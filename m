@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab3HGIuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 04:50:04 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:11967 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755786Ab3HGIuB (ORCPT
+	id S1757280Ab3HGIue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 04:50:34 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47190 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755809Ab3HGIuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 04:50:01 -0400
-X-Spam-Score: -100.8
-Message-ID: <520209FA.70409@asianux.com>
-Date: Wed, 07 Aug 2013 16:48:58 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 7 Aug 2013 04:50:32 -0400
+X-AuditID: 9c930197-b7b17ae000000a07-fa-52020a56311f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V9 01/14] perf tools: add debug prints
+References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
+	<1375719994-26482-2-git-send-email-adrian.hunter@intel.com>
+	<8738qmyp7i.fsf@sejong.aot.lge.com> <520201A3.4030606@intel.com>
+Date: Wed, 07 Aug 2013 17:50:30 +0900
+In-Reply-To: <520201A3.4030606@intel.com> (Adrian Hunter's message of "Wed, 07
+	Aug 2013 11:13:23 +0300")
+Message-ID: <87haf1yje1.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: Joe Perches <joe@perches.com>, "'Jiri Kosina'" <trivial@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, davej@redhat.com,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
- and "uapi/linux/Kbuild"
-References: <52005571.4080704@asianux.com> <1375810303.2424.28.camel@joe-AO722> <1375860749.8422.25@driftwood>
-In-Reply-To: <1375860749.8422.25@driftwood>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 03:32 PM, Rob Landley wrote:
-> On 08/06/2013 12:31:43 PM, Joe Perches wrote:
->> On Tue, 2013-08-06 at 09:46 +0800, Chen Gang wrote:
->> > "include/uapi/" is the whole Linux kernel API, it is important enough
->> > to get more global explanations by comments.
->>
->> It'd probably be useful to have more descriptions
->> of uapi in the Documentation directory too.
-> 
-> I'd rather have comments in the headers that get exported to userspace
-> and then have other forms of documentation generated from that by some
-> process similar to "make htmldocs". Otherwise you've got two places to
-> keep in sync.
-> 
+On Wed, 07 Aug 2013 11:13:23 +0300, Adrian Hunter wrote:
+> On 07/08/13 09:44, Namhyung Kim wrote:
+>> Things like this likely being ended up with typo.  How about this? (not tested)
+>
+> And yet there aren't any typos.
 
-At least for me, it is a good idea, although UAPI files is rarely
-changed (may add new item, but few modifying the existing items).
+Yes, but there's a possibility of adding one later.  I have a memory
+that when Jiri added something similar there's one so we changed to use
+macros for that.
 
-And for our case, it is summary comments for directory organization for
-all UAPI files, so in my opinion, it is still necessary to give summary
-comments in Kbuild.
+>
+>> 
+>> #define __PRINT_ATTR(fmt, cast, field)  \
+>> 	fprintf(fp, "  %-28s  "fmt"\n", #field, cast attr->field)
+>> 
+>> #define PRINT_ATTR_D32(field)  __PRINT_ATTR("%u", ,field)
+>> #define PRINT_ATTR_X32(field)  __PRINT_ATTR("%#x", ,field)
+>> #define PRINT_ATTR_D64(field)  __PRINT_ATTR("%"PRIu64, (uint64_t), field)
+>> #define PRINT_ATTR_X64(field)  __PRINT_ATTR("%#"PRIx64, (uint64_t), field)
+>> #define PRINT_ATTR2(field1, field2)  \
+>> 	fprintf(fp, "  %-28s  %u    %-28s  %u\n", \
+>> 		#field1, attr->field1, #field2, attr->field2)
+>
+> That does not allow the output to be nicely formatted.  In some cases the
+> field name is just too long and I have abbreviated it.
 
-In Linux user mode or another OS which share the same files of UAPI,
-they do not care about our kernel's Kbuild, for they have their own
-directory organizations which may different with Linux kernel's.
+But yet there aren't any longer than 28. :)
 
-> (Really the guy you've got to keep in the loop about this is Michael
-> Kerrisk. The section 2 man pages are the current best reference on UAPI
-> stuff...)
-> 
+>
+> When you add in all the variations you just get a macro mess.
 
-As far as I know, the section 2 man pages is already for it (e.g. man 2
-setfuid, man 2 open, ...).
+I think above 5 is enough but who knows..
 
-Do you mean currently it is only for some of system calls (part of
-UAPI), not for the whole UAPI ?
+Anyway I won't arguing on it strongly, it's just a matter of styles IMHO.
 
-
-> Rob
-> 
-
-
--- 
-Chen Gang
+Thanks,
+Namhyung
