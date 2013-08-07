@@ -1,72 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006Ab3HGXeN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 19:34:13 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:64663 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757214Ab3HGXeJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 19:34:09 -0400
+	id S933159Ab3HGXeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 19:34:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17523 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933035Ab3HGXe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 19:34:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,835,1367996400"; 
+   d="scan'208";a="359297451"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Borislav Petkov <bp@alien8.de>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/5] x86, AMD: cleanup: merge common code in early
+ microcode loading
+Thread-Topic: [PATCH 3/5] x86, AMD: cleanup: merge common code in early
+ microcode loading
+Thread-Index: AQHOiHJi+cm++MPa80WiAzcLiv5LH5mKbKhAgAANp+A=
+Date: Wed, 7 Aug 2013 23:34:01 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205A53B73A@ORSMSX106.amr.corp.intel.com>
+References: <20130723230026.394a5ee1@googlemail.com>
+ <20130724133254.GE30777@pd.tnic> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CA+icZUVCBdFARueFRzAWT6Ax19s83ds5LFvqpQ-tOO96-ZhStA@mail.gmail.com>
-References: <CA+icZUW990rWKdQmppjkGTJzFBtTnW-tb0dRu2AbTYB8KSDN4w@mail.gmail.com>
-	<2146168.3J7W6RtiZr@vostro.rjw.lan>
-	<CAMbhsRSaJWUL2yBnEJ83TCjMJRSZNP0-XM3-mVYf7FuPtUYnUQ@mail.gmail.com>
-	<CA+icZUVCBdFARueFRzAWT6Ax19s83ds5LFvqpQ-tOO96-ZhStA@mail.gmail.com>
-Date: Wed, 7 Aug 2013 16:34:08 -0700
-X-Google-Sender-Auth: IwXmKQmxyj-U2JbhYrEHYi4_1Po
-Message-ID: <CAMbhsRT6eki+oY4D-iRJz2iqS+N3YBmnC0eP4bMN69cbgj=UsQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 7 [ call-trace on suspend: ext4 | pm
- related ? ]
-From: Colin Cross <ccross@android.com>
-To: sedat.dilek@gmail.com
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Ext4 Developers List <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: multipart/mixed; boundary=e89a8ff242a363808d04e363faa7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r77NYb3D030361
 
---e89a8ff242a363808d04e363faa7
-Content-Type: text/plain; charset=ISO-8859-1
+> From: Yu, Fenghua
+> Sent: Wednesday, August 07, 2013 3:46 PM
+> 
+> > From: Borislav Petkov [mailto:bp@alien8.de]
+> > Sent: Wednesday, July 24, 2013 6:33 AM
+> > On Tue, Jul 23, 2013 at 11:00:26PM +0200, Torsten Kaiser wrote:
+> > > Extract common checks and initialisations from load_ucode_ap() and
+> > > save_microcode_in_initrd_amd() to load_microcode_amd_early().
+> > > load_ucode_ap() gets a quick exit for !cpu, because for the BSP
+> there
+> > is
+> > > already a different function dealing with its update.
+> > >
+> > > The original code already didn't anything, because without
+> > load_microcode_amd()
+> > > getting called apply_microcode_amd() could not do anything.
+> > >
+> > > Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+> > >
+> > > --- a/arch/x86/kernel/microcode_amd_early.c	2013-07-22
+> > 06:22:32.000000000 +0200
+> > > +++ b/arch/x86/kernel/microcode_amd_early.c	2013-07-23
+> > 20:00:04.889508712 +0200
+> > > @@ -196,6 +196,23 @@ void __init load_ucode_amd_bsp(void)
+> > >  	apply_ucode_in_initrd(cd.data, cd.size);
+> > >  }
+> > >
+> > > +static int load_microcode_amd_early(void)
+> > > +{
+> > > +	enum ucode_state ret;
+> > > +	void *ucode;
+> > > +
+> > > +	if (ucode_loaded || !ucode_size || !initrd_start)
+> > > +		return 0;
+> > > +
+> > > +	ucode = (void *)(initrd_start + ucode_offset);
+> > > +	ret = load_microcode_amd(0, ucode, ucode_size);
+> > > +	if (ret != UCODE_OK)
+> > > +		return -EINVAL;
+> > > +
+> > > +	ucode_loaded = true;
+> > > +	return 0;
+> > > +}
+> > > +
+> > >  #ifdef CONFIG_X86_32
+> > >  u8 amd_bsp_mpb[MPB_MAX_SIZE];
+> > >
+> > > @@ -258,17 +275,13 @@ void load_ucode_amd_ap(void)
+> > >
+> > >  	collect_cpu_info_amd_early(&cpu_data(cpu), ucode_cpu_info + cpu);
+> > >
+> > > -	if (cpu && !ucode_loaded) {
+> > > -		void *ucode;
+> > > -
+> > > -		if (!ucode_size || !initrd_start)
+> > > -			return;
+> > > +	/* BSP via load_ucode_amd_bsp() */
+> > > +	if (!cpu)
+> > > +		return;
+> >
+> > Ok, this is really misleading. Fenghua, what's the reason for calling
+> > load_ucode_ap() on the BSP too?
+> >
+> > We have on the one hand:
+> >
+> > x86_64_start_kernel
+> > |->load_ucode_bsp
+> >
+> > and on the other:
+> >
+> > x86_64_start_kernel
+> > |-> x86_64_start_reservations
+> >     |-> start_kernel
+> >         |-> trap_init
+> > 	    |-> cpu_init
+> > 	        |-> load_ucode_ap()
+> >
+> > so we attempt to load the ucode twice on the BSP.
+> >
+> 
+> You are right. Though the second time loading attempt will not find a
+> valid/newer ucode patch to update. So this won't cause a real/serious
+> problem. But we had better to fix this anyway.
+> 
+> > IMO, we should do this in cpu_init:
+> >
+> > 	if (cpu)
+> > 		load_ucode_ap();
+> >
+> > no?
+> 
+> This check won't work when CPU0 is hot added. So we need to find a
+> better way to fix this.
+> 
 
-On Wed, Aug 7, 2013 at 4:15 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Thu, Aug 8, 2013 at 12:58 AM, Colin Cross <ccross@android.com> wrote:
->> Can you try add a call to show_state_filter(TASK_UNINTERRUPTIBLE) in
->> the error path of try_to_freeze_tasks(), where it prints the "refusing
->> to freeze" message?  It will print the stack trace of every thread
->> since they are all in the freezer, so the output will be very long.
->>
->
-> If you provide a patch, I will give it a try.
+Maybe need to change the check as follows to take care of CPU0 hot add case?
 
-Try the attached patch.
+if ((cpu && system_state == SYSTEM_BOOTING) || (system_state == SYSTEM_RUNNING))
+	load_ucode_ap();
 
---e89a8ff242a363808d04e363faa7
-Content-Type: application/octet-stream; 
-	name="0001-HACK-print-stack-trace-for-all-tasks-when-freezing-f.patch"
-Content-Disposition: attachment; 
-	filename="0001-HACK-print-stack-trace-for-all-tasks-when-freezing-f.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hk36b8390
+Thanks.
 
-RnJvbSBjMTZmMmEyYzM5ZTI5MWU4ZDRmYjM1ZjM0N2M0ZjVmNjNlZWExYzM2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBDb2xpbiBDcm9zcyA8Y2Nyb3NzQGFuZHJvaWQuY29tPgpEYXRl
-OiBXZWQsIDcgQXVnIDIwMTMgMTY6MzI6MTkgLTA3MDAKU3ViamVjdDogW1BBVENIXSBIQUNLOiBw
-cmludCBzdGFjayB0cmFjZSBmb3IgYWxsIHRhc2tzIHdoZW4gZnJlZXppbmcgZmFpbHMKCkNoYW5n
-ZS1JZDogSTk4YTU5ZmFhMjU4MDQ1OGVjMGZhODZlNDA0N2YyNzk0MzBjYzgxZjAKLS0tCiBrZXJu
-ZWwvcG93ZXIvcHJvY2Vzcy5jIHwgMyArKysKIDEgZmlsZSBjaGFuZ2VkLCAzIGluc2VydGlvbnMo
-KykKCmRpZmYgLS1naXQgYS9rZXJuZWwvcG93ZXIvcHJvY2Vzcy5jIGIva2VybmVsL3Bvd2VyL3By
-b2Nlc3MuYwppbmRleCAwNmVjODg2Li41ZDE3NGRmIDEwMDY0NAotLS0gYS9rZXJuZWwvcG93ZXIv
-cHJvY2Vzcy5jCisrKyBiL2tlcm5lbC9wb3dlci9wcm9jZXNzLmMKQEAgLTkwLDYgKzkwLDkgQEAg
-c3RhdGljIGludCB0cnlfdG9fZnJlZXplX3Rhc2tzKGJvb2wgdXNlcl9vbmx5KQogCQkgICAgICAg
-ZWxhcHNlZF9tc2VjcyAvIDEwMDAsIGVsYXBzZWRfbXNlY3MgJSAxMDAwLAogCQkgICAgICAgdG9k
-byAtIHdxX2J1c3ksIHdxX2J1c3kpOwogCisJCXByX2Vycigic2hvd2luZyBhbGwgYmxvY2tlZCB0
-YXNrc1xuIik7CisJCXNob3dfc3RhdGVfZmlsdGVyKFRBU0tfVU5JTlRFUlJVUFRJQkxFKTsKKwog
-CQlpZiAoIXdha2V1cCkgewogCQkJcmVhZF9sb2NrKCZ0YXNrbGlzdF9sb2NrKTsKIAkJCWRvX2Vh
-Y2hfdGhyZWFkKGcsIHApIHsKLS0gCjEuOC4zCgo=
---e89a8ff242a363808d04e363faa7--
+-Fenghua
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
