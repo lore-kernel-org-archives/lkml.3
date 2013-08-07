@@ -1,152 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab3HGLNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 07:13:06 -0400
-Received: from 6.mo3.mail-out.ovh.net ([188.165.43.173]:60872 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757307Ab3HGLNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 07:13:04 -0400
-X-Greylist: delayed 2400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Aug 2013 07:13:04 EDT
-Message-ID: <52022797.3060006@overkiz.com>
-Date: Wed, 07 Aug 2013 12:55:19 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH] ARM: at91/dt: split sam9x5 peripheral definitions
-References: <1375870466-1093-1-git-send-email-b.brezillon@overkiz.com> <CACQ1gAjsPvHkpUuO_3jK3HfnDBQDoJmO7z1Gj5YkAmybHB_zmg@mail.gmail.com>
-In-Reply-To: <CACQ1gAjsPvHkpUuO_3jK3HfnDBQDoJmO7z1Gj5YkAmybHB_zmg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 2868230013141743781
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S932568Ab3HGLNl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 07:13:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:1839 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757307Ab3HGLNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 07:13:39 -0400
+X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
+   d="scan'208";a="8144300"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH v3 12/25] x86, acpi: Rename check_multiple_madt() and make it global.
+Date: Wed, 7 Aug 2013 18:52:03 +0800
+Message-Id: <1375872736-4822-13-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/07 18:52:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/07 18:52:18,
+	Serialize complete at 2013/08/07 18:52:18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Richard,
+Since we split acpi_table_init() into two steps, and want to do
+the two steps separately, we need to do check_multiple_madt() after
+acpi_table_init_override().
 
-On 07/08/2013 12:38, Richard Genoud wrote:
-> 2013/8/7 Boris BREZILLON <b.brezillon@overkiz.com>:
->> This patch splits the sam9x5 peripheral definitions into:
->> - a common base for all sam9x5 SoCs (at91sam9x5.dtsi)
->> - several optional peripheral definitions which will be included by specific
->>    sam9x5 SoCs (at91sam9x5_'periph name'.dtsi)
->>
->> This provides a better representation of the real hardware (drop unneeded
->> dt nodes) and avoids future peripheral id conflict (lcdc and isi both use
->> peripheral id 25).
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->> ---
->>   arch/arm/boot/dts/at91sam9g25.dtsi       |    2 +
->>   arch/arm/boot/dts/at91sam9g35.dtsi       |    1 +
->>   arch/arm/boot/dts/at91sam9x25.dtsi       |   24 ++---------
->>   arch/arm/boot/dts/at91sam9x35.dtsi       |    1 +
->>   arch/arm/boot/dts/at91sam9x5.dtsi        |   67 ------------------------------
->>   arch/arm/boot/dts/at91sam9x5_macb0.dtsi  |   56 +++++++++++++++++++++++++
->>   arch/arm/boot/dts/at91sam9x5_macb1.dtsi  |   44 ++++++++++++++++++++
->>   arch/arm/boot/dts/at91sam9x5_usart3.dtsi |   51 +++++++++++++++++++++++
->>   8 files changed, 158 insertions(+), 88 deletions(-)
->>   create mode 100644 arch/arm/boot/dts/at91sam9x5_macb0.dtsi
->>   create mode 100644 arch/arm/boot/dts/at91sam9x5_macb1.dtsi
->>   create mode 100644 arch/arm/boot/dts/at91sam9x5_usart3.dtsi
->>
-> [snip]
->> diff --git a/arch/arm/boot/dts/at91sam9x5_usart3.dtsi b/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
->> new file mode 100644
->> index 0000000..5589579
->> --- /dev/null
->> +++ b/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
->> @@ -0,0 +1,51 @@
->> +/*
->> + * at91sam9x5_lcdc.dtsi - Device Tree Include file for AT91SAM9x5 SoC with
->> + * 4 USART.
-> One minor comment mistake here !
-Nice catch!
+But we also have to keep acpi_table_init() as before because it
+is also used in ia64, we have to do check_multiple_madt() directly
+in acpi_boot_table_init() in x86.
 
-I'll fix it for the next version.
+This patch make check_multiple_madt() global, and rename it to
+acpi_check_multiple_madt() because all interfaces provided by
+drivers/acpi/tables.c begins with "acpi_".
 
-BTW did you test it (I didn't: I don't have any board with this SoC 
-family) ?
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ drivers/acpi/tables.c |    4 ++--
+ include/linux/acpi.h  |    1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-This separation was formerly done in the "at91 common clk" series but I 
-removed it
-from the new version (which I will submit soon) to ease the review and 
-tests.
-
-
-Best Regards,
-
-Boris
->> + *
->> + * Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
->> + *
->> + * Licensed under GPLv2.
->> + */
->> +
->> +#include <dt-bindings/pinctrl/at91.h>
->> +#include <dt-bindings/interrupt-controller/irq.h>
->> +
->> +/ {
->> +       ahb {
->> +               apb {
->> +                       pinctrl@fffff400 {
->> +                               usart3 {
->> +                                       pinctrl_usart3: usart3-0 {
->> +                                               atmel,pins =
->> +                                                       <AT91_PIOC 22 AT91_PERIPH_B AT91_PINCTRL_PULL_UP        /* PC22 periph B with pullup */
->> +                                                        AT91_PIOC 23 AT91_PERIPH_B AT91_PINCTRL_NONE>;         /* PC23 periph B */
->> +                                       };
->> +
->> +                                       pinctrl_usart3_rts: usart3_rts-0 {
->> +                                               atmel,pins =
->> +                                                       <AT91_PIOC 24 AT91_PERIPH_B AT91_PINCTRL_NONE>;         /* PC24 periph B */
->> +                                       };
->> +
->> +                                       pinctrl_usart3_cts: usart3_cts-0 {
->> +                                               atmel,pins =
->> +                                                       <AT91_PIOC 25 AT91_PERIPH_B AT91_PINCTRL_NONE>;         /* PC25 periph B */
->> +                                       };
->> +
->> +                                       pinctrl_usart3_sck: usart3_sck-0 {
->> +                                               atmel,pins =
->> +                                                       <AT91_PIOC 26 AT91_PERIPH_B AT91_PINCTRL_NONE>;         /* PC26 periph B */
->> +                                       };
->> +                               };
->> +                       };
->> +
->> +                       usart3: serial@f8028000 {
->> +                               compatible = "atmel,at91sam9260-usart";
->> +                               reg = <0xf8028000 0x200>;
->> +                               interrupts = <8 IRQ_TYPE_LEVEL_HIGH 5>;
->> +                               pinctrl-names = "default";
->> +                               pinctrl-0 = <&pinctrl_usart3>;
->> +                               status = "disabled";
->> +                       };
->> +               };
->> +       };
->> +};
->> --
->> 1.7.9.5
->>
->
->
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index 4913a85..45727b2 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -314,7 +314,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
+  * but some report two.  Provide a knob to use either.
+  * (don't you wish instance 0 and 1 were not the same?)
+  */
+-static void __init check_multiple_madt(void)
++void __init acpi_check_multiple_madt(void)
+ {
+ 	struct acpi_table_header *table = NULL;
+ 	acpi_size tbl_size;
+@@ -369,7 +369,7 @@ int __init acpi_table_init(void)
+ 
+ 	acpi_table_init_override();
+ 
+-	check_multiple_madt();
++	acpi_check_multiple_madt();
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 9704179..44a3e5f 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -95,6 +95,7 @@ void acpi_boot_table_init (void);
+ int acpi_mps_check (void);
+ int acpi_numa_init (void);
+ 
++void acpi_check_multiple_madt(void);
+ int acpi_table_init_firmware(void);
+ void acpi_table_init_override(void);
+ int acpi_table_init (void);
+-- 
+1.7.1
 
