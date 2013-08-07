@@ -1,117 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932862Ab3HGLPw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 07:15:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:1839 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757391Ab3HGLNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 07:13:41 -0400
-X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
-   d="scan'208";a="8144302"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v3 16/25] x86: Make get_ramdisk_{image|size}() global.
-Date: Wed, 7 Aug 2013 18:52:07 +0800
-Message-Id: <1375872736-4822-17-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:52:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:52:18,
-	Serialize complete at 2013/08/07 18:52:18
+	id S932803Ab3HGLQb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 07:16:31 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:59931 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932434Ab3HGLQ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 07:16:29 -0400
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH] cpufreq: exynos5440: Fix to skip when new frequency same as current
+Date: Wed,  7 Aug 2013 16:46:11 +0530
+Message-Id: <1375874171-16951-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the following patches, we need to call get_ramdisk_{image|size}()
-to get initrd file's address and size. So make these two functions
-global.
+This patch fixes the issue of un-necessary setting the clock controller
+when the new target frequency is same as the current one. This case usually
+occurs with governors like ondemand which passes the target frequency as the
+percentage of average frequency. This check is present in most of the cpufreq
+driver.
 
-v1 -> v2:
-As tj suggested, make these two function static inline in
-arch/x86/include/asm/setup.h.
-
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
- arch/x86/include/asm/setup.h |   21 +++++++++++++++++++++
- arch/x86/kernel/setup.c      |   18 ------------------
- 2 files changed, 21 insertions(+), 18 deletions(-)
+ drivers/cpufreq/exynos5440-cpufreq.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index b7bf350..cfdb55d 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -106,6 +106,27 @@ void *extend_brk(size_t size, size_t align);
- 	RESERVE_BRK(name, sizeof(type) * entries)
+diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
+index 0c74018..d514c15 100644
+--- a/drivers/cpufreq/exynos5440-cpufreq.c
++++ b/drivers/cpufreq/exynos5440-cpufreq.c
+@@ -238,6 +238,9 @@ static int exynos_target(struct cpufreq_policy *policy,
+ 	freqs.old = dvfs_info->cur_frequency;
+ 	freqs.new = freq_table[index].frequency;
  
- extern void probe_roms(void);
++	if (freqs.old == freqs.new)
++		goto out;
 +
-+#ifdef CONFIG_BLK_DEV_INITRD
-+static inline u64 __init get_ramdisk_image(void)
-+{
-+	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+
-+	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
-+
-+	return ramdisk_image;
-+}
-+
-+static inline u64 __init get_ramdisk_size(void)
-+{
-+	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+
-+	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
-+
-+	return ramdisk_size;
-+}
-+#endif /* CONFIG_BLK_DEV_INITRD */
-+
- #ifdef __i386__
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
  
- void __init i386_start_kernel(void);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index fdb5a26..da44353 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -296,24 +296,6 @@ static void __init reserve_brk(void)
- }
- 
- #ifdef CONFIG_BLK_DEV_INITRD
--
--static u64 __init get_ramdisk_image(void)
--{
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--
--	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
--
--	return ramdisk_image;
--}
--static u64 __init get_ramdisk_size(void)
--{
--	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
--
--	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
--
--	return ramdisk_size;
--}
--
- #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
- static void __init relocate_initrd(void)
- {
+ 	/* Set the target frequency in all C0_3_PSTATE register */
 -- 
 1.7.1
 
