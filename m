@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933137Ab3HGUIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 16:08:39 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:58638 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933089Ab3HGUIh (ORCPT
+	id S933149Ab3HGUJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 16:09:26 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:37616 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932518Ab3HGUJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 16:08:37 -0400
-Date: Wed, 7 Aug 2013 16:14:55 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-cc: Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
-Subject: perf,arm -- another (different) fuzzer oops
-Message-ID: <alpine.DEB.2.10.1308071611290.14098@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 7 Aug 2013 16:09:25 -0400
+Date: Wed, 7 Aug 2013 17:09:18 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Pekka Enberg <penberg@kernel.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH/RFC 0/4] perf ui/gtk: Separate out GTK code to a shared
+ object (v2)
+Message-ID: <20130807200918.GF2665@ghostprotocols.net>
+References: <1375766056-19377-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375766056-19377-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Em Tue, Aug 06, 2013 at 02:14:12PM +0900, Namhyung Kim escreveu:
+> Hi,
+> 
+> This is v2 of gtk code separation patchset to reduce library
+> dependencies of the perf executable.
+> 
+> I only built libperf-gtk.so with -fPIC, and it's not linked to libperf
+> at build time.  All unresolved symbols used for perf should be
+> resolved at runtime via perf executable (so libperf.a) - I didn't know
+> that the linker permits unresolved symbols in a shared library at
+> build time.
+> 
+> Tested on my x86-64 machine only.  It seems work well for me.
 
-I don't have time to come up with a test case right now, but I've
-applied the patch to fix the oops from two days ago, and re-ran
-my perf_fuzzer tool and it immediately came up with another issue on ARM.
-This is an ARM Pandaboard running 3.11-rc4 with the one-line
-oops fix from the other thread.
+Not for me, please take a look at O= handling:
 
-Vince
+[acme@sandy linux]$ make -j8 O=/tmp/build/perf -C tools/perf/ install
+<SNIP>
+    CHK gtk2
+    CHK -DHAVE_GTK_INFO_BAR
+<SNIP>
+make: Entering directory `/home/acme/git/linux/tools/perf'
+make: *** No rule to make target `/tmp/build/perf/ui/gtk/browser.c',
+needed by `/tmp/build/perf/ui/gtk/browser.o'.  Stop.
+make: *** Waiting for unfinished jobs....
+make[1]: Entering directory `/home/acme/git/linux/tools/lib/traceevent'
+make[2]: warning: jobserver unavailable: using -j1.  Add `+' to parent
+make rule.
+make[1]: Entering directory `/home/acme/git/linux/tools/lib/lk'
+    AR liblk.a
+make[1]: Leaving directory `/home/acme/git/linux/tools/lib/traceevent'
+make[1]: Leaving directory `/home/acme/git/linux/tools/lib/lk'
+make: Leaving directory `/home/acme/git/linux/tools/perf'
+[acme@sandy linux]$ 
+ 
+> The patch 1 is a bug fix and can be applied independently.
 
-[  388.509063] Unable to handle kernel paging request at virtual address 73fd14cc
-[  388.509063] pgd = eca6c000
-[  388.519805] [73fd14cc] *pgd=00000000
-[  388.523651] Internal error: Oops: 5 [#1] SMP ARM
-[  388.528594] Modules linked in: snd_soc_omap_hdmi omapdss snd_soc_omap_abe_twl6040 snd_soc_twl6040 snd_soc_omap snd_soc_omap_hdmi_card snd_soc_omap_mcpdm snd_soc_omap_mcbsp snd_soc_core snd_compress regmap_spi snd_pcm snd_page_alloc snd_timer snd soundcore
-[  388.551757] CPU: 1 PID: 2790 Comm: perf_fuzzer Not tainted 3.11.0-rc4 #6
-[  388.559906] task: eddcab80 ti: ed892000 task.ti: ed892000
-[  388.565643] PC is at armpmu_map_event+0x20/0x88
-[  388.570495] LR is at armpmu_event_init+0x38/0x280
-[  388.574981] pc : [<c001c3e4>]    lr : [<c001c17c>]    psr: 60000013
-[  388.574981] sp : ed893e40  ip : ecececec  fp : edfaec00
-[  388.581878] r10: 00000000  r9 : 00000000  r8 : ed8c3ac0
-[  388.593292] r7 : ed8c3b5c  r6 : edfaec00  r5 : 00000000  r4 : 00000000
-[  388.593292] r3 : 000000ff  r2 : c0496144  r1 : c049611c  r0 : edfaec00
-[  388.607177] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[  388.614776] Control: 10c5387d  Table: aca6c04a  DAC: 00000015
-[  388.614776] Process perf_fuzzer (pid: 2790, stack limit = 0xed892240)
-[  388.621826] Stack: (0xed893e40 to 0xed894000)
-[  388.632385] 3e40: 00000800 c001c17c 00000002 c008a748 00000001 00000000 00000000 c00bf078
-[  388.634796] 3e60: 00000000 edfaee50 00000000 00000000 00000000 edfaec00 ed8c3ac0 edfaec00
-[  388.634796] 3e80: 00000000 c073ffac ed893f20 c00bf180 00000001 00000000 c00bf078 ed893f20
-[  388.652435] 3ea0: 00000000 ed8c3ac0 00000000 00000000 00000000 c0cb0818 eddcab80 c00bf440
-[  388.667205] 3ec0: ed893f20 00000000 eddcab80 eca76800 00000000 eca76800 00000000 00000000
-[  388.668487] 3ee0: 00000000 ec984c80 eddcab80 c00bfe68 00000000 00000000 00000000 00000080
-[  388.684631] 3f00: 00000000 ed892000 00000000 ed892030 00000004 ecc7e3c8 ecc7e3c8 00000000
-[  388.693328] 3f20: 00000000 00000048 ecececec 00000000 00000000 00000000 00000000 00000000
-[  388.701843] 3f40: 00000000 00000000 00297810 00000000 00000000 00000000 00000000 00000000
-[  388.701843] 3f60: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-[  388.719451] 3f80: 00000002 00000002 000103a4 00000002 0000016c c00128e8 ed892000 00000000
-[  388.724212] 3fa0: 00090998 c0012700 00000002 000103a4 00090ab8 00000000 00000000 0000000f
-[  388.731842] 3fc0: 00000002 000103a4 00000002 0000016c 00090ab0 00090ab8 000107a0 00090998
-[  388.745574] 3fe0: bed92be0 bed92bd0 0000b785 b6e8f6d0 40000010 00090ab8 00000000 00000000
-[  388.751831] [<c001c3e4>] (armpmu_map_event+0x20/0x88) from [<c001c17c>] (armpmu_event_init+0x38/0x280)
-[  388.764221] [<c001c17c>] (armpmu_event_init+0x38/0x280) from [<c00bf180>] (perf_init_event+0x108/0x180)
-[  388.764221] [<c00bf180>] (perf_init_event+0x108/0x180) from [<c00bf440>] (perf_event_alloc+0x248/0x40c)
-[  388.764221] [<c00bf440>] (perf_event_alloc+0x248/0x40c) from [<c00bfe68>] (SyS_perf_event_open+0x4f4/0x8fc)
-[  388.791839] [<c00bfe68>] (SyS_perf_event_open+0x4f4/0x8fc) from [<c0012700>] (ret_fast_syscall+0x0/0x48)
-[  388.804718] Code: 0a000005 e3540004 0a000016 e3540000 (0791010c) 
-[  388.811248] ---[ end trace 89ea407225495d97 ]---
+I took it, thanks.
