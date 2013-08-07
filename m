@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933509Ab3HGVSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:18:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40025 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933390Ab3HGVSg (ORCPT
+	id S933589Ab3HGVS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:18:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47040 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933401Ab3HGVL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:18:36 -0400
-Date: Wed, 7 Aug 2013 14:18:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ed Cashin <ecashin@coraid.com>
-Cc: <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] aoe: adjust ref of head for compound page tails
-Message-Id: <20130807141835.533816143f8b37175c50d58d@linux-foundation.org>
-In-Reply-To: <8DFEA276-4EE1-44B4-9669-5634631D7BBC@coraid.com>
-References: <cover.1375320764.git.ecashin@coraid.com>
-	<0c8aff39249c1da6b9cc3356650149d065c3ebd2.1375320764.git.ecashin@coraid.com>
-	<20130807135804.e62b75f6986e9568ab787562@linux-foundation.org>
-	<8DFEA276-4EE1-44B4-9669-5634631D7BBC@coraid.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Aug 2013 17:11:28 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 21/47] perf evsel: Add support for enabling counters
+Date: Wed,  7 Aug 2013 18:10:48 -0300
+Message-Id: <1375909874-22073-22-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
+References: <1375909874-22073-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Aug 2013 17:12:36 -0400 Ed Cashin <ecashin@coraid.com> wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> 
-> On Aug 7, 2013, at 4:58 PM, Andrew Morton wrote:
-> 
-> > On Thu, 1 Aug 2013 21:29:59 -0400 Ed Cashin <ecashin@coraid.com> wrote:
-> > 
-> >> As discussed previously,
-> > 
-> > I think I missed that.
-> > 
-> >> the fact that some users of the block
-> >> layer provide bios that point to pages with a zero _count means
-> >> that it is not OK for the network layer to do a put_page on the
-> >> skb frags during an skb_linearize, so the aoe driver gets a
-> >> reference to pages in bios and puts the reference before ending
-> >> the bio.  And because it cannot use get_page on a page with a
-> >> zero _count, it manipulates the value directly.
-> > 
-> > Eh?  What code is putting count==0 pages into bios?  That sounds very
-> > weird and broken.
-> 
-> I thought so in 2007 but couldn't solicit a clear "this is wrong" consensus from the discussion.
-> 
->   http://article.gmane.org/gmane.linux.kernel/499197
->   https://lkml.org/lkml/2007/1/19/56
->   https://lkml.org/lkml/2006/12/18/230
-> 
-> We were seeing zero-count pages in bios from XFS, but Christoph Hellwig pointed out that kmalloced pages can also come from ext3 when it's doing log recovery, and they'll have zero page counts.
+Add support for enabling already set up counters by using an
+ioctl. I share some code with the filter setup.
 
-aiiee!
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1375490473-1503-3-git-send-email-andi@firstfloor.org
+[ Fixed up 'err' variable indentation ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evsel.c | 21 ++++++++++++++++++---
+ tools/perf/util/evsel.h |  1 +
+ 2 files changed, 19 insertions(+), 3 deletions(-)
 
-It is (I suppose) reasonable to put kmalloced memory into a BIO's page
-array.  And it is perfectly reasonable for a user of that bio to do a
-get_page/put_page against that page.  It is utterly unreasonable for
-the damn page to get freed as a result!
-
-I'd claim that slab is broken.  The page is in use, so it should have an
-elevated refcount, full stop.
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 8f10161..960394e 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -634,15 +634,15 @@ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads)
+ 	return evsel->fd != NULL ? 0 : -ENOMEM;
+ }
+ 
+-int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+-			   const char *filter)
++static int perf_evsel__run_ioctl(struct perf_evsel *evsel, int ncpus, int nthreads,
++			  int ioc,  void *arg)
+ {
+ 	int cpu, thread;
+ 
+ 	for (cpu = 0; cpu < ncpus; cpu++) {
+ 		for (thread = 0; thread < nthreads; thread++) {
+ 			int fd = FD(evsel, cpu, thread),
+-			    err = ioctl(fd, PERF_EVENT_IOC_SET_FILTER, filter);
++			    err = ioctl(fd, ioc, arg);
+ 
+ 			if (err)
+ 				return err;
+@@ -652,6 +652,21 @@ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ 	return 0;
+ }
+ 
++int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
++			   const char *filter)
++{
++	return perf_evsel__run_ioctl(evsel, ncpus, nthreads,
++				     PERF_EVENT_IOC_SET_FILTER,
++				     (void *)filter);
++}
++
++int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads)
++{
++	return perf_evsel__run_ioctl(evsel, ncpus, nthreads,
++				     PERF_EVENT_IOC_ENABLE,
++				     0);
++}
++
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads)
+ {
+ 	evsel->sample_id = xyarray__new(ncpus, nthreads, sizeof(struct perf_sample_id));
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 5edc625..532a5f9 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -146,6 +146,7 @@ void perf_evsel__set_sample_id(struct perf_evsel *evsel);
+ 
+ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ 			   const char *filter);
++int perf_evsel__enable(struct perf_evsel *evsel, int ncpus, int nthreads);
+ 
+ int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
+ 			     struct cpu_map *cpus);
+-- 
+1.8.1.4
 
