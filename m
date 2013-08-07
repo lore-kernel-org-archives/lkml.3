@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933708Ab3HGWHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 18:07:05 -0400
-Received: from ares07.inai.de ([5.9.24.206]:59998 "EHLO ares07.inai.de"
+	id S933692Ab3HGWNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 18:13:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54771 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933454Ab3HGWHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 18:07:03 -0400
-X-Greylist: delayed 483 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Aug 2013 18:07:03 EDT
-From: Jan Engelhardt <jengelh@inai.de>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: linux-kernel@vger.kernel.org
-Subject: Potentially missing "else"
-Date: Wed,  7 Aug 2013 23:58:57 +0200
-Message-Id: <1375912738-25114-1-git-send-email-jengelh@inai.de>
-X-Mailer: git-send-email 1.8.2
+	id S933398Ab3HGWNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 18:13:16 -0400
+Message-ID: <5202C655.6050609@zytor.com>
+Date: Wed, 07 Aug 2013 15:12:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: linux-kernel@vger.kernel.org, ciminaghi@gnudd.com,
+        giancarlo.asnaghi@st.com, x86@kernel.org, mingo@redhat.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de, devicetree@vger.kernel.org
+Subject: Re: [PATCH 00/26] STA2X11 devicetree support for amba/pci
+References: <52026AB5.80009@zytor.com>  <cover.1375867291.git.rubini@gnudd.com> <20130807211235.GA17863@mail.gnudd.com>
+In-Reply-To: <20130807211235.GA17863@mail.gnudd.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/07/2013 02:12 PM, Alessandro Rubini wrote:
+> 
+> Thank you for your feedback.  May I ask three more questions (this is
+> the 1st)?
+> 
+> Is the patch-set a viable approach for mainline, modulo serious evaluation
+> of the hairy IRQ details and the other bits?
+> 
 
-The following changes since commit 48a409644199d5efff6d966cd72ccc7f5a06c2a5:
+Serious evaluation is definitely called for.  I think that is all I can
+say at this point.
 
-  shell-completion: Make options accept '=' as last char (2013-08-02 12:07:39 -0300)
+When you say that on Northville this acts as "the main chipset".  The
+typical definition of that is the firmware resides there.  Is that the
+case in this platform as well (I am guessing no)?  It may sound like
+splitting hairs but I'm trying to wrap my brain around this platform; it
+sounds like I might have received a very wrong understanding.
 
-are available in the git repository at:
+	-hpa
 
-  git://git.inai.de/kmod master
-
-for you to fetch changes up to e4523541e7f26457cf7078d5f30e091d1b24e3a9:
-
-  depmod: add missing "else" clause (2013-08-07 23:50:51 +0200)
-
-----------------------------------------------------------------
-Jan Engelhardt (1):
-      depmod: add missing "else" clause
-
- libkmod/libkmod-config.c | 2 +-
- tools/depmod.c           | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
