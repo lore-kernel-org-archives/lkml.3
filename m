@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab3HGRQM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:16:12 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:51712 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab3HGRQL convert rfc822-to-8bit (ORCPT
+	id S1757293Ab3HGRUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:20:45 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:56321 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756464Ab3HGRUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:16:11 -0400
-Content-Type: text/plain; charset="utf-8"
+	Wed, 7 Aug 2013 13:20:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Yadwinder Singh Brar <yadi.brar@samsung.com>, linux-kernel@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1373197462-4033-3-git-send-email-yadi.brar@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, sbkim73@samsung.com,
-        sameo@linux.intel.com, lee.jones@linaro.org, broonie@kernel.org,
-        yadi.brar01@gmail.com, Yadwinder Singh Brar <yadi.brar@samsung.com>
-References: <1373197462-4033-1-git-send-email-yadi.brar@samsung.com>
- <1373197462-4033-3-git-send-email-yadi.brar@samsung.com>
-Message-ID: <20130807171606.5348.76732@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH 2/3] mfd: sec: Add clock cell for s2mps11
-Date: Wed, 07 Aug 2013 10:16:06 -0700
+In-Reply-To: <20130807130950.GF2515@console-pimps.org>
+References: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
+	<1375847113-24884-13-git-send-email-roy.franz@linaro.org>
+	<20130807130950.GF2515@console-pimps.org>
+Date: Wed, 7 Aug 2013 10:20:42 -0700
+Message-ID: <CAFECyb_ZoCCMs75FLtGewfFQy1m5aVw6s5Jv1H1vaxg976qFNA@mail.gmail.com>
+Subject: Re: [PATCH 12/17] Add proper definitions for some EFI function pointers.
+From: Roy Franz <roy.franz@linaro.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        matt.fleming@intel.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Dave Martin <dave.martin@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Yadwinder Singh Brar (2013-07-07 04:44:21)
-> This patch adds clock to list of mfd cells for s2mps11 and DT documentation
-> for clock part.
-> 
-> Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+On Wed, Aug 7, 2013 at 6:09 AM, Matt Fleming <matt@console-pimps.org> wrote:
+> On Tue, 06 Aug, at 08:45:08PM, Roy Franz wrote:
+>> The x86/AMD64 EFI stubs must us a call wrapper to convert between
+>> the Linux and EFI ABIs, so void pointers are sufficient.  For ARM,
+>> the ABIs are compatible, so we can directly invoke the function
+>> pointers.  The functions that are used by the ARM stub are updated
+>> to match the EFI definitions.
+>>
+>> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+>> ---
+>>  include/linux/efi.h |   42 +++++++++++++++++++++++++-----------------
+>>  1 file changed, 25 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/include/linux/efi.h b/include/linux/efi.h
+>> index 51f5641..96bb866 100644
+>> --- a/include/linux/efi.h
+>> +++ b/include/linux/efi.h
+>> @@ -39,6 +39,8 @@
+>>  typedef unsigned long efi_status_t;
+>>  typedef u8 efi_bool_t;
+>>  typedef u16 efi_char16_t;            /* UNICODE character */
+>> +typedef u64 efi_physical_addr_t;
+>> +typedef void *efi_handle_t;
+>>
+>>
+>>  typedef struct {
+>> @@ -96,6 +98,7 @@ typedef     struct {
+>>  #define EFI_MEMORY_DESCRIPTOR_VERSION        1
+>>
+>>  #define EFI_PAGE_SHIFT               12
+>> +#define EFI_PAGE_SIZE                (1UL << EFI_PAGE_SHIFT)
+>
+> It would be worth getting rid of the EFI_PAGE_SIZE definition in
+> arch/x86/boot/compressed/eboot.h now that we have one here.
+>
+> --
+> Matt Fleming, Intel Open Source Technology Center
 
-Reviewed-by: Mike Turquette <mturquette@linaro.org>
+I'll get this in the next version.
 
-> ---
->  Documentation/devicetree/bindings/mfd/s2mps11.txt |   20 ++++++++++++++++++++
->  drivers/mfd/sec-core.c                            |    4 +++-
->  2 files changed, 23 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> index 36269c4..e41dd16 100644
-> --- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> @@ -16,6 +16,21 @@ Optional properties:
->  - interrupts: Interrupt specifiers for interrupt sources.
->  
->  Optional nodes:
-> +- clocks: s2mps11 provides three(AP/CP/BT) buffered 32.768 KHz outputs, so to
-> +  register these as clocks with common clock framework instantiate a sub-node
-> +  named "clocks". It uses the common clock binding documented in :
-> +  [Documentation/devicetree/bindings/clock/clock-bindings.txt]
-> +  - #clock-cells: should be 1.
-> +
-> +  - The following is the list of clocks generated by the controller. Each clock
-> +    is assigned an identifier and client nodes use this identifier to specify
-> +    the clock which they consume.
-> +    Clock               ID
-> +    ----------------------
-> +    32KhzAP            0
-> +    32KhzCP            1
-> +    32KhzBT            2
-> +
->  - regulators: The regulators of s2mps11 that have to be instantiated should be
->  included in a sub-node named 'regulators'. Regulator nodes included in this
->  sub-node should be of the format as listed below.
-> @@ -55,6 +70,11 @@ Example:
->                 compatible = "samsung,s2mps11-pmic";
->                 reg = <0x66>;
->  
-> +               s2m_osc: clocks{
-> +                       #clock-cells = 1;
-> +                       clock-output-names = "xx", "yy", "zz";
-> +               };
-> +
->                 regulators {
->                         ldo1_reg: LDO1 {
->                                 regulator-name = "VDD_ABB_3.3V";
-> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-> index 760da8a..eaee5ec 100644
-> --- a/drivers/mfd/sec-core.c
-> +++ b/drivers/mfd/sec-core.c
-> @@ -58,7 +58,9 @@ static struct mfd_cell s5m8767_devs[] = {
->  static struct mfd_cell s2mps11_devs[] = {
->         {
->                 .name = "s2mps11-pmic",
-> -       },
-> +       }, {
-> +               .name = "s2mps11-clk",
-> +       }
->  };
->  
->  #ifdef CONFIG_OF
-> -- 
-> 1.7.0.4
+Thanks,
+Roy
