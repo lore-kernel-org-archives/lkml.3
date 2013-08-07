@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933580Ab3HGVPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:15:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47087 "EHLO
+	id S933565Ab3HGVPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:15:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47094 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933412Ab3HGVLa (ORCPT
+	with ESMTP id S933413Ab3HGVLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:11:30 -0400
+	Wed, 7 Aug 2013 17:11:31 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 31/47] perf tests: Adjust the vmlinux symtab matches kallsyms test again
-Date: Wed,  7 Aug 2013 18:10:58 -0300
-Message-Id: <1375909874-22073-32-git-send-email-acme@infradead.org>
+Subject: [PATCH 04/47] perf tools: Add support for parsing PERF_SAMPLE_READ sample type
+Date: Wed,  7 Aug 2013 18:10:31 -0300
+Message-Id: <1375909874-22073-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
 References: <1375909874-22073-1-git-send-email-acme@infradead.org>
@@ -29,84 +27,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-The kallsyms maps now may map to kcore and the symbol values now may be
-file offsets.  For comparison with vmlinux the virtual memory address is
-needed which is obtained by unmapping the symbol value.
+Adding support to parse out the PERF_SAMPLE_READ sample bits.  The code
+contains both single and group format specification.
 
-The "vmlinux symtab matches kallsyms" is adjusted accordingly.
+This code parse out and prepare PERF_SAMPLE_READ data into the
+perf_sample struct. It will be used for group leader sampling feature
+comming in shortly.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1375875537-4509-9-git-send-email-adrian.hunter@intel.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-0tgdoln5rwk3wocshb442cl3@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/vmlinux-kallsyms.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ tools/perf/util/event.h   | 18 ++++++++++++++++++
+ tools/perf/util/evlist.c  | 26 ++++++++++++++++++++++++++
+ tools/perf/util/evlist.h  |  2 ++
+ tools/perf/util/evsel.c   | 30 ++++++++++++++++++++++++++++--
+ tools/perf/util/session.c | 38 ++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 112 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
-index e2e1498..2bd13ed 100644
---- a/tools/perf/tests/vmlinux-kallsyms.c
-+++ b/tools/perf/tests/vmlinux-kallsyms.c
-@@ -16,6 +16,8 @@ static int vmlinux_matches_kallsyms_filter(struct map *map __maybe_unused,
- 	return 0;
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 1ebb8fb..6119a64 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -80,6 +80,23 @@ struct stack_dump {
+ 	char *data;
+ };
+ 
++struct sample_read_value {
++	u64 value;
++	u64 id;
++};
++
++struct sample_read {
++	u64 time_enabled;
++	u64 time_running;
++	union {
++		struct {
++			u64 nr;
++			struct sample_read_value *values;
++		} group;
++		struct sample_read_value one;
++	};
++};
++
+ struct perf_sample {
+ 	u64 ip;
+ 	u32 pid, tid;
+@@ -97,6 +114,7 @@ struct perf_sample {
+ 	struct branch_stack *branch_stack;
+ 	struct regs_dump  user_regs;
+ 	struct stack_dump user_stack;
++	struct sample_read read;
+ };
+ 
+ #define PERF_MEM_DATA_SRC_NONE \
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 0d3b739..df77a44 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -676,6 +676,32 @@ u64 perf_evlist__sample_type(struct perf_evlist *evlist)
+ 	return first->attr.sample_type;
  }
  
-+#define UM(x) kallsyms_map->unmap_ip(kallsyms_map, (x))
++bool perf_evlist__valid_read_format(struct perf_evlist *evlist)
++{
++	struct perf_evsel *first = perf_evlist__first(evlist), *pos = first;
++	u64 read_format = first->attr.read_format;
++	u64 sample_type = first->attr.sample_type;
 +
- int test__vmlinux_matches_kallsyms(void)
++	list_for_each_entry_continue(pos, &evlist->entries, node) {
++		if (read_format != pos->attr.read_format)
++			return false;
++	}
++
++	/* PERF_SAMPLE_READ imples PERF_FORMAT_ID. */
++	if ((sample_type & PERF_SAMPLE_READ) &&
++	    !(read_format & PERF_FORMAT_ID)) {
++		return false;
++	}
++
++	return true;
++}
++
++u64 perf_evlist__read_format(struct perf_evlist *evlist)
++{
++	struct perf_evsel *first = perf_evlist__first(evlist);
++	return first->attr.read_format;
++}
++
+ u16 perf_evlist__id_hdr_size(struct perf_evlist *evlist)
  {
- 	int err = -1;
-@@ -74,7 +76,7 @@ int test__vmlinux_matches_kallsyms(void)
- 		goto out;
+ 	struct perf_evsel *first = perf_evlist__first(evlist);
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 0583d36..c7178b7 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -118,6 +118,7 @@ int perf_evlist__apply_filters(struct perf_evlist *evlist);
+ void __perf_evlist__set_leader(struct list_head *list);
+ void perf_evlist__set_leader(struct perf_evlist *evlist);
+ 
++u64 perf_evlist__read_format(struct perf_evlist *evlist);
+ u64 perf_evlist__sample_type(struct perf_evlist *evlist);
+ bool perf_evlist__sample_id_all(struct perf_evlist *evlist);
+ u16 perf_evlist__id_hdr_size(struct perf_evlist *evlist);
+@@ -127,6 +128,7 @@ int perf_evlist__parse_sample(struct perf_evlist *evlist, union perf_event *even
+ 
+ bool perf_evlist__valid_sample_type(struct perf_evlist *evlist);
+ bool perf_evlist__valid_sample_id_all(struct perf_evlist *evlist);
++bool perf_evlist__valid_read_format(struct perf_evlist *evlist);
+ 
+ void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
+ 				   struct list_head *list,
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 8bed0c1..9ab8fff 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1096,8 +1096,34 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
  	}
  
--	ref_reloc_sym.addr = sym->start;
-+	ref_reloc_sym.addr = UM(sym->start);
+ 	if (type & PERF_SAMPLE_READ) {
+-		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
+-		return -1;
++		u64 read_format = evsel->attr.read_format;
++
++		if (read_format & PERF_FORMAT_GROUP)
++			data->read.group.nr = *array;
++		else
++			data->read.one.value = *array;
++
++		array++;
++
++		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
++			data->read.time_enabled = *array;
++			array++;
++		}
++
++		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
++			data->read.time_running = *array;
++			array++;
++		}
++
++		/* PERF_FORMAT_ID is forced for PERF_SAMPLE_READ */
++		if (read_format & PERF_FORMAT_GROUP) {
++			data->read.group.values = (struct sample_read_value *) array;
++			array = (void *) array + data->read.group.nr *
++				sizeof(struct sample_read_value);
++		} else {
++			data->read.one.id = *array;
++			array++;
++		}
+ 	}
  
- 	/*
- 	 * Step 5:
-@@ -131,7 +133,7 @@ int test__vmlinux_matches_kallsyms(void)
- 							 mem_start, NULL, NULL);
- 		pair = first_pair;
+ 	if (type & PERF_SAMPLE_CALLCHAIN) {
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 272c9cf..f082921 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -71,6 +71,11 @@ static int perf_session__open(struct perf_session *self, bool force)
+ 		goto out_close;
+ 	}
  
--		if (pair && pair->start == mem_start) {
-+		if (pair && UM(pair->start) == mem_start) {
- next_pair:
- 			if (strcmp(sym->name, pair->name) == 0) {
- 				/*
-@@ -143,11 +145,11 @@ next_pair:
- 				 * off the real size. More than that and we
- 				 * _really_ have a problem.
- 				 */
--				s64 skew = mem_end - pair->end;
-+				s64 skew = mem_end - UM(pair->end);
- 				if (llabs(skew) >= page_size)
- 					pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
- 						 mem_start, sym->name, mem_end,
--						 pair->end);
-+						 UM(pair->end));
++	if (!perf_evlist__valid_read_format(self->evlist)) {
++		pr_err("non matching read_format");
++		goto out_close;
++	}
++
+ 	self->size = input_stat.st_size;
+ 	return 0;
  
- 				/*
- 				 * Do not count this as a failure, because we
-@@ -165,7 +167,7 @@ detour:
- 				if (nnd) {
- 					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
+@@ -749,6 +754,36 @@ static void perf_session__print_tstamp(struct perf_session *session,
+ 		printf("%" PRIu64 " ", sample->time);
+ }
  
--					if (next->start == mem_start) {
-+					if (UM(next->start) == mem_start) {
- 						pair = next;
- 						goto next_pair;
- 					}
++static void sample_read__printf(struct perf_sample *sample, u64 read_format)
++{
++	printf("... sample_read:\n");
++
++	if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
++		printf("...... time enabled %016" PRIx64 "\n",
++		       sample->read.time_enabled);
++
++	if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
++		printf("...... time running %016" PRIx64 "\n",
++		       sample->read.time_running);
++
++	if (read_format & PERF_FORMAT_GROUP) {
++		u64 i;
++
++		printf(".... group nr %" PRIu64 "\n", sample->read.group.nr);
++
++		for (i = 0; i < sample->read.group.nr; i++) {
++			struct sample_read_value *value;
++
++			value = &sample->read.group.values[i];
++			printf("..... id %016" PRIx64
++			       ", value %016" PRIx64 "\n",
++			       value->id, value->value);
++		}
++	} else
++		printf("..... id %016" PRIx64 ", value %016" PRIx64 "\n",
++			sample->read.one.id, sample->read.one.value);
++}
++
+ static void dump_event(struct perf_session *session, union perf_event *event,
+ 		       u64 file_offset, struct perf_sample *sample)
+ {
+@@ -798,6 +833,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	if (sample_type & PERF_SAMPLE_DATA_SRC)
+ 		printf(" . data_src: 0x%"PRIx64"\n", sample->data_src);
++
++	if (sample_type & PERF_SAMPLE_READ)
++		sample_read__printf(sample, evsel->attr.read_format);
+ }
+ 
+ static struct machine *
 -- 
 1.8.1.4
 
