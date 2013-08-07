@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab3HGIdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 04:33:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:35450 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755676Ab3HGId2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 04:33:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,831,1367996400"; 
-   d="scan'208";a="342845365"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH net v2] net: rename  busy poll MIB counter
-To: David Miller <davem@davemloft.net>
-Cc: Shawn Bohrer <sbohrer@rgmadvisors.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, Eliezer Tamir <eliezer.tamir@linux.intel.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 07 Aug 2013 11:33:25 +0300
-Message-ID: <20130807083324.27322.99300.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756837Ab3HGIg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 04:36:26 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:65232 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756619Ab3HGIgW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 04:36:22 -0400
+X-AuditID: cbfee68e-b7f276d000002279-98-52020704d8ef
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        amit.daniel@samsung.com, kgene.kim@samsung.com
+Subject: [PATCH] thermal: exynos_tmu: fix wrong error check for mapped memory
+Date: Wed, 07 Aug 2013 14:01:09 +0530
+Message-id: <1375864269-9197-1-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsWyRsSkTpeFnSnI4NVvGYuGqyEWa/b/ZLLo
+	XXCVzeLyrjlsFp97jzBazDi/j8niycM+Ngd2j8V7XjJ59G1Zxehx/MZ2Jo/Pm+QCWKK4bFJS
+	czLLUov07RK4Mp68/85asIStom3hAZYGxiWsXYycHBICJhJ925YyQdhiEhfurWfrYuTiEBJY
+	yiix8tUuRpiiCxPWs0IkpjNKLJh0nRHC6WGS2HNiDjtIFZuAmcTBRavBbBEBL4lZD6+CjWUW
+	KJV4uPMX2DphAV+JNZ2f2UBsFgFViR0PP4PV8Aq4SKzb+hyolwNom4LEnEk2IPMlBL6zSfy4
+	cpERol5A4tvkQywQNbISmw4wQxwnKXFwxQ2WCYyCCxgZVjGKphYkFxQnpRcZ6RUn5haX5qXr
+	JefnbmIEhurpf8/6djDePGB9iDEZaNxEZinR5HxgqOeVxBsamxlZmJqYGhuZW5qRJqwkzqvW
+	Yh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgTF7zdvGW3eO8zsHxKh8ltq+7up+nZc+JnNn
+	a1vEnVYoEU2xSdle3lCWvFuwab6v6t0T+jU/c/e9u8/Vu1pSW+SlFEPb7TULHR7tze9vbnsX
+	vqsn5JuCzOlVCuvnLRS/7JIeE/tiW3SgPYvrH4GlNsdbtixflX8v+M9UF7Ynh2ak2TnlBfhl
+	9SmxFGckGmoxFxUnAgCNNdzCawIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t9jQV0WdqYgg5X7RCwaroZYrNn/k8mi
+	d8FVNovLu+awWXzuPcJoMeP8PiaLJw/72BzYPRbvecnk0bdlFaPH8RvbmTw+b5ILYIlqYLTJ
+	SE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpASaEsMacU
+	KBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jx5P131oIlbBVtCw+wNDAuYe1i5OSQ
+	EDCRuDBhPZQtJnHh3nq2LkYuDiGB6YwSCyZdZ4Rwepgk9pyYww5SxSZgJnFw0WowW0TAS2LW
+	w6tMIDazQKnEw52/wCYJC/hKrOn8zAZiswioSux4+BmshlfARWLd1udAvRxA2xQk5kyymcDI
+	vYCRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcCQ8k97BuKrB4hCjAAejEg9vhRhjkBBr
+	YllxZe4hRgkOZiUR3gmsTEFCvCmJlVWpRfnxRaU5qcWHGJOBlk9klhJNzgdGaV5JvKGxibmp
+	samliYWJmSVpwkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MOb9qe/O7fi+ce79+AqtklNN
+	/lHStwrf6jMKdP+w4bvwll2h/qCOzLabrJMm/PT9sKsm7Mz0zWXNjRs5n3FbRlXoPz2yUI/V
+	74+nnlO6q2GYSMT324IS1qdvLbrap732s+Q3c30D8+sPU17p9TR9k7h8xa6Ke8ksz7kKvyYe
+	iHJ1ZrrcmM4voMRSnJFoqMVcVJwIAMng9EvIAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename mib counter from "low latency" to "busy poll"
+The error check is checking for a "base" mapped memory base
+instead of "base_common". Fixing the same.
 
-v1 also moved the counter to the ip MIB (suggested by Shawn Bohrer)
-Eric Dumazet suggested that the current location is better.
-
-So v2 just renames the counter to fit the new naming convention.
-
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 ---
+ drivers/thermal/samsung/exynos_tmu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- include/net/busy_poll.h   |    2 +-
- include/uapi/linux/snmp.h |    2 +-
- net/ipv4/proc.c           |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
-index f18b919..7a7abe9 100644
---- a/include/net/busy_poll.h
-+++ b/include/net/busy_poll.h
-@@ -122,7 +122,7 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
- 		if (rc > 0)
- 			/* local bh are disabled so it is ok to use _BH */
- 			NET_ADD_STATS_BH(sock_net(sk),
--					 LINUX_MIB_LOWLATENCYRXPACKETS, rc);
-+					 LINUX_MIB_BUSYPOLLRXPACKETS, rc);
+diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+index ec01dfe..a033dbb 100644
+--- a/drivers/thermal/samsung/exynos_tmu.c
++++ b/drivers/thermal/samsung/exynos_tmu.c
+@@ -592,7 +592,7 @@ static int exynos_map_dt_data(struct platform_device *pdev)
  
- 	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
- 		 !need_resched() && !busy_loop_timeout(end_time));
-diff --git a/include/uapi/linux/snmp.h b/include/uapi/linux/snmp.h
-index af0a674..a1356d3 100644
---- a/include/uapi/linux/snmp.h
-+++ b/include/uapi/linux/snmp.h
-@@ -253,7 +253,7 @@ enum
- 	LINUX_MIB_TCPFASTOPENLISTENOVERFLOW,	/* TCPFastOpenListenOverflow */
- 	LINUX_MIB_TCPFASTOPENCOOKIEREQD,	/* TCPFastOpenCookieReqd */
- 	LINUX_MIB_TCPSPURIOUS_RTX_HOSTQUEUES, /* TCPSpuriousRtxHostQueues */
--	LINUX_MIB_LOWLATENCYRXPACKETS,		/* LowLatencyRxPackets */
-+	LINUX_MIB_BUSYPOLLRXPACKETS,		/* BusyPollRxPackets */
- 	__LINUX_MIB_MAX
- };
- 
-diff --git a/net/ipv4/proc.c b/net/ipv4/proc.c
-index 6577a11..463bd12 100644
---- a/net/ipv4/proc.c
-+++ b/net/ipv4/proc.c
-@@ -273,7 +273,7 @@ static const struct snmp_mib snmp4_net_list[] = {
- 	SNMP_MIB_ITEM("TCPFastOpenListenOverflow", LINUX_MIB_TCPFASTOPENLISTENOVERFLOW),
- 	SNMP_MIB_ITEM("TCPFastOpenCookieReqd", LINUX_MIB_TCPFASTOPENCOOKIEREQD),
- 	SNMP_MIB_ITEM("TCPSpuriousRtxHostQueues", LINUX_MIB_TCPSPURIOUS_RTX_HOSTQUEUES),
--	SNMP_MIB_ITEM("LowLatencyRxPackets", LINUX_MIB_LOWLATENCYRXPACKETS),
-+	SNMP_MIB_ITEM("BusyPollRxPackets", LINUX_MIB_BUSYPOLLRXPACKETS),
- 	SNMP_MIB_SENTINEL
- };
- 
+ 	data->base_common = devm_ioremap(&pdev->dev, res.start,
+ 					resource_size(&res));
+-	if (!data->base) {
++	if (!data->base_common) {
+ 		dev_err(&pdev->dev, "Failed to ioremap memory\n");
+ 		return -ENOMEM;
+ 	}
+-- 
+1.7.9.5
 
