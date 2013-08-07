@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465Ab3HGVNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:13:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47112 "EHLO
+	id S933527Ab3HGVP3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:15:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47101 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933422Ab3HGVLc (ORCPT
+	with ESMTP id S933415Ab3HGVLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:11:32 -0400
+	Wed, 7 Aug 2013 17:11:31 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 19/47] perf kvm: Split out tracepoints from record args
-Date: Wed,  7 Aug 2013 18:10:46 -0300
-Message-Id: <1375909874-22073-20-git-send-email-acme@infradead.org>
+Subject: [PATCH 28/47] perf tests: Adjust the vmlinux symtab matches kallsyms test
+Date: Wed,  7 Aug 2013 18:10:55 -0300
+Message-Id: <1375909874-22073-29-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
 References: <1375909874-22073-1-git-send-email-acme@infradead.org>
@@ -28,82 +29,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Needed by kvm live command. Make record_args a local while we are
-messing with the args.
+The vmlinux maps now map to the dso and the symbol values are now file
+offsets.  For comparison with kallsyms the virtual memory address is
+needed which is obtained by unmapping the symbol value.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+The "vmlinux symtab matches kallsyms" is adjusted accordingly.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1375473947-64285-5-git-send-email-dsahern@gmail.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1375875537-4509-5-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ tools/perf/tests/vmlinux-kallsyms.c | 32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 24b78ae..7d14a3a 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -801,16 +801,11 @@ exit:
- 	return ret;
- }
+diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
+index add1539..e2e1498 100644
+--- a/tools/perf/tests/vmlinux-kallsyms.c
++++ b/tools/perf/tests/vmlinux-kallsyms.c
+@@ -25,6 +25,7 @@ int test__vmlinux_matches_kallsyms(void)
+ 	struct machine kallsyms, vmlinux;
+ 	enum map_type type = MAP__FUNCTION;
+ 	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
++	u64 mem_start, mem_end;
  
--static const char * const record_args[] = {
--	"record",
--	"-R",
--	"-f",
--	"-m", "1024",
--	"-c", "1",
--	"-e", "kvm:kvm_entry",
--	"-e", "kvm:kvm_exit",
--	"-e", "kvm:kvm_mmio",
--	"-e", "kvm:kvm_pio",
-+static const char * const kvm_events_tp[] = {
-+	"kvm:kvm_entry",
-+	"kvm:kvm_exit",
-+	"kvm:kvm_mmio",
-+	"kvm:kvm_pio",
- };
+ 	/*
+ 	 * Step 1:
+@@ -123,10 +124,14 @@ int test__vmlinux_matches_kallsyms(void)
+ 		if (sym->start == sym->end)
+ 			continue;
  
- #define STRDUP_FAIL_EXIT(s)		\
-@@ -826,8 +821,16 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- {
- 	unsigned int rec_argc, i, j;
- 	const char **rec_argv;
-+	const char * const record_args[] = {
-+		"record",
-+		"-R",
-+		"-f",
-+		"-m", "1024",
-+		"-c", "1",
-+	};
- 
--	rec_argc = ARRAY_SIZE(record_args) + argc + 2;
-+	rec_argc = ARRAY_SIZE(record_args) + argc + 2 +
-+		   2 * ARRAY_SIZE(kvm_events_tp);
- 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
- 
- 	if (rec_argv == NULL)
-@@ -836,6 +839,11 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
- 		rec_argv[i] = STRDUP_FAIL_EXIT(record_args[i]);
- 
-+	for (j = 0; j < ARRAY_SIZE(kvm_events_tp); j++) {
-+		rec_argv[i++] = "-e";
-+		rec_argv[i++] = STRDUP_FAIL_EXIT(kvm_events_tp[j]);
-+	}
+-		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
++		mem_start = vmlinux_map->unmap_ip(vmlinux_map, sym->start);
++		mem_end = vmlinux_map->unmap_ip(vmlinux_map, sym->end);
 +
- 	rec_argv[i++] = STRDUP_FAIL_EXIT("-o");
- 	rec_argv[i++] = STRDUP_FAIL_EXIT(kvm->file_name);
++		first_pair = machine__find_kernel_symbol(&kallsyms, type,
++							 mem_start, NULL, NULL);
+ 		pair = first_pair;
  
+-		if (pair && pair->start == sym->start) {
++		if (pair && pair->start == mem_start) {
+ next_pair:
+ 			if (strcmp(sym->name, pair->name) == 0) {
+ 				/*
+@@ -138,10 +143,11 @@ next_pair:
+ 				 * off the real size. More than that and we
+ 				 * _really_ have a problem.
+ 				 */
+-				s64 skew = sym->end - pair->end;
++				s64 skew = mem_end - pair->end;
+ 				if (llabs(skew) >= page_size)
+ 					pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
+-						 sym->start, sym->name, sym->end, pair->end);
++						 mem_start, sym->name, mem_end,
++						 pair->end);
+ 
+ 				/*
+ 				 * Do not count this as a failure, because we
+@@ -159,7 +165,7 @@ detour:
+ 				if (nnd) {
+ 					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
+ 
+-					if (next->start == sym->start) {
++					if (next->start == mem_start) {
+ 						pair = next;
+ 						goto next_pair;
+ 					}
+@@ -172,10 +178,11 @@ detour:
+ 				}
+ 
+ 				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
+-					 sym->start, sym->name, pair->name);
++					 mem_start, sym->name, pair->name);
+ 			}
+ 		} else
+-			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
++			pr_debug("%#" PRIx64 ": %s not on kallsyms\n",
++				 mem_start, sym->name);
+ 
+ 		err = -1;
+ 	}
+@@ -208,16 +215,19 @@ detour:
+ 	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
+ 		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
+ 
+-		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
++		mem_start = vmlinux_map->unmap_ip(vmlinux_map, pos->start);
++		mem_end = vmlinux_map->unmap_ip(vmlinux_map, pos->end);
++
++		pair = map_groups__find(&kallsyms.kmaps, type, mem_start);
+ 		if (pair == NULL || pair->priv)
+ 			continue;
+ 
+-		if (pair->start == pos->start) {
++		if (pair->start == mem_start) {
+ 			pair->priv = 1;
+ 			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
+ 				pos->start, pos->end, pos->pgoff, pos->dso->name);
+-			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
+-				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
++			if (mem_end != pair->end)
++				pr_info(":\n*%" PRIx64 "-%" PRIx64 " %" PRIx64,
+ 					pair->start, pair->end, pair->pgoff);
+ 			pr_info(" %s\n", pair->dso->name);
+ 			pair->priv = 1;
 -- 
 1.8.1.4
 
