@@ -1,104 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab3HGQau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:30:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43316 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757071Ab3HGQas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:30:48 -0400
-Date: Wed, 7 Aug 2013 17:30:45 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Julius Werner <jwerner@chromium.org>
-Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Subject: Re: [PATCH 1/3 v5] usb: phy-samsung-usb: Simplify PMU register
- handling
-Message-ID: <20130807163045.GK28558@e106331-lin.cambridge.arm.com>
-References: <1375812017-6287-1-git-send-email-jwerner@chromium.org>
+	id S932363Ab3HGQbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:31:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21420 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756335Ab3HGQbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 12:31:17 -0400
+Message-ID: <5202764C.2000709@redhat.com>
+Date: Wed, 07 Aug 2013 09:31:08 -0700
+From: Anand Avati <avati@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375812017-6287-1-git-send-email-jwerner@chromium.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: Ric Wheeler <rwheeler@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Brian Foster <bfoster@redhat.com>, David Howells <dhowells@redhat.com>,
+        Eric Paris <eparis@redhat.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux NFS list <linux-nfs@vger.kernel.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>
+Subject: Re: [PATCH 4/4] fuse: drop dentry on failed revalidate
+References: <1375799403-28544-1-git-send-email-miklos@szeredi.hu> <1375799403-28544-5-git-send-email-miklos@szeredi.hu> <52015739.4050702@redhat.com> <CAJfpegsD8cgnW59crKABjTE1E5aNpmyO=91ubtNxxp=LnwjgDg@mail.gmail.com>
+In-Reply-To: <CAJfpegsD8cgnW59crKABjTE1E5aNpmyO=91ubtNxxp=LnwjgDg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 07:00:17PM +0100, Julius Werner wrote:
-> This patch simplifies the way the phy-samsung-usb code finds the correct
-> power management register to enable PHY clock gating. Previously, the
-> code would calculate the register address from a device tree supplied
-> base address and add an offset based on the PHY type.
-> 
-> Since every PHY has its own device tree entry and needs only one
-> register, we can just encode the address itself in the device tree and
-> remove the diffentiation in the code. The bitmask needed to specify the
-> bit within that register stays in place, allowing support for platforms
-> like s3c64xx that use different bits within the same register.
+On 8/7/13 8:44 AM, Miklos Szeredi wrote:
+> On Tue, Aug 6, 2013 at 10:06 PM, Anand Avati <avati@redhat.com> wrote:
+>> On 8/6/13 7:30 AM, Miklos Szeredi wrote:
+>>>
+>>> From: Anand Avati <avati@redhat.com>
+>>>
+>>> Drop a subtree when we find that it has moved or been delated.  This can
+>>> be
+>>> done as long as there are no submounts under this location.
+>>>
+>>> If the directory was moved and we come across the same directory in a
+>>> future lookup it will be reconnected by d_materialise_unique().
+>>>
+>>> Signed-off-by: Anand Avati <avati@redhat.com>
+>>> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+>>> ---
+>>>    fs/fuse/dir.c | 7 ++++++-
+>>>    1 file changed, 6 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+>>> index 131d14b..4ba5893 100644
+>>> --- a/fs/fuse/dir.c
+>>> +++ b/fs/fuse/dir.c
+>>> @@ -226,8 +226,13 @@ static int fuse_dentry_revalidate(struct dentry
+>>> *entry, unsigned int flags)
+>>>                  if (!err) {
+>>>                          struct fuse_inode *fi = get_fuse_inode(inode);
+>>>                          if (outarg.nodeid != get_node_id(inode)) {
+>>> +                               int ret = 0;
+>>> +
+>>> +                               if (check_submounts_and_drop(entry) != 0)
+>>> +                                       ret = 1;
+>>> +
+>>>                                  fuse_queue_forget(fc, forget,
+>>> outarg.nodeid, 1);
+>>> -                               return 0;
+>>> +                               return ret;
+>>
+>>
+>> If outarg.nodeid != get_node_id(inode), then we have to return 0 no matter
+>> what (whether we successfully dropped the entry or not), no?
+>
+> If we return 0 in that case (we failed to invalidate the dentry), then
+> the VFS will call d_invalidate() which will fail.  The result is the
+> same...
+>
+>> Or are you
+>> trying to forcefully keep the path to reach the submount alive? If so, we
+>> still fail in inode_permission() .. -> getattr() of the dir inode, no?
+>
+> Yes.  But the path to the mountpoint should still be reachable (for
+> the purpose of unmounting for example).  I'm including an interesting
+> discussion between Al and Linus about this (mailing lists weren't
+> CC-d, but I don't think they'd mind).
 
-This breaks compatibility, both for an old kernel and a new dt and a new
-kernel with an old dt. Is anyone using these bindings?
 
+Thanks for attaching the thread. Was very educative! I still do not 
+quite understand - will umount() still work when 
+inode_permission()[->getattr()] on the ancestors fail (with ESTALE 
+etc.)? Wouldn't path resolution itself abort and fail and therefore 
+do_umount() never called? I understand that the path to the mountpoint 
+being reachable through the dentry chain is a necessity for umounting, 
+but is just that really sufficient?
 
-> 
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  .../devicetree/bindings/usb/samsung-usbphy.txt     | 26 +++++-----------------
->  arch/arm/boot/dts/exynos5250.dtsi                  |  4 ++--
->  drivers/usb/phy/phy-samsung-usb.c                  | 18 ++++-----------
->  drivers/usb/phy/phy-samsung-usb.h                  | 23 +++++--------------
->  drivers/usb/phy/phy-samsung-usb2.c                 | 11 ++++-----
->  drivers/usb/phy/phy-samsung-usb3.c                 |  2 +-
->  6 files changed, 22 insertions(+), 62 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
-> index 33fd354..1cf9b68 100644
-> --- a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
-> +++ b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
-> @@ -34,14 +34,7 @@ Optional properties:
->  - The child node 'usbphy-sys' to the node 'usbphy' is for the system controller
->    interface for usb-phy. It should provide the following information required by
->    usb-phy controller to control phy.
-> -  - reg : base physical address of PHY_CONTROL registers.
-> -	  The size of this register is the total sum of size of all PHY_CONTROL
-> -	  registers that the SoC has. For example, the size will be
-> -	  '0x4' in case we have only one PHY_CONTROL register (e.g.
-> -	  OTHERS register in S3C64XX or USB_PHY_CONTROL register in S5PV210)
-> -	  and, '0x8' in case we have two PHY_CONTROL registers (e.g.
-> -	  USBDEVICE_PHY_CONTROL and USBHOST_PHY_CONTROL registers in exynos4x).
-> -	  and so on.
-> +  - reg : address of PHY_CONTROL register for this PHY.
->  
->  Example:
->   - Exynos4210
-> @@ -57,8 +50,8 @@ Example:
->  		clock-names = "xusbxti", "otg";
->  
->  		usbphy-sys {
-> -			/* USB device and host PHY_CONTROL registers */
-> -			reg = <0x10020704 0x8>;
-> +			/* USB device PHY_CONTROL register */
-> +			reg = <0x10020704 0x4>;
->  		};
->  	};
->  
-
-Why are we describing fewer registers now? Are they described elsewhere?
-
-The dt should describe the device, not only the portion of it Linux
-wants to use right now.
-
-Thanks,
-Mark.
+Avati
