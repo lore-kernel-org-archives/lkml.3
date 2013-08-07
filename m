@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab3HGGe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 02:34:56 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:17737 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108Ab3HGGey (ORCPT
+	id S932149Ab3HGGfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 02:35:46 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:19645 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757136Ab3HGGfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 02:34:54 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f5f6d00000105f-d5-5201ea8cb87e
-Content-transfer-encoding: 8BIT
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH] [TRIVIAL] ARM: msm: fix compilation error in gpiomux
-Date: Wed, 07 Aug 2013 08:34:39 +0200
-Message-id: <1375857279-18082-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t/xa7o9rxiDDM43cFr8OzaFyeLx8n9s
-	FlOXtbFavH5haLHp8TVWi4n7z7JbXN41h83i9mVeBw6PluYeNo/Lfb1MHqcn72fx2Lyk3qNv
-	yypGj8+b5ALYorhsUlJzMstSi/TtErgyLq/pZy6YwV6xce1ZpgbGSWxdjBwcEgImEjf6S7sY
-	OYFMMYkL99YDhbk4hASWMkpM7lrBBpLgFRCU+DH5HgtIPbOAvMSRS9kgYWYBdYlJ8xYxQ9T3
-	MUmcb9oKVs8mYCyxefkSsEEiAs1MEp0Hv7BDdBhK/Hz3B8wWFnCV6Pq/H8xmEVCVuPXyMyvE
-	MneJyfePMUMcpyAxZ5LNBEa+WUjOmIVwxiwkZyxgZF7FKJpamlxQnJSea6RXnJhbXJqXrpec
-	n7uJERK+X3cwLj1mdYhRgINRiYe3QowxSIg1say4MvcQowQHs5IIr9YcoBBvSmJlVWpRfnxR
-	aU5q8SFGJg5OqQbGnEMc628HVOWIXvRK280iGcn1Y+3RPxkcjm/Oleb3rFZxOFR727I/dcpR
-	1cvS71Pko2Q1pomXSc8qPlNVNa+/V1FRPU3tvsD26SK3nPa4pp7bbrDL3SGEu2JRZGHUBgfW
-	Y8Vehb1GVjsEX9szVs5aWjz3r15imPXrVyEKpoF3qmz+WzfxpiuxFGckGmoxFxUnAgDKKUOm
-	PQIAAA==
+	Wed, 7 Aug 2013 02:35:45 -0400
+X-Spam-Score: -100.8
+Message-ID: <5201EA83.5010906@asianux.com>
+Date: Wed, 07 Aug 2013 14:34:43 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Li Zefan <lizefan@huawei.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, xi.wang@gmail.com,
+        nicolas.dichtel@6wind.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/sysctl_binary.c: improve the usage of return value
+ 'result'
+References: <5200A5E6.9020803@asianux.com> <8761vibihw.fsf@xmission.com> <5201D62B.6080905@asianux.com> <5201E192.7060108@huawei.com> <5201E805.2080008@asianux.com> <20130806232913.b9216a61.akpm@linux-foundation.org>
+In-Reply-To: <20130806232913.b9216a61.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix compilation error in gpiomux (CONFIG_MSM_GPIOMUX=y):
-arch/arm/mach-msm/gpiomux.c:24:13: error: static declaration of
-	‘__msm_gpiomux_write’ follows non-static declaration
-arch/arm/mach-msm/gpiomux.h:85:6: note: previous declaration of
-	‘__msm_gpiomux_write’ was here
+On 08/07/2013 02:29 PM, Andrew Morton wrote:
+> On Wed, 07 Aug 2013 14:24:05 +0800 Chen Gang <gang.chen@asianux.com> wrote:
+> 
+>>> To be honest...
+>>>
+>>> You are too bad in english to do kernel development. You don't seem to
+>>> know how to communicate in english...
+>>>
+>>
+>> So I should improve my English, and now I am just trying improving.
+>>
+>> At least, it is not an excuse to leave upstream kernel development, is
+>> it right ?  or do you have additional ideas or suggestions ?
+> 
+> I find your English to be adequate.  There are worse ;)
+> 
+> Don't be afraid of writing too much text - trust me, I've never seen
+> a changelog which was too long!
+> 
+> 
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- arch/arm/mach-msm/gpiomux.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thank you very much, I should continue trying.
 
-diff --git a/arch/arm/mach-msm/gpiomux.c b/arch/arm/mach-msm/gpiomux.c
-index 2b8e2d2..4110b82 100644
---- a/arch/arm/mach-msm/gpiomux.c
-+++ b/arch/arm/mach-msm/gpiomux.c
-@@ -21,7 +21,7 @@
- 
- static DEFINE_SPINLOCK(gpiomux_lock);
- 
--static void __msm_gpiomux_write(unsigned gpio, gpiomux_config_t val)
-+void __msm_gpiomux_write(unsigned gpio, gpiomux_config_t val)
- {
- 	unsigned tlmm_config  = (val & ~GPIOMUX_CTL_MASK) |
- 				((gpio & 0x3ff) << 4);
+
+Thanks.
 -- 
-1.7.9.5
-
+Chen Gang
