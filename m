@@ -1,192 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932939Ab3HGSwW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 14:52:22 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:37474 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932522Ab3HGSuI (ORCPT
+	id S932625Ab3HGSw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 14:52:56 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:64741 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757176Ab3HGSwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 14:50:08 -0400
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: linux-efi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        matt.fleming@intel.com, tony.luck@gmail.com, grant.likely@secretlab.ca,
-        Leif Lindholm <leif.lindholm@linaro.org>
-Subject: [PATCH v3 2/5] efi: provide a generic efi_config_init()
-Date: Wed,  7 Aug 2013 19:54:17 +0100
-Message-Id: <1375901660-23541-3-git-send-email-leif.lindholm@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1375901660-23541-1-git-send-email-leif.lindholm@linaro.org>
-References: <1375901660-23541-1-git-send-email-leif.lindholm@linaro.org>
+	Wed, 7 Aug 2013 14:52:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <1375071776-29037-1-git-send-email-sachin.kamat@linaro.org>
+References: <1375071776-29037-1-git-send-email-sachin.kamat@linaro.org>
+Date: Wed, 7 Aug 2013 20:52:54 +0200
+Message-ID: <CACRpkdbmQJom3qYpg31iRcg=rEhn=xn0ZFmUm6UaS98BZ4-Gkg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: st: Convert to use devm_ioremap_resource
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Common to (U)EFI support on all platforms is the global "efi" data
-structure, and the code that parses the System Table to locate
-addresses to populate that structure with.
+On Mon, Jul 29, 2013 at 6:22 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
 
-This patch adds both of these to the global EFI driver code.
+> devm_request_and_ioremap is deprecated. Use devm_ioremap_resource
+> instead.
+>
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
----
- drivers/firmware/efi/efi.c |  108 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/efi.h        |    7 +++
- 2 files changed, 115 insertions(+)
+Applied with Srinivas ACK.
 
-diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-index 5145fa3..e1010d4 100644
---- a/drivers/firmware/efi/efi.c
-+++ b/drivers/firmware/efi/efi.c
-@@ -13,11 +13,27 @@
-  * This file is released under the GPLv2.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/kobject.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/device.h>
- #include <linux/efi.h>
-+#include <linux/io.h>
-+
-+struct efi __read_mostly efi = {
-+	.mps        = EFI_INVALID_TABLE_ADDR,
-+	.acpi       = EFI_INVALID_TABLE_ADDR,
-+	.acpi20     = EFI_INVALID_TABLE_ADDR,
-+	.smbios     = EFI_INVALID_TABLE_ADDR,
-+	.sal_systab = EFI_INVALID_TABLE_ADDR,
-+	.boot_info  = EFI_INVALID_TABLE_ADDR,
-+	.hcdp       = EFI_INVALID_TABLE_ADDR,
-+	.uga        = EFI_INVALID_TABLE_ADDR,
-+	.uv_systab  = EFI_INVALID_TABLE_ADDR,
-+};
-+EXPORT_SYMBOL(efi);
- 
- static struct kobject *efi_kobj;
- static struct kobject *efivars_kobj;
-@@ -132,3 +148,95 @@ err_put:
- }
- 
- subsys_initcall(efisubsys_init);
-+
-+
-+static __initdata efi_config_table_type_t common_tables[] = {
-+	{ACPI_20_TABLE_GUID, "ACPI 2.0", &efi.acpi20},
-+	{ACPI_TABLE_GUID, "ACPI", &efi.acpi},
-+	{HCDP_TABLE_GUID, "HCDP", &efi.hcdp},
-+	{MPS_TABLE_GUID, "MPS", &efi.mps},
-+	{SAL_SYSTEM_TABLE_GUID, "SALsystab", &efi.sal_systab},
-+	{SMBIOS_TABLE_GUID, "SMBIOS", &efi.smbios},
-+	{UGA_IO_PROTOCOL_GUID, "UGA", &efi.uga},
-+	{NULL_GUID, NULL, 0},
-+};
-+
-+static __init int match_config_table(efi_guid_t *guid,
-+				     unsigned long table,
-+				     efi_config_table_type_t *table_types)
-+{
-+	u8 str[EFI_VARIABLE_GUID_LEN + 1];
-+	int i;
-+
-+	if (table_types) {
-+		efi_guid_unparse(guid, str);
-+
-+		for (i = 0; efi_guidcmp(table_types[i].guid, NULL_GUID); i++) {
-+			efi_guid_unparse(&table_types[i].guid, str);
-+
-+			if (!efi_guidcmp(*guid, table_types[i].guid)) {
-+				*(table_types[i].ptr) = table;
-+				pr_cont(" %s=0x%lx ",
-+					table_types[i].name, table);
-+				return 1;
-+			}
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+int __init efi_config_init(efi_config_table_type_t *arch_tables)
-+{
-+	void *config_tables, *tablep;
-+	int i, sz;
-+
-+	if (efi_enabled(EFI_64BIT))
-+		sz = sizeof(efi_config_table_64_t);
-+	else
-+		sz = sizeof(efi_config_table_32_t);
-+
-+	/*
-+	 * Let's see what config tables the firmware passed to us.
-+	 */
-+	config_tables = early_memremap(efi.systab->tables,
-+				       efi.systab->nr_tables * sz);
-+	if (config_tables == NULL) {
-+		pr_err("Could not map Configuration table!\n");
-+		return -ENOMEM;
-+	}
-+
-+	tablep = config_tables;
-+	pr_info("");
-+	for (i = 0; i < efi.systab->nr_tables; i++) {
-+		efi_guid_t guid;
-+		unsigned long table;
-+
-+		if (efi_enabled(EFI_64BIT)) {
-+			u64 table64;
-+			guid = ((efi_config_table_64_t *)tablep)->guid;
-+			table64 = ((efi_config_table_64_t *)tablep)->table;
-+			table = table64;
-+#ifndef CONFIG_64BIT
-+			if (table64 >> 32) {
-+				pr_cont("\n");
-+				pr_err("Table located above 4GB, disabling EFI.\n");
-+				early_iounmap(config_tables,
-+					       efi.systab->nr_tables * sz);
-+				return -EINVAL;
-+			}
-+#endif
-+		} else {
-+			guid = ((efi_config_table_32_t *)tablep)->guid;
-+			table = ((efi_config_table_32_t *)tablep)->table;
-+		}
-+
-+		if (!match_config_table(&guid, table, common_tables))
-+			match_config_table(&guid, table, arch_tables);
-+
-+		tablep += sz;
-+	}
-+	pr_cont("\n");
-+	early_iounmap(config_tables, efi.systab->nr_tables * sz);
-+	return 0;
-+}
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 5f8f176..09d9e42 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -404,6 +404,12 @@ typedef struct {
- 	unsigned long table;
- } efi_config_table_t;
- 
-+typedef struct {
-+	efi_guid_t guid;
-+	const char *name;
-+	unsigned long *ptr;
-+} efi_config_table_type_t;
-+
- #define EFI_SYSTEM_TABLE_SIGNATURE ((u64)0x5453595320494249ULL)
- 
- #define EFI_2_30_SYSTEM_TABLE_REVISION  ((2 << 16) | (30))
-@@ -587,6 +593,7 @@ static inline efi_status_t efi_query_variable_store(u32 attributes, unsigned lon
- }
- #endif
- extern void __iomem *efi_lookup_mapped_addr(u64 phys_addr);
-+extern int efi_config_init(efi_config_table_type_t *arch_tables);
- extern u64 efi_get_iobase (void);
- extern u32 efi_mem_type (unsigned long phys_addr);
- extern u64 efi_mem_attributes (unsigned long phys_addr);
--- 
-1.7.10.4
-
+Thanks!
+Linus Walleij
