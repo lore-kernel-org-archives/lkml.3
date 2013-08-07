@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab3HGFNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 01:13:06 -0400
-Received: from popelka.ms.mff.cuni.cz ([195.113.20.131]:54214 "EHLO
-	popelka.ms.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab3HGFNE (ORCPT
+	id S1755085Ab3HGFNn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 01:13:43 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:52152 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab3HGFNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 01:13:04 -0400
-X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Aug 2013 01:13:04 EDT
-Date: Wed, 7 Aug 2013 07:06:01 +0200
-From: =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-Message-ID: <20130807050601.GA5385@domone.kolej.mff.cuni.cz>
-References: <CA+55aFwRHpL-3YObZfw6NxxDxMqQbiwp0=NnpotGj2RHDNF3iw@mail.gmail.com>
- <1375727977.22073.112.camel@gandalf.local.home>
- <CA+55aFyfvifCu=jDBH8LPmEHtvooVyo25dvJ+T6SQLhVidBBdQ@mail.gmail.com>
- <1375798783.25420.30.camel@gandalf.local.home>
- <CA+55aFwKYSwytooG50fyryWpVdGEk_v=vdB=L-kAyLmmSW=bkQ@mail.gmail.com>
- <1375811885.25420.44.camel@gandalf.local.home>
- <20130806203319.GA16170@Krystal>
- <1375821817.25420.50.camel@gandalf.local.home>
- <1375836304.25420.76.camel@gandalf.local.home>
- <1375836960.25420.80.camel@gandalf.local.home>
+	Wed, 7 Aug 2013 01:13:42 -0400
+Message-ID: <5201D777.8060303@linux.vnet.ibm.com>
+Date: Wed, 07 Aug 2013 10:43:27 +0530
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375836960.25420.80.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tony Luck <tony.luck@gmail.com>
+CC: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "keescook@chromium.org" <keescook@chromium.org>
+Subject: Re: [PATCH 00/11] Add compression support to pstore
+References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420> <51FA3B02.7060004@linux.vnet.ibm.com> <3908561D78D1C84285E8C5FCA982C28F31CAA167@ORSMSX106.amr.corp.intel.com> <CA+8MBbLuhVDCb26ag3AH0vXrP4MXHLxS5aVn8pTi4=qL1NdR5w@mail.gmail.com> <CA+8MBbJ7x46FGC7dPSdNzf8z=fZz20w1kiNgnZr4QQB6SUELhg@mail.gmail.com> <51FFDC8B.7010909@linux.vnet.ibm.com> <CA+8MBb+1LpR+Cx=84WZT98U5eqZcm1KriUP75aCg+uSrXrb3Yw@mail.gmail.com> <51FFFFEB.3030907@linux.vnet.ibm.com> <CA+8MBbK9oZJO+RJGC-7riO=Kz=UbRcAvQ-nDi=2GLyvEDpoc7g@mail.gmail.com> <CA+8MBbKA+P4vs3utSKQ-LPMW3ybrWOp=f3FH6ahv1YtwnMm5KA@mail.gmail.com> <5201A9BD.4090503@linux.vnet.ibm.com> <CA+8MBbJS0Dymn4OABi-rW9M5Bw-ZZ6DaEjQOW-oki+4ge4BDtg@mail.gmail.com>
+In-Reply-To: <CA+8MBbJS0Dymn4OABi-rW9M5Bw-ZZ6DaEjQOW-oki+4ge4BDtg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080705-3864-0000-0000-000009768FE6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 08:56:00PM -0400, Steven Rostedt wrote:
-> On Tue, 2013-08-06 at 20:45 -0400, Steven Rostedt wrote:
-> 
-> > [    3.387362] short jumps: 106
-> > [    3.390277]  long jumps: 330
-> > 
-> > Thus, approximately 25%. Not bad.
-> 
-> Also, where these happen to be is probably even more important than how
-> many. If all the short jumps happen in slow paths, it's rather
-> pointless. But they seem to be in some rather hot paths. I had it print
-> out where it placed the short jumps too:
-> 
- 
-> The kmem_cache_* and the try_to_wake_up* are the hot paths that caught
-> my eye.
-> 
-> But still, is this worth it?
+Hi Tony,
+
+On Wednesday 07 August 2013 08:55 AM, Tony Luck wrote:
+> On Tue, Aug 6, 2013 at 6:58 PM, Aruna Balakrishnaiah
+> <aruna@linux.vnet.ibm.com> wrote:
+>> The patch looks right. I will clean it up. Does the issue still persist
+>> after this?
+> Things seem to be working - but testing has hardly been extensive (just
+> a couple of forced panics).
 >
-Add short_counter,long_counter and before increment counter before each
-jump. That way we will know how many short/long jumps were taken. 
-> -- Steve
-> 
+> I do have one other question. In this code:
+>
+>>>                   if (compressed && (type == PSTORE_TYPE_DMESG)) {
+>>>                           big_buf_sz = (psinfo->bufsize * 100) / 45;
+> Where does the magic multiply by 1.45 come from?  Is that always enough
+> for the decompression of "dmesg" type data to succeed?
+
+I had this in my cover letter of the series, posting the same from it
+
+Writing to persistent store
+----------------------------
+Compression will reduce the size of oops/panic report to atmost 45% of its
+original size. (Based on experiments done while providing compression support
+to nvram by Jim keniston).
+Hence buffer of size ( (100/45 approx 2.22) *<registered_buffer> is allocated).
+The compression parameters selected based on some experiments:
+compression_level = 6, window_bits = 12, memory_level = 4  which achieved a
+significant compression of 12 % of uncompressed buffer size tried upto 36k.
+Data is compressed from the bigger buffer to registered buffer which is
+returned to backends.
+Pstore will indicate that with a flag 'compressed' which is passed to backends.
+Using this flag, backends will add a flag in their header to indicate the data
+is compressed or not while writing to persistent store.
+
+
+The significant compression that I have mentioned had repeated occurrences in the
+text. When I tried with plain text I saw compression of around 45% with compression
+parameters I have used.
+
+If the record size is fixed across all the backends then it would be easy to come
+up with a pre defined set of compression parameters as well as the buffer size of
+compressed/decompressed data based on experiments. In power as of now, the maximum size
+of the record is 4k. So compression support on power was provided with multiply (100/45)
+considering the maximum record size to be 4k.
+
+How is it with erst and efivars?
+
+- Aruna
+
+> -Tony
+>
 
