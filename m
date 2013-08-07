@@ -1,111 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295Ab3HGUk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 16:40:57 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:60710 "EHLO
+	id S933314Ab3HGUlC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 16:41:02 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:60711 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933220Ab3HGUkz (ORCPT
+	with ESMTP id S933220Ab3HGUk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 16:40:55 -0400
-Message-ID: <201308072040.r77KetU3016117@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 7 Aug 2013 12:11:56 -0400
-Subject: [PATCH] tile: improve illegal translation interrupt handling
-To: <linux-kernel@vger.kernel.org>
+	Wed, 7 Aug 2013 16:40:58 -0400
+Message-ID: <201308072040.r77Kevx4016119@farm-0012.internal.tilera.com>
+From: Ken Steele <ken@tilera.com>
+Date: Wed, 7 Aug 2013 12:39:56 -0400
+Subject: [PATCH] RAID: add tilegx SIMD implementation of raid6
+To: <linux-kernel@vger.kernel.org>, <linux-raid@vger.kernel.org>,
+        Neil Brown <neilb@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First, don't re-enable interrupts blindly in the Linux trap handler.
-We already handle page faults this way; synchronous interrupts like
-ILL_TRANS will fire even when interrupts are disabled, and we don't
-want to re-enable interrupts in that case.
+This change adds TILE-Gx SIMD instructions to the software raid
+(md), modeling the Altivec implementation. This is only for Syndrome
+generation; there is more that could be done to improve recovery,
+as in the recent Intel SSE3 recovery implementation.
 
-For ILL_TRANS, we now pass the ILL_VA_PC reason into the trap handler
-so we can report it properly; this is the address that caused the
-illegal translation trap.  We print the address as part of the
-pr_alert() message now if it's coming from the kernel.
+The code unrolls 8 times; this turns out to be the best on tilegx
+hardware among the set 1, 2, 4, 8 or 16.  The code reads one
+cache-line of data from each disk, stores P and Q then goes to the
+next cache-line.
 
+The test code in sys/linux/lib/raid6/test reports 2008 MB/s data
+read rate for syndrome generation using 18 disks (16 data and 2
+parity). It was 1512 MB/s before this SIMD optimizations. This is
+running on 1 core with all the data in cache.
+
+This is based on the paper The Mathematics of RAID-6.
+(http://kernel.org/pub/linux/kernel/people/hpa/raid6.pdf).
+
+Signed-off-by: Ken Steele <ken@tilera.com>
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/kernel/intvec_64.S |  2 +-
- arch/tile/kernel/traps.c     | 25 +++++++++++++++----------
- 2 files changed, 16 insertions(+), 11 deletions(-)
+ include/linux/raid/pq.h |  1 +
+ lib/raid6/Makefile      |  6 ++++
+ lib/raid6/algos.c       |  3 ++
+ lib/raid6/test/Makefile |  7 ++++
+ lib/raid6/tilegx.uc     | 86 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 103 insertions(+)
+ create mode 100644 lib/raid6/tilegx.uc
 
-diff --git a/arch/tile/kernel/intvec_64.S b/arch/tile/kernel/intvec_64.S
-index 8e7d6b8..3c63fbd 100644
---- a/arch/tile/kernel/intvec_64.S
-+++ b/arch/tile/kernel/intvec_64.S
-@@ -485,7 +485,7 @@ intvec_\vecname:
- 	mfspr   r3, SPR_SYSTEM_SAVE_K_2   /* info about page fault */
- 	.else
- 	.ifc \vecnum, INT_ILL_TRANS
--	mfspr   r2, ILL_TRANS_REASON
-+	mfspr   r2, ILL_VA_PC
- 	.else
- 	.ifc \vecnum, INT_DOUBLE_FAULT
- 	mfspr   r2, SPR_SYSTEM_SAVE_K_2   /* double fault info from HV */
-diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
-index 5b19a23..a1bbc5de 100644
---- a/arch/tile/kernel/traps.c
-+++ b/arch/tile/kernel/traps.c
-@@ -222,8 +222,9 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
- 	unsigned long address = 0;
- 	bundle_bits instr;
+diff --git a/include/linux/raid/pq.h b/include/linux/raid/pq.h
+index 8dfaa2c..6d5df8a 100644
+--- a/include/linux/raid/pq.h
++++ b/include/linux/raid/pq.h
+@@ -101,6 +101,7 @@ extern const struct raid6_calls raid6_altivec8;
+ extern const struct raid6_calls raid6_avx2x1;
+ extern const struct raid6_calls raid6_avx2x2;
+ extern const struct raid6_calls raid6_avx2x4;
++extern const struct raid6_calls raid6_tilegx8;
  
--	/* Re-enable interrupts. */
--	local_irq_enable();
-+	/* Re-enable interrupts, if they were previously enabled. */
-+	if (!(regs->flags & PT_FLAGS_DISABLE_IRQ))
-+		local_irq_enable();
+ struct raid6_recov_calls {
+ 	void (*data2)(int, size_t, int, int, void **);
+diff --git a/lib/raid6/Makefile b/lib/raid6/Makefile
+index 9f7c184..e5e9021 100644
+--- a/lib/raid6/Makefile
++++ b/lib/raid6/Makefile
+@@ -5,6 +5,7 @@ raid6_pq-y	+= algos.o recov.o tables.o int1.o int2.o int4.o \
  
- 	/*
- 	 * If it hits in kernel mode and we can't fix it up, just exit the
-@@ -231,7 +232,8 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
- 	 */
- 	if (!user_mode(regs)) {
- 		const char *name;
--		if (fixup_exception(regs))  /* only UNALIGN_DATA in practice */
-+		char buf[100];
-+		if (fixup_exception(regs))  /* ILL_TRANS or UNALIGN_DATA */
- 			return;
- 		if (fault_num >= 0 &&
- 		    fault_num < sizeof(int_name)/sizeof(int_name[0]) &&
-@@ -239,10 +241,16 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
- 			name = int_name[fault_num];
- 		else
- 			name = "Unknown interrupt";
--		pr_alert("Kernel took bad trap %d (%s) at PC %#lx\n",
--			 fault_num, name, regs->pc);
- 		if (fault_num == INT_GPV)
--			pr_alert("GPV_REASON is %#lx\n", reason);
-+			snprintf(buf, sizeof(buf), "; GPV_REASON %#lx", reason);
-+#ifdef __tilegx__
-+		else if (fault_num == INT_ILL_TRANS)
-+			snprintf(buf, sizeof(buf), "; address %#lx", reason);
-+#endif
-+		else
-+			buf[0] = '\0';
-+		pr_alert("Kernel took bad trap %d (%s) at PC %#lx%s\n",
-+			 fault_num, name, regs->pc, buf);
- 		show_regs(regs);
- 		do_exit(SIGKILL);  /* FIXME: implement i386 die() */
- 		return;
-@@ -324,11 +332,8 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
- 		fill_ra_stack();
+ raid6_pq-$(CONFIG_X86) += recov_ssse3.o recov_avx2.o mmx.o sse1.o sse2.o avx2.o
+ raid6_pq-$(CONFIG_ALTIVEC) += altivec1.o altivec2.o altivec4.o altivec8.o
++raid6_pq-$(CONFIG_TILEGX) += tilegx8.o
  
- 		signo = SIGSEGV;
-+		address = reason;
- 		code = SEGV_MAPERR;
--		if (reason & SPR_ILL_TRANS_REASON__I_STREAM_VA_RMASK)
--			address = regs->pc;
--		else
--			address = 0;  /* FIXME: GX: single-step for address */
- 		break;
- 	}
+ hostprogs-y	+= mktables
+ 
+@@ -70,6 +71,11 @@ $(obj)/altivec8.c:   UNROLL := 8
+ $(obj)/altivec8.c:   $(src)/altivec.uc $(src)/unroll.awk FORCE
+ 	$(call if_changed,unroll)
+ 
++targets += tilegx8.c
++$(obj)/tilegx8.c:   UNROLL := 8
++$(obj)/tilegx8.c:   $(src)/tilegx.uc $(src)/unroll.awk FORCE
++	$(call if_changed,unroll)
++
+ quiet_cmd_mktable = TABLE   $@
+       cmd_mktable = $(obj)/mktables > $@ || ( rm -f $@ && exit 1 )
+ 
+diff --git a/lib/raid6/algos.c b/lib/raid6/algos.c
+index 6d7316f..b9f3401 100644
+--- a/lib/raid6/algos.c
++++ b/lib/raid6/algos.c
+@@ -66,6 +66,9 @@ const struct raid6_calls * const raid6_algos[] = {
+ 	&raid6_altivec4,
+ 	&raid6_altivec8,
  #endif
++#if defined(CONFIG_TILEGX)
++	&raid6_tilegx8,
++#endif
+ 	&raid6_intx1,
+ 	&raid6_intx2,
+ 	&raid6_intx4,
+diff --git a/lib/raid6/test/Makefile b/lib/raid6/test/Makefile
+index 087332d..96b4637 100644
+--- a/lib/raid6/test/Makefile
++++ b/lib/raid6/test/Makefile
+@@ -35,6 +35,9 @@ else
+                 OBJS += altivec1.o altivec2.o altivec4.o altivec8.o
+         endif
+ endif
++ifeq ($(ARCH),tilegx)
++OBJS += tilegx8.o
++endif
+ 
+ .c.o:
+ 	$(CC) $(CFLAGS) -c -o $@ $<
+@@ -85,11 +88,15 @@ int16.c: int.uc ../unroll.awk
+ int32.c: int.uc ../unroll.awk
+ 	$(AWK) ../unroll.awk -vN=32 < int.uc > $@
+ 
++tilegx8.c: tilegx.uc ../unroll.awk
++	$(AWK) ../unroll.awk -vN=8 < tilegx.uc > $@
++
+ tables.c: mktables
+ 	./mktables > tables.c
+ 
+ clean:
+ 	rm -f *.o *.a mktables mktables.c *.uc int*.c altivec*.c tables.c raid6test
++	rm tilegx*.c
+ 
+ spotless: clean
+ 	rm -f *~
+diff --git a/lib/raid6/tilegx.uc b/lib/raid6/tilegx.uc
+new file mode 100644
+index 0000000..e7c2945
+--- /dev/null
++++ b/lib/raid6/tilegx.uc
+@@ -0,0 +1,86 @@
++/* -*- linux-c -*- ------------------------------------------------------- *
++ *
++ *   Copyright 2002 H. Peter Anvin - All Rights Reserved
++ *   Copyright 2012 Tilera Corporation - All Rights Reserved
++ *
++ *   This program is free software; you can redistribute it and/or modify
++ *   it under the terms of the GNU General Public License as published by
++ *   the Free Software Foundation, Inc., 53 Temple Place Ste 330,
++ *   Boston MA 02111-1307, USA; either version 2 of the License, or
++ *   (at your option) any later version; incorporated herein by reference.
++ *
++ * ----------------------------------------------------------------------- */
++
++/*
++ * tilegx$#.c
++ *
++ * $#-way unrolled TILE-Gx SIMD for RAID-6 math.
++ *
++ * This file is postprocessed using unroll.awk.
++ *
++ */
++
++#include <linux/raid/pq.h>
++
++/* Create 8 byte copies of constant byte */
++# define NBYTES(x) (__insn_v1addi(0, x))
++# define NSIZE  8
++
++/*
++ * The SHLBYTE() operation shifts each byte left by 1, *not*
++ * rolling over into the next byte
++ */
++static inline __attribute_const__ u64 SHLBYTE(u64 v)
++{
++	/* Vector One Byte Shift Left Immediate. */
++	return __insn_v1shli(v, 1);
++}
++
++/*
++ * The MASK() operation returns 0xFF in any byte for which the high
++ * bit is 1, 0x00 for any byte for which the high bit is 0.
++ */
++static inline __attribute_const__ u64 MASK(u64 v)
++{
++	/* Vector One Byte Shift Right Signed Immediate. */
++	return __insn_v1shrsi(v, 7);
++}
++
++
++void raid6_tilegx$#_gen_syndrome(int disks, size_t bytes, void **ptrs)
++{
++	u8 **dptr = (u8 **)ptrs;
++	u64 *p, *q;
++	int d, z, z0;
++
++	u64 wd$$, wq$$, wp$$, w1$$, w2$$;
++	u64 x1d = NBYTES(0x1d);
++	u64 * z0ptr;
++
++	z0 = disks - 3;			/* Highest data disk */
++	p = (u64 *)dptr[z0+1];	/* XOR parity */
++	q = (u64 *)dptr[z0+2];	/* RS syndrome */
++
++	z0ptr = (u64 *)&dptr[z0][0];
++	for ( d = 0 ; d < bytes ; d += NSIZE*$# ) {
++		wq$$ = wp$$ = *z0ptr++;
++		for ( z = z0-1 ; z >= 0 ; z-- ) {
++			wd$$ = *(u64 *)&dptr[z][d+$$*NSIZE];
++			wp$$ = wp$$ ^ wd$$;
++			w2$$ = MASK(wq$$);
++			w1$$ = SHLBYTE(wq$$);
++			w2$$ = w2$$ & x1d;
++			w1$$ = w1$$ ^ w2$$;
++			wq$$ = w1$$ ^ wd$$;
++		}
++		*p++ = wp$$;
++		*q++ = wq$$;
++	}
++}
++
++const struct raid6_calls raid6_tilegx$# = {
++	raid6_tilegx$#_gen_syndrome,
++	NULL,
++	"tilegx$#",
++	0
++};
 -- 
 1.8.3.1
 
