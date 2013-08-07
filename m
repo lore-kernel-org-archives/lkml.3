@@ -1,46 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612Ab3HGOsZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 10:48:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34396 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756898Ab3HGOrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 10:47:35 -0400
-Date: Wed, 7 Aug 2013 16:47:30 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH 2/3] memcg: Limit the number of events registered on
- oom_control
-Message-ID: <20130807144730.GB13279@dhcp22.suse.cz>
-References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
- <1375874907-22013-2-git-send-email-mhocko@suse.cz>
- <20130807130836.GB27006@htj.dyndns.org>
- <20130807133746.GI8184@dhcp22.suse.cz>
- <20130807134741.GF27006@htj.dyndns.org>
- <20130807135734.GK8184@dhcp22.suse.cz>
+	id S933089Ab3HGOx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 10:53:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41634 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756650Ab3HGOx5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 10:53:57 -0400
+Date: Wed, 7 Aug 2013 15:53:09 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: "poeschel@lemonage.de" <poeschel@lemonage.de>,
+        "b-cousson@ti.com" <b-cousson@ti.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: am33xx: Correct gpio #interrupt-cells
+ property
+Message-ID: <20130807145309.GG28558@e106331-lin.cambridge.arm.com>
+References: <1375873592-26881-1-git-send-email-larsi@wh2.tu-dresden.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130807135734.GK8184@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1375873592-26881-1-git-send-email-larsi@wh2.tu-dresden.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-08-13 15:57:34, Michal Hocko wrote:
-[...]
-> Hmm, OK so you think that the fd limit is sufficient already?
+On Wed, Aug 07, 2013 at 12:06:32PM +0100, Lars Poeschel wrote:
+> From: Lars Poeschel <poeschel@lemonage.de>
+> 
+> Following commit ff5c9059 and therefore other omap platforms using
+> the gpio-omap driver correct the #interrupt-cells property on am33xx
+> too. The omap gpio binding documentaion also states that
+> the #interrupt-cells property should be 2.
 
-Hmm, that would need to touch the code as well (the register callback
-would need to make sure only one event is registered per cfile). But yes
-this way would be better. I will send a new patch once I have an idle
-moment.
--- 
-Michal Hocko
-SUSE Labs
+I take it there are no device nodes for which any of these nodes are an
+interrupt parent (which would need to be updated)?
+
+If so:
+
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+
+Thanks,
+Mark.
+
+> 
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+> ---
+>  arch/arm/boot/dts/am33xx.dtsi |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> index 38b446b..033c5dd 100644
+> --- a/arch/arm/boot/dts/am33xx.dtsi
+> +++ b/arch/arm/boot/dts/am33xx.dtsi
+> @@ -102,7 +102,7 @@
+>  			gpio-controller;
+>  			#gpio-cells = <2>;
+>  			interrupt-controller;
+> -			#interrupt-cells = <1>;
+> +			#interrupt-cells = <2>;
+>  			reg = <0x44e07000 0x1000>;
+>  			interrupts = <96>;
+>  		};
+> @@ -113,7 +113,7 @@
+>  			gpio-controller;
+>  			#gpio-cells = <2>;
+>  			interrupt-controller;
+> -			#interrupt-cells = <1>;
+> +			#interrupt-cells = <2>;
+>  			reg = <0x4804c000 0x1000>;
+>  			interrupts = <98>;
+>  		};
+> @@ -124,7 +124,7 @@
+>  			gpio-controller;
+>  			#gpio-cells = <2>;
+>  			interrupt-controller;
+> -			#interrupt-cells = <1>;
+> +			#interrupt-cells = <2>;
+>  			reg = <0x481ac000 0x1000>;
+>  			interrupts = <32>;
+>  		};
+> @@ -135,7 +135,7 @@
+>  			gpio-controller;
+>  			#gpio-cells = <2>;
+>  			interrupt-controller;
+> -			#interrupt-cells = <1>;
+> +			#interrupt-cells = <2>;
+>  			reg = <0x481ae000 0x1000>;
+>  			interrupts = <62>;
+>  		};
+> -- 
+> 1.7.10.4
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
