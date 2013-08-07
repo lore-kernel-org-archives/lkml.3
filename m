@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab3HGL2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 07:28:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54732 "EHLO mx2.suse.de"
+	id S1757447Ab3HGL2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 07:28:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54754 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753975Ab3HGL2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 07:28:37 -0400
+	id S1753975Ab3HGL2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 07:28:39 -0400
 From: Michal Hocko <mhocko@suse.cz>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
@@ -14,58 +14,107 @@ Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [PATCH 1/3] memcg: limit the number of thresholds per-memcg
-Date: Wed,  7 Aug 2013 13:28:25 +0200
-Message-Id: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+Subject: [PATCH 3/3] vmpressure: limit the number of registered events
+Date: Wed,  7 Aug 2013 13:28:27 +0200
+Message-Id: <1375874907-22013-3-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no limit for the maximum number of threshold events registered
+There is no limit for the maximum number of vmpressure events registered
 per memcg. This might lead to an user triggered memory depletion if a
-regular user is allowed to register on memory.[memsw.]usage_in_bytes
-eventfd interface.
+regular user is allowed to register events.
 
 Let's be more strict and cap the number of events that might be
-registered. MAX_THRESHOLD_EVENTS value is more or less random. The
+registered. MAX_VMPRESSURE_EVENTS value is more or less random. The
 expectation is that it should be high enough to cover reasonable
 usecases while not too high to allow excessive resources consumption.
-1024 events consume something like 16KB which shouldn't be a big deal
+1024 events consume something like 32KB which shouldn't be a big deal
 and it should be good enough.
 
-Reported-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ include/linux/vmpressure.h |    2 ++
+ mm/vmpressure.c            |   21 +++++++++++++++++----
+ 2 files changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e4330cd..8247db3 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5401,6 +5401,9 @@ static void mem_cgroup_oom_notify(struct mem_cgroup *memcg)
- 		mem_cgroup_oom_notify_cb(iter);
+diff --git a/include/linux/vmpressure.h b/include/linux/vmpressure.h
+index 7dc17e2..474230c 100644
+--- a/include/linux/vmpressure.h
++++ b/include/linux/vmpressure.h
+@@ -14,6 +14,8 @@ struct vmpressure {
+ 	/* The lock is used to keep the scanned/reclaimed above in sync. */
+ 	struct spinlock sr_lock;
+ 
++	/* Number of registered events. */
++	unsigned int events_count;
+ 	/* The list of vmpressure_event structs. */
+ 	struct list_head events;
+ 	/* Have to grab the lock on events traversal or modifications. */
+diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+index 0c1e37d..bc9d546 100644
+--- a/mm/vmpressure.c
++++ b/mm/vmpressure.c
+@@ -281,6 +281,9 @@ void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio)
+ 	vmpressure(gfp, memcg, vmpressure_win, 0);
  }
  
-+/* Maximum number of treshold events registered per memcg. */
-+#define MAX_THRESHOLD_EVENTS	1024
++/* Maximum number of events registered per group */
++#define MAX_VMPRESSURE_EVENTS 1024
 +
- static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
- 	struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)
- {
-@@ -5424,6 +5427,11 @@ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,
- 	else
- 		BUG();
+ /**
+  * vmpressure_register_event() - Bind vmpressure notifications to an eventfd
+  * @cg:		cgroup that is interested in vmpressure notifications
+@@ -304,6 +307,7 @@ int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
+ 	struct vmpressure *vmpr = cg_to_vmpressure(cg);
+ 	struct vmpressure_event *ev;
+ 	int level;
++	int ret = 0;
  
-+	if (thresholds->primary->size == MAX_THRESHOLD_EVENTS) {
+ 	for (level = 0; level < VMPRESSURE_NUM_LEVELS; level++) {
+ 		if (!strcmp(vmpressure_str_levels[level], args))
+@@ -313,18 +317,26 @@ int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
+ 	if (level >= VMPRESSURE_NUM_LEVELS)
+ 		return -EINVAL;
+ 
++	mutex_lock(&vmpr->events_lock);
++	if (vmpr->events_count == MAX_VMPRESSURE_EVENTS) {
 +		ret = -ENOSPC;
 +		goto unlock;
 +	}
-+
- 	usage = mem_cgroup_usage(memcg, type == _MEMSWAP);
+ 	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
+-	if (!ev)
+-		return -ENOMEM;
++	if (!ev) {
++		ret = -ENOMEM;
++		goto unlock;
++	}
  
- 	/* Check if a threshold crossed before adding a new one */
+ 	ev->efd = eventfd;
+ 	ev->level = level;
+ 
+-	mutex_lock(&vmpr->events_lock);
++	vmpr->events_count++;
+ 	list_add(&ev->node, &vmpr->events);
++unlock:
+ 	mutex_unlock(&vmpr->events_lock);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ /**
+@@ -351,6 +363,7 @@ void vmpressure_unregister_event(struct cgroup *cg, struct cftype *cft,
+ 	list_for_each_entry(ev, &vmpr->events, node) {
+ 		if (ev->efd != eventfd)
+ 			continue;
++		vmpr->events_count--;
+ 		list_del(&ev->node);
+ 		kfree(ev);
+ 		break;
 -- 
 1.7.10.4
 
