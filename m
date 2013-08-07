@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932963Ab3HGTIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 15:08:18 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:51863 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757056Ab3HGTIR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 15:08:17 -0400
+	id S1757447Ab3HGTLu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 15:11:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15320 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757051Ab3HGTLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 15:11:49 -0400
+Date: Wed, 7 Aug 2013 21:06:12 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Zach Levis <zml@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] audit_alloc: clear TIF_SYSCALL_AUDIT if
+	!audit_context
+Message-ID: <20130807190612.GA7168@redhat.com>
+References: <20130807180530.GA4916@redhat.com> <20130807180553.GA4920@redhat.com> <CAGXu5jKuSp=c94xAQzdG4QenXnWs0X2n+jCyQb0b1Ncp6tbRMg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130806152357.40031f6702c92ce9f0d10fca@linux-foundation.org>
-References: <1375778440-31503-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<20130806152357.40031f6702c92ce9f0d10fca@linux-foundation.org>
-Date: Thu, 8 Aug 2013 04:08:16 +0900
-Message-ID: <CAAmzW4NMPLKae8kRDmGtciTPBam+mPF+qPtf8HindD+-xn2siQ@mail.gmail.com>
-Subject: Re: [PATCH] mm, page_alloc: optimize batch count in free_pcppages_bulk()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Minchan Kim <minchan@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jKuSp=c94xAQzdG4QenXnWs0X2n+jCyQb0b1Ncp6tbRMg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
-
-2013/8/7 Andrew Morton <akpm@linux-foundation.org>:
-> On Tue,  6 Aug 2013 17:40:40 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+On 08/07, Kees Cook wrote:
 >
->> If we use a division operation, we can compute a batch count more closed
->> to ideal value. With this value, we can finish our job within
->> MIGRATE_PCPTYPES iteration. In addition, batching to free more pages
->> may be helpful to cache usage.
->>
+> On Wed, Aug 7, 2013 at 11:05 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> > index 9845cb3..95293ab 100644
+> > --- a/kernel/auditsc.c
+> > +++ b/kernel/auditsc.c
+> > @@ -943,8 +943,10 @@ int audit_alloc(struct task_struct *tsk)
+> >                 return 0; /* Return if not auditing. */
+> >
+> >         state = audit_filter_task(tsk, &key);
+> > -       if (state == AUDIT_DISABLED)
+> > +       if (state == AUDIT_DISABLED) {
+> > +               clear_tsk_thread_flag(tsk, TIF_SYSCALL_AUDIT);
+> >                 return 0;
+> > +       }
+> >
+> >         if (!(context = audit_alloc_context(state))) {
+> >                 kfree(key);
+> > --
+> > 1.5.5.1
+> >
+> >
 >
-> hm, maybe.  The .text got 120 bytes larger so the code now will
-> eject two of someone else's cachelines, which can't be good.  I need
-> more convincing, please ;)
+> Interestingly, I see no other callers of "clear_tsk_thread_flag(tsk,
+> TIF_SYSCALL_AUDIT)" :)
 >
-> (bss got larger too - I don't have a clue why this happens).
+> This patch seems right, since TIF_SYSCALL_AUDIT is set only when
+> audit_filter_task != AUDIT_DISABLED. Though maybe this should be
+> explicitly handled in dup_task_struct()?
 
-In my testing, it makes .text just 64 byes larger.
-I think that I cannot avoid such few increasing size.
+Personally I agree.
 
-Current round-robin freeing algorithm access 'struct page' at random
-order, because
-it change it's migrate type and list on every iteration and a page on
-different list
-may be far from each other. If we do more batch free, we have more
-probability to access
-adjacent 'struct page' than before, so I think that this is
-cache-friendly. But this is just
-theoretical argument, so I'm not sure whether it is useful or not :)
+But note that we have more clear-tif-after-fork's. IOW, I think we
+should probably add copy_tif_flags() or something which acts like
+copy_flags(). TIF_SYSCALL_TRACE, TIF_SYSCALL_EMU, TIF_NEED_RESCHED
+at least. Until then we should follow the copy-them-all-then-clear
+rule.
 
-Thanks.
+Besides, if we add the new clear_tsk_thread_flag() into copy_process's
+path we probably need ifdef or ifdef'ed helper.
+
+Oleg.
+
