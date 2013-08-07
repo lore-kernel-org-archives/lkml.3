@@ -1,144 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab3HGQAU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:00:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43514 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756852Ab3HGQAR (ORCPT
+	id S932194Ab3HGQAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:00:31 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30325 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757074Ab3HGQA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:00:17 -0400
-Message-ID: <52026F0B.6020705@wwwdotorg.org>
-Date: Wed, 07 Aug 2013 10:00:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 7 Aug 2013 12:00:28 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19/6k4Pj7rWGfsp/EyiyGty6vfuwofc9+U=
+Date: Wed, 7 Aug 2013 12:00:19 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lior Amsalem <alior@marvell.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        sboyd@codeaurora.org
+Subject: Re: [PATCH] ARM: dts: Fix memory node in skeleton64.dtsi
+Message-ID: <20130807160019.GF19280@titan.lakedaemon.net>
+References: <1375839186-1904-1-git-send-email-stepanm@codeaurora.org>
+ <5201E7CA.4050601@free-electrons.com>
 MIME-Version: 1.0
-To: Hanumant Singh <hanumant@codeaurora.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        "Bird, Tim" <Tim.Bird@sonymobile.com>,
-        ext Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
-References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com> <51F82BCC.1080409@codeaurora.org> <51F82E9F.9010309@wwwdotorg.org> <51F853BF.9040007@codeaurora.org> <51F8556A.1010300@wwwdotorg.org> <51F85690.9060701@codeaurora.org> <51F88BAC.2020001@wwwdotorg.org> <51F969A5.5020405@codeaurora.org> <51F97C47.5020202@wwwdotorg.org> <51F9A934.404@codeaurora.org> <52018A8D.70608@codeaurora.org>
-In-Reply-To: <52018A8D.70608@codeaurora.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5201E7CA.4050601@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 05:45 PM, Hanumant Singh wrote:
-> On 7/31/2013 5:17 PM, Hanumant Singh wrote:
->> On 7/31/2013 2:06 PM, Stephen Warren wrote:
->>> On 07/31/2013 01:46 PM, Hanumant Singh wrote:
->>>> On 7/30/2013 8:59 PM, Stephen Warren wrote:
->>>>> On 07/30/2013 06:13 PM, Hanumant Singh wrote:
->>>>>> On 7/30/2013 5:08 PM, Stephen Warren wrote:
->>>>>>> On 07/30/2013 06:01 PM, Hanumant Singh wrote:
->>>>>>>> On 7/30/2013 2:22 PM, Stephen Warren wrote:
->>>>>>>>> On 07/30/2013 03:10 PM, hanumant wrote:
->>>>>>>>> ...
->>>>>>>>>> We actually have the same TLMM pinmux used by several socs of a
->>>>>>>>>> family.
->>>>>>>>>> The number of pins on each soc may vary.
->>>>>>>>>> Also a given soc gets used in a number of boards.
->>>>>>>>>> The device tree for a given soc is split into the different
->>>>>>>>>> boards
->>>>>>>>>> that
->>>>>>>>>> its in ie the boards inherit a common soc.dtsi but have separate
->>>>>>>>>> dts.
->>>>>>>>>> The boards for the same soc may use different pin groups for
->>>>>>>>>> accomplishing a function, since we have multiple i2c, spi uart
->>>>>>>>>> etc
->>>>>>>>>> peripheral instances on a soc. A different instance of each of
->>>>>>>>>> the
->>>>>>>>>> above
->>>>>>>>>> peripherals, can be used in different boards, utilizing different
->>>>>>>>>> or subset of same pin groups.
->>>>>>>>>> Thus I would need to have multiple C files for one soc, based
->>>>>>>>>> on the
->>>>>>>>>> boards that it goes into.
->>>>>>>>>
->>>>>>>>> The pinctrl driver should be exposing the raw capabilities of
->>>>>>>>> the HW.
->>>>>>>>> All the board-specific configuration should be expressed in DT.
->>>>>>>>> So, the
->>>>>>>>> driver shouldn't have to know anything about different boards at
->>>>>>>>> compile-time.
->>>>>>>>>
->>>>>>>> I agree, so I wanted to keep the pin grouping information in DT, we
->>>>>>>> already have a board based differentiation of dts files in DT,
->>>>>>>> for the
->>>>>>>> same soc.
->>>>>>>
->>>>>>> That's the opposite of what I was saying. Pin groups are a
->>>>>>> feature of
->>>>>>> the SoC design, not the board.
->>>>>>>
->>>>>> Sorry I guess I wasn't clear.
->>>>>> Right now I have a soc-pinctrl.dtsi containing pin groupings.
->>>>>> This will be "inherited" by soc-boardtype.dts.
->>>>>> The pinctrl client device nodes in soc-boardtype.dts will point to
->>>>>> pin
->>>>>> groupings in soc-pinctrl.dtsi that are valid for that particular
->>>>>> boardtype.
->>>>>> Is this a valid design?
->>>>>
->>>>> OK, so you have two types of child node inside the pinctrl DT node;
->>>>> some
->>>>> define the pin groups the SoC has (in soc.dtsi) and some define
->>>>> pinctrl
->>>>> states that reference the pin group nodes and are referenced by the
->>>>> client nodes.
->>>>>
->>>>> That's probably fine. However, I'd still question putting the pin
->>>>> group
->>>>> nodes in DT at all; I'm not convinced it's better than just putting
->>>>> those into the driver itself. You end up with the same data tables
->>>>> after
->>>>> parsing the DT anyway.
->>>>>
->>>>
->>>> Any feedback for the rest of the patch?
->>>
->>> I'm certainly waiting for this aspect of the patch to be resolved; I
->>> think it will impact the rest of the patch so much that it's not worth
->>> reviewing until we decide on where to represent the pin groups (some DT
->>> parsing could would be removed if we put the pin group definitions into
->>> the driver, hence wouldn't need to be reviewed, and likewise there's be
->>> some new tables to review).
->>>
->>
->> I am trying to look at examples of what you are suggesting.
->> I was looking at the exynos implementation, and just from a brief glance
->> it seems like there too the pin grouping is being specified in the
->> device tree, using what looks like labels of the pins.
->> The labels are matched to group structures in soc specific files?
->>
->> By having the pin groupings in DT I am able to reuse the driver without
->> any SOC based code bloat.
->> As I mentioned earlier, we have entire families of SOCs using the same
->> TLMM hardware.
->> Its not a guarantee that for a given TLMM version,
->> the pin groupings on that hardware are the same for every SOC that its
->> in. Its infact most likely that I wont be able to use the pin groupings
->> from one SOC to the next even if they both use the same TLMM.
->> It will very quickly lead to a bloat of
->> pinctrl-<msm_soc>.c (containing the pin groupings replicated for each
->> soc)
->> which use TLMM version specific register programming implementation
->> pinctrl-tlmm-<version>.c
->> and the DT parsing and interface to framework (which remains unchanged).
->> pinctrl-msm.c.
->>
->> Thanks
->> Hanumant
->>
+On Wed, Aug 07, 2013 at 08:23:06AM +0200, Gregory CLEMENT wrote:
+> On 07/08/2013 03:33, Stepan Moskovchenko wrote:
+> > Update the reg property of the memory node in
+> > skeleton64.dtsi to reflect the fact that the root node uses
+> > address-cells=2 and size-cells=2.
 > 
-> Any comments on this?
+> Good catch
+> 
+> Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-No. As I said, I personally want to see all the pingroups defined in the
-pinctrl driver. But, if someone else acks/... the patches without it, I
-probably won't nack it.
+Since we introduced the file, and I can't think of any other tree that
+should take it, so I'll go ahead and take it.
+
+thx,
+
+Jason.
+
+> > Change-Id: Ie9b61166143969e020ceebc51e9a384405d8c0f2
+> > Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+> > ---
+> >  arch/arm/boot/dts/skeleton64.dtsi |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/skeleton64.dtsi b/arch/arm/boot/dts/skeleton64.dtsi
+> > index 1599415..b5d7f36 100644
+> > --- a/arch/arm/boot/dts/skeleton64.dtsi
+> > +++ b/arch/arm/boot/dts/skeleton64.dtsi
+> > @@ -9,5 +9,5 @@
+> >  	#size-cells = <2>;
+> >  	chosen { };
+> >  	aliases { };
+> > -	memory { device_type = "memory"; reg = <0 0>; };
+> > +	memory { device_type = "memory"; reg = <0 0 0 0>; };
+> >  };
+> > 
+> 
+> 
+> -- 
+> Gregory Clement, Free Electrons
+> Kernel, drivers, real-time and embedded Linux
+> development, consulting, training and support.
+> http://free-electrons.com
