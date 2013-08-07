@@ -1,36 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348Ab3HGHoV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 03:44:21 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:54876 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932188Ab3HGHoR (ORCPT
+	id S932371Ab3HGHoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 03:44:30 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:60485 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932125Ab3HGHo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 03:44:17 -0400
-Date: Wed, 7 Aug 2013 08:44:10 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Roy Franz <roy.franz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
-        linux@arm.linux.org.uk, leif.lindholm@linaro.org, dave.martin@arm.com
-Subject: Re: [PATCH V2 00/17] EFI stub for ARM
-Message-ID: <20130807074410.GB2515@console-pimps.org>
-References: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
-MIME-Version: 1.0
+	Wed, 7 Aug 2013 03:44:27 -0400
+Subject: Re: [PATCH 5/5] arm: omap: Proper cleanups for omap_device
+Mime-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20130806101421.GA29283@kroah.com>
+Date: Wed, 7 Aug 2013 10:44:22 +0300
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        =?iso-8859-1?Q?Beno=EEt_Coussno?= <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <84B0EA3D-B6D7-4071-AEA6-019B771985B4@antoniou-consulting.com>
+References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com> <1375775624-12250-6-git-send-email-panto@antoniou-consulting.com> <20130806093356.GA27889@kroah.com> <8C31ED90-E9EF-4264-858A-17CC2536B552@antoniou-consulting.com> <20130806101421.GA29283@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 06 Aug, at 08:44:56PM, Roy Franz wrote:
-> This patchset depends (trivially) on a separately submitted bugfix to the
-> EFI stub: "correct call to free_pages"
-> http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=df981edcb9bce00b9c5e4f3cc33f3f98bc9a2394
+Hi Greg,
 
-For those playing at home, this bugfix is now in Linus' tree.
+On Aug 6, 2013, at 1:14 PM, Greg Kroah-Hartman wrote:
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+> On Tue, Aug 06, 2013 at 12:37:25PM +0300, Pantelis Antoniou wrote:
+>>> I don't like this at all, sorry.
+>>> 
+>> 
+
+[snip]
+
+>> Don't shoot the messenger please...
+>> 
+>> This is all about fixing a crash without messing too many things.
+> 
+> I understand, it's not your fault at all.
+
+Let's start talking about the patchset again.
+
+I know all of this code is rather distasteful but it's only purpose
+is to fix a bunch of crashes in a code path that was supposed to be working,
+namely the removal of a platform device, in the supposedly well supported
+ARM OMAP arch.
+
+Can we agree to at least not crashing until we get to a consensus about
+fixing the whole mess properly? This will take at least a few minor
+kernel revisions while in the meantime users get crashes everyday.
+
+Regards
+
+-- Pantelis
+
