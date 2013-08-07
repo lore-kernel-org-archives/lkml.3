@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933606Ab3HGVTa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:19:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47030 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933394Ab3HGVL2 (ORCPT
+	id S933549Ab3HGVVu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:21:50 -0400
+Received: from server506a.appriver.com ([50.56.144.13]:64072 "EHLO
+	server506.appriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933398Ab3HGVVq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:11:28 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 13/47] perf trace: Beautify 'connect' result
-Date: Wed,  7 Aug 2013 18:10:40 -0300
-Message-Id: <1375909874-22073-14-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
-References: <1375909874-22073-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 7 Aug 2013 17:21:46 -0400
+X-Note-AR-ScanTimeLocal: 8/7/2013 4:21:46 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-Virus-Scan: V-
+X-Note-SnifferID: 0
+X-Note: TCH-CT/SI:0-86/SG:2 8/7/2013 4:21:31 PM
+X-GBUdb-Analysis: 0, 10.242.229.139, Ugly c=1 p=-0.97858 Source White
+X-Signature-Violations: 0-0-0-5373-c
+X-Note-419: 0 ms. Fail:0 Chk:1343 of 1343 total
+X-Note: SCH-CT/SI:0-1343/SG:1 8/7/2013 4:21:29 PM
+X-Note: Spam Tests Failed: 
+X-Country-Path: PRIVATE->PRIVATE->UNITED STATES
+X-Note-Sending-IP: 10.242.229.139
+X-Note-Reverse-DNS: 
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G319 G320 G321 G322 G326 G327 G434 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: VALID
+X-Note: Headers Injected
+Subject: Re: [PATCH] aoe: adjust ref of head for compound page tails
+MIME-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset="us-ascii"
+From: Ed Cashin <ecashin@coraid.com>
+In-Reply-To: <20130807140021.57a40fb31807f16b525f6ff3@linux-foundation.org>
+Date: Wed, 7 Aug 2013 17:21:32 -0400
+CC: <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-ID: <EB4C2185-3868-42A3-A88D-F9642962D336@coraid.com>
+References: <cover.1375320764.git.ecashin@coraid.com> <0c8aff39249c1da6b9cc3356650149d065c3ebd2.1375320764.git.ecashin@coraid.com> <20130807140021.57a40fb31807f16b525f6ff3@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1085)
+X-Rerouted-By-Exchange: 
+X-Rerouted-By-Exchange: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Aug 7, 2013, at 5:00 PM, Andrew Morton wrote:
 
-It is an errno, so print an error string.
+> On Thu, 1 Aug 2013 21:29:59 -0400 Ed Cashin <ecashin@coraid.com> wrote:
+> 
+>> As discussed previously, the fact that some users of the block
+>> layer provide bios that point to pages with a zero _count means
+>> that it is not OK for the network layer to do a put_page on the
+>> skb frags during an skb_linearize, so the aoe driver gets a
+>> reference to pages in bios and puts the reference before ending
+>> the bio.  And because it cannot use get_page on a page with a
+>> zero _count, it manipulates the value directly.
+>> 
+>> It is not OK to increment the _count of a compound page tail,
+>> though, since the VM layer will VM_BUG_ON a non-zero _count.
+>> Block users that do direct I/O can result in the aoe driver
+>> seeing compound page tails in bios.  In that case, the same logic
+>> works as long as the head of the compound page is used instead of
+>> the tails.  This patch handles compound pages and does not BUG.
+>> 
+>> It relies on the block layer user leaving the relationship
+>> between the page tail and its head alone for the duration between
+>> the submission of the bio and its completion, whether successful
+>> or not.
+> 
+> What are the end-user-visible effects of the problem which is being
+> fixed?  Please always include this info when fixing bugs so that others
+> can work out what kernel version(s) need the patch.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-zt68gijvvoe8gd7kmclo43si@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-trace.c | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 0e4b67f..da7ae01 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -18,6 +18,7 @@ static struct syscall_fmt {
- } syscall_fmts[] = {
- 	{ .name	    = "access",	    .errmsg = true, },
- 	{ .name	    = "arch_prctl", .errmsg = true, .alias = "prctl", },
-+	{ .name	    = "connect",    .errmsg = true, },
- 	{ .name	    = "fstat",	    .errmsg = true, .alias = "newfstat", },
- 	{ .name	    = "fstatat",    .errmsg = true, .alias = "newfstatat", },
- 	{ .name	    = "futex",	    .errmsg = true, },
+Sorry.  I tried to cover that but maybe should have separated it more clearly from the running text.
+
+The patch changes the current behavior encountered with direct I/O and aoe:
+
+  aoe can BUG when direct I/O used
+
+... to a new behavior:
+
+  aoe does not BUG when direct I/O is used
+
+And the user will never know that instead aoe is manipulating the _count of the head page, even though that's what's happening with this patch applied.
+
+(The user-visible effects that motivated the older patch that added the BUG to aoe when page tails are used for block I/O was a VM_BUG_ON that occurred when the aoe driver manipulated the _count of a compound page tail.)
+
 -- 
-1.8.1.4
+  Ed Cashin
+  ecashin@coraid.com
+
 
