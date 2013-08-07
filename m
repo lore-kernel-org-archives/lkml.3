@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932781Ab3HGLEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 07:04:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36080 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757249Ab3HGLEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 07:04:08 -0400
-Date: Wed, 7 Aug 2013 13:04:06 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
-        "joeyli.kernel@gmail.com" <joeyli.kernel@gmail.com>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: Backlight control only in the kernel?
-Message-ID: <20130807110406.GD17920@pd.tnic>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com>
- <20130807074405.GA18272@pd.tnic>
- <1375871766.10292.7.camel@x230.lan>
+	id S1757409Ab3HGLJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 07:09:51 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23152 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757294Ab3HGLJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 07:09:50 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/gcpgEwgNmxli96b+FBzyR
+Date: Wed, 7 Aug 2013 04:09:45 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Chen Baozi <baozich@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: fix wrong address when loading
+ PRM_FRAC_INCREMENTOR_DENUMERATOR_RELOAD
+Message-ID: <20130807110945.GL7656@atomide.com>
+References: <1375356474-24203-1-git-send-email-baozich@gmail.com>
+ <C635EF21-CD18-4633-AA39-16209F8EE231@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375871766.10292.7.camel@x230.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <C635EF21-CD18-4633-AA39-16209F8EE231@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 10:36:08AM +0000, Matthew Garrett wrote:
-> Not really. The ACPI driver is able to do this because the events and
-> the backlight are associated with the same device.
+* Chen Baozi <baozich@gmail.com> [130805 08:33]:
+> ping?
+> 
+> On Aug 1, 2013, at 7:27 PM, Chen Baozi <baozich@gmail.com> wrote:
+> 
+> > The denominator should be load from INCREMENTOR_DENUMERATOR_RELOAD_OFFSET
+> > rather than INCREMENTER_NUMERATOR_OFFSET.
 
-Well, it doesn't work at least in my case.
+Maybe describe what exactly happens without this fix?
 
-I need to echo stuff into /sys/class/backlight/intel_backlight :(
+Also we should get few acks for this for the -rc series.
 
-> We could potentially make something work with GPU backlight drivers
-> since their PCI device should also be associated with the backlight
-> device, but things get complicated quickly - once ddcci support
-> is hooked up you'll also have kernel backlight devices for some
-> external monitors, and now you need to make a policy decision about
-> which display should be controlled in response to the keypress. One
-> reasonable choice would be whichever display contains the currently
-> focused window, which is obviously out of scope for the kernel.
->
-> So if we're going to do this then we need a generalised mechanism
-> in-kernel for connecting input devices to backlight devices, and we
-> need a mechanism for disabling it when userspace knows better. This
-> sounds like a lot of work for something that should really just be
-> handled by userspace already.
+Regards,
 
-That's easy: single-monitor setups have it enabled by default. So every
-laptop out there will just work, without any userspace intervention.
+Tony
 
-More complicated situations are presented with the opportunity to
-disable the kernel-side control and do it themselves.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+> > Signed-off-by: Chen Baozi <baozich@gmail.com>
+> > ---
+> > arch/arm/mach-omap2/timer.c | 2 +-
+> > 1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> > index b37e1fc..9265e03 100644
+> > --- a/arch/arm/mach-omap2/timer.c
+> > +++ b/arch/arm/mach-omap2/timer.c
+> > @@ -537,7 +537,7 @@ static void __init realtime_counter_init(void)
+> > 	reg |= num;
+> > 	__raw_writel(reg, base + INCREMENTER_NUMERATOR_OFFSET);
+> > 
+> > -	reg = __raw_readl(base + INCREMENTER_NUMERATOR_OFFSET) &
+> > +	reg = __raw_readl(base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET) &
+> > 			NUMERATOR_DENUMERATOR_MASK;
+> > 	reg |= den;
+> > 	__raw_writel(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
+> > -- 
+> > 1.8.1.4
+> > 
+> 
