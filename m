@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab3HGIIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 04:08:24 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:63922 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932282Ab3HGIIU (ORCPT
+	id S932438Ab3HGIJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 04:09:07 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:52132 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932227Ab3HGIJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 04:08:20 -0400
-Message-ID: <52020066.3050500@atmel.com>
-Date: Wed, 7 Aug 2013 16:08:06 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 7 Aug 2013 04:09:02 -0400
+X-AuditID: 9c93017d-b7b45ae000000e34-fb-5202009cf763
+From: Namhyung Kim <namhyung@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V9 05/14] perf tools: tidy up sample parsing overflow checking
+References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
+	<1375719994-26482-6-git-send-email-adrian.hunter@intel.com>
+Date: Wed, 07 Aug 2013 17:09:00 +0900
+In-Reply-To: <1375719994-26482-6-git-send-email-adrian.hunter@intel.com>
+	(Adrian Hunter's message of "Mon, 5 Aug 2013 19:26:25 +0300")
+Message-ID: <87txj1ylb7.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stephen Boyd <sboyd@codeaurora.org>, John Stultz <john.stultz@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] clock: correct the comparison parameter of MHz
-References: <1375861660-32525-1-git-send-email-voice.shen@atmel.com> <20130807080253.GE23006@n2100.arm.linux.org.uk>
-In-Reply-To: <20130807080253.GE23006@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell King,
+On Mon,  5 Aug 2013 19:26:25 +0300, Adrian Hunter wrote:
+> The size of data retrieved from a sample event must be
+> validated to ensure it does not go past the end of the
+> event.  That was being done sporadically and without
+> considering integer overflows.
 
-On 8/7/2013 16:02, Russell King - ARM Linux wrote:
-> On Wed, Aug 07, 2013 at 03:47:40PM +0800, Bo Shen wrote:
->> correct the comparison parameter of MHz from 4,000,000 to 1,000,000
->
-> You're assuming this wasn't intentional.  As the division by 1000000
-> ends up losing the fractional rate, I decided to leave 1-4MHz as kHz,
-> so something like 1.832MHz would be displayed as 1832kHz and not
-> 1MHz.
+Wouldn't it be great if the macro (or something) can do all three things
+together - checking overflow, getting current value (pointer) and
+advancing the array to the size?  Is that possible?
 
-Thanks for clarification of this. Now, it is better for me to understand 
-this piece of code.
-
-Best Regards,
-Bo Shen
-
+Thanks,
+Namhyung
