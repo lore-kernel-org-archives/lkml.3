@@ -1,200 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757071Ab3HGSgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 14:36:01 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:32990 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab3HGSf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 14:35:59 -0400
+	id S932254Ab3HGSi3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 14:38:29 -0400
+Received: from orbit.nwl.cc ([176.31.251.142]:47829 "EHLO mail.nwl.cc"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753085Ab3HGSi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 14:38:27 -0400
+Date: Wed, 7 Aug 2013 20:37:58 +0200
+From: Phil Sutter <phil@nwl.cc>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, johannes@sipsolutions.net, sedat.dilek@gmail.com,
+        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        hannes@stressinduktion.org, linux-wireless@vger.kernel.org,
+        linville@tuxdriver.com
+Subject: Re: linux-next: Tree for Aug 7
+Message-ID: <20130807183758.GB16263@orbit.nwl.cc>
+Mail-Followup-To: David Miller <davem@davemloft.net>,
+	eric.dumazet@gmail.com, johannes@sipsolutions.net,
+	sedat.dilek@gmail.com, sfr@canb.auug.org.au,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	netdev@vger.kernel.org, hannes@stressinduktion.org,
+	linux-wireless@vger.kernel.org, linville@tuxdriver.com
+References: <1375892245.4004.31.camel@edumazet-glaptop>
+ <1375892522.8154.3.camel@jlt4.sipsolutions.net>
+ <1375893609.4004.33.camel@edumazet-glaptop>
+ <20130807.104713.1615549684239408926.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <1375880938-6979-1-git-send-email-gautam.vivek@samsung.com>
-References: <1375880938-6979-1-git-send-email-gautam.vivek@samsung.com>
-Date: Wed, 7 Aug 2013 11:35:58 -0700
-X-Google-Sender-Auth: 9I_jYtq7A__IPDbMFc9LXSAMMXU
-Message-ID: <CAODwPW8X-sVj1XPmZsFNtUtb-LQG96omNwOqdqh8UQMDsupvVg@mail.gmail.com>
-Subject: Re: [PATCH] usb: phy: Cleanup error code in **_usb_get_phy_**() APIs
-From: Julius Werner <jwerner@chromium.org>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        kishon@ti.com, Julius Werner <jwerner@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130807.104713.1615549684239408926.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -94,11 +94,11 @@ static int devm_usb_phy_match(struct device *dev, void *res, void *match_data)
->   */
->  struct usb_phy *devm_usb_get_phy(struct device *dev, enum usb_phy_type type)
->  {
-> -       struct usb_phy **ptr, *phy;
-> +       struct usb_phy  *phy = ERR_PTR(-ENOMEM), **ptr;
+On Wed, Aug 07, 2013 at 10:47:13AM -0700, David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Wed, 07 Aug 2013 09:40:09 -0700
+> 
+> > On Wed, 2013-08-07 at 18:22 +0200, Johannes Berg wrote:
+> > 
+> >> Maybe. I haven't tested it, but I'm thinking that skb->data doesn't
+> >> point to the start of the data frame in this case, since we now call
+> >> eth_type_trans() which pulls the ethernet header. So if the device just
+> >> transmits skb->len starting from skb->data, it'll be wrong, no? That
+> >> seems a basic assumption though.
+> > 
+> > Yes, it seems calling eth_type_trans() is not right here, and even could
+> > crash.
+> > 
+> > Sorry, for being vague, I am a bit busy this morning.
+> 
+> Yes, this is absolutely the core problem, you absolute cannot
+> call eth_type_trans() on the output path, it pulls off the
+> ethernet header from the packet.  That can't possibly work.
+> 
+> I want a real fix submitted formally for this problem immediately,
+> or else I'm reverting all of these changes this afternoon.
 
-This looks a little roundabout, don't you think? Why don't you just
-directly have 'return ERR_PTR(-ENOMEM)' down there where you put 'goto
-err0'?
+One could simply call skb_push(skb, ETH_HLEN) right after calling
+eth_type_trans(skb, dev) in order to undo the 'data' and 'len'
+adjustment. Not sure if this kind of hack is the right way to go here,
+or if the whole af_packet parses ethernet header discussion should be
+opened again instead.
 
->
->         ptr = devres_alloc(devm_usb_phy_release, sizeof(*ptr), GFP_KERNEL);
->         if (!ptr)
-> -               return NULL;
-> +               goto err0;
->
->         phy = usb_get_phy(type);
->         if (!IS_ERR(phy)) {
-> @@ -107,6 +107,7 @@ struct usb_phy *devm_usb_get_phy(struct device *dev, enum usb_phy_type type)
->         } else
->                 devres_free(ptr);
->
-> +err0:
->         return phy;
->  }
->  EXPORT_SYMBOL_GPL(devm_usb_get_phy);
-
->  struct usb_phy *devm_usb_get_phy_dev(struct device *dev, u8 index)
->  {
-> -       struct usb_phy **ptr, *phy;
-> +       struct usb_phy  *phy = ERR_PTR(-ENOMEM), **ptr;
-
-Same here
-
->
->         ptr = devres_alloc(devm_usb_phy_release, sizeof(*ptr), GFP_KERNEL);
->         if (!ptr)
-> -               return NULL;
-> +               goto err0;
->
->         phy = usb_get_phy_dev(dev, index);
->         if (!IS_ERR(phy)) {
-> @@ -267,6 +268,7 @@ struct usb_phy *devm_usb_get_phy_dev(struct device *dev, u8 index)
->         } else
->                 devres_free(ptr);
->
-> +err0:
->         return phy;
->  }
->  EXPORT_SYMBOL_GPL(devm_usb_get_phy_dev);
-
-> @@ -142,7 +142,7 @@ extern void usb_remove_phy(struct usb_phy *);
->  /* helpers for direct access thru low-level io interface */
->  static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
->  {
-> -       if (x->io_ops && x->io_ops->read)
-> +       if (!IS_ERR(x) && x->io_ops && x->io_ops->read)
-
-I liked the ones where we had IS_ERR_OR_NULL() here (and in all the
-ones below)... you sometimes have to handle PHYs in
-platform-independent code where you don't want to worry about if this
-platform actually has a PHY driver there or not. Any reason you
-changed that?
-
->                 return x->io_ops->read(x, reg);
->
->         return -EINVAL;
-> @@ -150,7 +150,7 @@ static inline int usb_phy_io_read(struct usb_phy *x, u32 reg)
->
->  static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
->  {
-> -       if (x->io_ops && x->io_ops->write)
-> +       if (!IS_ERR(x) && x->io_ops && x->io_ops->write)
->                 return x->io_ops->write(x, val, reg);
->
->         return -EINVAL;
-> @@ -159,7 +159,7 @@ static inline int usb_phy_io_write(struct usb_phy *x, u32 val, u32 reg)
->  static inline int
->  usb_phy_init(struct usb_phy *x)
->  {
-> -       if (x->init)
-> +       if (!IS_ERR(x) && x->init)
->                 return x->init(x);
->
->         return 0;
-> @@ -168,26 +168,27 @@ usb_phy_init(struct usb_phy *x)
->  static inline void
->  usb_phy_shutdown(struct usb_phy *x)
->  {
-> -       if (x->shutdown)
-> +       if (!IS_ERR(x) && x->shutdown)
->                 x->shutdown(x);
->  }
->
->  static inline int
->  usb_phy_vbus_on(struct usb_phy *x)
->  {
-> -       if (!x->set_vbus)
-> -               return 0;
-> +       if (!IS_ERR(x) && x->set_vbus)
-> +               return x->set_vbus(x, true);
->
-> -       return x->set_vbus(x, true);
-> +       return 0;
->  }
->
->  static inline int
->  usb_phy_vbus_off(struct usb_phy *x)
->  {
-> -       if (!x->set_vbus)
-> -               return 0;
-> +       if (!IS_ERR(x) && x->set_vbus)
-> +               return x->set_vbus(x, false);
-> +
-> +       return 0;
->
-> -       return x->set_vbus(x, false);
->  }
->
->  /* for usb host and peripheral controller drivers */
-> @@ -249,8 +250,9 @@ static inline int usb_bind_phy(const char *dev_name, u8 index,
->  static inline int
->  usb_phy_set_power(struct usb_phy *x, unsigned mA)
->  {
-> -       if (x && x->set_power)
-> +       if (!IS_ERR(x) && x->set_power)
->                 return x->set_power(x, mA);
-> +
->         return 0;
->  }
->
-> @@ -258,28 +260,28 @@ usb_phy_set_power(struct usb_phy *x, unsigned mA)
->  static inline int
->  usb_phy_set_suspend(struct usb_phy *x, int suspend)
->  {
-> -       if (x->set_suspend != NULL)
-> +       if (!IS_ERR(x) && x->set_suspend != NULL)
->                 return x->set_suspend(x, suspend);
-> -       else
-> -               return 0;
-> +
-> +       return 0;
->  }
->
->  static inline int
->  usb_phy_notify_connect(struct usb_phy *x, enum usb_device_speed speed)
->  {
-> -       if (x->notify_connect)
-> +       if (!IS_ERR(x) && x->notify_connect)
->                 return x->notify_connect(x, speed);
-> -       else
-> -               return 0;
-> +
-> +       return 0;
->  }
->
->  static inline int
->  usb_phy_notify_disconnect(struct usb_phy *x, enum usb_device_speed speed)
->  {
-> -       if (x->notify_disconnect)
-> +       if (!IS_ERR(x) && x->notify_disconnect)
->                 return x->notify_disconnect(x, speed);
-> -       else
-> -               return 0;
-> +
-> +       return 0;
->  }
-
-Otherwise looks good to me.
+Best wishes, Phil
