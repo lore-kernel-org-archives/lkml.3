@@ -1,216 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab3HGVMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:12:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47129 "EHLO
+	id S933544Ab3HGVN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:13:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47106 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933286Ab3HGVLk (ORCPT
+	with ESMTP id S933418Ab3HGVLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:11:40 -0400
+	Wed, 7 Aug 2013 17:11:32 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Jiri Olsa <jolsa@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
         Stephane Eranian <eranian@google.com>,
-        Thiago Peixoto <thiagolcpeixoto@gmail.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 00/47] perf/core improvements and fixes
-Date: Wed,  7 Aug 2013 18:10:27 -0300
-Message-Id: <1375909874-22073-1-git-send-email-acme@infradead.org>
+Subject: [PATCH 29/47] perf tools: Make it possible to read object code from kernel modules
+Date: Wed,  7 Aug 2013 18:10:56 -0300
+Message-Id: <1375909874-22073-30-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
+References: <1375909874-22073-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Hi Ingo,
+The new "object code reading" test shows that it is not possible to read
+object code from kernel modules.  That is because the mappings do not
+map to the dsos.  This patch fixes that.
 
-	Please consider pulling,
+This involves identifying and flagging relocatable (ELF type ET_REL)
+files (e.g. kernel modules) for symbol adjustment and updating
+map__rip_2objdump() accordingly.  The kmodule parameter of
+dso__load_sym() is taken into use and the module map altered to map to
+the dso.
 
-- Arnaldo
-
-The following changes since commit 93786a5f6aeb9c032c1c240246c5aabcf457b38f:
-
-  watchdog: Make it work under full dynticks (2013-07-30 22:29:15 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to cecb977e24da1465cdb0ff2d10d22e5891dc3e6c:
-
-  Revert "tools lib lk: Fix for cross build" (2013-08-07 17:35:41 -0300)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Do annotation using /proc/kcore and /proc/kallsyms, removing the
-  need for a vmlinux file kernel assembly annotation. This also improves
-  this use case because vmlinux has just the initial kernel image, not
-  what is actually in use after various code patchings by things like
-  alternatives, etc. From Adrian Hunter.
-
-. Various improvements and fixes to the "vmlinux matches kallsyms" 'perf test'
-  entry, related to the /proc/kcore annotation feature.
-
-. Add --initial-delay option to 'perf stat' to skip measuring for
-  the startup phase, from Andi Kleen.
-
-. perf kvm stat live mode, that combines aspects of 'perf kvm stat' record and
-  report, from David Ahern.
-
-. Add option to analyze specific VM in perf kvm stat report, from David Ahern.
-
-. Do not require /lib/modules/* on a guest, fix from Jason Wessel.
-
-. Group leader sampling, that allows just one event in a group to sample while
-  the other events have just its values read, from Jiri Olsa.
-
-. Add support for a new modifier "D", which requests that the event, or group
-  of events, be pinned to the PMU, from Michael Ellerman.
-
-. Fix segmentation fault on the gtk browser, from Namhyung Kim.
-
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1375875537-4509-7-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/dso.c        |  1 +
+ tools/perf/util/dso.h        |  1 +
+ tools/perf/util/map.c        | 14 +++++++++-----
+ tools/perf/util/symbol-elf.c | 25 ++++++++++++++++++++++++-
+ tools/perf/util/symbol.c     | 11 ++++++++---
+ 5 files changed, 43 insertions(+), 9 deletions(-)
 
-----------------------------------------------------------------
-Adrian Hunter (13):
-      perf symbols: avoid SyS kernel syscall aliases
-      perf tests: Add test for reading object code
-      perf symbols: Load kernel maps before using
-      perf tools: Make it possible to read object code from vmlinux
-      perf tests: Adjust the vmlinux symtab matches kallsyms test
-      perf tools: Make it possible to read object code from kernel modules
-      perf symbols: Add support for reading from /proc/kcore
-      perf tests: Adjust the vmlinux symtab matches kallsyms test again
-      perf tests: Add kcore to the object code reading test
-      perf annotate: Allow disassembly using /proc/kcore
-      perf annotate: Put dso name in symbol annotation title
-      perf annotate: Remove nop at end of annotation
-      perf annotate: Add call target name if it is missing
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 121583d..1955804 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -419,6 +419,7 @@ struct dso *dso__new(const char *name)
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
++		dso->rel = 0;
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+ 		dso->kernel = DSO_TYPE_USER;
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 02aadaf..735a837 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -85,6 +85,7 @@ struct dso {
+ 	u8		 lname_alloc:1;
+ 	u8		 sorted_by_name;
+ 	u8		 loaded;
++	u8		 rel;
+ 	u8		 build_id[BUILD_ID_SIZE];
+ 	const char	 *short_name;
+ 	char		 *long_name;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 5f662a3..4d599fe 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -248,14 +248,18 @@ size_t map__fprintf_dsoname(struct map *map, FILE *fp)
+ 
+ /*
+  * objdump wants/reports absolute IPs for ET_EXEC, and RIPs for ET_DYN.
+- * map->dso->adjust_symbols==1 for ET_EXEC-like cases.
++ * map->dso->adjust_symbols==1 for ET_EXEC-like cases except ET_REL which is
++ * relative to section start.
+  */
+ u64 map__rip_2objdump(struct map *map, u64 rip)
+ {
+-	u64 addr = map->dso->adjust_symbols ?
+-			map->unmap_ip(map, rip) :	/* RIP -> IP */
+-			rip;
+-	return addr;
++	if (!map->dso->adjust_symbols)
++		return rip;
++
++	if (map->dso->rel)
++		return rip - map->pgoff;
++
++	return map->unmap_ip(map, rip);
+ }
+ 
+ void map_groups__init(struct map_groups *mg)
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index ed6f443..3eaa7b4 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -599,11 +599,13 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
+ 	if (dso->kernel == DSO_TYPE_USER) {
+ 		GElf_Shdr shdr;
+ 		ss->adjust_symbols = (ehdr.e_type == ET_EXEC ||
++				ehdr.e_type == ET_REL ||
+ 				elf_section_by_name(elf, &ehdr, &shdr,
+ 						     ".gnu.prelink_undo",
+ 						     NULL) != NULL);
+ 	} else {
+-		ss->adjust_symbols = ehdr.e_type == ET_EXEC;
++		ss->adjust_symbols = ehdr.e_type == ET_EXEC ||
++				     ehdr.e_type == ET_REL;
+ 	}
+ 
+ 	ss->name   = strdup(name);
+@@ -676,6 +678,14 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 	bool remap_kernel = false, adjust_kernel_syms = false;
+ 
+ 	dso->symtab_type = syms_ss->type;
++	dso->rel = syms_ss->ehdr.e_type == ET_REL;
++
++	/*
++	 * Modules may already have symbols from kallsyms, but those symbols
++	 * have the wrong values for the dso maps, so remove them.
++	 */
++	if (kmodule && syms_ss->symtab)
++		symbols__delete(&dso->symbols[map->type]);
+ 
+ 	if (!syms_ss->symtab) {
+ 		syms_ss->symtab  = syms_ss->dynsym;
+@@ -828,11 +838,24 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 					map_groups__insert(kmap->kmaps, map);
+ 				}
+ 
++				/*
++				 * The initial module mapping is based on
++				 * /proc/modules mapped to offset zero.
++				 * Overwrite it to map to the module dso.
++				 */
++				if (remap_kernel && kmodule) {
++					remap_kernel = false;
++					map->pgoff = shdr.sh_offset;
++				}
++
+ 				curr_map = map;
+ 				curr_dso = dso;
+ 				goto new_symbol;
+ 			}
+ 
++			if (!kmap)
++				goto new_symbol;
++
+ 			snprintf(dso_name, sizeof(dso_name),
+ 				 "%s%s", dso->short_name, section_name);
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 04300dd..b9056a8 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -854,10 +854,15 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	if (!runtime_ss && syms_ss)
+ 		runtime_ss = syms_ss;
+ 
+-	if (syms_ss)
+-		ret = dso__load_sym(dso, map, syms_ss, runtime_ss, filter, 0);
+-	else
++	if (syms_ss) {
++		int km;
++
++		km = dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE ||
++		     dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE;
++		ret = dso__load_sym(dso, map, syms_ss, runtime_ss, filter, km);
++	} else {
+ 		ret = -1;
++	}
+ 
+ 	if (ret > 0) {
+ 		int nr_plt;
+-- 
+1.8.1.4
 
-Andi Kleen (4):
-      perf evlist: Remove obsolete dummy execve
-      perf evsel: Add support for enabling counters
-      perf stat: Add support for --initial-delay option
-      perf stat: Flush output after each line in interval mode
-
-Arnaldo Carvalho de Melo (3):
-      perf trace: Beautify 'connect' result
-      perf python: Remove duplicate TID bit from mask
-      perf annotate browser: Improve description of '?' hotkey
-
-David Ahern (10):
-      perf evsel: Actually show symbol offset in stack trace when requested
-      perf tools: Fix compile of util/tsc.c
-      perf top: move CONSOLE_CLEAR to header file
-      perf stats: Add max and min stats
-      perf session: Export a few functions for event processing
-      perf kvm: Split out tracepoints from record args
-      perf session: Export queue_event function
-      perf kvm: Add live mode
-      perf kvm: Add min and max stats to display
-      perf kvm stat report: Add option to analyze specific VM
-
-Ingo Molnar (1):
-      perf annotate browser: Fix typo
-
-Jason Wessel (1):
-      perf machine: Do not require /lib/modules/* on a guest
-
-Jiri Olsa (10):
-      perf: Add PERF_EVENT_IOC_ID ioctl to return event ID
-      perf: Do not get values from disabled counters in group format read
-      perf evlist: Use PERF_EVENT_IOC_ID perf ioctl to read event id
-      perf tools: Add support for parsing PERF_SAMPLE_READ sample type
-      perf evlist: Fix event ID retrieval for group format read case
-      perf evlist: Add perf_evlist__id2sid method to get event ID related data
-      perf evsel: Add PERF_SAMPLE_READ sample related processing
-      perf tools: Add 'S' event/group modifier to read sample value
-      perf tests: Add attr record group sampling test
-      perf tests: Add parse events tests for leader sampling
-
-Joonsoo Kim (1):
-      Revert "tools lib lk: Fix for cross build"
-
-Michael Ellerman (2):
-      perf tools: Add support for pinned modifier
-      perf tests: Add tests of new pinned modifier
-
-Namhyung Kim (2):
-      perf util: Add parse_nsec_time() function
-      perf ui/gtk: Fix segmentation fault on perf_hpp__for_each_format loop
-
- include/uapi/linux/perf_event.h                  |   1 +
- kernel/events/core.c                             |  12 +-
- tools/lib/lk/Makefile                            |  15 -
- tools/perf/Documentation/perf-list.txt           |   2 +
- tools/perf/Documentation/perf-stat.txt           |   5 +
- tools/perf/Makefile                              |   1 +
- tools/perf/arch/x86/util/tsc.c                   |   8 +-
- tools/perf/builtin-inject.c                      |   2 +-
- tools/perf/builtin-kvm.c                         | 732 +++++++++++++++++++++--
- tools/perf/builtin-script.c                      |   4 +-
- tools/perf/builtin-stat.c                        |  24 +-
- tools/perf/builtin-top.c                         |   5 +-
- tools/perf/builtin-trace.c                       |   1 +
- tools/perf/python/twatch.py                      |   2 +-
- tools/perf/tests/attr/test-record-group-sampling |  36 ++
- tools/perf/tests/builtin-test.c                  |   4 +
- tools/perf/tests/code-reading.c                  | 573 ++++++++++++++++++
- tools/perf/tests/parse-events.c                  | 168 ++++++
- tools/perf/tests/tests.h                         |   1 +
- tools/perf/tests/vmlinux-kallsyms.c              |  36 +-
- tools/perf/ui/browsers/annotate.c                |  20 +-
- tools/perf/ui/gtk/hists.c                        |   2 -
- tools/perf/util/annotate.c                       |  60 +-
- tools/perf/util/build-id.c                       |   2 +-
- tools/perf/util/dso.c                            |  10 +-
- tools/perf/util/dso.h                            |  17 +
- tools/perf/util/event.c                          |  18 +-
- tools/perf/util/event.h                          |  18 +
- tools/perf/util/evlist.c                         |  77 ++-
- tools/perf/util/evlist.h                         |   4 +
- tools/perf/util/evsel.c                          |  80 ++-
- tools/perf/util/evsel.h                          |   5 +
- tools/perf/util/machine.c                        |  25 +-
- tools/perf/util/map.c                            |  67 +--
- tools/perf/util/map.h                            |  13 +
- tools/perf/util/parse-events.c                   |  17 +-
- tools/perf/util/parse-events.l                   |   3 +-
- tools/perf/util/session.c                        | 123 +++-
- tools/perf/util/session.h                        |   5 +
- tools/perf/util/stat.c                           |   6 +
- tools/perf/util/stat.h                           |   9 +
- tools/perf/util/symbol-elf.c                     | 174 +++++-
- tools/perf/util/symbol-minimal.c                 |   7 +
- tools/perf/util/symbol.c                         | 273 ++++++++-
- tools/perf/util/symbol.h                         |   5 +
- tools/perf/util/thread.h                         |   2 +-
- tools/perf/util/top.h                            |   2 +
- tools/perf/util/unwind.c                         |   4 +-
- tools/perf/util/util.c                           |  33 +
- tools/perf/util/util.h                           |   2 +
- 50 files changed, 2523 insertions(+), 192 deletions(-)
- create mode 100644 tools/perf/tests/attr/test-record-group-sampling
- create mode 100644 tools/perf/tests/code-reading.c
