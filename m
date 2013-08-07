@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab3HGHSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 03:18:32 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56378 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757127Ab3HGHS3 (ORCPT
+	id S932157Ab3HGH2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 03:28:35 -0400
+Received: from fallback7.mail.ru ([94.100.176.135]:39488 "EHLO
+	fallback7.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757109Ab3HGH2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 03:18:29 -0400
-X-AuditID: 9c930179-b7c53ae000000457-91-5201f4c36e17
-Date: Wed, 7 Aug 2013 16:18:32 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH 3/4] mm, rmap: minimize lock hold when unlink_anon_vmas
-Message-ID: <20130807071832.GC32449@lge.com>
-References: <1375778620-31593-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375778620-31593-3-git-send-email-iamjoonsoo.kim@lge.com>
- <20130807061138.GK1845@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130807061138.GK1845@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 7 Aug 2013 03:28:33 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?V2VpIE5p?= <wni@nvidia.com>
+Cc: khali@linux-fr.org, swarren@wwwdotorg.org, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org, MLongnecker@nvidia.com, linux@roeck-us.net,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCAxLzJdIGh3bW9uOiAobG05MCkgQWRkIHBvd2VyIGNvbnRy?=
+ =?UTF-8?B?b2w=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [217.119.30.118]
+Date: Wed, 07 Aug 2013 11:27:22 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1375860442.896960598@f427.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+In-Reply-To: <1375858358-15070-2-git-send-email-wni@nvidia.com>
+References: <1375858358-15070-1-git-send-email-wni@nvidia.com>
+ <1375858358-15070-2-git-send-email-wni@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r777SijW024482
 
-On Wed, Aug 07, 2013 at 02:11:38AM -0400, Johannes Weiner wrote:
-> On Tue, Aug 06, 2013 at 05:43:39PM +0900, Joonsoo Kim wrote:
-> > Currently, we free the avc objects with holding a lock. To minimize
-> > lock hold time, we just move the avc objects to another list
-> > with holding a lock. Then, iterate them and free objects without holding
-> > a lock. This makes lock hold time minimized.
-> > 
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> The device lm90 can be controlled by the vdd rail.
+> Adding the power control support to power on/off the vdd rail.
+> And make sure that power is enabled before accessing the device.
 > 
-> I expect kfree() to be fast enough that we don't think we need to
-> bother batching this outside the lock.
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> ---
+>  drivers/hwmon/lm90.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++
+[...]
+> +	if (!data->lm90_reg) {
+> +		data->lm90_reg = regulator_get(&client->dev, "vdd");
+> +		if (IS_ERR_OR_NULL(data->lm90_reg)) {
+> +			if (PTR_ERR(data->lm90_reg) == -ENODEV)
+> +				dev_info(&client->dev,
+> +					 "No regulator found for vdd. Assuming vdd is always powered.");
+> +			else
+> +				dev_warn(&client->dev,
+> +					 "Error [%ld] in getting the regulator handle for vdd.\n",
+> +					 PTR_ERR(data->lm90_reg));
+> +			data->lm90_reg = NULL;
+> +			mutex_unlock(&data->update_lock);
+> +			return -ENODEV;
+> +		}
+> +	}
+> +	if (is_enable) {
+> +		ret = regulator_enable(data->lm90_reg);
+> +		msleep(POWER_ON_DELAY);
 
-Okay!
+Can this delay be handled directly from regulator?
 
-Thanks.
-
+[...]
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
