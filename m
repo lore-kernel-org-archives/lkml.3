@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab3HGFzm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 01:55:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59910 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab3HGFzk (ORCPT
+	id S932111Ab3HGF6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 01:58:19 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:15899 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756836Ab3HGF6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 01:55:40 -0400
-Date: Wed, 7 Aug 2013 14:57:00 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Coussno <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] pdev: Fix platform device resource linking
-Message-ID: <20130807055700.GD5304@kroah.com>
-References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com>
- <1375775624-12250-2-git-send-email-panto@antoniou-consulting.com>
- <20130806093601.GB27889@kroah.com>
- <311C42C3-6544-4058-ABE9-F9FAE72DD5CA@antoniou-consulting.com>
- <20130806101527.GB29283@kroah.com>
- <20130806101914.GH23053@n2100.arm.linux.org.uk>
+	Wed, 7 Aug 2013 01:58:18 -0400
+Message-ID: <5201E192.7060108@huawei.com>
+Date: Wed, 7 Aug 2013 13:56:34 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130806101914.GH23053@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chen Gang <gang.chen@asianux.com>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, <xi.wang@gmail.com>,
+        <nicolas.dichtel@6wind.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/sysctl_binary.c: improve the usage of return value
+ 'result'
+References: <5200A5E6.9020803@asianux.com> <8761vibihw.fsf@xmission.com> <5201D62B.6080905@asianux.com>
+In-Reply-To: <5201D62B.6080905@asianux.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 11:19:14AM +0100, Russell King - ARM Linux wrote:
-> On Tue, Aug 06, 2013 at 06:15:27PM +0800, Greg Kroah-Hartman wrote:
-> > On Tue, Aug 06, 2013 at 12:45:42PM +0300, Pantelis Antoniou wrote:
-> > > What would it take to move all this into driver core?
-> > 
-> > What specifically would you move into there?
+>> The right answer to the code is to config it out and then you don't have
+>> to worry about it one way or another.
+>>
 > 
-> A variable to hold the streaming dma_mask, so that its in struct device
-> rather than having to be separate.  Yes, we can keep the pointer in there
-> too, because that appears to convey meaning in the kernel today - whether
-> the device can do DMA or not.
+> Pardon?
 > 
-> A NULL dma_mask pointer already means it can't and dma_set_mask() always
-> fails.  A non-NULL dma_mask pointer means the driver can use
-> dma_set_mask() to set an appropriate mask.
+> Excuse me, my English is not quite well, I don't quite understand your
+> meaning, could you please repeat again in details or say more clearly ?
+> 
+> 
+>> The sysctl binary path has never been properly maintained and I don't
+>> intend to start.   But I will spend 5 minutes to say this patch seems to
+>> make the code worse not better.
+>>
+> 
+> I guess no one ever invited you to maintain this file (for just as you
+> said, this file will be removed), so don't worry about it.
+> 
+> Hmm... do you mean you spend 5 minutes to get a conclusion ? if so,
+> better not use word 'seems' which is not a suitable word appeared in
+> the results, proofs or conclusions.
+> 
 
-Ok, that sounds fine to me, for some reason I thought I said yes to this
-a long time ago, did no one ever send me a patch for it?
+To be honest...
 
-thanks,
+You are too bad in english to do kernel development. You don't seem to
+know how to communicate in english...
 
-greg k-h
+And people easily get frustrated or even pissed off when discussing with
+you. That's why tglx descided to put your emails into /dev/null...
+
+> At least, one conclusion is: this patch switches from old-style to
+> new-style, not for optimization.
+> 
+> But for sysctl_getname() and "checkpatch.pl" of this patch, better to
+> get more discussion.
+> 
+> Is it OK ?
+
