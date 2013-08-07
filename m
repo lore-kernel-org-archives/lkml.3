@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592Ab3HGKXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:23:25 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:56288 "EHLO mail.gnudd.com"
+	id S932604Ab3HGKXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:23:37 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:56310 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932458Ab3HGKXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:23:08 -0400
-Date: Wed, 7 Aug 2013 12:16:30 +0200
+	id S932458Ab3HGKXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:23:34 -0400
+Date: Wed, 7 Aug 2013 12:16:51 +0200
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: Davide Ciminaghi <ciminaghi@gnudd.com>,
         Giancarlo Asnaghi <giancarlo.asnaghi@st.com>, x86@kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
-Subject: [PATCH 01/26] x86: fix warning for sta2x11
-Message-ID: <ecfa93f64262f5428da9400740f86786ff04d346.1375867291.git.rubini@gnudd.com>
+        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
+Subject: [PATCH 03/26] mmc: Use the new <linux/sizes.h>
+Message-ID: <85d780625135282d3dda1ad136b74db9b658d927.1375867291.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,45 +27,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The .free fied of struct dma_map_ops features a prototype that is
-different from what lib/swiotlb.c offers. The new "attrs" argument in
-dma_ops.free is missing from the generic implementation.
-
-This removes the build warning by providing a function that just calls
-swiotlb_free_coherent() without passing "attrs".
-
-The real solution, in my opinion, would be adding "attrs" as argument
-to swiotlb_free_coherent() and remove this new empty function as well
-as the identical ones found in other 6 files within arch.
+For portability, use <linux/sizes.h>.
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+Link: http://lkml.kernel.org/r/1355146956-6009-6-git-send-email-ciminaghi@gnudd.com
 Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Acked-by: David Brown <davidb@codeaurora.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/pci/sta2x11-fixup.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/mmc/host/mmci.c     |    2 +-
+ drivers/mmc/host/msm_sdcc.c |    2 +-
+ drivers/mmc/host/mvsdio.c   |    2 +-
+ drivers/mmc/host/pxamci.c   |    3 +--
+ 4 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
-index 9d8a509..5c24ccb 100644
---- a/arch/x86/pci/sta2x11-fixup.c
-+++ b/arch/x86/pci/sta2x11-fixup.c
-@@ -180,10 +180,17 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
- 	return vaddr;
- }
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index c3785ed..edd987e 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -34,11 +34,11 @@
+ #include <linux/amba/mmci.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/types.h>
++#include <linux/sizes.h>
+ #include <linux/pinctrl/consumer.h>
  
-+static void sta2x11_swiotlb_free_coherent(struct device *dev, size_t size,
-+					  void *vaddr, dma_addr_t dma_addr,
-+					  struct dma_attrs *attrs)
-+{
-+	swiotlb_free_coherent(dev, size, vaddr, dma_addr);
-+}
-+
- /* We have our own dma_ops: the same as swiotlb but from alloc (above) */
- static struct dma_map_ops sta2x11_dma_ops = {
- 	.alloc = sta2x11_swiotlb_alloc_coherent,
--	.free = swiotlb_free_coherent,
-+	.free = sta2x11_swiotlb_free_coherent,
- 	.map_page = swiotlb_map_page,
- 	.unmap_page = swiotlb_unmap_page,
- 	.map_sg = swiotlb_map_sg_attrs,
+ #include <asm/div64.h>
+ #include <asm/io.h>
+-#include <asm/sizes.h>
+ 
+ #include "mmci.h"
+ 
+diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
+index b900de4..405f0d8 100644
+--- a/drivers/mmc/host/msm_sdcc.c
++++ b/drivers/mmc/host/msm_sdcc.c
+@@ -37,10 +37,10 @@
+ #include <linux/memory.h>
+ #include <linux/gfp.h>
+ #include <linux/gpio.h>
++#include <linux/sizes.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/div64.h>
+-#include <asm/sizes.h>
+ 
+ #include <linux/platform_data/mmc-msm_sdcc.h>
+ #include <mach/dma.h>
+diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+index 4ddd83f..4dec50f 100644
+--- a/drivers/mmc/host/mvsdio.c
++++ b/drivers/mmc/host/mvsdio.c
+@@ -23,11 +23,11 @@
+ #include <linux/gpio.h>
+ #include <linux/of_gpio.h>
+ #include <linux/of_irq.h>
++#include <linux/sizes.h>
+ #include <linux/mmc/host.h>
+ #include <linux/mmc/slot-gpio.h>
+ #include <linux/pinctrl/consumer.h>
+ 
+-#include <asm/sizes.h>
+ #include <asm/unaligned.h>
+ #include <linux/platform_data/mmc-mvsdio.h>
+ 
+diff --git a/drivers/mmc/host/pxamci.c b/drivers/mmc/host/pxamci.c
+index 1956a3d..3924f36 100644
+--- a/drivers/mmc/host/pxamci.c
++++ b/drivers/mmc/host/pxamci.c
+@@ -33,8 +33,7 @@
+ #include <linux/of.h>
+ #include <linux/of_gpio.h>
+ #include <linux/of_device.h>
+-
+-#include <asm/sizes.h>
++#include <linux/sizes.h>
+ 
+ #include <mach/hardware.h>
+ #include <mach/dma.h>
 -- 
 1.7.7.2
