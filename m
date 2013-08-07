@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab3HGQ6F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:58:05 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:64976 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756951Ab3HGQ6E (ORCPT
+	id S932485Ab3HGQ6c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:58:32 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:43927 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932490Ab3HGQ6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:58:04 -0400
-Message-ID: <1375894677.7303.55.camel@x61.thuisdomein>
-Subject: Re: Can we drop __must_check from driver_for_each_device()?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Date: Wed, 07 Aug 2013 18:57:57 +0200
-In-Reply-To: <20130807055154.GA5304@kroah.com>
-References: <1375306513.8170.33.camel@x61.thuisdomein>
-	 <20130802003157.GA11584@kroah.com>
-	 <1375821085.7303.33.camel@x61.thuisdomein>
-	 <20130807055154.GA5304@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Aug 2013 16:57:58.0504 (UTC) FILETIME=[44D99680:01CE938F]
-X-RcptDomain: vger.kernel.org
+	Wed, 7 Aug 2013 12:58:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130807162147.GA31460@redhat.com>
+References: <5200AD26.8070701@asianux.com> <5200AD67.1030109@asianux.com>
+ <52015ADB.30408@mit.edu> <20130807162147.GA31460@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 7 Aug 2013 09:58:09 -0700
+Message-ID: <CALCETrVELXkdccJZQRsm_9mtXrD-8nW_sRW_p-SWNVsXcqX2Cg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] kernel/sys.c: return the current gid when error occurs
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Chen Gang <gang.chen@asianux.com>, Kees Cook <keescook@chromium.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, holt@sgi.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 14:51 +0900, Greg Kroah-Hartman wrote:
-> On Tue, Aug 06, 2013 at 10:31:25PM +0200, Paul Bolle wrote:
-> > On Fri, 2013-08-02 at 08:31 +0800, Greg Kroah-Hartman wrote:
-> > > On Wed, Jul 31, 2013 at 11:35:13PM +0200, Paul Bolle wrote:
-> > > > 2) Please note that if the callback always returns zero,
-> > > > driver_for_each_device() can still return -EINVAL, but only if it was
-> > > > provided a NULL "drv" (a struct device_driver). It sure seems odd to do
-> > > > so. Can that actually happen?
-> > > 
-> > > Possibly.
-> > 
-> > So driver_for_each_device() really should be NULL "drv" safe.
-> 
-> Probably not, now that I think about it some more.  I don't see how that
-> could ever really happen, do you?
+On Wed, Aug 7, 2013 at 9:21 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 08/06, Andy Lutomirski wrote:
+>>
+>> I assume that what the man page means is that the return value is
+>> whatever fsgid was prior to the call.  On error, fsgid isn't changed, so
+>> the return value is still "current".
+>
+> Probably... Still
+>
+>         On success, the previous value of fsuid is returned.
+>         On error, the current value of fsuid is returned.
+>
+> looks confusing. sys_setfsuid() always returns the old value.
+>
+>> (FWIW, this behavior is awful and is probably the cause of a security
+>> bug or three, since success and failure are indistinguishable.
+>
+> At least this all looks strange.
+>
+> I dunno if we can change this old behaviour. I won't be surprized
+> if someone already uses setfsuid(-1) as getfsuid().
 
-No, I don't.
+I suspect that changing this without introducing security or other
+bugs is impossible.  If someone wanted to add new_setfsuid that
+returned an error when it failed, that would be a different story.
+(I'm not going to do that myself.)
 
-See there are two groups of user of driver_for_each_device():
-1) those that call it on the device_driver member of their
-platform_driver, pci_driver, or usb_driver. If that device_driver member
-turns out to be NULL we've got bigger problems, I guess;
-2) those that call driver_find() to get a pointer to a device_driver.
-These users can trivially check for NULL before calling
-driver_for_each_device().
+>
+> And perhaps the man page should be changed. Add Michael.
 
-[Side note: the comment above driver_find() reads in part:
-    This routine provides no locking to prevent the driver it returns
-    from being unregistered or unloaded while the caller is using it.
-    The caller is responsible for preventing this.
+Agreed.  The text is a bit odd.
 
-None of these callers of driver_find() seem to be troubled by this.
-Their use of the pointer to a device_driver could be racey.]
-
-Anyhow, I think the NULL "dev" check can be dropped.
-
-> > But wouldn't it therefor be better to make sure the callback functions
-> > do not return -EINVAL themselves, so -EINVAL will always only indicate
-> > the NULL "drv" case?
-> 
-> I doubt it's a real need at all.
-
-This is, of course, why I raised this issue. Because if we drop the NULL
-"drv" check, we have a function that will in most cases always return
-zero, because the callbacks it uses mostly return zero. So I think that
-if the NULL "drv" check could be dropped, we might as well drop
-__must_check here. The few cases were the callback might return non-zero
-are already handled correctly.
-
-> > So, since this warning is still there, I'm looking for another way to
-> > get rid of it.
-> 
-> Fix it properly would be good to do, don't you think?
-
-It's hard to disagree with that!
-
-Thanks,
+>
+> Oleg.
+>
 
 
-Paul Bolle
 
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
