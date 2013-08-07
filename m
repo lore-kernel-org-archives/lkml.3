@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab3HGCFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 22:05:03 -0400
-Received: from countercultured.net ([209.51.175.25]:45173 "HELO
-	countercultured.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756527Ab3HGCFA (ORCPT
+	id S1756872Ab3HGC0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 22:26:19 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:47696 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756799Ab3HGC0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 22:05:00 -0400
-Message-ID: <5201A9B7.1010605@davequigley.com>
-Date: Tue, 06 Aug 2013 21:58:15 -0400
-From: Dave Quigley <dpquigl@davequigley.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 6 Aug 2013 22:26:18 -0400
+X-Spam-Score: -100.8
+Message-ID: <5201B00A.4090609@asianux.com>
+Date: Wed, 07 Aug 2013 10:25:14 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Steve Dickson <SteveD@redhat.com>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+To: Kees Cook <keescook@chromium.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs/nfs/inode.c: adjust code alignment
-References: <1375714059-29567-1-git-send-email-Julia.Lawall@lip6.fr>  <1375714059-29567-2-git-send-email-Julia.Lawall@lip6.fr> <1375714793.7337.12.camel@leira.trondhjem.org> <52013A9D.4010905@RedHat.com>
-In-Reply-To: <52013A9D.4010905@RedHat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Subject: Re: [PATCH 0/2] kernel/sys.c: for setfsgid(), return the current
+ gid when error occurs
+References: <5200AD26.8070701@asianux.com> <CAGXu5j+J=y-+wnkXV_wLJnoCOupFGk8GwvHjJz2oWCiZt_oQGQ@mail.gmail.com>
+In-Reply-To: <CAGXu5j+J=y-+wnkXV_wLJnoCOupFGk8GwvHjJz2oWCiZt_oQGQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/6/2013 2:04 PM, Steve Dickson wrote:
-> Hello,
->
-> On 05/08/13 10:59, Myklebust, Trond wrote:
->> On Mon, 2013-08-05 at 16:47 +0200, Julia Lawall wrote:
->>> From: Julia Lawall <Julia.Lawall@lip6.fr>
->>>
->>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
->>>
->>> ---
->>>
->>> This patch adjusts the code so that the alignment matches the current
->>> semantics.  I have no idea if it is the intended semantics, though.  Should
->>> the call to nfs_setsecurity also be under the else?
->>>
+On 08/07/2013 02:36 AM, Kees Cook wrote:
+> On Tue, Aug 6, 2013 at 1:00 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>> They are 2 related patches for setfsgid().
 >>
->>>   fs/nfs/inode.c |    2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
->>> index af6e806..d8ad685 100644
->>> --- a/fs/nfs/inode.c
->>> +++ b/fs/nfs/inode.c
->>> @@ -463,7 +463,7 @@ nfs_fhget(struct super_block *sb, struct nfs_fh
->>> *fh, struct nfs_fattr *fattr, st
->>>                  unlock_new_inode(inode);
->>>          } else
->>>                  nfs_refresh_inode(inode, fattr);
->>> -               nfs_setsecurity(inode, fattr, label);
->>> +       nfs_setsecurity(inode, fattr, label);
-> This call to nfs_setsecurity() is not needed. The security only needs
-> to be set when the i-node is created...
->
-> steved.
->
->>>          dprintk("NFS: nfs_fhget(%s/%Ld fh_crc=0x%08x ct=%d)\n",
->>>                  inode->i_sb->s_id,
->>>                  (long long)NFS_FILEID(inode),
+>> Patch 1 for bug fix: return the current gid when error occurs.
+>> Patch 2 for cleaning code: remove useless variable 'old_fsgid'.
 >>
->> Hi Julia,
->>
->> Thanks for pointing this out! Given that the 'then' clause of the if
->> statement already calls nfs_setsecurity before unlocking the inode, I
->> suspect that the above _should_ really be part of the 'else' clause.
->>
->> That said, I can't see that calling nfs_setsecurity twice on the inode
->> can cause any unintended side-effects, so I suggest that we rather queue
->> the patch up for inclusion in 3.12.
->> Steve and Dave, any comments?
->>
->
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> --
+>>  kernel/sys.c |   15 +++++----------
+>>  1 files changed, 5 insertions(+), 10 deletions(-)
+> 
+> Making a change like this might have dramatic effects. So, a few
+> questions, to help better understand:
+> 
+> How long as the behavior been this way on Linux?
+> What is the origin of the documentation that states it differently?
+> Do existing userspace tools already depend on the current behavior?
+> What specific problem will be solved by changing this?
+> 
 
-I can't see why it would be needed either. I agree with Steve. We can 
-get rid of it.
+Firstly, your questions are necessary and valuable to get reply.
 
-Dave
+But sorry, I only find it by reading code, and not quite familiar with
+the details (e.g. how to use it, and its history ...).
+
+I only know the original implementation has a kernel API related issue
+(at least now, it is), and try to send a possible fixing patch to
+mailing list for getting more discussion and better fixing.
+
+So, welcome any members to help reply your valuable questions (and I
+should also try to answer them, but at least, I really needs time to
+familiar about it).
+
+
+> Thanks,
+> 
+> -Kees
+> 
+
+Thanks.
+-- 
+Chen Gang
