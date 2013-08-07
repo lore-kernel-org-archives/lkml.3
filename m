@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab3HGPYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 11:24:20 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:40964 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754534Ab3HGPYQ (ORCPT
+	id S1756229Ab3HGPYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 11:24:25 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:49553 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab3HGPYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 11:24:16 -0400
-Date: Wed, 7 Aug 2013 11:30:33 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
-Subject: Re: perf,arm -- oops in validate_event
-In-Reply-To: <alpine.DEB.2.10.1308071122470.8139@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1308071129000.8139@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1308051622270.28589@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1308051711080.31327@vincent-weaver-1.um.maine.edu> <20130806111932.GA25383@e106331-lin.cambridge.arm.com> <20130806115921.GA14798@mudshark.cambridge.arm.com>
- <20130806130815.GC25383@e106331-lin.cambridge.arm.com> <20130807130027.GA16474@mudshark.cambridge.arm.com> <alpine.DEB.2.10.1308071122470.8139@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 7 Aug 2013 11:24:19 -0400
+Message-ID: <52026635.1010602@ahsoftware.de>
+Date: Wed, 07 Aug 2013 17:22:29 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        =?UTF-8?B?QmVub8OudCBDb3Vzc25v?= <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] arm: omap: Proper cleanups for omap_device
+References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com> <1375775624-12250-6-git-send-email-panto@antoniou-consulting.com> <20130806093356.GA27889@kroah.com> <8C31ED90-E9EF-4264-858A-17CC2536B552@antoniou-consulting.com> <20130806101421.GA29283@kroah.com> <5200FC09.7080108@ahsoftware.de> <20130807055227.GB5304@kroah.com>
+In-Reply-To: <20130807055227.GB5304@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Aug 2013, Vince Weaver wrote:
+Am 07.08.2013 07:52, schrieb Greg Kroah-Hartman:
+> On Tue, Aug 06, 2013 at 03:37:13PM +0200, Alexander Holler wrote:
+>> Am 06.08.2013 12:14, schrieb Greg Kroah-Hartman:
+>>
+>>>> What exactly is a platform device anyway?
+>>>
+>>> Originally it was a "something that wasn't connected to a bus, but just
+>>> had memory-mapped i/o."  Like the PS2 keyboard controller.
+>>>
+>>> Embedded systems got ahold of this and went to town, and made everything
+>>> a platform device because they could, and no one was paying attention.
+>>>
+>>> Then OF came along and used it as well, and you know the rest...
+>>>
+>>> I think we need to get the ACPI and OF people, and me, in a room
+>>> together at the kernel summit and not let us out until we have this all
+>>> worked out.
+>>
+>> MFD uses platform devices too.
+>
+> Ugh, I've been avoiding looking at mfd for a long time now, and really
+> don't want to start now...
+>
 
-> On Wed, 7 Aug 2013, Will Deacon wrote:
-> 
-> > Ok, so the following quick hack below should solve the issue (can you confirm
-> > it please, since I don't have access to any hardware atm?)
-> > 
-> > We should revisit this for 3.12 though, because I'm not sure that our
-> > validation code even does the right thing when there are multiple PMUs
-> > involved.
-> > 
-> > --->8
-> > 
-> > diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> > index d9f5cd4..0500f10b 100644
-> > --- a/arch/arm/kernel/perf_event.c
-> > +++ b/arch/arm/kernel/perf_event.c
-> > @@ -253,6 +253,9 @@ validate_event(struct pmu_hw_events *hw_events,
-> >         struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-> >         struct pmu *leader_pmu = event->group_leader->pmu;
-> >  
-> > +       if (is_software_event(event))
-> > +               return 1;
-> > +
-> >         if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
-> >                 return 1;
-> 
-> this isn't enough.  You can also trigger the oops by using
-> tracepoint or breakpoint events as group leaders in addition to software
-> events.
+I've just mentioned it to suggest that platform devices seem to be used 
+all over the kernel as the generic (minimal) form of a device driver. At 
+least that is the impression I've got.
 
-I take that back, it turns out tracepoint and breakpoint both
-have task_ctx_nr set to perf_sw_context (althouth breakpoint has
-a comment saying this may change in the future).
+Regards,
 
-Let me compile and verify the fix.  It may take some time for the compile 
-to finish as it's not a very fast machine.
+Alexander Holler
 
-Vince
