@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933448Ab3HGVXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:23:25 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:54973 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933337Ab3HGVXV (ORCPT
+	id S933594Ab3HGVXt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:23:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46988 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933359Ab3HGVL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:23:21 -0400
-Date: Wed, 7 Aug 2013 22:23:02 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Andrew Fish <afish@apple.com>
-Cc: Matt Fleming <matt@console-pimps.org>, edk2-devel@lists.sourceforge.net,
-        Laszlo Ersek <lersek@redhat.com>, linux-efi@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130807212302.GA10905@srcf.ucam.org>
-References: <51FFD5B0.9080000@redhat.com>
- <20130805164731.GG31845@pd.tnic>
- <52001896.1030509@redhat.com>
- <20130805220808.GC14067@pd.tnic>
- <20130806141036.GD14891@pd.tnic>
- <520116D1.2010000@redhat.com>
- <20130807151935.GJ17920@pd.tnic>
- <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
- <20130807201908.GG2515@console-pimps.org>
- <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 7 Aug 2013 17:11:27 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 17/47] perf stats: Add max and min stats
+Date: Wed,  7 Aug 2013 18:10:44 -0300
+Message-Id: <1375909874-22073-18-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
+References: <1375909874-22073-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 02:10:28PM -0700, Andrew Fish wrote:
+From: David Ahern <dsahern@gmail.com>
 
-> Well the issue I see is I don't think OS X or Windows are doing this. 
-> So I'm guessing there is some unique thing beings done on the Linux 
-> side and we don't have good tests to catch bugs in the EFI 
-> implementations. If the Linux loader hides the bugs and we don't hit 
-> them with other operating systems they are never going to get fixed. 
-> It would be good if we could track down some of these issues and make 
-> a request for some tests that can help catch these issues. The tests 
-> would be part of UEFI.org, but since some of us play in both worlds we 
-> can forward the known issues to the UEFI test work group.
+Need an initialization function to set min to -1 to
+differentiate from an actual min of 0.
 
-Linux enables NX before calling SetVirtualAddressMap(). If other OSes 
-don't do that, you probably won't see the bug.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1375473947-64285-3-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/stat.c | 6 ++++++
+ tools/perf/util/stat.h | 9 +++++++++
+ 2 files changed, 15 insertions(+)
 
-> Is it possible to have a switch to turn off the not required behavior 
-> (hiding EFI implementation bugs) so that bad platforms could be 
-> detected? This would be a good thing to try on platforms at the 
-> upcoming UEFI Plugfest hosted by the Linux Foundation and the UEFI 
-> Forum, so the bad behavior can be detected and the vendors can fix the 
-> issue.
-
-It's behaviour that we already have to work around due to shipping 
-hardware exhibiting it, so while we could certainly develop a test, 
-Linux is always going to need to include the workaround code.
-
-That being said, some of what we do with the memory map in Linux right 
-now is probably unnecessary - we're modifying the memory map because 
-that's a convenient place to store the information, rather than because 
-the memory map actually needs to be modified. We could do a better job 
-of that.
-
+diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
+index 7c59c28..6506b3d 100644
+--- a/tools/perf/util/stat.c
++++ b/tools/perf/util/stat.c
+@@ -10,6 +10,12 @@ void update_stats(struct stats *stats, u64 val)
+ 	delta = val - stats->mean;
+ 	stats->mean += delta / stats->n;
+ 	stats->M2 += delta*(val - stats->mean);
++
++	if (val > stats->max)
++		stats->max = val;
++
++	if (val < stats->min)
++		stats->min = val;
+ }
+ 
+ double avg_stats(struct stats *stats)
+diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
+index 588367c..ae8ccd7 100644
+--- a/tools/perf/util/stat.h
++++ b/tools/perf/util/stat.h
+@@ -6,6 +6,7 @@
+ struct stats
+ {
+ 	double n, mean, M2;
++	u64 max, min;
+ };
+ 
+ void update_stats(struct stats *stats, u64 val);
+@@ -13,4 +14,12 @@ double avg_stats(struct stats *stats);
+ double stddev_stats(struct stats *stats);
+ double rel_stddev_stats(double stddev, double avg);
+ 
++static inline void init_stats(struct stats *stats)
++{
++	stats->n    = 0.0;
++	stats->mean = 0.0;
++	stats->M2   = 0.0;
++	stats->min  = (u64) -1;
++	stats->max  = 0;
++}
+ #endif
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.8.1.4
+
