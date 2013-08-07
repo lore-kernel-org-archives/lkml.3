@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab3HGNAy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:00:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39596 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932738Ab3HGNAx (ORCPT
+	id S932939Ab3HGNH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:07:28 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:8364 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908Ab3HGNH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:00:53 -0400
-Date: Wed, 7 Aug 2013 14:00:27 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
-Subject: Re: perf,arm -- oops in validate_event
-Message-ID: <20130807130027.GA16474@mudshark.cambridge.arm.com>
-References: <alpine.DEB.2.10.1308051622270.28589@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1308051711080.31327@vincent-weaver-1.um.maine.edu>
- <20130806111932.GA25383@e106331-lin.cambridge.arm.com>
- <20130806115921.GA14798@mudshark.cambridge.arm.com>
- <20130806130815.GC25383@e106331-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130806130815.GC25383@e106331-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Aug 2013 09:07:27 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/UwZ9ieg==
+X-RZG-CLASS-ID: mo00
+From: Olaf Hering <olaf@aepfle.de>
+To: kys@microsoft.com, gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Olaf Hering <olaf@aepfle.de>
+Subject: [PATCH] Tools: hv: correct payload size in netlink_send
+Date: Wed,  7 Aug 2013 15:07:21 +0200
+Message-Id: <1375880841-12959-1-git-send-email-olaf@aepfle.de>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 02:08:15PM +0100, Mark Rutland wrote:
-> On Tue, Aug 06, 2013 at 12:59:21PM +0100, Will Deacon wrote:
-> > But we already check `event->pmu != leader_pmu' in validate_event, so we
-> > shouldn't get anywhere nearer calling get_event_idx in the case you
-> > describe. It sounds more like we have an inconsistency with one of the
-> > events.
-> 
-> Note in my example that the software event was the group leader (so in
-> fact we'd *only* be checking those events which we can't actually
-> handle...).
-> 
-> I was also under the impression that in the case of mixed hardware and
-> software events, a hardware event must be the group leader. That
-> doesn't seem to be the case. If a hardware event is added to a software
-> group, the group is moved to hardware context but the original software
-> event stays as the group leader.
+netlink_send is supposed to send just the cn_msg+hv_kvp_msg via netlink.
+Currently it sets an incorrect iovec size, as reported by valgrind.
 
-Ok, so the following quick hack below should solve the issue (can you confirm
-it please, since I don't have access to any hardware atm?)
+In the case of registering with the kernel the allocated buffer is large
+enough to hold nlmsghdr+cn_msg+hv_kvp_msg, no overrun happens. In the
+case of responding to the kernel the cn_msg is located in the middle of
+recv_buffer, after the nlmsghdr. Currently the code in netlink_send adds
+also the size of nlmsghdr to the payload. But nlmsghdr is a separate
+iovec. This leads to an (harmless) out-of-bounds access when the kernel
+processes the iovec. Correct the iovec size of the cn_msg to be just
+cn_msg + its payload.
 
-We should revisit this for 3.12 though, because I'm not sure that our
-validation code even does the right thing when there are multiple PMUs
-involved.
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
+ tools/hv/hv_kvp_daemon.c | 2 +-
+ tools/hv/hv_vss_daemon.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Will
-
---->8
-
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index d9f5cd4..0500f10b 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -253,6 +253,9 @@ validate_event(struct pmu_hw_events *hw_events,
-        struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
-        struct pmu *leader_pmu = event->group_leader->pmu;
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index d3bcb84..1bd1ad1 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -1399,7 +1399,7 @@ netlink_send(int fd, struct cn_msg *msg)
+ 	char buffer[64];
+ 	struct iovec iov[2];
  
-+       if (is_software_event(event))
-+               return 1;
-+
-        if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
-                return 1;
+-	size = NLMSG_SPACE(sizeof(struct cn_msg) + msg->len);
++	size = sizeof(struct cn_msg) + msg->len;
+ 
+ 	nlh = (struct nlmsghdr *)buffer;
+ 	nlh->nlmsg_seq = 0;
+diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
+index 6b4f2fa..2f1f53f 100644
+--- a/tools/hv/hv_vss_daemon.c
++++ b/tools/hv/hv_vss_daemon.c
+@@ -111,7 +111,7 @@ static int netlink_send(int fd, struct cn_msg *msg)
+ 	char buffer[64];
+ 	struct iovec iov[2];
+ 
+-	size = NLMSG_SPACE(sizeof(struct cn_msg) + msg->len);
++	size = sizeof(struct cn_msg) + msg->len;
+ 
+ 	nlh = (struct nlmsghdr *)buffer;
+ 	nlh->nlmsg_seq = 0;
