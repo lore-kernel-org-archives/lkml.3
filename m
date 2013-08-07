@@ -1,39 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab3HGRiq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:38:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56696 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756757Ab3HGRio (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:38:44 -0400
-Message-ID: <52028620.6000608@wwwdotorg.org>
-Date: Wed, 07 Aug 2013 11:38:40 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S932363Ab3HGRkz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:40:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45682 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757229Ab3HGRky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 13:40:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,834,1367996400"; 
+   d="scan'208";a="279008283"
+Message-ID: <520286A4.1020101@intel.com>
+Date: Wed, 07 Aug 2013 10:40:52 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, swarren@nvidia.com, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mturquette@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/6] clk: Tegra: Add CPU0 clock driver
-References: <cover.1375886595.git.viresh.kumar@linaro.org> <8d192a13cb7e088943da40689d62bc6353bd8604.1375886595.git.viresh.kumar@linaro.org>
-In-Reply-To: <8d192a13cb7e088943da40689d62bc6353bd8604.1375886595.git.viresh.kumar@linaro.org>
-X-Enigmail-Version: 1.4.6
+To: Jan Kara <jack@suse.cz>
+CC: Andy Lutomirski <luto@amacapital.net>, linux-mm@kvack.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] Add madvise(..., MADV_WILLWRITE)
+References: <cover.1375729665.git.luto@amacapital.net> <20130807134058.GC12843@quack.suse.cz>
+In-Reply-To: <20130807134058.GC12843@quack.suse.cz>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 08:46 AM, Viresh Kumar wrote:
-> This patch adds CPU0's clk driver for Tegra. It will be used by the generic
-> cpufreq-cpu0 driver to get/set cpu clk.
-> 
-> Most of the platform specific bits are picked from tegra-cpufreq.c.
+On 08/07/2013 06:40 AM, Jan Kara wrote:
+>   One question before I look at the patches: Why don't you use fallocate()
+> in your application? The functionality you require seems to be pretty
+> similar to it - writing to an already allocated block is usually quick.
 
-Hmmm. I'm not sure if it makes sense to represent this as a clock
-object; isn't this more of a virtual construct that manages the rate of
-the clock, rather than an actual clock? The actual clock already exists
-as "cpu".
+One problem I've seen is that it still costs you a fault per-page to get
+the PTEs in to a state where you can write to the memory.  MADV_WILLNEED
+will do readahead to get the page cache filled, but it still leaves the
+pages unmapped.  Those faults get expensive when you're trying to do a
+couple hundred million of them all at once.
