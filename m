@@ -1,106 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933807Ab3HGWDF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 18:03:05 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:43604 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933206Ab3HGVy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:54:56 -0400
-From: Kent Overstreet <kmo@daterainc.com>
-To: axboe@kernel.dk
-Cc: neilb@suse.de, linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        dm-devel@redhat.com, linux-raid@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 01/22] block: Use rw_copy_check_uvector()
-Date: Wed,  7 Aug 2013 14:54:10 -0700
-Message-Id: <1375912471-5106-2-git-send-email-kmo@daterainc.com>
-X-Mailer: git-send-email 1.8.4.rc1
-In-Reply-To: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
-References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
+	id S933525Ab3HGWE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 18:04:56 -0400
+Received: from [204.155.152.216] ([204.155.152.216]:36049 "EHLO shutemov.name"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933147Ab3HGWEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 18:04:54 -0400
+Date: Thu, 8 Aug 2013 01:05:13 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH 1/3] memcg: limit the number of thresholds per-memcg
+Message-ID: <20130807220513.GA8068@shutemov.name>
+References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+ <20130807132210.GD27006@htj.dyndns.org>
+ <20130807134654.GJ8184@dhcp22.suse.cz>
+ <20130807135818.GG27006@htj.dyndns.org>
+ <20130807143727.GA13279@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130807143727.GA13279@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need for silly open coding - and struct sg_iovec has exactly the same
-layout as struct iovec...
+On Wed, Aug 07, 2013 at 04:37:27PM +0200, Michal Hocko wrote:
+> On Wed 07-08-13 09:58:18, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Wed, Aug 07, 2013 at 03:46:54PM +0200, Michal Hocko wrote:
+> > > OK, I have obviously misunderstood your concern mentioned in the other
+> > > email. Could you be more specific what is the DoS scenario which was
+> > > your concern, then?
+> > 
+> > So, let's say the file is write-accessible to !priv user which is
+> > under reasonable resource limits.  Normally this shouldn't affect priv
+> > system tools which are monitoring the same event as it shouldn't be
+> > able to deplete resources as long as the resource control mechanisms
+> > are configured and functioning properly; however, the memory usage
+> > event puts all event listeners into a single contiguous table which a
+> > !priv user can easily expand to a size where the table can no longer
+> > be enlarged and if a priv system tool or another user tries to
+> > register event afterwards, it'll fail.  IOW, it creates a shared
+> > resource which isn't properly provisioned and can be trivially filled
+> > up making it an easy DoS target.
+> 
+> OK, got your point. You are right and I haven't considered the size of
+> the table and the size restrictions of kmalloc. Thanks for pointing this
+> out!
+> ---
+> From cde8a3333296eddd288780e78803610127401b6a Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Wed, 7 Aug 2013 11:11:22 +0200
+> Subject: [PATCH] memcg: limit the number of thresholds per-memcg
+> 
+> There is no limit for the maximum number of threshold events registered
+> per memcg. It is even worse that all the events are stored in a
+> per-memcg table which is enlarged when a new event is registered. This
+> can lead to the following issue mentioned by Tejun:
+> "
+> So, let's say the file is write-accessible to !priv user which is
+> under reasonable resource limits.  Normally this shouldn't affect priv
+> system tools which are monitoring the same event as it shouldn't be
+> able to deplete resources as long as the resource control mechanisms
+> are configured and functioning properly; however, the memory usage
+> event puts all event listeners into a single contiguous table which a
+> !priv user can easily expand to a size where the table can no longer
+> be enlarged and if a priv system tool or another user tries to
+> register event afterwards, it'll fail.  IOW, it creates a shared
+> resource which isn't properly provisioned and can be trivially filled
+> up making it an easy DoS target.
+> "
+> 
+> Let's be more strict and cap the number of events that might be
+> registered. MAX_THRESHOLD_EVENTS value is more or less random. The
+> expectation is that it should be high enough to cover reasonable
+> usecases while not too high to allow excessive resources consumption.
+> 1024 events consume something like 16KB which shouldn't be a big deal
+> and it should be good enough.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
----
- block/scsi_ioctl.c | 39 ++++++++++-----------------------------
- 1 file changed, 10 insertions(+), 29 deletions(-)
+Is it correct that you fix one local DoS by introducing a new one?
+With the page the !priv user can block root from registering a threshold.
+Is it really the way we want to fix it?
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index a5ffcc9..625e3e4 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -286,7 +286,8 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
- 		struct sg_io_hdr *hdr, fmode_t mode)
- {
- 	unsigned long start_time;
--	int writing = 0, ret = 0;
-+	ssize_t ret = 0;
-+	int writing = 0;
- 	struct request *rq;
- 	char sense[SCSI_SENSE_BUFFERSIZE];
- 	struct bio *bio;
-@@ -321,37 +322,16 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
- 	}
- 
- 	if (hdr->iovec_count) {
--		const int size = sizeof(struct sg_iovec) * hdr->iovec_count;
- 		size_t iov_data_len;
--		struct sg_iovec *sg_iov;
- 		struct iovec *iov;
--		int i;
- 
--		sg_iov = kmalloc(size, GFP_KERNEL);
--		if (!sg_iov) {
--			ret = -ENOMEM;
-+		ret = rw_copy_check_uvector(-1, hdr->dxferp, hdr->iovec_count,
-+					    0, NULL, &iov);
-+		if (ret < 0)
- 			goto out;
--		}
--
--		if (copy_from_user(sg_iov, hdr->dxferp, size)) {
--			kfree(sg_iov);
--			ret = -EFAULT;
--			goto out;
--		}
- 
--		/*
--		 * Sum up the vecs, making sure they don't overflow
--		 */
--		iov = (struct iovec *) sg_iov;
--		iov_data_len = 0;
--		for (i = 0; i < hdr->iovec_count; i++) {
--			if (iov_data_len + iov[i].iov_len < iov_data_len) {
--				kfree(sg_iov);
--				ret = -EINVAL;
--				goto out;
--			}
--			iov_data_len += iov[i].iov_len;
--		}
-+		iov_data_len = ret;
-+		ret = 0;
- 
- 		/* SG_IO howto says that the shorter of the two wins */
- 		if (hdr->dxfer_len < iov_data_len) {
-@@ -361,9 +341,10 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
- 			iov_data_len = hdr->dxfer_len;
- 		}
- 
--		ret = blk_rq_map_user_iov(q, rq, NULL, sg_iov, hdr->iovec_count,
-+		ret = blk_rq_map_user_iov(q, rq, NULL, (struct sg_iovec *) iov,
-+					  hdr->iovec_count,
- 					  iov_data_len, GFP_KERNEL);
--		kfree(sg_iov);
-+		kfree(iov);
- 	} else if (hdr->dxfer_len)
- 		ret = blk_rq_map_user(q, rq, NULL, hdr->dxferp, hdr->dxfer_len,
- 				      GFP_KERNEL);
 -- 
-1.8.4.rc1
-
+ Kirill A. Shutemov
