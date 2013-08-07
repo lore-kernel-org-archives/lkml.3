@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab3HGAGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 20:06:09 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58563 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756627Ab3HGAFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 20:05:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCH] MAINTAINERS: drivers/power: add entry for SmartReflex AVS drivers
-Date: Wed, 07 Aug 2013 02:16:13 +0200
-Message-ID: <5392876.GdkYchpyB0@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <87haf2fk36.fsf@linaro.org>
-References: <1375720159-13684-1-git-send-email-khilman@linaro.org> <2468244.h36esXYJ6h@vostro.rjw.lan> <87haf2fk36.fsf@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756342Ab3HGAIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 20:08:13 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:34644 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268Ab3HGAIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 20:08:11 -0400
+Message-ID: <1375834084.2134.44.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 0/2] hugepage: optimize page fault path locking
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Eric B Munson <emunson@mgebm.net>, Anton Blanchard <anton@samba.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 06 Aug 2013 17:08:04 -0700
+In-Reply-To: <20130729061820.GA4784@lge.com>
+References: <1374848845-1429-1-git-send-email-davidlohr.bueso@hp.com>
+	 <20130729061820.GA4784@lge.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 06, 2013 04:58:05 PM Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Mon, 2013-07-29 at 15:18 +0900, Joonsoo Kim wrote:
+> On Fri, Jul 26, 2013 at 07:27:23AM -0700, Davidlohr Bueso wrote:
+> > This patchset attempts to reduce the amount of contention we impose
+> > on the hugetlb_instantiation_mutex by replacing the global mutex with
+> > a table of mutexes, selected based on a hash. The original discussion can 
+> > be found here: http://lkml.org/lkml/2013/7/12/428
 > 
-> > On Monday, August 05, 2013 09:29:19 AM Kevin Hilman wrote:
-> >> The SmartReflex AVS driver evolved out of the OMAP kernel and now
-> >> lives under drivers/power/avs.
-> >> 
-> >> I've historically been maintainer of this but Nishanth Menon is doing
-> >> most of the heavy lifting now.  Add us both as co-maintainers.
-> >> 
-> >> Cc: Anton Vorontsov <anton@enomsg.org>
-> >> Cc: David Woodhouse <dwmw2@infradead.org>
-> >> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> >> Cc: Nishanth Menon <nm@ti.com>
-> >> Signed-off-by: Kevin Hilman <khilman@linaro.org>
-> >
-> > Who's supposed to take this patch?
+> Hello, Davidlohr.
 > 
-> I assumed Anton, but I wasn't sure since I've been merging
-> drivers/power/avs patches through you.
+> I recently sent a patchset which remove the hugetlb_instantiation_mutex
+> entirely ('mm, hugetlb: remove a hugetlb_instantiation_mutex').
+> This patchset can be found here: https://lkml.org/lkml/2013/7/29/54
+> 
+> If possible, could you review it and test it whether your problem is
+> disappered with it or not?
 
-I'm fine with Anton. :-)
+This patchset applies on top of https://lkml.org/lkml/2013/7/22/96
+"[PATCH v2 00/10] mm, hugetlb: clean-up and possible bug fix", right?
+
+AFAIK those changes are the ones Andrew picked up a few weeks ago and
+are now in linux-next, right? I was able to apply those just fine, but
+couldn't apply your 'remove a hugetlb_instantiation_mutex series' (IIRC
+pach 1/18 failed). I guess you'll send out a v2 anyway so I'll wait
+until then.
+
+In any case I'm not seeing an actual performance issue with the
+hugetlb_instantiation_mutex, all I noticed was that under large DB
+workloads that make use of hugepages, such as Oracle, this lock becomes
+quite hot during the first few minutes of startup, which makes sense in
+the fault path it is contended. So I'll try out your patches, but, in
+this particular case, I just cannot compare with the lock vs without the
+lock situations.
 
 Thanks,
-Rafael
+Davidlohr
 
