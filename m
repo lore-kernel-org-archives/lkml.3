@@ -1,71 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502Ab3HGKVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:21:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:2456 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932454Ab3HGKVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:21:03 -0400
-X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
-   d="scan'208";a="8143909"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Dipankar Sarma <dipankar@in.ibm.com>
-Subject: [PATCH 4/8] rcu: delay task rcu state cleanup in exit_rcu()
-Date: Wed, 7 Aug 2013 18:25:00 +0800
-Message-Id: <1375871104-10688-5-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:19:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:19:36,
-	Serialize complete at 2013/08/07 18:19:36
+	id S932511Ab3HGKV5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:21:57 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:56224 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932454Ab3HGKVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:21:54 -0400
+Date: Wed, 7 Aug 2013 12:21:31 +0200
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: linux-kernel@vger.kernel.org
+Cc: rubini@gnudd.com, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
+Subject: [PATCH 23/26] AMBA: pci-amba bridge: export function creating
+ pci-amba device names
+Message-ID: <25c849c312f08d161b91a1c7b7ea56e1c7207789.1375867291.git.rubini@gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+References: <cover.1375867291.git.rubini@gnudd.com>
+In-Reply-To: <cover.1375867291.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-exit_rcu() tries to clean up the task rcu state when the task is exiting.
-It did it by calls __rcu_read_unlock().
+pci_amba_get_dev_name() will be used by the sta2x11 common clock framework
+to register clkdevs with the same name as the corresponding amba or
+platform device.
 
-Actually, calling rcu_read_unlock_special() is enough. This patch defer it
-to the rcu_preempt_note_context_switch() of the next schedule().
-
-This patch prepares for the next patch which defers rcu_read_unlock_special()
-if irq is disabled when __rcu_read_unlock() is called.
-So __rcu_read_unlock() can't work here(it is irq-disabled here)
-if the next patch applied.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 ---
- kernel/rcutree_plugin.h |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ drivers/amba/pci-amba.c  |   14 ++++++++++++++
+ include/linux/pci-amba.h |   42 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 56 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/pci-amba.h
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 6b23b6f..fc8b36f 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -942,10 +942,13 @@ void exit_rcu(void)
+diff --git a/drivers/amba/pci-amba.c b/drivers/amba/pci-amba.c
+index f272d38..1beeefd 100644
+--- a/drivers/amba/pci-amba.c
++++ b/drivers/amba/pci-amba.c
+@@ -9,6 +9,7 @@
+ #include <linux/amba/bus.h>
+ #include <linux/pci.h>
+ #include <linux/pci_ids.h>
++#include <linux/pci-amba.h>
+ #include <linux/slab.h>
+ #include <linux/irq.h>
+ #include <linux/sizes.h>
+@@ -25,6 +26,8 @@
+ */
+ #define IMAP_ROW_LEN (1 + 1 + 1 + 1 + 1)
  
- 	if (likely(list_empty(&current->rcu_node_entry)))
- 		return;
--	t->rcu_read_lock_nesting = 1;
--	barrier();
--	t->rcu_read_unlock_special = RCU_READ_UNLOCK_BLOCKED;
--	__rcu_read_unlock();
-+	WARN_ON_ONCE(!(t->rcu_read_unlock_special | RCU_READ_UNLOCK_BLOCKED));
-+	/*
-+	 * Task RCU state(rcu_node_entry) of this task will be cleanup by
-+	 * the next rcu_preempt_note_context_switch() of the next schedule()
-+	 * in the do_exit().
-+	 */
-+	t->rcu_read_lock_nesting = INT_MIN;
++static const struct pci_device_id pci_amba_table[];
++
+ static inline int resource_fits(struct resource *r1, struct resource *r2)
+ {
+ 	return (r1->start >= r2->start) && (r1->end <= r2->end);
+@@ -63,6 +66,17 @@ static int get_dev_name(char **name, struct pci_dev *pdev, int index)
+ 	return 0;
  }
  
- #else /* #ifdef CONFIG_TREE_PREEMPT_RCU */
++int pci_amba_get_dev_name(char **name, struct pci_dev *pdev, int index)
++{
++	/* Check whether the device is a pci-amba one */
++	if (!pci_match_id(pci_amba_table, pdev))
++		return -ENODEV;
++	if (!name)
++		return -EINVAL;
++	return get_dev_name(name, pdev, index);
++}
++EXPORT_SYMBOL(pci_amba_get_dev_name);
++
+ static int fixup_irq(struct device_node *node,
+ 		     struct device_node *amba_bus,
+ 		     struct pci_dev *pdev)
+diff --git a/include/linux/pci-amba.h b/include/linux/pci-amba.h
+new file mode 100644
+index 0000000..913624e
+--- /dev/null
++++ b/include/linux/pci-amba.h
+@@ -0,0 +1,42 @@
++/*
++ * PCI-AMBA Helpers
++ *
++ * Copyright 2012 ST Microelectronics (Alessandro Rubini, Davide Ciminaghi)
++ *
++ * All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or (at
++ * your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for more
++ * details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++#ifndef _PCI_AMBA_H
++#define _PCI_AMBA_H
++
++#include <linux/of.h>
++
++/*
++ * pci_amba_get_dev_name: allocate and fill in a buffer with a suitable
++ * name for a pci-amba device.
++ *
++ * @name: pointer to a location where the address of the allocated buffer
++ * shall be stored.
++ * @pdev: pointer to the corresponding pci device.
++ * @index: index of device (in case of more than one amba/platform device
++ * per pci device).
++ *
++ */
++extern int pci_amba_get_dev_name(char **name, struct pci_dev *pdev, int index);
++
++#endif /* _PCI_AMBA_H */
 -- 
-1.7.4.4
-
+1.7.7.2
