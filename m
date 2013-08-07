@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933600Ab3HGVRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:17:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47068 "EHLO
+	id S933586Ab3HGVRr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:17:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47073 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933406Ab3HGVL3 (ORCPT
+	with ESMTP id S933407Ab3HGVLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:11:29 -0400
+	Wed, 7 Aug 2013 17:11:30 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Michael Ellerman <michael@ellerman.id.au>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 44/47] perf tools: Add support for pinned modifier
-Date: Wed,  7 Aug 2013 18:11:11 -0300
-Message-Id: <1375909874-22073-45-git-send-email-acme@infradead.org>
+Subject: [PATCH 24/47] perf symbols: avoid SyS kernel syscall aliases
+Date: Wed,  7 Aug 2013 18:10:51 -0300
+Message-Id: <1375909874-22073-25-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
 References: <1375909874-22073-1-git-send-email-acme@infradead.org>
@@ -24,139 +29,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-This commit adds support for a new modifier "D", which requests that the
-event, or group of events, be pinned to the PMU.
+When removing duplicate symbols, prefer to remove syscall aliases
+starting with SyS or compat_SyS.
 
-The "p" modifier is already taken for precise, and "P" may be used in
-future to mean "fully precise".
+A side-effect of that is that it results in slightly improved results
+for the "vmlinux symtab matches kallsyms" test.
 
-So we use "D", which stands for pinneD - and looks like a padlock, or if
-you're using the ":D" syntax perf smiles at you.
-
-This is an oft-requested feature from our HW folks, who want to be able
-to run a large number of events, but also want 100% accurate results for
-instructions per cycle.
-
-Comparison of results with and without pinning:
-
-$ perf stat -e '{cycles,instructions}:D' -e cycles,instructions,...
-
-  79,590,480,683 cycles         #  0.000 GHz
- 166,123,716,524 instructions   #  2.09  insns per cycle
-                                #  0.11  stalled cycles per insn
-
-  79,352,134,463 cycles         #  0.000 GHz                     [11.11%]
- 165,178,301,818 instructions   #  2.08  insns per cycle
-                                #  0.11  stalled cycles per insn [11.13%]
-
-As you can see although perf does a very good job of scaling the values
-in the non-pinned case, there is some small discrepancy.
-
-The patch is fairly straight forward, the one detail is that we need to
-make sure we only request pinning for the group leader when we have a
-group.
-
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1375795686-4226-1-git-send-email-michael@ellerman.id.au
-[ Use perf_evsel__is_group_leader instead of open coded equivalent, as
-  suggested by Jiri Olsa ]
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1375875537-4509-6-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-list.txt |  1 +
- tools/perf/util/parse-events.c         | 11 ++++++++++-
- tools/perf/util/parse-events.l         |  3 ++-
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/util/symbol.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index eb03f06..6fce6a6 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -30,6 +30,7 @@ counted. The following modifiers exist:
-  H - host counting (not in KVM guests)
-  p - precise level
-  S - read sample value (PERF_SAMPLE_READ)
-+ D - pin the event to the PMU
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 02718e7..ea62ecd 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -87,6 +87,7 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
+ {
+ 	s64 a;
+ 	s64 b;
++	size_t na, nb;
  
- The 'p' modifier can be used for specifying how precise the instruction
- address should be. The 'p' modifier can be specified multiple times:
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index dba877d..9cba923 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -688,6 +688,7 @@ struct event_modifier {
- 	int precise;
- 	int exclude_GH;
- 	int sample_read;
-+	int pinned;
- };
+ 	/* Prefer a symbol with non zero length */
+ 	a = syma->end - syma->start;
+@@ -120,11 +121,21 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
+ 	else if (a > b)
+ 		return SYMBOL_B;
  
- static int get_event_modifier(struct event_modifier *mod, char *str,
-@@ -700,6 +701,7 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 	int eG = evsel ? evsel->attr.exclude_guest : 0;
- 	int precise = evsel ? evsel->attr.precise_ip : 0;
- 	int sample_read = 0;
-+	int pinned = evsel ? evsel->attr.pinned : 0;
- 
- 	int exclude = eu | ek | eh;
- 	int exclude_GH = evsel ? evsel->exclude_GH : 0;
-@@ -734,6 +736,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 				eG = 1;
- 		} else if (*str == 'S') {
- 			sample_read = 1;
-+		} else if (*str == 'D') {
-+			pinned = 1;
- 		} else
- 			break;
- 
-@@ -761,6 +765,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 	mod->precise = precise;
- 	mod->exclude_GH = exclude_GH;
- 	mod->sample_read = sample_read;
-+	mod->pinned = pinned;
+-	/* If all else fails, choose the symbol with the longest name */
+-	if (strlen(syma->name) >= strlen(symb->name))
++	/* Choose the symbol with the longest name */
++	na = strlen(syma->name);
++	nb = strlen(symb->name);
++	if (na > nb)
+ 		return SYMBOL_A;
+-	else
++	else if (na < nb)
++		return SYMBOL_B;
 +
- 	return 0;
++	/* Avoid "SyS" kernel syscall aliases */
++	if (na >= 3 && !strncmp(syma->name, "SyS", 3))
+ 		return SYMBOL_B;
++	if (na >= 10 && !strncmp(syma->name, "compat_SyS", 10))
++		return SYMBOL_B;
++
++	return SYMBOL_A;
  }
  
-@@ -773,7 +779,7 @@ static int check_modifier(char *str)
- 	char *p = str;
- 
- 	/* The sizeof includes 0 byte as well. */
--	if (strlen(str) > (sizeof("ukhGHpppS") - 1))
-+	if (strlen(str) > (sizeof("ukhGHpppSD") - 1))
- 		return -1;
- 
- 	while (*p) {
-@@ -812,6 +818,9 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add)
- 		evsel->attr.exclude_guest  = mod.eG;
- 		evsel->exclude_GH          = mod.exclude_GH;
- 		evsel->sample_read         = mod.sample_read;
-+
-+		if (perf_evsel__is_group_leader(evsel))
-+			evsel->attr.pinned = mod.pinned;
- 	}
- 
- 	return 0;
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index b36115f..0790452 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -82,7 +82,8 @@ num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
- name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
--modifier_event	[ukhpGHS]+
-+/* If you add a modifier you need to update check_modifier() */
-+modifier_event	[ukhpGHSD]+
- modifier_bp	[rwx]{1,3}
- 
- %%
+ void symbols__fixup_duplicate(struct rb_root *symbols)
 -- 
 1.8.1.4
 
