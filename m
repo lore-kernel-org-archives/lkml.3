@@ -1,158 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab3HGHuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 03:50:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58360 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932073Ab3HGHuu (ORCPT
+	id S932358Ab3HGHv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 03:51:26 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52491 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab3HGHvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 03:50:50 -0400
-Message-ID: <5201FC55.5080304@free-electrons.com>
-Date: Wed, 07 Aug 2013 09:50:45 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 7 Aug 2013 03:51:24 -0400
+X-AuditID: 9c930179-b7c53ae000000457-85-5201fc7b8953
+From: Namhyung Kim <namhyung@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V9 04/14] perf tools: change machine__findnew_thread() to set thread pid
+References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
+	<1375719994-26482-5-git-send-email-adrian.hunter@intel.com>
+Date: Wed, 07 Aug 2013 16:51:22 +0900
+In-Reply-To: <1375719994-26482-5-git-send-email-adrian.hunter@intel.com>
+	(Adrian Hunter's message of "Mon, 5 Aug 2013 19:26:24 +0300")
+Message-ID: <87y58ex7k5.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>
-CC: Hector Palacios <hector.palacios@digi.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "marex@denx.de" <marex@denx.de>
-Subject: Re: [PATCH v3 4/5] iio: mxs-lradc: add scale_available file to channels
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-5-git-send-email-hector.palacios@digi.com> <51EE4300.7070802@metafoo.de> <51EE8445.6070603@digi.com> <51F276D8.9090906@free-electrons.com> <d838f30e-30ca-49ca-a9f3-ebf4e523c7eb@email.android.com>
-In-Reply-To: <d838f30e-30ca-49ca-a9f3-ebf4e523c7eb@email.android.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan, Lars
-
-I would really like to see that included in 3.12. While I agree there is
-room for improvement, I don't think there are any comments that need an
-immediate action before inclusion apart from the decision that has to be
-taken for the device tree.
-
-Can you confirm whether you'll take this series as is ?
-
-Regards,
-
-On 26/07/2013 18:13, Jonathan Cameron wrote:
+On Mon,  5 Aug 2013 19:26:24 +0300, Adrian Hunter wrote:
+> Add a new parameter for 'pid' to machine__findnew_thread().
+> Change callers to pass 'pid' when it is known.
 >
-> Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
->> On 23/07/2013 15:25, Hector Palacios wrote:
->>> Dear Lars,
->>>
->>> On 07/23/2013 10:46 AM, Lars-Peter Clausen wrote:
->>>> On 07/22/2013 04:04 PM, Hector Palacios wrote:
->>>> [...]
->>>>> +static ssize_t mxs_lradc_show_scale_available_ch(struct device
->> *dev,
->>>>> +        struct device_attribute *attr,
->>>>> +        char *buf,
->>>>> +        int ch)
->>>>> +{
->>>>> +    struct iio_dev *iio = dev_to_iio_dev(dev);
->>>>> +    struct mxs_lradc *lradc = iio_priv(iio);
->>>>> +    int i, len = 0;
->>>>> +
->>>>> +    for (i = 0; i < ARRAY_SIZE(lradc->scale_avail[ch]); i++)
->>>>> +        len += sprintf(buf + len, "%d.%09u ",
->>>>> +                   lradc->scale_avail[ch][i].integer,
->>>>> +                   lradc->scale_avail[ch][i].nano);
->>>>> +
->>>>> +    len += sprintf(buf + len, "\n");
->>>>> +
->>>>> +    return len;
->>>>> +}
->>>>> +
->>>>> +static ssize_t mxs_lradc_show_scale_available(struct device *dev,
->>>>> +        struct device_attribute *attr,
->>>>> +        char *buf)
->>>>> +{
->>>>> +    struct iio_dev_attr *iio_attr = to_iio_dev_attr(attr);
->>>>> +
->>>>> +    return mxs_lradc_show_scale_available_ch(dev, attr, buf,
->>>>> +                         iio_attr->address);
->>>>> +}
->>>>> +
->>>>> +#define SHOW_SCALE_AVAILABLE_ATTR(ch)                    \
->>>>> +static IIO_DEVICE_ATTR(in_voltage##ch##_scale_available, S_IRUGO, 
->>  \
->>>>> +               mxs_lradc_show_scale_available, NULL, ch)
->>>>> +
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(0);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(1);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(2);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(3);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(4);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(5);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(6);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(7);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(8);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(9);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(10);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(11);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(12);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(13);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(14);
->>>>> +SHOW_SCALE_AVAILABLE_ATTR(15);
->>>>> +
->>>>> +static struct attribute *mxs_lradc_attributes[] = {
->>>>> +    &iio_dev_attr_in_voltage0_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage1_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage2_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage3_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage4_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage5_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage6_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage7_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage8_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage9_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage10_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage11_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage12_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage13_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage14_scale_available.dev_attr.attr,
->>>>> +    &iio_dev_attr_in_voltage15_scale_available.dev_attr.attr,
->>>>> +    NULL
->>>>> +};
->>>> This should really be using the iio_chan_spec_ext_info
->>>> infrastructure. Bonus
->>>> points for factoring out the common code used to calculate and
->>>> display the
->>>> scales.
->>> I perfectly understand. Sadly, I don't currently have the time and
->>> expertise to try to work this out the proper way. It already took
->> much
->>> longer than expected to have this driver toggle a divider flag.
->>>
->>> I'd appreciate if anyone wishes to complete this job.
->>> @Alexander, please feel free to submit your other temp patch without
->>> waiting for this one.
->>>
->> Maybe, we can get the patch set as is and do further clean up later.
->> Anyway, that driver is still in staging, right ?
->>
->> As said, I'm willing to propose something for the scale calculation.
-> My thoughts exactly. Long term plans include generic handling of available attributes for the whole of IIO.
->
-> It will take me a little while to catch up my backlog though!
->
-> Jonathan
->
->
->
+[SNIP]
+
+> @@ -198,7 +198,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
+>  
+>  	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+>  
+> -	thread = machine__findnew_thread(machine, event->ip.pid);
+> +	thread = machine__findnew_thread(machine, event->ip.pid, event->ip.pid);
+
+Maybe I'm missing something.  Why not use event->ip.tid here?
 
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+>  	if (thread == NULL) {
+>  		pr_err("problem processing %d event, skipping it.\n",
+>  		       event->header.type);
+> diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+> index b49f5c5..c324778 100644
+> --- a/tools/perf/builtin-kmem.c
+> +++ b/tools/perf/builtin-kmem.c
+> @@ -305,7 +305,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+>  				struct perf_evsel *evsel,
+>  				struct machine *machine)
+>  {
+> -	struct thread *thread = machine__findnew_thread(machine, event->ip.pid);
+> +	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
+> +							event->ip.pid);
 
+And here.
+
+[SNIP]
+
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index 1cad370..a021e70 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -480,7 +480,8 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+>  				struct machine *machine)
+>  {
+>  	struct addr_location al;
+> -	struct thread *thread = machine__findnew_thread(machine, event->ip.tid);
+> +	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
+> +							event->ip.tid);
+
+But .tid used here.
+
+>  
+>  	if (thread == NULL) {
+>  		pr_debug("problem processing %d event, skipping it.\n",
+[SNIP]
+> diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+> index 5295625..0f9d27a 100644
+> --- a/tools/perf/util/build-id.c
+> +++ b/tools/perf/util/build-id.c
+> @@ -24,7 +24,8 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
+>  {
+>  	struct addr_location al;
+>  	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+> -	struct thread *thread = machine__findnew_thread(machine, event->ip.pid);
+> +	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
+> +							event->ip.pid);
+
+Again, pid used.
+
+>  
+>  	if (thread == NULL) {
+>  		pr_err("problem processing %d event, skipping it.\n",
+> @@ -47,7 +48,9 @@ static int perf_event__exit_del_thread(struct perf_tool *tool __maybe_unused,
+>  				       __maybe_unused,
+>  				       struct machine *machine)
+>  {
+> -	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
+> +	struct thread *thread = machine__findnew_thread(machine,
+> +							event->fork.pid,
+> +							event->fork.tid);
+>  
+>  	dump_printf("(%d:%d):(%d:%d)\n", event->fork.pid, event->fork.tid,
+>  		    event->fork.ppid, event->fork.ptid);
+> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> index 9541270..ec494a3 100644
+> --- a/tools/perf/util/event.c
+> +++ b/tools/perf/util/event.c
+> @@ -677,7 +677,8 @@ int perf_event__preprocess_sample(const union perf_event *event,
+>  				  symbol_filter_t filter)
+>  {
+>  	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+> -	struct thread *thread = machine__findnew_thread(machine, event->ip.pid);
+> +	struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
+> +							event->ip.pid);
+
+And here.
+
+>  
+>  	if (thread == NULL)
+>  		return -1;
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index 67ba572..16b84ac 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -30,7 +30,8 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
+>  		return -ENOMEM;
+>  
+>  	if (pid != HOST_KERNEL_ID) {
+> -		struct thread *thread = machine__findnew_thread(machine, pid);
+> +		struct thread *thread = machine__findnew_thread(machine, 0,
+> +								pid);
+>  		char comm[64];
+>  
+>  		if (thread == NULL)
+> @@ -282,9 +283,10 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+>  	return th;
+>  }
+>  
+> -struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
+> +struct thread *machine__findnew_thread(struct machine *machine, pid_t pid,
+> +				       pid_t tid)
+>  {
+> -	return __machine__findnew_thread(machine, 0, tid, true);
+> +	return __machine__findnew_thread(machine, pid, tid, true);
+>  }
+>  
+>  struct thread *machine__find_thread(struct machine *machine, pid_t tid)
+> @@ -294,7 +296,9 @@ struct thread *machine__find_thread(struct machine *machine, pid_t tid)
+>  
+>  int machine__process_comm_event(struct machine *machine, union perf_event *event)
+>  {
+> -	struct thread *thread = machine__findnew_thread(machine, event->comm.tid);
+> +	struct thread *thread = machine__findnew_thread(machine,
+> +							event->comm.pid,
+> +							event->comm.tid);
+>  
+>  	if (dump_trace)
+>  		perf_event__fprintf_comm(event, stdout);
+> @@ -975,7 +979,8 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+>  		return 0;
+>  	}
+>  
+> -	thread = machine__findnew_thread(machine, event->mmap.pid);
+> +	thread = machine__findnew_thread(machine, event->mmap.pid,
+> +					 event->mmap.pid);
+
+Ditto.
+
+Hmm.. now I'm thinking that it's related to sharing map_groups between
+threads within a process.  To do that, IMHO we need more sophisticated
+handling rather than passing either pid or tid depending on contexts?
+
+Thanks,
+Namhyung
