@@ -1,85 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442Ab3HGQmX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:42:23 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:50749 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120Ab3HGQmW (ORCPT
+	id S932455Ab3HGQob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:44:31 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:45943 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384Ab3HGQo2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:42:22 -0400
-Date: Wed, 7 Aug 2013 09:42:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: Re: [PATCH 7/8] rcu: add # of deferred _special() statistics
-Message-ID: <20130807164200.GD4306@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
- <1375871104-10688-8-git-send-email-laijs@cn.fujitsu.com>
+	Wed, 7 Aug 2013 12:44:28 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375871104-10688-8-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080716-7282-0000-0000-00001A27B07E
+Content-Transfer-Encoding: 8BIT
+To: Viresh Kumar <viresh.kumar@linaro.org>, rjw@sisk.pl, swarren@nvidia.com
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <8d192a13cb7e088943da40689d62bc6353bd8604.1375886595.git.viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+References: <cover.1375886595.git.viresh.kumar@linaro.org>
+ <8d192a13cb7e088943da40689d62bc6353bd8604.1375886595.git.viresh.kumar@linaro.org>
+Message-ID: <20130807164423.5348.81610@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH 1/6] clk: Tegra: Add CPU0 clock driver
+Date: Wed, 07 Aug 2013 09:44:23 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 06:25:03PM +0800, Lai Jiangshan wrote:
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Quoting Viresh Kumar (2013-08-07 07:46:43)
+> This patch adds CPU0's clk driver for Tegra. It will be used by the generic
+> cpufreq-cpu0 driver to get/set cpu clk.
+> 
+> Most of the platform specific bits are picked from tegra-cpufreq.c.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+Hi Viresh,
+
+It is nice to see more CPUfreq consolidation.
+
+I'm currently hacking on a patch to introduce clk_coordinate_rates().
+That function may be a better fit for this sort of thing compared to
+overloading the .set_rate callback. I'll try to get the patches on the
+list ASAP and will Cc you.
+
+Regards,
+Mike
+
 > ---
->  kernel/rcutree.h        |    1 +
->  kernel/rcutree_plugin.h |    1 +
->  kernel/rcutree_trace.c  |    1 +
->  3 files changed, 3 insertions(+), 0 deletions(-)
+>  drivers/clk/tegra/Makefile      |   1 +
+>  drivers/clk/tegra/clk-cpu.c     | 164 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/tegra/clk-tegra30.c |   4 +
+>  include/linux/clk/tegra.h       |   1 +
+>  4 files changed, 170 insertions(+)
+>  create mode 100644 drivers/clk/tegra/clk-cpu.c
 > 
-> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> index 4a39d36..a5e9643 100644
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@ -290,6 +290,7 @@ struct rcu_data {
->  	unsigned long	n_force_qs_snap;
->  					/* did other CPU force QS recently? */
->  	long		blimit;		/* Upper limit on a processed batch */
-> +	unsigned long	n_defer_special;/* # of deferred _special() */
-> 
->  	/* 3) dynticks interface. */
->  	struct rcu_dynticks *dynticks;	/* Shared per-CPU dynticks state. */
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index c9ff9f1..d828eec 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -396,6 +396,7 @@ void rcu_read_unlock_special(struct task_struct *t, bool unlock)
->  		 * is still unlikey to be true.
->  		 */
->  		if (unlikely(unlock && irqs_disabled_flags(flags))) {
-> +			this_cpu_ptr(&rcu_preempt_data)->n_defer_special++;
->  			set_need_resched();
->  			local_irq_restore(flags);
->  			return;
-> diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-> index cf6c174..17d8b2c 100644
-> --- a/kernel/rcutree_trace.c
-> +++ b/kernel/rcutree_trace.c
-> @@ -149,6 +149,7 @@ static void print_one_rcu_data(struct seq_file *m, struct rcu_data *rdp)
->  	seq_printf(m, " ci=%lu nci=%lu co=%lu ca=%lu\n",
-
-The above "\n" needs to be removed.  (Fixed while queueing.)
-
-							Thanx, Paul
-
->  		   rdp->n_cbs_invoked, rdp->n_nocbs_invoked,
->  		   rdp->n_cbs_orphaned, rdp->n_cbs_adopted);
-> +	seq_printf(m, " ds=%lu\n", rdp->n_defer_special);
+> diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
+> index f49fac2..0e818c0 100644
+> --- a/drivers/clk/tegra/Makefile
+> +++ b/drivers/clk/tegra/Makefile
+> @@ -10,3 +10,4 @@ obj-y                                 += clk-super.o
+>  obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clk-tegra20.o
+>  obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += clk-tegra30.o
+>  obj-$(CONFIG_ARCH_TEGRA_114_SOC)       += clk-tegra114.o
+> +obj-$(CONFIG_GENERIC_CPUFREQ_CPU0)     += clk-cpu.o
+> diff --git a/drivers/clk/tegra/clk-cpu.c b/drivers/clk/tegra/clk-cpu.c
+> new file mode 100644
+> index 0000000..01716d6
+> --- /dev/null
+> +++ b/drivers/clk/tegra/clk-cpu.c
+> @@ -0,0 +1,164 @@
+> +/*
+> + * Copyright (C) 2013 Linaro
+> + *
+> + * Author: Viresh Kumar <viresh.kumar@linaro.org>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +/*
+> + * Responsible for setting cpu0 clk as requested by cpufreq-cpu0 driver
+> + *
+> + * All platform specific bits are taken from tegra-cpufreq driver.
+> + */
+> +
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/err.h>
+> +#include <linux/slab.h>
+> +
+> +#define to_clk_cpu0(_hw) container_of(_hw, struct clk_cpu0, hw)
+> +
+> +struct clk_cpu0 {
+> +       struct clk_hw hw;
+> +       spinlock_t *lock;
+> +};
+> +
+> +static struct clk *cpu_clk;
+> +static struct clk *pll_x_clk;
+> +static struct clk *pll_p_clk;
+> +static struct clk *emc_clk;
+> +
+> +static unsigned long cpu0_recalc_rate(struct clk_hw *hw,
+> +               unsigned long parent_rate)
+> +{
+> +       return clk_get_rate(cpu_clk);
+> +}
+> +
+> +static long cpu0_round_rate(struct clk_hw *hw, unsigned long drate,
+> +               unsigned long *parent_rate)
+> +{
+> +       return clk_round_rate(cpu_clk, drate);
+> +}
+> +
+> +static int cpu0_set_rate(struct clk_hw *hw, unsigned long rate,
+> +               unsigned long parent_rate)
+> +{
+> +       int ret;
+> +
+> +       /*
+> +        * Vote on memory bus frequency based on cpu frequency
+> +        * This sets the minimum frequency, display or avp may request higher
+> +        */
+> +       if (rate >= 816000000)
+> +               clk_set_rate(emc_clk, 600000000); /* cpu 816 MHz, emc max */
+> +       else if (rate >= 456000000)
+> +               clk_set_rate(emc_clk, 300000000); /* cpu 456 MHz, emc 150Mhz */
+> +       else
+> +               clk_set_rate(emc_clk, 100000000); /* emc 50Mhz */
+> +
+> +       /*
+> +        * Take an extra reference to the main pll so it doesn't turn
+> +        * off when we move the cpu off of it
+> +        */
+> +       clk_prepare_enable(pll_x_clk);
+> +
+> +       ret = clk_set_parent(cpu_clk, pll_p_clk);
+> +       if (ret) {
+> +               pr_err("%s: Failed to switch cpu to clock pll_p\n", __func__);
+> +               goto out;
+> +       }
+> +
+> +       if (rate == clk_get_rate(pll_p_clk))
+> +               goto out;
+> +
+> +       ret = clk_set_rate(pll_x_clk, rate);
+> +       if (ret) {
+> +               pr_err("Failed to change pll_x to %lu\n", rate);
+> +               goto out;
+> +       }
+> +
+> +       ret = clk_set_parent(cpu_clk, pll_x_clk);
+> +       if (ret) {
+> +               pr_err("Failed to switch cpu to clock pll_x\n");
+> +               goto out;
+> +       }
+> +
+> +out:
+> +       clk_disable_unprepare(pll_x_clk);
+> +       return ret;
+> +}
+> +
+> +static struct clk_ops clk_cpu0_ops = {
+> +       .recalc_rate = cpu0_recalc_rate,
+> +       .round_rate = cpu0_round_rate,
+> +       .set_rate = cpu0_set_rate,
+> +};
+> +
+> +struct clk *tegra_clk_register_cpu0(void)
+> +{
+> +       struct clk_init_data init;
+> +       struct clk_cpu0 *cpu0;
+> +       struct clk *clk;
+> +
+> +       cpu0 = kzalloc(sizeof(*cpu0), GFP_KERNEL);
+> +       if (!cpu0) {
+> +               pr_err("%s: could not allocate cpu0 clk\n", __func__);
+> +               return ERR_PTR(-ENOMEM);
+> +       }
+> +
+> +       cpu_clk = clk_get_sys(NULL, "cpu");
+> +       if (IS_ERR(cpu_clk)) {
+> +               clk = cpu_clk;
+> +               goto free_mem;
+> +       }
+> +
+> +       pll_x_clk = clk_get_sys(NULL, "pll_x");
+> +       if (IS_ERR(pll_x_clk)) {
+> +               clk = pll_x_clk;
+> +               goto put_cpu_clk;
+> +       }
+> +
+> +       pll_p_clk = clk_get_sys(NULL, "pll_p_cclk");
+> +       if (IS_ERR(pll_p_clk)) {
+> +               clk = pll_p_clk;
+> +               goto put_pll_x_clk;
+> +       }
+> +
+> +       emc_clk = clk_get_sys("cpu", "emc");
+> +       if (IS_ERR(emc_clk)) {
+> +               clk = emc_clk;
+> +               goto put_pll_p_clk;
+> +       }
+> +
+> +       cpu0->hw.init = &init;
+> +
+> +       init.name = "cpu0";
+> +       init.ops = &clk_cpu0_ops;
+> +       init.flags = CLK_IS_ROOT | CLK_GET_RATE_NOCACHE;
+> +       init.num_parents = 0;
+> +
+> +       clk = clk_register(NULL, &cpu0->hw);
+> +       if (!IS_ERR(clk))
+> +               return clk;
+> +
+> +       clk_prepare_enable(emc_clk);
+> +       clk_prepare_enable(cpu_clk);
+> +
+> +       clk_put(emc_clk);
+> +put_pll_p_clk:
+> +       clk_put(pll_p_clk);
+> +put_pll_x_clk:
+> +       clk_put(pll_x_clk);
+> +put_cpu_clk:
+> +       clk_put(cpu_clk);
+> +free_mem:
+> +       kfree(cpu0);
+> +
+> +       pr_err("%s: clk register failed\n", __func__);
+> +
+> +       return NULL;
+> +}
+> diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+> index e2c6ca0..1cabeea 100644
+> --- a/drivers/clk/tegra/clk-tegra30.c
+> +++ b/drivers/clk/tegra/clk-tegra30.c
+> @@ -1396,6 +1396,10 @@ static void __init tegra30_super_clk_init(void)
+>                                         CLK_SET_RATE_PARENT, 1, 2);
+>         clk_register_clkdev(clk, "twd", NULL);
+>         clks[twd] = clk;
+> +
+> +       /* cpu0 clk for cpufreq driver */
+> +       clk = tegra_clk_register_cpu0();
+> +       clk_register_clkdev(clk, NULL, "cpu0");
 >  }
-> 
->  static int show_rcudata(struct seq_file *m, void *v)
+>  
+>  static const char *mux_pllacp_clkm[] = { "pll_a_out0", "unused", "pll_p",
+> diff --git a/include/linux/clk/tegra.h b/include/linux/clk/tegra.h
+> index 23a0cee..d416138 100644
+> --- a/include/linux/clk/tegra.h
+> +++ b/include/linux/clk/tegra.h
+> @@ -128,5 +128,6 @@ static inline void tegra_periph_reset_deassert(struct clk *c) {}
+>  static inline void tegra_periph_reset_assert(struct clk *c) {}
+>  #endif
+>  void tegra_clocks_apply_init_table(void);
+> +struct clk *tegra_clk_register_cpu0(void);
+>  
+>  #endif /* __LINUX_CLK_TEGRA_H_ */
 > -- 
-> 1.7.4.4
-> 
-
+> 1.7.12.rc2.18.g61b472e
