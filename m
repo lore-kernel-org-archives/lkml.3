@@ -1,74 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab3HGA43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 20:56:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59625 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756739Ab3HGA4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 20:56:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,829,1367996400"; 
-   d="scan'208";a="358681243"
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
+	id S1756793Ab3HGA6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 20:58:45 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:60772 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756650Ab3HGA6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 20:58:44 -0400
+Date: Wed, 7 Aug 2013 02:58:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <1375833325.2134.36.camel@buesod1.americas.hpqcorp.net>
-References: <1372366385.22432.185.camel@schen9-DESK>
-	 <1372375873.22432.200.camel@schen9-DESK> <20130628093809.GB29205@gmail.com>
-	 <1372453461.22432.216.camel@schen9-DESK> <20130629071245.GA5084@gmail.com>
-	 <1372710497.22432.224.camel@schen9-DESK> <20130702064538.GB3143@gmail.com>
-	 <1373997195.22432.297.camel@schen9-DESK> <20130723094513.GA24522@gmail.com>
-	 <20130723095124.GW27075@twins.programming.kicks-ass.net>
-	 <20130723095306.GA26174@gmail.com> <1375143209.22432.419.camel@schen9-DESK>
-	 <1375833325.2134.36.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 06 Aug 2013 17:56:28 -0700
-Message-ID: <1375836988.22432.435.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH] proc: Add workaround for idle/iowait decreasing problem.
+Message-ID: <20130807005838.GB3011@somewhere>
+References: <201301152014.AAD52192.FOOHQVtSFMFOJL@I-love.SAKURA.ne.jp>
+ <alpine.LFD.2.02.1301151313170.7475@ionos>
+ <201301180857.r0I8vK7c052791@www262.sakura.ne.jp>
+ <1363660703.4993.3.camel@nexus>
+ <201304012205.DFC60784.HVOMJSFFLFtOOQ@I-love.SAKURA.ne.jp>
+ <201304232145.AHE52181.HJVOOQSFLMFOtF@I-love.SAKURA.ne.jp>
+ <20130428004940.GA10354@somewhere>
+ <51D24F54.1000703@lab.ntt.co.jp>
+ <51D2ADCC.1090807@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51D2ADCC.1090807@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-06 at 16:55 -0700, Davidlohr Bueso wrote:
-
-> I got good numbers, recovering the performance drop I noticed with the
-> i_mmap_mutex to rwsem patches.
-
-That's good.  I remembered that the earlier version of the patch not
-only recovered the performance drop, but also provide some boost when
-you switch from i_mmap_mutex to rwsem for aim7.  Do you see similar
-boost with this version?
-
->  Looking forward to a more upstreamable
-> patchset that deals with this work, including the previous patches.
+On Tue, Jul 02, 2013 at 07:39:08PM +0900, Fernando Luis Vazquez Cao wrote:
+> On 2013年07月02日 12:56, Fernando Luis Vazquez Cao wrote:
+> >Hi Frederic,
+> >
+> >I'm sorry it's taken me so long to respond; I got sidetracked for
+> >a while. Comments follow below.
+> >
+> >On 2013/04/28 09:49, Frederic Weisbecker wrote:
+> >>On Tue, Apr 23, 2013 at 09:45:23PM +0900, Tetsuo Handa wrote:
+> >>>CONFIG_NO_HZ=y can cause idle/iowait values to decrease.
+> >[...]
+> >>It's not clear in the changelog why you see non-monotonic
+> >>idle/iowait values.
+> >>
+> >>Looking at the previous patch from Fernando, it seems that's
+> >>because we can
+> >>race with concurrent updates from the CPU target when it wakes
+> >>up from idle?
+> >>(could be updated by drivers/cpufreq/cpufreq_governor.c as well).
+> >>
+> >>If so the bug has another symptom: we may also report a wrong
+> >>iowait/idle time
+> >>by accounting the last idle time twice.
+> >>
+> >>In this case we should fix the bug from the source, for example
+> >>we can force
+> >>the given ordering:
+> >>
+> >>= Write side =                          = Read side =
+> >>
+> >>// tick_nohz_start_idle()
+> >>write_seqcount_begin(ts->seq)
+> >>ts->idle_entrytime = now
+> >>ts->idle_active = 1
+> >>write_seqcount_end(ts->seq)
+> >>
+> >>// tick_nohz_stop_idle()
+> >>write_seqcount_begin(ts->seq)
+> >>ts->iowait_sleeptime += now - ts->idle_entrytime
+> >>t->idle_active = 0
+> >>write_seqcount_end(ts->seq)
+> >>
+> >>                                         // get_cpu_iowait_time_us()
+> >>                                         do {
+> >>                                             seq =
+> >>read_seqcount_begin(ts->seq)
+> >>                                             if (t->idle_active) {
+> >>                                                 time = now -
+> >>ts->idle_entrytime
+> >>                                                 time +=
+> >>ts->iowait_sleeptime
+> >>                                             } else {
+> >>                                                 time =
+> >>ts->iowait_sleeptime
+> >>                                             }
+> >>                                         } while
+> >>(read_seqcount_retry(ts->seq, seq));
+> >>
+> >>Right? seqcount should be enough to make sure we are getting a
+> >>consistent result.
+> >>I doubt we need harder locking.
+> >
+> >I tried that and it doesn't suffice. The problem that causes the most
+> >serious skews is related to the CPU scheduler: the per-run queue
+> >counter nr_iowait can be updated not only from the CPU it belongs
+> >to but also from any other CPU if tasks are migrated out while
+> >waiting on I/O.
+> >
+> >The race looks like this:
+> >
+> >CPU0                            CPU1
+> >                                [ CPU1_rq->nr_iowait == 0 ]
+> >                                Task foo: io_schedule()
+> >                                            schedule()
+> >                                [ CPU1_rq->nr_iowait == 1) ]
+> >                                Task foo migrated to CPU0
+> >                                Goes to sleep
+> >
+> >// get_cpu_iowait_time_us(1, NULL)
+> >[ CPU1_ts->idle_active == 1, CPU1_rq->nr_iowait == 1 ]
+> >[ CPU1_ts->iowait_sleeptime = 4, CPU1_ts->idle_entrytime = 3 ]
+> >now = 5
+> >delta = 5 - 3 = 2
+> >iowait = 4 + 2 = 6
+> >
+> >Task foo wakes up
+> >[ CPU1_rq->nr_iowait == 0 ]
+> >
+> >                                CPU1 comes out of sleep state
+> >                                tick_nohz_stop_idle()
+> >                                  update_ts_time_stats()
+> >                                    [ CPU1_ts->idle_active == 1,
+> >CPU1_rq->nr_iowait == 0         ]
+> >                                    [ CPU1_ts->iowait_sleeptime =
+> >4, CPU1_ts->idle_entrytime = 3 ]
+> >                                    now = 6
+> >                                    delta = 6 - 3 = 3
+> >                                    (CPU1_ts->iowait_sleeptime is
+> >not updated)
+> >                                    CPU1_ts->idle_entrytime = now = 6
+> >                                  CPU1_ts->idle_active = 0
+> >
+> >// get_cpu_iowait_time_us(1, NULL)
+> >[ CPU1_ts->idle_active == 0, CPU1_rq->nr_iowait == 0 ]
+> >[ CPU1_ts->iowait_sleeptime = 4, CPU1_ts->idle_entrytime = 6 ]
+> >iowait = CPU1_ts->iowait_sleeptime = 4
+> >(iowait decreased from 6 to 4)
 > 
-> One thing that's bugging me about this series though is the huge amount
-> of duplicated code being introduced to rwsems from mutexes. We can share
-> common functionality such as mcs locking (perhaps in a new file under
-> lib/), can_spin_on_owner() and owner_running(), perhaps moving those
-> functions into sheduler code, were AFAIK they were originally.
+> A possible solution to the races above would be to add
+> a per-cpu variable such ->iowait_sleeptime_user which
+> shadows ->iowait_sleeptime but is maintained in
+> get_cpu_iowait_time_us() and kept monotonic,
+> the former being the one we would export to user
+> space.
+> 
+> Another approach would be updating ->nr_iowait
+> of the source and destination CPUs during task
+> migration, but this may be overkill.
+> 
+> What do you think?
 
-I think that MCS locking is worth breaking out as its
-own library.  After we've done that, the rest of
-the duplication are minimal. It is easier
-to keep them separate as there are some rwsem 
-specific logic that may require tweaking
-to can_spin_on_owner and owner_running.  
+I have the feeling we can fix that with:
+
+* only update ts->idle_sleeptime / ts->iowait_sleeptime locally
+  from tick_nohz_start_idle() and tick_nohz_stop_idle()
+
+* readers can add the pending delta to these values anytime they fetch it
+
+* use seqcount to ensure that ts->idle_entrytime, ts->iowait/idle_sleeptime update
+sequences are well synchronized.
+
+I just wrote the patches that do that. Let me just test them and write the changelogs
+then I'll post that tomorrow.
 
 Thanks.
-
-Tim
-
