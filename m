@@ -1,268 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933209Ab3HGOEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 10:04:54 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:57369 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757455Ab3HGOEx (ORCPT
+	id S933227Ab3HGOHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 10:07:05 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:43333 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933097Ab3HGOHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 10:04:53 -0400
+	Wed, 7 Aug 2013 10:07:03 -0400
+Message-ID: <52025481.8050705@redhat.com>
+Date: Wed, 07 Aug 2013 16:06:57 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux ppc; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1375260165-8773-1-git-send-email-zwu.kernel@gmail.com>
-References: <1375260165-8773-1-git-send-email-zwu.kernel@gmail.com>
-Date: Wed, 7 Aug 2013 22:04:52 +0800
-Message-ID: <CAEH94LgR8f4fJYCz=zkQnHv4dXoCFJNJFa1D9xMqR1ORxawK0g@mail.gmail.com>
-Subject: Re: [PATCH v3] xfs: introduce object readahead to log recovery
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: xfstests <xfs@oss.sgi.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Newsgroups: gmane.linux.kernel,gmane.comp.emulators.kvm.devel
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Gleb Natapov <gleb@redhat.com>, Jan Kiszka <jan.kiszka@siemens.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: MMU: fix check the reserved bits on the gpte of
+ L2
+References: <51FF3127.5030206@linux.vnet.ibm.com>
+In-Reply-To: <51FF3127.5030206@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI, xfs maintainers,
-
-any comments?
-
-On Wed, Jul 31, 2013 at 4:42 PM,  <zwu.kernel@gmail.com> wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 08/05/2013 06:59 AM, Xiao Guangrong wrote:
+> Current code always uses arch.mmu to check the reserved bits on guest gpte
+> which is valid only for L1 guest, we should use arch.nested_mmu instead when
+> we translate gva to gpa for the L2 guest
 >
->   It can take a long time to run log recovery operation because it is
-> single threaded and is bound by read latency. We can find that it took
-> most of the time to wait for the read IO to occur, so if one object
-> readahead is introduced to log recovery, it will obviously reduce the
-> log recovery time.
+> Fix it by using @mmu instead since it is adapted to the current mmu mode
+> automatically
 >
-> Log recovery time stat:
+> The bug can be triggered when nested npt is used and L1 guest and L2 guest
+> use different mmu mode
 >
->           w/o this patch        w/ this patch
->
-> real:        0m15.023s             0m7.802s
-> user:        0m0.001s              0m0.001s
-> sys:         0m0.246s              0m0.107s
->
-> Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> Reported-by: Jan Kiszka <jan.kiszka@siemens.com>
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 > ---
->  fs/xfs/xfs_log_recover.c | 159 +++++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 153 insertions(+), 6 deletions(-)
+>   arch/x86/kvm/paging_tmpl.h | 3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
 >
-> diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
-> index 7681b19..ebb00bc 100644
-> --- a/fs/xfs/xfs_log_recover.c
-> +++ b/fs/xfs/xfs_log_recover.c
-> @@ -3116,6 +3116,106 @@ xlog_recover_free_trans(
->         kmem_free(trans);
->  }
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index 7769699..3a75828 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -218,8 +218,7 @@ retry_walk:
+>   		if (unlikely(!is_present_gpte(pte)))
+>   			goto error;
 >
-> +STATIC void
-> +xlog_recover_buffer_ra_pass2(
-> +       struct xlog                     *log,
-> +       struct xlog_recover_item        *item)
-> +{
-> +       struct xfs_buf_log_format       *buf_f = item->ri_buf[0].i_addr;
-> +       struct xfs_mount                *mp = log->l_mp;
-> +
-> +       if (xlog_check_buffer_cancelled(log, buf_f->blf_blkno,
-> +                       buf_f->blf_len, buf_f->blf_flags)) {
-> +               return;
-> +       }
-> +
-> +       xfs_buf_readahead(mp->m_ddev_targp, buf_f->blf_blkno,
-> +                               buf_f->blf_len, NULL);
-> +}
-> +
-> +STATIC void
-> +xlog_recover_inode_ra_pass2(
-> +       struct xlog                     *log,
-> +       struct xlog_recover_item        *item)
-> +{
-> +       struct xfs_inode_log_format     ilf_buf;
-> +       struct xfs_inode_log_format     *ilfp;
-> +       struct xfs_mount                *mp = log->l_mp;
-> +       int                     error;
-> +
-> +       if (item->ri_buf[0].i_len == sizeof(struct xfs_inode_log_format)) {
-> +               ilfp = item->ri_buf[0].i_addr;
-> +       } else {
-> +               ilfp = &ilf_buf;
-> +               memset(ilfp, 0, sizeof(*ilfp));
-> +               error = xfs_inode_item_format_convert(&item->ri_buf[0], ilfp);
-> +               if (error)
-> +                       return;
-> +       }
-> +
-> +       if (xlog_check_buffer_cancelled(log, ilfp->ilf_blkno, ilfp->ilf_len, 0))
-> +               return;
-> +
-> +       xfs_buf_readahead(mp->m_ddev_targp, ilfp->ilf_blkno,
-> +                               ilfp->ilf_len, &xfs_inode_buf_ops);
-> +}
-> +
-> +STATIC void
-> +xlog_recover_dquot_ra_pass2(
-> +       struct xlog                     *log,
-> +       struct xlog_recover_item        *item)
-> +{
-> +       struct xfs_mount        *mp = log->l_mp;
-> +       struct xfs_disk_dquot   *recddq;
-> +       struct xfs_dq_logformat *dq_f;
-> +       uint                    type;
-> +
-> +
-> +       if (mp->m_qflags == 0)
-> +               return;
-> +
-> +       recddq = item->ri_buf[1].i_addr;
-> +       if (recddq == NULL)
-> +               return;
-> +       if (item->ri_buf[1].i_len < sizeof(struct xfs_disk_dquot))
-> +               return;
-> +
-> +       type = recddq->d_flags & (XFS_DQ_USER | XFS_DQ_PROJ | XFS_DQ_GROUP);
-> +       ASSERT(type);
-> +       if (log->l_quotaoffs_flag & type)
-> +               return;
-> +
-> +       dq_f = item->ri_buf[0].i_addr;
-> +       ASSERT(dq_f);
-> +       ASSERT(dq_f->qlf_len == 1);
-> +
-> +       xfs_buf_readahead(mp->m_ddev_targp, dq_f->qlf_blkno,
-> +                               dq_f->qlf_len, NULL);
-> +}
-> +
-> +STATIC void
-> +xlog_recover_ra_pass2(
-> +       struct xlog                     *log,
-> +       struct xlog_recover_item        *item)
-> +{
-> +       switch (ITEM_TYPE(item)) {
-> +       case XFS_LI_BUF:
-> +               xlog_recover_buffer_ra_pass2(log, item);
-> +               break;
-> +       case XFS_LI_INODE:
-> +               xlog_recover_inode_ra_pass2(log, item);
-> +               break;
-> +       case XFS_LI_DQUOT:
-> +               xlog_recover_dquot_ra_pass2(log, item);
-> +               break;
-> +       case XFS_LI_EFI:
-> +       case XFS_LI_EFD:
-> +       case XFS_LI_QUOTAOFF:
-> +       default:
-> +               break;
-> +       }
-> +}
-> +
->  STATIC int
->  xlog_recover_commit_pass1(
->         struct xlog                     *log,
-> @@ -3177,6 +3277,26 @@ xlog_recover_commit_pass2(
->         }
->  }
+> -		if (unlikely(is_rsvd_bits_set(&vcpu->arch.mmu, pte,
+> -					      walker->level))) {
+> +		if (unlikely(is_rsvd_bits_set(mmu, pte, walker->level))) {
+>   			errcode |= PFERR_RSVD_MASK | PFERR_PRESENT_MASK;
+>   			goto error;
+>   		}
 >
-> +STATIC int
-> +xlog_recover_items_pass2(
-> +       struct xlog                     *log,
-> +       struct xlog_recover             *trans,
-> +       struct list_head                *buffer_list,
-> +       struct list_head                *item_list)
-> +{
-> +       struct xlog_recover_item        *item;
-> +       int                             error = 0;
-> +
-> +       list_for_each_entry(item, item_list, ri_list) {
-> +               error = xlog_recover_commit_pass2(log, trans,
-> +                                         buffer_list, item);
-> +               if (error)
-> +                       return error;
-> +       }
-> +
-> +       return error;
-> +}
-> +
->  /*
->   * Perform the transaction.
->   *
-> @@ -3189,9 +3309,16 @@ xlog_recover_commit_trans(
->         struct xlog_recover     *trans,
->         int                     pass)
->  {
-> -       int                     error = 0, error2;
-> -       xlog_recover_item_t     *item;
-> -       LIST_HEAD               (buffer_list);
-> +       int                             error = 0;
-> +       int                             error2;
-> +       int                             items_queued = 0;
-> +       struct xlog_recover_item        *item;
-> +       struct xlog_recover_item        *next;
-> +       LIST_HEAD                       (buffer_list);
-> +       LIST_HEAD                       (ra_list);
-> +       LIST_HEAD                       (done_list);
-> +
-> +       #define XLOG_RECOVER_COMMIT_QUEUE_MAX 100
->
->         hlist_del(&trans->r_list);
->
-> @@ -3199,14 +3326,22 @@ xlog_recover_commit_trans(
->         if (error)
->                 return error;
->
-> -       list_for_each_entry(item, &trans->r_itemq, ri_list) {
-> +       list_for_each_entry_safe(item, next, &trans->r_itemq, ri_list) {
->                 switch (pass) {
->                 case XLOG_RECOVER_PASS1:
->                         error = xlog_recover_commit_pass1(log, trans, item);
->                         break;
->                 case XLOG_RECOVER_PASS2:
-> -                       error = xlog_recover_commit_pass2(log, trans,
-> -                                                         &buffer_list, item);
-> +                       xlog_recover_ra_pass2(log, item);
-> +                       list_move_tail(&item->ri_list, &ra_list);
-> +                       items_queued++;
-> +                       if (items_queued >= XLOG_RECOVER_COMMIT_QUEUE_MAX) {
-> +                               error = xlog_recover_items_pass2(log, trans,
-> +                                               &buffer_list, &ra_list);
-> +                               list_splice_tail_init(&ra_list, &done_list);
-> +                               items_queued = 0;
-> +                       }
-> +
->                         break;
->                 default:
->                         ASSERT(0);
-> @@ -3216,6 +3351,18 @@ xlog_recover_commit_trans(
->                         goto out;
->         }
->
-> +       if (!list_empty(&ra_list)) {
-> +               error = xlog_recover_items_pass2(log, trans,
-> +                               &buffer_list, &ra_list);
-> +               if (error)
-> +                       goto out;
-> +
-> +               list_splice_tail_init(&ra_list, &done_list);
-> +       }
-> +
-> +       if (!list_empty(&done_list))
-> +               list_splice_init(&done_list, &trans->r_itemq);
-> +
->         xlog_recover_free_trans(trans);
->
->  out:
-> --
-> 1.7.11.7
->
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
 
+Applied, thanks.
 
-
--- 
-Regards,
-
-Zhi Yong Wu
+Paolo
