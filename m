@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933471Ab3HGVMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:12:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47127 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387Ab3HGVLi (ORCPT
+	id S933433Ab3HGVMp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:12:45 -0400
+Received: from server506b.appriver.com ([50.56.144.14]:51367 "EHLO
+	server506.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933227Ab3HGVMk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:11:38 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 43/47] perf ui/gtk: Fix segmentation fault on perf_hpp__for_each_format loop
-Date: Wed,  7 Aug 2013 18:11:10 -0300
-Message-Id: <1375909874-22073-44-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
-References: <1375909874-22073-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 7 Aug 2013 17:12:40 -0400
+X-Note-AR-ScanTimeLocal: 8/7/2013 4:12:38 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-Virus-Scan: V-
+X-Note-SnifferID: 0
+X-Note: TCH-CT/SI:0-82/SG:2 8/7/2013 4:12:37 PM
+X-GBUdb-Analysis: 0, 10.242.229.139, Ugly c=1 p=-0.977602 Source White
+X-Signature-Violations: 0-0-0-4229-c
+X-Note-419: 15.6008 ms. Fail:0 Chk:1343 of 1343 total
+X-Note: SCH-CT/SI:0-1343/SG:1 8/7/2013 4:12:19 PM
+X-Note: Spam Tests Failed: 
+X-Country-Path: PRIVATE->PRIVATE->UNITED STATES
+X-Note-Sending-IP: 10.242.229.139
+X-Note-Reverse-DNS: 
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G319 G320 G321 G322 G326 G327 G434 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: VALID
+X-Note: Headers Injected
+Subject: Re: [PATCH] aoe: adjust ref of head for compound page tails
+MIME-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset="us-ascii"
+From: Ed Cashin <ecashin@coraid.com>
+In-Reply-To: <20130807135804.e62b75f6986e9568ab787562@linux-foundation.org>
+Date: Wed, 7 Aug 2013 17:12:36 -0400
+CC: <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>
+Content-Transfer-Encoding: 8BIT
+Message-ID: <8DFEA276-4EE1-44B4-9669-5634631D7BBC@coraid.com>
+References: <cover.1375320764.git.ecashin@coraid.com> <0c8aff39249c1da6b9cc3356650149d065c3ebd2.1375320764.git.ecashin@coraid.com> <20130807135804.e62b75f6986e9568ab787562@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1085)
+X-Rerouted-By-Exchange: 
+X-Rerouted-By-Exchange: 
+X-Rerouted-By-Exchange: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
 
-The commit 2b8bfa6bb8a7 ("perf tools: Centralize default columns init in
-perf_hpp__init") moves initialization of common overhead column to
-perf_hpp__init() but forgot about the gtk code.
+On Aug 7, 2013, at 4:58 PM, Andrew Morton wrote:
 
-So the gtk code added the same column to the list twice causing infinite
-loop when iterating it by perf_hpp__for_each_format loop.  When I run
-perf report --gtk, I can see following messages indefinitely.
+> On Thu, 1 Aug 2013 21:29:59 -0400 Ed Cashin <ecashin@coraid.com> wrote:
+> 
+>> As discussed previously,
+> 
+> I think I missed that.
+> 
+>> the fact that some users of the block
+>> layer provide bios that point to pages with a zero _count means
+>> that it is not OK for the network layer to do a put_page on the
+>> skb frags during an skb_linearize, so the aoe driver gets a
+>> reference to pages in bios and puts the reference before ending
+>> the bio.  And because it cannot use get_page on a page with a
+>> zero _count, it manipulates the value directly.
+> 
+> Eh?  What code is putting count==0 pages into bios?  That sounds very
+> weird and broken.
 
-  (perf:11687): Gtk-CRITICAL **: IA__gtk_main_quit: assertion 'main_loops != NULL' failed
-  perf: Segmentation fault
+I thought so in 2007 but couldn't solicit a clear "this is wrong" consensus from the discussion.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1375766056-19377-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/ui/gtk/hists.c | 2 --
- 1 file changed, 2 deletions(-)
+  http://article.gmane.org/gmane.linux.kernel/499197
+  https://lkml.org/lkml/2007/1/19/56
+  https://lkml.org/lkml/2006/12/18/230
 
-diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
-index cb2ed198..2ca66cc 100644
---- a/tools/perf/ui/gtk/hists.c
-+++ b/tools/perf/ui/gtk/hists.c
-@@ -109,8 +109,6 @@ __HPP_COLOR_PERCENT_FN(overhead_guest_us, period_guest_us)
- 
- void perf_gtk__init_hpp(void)
- {
--	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
--
- 	perf_hpp__init();
- 
- 	perf_hpp__format[PERF_HPP__OVERHEAD].color =
+We were seeing zero-count pages in bios from XFS, but Christoph Hellwig pointed out that kmalloced pages can also come from ext3 when it's doing log recovery, and they'll have zero page counts.
+
+I don't have a counter in the driver to track how often zero-count pages show up in bios, so I don't know how common it is these days.  I would have been motivated to look if I had gotten the impression that there was any interest in identifying and eliminating cases where zero-count pages were being used in bios.
+
 -- 
-1.8.1.4
+  Ed Cashin
+  ecashin@coraid.com
+
 
