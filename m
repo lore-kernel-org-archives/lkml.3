@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415Ab3HGHzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 03:55:47 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:38298 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932141Ab3HGHzo (ORCPT
+	id S932411Ab3HGIAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 04:00:37 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:43001 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756346Ab3HGIAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 03:55:44 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Rui Xiang <rui.xiang@huawei.com>
-Cc: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <netfilter-devel@vger.kernel.org>,
-        <serge.hallyn@ubuntu.com>, <akpm@linux-foundation.org>,
-        <gaofeng@cn.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <libo.chen@huawei.com>
-References: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com>
-Date: Wed, 07 Aug 2013 00:55:28 -0700
-In-Reply-To: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com> (Rui
-	Xiang's message of "Wed, 7 Aug 2013 15:37:04 +0800")
-Message-ID: <878v0evssv.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 7 Aug 2013 04:00:36 -0400
+Date: Wed, 7 Aug 2013 09:00:30 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        sbkim73@samsung.com, Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH 1/3] clk: s2mps11: Add support for s2mps11
+Message-ID: <20130807080030.GI5100@lee--X1>
+References: <1373197462-4033-1-git-send-email-yadi.brar@samsung.com>
+ <1373197462-4033-2-git-send-email-yadi.brar@samsung.com>
+ <20130805232337.5348.79716@quantum>
+ <CAKew6eXRuB5Q0f_GaCKOR7XwbX0n=-5BR_TeRVMUCD9AUHiL7w@mail.gmail.com>
+ <20130806195235.5348.32684@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/Jwj6F2xtMGGKqmkJrojXHj0cx4jhiuoI=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0044]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Rui Xiang <rui.xiang@huawei.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v3 00/11] Add namespace support for syslog
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130806195235.5348.32684@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 06 Aug 2013, Mike Turquette wrote:
 
-Since this still has not been addressed.  I am going to repeat Andrews
-objection again.
+> Quoting Yadwinder Singh Brar (2013-08-05 21:25:44)
+> > Hi Mike,
+> > 
+> > On Tue, Aug 6, 2013 at 4:53 AM, Mike Turquette <mturquette@linaro.org> wrote:
+> > > Quoting Yadwinder Singh Brar (2013-07-07 04:44:20)
+> > >> This patch adds support to register three(AP/CP/BT) buffered 32.768 KHz
+> > >> outputs of mfd-s2mps11 with common clock framework.
+> > >>
+> > >> Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+> > >
+> > > Yadwinder,
+> > >
+> > > Looks good to me with the exception of a binding description document.
+> > > Can you provide one and squash it into this commit?
+> > >
+> > 
+> > Binding description is provided in next patch :
+> > [PATCH 2/3] mfd: sec: Add clock cell for s2mps11  :
+> > https://lkml.org/lkml/2013/7/16/228
+> > 
+> > Since its a MFD, so i preferred to add documentation in same file
+> > under mfd, same was done for regulators also.
+> > If its fine with you then, I think that patch can go through MFD tree
+> > as same file is touched in for-next of MFD tree.
+> 
+> I see. Ok I've taken patch #1 into clk-next.
 
-Isn't there a better way to get iptables information out than to use
-syslog.  I did not have time to follow up on that but it did appear that
-someone did have a better way to get the information out.
+Can you review the bindings in:
 
-Essentially the argument against this goes.  The kernel logging facility
-is really not a particularly good tool to be using for anything other
-than kernel debugging information, and there appear to be no substantial
-uses for a separate syslog that should not be done in other ways.
+  mfd: sec: Add clock cell for s2mps11
 
-That design objection must be addressed before merging this code can be
-given serious consideration.
+... please Mike?
 
-Eric
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
