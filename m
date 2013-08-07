@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813Ab3HGK4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:56:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49130 "EHLO song.cn.fujitsu.com"
+	id S932796Ab3HGK4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:56:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:24966 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932619Ab3HGKxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932638Ab3HGKxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Aug 2013 06:53:51 -0400
 X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
-   d="scan'208";a="8144154"
+   d="scan'208";a="8144156"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
@@ -21,171 +21,264 @@ To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v3 18/25] x86, acpica, acpi: Try to find SRAT in firmware earlier.
-Date: Wed, 7 Aug 2013 18:52:09 +0800
-Message-Id: <1375872736-4822-19-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v3 21/25] memblock, numa: Introduce flag into memblock.
+Date: Wed, 7 Aug 2013 18:52:12 +0800
+Message-Id: <1375872736-4822-22-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:52:16,
+ 2013/08/07 18:52:17,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/07 18:52:18,
-	Serialize complete at 2013/08/07 18:52:18
+ 2013/08/07 18:52:19,
+	Serialize complete at 2013/08/07 18:52:19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduce early_acpi_firmware_srat() to find the
-phys addr of SRAT provided by firmware. And call it in
-find_hotpluggable_memory().
+There is no flag in memblock to describe what type the memory is.
+Sometimes, we may use memblock to reserve some memory for special usage.
+And we want to know what kind of memory it is. So we need a way to
+differentiate memory for different usage.
 
-Since we have initialized acpi_gbl_root_table_list earlier,
-and store all the tables' phys addrs and signatures in it,
-it is easy to find the SRAT.
+In hotplug environment, we want to reserve hotpluggable memory so the
+kernel won't be able to use it. And when the system is up, we have to
+free these hotpluggable memory to buddy. So we need to mark these memory
+first.
 
+In order to do so, we need to mark out these special memory in memblock.
+In this patch, we introduce a new "flags" member into memblock_region:
+   struct memblock_region {
+           phys_addr_t base;
+           phys_addr_t size;
+           unsigned long flags;		/* This is new. */
+   #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+           int nid;
+   #endif
+   };
+
+This patch does the following things:
+1) Add "flags" member to memblock_region.
+2) Modify the following APIs' prototype:
+	memblock_add_region()
+	memblock_insert_region()
+3) Add memblock_reserve_region() to support reserve memory with flags, and keep
+   memblock_reserve()'s prototype unmodified.
+4) Modify other APIs to support flags, but keep their prototype unmodified.
+
+The idea is from Wen Congyang <wency@cn.fujitsu.com> and Liu Jiang <jiang.liu@huawei.com>.
+
+v1 -> v2:
+As tj suggested, a zero flag MEMBLK_DEFAULT will make users confused. If
+we want to specify any other flag, such MEMBLK_HOTPLUG, users don't know
+to use MEMBLK_DEFAULT | MEMBLK_HOTPLUG or just MEMBLK_HOTPLUG. So remove
+MEMBLK_DEFAULT (which is 0), and just use 0 by default to avoid confusions
+to users.
+
+Suggested-by: Wen Congyang <wency@cn.fujitsu.com>
+Suggested-by: Liu Jiang <jiang.liu@huawei.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- drivers/acpi/acpica/tbxface.c |   32 ++++++++++++++++++++++++++++++++
- drivers/acpi/osl.c            |   22 ++++++++++++++++++++++
- include/acpi/acpixf.h         |    4 ++++
- include/linux/acpi.h          |    4 ++++
- mm/memory_hotplug.c           |    8 ++++++--
- 5 files changed, 68 insertions(+), 2 deletions(-)
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |   53 +++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 39 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
-index ecaa5e1..a025dcc 100644
---- a/drivers/acpi/acpica/tbxface.c
-+++ b/drivers/acpi/acpica/tbxface.c
-@@ -236,6 +236,38 @@ acpi_status acpi_reallocate_root_table(void)
- 	return_ACPI_STATUS(status);
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index f388203..e89e0cd 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -22,6 +22,7 @@
+ struct memblock_region {
+ 	phys_addr_t base;
+ 	phys_addr_t size;
++	unsigned long flags;
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 	int nid;
+ #endif
+diff --git a/mm/memblock.c b/mm/memblock.c
+index a847bfe..0841a6e 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -157,6 +157,7 @@ static void __init_memblock memblock_remove_region(struct memblock_type *type, u
+ 		type->cnt = 1;
+ 		type->regions[0].base = 0;
+ 		type->regions[0].size = 0;
++		type->regions[0].flags = 0;
+ 		memblock_set_region_node(&type->regions[0], MAX_NUMNODES);
+ 	}
  }
+@@ -307,7 +308,8 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
  
-+/**
-+ * acpi_get_table_desc - Get the acpi table descriptor of a specific table.
-+ * @signature: The signature of the table to be found.
-+ * @out_desc: The out returned descriptor.
-+ *
-+ * Iterate over acpi_gbl_root_table_list to find a specific table and then
-+ * return its phys addr.
-+ *
-+ * NOTE: The caller has the responsibility to allocate memory for @out_desc.
-+ *
-+ * Return AE_OK on success, AE_NOT_FOUND if the table is not found.
-+ */
-+acpi_status acpi_get_table_desc(char *signature,
-+				struct acpi_table_desc *out_desc)
-+{
-+	struct acpi_table_desc *desc;
-+	int pos, count = acpi_gbl_root_table_list.current_table_count;
-+
-+	for (pos = 0; pos < count; pos++) {
-+		desc = &acpi_gbl_root_table_list.tables[pos];
-+
-+		if (!ACPI_COMPARE_NAME(&desc->signature, signature))
-+			continue;
-+
-+		memcpy(out_desc, desc, sizeof(struct acpi_table_desc));
-+
-+		return_ACPI_STATUS(AE_OK);
-+	}
-+
-+	return_ACPI_STATUS(AE_NOT_FOUND);
-+}
-+
- /*******************************************************************************
+ 		if (this->base + this->size != next->base ||
+ 		    memblock_get_region_node(this) !=
+-		    memblock_get_region_node(next)) {
++		    memblock_get_region_node(next) ||
++		    this->flags != next->flags) {
+ 			BUG_ON(this->base + this->size > next->base);
+ 			i++;
+ 			continue;
+@@ -327,13 +329,15 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
+  * @base:	base address of the new region
+  * @size:	size of the new region
+  * @nid:	node id of the new region
++ * @flags:	flags of the new region
   *
-  * FUNCTION:    acpi_get_table_header
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index dcbca3e..ec490fe 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -53,6 +53,7 @@
- #include <acpi/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/processor.h>
-+#include <acpi/acpixf.h>
- 
- #define _COMPONENT		ACPI_OS_SERVICES
- ACPI_MODULE_NAME("osl");
-@@ -760,6 +761,27 @@ void __init acpi_initrd_override(void *data, size_t size)
- }
- #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
- 
-+#ifdef CONFIG_ACPI_NUMA
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    early_acpi_firmware_srat
-+ *
-+ * RETURN:      Phys addr of SRAT on success, 0 on error.
-+ *
-+ * DESCRIPTION: Get the phys addr of SRAT provided by firmware.
-+ *
-+ ******************************************************************************/
-+phys_addr_t __init early_acpi_firmware_srat(void)
-+{
-+	struct acpi_table_desc table_desc;
-+
-+	if (acpi_get_table_desc(ACPI_SIG_SRAT, &table_desc))
-+		return 0;
-+
-+	return table_desc.address;
-+}
-+#endif	/* CONFIG_ACPI_NUMA */
-+
- static void acpi_table_taint(struct acpi_table_header *table)
+  * Insert new memblock region [@base,@base+@size) into @type at @idx.
+  * @type must already have extra room to accomodate the new region.
+  */
+ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+ 						   int idx, phys_addr_t base,
+-						   phys_addr_t size, int nid)
++						   phys_addr_t size,
++						   int nid, unsigned long flags)
  {
- 	pr_warn(PREFIX
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index 99c9d7b..daa7c10 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -188,6 +188,10 @@ acpi_status acpi_find_root_pointer(acpi_size *rsdp_address);
- acpi_status acpi_unload_table_id(acpi_owner_id id);
+ 	struct memblock_region *rgn = &type->regions[idx];
  
- acpi_status
-+acpi_get_table_desc(char *signature,
-+		    struct acpi_table_desc *out_desc);
-+
-+acpi_status
- acpi_get_table_header(acpi_string signature,
- 		      u32 instance, struct acpi_table_header *out_table_header);
+@@ -341,6 +345,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+ 	memmove(rgn + 1, rgn, (type->cnt - idx) * sizeof(*rgn));
+ 	rgn->base = base;
+ 	rgn->size = size;
++	rgn->flags = flags;
+ 	memblock_set_region_node(rgn, nid);
+ 	type->cnt++;
+ 	type->total_size += size;
+@@ -352,6 +357,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+  * @base: base address of the new region
+  * @size: size of the new region
+  * @nid: nid of the new region
++ * @flags: flags of the new region
+  *
+  * Add new memblock region [@base,@base+@size) into @type.  The new region
+  * is allowed to overlap with existing ones - overlaps don't affect already
+@@ -362,7 +368,8 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+  * 0 on success, -errno on failure.
+  */
+ static int __init_memblock memblock_add_region(struct memblock_type *type,
+-				phys_addr_t base, phys_addr_t size, int nid)
++				phys_addr_t base, phys_addr_t size,
++				int nid, unsigned long flags)
+ {
+ 	bool insert = false;
+ 	phys_addr_t obase = base;
+@@ -377,6 +384,7 @@ static int __init_memblock memblock_add_region(struct memblock_type *type,
+ 		WARN_ON(type->cnt != 1 || type->total_size);
+ 		type->regions[0].base = base;
+ 		type->regions[0].size = size;
++		type->regions[0].flags = flags;
+ 		memblock_set_region_node(&type->regions[0], nid);
+ 		type->total_size = size;
+ 		return 0;
+@@ -407,7 +415,8 @@ repeat:
+ 			nr_new++;
+ 			if (insert)
+ 				memblock_insert_region(type, i++, base,
+-						       rbase - base, nid);
++						       rbase - base, nid,
++						       flags);
+ 		}
+ 		/* area below @rend is dealt with, forget about it */
+ 		base = min(rend, end);
+@@ -417,7 +426,8 @@ repeat:
+ 	if (base < end) {
+ 		nr_new++;
+ 		if (insert)
+-			memblock_insert_region(type, i, base, end - base, nid);
++			memblock_insert_region(type, i, base, end - base,
++					       nid, flags);
+ 	}
  
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index bdcb9dd..280078c 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -97,6 +97,10 @@ static inline phys_addr_t early_acpi_override_srat(void)
+ 	/*
+@@ -439,12 +449,13 @@ repeat:
+ int __init_memblock memblock_add_node(phys_addr_t base, phys_addr_t size,
+ 				       int nid)
+ {
+-	return memblock_add_region(&memblock.memory, base, size, nid);
++	return memblock_add_region(&memblock.memory, base, size, nid, 0);
  }
- #endif	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
  
-+#ifdef CONFIG_ACPI_NUMA
-+phys_addr_t early_acpi_firmware_srat(void);
-+#endif  /* CONFIG_ACPI_NUMA */
-+
- char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
- void __acpi_unmap_table(char *map, unsigned long size);
- int early_acpi_boot_init(void);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 2a57888..2dfb06f 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -107,8 +107,12 @@ void __init find_hotpluggable_memory(void)
- 
- 	/* Try to find if SRAT is overridden */
- 	srat_paddr = early_acpi_override_srat();
--	if (!srat_paddr)
--		return;
-+	if (!srat_paddr) {
-+		/* Try to find SRAT from firmware if it wasn't overridden */
-+		srat_paddr = early_acpi_firmware_srat();
-+		if (!srat_paddr)
-+			return;
-+	}
- 
- 	/* Will parse SRAT and find out hotpluggable memory here */
+ int __init_memblock memblock_add(phys_addr_t base, phys_addr_t size)
+ {
+-	return memblock_add_region(&memblock.memory, base, size, MAX_NUMNODES);
++	return memblock_add_region(&memblock.memory, base, size,
++				   MAX_NUMNODES, 0);
  }
+ 
+ /**
+@@ -499,7 +510,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ 			rgn->size -= base - rbase;
+ 			type->total_size -= base - rbase;
+ 			memblock_insert_region(type, i, rbase, base - rbase,
+-					       memblock_get_region_node(rgn));
++					       memblock_get_region_node(rgn),
++					       rgn->flags);
+ 		} else if (rend > end) {
+ 			/*
+ 			 * @rgn intersects from above.  Split and redo the
+@@ -509,7 +521,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ 			rgn->size -= end - rbase;
+ 			type->total_size -= end - rbase;
+ 			memblock_insert_region(type, i--, rbase, end - rbase,
+-					       memblock_get_region_node(rgn));
++					       memblock_get_region_node(rgn),
++					       rgn->flags);
+ 		} else {
+ 			/* @rgn is fully contained, record it */
+ 			if (!*end_rgn)
+@@ -551,16 +564,24 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
+ 	return __memblock_remove(&memblock.reserved, base, size);
+ }
+ 
+-int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
++static int __init_memblock memblock_reserve_region(phys_addr_t base,
++						   phys_addr_t size,
++						   int nid,
++						   unsigned long flags)
+ {
+ 	struct memblock_type *_rgn = &memblock.reserved;
+ 
+-	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
++	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] flags %#02lx %pF\n",
+ 		     (unsigned long long)base,
+ 		     (unsigned long long)base + size,
+-		     (void *)_RET_IP_);
++		     flags, (void *)_RET_IP_);
++
++	return memblock_add_region(_rgn, base, size, nid, flags);
++}
+ 
+-	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
++int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
++{
++	return memblock_reserve_region(base, size, MAX_NUMNODES, 0);
+ }
+ 
+ /**
+@@ -985,6 +1006,7 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ static void __init_memblock memblock_dump(struct memblock_type *type, char *name)
+ {
+ 	unsigned long long base, size;
++	unsigned long flags;
+ 	int i;
+ 
+ 	pr_info(" %s.cnt  = 0x%lx\n", name, type->cnt);
+@@ -995,13 +1017,14 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
+ 
+ 		base = rgn->base;
+ 		size = rgn->size;
++		flags = rgn->flags;
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ 		if (memblock_get_region_node(rgn) != MAX_NUMNODES)
+ 			snprintf(nid_buf, sizeof(nid_buf), " on node %d",
+ 				 memblock_get_region_node(rgn));
+ #endif
+-		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s\n",
+-			name, i, base, base + size - 1, size, nid_buf);
++		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes%s flags: %#lx\n",
++			name, i, base, base + size - 1, size, nid_buf, flags);
+ 	}
+ }
+ 
 -- 
 1.7.1
 
