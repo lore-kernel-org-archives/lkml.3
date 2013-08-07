@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab3HGEuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 00:50:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46189 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752185Ab3HGEt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 00:49:58 -0400
-Message-ID: <5201D180.9080005@zytor.com>
-Date: Tue, 06 Aug 2013 21:48:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754072Ab3HGEvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 00:51:37 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:34414 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab3HGEvg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 00:51:36 -0400
+Message-ID: <5201D24F.8010403@hitachi.com>
+Date: Wed, 07 Aug 2013 13:51:27 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
-        konrad.wilk@oracle.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH  V12 0/14] Paravirtualized ticket spinlocks
-References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com> <52016412.1020608@zytor.com> <5201B6FB.5080807@linux.vnet.ibm.com>
-In-Reply-To: <5201B6FB.5080807@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.5.2
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Re: [PATCH -tip ] x86/insn: Add Haswell-introduced opcodes
+References: <20130806073750.4049.12365.stgit@udc4-manage.rcp.hitachi.co.jp> <52011361.6060606@zytor.com>
+In-Reply-To: <52011361.6060606@zytor.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 07:54 PM, Raghavendra K T wrote:
-> On 08/07/2013 02:31 AM, H. Peter Anvin wrote:
+(2013/08/07 0:16), H. Peter Anvin wrote:
+> On 08/06/2013 12:37 AM, Masami Hiramatsu wrote:
+>> Add TSX-NI related instructions and new instructions to
+>> x86-opcode-map.txt according to the Intel(R) 64 and IA-32
+>> Architectures Software Developer's Manual Vol2C (June, 2013).
+>> This also includes below updates.
+>>  - Fix a typo of MWAIT (the lack of (11B)).
+>>  - Change NOP Ev to prefetchw Ev
+>>  - Add CRC32 new prefix style (66&F2)
+>>  - Add ADCX, ADOX, RDSEED, CLAC and STAC instructions
 >>
->> What is the baseline for this patchset?  I tried to apply it on top of
->> 3.11-rc4 and I got nontrivial conflicts.
->>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: "H. Peter Anvin" <hpa@zytor.com>
 > 
-> I had based it on top of 445363e8 [ Merge branch 'perf/urgent']
-> of tip.  Sorry for not mentioning that.
+> Thanks, applied!
 > 
-> Please let me know, if I should rebase again.
+> You may want to also look at:
 > 
+> http://software.intel.com/en-us/intel-isa-extensions
+> 
+> ... specifically ...
+> 
+> http://software.intel.com/sites/default/files/319433-015.pdf
+> 
+> For a *lot* of new instructions coming down the pipe.
 
-tip:master is not a stable branch; it is more like linux-next.  We need
-to figure out which topic branches are dependencies for this set.
+Thanks, Andi also asked me to support them ;)
+As far as I can see, that requires more work to support
+EVEX decoding. And perhaps, I have to classify new instructions
+and operands and introduce new abbreviations/superscripts for
+them, because there is no opcode map in the above document.
 
-	-hpa
+Would you intel guys have any idea about new opcode map?
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
