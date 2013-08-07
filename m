@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab3HKDVM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 23:21:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44897 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab3HKDVH (ORCPT
+	id S1752063Ab3HKDbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 23:31:09 -0400
+Received: from ms-gwomx02.so-net.ne.jp ([202.238.84.149]:25225 "EHLO
+	ms-gwomx02.so-net.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab3HKDbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 23:21:07 -0400
-Date: Sat, 10 Aug 2013 20:22:30 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [ 000/102] 3.10.6-stable review
-Message-ID: <20130811032230.GA14919@kroah.com>
-References: <20130809015010.208118575@linuxfoundation.org>
- <B8EFE96D1287C24090BAD9D858E15E61761C23@sisaex02sj>
- <20130809191002.GC10130@kroah.com>
- <B8EFE96D1287C24090BAD9D858E15E61762F0A@sisaex02sj>
+	Sat, 10 Aug 2013 23:31:06 -0400
+X-Greylist: delayed 10533 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Aug 2013 23:31:05 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E61762F0A@sisaex02sj>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <20130807061444.0000143F.0328@u01.gate01.com>
+Date: Wed, 07 Aug 2013 15:14:44 +0900
+From: "Gareth & Catherine Bull" <msviolet@u01.gate01.com>
+To: <info@mail.com>
+Reply-To: <mr.garethbull@foxmail.com>
+Subject: =?ISO-8859-1?B?ozEuNQ==?= million British Pounds
+Content-Type: Text/plain; charset=ISO-8859-1
+X-Priority: 3
+ORGANIZATION: Gareth & Catherine Bull
+X-MAILER: Active! mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7B3Vh6v017275
 
-On Sat, Aug 10, 2013 at 10:07:08PM +0000, Shuah Khan wrote:
-> On 08/09/2013 01:10 PM, Greg Kroah-Hartman wrote:
-> > On Fri, Aug 09, 2013 at 02:42:24PM +0000, Shuah Khan wrote:
-> >> On 08/09/2013 07:54 AM, Greg Kroah-Hartman wrote:
-> >>> This is the start of the stable review cycle for the 3.10.6 release.
-> >>> There are 102 patches in this series, all will be posted as a response
-> >>> to this one.  If anyone has any issues with these being applied, please
-> >>> let me know.
-> >>>
-> >>> Responses should be made by Sun Aug 11 01:46:31 UTC 2013.
-> >>> Anything received after that time might be too late.
-> >>>
-> >>> The whole patch series can be found in one patch at:
-> >>> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.6-rc1.gz
-> >>> and the diffstat can be found below.
-> >>>
-> >>> thanks,
-> >>>
-> >>> greg k-h
-> >>>
-> >
-> 
-> Patches applied to 3.0.89, 3.4.56 and 3.10.5
-> 
-> Compiled and booted on the following systems:
-> 
-> Samsung Series 9 900X4C Intel Corei5:
->      (3.4.57-rc1, 3.10.6-rc1)
-> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
->      (3.0.90-rc1, 3.4.57-rc1, and 3.10.6-rc1)
-> 
-> dmesgs for all releases look good. No regressions compared to the 
-> previous dmesgs for each of these releases. dmesg emerg, crit, alert, 
-> err are clean. No regressions in warn.
+My wife and I won the Euro Millions Lottery of £41 Million British
+Pounds and we have decided to donate £1.5 million British Pounds each to 
+10
+individuals worldwide as part of our own charity project.
 
-Thanks for testing all of these and letting me know.
+To verify,please see our interview by visiting the web page below:
 
-greg k-h
+http://www.dailymail.co.uk/news/article-2091124/EuroMillions-winners-Gareth-Catherine-Bull-scoop-41MILLION-lotto-jackpot.html
+
+
+
+Your email address was among the emails which were submitted to us by
+the Google, Inc as a web user; if you have received our email please, 
+kindly
+send us the below details so that we can transfer your £1,500,000.00
+pounds in your name or direct our bank to effect the transfer of the
+funds to your operational bank account in your country, congratulations.
+
+Full Name:
+Mobile No:
+Age:
+Country:
+
+Send your response to (mr.garethbull@foxmail.com)
+
+Best Regards,
+Gareth & Catherine Bull
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
