@@ -1,87 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab3HGJJJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 05:09:09 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:44983 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757357Ab3HGJJH (ORCPT
+	id S932220Ab3HGJKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 05:10:24 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:47363 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab3HGJKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 05:09:07 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-02-52020eb2189b
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Daniel Jeong'" <gshark.jeong@gmail.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-References: <1375851375-5604-1-git-send-email-gshark.jeong@gmail.com>
-In-reply-to: <1375851375-5604-1-git-send-email-gshark.jeong@gmail.com>
-Subject: Re: [PATCH v3] backlight: lm3630: apply chip revision
-Date: Wed, 07 Aug 2013 18:09:05 +0900
-Message-id: <000001ce934d$c4b3ddd0$4e1b9970$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHlPrAeIGBs8MpcioPWknjc/OXhXZlcHZUA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zY91NfExBBodPilvMWb+GzWLy7i5W
-	i8sLLwGJXXPYLHbvesrqwOqxc9Zddo8TM36zeOyZ/4PVo2/LKkaPz5vkAlijuGxSUnMyy1KL
-	9O0SuDKePFjFWnCSs+LdR5YGxnfsXYycHBICJhKTdrezQdhiEhfurQeyuTiEBJYxSqzdspAN
-	pujFmolMEInpjBKTFk9nhnB+MUrsXnSJBaSKTUBN4suXw2BjRQSiJF6dOwdUxMHBLJAlcXRB
-	LYgpJOAq8fGkNkgFp4CbxPtnTcwgtrCAnUT/sxawThYBVYlzM5vAJvIKWEpsXnGLGcIWlPgx
-	+R5YnFlAS2L9zuNMELa8xOY1b5kh7lSQ2HH2NSPEBUYSbxuXQtWLSOx78Y4R5GQJgWvsEnPO
-	bmKFWCYg8W3yIRaQ2yQEZCU2HYCaIylxcMUNlgmMErOQrJ6FZPUsJKtnIVmxgJFlFaNoakFy
-	QXFSepGJXnFibnFpXrpecn7uJkZInE7YwXjvgPUhxmSg9ROZpUST84FxnlcSb2hsZmRhamJq
-	bGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRjHezetOequ+iwtY+L7X
-	Ivr65Gs8wjFvXzBdrTz3NbRs993Tws1VslMisvO7kvXYp/Ctvpkl43GL36Z7kV11oKDAQlvD
-	pvy58zfePNPfX3L9kfDGSp9tlgb/NJ78yrO6veJPkNR5lqsLNHpKi+abP7+ZJ6n5YLP10+u7
-	NlonfH2ivGzL14yyo0osxRmJhlrMRcWJAA/In2rpAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQd1NfExBBnsOCFvMWb+GzWLy7i5W
-	i8sLLwGJXXPYLHbvesrqwOqxc9Zddo8TM36zeOyZ/4PVo2/LKkaPz5vkAlijGhhtMlITU1KL
-	FFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4C2KymUJeaUAoUCEouL
-	lfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgznjxYxVpwkrPi3UeWBsZ37F2MnBwSAiYSL9ZM
-	ZIKwxSQu3FvP1sXIxSEkMJ1RYtLi6cwQzi9Gid2LLrGAVLEJqEl8+XIYrFtEIEri1blzQEUc
-	HMwCWRJHF9SCmEICrhIfT2qDVHAKuEm8f9bEDGILC9hJ9D9rAetkEVCVODezCWwir4ClxOYV
-	t5ghbEGJH5PvgcWZBbQk1u88zgRhy0tsXvOWGeJOBYkdZ18zQlxgJPG2cSlUvYjEvhfvGCcw
-	Cs1CMmoWklGzkIyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgJPBMagfjygaL
-	Q4wCHIxKPLwVYoxBQqyJZcWVuYcYJTiYlUR4J7AyBQnxpiRWVqUW5ccXleakFh9iTAb6dCKz
-	lGhyPjBB5ZXEGxqbmBlZGplZGJmYm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY6e+
-	dkbCxGMMFy1q1gkk+j03XpDoWf1F30nXK7k9MLFh+Q+TkkhlZqlfV558c/5uyMGxq8W/w1ff
-	dcbukFOWbs8VTuZfuSN462CRW8HUXc+vpy6YtMNf983CvHaWJ6eiApYKlhzLYHimfOOasE6E
-	uPDcXA+WyUZnJ2SzxDSst87x+/3rVP0iJZbijERDLeai4kQA8fruW0YDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
+	Wed, 7 Aug 2013 05:10:22 -0400
+Message-ID: <52020EE4.1090606@huawei.com>
+Date: Wed, 7 Aug 2013 17:09:56 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Xishi Qiu <qiuxishi@huawei.com>
+CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] mm: use zone_end_pfn() instead of zone_start_pfn+spanned_pages
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 07, 2013 1:56 PM, Daniel Jeong wrote:
-> 
-> The LM3630 chip was revised by TI and chip name was also changed to LM3630A.
-> And register map, default values and initial sequences are changed.
-> The files, lm3630_bl.{c,h} are replaced by lm3630a_bl.{c,h}
-> You can find more information about LM3630A(datasheet, evm etc)
-> at http://www.ti.com/product/lm3630a
-> 
-> Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+Use "zone_end_pfn()" instead of "zone->zone_start_pfn + zone->spanned_pages".
+Simplify the code, no functional change.
 
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ kernel/power/snapshot.c |   12 ++++++------
+ mm/memory_hotplug.c     |    4 ++--
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-
-Best regards,
-Jingoo Han
-
-> ---
->  drivers/video/backlight/Kconfig          |    6 +-
->  drivers/video/backlight/Makefile         |    2 +-
->  drivers/video/backlight/lm3630_bl.c      |  475 -----------------------------
->  drivers/video/backlight/lm3630a_bl.c     |  483 ++++++++++++++++++++++++++++++
->  include/linux/platform_data/lm3630_bl.h  |   57 ----
->  include/linux/platform_data/lm3630a_bl.h |   65 ++++
->  6 files changed, 552 insertions(+), 536 deletions(-)
->  delete mode 100644 drivers/video/backlight/lm3630_bl.c
->  create mode 100644 drivers/video/backlight/lm3630a_bl.c
->  delete mode 100644 include/linux/platform_data/lm3630_bl.h
->  create mode 100644 include/linux/platform_data/lm3630a_bl.h
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 349587b..358a146 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -352,7 +352,7 @@ static int create_mem_extents(struct list_head *list, gfp_t gfp_mask)
+ 		struct mem_extent *ext, *cur, *aux;
+ 
+ 		zone_start = zone->zone_start_pfn;
+-		zone_end = zone->zone_start_pfn + zone->spanned_pages;
++		zone_end = zone_end_pfn(zone);
+ 
+ 		list_for_each_entry(ext, list, hook)
+ 			if (zone_start <= ext->end)
+@@ -884,7 +884,7 @@ static unsigned int count_highmem_pages(void)
+ 			continue;
+ 
+ 		mark_free_pages(zone);
+-		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
++		max_zone_pfn = zone_end_pfn(zone);
+ 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
+ 			if (saveable_highmem_page(zone, pfn))
+ 				n++;
+@@ -948,7 +948,7 @@ static unsigned int count_data_pages(void)
+ 			continue;
+ 
+ 		mark_free_pages(zone);
+-		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
++		max_zone_pfn = zone_end_pfn(zone);
+ 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
+ 			if (saveable_page(zone, pfn))
+ 				n++;
+@@ -1041,7 +1041,7 @@ copy_data_pages(struct memory_bitmap *copy_bm, struct memory_bitmap *orig_bm)
+ 		unsigned long max_zone_pfn;
+ 
+ 		mark_free_pages(zone);
+-		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
++		max_zone_pfn = zone_end_pfn(zone);
+ 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
+ 			if (page_is_saveable(zone, pfn))
+ 				memory_bm_set_bit(orig_bm, pfn);
+@@ -1093,7 +1093,7 @@ void swsusp_free(void)
+ 	unsigned long pfn, max_zone_pfn;
+ 
+ 	for_each_populated_zone(zone) {
+-		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
++		max_zone_pfn = zone_end_pfn(zone);
+ 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
+ 			if (pfn_valid(pfn)) {
+ 				struct page *page = pfn_to_page(pfn);
+@@ -1755,7 +1755,7 @@ static int mark_unsafe_pages(struct memory_bitmap *bm)
+ 
+ 	/* Clear page flags */
+ 	for_each_populated_zone(zone) {
+-		max_zone_pfn = zone->zone_start_pfn + zone->spanned_pages;
++		max_zone_pfn = zone_end_pfn(zone);
+ 		for (pfn = zone->zone_start_pfn; pfn < max_zone_pfn; pfn++)
+ 			if (pfn_valid(pfn))
+ 				swsusp_unset_page_free(pfn_to_page(pfn));
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index ca1dd3a..2cd2207 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -229,7 +229,7 @@ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
+ 
+ 	zone_span_writelock(zone);
+ 
+-	old_zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
++	old_zone_end_pfn = zone_end_pfn(zone);
+ 	if (!zone->spanned_pages || start_pfn < zone->zone_start_pfn)
+ 		zone->zone_start_pfn = start_pfn;
+ 
+@@ -515,7 +515,7 @@ static void shrink_zone_span(struct zone *zone, unsigned long start_pfn,
+ 			     unsigned long end_pfn)
+ {
+ 	unsigned long zone_start_pfn =  zone->zone_start_pfn;
+-	unsigned long zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
++	unsigned long zone_end_pfn = zone_end_pfn(zone);
+ 	unsigned long pfn;
+ 	struct mem_section *ms;
+ 	int nid = zone_to_nid(zone);
+-- 
+1.7.1
 
