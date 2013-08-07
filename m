@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932939Ab3HGNH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:07:28 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:8364 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908Ab3HGNH1 (ORCPT
+	id S932945Ab3HGNIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:08:42 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:47341 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908Ab3HGNIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:07:27 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/UwZ9ieg==
-X-RZG-CLASS-ID: mo00
-From: Olaf Hering <olaf@aepfle.de>
-To: kys@microsoft.com, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Olaf Hering <olaf@aepfle.de>
-Subject: [PATCH] Tools: hv: correct payload size in netlink_send
-Date: Wed,  7 Aug 2013 15:07:21 +0200
-Message-Id: <1375880841-12959-1-git-send-email-olaf@aepfle.de>
-X-Mailer: git-send-email 1.8.3.1
+	Wed, 7 Aug 2013 09:08:41 -0400
+Date: Wed, 7 Aug 2013 09:08:36 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH 2/3] memcg: Limit the number of events registered on
+ oom_control
+Message-ID: <20130807130836.GB27006@htj.dyndns.org>
+References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+ <1375874907-22013-2-git-send-email-mhocko@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375874907-22013-2-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-netlink_send is supposed to send just the cn_msg+hv_kvp_msg via netlink.
-Currently it sets an incorrect iovec size, as reported by valgrind.
+Hello, Michal.
 
-In the case of registering with the kernel the allocated buffer is large
-enough to hold nlmsghdr+cn_msg+hv_kvp_msg, no overrun happens. In the
-case of responding to the kernel the cn_msg is located in the middle of
-recv_buffer, after the nlmsghdr. Currently the code in netlink_send adds
-also the size of nlmsghdr to the payload. But nlmsghdr is a separate
-iovec. This leads to an (harmless) out-of-bounds access when the kernel
-processes the iovec. Correct the iovec size of the cn_msg to be just
-cn_msg + its payload.
+On Wed, Aug 07, 2013 at 01:28:26PM +0200, Michal Hocko wrote:
+> There is no limit for the maximum number of oom_control events
+> registered per memcg. This might lead to an user triggered memory
+> depletion if a regular user is allowed to register events.
+> 
+> Let's be more strict and cap the number of events that might be
+> registered. MAX_OOM_NOTIFY_EVENTS value is more or less random. The
+> expectation is that it should be high enough to cover reasonable
+> usecases while not too high to allow excessive resources consumption.
+> 1024 events consume something like 24KB which shouldn't be a big deal
+> and it should be good enough (even 1024 oom notification events sounds
+> crazy).
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
----
- tools/hv/hv_kvp_daemon.c | 2 +-
- tools/hv/hv_vss_daemon.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+I think putting restriction on usage_event makes sense as that builds
+a shared contiguous table from all events which can't be attributed
+correctly and makes it easy to trigger allocation failures due to
+large order allocation but is this necessary for oom and vmpressure,
+both of which allocate only for the listening task?  It isn't
+different from listening from epoll, for example.  If there needs to
+be kernel memory limit, shouldn't that be handled by kmemcg?
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index d3bcb84..1bd1ad1 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -1399,7 +1399,7 @@ netlink_send(int fd, struct cn_msg *msg)
- 	char buffer[64];
- 	struct iovec iov[2];
- 
--	size = NLMSG_SPACE(sizeof(struct cn_msg) + msg->len);
-+	size = sizeof(struct cn_msg) + msg->len;
- 
- 	nlh = (struct nlmsghdr *)buffer;
- 	nlh->nlmsg_seq = 0;
-diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-index 6b4f2fa..2f1f53f 100644
---- a/tools/hv/hv_vss_daemon.c
-+++ b/tools/hv/hv_vss_daemon.c
-@@ -111,7 +111,7 @@ static int netlink_send(int fd, struct cn_msg *msg)
- 	char buffer[64];
- 	struct iovec iov[2];
- 
--	size = NLMSG_SPACE(sizeof(struct cn_msg) + msg->len);
-+	size = sizeof(struct cn_msg) + msg->len;
- 
- 	nlh = (struct nlmsghdr *)buffer;
- 	nlh->nlmsg_seq = 0;
+Thanks.
+
+-- 
+tejun
