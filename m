@@ -1,98 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843Ab3HGK7g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:59:36 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54063 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932496Ab3HGK7d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:59:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <52022797.3060006@overkiz.com>
-References: <1375870466-1093-1-git-send-email-b.brezillon@overkiz.com>
- <CACQ1gAjsPvHkpUuO_3jK3HfnDBQDoJmO7z1Gj5YkAmybHB_zmg@mail.gmail.com> <52022797.3060006@overkiz.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 7 Aug 2013 12:59:12 +0200
-Message-ID: <CACQ1gAh3L4cA16BJxCK8ABk4zAmFKzVS=4PH966FUxQUs13+uA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: at91/dt: split sam9x5 peripheral definitions
-To: boris brezillon <b.brezillon@overkiz.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S932801Ab3HGK70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:59:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:24966 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932504Ab3HGKxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:53:44 -0400
+X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
+   d="scan'208";a="8144144"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH v3 04/25] acpi: Introduce acpi_verify_initrd() to check if a table is invalid.
+Date: Wed, 7 Aug 2013 18:51:55 +0800
+Message-Id: <1375872736-4822-5-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/07 18:52:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/07 18:52:17,
+	Serialize complete at 2013/08/07 18:52:17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/7 boris brezillon <b.brezillon@overkiz.com>:
-> Hello Richard,
->
->
-> On 07/08/2013 12:38, Richard Genoud wrote:
->>
->> 2013/8/7 Boris BREZILLON <b.brezillon@overkiz.com>:
->>>
->>> This patch splits the sam9x5 peripheral definitions into:
->>> - a common base for all sam9x5 SoCs (at91sam9x5.dtsi)
->>> - several optional peripheral definitions which will be included by
->>> specific
->>>    sam9x5 SoCs (at91sam9x5_'periph name'.dtsi)
->>>
->>> This provides a better representation of the real hardware (drop unneeded
->>> dt nodes) and avoids future peripheral id conflict (lcdc and isi both use
->>> peripheral id 25).
->>>
->>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->>> ---
->>>   arch/arm/boot/dts/at91sam9g25.dtsi       |    2 +
->>>   arch/arm/boot/dts/at91sam9g35.dtsi       |    1 +
->>>   arch/arm/boot/dts/at91sam9x25.dtsi       |   24 ++---------
->>>   arch/arm/boot/dts/at91sam9x35.dtsi       |    1 +
->>>   arch/arm/boot/dts/at91sam9x5.dtsi        |   67
->>> ------------------------------
->>>   arch/arm/boot/dts/at91sam9x5_macb0.dtsi  |   56
->>> +++++++++++++++++++++++++
->>>   arch/arm/boot/dts/at91sam9x5_macb1.dtsi  |   44 ++++++++++++++++++++
->>>   arch/arm/boot/dts/at91sam9x5_usart3.dtsi |   51 +++++++++++++++++++++++
->>>   8 files changed, 158 insertions(+), 88 deletions(-)
->>>   create mode 100644 arch/arm/boot/dts/at91sam9x5_macb0.dtsi
->>>   create mode 100644 arch/arm/boot/dts/at91sam9x5_macb1.dtsi
->>>   create mode 100644 arch/arm/boot/dts/at91sam9x5_usart3.dtsi
->>>
->> [snip]
->>>
->>> diff --git a/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
->>> b/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
->>> new file mode 100644
->>> index 0000000..5589579
->>> --- /dev/null
->>> +++ b/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
->>> @@ -0,0 +1,51 @@
->>> +/*
->>> + * at91sam9x5_lcdc.dtsi - Device Tree Include file for AT91SAM9x5 SoC
->>> with
->>> + * 4 USART.
->>
->> One minor comment mistake here !
->
-> Nice catch!
->
-> I'll fix it for the next version.
->
-> BTW did you test it (I didn't: I don't have any board with this SoC family)
-> ?
-Not yet, will do it !
+In acpi_initrd_override(), it checks several things to ensure the
+table it found is valid. In later patches, we need to do these check
+somewhere else. So this patch introduces a common function
+acpi_verify_initrd() to do all these checks, and reuse it in different
+places. The function will be used in the subsequent patches.
 
-> This separation was formerly done in the "at91 common clk" series but I
-> removed it
-> from the new version (which I will submit soon) to ease the review and
-> tests.
->
-ok !
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/osl.c |   86 +++++++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 61 insertions(+), 25 deletions(-)
 
-Thanks,
-Richard
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 3b8bab2..0043e9f 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -572,9 +572,68 @@ static const char * const table_sigs[] = {
+ /* Must not increase 10 or needs code modification below */
+ #define ACPI_OVERRIDE_TABLES 10
+ 
++/*******************************************************************************
++ *
++ * FUNCTION:    acpi_verify_table
++ *
++ * PARAMETERS:  File               - The initrd file
++ *              Path               - Path to acpi overriding tables in cpio file
++ *              Signature          - Signature of the table
++ *
++ * RETURN:      0 if it passes all the checks, -EINVAL if any check fails.
++ *
++ * DESCRIPTION: Check if an acpi table found in initrd is invalid.
++ *              @signature can be NULL. If it is NULL, the function will check
++ *              if the table signature matches any signature in table_sigs[].
++ *
++ ******************************************************************************/
++int __init acpi_verify_table(struct cpio_data *file,
++			      const char *path, const char *signature)
++{
++	int idx;
++	struct acpi_table_header *table = file->data;
++
++	if (file->size < sizeof(struct acpi_table_header)) {
++		ACPI_INVALID_TABLE("Table smaller than ACPI header",
++			      path, file->name);
++		return -EINVAL;
++	}
++
++	if (signature) {
++		if (memcmp(table->signature, signature, 4)) {
++			ACPI_INVALID_TABLE("Table signature does not match",
++				      path, file->name);
++			return -EINVAL;
++		}
++	} else {
++		for (idx = 0; table_sigs[idx]; idx++)
++			if (!memcmp(table->signature, table_sigs[idx], 4))
++				break;
++
++		if (!table_sigs[idx]) {
++			ACPI_INVALID_TABLE("Unknown signature", path, file->name);
++			return -EINVAL;
++		}
++	}
++
++	if (file->size != table->length) {
++		ACPI_INVALID_TABLE("File length does not match table length",
++			      path, file->name);
++		return -EINVAL;
++	}
++
++	if (acpi_table_checksum(file->data, table->length)) {
++		ACPI_INVALID_TABLE("Bad table checksum",
++			      path, file->name);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ void __init acpi_initrd_override(void *data, size_t size)
+ {
+-	int sig, no, table_nr = 0, total_offset = 0;
++	int no, table_nr = 0, total_offset = 0;
+ 	long offset = 0;
+ 	struct acpi_table_header *table;
+ 	char cpio_path[32] = "kernel/firmware/acpi/";
+@@ -593,33 +652,10 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 		data += offset;
+ 		size -= offset;
+ 
+-		if (file.size < sizeof(struct acpi_table_header)) {
+-			ACPI_INVALID_TABLE("Table smaller than ACPI header",
+-				      cpio_path, file.name);
+-			continue;
+-		}
+-
+ 		table = file.data;
+ 
+-		for (sig = 0; table_sigs[sig]; sig++)
+-			if (!memcmp(table->signature, table_sigs[sig], 4))
+-				break;
+-
+-		if (!table_sigs[sig]) {
+-			ACPI_INVALID_TABLE("Unknown signature",
+-				      cpio_path, file.name);
++		if (acpi_verify_table(&file, cpio_path, NULL))
+ 			continue;
+-		}
+-		if (file.size != table->length) {
+-			ACPI_INVALID_TABLE("File length does not match table length",
+-				      cpio_path, file.name);
+-			continue;
+-		}
+-		if (acpi_table_checksum(file.data, table->length)) {
+-			ACPI_INVALID_TABLE("Bad table checksum",
+-				      cpio_path, file.name);
+-			continue;
+-		}
+ 
+ 		pr_info("%4.4s ACPI table found in initrd [%s%s][0x%x]\n",
+ 			table->signature, cpio_path, file.name, table->length);
+-- 
+1.7.1
+
