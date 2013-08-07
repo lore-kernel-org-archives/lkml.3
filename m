@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab3HGQvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:51:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18980 "EHLO
+	id S932518Ab3HGQvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:51:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2358 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932392Ab3HGQvP (ORCPT
+	with ESMTP id S932282Ab3HGQvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:51:15 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=if_WWjHuaHkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pLi8QA9iOc4A:10 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=nTqW6CzA5JgN1M89fUwA:9 a=jEp0ucaQiEUA:10 a=CY6gl2JlH4YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 7 Aug 2013 12:51:14 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=lky5M0npDcYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=B5JiVbnoTJEA:10 a=VwQbUJbxAAAA:8 a=MW9TR38vLfj99IOdX0wA:9 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130807165113.974746364@goodmis.org>
+Message-Id: <20130807164934.149920591@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 07 Aug 2013 12:49:37 -0400
+Date: Wed, 07 Aug 2013 12:49:34 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: "H. Peter Anvin" <hpa@zytor.com>,
@@ -21,96 +21,51 @@ Cc: "H. Peter Anvin" <hpa@zytor.com>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@akamai.com>,
-        Jason Baron <jbaron@redhat.com>
-Subject: [PATCH 3/4] x86/jump-label: Add safety checks to jump label conversions
-References: <20130807164934.149920591@goodmis.org>
-Content-Disposition: inline; filename=0003-x86-jump-label-Add-safety-checks-to-jump-label-conve.patch
+        Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@akamai.com>
+Subject: [PATCH 0/4] [GIT PULL][3.12] x86/jump-label: Clean ups and safety checks
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
 
-As with all modifying of kernel text, we need to be very paranoid.
+Peter,
 
-When converting the jump label locations to and from nops to jumps
-a check has been added to make sure what we are replacing is what we
-expect, otherwise we bug.
+These 4 patches were taken from the patchset that did the 2-5 byte
+jumps, but had nothing to do with the 2-5 byte jumps itself. They
+were clean ups and safety checks that were needed for the jump code.
+Although the 2-5 byte jump code is controversial, these cleanups are
+not.
 
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Jason Baron <jbaron@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/kernel/jump_label.c |   32 ++++++++++++++++++++++++++++----
- 1 file changed, 28 insertions(+), 4 deletions(-)
+The first change is to use the default nops instead of a jmp to next
+instruction in the jump label code.
 
-diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-index ae3d8fb..24cf2b2 100644
---- a/arch/x86/kernel/jump_label.c
-+++ b/arch/x86/kernel/jump_label.c
-@@ -26,16 +26,40 @@ union jump_code_union {
- 
- static void __jump_label_transform(struct jump_entry *entry,
- 				   enum jump_label_type type,
--				   void *(*poker)(void *, const void *, size_t))
-+				   void *(*poker)(void *, const void *, size_t),
-+				   int init)
- {
- 	union jump_code_union code;
-+	const unsigned char *ideal_nop = ideal_nops[NOP_ATOMIC5];
- 
- 	if (type == JUMP_LABEL_ENABLE) {
-+		/*
-+		 * We are enabling this jump label. If it is not a nop
-+		 * then something must have gone wrong.
-+		 */
-+		BUG_ON(memcmp((void *)entry->code, ideal_nop, 5) != 0);
-+
- 		code.jump = 0xe9;
- 		code.offset = entry->target -
- 				(entry->code + JUMP_LABEL_NOP_SIZE);
--	} else
-+	} else {
-+		/*
-+		 * We are disabling this jump label. If it is not what
-+		 * we think it is, then something must have gone wrong.
-+		 * If this is the first initialization call, then we
-+		 * are converting the default nop to the ideal nop.
-+		 */
-+		if (init) {
-+			const unsigned char default_nop[] = { STATIC_KEY_INIT_NOP };
-+			BUG_ON(memcmp((void *)entry->code, default_nop, 5) != 0);
-+		} else {
-+			code.jump = 0xe9;
-+			code.offset = entry->target -
-+				(entry->code + JUMP_LABEL_NOP_SIZE);
-+			BUG_ON(memcmp((void *)entry->code, &code, 5) != 0);
-+		}
- 		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
-+	}
- 
- 	(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
- }
-@@ -45,7 +69,7 @@ void arch_jump_label_transform(struct jump_entry *entry,
- {
- 	get_online_cpus();
- 	mutex_lock(&text_mutex);
--	__jump_label_transform(entry, type, text_poke_smp);
-+	__jump_label_transform(entry, type, text_poke_smp, 0);
- 	mutex_unlock(&text_mutex);
- 	put_online_cpus();
- }
-@@ -76,7 +100,7 @@ __init_or_module void arch_jump_label_transform_static(struct jump_entry *entry,
- 			jlstate = JL_STATE_NO_UPDATE;
- 	}
- 	if (jlstate == JL_STATE_UPDATE)
--		__jump_label_transform(entry, type, text_poke_early);
-+		__jump_label_transform(entry, type, text_poke_early, 1);
- }
- 
- #endif
--- 
-1.7.10.4
+The second is a boot time optimization that doesn't bother changing
+the nops if the default nop is the same as the ideal nop.
+
+The third patch adds safety checks like the ftrace function code has.
+It makes sure the op code that is being changed is in fact the op code
+we expect it to be.
+
+The last patch will output the problem code if it fails the safety
+check from patch three.
+
+This is based off of tip/x86/jumplabel, which was equal to v3.11-rc1.
+
+Please pull the latest tip/x86/jumplabel tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/x86/jumplabel
+
+Head SHA1: fb40d7a8994a3cc7a1e1c1f3258ea8662a366916
 
 
+Steven Rostedt (4):
+      x86/jump-label: Use best default nops for inital jump label calls
+      x86/jump-label: Do not bother updating nops if they are correct
+      x86/jump-label: Add safety checks to jump label conversions
+      x86/jump-label: Show where and what was wrong on errors
+
+----
+ arch/x86/include/asm/jump_label.h |    9 +++--
+ arch/x86/kernel/jump_label.c      |   70 ++++++++++++++++++++++++++++++++++---
+ 2 files changed, 73 insertions(+), 6 deletions(-)
