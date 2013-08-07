@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab3HGU3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 16:29:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:52382 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932350Ab3HGU3q (ORCPT
+	id S933173Ab3HGUaX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 16:30:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25565 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932818Ab3HGUaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 16:29:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-Subject: Re: [PATCH 1/8] ARM: at91: move peripheral id definitions to dt-bindings include dir
-Date: Wed, 7 Aug 2013 22:24:30 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1375339733-3488-1-git-send-email-b.brezillon@overkiz.com> <1375339933-3643-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1375339933-3643-1-git-send-email-b.brezillon@overkiz.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Wed, 7 Aug 2013 16:30:22 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=8WDeNtya6e4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=FBSalxFJak0A:10 a=oGMlB6cnAAAA:8 a=K7hpe1EHq2gghiSB1okA:9 a=QEXdDO2ut3YA:10 a=CY6gl2JlH4YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375907419.6848.27.camel@gandalf.local.home>
+Subject: Re: [RFC][PATCH 3/2] x86/jump labels: Count and display the short
+ jumps used
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@akamai.com>
+Date: Wed, 07 Aug 2013 16:30:19 -0400
+In-Reply-To: <CA+55aFwNWsd4eSA_wZzz9L1q=ROkdBf_SBE5gYGSZksg-Kv2Jg@mail.gmail.com>
+References: <20130807173606.872055511@goodmis.org>
+	 <1375898048.6848.18.camel@gandalf.local.home>
+	 <CA+55aFwo4iFk4_6cSoK=NjCWjVgdPgKy0YfKpZd2zSGn_RXHYg@mail.gmail.com>
+	 <2e3a4a90-2915-4b75-b807-b0e802e4955f@email.android.com>
+	 <CA+55aFwNWsd4eSA_wZzz9L1q=ROkdBf_SBE5gYGSZksg-Kv2Jg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201308072224.30614.arnd@arndb.de>
-X-Provags-ID: V02:K0:mGL/4+yTcQSVKfEPq8xaWWhIOYixeV0+GBrlx3EHMqw
- 1VDXbNB5nRSae71Y/9NwVssBYnTtML0UWAbnxcuk/iQhy88MEV
- 4dBwh1c6V11+AplWFp3RT4xdwv+w4aeI+OCa9qrcAak1eMuGQu
- OmZ/Jh4ONOn1ALKhv2E+MgBqdIDoSJheSothLyQ74KywOpS0AK
- ULch+PqFOpIDkIAjy4ALtMStmo+Bk75ypJM+y6ldpW8yUPu/At
- bkpFiAveCIdUgAcDXIbYrdv4F+4tIpMlmCu3NMM9RNpi3T8+Kw
- kO0yp58ZgXGsEKtM/usZfrVtDGpUhZPvGm+dd0NW6i6W/L2gc3
- ngZguV+nDIcOp15VKUZ0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 August 2013, Boris BREZILLON wrote:
+On Wed, 2013-08-07 at 12:49 -0700, Linus Torvalds wrote:
+> On Wed, Aug 7, 2013 at 12:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> > Well we do... both to extract relocations and to sort the exception table.  Perhaps we need to merge those kinds of postprocessing tools?
 > 
-> This patch moves peripheral id definitions from machine specific include
-> dir (arch/arm/mach-at91/include/mach/'soc-name'.h) to dt-bindinds include
-> dir (include/dt-bindings/at91/'soc-name'/peripherals.h).
-> 
-> These definitions will be used inside dt to define interrupt ids and
-> peripheral clk ids.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> If we can do this generically and without adding 500 lines of
+> specialized code, my argument obviously goes away.
 
-This seems counterproductive, why would you do that?
+And the code that does this work is actually in the kernel today,
+although, seldom used.
 
-There is no sharing of identifiers across SoCs here, you just move the
-data around, and changing the .dts files to use the abstract macros would
-just end up making them harder to understand, not easier, since you then
-have to look up the numbers in another file.
+The recordmount.[ch] can do this modification. It's main purpose was to
+create a table of mcount call locations that ftrace can use to convert
+to nops on boot. As it only converts white-listed sections (doesn't
+convert things like .init or .exit, as there exists no way today to
+generically know when they are removed), it only creates the pointers to
+those sections that ftrace will touch.
 
-	Arnd
+Those sections that do not get converted, can have a call to mcount that
+is not changed to a nop. Most places this is not the case, because
+things like __init have "notrace" defined to keep those functions from
+being profiled. But if another section is added that ftrace does not
+know about, it will get a call to mcount and cause a bit of a slow down.
+Note, mcount itself looks like:
+
+mcount:
+	retq
+
+To handle these missed cases, the recordmcount.c was modified to convert
+the call to mcount into a nop. There's a flag you can set to have this
+warn on locations that it converts:
+
+make RECORDMCOUNT_WARN=1
+
+It will give a warning at the locations that it converted, which should
+then be white-listed or have notrace added to it.
+
+This is the code I based the update_jump_labels from. With a bit of
+work, all these ELF parsers could probably be consolidated, and this
+addition may not be that hard or complex to add.
+
+-- Steve
+
+
