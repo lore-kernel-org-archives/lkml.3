@@ -1,150 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab3HGHKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 03:10:16 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:62193 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab3HGHKN (ORCPT
+	id S932171Ab3HGHP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 03:15:58 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19429 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757042Ab3HGHP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 03:10:13 -0400
-Message-ID: <5201F2CD.8060301@monstr.eu>
-Date: Wed, 07 Aug 2013 09:10:05 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 7 Aug 2013 03:15:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 07 Aug 2013 00:15:56 -0700
+Message-ID: <5201F42B.5040308@nvidia.com>
+Date: Wed, 7 Aug 2013 15:15:55 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Fabian Vogt <fabian@ritter-vogt.de>
-CC: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org,
-        linus.walleij@linaro.org, grant.likely@linaro.org, pawel.moll@arm.com,
-        jakob.braun96@gmx.de
-Subject: Re: [PATCH] [V2] gpio: New driver for LSI ZEVIO SoCs
-References: <1375818804-13053-1-git-send-email-fabian@ritter-vogt.de>
-In-Reply-To: <1375818804-13053-1-git-send-email-fabian@ritter-vogt.de>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="5Gh3VN57Gq5ioSdaiJLhff7bVKjKAqiGe"
+To: Guenter Roeck <linux@roeck-us.net>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 1/2] hwmon: (lm90) Add power control
+References: <1375858358-15070-1-git-send-email-wni@nvidia.com> <1375858358-15070-2-git-send-email-wni@nvidia.com> <5201F138.3080906@roeck-us.net>
+In-Reply-To: <5201F138.3080906@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---5Gh3VN57Gq5ioSdaiJLhff7bVKjKAqiGe
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 08/07/2013 03:03 PM, Guenter Roeck wrote:
+> On 08/06/2013 11:52 PM, Wei Ni wrote:
+>> The device lm90 can be controlled by the vdd rail.
+>> Adding the power control support to power on/off the vdd rail.
+>> And make sure that power is enabled before accessing the device.
+>>
+>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>> ---
+>>   drivers/hwmon/lm90.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 52 insertions(+)
+>>
+>> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+>> index cdff742..eeb0115 100644
+>> --- a/drivers/hwmon/lm90.c
+>> +++ b/drivers/hwmon/lm90.c
+>> @@ -89,6 +89,8 @@
+>>   #include <linux/err.h>
+>>   #include <linux/mutex.h>
+>>   #include <linux/sysfs.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/regulator/consumer.h>
+>>
+>>   /*
+>>    * Addresses to scan
+>> @@ -179,6 +181,8 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
+>>   #define LM90_HAVE_TEMP3		(1 << 6) /* 3rd temperature sensor	*/
+>>   #define LM90_HAVE_BROKEN_ALERT	(1 << 7) /* Broken alert		*/
+>>
+>> +#define POWER_ON_DELAY 20 /*ms*/
+>> +
+>>   /*
+>>    * Driver data (common to all clients)
+>>    */
+>> @@ -302,6 +306,7 @@ static const struct lm90_params lm90_params[] = {
+>>   struct lm90_data {
+>>   	struct device *hwmon_dev;
+>>   	struct mutex update_lock;
+>> +	struct regulator *lm90_reg;
+>>   	char valid; /* zero until following fields are valid */
+>>   	unsigned long last_updated; /* in jiffies */
+>>   	int kind;
+>> @@ -1391,6 +1396,48 @@ static void lm90_init_client(struct i2c_client *client)
+>>   		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
+>>   }
+>>
+>> +static int lm90_power_control(struct i2c_client *client, bool is_enable)
+>> +{
+>> +	struct lm90_data *data = i2c_get_clientdata(client);
+>> +	int ret;
+>> +
+>> +	mutex_lock(&data->update_lock);
+>> +
+>> +	if (!data->lm90_reg) {
+>> +		data->lm90_reg = regulator_get(&client->dev, "vdd");
+>> +		if (IS_ERR_OR_NULL(data->lm90_reg)) {
+>> +			if (PTR_ERR(data->lm90_reg) == -ENODEV)
+>> +				dev_info(&client->dev,
+>> +					 "No regulator found for vdd. Assuming vdd is always powered.");
+>> +			else
+>> +				dev_warn(&client->dev,
+>> +					 "Error [%ld] in getting the regulator handle for vdd.\n",
+>> +					 PTR_ERR(data->lm90_reg));
+>> +			data->lm90_reg = NULL;
+>> +			mutex_unlock(&data->update_lock);
+>> +			return -ENODEV;
+> 
+> I don't think it is acceptable to have the driver fail on pretty much all PCs.
 
-Hi,
+Yes, you are right, I didn't consider it carefully, I will fix it.
+I think it's better to move these codes to the probe() directly.
 
-On 08/06/2013 09:53 PM, Fabian Vogt wrote:
-> This driver supports the GPIO controller found in LSI ZEVIO SoCs.
-> It has been successfully tested on a TI nspire CX calculator.
-> ---
->  .../devicetree/bindings/gpio/gpio-zevio.txt        |  19 ++
->  drivers/gpio/Kconfig                               |   7 +
->  drivers/gpio/Makefile                              |   1 +
->  drivers/gpio/gpio-zevio.c                          | 212 +++++++++++++=
-++++++++
->  4 files changed, 239 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-zevio.t=
-xt
->  create mode 100644 drivers/gpio/gpio-zevio.c
->=20
-> diff --git a/Documentation/devicetree/bindings/gpio/gpio-zevio.txt b/Do=
-cumentation/devicetree/bindings/gpio/gpio-zevio.txt
-> new file mode 100644
-> index 0000000..96d948b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-zevio.txt
-> @@ -0,0 +1,19 @@
-> +Zevio GPIO controller
-> +
-> +Required properties:
-> +- compatible =3D "lsi,zevio-gpio"
-> +- reg =3D <BASEADDR SIZE>
-> +- #gpio-cells =3D <2>
-> +- gpio-controller;
-> +
-> +Optional:
-> +- #ngpios =3D <32>: Number of GPIOs. Defaults to 32 if absent
-> +
-> +Example:
-> +	gpio: gpio@90000000 {
-> +		compatible =3D "lsi,zevio-gpio";
-> +		reg =3D <0x90000000 0x1000>;
-> +=09
+> 
+> Also, I dislike that - even if the calling code doesn't fail - the above message would be displayed on unload as well.
+> 
+> In general, the 'unload' flag seems unnecessary. You could just call
+> 
+> 	if (data->lm90_reg)
+> 		regulator_disable();
+> 
+> in the remove function. In addition to that, shouldn't you call regulator_put() on exit ?
 
-<tab> here and I can't see the reason to have this blank line here.
+Oh, sorry, I miss the regulator_put(), I will fix it.
 
-> +		gpio-controller;
-> +		#gpio-cells =3D <2>;
-> +	};
-> \ No newline at end of file
+> Also, I am missing error handling in the probe function; if something else fails,
+> the regulator is neither disabled nor released.
 
-Doesn't look right.
+It looks this patch have many problems, I will fix them.
+Thanks for your comments.
 
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index b2450ba..ba8c357 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -138,6 +138,13 @@ config GPIO_EP93XX
->  	depends on ARCH_EP93XX
->  	select GPIO_GENERIC
-> =20
-> +config GPIO_ZEVIO
-> +	bool "LSI ZEVIO SoC memory mapped GPIOs"
-> +	depends on ARCH_NSPIRE
-> +	select GENERIC_IRQ_CHIP
-> +	help
-> +	  Say yes here to support the GPIO controller in LSI ZEVIO SoCs.
-> +
+> 
+> Guenter
+> 
+>> +		}
+>> +	}
+>> +	if (is_enable) {
+>> +		ret = regulator_enable(data->lm90_reg);
+>> +		msleep(POWER_ON_DELAY);
+>> +	} else {
+>> +		ret = regulator_disable(data->lm90_reg);
+>> +	}
+>> +
+>> +	if (ret < 0)
+>> +		dev_err(&client->dev,
+>> +			"Error in %s rail vdd, error %d\n",
+>> +			(is_enable) ? "enabling" : "disabling", ret);
+>> +	else
+>> +		dev_info(&client->dev, "success in %s rail vdd\n",
+>> +			 (is_enable) ? "enabling" : "disabling");
+>> +
+>> +	mutex_unlock(&data->update_lock);
+>> +
+>> +	return ret;
+>> +}
+>> +
+>>   static int lm90_probe(struct i2c_client *client,
+>>   		      const struct i2c_device_id *id)
+>>   {
+>> @@ -1406,6 +1453,10 @@ static int lm90_probe(struct i2c_client *client,
+>>   	i2c_set_clientdata(client, data);
+>>   	mutex_init(&data->update_lock);
+>>
+>> +	err = lm90_power_control(client, true);
+>> +	if (err < 0)
+>> +		return err;
+>> +
+>>   	/* Set the device type */
+>>   	data->kind = id->driver_data;
+>>   	if (data->kind == adm1032) {
+>> @@ -1483,6 +1534,7 @@ static int lm90_remove(struct i2c_client *client)
+>>   	hwmon_device_unregister(data->hwmon_dev);
+>>   	lm90_remove_files(client, data);
+>>   	lm90_restore_conf(client, data);
+>> +	lm90_power_control(client, false);
+>>
+>>   	return 0;
+>>   }
+>>
+> 
 
-Not sure how subsystem maintainer handle this but I would prefer
-to keep this sorted as it is done in Makefile.
-
->  config GPIO_MM_LANTIQ
->  	bool "Lantiq Memory mapped GPIOs"
->  	depends on LANTIQ && SOC_XWAY
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index ef3e983..1e7e926 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -87,3 +87,4 @@ obj-$(CONFIG_GPIO_WM831X)	+=3D gpio-wm831x.o
->  obj-$(CONFIG_GPIO_WM8350)	+=3D gpio-wm8350.o
->  obj-$(CONFIG_GPIO_WM8994)	+=3D gpio-wm8994.o
->  obj-$(CONFIG_GPIO_XILINX)	+=3D gpio-xilinx.o
-> +obj-$(CONFIG_GPIO_ZEVIO)	+=3D gpio-zevio.o
-> \ No newline at end of file
-
-ditto.
-
-The patch contains several trailing whitespace reported by checkpatch.pl
-which should be fixed.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---5Gh3VN57Gq5ioSdaiJLhff7bVKjKAqiGe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlIB8tEACgkQykllyylKDCFyWQCghfLlPv7aRNZyGwjFTk0NRU8b
-e94AnjRbPpFdXMp5msGsBTUNXROZGVsq
-=Ow1I
------END PGP SIGNATURE-----
-
---5Gh3VN57Gq5ioSdaiJLhff7bVKjKAqiGe--
