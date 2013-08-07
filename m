@@ -1,66 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab3HGCt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 22:49:58 -0400
-Received: from cns1-135.icoremail.net ([120.31.129.135]:53650 "HELO
-	cns1-7.icoremail.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with SMTP id S1756833Ab3HGCt5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 22:49:57 -0400
-Date: Wed, 7 Aug 2013 10:51:19 +0800
-From: "Akbyu" <sales1@chinamiaoji.com>
-Reply-To: swt@swtindustry.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: paper supplier
-Message-ID: <201308071051198753154@chinamiaoji.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-CM-TRANSID: KQGowJCrLqrLtQFSQDclAA--.22605S4
-X-Coremail-Antispam: 1UD129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
-	VFW2AGmfu7bjvjm3AaLaJ3UjIYCTnIWjp_UUUrp7k042IEc7kJM7k042IE4IIF72xFxVCF
-	54CYxVAaw2AFwI1lb7IF0VCFIxCj07C26xAqzxv26xkF7I0En4kS14v7M7k042IE4IIF72
-	xFxVCFI7km07C267AKxwAYjsxI4VWxJwAYFVCjjxCrM7AC8VAFwI0_Jr0_Gr1l1xkIjI8I
-	6I8E6xAIw20EY4v20xvaj40_Wr0E3s1l1IIY67AEw4v_Jr0_Jr4l8cAvFVAK0II2c7xJM2
-	8CjxkF64kEwVA0rcxSw2x7M28EF7xvwVC0I7IYx2IY67AKxVW8JVW5JwA2z4x0Y4vE2Ix0
-	cI8IcVCY1x0267AKxVW8JVWxJwA2z4x0Y4vEx4A2jsIE14v26F4UJVW0owA2z4x0Y4vEx4
-	A2jsIEc7CjxVAFwI0_Cr1j6rxdM2AIxVAIcxkEcVAq07x20xvEncxIr21l57IF6s8CjcxG
-	0xyl5I8CrVACY4xI64kE6c02F40Ex7xfMcIj6xIIjxv20xvE14v26r1q6rW5McIj6I8E87
-	Iv67AKxVW8Jr0_Cr1UMcvjeVCFs4IE7xkEbVWUJVW8JwACjcxG0xvY0x0EwIxGrwACY4xI
-	67k04243AVAKzVAKj4xxM4xvF2IEb7IF0Fy26I8I3I1lc2xSY4AK67AK6r4UMxAIw28Icx
-	kI7VAKI48JMxAqzxv262kKe7AKxVWrXr0_Gr1UJwCF54CYxVCY1x0262kKe7AKxVWrXr0_
-	Gr1UJwCFx2IqxVCFs4IE7xkEbVWUJVW8JwCFI7km07C267AKxVWrXr0_Gr1UJwCFI7vE0w
-	C20s026c02F40E14v26r1j6r18MI8I3I0E7480Y4vE14v26r106r1rMI8E67AF67kF1VAF
-	wI0_Jr0_JrylIxkGc2Ij64vIr41lIxAIcVC0I7IYx2IY67AKxVWUCVW8JwCI42IY6xIIjx
-	v20xvEc7CjxVAFwI0_Jr0_Gr1lIxAIcVCF04k26cxKx2IYs7xG6Fyj6rWUJwCI42IY6I8E
-	87Iv67AKxVW8Jr0_Cr1UMIIF0xvEx4A2jsIEc7CjxVAFwI0_Gr1j6F4UJwCE64xvF2IEb7
-	IF0Fy7YxBIdaVFxhVjvjDU0xZFpf9x07bxkucUUUUU=
-X-CM-SenderInfo: 5vdov2ur6fxx5qdpxtxrmlhudrp/
+	id S1756905Ab3HGCze (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 22:55:34 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35018 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756833Ab3HGCzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 22:55:33 -0400
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Phil Carmody <phil.carmody@partner.samsung.com>,
+        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] checkpatch: Better --fix of SPACING errors.
+Date: Tue,  6 Aug 2013 19:55:29 -0700
+Message-Id: <55837ac7d8f48eb8dc9060f1b705c9c8b01bea59.1375843905.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r772o2uj023096
 
-Dear Purchasing manager:
-Nice time to you
+Previous attempt at fixing SPACING errors could
+make a hash of several defects.
 
-It is my big pleasure to hear you need A4 paper
-we are the leading supplier from China
-If you still need that pls tell me
+This patch should make --fix be a lot better at
+correcting these defects.
 
-Then i can send you our best price
-Best wishes
-Ida
+Trim left and right sides of these defects
+appropriately instead of a somewhat random attempt
+at it.
 
-Ida Chen
+Trim left spaces from any following bit of the
+modified line when only a single space is required
+around an operator.
 
-SALES MANAGER
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 64 +++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 42 insertions(+), 22 deletions(-)
 
-East Siweite industry Co., Ltd
-www.dfswtpaper.com
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index ca5079e..c25af23 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1472,7 +1472,23 @@ sub check_absolute_file {
+ sub trim {
+ 	my ($string) = @_;
+ 
+-	$string =~ s/(^\s+|\s+$)//g;
++	$string =~ s/^\s+|\s+$//g;
++
++	return $string;
++}
++
++sub ltrim {
++	my ($string) = @_;
++
++	$string =~ s/^\s+//;
++
++	return $string;
++}
++
++sub rtrim {
++	my ($string) = @_;
++
++	$string =~ s/\s+$//;
+ 
+ 	return $string;
+ }
+@@ -2821,6 +2837,7 @@ sub process {
+ 			$off = 0;
+ 
+ 			my $blank = copy_spacing($opline);
++			my $last_after = -1;
+ 
+ 			for (my $n = 0; $n < $#elements; $n += 2) {
+ 
+@@ -2886,7 +2903,7 @@ sub process {
+ 					    $cc !~ /^\\/ && $cc !~ /^;/) {
+ 						if (ERROR("SPACING",
+ 							  "space required after that '$op' $at\n" . $hereptr)) {
+-							$good = trim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]) . " ";
++							$good = $fix_elements[$n] . trim($fix_elements[$n + 1]) . " ";
+ 							$line_fixed = 1;
+ 						}
+ 					}
+@@ -2901,11 +2918,11 @@ sub process {
+ 					if ($ctx =~ /Wx.|.xW/) {
+ 						if (ERROR("SPACING",
+ 							  "spaces prohibited around that '$op' $at\n" . $hereptr)) {
+-							$good = trim($fix_elements[$n]) . trim($fix_elements[$n + 1]);
+-							$line_fixed = 1;
++							$good = rtrim($fix_elements[$n]) . trim($fix_elements[$n + 1]);
+ 							if (defined $fix_elements[$n + 2]) {
+ 								$fix_elements[$n + 2] =~ s/^\s+//;
+ 							}
++							$line_fixed = 1;
+ 						}
+ 					}
+ 
+@@ -2914,8 +2931,9 @@ sub process {
+ 					if ($ctx !~ /.x[WEC]/ && $cc !~ /^}/) {
+ 						if (ERROR("SPACING",
+ 							  "space required after that '$op' $at\n" . $hereptr)) {
+-							$good = trim($fix_elements[$n]) . trim($fix_elements[$n + 1]) . " ";
++							$good = $fix_elements[$n] . trim($fix_elements[$n + 1]) . " ";
+ 							$line_fixed = 1;
++							$last_after = $n;
+ 						}
+ 					}
+ 
+@@ -2932,8 +2950,10 @@ sub process {
+ 					if ($ctx !~ /[WEBC]x./ && $ca !~ /(?:\)|!|~|\*|-|\&|\||\+\+|\-\-|\{)$/) {
+ 						if (ERROR("SPACING",
+ 							  "space required before that '$op' $at\n" . $hereptr)) {
+-							$good = trim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]);
+-							$line_fixed = 1;
++							if ($n != $last_after + 2) {
++								$good = $fix_elements[$n] . " " . ltrim($fix_elements[$n + 1]);
++								$line_fixed = 1;
++							}
+ 						}
+ 					}
+ 					if ($op eq '*' && $cc =~/\s*$Modifier\b/) {
+@@ -2942,12 +2962,11 @@ sub process {
+ 					} elsif ($ctx =~ /.xW/) {
+ 						if (ERROR("SPACING",
+ 							  "space prohibited after that '$op' $at\n" . $hereptr)) {
+-							$fixed_line =~ s/\s+$//;
+-							$good = trim($fix_elements[$n]) . trim($fix_elements[$n + 1]);
+-							$line_fixed = 1;
++							$good = $fix_elements[$n] . rtrim($fix_elements[$n + 1]);
+ 							if (defined $fix_elements[$n + 2]) {
+ 								$fix_elements[$n + 2] =~ s/^\s+//;
+ 							}
++							$line_fixed = 1;
+ 						}
+ 					}
+ 
+@@ -2956,8 +2975,7 @@ sub process {
+ 					if ($ctx !~ /[WEOBC]x[^W]/ && $ctx !~ /[^W]x[WOBEC]/) {
+ 						if (ERROR("SPACING",
+ 							  "space required one side of that '$op' $at\n" . $hereptr)) {
+-							$fixed_line =~ s/\s+$//;
+-							$good = trim($fix_elements[$n]) . trim($fix_elements[$n + 1]) . " ";
++							$good = $fix_elements[$n] . trim($fix_elements[$n + 1]) . " ";
+ 							$line_fixed = 1;
+ 						}
+ 					}
+@@ -2965,20 +2983,18 @@ sub process {
+ 					    ($ctx =~ /Wx./ && $cc =~ /^;/)) {
+ 						if (ERROR("SPACING",
+ 							  "space prohibited before that '$op' $at\n" . $hereptr)) {
+-							$fixed_line =~ s/\s+$//;
+-							$good = trim($fix_elements[$n]) . trim($fix_elements[$n + 1]);
++							$good = rtrim($fix_elements[$n]) . trim($fix_elements[$n + 1]);
+ 							$line_fixed = 1;
+ 						}
+ 					}
+ 					if ($ctx =~ /ExW/) {
+ 						if (ERROR("SPACING",
+ 							  "space prohibited after that '$op' $at\n" . $hereptr)) {
+-							$fixed_line =~ s/\s+$//;
+-							$good = trim($fix_elements[$n]) . trim($fix_elements[$n + 1]);
+-							$line_fixed = 1;
++							$good = $fix_elements[$n] . trim($fix_elements[$n + 1]);
+ 							if (defined $fix_elements[$n + 2]) {
+ 								$fix_elements[$n + 2] =~ s/^\s+//;
+ 							}
++							$line_fixed = 1;
+ 						}
+ 					}
+ 
+@@ -2992,8 +3008,10 @@ sub process {
+ 					if ($ctx =~ /Wx[^WCE]|[^WCE]xW/) {
+ 						if (ERROR("SPACING",
+ 							  "need consistent spacing around '$op' $at\n" . $hereptr)) {
+-							$fixed_line =~ s/\s+$//;
+-							$good = trim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]) . " ";
++							$good = rtrim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]) . " ";
++							if (defined $fix_elements[$n + 2]) {
++								$fix_elements[$n + 2] =~ s/^\s+//;
++							}
+ 							$line_fixed = 1;
+ 						}
+ 					}
+@@ -3004,7 +3022,7 @@ sub process {
+ 					if ($ctx =~ /Wx./) {
+ 						if (ERROR("SPACING",
+ 							  "space prohibited before that '$op' $at\n" . $hereptr)) {
+-							$good = trim($fix_elements[$n]) . trim($fix_elements[$n + 1]);
++							$good = rtrim($fix_elements[$n]) . trim($fix_elements[$n + 1]);
+ 							$line_fixed = 1;
+ 						}
+ 					}
+@@ -3031,8 +3049,10 @@ sub process {
+ 					if ($ok == 0) {
+ 						if (ERROR("SPACING",
+ 							  "spaces required around that '$op' $at\n" . $hereptr)) {
+-							$good = trim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]) . " ";
+-							$good = $fix_elements[$n] . " " . trim($fix_elements[$n + 1]) . " ";
++							$good = rtrim($fix_elements[$n]) . " " . trim($fix_elements[$n + 1]) . " ";
++							if (defined $fix_elements[$n + 2]) {
++								$fix_elements[$n + 2] =~ s/^\s+//;
++							}
+ 							$line_fixed = 1;
+ 						}
+ 					}
+-- 
+1.8.1.2.459.gbcd45b4.dirty
 
-SKYPE: siweite
-
-Email:swt@swtindustry.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
