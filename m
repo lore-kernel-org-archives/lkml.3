@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757479Ab3HGN7x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:59:53 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:39646 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab3HGN7w (ORCPT
+	id S1757517Ab3HGOBK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 10:01:10 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:65428 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab3HGOBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:59:52 -0400
-Date: Wed, 7 Aug 2013 14:59:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 01/22] ARM: ux500: Remove '0x's from HREF v60+ DTS file
-Message-ID: <20130807135946.GE18668@lee--X1>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
- <CACRpkdYAaCrRLjRwZVsq0Av0vc5Y4PODQchEwTCcrmYS47G3jw@mail.gmail.com>
+	Wed, 7 Aug 2013 10:01:07 -0400
+Date: Wed, 7 Aug 2013 10:01:03 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH 2/3] memcg: Limit the number of events registered on
+ oom_control
+Message-ID: <20130807140103.GH27006@htj.dyndns.org>
+References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+ <1375874907-22013-2-git-send-email-mhocko@suse.cz>
+ <20130807130836.GB27006@htj.dyndns.org>
+ <20130807133746.GI8184@dhcp22.suse.cz>
+ <20130807134741.GF27006@htj.dyndns.org>
+ <20130807135734.GK8184@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYAaCrRLjRwZVsq0Av0vc5Y4PODQchEwTCcrmYS47G3jw@mail.gmail.com>
+In-Reply-To: <20130807135734.GK8184@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Aug 2013, Linus Walleij wrote:
-
-> On Mon, Jul 22, 2013 at 12:52 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Wed, Aug 07, 2013 at 03:57:34PM +0200, Michal Hocko wrote:
+> On Wed 07-08-13 09:47:41, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On Wed, Aug 07, 2013 at 03:37:46PM +0200, Michal Hocko wrote:
+> > > > It isn't different from listening from epoll, for example.
+> > > 
+> > > epoll limits the number of watchers, no?
+> > 
+> > Not that I know of.  It'll be limited by max open fds but I don't
+> > think there are other limits. 
 > 
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> None of these patches apply since I applied your other patch series
-> that rename all the files ... can you respin the ux500 "0x"-strip patches
-> on top of the rename set? My ux500-devicetree branch can be used
-> as a baseline.
+> max_user_watches seems to be a limit (4% of lowmem in maximum).
 
-I can do that. Although, would you prefer that I fixed-up my renaming
-patches, then applied the 0x patches on top instead?
+That's per *user* not per event source.  The problem here is creating
+a global (across securit domains) resource shared by all users.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
