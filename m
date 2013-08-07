@@ -1,169 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab3HGEG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 00:06:59 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42134 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412Ab3HGEG5 (ORCPT
+	id S1753043Ab3HGENv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 00:13:51 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:29857 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525Ab3HGENo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 00:06:57 -0400
-Message-ID: <5201C7D9.20004@linux.vnet.ibm.com>
-Date: Wed, 07 Aug 2013 12:06:49 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, pbonzini@redhat.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 04/12] KVM: MMU: log dirty page after marking spte writable
-References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130807014828.GA4781@amt.cnet>
-In-Reply-To: <20130807014828.GA4781@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080703-9574-0000-0000-000009117351
+	Wed, 7 Aug 2013 00:13:44 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-45-5201c976e59b
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Bjorn Helgaas'" <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH V5] pci: exynos: split into two parts such as Synopsys part
+ and Exynos part
+Date: Wed, 07 Aug 2013 13:13:42 +0900
+Message-id: <002501ce9324$8066f5a0$8134e0e0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6TJHzb0/LWXiwVREuX4otx/hBlbg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsVy+t8zI92yk4xBBjf2ylr8nXSM3WJJU4bF
+	y0OaFvOPnGO1uLzwEqtF74KrbBYXnvawWVzeNYfN4uy842wWM87vY7LYOPUXo0X7JWWLn7vm
+	sVg0Hn3AatH65AGjA7/H71+TGD12zrrL7rFgU6nH94Xz2T36tqxi9Hj6Yy+zx/Eb25k8Pm+S
+	C+CI4rJJSc3JLEst0rdL4Mr4ev8be8FFroq5fysbGBs5uhg5OSQETCQWbVnEDGGLSVy4t56t
+	i5GLQ0hgGaPE8xtLmWGK9v1ZwwyRWMQo0fHjPSuE84tR4tyLtywgVWwCahJfvhxmB7FFBDQl
+	Zq/YwgRSxCzwnlli9apFYAlhgUSJiYu/MIHYLAKqEht2HQKL8wpYSpx++pgJwhaU+DH5HthQ
+	ZgEtifU7jzNB2PISm9e8hTpJQWLH2deMEMv0JGY/OMoMUSMise/FO0aQxRICMzkkTpy+wwyx
+	TEDi2+RDQEM5gBKyEpsOQM2RlDi44gbLBEaxWUhWz0KyehaS1bOQrFjAyLKKUTS1ILmgOCm9
+	yFSvODG3uDQvXS85P3cTIyTuJ+5gvH/A+hBjMtD6icxSosn5wLSRVxJvaGxmZGFqYmpsZG5p
+	Rpqwkjiveot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQZG93TuV8uN5zdWLlzPtoZJ/qdj
+	4eP74gdLCppn9pVKqU9lYYh4835FpWGHRM3Nj+J2mxZtjJdTa1c+f5Jb9evJdbP1jTUnfbFx
+	WVH+3+3Vu1/L0rZV9uiwr3DZu5m/PqN69j6BjQu6K7Kan557p/5AmWXqq/BvXx8eOW4RvsXs
+	w3lvmZ7uOfGpSizFGYmGWsxFxYkAyOb3AhEDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNKsWRmVeSWpSXmKPExsVy+t9jAd2yk4xBBs8+iVv8nXSM3WJJU4bF
+	y0OaFvOPnGO1uLzwEqtF74KrbBYXnvawWVzeNYfN4uy842wWM87vY7LYOPUXo0X7JWWLn7vm
+	sVg0Hn3AatH65AGjA7/H71+TGD12zrrL7rFgU6nH94Xz2T36tqxi9Hj6Yy+zx/Eb25k8Pm+S
+	C+CIamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6
+	XUmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8fX+N/aCi1wVc/9WNjA2
+	cnQxcnJICJhI7PuzhhnCFpO4cG89WxcjF4eQwCJGiY4f71khnF+MEudevGUBqWITUJP48uUw
+	O4gtIqApMXvFFiaQImaB98wSq1ctAksICyRKTFz8hQnEZhFQldiw6xBYnFfAUuL008dMELag
+	xI/J98CGMgtoSazfeZwJwpaX2LzmLdRJChI7zr5mhFimJzH7wVFmiBoRiX0v3jFOYBSYhWTU
+	LCSjZiEZNQtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwUnlmdQOxpUNFocYBTgY
+	lXh4K8QYg4RYE8uKK3MPMUpwMCuJ8GrNAQrxpiRWVqUW5ccXleakFh9iTAb6dCKzlGhyPjDh
+	5ZXEGxqbmBlZGplZGJmYm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDI6/5hsCcnh7f
+	2DmdbRvPP3V2nHJjNStv+31b/r+SDiwf9Cvymaf9eMj+QTfvZqjEju8iX0K780X26nYZXFx6
+	3mr7wR3WFnLXvHI3xzqt1bT8k/Cp5d/pRdqq4ov+dvnLBdqwWvZYbrAzKl7x4IHHYUbu7QUa
+	nzmvm1x8NWOXvLWsae6HNf/vKrEUZyQaajEXFScCACgOXTFuAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 09:48 AM, Marcelo Tosatti wrote:
-> On Tue, Jul 30, 2013 at 09:02:02PM +0800, Xiao Guangrong wrote:
->> Make sure we can see the writable spte before the dirt bitmap is visible
->>
->> We do this is for kvm_vm_ioctl_get_dirty_log() write-protects the spte based
->> on the dirty bitmap, we should ensure the writable spte can be found in rmap
->> before the dirty bitmap is visible. Otherwise, we cleared the dirty bitmap and
->> failed to write-protect the page
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c | 6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
+On Wednesday, July 31, 2013 5:14 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> Exynos PCIe IP consists of Synopsys specific part and Exynos
+> specific part. Only core block is a Synopsys designware part;
+> other parts are Exynos specific.
+> Also, the Synopsys designware part can be shared with other
+> platforms; thus, it can be split two parts such as Synopsys
+> designware part and Exynos specific part.
 > 
-> Can you explain why this is safe, with regard to the rule 
-> at edde99ce05290e50 ?
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> Cc: Pratyush Anand <pratyush.anand@st.com>
+> Cc: Mohit KUMAR <Mohit.KUMAR@st.com>
 
-BTW, this log fixed this case:
+Hi Bjorn Helgaas,
 
-     VCPU 0                KVM migration control
+There is no comment for last 2 weeks.
+Will you accept this patch?
 
-                           write-protects all pages
-#Pf happen then the page
-become writable, set dirty
-bit on the bitmap
 
-                          swap the bitmap, current bitmap is empty
+Best regards,
+Jingoo Han
 
-write the page (no dirty log)
-
-                          stop the guest and push
-                          the remaining dirty pages
-Stopped
-                          See current bitmap is empty that means
-                          no page is dirty.
+> ---
+> Changes since v4:
+> - fixed section mismatch warnings
+> - fixed sparse warnings
 > 
-> "The rule is that all pages are either dirty in the current bitmap,
-> or write-protected, which is violated here."
-
-Actually, this rule is not complete true, there's the 3th case:
-the window between write guest page and set dirty bitmap is valid.
-In that window, page is write-free and not dirty logged.
-
-This case is based on the fact that at the final step of live migration,
-kvm should stop the guest and push the remaining dirty pages to the
-destination.
-
-They're some examples in the current code:
-example 1, in fast_pf_fix_direct_spte():
-	if (cmpxchg64(sptep, spte, spte | PT_WRITABLE_MASK) == spte)
-		/* The window in here... */
-		mark_page_dirty(vcpu->kvm, gfn);
-
-example 2, in kvm_write_guest_page():
-	r = __copy_to_user((void __user *)addr + offset, data, len);
-	if (r)
-		return -EFAULT;
-	/*
-	 * The window is here, the page is dirty but not logged in
-         * The bitmap.
-	 */
-	mark_page_dirty(kvm, gfn);
-	return 0;
-
-> 
-> Overall, please document what is the required order of operations for
-> both set_spte and get_dirty_log and why this order is safe (right on top
-> of the code).
-
-Okay.
-
-The order we required here is, we should 1) set spte to writable __before__
-set the dirty bitmap and 2) add the spte into rmap __before__ set the dirty
-bitmap.
-
-The point 1) is the same as fast_pf_fix_direct_spte(), which i explained above.
-The point 1) and 2) can ensure we can find the spte on rmap and see the spte is
-writable when we do lockless write-protection, otherwise these cases will happen
-
-VCPU 0					kvm ioctl doing get-dirty-pages
-
-mark_page_dirty(gfn) which
-set the gfn on the dirty maps
-                                      mask = xchg(dirty_bitmap, 0)
-
-                                      walk all gfns which set on "mask" and
-                                      locklessly write-protect the gfn,
-                                      then walk rmap, see no spte on that rmap
-	
-
-add the spte into rmap
-
-!!!!!! Then the page can be freely wrote but not recorded in the dirty bitmap.
-
-Or:
-
-VCPU 0					kvm ioctl doing get-dirty-pages
-
-mark_page_dirty(gfn) which
-set the gfn on the dirty maps
-
-add spte into rmap
-                                      mask = xchg(dirty_bitmap, 0)
-
-                                      walk all gfns which set on "mask" and
-                                      locklessly write-protect the gfn,
-                                      then walk rmap, see spte is on the ramp
-                                      but it is readonly or nonpresent.
-	
-Mark spte writable
-
-!!!!!! Then the page can be freely wrote but not recorded in the dirty bitmap.
-
-Hopefully, i have clarified it, if you have any questions, please let me know.
-
-> 
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 35d4b50..0fe56ad 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -2486,12 +2486,12 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->>  		}
->>  	}
->>  
->> -	if (pte_access & ACC_WRITE_MASK)
->> -		mark_page_dirty(vcpu->kvm, gfn);
->> -
->>  set_pte:
->>  	if (mmu_spte_update(sptep, spte))
->>  		kvm_flush_remote_tlbs(vcpu->kvm);
-> 
-> Here, there is a modified guest page without dirty log bit set (think
-> another vcpu writing to the page via this spte).
-
-This is okay since we call mark_page_dirty(vcpu->kvm, gfn) after that, this
-is the same case as fast_pf_fix_direct_spte() and i have explained why it is
-safe above.
-
+>  .../devicetree/bindings/pci/designware-pcie.txt    |    3 +
+>  arch/arm/boot/dts/exynos5440.dtsi                  |    2 +
+>  drivers/pci/host/Makefile                          |    3 +-
+>  drivers/pci/host/pci-exynos.c                      |  530 ++++++++++
+>  drivers/pci/host/pcie-designware.c                 | 1011 ++++++--------------
+>  drivers/pci/host/pcie-designware.h                 |   65 ++
+>  6 files changed, 874 insertions(+), 740 deletions(-)
+>  create mode 100644 drivers/pci/host/pci-exynos.c
+>  create mode 100644 drivers/pci/host/pcie-designware.h
 
 
