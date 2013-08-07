@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab3HGOK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 10:10:58 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:60472 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757456Ab3HGOK5 (ORCPT
+	id S1757555Ab3HGOLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 10:11:25 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:43464 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757456Ab3HGOLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 10:10:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130803160628.GL2580@book.gsilab.sittig.org>
-References: <1375255254-10955-1-git-send-email-a13xp0p0v88@gmail.com>
-	<20130803160628.GL2580@book.gsilab.sittig.org>
-Date: Wed, 7 Aug 2013 18:10:56 +0400
-Message-ID: <CAF0T0X6cwQPR4-imsev3Xd16usfjEABwm7hYxdJgvrMWZ=tBHA@mail.gmail.com>
-Subject: Re: [PATCH RFC v3 1/5] dma: mpc512x: reorder mpc8308 specific instructions
-From: Alexander Popov <a13xp0p0v88@gmail.com>
-To: Alexander Popov <a13xp0p0v88@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        Arnd Bergmann <arnd@arndb.de>, Anatolij Gustschin <agust@denx.de>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Aug 2013 10:11:24 -0400
+From: Chen Baozi <baozich@gmail.com>
+To: tony@atomide.com
+Cc: Chen Baozi <baozich@gmail.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] ARM: fix wrong address when loading PRM_FRAC_INCREMENTOR_DENUMERATOR_RELOAD
+Date: Wed,  7 Aug 2013 22:05:21 +0800
+Message-Id: <1375884321-30489-1-git-send-email-baozich@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/3 Gerhard Sittig <gsi@denx.de>:
-> On Wed, Jul 31, 2013 at 11:20 +0400, Alexander Popov wrote:
->>
-> Please make sure to either cite
-> properly or to properly mark changes as such.  Don't spread false
-> information, please.  You are free to change what I submitted,
-> but you should not pretend that I wrote what has become of the
-> code after you have modified it.  Please fix the attribution.
+The denominator should be load from INCREMENTOR_DENUMERATOR_RELOAD_OFFSET
+rather than INCREMENTER_NUMERATOR_OFFSET.
 
-Excuse me for the confusion.
-I'll be careful with "From:" notes.
+This is more likely a typo, since INCREMENTER_DENUMERATOR_RELOAD[23:17] is
+reserved. It seems that it won't make much trouble without this fix, because
+the useful [11:0] bits are mask and set the right value. Anyway, reading
+from a right address is better choice.
 
-> Just to clarify:  The defines here appear to be more appropriate
-> than the initial enums, after it turned out that we need not
-> handle indiviudal channels in special ways, and really only need
-> these three numbers (one of them being the maximum of the
-> others).  But regardless of what you have changed, you should
-> clearly state the fact.
+Signed-off-by: Chen Baozi <baozich@gmail.com>
+---
+ arch/arm/mach-omap2/timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Ok, I'll do so.
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index 1e77f11..ccc5c72 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -537,7 +537,7 @@ static void __init realtime_counter_init(void)
+ 	reg |= num;
+ 	__raw_writel(reg, base + INCREMENTER_NUMERATOR_OFFSET);
+ 
+-	reg = __raw_readl(base + INCREMENTER_NUMERATOR_OFFSET) &
++	reg = __raw_readl(base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET) &
+ 			NUMERATOR_DENUMERATOR_MASK;
+ 	reg |= den;
+ 	__raw_writel(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
+-- 
+1.8.1.4
 
-Best regards,
-Alexander.
