@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab3HGAgb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 20:36:31 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57879 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756331Ab3HGAg2 (ORCPT
+	id S1756649Ab3HGApJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 20:45:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15952 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756557Ab3HGApI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 20:36:28 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <52019667.3010405@jp.fujitsu.com>
-Date: Wed, 7 Aug 2013 09:35:51 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: <rafael.j.wysocki@intel.com>, <yinghai@kernel.org>, <toshi.kani@hp.com>,
-        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: acpi_bus_trim does not detach devices in post order
-References: <52006888.5030203@jp.fujitsu.com> <5200CAAD.5080102@jp.fujitsu.com> <8453998.khIH1RyxM0@vostro.rjw.lan>
-In-Reply-To: <8453998.khIH1RyxM0@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Tue, 6 Aug 2013 20:45:08 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pFOAptgLnqcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pvQ05lsfB1wA:10 a=7f-O_72P7KBp29N_9koA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375836304.25420.76.camel@gandalf.local.home>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, gcc <gcc@gcc.gnu.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Date: Tue, 06 Aug 2013 20:45:04 -0400
+In-Reply-To: <1375821817.25420.50.camel@gandalf.local.home>
+References: <1375721715.22073.80.camel@gandalf.local.home>
+	 <CA+55aFw_o=D-j_SRn=Y4LhHm-tEyuP1Je5ZHVTYxbVyLyDcLEg@mail.gmail.com>
+	 <1375725328.22073.101.camel@gandalf.local.home>
+	 <CA+55aFwRHpL-3YObZfw6NxxDxMqQbiwp0=NnpotGj2RHDNF3iw@mail.gmail.com>
+	 <1375727977.22073.112.camel@gandalf.local.home>
+	 <CA+55aFyfvifCu=jDBH8LPmEHtvooVyo25dvJ+T6SQLhVidBBdQ@mail.gmail.com>
+	 <1375798783.25420.30.camel@gandalf.local.home>
+	 <CA+55aFwKYSwytooG50fyryWpVdGEk_v=vdB=L-kAyLmmSW=bkQ@mail.gmail.com>
+	 <1375811885.25420.44.camel@gandalf.local.home>
+	 <20130806203319.GA16170@Krystal>
+	 <1375821817.25420.50.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/06 23:26), Rafael J. Wysocki wrote:
-> On Tuesday, August 06, 2013 07:06:37 PM Yasuaki Ishimatsu wrote:
->> (2013/08/06 12:07), Yasuaki Ishimatsu wrote:
->>>
->>> I acked the following commit but I hit a problem by the commit.
->>> So I report it.
->>>
->>> commit cecdb193c8d91a42d9489d00618cc3dfff92e55a
->>> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>> Date:   Tue Jan 15 13:24:02 2013 +0100
->>>
->>>       ACPI / scan: Change the implementation of acpi_bus_trim()
->>>
->>> Before applying the commit, acpi_bus_trim() detachs devices in post order.
->>>
->>> When I hot add memory devices and processor devices by container device
->>> in my x86 box, memory devices are added first and processor devices are added
->>> second. So I expect that processor devices are removed first and memory
->>> devices are removed second when I remove them. And before applying the
->>> commit, acpi_bus_trim() did so.
->>>
->>> But after appling the commit, acpi_bus_trim() does not detach devices in
->>> post order. So when I remove them, memory devices are removed first and
->>> processor devices are removed second.
->>>
->>> By this, I hit a problem.
->>>
->>> In Linux on x86 arch, NUMA node is depend on memory devices. So new NUMA
->>> node is created at memory hot adding. Thus when I hot add memory devices and
->>> processor devices, we must hot add memory device first. Otherwise, processor
->>> devices are not set to correct NUMA node number.
->>>
->>> And Linux expects that when removing them, processor devices are removed
->>> first before removing memory devices. But acpi_bus_trim() does not do so.
->>> By this, NUMA node is not cleared in my x86 box when hot removing memory device
->>> and processor devices. When removing memory devices, NUMA node is cleared.
->>> But if there are processor devices related with the NUMA node, NUMA node is
->>> not be cleared at memory hot removing.
->>>
->>> So when I remove them, NUMA node's sysfs file remained as follows:
->>
->> I had little mistake. CPU also tries to clear NUMA node.
->> But current implementation has bug. So I'll fix it.
->
+On Tue, 2013-08-06 at 16:43 -0400, Steven Rostedt wrote:
+> On Tue, 2013-08-06 at 16:33 -0400, Mathieu Desnoyers wrote:
+> 
+> > Steve, perhaps you could add a mode to your binary rewriting program
+> > that counts the number of 2-byte vs 5-byte jumps found, and if possible
+> > get a breakdown of those per subsystem ?
+> 
+> I actually started doing that, as I was curious to how many were being
+> changed as well.
 
-> Do I understand correctly that with your fix at
->
-> https://patchwork.kernel.org/patch/2839298/
->
-> the current acpi_bus_trim() implementation will be sufficient?
+I didn't add it to the update program as that runs on each individual
+object (needs to handle modules). But I put in the start up code a
+counter to see what types were converted:
 
-No. The patch just fixed implementation of CPU hotplug.
+[    3.387362] short jumps: 106
+[    3.390277]  long jumps: 330
 
-A problem I think is that acpi_bus_trim() does not detach devices in
-post-order. And my patch does not fix it. So if some device has dependency
-of other device, similar problem will occur.
+Thus, approximately 25%. Not bad.
 
-Thanks,
-Yasuaki Ishimatsu
-
->
-> Rafael
->
->
+-- Steve
 
 
