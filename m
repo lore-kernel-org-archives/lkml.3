@@ -1,96 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933172Ab3HGXfK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 19:35:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41100 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab3HGXfJ (ORCPT
+	id S933238Ab3HGXfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 19:35:24 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:36609 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757520Ab3HGXfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 19:35:09 -0400
-Date: Wed, 7 Aug 2013 16:35:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ed Cashin <ecashin@coraid.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] aoe: adjust ref of head for compound page tails
-Message-Id: <20130807163507.954590c479a07886a8ae6cb1@linux-foundation.org>
-In-Reply-To: <782613DB-4C38-450C-BBC2-E14FA64D44AC@coraid.com>
-References: <cover.1375320764.git.ecashin@coraid.com>
-	<0c8aff39249c1da6b9cc3356650149d065c3ebd2.1375320764.git.ecashin@coraid.com>
-	<20130807140021.57a40fb31807f16b525f6ff3@linux-foundation.org>
-	<EB4C2185-3868-42A3-A88D-F9642962D336@coraid.com>
-	<20130807142647.6614d3ec88a7af12cba4505a@linux-foundation.org>
-	<782613DB-4C38-450C-BBC2-E14FA64D44AC@coraid.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Aug 2013 19:35:22 -0400
+Message-ID: <201308072335.r77NZJPA022490@farm-0012.internal.tilera.com>
+In-Reply-To: <5202CEAA.9040204@linux.vnet.ibm.com>
+References: <5202CEAA.9040204@linux.vnet.ibm.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 7 Aug 2013 16:49:44 -0400
+Subject: [PATCH v4 1/2] workqueue: add new schedule_on_cpu_mask() API
+To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Aug 2013 19:27:40 -0400 Ed Cashin <ecashin@coraid.com> wrote:
+This primitive allows scheduling work to run on a particular set of
+cpus described by a "struct cpumask".  This can be useful, for example,
+if you have a per-cpu variable that requires code execution only if the
+per-cpu variable has a certain value (for example, is a non-empty list).
 
-> On Aug 7, 2013, at 5:26 PM, Andrew Morton wrote:
-> 
-> > On Wed, 7 Aug 2013 17:21:32 -0400 Ed Cashin <ecashin@coraid.com> wrote:
-> ...
-> >> Sorry.  I tried to cover that but maybe should have separated it more clearly from the running text.
-> >> 
-> >> The patch changes the current behavior encountered with direct I/O and aoe:
-> >> 
-> >>  aoe can BUG when direct I/O used
-> >> 
-> >> ... to a new behavior:
-> >> 
-> >>  aoe does not BUG when direct I/O is used
-> >> 
-> >> And the user will never know that instead aoe is manipulating the _count of the head page, even though that's what's happening with this patch applied.
-> >> 
-> >> (The user-visible effects that motivated the older patch that added the BUG to aoe when page tails are used for block I/O was a VM_BUG_ON that occurred when the aoe driver manipulated the _count of a compound page tail.)
-> > 
-> > OK, I added "Fix a BUG which can trigger when direct-IO is used with
-> > AOE".  Which kernel versions are affected?
-> 
-> 
-> That BUG was added to the aoe driver in a commit that first appears in v3.7.  It persists until this patch adds the code that handles the situation that the BUG was intended to detect.
-> 
-> [ecashin@marino linux]$ git describe --contains --match 'v*' 69cf2d85de773d998798e47e3335b85e5645d157
-> v3.7-rc1~110^2~22
-> [ecashin@marino linux]$ 
-> 
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+v4: don't lose possible -ENOMEM in schedule_on_each_cpu()
+(Note: no change to the mm/swap.c commit)
 
-ah, is it this?
+v3: split commit into two, one for workqueue and one for mm, though both
+should probably be taken through -mm.
 
-+bio_pageinc(struct bio *bio)
-+{
-+       struct bio_vec *bv;
-+       struct page *page;
-+       int i;
+ include/linux/workqueue.h |  3 +++
+ kernel/workqueue.c        | 36 +++++++++++++++++++++++++++---------
+ 2 files changed, 30 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index a0ed78a..71a3fe7 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -13,6 +13,8 @@
+ #include <linux/atomic.h>
+ #include <linux/cpumask.h>
+ 
++struct cpumask;
 +
-+       bio_for_each_segment(bv, bio, i) {
-+               page = bv->bv_page;
-+               /* Non-zero page count for non-head members of
-+                * compound pages is no longer allowed by the kernel,
-+                * but this has never been seen here.
-+                */
-+               if (unlikely(PageCompound(page)))
-+                       if (compound_trans_head(page) != page) {
-+                               pr_crit("page tail used for block I/O\n");
-+                               BUG();
-+                       }
-
-But get_page/put_page against a tail page of a compound page should
-Just Work.  The core MM will hunt down the head page and manipulate its
-refcount.  
-
-Perhaps the problem here is that AOE is diving under the covers and is
-using low-level page refcount alterations:
-
-+               atomic_inc(&page->_count);
-
-Why does AOE do this?  It would be better if it were to use the
-official published MM interfaces.  If those interfaces need
-alteration/augmentation then we can do that.
-
-
+ struct workqueue_struct;
+ 
+ struct work_struct;
+@@ -470,6 +472,7 @@ extern void flush_workqueue(struct workqueue_struct *wq);
+ extern void drain_workqueue(struct workqueue_struct *wq);
+ extern void flush_scheduled_work(void);
+ 
++extern int schedule_on_cpu_mask(work_func_t func, const struct cpumask *mask);
+ extern int schedule_on_each_cpu(work_func_t func);
+ 
+ int execute_in_process_context(work_func_t fn, struct execute_work *);
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f02c4a4..1dacb09 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2962,17 +2962,18 @@ bool cancel_delayed_work_sync(struct delayed_work *dwork)
+ EXPORT_SYMBOL(cancel_delayed_work_sync);
+ 
+ /**
+- * schedule_on_each_cpu - execute a function synchronously on each online CPU
++ * schedule_on_cpu_mask - execute a function synchronously on each listed CPU
+  * @func: the function to call
++ * @mask: the cpumask to invoke the function on
+  *
+- * schedule_on_each_cpu() executes @func on each online CPU using the
++ * schedule_on_cpu_mask() executes @func on each listed CPU using the
+  * system workqueue and blocks until all CPUs have completed.
+- * schedule_on_each_cpu() is very slow.
++ * schedule_on_cpu_mask() is very slow.
+  *
+  * RETURNS:
+  * 0 on success, -errno on failure.
+  */
+-int schedule_on_each_cpu(work_func_t func)
++int schedule_on_cpu_mask(work_func_t func, const struct cpumask *mask)
+ {
+ 	int cpu;
+ 	struct work_struct __percpu *works;
+@@ -2981,24 +2982,41 @@ int schedule_on_each_cpu(work_func_t func)
+ 	if (!works)
+ 		return -ENOMEM;
+ 
+-	get_online_cpus();
+-
+-	for_each_online_cpu(cpu) {
++	for_each_cpu(cpu, mask) {
+ 		struct work_struct *work = per_cpu_ptr(works, cpu);
+ 
+ 		INIT_WORK(work, func);
+ 		schedule_work_on(cpu, work);
+ 	}
+ 
+-	for_each_online_cpu(cpu)
++	for_each_cpu(cpu, mask)
+ 		flush_work(per_cpu_ptr(works, cpu));
+ 
+-	put_online_cpus();
+ 	free_percpu(works);
+ 	return 0;
+ }
+ 
+ /**
++ * schedule_on_each_cpu - execute a function synchronously on each online CPU
++ * @func: the function to call
++ *
++ * schedule_on_each_cpu() executes @func on each online CPU using the
++ * system workqueue and blocks until all CPUs have completed.
++ * schedule_on_each_cpu() is very slow.
++ *
++ * RETURNS:
++ * 0 on success, -errno on failure.
++ */
++int schedule_on_each_cpu(work_func_t func)
++{
++	int ret;
++	get_online_cpus();
++	ret = schedule_on_cpu_mask(func, cpu_online_mask);
++	put_online_cpus();
++	return ret;
++}
++
++/**
+  * flush_scheduled_work - ensure that any scheduled work has run to completion.
+  *
+  * Forces execution of the kernel-global workqueue and blocks until its
+-- 
+1.8.3.1
 
