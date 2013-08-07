@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933539Ab3HGX1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 19:27:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49780 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751998Ab3HGX1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 19:27:20 -0400
-Date: Thu, 8 Aug 2013 09:27:07 +1000
-From: NeilBrown <neilb@suse.de>
-To: Ken Steele <ken@tilera.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH] RAID: add tilegx SIMD implementation of raid6
-Message-ID: <20130808092707.7149ee90@notabene.brown>
-In-Reply-To: <201308072040.r77Kevx4016119@farm-0012.internal.tilera.com>
-References: <201308072040.r77Kevx4016119@farm-0012.internal.tilera.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/CAegtB=VD9O6G_z0EQE1w2q"; protocol="application/pgp-signature"
+	id S1757571Ab3HGX1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 19:27:45 -0400
+Received: from server506h.appriver.com ([50.56.144.38]:58825 "EHLO
+	server506.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752651Ab3HGX1n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 19:27:43 -0400
+X-Note-AR-ScanTimeLocal: 8/7/2013 6:27:42 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-Virus-Scan: V-
+X-Note-SnifferID: 0
+X-Note: TCH-CT/SI:0-34/SG:2 8/7/2013 6:27:40 PM
+X-GBUdb-Analysis: 0, 10.242.229.139, Ugly c=1 p=-0.977973 Source White
+X-Signature-Violations: 0-0-0-3945-c
+X-Note-419: 0 ms. Fail:0 Chk:1343 of 1343 total
+X-Note: SCH-CT/SI:0-1343/SG:1 8/7/2013 6:27:28 PM
+X-Note: Spam Tests Failed: 
+X-Country-Path: PRIVATE->PRIVATE->UNITED STATES
+X-Note-Sending-IP: 10.242.229.139
+X-Note-Reverse-DNS: 
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G319 G320 G321 G322 G326 G327 G434 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: VALID
+X-Note: Headers Injected
+Subject: Re: [PATCH] aoe: adjust ref of head for compound page tails
+MIME-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset="us-ascii"
+From: Ed Cashin <ecashin@coraid.com>
+In-Reply-To: <20130807142647.6614d3ec88a7af12cba4505a@linux-foundation.org>
+Date: Wed, 7 Aug 2013 19:27:40 -0400
+CC: <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-ID: <782613DB-4C38-450C-BBC2-E14FA64D44AC@coraid.com>
+References: <cover.1375320764.git.ecashin@coraid.com> <0c8aff39249c1da6b9cc3356650149d065c3ebd2.1375320764.git.ecashin@coraid.com> <20130807140021.57a40fb31807f16b525f6ff3@linux-foundation.org> <EB4C2185-3868-42A3-A88D-F9642962D336@coraid.com> <20130807142647.6614d3ec88a7af12cba4505a@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1085)
+X-Rerouted-By-Exchange: 
+X-Rerouted-By-Exchange: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/CAegtB=VD9O6G_z0EQE1w2q
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Aug 7, 2013, at 5:26 PM, Andrew Morton wrote:
 
-On Wed, 7 Aug 2013 12:39:56 -0400 Ken Steele <ken@tilera.com> wrote:
-
-> This change adds TILE-Gx SIMD instructions to the software raid
-> (md), modeling the Altivec implementation. This is only for Syndrome
-> generation; there is more that could be done to improve recovery,
-> as in the recent Intel SSE3 recovery implementation.
->=20
-> The code unrolls 8 times; this turns out to be the best on tilegx
-> hardware among the set 1, 2, 4, 8 or 16.  The code reads one
-> cache-line of data from each disk, stores P and Q then goes to the
-> next cache-line.
->=20
-> The test code in sys/linux/lib/raid6/test reports 2008 MB/s data
-> read rate for syndrome generation using 18 disks (16 data and 2
-> parity). It was 1512 MB/s before this SIMD optimizations. This is
-> running on 1 core with all the data in cache.
->=20
-> This is based on the paper The Mathematics of RAID-6.
-> (http://kernel.org/pub/linux/kernel/people/hpa/raid6.pdf).
->=20
-> Signed-off-by: Ken Steele <ken@tilera.com>
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-
-Thanks.  Looks credible and you've obviously tested it so I've added it to =
-my
-queue for the next merge window.
-
-One tiny little change I made:
-
->  clean:
->  	rm -f *.o *.a mktables mktables.c *.uc int*.c altivec*.c tables.c raid6=
-test
-> +	rm tilegx*.c
-
-I made that "rm -f" for consistency.
-
-Thanks,
-NeilBrown
+> On Wed, 7 Aug 2013 17:21:32 -0400 Ed Cashin <ecashin@coraid.com> wrote:
+...
+>> Sorry.  I tried to cover that but maybe should have separated it more clearly from the running text.
+>> 
+>> The patch changes the current behavior encountered with direct I/O and aoe:
+>> 
+>>  aoe can BUG when direct I/O used
+>> 
+>> ... to a new behavior:
+>> 
+>>  aoe does not BUG when direct I/O is used
+>> 
+>> And the user will never know that instead aoe is manipulating the _count of the head page, even though that's what's happening with this patch applied.
+>> 
+>> (The user-visible effects that motivated the older patch that added the BUG to aoe when page tails are used for block I/O was a VM_BUG_ON that occurred when the aoe driver manipulated the _count of a compound page tail.)
+> 
+> OK, I added "Fix a BUG which can trigger when direct-IO is used with
+> AOE".  Which kernel versions are affected?
 
 
---Sig_/CAegtB=VD9O6G_z0EQE1w2q
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+That BUG was added to the aoe driver in a commit that first appears in v3.7.  It persists until this patch adds the code that handles the situation that the BUG was intended to detect.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+[ecashin@marino linux]$ git describe --contains --match 'v*' 69cf2d85de773d998798e47e3335b85e5645d157
+v3.7-rc1~110^2~22
+[ecashin@marino linux]$ 
 
-iQIVAwUBUgLXyznsnt1WYoG5AQK3uA/7Biq7BxvoTdaAkqIBO8dCgmZteMoX9bSf
-IPy1le3rlHF5T3jVRglFZatR8pXtZBKKBG3tqiOUhxp+9emfktKCOjlSJ5xAo83G
-1iAU3TLQirPKf8L+luafXIanJdIQjjwA1bVaHBkymKBxcGgzF5/HLA0TT7E/a5T4
-wW4S1JtY3cqMb9tY/NjXyz13ctD0AK0r1uuOlgZmQuTek63ja7JFkzyps15seVcJ
-BBkQ+l6K2WDLIDFY/JqL6hsTDOgrbTzquDMDqW7PpQA6T2hESLKtjHk4ncVOWJ3a
-sSfnpOuUIbH07oWrcNdKJZ0kb313rcY5KiNV0Els9E3UKjYsgD50KIXhNbMeBnDF
-hmhWPUtZezsQni7g2J182l3WZmsGOCu+CmGFZ1ffZT62mhViDRpz5YNGMByzziFu
-ftzVIR79afwex2BDmV90Epm47kw4bNMalYSPv0/aOc9KfX+T4XYO1nEGw2pOVtYQ
-tUWCuauszmtgAeuKEYmTK1SzoyqxtFw/sOfkGLHjij1bpfg9Ewfl62aa8FR+36zT
-vUyTbzqzol+4E0fxydmXPOvKUCloYOyBraDpwpHYwaQX+UFCp3R6sTwrkVTlw3RA
-XTwxHEhSxJY6OL/lO8EBdfd8LIyHLh+qLwewQGia7YBZ1p9bozLQXSj9SmoUSgUj
-3vToOqoyDTQ=
-=m4Y8
------END PGP SIGNATURE-----
+-- 
+  Ed Cashin
+  ecashin@coraid.com
 
---Sig_/CAegtB=VD9O6G_z0EQE1w2q--
+
