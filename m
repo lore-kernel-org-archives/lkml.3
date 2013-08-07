@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab3HGRFS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:05:18 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:46950 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab3HGRFP (ORCPT
+	id S1757191Ab3HGRGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:06:10 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:64171 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756738Ab3HGRGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:05:15 -0400
+	Wed, 7 Aug 2013 13:06:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <002501ce9324$8066f5a0$8134e0e0$@samsung.com>
-References: <002501ce9324$8066f5a0$8134e0e0$@samsung.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 7 Aug 2013 11:04:54 -0600
-Message-ID: <CAErSpo4YuSEsUp6wyXEJyySvqUwOisdq7BURL-eVmzWL+qSgHw@mail.gmail.com>
-Subject: Re: [PATCH V5] pci: exynos: split into two parts such as Synopsys
- part and Exynos part
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Mohit KUMAR <Mohit.KUMAR@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Sean Cross <xobs@kosagi.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        SRIKANTH TUMKUR SHIVANAND <ts.srikanth@samsung.com>,
+In-Reply-To: <20130807163045.GK28558@e106331-lin.cambridge.arm.com>
+References: <1375812017-6287-1-git-send-email-jwerner@chromium.org>
+	<20130807163045.GK28558@e106331-lin.cambridge.arm.com>
+Date: Wed, 7 Aug 2013 10:06:05 -0700
+X-Google-Sender-Auth: MWyuZfEowOTrSW6e9aKGBSCefA4
+Message-ID: <CAODwPW9DmVdzHbHN0NUK0fYUNw0tj2ktyh-20no30r14_JayFQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3 v5] usb: phy-samsung-usb: Simplify PMU register handling
+From: Julius Werner <jwerner@chromium.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Julius Werner <jwerner@chromium.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 10:13 PM, Jingoo Han <jg1.han@samsung.com> wrote:
-> On Wednesday, July 31, 2013 5:14 PM, Jingoo Han <jg1.han@samsung.com> wrote:
->> Exynos PCIe IP consists of Synopsys specific part and Exynos
->> specific part. Only core block is a Synopsys designware part;
->> other parts are Exynos specific.
->> Also, the Synopsys designware part can be shared with other
->> platforms; thus, it can be split two parts such as Synopsys
->> designware part and Exynos specific part.
->>
->> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->> Cc: Pratyush Anand <pratyush.anand@st.com>
->> Cc: Mohit KUMAR <Mohit.KUMAR@st.com>
+> This breaks compatibility, both for an old kernel and a new dt and a new
+> kernel with an old dt. Is anyone using these bindings?
+
+They only affect Samsung SoCs and have only been upstream for half a
+year, so I doubt it's heavily used.
+
+> Why are we describing fewer registers now? Are they described elsewhere?
 >
-> Hi Bjorn Helgaas,
->
-> There is no comment for last 2 weeks.
-> Will you accept this patch?
+> The dt should describe the device, not only the portion of it Linux
+> wants to use right now.
 
-I don't have any problem with this, since it's really arch code.  Do
-you want me to merge it, or do you have a standard path for merging
-Exynos and/or Designware changes?
-
-Bjorn
-
-In case you need it:
-
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-
->> ---
->> Changes since v4:
->> - fixed section mismatch warnings
->> - fixed sparse warnings
->>
->>  .../devicetree/bindings/pci/designware-pcie.txt    |    3 +
->>  arch/arm/boot/dts/exynos5440.dtsi                  |    2 +
->>  drivers/pci/host/Makefile                          |    3 +-
->>  drivers/pci/host/pci-exynos.c                      |  530 ++++++++++
->>  drivers/pci/host/pcie-designware.c                 | 1011 ++++++--------------
->>  drivers/pci/host/pcie-designware.h                 |   65 ++
->>  6 files changed, 874 insertions(+), 740 deletions(-)
->>  create mode 100644 drivers/pci/host/pci-exynos.c
->>  create mode 100644 drivers/pci/host/pcie-designware.h
->
->
+This only ever described a small section of the huge set of PMU
+registers anyway. Before it described up to three registers
+controlling different PHYs (using hardcoded offsets in the code to
+later find the right one)... with my patch every PHY's DT entry only
+describes the one register concerning itself, which makes more sense
+in my opinion. It will also prevent the register descriptions in
+different DT entries from overlapping.
