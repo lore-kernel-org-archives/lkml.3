@@ -1,110 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933576Ab3HGVWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:22:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47020 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933387Ab3HGVL1 (ORCPT
+	id S933448Ab3HGVXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:23:25 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54973 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933337Ab3HGVXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:11:27 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/47] perf session: Export a few functions for event processing
-Date: Wed,  7 Aug 2013 18:10:45 -0300
-Message-Id: <1375909874-22073-19-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
-References: <1375909874-22073-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 7 Aug 2013 17:23:21 -0400
+Date: Wed, 7 Aug 2013 22:23:02 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Andrew Fish <afish@apple.com>
+Cc: Matt Fleming <matt@console-pimps.org>, edk2-devel@lists.sourceforge.net,
+        Laszlo Ersek <lersek@redhat.com>, linux-efi@vger.kernel.org,
+        Gleb Natapov <gleb@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [edk2] Corrupted EFI region
+Message-ID: <20130807212302.GA10905@srcf.ucam.org>
+References: <51FFD5B0.9080000@redhat.com>
+ <20130805164731.GG31845@pd.tnic>
+ <52001896.1030509@redhat.com>
+ <20130805220808.GC14067@pd.tnic>
+ <20130806141036.GD14891@pd.tnic>
+ <520116D1.2010000@redhat.com>
+ <20130807151935.GJ17920@pd.tnic>
+ <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
+ <20130807201908.GG2515@console-pimps.org>
+ <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+On Wed, Aug 07, 2013 at 02:10:28PM -0700, Andrew Fish wrote:
 
-Allows kvm live mode to reuse the event processing and ordered samples
-processing used by the perf-report path.
+> Well the issue I see is I don't think OS X or Windows are doing this. 
+> So I'm guessing there is some unique thing beings done on the Linux 
+> side and we don't have good tests to catch bugs in the EFI 
+> implementations. If the Linux loader hides the bugs and we don't hit 
+> them with other operating systems they are never going to get fixed. 
+> It would be good if we could track down some of these issues and make 
+> a request for some tests that can help catch these issues. The tests 
+> would be part of UEFI.org, but since some of us play in both worlds we 
+> can forward the known issues to the UEFI test work group.
 
-v2: removed flush_sample_queue as noticed by Jiri
+Linux enables NX before calling SetVirtualAddressMap(). If other OSes 
+don't do that, you probably won't see the bug.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1375473947-64285-4-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/session.c | 12 ++++++------
- tools/perf/util/session.h |  7 +++++++
- 2 files changed, 13 insertions(+), 6 deletions(-)
+> Is it possible to have a switch to turn off the not required behavior 
+> (hiding EFI implementation bugs) so that bad platforms could be 
+> detected? This would be a good thing to try on platforms at the 
+> upcoming UEFI Plugfest hosted by the Linux Foundation and the UEFI 
+> Forum, so the bad behavior can be detected and the vendors can fix the 
+> issue.
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index a0ce5a4..b5ebd47 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -250,7 +250,7 @@ static int process_finished_round(struct perf_tool *tool,
- 				  union perf_event *event,
- 				  struct perf_session *session);
- 
--static void perf_tool__fill_defaults(struct perf_tool *tool)
-+void perf_tool__fill_defaults(struct perf_tool *tool)
- {
- 	if (tool->sample == NULL)
- 		tool->sample = process_event_sample_stub;
-@@ -495,7 +495,7 @@ static int perf_session_deliver_event(struct perf_session *session,
- 				      u64 file_offset);
- 
- static int flush_sample_queue(struct perf_session *s,
--			       struct perf_tool *tool)
-+		       struct perf_tool *tool)
- {
- 	struct ordered_samples *os = &s->ordered_samples;
- 	struct list_head *head = &os->samples;
-@@ -1049,10 +1049,10 @@ static void event_swap(union perf_event *event, bool sample_id_all)
- 		swap(event, sample_id_all);
- }
- 
--static int perf_session__process_event(struct perf_session *session,
--				       union perf_event *event,
--				       struct perf_tool *tool,
--				       u64 file_offset)
-+int perf_session__process_event(struct perf_session *session,
-+				union perf_event *event,
-+				struct perf_tool *tool,
-+				u64 file_offset)
- {
- 	struct perf_sample sample;
- 	int ret;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index ad8d3d4..9818fc2 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -56,6 +56,13 @@ int __perf_session__process_events(struct perf_session *self,
- int perf_session__process_events(struct perf_session *self,
- 				 struct perf_tool *tool);
- 
-+int perf_session__process_event(struct perf_session *session,
-+				union perf_event *event,
-+				struct perf_tool *tool,
-+				u64 file_offset);
-+
-+void perf_tool__fill_defaults(struct perf_tool *tool);
-+
- int perf_session__resolve_callchain(struct perf_session *self, struct perf_evsel *evsel,
- 				    struct thread *thread,
- 				    struct ip_callchain *chain,
+It's behaviour that we already have to work around due to shipping 
+hardware exhibiting it, so while we could certainly develop a test, 
+Linux is always going to need to include the workaround code.
+
+That being said, some of what we do with the memory map in Linux right 
+now is probably unnecessary - we're modifying the memory map because 
+that's a convenient place to store the information, rather than because 
+the memory map actually needs to be modified. We could do a better job 
+of that.
+
 -- 
-1.8.1.4
-
+Matthew Garrett | mjg59@srcf.ucam.org
