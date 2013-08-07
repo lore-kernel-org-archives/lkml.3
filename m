@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3HGQVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:21:10 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:37560 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992Ab3HGQVI (ORCPT
+	id S1756940Ab3HGQVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:21:21 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:33365 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756462Ab3HGQVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:21:08 -0400
+	Wed, 7 Aug 2013 12:21:18 -0400
+Message-ID: <520273FB.3030103@linaro.org>
+Date: Wed, 07 Aug 2013 09:21:15 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <001b01ce9366$9f7427a0$de5c76e0$@samsung.com>
-References: <003c01ce89f3$3abc4bc0$b034e340$@samsung.com>
-	<27536111.odlCO093Zi@amdc1032>
-	<003c01ce91cd$427fad70$c77f0850$@samsung.com>
-	<1429191.3FDem6vW0S@amdc1032>
-	<002001ce928a$f5a7f390$e0f7dab0$@samsung.com>
-	<5200F781.9020300@samsung.com>
-	<CANEJEGtQuKG5err-R7SxD6m+aJWVmn47X9NJLx7UzaRkKhUMoQ@mail.gmail.com>
-	<001b01ce9366$9f7427a0$de5c76e0$@samsung.com>
-Date: Wed, 7 Aug 2013 09:21:07 -0700
-X-Google-Sender-Auth: T9CcaEWG4_U38Jp1MzzXZSp_YZQ
-Message-ID: <CANEJEGtDm6FYvx8DdiGofk5ViU8kWK-3QvTvtU66Mvhfn+sDCQ@mail.gmail.com>
-Subject: Re: [PATCH v8 06/12] ARM: dts: Add description of System MMU of
- Exynos SoCs
-From: Grant Grundler <grundler@chromium.org>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: Grant Grundler <grundler@chromium.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Hyunwoong Kim <khw0178.kim@samsung.com>,
-        Joerg Roedel <joro@8bytes.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Subash Patel <supash.ramaswamy@linaro.org>,
-        Keyyoung Park <keyyoung.park@samsung.com>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu, Sachin Kamat <sachin.kamat@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: Re: [PATCH] clocksource: add an "menu" item to Kconfig
+References: <1375873017-30625-1-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <1375873017-30625-1-git-send-email-bigeasy@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 7, 2013 at 5:07 AM, Cho KyongHo <pullip.cho@samsung.com> wrote:
-...
->> I don't understand how this is possible. Can someone explain this
->> better in the IOMMU documentation please?
->
-> System MMU is dedicated to a master H/W such as FIMD and FIMC.
+On 08/07/2013 03:56 AM, Sebastian Andrzej Siewior wrote:
+> This patch adds a menu item to clocksource' Kconfig file. Without it the
+> changeable items look somehow lost in the main drivers' menu
 
-Sory - Exynos 5250 documentation I have (confidential version) uses
-FIMD and FIMC but never explains what they are nor identifies them in
-a diagram. Based on the references, they are related to the video
-mixer but I don't know exactly what function FIMD/FIMC serve.
+So I'd like to push back on this a bit and ask why we need user-visible 
+clocksource config options?
 
+I'm much prefer the platform options select the needed clocksources, and 
+not leave it up to the user (who really doesn't want to go digging 
+around to find the clocksource sub-menu under drivers, and scan a list 
+of 100 options that aren't possible on their hardware).
 
-> Thus, attaching a master H/W to an iommu domain can be thought as
-> attaching a System MMU to an iommu domain even though such thinking
-> is not correct view of the relationship between iommu domain and
-> System MMU.
+For an example of what I consider bad behavior here, see the RTC driver 
+directory - at a certain point they just become hashes: "Oh no.. you 
+selected rtc-387aae6fd, on your hardware, you need rtc-adfb8e5".
 
-This almost makes sense. I understand the above to mean the System MMU
-is a proxy for the FIMD and FIMC.
+It really just seems like it forces more unnecessary options on the user 
+and more ways to build a kernel that won't boot.
 
->> I can understand we might have multiple MMUs in a system...e.g. every
->> range of memory might have it's own MMU. But they share the same
->> physical address space and generally live under one page table.
->> Because of "one page table" I would consider them one entity from the
->> the IOMMUs perspective.
->
-> Sorry, I don't understand.
-> Do you mean you are thinking that it is better to share one page table
-> by all IOMMUs in a system?
+I do get you're trying to fix up the bad situation, caused by 
+user-prompts slipping into the Kconfig.
 
-No. This is how the previous IOMMUs I worked on functioned. It doesn't
-mean this is how current ones should.
+But I might prefer a patch closer to whats below.
 
-My example above was referring to CPU MMUs in the case of NUMA
-architectures. Each NUMA CPU socket can have it's own MMU (and TLB)
-and corresponding memory controller. All CPUs in an SMP system map
-process and kernel virtual addresses to one common "physical" address
-space. This means allocation and use of "physical address space" has
-to be managed as one entity (even if several page tables exist in the
-implementation - e.g. NUMA).
+thanks
+-john
 
 
-Back to the original comment that started my question (pulled out of
-context now...sorry):
-   "Just make sure that it will be possible to attach more than one
-sysmmu controller to one iommu domain."
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index b7b9b04..b3050db 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -57,14 +57,14 @@ config CLKSRC_NOMADIK_MTU_SCHED_CLOCK
+  	  Use the Multi Timer Unit as the sched_clock.
+  
+  config CLKSRC_DBX500_PRCMU
+-	bool "Clocksource PRCMU Timer"
++	bool
+  	depends on UX500_SOC_DB8500
+  	default y
+  	help
+  	  Use the always on PRCMU Timer as clocksource
+  
+  config CLKSRC_DBX500_PRCMU_SCHED_CLOCK
+-	bool "Clocksource PRCMU Timer sched_clock"
++	bool
+  	depends on (CLKSRC_DBX500_PRCMU && !CLKSRC_NOMADIK_MTU_SCHED_CLOCK)
+  	default y
+  	help
 
-Does that mean the IOMMU now has to map to multiple "physical address
-spaces" or am I completely missing what a SysMMU does?
 
-The "SysMMU" is the System Memory Management Unit, right?
-
-I still thinking one IOMMU domain maps one (IO) virtual address space
-to one (common with CPU and other IOMMU) physical address space.
-
-cheers,
-grant
-
->
-> Thank you,
-> KyongHo
->>
->> thanks,
->> grant
->
