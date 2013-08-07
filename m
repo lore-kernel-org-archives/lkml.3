@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438Ab3HGIJH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 04:09:07 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:52132 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227Ab3HGIJC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 04:09:02 -0400
-X-AuditID: 9c93017d-b7b45ae000000e34-fb-5202009cf763
-From: Namhyung Kim <namhyung@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V9 05/14] perf tools: tidy up sample parsing overflow checking
-References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
-	<1375719994-26482-6-git-send-email-adrian.hunter@intel.com>
-Date: Wed, 07 Aug 2013 17:09:00 +0900
-In-Reply-To: <1375719994-26482-6-git-send-email-adrian.hunter@intel.com>
-	(Adrian Hunter's message of "Mon, 5 Aug 2013 19:26:25 +0300")
-Message-ID: <87txj1ylb7.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754880Ab3HGIL6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 04:11:58 -0400
+Received: from mail.phy.syr.edu ([128.230.72.46]:64561 "EHLO mail.phy.syr.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750889Ab3HGIL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 04:11:56 -0400
+X-Greylist: delayed 3523 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Aug 2013 04:11:56 EDT
+From: "ADMIN" <keny@physics.syr.edu>
+Reply-To: upgrade1@dgoh.org
+Subject: Dear user
+Date: Wed, 7 Aug 2013 02:04:09 -0500
+Message-Id: <20130807070442.M23966@physics.syr.edu>
+X-Mailer: OpenWebMail 2.53 20090308 336
+X-OriginatingIP: 41.203.67.55 (wali)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain;
+	charset=utf-8
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 Aug 2013 19:26:25 +0300, Adrian Hunter wrote:
-> The size of data retrieved from a sample event must be
-> validated to ensure it does not go past the end of the
-> event.  That was being done sporadically and without
-> considering integer overflows.
+Dear user
+Your e-mail exceeds 2 GB, which is created by our webmaster, you are
+currently at 2.30GB, you can not send or receive new messages until you
+check your account. Fill out the form to confirm your account.
 
-Wouldn't it be great if the macro (or something) can do all three things
-together - checking overflow, getting current value (pointer) and
-advancing the array to the size?  Is that possible?
+Complete the form below to confirm your e-mail address:
 
-Thanks,
-Namhyung
+(1) E-mail:
+(2) Username:
+(3) Password:
+(4) Confirm Password:
+
+thanks
+system administrator
