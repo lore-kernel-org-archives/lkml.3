@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab3HGTZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 15:25:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39228 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab3HGTZ4 (ORCPT
+	id S932680Ab3HGT0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 15:26:19 -0400
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:40241 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab3HGT0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 15:25:56 -0400
-Date: Thu, 8 Aug 2013 04:27:14 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bob Smith <bsmith@linuxtoys.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons a
- /sys-like interface
-Message-ID: <20130807192714.GC2708@kroah.com>
-References: <51FC5478.40500@linuxtoys.org>
- <51FC5A97.1090102@linuxtoys.org>
- <20130803223828.GA14611@kroah.com>
- <51FECDA6.5070001@linuxtoys.org>
- <20130804231958.GA25418@kroah.com>
- <52003958.7080103@linuxtoys.org>
- <20130806094604.GE27889@kroah.com>
- <520299AB.1020607@linuxtoys.org>
+	Wed, 7 Aug 2013 15:26:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520299AB.1020607@linuxtoys.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANOLnOMPhOH5uUBqWwV-YNSeA_YHxL_dDa0ftL4jcWRgGwkfiQ@mail.gmail.com>
+References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com>
+	<CAMP44s2bOniz4qx5y9h4ppHRUjiPVGL+igSwO5NUJd4zpObxFw@mail.gmail.com>
+	<20130806154314.GA398@redhat.com>
+	<CANOLnOMPhOH5uUBqWwV-YNSeA_YHxL_dDa0ftL4jcWRgGwkfiQ@mail.gmail.com>
+Date: Wed, 7 Aug 2013 12:26:16 -0700
+X-Google-Sender-Auth: 58DzAWWpO8j2QLDVLYdFQ80CJIY
+Message-ID: <CA+55aFxt1iqJXW=bsETugWVxj9LwZXkq0FT836YMJVsRP9juEQ@mail.gmail.com>
+Subject: Re: [PATCH 0/1] (Was: Linux 3.11-rc4)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Grazvydas Ignotas <notasas@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Denys Vlasenko <dvlasenk@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 12:02:03PM -0700, Bob Smith wrote:
-> Greg
->    This sample program shows what I'm trying to accomplish.
-> 
-> I still owe you a reply for your previous posting
-> 
-> thanks
-> Bob Smith
-> 
-> 
-> /*
->  * pxtest.c : This program demonstrates the use of a proxy device.
->  *
->  * The program generates some data once a second and tries to send
->  * it to /dev/proxyout.  The original data is modified by adding
->  * an offset to each input character.  The offset can be set or
->  * viewed at the proxy device node /dev/proxyctrl.
->  *
->  * Typical usage might be
->  *    sudo modprobe proxy
->  *    PROXYDEV=`grep proxy /proc/devices | cut -d\  -f 1`
->  *    sudo mknod /dev/proxyout c $PROXYDEV 0
->  *    sudo mknod /dev/proxyctrl c $PROXYDEV 1
+On Wed, Aug 7, 2013 at 5:05 AM, Grazvydas Ignotas <notasas@gmail.com> wrote:
+>
+> Personally I'd say the kernel should not limit what's written to debug
+> registers. Why can't I write insane values to registers in _my_
+> hardware? It's not like it's going to break the hardware or anything.
 
-No one should ever have to mknod a device node, the kernel should do
-this for us automatically, please don't regress to the 1990's...
+It may be your hardware, but do you know what might be running on it?
+It's a security issue: setting debug traps on kernel code/data
+addresses can not only leak information, it can cause serious trouble
+(taking a debug trap on the first instruction of an NMI handler etc)
+including kernel stack corruption...
 
->  *    sudo chmod 666 /dev/proxyout /dev/proxyctrl
+You do want the kernel to give you file permission checking even
+though it's "your machine", don't you? Very similar thing.
 
-That's mighty permissive :(
+The fact that windows allows it is kind of irrelevant. They aren't
+exactly known for caring deeply.
 
->  *    gcc -o pxtest pxtest.c
->  *    ./pxtest &
->  *    cat /dev/proxyout    # view the output
->  *    (switch to another terminal window)
->  *    cat /dev/proxyctrl   # what is the offset?
->  *    echo 2 > /dev/proxyctrl  # set offset to 2
->  */
-
-I really don't understand this, you just have two programs talking to
-each other, passing the data blindly through the kernel.  Again, we
-already have over 10 different ways to do IPC these days, are you _sure_
-that _none_ of them work for you like this?  You have gone and looked at
-them all, right?
-
-thanks,
-
-greg k-h
+               Linus
