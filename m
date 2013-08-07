@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168Ab3HGNlC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:41:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933122Ab3HGNlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:41:00 -0400
-Date: Wed, 7 Aug 2013 15:40:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-mm@kvack.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/3] Add madvise(..., MADV_WILLWRITE)
-Message-ID: <20130807134058.GC12843@quack.suse.cz>
-References: <cover.1375729665.git.luto@amacapital.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1375729665.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933186Ab3HGNni (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:43:38 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:44091 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933144Ab3HGNnh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 09:43:37 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com,
+        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: [PATCH 1/2] hexagon: fix return type of ffs()
+Date: Wed,  7 Aug 2013 22:42:38 +0900
+Message-Id: <1375882959-26853-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-08-13 12:43:58, Andy Lutomirski wrote:
-> My application fallocates and mmaps (shared, writable) a lot (several
-> GB) of data at startup.  Those mappings are mlocked, and they live on
-> ext4.  The first write to any given page is slow because
-> ext4_da_get_block_prep can block.  This means that, to get decent
-> performance, I need to write something to all of these pages at
-> startup.  This, in turn, causes a giant IO storm as several GB of
-> zeros get pointlessly written to disk.
-> 
-> This series is an attempt to add madvise(..., MADV_WILLWRITE) to
-> signal to the kernel that I will eventually write to the referenced
-> pages.  It should cause any expensive operations that happen on the
-> first write to happen immediately, but it should not result in
-> dirtying the pages.
-> 
-> madvice(addr, len, MADV_WILLWRITE) returns the number of bytes that
-> the operation succeeded on or a negative error code if there was an
-> actual failure.  A return value of zero signifies that the kernel
-> doesn't know how to "willwrite" the range and that userspace should
-> implement a fallback.
-> 
-> For now, it only works on shared writable ext4 mappings.  Eventually
-> it should support other filesystems as well as private pages (it
-> should COW the pages but not cause swap IO) and anonymous pages (it
-> should COW the zero page if applicable).
-> 
-> The implementation leaves much to be desired.  In particular, it
-> generates dirty buffer heads on a clean page, and this scares me.
-> 
-> Thoughts?
-  One question before I look at the patches: Why don't you use fallocate()
-in your application? The functionality you require seems to be pretty
-similar to it - writing to an already allocated block is usually quick.
+The return type of ffs() is 'int' on all architectures except cris and
+hexagon.  This unifies the return type to 'int'.
 
+The problem I'm seeing is that the following line generates a warning
+on cris and hexagon because of the mismatch between format '%u' and
+return type of ffs().
 
-								Honza
+	printk("bits in OOB size: %u\n",	ffs(ns->geom.oobsz) - 1);
 
-> Andy Lutomirski (3):
->   mm: Add MADV_WILLWRITE to indicate that a range will be written to
->   fs: Add block_willwrite
->   ext4: Implement willwrite for the delalloc case
-> 
->  fs/buffer.c                            | 57 ++++++++++++++++++++++++++++++++++
->  fs/ext4/ext4.h                         |  2 ++
->  fs/ext4/file.c                         |  1 +
->  fs/ext4/inode.c                        | 22 +++++++++++++
->  include/linux/buffer_head.h            |  3 ++
->  include/linux/mm.h                     | 12 +++++++
->  include/uapi/asm-generic/mman-common.h |  3 ++
->  mm/madvise.c                           | 28 +++++++++++++++--
->  8 files changed, 126 insertions(+), 2 deletions(-)
-> 
-> -- 
-> 1.8.3.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+But removing this warning by casting to 'int' looks odd, so I suggest
+unifying the return type of ffs() on all architectures.
+
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Mikael Starvik <starvik@axis.com>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: linux-cris-kernel@axis.com
+Cc: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-hexagon@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
+---
+This patch is not compile tested yet, because I couldn't find cross
+compiler for hexagon.
+
+ arch/hexagon/include/asm/bitops.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/hexagon/include/asm/bitops.h b/arch/hexagon/include/asm/bitops.h
+index 9b1e4af..80e34a6 100644
+--- a/arch/hexagon/include/asm/bitops.h
++++ b/arch/hexagon/include/asm/bitops.h
+@@ -234,7 +234,7 @@ static inline long fls(int x)
+  * the libc and compiler builtin ffs routines, therefore
+  * differs in spirit from the above ffz (man ffs).
+  */
+-static inline long ffs(int x)
++static inline int ffs(int x)
+ {
+ 	int r;
+ 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.3.1
+
