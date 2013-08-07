@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638Ab3HGVro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:47:44 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:36379 "EHLO smtp.gentoo.org"
+	id S933578Ab3HGVrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:47:42 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:36371 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933207Ab3HGVrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 17:47:19 -0400
+	id S933190Ab3HGVrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 17:47:16 -0400
 From: Sergei Trofimovich <slyich@gmail.com>
 To: linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
         Josef Bacik <jbacik@fusionio.com>
 Cc: linux-kernel@vger.kernel.org, Sergei Trofimovich <slyfox@gentoo.org>
-Subject: [PATCH 5/7] btrfs: cleanup: mark 'btrfs_read_root_item' as static
-Date: Thu,  8 Aug 2013 00:43:21 +0300
-Message-Id: <1375911803-17318-6-git-send-email-slyich@gmail.com>
+Subject: [PATCH 4/7] btrfs: cleanup: removed unused 'btrfs_start_transaction_lflush'
+Date: Thu,  8 Aug 2013 00:43:20 +0300
+Message-Id: <1375911803-17318-5-git-send-email-slyich@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375911803-17318-1-git-send-email-slyich@gmail.com>
 References: <1375911803-17318-1-git-send-email-slyich@gmail.com>
@@ -23,42 +23,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Sergei Trofimovich <slyfox@gentoo.org>
 
 Found by uselex.rb:
-> btrfs_read_root_item: [R]: exported from: fs/btrfs/btrfs.o fs/btrfs/built-in.o fs/btrfs/root-tree.o
+> btrfs_start_transaction_lflush: [R]: exported from: fs/btrfs/btrfs.o fs/btrfs/transaction.o fs/btrfs/built-in.o
 
 Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
 ---
- fs/btrfs/ctree.h     | 2 --
- fs/btrfs/root-tree.c | 4 ++--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ fs/btrfs/transaction.c | 7 -------
+ fs/btrfs/transaction.h | 2 --
+ 2 files changed, 9 deletions(-)
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index e795bf1..e91ab9e 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -3414,8 +3414,6 @@ int __must_check btrfs_update_root(struct btrfs_trans_handle *trans,
- 				   struct btrfs_root *root,
- 				   struct btrfs_key *key,
- 				   struct btrfs_root_item *item);
--void btrfs_read_root_item(struct extent_buffer *eb, int slot,
--			  struct btrfs_root_item *item);
- int btrfs_find_root(struct btrfs_root *root, struct btrfs_key *search_key,
- 		    struct btrfs_path *path, struct btrfs_root_item *root_item,
- 		    struct btrfs_key *root_key);
-diff --git a/fs/btrfs/root-tree.c b/fs/btrfs/root-tree.c
-index ffb1036..65ecc15 100644
---- a/fs/btrfs/root-tree.c
-+++ b/fs/btrfs/root-tree.c
-@@ -29,8 +29,8 @@
-  * generation numbers as then we know the root was once mounted with an older
-  * kernel that was not aware of the root item structure change.
-  */
--void btrfs_read_root_item(struct extent_buffer *eb, int slot,
--			  struct btrfs_root_item *item)
-+static void btrfs_read_root_item(struct extent_buffer *eb, int slot,
-+				 struct btrfs_root_item *item)
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index ff891d2..57c3239 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -497,13 +497,6 @@ struct btrfs_trans_handle *btrfs_start_transaction(struct btrfs_root *root,
+ 				 BTRFS_RESERVE_FLUSH_ALL);
+ }
+ 
+-struct btrfs_trans_handle *btrfs_start_transaction_lflush(
+-					struct btrfs_root *root, int num_items)
+-{
+-	return start_transaction(root, num_items, TRANS_START,
+-				 BTRFS_RESERVE_FLUSH_LIMIT);
+-}
+-
+ struct btrfs_trans_handle *btrfs_join_transaction(struct btrfs_root *root)
  {
- 	uuid_le uuid;
- 	int len;
+ 	return start_transaction(root, 0, TRANS_JOIN, 0);
+diff --git a/fs/btrfs/transaction.h b/fs/btrfs/transaction.h
+index af8293f..05d4be1 100644
+--- a/fs/btrfs/transaction.h
++++ b/fs/btrfs/transaction.h
+@@ -131,8 +131,6 @@ int btrfs_end_transaction(struct btrfs_trans_handle *trans,
+ 			  struct btrfs_root *root);
+ struct btrfs_trans_handle *btrfs_start_transaction(struct btrfs_root *root,
+ 						   int num_items);
+-struct btrfs_trans_handle *btrfs_start_transaction_lflush(
+-					struct btrfs_root *root, int num_items);
+ struct btrfs_trans_handle *btrfs_join_transaction(struct btrfs_root *root);
+ struct btrfs_trans_handle *btrfs_join_transaction_nolock(struct btrfs_root *root);
+ struct btrfs_trans_handle *btrfs_attach_transaction(struct btrfs_root *root);
 -- 
 1.8.3.2
 
