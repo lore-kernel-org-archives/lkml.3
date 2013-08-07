@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3HGP1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 11:27:36 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:60945 "EHLO mx11.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754988Ab3HGP1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 11:27:33 -0400
-X-IronPort-AV: E=Sophos;i="4.89,833,1367996400"; 
-   d="scan'208";a="39873076"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Nix <nix@esperi.org.uk>
-CC: Jeff Layton <jlayton@redhat.com>,
-        =?utf-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, NFS list <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dhowells@redhat.com" <dhowells@redhat.com>
-Subject: Re: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
- from 3.9.*
-Thread-Topic: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic
- from 3.9.*
-Thread-Index: AQHOk1eH4gcyFEImq0mWTcGQZbqon5mKU+4A
-Date: Wed, 7 Aug 2013 15:27:31 +0000
-Message-ID: <1375889252.6488.1.camel@leira.trondhjem.org>
-References: <8761vlv4z9.fsf@spindle.srvr.nix>
-	 <20130805084436.69ee4415@corrin.poochiereds.net>
-	 <87siyotcri.fsf@spindle.srvr.nix>
-	 <20130805110427.509db424@tlielax.poochiereds.net>
-	 <20130805111106.73d6ab90@tlielax.poochiereds.net>
-	 <87zjswrvaq.fsf@spindle.srvr.nix>
-	 <1375719301.7337.14.camel@leira.trondhjem.org>
-	 <20130805133739.21654ecb@tlielax.poochiereds.net>
-	 <1375726682.7337.29.camel@leira.trondhjem.org>
-	 <20130805143311.4ae59067@tlielax.poochiereds.net>
-	 <1375755693.7337.42.camel@leira.trondhjem.org>
-	 <87iozhst0s.fsf@spindle.srvr.nix>
-In-Reply-To: <87iozhst0s.fsf@spindle.srvr.nix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <00E5B87D03B7E34784BD58358807C767@hq.netapp.com>
+	id S1756189Ab3HGP2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 11:28:41 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:36650 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754534Ab3HGP2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 11:28:38 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: sedat.dilek@gmail.com, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the ext4 tree
+References: <20130729110816.12958c3a26400f444a9a5012@canb.auug.org.au>
+	<CA+icZUUt4domktYZZn0Qp3BZoSFqmKic4qSnVP4cuTKwUww_=A@mail.gmail.com>
+	<20130807153840.4f2997b603397c07aca98b2d@canb.auug.org.au>
+Date: Wed, 07 Aug 2013 08:28:35 -0700
+In-Reply-To: <20130807153840.4f2997b603397c07aca98b2d@canb.auug.org.au>
+	(Stephen Rothwell's message of "Wed, 7 Aug 2013 15:38:40 +1000")
+Message-ID: <87zjsted0c.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r77FRkr2027352
 
-On Wed, 2013-08-07 at 11:18 +0100, Nix wrote:
-> On 6 Aug 2013, Trond Myklebust verbalised:
-> > True. How about something like the following instead. Note the change to
-> > the original patch...
-> 
-> Well, with those applied I could reboot without a panic for the first
-> time since 3.8.x: looking good. I'll give it a reboot or two with a
-> system that's not hot from booting though.
-> 
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-Could you please also try applying only the 1/2 patch, to see if that
-suffices to quell the shutdown panic?
+> Hi Sedat,
+>
+> On Wed, 7 Aug 2013 07:16:57 +0200 Sedat Dilek
+> <sedat.dilek@gmail.com> wrote:
+>>
+>> On Mon, Jul 29, 2013 at 3:08 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> >
+>> > After merging the ext4 tree, today's linux-next build (powerpc
+>> > ppc64_defconfig) failed like this:
+>> >
+>> > fs/ext4/ialloc.c: In function '__ext4_new_inode':
+>> > fs/ext4/ialloc.c:817:1: warning: label 'next_ino' defined but not used [-Wunused-label]
+>> >  next_ino:
+>> >  ^
+>> > fs/ext4/ialloc.c:792:4: error: label 'next_inode' used but not defined
+>> >     goto next_inode;
+>> >     ^
+>> >
+>> > Hmm ...
+>> >
+>> > Caused by commit 4a8603ef197a ("ext4: avoid reusing recently deleted
+>> > inodes in no journal mode").
+>> >
+>> > I have used the ext4 tree from next-20130726 for today.
+>> 
+>> Since this message ext4-tree was not updated.
+>> The commit "ext4: avoid reusing recently deleted inodes in no journal
+>> mode" was refreshed and has a different commit-id.
+>> Did you test with this one? You still see the breakage?
+>
+> Today's linux-next does not have this build failure.
 
+However, this same commit does introduce a new build failure (not
+present in next-20130806) when ext4 is built as a module:
+
+ERROR: "dirty_expire_interval" [fs/ext4/ext4.ko] undefined!
+make[3]: *** [__modpost] Error 1
+make[2]: *** [modules] Error 2
+
+The change below fixes the problem.
+
+Found when building the mv78xx0_defconfig on ARM.
+
+Kevin
+
+------------8<--------------
+>From 8bd28888e08124d9b298f42a0e0c3a7584ba285f Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@linaro.org>
+Date: Wed, 7 Aug 2013 08:17:43 -0700
+Subject: [PATCH] mm: page-writeback: export dirty_expire_interval, used by
+ ext4
+
+commit 533ec0ed (ext4: avoid reusing recently deleted inodes in no
+journal mode) started using dirty_expire_inteval, which is not
+available to modules.  Make it available to modules.
+
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
+---
+ mm/page-writeback.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index d374b29..c8b61ef 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -104,6 +104,8 @@ EXPORT_SYMBOL_GPL(dirty_writeback_interval);
+  */
+ unsigned int dirty_expire_interval = 30 * 100; /* centiseconds */
+ 
++EXPORT_SYMBOL_GPL(dirty_expire_interval);
++
+ /*
+  * Flag that makes the machine dump writes/reads and block dirtyings.
+  */
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+1.8.3
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
