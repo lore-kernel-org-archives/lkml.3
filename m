@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492Ab3HGLdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 07:33:13 -0400
+	id S932778Ab3HGLgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 07:36:42 -0400
 Received: from mga02.intel.com ([134.134.136.20]:56434 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753975Ab3HGLdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 07:33:08 -0400
+	id S1757476Ab3HGLdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 07:33:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,832,1367996400"; 
-   d="scan'208";a="383214496"
+   d="scan'208";a="383214527"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V4 03/13] perf tools: make it possible to read object code from vmlinux
-Date: Wed,  7 Aug 2013 14:38:47 +0300
-Message-Id: <1375875537-4509-4-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V4 04/13] perf tools: adjust the vmlinux symtab matches kallsyms test
+Date: Wed,  7 Aug 2013 14:38:48 +0300
+Message-Id: <1375875537-4509-5-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375875537-4509-1-git-send-email-adrian.hunter@intel.com>
 References: <1375875537-4509-1-git-send-email-adrian.hunter@intel.com>
@@ -28,381 +28,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new "object code reading" test shows that it is not possible
-to read object code from vmlinux.  That is because the mappings
-do not map to the dso.  This patch fixes that.
+vmlinux maps now map to the dso and the symbol values
+are now file offsets.  For comparison with kallsyms
+the virtual memory address is needed which is obtained
+by unmapping the symbol value.
 
-A side-effect of changing the kernel map is that the "reloc"
-offset must be taken into account.  As a result of that
-separate map functions for relocation are no longer needed.
-
-Also fixing up the maps to match the symbols no longer makes
-sense and so is not done.
-
-The vmlinux dso data_type is now set to either
-DSO_BINARY_TYPE__VMLINUX or DSO_BINARY_TYPE__GUEST_VMLINUX
-as approprite, which enables the correct file name to
-be determined by dso__binary_type_file().
-
-This patch breaks the "vmlinux symtab matches kallsyms"
-test.  That is fixed in a following patch.
+The "vmlinux symtab matches kallsyms" is adjusted
+accordingly.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/dso.c        |   4 +-
- tools/perf/util/dso.h        |   8 ++++
- tools/perf/util/machine.c    |   4 +-
- tools/perf/util/map.c        |  35 ---------------
- tools/perf/util/symbol-elf.c | 100 +++++++++++++++++++++++++++++++++++++++----
- tools/perf/util/symbol.c     |  22 +++++-----
- 6 files changed, 112 insertions(+), 61 deletions(-)
+ tools/perf/tests/vmlinux-kallsyms.c | 32 +++++++++++++++++++++-----------
+ 1 file changed, 21 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index c4374f0..121583d 100644
---- a/tools/perf/util/dso.c
-+++ b/tools/perf/util/dso.c
-@@ -78,6 +78,8 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
- 			 symbol_conf.symfs, build_id_hex, build_id_hex + 2);
- 		break;
+diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
+index add1539..e2e1498 100644
+--- a/tools/perf/tests/vmlinux-kallsyms.c
++++ b/tools/perf/tests/vmlinux-kallsyms.c
+@@ -25,6 +25,7 @@ int test__vmlinux_matches_kallsyms(void)
+ 	struct machine kallsyms, vmlinux;
+ 	enum map_type type = MAP__FUNCTION;
+ 	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
++	u64 mem_start, mem_end;
  
-+	case DSO_BINARY_TYPE__VMLINUX:
-+	case DSO_BINARY_TYPE__GUEST_VMLINUX:
- 	case DSO_BINARY_TYPE__SYSTEM_PATH_DSO:
- 		snprintf(file, size, "%s%s",
- 			 symbol_conf.symfs, dso->long_name);
-@@ -95,9 +97,7 @@ int dso__binary_type_file(struct dso *dso, enum dso_binary_type type,
- 
- 	default:
- 	case DSO_BINARY_TYPE__KALLSYMS:
--	case DSO_BINARY_TYPE__VMLINUX:
- 	case DSO_BINARY_TYPE__GUEST_KALLSYMS:
--	case DSO_BINARY_TYPE__GUEST_VMLINUX:
- 	case DSO_BINARY_TYPE__JAVA_JIT:
- 	case DSO_BINARY_TYPE__NOT_FOUND:
- 		ret = -1;
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index d51aaf2..02aadaf 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/types.h>
- #include <linux/rbtree.h>
-+#include <stdbool.h>
- #include "types.h"
- #include "map.h"
- 
-@@ -146,4 +147,11 @@ size_t dso__fprintf_buildid(struct dso *dso, FILE *fp);
- size_t dso__fprintf_symbols_by_name(struct dso *dso,
- 				    enum map_type type, FILE *fp);
- size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
-+
-+static inline bool dso__is_vmlinux(struct dso *dso)
-+{
-+	return dso->data_type == DSO_BINARY_TYPE__VMLINUX ||
-+	       dso->data_type == DSO_BINARY_TYPE__GUEST_VMLINUX;
-+}
-+
- #endif /* __PERF_DSO */
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index f9f9d63..dc35dcf 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -628,10 +628,8 @@ int machine__load_vmlinux_path(struct machine *machine, enum map_type type,
- 	struct map *map = machine->vmlinux_maps[type];
- 	int ret = dso__load_vmlinux_path(map->dso, map, filter);
- 
--	if (ret > 0) {
-+	if (ret > 0)
- 		dso__set_loaded(map->dso, type);
--		map__reloc_vmlinux(map);
--	}
- 
- 	return ret;
- }
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 8bcdf9e..5f662a3 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -182,12 +182,6 @@ int map__load(struct map *map, symbol_filter_t filter)
- #endif
- 		return -1;
- 	}
--	/*
--	 * Only applies to the kernel, as its symtabs aren't relative like the
--	 * module ones.
--	 */
--	if (map->dso->kernel)
--		map__reloc_vmlinux(map);
- 
- 	return 0;
- }
-@@ -513,35 +507,6 @@ int map_groups__clone(struct map_groups *mg,
- 	return 0;
- }
- 
--static u64 map__reloc_map_ip(struct map *map, u64 ip)
--{
--	return ip + (s64)map->pgoff;
--}
--
--static u64 map__reloc_unmap_ip(struct map *map, u64 ip)
--{
--	return ip - (s64)map->pgoff;
--}
--
--void map__reloc_vmlinux(struct map *map)
--{
--	struct kmap *kmap = map__kmap(map);
--	s64 reloc;
--
--	if (!kmap->ref_reloc_sym || !kmap->ref_reloc_sym->unrelocated_addr)
--		return;
--
--	reloc = (kmap->ref_reloc_sym->unrelocated_addr -
--		 kmap->ref_reloc_sym->addr);
--
--	if (!reloc)
--		return;
--
--	map->map_ip   = map__reloc_map_ip;
--	map->unmap_ip = map__reloc_unmap_ip;
--	map->pgoff    = reloc;
--}
--
- void maps__insert(struct rb_root *maps, struct map *map)
- {
- 	struct rb_node **p = &maps->rb_node;
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 4b12bf8..ed6f443 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -603,7 +603,7 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
- 						     ".gnu.prelink_undo",
- 						     NULL) != NULL);
- 	} else {
--		ss->adjust_symbols = 0;
-+		ss->adjust_symbols = ehdr.e_type == ET_EXEC;
- 	}
- 
- 	ss->name   = strdup(name);
-@@ -624,6 +624,37 @@ out_close:
- 	return err;
- }
- 
-+/**
-+ * ref_reloc_sym_not_found - has kernel relocation symbol been found.
-+ * @kmap: kernel maps and relocation reference symbol
-+ *
-+ * This function returns %true if we are dealing with the kernel maps and the
-+ * relocation reference symbol has not yet been found.  Otherwise %false is
-+ * returned.
-+ */
-+static bool ref_reloc_sym_not_found(struct kmap *kmap)
-+{
-+	return kmap && kmap->ref_reloc_sym && kmap->ref_reloc_sym->name &&
-+	       !kmap->ref_reloc_sym->unrelocated_addr;
-+}
-+
-+/**
-+ * ref_reloc - kernel relocation offset.
-+ * @kmap: kernel maps and relocation reference symbol
-+ *
-+ * This function returns the offset of kernel addresses as determined by using
-+ * the relocation reference symbol i.e. if the kernel has not been relocated
-+ * then the return value is zero.
-+ */
-+static u64 ref_reloc(struct kmap *kmap)
-+{
-+	if (kmap && kmap->ref_reloc_sym &&
-+	    kmap->ref_reloc_sym->unrelocated_addr)
-+		return kmap->ref_reloc_sym->addr -
-+		       kmap->ref_reloc_sym->unrelocated_addr;
-+	return 0;
-+}
-+
- int dso__load_sym(struct dso *dso, struct map *map,
- 		  struct symsrc *syms_ss, struct symsrc *runtime_ss,
- 		  symbol_filter_t filter, int kmodule)
-@@ -642,6 +673,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 	Elf_Scn *sec, *sec_strndx;
- 	Elf *elf;
- 	int nr = 0;
-+	bool remap_kernel = false, adjust_kernel_syms = false;
- 
- 	dso->symtab_type = syms_ss->type;
- 
-@@ -681,7 +713,31 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 	nr_syms = shdr.sh_size / shdr.sh_entsize;
- 
- 	memset(&sym, 0, sizeof(sym));
--	dso->adjust_symbols = runtime_ss->adjust_symbols;
-+
-+	/*
-+	 * The kernel relocation symbol is needed in advance in order to adjust
-+	 * kernel maps correctly.
-+	 */
-+	if (ref_reloc_sym_not_found(kmap)) {
-+		elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
-+			const char *elf_name = elf_sym__name(&sym, symstrs);
-+
-+			if (strcmp(elf_name, kmap->ref_reloc_sym->name))
-+				continue;
-+			kmap->ref_reloc_sym->unrelocated_addr = sym.st_value;
-+			break;
-+		}
-+	}
-+
-+	dso->adjust_symbols = runtime_ss->adjust_symbols || ref_reloc(kmap);
-+	/*
-+	 * Initial kernel and module mappings do not map to the dso.  For
-+	 * function mappings, flag the fixups.
-+	 */
-+	if (map->type == MAP__FUNCTION && (dso->kernel || kmodule)) {
-+		remap_kernel = true;
-+		adjust_kernel_syms = dso->adjust_symbols;
-+	}
- 	elf_symtab__for_each_symbol(syms, nr_syms, idx, sym) {
- 		struct symbol *f;
- 		const char *elf_name = elf_sym__name(&sym, symstrs);
-@@ -690,10 +746,6 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 		const char *section_name;
- 		bool used_opd = false;
- 
--		if (kmap && kmap->ref_reloc_sym && kmap->ref_reloc_sym->name &&
--		    strcmp(elf_name, kmap->ref_reloc_sym->name) == 0)
--			kmap->ref_reloc_sym->unrelocated_addr = sym.st_value;
--
- 		if (!is_label && !elf_sym__is_a(&sym, map->type))
+ 	/*
+ 	 * Step 1:
+@@ -123,10 +124,14 @@ int test__vmlinux_matches_kallsyms(void)
+ 		if (sym->start == sym->end)
  			continue;
  
-@@ -745,15 +797,37 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 		    (sym.st_value & 1))
- 			--sym.st_value;
- 
--		if (dso->kernel != DSO_TYPE_USER || kmodule) {
-+		if (dso->kernel || kmodule) {
- 			char dso_name[PATH_MAX];
- 
-+			/* Adjust symbol to map to file offset */
-+			if (adjust_kernel_syms)
-+				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+-		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
++		mem_start = vmlinux_map->unmap_ip(vmlinux_map, sym->start);
++		mem_end = vmlinux_map->unmap_ip(vmlinux_map, sym->end);
 +
- 			if (strcmp(section_name,
- 				   (curr_dso->short_name +
- 				    dso->short_name_len)) == 0)
- 				goto new_symbol;
++		first_pair = machine__find_kernel_symbol(&kallsyms, type,
++							 mem_start, NULL, NULL);
+ 		pair = first_pair;
  
- 			if (strcmp(section_name, ".text") == 0) {
-+				/*
-+				 * The initial kernel mapping is based on
-+				 * kallsyms and identity maps.  Overwrite it to
-+				 * map to the kernel dso.
-+				 */
-+				if (remap_kernel && dso->kernel) {
-+					remap_kernel = false;
-+					map->start = shdr.sh_addr +
-+						     ref_reloc(kmap);
-+					map->end = map->start + shdr.sh_size;
-+					map->pgoff = shdr.sh_offset;
-+					map->map_ip = map__map_ip;
-+					map->unmap_ip = map__unmap_ip;
-+					/* Ensure maps are correctly ordered */
-+					map_groups__remove(kmap->kmaps, map);
-+					map_groups__insert(kmap->kmaps, map);
-+				}
-+
- 				curr_map = map;
- 				curr_dso = dso;
- 				goto new_symbol;
-@@ -781,8 +855,16 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 					dso__delete(curr_dso);
- 					goto out_elf_end;
+-		if (pair && pair->start == sym->start) {
++		if (pair && pair->start == mem_start) {
+ next_pair:
+ 			if (strcmp(sym->name, pair->name) == 0) {
+ 				/*
+@@ -138,10 +143,11 @@ next_pair:
+ 				 * off the real size. More than that and we
+ 				 * _really_ have a problem.
+ 				 */
+-				s64 skew = sym->end - pair->end;
++				s64 skew = mem_end - pair->end;
+ 				if (llabs(skew) >= page_size)
+ 					pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
+-						 sym->start, sym->name, sym->end, pair->end);
++						 mem_start, sym->name, mem_end,
++						 pair->end);
+ 
+ 				/*
+ 				 * Do not count this as a failure, because we
+@@ -159,7 +165,7 @@ detour:
+ 				if (nnd) {
+ 					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
+ 
+-					if (next->start == sym->start) {
++					if (next->start == mem_start) {
+ 						pair = next;
+ 						goto next_pair;
+ 					}
+@@ -172,10 +178,11 @@ detour:
  				}
--				curr_map->map_ip = identity__map_ip;
--				curr_map->unmap_ip = identity__map_ip;
-+				if (adjust_kernel_syms) {
-+					curr_map->start = shdr.sh_addr +
-+							  ref_reloc(kmap);
-+					curr_map->end = curr_map->start +
-+							shdr.sh_size;
-+					curr_map->pgoff = shdr.sh_offset;
-+				} else {
-+					curr_map->map_ip = identity__map_ip;
-+					curr_map->unmap_ip = identity__map_ip;
-+				}
- 				curr_dso->symtab_type = dso->symtab_type;
- 				map_groups__insert(kmap->kmaps, curr_map);
- 				dsos__add(&dso->node, curr_dso);
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 02718e7..b407c53 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -906,6 +906,10 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 	symsrc__destroy(&ss);
  
- 	if (err > 0) {
-+		if (dso->kernel == DSO_TYPE_GUEST_KERNEL)
-+			dso->data_type = DSO_BINARY_TYPE__GUEST_VMLINUX;
-+		else
-+			dso->data_type = DSO_BINARY_TYPE__VMLINUX;
- 		dso__set_long_name(dso, (char *)vmlinux);
- 		dso__set_loaded(dso, map->type);
- 		pr_debug("Using %s for symbols\n", symfs_vmlinux);
-@@ -978,7 +982,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 			dso__set_long_name(dso,
- 					   strdup(symbol_conf.vmlinux_name));
- 			dso->lname_alloc = 1;
--			goto out_fixup;
-+			return err;
- 		}
- 		return err;
- 	}
-@@ -986,7 +990,7 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 	if (vmlinux_path != NULL) {
- 		err = dso__load_vmlinux_path(dso, map, filter);
- 		if (err > 0)
--			goto out_fixup;
-+			return err;
- 	}
+ 				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
+-					 sym->start, sym->name, pair->name);
++					 mem_start, sym->name, pair->name);
+ 			}
+ 		} else
+-			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
++			pr_debug("%#" PRIx64 ": %s not on kallsyms\n",
++				 mem_start, sym->name);
  
- 	/* do not try local files if a symfs was given */
-@@ -1047,7 +1051,6 @@ do_kallsyms:
- 
- 	if (err > 0) {
- 		dso__set_long_name(dso, strdup("[kernel.kallsyms]"));
--out_fixup:
- 		map__fixup_start(map);
- 		map__fixup_end(map);
+ 		err = -1;
  	}
-@@ -1078,7 +1081,7 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
- 		if (symbol_conf.default_guest_vmlinux_name != NULL) {
- 			err = dso__load_vmlinux(dso, map,
- 				symbol_conf.default_guest_vmlinux_name, filter);
--			goto out_try_fixup;
-+			return err;
- 		}
+@@ -208,16 +215,19 @@ detour:
+ 	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
+ 		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
  
- 		kallsyms_filename = symbol_conf.default_guest_kallsyms;
-@@ -1090,15 +1093,10 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
- 	}
+-		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
++		mem_start = vmlinux_map->unmap_ip(vmlinux_map, pos->start);
++		mem_end = vmlinux_map->unmap_ip(vmlinux_map, pos->end);
++
++		pair = map_groups__find(&kallsyms.kmaps, type, mem_start);
+ 		if (pair == NULL || pair->priv)
+ 			continue;
  
- 	err = dso__load_kallsyms(dso, kallsyms_filename, map, filter);
--	if (err > 0)
--		pr_debug("Using %s for symbols\n", kallsyms_filename);
--
--out_try_fixup:
- 	if (err > 0) {
--		if (kallsyms_filename != NULL) {
--			machine__mmap_name(machine, path, sizeof(path));
--			dso__set_long_name(dso, strdup(path));
--		}
-+		pr_debug("Using %s for symbols\n", kallsyms_filename);
-+		machine__mmap_name(machine, path, sizeof(path));
-+		dso__set_long_name(dso, strdup(path));
- 		map__fixup_start(map);
- 		map__fixup_end(map);
- 	}
+-		if (pair->start == pos->start) {
++		if (pair->start == mem_start) {
+ 			pair->priv = 1;
+ 			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
+ 				pos->start, pos->end, pos->pgoff, pos->dso->name);
+-			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
+-				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
++			if (mem_end != pair->end)
++				pr_info(":\n*%" PRIx64 "-%" PRIx64 " %" PRIx64,
+ 					pair->start, pair->end, pair->pgoff);
+ 			pr_info(" %s\n", pair->dso->name);
+ 			pair->priv = 1;
 -- 
 1.7.11.7
 
