@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437Ab3HGKTJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:19:09 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:34800 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757225Ab3HGKTI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:19:08 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Myklebust\, Trond" <Trond.Myklebust@netapp.com>
-Cc: Jeff Layton <jlayton@redhat.com>,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>, NFS list <linux-nfs@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dhowells\@redhat.com" <dhowells@redhat.com>
-Subject: Re: [3.10.4] NFS locking panic, plus persisting NFS shutdown panic from 3.9.*
-References: <8761vlv4z9.fsf@spindle.srvr.nix>
-	<20130805084436.69ee4415@corrin.poochiereds.net>
-	<87siyotcri.fsf@spindle.srvr.nix>
-	<20130805110427.509db424@tlielax.poochiereds.net>
-	<20130805111106.73d6ab90@tlielax.poochiereds.net>
-	<87zjswrvaq.fsf@spindle.srvr.nix>
-	<1375719301.7337.14.camel@leira.trondhjem.org>
-	<20130805133739.21654ecb@tlielax.poochiereds.net>
-	<1375726682.7337.29.camel@leira.trondhjem.org>
-	<20130805143311.4ae59067@tlielax.poochiereds.net>
-	<1375755693.7337.42.camel@leira.trondhjem.org>
-Emacs: there's a reason it comes with a built-in psychotherapist.
-Date: Wed, 07 Aug 2013 11:18:59 +0100
-In-Reply-To: <1375755693.7337.42.camel@leira.trondhjem.org> (Trond Myklebust's
-	message of "Tue, 6 Aug 2013 02:21:35 +0000")
-Message-ID: <87iozhst0s.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-dcc1-Metrics: spindle 1182; Body=7 Fuz1=7 Fuz2=7
+	id S932450Ab3HGKVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:21:01 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:2456 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932129Ab3HGKVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:21:00 -0400
+X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
+   d="scan'208";a="8143903"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 0/8] rcu: Ensure rcu read site is deadlock-immunity
+Date: Wed, 7 Aug 2013 18:24:56 +0800
+Message-Id: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/07 18:19:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/07 18:19:35,
+	Serialize complete at 2013/08/07 18:19:35
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 Aug 2013, Trond Myklebust verbalised:
-> True. How about something like the following instead. Note the change to
-> the original patch...
+Although all articles declare that rcu read site is deadlock-immunity.
+It is not true for rcu-preempt, it will be deadlock if rcu read site
+overlaps with scheduler lock.
 
-Well, with those applied I could reboot without a panic for the first
-time since 3.8.x: looking good. I'll give it a reboot or two with a
-system that's not hot from booting though.
+ec433f0c, 10f39bb1 and 016a8d5b just partially solve it. But rcu read site
+is still not deadlock-immunity. And the problem described in 016a8d5b
+is still existed(rcu_read_unlock_special() calls wake_up).
+
+The problem is fixed in patch5.
+
+Lai Jiangshan (8):
+  rcu: add a warn to rcu_preempt_note_context_switch()
+  rcu: rcu_read_unlock_special() can be nested in irq/softirq 10f39bb1
+  rcu: keep irqs disabled in rcu_read_unlock_special()
+  rcu: delay task rcu state cleanup in exit_rcu()
+  rcu: eliminate rcu read site deadlock
+  rcu: call rcu_read_unlock_special() in rcu_preempt_check_callbacks()
+  rcu: add # of deferred _special() statistics
+  rcu: remove irq work for rsp_wakeup()
+
+ include/linux/rcupdate.h |    2 +-
+ kernel/rcupdate.c        |    2 +-
+ kernel/rcutree.c         |   17 +--------
+ kernel/rcutree.h         |    2 +-
+ kernel/rcutree_plugin.h  |   82 ++++++++++++++++++++++++++++++++++-----------
+ kernel/rcutree_trace.c   |    1 +
+ 6 files changed, 68 insertions(+), 38 deletions(-)
 
 -- 
-NULL && (void)
+1.7.4.4
+
