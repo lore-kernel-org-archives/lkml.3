@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab3HGRGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:06:10 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:64171 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756738Ab3HGRGH (ORCPT
+	id S1756757Ab3HGRJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:09:19 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46883 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab3HGRJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:06:07 -0400
+	Wed, 7 Aug 2013 13:09:18 -0400
+Message-ID: <52027F39.5050805@wwwdotorg.org>
+Date: Wed, 07 Aug 2013 11:09:13 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130807163045.GK28558@e106331-lin.cambridge.arm.com>
-References: <1375812017-6287-1-git-send-email-jwerner@chromium.org>
-	<20130807163045.GK28558@e106331-lin.cambridge.arm.com>
-Date: Wed, 7 Aug 2013 10:06:05 -0700
-X-Google-Sender-Auth: MWyuZfEowOTrSW6e9aKGBSCefA4
-Message-ID: <CAODwPW9DmVdzHbHN0NUK0fYUNw0tj2ktyh-20no30r14_JayFQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v5] usb: phy-samsung-usb: Simplify PMU register handling
-From: Julius Werner <jwerner@chromium.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Sonic Zhang <sonic.adi@gmail.com>, Axel Lin <axel.lin@ingics.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        buildroot-devel@blackfin.uclinux.org,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: Re: [PATCH] pinctrl: pinmux: Don't free pins requested by other devices
+References: <1374039105-17777-1-git-send-email-sonic.adi@gmail.com> <CACRpkdZMCO9Cw=SMk4cq8k0+eqYrK=kKsjfAHut1=PXjxS_6jA@mail.gmail.com>
+In-Reply-To: <CACRpkdZMCO9Cw=SMk4cq8k0+eqYrK=kKsjfAHut1=PXjxS_6jA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This breaks compatibility, both for an old kernel and a new dt and a new
-> kernel with an old dt. Is anyone using these bindings?
+On 08/07/2013 10:23 AM, Linus Walleij wrote:
+> On Wed, Jul 17, 2013 at 7:31 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
+> 
+> I'd like Stephen and Axel to have a look at this as well...
+> 
+>> From: Sonic Zhang <sonic.zhang@analog.com>
+>>
+>> in pinmux_disable_setting after current device fails to request
+>> the same pins.
+>>
+>> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+> 
+> I don't quite understand the patch. Can you provide more context?
 
-They only affect Samsung SoCs and have only been upstream for half a
-year, so I doubt it's heavily used.
+Yes, the commit description needs to describe the problem this solves.
 
-> Why are we describing fewer registers now? Are they described elsewhere?
->
-> The dt should describe the device, not only the portion of it Linux
-> wants to use right now.
+I'm *guessing* the issue is:
 
-This only ever described a small section of the huge set of PMU
-registers anyway. Before it described up to three registers
-controlling different PHYs (using hardcoded offsets in the code to
-later find the right one)... with my patch every PHY's DT entry only
-describes the one register concerning itself, which makes more sense
-in my opinion. It will also prevent the register descriptions in
-different DT entries from overlapping.
+Something tries to enable a new mux setting on some pins. One of those
+pins is already owned by something else. So, applying the current
+setting fails. So, pinctrl core attempts to unapply the partially
+applied setting. This ends up incorrectly over-writing the conflicting
+ownership of the pins with NULL, and hence forgetting about it.
+
+I think a better change would be something more along the lines of:
+
+  for (i = 0; i < num_pins; i++)
++ 	if (this_device_owns_pin(pins[i])
+  		pin_free(pctldev, pins[i], NULL);
+
+?
+
+Where this_device_owns_pin() might be someting like:
+
+	desc->owning_setting == setting
+
+(which would be a new field that needed to be assigned during
+pinmux_enable_setting).
+
+Or perhaps the strcmp() is fine.
+
+>> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+>> index 88cc509..9ebcf3b 100644
+>> --- a/drivers/pinctrl/pinmux.c
+>> +++ b/drivers/pinctrl/pinmux.c
+>> @@ -482,13 +482,14 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+>>                                  pins[i]);
+>>                         continue;
+>>                 }
+>> +               /* And release the pins */
+>> +               if (desc->mux_usecount &&
+>> +                       !strcmp(desc->mux_owner, setting->dev_name))
+>> +                       pin_free(pctldev, pins[i], NULL);
+>> +
+>>                 desc->mux_setting = NULL;
+>>         }
+>>
+>> -       /* And release the pins */
+>> -       for (i = 0; i < num_pins; i++)
+>> -               pin_free(pctldev, pins[i], NULL);
+>> -
+> 
+> For pinmux_disable_setting() to inspect desc->mux_usecount seems
+> assymetric. This is something pin_free() should do, shouldn't it?
+> 
+> Should not this codepath be kept and a change made inside pin_free()
+> for the check above instead?
+
