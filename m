@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933646Ab3HGWWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 18:22:49 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:39125 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933398Ab3HGWWs (ORCPT
+	id S933862Ab3HGWYR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 18:24:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48636 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933398Ab3HGWYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 18:22:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+8MBb+pkKpaEDs6J_XbzM3wzady2MjdU+jcDP+jH1f1VBxG5w@mail.gmail.com>
-References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
-	<51FA3B02.7060004@linux.vnet.ibm.com>
-	<3908561D78D1C84285E8C5FCA982C28F31CAA167@ORSMSX106.amr.corp.intel.com>
-	<CA+8MBbLuhVDCb26ag3AH0vXrP4MXHLxS5aVn8pTi4=qL1NdR5w@mail.gmail.com>
-	<CA+8MBbJ7x46FGC7dPSdNzf8z=fZz20w1kiNgnZr4QQB6SUELhg@mail.gmail.com>
-	<51FFDC8B.7010909@linux.vnet.ibm.com>
-	<CA+8MBb+1LpR+Cx=84WZT98U5eqZcm1KriUP75aCg+uSrXrb3Yw@mail.gmail.com>
-	<51FFFFEB.3030907@linux.vnet.ibm.com>
-	<CA+8MBbK9oZJO+RJGC-7riO=Kz=UbRcAvQ-nDi=2GLyvEDpoc7g@mail.gmail.com>
-	<CA+8MBbKA+P4vs3utSKQ-LPMW3ybrWOp=f3FH6ahv1YtwnMm5KA@mail.gmail.com>
-	<5201A9BD.4090503@linux.vnet.ibm.com>
-	<CA+8MBbJS0Dymn4OABi-rW9M5Bw-ZZ6DaEjQOW-oki+4ge4BDtg@mail.gmail.com>
-	<5201D777.8060303@linux.vnet.ibm.com>
-	<CA+8MBb+pkKpaEDs6J_XbzM3wzady2MjdU+jcDP+jH1f1VBxG5w@mail.gmail.com>
-Date: Wed, 7 Aug 2013 15:22:45 -0700
-Message-ID: <CA+8MBbJk63N3+YLUGDmGP5jrVc2mLa0Pn-QrqPk1xatknTVVEQ@mail.gmail.com>
-Subject: Re: [PATCH 00/11] Add compression support to pstore
-From: Tony Luck <tony.luck@gmail.com>
-To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "keescook@chromium.org" <keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Aug 2013 18:24:16 -0400
+Message-ID: <1375914247.8674.35.camel@smoke>
+Subject: Re: [PATCH 04/22] block: Abstract out bvec iterator
+From: Geoff Levand <geoff@infradead.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Wed, 07 Aug 2013 15:24:07 -0700
+In-Reply-To: <1375912471-5106-5-git-send-email-kmo@daterainc.com>
+References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
+	 <1375912471-5106-5-git-send-email-kmo@daterainc.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 6, 2013 at 10:35 PM, Tony Luck <tony.luck@gmail.com> wrote:
-> ERST is at the whim of the BIOS writer (the ACPI standard doesn't provide any
-> suggestions on record sizes).  My systems support ~6K record size.
+Hi Kent,
 
-Off by a little - 7896 bytes on my current machine.
+On Wed, 2013-08-07 at 14:54 -0700, Kent Overstreet wrote:
+> Immutable biovecs are going to require an explicit iterator. To
+> implement immutable bvecs, a later patch is going to add a bi_bvec_done
+> member to this struct; for now, this patch effectively just renames
+> things.
 
-> efivars has, IIRC, a 1k limit coded in the Linux back end.
-My memory was correct for this one.
+> diff --git a/drivers/block/ps3disk.c b/drivers/block/ps3disk.c
+> index d754a88..464be78 100644
+> --- a/drivers/block/ps3disk.c
+> +++ b/drivers/block/ps3disk.c
+> @@ -104,7 +104,7 @@ static void ps3disk_scatter_gather(struct ps3_storage_device *dev,
+>  		dev_dbg(&dev->sbd.core,
+>  			"%s:%u: bio %u: %u segs %u sectors from %lu\n",
+>  			__func__, __LINE__, i, bio_segments(iter.bio),
+> -			bio_sectors(iter.bio), iter.bio->bi_sector);
+> +			bio_sectors(iter.bio), iter.bio->bi_iter.bi_sector);
+>  
+>  		size = bvec->bv_len;
+>  		buf = bvec_kmap_irq(bvec, &flags);
 
-Adding a little tracing to pstore_getrecords() I see this:
+The ps3 part looks OK.  Please try a build test with the powerpc
+defconfig_ps3 if you can.
 
-pstore: inflated 3880 bytes compressed to 17459 bytes
-pstore: inflated 2567 bytes compressed to 17531 bytes
-pstore: inflated 4018 bytes compressed to 17488 bytes
+Acked-by: Geoff Levand <geoff@infradead.org>
 
-Which isn't at all what I expected.  The ERST backend
-advertised a bufsize of 7896, and I have the default
-kmsg_bytes of 10240.  So on my forced panic the code
-decided to create a three part pstore dump.  The sum of
-the pieces is close to, but a little over the target of 10K.
-But I don't understand why the compressed sizes are so
-much smaller that the ERST backend block size.
 
-The uncompressed sizes appear to be close to constant.
-The compression ratios vary from 14% to 23%
-
-Why do we get three small parts instead of two bigger
-ones close the the 7896 ERST bufsize?
-
--Tony
