@@ -1,94 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933525Ab3HGWE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 18:04:56 -0400
-Received: from [204.155.152.216] ([204.155.152.216]:36049 "EHLO shutemov.name"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933147Ab3HGWEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 18:04:54 -0400
-Date: Thu, 8 Aug 2013 01:05:13 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH 1/3] memcg: limit the number of thresholds per-memcg
-Message-ID: <20130807220513.GA8068@shutemov.name>
-References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
- <20130807132210.GD27006@htj.dyndns.org>
- <20130807134654.GJ8184@dhcp22.suse.cz>
- <20130807135818.GG27006@htj.dyndns.org>
- <20130807143727.GA13279@dhcp22.suse.cz>
+	id S933621Ab3HGWGi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 18:06:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54723 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933147Ab3HGWGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 18:06:36 -0400
+Message-ID: <5202C4C3.6050007@zytor.com>
+Date: Wed, 07 Aug 2013 15:05:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130807143727.GA13279@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: linux-kernel@vger.kernel.org, ciminaghi@gnudd.com,
+        giancarlo.asnaghi@st.com, x86@kernel.org, mingo@redhat.com,
+        linux@arm.linux.org.uk, tglx@linutronix.de, devicetree@vger.kernel.org
+Subject: Re: [PATCH 00/26] STA2X11 devicetree support for amba/pci
+References: <52026AB5.80009@zytor.com>  <cover.1375867291.git.rubini@gnudd.com> <20130807211235.GA17863@mail.gnudd.com>
+In-Reply-To: <20130807211235.GA17863@mail.gnudd.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 04:37:27PM +0200, Michal Hocko wrote:
-> On Wed 07-08-13 09:58:18, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Wed, Aug 07, 2013 at 03:46:54PM +0200, Michal Hocko wrote:
-> > > OK, I have obviously misunderstood your concern mentioned in the other
-> > > email. Could you be more specific what is the DoS scenario which was
-> > > your concern, then?
-> > 
-> > So, let's say the file is write-accessible to !priv user which is
-> > under reasonable resource limits.  Normally this shouldn't affect priv
-> > system tools which are monitoring the same event as it shouldn't be
-> > able to deplete resources as long as the resource control mechanisms
-> > are configured and functioning properly; however, the memory usage
-> > event puts all event listeners into a single contiguous table which a
-> > !priv user can easily expand to a size where the table can no longer
-> > be enlarged and if a priv system tool or another user tries to
-> > register event afterwards, it'll fail.  IOW, it creates a shared
-> > resource which isn't properly provisioned and can be trivially filled
-> > up making it an easy DoS target.
+On 08/07/2013 02:12 PM, Alessandro Rubini wrote:
 > 
-> OK, got your point. You are right and I haven't considered the size of
-> the table and the size restrictions of kmalloc. Thanks for pointing this
-> out!
-> ---
-> From cde8a3333296eddd288780e78803610127401b6a Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Wed, 7 Aug 2013 11:11:22 +0200
-> Subject: [PATCH] memcg: limit the number of thresholds per-memcg
+> I understand. My impression of devicetree is exactly like that, I must
+> say.  What we have here is a very clean PCI enumeration of it all: we
+> only need to specify the mapping of GPIO pins (i.e. card-detect for
+> mmc) and DMA channels, as all the rest works by itself.
 > 
-> There is no limit for the maximum number of threshold events registered
-> per memcg. It is even worse that all the events are stored in a
-> per-memcg table which is enlarged when a new event is registered. This
-> can lead to the following issue mentioned by Tejun:
-> "
-> So, let's say the file is write-accessible to !priv user which is
-> under reasonable resource limits.  Normally this shouldn't affect priv
-> system tools which are monitoring the same event as it shouldn't be
-> able to deplete resources as long as the resource control mechanisms
-> are configured and functioning properly; however, the memory usage
-> event puts all event listeners into a single contiguous table which a
-> !priv user can easily expand to a size where the table can no longer
-> be enlarged and if a priv system tool or another user tries to
-> register event afterwards, it'll fail.  IOW, it creates a shared
-> resource which isn't properly provisioned and can be trivially filled
-> up making it an easy DoS target.
-> "
-> 
-> Let's be more strict and cap the number of events that might be
-> registered. MAX_THRESHOLD_EVENTS value is more or less random. The
-> expectation is that it should be high enough to cover reasonable
-> usecases while not too high to allow excessive resources consumption.
-> 1024 events consume something like 16KB which shouldn't be a big deal
-> and it should be good enough.
 
-Is it correct that you fix one local DoS by introducing a new one?
-With the page the !priv user can block root from registering a threshold.
-Is it really the way we want to fix it?
+Could you elucidate this a bit more?  Specifically, from the PCI host's
+perspective, how do you know what you are dealing with (presumably PCI
+VID:DID:SVID:SID?)  How exactly does the mapping of PCI BARs and
+INT/MSI/MSI-X channels to the slave device play in?
 
--- 
- Kirill A. Shutemov
+I think it is safe to say that the device models we have today simply
+don't account for this kind of usage, which, as you say, is a genuine
+problem, and I think we need to understand the problem space better in
+order to properly architect the solution, as I don't think we have one
+right now.
+
+	-hpa
+
