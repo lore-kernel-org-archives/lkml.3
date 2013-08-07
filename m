@@ -1,36 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933230Ab3HGUyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 16:54:00 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:51988 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387Ab3HGUx7 (ORCPT
+	id S933251Ab3HGU5K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 16:57:10 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:16580 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932387Ab3HGU5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 16:53:59 -0400
-Date: Wed, 7 Aug 2013 13:53:57 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: PREEMPT_RT vs bcache
-Message-ID: <20130807205357.GD11612@kmo-pixel>
-References: <1375907298.27403.35.camel@deadeye.wl.decadent.org.uk>
+	Wed, 7 Aug 2013 16:57:09 -0400
+Message-ID: <201308072057.r77Kv7Lv017921@farm-0012.internal.tilera.com>
+In-Reply-To: <20130807204527.GB28039@mtj.dyndns.org>
+References: <20130807204527.GB28039@mtj.dyndns.org>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 7 Aug 2013 16:49:44 -0400
+Subject: [PATCH v3 1/2] workqueue: add new schedule_on_cpu_mask() API
+To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375907298.27403.35.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 10:28:18PM +0200, Ben Hutchings wrote:
-> As Kent said back in 2011 (commit 84759c6d18c5), bcache needs
-> {down,up}_read_non_owner().  But these are not implemented by the -rt
-> patchset when PREEMPT_RT_FULL is enabled.  Can they be added, or is
-> there a fundamental conflict here?
+This primitive allows scheduling work to run on a particular set of
+cpus described by a "struct cpumask".  This can be useful, for example,
+if you have a per-cpu variable that requires code execution only if the
+per-cpu variable has a certain value (for example, is a non-empty list).
 
-You should be able to cherry pick
-84759c6d18c5144432781ddca037d929ee9db8a5 (Revert "rw_semaphore: remove
-up/down_read_non_owner") - that went in when bcache was merged.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+v3: split commit into two, one for workqueue and one for mm, though both
+should probably be taken through -mm.
+
+ include/linux/workqueue.h |  3 +++
+ kernel/workqueue.c        | 35 ++++++++++++++++++++++++++---------
+ 2 files changed, 29 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index a0ed78a..71a3fe7 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -13,6 +13,8 @@
+ #include <linux/atomic.h>
+ #include <linux/cpumask.h>
+ 
++struct cpumask;
++
+ struct workqueue_struct;
+ 
+ struct work_struct;
+@@ -470,6 +472,7 @@ extern void flush_workqueue(struct workqueue_struct *wq);
+ extern void drain_workqueue(struct workqueue_struct *wq);
+ extern void flush_scheduled_work(void);
+ 
++extern int schedule_on_cpu_mask(work_func_t func, const struct cpumask *mask);
+ extern int schedule_on_each_cpu(work_func_t func);
+ 
+ int execute_in_process_context(work_func_t fn, struct execute_work *);
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f02c4a4..a6d1809 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2962,17 +2962,18 @@ bool cancel_delayed_work_sync(struct delayed_work *dwork)
+ EXPORT_SYMBOL(cancel_delayed_work_sync);
+ 
+ /**
+- * schedule_on_each_cpu - execute a function synchronously on each online CPU
++ * schedule_on_cpu_mask - execute a function synchronously on each listed CPU
+  * @func: the function to call
++ * @mask: the cpumask to invoke the function on
+  *
+- * schedule_on_each_cpu() executes @func on each online CPU using the
++ * schedule_on_cpu_mask() executes @func on each listed CPU using the
+  * system workqueue and blocks until all CPUs have completed.
+- * schedule_on_each_cpu() is very slow.
++ * schedule_on_cpu_mask() is very slow.
+  *
+  * RETURNS:
+  * 0 on success, -errno on failure.
+  */
+-int schedule_on_each_cpu(work_func_t func)
++int schedule_on_cpu_mask(work_func_t func, const struct cpumask *mask)
+ {
+ 	int cpu;
+ 	struct work_struct __percpu *works;
+@@ -2981,24 +2982,40 @@ int schedule_on_each_cpu(work_func_t func)
+ 	if (!works)
+ 		return -ENOMEM;
+ 
+-	get_online_cpus();
+-
+-	for_each_online_cpu(cpu) {
++	for_each_cpu(cpu, mask) {
+ 		struct work_struct *work = per_cpu_ptr(works, cpu);
+ 
+ 		INIT_WORK(work, func);
+ 		schedule_work_on(cpu, work);
+ 	}
+ 
+-	for_each_online_cpu(cpu)
++	for_each_cpu(cpu, mask)
+ 		flush_work(per_cpu_ptr(works, cpu));
+ 
+-	put_online_cpus();
+ 	free_percpu(works);
+ 	return 0;
+ }
+ 
+ /**
++ * schedule_on_each_cpu - execute a function synchronously on each online CPU
++ * @func: the function to call
++ *
++ * schedule_on_each_cpu() executes @func on each online CPU using the
++ * system workqueue and blocks until all CPUs have completed.
++ * schedule_on_each_cpu() is very slow.
++ *
++ * RETURNS:
++ * 0 on success, -errno on failure.
++ */
++int schedule_on_each_cpu(work_func_t func)
++{
++	get_online_cpus();
++	schedule_on_cpu_mask(func, cpu_online_mask);
++	put_online_cpus();
++	return 0;
++}
++
++/**
+  * flush_scheduled_work - ensure that any scheduled work has run to completion.
+  *
+  * Forces execution of the kernel-global workqueue and blocks until its
+-- 
+1.8.3.1
+
