@@ -1,79 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab3HGHuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 03:50:01 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61171 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756960Ab3HGHuA (ORCPT
+	id S932322Ab3HGHuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 03:50:51 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58360 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932073Ab3HGHuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 03:50:00 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5201FC2C.4030908@roeck-us.net>
-Date: Wed, 07 Aug 2013 00:50:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
+	Wed, 7 Aug 2013 03:50:50 -0400
+Message-ID: <5201FC55.5080304@free-electrons.com>
+Date: Wed, 07 Aug 2013 09:50:45 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Wei Ni <wni@nvidia.com>
-CC: Alexander Shiyan <shc_work@mail.ru>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Hector Palacios <hector.palacios@digi.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] hwmon: (lm90) Add power control
-References: <1375858358-15070-1-git-send-email-wni@nvidia.com> <1375858358-15070-2-git-send-email-wni@nvidia.com> <1375860442.896960598@f427.i.mail.ru> <5201F811.9050602@nvidia.com>
-In-Reply-To: <5201F811.9050602@nvidia.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        "marex@denx.de" <marex@denx.de>
+Subject: Re: [PATCH v3 4/5] iio: mxs-lradc: add scale_available file to channels
+References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-5-git-send-email-hector.palacios@digi.com> <51EE4300.7070802@metafoo.de> <51EE8445.6070603@digi.com> <51F276D8.9090906@free-electrons.com> <d838f30e-30ca-49ca-a9f3-ebf4e523c7eb@email.android.com>
+In-Reply-To: <d838f30e-30ca-49ca-a9f3-ebf4e523c7eb@email.android.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 12:32 AM, Wei Ni wrote:
-> On 08/07/2013 03:27 PM, Alexander Shiyan wrote:
->>> The device lm90 can be controlled by the vdd rail.
->>> Adding the power control support to power on/off the vdd rail.
->>> And make sure that power is enabled before accessing the device.
+Hi Jonathan, Lars
+
+I would really like to see that included in 3.12. While I agree there is
+room for improvement, I don't think there are any comments that need an
+immediate action before inclusion apart from the decision that has to be
+taken for the device tree.
+
+Can you confirm whether you'll take this series as is ?
+
+Regards,
+
+On 26/07/2013 18:13, Jonathan Cameron wrote:
+>
+> Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+>> On 23/07/2013 15:25, Hector Palacios wrote:
+>>> Dear Lars,
 >>>
->>> Signed-off-by: Wei Ni <wni@nvidia.com>
->>> ---
->>>   drivers/hwmon/lm90.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++
->> [...]
->>> +	if (!data->lm90_reg) {
->>> +		data->lm90_reg = regulator_get(&client->dev, "vdd");
->>> +		if (IS_ERR_OR_NULL(data->lm90_reg)) {
->>> +			if (PTR_ERR(data->lm90_reg) == -ENODEV)
->>> +				dev_info(&client->dev,
->>> +					 "No regulator found for vdd. Assuming vdd is always powered.");
->>> +			else
->>> +				dev_warn(&client->dev,
->>> +					 "Error [%ld] in getting the regulator handle for vdd.\n",
->>> +					 PTR_ERR(data->lm90_reg));
->>> +			data->lm90_reg = NULL;
->>> +			mutex_unlock(&data->update_lock);
->>> +			return -ENODEV;
->>> +		}
->>> +	}
->>> +	if (is_enable) {
->>> +		ret = regulator_enable(data->lm90_reg);
->>> +		msleep(POWER_ON_DELAY);
+>>> On 07/23/2013 10:46 AM, Lars-Peter Clausen wrote:
+>>>> On 07/22/2013 04:04 PM, Hector Palacios wrote:
+>>>> [...]
+>>>>> +static ssize_t mxs_lradc_show_scale_available_ch(struct device
+>> *dev,
+>>>>> +        struct device_attribute *attr,
+>>>>> +        char *buf,
+>>>>> +        int ch)
+>>>>> +{
+>>>>> +    struct iio_dev *iio = dev_to_iio_dev(dev);
+>>>>> +    struct mxs_lradc *lradc = iio_priv(iio);
+>>>>> +    int i, len = 0;
+>>>>> +
+>>>>> +    for (i = 0; i < ARRAY_SIZE(lradc->scale_avail[ch]); i++)
+>>>>> +        len += sprintf(buf + len, "%d.%09u ",
+>>>>> +                   lradc->scale_avail[ch][i].integer,
+>>>>> +                   lradc->scale_avail[ch][i].nano);
+>>>>> +
+>>>>> +    len += sprintf(buf + len, "\n");
+>>>>> +
+>>>>> +    return len;
+>>>>> +}
+>>>>> +
+>>>>> +static ssize_t mxs_lradc_show_scale_available(struct device *dev,
+>>>>> +        struct device_attribute *attr,
+>>>>> +        char *buf)
+>>>>> +{
+>>>>> +    struct iio_dev_attr *iio_attr = to_iio_dev_attr(attr);
+>>>>> +
+>>>>> +    return mxs_lradc_show_scale_available_ch(dev, attr, buf,
+>>>>> +                         iio_attr->address);
+>>>>> +}
+>>>>> +
+>>>>> +#define SHOW_SCALE_AVAILABLE_ATTR(ch)                    \
+>>>>> +static IIO_DEVICE_ATTR(in_voltage##ch##_scale_available, S_IRUGO, 
+>>  \
+>>>>> +               mxs_lradc_show_scale_available, NULL, ch)
+>>>>> +
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(0);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(1);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(2);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(3);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(4);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(5);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(6);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(7);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(8);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(9);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(10);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(11);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(12);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(13);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(14);
+>>>>> +SHOW_SCALE_AVAILABLE_ATTR(15);
+>>>>> +
+>>>>> +static struct attribute *mxs_lradc_attributes[] = {
+>>>>> +    &iio_dev_attr_in_voltage0_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage1_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage2_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage3_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage4_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage5_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage6_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage7_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage8_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage9_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage10_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage11_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage12_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage13_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage14_scale_available.dev_attr.attr,
+>>>>> +    &iio_dev_attr_in_voltage15_scale_available.dev_attr.attr,
+>>>>> +    NULL
+>>>>> +};
+>>>> This should really be using the iio_chan_spec_ext_info
+>>>> infrastructure. Bonus
+>>>> points for factoring out the common code used to calculate and
+>>>> display the
+>>>> scales.
+>>> I perfectly understand. Sadly, I don't currently have the time and
+>>> expertise to try to work this out the proper way. It already took
+>> much
+>>> longer than expected to have this driver toggle a divider flag.
+>>>
+>>> I'd appreciate if anyone wishes to complete this job.
+>>> @Alexander, please feel free to submit your other temp patch without
+>>> waiting for this one.
+>>>
+>> Maybe, we can get the patch set as is and do further clean up later.
+>> Anyway, that driver is still in staging, right ?
 >>
->> Can this delay be handled directly from regulator?
+>> As said, I'm willing to propose something for the scale calculation.
+> My thoughts exactly. Long term plans include generic handling of available attributes for the whole of IIO.
 >
-> I think it should be handled in the device driver.
-> Because there have different delay time to wait devices stable.
+> It will take me a little while to catch up my backlog though!
+>
+> Jonathan
+>
+>
 >
 
-Then why does no other caller of regulator_enable() need this ?
-I don't think lm90 is so much different to other users of regulator
-functionality.
 
-Besides that, your delay is unconditional, even for static regulators
-which are always on. Other callers of regulator_enable() don't need
-all that complexity, which I take as sign that it is not needed here either.
-
-Guenter
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
