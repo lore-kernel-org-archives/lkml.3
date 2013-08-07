@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab3HGHiP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 03:38:15 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:45039 "EHLO
+	id S932384Ab3HGHi4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 03:38:56 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:45079 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239Ab3HGHiL (ORCPT
+	with ESMTP id S932299Ab3HGHiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 03:38:11 -0400
+	Wed, 7 Aug 2013 03:38:15 -0400
 From: Rui Xiang <rui.xiang@huawei.com>
 To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
 CC: <netdev@vger.kernel.org>, <netfilter-devel@vger.kernel.org>,
@@ -14,9 +14,9 @@ CC: <netdev@vger.kernel.org>, <netfilter-devel@vger.kernel.org>,
         <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
         <guz.fnst@cn.fujitsu.com>, <libo.chen@huawei.com>,
         Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH v3 09/11] syslog_ns: implement ns_printk_emit for specific syslog_ns
-Date: Wed, 7 Aug 2013 15:37:13 +0800
-Message-ID: <1375861035-24320-10-git-send-email-rui.xiang@huawei.com>
+Subject: [PATCH v3 11/11] netfilter: use ns_printk in iptable context
+Date: Wed, 7 Aug 2013 15:37:15 +0800
+Message-ID: <1375861035-24320-12-git-send-email-rui.xiang@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com>
 References: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com>
@@ -28,82 +28,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prink_emit use init_syslog_ns as a parameter of namespace,
-but in some context, it will cause that logs generated
-through printk_emit will be exported to host, for instance,
-devkmsg_writev.
-
-We add a new interface ns_printk_emit to pass an syslog_ns
-parameter, and use it in devkmsg_writev.
+To containerise iptables log, use ns_printk
+to report individual logs to container as
+getting syslog_ns from net->user_ns.
 
 Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 ---
- include/linux/printk.h |  6 ++++++
- kernel/printk.c        | 20 +++++++++++++++++++-
- 2 files changed, 25 insertions(+), 1 deletion(-)
+ include/net/netfilter/xt_log.h | 6 +++++-
+ net/netfilter/xt_LOG.c         | 4 ++--
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index bf83ad9..4c7e2be 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -121,6 +121,12 @@ asmlinkage int printk_emit(int facility, int level,
- 			   const char *dict, size_t dictlen,
- 			   const char *fmt, ...);
- 
-+asmlinkage __printf(6, 7) __cold
-+asmlinkage int ns_printk_emit(struct syslog_namespace *ns,
-+			   int facility, int level,
-+			   const char *dict, size_t dictlen,
-+			   const char *fmt, ...);
-+
- asmlinkage __printf(1, 2) __cold
- int printk(const char *fmt, ...);
- 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 38e8869..b60c1d4 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -420,6 +420,7 @@ static ssize_t devkmsg_writev(struct kiocb *iocb, const struct iovec *iv,
- 	int facility = 1;	/* LOG_USER */
- 	size_t len = iov_length(iv, count);
- 	ssize_t ret = len;
-+	struct namespace *ns = current_user_ns()->syslog_ns;
- 
- 	if (len > LOG_LINE_MAX)
- 		return -EINVAL;
-@@ -461,7 +462,7 @@ static ssize_t devkmsg_writev(struct kiocb *iocb, const struct iovec *iv,
- 	}
- 	line[len] = '\0';
- 
--	printk_emit(facility, level, NULL, 0, "%s", line);
-+	ns_printk_emit(ns, facility, level, NULL, 0, "%s", line);
- out:
- 	kfree(buf);
- 	return ret;
-@@ -1722,6 +1723,23 @@ asmlinkage int printk_emit(int facility, int level,
+diff --git a/include/net/netfilter/xt_log.h b/include/net/netfilter/xt_log.h
+index 9d9756c..834d972 100644
+--- a/include/net/netfilter/xt_log.h
++++ b/include/net/netfilter/xt_log.h
+@@ -39,10 +39,14 @@ static struct sbuff *sb_open(void)
+ 	return m;
  }
- EXPORT_SYMBOL(printk_emit);
  
-+asmlinkage int ns_printk_emit(struct syslog_namespace *ns,
-+			   int facility, int level,
-+			   const char *dict, size_t dictlen,
-+			   const char *fmt, ...)
-+{
-+	va_list args;
-+	int r;
-+
-+	va_start(args, fmt);
-+	r = ns_vprintk_emit(ns, facility, level, dict, dictlen, fmt,
-+								args);
-+	va_end(args);
-+
-+	return r;
-+}
-+EXPORT_SYMBOL(ns_printk_emit);
-+
- /**
-  * printk - print a kernel message
-  * @fmt: format string
+-static void sb_close(struct sbuff *m)
++static void sb_close(struct sbuff *m, struct net *net)
+ {
+ 	m->buf[m->count] = 0;
++#ifdef CONFIG_NET_NS
++	ns_printk(net->user_ns->syslog_ns, "%s\n", m->buf);
++#else
+ 	printk("%s\n", m->buf);
++#endif
+ 
+ 	if (likely(m != &emergency))
+ 		kfree(m);
+diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
+index 5ab2484..e034a74 100644
+--- a/net/netfilter/xt_LOG.c
++++ b/net/netfilter/xt_LOG.c
+@@ -493,7 +493,7 @@ ipt_log_packet(struct net *net,
+ 
+ 	dump_ipv4_packet(m, loginfo, skb, 0);
+ 
+-	sb_close(m);
++	sb_close(m, net);
+ }
+ 
+ #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+@@ -824,7 +824,7 @@ ip6t_log_packet(struct net *net,
+ 
+ 	dump_ipv6_packet(m, loginfo, skb, skb_network_offset(skb), 1);
+ 
+-	sb_close(m);
++	sb_close(m, net);
+ }
+ #endif
+ 
 -- 
 1.8.2.2
 
