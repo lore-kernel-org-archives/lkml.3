@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933546Ab3HGVPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 17:15:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47095 "EHLO
+	id S933496Ab3HGVP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 17:15:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47104 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933414Ab3HGVLb (ORCPT
+	with ESMTP id S933133Ab3HGVLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Aug 2013 17:11:31 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 42/47] perf kvm stat report: Add option to analyze specific VM
-Date: Wed,  7 Aug 2013 18:11:09 -0300
-Message-Id: <1375909874-22073-43-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 37/47] perf annotate browser: Improve description of '?' hotkey
+Date: Wed,  7 Aug 2013 18:11:04 -0300
+Message-Id: <1375909874-22073-38-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375909874-22073-1-git-send-email-acme@infradead.org>
 References: <1375909874-22073-1-git-send-email-acme@infradead.org>
@@ -28,118 +28,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Add an option to analyze a specific VM within a data file. This allows
-the collection of kvm events for all VMs and then analyze data for each
-VM (or set of VMs) individually.
+The previous description: "Search previous string" is usually associated
+with the 'N' following a '/string', the opposite of 'n', which is
+'Search next string' in the direction established with '/' or '?'.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+So change it to 'Search string backwards', to clarify that.
+
+The 'N' hotkey remains to be implemented with the semantic described
+above.
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1375753297-69645-6-git-send-email-dsahern@gmail.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-5lw5y15d7vv308xbpm8pqe4g@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 38 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 36 insertions(+), 2 deletions(-)
+ tools/perf/ui/browsers/annotate.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index b6595e9..2ceec81 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -9,7 +9,7 @@
- #include "util/thread.h"
- #include "util/header.h"
- #include "util/session.h"
--
-+#include "util/intlist.h"
- #include "util/parse-options.h"
- #include "util/trace-event.h"
- #include "util/debug.h"
-@@ -107,6 +107,9 @@ struct perf_kvm_stat {
- 	u64 total_count;
- 	u64 lost_events;
- 
-+	const char *pid_str;
-+	struct intlist *pid_list;
-+
- 	struct rb_root result;
- 
- 	int timerfd;
-@@ -777,16 +780,29 @@ static int process_lost_event(struct perf_tool *tool,
- 	return 0;
- }
- 
-+static bool skip_sample(struct perf_kvm_stat *kvm,
-+			struct perf_sample *sample)
-+{
-+	if (kvm->pid_list && intlist__find(kvm->pid_list, sample->pid) == NULL)
-+		return true;
-+
-+	return false;
-+}
-+
- static int process_sample_event(struct perf_tool *tool,
- 				union perf_event *event,
- 				struct perf_sample *sample,
- 				struct perf_evsel *evsel,
- 				struct machine *machine)
- {
--	struct thread *thread = machine__findnew_thread(machine, sample->tid);
-+	struct thread *thread;
- 	struct perf_kvm_stat *kvm = container_of(tool, struct perf_kvm_stat,
- 						 tool);
- 
-+	if (skip_sample(kvm, sample))
-+		return 0;
-+
-+	thread = machine__findnew_thread(machine, sample->tid);
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
- 			event->header.type);
-@@ -1209,11 +1225,27 @@ static int read_events(struct perf_kvm_stat *kvm)
- 	return perf_session__process_events(kvm->session, &kvm->tool);
- }
- 
-+static int parse_target_str(struct perf_kvm_stat *kvm)
-+{
-+	if (kvm->pid_str) {
-+		kvm->pid_list = intlist__new(kvm->pid_str);
-+		if (kvm->pid_list == NULL) {
-+			pr_err("Error parsing process id string\n");
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int kvm_events_report_vcpu(struct perf_kvm_stat *kvm)
- {
- 	int ret = -EINVAL;
- 	int vcpu = kvm->trace_vcpu;
- 
-+	if (parse_target_str(kvm) != 0)
-+		goto exit;
-+
- 	if (!verify_vcpu(vcpu))
- 		goto exit;
- 
-@@ -1300,6 +1332,8 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
- 			    "key for sorting: sample(sort by samples number)"
- 			    " time (sort by avg time)"),
-+		OPT_STRING('p', "pid", &kvm->pid_str, "pid",
-+			   "analyze events only for given process id(s)"),
- 		OPT_END()
- 	};
- 
+diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
+index 0f88a77..7d75497 100644
+--- a/tools/perf/ui/browsers/annotate.c
++++ b/tools/perf/ui/browsers/annotate.c
+@@ -732,7 +732,7 @@ static int annotate_browser__run(struct annotate_browser *browser,
+ 		"s             Toggle source code view\n"
+ 		"/             Search string\n"
+ 		"r             Run available scripts\n"
+-		"?             Search previous string\n");
++		"?             Search string backwards\n");
+ 			continue;
+ 		case 'r':
+ 			{
 -- 
 1.8.1.4
 
