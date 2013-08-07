@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757018Ab3HGQWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:22:21 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:59888 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab3HGQWT (ORCPT
+	id S1757051Ab3HGQXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:23:24 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:52077 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754682Ab3HGQXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:22:19 -0400
-Message-ID: <1375892522.8154.3.camel@jlt4.sipsolutions.net>
-Subject: Re: linux-next: Tree for Aug 7
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Phil Sutter <phil@nwl.cc>, Sedat Dilek <sedat.dilek@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        wireless <linux-wireless@vger.kernel.org>,
-        John Linville <linville@tuxdriver.com>
-Date: Wed, 07 Aug 2013 18:22:02 +0200
-In-Reply-To: <1375892245.4004.31.camel@edumazet-glaptop> (sfid-20130807_181729_176093_C3201A13)
-References: <20130807155443.a0355d0429f3e0b4ccbed261@canb.auug.org.au>
-	 <CA+icZUW+uxCsvPYcY2RRvMxRVzaBLuH9u8M4ziQNWXv=nk4b2w@mail.gmail.com>
-	 <20130807155918.GA16263@orbit.nwl.cc>
-	 <1375891974.8154.1.camel@jlt4.sipsolutions.net>
-	 <1375892245.4004.31.camel@edumazet-glaptop>
-	 (sfid-20130807_181729_176093_C3201A13)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Aug 2013 12:23:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374039105-17777-1-git-send-email-sonic.adi@gmail.com>
+References: <1374039105-17777-1-git-send-email-sonic.adi@gmail.com>
+Date: Wed, 7 Aug 2013 18:23:22 +0200
+Message-ID: <CACRpkdZMCO9Cw=SMk4cq8k0+eqYrK=kKsjfAHut1=PXjxS_6jA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: pinmux: Don't free pins requested by other devices
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sonic Zhang <sonic.adi@gmail.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Axel Lin <axel.lin@ingics.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Steven Miao <realmz6@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        buildroot-devel@blackfin.uclinux.org,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 09:17 -0700, Eric Dumazet wrote:
-> On Wed, 2013-08-07 at 18:12 +0200, Johannes Berg wrote:
-> > On Wed, 2013-08-07 at 17:59 +0200, Phil Sutter wrote:
-> > 
-> > > The idea behind this patch is that users setting the protocol to
-> > > something else probably do know better and so should be left alone.
-> > 
-> > Regardless of that, I think that still the skb pointers would be changed
-> > by this patch which would confuse the receiver of the SKB (device
-> > driver), no? Has anyone verified that theory? :)
-> 
-> Maybe receivers made wrong assumptions about some headers being set or
-> not set ?
+On Wed, Jul 17, 2013 at 7:31 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
 
-Maybe. I haven't tested it, but I'm thinking that skb->data doesn't
-point to the start of the data frame in this case, since we now call
-eth_type_trans() which pulls the ethernet header. So if the device just
-transmits skb->len starting from skb->data, it'll be wrong, no? That
-seems a basic assumption though.
+I'd like Stephen and Axel to have a look at this as well...
 
-johannes
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> in pinmux_disable_setting after current device fails to request
+> the same pins.
+>
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 
+I don't quite understand the patch. Can you provide more context?
+
+> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+> index 88cc509..9ebcf3b 100644
+> --- a/drivers/pinctrl/pinmux.c
+> +++ b/drivers/pinctrl/pinmux.c
+> @@ -482,13 +482,14 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+>                                  pins[i]);
+>                         continue;
+>                 }
+> +               /* And release the pins */
+> +               if (desc->mux_usecount &&
+> +                       !strcmp(desc->mux_owner, setting->dev_name))
+> +                       pin_free(pctldev, pins[i], NULL);
+> +
+>                 desc->mux_setting = NULL;
+>         }
+>
+> -       /* And release the pins */
+> -       for (i = 0; i < num_pins; i++)
+> -               pin_free(pctldev, pins[i], NULL);
+> -
+
+For pinmux_disable_setting() to inspect desc->mux_usecount seems
+assymetric. This is something pin_free() should do, shouldn't it?
+
+Should not this codepath be kept and a change made inside pin_free()
+for the check above instead?
+
+Yours,
+Linus Walleij
