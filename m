@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab3HGKEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:04:22 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:34208 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756920Ab3HGKEV convert rfc822-to-8bit (ORCPT
+	id S932413Ab3HGKF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:05:29 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52028 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932372Ab3HGKF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:04:21 -0400
+	Wed, 7 Aug 2013 06:05:28 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <52021BD7.6010903@jp.fujitsu.com>
+Date: Wed, 07 Aug 2013 19:05:11 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130807055157.GA32278@redhat.com>
-References: <20130807055157.GA32278@redhat.com>
-Date: Wed, 7 Aug 2013 18:04:20 +0800
-Message-ID: <CAJd=RBCJv7=Qj6dPW2Ha=nq6JctnK3r7wYCAZTm=REVOZUNowg@mail.gmail.com>
-Subject: Re: unused swap offset / bad page map.
-From: Hillf Danton <dhillf@gmail.com>
-To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        jingbai.ma@hp.com
+Subject: Re: [Help Test] kdump, x86, acpi: Reproduce CPU0 SMI corruption issue
+ after unsetting BSP flag
+References: <5200BFB3.2050202@jp.fujitsu.com> <CAErSpo5O8RbL=h5jrD3NkBhH6ARhMOag9JfUzPEED0cBfDSwxQ@mail.gmail.com>
+In-Reply-To: <CAErSpo5O8RbL=h5jrD3NkBhH6ARhMOag9JfUzPEED0cBfDSwxQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dave
-
-On Wed, Aug 7, 2013 at 1:51 PM, Dave Jones <davej@redhat.com> wrote:
-> Seen while fuzzing with lots of child processes.
+(2013/08/07 1:25), Bjorn Helgaas wrote:
+> On Tue, Aug 6, 2013 at 3:19 AM, HATAYAMA Daisuke
+> <d.hatayama@jp.fujitsu.com> wrote:
+>> So, could anyone help testing the idea 2) above if you have which of
+>> the following machines? (or other ones that can lead to the same bug)
+>>
+>> - HP Compaq 6910p
+>> - HP Compaq 6710b
+>> - HP Compaq 6710s
+>> - HP Compaq 6510b
+>> - HP Compaq 2510p
 >
-> swap_free: Unused swap offset entry 001263f5
-> BUG: Bad page map in process trinity-child29  pte:24c7ea00 pmd:09fec067
-> addr:00007f9db958d000 vm_flags:00100073 anon_vma:ffff88022c004ba0 mapping:          (null) index:f99
-> Modules linked in: fuse ipt_ULOG snd_seq_dummy tun sctp scsi_transport_iscsi can_raw can_bcm rfcomm bnep nfnetlink hidp appletalk bluetooth rose can af_802154 phonet x25 af_rxrpc llc2 nfc rfkill af_key pppoe rds pppox ppp_generic slhc caif_socket caif irda crc_ccitt atm netrom ax25 ipx p8023 psnap p8022 llc snd_hda_codec_realtek pcspkr usb_debug snd_seq snd_seq_device snd_hda_intel snd_hda_codec snd_hwdep e1000e snd_pcm ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
-> CPU: 1 PID: 2624 Comm: trinity-child29 Not tainted 3.11.0-rc4+ #1
->  0000000000000000 ffff8801fd7ddc90 ffffffff81700f2c 00007f9db958d000
->  ffff8801fd7ddcd8 ffffffff8117cba7 0000000024c7ea00 0000000000000f99
->  00007f9db9600000 ffff880009fecc68 0000000024c7ea00 ffff8801fd7dde00
-> Call Trace:
->  [<ffffffff81700f2c>] dump_stack+0x4e/0x82
->  [<ffffffff8117cba7>] print_bad_pte+0x187/0x220
->  [<ffffffff8117e415>] unmap_single_vma+0x535/0x890
->  [<ffffffff8117f719>] unmap_vmas+0x49/0x90
->  [<ffffffff81187ef1>] exit_mmap+0xc1/0x170
->  [<ffffffff810510ef>] mmput+0x6f/0x100
->  [<ffffffff81055818>] do_exit+0x288/0xcd0
->  [<ffffffff810c1da5>] ? trace_hardirqs_on_caller+0x115/0x1e0
->  [<ffffffff810c1e7d>] ? trace_hardirqs_on+0xd/0x10
->  [<ffffffff810575dc>] do_group_exit+0x4c/0xc0
->  [<ffffffff81057664>] SyS_exit_group+0x14/0x20
->  [<ffffffff81713dd4>] tracesys+0xdd/0xe2
+> Sorry, I don't have access to any of these machines any more, and I
+> don't have any useful advice for you.
 >
-> There were a slew of these. same trace, different addr/anon_vma/index.
-> mapping always null.
->
-Would you please run again with the debug info added?
----
---- a/mm/swapfile.c	Wed Aug  7 17:27:22 2013
-+++ b/mm/swapfile.c	Wed Aug  7 17:57:20 2013
-@@ -509,6 +509,7 @@ static struct swap_info_struct *swap_inf
- {
- 	struct swap_info_struct *p;
- 	unsigned long offset, type;
-+	int race = 0;
 
- 	if (!entry.val)
- 		goto out;
-@@ -524,10 +525,17 @@ static struct swap_info_struct *swap_inf
- 	if (!p->swap_map[offset])
- 		goto bad_free;
- 	spin_lock(&p->lock);
-+	if (!p->swap_map[offset]) {
-+		race = 1;
-+		spin_unlock(&p->lock);
-+		goto bad_free;
-+	}
- 	return p;
+I have guessed that answer from the change of your email address...
 
- bad_free:
- 	printk(KERN_ERR "swap_free: %s%08lx\n", Unused_offset, entry.val);
-+	if (race)
-+		printk(KERN_ERR "but due to race\n");
- 	goto out;
- bad_offset:
- 	printk(KERN_ERR "swap_free: %s%08lx\n", Bad_offset, entry.val);
---
+But thanks for your record in commit and bugzilla. It's helpful to follow
+details of this bug.
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
+
