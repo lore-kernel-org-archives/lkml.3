@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab3HGGKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 02:10:52 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40542 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757077Ab3HGGKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 02:10:51 -0400
-Message-ID: <1375855849.2424.82.camel@joe-AO722>
-Subject: Re: [PATCH] kernel/sysctl_binary.c: improve the usage of return
- value 'result'
-From: Joe Perches <joe@perches.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Chen Gang <gang.chen@asianux.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, xi.wang@gmail.com,
-        nicolas.dichtel@6wind.com, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 06 Aug 2013 23:10:49 -0700
-In-Reply-To: <5201E192.7060108@huawei.com>
-References: <5200A5E6.9020803@asianux.com> <8761vibihw.fsf@xmission.com>
-	 <5201D62B.6080905@asianux.com> <5201E192.7060108@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932124Ab3HGGLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 02:11:45 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52388 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757077Ab3HGGLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 02:11:44 -0400
+Date: Wed, 7 Aug 2013 02:11:38 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 3/4] mm, rmap: minimize lock hold when unlink_anon_vmas
+Message-ID: <20130807061138.GK1845@cmpxchg.org>
+References: <1375778620-31593-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375778620-31593-3-git-send-email-iamjoonsoo.kim@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375778620-31593-3-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 13:56 +0800, Li Zefan wrote:
-> >> The right answer to the code is to config it out and then you don't have
-> >> to worry about it one way or another.
-[]
-> > Hmm... do you mean you spend 5 minutes to get a conclusion ? if so,
-> > better not use word 'seems' which is not a suitable word appeared in
-> > the results, proofs or conclusions.
-[]
-> You are too bad in english to do kernel development. You don't seem to
-> know how to communicate in english...
+On Tue, Aug 06, 2013 at 05:43:39PM +0900, Joonsoo Kim wrote:
+> Currently, we free the avc objects with holding a lock. To minimize
+> lock hold time, we just move the avc objects to another list
+> with holding a lock. Then, iterate them and free objects without holding
+> a lock. This makes lock hold time minimized.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-I don't think that's true.
-
-For instance, pessimization is a pretty
-obscure word.  Most native English speakers
-could probably guess what it meant, but I
-couldn't hold any low opinion of non-native
-speaker that asked "what does that mean".
-
-The code communicates just fine.
-
-Chen Gang could be a bit more careful when
-making significant changes to core kernel
-facilities.
-
-(said the guy that broke just printk)
-
-I think the fluent English speakers can be
-tolerant reasonably well when the code is
-correct and compelling (and correct).
-
-cheers, Joe
-
+I expect kfree() to be fast enough that we don't think we need to
+bother batching this outside the lock.
