@@ -1,166 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933816Ab3HGXbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 19:31:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51334 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933682Ab3HGXbI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 19:31:08 -0400
-Date: Wed, 07 Aug 2013 16:36:21 -0700 (PDT)
-Message-Id: <20130807.163621.84433966934449459.davem@davemloft.net>
-To: phil@nwl.cc
-Cc: eric.dumazet@gmail.com, johannes@sipsolutions.net, sedat.dilek@gmail.com,
-        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        hannes@stressinduktion.org, linux-wireless@vger.kernel.org,
-        linville@tuxdriver.com
-Subject: Re: linux-next: Tree for Aug 7
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130807.162748.779496444843938176.davem@davemloft.net>
-References: <20130807.104713.1615549684239408926.davem@davemloft.net>
-	<20130807183758.GB16263@orbit.nwl.cc>
-	<20130807.162748.779496444843938176.davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 07 Aug 2013 16:31:07 -0700 (PDT)
+	id S1757582Ab3HGXd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 19:33:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:53315 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757214Ab3HGXd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 19:33:56 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "lkml" <linux-kernel@vger.kernel.org>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Asias He <asias@redhat.com>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Subject: [PLEASE PULL] virtio fixes (again!)
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 08 Aug 2013 09:02:54 +0930
+Message-ID: <87siyloz4p.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Wed, 07 Aug 2013 16:27:48 -0700 (PDT)
+The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
 
-> Look, I'm going to fix this myself, because I'm pretty tired of
-> waiting for the obvious fix.
+  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
 
-Someone please test this:
+are available in the git repository at:
 
-diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
-index c623861..afc02a6 100644
---- a/include/linux/etherdevice.h
-+++ b/include/linux/etherdevice.h
-@@ -29,6 +29,7 @@
- 
- #ifdef __KERNEL__
- extern __be16		eth_type_trans(struct sk_buff *skb, struct net_device *dev);
-+extern __be16		__eth_type_trans(struct sk_buff *skb, struct net_device *dev);
- extern const struct header_ops eth_header_ops;
- 
- extern int eth_header(struct sk_buff *skb, struct net_device *dev,
-diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
-index be1f64d..35dc1be 100644
---- a/net/ethernet/eth.c
-+++ b/net/ethernet/eth.c
-@@ -146,6 +146,45 @@ int eth_rebuild_header(struct sk_buff *skb)
- EXPORT_SYMBOL(eth_rebuild_header);
- 
- /**
-+ * __eth_type_trans - only determine the packet's protocol ID.
-+ * @skb: packet
-+ * @dev: device
-+ */
-+__be16 __eth_type_trans(struct sk_buff *skb, struct net_device *dev)
-+{
-+	struct ethhdr *eth = (struct ethhdr *) skb->data;
-+
-+	/*
-+	 * Some variants of DSA tagging don't have an ethertype field
-+	 * at all, so we check here whether one of those tagging
-+	 * variants has been configured on the receiving interface,
-+	 * and if so, set skb->protocol without looking at the packet.
-+	 */
-+	if (netdev_uses_dsa_tags(dev))
-+		return htons(ETH_P_DSA);
-+	if (netdev_uses_trailer_tags(dev))
-+		return htons(ETH_P_TRAILER);
-+
-+	if (ntohs(eth->h_proto) >= ETH_P_802_3_MIN)
-+		return eth->h_proto;
-+
-+	/*
-+	 *      This is a magic hack to spot IPX packets. Older Novell breaks
-+	 *      the protocol design and runs IPX over 802.3 without an 802.2 LLC
-+	 *      layer. We look for FFFF which isn't a used 802.2 SSAP/DSAP. This
-+	 *      won't work for fault tolerant netware but does for the rest.
-+	 */
-+	if (skb->len >= 2 && *(unsigned short *)(skb->data) == 0xFFFF)
-+		return htons(ETH_P_802_3);
-+
-+	/*
-+	 *      Real 802.2 LLC
-+	 */
-+	return htons(ETH_P_802_2);
-+}
-+EXPORT_SYMBOL(__eth_type_trans);
-+
-+/**
-  * eth_type_trans - determine the packet's protocol ID.
-  * @skb: received socket data
-  * @dev: receiving network device
-@@ -184,33 +223,7 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
- 			skb->pkt_type = PACKET_OTHERHOST;
- 	}
- 
--	/*
--	 * Some variants of DSA tagging don't have an ethertype field
--	 * at all, so we check here whether one of those tagging
--	 * variants has been configured on the receiving interface,
--	 * and if so, set skb->protocol without looking at the packet.
--	 */
--	if (netdev_uses_dsa_tags(dev))
--		return htons(ETH_P_DSA);
--	if (netdev_uses_trailer_tags(dev))
--		return htons(ETH_P_TRAILER);
--
--	if (ntohs(eth->h_proto) >= ETH_P_802_3_MIN)
--		return eth->h_proto;
--
--	/*
--	 *      This is a magic hack to spot IPX packets. Older Novell breaks
--	 *      the protocol design and runs IPX over 802.3 without an 802.2 LLC
--	 *      layer. We look for FFFF which isn't a used 802.2 SSAP/DSAP. This
--	 *      won't work for fault tolerant netware but does for the rest.
--	 */
--	if (skb->len >= 2 && *(unsigned short *)(skb->data) == 0xFFFF)
--		return htons(ETH_P_802_3);
--
--	/*
--	 *      Real 802.2 LLC
--	 */
--	return htons(ETH_P_802_2);
-+	return __eth_type_trans(skb, dev);
- }
- EXPORT_SYMBOL(eth_type_trans);
- 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 0c0f6c9..ec8e1c3 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -2003,7 +2003,7 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
- 			return err;
- 
- 		if (dev->type == ARPHRD_ETHER)
--			skb->protocol = eth_type_trans(skb, dev);
-+			skb->protocol = __eth_type_trans(skb, dev);
- 
- 		data += dev->hard_header_len;
- 		to_write -= dev->hard_header_len;
-@@ -2332,13 +2332,13 @@ static int packet_snd(struct socket *sock,
- 	sock_tx_timestamp(sk, &skb_shinfo(skb)->tx_flags);
- 
- 	if (dev->type == ARPHRD_ETHER) {
--		skb->protocol = eth_type_trans(skb, dev);
-+		skb->protocol = __eth_type_trans(skb, dev);
- 		if (skb->protocol == htons(ETH_P_8021Q))
- 			reserve += VLAN_HLEN;
- 	} else {
- 		skb->protocol = proto;
--		skb->dev = dev;
- 	}
-+	skb->dev = dev;
- 
- 	if (!gso_type && (len > dev->mtu + reserve + extra_len)) {
- 		err = -EMSGSIZE;
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
+
+for you to fetch changes up to aa52aeea2725839bdd3dcce394486e9a043065e0:
+
+  virtio-scsi: Fix virtqueue affinity setup (2013-08-01 11:37:19 +0930)
+
+----------------------------------------------------------------
+More virtio console fixes than I'm happy with, but all real issues,
+and all CC:stable..
+
+Thanks,
+Rusty.
+
+----------------------------------------------------------------
+Amit Shah (5):
+      virtio: console: fix race with port unplug and open/close
+      virtio: console: fix race in port_fops_open() and port unplug
+      virtio: console: clean up port data immediately at time of unplug
+      virtio: console: fix raising SIGIO after port unplug
+      virtio: console: return -ENODEV on all read operations after unplug
+
+Asias He (1):
+      virtio-scsi: Fix virtqueue affinity setup
+
+Yoshihiro YUNOMAE (2):
+      virtio/console: Quit from splice_write if pipe->nrbufs is 0
+      virtio/console: Add pipe_lock/unlock for splice_write
+
+ drivers/char/virtio_console.c | 70 +++++++++++++++++++++++++++++--------------
+ drivers/scsi/virtio_scsi.c    |  2 +-
+ 2 files changed, 49 insertions(+), 23 deletions(-)
