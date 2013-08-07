@@ -1,146 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab3HGQHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 12:07:10 -0400
-Received: from orbit.nwl.cc ([176.31.251.142]:41790 "EHLO mail.nwl.cc"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756520Ab3HGQHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 12:07:08 -0400
-X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Aug 2013 12:07:08 EDT
-Date: Wed, 7 Aug 2013 17:59:18 +0200
-From: Phil Sutter <phil@nwl.cc>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        David Miller <davem@davemloft.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        wireless <linux-wireless@vger.kernel.org>,
-        John Linville <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: linux-next: Tree for Aug 7
-Message-ID: <20130807155918.GA16263@orbit.nwl.cc>
-Mail-Followup-To: Sedat Dilek <sedat.dilek@gmail.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-	David Miller <davem@davemloft.net>,
-	Hannes Frederic Sowa <hannes@stressinduktion.org>,
-	wireless <linux-wireless@vger.kernel.org>,
-	John Linville <linville@tuxdriver.com>,
-	Johannes Berg <johannes@sipsolutions.net>
-References: <20130807155443.a0355d0429f3e0b4ccbed261@canb.auug.org.au>
- <CA+icZUW+uxCsvPYcY2RRvMxRVzaBLuH9u8M4ziQNWXv=nk4b2w@mail.gmail.com>
+	id S932198Ab3HGQHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:07:55 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62537 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756521Ab3HGQHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 12:07:53 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <520270DB.2060909@roeck-us.net>
+Date: Wed, 07 Aug 2013 09:07:55 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="VS++wcV0S1rZb1Fb"
-Content-Disposition: inline
-In-Reply-To: <CA+icZUW+uxCsvPYcY2RRvMxRVzaBLuH9u8M4ziQNWXv=nk4b2w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jan Kara <jack@suse.cz>
+CC: Davidlohr Bueso <davidlohr@hp.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230 ext4_evict_inode+0x4c9/0x500
+ [ext4]() still in 3.11-rc3
+References: <1375388059.2097.10.camel@buesod1.americas.hpqcorp.net> <20130801203320.GB31857@quack.suse.cz> <1375415926.2269.1.camel@buesod1.americas.hpqcorp.net> <20130807152050.GA26516@quack.suse.cz> <52026764.3090305@roeck-us.net> <20130807153334.GC26516@quack.suse.cz>
+In-Reply-To: <20130807153334.GC26516@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/07/2013 08:33 AM, Jan Kara wrote:
+> On Wed 07-08-13 08:27:32, Guenter Roeck wrote:
+>> On 08/07/2013 08:20 AM, Jan Kara wrote:
+>>> On Thu 01-08-13 20:58:46, Davidlohr Bueso wrote:
+>>>> On Thu, 2013-08-01 at 22:33 +0200, Jan Kara wrote:
+>>>>>    Hi,
+>>>>>
+>>>>> On Thu 01-08-13 13:14:19, Davidlohr Bueso wrote:
+>>>>>> FYI I'm seeing loads of the following messages with Linus' latest
+>>>>>> 3.11-rc3 (which includes 822dbba33458cd6ad)
+>>>>>    Thanks for notice. I see you are running reaim to trigger this. What
+>>>>> workload?
+>>>>
+>>>> After re-running the workloads one by one, I finally hit the issue again
+>>>> with 'dbase'. FWIW I'm using ramdisks + ext4.
+>>>    Hum, I'm not able to reproduce this with current Linus' kernel - commit
+>>> e4ef108fcde0b97ed38923ba1ea06c7a152bab9e - I've tried with ramdisk but no
+>>> luck. Are you using some special mount options?
+>>>
+>> I don't see this commit in the upstream kernel ?
+>    It is Linus's merge of Tejun's libata fix from Tuesday...
+>
+>> I tried reproducing the problem on the same system I had seen 822dbba33458cd6ad on,
+>> with the same workload. It has now been running since last Friday, but I have
+>> not seen any problems.
+>    Ah, OK, so it may be fixed after all. If you happen to see it again,
+> please let me know. Thanks!
+>
+At least the problem I found, yes. The problem Davidlohr found may be a different one.
 
---VS++wcV0S1rZb1Fb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Guenter
 
-On Wed, Aug 07, 2013 at 10:29:18AM +0200, Sedat Dilek wrote:
-> On Wed, Aug 7, 2013 at 7:54 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > Hi all,
-> >
-> > Changes since 20130806:
-> >
-> > The ext4 tree lost its build failure.
-> >
-> > The mvebu tree gained a build failure so I used the version from
-> > next-20130806.
-> >
-> > The akpm tree gained conflicts against the ext4 tree.
-> >
-> > ----------------------------------------------------------------------------
-> >
-> 
-> [ CC some netdev and wireless folks ]
-> 
-> Yesterday, I discovered an issue with net-next.
-> The patch in [1] fixed the problems in my network/wifi environment.
-> Hannes confirmed that virtio_net are solved, too.
-> Today's next-20130807 still needs it for affected people.
-> 
-> - Sedat -
-> 
-> [1] http://marc.info/?l=linux-netdev&m=137582524017840&w=2
-> [2] http://marc.info/?l=linux-netdev&m=137583048219416&w=2
-> [3] http://marc.info/?t=137579712800008&r=1&w=2
 
-Could you please try the attached patch. It limits parsing the ethernet
-header (by calling eth_type_trans()) to cases when the configured
-protocol is ETH_P_ALL, so at least for 802.1X this should fix the
-problem.
-
-The idea behind this patch is that users setting the protocol to
-something else probably do know better and so should be left alone.
-
-Best wishes, Phil
-
---VS++wcV0S1rZb1Fb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="af_packet_fixup.diff"
-
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index bbe1ece..66bc79c 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -1932,8 +1932,6 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
- 
- 	ph.raw = frame;
- 
--	skb->protocol = proto;
--	skb->dev = dev;
- 	skb->priority = po->sk.sk_priority;
- 	skb->mark = po->sk.sk_mark;
- 	sock_tx_timestamp(&po->sk, &skb_shinfo(skb)->tx_flags);
-@@ -2002,13 +2000,18 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
- 		if (unlikely(err))
- 			return err;
- 
--		if (dev->type == ARPHRD_ETHER)
--			skb->protocol = eth_type_trans(skb, dev);
--
- 		data += dev->hard_header_len;
- 		to_write -= dev->hard_header_len;
- 	}
- 
-+	if (dev->type == ARPHRD_ETHER &&
-+	    proto = htons(ETH_P_ALL)) {
-+		skb->protocol = eth_type_trans(skb, dev);
-+	} else {
-+		skb->protocol = proto;
-+		skb->dev = dev;
-+	}
-+
- 	max_frame_len = dev->mtu + dev->hard_header_len;
- 	if (skb->protocol == htons(ETH_P_8021Q))
- 		max_frame_len += VLAN_HLEN;
-@@ -2331,15 +2334,17 @@ static int packet_snd(struct socket *sock,
- 
- 	sock_tx_timestamp(sk, &skb_shinfo(skb)->tx_flags);
- 
--	if (dev->type == ARPHRD_ETHER) {
-+	if (dev->type == ARPHRD_ETHER &&
-+	    proto == htons(ETH_P_ALL)) {
- 		skb->protocol = eth_type_trans(skb, dev);
--		if (skb->protocol == htons(ETH_P_8021Q))
--			reserve += VLAN_HLEN;
- 	} else {
- 		skb->protocol = proto;
- 		skb->dev = dev;
- 	}
- 
-+	if (skb->protocol == htons(ETH_P_8021Q))
-+		reserve += VLAN_HLEN;
-+
- 	if (!gso_type && (len > dev->mtu + reserve + extra_len)) {
- 		err = -EMSGSIZE;
- 		goto out_free;
-
---VS++wcV0S1rZb1Fb--
