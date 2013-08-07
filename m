@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab3HGSqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 14:46:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52580 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755416Ab3HGSqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 14:46:42 -0400
-Message-ID: <520295C9.5080608@zytor.com>
-Date: Wed, 07 Aug 2013 11:45:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@akamai.com>
-Subject: Re: [PATCH 4/4] x86/jump-label: Show where and what was wrong on
- errors
-References: <20130807164934.149920591@goodmis.org> <20130807165114.147890467@goodmis.org> <20130807172044.GC18272@pd.tnic> <1375896786.6848.14.camel@gandalf.local.home> <20130807173744.GD18272@pd.tnic> <1375897584.6848.15.camel@gandalf.local.home> <5202892F.7010804@zytor.com> <20130807184114.GK17920@pd.tnic>
-In-Reply-To: <20130807184114.GK17920@pd.tnic>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757282Ab3HGSrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 14:47:43 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:64226 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755416Ab3HGSrl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 14:47:41 -0400
+Message-ID: <1375901258.7303.64.camel@x61.thuisdomein>
+Subject: [PATCH] IB/qib: make qib_driver static
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mike Marciniszyn <infinipath@intel.com>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 07 Aug 2013 20:47:38 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Aug 2013 18:47:39.0418 (UTC) FILETIME=[97615FA0:01CE939E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 11:41 AM, Borislav Petkov wrote:
-> On Wed, Aug 07, 2013 at 10:51:43AM -0700, H. Peter Anvin wrote:
->> A bigger issue is probably if panic-on-bug should be the default, with
->> !panic being an opt-in debugging option.
-> 
-> Yes, it might make sense although embedded wants to disable CONFIG_BUG
-> on systems which cannot report errors:
-> 
+struct pci_driver qib_driver is only used in qib_init.c. Remove it from
+qib.h and make it static for qib_init.c.
 
-There is another thread going on to convert BUG to trap even on machines
-where CONFIG_BUG is disabled, i.e. CONFIG_BUG would control the metadata
-only.  With the configuration option off, you would get the address of
-the failure only.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Compile tested only.
 
-	-hpa
+ drivers/infiniband/hw/qib/qib.h      | 1 -
+ drivers/infiniband/hw/qib/qib_init.c | 2 +-
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
+diff --git a/drivers/infiniband/hw/qib/qib.h b/drivers/infiniband/hw/qib/qib.h
+index 4a9af79..1dd4b7c 100644
+--- a/drivers/infiniband/hw/qib/qib.h
++++ b/drivers/infiniband/hw/qib/qib.h
+@@ -89,7 +89,6 @@ struct qlogic_ib_stats {
+ 
+ extern struct qlogic_ib_stats qib_stats;
+ extern const struct pci_error_handlers qib_pci_err_handler;
+-extern struct pci_driver qib_driver;
+ 
+ #define QIB_CHIP_SWVERSION QIB_CHIP_VERS_MAJ
+ /*
+diff --git a/drivers/infiniband/hw/qib/qib_init.c b/drivers/infiniband/hw/qib/qib_init.c
+index 36e048e..24e802f 100644
+--- a/drivers/infiniband/hw/qib/qib_init.c
++++ b/drivers/infiniband/hw/qib/qib_init.c
+@@ -1193,7 +1193,7 @@ static DEFINE_PCI_DEVICE_TABLE(qib_pci_tbl) = {
+ 
+ MODULE_DEVICE_TABLE(pci, qib_pci_tbl);
+ 
+-struct pci_driver qib_driver = {
++static struct pci_driver qib_driver = {
+ 	.name = QIB_DRV_NAME,
+ 	.probe = qib_init_one,
+ 	.remove = qib_remove_one,
+-- 
+1.8.1.4
 
