@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654Ab3HGK0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 06:26:00 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:56382 "EHLO mail.gnudd.com"
+	id S932669Ab3HGK0M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:26:12 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:56389 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932456Ab3HGKZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 06:25:58 -0400
-Date: Wed, 7 Aug 2013 12:19:19 +0200
+	id S932456Ab3HGK0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 06:26:08 -0400
+Date: Wed, 7 Aug 2013 12:19:31 +0200
 From: Davide Ciminaghi <ciminaghi@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: rubini@gnudd.com, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
         x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Ingo Molnar <mingo@redhat.com>, Russell King <linux@arm.linux.org.uk>,
         Thomas Gleixner <tglx@linutronix.de>, devicetree@vger.kernel.org
-Subject: [PATCH 11/26] x86 devicetree: add functions for handling
- setup/teardown of MSI irqs
-Message-ID: <7d9a2146a1b661a22ec52feb8fbe64df984ccb0c.1375867291.git.rubini@gnudd.com>
+Subject: [PATCH 12/26] x86 kernel apic: notify MSI irqdomain(s) on
+ etup/teardown of MSI IRQs
+Message-ID: <7e98fe84a1cabd344308f8fa142e2a67aa105cdc.1375867291.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,100 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces x86_of_new_msi_irq() and x86_of_del_msi_irq(), which
-shall be invoked by native_setup_msi_irqs() and native_teardown_msi_irq()
-respectively to add/delete irq numbers to/from the "dummy" msi irqdomain.
+This patch should have no effect on non-OF x86 machines.
+
+When CONFIG_OF is enabled, an irqdomain exists for each MSI controller
+in the devicetree. This patch invokes the functions taking care of
+adding/removing IRQs numbers to/from the MSI irqdomain they belong to.
 
 Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
 Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 ---
- arch/x86/include/asm/prom.h  |    9 +++++++
- arch/x86/kernel/devicetree.c |   48 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 57 insertions(+), 0 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
-index bade6ac..902b361 100644
---- a/arch/x86/include/asm/prom.h
-+++ b/arch/x86/include/asm/prom.h
-@@ -27,11 +27,20 @@ extern int of_ioapic;
- extern u64 initial_dtb;
- extern void add_dtb(u64 data);
- extern void x86_add_irq_domains(void);
-+extern int x86_of_new_msi_irq(struct pci_dev *pdev, unsigned int irq);
-+extern void x86_of_del_msi_irq(unsigned int irq);
- void x86_of_pci_init(void);
- void x86_dtb_init(void);
- #else
- static inline void add_dtb(u64 data) { }
- static inline void x86_add_irq_domains(void) { }
-+
-+static inline int x86_of_new_msi_irq(struct pci_dev *pdev, unsigned int irq)
-+{
-+	return 0;
-+}
-+
-+static inline void x86_of_del_msi_irq(unsigned int irq) { }
- static inline void x86_of_pci_init(void) { }
- static inline void x86_dtb_init(void) { }
- #define of_ioapic 0
-diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
-index d1dcfd0..805931b 100644
---- a/arch/x86/kernel/devicetree.c
-+++ b/arch/x86/kernel/devicetree.c
-@@ -401,6 +401,54 @@ static void __init ioapic_add_ofnode(struct device_node *np)
- 	printk(KERN_ERR "IOxAPIC at %s is not registered.\n", np->full_name);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 9ed796c..65db413 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -60,6 +60,7 @@
+ #include <asm/irq_remapping.h>
+ #include <asm/hpet.h>
+ #include <asm/hw_irq.h>
++#include <asm/prom.h>
+ 
+ #include <asm/apic.h>
+ 
+@@ -3154,6 +3155,9 @@ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 		ret = setup_msi_irq(dev, msidesc, irq, 0);
+ 		if (ret < 0)
+ 			goto error;
++		ret = x86_of_new_msi_irq(dev, irq);
++		if (ret < 0)
++			goto error;
+ 	}
+ 	return 0;
+ 
+@@ -3164,6 +3168,7 @@ error:
+ 
+ void native_teardown_msi_irq(unsigned int irq)
+ {
++	x86_of_del_msi_irq(irq);
+ 	destroy_irq(irq);
  }
  
-+int x86_of_new_msi_irq(struct pci_dev *pdev, unsigned int irq)
-+{
-+	struct device_node *n = of_node_get(pci_device_to_OF_node(pdev));
-+	struct device_node *iparent;
-+	struct irq_domain *d;
-+	int ret = 0;
-+	/* Dummy interrupt specifier */
-+	__be32 intspec = 0;
-+	const __be32 *addr;
-+	struct of_irq oirq;
-+
-+	/* Walk up the tree looking for the device's interrupt controller */
-+	if (!n)
-+		return ret;
-+	iparent = of_irq_find_parent(n);
-+	of_node_put(n);
-+	if (!iparent)
-+		return ret;
-+
-+	addr = of_get_property(n, "reg", NULL);
-+	if (!addr)
-+		return ret;
-+
-+	ret = of_irq_map_raw(iparent, &intspec, 1, addr, &oirq);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Controller found, now look for the relevant irq domain */
-+	d = irq_find_host(oirq.controller);
-+	if (!d) {
-+		WARN_ON(1);
-+		return -ENODEV;
-+	}
-+	/* And finally simply associate this irq number with itself */
-+	ret = irq_domain_associate(d, irq, irq);
-+	return ret;
-+}
-+
-+void x86_of_del_msi_irq(unsigned int irq)
-+{
-+	struct irq_data *irq_data = irq_get_irq_data(irq);
-+	if (!irq_data->domain) {
-+		WARN_ON(1);
-+		return;
-+	}
-+	irq_domain_disassociate(irq_data->domain, irq);
-+}
-+
- static const struct irq_domain_ops msi_irq_domain_ops = {
- 	.xlate = irq_domain_xlate_onecell,
- };
 -- 
 1.7.7.2
