@@ -1,98 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933679Ab3HGXaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 19:30:52 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:56115 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757518Ab3HGXat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 19:30:49 -0400
-Message-ID: <5202D8A4.70608@linux.vnet.ibm.com>
-Date: Wed, 07 Aug 2013 16:30:44 -0700
-From: Zach Levis <zml@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: akpm@linux-foundation.org, oleg@redhat.com, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        dan.carpenter@oracle.com, Zach Levis <zach@zachsthings.com>
-Subject: Re: [PATCH v3 0/3] fs/binfmts: Improve handling of loops
-References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com> <1375485703-4077-1-git-send-email-zml@linux.vnet.ibm.com> <20130806211150.GH2280@outflux.net>
-In-Reply-To: <20130806211150.GH2280@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S933816Ab3HGXbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 19:31:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51334 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933682Ab3HGXbI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 19:31:08 -0400
+Date: Wed, 07 Aug 2013 16:36:21 -0700 (PDT)
+Message-Id: <20130807.163621.84433966934449459.davem@davemloft.net>
+To: phil@nwl.cc
+Cc: eric.dumazet@gmail.com, johannes@sipsolutions.net, sedat.dilek@gmail.com,
+        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        hannes@stressinduktion.org, linux-wireless@vger.kernel.org,
+        linville@tuxdriver.com
+Subject: Re: linux-next: Tree for Aug 7
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130807.162748.779496444843938176.davem@davemloft.net>
+References: <20130807.104713.1615549684239408926.davem@davemloft.net>
+	<20130807183758.GB16263@orbit.nwl.cc>
+	<20130807.162748.779496444843938176.davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080723-5806-0000-0000-000022581C0D
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 07 Aug 2013 16:31:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 02:11 PM, Kees Cook wrote:
-> Hi Zach,
->
-> I like the idea behind these clean ups. Thanks for working on them!
->
-> On Fri, Aug 02, 2013 at 04:21:40PM -0700, Zach Levis wrote:
->> This v3 is based off Oleg's changes from "exec: more cleanups" and
->> "exec: minor cleanups + minor fix"
->
-> I would echo all of Oleg's comments on the series so far. Additionally,
-working on that. v4 will take a little longer since I'm working on some 
-more significant changes to make sure I reset all of the possible data 
-in the linux_binprm struct and reuse the code from do_execve_common for 
-that as much as possible.
+From: David Miller <davem@davemloft.net>
+Date: Wed, 07 Aug 2013 16:27:48 -0700 (PDT)
 
-> please use "scripts/checkpatch.pl" for checking your patches for common
-> errors (see item 4 in Documentation/SubmittingPatches). I see a number
-> of problems that are detected by the tool:
->
-> WARNING: line over 80 characters
-> #52: FILE: fs/exec.c:1403:
-> +               if (retval == -ELOOP && bprm->recursion_depth == 0) { /* cur, previous */
->
-> ...
->
-> ERROR: trailing statements should be on next line
-> #269: FILE: fs/binfmt_em86.c:70:
-> +               if (retval < 0) return retval;
->
-> ...
->
-> ERROR: "(foo*)" should be "(foo *)"
-> #341: FILE: fs/binfmt_flat.c:791:
-> +       memset((void*)(datapos + data_len), 0, bss_len +
->
-> etc.
->
-will do
-> After that, be sure to use "scripts/get_maintainer.pl" for generating
-> your CC list (see item 5 in SubmittingPatches; I initially missed this
-> series -- adding more CCs for people that have touched the code can help
-> with your reviews).
-Sorry about that. Will do in the future
+> Look, I'm going to fix this myself, because I'm pretty tired of
+> waiting for the obvious fix.
 
->
-> Also, you only need to include a single Signed-off-by line for
-> yourself. :)
-Well, then it seems I'll be sending the next rev from my personal email, 
-seeing as I've only got a week and a half left on my internship here 
-(and until I lose access to my IBM email).
->
->> It incorporates Oleg and Andrew's suggestions and takes care
->> of the issue from Dan's patch "fs/binfmts: double unlock in
->> search_binary_handler()"
->
-> In the commit message, can you include some examples of how to generate
-> the loops you're encountering? This helps people understand why you're
-> doing what you're doing and provides a way for people to reproduce the
-> conditions themselves.
-Commit 2/3 has a link to a gist with testcases for the scripts -- I 
-stuck them in a gist so they didn't clog up the commit message. If 
-there's a way you'd prefer me to reference them let me know.
+Someone please test this:
 
->
-> Thanks,
->
-> -Kees
->
-
+diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
+index c623861..afc02a6 100644
+--- a/include/linux/etherdevice.h
++++ b/include/linux/etherdevice.h
+@@ -29,6 +29,7 @@
+ 
+ #ifdef __KERNEL__
+ extern __be16		eth_type_trans(struct sk_buff *skb, struct net_device *dev);
++extern __be16		__eth_type_trans(struct sk_buff *skb, struct net_device *dev);
+ extern const struct header_ops eth_header_ops;
+ 
+ extern int eth_header(struct sk_buff *skb, struct net_device *dev,
+diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
+index be1f64d..35dc1be 100644
+--- a/net/ethernet/eth.c
++++ b/net/ethernet/eth.c
+@@ -146,6 +146,45 @@ int eth_rebuild_header(struct sk_buff *skb)
+ EXPORT_SYMBOL(eth_rebuild_header);
+ 
+ /**
++ * __eth_type_trans - only determine the packet's protocol ID.
++ * @skb: packet
++ * @dev: device
++ */
++__be16 __eth_type_trans(struct sk_buff *skb, struct net_device *dev)
++{
++	struct ethhdr *eth = (struct ethhdr *) skb->data;
++
++	/*
++	 * Some variants of DSA tagging don't have an ethertype field
++	 * at all, so we check here whether one of those tagging
++	 * variants has been configured on the receiving interface,
++	 * and if so, set skb->protocol without looking at the packet.
++	 */
++	if (netdev_uses_dsa_tags(dev))
++		return htons(ETH_P_DSA);
++	if (netdev_uses_trailer_tags(dev))
++		return htons(ETH_P_TRAILER);
++
++	if (ntohs(eth->h_proto) >= ETH_P_802_3_MIN)
++		return eth->h_proto;
++
++	/*
++	 *      This is a magic hack to spot IPX packets. Older Novell breaks
++	 *      the protocol design and runs IPX over 802.3 without an 802.2 LLC
++	 *      layer. We look for FFFF which isn't a used 802.2 SSAP/DSAP. This
++	 *      won't work for fault tolerant netware but does for the rest.
++	 */
++	if (skb->len >= 2 && *(unsigned short *)(skb->data) == 0xFFFF)
++		return htons(ETH_P_802_3);
++
++	/*
++	 *      Real 802.2 LLC
++	 */
++	return htons(ETH_P_802_2);
++}
++EXPORT_SYMBOL(__eth_type_trans);
++
++/**
+  * eth_type_trans - determine the packet's protocol ID.
+  * @skb: received socket data
+  * @dev: receiving network device
+@@ -184,33 +223,7 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
+ 			skb->pkt_type = PACKET_OTHERHOST;
+ 	}
+ 
+-	/*
+-	 * Some variants of DSA tagging don't have an ethertype field
+-	 * at all, so we check here whether one of those tagging
+-	 * variants has been configured on the receiving interface,
+-	 * and if so, set skb->protocol without looking at the packet.
+-	 */
+-	if (netdev_uses_dsa_tags(dev))
+-		return htons(ETH_P_DSA);
+-	if (netdev_uses_trailer_tags(dev))
+-		return htons(ETH_P_TRAILER);
+-
+-	if (ntohs(eth->h_proto) >= ETH_P_802_3_MIN)
+-		return eth->h_proto;
+-
+-	/*
+-	 *      This is a magic hack to spot IPX packets. Older Novell breaks
+-	 *      the protocol design and runs IPX over 802.3 without an 802.2 LLC
+-	 *      layer. We look for FFFF which isn't a used 802.2 SSAP/DSAP. This
+-	 *      won't work for fault tolerant netware but does for the rest.
+-	 */
+-	if (skb->len >= 2 && *(unsigned short *)(skb->data) == 0xFFFF)
+-		return htons(ETH_P_802_3);
+-
+-	/*
+-	 *      Real 802.2 LLC
+-	 */
+-	return htons(ETH_P_802_2);
++	return __eth_type_trans(skb, dev);
+ }
+ EXPORT_SYMBOL(eth_type_trans);
+ 
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index 0c0f6c9..ec8e1c3 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -2003,7 +2003,7 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
+ 			return err;
+ 
+ 		if (dev->type == ARPHRD_ETHER)
+-			skb->protocol = eth_type_trans(skb, dev);
++			skb->protocol = __eth_type_trans(skb, dev);
+ 
+ 		data += dev->hard_header_len;
+ 		to_write -= dev->hard_header_len;
+@@ -2332,13 +2332,13 @@ static int packet_snd(struct socket *sock,
+ 	sock_tx_timestamp(sk, &skb_shinfo(skb)->tx_flags);
+ 
+ 	if (dev->type == ARPHRD_ETHER) {
+-		skb->protocol = eth_type_trans(skb, dev);
++		skb->protocol = __eth_type_trans(skb, dev);
+ 		if (skb->protocol == htons(ETH_P_8021Q))
+ 			reserve += VLAN_HLEN;
+ 	} else {
+ 		skb->protocol = proto;
+-		skb->dev = dev;
+ 	}
++	skb->dev = dev;
+ 
+ 	if (!gso_type && (len > dev->mtu + reserve + extra_len)) {
+ 		err = -EMSGSIZE;
