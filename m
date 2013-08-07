@@ -1,49 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab3HGRaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:30:12 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:65071 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab3HGRaL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:30:11 -0400
+	id S1757334Ab3HGRa7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:30:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40051 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756581Ab3HGRa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 13:30:57 -0400
+Date: Wed, 7 Aug 2013 19:30:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH 2/3] memcg: Limit the number of events registered on
+ oom_control
+Message-ID: <20130807173051.GD16343@dhcp22.suse.cz>
+References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+ <1375874907-22013-2-git-send-email-mhocko@suse.cz>
+ <20130807130836.GB27006@htj.dyndns.org>
+ <20130807133746.GI8184@dhcp22.suse.cz>
+ <20130807134741.GF27006@htj.dyndns.org>
+ <20130807135734.GK8184@dhcp22.suse.cz>
+ <20130807144730.GB13279@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CA+8MBb+pkKpaEDs6J_XbzM3wzady2MjdU+jcDP+jH1f1VBxG5w@mail.gmail.com>
-References: <20130715164844.1520.27771.stgit@aruna-ThinkPad-T420>
-	<51FA3B02.7060004@linux.vnet.ibm.com>
-	<3908561D78D1C84285E8C5FCA982C28F31CAA167@ORSMSX106.amr.corp.intel.com>
-	<CA+8MBbLuhVDCb26ag3AH0vXrP4MXHLxS5aVn8pTi4=qL1NdR5w@mail.gmail.com>
-	<CA+8MBbJ7x46FGC7dPSdNzf8z=fZz20w1kiNgnZr4QQB6SUELhg@mail.gmail.com>
-	<51FFDC8B.7010909@linux.vnet.ibm.com>
-	<CA+8MBb+1LpR+Cx=84WZT98U5eqZcm1KriUP75aCg+uSrXrb3Yw@mail.gmail.com>
-	<51FFFFEB.3030907@linux.vnet.ibm.com>
-	<CA+8MBbK9oZJO+RJGC-7riO=Kz=UbRcAvQ-nDi=2GLyvEDpoc7g@mail.gmail.com>
-	<CA+8MBbKA+P4vs3utSKQ-LPMW3ybrWOp=f3FH6ahv1YtwnMm5KA@mail.gmail.com>
-	<5201A9BD.4090503@linux.vnet.ibm.com>
-	<CA+8MBbJS0Dymn4OABi-rW9M5Bw-ZZ6DaEjQOW-oki+4ge4BDtg@mail.gmail.com>
-	<5201D777.8060303@linux.vnet.ibm.com>
-	<CA+8MBb+pkKpaEDs6J_XbzM3wzady2MjdU+jcDP+jH1f1VBxG5w@mail.gmail.com>
-Date: Wed, 7 Aug 2013 10:30:09 -0700
-Message-ID: <CA+8MBb+dNkT_xpqL6oy=D3UqCtEwAci5fatw-0crCFLMAGE1nA@mail.gmail.com>
-Subject: Re: [PATCH 00/11] Add compression support to pstore
-From: Tony Luck <tony.luck@gmail.com>
-To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "keescook@chromium.org" <keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130807144730.GB13279@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh - one more thing - and my apologies for not spotting this before:
+On Wed 07-08-13 16:47:30, Michal Hocko wrote:
+> On Wed 07-08-13 15:57:34, Michal Hocko wrote:
+> [...]
+> > Hmm, OK so you think that the fd limit is sufficient already?
+> 
+> Hmm, that would need to touch the code as well (the register callback
+> would need to make sure only one event is registered per cfile). But yes
+> this way would be better. I will send a new patch once I have an idle
+> moment.
 
-                dst = allocate_buf_for_compression(big_buf_sz);
+What do you think about the following? I am not sure about EINVAL maybe
+there is a better way to tell userspace it is doing something wrong. I
+would appreciate any suggestions. If this looks good I will post a
+similar patch for vmpressure.
+---
+>From 180614714348300836701bec618608059438efc2 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 7 Aug 2013 18:51:40 +0200
+Subject: [PATCH] memcg: Limit the number of events registered on oom_control
 
-No - you may not call kmalloc() in oops/panic context.  Please pre-allocate
-everything you need in some initialization code to make sure that we don't
-fail in the panic path because we can't get the memory we need.
+There is no limit for the maximum number of oom_control events
+registered per memcg. This might lead to an user triggered memory
+depletion if a regular user is allowed to register events because one
+file descriptor might be used for arbitrary number of registrations.
 
--Tony
+Let's be more strict and cap the number of events to the number of
+open file descriptors. Teach mem_cgroup_oom_register_event to check
+the registered events and fail if the given cftype (target file file
+descriptor) has been already registered. This will cap the number of
+events to the maximum number of allowed open files so no user who is
+allowed to register event can runaway the an existing limit.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8247db3..f893a39 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -212,6 +212,7 @@ struct mem_cgroup_thresholds {
+ struct mem_cgroup_eventfd_list {
+ 	struct list_head list;
+ 	struct eventfd_ctx *eventfd;
++	struct cftype *cft;
+ };
+ 
+ static void mem_cgroup_threshold(struct mem_cgroup *memcg);
+@@ -5577,6 +5578,7 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+ 	struct mem_cgroup_eventfd_list *event;
+ 	enum res_type type = MEMFILE_TYPE(cft->private);
++	struct mem_cgroup_eventfd_list *ev, *tmp;
+ 
+ 	BUG_ON(type != _OOM_TYPE);
+ 	event = kmalloc(sizeof(*event),	GFP_KERNEL);
+@@ -5585,7 +5587,20 @@ static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
+ 
+ 	spin_lock(&memcg_oom_lock);
+ 
++	/*
++	 * Make sure that only one event is registered for the given
++	 * cftype - aka file descriptor. This caps the number of events
++	 * to number of file descriptors per process so the userspace doesn't
++	 * escape and depleate the memory.
++	 */
++	list_for_each_entry_safe(ev, tmp, &memcg->oom_notify, list) {
++		if (ev->cft == cft) {
++			kfree(event);
++			return -EINVAL;
++		}
++	}
+ 	event->eventfd = eventfd;
++	event->cft = cft;
+ 	list_add(&event->list, &memcg->oom_notify);
+ 
+ 	/* already in OOM ? */
+-- 
+1.7.10.4
+
+-- 
+Michal Hocko
+SUSE Labs
