@@ -1,72 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab3HGAIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Aug 2013 20:08:13 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:34644 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab3HGAIL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Aug 2013 20:08:11 -0400
-Message-ID: <1375834084.2134.44.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/2] hugepage: optimize page fault path locking
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Eric B Munson <emunson@mgebm.net>, Anton Blanchard <anton@samba.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 06 Aug 2013 17:08:04 -0700
-In-Reply-To: <20130729061820.GA4784@lge.com>
-References: <1374848845-1429-1-git-send-email-davidlohr.bueso@hp.com>
-	 <20130729061820.GA4784@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756549Ab3HGAK5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Aug 2013 20:10:57 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58570 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756044Ab3HGAKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Aug 2013 20:10:55 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Subject: Re: [PATCH V2 00/11] CPUFreq: Fixes & Cleanups for 3.12
+Date: Wed, 07 Aug 2013 02:21:12 +0200
+Message-ID: <1627831.GMXVKIrL9l@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <cover.1375809311.git.viresh.kumar@linaro.org>
+References: <cover.1375809311.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-29 at 15:18 +0900, Joonsoo Kim wrote:
-> On Fri, Jul 26, 2013 at 07:27:23AM -0700, Davidlohr Bueso wrote:
-> > This patchset attempts to reduce the amount of contention we impose
-> > on the hugetlb_instantiation_mutex by replacing the global mutex with
-> > a table of mutexes, selected based on a hash. The original discussion can 
-> > be found here: http://lkml.org/lkml/2013/7/12/428
+On Tuesday, August 06, 2013 10:53:02 PM Viresh Kumar wrote:
+> Hi Rafael,
 > 
-> Hello, Davidlohr.
+> This is V2 of the patch series which was posted here earlier:
 > 
-> I recently sent a patchset which remove the hugetlb_instantiation_mutex
-> entirely ('mm, hugetlb: remove a hugetlb_instantiation_mutex').
-> This patchset can be found here: https://lkml.org/lkml/2013/7/29/54
+> http://www.gossamer-threads.com/lists/linux/kernel/1759514
 > 
-> If possible, could you review it and test it whether your problem is
-> disappered with it or not?
+> This patchset tries to fix & cleanup many existing cpufreq core issues. First
+> four patches tries to cleanup basic problems in cpufreq core. Its first patch
+> was earlier sent separately but now is part of this series.
+> 
+> Fifth patch was also sent earlier as reply to your patches and was reviewed by
+> Srivatsa. Sixth patch was picked from Lukasz's patchset on introducing software
+> "boost" feature in core. It will be used by this patchset.
+> 
+> And 7-10 are are the most significant part of this set. They try to make many
+> things simple and robust.
+> 
+> Last patch in the series is new and wasn't part of V1.
+> 
+> This is rebased of your bleeding-edge branch + two patches from you:
+> 18a6b03 cpufreq: Avoid double kobject_put() for the same kobject in error code path
+> d0cde63 cpufreq: Do not hold driver module references for additional policy CPUs
+> abe513f Merge branch 'acpi-sleep-next' into linux-next
+> 
+> They are also pushed in my cpufreq-next branch.
+> 
+> They are tested fairly well on ARM Vexpress TC2 board (big LITTLE).
+> 
+> Lukasz Majewski (1):
+>   cpufreq: Store cpufreq policies in a list
+> 
+> Viresh Kumar (10):
+>   cpufreq: Cleanup header files included in core
+>   cpufreq: Re-arrange declarations in cpufreq.h
+>   cpufreq: Give consistent names for struct cpufreq_policy *
+>   cpufreq: Use sizeof(*ptr) form for finding size of a struct
+>   cpufreq: Pass policy to cpufreq_add_policy_cpu()
+>   cpufreq: Use cpufreq_policy_list for iterating over policies
+>   cpufreq: Fix broken usage of governor->owner's refcount
+>   cpufreq: Don't use cpufreq_driver->owner's refcount to protect
+>     critical sections
+>   cpufreq: Remove struct cpufreq_driver's owner field
+>   cpufreq: improve error checking on return values of
+>     __cpufreq_governor()
 
-This patchset applies on top of https://lkml.org/lkml/2013/7/22/96
-"[PATCH v2 00/10] mm, hugetlb: clean-up and possible bug fix", right?
+Applied to bleeding-edge except for patch [05/11] that I've applied already
+earlier.
 
-AFAIK those changes are the ones Andrew picked up a few weeks ago and
-are now in linux-next, right? I was able to apply those just fine, but
-couldn't apply your 'remove a hugetlb_instantiation_mutex series' (IIRC
-pach 1/18 failed). I guess you'll send out a v2 anyway so I'll wait
-until then.
+>  Documentation/cpu-freq/cpu-drivers.txt |   2 -
+>  drivers/cpufreq/acpi-cpufreq.c         |   5 +-
+>  drivers/cpufreq/at32ap-cpufreq.c       |   1 -
+>  drivers/cpufreq/blackfin-cpufreq.c     |   1 -
+>  drivers/cpufreq/cpufreq-nforce2.c      |   1 -
+>  drivers/cpufreq/cpufreq.c              | 426 ++++++++++++++++-----------------
+>  drivers/cpufreq/cpufreq_conservative.c |  14 +-
+>  drivers/cpufreq/cpufreq_governor.c     |   6 -
+>  drivers/cpufreq/cpufreq_governor.h     |   7 +-
+>  drivers/cpufreq/cpufreq_ondemand.c     |  24 +-
+>  drivers/cpufreq/cpufreq_performance.c  |   3 +-
+>  drivers/cpufreq/cpufreq_powersave.c    |   3 +-
+>  drivers/cpufreq/cpufreq_stats.c        |  23 +-
+>  drivers/cpufreq/cris-artpec3-cpufreq.c |   1 -
+>  drivers/cpufreq/cris-etraxfs-cpufreq.c |   1 -
+>  drivers/cpufreq/e_powersaver.c         |   5 +-
+>  drivers/cpufreq/elanfreq.c             |   1 -
+>  drivers/cpufreq/exynos-cpufreq.c       |   2 +-
+>  drivers/cpufreq/freq_table.c           |   4 +-
+>  drivers/cpufreq/gx-suspmod.c           |   3 +-
+>  drivers/cpufreq/ia64-acpi-cpufreq.c    |   5 +-
+>  drivers/cpufreq/intel_pstate.c         |   1 -
+>  drivers/cpufreq/kirkwood-cpufreq.c     |   1 -
+>  drivers/cpufreq/longhaul.c             |   1 -
+>  drivers/cpufreq/longrun.c              |   1 -
+>  drivers/cpufreq/loongson2_cpufreq.c    |   1 -
+>  drivers/cpufreq/maple-cpufreq.c        |   1 -
+>  drivers/cpufreq/p4-clockmod.c          |   1 -
+>  drivers/cpufreq/pasemi-cpufreq.c       |   1 -
+>  drivers/cpufreq/pcc-cpufreq.c          |   1 -
+>  drivers/cpufreq/pmac32-cpufreq.c       |   1 -
+>  drivers/cpufreq/pmac64-cpufreq.c       |   6 +-
+>  drivers/cpufreq/powernow-k6.c          |   1 -
+>  drivers/cpufreq/powernow-k7.c          |  14 +-
+>  drivers/cpufreq/powernow-k8.c          |   7 +-
+>  drivers/cpufreq/ppc-corenet-cpufreq.c  |   1 -
+>  drivers/cpufreq/ppc_cbe_cpufreq.c      |   1 -
+>  drivers/cpufreq/s3c2416-cpufreq.c      |   1 -
+>  drivers/cpufreq/s3c24xx-cpufreq.c      |   6 +-
+>  drivers/cpufreq/s3c64xx-cpufreq.c      |   1 -
+>  drivers/cpufreq/sc520_freq.c           |   1 -
+>  drivers/cpufreq/sh-cpufreq.c           |   1 -
+>  drivers/cpufreq/sparc-us2e-cpufreq.c   |   6 +-
+>  drivers/cpufreq/sparc-us3-cpufreq.c    |   6 +-
+>  drivers/cpufreq/speedstep-centrino.c   |   1 -
+>  drivers/cpufreq/speedstep-ich.c        |   1 -
+>  drivers/cpufreq/speedstep-smi.c        |   1 -
+>  include/linux/cpufreq.h                | 386 ++++++++++++++---------------
+>  48 files changed, 442 insertions(+), 547 deletions(-)
 
-In any case I'm not seeing an actual performance issue with the
-hugetlb_instantiation_mutex, all I noticed was that under large DB
-workloads that make use of hugepages, such as Oracle, this lock becomes
-quite hot during the first few minutes of startup, which makes sense in
-the fault path it is contended. So I'll try out your patches, but, in
-this particular case, I just cannot compare with the lock vs without the
-lock situations.
+I like these statistics. :-)
 
 Thanks,
-Davidlohr
+Rafael
 
