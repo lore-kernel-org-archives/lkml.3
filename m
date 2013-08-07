@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab3HGJz5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 05:55:57 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:51039 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757230Ab3HGJz4 (ORCPT
+	id S932403Ab3HGKEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 06:04:22 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:34208 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756920Ab3HGKEV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 05:55:56 -0400
+	Wed, 7 Aug 2013 06:04:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKohpomGSoU5VOcrbonD1=NE-6xDVr+pveAmuXdrzjmLotmEug@mail.gmail.com>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<d12b25130db5a8b645929eb93d1cf4ddc2d68826.1352196505.git.viresh.kumar@linaro.org>
-	<1354024039.6276.72.camel@gandalf.local.home>
-	<CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
-	<CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
-	<CAKohpo=0r=HY5w-XqnXv42eSJcH08C47J+TqWn7vY1aNBhGT_A@mail.gmail.com>
-	<CAKohpo=eAGVA540jN8+t0aaqCV9qJRkH0q9-q6QVUYusWQqSYw@mail.gmail.com>
-	<alpine.LFD.2.02.1305131223470.2863@ionos>
-	<CAKohpokfKPQ3EhMf3WB8koXuH2rF6QoejwNOTw08X+XfnVhpEg@mail.gmail.com>
-	<CAKohpomoSHS0wSCBrJApZuSTr9fbm2py6WdNg1MNzRWjb55Y_Q@mail.gmail.com>
-	<CAKohpon0dC6O_QBXnbyxUOO0DcrRxTzFkZSJNh6VrNL5kzT66Q@mail.gmail.com>
-	<CAKohpomGSoU5VOcrbonD1=NE-6xDVr+pveAmuXdrzjmLotmEug@mail.gmail.com>
-Date: Wed, 7 Aug 2013 15:25:55 +0530
-Message-ID: <CAKohpokzTj-=2BgrAH4UabiCAe_sZXhdyKu1L-VDnYBJ97BAyA@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 4/4] timer: Migrate running timer
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tj@kernel.org, mingo@redhat.com,
-        peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org, John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130807055157.GA32278@redhat.com>
+References: <20130807055157.GA32278@redhat.com>
+Date: Wed, 7 Aug 2013 18:04:20 +0800
+Message-ID: <CAJd=RBCJv7=Qj6dPW2Ha=nq6JctnK3r7wYCAZTm=REVOZUNowg@mail.gmail.com>
+Subject: Re: unused swap offset / bad page map.
+From: Hillf Danton <dhillf@gmail.com>
+To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 July 2013 14:47, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 18 June 2013 10:21, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+Hello Dave
 
-> Hi Thomas,
+On Wed, Aug 7, 2013 at 1:51 PM, Dave Jones <davej@redhat.com> wrote:
+> Seen while fuzzing with lots of child processes.
 >
-> Do you still see some light of hope in this patch :) ?
+> swap_free: Unused swap offset entry 001263f5
+> BUG: Bad page map in process trinity-child29  pte:24c7ea00 pmd:09fec067
+> addr:00007f9db958d000 vm_flags:00100073 anon_vma:ffff88022c004ba0 mapping:          (null) index:f99
+> Modules linked in: fuse ipt_ULOG snd_seq_dummy tun sctp scsi_transport_iscsi can_raw can_bcm rfcomm bnep nfnetlink hidp appletalk bluetooth rose can af_802154 phonet x25 af_rxrpc llc2 nfc rfkill af_key pppoe rds pppox ppp_generic slhc caif_socket caif irda crc_ccitt atm netrom ax25 ipx p8023 psnap p8022 llc snd_hda_codec_realtek pcspkr usb_debug snd_seq snd_seq_device snd_hda_intel snd_hda_codec snd_hwdep e1000e snd_pcm ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
+> CPU: 1 PID: 2624 Comm: trinity-child29 Not tainted 3.11.0-rc4+ #1
+>  0000000000000000 ffff8801fd7ddc90 ffffffff81700f2c 00007f9db958d000
+>  ffff8801fd7ddcd8 ffffffff8117cba7 0000000024c7ea00 0000000000000f99
+>  00007f9db9600000 ffff880009fecc68 0000000024c7ea00 ffff8801fd7dde00
+> Call Trace:
+>  [<ffffffff81700f2c>] dump_stack+0x4e/0x82
+>  [<ffffffff8117cba7>] print_bad_pte+0x187/0x220
+>  [<ffffffff8117e415>] unmap_single_vma+0x535/0x890
+>  [<ffffffff8117f719>] unmap_vmas+0x49/0x90
+>  [<ffffffff81187ef1>] exit_mmap+0xc1/0x170
+>  [<ffffffff810510ef>] mmput+0x6f/0x100
+>  [<ffffffff81055818>] do_exit+0x288/0xcd0
+>  [<ffffffff810c1da5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+>  [<ffffffff810c1e7d>] ? trace_hardirqs_on+0xd/0x10
+>  [<ffffffff810575dc>] do_group_exit+0x4c/0xc0
+>  [<ffffffff81057664>] SyS_exit_group+0x14/0x20
+>  [<ffffffff81713dd4>] tracesys+0xdd/0xe2
+>
+> There were a slew of these. same trace, different addr/anon_vma/index.
+> mapping always null.
+>
+Would you please run again with the debug info added?
+---
+--- a/mm/swapfile.c	Wed Aug  7 17:27:22 2013
++++ b/mm/swapfile.c	Wed Aug  7 17:57:20 2013
+@@ -509,6 +509,7 @@ static struct swap_info_struct *swap_inf
+ {
+ 	struct swap_info_struct *p;
+ 	unsigned long offset, type;
++	int race = 0;
 
-Ping!!
+ 	if (!entry.val)
+ 		goto out;
+@@ -524,10 +525,17 @@ static struct swap_info_struct *swap_inf
+ 	if (!p->swap_map[offset])
+ 		goto bad_free;
+ 	spin_lock(&p->lock);
++	if (!p->swap_map[offset]) {
++		race = 1;
++		spin_unlock(&p->lock);
++		goto bad_free;
++	}
+ 	return p;
+
+ bad_free:
+ 	printk(KERN_ERR "swap_free: %s%08lx\n", Unused_offset, entry.val);
++	if (race)
++		printk(KERN_ERR "but due to race\n");
+ 	goto out;
+ bad_offset:
+ 	printk(KERN_ERR "swap_free: %s%08lx\n", Bad_offset, entry.val);
+--
