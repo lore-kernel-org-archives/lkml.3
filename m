@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab3HGRxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 13:53:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42838 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144Ab3HGRxS (ORCPT
+	id S932874Ab3HGRyL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 13:54:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5704 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932144Ab3HGRyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 13:53:18 -0400
-Message-ID: <5202898A.6050006@wwwdotorg.org>
-Date: Wed, 07 Aug 2013 11:53:14 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, swarren@nvidia.com, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mturquette@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 5/6] ARM: Tegra: start using cpufreq-cpu0 driver
-References: <cover.1375886595.git.viresh.kumar@linaro.org> <6610c86618b781b00eba446ca19035e077d99691.1375886595.git.viresh.kumar@linaro.org> <520287EA.5060508@wwwdotorg.org> <CAKohpokOn4-RZE5mfoM+2p8jszWoGfOErrLShZmv86OgCMv+JA@mail.gmail.com>
-In-Reply-To: <CAKohpokOn4-RZE5mfoM+2p8jszWoGfOErrLShZmv86OgCMv+JA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Aug 2013 13:54:10 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=bknPSD7f66EA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=uoby4yjohHoA:10 a=5GyewtIREX3LFQS_ha8A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375898048.6848.18.camel@gandalf.local.home>
+Subject: [RFC][PATCH 3/2] x86/jump labels: Count and display the short jumps
+ used
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Jason Baron <jbaron@akamai.com>
+Date: Wed, 07 Aug 2013 13:54:08 -0400
+In-Reply-To: <20130807173606.872055511@goodmis.org>
+References: <20130807173606.872055511@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 11:49 AM, Viresh Kumar wrote:
-> On 7 August 2013 23:16, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 08/07/2013 08:46 AM, Viresh Kumar wrote:
->>> cpufreq-cpu0 driver can be probed over DT only if a corresponding device node is
->>> created for the SoC which wants to use it. Lets create a platform device for
->>> cpufreq-cpu0 driver for Tegra.
->>>
->>> Also it removes the Kconfig entry responsible to compiling tegra-cpufreq driver
->>> and hence there will not be any conflicts between two cpufreq drivers.
->>
->>> diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
->>
->>>  static void __init tegra_dt_init(void)
->>>  {
->>> +     struct platform_device_info devinfo = { .name = "cpufreq-cpu0", };
->>>       struct soc_device_attribute *soc_dev_attr;
->>>       struct soc_device *soc_dev;
->>>       struct device *parent = NULL;
->>>
->>>       tegra_clocks_apply_init_table();
->>> +     platform_device_register_full(&devinfo);
->>
->> This seems awfully like going back to board files. Shouldn't something
->> that binds to the CPU nodes register the cpufreq device automatically,
->> based on the CPU's compatible value?
+On Wed, 2013-08-07 at 13:36 -0400, Steven Rostedt wrote:
+> As I said, I would post the patches that let the jmps used by jump labels
+> be turn to 2 bytes where possible. These are a bit controversial due
+> to the complexity of the update_jump_label code.
 > 
-> This link has got some information why we can't have a node for cpufreq
-> or a compatibility value..
+> These patches are based off of tip's x86/jumplabel code.
 > 
-> http://permalink.gmane.org/gmane.linux.kernel.cpufreq/9018
+> But if someone cares to play with it, feel free. I'll push this up
+> to my repo under: tip/perf/jump-label-7 (internally this is my 7th version).
+> 
+> I'll post a patch that does the counting as well as a reply to this
+> post.
 
-That link only describes why we shouldn't have a dedicated compatible
-value for cpufreq. I certainly agree with that. However, I think it's
-reasonable that whatever code binds to:
+Here's the patch that forces the update and counts the number of short
+jumps vs long jumps. It also outputs the locations of the short jumps.
 
-	compatible = "arm,cortex-a9";
+On another box, using a distro config, I had even better results:
 
-... should instantiate any virtual devices that relate to the CPU.
+[    2.352448] short jumps: 193
+[    2.355407]  long jumps: 219
 
-Doing so would be similar to how the Tegra I2S driver instantiates the
-internal struct device that ASoC needs for the PCM/DMA device, rather
-than having board-dt-tegra20.c do it, like it would have done in
-board-file days.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Index: linux-trace.git/arch/x86/kernel/jump_label.c
+===================================================================
+--- linux-trace.git.orig/arch/x86/kernel/jump_label.c
++++ linux-trace.git/arch/x86/kernel/jump_label.c
+@@ -44,6 +44,9 @@ static void bug_at(unsigned char *ip, in
+ 	BUG();
+ }
+ 
++static int short_nops;
++static int long_nops;
++
+ static void __jump_label_transform(struct jump_entry *entry,
+ 				   enum jump_label_type type,
+ 				   void *(*poker)(void *, const void *, size_t),
+@@ -82,9 +85,14 @@ static void __jump_label_transform(struc
+ 		 */
+ 		if (init) {
+ 			/* Ignore short nops, we do not change them */
+-			if (memcmp(ip, nop_short, 2) == 0)
++			if (memcmp(ip, nop_short, 2) == 0) {
++				short_nops++;
++				printk("short jump at: %pS %p\n",
++				       (void *)ip, (void *)ip);
+ 				return;
++			}
+ 
++			long_nops++;
+ 			/* We are initializing from the default nop */
+ 			if (unlikely(memcmp(ip, default_nop, 5) != 0))
+ 				bug_at(ip, __LINE__);
+@@ -154,7 +162,7 @@ __init_or_module void arch_jump_label_tr
+ 	if (jlstate == JL_STATE_START) {
+ 		const unsigned char *ideal_nop = ideal_nops[NOP_ATOMIC5];
+ 
+-		if (memcmp(ideal_nop, default_nop, 5) != 0)
++		if (1 || memcmp(ideal_nop, default_nop, 5) != 0)
+ 			jlstate = JL_STATE_UPDATE;
+ 		else
+ 			jlstate = JL_STATE_NO_UPDATE;
+@@ -162,4 +170,11 @@ __init_or_module void arch_jump_label_tr
+ 	if (jlstate == JL_STATE_UPDATE)
+ 		__jump_label_transform(entry, type, text_poke_early, 1);
+ }
++
++static __init int output_jumps(void)
++{
++	printk("short jumps: %d\n", short_nops);
++	printk(" long jumps: %d\n", long_nops);
++}
++late_initcall(output_jumps);
+ #endif
+
+
