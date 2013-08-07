@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187Ab3HGNpT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:45:19 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:10466 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933046Ab3HGNpR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:45:17 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+yackYocTD1iAi8x+OWJ8KkvZ5r/UwZ9ieg==
-X-RZG-CLASS-ID: mo00
-From: Olaf Hering <olaf@aepfle.de>
-To: kys@microsoft.com, gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Olaf Hering <olaf@aepfle.de>
-Subject: [PATCH] Tools: hv: use full nlmsghdr in netlink_send
-Date: Wed,  7 Aug 2013 15:45:12 +0200
-Message-Id: <1375883112-20279-1-git-send-email-olaf@aepfle.de>
-X-Mailer: git-send-email 1.8.3.1
+	id S932971Ab3HGNq5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:46:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60187 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932724Ab3HGNqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 09:46:55 -0400
+Date: Wed, 7 Aug 2013 15:46:54 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH 1/3] memcg: limit the number of thresholds per-memcg
+Message-ID: <20130807134654.GJ8184@dhcp22.suse.cz>
+References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+ <20130807132210.GD27006@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130807132210.GD27006@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to have a nlmsghdr pointer to another temporary buffer.
-Instead use a full struct nlmsghdr.
+On Wed 07-08-13 09:22:10, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Aug 07, 2013 at 01:28:25PM +0200, Michal Hocko wrote:
+> > There is no limit for the maximum number of threshold events registered
+> > per memcg. This might lead to an user triggered memory depletion if a
+> > regular user is allowed to register on memory.[memsw.]usage_in_bytes
+> > eventfd interface.
+> > 
+> > Let's be more strict and cap the number of events that might be
+> > registered. MAX_THRESHOLD_EVENTS value is more or less random. The
+> > expectation is that it should be high enough to cover reasonable
+> > usecases while not too high to allow excessive resources consumption.
+> > 1024 events consume something like 16KB which shouldn't be a big deal
+> > and it should be good enough.
+> 
+> I don't think the memory consumption per-se is the issue to be handled
+> here (as kernel memory consumption is a different generic problem) but
+> rather that all listeners, regardless of their priv level, cgroup
+> membership and so on, end up contributing to this single shared
+> contiguous table,
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
----
- tools/hv/hv_kvp_daemon.c | 15 +++++----------
- tools/hv/hv_vss_daemon.c | 15 +++++----------
- 2 files changed, 10 insertions(+), 20 deletions(-)
+The table is per-memcg but you are right that everybody who has file
+write access to the particular group's usage file can register to it.
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 1bd1ad1..7c05f55 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -1393,23 +1393,18 @@ kvp_get_domain_name(char *buffer, int length)
- static int
- netlink_send(int fd, struct cn_msg *msg)
- {
--	struct nlmsghdr *nlh;
-+	struct nlmsghdr nlh = { .nlmsg_type = NLMSG_DONE };
- 	unsigned int size;
- 	struct msghdr message;
--	char buffer[64];
- 	struct iovec iov[2];
- 
- 	size = sizeof(struct cn_msg) + msg->len;
- 
--	nlh = (struct nlmsghdr *)buffer;
--	nlh->nlmsg_seq = 0;
--	nlh->nlmsg_pid = getpid();
--	nlh->nlmsg_type = NLMSG_DONE;
--	nlh->nlmsg_len = NLMSG_LENGTH(size - sizeof(*nlh));
--	nlh->nlmsg_flags = 0;
-+	nlh.nlmsg_pid = getpid();
-+	nlh.nlmsg_len = NLMSG_LENGTH(size);
- 
--	iov[0].iov_base = nlh;
--	iov[0].iov_len = sizeof(*nlh);
-+	iov[0].iov_base = &nlh;
-+	iov[0].iov_len = sizeof(nlh);
- 
- 	iov[1].iov_base = msg;
- 	iov[1].iov_len = size;
-diff --git a/tools/hv/hv_vss_daemon.c b/tools/hv/hv_vss_daemon.c
-index 2f1f53f..8ac0ee7 100644
---- a/tools/hv/hv_vss_daemon.c
-+++ b/tools/hv/hv_vss_daemon.c
-@@ -105,23 +105,18 @@ static int vss_operate(int operation)
- 
- static int netlink_send(int fd, struct cn_msg *msg)
- {
--	struct nlmsghdr *nlh;
-+	struct nlmsghdr nlh = { .nlmsg_type = NLMSG_DONE };
- 	unsigned int size;
- 	struct msghdr message;
--	char buffer[64];
- 	struct iovec iov[2];
- 
- 	size = sizeof(struct cn_msg) + msg->len;
- 
--	nlh = (struct nlmsghdr *)buffer;
--	nlh->nlmsg_seq = 0;
--	nlh->nlmsg_pid = getpid();
--	nlh->nlmsg_type = NLMSG_DONE;
--	nlh->nlmsg_len = NLMSG_LENGTH(size - sizeof(*nlh));
--	nlh->nlmsg_flags = 0;
-+	nlh.nlmsg_pid = getpid();
-+	nlh.nlmsg_len = NLMSG_LENGTH(size);
- 
--	iov[0].iov_base = nlh;
--	iov[0].iov_len = sizeof(*nlh);
-+	iov[0].iov_base = &nlh;
-+	iov[0].iov_len = sizeof(nlh);
- 
- 	iov[1].iov_base = msg;
- 	iov[1].iov_len = size;
+> which makes it quite easy to do DoS attack on it if
+> the event control is actually delegated to untrusted security domain,
+
+OK, I have obviously misunderstood your concern mentioned in the other
+email. Could you be more specific what is the DoS scenario which was
+your concern, then?
+
+[...]
+> Can you please update the patch description to reflect the actual
+> problem?
+
+As soon as I understand what is your concern ;)
+-- 
+Michal Hocko
+SUSE Labs
