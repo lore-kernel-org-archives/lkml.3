@@ -1,118 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab3HGPzS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 11:55:18 -0400
-Received: from smtp161.dfw.emailsrvr.com ([67.192.241.161]:35547 "EHLO
-	smtp161.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756023Ab3HGPx4 (ORCPT
+	id S932167Ab3HGQAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 12:00:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43514 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756852Ab3HGQAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 11:53:56 -0400
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
-        devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        rob.herring@calxeda.com, sergei.shtylyov@cogentembedded.com
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH v3 3/5] devicetree: create a separate binding description for sata_highbank
-Date: Wed,  7 Aug 2013 10:52:36 -0500
-Message-Id: <1375890758-30265-3-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1375890758-30265-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1375890758-30265-1-git-send-email-mark.langsdorf@calxeda.com>
+	Wed, 7 Aug 2013 12:00:17 -0400
+Message-ID: <52026F0B.6020705@wwwdotorg.org>
+Date: Wed, 07 Aug 2013 10:00:11 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Hanumant Singh <hanumant@codeaurora.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        "Bird, Tim" <Tim.Bird@sonymobile.com>,
+        ext Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com> <51F82BCC.1080409@codeaurora.org> <51F82E9F.9010309@wwwdotorg.org> <51F853BF.9040007@codeaurora.org> <51F8556A.1010300@wwwdotorg.org> <51F85690.9060701@codeaurora.org> <51F88BAC.2020001@wwwdotorg.org> <51F969A5.5020405@codeaurora.org> <51F97C47.5020202@wwwdotorg.org> <51F9A934.404@codeaurora.org> <52018A8D.70608@codeaurora.org>
+In-Reply-To: <52018A8D.70608@codeaurora.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Calxeda sata_highbank driver has been adding its descriptions to the
-ahci driver. Separate them properly.
+On 08/06/2013 05:45 PM, Hanumant Singh wrote:
+> On 7/31/2013 5:17 PM, Hanumant Singh wrote:
+>> On 7/31/2013 2:06 PM, Stephen Warren wrote:
+>>> On 07/31/2013 01:46 PM, Hanumant Singh wrote:
+>>>> On 7/30/2013 8:59 PM, Stephen Warren wrote:
+>>>>> On 07/30/2013 06:13 PM, Hanumant Singh wrote:
+>>>>>> On 7/30/2013 5:08 PM, Stephen Warren wrote:
+>>>>>>> On 07/30/2013 06:01 PM, Hanumant Singh wrote:
+>>>>>>>> On 7/30/2013 2:22 PM, Stephen Warren wrote:
+>>>>>>>>> On 07/30/2013 03:10 PM, hanumant wrote:
+>>>>>>>>> ...
+>>>>>>>>>> We actually have the same TLMM pinmux used by several socs of a
+>>>>>>>>>> family.
+>>>>>>>>>> The number of pins on each soc may vary.
+>>>>>>>>>> Also a given soc gets used in a number of boards.
+>>>>>>>>>> The device tree for a given soc is split into the different
+>>>>>>>>>> boards
+>>>>>>>>>> that
+>>>>>>>>>> its in ie the boards inherit a common soc.dtsi but have separate
+>>>>>>>>>> dts.
+>>>>>>>>>> The boards for the same soc may use different pin groups for
+>>>>>>>>>> accomplishing a function, since we have multiple i2c, spi uart
+>>>>>>>>>> etc
+>>>>>>>>>> peripheral instances on a soc. A different instance of each of
+>>>>>>>>>> the
+>>>>>>>>>> above
+>>>>>>>>>> peripherals, can be used in different boards, utilizing different
+>>>>>>>>>> or subset of same pin groups.
+>>>>>>>>>> Thus I would need to have multiple C files for one soc, based
+>>>>>>>>>> on the
+>>>>>>>>>> boards that it goes into.
+>>>>>>>>>
+>>>>>>>>> The pinctrl driver should be exposing the raw capabilities of
+>>>>>>>>> the HW.
+>>>>>>>>> All the board-specific configuration should be expressed in DT.
+>>>>>>>>> So, the
+>>>>>>>>> driver shouldn't have to know anything about different boards at
+>>>>>>>>> compile-time.
+>>>>>>>>>
+>>>>>>>> I agree, so I wanted to keep the pin grouping information in DT, we
+>>>>>>>> already have a board based differentiation of dts files in DT,
+>>>>>>>> for the
+>>>>>>>> same soc.
+>>>>>>>
+>>>>>>> That's the opposite of what I was saying. Pin groups are a
+>>>>>>> feature of
+>>>>>>> the SoC design, not the board.
+>>>>>>>
+>>>>>> Sorry I guess I wasn't clear.
+>>>>>> Right now I have a soc-pinctrl.dtsi containing pin groupings.
+>>>>>> This will be "inherited" by soc-boardtype.dts.
+>>>>>> The pinctrl client device nodes in soc-boardtype.dts will point to
+>>>>>> pin
+>>>>>> groupings in soc-pinctrl.dtsi that are valid for that particular
+>>>>>> boardtype.
+>>>>>> Is this a valid design?
+>>>>>
+>>>>> OK, so you have two types of child node inside the pinctrl DT node;
+>>>>> some
+>>>>> define the pin groups the SoC has (in soc.dtsi) and some define
+>>>>> pinctrl
+>>>>> states that reference the pin group nodes and are referenced by the
+>>>>> client nodes.
+>>>>>
+>>>>> That's probably fine. However, I'd still question putting the pin
+>>>>> group
+>>>>> nodes in DT at all; I'm not convinced it's better than just putting
+>>>>> those into the driver itself. You end up with the same data tables
+>>>>> after
+>>>>> parsing the DT anyway.
+>>>>>
+>>>>
+>>>> Any feedback for the rest of the patch?
+>>>
+>>> I'm certainly waiting for this aspect of the patch to be resolved; I
+>>> think it will impact the rest of the patch so much that it's not worth
+>>> reviewing until we decide on where to represent the pin groups (some DT
+>>> parsing could would be removed if we put the pin group definitions into
+>>> the driver, hence wouldn't need to be reviewed, and likewise there's be
+>>> some new tables to review).
+>>>
+>>
+>> I am trying to look at examples of what you are suggesting.
+>> I was looking at the exynos implementation, and just from a brief glance
+>> it seems like there too the pin grouping is being specified in the
+>> device tree, using what looks like labels of the pins.
+>> The labels are matched to group structures in soc specific files?
+>>
+>> By having the pin groupings in DT I am able to reuse the driver without
+>> any SOC based code bloat.
+>> As I mentioned earlier, we have entire families of SOCs using the same
+>> TLMM hardware.
+>> Its not a guarantee that for a given TLMM version,
+>> the pin groupings on that hardware are the same for every SOC that its
+>> in. Its infact most likely that I wont be able to use the pin groupings
+>> from one SOC to the next even if they both use the same TLMM.
+>> It will very quickly lead to a bloat of
+>> pinctrl-<msm_soc>.c (containing the pin groupings replicated for each
+>> soc)
+>> which use TLMM version specific register programming implementation
+>> pinctrl-tlmm-<version>.c
+>> and the DT parsing and interface to framework (which remains unchanged).
+>> pinctrl-msm.c.
+>>
+>> Thanks
+>> Hanumant
+>>
+> 
+> Any comments on this?
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
----
-Changes from v2
-	Fixed some indenting.
-Changes from v1
-	None.
-
- .../devicetree/bindings/ata/ahci-platform.txt      | 18 +++---------
- .../devicetree/bindings/ata/sata_highbank.txt      | 32 ++++++++++++++++++++++
- 2 files changed, 36 insertions(+), 14 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/sata_highbank.txt
-
-diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-index 3ec0c5c..89de156 100644
---- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-+++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-@@ -4,27 +4,17 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
- Each SATA controller should have its own node.
- 
- Required properties:
--- compatible        : compatible list, contains "calxeda,hb-ahci" or "snps,spear-ahci"
-+- compatible        : compatible list, contains "snps,spear-ahci"
- - interrupts        : <interrupt mapping for SATA IRQ>
- - reg               : <registers mapping>
- 
- Optional properties:
--- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
--			SATA port to a combophy and a lane within that
--			combophy
--- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
--			which indicates that the driver supports SGPIO
--			indicator lights using the indicated GPIOs
--- calxeda,led-order : a u32 array that map port numbers to offsets within the
--			SGPIO bitstream.
- - dma-coherent      : Present if dma operations are coherent
- 
- Example:
-         sata@ffe08000 {
--		compatible = "calxeda,hb-ahci";
--                reg = <0xffe08000 0x1000>;
--                interrupts = <115>;
--		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
--					&combophy0 2 &combophy0 3>;
-+		compatible = "snps,spear-ahci";
-+		reg = <0xffe08000 0x1000>;
-+		interrupts = <115>;
- 
-         };
-diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-new file mode 100644
-index 0000000..1ac6d3d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-@@ -0,0 +1,32 @@
-+* Calxeda AHCI SATA Controller
-+
-+SATA nodes are defined to describe on-chip Serial ATA controllers.
-+The Calxeda SATA controller mostly conforms to the AHCI interface
-+with some special extensions to add functionality.
-+Each SATA controller should have its own node.
-+
-+Required properties:
-+- compatible        : compatible list, contains "calxeda,hb-ahci"
-+- interrupts        : <interrupt mapping for SATA IRQ>
-+- reg               : <registers mapping>
-+
-+Optional properties:
-+- dma-coherent      : Present if dma operations are coherent
-+- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
-+			SATA port to a combophy and a lane within that
-+			combophy
-+- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
-+			which indicates that the driver supports SGPIO
-+			indicator lights using the indicated GPIOs
-+- calxeda,led-order : a u32 array that map port numbers to offsets within the
-+			SGPIO bitstream.
-+
-+Example:
-+        sata@ffe08000 {
-+		compatible = "calxeda,hb-ahci";
-+		reg = <0xffe08000 0x1000>;
-+		interrupts = <115>;
-+		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
-+					&combophy0 2 &combophy0 3>;
-+
-+        };
--- 
-1.8.1.2
-
+No. As I said, I personally want to see all the pingroups defined in the
+pinctrl driver. But, if someone else acks/... the patches without it, I
+probably won't nack it.
