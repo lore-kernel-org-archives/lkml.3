@@ -1,79 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202Ab3HGNnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:43:41 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:61760 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933187Ab3HGNnj (ORCPT
+	id S933199Ab3HGNo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:44:27 -0400
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:47058 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933163Ab3HGNo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:43:39 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com,
-        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: [PATCH 2/2] cris: fix return type of ffs()
-Date: Wed,  7 Aug 2013 22:42:39 +0900
-Message-Id: <1375882959-26853-2-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375882959-26853-1-git-send-email-akinobu.mita@gmail.com>
-References: <1375882959-26853-1-git-send-email-akinobu.mita@gmail.com>
+	Wed, 7 Aug 2013 09:44:26 -0400
+Message-ID: <52024F38.4080808@gmail.com>
+Date: Wed, 07 Aug 2013 09:44:24 -0400
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Jeremy Eder <jeder@redhat.com>
+Subject: Re: [PATCH 01/17] perf util: Save pid-cmdline mapping into tracing
+ header
+References: <1375175954-798-1-git-send-email-namhyung@kernel.org> <1375175954-798-2-git-send-email-namhyung@kernel.org> <20130730132839.GA2607@ghostprotocols.net> <51F85FAA.2090400@lge.com> <20130731140746.GA3614@ghostprotocols.net> <87r4e81u8w.fsf@sejong.aot.lge.com>
+In-Reply-To: <87r4e81u8w.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The return type of ffs() is 'int' on all architectures except cris and
-hexagon.  This unifies the return type to 'int'.
+On 8/5/13 3:17 AM, Namhyung Kim wrote:
+>> I don't think this is a problem, its in line with Ingo's suggestion of a
+>> new perf ioctl to ask the kernel to generate PERF_RECORD_MMAP events for
+>> existing threads.
+>
+> Hmm.. could you please give me a link of the thread?
 
-The problem I'm seeing is that the following line generates a warning
-on cris and hexagon because of the mismatch between format '%u' and
-return type of ffs().
+I believe this is the thread being referred to:
+https://lkml.org/lkml/2013/6/25/180
 
-	printk("bits in OOB size: %u\n",	ffs(ns->geom.oobsz) - 1);
-
-But removing this warning by casting to 'int' looks odd, so I suggest
-unifying the return type of ffs() on all architectures.
-
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-hexagon@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
----
- arch/cris/include/arch-v10/arch/bitops.h | 2 +-
- arch/cris/include/arch-v32/arch/bitops.h | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/cris/include/arch-v10/arch/bitops.h b/arch/cris/include/arch-v10/arch/bitops.h
-index 03d9cfd..cc37a22 100644
---- a/arch/cris/include/arch-v10/arch/bitops.h
-+++ b/arch/cris/include/arch-v10/arch/bitops.h
-@@ -65,7 +65,7 @@ static inline unsigned long __ffs(unsigned long word)
-  * differs in spirit from the above ffz (man ffs).
-  */
- 
--static inline unsigned long kernel_ffs(unsigned long w)
-+static inline int kernel_ffs(unsigned long w)
- {
- 	return w ? cris_swapwbrlz (w) + 1 : 0;
- }
-diff --git a/arch/cris/include/arch-v32/arch/bitops.h b/arch/cris/include/arch-v32/arch/bitops.h
-index 147689d6..a5d0963 100644
---- a/arch/cris/include/arch-v32/arch/bitops.h
-+++ b/arch/cris/include/arch-v32/arch/bitops.h
-@@ -55,7 +55,7 @@ __ffs(unsigned long w)
- /*
-  * Find First Bit that is set.
-  */
--static inline unsigned long
-+static inline int
- kernel_ffs(unsigned long w)
- {
- 	return w ? cris_swapwbrlz (w) + 1 : 0;
--- 
-1.8.3.1
-
+David
