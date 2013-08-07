@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab3HGLNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 07:13:48 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:46642 "EHLO song.cn.fujitsu.com"
+	id S932858Ab3HGLOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 07:14:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:1839 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932605Ab3HGLNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 07:13:45 -0400
+	id S932559Ab3HGLNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 07:13:42 -0400
 X-IronPort-AV: E=Sophos;i="4.89,832,1367942400"; 
-   d="scan'208";a="8144306"
+   d="scan'208";a="8144304"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
@@ -21,9 +21,9 @@ To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH v3 17/25] x86, acpica, acpi: Try to find if SRAT is overrided earlier.
-Date: Wed, 7 Aug 2013 18:52:08 +0800
-Message-Id: <1375872736-4822-18-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v3 14/25] x86, acpi: Initialize acpi golbal root table list earlier.
+Date: Wed, 7 Aug 2013 18:52:05 +0800
+Message-Id: <1375872736-4822-15-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375872736-4822-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -36,241 +36,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux cannot migrate pages used by the kernel due to the direct mapping
-(va = pa + PAGE_OFFSET), any memory used by the kernel cannot be hot-removed.
-So when using memory hotplug, we have to prevent the kernel from using
-hotpluggable memory.
+As the previous patches split the acpi_gbl_root_table_list initialization
+procedure into two steps: install and override, this patch does the "install"
+steps earlier, right after memblock is ready.
 
-The ACPI table SRAT (System Resource Affinity Table) contains info to specify
-which memory is hotpluggble. After SRAT is parsed, we are aware of which
-memory is hotpluggable.
-
-At the early time when system is booting, SRAT has not been parsed. The boot
-memory allocator memblock will allocate any memory to the kernel. So we need
-SRAT parsed before memblock starts to work.
-
-In this patch, we are going to parse SRAT earlier, right after memblock is ready.
-
-Generally speaking, tables such as SRAT are provided by firmware. But
-ACPI_INITRD_TABLE_OVERRIDE functionality allows users to customize their own
-tables in initrd, and override the ones from firmware. So if we want to parse
-SRAT earlier, we also need to do SRAT override earlier.
-
-First, we introduce early_acpi_override_srat() to check if SRAT will be overridden
-from initrd.
-
-Second, we introduce find_hotpluggable_memory() to reserve hotpluggable memory,
-which will firstly call early_acpi_override_srat() to find out which memory is
-hotpluggable in the override SRAT.
+In this way, we are able to find SRAT in firmware earlier. And then, we can
+prevent memblock from allocating hotpluggable memory for the kernel.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- arch/x86/kernel/setup.c        |   10 ++++++
- drivers/acpi/osl.c             |   61 ++++++++++++++++++++++++++++++++++++++++
- include/linux/acpi.h           |   14 ++++++++-
- include/linux/memory_hotplug.h |    2 +
- mm/memory_hotplug.c            |   25 +++++++++++++++-
- 5 files changed, 109 insertions(+), 3 deletions(-)
+ arch/x86/kernel/acpi/boot.c |   30 +++++++++++++++++-------------
+ arch/x86/kernel/setup.c     |    8 +++++++-
+ include/linux/acpi.h        |    1 +
+ 3 files changed, 25 insertions(+), 14 deletions(-)
 
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index ddb0bc1..30daefd 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1497,6 +1497,23 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 	{}
+ };
+ 
++void __init early_acpi_boot_table_init(void)
++{
++	dmi_check_system(acpi_dmi_table);
++
++	/*
++	 * If acpi_disabled, bail out
++	 */
++	if (acpi_disabled)
++		return; 
++
++	/*
++	 * Initialize the ACPI boot-time table parser.
++	 */
++	if (acpi_table_init_firmware())
++		disable_acpi();
++}
++
+ /*
+  * acpi_boot_table_init() and acpi_boot_init()
+  *  called from setup_arch(), always.
+@@ -1504,9 +1521,6 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+  *	2. enumerates lapics
+  *	3. enumerates io-apics
+  *
+- * acpi_table_init() is separate to allow reading SRAT without
+- * other side effects.
+- *
+  * side effects of acpi_boot_init:
+  *	acpi_lapic = 1 if LAPIC found
+  *	acpi_ioapic = 1 if IOAPIC found
+@@ -1518,22 +1532,12 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 
+ void __init acpi_boot_table_init(void)
+ {
+-	dmi_check_system(acpi_dmi_table);
+-
+ 	/*
+ 	 * If acpi_disabled, bail out
+ 	 */
+ 	if (acpi_disabled)
+ 		return; 
+ 
+-	/*
+-	 * Initialize the ACPI boot-time table parser.
+-	 */
+-	if (acpi_table_init_firmware()) {
+-		disable_acpi();
+-		return;
+-	}
+-
+ 	acpi_table_init_override();
+ 
+ 	acpi_check_multiple_madt();
 diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index da44353..36d7fe8 100644
+index f8ec578..fdb5a26 100644
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -1061,6 +1061,16 @@ void __init setup_arch(char **cmdline_p)
- 	 */
- 	early_acpi_boot_table_init();
+@@ -1074,6 +1074,12 @@ void __init setup_arch(char **cmdline_p)
+ 	memblock_x86_fill();
  
-+#ifdef CONFIG_ACPI_NUMA
-+	/*
-+	 * Linux kernel cannot migrate kernel pages, as a result, memory used
-+	 * by the kernel cannot be hot-removed. Find and mark hotpluggable
-+	 * memory in memblock to prevent memblock from allocating hotpluggable
-+	 * memory for the kernel.
-+	 */
-+	find_hotpluggable_memory();
-+#endif
-+
  	/*
++	 * Parse the ACPI tables from firmware for possible boot-time SMP
++	 * configuration.
++	 */
++	early_acpi_boot_table_init();
++
++	/*
  	 * The EFI specification says that boot service code won't be called
  	 * after ExitBootServices(). This is, in fact, a lie.
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 0043e9f..dcbca3e 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -48,6 +48,7 @@
+ 	 */
+@@ -1130,7 +1136,7 @@ void __init setup_arch(char **cmdline_p)
+ 	io_delay_init();
  
- #include <asm/io.h>
- #include <asm/uaccess.h>
-+#include <asm/setup.h>
+ 	/*
+-	 * Parse the ACPI tables for possible boot-time SMP configuration.
++	 * Finish parsing the ACPI tables.
+ 	 */
+ 	acpi_boot_table_init();
  
- #include <acpi/acpi.h>
- #include <acpi/acpi_bus.h>
-@@ -631,6 +632,66 @@ int __init acpi_verify_table(struct cpio_data *file,
- 	return 0;
- }
- 
-+#ifdef CONFIG_ACPI_NUMA
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    early_acpi_override_srat
-+ *
-+ * RETURN:      Phys addr of SRAT on success, 0 on error.
-+ *
-+ * DESCRIPTION: Try to get the phys addr of SRAT in initrd.
-+ *              The ACPI_INITRD_TABLE_OVERRIDE procedure is able to use tables
-+ *              in initrd file to override the ones provided by firmware. This
-+ *              function checks if there is a SRAT in initrd at early time. If
-+ *              so, return the phys addr of the SRAT.
-+ *
-+ ******************************************************************************/
-+phys_addr_t __init early_acpi_override_srat(void)
-+{
-+	int i;
-+	u32 length;
-+	long offset;
-+	void *ramdisk_vaddr;
-+	struct acpi_table_header *table;
-+	struct cpio_data file;
-+	unsigned long map_step = NR_FIX_BTMAPS << PAGE_SHIFT;
-+	phys_addr_t ramdisk_image = get_ramdisk_image();
-+	char cpio_path[32] = "kernel/firmware/acpi/";
-+
-+	if (!ramdisk_image || !get_ramdisk_size())
-+		return 0;
-+
-+	/* Try to find if SRAT is overridden */
-+	for (i = 0; i < ACPI_OVERRIDE_TABLES; i++) {
-+		ramdisk_vaddr = early_ioremap(ramdisk_image, map_step);
-+
-+		file = find_cpio_data(cpio_path, ramdisk_vaddr,
-+				      map_step, &offset);
-+		if (!file.data) {
-+			early_iounmap(ramdisk_vaddr, map_step);
-+			return 0;
-+		}
-+
-+		table = file.data;
-+		length = table->length;
-+
-+		if (acpi_verify_table(&file, cpio_path, ACPI_SIG_SRAT)) {
-+			ramdisk_image += offset;
-+			early_iounmap(ramdisk_vaddr, map_step);
-+			continue;
-+		}
-+
-+		/* Found SRAT */
-+		early_iounmap(ramdisk_vaddr, map_step);
-+		ramdisk_image = ramdisk_image + offset - length;
-+
-+		break;
-+	}
-+
-+	return ramdisk_image;
-+}
-+#endif	/* CONFIG_ACPI_NUMA */
-+
- void __init acpi_initrd_override(void *data, size_t size)
- {
- 	int no, table_nr = 0, total_offset = 0;
 diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index c5e7b2a..bdcb9dd 100644
+index 44a3e5f..c5e7b2a 100644
 --- a/include/linux/acpi.h
 +++ b/include/linux/acpi.h
-@@ -81,11 +81,21 @@ typedef int (*acpi_tbl_entry_handler)(struct acpi_subtable_header *header,
- 
- #ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
- void acpi_initrd_override(void *data, size_t size);
--#else
-+
-+#ifdef CONFIG_ACPI_NUMA
-+phys_addr_t early_acpi_override_srat(void);
-+#endif	/* CONFIG_ACPI_NUMA */
-+
-+#else	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
- static inline void acpi_initrd_override(void *data, size_t size)
- {
- }
--#endif
-+
-+static inline phys_addr_t early_acpi_override_srat(void)
-+{
-+	return 0;
-+}
-+#endif	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
- 
- char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
+@@ -91,6 +91,7 @@ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
  void __acpi_unmap_table(char *map, unsigned long size);
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index dd38e62..463efa9 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -104,6 +104,7 @@ extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
- /* reasonably generic interface to expand the physical pages in a zone  */
- extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
- 	unsigned long nr_pages);
-+extern void find_hotpluggable_memory(void);
- 
- #ifdef CONFIG_NUMA
- extern int memory_add_physaddr_to_nid(u64 start);
-@@ -181,6 +182,7 @@ static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
- {
- }
- #endif
-+
- extern void put_page_bootmem(struct page *page);
- extern void get_page_bootmem(unsigned long ingo, struct page *page,
- 			     unsigned long type);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index ca1dd3a..2a57888 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -30,6 +30,7 @@
- #include <linux/mm_inline.h>
- #include <linux/firmware-map.h>
- #include <linux/stop_machine.h>
-+#include <linux/acpi.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -62,7 +63,6 @@ void unlock_memory_hotplug(void)
- 	mutex_unlock(&mem_hotplug_mutex);
- }
- 
--
- /* add this memory to iomem resource */
- static struct resource *register_memory_resource(u64 start, u64 size)
- {
-@@ -91,6 +91,29 @@ static void release_memory_resource(struct resource *res)
- 	return;
- }
- 
-+#ifdef CONFIG_ACPI_NUMA
-+/**
-+ * find_hotpluggable_memory - Find out hotpluggable memory from ACPI SRAT.
-+ *
-+ * This function did the following:
-+ * 1. Try to find if there is a SRAT in initrd file used to override the one
-+ *    provided by firmware. If so, get its phys addr.
-+ * 2. If there is no override SRAT, get the phys addr of the SRAT in firmware.
-+ * 3. Parse SRAT, find out which memory is hotpluggable.
-+ */
-+void __init find_hotpluggable_memory(void)
-+{
-+	phys_addr_t srat_paddr;
-+
-+	/* Try to find if SRAT is overridden */
-+	srat_paddr = early_acpi_override_srat();
-+	if (!srat_paddr)
-+		return;
-+
-+	/* Will parse SRAT and find out hotpluggable memory here */
-+}
-+#endif	/* CONFIG_ACPI_NUMA */
-+
- #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
- void get_page_bootmem(unsigned long info,  struct page *page,
- 		      unsigned long type)
+ int early_acpi_boot_init(void);
+ int acpi_boot_init (void);
++void early_acpi_boot_table_init (void);
+ void acpi_boot_table_init (void);
+ int acpi_mps_check (void);
+ int acpi_numa_init (void);
 -- 
 1.7.1
 
