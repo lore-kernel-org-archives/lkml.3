@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab3HGGTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 02:19:18 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48280 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932091Ab3HGGSb (ORCPT
+	id S1755051Ab3HGGWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 02:22:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47222 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab3HGGWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 02:18:31 -0400
-X-AuditID: 9c930197-b7b17ae000000a07-95-5201e6b5a77e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: <linux-kernel@vger.kernel.org>, acme@ghostprotocols.net,
-        a.p.zijlstra@chello.nl, jolsa@redhat.com
-Subject: Re: [PATCH v2 2/2] perf tests: Add tests of new pinned modifier
-References: <1375795686-4226-1-git-send-email-michael@ellerman.id.au>
-	<1375795686-4226-2-git-send-email-michael@ellerman.id.au>
-Date: Wed, 07 Aug 2013 15:18:29 +0900
-In-Reply-To: <1375795686-4226-2-git-send-email-michael@ellerman.id.au>
-	(Michael Ellerman's message of "Tue, 6 Aug 2013 23:28:06 +1000")
-Message-ID: <877gfyyqfe.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 7 Aug 2013 02:22:49 -0400
+Message-ID: <5201E7B0.5070802@canonical.com>
+Date: Wed, 07 Aug 2013 08:22:40 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Dave Airlie <airlied@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: Re: [PATCH] mutex: fix deadlock injection
+References: <20130701082221.GA14112@gmail.com> <CA+55aFwfsz6e5oQAdZw-YyYzwJXCPjKJKiLEXxn7ujU7KWX97Q@mail.gmail.com> <51D3C4C8.8060701@canonical.com> <20130705062345.GA29487@gmail.com> <51F775B5.201@canonical.com> <20130730084102.GI3008@twins.programming.kicks-ass.net> <CAPM=9ty0B=HR-g1vLoe51LpRZH8zH1yBzTSfhJg5yXceF+afdw@mail.gmail.com>
+In-Reply-To: <CAPM=9ty0B=HR-g1vLoe51LpRZH8zH1yBzTSfhJg5yXceF+afdw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  6 Aug 2013 23:28:06 +1000, Michael Ellerman wrote:
-> Add a negative test to test__checkevent_pmu_events() to get lots of
-> coverage of the negative case, ie. when the modifier is not specified.
+Op 07-08-13 02:05, Dave Airlie schreef:
+> On Tue, Jul 30, 2013 at 6:41 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Tue, Jul 30, 2013 at 10:13:41AM +0200, Maarten Lankhorst wrote:
+>>> The check needs to be for > 1, because ctx->acquired is already incremented.
+>>> This will prevent ww_mutex_lock_slow from returning -EDEADLK and not locking
+>>> the mutex. It caused a lot of false gpu lockups on radeon with
+>>> CONFIG_DEBUG_WW_MUTEX_SLOWPATH=y because a function that shouldn't be able
+>>> to return -EDEADLK did.
+>>>
+>>> Cc: Alex Deucher <alexander.deucher@amd.com>
+>>> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> Should this be merged via Ingo? or will I queue it in my -fixes?
 >
-> Add a test of a single event, and of the group case.
-
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-
-Thanks,
-Namhyung
+> Dave.
+>
+It's in tip:core/urgent, so I imagine you don't need to queue it.
