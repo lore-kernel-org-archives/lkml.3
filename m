@@ -1,139 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933133Ab3HGNeP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:34:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59668 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086Ab3HGNeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:34:14 -0400
-Date: Wed, 7 Aug 2013 15:34:08 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Peter Wu <lekensteyn@gmail.com>
-Cc: linux-input@vger.kernel.org, Manoj Chourasia <mchourasia@nvidia.com>,
-        linux-kernel@vger.kernel.org, alnovak@suse.cz
-Subject: Re: List corruption in hidraw_release in 3.11-rc4
-In-Reply-To: <6207700.eHyYqS01s0@al>
-Message-ID: <alpine.LNX.2.00.1308071533130.10425@pobox.suse.cz>
-References: <6712128.bn50J4si9x@al> <alpine.LNX.2.00.1308070258480.10817@pobox.suse.cz> <6207700.eHyYqS01s0@al>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933139Ab3HGNfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:35:50 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:55858 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933040Ab3HGNft (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 09:35:49 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH] ARM: fix wrong address when loading PRM_FRAC_INCREMENTOR_DENUMERATOR_RELOAD
+From: Chen Baozi <baozich@gmail.com>
+In-Reply-To: <20130807110945.GL7656@atomide.com>
+Date: Wed, 7 Aug 2013 21:35:43 +0800
+Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <4F20F648-FED2-4877-8896-EF6F12295615@gmail.com>
+References: <1375356474-24203-1-git-send-email-baozich@gmail.com> <C635EF21-CD18-4633-AA39-16209F8EE231@gmail.com> <20130807110945.GL7656@atomide.com>
+To: Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Aug 2013, Peter Wu wrote:
 
-> > does the patch below fix the problem you are seeing?
-> That one is already in 3.11-rc4 as far as I can see. Also, that code can 
-> probably simplified by moving the mutex_unlock after the out label, removing 
-> the need to duplicate the mutex_unlock.
+On Aug 7, 2013, at 7:09 PM, Tony Lindgren <tony@atomide.com> wrote:
+
+> * Chen Baozi <baozich@gmail.com> [130805 08:33]:
+>> ping?
+>> 
+>> On Aug 1, 2013, at 7:27 PM, Chen Baozi <baozich@gmail.com> wrote:
+>> 
+>>> The denominator should be load from INCREMENTOR_DENUMERATOR_RELOAD_OFFSET
+>>> rather than INCREMENTER_NUMERATOR_OFFSET.
 > 
-> Remember what I said about "no Oopses"? Well, it turned out that several 
-> memory structures were damaged which causes a general protection fault in 
-> sock_alloc_inode and other places.
+> Maybe describe what exactly happens without this fix?
+
+I think it is more likely a typo, since 
+INCREMENTER_DENUMERATOR_RELOAD[23:17] is reserved. It seems
+that it won't make much trouble without this fix because
+the useful [11:0] bit is mask and set the right value later.
+
+Cheers,
+
+Baozi
+
 > 
-> I managed to create a program that can reproduce this bug 100% in a QEMU 
-> virtual machine with a Logitech USB receiver passed to it.
-> 
-> qemu-system-x86_64 -enable-kvm -m 1G -usb -usbdevice host:046d:c52b
-> (pass -kernel, -initrd, -append as needed)
-> 
-> Copy hidraw-test to initrd, boot QEMU and run `hidraw-test`. Result: instant
-> (= +/- 2 seconds) crash.
-> 
-> I have applied Manoj's patch[1] on top of 3.11-rc4 which seem to fix the issue. 
-> One observation is that the new device is named /dev/hidraw1 instead of 
-> /dev/hidraw0. Example:
-> 
-> f(){ hidraw-test /dev/hidraw$1 usb1;}
-> # needed for 3.11-rc4
-> f 1; f 1 # crash
-> # needed for 3.11-rc4 + patch
-> f 1; f 2 # ok
+> Also we should get few acks for this for the -rc series.
 > 
 > Regards,
-> Peter
 > 
->  [1]: http://lkml.org/lkml/2013/7/22/248
+> Tony
+> 
+>>> Signed-off-by: Chen Baozi <baozich@gmail.com>
+>>> ---
+>>> arch/arm/mach-omap2/timer.c | 2 +-
+>>> 1 file changed, 1 insertion(+), 1 deletion(-)
+>>> 
+>>> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+>>> index b37e1fc..9265e03 100644
+>>> --- a/arch/arm/mach-omap2/timer.c
+>>> +++ b/arch/arm/mach-omap2/timer.c
+>>> @@ -537,7 +537,7 @@ static void __init realtime_counter_init(void)
+>>> 	reg |= num;
+>>> 	__raw_writel(reg, base + INCREMENTER_NUMERATOR_OFFSET);
+>>> 
+>>> -	reg = __raw_readl(base + INCREMENTER_NUMERATOR_OFFSET) &
+>>> +	reg = __raw_readl(base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET) &
+>>> 			NUMERATOR_DENUMERATOR_MASK;
+>>> 	reg |= den;
+>>> 	__raw_writel(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
+>>> -- 
+>>> 1.8.1.4
+>>> 
+>> 
 
-That one I am still reviewing ... can I add your Tested-by: to it when 
-I'll be applying it and pushing to Linus?
-
-Thanks.
-
-> --
-> /* cc hidraw-test.c -o hidraw-test
->  * hidraw-test /dev/hidraw0 usb1; hidraw-test /dev/hidraw0 usb1;
->  */
-> #include <unistd.h>
-> #include <fcntl.h>
-> #include <stdio.h>
-> #include <errno.h>
-> #include <string.h>
-> #include <stdlib.h>
-> 
-> int open_and_write(const char *path, const char *data) {
-> 	int sfd, r;
-> 
-> 	sfd = open(path, O_WRONLY);
-> 	if (sfd < 0) {
-> 		perror(path);
-> 		return 1;
-> 	}
-> 
-> 	r = write(sfd, data, strlen(data));
-> 	if (r < 0) {
-> 		fprintf(stderr, "write(%s, %s): %s\n",
-> 			path, data, strerror(errno));
-> 		return 1;
-> 	}
-> 	close(sfd);
-> 	return 0;
-> }
-> 
-> int dork(const char *hiddev, const char *name) {
-> 	int fd;
-> 	char c;
-> 
-> 	fd = open(hiddev, O_RDWR | O_NONBLOCK);
-> 	if (fd < 0) {
-> 		perror("open");
-> 		return 1;
-> 	}
-> 
-> 	if (open_and_write("/sys/bus/usb/drivers/usb/unbind", name))
-> 		return 1;
-> 
-> 	// does not make a difference
-> 	//sleep(1);
-> 
-> 	if (open_and_write("/sys/bus/usb/drivers/usb/bind", name))
-> 		return 1;
-> 
-> 	// allow devices to get discovered
-> 	sleep(1);
-> 
-> 	printf("read() = %zi\n", read(fd, &c, 1)); perror("read");
-> 	close(fd);
-> 	return 0;
-> }
-> 
-> int main(int argc, char **argv) {
-> 	if (argc < 3) {
-> 		fprintf(stderr, "Usage: %s /dev/hidrawN usbN\n", *argv);
-> 		return 1;
-> 	}
-> 
-> 	system("modprobe -v usbhid");
-> 	system("modprobe -v hid-logitech-dj");
-> 
-> 	dork(argv[1], argv[2]);
-> 
-> 	return 0;
-> }
-> 
-
--- 
-Jiri Kosina
-SUSE Labs
