@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977Ab3HGNLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 09:11:17 -0400
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:41621 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909Ab3HGNLQ (ORCPT
+	id S932993Ab3HGNUJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 09:20:09 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:33850 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932942Ab3HGNUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 09:11:16 -0400
-Date: Wed, 7 Aug 2013 09:11:11 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH 2/3] memcg: Limit the number of events registered on
- oom_control
-Message-ID: <20130807131111.GC27006@htj.dyndns.org>
-References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
- <1375874907-22013-2-git-send-email-mhocko@suse.cz>
- <20130807130836.GB27006@htj.dyndns.org>
+	Wed, 7 Aug 2013 09:20:07 -0400
+Message-ID: <52024979.1040201@linux.vnet.ibm.com>
+Date: Wed, 07 Aug 2013 21:19:53 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130807130836.GB27006@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, mtosatti@redhat.com,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 10/12] KVM: MMU: allow locklessly access shadow page table
+ out of vcpu thread
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1375189330-24066-11-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130807220927.bc16decbc7171f6fa5be8f84@gmail.com>
+In-Reply-To: <20130807220927.bc16decbc7171f6fa5be8f84@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080713-5816-0000-0000-000009506C40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 09:08:36AM -0400, Tejun Heo wrote:
-> Hello, Michal.
+On 08/07/2013 09:09 PM, Takuya Yoshikawa wrote:
+> On Tue, 30 Jul 2013 21:02:08 +0800
+> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
 > 
-> On Wed, Aug 07, 2013 at 01:28:26PM +0200, Michal Hocko wrote:
-> > There is no limit for the maximum number of oom_control events
-> > registered per memcg. This might lead to an user triggered memory
-> > depletion if a regular user is allowed to register events.
-> > 
-> > Let's be more strict and cap the number of events that might be
-> > registered. MAX_OOM_NOTIFY_EVENTS value is more or less random. The
-> > expectation is that it should be high enough to cover reasonable
-> > usecases while not too high to allow excessive resources consumption.
-> > 1024 events consume something like 24KB which shouldn't be a big deal
-> > and it should be good enough (even 1024 oom notification events sounds
-> > crazy).
+>> @@ -2342,6 +2358,13 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+>>  	 */
+>>  	kvm_flush_remote_tlbs(kvm);
+>>  
+>> +	if (kvm->arch.rcu_free_shadow_page) {
+>> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
+>> +		list_del_init(invalid_list);
+>> +		call_rcu(&sp->rcu, free_pages_rcu);
+>> +		return;
+>> +	}
+>> +
+>>  	list_for_each_entry_safe(sp, nsp, invalid_list, link) {
+>>  		WARN_ON(!sp->role.invalid || sp->root_count);
+>>  		kvm_mmu_free_page(sp);
 > 
-> I think putting restriction on usage_event makes sense as that builds
-> a shared contiguous table from all events which can't be attributed
-> correctly and makes it easy to trigger allocation failures due to
-> large order allocation but is this necessary for oom and vmpressure,
-> both of which allocate only for the listening task?  It isn't
-> different from listening from epoll, for example.  If there needs to
-> be kernel memory limit, shouldn't that be handled by kmemcg?
+> Shouldn't we avoid calling call_rcu() when we are holding mmu_lock?
 
-To add a bit, adding this global limit actually makes these events
-prone to DoS attack regardless of kernel memory usage limit.  Given
-that the whole usage model of delegating access to the file is busted,
-I don't think it matters all that much but I'm not sure what this
-patch is protecting against.
+Using call_rcu() to free pages is a rare case that happen only between
+lockless write-protection and zapping shadow pages, so i think we do
+not need to care this case too much.
 
-Thanks.
-
--- 
-tejun
