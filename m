@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966435Ab3HHUK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:10:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25011 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966335Ab3HHUKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 16:10:24 -0400
-Subject: [PATCH v5 9/9] pci: Remove aer_do_secondary_bus_reset()
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: alexander.h.duyck@intel.com, ddutile@redhat.com,
-        indou.takao@jp.fujitsu.com, linux-kernel@vger.kernel.org
-Date: Thu, 08 Aug 2013 14:10:20 -0600
-Message-ID: <20130808201020.2932.24022.stgit@bling.home>
-In-Reply-To: <20130808200444.2932.17381.stgit@bling.home>
-References: <20130808200444.2932.17381.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S966332Ab3HHUOD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:14:03 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:44765 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966197Ab3HHUOB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 16:14:01 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH] PM / QoS: Fix workqueue deadlock when using pm_qos_update_request_timeout()
+Date: Thu,  8 Aug 2013 13:13:57 -0700
+Message-Id: <1375992837-1673-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.4.rc1.21.gfb56570
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One PCI bus reset function to rule them all.
+pm_qos_update_request_timeout() updates a qos and then schedules
+a delayed work item to bring the qos back down to the default
+after the timeout. When the work item runs, pm_qos_work_fn() will
+call pm_qos_update_request() and deadlock because it tries to
+cancel itself via cancel_delayed_work_sync(). Future callers of
+that qos will also hang waiting to cancel the work that is
+canceling itself. Before ed1ac6e (PM: don't use
+[delayed_]work_pending(), 2013-01-11) this didn't happen because
+the work function wouldn't try to cancel itself.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Let's just do the little bit of pm_qos_update_request() here so
+that we don't deadlock.
+
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/pci/pcie/aer/aerdrv.c      |    2 +-
- drivers/pci/pcie/aer/aerdrv.h      |    1 -
- drivers/pci/pcie/aer/aerdrv_core.c |   35 +----------------------------------
- 3 files changed, 2 insertions(+), 36 deletions(-)
+ kernel/power/qos.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pci/pcie/aer/aerdrv.c b/drivers/pci/pcie/aer/aerdrv.c
-index 76ef634..0bf82a2 100644
---- a/drivers/pci/pcie/aer/aerdrv.c
-+++ b/drivers/pci/pcie/aer/aerdrv.c
-@@ -352,7 +352,7 @@ static pci_ers_result_t aer_root_reset(struct pci_dev *dev)
- 	reg32 &= ~ROOT_PORT_INTR_ON_MESG_MASK;
- 	pci_write_config_dword(dev, pos + PCI_ERR_ROOT_COMMAND, reg32);
+diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+index 06fe285..d52d314 100644
+--- a/kernel/power/qos.c
++++ b/kernel/power/qos.c
+@@ -308,7 +308,11 @@ static void pm_qos_work_fn(struct work_struct *work)
+ 						  struct pm_qos_request,
+ 						  work);
  
--	aer_do_secondary_bus_reset(dev);
-+	pci_reset_bridge_secondary_bus(dev);
- 	dev_printk(KERN_DEBUG, &dev->dev, "Root Port link has been reset\n");
- 
- 	/* Clear Root Error Status */
-diff --git a/drivers/pci/pcie/aer/aerdrv.h b/drivers/pci/pcie/aer/aerdrv.h
-index 90ea3e8..84420b7 100644
---- a/drivers/pci/pcie/aer/aerdrv.h
-+++ b/drivers/pci/pcie/aer/aerdrv.h
-@@ -106,7 +106,6 @@ static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
- }
- 
- extern struct bus_type pcie_port_bus_type;
--void aer_do_secondary_bus_reset(struct pci_dev *dev);
- int aer_init(struct pcie_device *dev);
- void aer_isr(struct work_struct *work);
- void aer_print_error(struct pci_dev *dev, struct aer_err_info *info);
-diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
-index 8b68ae5..85ca36f 100644
---- a/drivers/pci/pcie/aer/aerdrv_core.c
-+++ b/drivers/pci/pcie/aer/aerdrv_core.c
-@@ -367,39 +367,6 @@ static pci_ers_result_t broadcast_error_message(struct pci_dev *dev,
+-	pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
++	if (PM_QOS_DEFAULT_VALUE != req->node.prio)
++		pm_qos_update_target(
++				pm_qos_array[req->pm_qos_class]->constraints,
++				&req->node, PM_QOS_UPDATE_REQ,
++				PM_QOS_DEFAULT_VALUE);
  }
  
  /**
-- * aer_do_secondary_bus_reset - perform secondary bus reset
-- * @dev: pointer to bridge's pci_dev data structure
-- *
-- * Invoked when performing link reset at Root Port or Downstream Port.
-- */
--void aer_do_secondary_bus_reset(struct pci_dev *dev)
--{
--	u16 p2p_ctrl;
--
--	/* Assert Secondary Bus Reset */
--	pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &p2p_ctrl);
--	p2p_ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, p2p_ctrl);
--
--	/*
--	 * we should send hot reset message for 2ms to allow it time to
--	 * propagate to all downstream ports
--	 */
--	msleep(2);
--
--	/* De-assert Secondary Bus Reset */
--	p2p_ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, p2p_ctrl);
--
--	/*
--	 * System software must wait for at least 100ms from the end
--	 * of a reset of one or more device before it is permitted
--	 * to issue Configuration Requests to those devices.
--	 */
--	msleep(200);
--}
--
--/**
-  * default_reset_link - default reset function
-  * @dev: pointer to pci_dev data structure
-  *
-@@ -408,7 +375,7 @@ void aer_do_secondary_bus_reset(struct pci_dev *dev)
-  */
- static pci_ers_result_t default_reset_link(struct pci_dev *dev)
- {
--	aer_do_secondary_bus_reset(dev);
-+	pci_reset_bridge_secondary_bus(dev);
- 	dev_printk(KERN_DEBUG, &dev->dev, "downstream link has been reset\n");
- 	return PCI_ERS_RESULT_RECOVERED;
- }
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
