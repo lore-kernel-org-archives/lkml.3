@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798Ab3HHI42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:56:28 -0400
-Received: from 20.mo4.mail-out.ovh.net ([46.105.33.73]:46089 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934146Ab3HHI4A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:56:00 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 2/6] ARM: at91: prepare common clk transition for sama5d3 SoC
-Date: Thu,  8 Aug 2013 10:47:01 +0200
-Message-Id: <1375951621-10904-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 6619447028202305715
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S934136Ab3HHIzg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:55:36 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26062 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S934047Ab3HHIzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 04:55:32 -0400
+X-IronPort-AV: E=Sophos;i="4.89,837,1367942400"; 
+   d="scan'208";a="8153189"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH part3 1/5] x86, acpi: Call two new functions instead of acpi_initialize_tables() in acpi_table_init().
+Date: Thu, 8 Aug 2013 16:54:02 +0800
+Message-Id: <1375952046-28490-2-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375952046-28490-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375952046-28490-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 16:54:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 16:54:05,
+	Serialize complete at 2013/08/08 16:54:05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enclose sama5d3 old clk registration in
-"#if defined(CONFIG_OLD_CLK_AT91) #endif" sections.
+The previous patches introduces two new functions:
+    acpi_initialize_tables_firmware() and acpi_initialize_tables_override(),
+which work just the same as acpi_initialize_tables() if they are called
+in sequence.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+In order to split acpi_table_init() on acpi side, call these two functions
+in acpi_table_init().
+
+Since acpi_table_init() is also used in ia64, we keep it works as before.
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- arch/arm/mach-at91/sama5d3.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/acpi/tables.c |    5 ++++-
+ include/acpi/acpixf.h |    4 ++++
+ 2 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
-index 0003949..3426098 100644
---- a/arch/arm/mach-at91/sama5d3.c
-+++ b/arch/arm/mach-at91/sama5d3.c
-@@ -19,9 +19,10 @@
+diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+index d67a1fe..c8f2d01 100644
+--- a/drivers/acpi/tables.c
++++ b/drivers/acpi/tables.c
+@@ -349,10 +349,13 @@ int __init acpi_table_init(void)
+ {
+ 	acpi_status status;
  
- #include "soc.h"
- #include "generic.h"
--#include "clock.h"
- #include "sam9_smc.h"
+-	status = acpi_initialize_tables(initial_tables, ACPI_MAX_TABLES, 0);
++	status = acpi_initialize_tables_firmware(initial_tables,
++						 ACPI_MAX_TABLES, 0);
+ 	if (ACPI_FAILURE(status))
+ 		return 1;
  
-+#if defined(CONFIG_OLD_CLK_AT91)
-+#include "clock.h"
- /* --------------------------------------------------------------------
-  *  Clocks
-  * -------------------------------------------------------------------- */
-@@ -361,6 +362,7 @@ static void __init sama5d3_register_clocks(void)
- 	clk_register(&pck1);
- 	clk_register(&pck2);
++	acpi_initialize_tables_override();
++
+ 	check_multiple_madt();
+ 	return 0;
  }
-+#endif
+diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
+index 22d497e..99c9d7b 100644
+--- a/include/acpi/acpixf.h
++++ b/include/acpi/acpixf.h
+@@ -115,6 +115,10 @@ extern u32 acpi_rsdt_forced;
+  * Initialization
+  */
+ acpi_status
++acpi_initialize_tables_firmware(struct acpi_table_desc *initial_storage,
++				u32 initial_table_count, u8 allow_resize);
++void acpi_initialize_tables_override(void);
++acpi_status
+ acpi_initialize_tables(struct acpi_table_desc *initial_storage,
+ 		       u32 initial_table_count, u8 allow_resize);
  
- /* --------------------------------------------------------------------
-  *  AT91SAM9x5 processor initialization
-@@ -373,5 +375,7 @@ static void __init sama5d3_map_io(void)
- 
- AT91_SOC_START(sama5d3)
- 	.map_io = sama5d3_map_io,
-+#if defined(CONFIG_OLD_CLK_AT91)
- 	.register_clocks = sama5d3_register_clocks,
-+#endif
- AT91_SOC_END
 -- 
-1.7.9.5
+1.7.1
 
