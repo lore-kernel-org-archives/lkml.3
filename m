@@ -1,111 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933737Ab3HHB5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 21:57:32 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:61348 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab3HHB5a (ORCPT
+	id S1757636Ab3HHCCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:02:54 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58946 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757571Ab3HHCCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 21:57:30 -0400
-Date: Wed, 7 Aug 2013 22:03:42 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Will Deacon <will.deacon@arm.com>, Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
-Subject: Re: perf,arm -- another (different) fuzzer oops
-In-Reply-To: <5202D5B0.9020107@codeaurora.org>
-Message-ID: <alpine.DEB.2.10.1308072157320.16962@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1308071611290.14098@vincent-weaver-1.um.maine.edu> <20130807223129.GA17118@mudshark.cambridge.arm.com> <5202D5B0.9020107@codeaurora.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 7 Aug 2013 22:02:52 -0400
+Message-ID: <5202FC4B.7040106@hitachi.com>
+Date: Thu, 08 Aug 2013 11:02:51 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-763390395-1375927430=:16962"
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v4 00/11] tracing: trace event triggers
+References: <cover.1375111640.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <cover.1375111640.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---8323329-763390395-1375927430=:16962
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+(2013/07/30 1:40), Tom Zanussi wrote:
+> Hi,
+> 
+> This is v4 of the trace event triggers patchset, addressing more
+> comments from Masami Hiramatsu (thanks for the review and comments).
+> 
+> One of Masami's comments was on event_trigger_regex_open's use of
+> inode->i_private and that the same problem was being worked on by Oleg
+> Nesterov in other places.  That still seems to be the case, but in
+> order to address that, this patchset is built on top of the current
+> linux-trace/for-next but also including v2 of Oleg Nesterov's tracing:
+> open/delete fixes (but with v3 of the 6/6 patch). 
 
-On Wed, 7 Aug 2013, Stephen Boyd wrote:
+Does this patchset supports multibuffer? It seems that setting a
+trigger in an event of an instance affects the default event, but not
+the instance's event.
+e.g.
 
-> Is config some really big value? It looks like config (or more
-> specifically event->attr.config) is ecececec which is larger than 9
-> (PERF_COUNT_HW_MAX). I'm fairly certain r4 is event->attr.type
-> (PERF_TYPE_HARDWARE) and so we're out of bounds on that array access in
-> armpmu_map_hw_event(). Does the below patch fix that?
+# mkdir instances/hoge
+# echo 'enable_event:mce:mce_record' > instances/hoge/events/syscalls/sys_enter_symlink/trigger
+# cat instances/hoge/events/syscalls/sys_enter_symlink/enable
+0*
+# cat instances/hoge/events/mce/mce_record/enable
+0
+# cat events/mce/mce_record/enable
+0*
+# ln -sf /dev/null /tmp
+# cat instances/hoge/events/mce/mce_record/enable
+0
+# cat events/mce/mce_record/enable
+1*
 
-Yes, it was big values in attr.config.  I managed to bisect down to a
-simple test case, which is attached.  Oddly the test case has two events
-before the oops happens; I should double check to make sure both are 
-really necessary.
+This looks odd, I expected enabling mce/mce_record under instances/hoge.
 
-I'll try this patch and see if it fixes things, thanks.
+And, there is a bug of ftrace itself (not introduced by this series) I've found.
+After the above operation, we can delete the instance "hoge", but the soft-mode
+flag of mce_record is not cleared, even though there is no trigger referring
+the event.
 
-Vince
+# rmdir instances/hoge
+# cat events/mce/mce_record/enable
+1*
+
+This is because the ftrace actually failed to remove(disable) the event trigger
+associated with the instance when doing rmdir, but it just removed that interface.
+
+> v4:
+>  - made some changes to the soft-disable for syscall patch, according
+>    to Masami's suggestions.  Actually, since there's now an array of
+>    ftrace_files for syscalls that can serve the same purpose, the
+>    enabled_enter/exit_syscalls bit arrays became redundant and were
+>    removed.
+>  - moved all the remaining common functions out of the
+>    traceon/traceoff patch and into the basic trigger framework patch
+>    and added comments to all the common functions.
+>  - extensively commented the event_trigger_ops and event_command ops.
+>  - made the register/unregister_command functions __init.  Since that
+>    code was originally inspired by similar ftrace code, a new patch
+>    was added to do the same thing for the register/unregister of the
+>    ftrace commands (patch 10/11).
+>  - fixed the event_trigger_regex_open i_private problem noted by
+>    Masami that's currently being addressed by Oleg Nesterov's fixes
+>    for this.  Note that that patchset also affects patch 8/11 (update
+>    filters for multi-buffer, since it touches event filters as well).
+>    Patch 11/11 depends on that patchset and also moves
+>    event_file_data() to trace.h.b
+
+OK, but I think the last 2 patches should be merged to 2/11 as updates.
+
+And also, could you rebase your patches on trace/for-next branch?
+Since that branch includes most of the latest fixes, it is better to
+review with it.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
---8323329-763390395-1375927430=:16962
-Content-Type: TEXT/x-csrc; name=arm_perf_new_oops.c
-Content-Transfer-Encoding: BASE64
-Content-ID: <alpine.DEB.2.10.1308072203420.16962@vincent-weaver-1.um.maine.edu>
-Content-Description: 
-Content-Disposition: attachment; filename=arm_perf_new_oops.c
-
-LyogbG9nX3RvX2NvZGUgb3V0cHV0IGZyb20gLi9uZXdfb29wcy5iaXNlY3Qx
-NSAqLw0KLyogYnkgVmluY2UgV2VhdmVyIDx2aW5jZW50LndlYXZlciBfYXRf
-IG1haW5lLmVkdSAqLw0KDQojaW5jbHVkZSA8c3RkaW8uaD4NCiNpbmNsdWRl
-IDx1bmlzdGQuaD4NCiNpbmNsdWRlIDxzdHJpbmcuaD4NCiNpbmNsdWRlIDxz
-aWduYWwuaD4NCiNpbmNsdWRlIDxzeXMvbW1hbi5oPg0KI2luY2x1ZGUgPHN5
-cy9zeXNjYWxsLmg+DQojaW5jbHVkZSA8c3lzL2lvY3RsLmg+DQojaW5jbHVk
-ZSA8c3lzL3ByY3RsLmg+DQojaW5jbHVkZSA8bGludXgvaHdfYnJlYWtwb2lu
-dC5oPg0KI2luY2x1ZGUgPGxpbnV4L3BlcmZfZXZlbnQuaD4NCg0KaW50IGZk
-WzEwMjRdOw0Kc3RydWN0IHBlcmZfZXZlbnRfYXR0ciBwZVsxMDI0XTsNCmNo
-YXIgKm1tYXBfcmVzdWx0WzEwMjRdOw0KI2RlZmluZSBNQVhfUkVBRF9TSVpF
-IDY1NTM2DQpzdGF0aWMgbG9uZyBsb25nIGRhdGFbTUFYX1JFQURfU0laRV07
-DQoNCmludCBmb3JrZWRfcGlkOw0KDQppbnQgcGVyZl9ldmVudF9vcGVuKHN0
-cnVjdCBwZXJmX2V2ZW50X2F0dHIgKmh3X2V2ZW50X3VwdHIsDQoJcGlkX3Qg
-cGlkLCBpbnQgY3B1LCBpbnQgZ3JvdXBfZmQsIHVuc2lnbmVkIGxvbmcgZmxh
-Z3MpIHsNCg0KCXJldHVybiBzeXNjYWxsKF9fTlJfcGVyZl9ldmVudF9vcGVu
-LGh3X2V2ZW50X3VwdHIsIHBpZCwgY3B1LA0KCQlncm91cF9mZCwgZmxhZ3Mp
-Ow0KfQ0KDQppbnQgbWFpbihpbnQgYXJnYywgY2hhciAqKmFyZ3YpIHsNCi8q
-IDEgKi8NCg0KCW1lbXNldCgmcGVbMF0sMCxzaXplb2Yoc3RydWN0IHBlcmZf
-ZXZlbnRfYXR0cikpOw0KCXBlWzBdLnR5cGU9UEVSRl9UWVBFX0hBUkRXQVJF
-Ow0KCXBlWzBdLmNvbmZpZz0weDJjYzYxMDA2Ow0KCXBlWzBdLnNhbXBsZV90
-eXBlPTA7IC8qIDAgKi8NCglwZVswXS5yZWFkX2Zvcm1hdD1QRVJGX0ZPUk1B
-VF9UT1RBTF9USU1FX0VOQUJMRUR8UEVSRl9GT1JNQVRfVE9UQUxfVElNRV9S
-VU5OSU5HfFBFUkZfRk9STUFUX0dST1VQOyAvKiBiICovDQoJcGVbMF0uZGlz
-YWJsZWQ9MTsNCglwZVswXS5leGNsdXNpdmU9MTsNCglwZVswXS5leGNsdWRl
-X2lkbGU9MTsNCglwZVswXS5jb21tPTE7DQoJcGVbMF0uaW5oZXJpdF9zdGF0
-PTE7DQoJcGVbMF0uZW5hYmxlX29uX2V4ZWM9MTsNCglwZVswXS5wcmVjaXNl
-X2lwPTA7IC8qIGFyYml0cmFyeSBza2lkICovDQoJcGVbMF0ubW1hcF9kYXRh
-PTE7DQoJcGVbMF0uc2FtcGxlX2lkX2FsbD0xOw0KCXBlWzBdLmV4Y2x1ZGVf
-aG9zdD0xOw0KCXBlWzBdLmV4Y2x1ZGVfZ3Vlc3Q9MTsNCglwZVswXS53YWtl
-dXBfZXZlbnRzPTIxNDc0ODM2NDc7DQoJcGVbMF0uYnBfdHlwZT1IV19CUkVB
-S1BPSU5UX0VNUFRZOw0KCXBlWzBdLmJyYW5jaF9zYW1wbGVfdHlwZT0yMTQ3
-NDgzNjQ4VUxMOw0KDQoJZmRbMF09cGVyZl9ldmVudF9vcGVuKCZwZVswXSww
-LDAsLTEsUEVSRl9GTEFHX0ZEX05PX0dST1VQIC8qMSovICk7DQoNCi8qIDIg
-Ki8NCg0KCW1lbXNldCgmcGVbMV0sMCxzaXplb2Yoc3RydWN0IHBlcmZfZXZl
-bnRfYXR0cikpOw0KCXBlWzFdLnR5cGU9UEVSRl9UWVBFX1JBVzsNCglwZVsx
-XS5zaXplPTgwOw0KCXBlWzFdLmNvbmZpZz0weGI2YzhhZDk5Ow0KCXBlWzFd
-LnNhbXBsZV90eXBlPTA7IC8qIDAgKi8NCglwZVsxXS5yZWFkX2Zvcm1hdD1Q
-RVJGX0ZPUk1BVF9UT1RBTF9USU1FX0VOQUJMRUR8UEVSRl9GT1JNQVRfSUR8
-MHg4MDAwMDAxMFVMTDsgLyogODAwMDAwMTUgKi8NCglwZVsxXS5pbmhlcml0
-PTE7DQoJcGVbMV0uZXhjbHVkZV91c2VyPTE7DQoJcGVbMV0uZXhjbHVkZV9o
-dj0xOw0KCXBlWzFdLm1tYXA9MTsNCglwZVsxXS5pbmhlcml0X3N0YXQ9MTsN
-CglwZVsxXS50YXNrPTE7DQoJcGVbMV0ucHJlY2lzZV9pcD0zOyAvKiBtdXN0
-IGhhdmUgemVybyBza2lkICovDQoJcGVbMV0uc2FtcGxlX2lkX2FsbD0xOw0K
-CXBlWzFdLmV4Y2x1ZGVfZ3Vlc3Q9MTsNCglwZVsxXS53YWtldXBfZXZlbnRz
-PTA7DQoJcGVbMV0uYnBfdHlwZT1IV19CUkVBS1BPSU5UX0VNUFRZOw0KDQoJ
-ZmRbMV09cGVyZl9ldmVudF9vcGVuKCZwZVsxXSwwLDAsLTEsUEVSRl9GTEFH
-X0ZEX05PX0dST1VQIC8qMSovICk7DQoNCgkvKiBSZXBsYXllZCAyIHN5c2Nh
-bGxzICovDQoJcmV0dXJuIDA7DQp9DQo=
-
---8323329-763390395-1375927430=:16962--
