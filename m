@@ -1,71 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933461Ab3HHGcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 02:32:22 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:52285 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755758Ab3HHGcU (ORCPT
+	id S933730Ab3HHGeU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 02:34:20 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:61571 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755758Ab3HHGeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 02:32:20 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f5f6d00000105f-a4-52033b71f946
-Content-transfer-encoding: 8BIT
-Message-id: <1375943536.30982.1.camel@AMDC1943>
-Subject: Re: [PATCH] [TRIVIAL] ARM: msm: fix compilation error in gpiomux
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 08 Aug 2013 08:32:16 +0200
-In-reply-to: <20130807210804.GB14845@codeaurora.org>
-References: <1375857279-18082-1-git-send-email-k.kozlowski@samsung.com>
- <20130807174053.GA17551@codeaurora.org> <20130807210804.GB14845@codeaurora.org>
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xa7pF1sxBBp2JFv+OTWGyeLz8H5vF
-	1GVtrBabHl9jtZi4/yy7xeVdc9gsbl/mtfhxppvFgcOjpbmHzeNyXy+Tx+nJ+1k8Ni+p9/i8
-	SS6ANYrLJiU1J7MstUjfLoErY+X0ncwFbewVm17/YWlgvM/axcjJISFgIrFy00EWCFtM4sK9
-	9WxdjFwcQgJLGSX2HX7JDJLgFRCU+DH5HlARBwezgLzEkUvZIGFmAXWJSfMWMUPUf2aUODtr
-	KSNEvb7E0WUf2UFsYQFPibeX3oLF2QSMJTYvX8IGYosANX/fcRJsGbNAM5PE3b65YAkWAVWJ
-	A9vfgi3mBLru4oQHTBAbZjJKnPrSwwRxqpLE7vZO9gmMArOQHDgL4cBZSA5cwMi8ilE0tTS5
-	oDgpPddIrzgxt7g0L10vOT93EyMk1L/uYFx6zOoQowAHoxIPb0cAU5AQa2JZcWXuIUYJDmYl
-	Ed6LxUAh3pTEyqrUovz4otKc1OJDjEwcnFINjM0VbbNU5NrK31quCJeLXPBWZ+fMjPNK+nz/
-	WNsfTz6ippjsw880d9mL43mvmna+jL787s3Sz/ffuIgcyJ8pJvVsUeLJFv4DeY9Z30922J+v
-	/u9y2L66LzdTbZ4GmCl3K7HWMR/ucXP8qPj3X0ZAvkG/rNjLbX7MZXUGjJelj61VsY0RfC+8
-	RImlOCPRUIu5qDgRAKVCjahTAgAA
+	Thu, 8 Aug 2013 02:34:17 -0400
+X-AuditID: 9c93017e-b7b62ae000000eeb-06-52033be8c00a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/3] perf tools: Separate out GTK codes to libperf-gtk.so
+Date: Thu,  8 Aug 2013 15:34:08 +0900
+Message-Id: <1375943650-2273-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375943650-2273-1-git-send-email-namhyung@kernel.org>
+References: <1375943650-2273-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2013-08-07 at 14:08 -0700, Stephen Boyd wrote:
-> On 08/07, David Brown wrote:
-> > On Wed, Aug 07, 2013 at 08:34:39AM +0200, Krzysztof Kozlowski wrote:
-> > >Fix compilation error in gpiomux (CONFIG_MSM_GPIOMUX=y):
-> > >arch/arm/mach-msm/gpiomux.c:24:13: error: static declaration of
-> > >	???__msm_gpiomux_write??? follows non-static declaration
-> > >arch/arm/mach-msm/gpiomux.h:85:6: note: previous declaration of
-> > >	???__msm_gpiomux_write??? was here
-> > >
-> > >Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > 
-> > Thanks, I'll pull this in.
-> > 
-> >  <https://patchwork.kernel.org/patch/2839921/>
-> > 
-> 
-> I believe this is fixed by Rohit's patch that has already been
-> taken in a pull request?
-> 
-> https://lkml.org/lkml/2013/7/26/608
+Separate out GTK codes to a shared object called libperf-gtk.so.  This
+time only GTK codes are built with -fPIC and libperf remains as is.
 
-Yes, Rohit's patch fixes the problem so this is already in linux-msm
-tree.
+Cc: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Makefile        | 39 ++++++++++++++++++++++++++++-----------
+ tools/perf/config/Makefile | 14 ++++++++++----
+ 2 files changed, 38 insertions(+), 15 deletions(-)
 
-
-Best regards,
-Krzysztof
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index e0d3d9f96771..dba23d201f27 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -113,6 +113,7 @@ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+ BUILTIN_OBJS =
+ LIB_H =
+ LIB_OBJS =
++GTK_OBJS =
+ PYRF_OBJS =
+ SCRIPT_SH =
+ 
+@@ -485,13 +486,19 @@ ifndef NO_SLANG
+ endif
+ 
+ ifndef NO_GTK2
+-  LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
+-  LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
++  ALL_PROGRAMS += $(OUTPUT)libperf-gtk.so
++
++  GTK_OBJS += $(OUTPUT)ui/gtk/browser.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/hists.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/setup.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/util.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/helpline.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/progress.o
++  GTK_OBJS += $(OUTPUT)ui/gtk/annotate.o
++
++install-gtk: $(OUTPUT)libperf-gtk.so
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(libdir_SQ)'
++	$(INSTALL) $(OUTPUT)libperf-gtk.so '$(DESTDIR_SQ)$(libdir_SQ)'
+ endif
+ 
+ ifndef NO_LIBPERL
+@@ -545,6 +552,12 @@ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+ 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
+                $(BUILTIN_OBJS) $(LIBS) -o $@
+ 
++$(GTK_OBJS): $(OUTPUT)%.o: %.c $(LIB_H)
++	$(QUIET_CC)$(CC) -o $@ -c -fPIC $(CFLAGS) $(GTK_CFLAGS) $<
++
++$(OUTPUT)libperf-gtk.so: $(GTK_OBJS) $(PERFLIBS)
++	$(QUIET_LINK)$(CC) -o $@ -shared $(ALL_LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
++
+ $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+ 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+@@ -763,7 +776,9 @@ check: $(OUTPUT)common-cmds.h
+ 
+ ### Installation rules
+ 
+-install-bin: all
++install-gtk:
++
++install-bin: all install-gtk
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
+@@ -796,15 +811,17 @@ $(INSTALL_DOC_TARGETS):
+ ### Cleaning rules
+ 
+ clean: $(LIBTRACEEVENT)-clean $(LIBLK)-clean
+-	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
++	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(GTK_OBJS)
++	$(RM) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
+ 	$(RM) $(ALL_PROGRAMS) perf
+-	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
++	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo
++	$(RM) $(OUTPUT)common-cmds.h TAGS tags cscope*
+ 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
+ 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
+ 	$(RM) $(OUTPUT)util/*-bison*
+ 	$(RM) $(OUTPUT)util/*-flex*
+ 	$(python-clean)
+ 
+-.PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
++.PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK) install-gtk
+ .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+ .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 214e17e97e5c..6bdfd0302c4e 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -267,11 +267,11 @@ ifndef NO_GTK2
+     NO_GTK2 := 1
+   else
+     ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
+-      CFLAGS += -DHAVE_GTK_INFO_BAR
++      GTK_CFLAGS := -DHAVE_GTK_INFO_BAR
+     endif
+-    CFLAGS += -DGTK2_SUPPORT
+-    CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
+-    EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
++    GTK_CFLAGS += -DGTK2_SUPPORT
++    GTK_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
++    GTK_LIBS := $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+   endif
+ endif
+ 
+@@ -456,7 +456,12 @@ else
+ sysconfdir = $(prefix)/etc
+ ETC_PERFCONFIG = etc/perfconfig
+ endif
++ifeq ($(IS_X86_64),1)
++lib = lib64
++else
+ lib = lib
++endif
++libdir = $(prefix)/$(lib)
+ 
+ # Shell quote (do not use $(call) to accommodate ancient setups);
+ ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
+@@ -469,6 +474,7 @@ template_dir_SQ = $(subst ','\'',$(template_dir))
+ htmldir_SQ = $(subst ','\'',$(htmldir))
+ prefix_SQ = $(subst ','\'',$(prefix))
+ sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
++libdir_SQ = $(subst ','\'',$(libdir))
+ 
+ ifneq ($(filter /%,$(firstword $(perfexecdir))),)
+ perfexec_instdir = $(perfexecdir)
+-- 
+1.7.11.7
 
