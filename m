@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758233Ab3HHWRa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 18:17:30 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:53473 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758182Ab3HHWR2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 18:17:28 -0400
-Message-ID: <520418F5.2030804@codeaurora.org>
-Date: Thu, 08 Aug 2013 15:17:25 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S966788Ab3HHWV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 18:21:27 -0400
+Received: from etezian.org ([198.101.225.253]:51873 "EHLO mail.etezian.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965419Ab3HHWV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 18:21:26 -0400
+Date: Fri, 9 Aug 2013 00:21:08 +0200
+From: Andi Shyti <andi@etezian.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andi Shyti <andi@etezian.org>, oatilla@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] etzkx accelerometer support
+Message-ID: <20130808222108.GC11387@jack.whiskey>
+References: <cover.1371418586.git.andi@etezian.org>
+ <20130616215110.GA10834@kroah.com>
+ <20130616222648.GE4385@jack.whiskey>
+ <20130617025854.GB12522@kroah.com>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] [TRIVIAL] ARM: msm: fix compilation error in gpiomux
-References: <1375857279-18082-1-git-send-email-k.kozlowski@samsung.com> <20130807174053.GA17551@codeaurora.org> <20130807210804.GB14845@codeaurora.org> <1375943536.30982.1.camel@AMDC1943>
-In-Reply-To: <1375943536.30982.1.camel@AMDC1943>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617025854.GB12522@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/7/2013 11:32 PM, Krzysztof Kozlowski wrote:
-> On śro, 2013-08-07 at 14:08 -0700, Stephen Boyd wrote:
->> On 08/07, David Brown wrote:
->>> On Wed, Aug 07, 2013 at 08:34:39AM +0200, Krzysztof Kozlowski wrote:
->>>> Fix compilation error in gpiomux (CONFIG_MSM_GPIOMUX=y):
->>>> arch/arm/mach-msm/gpiomux.c:24:13: error: static declaration of
->>>> 	???__msm_gpiomux_write??? follows non-static declaration
->>>> arch/arm/mach-msm/gpiomux.h:85:6: note: previous declaration of
->>>> 	???__msm_gpiomux_write??? was here
->>>>
->>>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->>> Thanks, I'll pull this in.
->>>
->>>   <https://patchwork.kernel.org/patch/2839921/>
->>>
->> I believe this is fixed by Rohit's patch that has already been
->> taken in a pull request?
->>
->> https://lkml.org/lkml/2013/7/26/608
-> Yes, Rohit's patch fixes the problem so this is already in linux-msm
-> tree.
->
+Hi Greg,
 
-David, please can you confirm which pull request has this patch ?
-> Best regards,
-> Krzysztof
->
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> > > > these two patches provide the etzkx device driver which supports
+> > > > the following accelerometers:
+> > > 
+> > > Why isn't this a drivers/iio/accel/ driver instead of a misc driver?
+> > > Please make this an iio driver, then you will be using the correct
+> > > user/kernel api to talk to your device.
+> > 
+> > I was thinking it may be an issue, but it's not iio because the
+> > time I developed the driver, iio was in the first staging period
+> > and mainly because the on the board I'm using I cannot update the
+> > Kernel to use the latest iio.
+> > 
+> > I guess you don't like the promise "I can do it later" once the
+> > supplier sends me a development board (which is planned) :)
+> 
+> Sure, I'll gladly accept "I can do it later" from anyone, as long as you
+> don't mind my, "I will merge it later" as well :)
+> 
+> Sorry, I can't accept a driver now, that is known to going to be
+> changing the kernel/user api in the future.  So please, rewrite it to
+> use IIO, that's what that interface / subsystem is there for.
 
+What about submitting this accelerometer driver under staging
+even if it's still not iio and slowly put it in shape?
 
-Thanks,
-Rohit Vaswani
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
-
+Andi
