@@ -1,315 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933942Ab3HHHPo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 03:15:44 -0400
-Received: from 9.mo4.mail-out.ovh.net ([46.105.40.176]:34461 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933909Ab3HHHPm (ORCPT
+	id S933927Ab3HHHSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 03:18:04 -0400
+Received: from fallback2.mail.ru ([94.100.176.87]:59392 "EHLO
+	fallback2.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933704Ab3HHHSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 03:15:42 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH v3 14/19] clk: at91: add PMC utmi clock
-Date: Thu,  8 Aug 2013 09:14:17 +0200
-Message-Id: <1375946057-9651-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 5053320257286666288
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 8 Aug 2013 03:18:01 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?V2VpIE5p?= <wni@nvidia.com>
+Cc: khali@linux-fr.org, linux@roeck-us.net, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        MLongnecker@nvidia.com, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2MiAxLzNdIGh3bW9uOiAobG05MCkgQWRkIHBvd2VyIGNv?=
+ =?UTF-8?B?bnRyb2w=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [217.119.30.118]
+Date: Thu, 08 Aug 2013 11:13:42 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1375946022.222322391@f304.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+In-Reply-To: <1375944991-29182-2-git-send-email-wni@nvidia.com>
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
+ <1375944991-29182-2-git-send-email-wni@nvidia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r787I9ji032104
 
-This adds new at91 utmi clock implementation using common clk framework.
+> The device lm90 can be controlled by the vdd rail.
+> Adding the power control support to power on/off the vdd rail.
+> And make sure that power is enabled before accessing the device.
+> 
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> ---
+>  drivers/hwmon/lm90.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 49 insertions(+)
+> 
+> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+[...]
+> +static void lm90_power_control(struct i2c_client *client, bool is_enable)
+> +{
+> +	struct lm90_data *data = i2c_get_clientdata(client);
+> +	int ret;
+> +
+> +	if (!data->lm90_reg)
+> +		return;
+> +
+> +	mutex_lock(&data->update_lock);
+> +
+> +	if (is_enable)
+> +		ret = regulator_enable(data->lm90_reg);
+> +	else
+> +		ret = regulator_disable(data->lm90_reg);
+> +
+> +	if (ret < 0)
+> +		dev_err(&client->dev,
+> +			"Error in %s rail vdd, error %d\n",
+> +			(is_enable) ? "enabling" : "disabling", ret);
+> +	else
+> +		dev_info(&client->dev, "success in %s rail vdd\n",
+> +			 (is_enable) ? "enabling" : "disabling");
 
-This clock is a pll with a fixed factor (x40).
-It is used as a source for usb clock.
+dev_dbg() ?
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> +
+> +	mutex_unlock(&data->update_lock);
+> +}
+> +
+>  static int lm90_probe(struct i2c_client *client,
+>  		      const struct i2c_device_id *id)
+>  {
+> @@ -1406,6 +1434,20 @@ static int lm90_probe(struct i2c_client *client,
+>  	i2c_set_clientdata(client, data);
+>  	mutex_init(&data->update_lock);
+>  
+> +	data->lm90_reg = regulator_get(&client->dev, "vdd");
+> +	if (IS_ERR_OR_NULL(data->lm90_reg)) {
+
+What about deferred probe?
+if (PTR_ERR(data->lm90_reg) == -EPROBE_DEFER)
+return -EPROBE_DEFER;
+
+> +		if (PTR_ERR(data->lm90_reg) == -ENODEV)
+> +			dev_info(&client->dev,
+> +				 "No regulator found for vdd. Assuming vdd is always powered.");
+
+On my opinion it is unnecessary message.
+
+> +		else
+> +			dev_warn(&client->dev,
+> +				 "Error [%ld] in getting the regulator handle for vdd.\n",
+> +				 PTR_ERR(data->lm90_reg));
+
+Ditto.
+
+> +		data->lm90_reg = NULL;
+
+You can just use !IS_ERR(data->lm90_reg) macro in the future,
+rather than set this to NULL.
+
+[...]
+
 ---
- arch/arm/mach-at91/Kconfig  |    7 ++
- drivers/clk/at91/Makefile   |    1 +
- drivers/clk/at91/clk-utmi.c |  161 +++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/at91/pmc.c      |    7 ++
- drivers/clk/at91/pmc.h      |    5 ++
- 5 files changed, 181 insertions(+)
- create mode 100644 drivers/clk/at91/clk-utmi.c
-
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 85b53a4..6ad37da 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -1,5 +1,8 @@
- if ARCH_AT91
- 
-+config HAVE_AT91_UTMI
-+	bool
-+
- config HAVE_AT91_DBGU0
- 	bool
- 
-@@ -78,6 +81,7 @@ config SOC_SAMA5D3
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
- 	select AT91_USE_OLD_CLK
-+	select HAVE_AT91_UTMI
- 	help
- 	  Select this if you are using one of Atmel's SAMA5D3 family SoC.
- 	  This support covers SAMA5D31, SAMA5D33, SAMA5D34, SAMA5D35.
-@@ -124,6 +128,7 @@ config SOC_AT91SAM9RL
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
- 	select AT91_USE_OLD_CLK
-+	select HAVE_AT91_UTMI
- 
- config SOC_AT91SAM9G45
- 	bool "AT91SAM9G45 or AT91SAM9M10 families"
-@@ -131,6 +136,7 @@ config SOC_AT91SAM9G45
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
- 	select AT91_USE_OLD_CLK
-+	select HAVE_AT91_UTMI
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9G45 family SoC.
- 	  This support covers AT91SAM9G45, AT91SAM9G46, AT91SAM9M10 and AT91SAM9M11.
-@@ -141,6 +147,7 @@ config SOC_AT91SAM9X5
- 	select HAVE_FB_ATMEL
- 	select SOC_AT91SAM9
- 	select AT91_USE_OLD_CLK
-+	select HAVE_AT91_UTMI
- 	help
- 	  Select this if you are using one of Atmel's AT91SAM9x5 family SoC.
- 	  This means that your SAM9 name finishes with a '5' (except if it is
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index 3873b62..a824883 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -7,3 +7,4 @@ obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
- obj-y += clk-system.o clk-peripheral.o
- 
- obj-$(CONFIG_AT91_PROGRAMMABLE_CLOCKS)	+= clk-programmable.o
-+obj-$(CONFIG_HAVE_AT91_UTMI)		+= clk-utmi.o
-diff --git a/drivers/clk/at91/clk-utmi.c b/drivers/clk/at91/clk-utmi.c
-new file mode 100644
-index 0000000..244ff9e
---- /dev/null
-+++ b/drivers/clk/at91/clk-utmi.c
-@@ -0,0 +1,161 @@
-+/*
-+ * drivers/clk/at91/clk-utmi.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91_pmc.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/io.h>
-+#include <linux/sched.h>
-+#include <linux/wait.h>
-+
-+#include "pmc.h"
-+
-+#define to_clk_utmi(hw) container_of(hw, struct clk_utmi, hw)
-+
-+struct clk_utmi {
-+	struct clk_hw hw;
-+	struct at91_pmc *pmc;
-+	unsigned int irq;
-+	wait_queue_head_t wait;
-+};
-+
-+static irqreturn_t clk_utmi_irq_handler(int irq, void *dev_id)
-+{
-+	struct clk_utmi *utmi = (struct clk_utmi *)dev_id;
-+
-+	wake_up(&utmi->wait);
-+	disable_irq_nosync(utmi->irq);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int clk_utmi_prepare(struct clk_hw *hw)
-+{
-+	struct clk_utmi *utmi = to_clk_utmi(hw);
-+	struct at91_pmc *pmc = utmi->pmc;
-+	u32 tmp = at91_pmc_read(AT91_CKGR_UCKR) | AT91_PMC_UPLLEN |
-+		  AT91_PMC_UPLLCOUNT | AT91_PMC_BIASEN;
-+
-+	pmc_write(pmc, AT91_CKGR_UCKR, tmp);
-+
-+	while (!(pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_LOCKU)) {
-+		enable_irq(utmi->irq);
-+		wait_event(utmi->wait,
-+			   pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_LOCKU);
-+	}
-+
-+	return 0;
-+}
-+
-+static int clk_utmi_is_ready(struct clk_hw *hw)
-+{
-+	struct clk_utmi *utmi = to_clk_utmi(hw);
-+	struct at91_pmc *pmc = utmi->pmc;
-+
-+	return !!(pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_LOCKU);
-+}
-+
-+static void clk_utmi_disable(struct clk_hw *hw)
-+{
-+	struct clk_utmi *utmi = to_clk_utmi(hw);
-+	struct at91_pmc *pmc = utmi->pmc;
-+	u32 tmp = at91_pmc_read(AT91_CKGR_UCKR) & ~AT91_PMC_UPLLEN;
-+
-+	pmc_write(pmc, AT91_CKGR_UCKR, tmp);
-+}
-+
-+static unsigned long clk_utmi_recalc_rate(struct clk_hw *hw,
-+					  unsigned long parent_rate)
-+{
-+	return parent_rate * 40;
-+}
-+
-+static const struct clk_ops utmi_ops = {
-+	.prepare = clk_utmi_prepare,
-+	.is_prepared = clk_utmi_is_ready,
-+	.disable = clk_utmi_disable,
-+	.is_enabled = clk_utmi_is_ready,
-+	.recalc_rate = clk_utmi_recalc_rate,
-+};
-+
-+static struct clk * __init
-+at91_clk_register_utmi(struct at91_pmc *pmc, unsigned int irq,
-+		       const char *name, const char *parent_name)
-+{
-+	int ret;
-+	struct clk_utmi *utmi;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+
-+	utmi = kzalloc(sizeof(*utmi), GFP_KERNEL);
-+	if (!utmi)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &utmi_ops;
-+	init.parent_names = parent_name ? &parent_name : NULL;
-+	init.num_parents = parent_name ? 1 : 0;
-+	init.flags = CLK_SET_RATE_GATE;
-+
-+	utmi->hw.init = &init;
-+	utmi->pmc = pmc;
-+	utmi->irq = irq;
-+	init_waitqueue_head(&utmi->wait);
-+	irq_set_status_flags(utmi->irq, IRQ_NOAUTOEN);
-+	ret = request_irq(utmi->irq, clk_utmi_irq_handler,
-+			  IRQF_TRIGGER_HIGH, "clk-utmi", utmi);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	clk = clk_register(NULL, &utmi->hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(utmi);
-+
-+	return clk;
-+}
-+
-+static void __init
-+of_at91_clk_utmi_setup(struct device_node *np, struct at91_pmc *pmc)
-+{
-+	unsigned int irq;
-+	struct clk *clk;
-+	const char *parent_name;
-+	const char *name = np->name;
-+
-+	parent_name = of_clk_get_parent_name(np, 0);
-+
-+	of_property_read_string(np, "clock-output-names", &name);
-+
-+	irq = irq_of_parse_and_map(np, 0);
-+	if (!irq)
-+		return;
-+
-+	clk = at91_clk_register_utmi(pmc, irq, name, parent_name);
-+
-+	if (IS_ERR(clk))
-+		return;
-+
-+	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	return;
-+}
-+
-+void __init of_at91sam9x5_clk_utmi_setup(struct device_node *np,
-+					 struct at91_pmc *pmc)
-+{
-+	of_at91_clk_utmi_setup(np, pmc);
-+}
-diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-index 66a627d..238f0d2 100644
---- a/drivers/clk/at91/pmc.c
-+++ b/drivers/clk/at91/pmc.c
-@@ -280,6 +280,13 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
- 		.data = of_at91sam9x5_clk_prog_setup,
- 	},
- #endif
-+	/* UTMI clock */
-+#if defined(CONFIG_HAVE_AT91_UTMI)
-+	{
-+		.compatible = "atmel,at91sam9x5-clk-utmi",
-+		.data = of_at91sam9x5_clk_utmi_setup,
-+	},
-+#endif
- 	{ /*sentinel*/ }
- };
- 
-diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-index 5f20dc1..3ba9503 100644
---- a/drivers/clk/at91/pmc.h
-+++ b/drivers/clk/at91/pmc.h
-@@ -91,4 +91,9 @@ extern void __init of_at91sam9x5_clk_prog_setup(struct device_node *np,
- 						struct at91_pmc *pmc);
- #endif
- 
-+#if defined(CONFIG_HAVE_AT91_UTMI)
-+extern void __init of_at91sam9x5_clk_utmi_setup(struct device_node *np,
-+						struct at91_pmc *pmc);
-+#endif
-+
- #endif /* __PMC_H_ */
--- 
-1.7.9.5
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
