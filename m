@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685Ab3HHCO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 22:14:29 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:17114 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932506Ab3HHCO2 (ORCPT
+	id S933718Ab3HHCPF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:15:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13908 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932506Ab3HHCPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 22:14:28 -0400
-X-Spam-Score: -100.8
-Message-ID: <5202FEC3.4010408@asianux.com>
-Date: Thu, 08 Aug 2013 10:13:23 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: Joe Perches <joe@perches.com>, "'Jiri Kosina'" <trivial@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, davej@redhat.com,
-        Arnd Bergmann <arnd@arndb.de>, David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH trivial] UAPI: Kbuild: add/modify comments for "uapi/Kbuild"
- and "uapi/linux/Kbuild"
-References: <52005571.4080704@asianux.com> <1375810303.2424.28.camel@joe-AO722> <1375860749.8422.25@driftwood> <520209FA.70409@asianux.com>
-In-Reply-To: <520209FA.70409@asianux.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 Aug 2013 22:15:03 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=NBs83Pxiv7wA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=iqRnftYWOgEA:10 a=kmG1LWDwp8PEcbahm5QA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375928102.6848.35.camel@gandalf.local.home>
+Subject: Re: [PATCH v4 00/11] tracing: trace event triggers
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>
+Date: Wed, 07 Aug 2013 22:15:02 -0400
+In-Reply-To: <5202FC4B.7040106@hitachi.com>
+References: <cover.1375111640.git.tom.zanussi@linux.intel.com>
+	 <5202FC4B.7040106@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rob:
+On Thu, 2013-08-08 at 11:02 +0900, Masami Hiramatsu wrote:
 
-Maybe I misunderstand what you said (if so, I am sorry for it).
+> # mkdir instances/hoge
+> # echo 'enable_event:mce:mce_record' > instances/hoge/events/syscalls/sys_enter_symlink/trigger
+> # cat instances/hoge/events/syscalls/sys_enter_symlink/enable
+> 0*
+> # cat instances/hoge/events/mce/mce_record/enable
+> 0
+> # cat events/mce/mce_record/enable
+> 0*
+> # ln -sf /dev/null /tmp
+> # cat instances/hoge/events/mce/mce_record/enable
+> 0
+> # cat events/mce/mce_record/enable
+> 1*
+> 
+> This looks odd, I expected enabling mce/mce_record under instances/hoge.
+> 
+> And, there is a bug of ftrace itself (not introduced by this series) I've found.
+> After the above operation, we can delete the instance "hoge", but the soft-mode
+> flag of mce_record is not cleared, even though there is no trigger referring
+> the event.
+> 
+> # rmdir instances/hoge
+> # cat events/mce/mce_record/enable
+> 1*
 
-At least for me, what you said is valuable to get additional discussion,
-but it seems better to start a new thread for it and also cc to
-linux-doc mail list.
-
-If so better include me in cc list, thanks.  ;-)
-
-If you think still suitable to discuss about it in this mail thread,
-please continue, at least, I still welcome.  :-)
-
-
-Thanks.
-
-On 08/07/2013 04:48 PM, Chen Gang wrote:
-> On 08/07/2013 03:32 PM, Rob Landley wrote:
->> On 08/06/2013 12:31:43 PM, Joe Perches wrote:
->>> On Tue, 2013-08-06 at 09:46 +0800, Chen Gang wrote:
->>>> "include/uapi/" is the whole Linux kernel API, it is important enough
->>>> to get more global explanations by comments.
->>>
->>> It'd probably be useful to have more descriptions
->>> of uapi in the Documentation directory too.
->>
->> I'd rather have comments in the headers that get exported to userspace
->> and then have other forms of documentation generated from that by some
->> process similar to "make htmldocs". Otherwise you've got two places to
->> keep in sync.
->>
-> 
-> At least for me, it is a good idea, although UAPI files is rarely
-> changed (may add new item, but few modifying the existing items).
-> 
-> And for our case, it is summary comments for directory organization for
-> all UAPI files, so in my opinion, it is still necessary to give summary
-> comments in Kbuild.
-> 
-> In Linux user mode or another OS which share the same files of UAPI,
-> they do not care about our kernel's Kbuild, for they have their own
-> directory organizations which may different with Linux kernel's.
-> 
->> (Really the guy you've got to keep in the loop about this is Michael
->> Kerrisk. The section 2 man pages are the current best reference on UAPI
->> stuff...)
->>
-> 
-> As far as I know, the section 2 man pages is already for it (e.g. man 2
-> setfuid, man 2 open, ...).
-> 
-> Do you mean currently it is only for some of system calls (part of
-> UAPI), not for the whole UAPI ?
-> 
-> 
->> Rob
->>
-> 
-> 
+Ouch. I'll have to look into this. Thanks!
 
 
--- 
-Chen Gang
+> And also, could you rebase your patches on trace/for-next branch?
+> Since that branch includes most of the latest fixes, it is better to
+> review with it.
+
+Yeah, it would be good to rebase against that. I may finally have time
+to look into these patches.
+
+-- Steve
+
+
+
