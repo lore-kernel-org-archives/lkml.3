@@ -1,204 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964906Ab3HHJrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 05:47:12 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:14295 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757710Ab3HHJrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 05:47:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 08 Aug 2013 02:45:25 -0700
-Message-ID: <52036920.4050808@nvidia.com>
-Date: Thu, 8 Aug 2013 17:47:12 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S964810Ab3HHJwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 05:52:31 -0400
+Received: from ns.pmeerw.net ([87.118.82.44]:34313 "EHLO pmeerw.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377Ab3HHJw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 05:52:29 -0400
+X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 05:52:29 EDT
+Date: Thu, 8 Aug 2013 11:45:13 +0200 (CEST)
+From: Peter Meerwald <p.meerwald@bct-electronic.com>
+X-X-Sender: pmeerw@pmeerw.net
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] leds-pca9633: Unique naming of the LEDs
+In-Reply-To: <1375951624-15186-3-git-send-email-ricardo.ribalda@gmail.com>
+Message-ID: <alpine.DEB.2.01.1308081141400.17424@pmeerw.net>
+References: <1375951624-15186-1-git-send-email-ricardo.ribalda@gmail.com> <1375951624-15186-3-git-send-email-ricardo.ribalda@gmail.com>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
-References: <1375944991-29182-1-git-send-email-wni@nvidia.com> <1375944991-29182-2-git-send-email-wni@nvidia.com> <520359E9.1000600@roeck-us.net>
-In-Reply-To: <520359E9.1000600@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 04:42 PM, Guenter Roeck wrote:
-> On 08/07/2013 11:56 PM, Wei Ni wrote:
->> The device lm90 can be controlled by the vdd rail.
->> Adding the power control support to power on/off the vdd rail.
->> And make sure that power is enabled before accessing the device.
->>
->> Signed-off-by: Wei Ni <wni@nvidia.com>
->> ---
->>   drivers/hwmon/lm90.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
->>   1 file changed, 49 insertions(+)
->>
->> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
->> index cdff742..306a348 100644
->> --- a/drivers/hwmon/lm90.c
->> +++ b/drivers/hwmon/lm90.c
->> @@ -89,6 +89,7 @@
->>   #include <linux/err.h>
->>   #include <linux/mutex.h>
->>   #include <linux/sysfs.h>
->> +#include <linux/regulator/consumer.h>
->>
->>   /*
->>    * Addresses to scan
->> @@ -302,6 +303,7 @@ static const struct lm90_params lm90_params[] = {
->>   struct lm90_data {
->>   	struct device *hwmon_dev;
->>   	struct mutex update_lock;
->> +	struct regulator *lm90_reg;
->>   	char valid; /* zero until following fields are valid */
->>   	unsigned long last_updated; /* in jiffies */
->>   	int kind;
->> @@ -1391,6 +1393,32 @@ static void lm90_init_client(struct i2c_client *client)
->>   		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
->>   }
->>
->> +static void lm90_power_control(struct i2c_client *client, bool is_enable)
->> +{
->> +	struct lm90_data *data = i2c_get_clientdata(client);
->> +	int ret;
->> +
->> +	if (!data->lm90_reg)
->> +		return;
->> +
->> +	mutex_lock(&data->update_lock);
->> +
-> 
-> This is only called during probe and remove, so the mutex is unnecessary.
+Hello,
 
-I considered that we may call this function in suspend/resume routine,
-so I add this mutex.
-But as you said, currently we doesn't have these routine yet, the mutex
-is unnecessary, so I will remove it.
+> If there are more than one pca963x chips on the system and there are
+> some LEDs without platform_data names, the driver wont be able to
+> provide unique naming to them.
 
-> 
->> +	if (is_enable)
->> +		ret = regulator_enable(data->lm90_reg);
->> +	else
->> +		ret = regulator_disable(data->lm90_reg);
->> +
->> +	if (ret < 0)
->> +		dev_err(&client->dev,
->> +			"Error in %s rail vdd, error %d\n",
->> +			(is_enable) ? "enabling" : "disabling", ret);
->> +	else
->> +		dev_info(&client->dev, "success in %s rail vdd\n",
->> +			 (is_enable) ? "enabling" : "disabling");
->> +
-> which reduces the function to (pretty much unnecessary) messages and an if statement
-> which you only need because you have the function.
-> 
-> You should just call regulator_enable in probe and regulator_disable in remove.
+> This patch adds the i2c adress to the name of the unnamed LEDs, making
+> them unique.
 
-Ok, I will remove these messages and this function.
+there still could be pca963x chips with the same address on different 
+I2C busses; the I2C address itself is not unique
 
-> 
-> Guenter
-> 
->> +	mutex_unlock(&data->update_lock);
->> +}
->> +
->>   static int lm90_probe(struct i2c_client *client,
->>   		      const struct i2c_device_id *id)
->>   {
->> @@ -1406,6 +1434,20 @@ static int lm90_probe(struct i2c_client *client,
->>   	i2c_set_clientdata(client, data);
->>   	mutex_init(&data->update_lock);
->>
->> +	data->lm90_reg = regulator_get(&client->dev, "vdd");
-> 
-> You should use devm_regulator_get(). Then you also don't need the call to regulator_put().
+spelling/nitpicking of commit message: 'is more than one pca963x chip', 
+'address'
 
-Oh, yes, you are right, I will do it.
+regards, p.
 
+> [  555.346827] ------------[ cut here ]------------
+> [  555.346844] WARNING: at /build/linux-voe0Su/linux-3.9.8/fs/sysfs/dir.c:536 sysfs_add_one+0x8b/0x9d()
+> [  555.346847] Hardware name: QT5022
+> [  555.346850] sysfs: cannot create duplicate filename '/class/leds/pca9633:6'
+> [  555.346853] Modules linked in: qt5038_platform(O+) leds_pca9633(O) hid_generic ledtrig_default_on rfcomm bnep bluetooth binfmt_misc nfsd auth_rpcgss nfs_acl nfs lockd dns_resolver fscache sunrpc nls_utf8 nls_cp437 vfat fat loop fuse joydev hid_multitouch usbhid hid acpi_cpufreq mperf kvm_amd kvm evdev pn533 nfc arc4 microcode pcspkr efivars k10temp ath9k ath9k_common ath9k_hw ath fglrx(PO) mac80211 cfg80211 video rfkill processor thermal_sys sp5100_tco button i2c_piix4 ext4 crc16 jbd2 mbcache sg sd_mod crc_t10dif ahci libahci igb i2c_algo_bit i2c_core dca ptp pps_core ehci_pci ohci_hcd ehci_hcd libata usbcore usb_common scsi_mod [last unloaded: leds_pca963x]
+> [  555.346940] Pid: 4766, comm: insmod Tainted: P        W  O 3.9-1-amd64 #1 Debian 3.9.8-1
+> [  555.346943] Call Trace:
+> [  555.346956]  [<ffffffff8103d153>] ? warn_slowpath_common+0x76/0x8c
+> [  555.346962]  [<ffffffff8103d202>] ? warn_slowpath_fmt+0x47/0x49
+> [  555.346968]  [<ffffffff8116005d>] ? sysfs_pathname+0x3b/0x41
+> [  555.346973]  [<ffffffff81160767>] ? sysfs_add_one+0x8b/0x9d
+> [  555.346978]  [<ffffffff811610a4>] ? sysfs_do_create_link_sd+0xe8/0x174
+> [  555.346985]  [<ffffffff81279250>] ? device_add+0x243/0x5ab
+> [  555.346991]  [<ffffffff81060a16>] ? complete_all+0x31/0x40
+> [  555.346998]  [<ffffffff8104991a>] ? init_timer_key+0xc/0x56
+> [  555.347004]  [<ffffffff8127964c>] ? device_create_vargs+0x82/0xb6
+> [  555.347009]  [<ffffffff812796af>] ? device_create+0x2f/0x31
+> [  555.347014]  [<ffffffff81060add>] ? should_resched+0x5/0x23
+> [  555.347021]  [<ffffffff812a3a92>] ? led_classdev_register+0x24/0x103
+> [  555.347028]  [<ffffffffa09d01c0>] ? pca9633_probe+0x173/0x239 [leds_pca9633]
+> [  555.347035]  [<ffffffff8127b504>] ? __driver_attach+0x73/0x73
+> [  555.347049]  [<ffffffffa009dfc9>] ? i2c_device_probe+0x63/0x88 [i2c_core]
+> [  555.347057]  [<ffffffff8127b373>] ? driver_probe_device+0x92/0x1b0
+> [  555.347064]  [<ffffffff81279c5c>] ? bus_for_each_drv+0x43/0x7d
+> [  555.347070]  [<ffffffff8127b2af>] ? device_attach+0x68/0x83
+> [  555.347078]  [<ffffffff8127a990>] ? bus_probe_device+0x25/0x8d
+> [  555.347083]  [<ffffffff812793f7>] ? device_add+0x3ea/0x5ab
+> [  555.347088]  [<ffffffff81060a16>] ? complete_all+0x31/0x40
+> [  555.347094]  [<ffffffff8104991a>] ? init_timer_key+0xc/0x56
+> [  555.347104]  [<ffffffffa009d3a1>] ? i2c_new_device+0x10d/0x179 [i2c_core]
+> [  555.347112]  [<ffffffffa008f036>] ? qt5038_init+0x36/0x1000 [qt5038_platform]
+> [  555.347119]  [<ffffffffa008f000>] ? 0xffffffffa008efff
+> [  555.347125]  [<ffffffff8100209e>] ? do_one_initcall+0x74/0x128
+> [  555.347131]  [<ffffffffa008f000>] ? 0xffffffffa008efff
+> [  555.347137]  [<ffffffff810836f5>] ? load_module+0x1af7/0x1dfc
+> [  555.347144]  [<ffffffff810801c5>] ? free_notes_attrs+0x3c/0x3c
+> [  555.347150]  [<ffffffff81083a98>] ? sys_init_module+0x9e/0xab
+> [  555.347157]  [<ffffffff8138be29>] ? system_call_fastpath+0x16/0x1b
+> [  555.347161] ---[ end trace ad00b85794e0de4d ]---
+> [  555.347448] leds-pca9633: probe of 0-006b failed with error -17
 > 
->> +	if (IS_ERR_OR_NULL(data->lm90_reg)) {
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/leds/leds-pca9633.c |    7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
 > 
-> The function never returns NULL except if the regulator subsystem is not configured,
-> so IS_ERR() is more appropriate.
-> 
-> If the regulator subsystem is not configured, you especially don't need or want
-> to pollute the log with an error message.
-> 
->> +		if (PTR_ERR(data->lm90_reg) == -ENODEV)
->> +			dev_info(&client->dev,
->> +				 "No regulator found for vdd. Assuming vdd is always powered.");
->> +		else
->> +			dev_warn(&client->dev,
->> +				 "Error [%ld] in getting the regulator handle for vdd.\n",
->> +				 PTR_ERR(data->lm90_reg));
-> 
-> I consider the messages unnecessary and confusing. You are polluting the log
-> of pretty much every PC user who has one of the supported chips in the system,
-> and of everyone else not using regulators for this chip.
-
-Ok, I will remove these codes.
-So I will write something like:
-if (!IS_ERR(data->lm90_reg)) {
-    ret = regulator_enable(data->lm90_reg);
-    if (ret < 0) {
-        dev_err();
-        return ret;
-    }
-} else {
-    if (PTR_ERR(data->lm90_reg) == -EPROBE_DEFER)
-        return -EPRPBE_DEFER;
-
-        data->lm90_reg = !!IS_ERR(data->lm90_reg);
-}
-
-> 
->> +		data->lm90_reg = NULL;
-> 
-> As pointed out, this is unnecessary, and you should handle -EPROBE_DEFER correctly.
-
-I think get_regulator() will return error values, not only
--EPROBE_DEFER, so we should set data->lm90_reg to NULL to handle other
-error values.
-
-> 
->> +	}
->> +
->> +	lm90_power_control(client, true);
->> +
->>   	/* Set the device type */
->>   	data->kind = id->driver_data;
->>   	if (data->kind == adm1032) {
->> @@ -1473,6 +1515,10 @@ exit_remove_files:
->>   	lm90_remove_files(client, data);
->>   exit_restore:
->>   	lm90_restore_conf(client, data);
->> +	lm90_power_control(client, false);
->> +	if (data->lm90_reg)
->> +		regulator_put(data->lm90_reg);
->> +
->>   	return err;
->>   }
->>
->> @@ -1483,6 +1529,9 @@ static int lm90_remove(struct i2c_client *client)
->>   	hwmon_device_unregister(data->hwmon_dev);
->>   	lm90_remove_files(client, data);
->>   	lm90_restore_conf(client, data);
->> +	lm90_power_control(client, false);
->> +	if (data->lm90_reg)
->> +		regulator_put(data->lm90_reg);
->>
->>   	return 0;
->>   }
->>
+> diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
+> index 070358a..4dd7793 100644
+> --- a/drivers/leds/leds-pca9633.c
+> +++ b/drivers/leds/leds-pca9633.c
+> @@ -159,10 +159,11 @@ static int pca9633_probe(struct i2c_client *client,
+>  			if (pdata->leds.leds[i].default_trigger)
+>  				pca9633[i].led_cdev.default_trigger =
+>  					pdata->leds.leds[i].default_trigger;
+> -		} else {
+> -			snprintf(pca9633[i].name, sizeof(pca9633[i].name),
+> -				 "pca9633:%d", i);
+>  		}
+> +		if (!pdata || i >= pdata->leds.num_leds ||
+> +						!pdata->leds.leds[i].name)
+> +			snprintf(pca9633[i].name, sizeof(pca9633[i].name),
+> +				 "pca9633:%.2x:%d", client->addr, i);
+>  
+>  		pca9633[i].led_cdev.name = pca9633[i].name;
+>  		pca9633[i].led_cdev.brightness_set = pca9633_led_set;
 > 
 
+-- 
+
+Peter Meerwald
++43-664-2444418 (mobile)
