@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965174Ab3HHKk1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:40:27 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60531 "EHLO
+	id S1757750Ab3HHKnI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 06:43:08 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49936 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965156Ab3HHKkX (ORCPT
+	with ESMTP id S1751429Ab3HHKnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:40:23 -0400
-Date: Thu, 8 Aug 2013 11:40:18 +0100
+	Thu, 8 Aug 2013 06:43:06 -0400
+Date: Thu, 8 Aug 2013 11:42:43 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <20130808104018.GW6427@sirena.org.uk>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20130808104243.GX6427@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bD34TO62teEVCiRb"
+	protocol="application/pgp-signature"; boundary="KISHs/FnjYvFOG5B"
 Content-Disposition: inline
 X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] regmap fixes for v3.11
+Subject: [GIT PULL] regulator fixes for v3.11
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,65 +28,56 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---bD34TO62teEVCiRb
+--KISHs/FnjYvFOG5B
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
+The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
 
-  Linux 3.11-rc4 (2013-08-04 13:46:46 -0700)
+  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-v3.11-rc4
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.11-rc4
 
-for you to fetch changes up to 4f57f8ec238db29c5dd4ce42a6c0fbb2956a6645:
+for you to fetch changes up to 386c90ac747913f1a31a0cdacb14f2347114474d:
 
-  Merge remote-tracking branch 'regmap/fix/disable' into regmap-linus (2013-08-06 19:50:34 +0100)
-
-----------------------------------------------------------------
-
-regmap: Fixes for v3.11
-
-Two things here, one is a fix for a nasty issue where we were failing to
-sync the last register in a block when using raw writes and the other
-fixes a missing header for the !REGMAP stubs so that we don't rely on
-implicit includes in that case.
+  regulator: palmas-pmic: doc: remove ti,tstep (2013-07-17 11:05:58 +0100)
 
 ----------------------------------------------------------------
-Lars-Peter Clausen (1):
-      regmap: cache: Make sure to sync the last register in a block
+regulator: DT binding fixes for v3.11
 
-Mark Brown (1):
-      Merge remote-tracking branch 'regmap/fix/disable' into regmap-linus
+A couple of fixes to bring the DT binding documentation for Palmas into
+sync with the code.
 
-Mateusz Krawczuk (1):
-      regmap: Add missing header for !CONFIG_REGMAP stubs
+----------------------------------------------------------------
+Nishanth Menon (2):
+      regulator: palmas-pmic: doc: fix typo for sleep-mode
+      regulator: palmas-pmic: doc: remove ti,tstep
 
- drivers/base/regmap/regcache.c | 3 ++-
- include/linux/regmap.h         | 1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/regulator/palmas-pmic.txt | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---bD34TO62teEVCiRb
+--KISHs/FnjYvFOG5B
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSA3WPAAoJELSic+t+oim99qMP/RtJ2Ix63PeGHNIH8xn08SXb
-0/LsmQMk6OBev7PVBqJ1ORAdqT1E+mGGqKCwHgXTBF847zP0mgs50tYzIusEQfiC
-4SbJqsDNNapVpffRib/T6OLxtr941F8Lf0K82xkR/g30stRAmk/gtcM4hRS7Cuon
-WiYoWWboTWZoIkkChzdEYj6tX6Ia4TAshtf6YPhL0XduecZrtIgZVafBRWqOGl/z
-5ffkVow0CCpBoBkOkiLFeCsQDLp5UJ3NVdQEsJt/AgJuZaPW/fx2EdOslMMQSbmT
-ffVmfqch7k3Tw0IJvRtg6sBHBPXA5HoJWAypCNfUwBpLd9X+yYhrzmcS/fdNmw9j
-3UGWs4K7MYLe5RTdPe7mkG0shJSNtHlCKxVQk11DoOEXAIXiLNt3gFtN0UIT4t4d
-BOY4cRdHdMsisXSiBfBOhUw6XDuiE5ZbhBtz/hOCqeidp79yiTxCFRmSqWfR3rhc
-6sZarGboe49okGlwpyi230oivZt/TmfVfrf4R4LHVQAjphHrvpm3NhgIedEeQduj
-x9pgLk7DhC4lPHClGfcBIaTi7mbqiae6eIcOL+A9qp3h4dushQrVXCURhlIT+WHQ
-Dt/F9pGS7fM4V1Qh8HqkiRKIuS10kmVfuX65jupdPY8ecVH388wmxsLKLV2+lLk9
-TBlxSoZYWadP+5pI7Waq
-=VS1Z
+iQIcBAEBAgAGBQJSA3YgAAoJELSic+t+oim9if4P/3qyU1omFcclAUGygpgBUTSe
+mLiipE1N4jK8sKILTRriDACPGPXXqRlKgcZ78lS4zzd98cdiryg9O0bB+/kaTmAl
+VBz1VRZQxuzGnZise9qDayMvagqlrpiz8n2Gu/tH5+xT7huU5NZGH3sFJM4PafHq
+93EO6e/nD6Zi/Z9/6MFgAI7OpAgVpU1nfpZGm6fL6cNajo5JtESZWPhyx5KJdO08
+iKmlxCkZQKlXt8lL5cUD8oQr/+CxI/BdnszANcsa1X8a3hYGCLL8UrHZh4D+ad5K
+KX7GsrracKKcoJsAvA7YEYWmRyTlV1QuCA3juE1s1fYOeMmYTkFbD2U2eFcJw7GW
+AfpooCLySUhr8QXKc53BbH5/qrETHakKZ31OStmYiCvLZOEWqHP81iqp/9x5ldgR
+ON/nS5ile8Sg60sb1zpVZ28QToOPKBnhedm/m5UBYLKRlLLA61eYc6Pqog1aAcYM
+zj1aUTebIovvFcS+KEGrekkIooR1JsiSO6sjrzbb664Z54U/bURV8osexnuX49nX
+Hyiz+8DZ34684gW/WcbeTCW5w1WDKJDiBa3I1A4YEH7IlX6c5z9MEE4T677WdATF
+NE05wbgjHwW55m3lDeamKbQ/zy34dlud9bf56zyhXEuIUbaJzqWNcqWv052gtrDQ
+/LAAEXsTA0kcN6FaeleJ
+=iRQI
 -----END PGP SIGNATURE-----
 
---bD34TO62teEVCiRb--
+--KISHs/FnjYvFOG5B--
