@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966298Ab3HHT4b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 15:56:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50789 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966044Ab3HHT4a (ORCPT
+	id S966280Ab3HHUAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:00:22 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:36859 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966063Ab3HHUAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 15:56:30 -0400
-Date: Thu, 8 Aug 2013 12:56:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ed Cashin <ecashin@coraid.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] aoe: adjust ref of head for compound page tails
-Message-Id: <20130808125629.a5d6a55638743e2deee43065@linux-foundation.org>
-In-Reply-To: <6E6337F8-28E9-4361-A7E5-063C6AFFE5BD@coraid.com>
-References: <cover.1375320764.git.ecashin@coraid.com>
-	<0c8aff39249c1da6b9cc3356650149d065c3ebd2.1375320764.git.ecashin@coraid.com>
-	<20130807140021.57a40fb31807f16b525f6ff3@linux-foundation.org>
-	<EB4C2185-3868-42A3-A88D-F9642962D336@coraid.com>
-	<20130807142647.6614d3ec88a7af12cba4505a@linux-foundation.org>
-	<782613DB-4C38-450C-BBC2-E14FA64D44AC@coraid.com>
-	<20130807163507.954590c479a07886a8ae6cb1@linux-foundation.org>
-	<FA421A63-C90D-42A2-B5A3-0B55AB22673F@coraid.com>
-	<20130807170548.b4bb3355d3aec8f280c7feff@linux-foundation.org>
-	<6E6337F8-28E9-4361-A7E5-063C6AFFE5BD@coraid.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Aug 2013 16:00:20 -0400
+Date: Thu, 8 Aug 2013 13:00:26 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Wei Ni <wni@nvidia.com>, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        linux-tegra@vger.kernel.org, MLongnecker@nvidia.com,
+        khali@linux-fr.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
+Message-ID: <20130808200026.GA18226@roeck-us.net>
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
+ <1375944991-29182-2-git-send-email-wni@nvidia.com>
+ <20130808110136.GA6427@sirena.org.uk>
+ <52038035.7030803@roeck-us.net>
+ <20130808130840.GC6427@sirena.org.uk>
+ <5203B78C.7010101@roeck-us.net>
+ <20130808171554.GI6427@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130808171554.GI6427@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Aug 2013 20:50:09 -0400 Ed Cashin <ecashin@coraid.com> wrote:
-
-> > But we shouldn't get that far:
-> > 
-> > static inline void get_page(struct page *page)
-> > {
-> > 	if (unlikely(PageTail(page)))
-> > 		if (likely(__get_page_tail(page)))
-> > 			return;
-> > 	/*
-> > 	 * Getting a normal page or the head of a compound page
-> > 	 * requires to already have an elevated page->_count.
-> > 	 */
-> > 	VM_BUG_ON(atomic_read(&page->_count) <= 0);
-> > 	atomic_inc(&page->_count);
-> > }
-> > 
-> > This is a tail page, so we should be using __get_page_tail().
+On Thu, Aug 08, 2013 at 06:15:54PM +0100, Mark Brown wrote:
+> On Thu, Aug 08, 2013 at 08:21:48AM -0700, Guenter Roeck wrote:
+> > On 08/08/2013 06:08 AM, Mark Brown wrote:
 > 
+> > >I'd be most surprised if the device worked without power, if the driver
+> > >fails to get and enable a regulator for it then that's not great
+> > >(especially if it does so silently).
 > 
-> When the workaround was created, it was with the assumption that the zero-count pages are not always tail pages, and that seemed to be the case in 2007, but as I said, I don't have a mechanism for detecting that now, so I cannot say whether it really happens with today's kernel.
-
-It sounds we should pull out all that code and retest.  It shouldn't be
-needed - if this results in some failure then I suspect core MM will
-need changes.
-
-Why don't you have a "mechanism for detecting that"?  It's a matter of
-pointing AOE at some hugetlb pages?
-
-> If it is never correct for normal pages or compound page heads to have a zero count while they are associated with a bio, then yes, I think get_page is a great solution.  The VM_BUG_ON in get_page would identify any parts of the kernel that are supplying bios that have pages without references.
+> > Correct, but it appears that the driver magically worked for a long time
+> > without it.
 > 
-> Just a note in response to "we shouldn't get that far":  I believe the VM_BUG_ON line in get_page does get executed for tail pages when the __get_page_tail returns false because the compound page head has a zero count:
+> Sure, it'll work in systems that have always on regulators.
 > 
->   get_page -> __get_page_tail -> get_page_unless_zero returns false, so
->     __get_page_tail returns "got", which is still false, so
->       get_page executes the VM_BUG_ON, where the _count will be zero for the tail page.
+> > Is it guaranteed that the driver keeps working for all cases where
+> > regulator support is enabled in the kernel, and where it used to work
+> > so far without mandating the existence of this specific regulator ?
+> > My main concern is having to deal with complaints that the driver stopped
+> > working for no good reason.
+> 
+> Sure, that's the transition issues I mentioned - the regulator API does
+> have stubbing facilities which should cover things and it's very easy to
+> define stub regulators if you need to.  Like I say I expect this to be a
+> lot easier after the next merge window as another way of doing stubs is
+> being added which should make this even easier by avoiding disrupting
+> drivers that do genuinely want to check for absent supplies and handle
+> that better.
+> 
+We will need to make sure that all dts files using any of the compatible chips
+are updated accordingly. There are several entries in various dts files for
+adm1032, adt7461, lm90, and nct1008.
 
-Yup.  If we hit a zero-ref huge page here then we want that BUG_ON to trigger.
+> > In this context, is it common practice to name such regulators "vdd"
+> > or similar ? What if there are multiple LM90 or compatible chips
+> > in a system, connected to different power rails ? Who determines
+> > if the regulator is supposed to be named "vdd" or "vcc" or anything
+> > else, and to which power rails it is actually connected ? How can
+> > and does one guarantee that "vdd" is the correct regulator to use
+> > for all systems ? What if some other driver requests "vdd", but the chip
+> > it supports happens to be connected to a different power rail ?
+> 
+> That's not what the name means - they are nothing to do with the board.
 
+Ok, makes sense.
+
+> The names requested by a driver are defined with regard to the device
+> and should be the names used by the chip itself as defined in the
+
+9 votes for vdd, 11 votes for vcc, one undecided (no datasheet available).
+Guess one is as good as the other ;-).
+
+Guenter
+
+> datasheet.  A board that uses regulators then maps these onto specific
+> regulators in the system, the driver doesn't need to know anything about
+> this process.
