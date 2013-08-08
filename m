@@ -1,85 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966225Ab3HHTRg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 15:17:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39352 "EHLO mail.skyhub.de"
+	id S966231Ab3HHTUH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 15:20:07 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:3857 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966162Ab3HHTRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 15:17:34 -0400
-Date: Thu, 8 Aug 2013 21:17:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: tony.luck@intel.com, bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
-        lance.ortiz@hp.com, m.chehab@samsung.com, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mce: acpi/apei: trace: Add trace event for ghes
- memory error
-Message-ID: <20130808191732.GE27974@pd.tnic>
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
- <1375986471-27113-3-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+	id S966162Ab3HHTUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 15:20:04 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Christian Daudt" <csd@broadcom.com>
+To: "Christian Daudt" <csd@broadcom.com>
+cc: "Russell King" <linux@arm.linux.org.uk>, "Arnd Bergmann" <arnd@arndb.de>,
+        "Markus Mayer" <markus.mayer@linaro.org>,
+        "Stephen Warren" <swarren@nvidia.com>,
+        "Shawn Guo" <shawn.guo@linaro.org>, "Olof Johansson" <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: bcm: Make secure API call optional
+Date: Thu, 8 Aug 2013 12:19:54 -0700
+Message-ID: <1375989594-12193-1-git-send-email-csd@broadcom.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1375986471-27113-3-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-WSS-ID: 7E1D31FF31W82352161-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 11:57:50PM +0530, Naveen N. Rao wrote:
-> +TRACE_EVENT(ghes_platform_memory_event,
-> +	TP_PROTO(const struct acpi_hest_generic_status *estatus,
-> +		 const struct acpi_hest_generic_data *gdata,
-> +		 const struct cper_sec_mem_err *mem),
-> +
-> +	TP_ARGS(estatus, gdata, mem),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	u32,	estatus_block_status		)
-> +		__field(	u32,	estatus_raw_data_offset		)
-> +		__field(	u32,	estatus_raw_data_length		)
-> +		__field(	u32,	estatus_data_length		)
-> +		__field(	u32,	estatus_error_severity		)
-> +		__array(	u8,	gdata_section_type,	16	)
-> +		__field(	u32,	gdata_error_severity		)
-> +		__field(	u16,	gdata_revision			)
-> +		__field(	u8,	gdata_validation_bits		)
-> +		__field(	u8,	gdata_flags			)
-> +		__field(	u32,	gdata_error_data_length		)
-> +		__array(	u8,	gdata_fru_id,		16	)
-> +		__array(	u8,	gdata_fru_text,		20	)
-> +		__field(	u64,	mem_validation_bits		)
-> +		__field(	u64,	mem_error_status		)
-> +		__field(	u64,	mem_physical_addr		)
-> +		__field(	u64,	mem_physical_addr_mask		)
-> +		__field(	u16,	mem_node			)
-> +		__field(	u16,	mem_card			)
-> +		__field(	u16,	mem_module			)
-> +		__field(	u16,	mem_bank			)
-> +		__field(	u16,	mem_device			)
-> +		__field(	u16,	mem_row				)
-> +		__field(	u16,	mem_column			)
-> +		__field(	u16,	mem_bit_pos			)
-> +		__field(	u64,	mem_requestor_id		)
-> +		__field(	u64,	mem_responder_id		)
-> +		__field(	u64,	mem_target_id			)
-> +		__field(	u8,	mem_error_type			)
-> +	),
+The current bcm_kona_smc_init function throws a BUG_ON if there's no SMC
+device node defined in the device tree.
 
-Without looking at the rest, a trace record from this tracepoint is
-going to be 160 bytes IINM, which looks kinda fat to me. And during an
-error storm we're probably not going to be able to log them all, maybe?
-Yes, no, maybe I'm off base...
+Since secure API access is optional depending the chip configuration,
+fix this by allowing the rest of the code to run even if there's no SMC
+device node defined
 
-In any case, are we sure we want all those fields above? Can we make
-them smaller, drop some of them from the tracepoint, etc, etc? Can we
-compute some of them in userspace with information we already have?
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Signed-off-by: Christian Daudt <csd@broadcom.com>
 
-Hmmm.
-
+diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
+index 56d9d19..e32c1b3 100644
+--- a/arch/arm/mach-bcm/bcm_kona_smc.c
++++ b/arch/arm/mach-bcm/bcm_kona_smc.c
+@@ -41,13 +41,14 @@ static const struct of_device_id bcm_kona_smc_ids[] __initconst = {
+ };
+ 
+ /* Map in the bounce area */
+-void __init bcm_kona_smc_init(void)
++int __init bcm_kona_smc_init(void)
+ {
+ 	struct device_node *node;
+ 
+ 	/* Read buffer addr and size from the device tree node */
+ 	node = of_find_matching_node(NULL, bcm_kona_smc_ids);
+-	BUG_ON(!node);
++	if (!node)
++		return -ENODEV;
+ 
+ 	/* Don't care about size or flags of the DT node */
+ 	bridge_data.buffer_addr =
+@@ -59,7 +60,9 @@ void __init bcm_kona_smc_init(void)
+ 
+ 	bridge_data.initialized = 1;
+ 
+-	pr_info("Secure API initialized!\n");
++	pr_info("Kona Secure API initialized\n");
++
++	return 0;
+ }
+ 
+ /* __bcm_kona_smc() should only run on CPU 0, with pre-emption disabled */
+diff --git a/arch/arm/mach-bcm/bcm_kona_smc.h b/arch/arm/mach-bcm/bcm_kona_smc.h
+index 3bedbed1..d098a7e 100644
+--- a/arch/arm/mach-bcm/bcm_kona_smc.h
++++ b/arch/arm/mach-bcm/bcm_kona_smc.h
+@@ -64,7 +64,7 @@
+ #define SSAPI_BRCM_START_VC_CORE	0x0E000008
+ 
+ #ifndef	__ASSEMBLY__
+-extern void bcm_kona_smc_init(void);
++extern int __init bcm_kona_smc_init(void);
+ 
+ extern unsigned bcm_kona_smc(unsigned service_id,
+ 			     unsigned arg0,
+diff --git a/arch/arm/mach-bcm/board_bcm.c b/arch/arm/mach-bcm/board_bcm.c
+index 2859932..70cc44f 100644
+--- a/arch/arm/mach-bcm/board_bcm.c
++++ b/arch/arm/mach-bcm/board_bcm.c
+@@ -29,15 +29,18 @@ static int __init kona_l2_cache_init(void)
+ 	if (!IS_ENABLED(CONFIG_CACHE_L2X0))
+ 		return 0;
+ 
++	if (bcm_kona_smc_init() < 0) {
++		pr_info("Kona secure API not available. Skipping L2 init\n");
++		return 0;
++	}
++
+ 	bcm_kona_smc(SSAPI_ENABLE_L2_CACHE, 0, 0, 0, 0);
+ 
+ 	/*
+ 	 * The aux_val and aux_mask have no effect since L2 cache is already
+ 	 * enabled.  Pass 0s for aux_val and 1s for aux_mask for default value.
+ 	 */
+-	l2x0_of_init(0, ~0);
+-
+-	return 0;
++	return l2x0_of_init(0, ~0);
+ }
+ 
+ static void __init board_init(void)
+@@ -45,8 +48,6 @@ static void __init board_init(void)
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL,
+ 		&platform_bus);
+ 
+-	bcm_kona_smc_init();
+-
+ 	kona_l2_cache_init();
+ }
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
