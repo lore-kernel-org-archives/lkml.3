@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964789Ab3HHI4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:56:03 -0400
-Received: from 15.mo4.mail-out.ovh.net ([91.121.62.11]:45386 "EHLO
+	id S964798Ab3HHI42 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:56:28 -0400
+Received: from 20.mo4.mail-out.ovh.net ([46.105.33.73]:46089 "EHLO
 	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934168Ab3HHI4A (ORCPT
+	with ESMTP id S934146Ab3HHI4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 04:56:00 -0400
 From: Boris BREZILLON <b.brezillon@overkiz.com>
@@ -16,11 +16,11 @@ To: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 5/6] ARM: at91: move sama5d3 SoC to common clk
-Date: Thu,  8 Aug 2013 10:49:43 +0200
-Message-Id: <1375951783-11021-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH 2/6] ARM: at91: prepare common clk transition for sama5d3 SoC
+Date: Thu,  8 Aug 2013 10:47:01 +0200
+Message-Id: <1375951621-10904-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 6665045974764910771
+X-Ovh-Tracer-Id: 6619447028202305715
 X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -34,27 +34,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the selection of AT91_USE_OLD_CLK when selecting sama5d3
-SoC support. This will enable automatically enable COMMON_CLK_AT91 option
-and add support for at91 common clk implementation.
+This patch enclose sama5d3 old clk registration in
+"#if defined(CONFIG_OLD_CLK_AT91) #endif" sections.
 
 Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- arch/arm/mach-at91/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/mach-at91/sama5d3.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 97033f7..b4f7d6f 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -86,7 +86,6 @@ config SOC_SAMA5D3
- 	select SOC_SAMA5
- 	select HAVE_FB_ATMEL
- 	select HAVE_AT91_DBGU1
--	select AT91_USE_OLD_CLK
- 	select HAVE_AT91_UTMI
- 	select HAVE_AT91_SMD
- 	select HAVE_AT91_USB_CLK
+diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
+index 0003949..3426098 100644
+--- a/arch/arm/mach-at91/sama5d3.c
++++ b/arch/arm/mach-at91/sama5d3.c
+@@ -19,9 +19,10 @@
+ 
+ #include "soc.h"
+ #include "generic.h"
+-#include "clock.h"
+ #include "sam9_smc.h"
+ 
++#if defined(CONFIG_OLD_CLK_AT91)
++#include "clock.h"
+ /* --------------------------------------------------------------------
+  *  Clocks
+  * -------------------------------------------------------------------- */
+@@ -361,6 +362,7 @@ static void __init sama5d3_register_clocks(void)
+ 	clk_register(&pck1);
+ 	clk_register(&pck2);
+ }
++#endif
+ 
+ /* --------------------------------------------------------------------
+  *  AT91SAM9x5 processor initialization
+@@ -373,5 +375,7 @@ static void __init sama5d3_map_io(void)
+ 
+ AT91_SOC_START(sama5d3)
+ 	.map_io = sama5d3_map_io,
++#if defined(CONFIG_OLD_CLK_AT91)
+ 	.register_clocks = sama5d3_register_clocks,
++#endif
+ AT91_SOC_END
 -- 
 1.7.9.5
 
