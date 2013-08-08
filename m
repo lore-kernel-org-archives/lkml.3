@@ -1,111 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933927Ab3HHHSE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 03:18:04 -0400
-Received: from fallback2.mail.ru ([94.100.176.87]:59392 "EHLO
-	fallback2.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933704Ab3HHHSB (ORCPT
+	id S1757646Ab3HHHZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 03:25:26 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28386 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756745Ab3HHHZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 03:18:01 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?V2VpIE5p?= <wni@nvidia.com>
-Cc: khali@linux-fr.org, linux@roeck-us.net, swarren@wwwdotorg.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        MLongnecker@nvidia.com, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2MiAxLzNdIGh3bW9uOiAobG05MCkgQWRkIHBvd2VyIGNv?=
- =?UTF-8?B?bnRyb2w=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [217.119.30.118]
-Date: Thu, 08 Aug 2013 11:13:42 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1375946022.222322391@f304.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-In-Reply-To: <1375944991-29182-2-git-send-email-wni@nvidia.com>
-References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
- <1375944991-29182-2-git-send-email-wni@nvidia.com>
+	Thu, 8 Aug 2013 03:25:25 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX194sh7OmwTr1FcZ5/ASfotc
+Date: Thu, 8 Aug 2013 00:25:14 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        =?utf-8?Q?Beno=C3=AEt?= Coussno <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] arm: omap: Proper cleanups for omap_device
+Message-ID: <20130808072513.GY7656@atomide.com>
+References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com>
+ <1375775624-12250-6-git-send-email-panto@antoniou-consulting.com>
+ <20130806093356.GA27889@kroah.com>
+ <8C31ED90-E9EF-4264-858A-17CC2536B552@antoniou-consulting.com>
+ <20130807161557.GO7656@atomide.com>
+ <4B64047B-505F-4D54-871B-8F1B5315B613@antoniou-consulting.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4B64047B-505F-4D54-871B-8F1B5315B613@antoniou-consulting.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r787I9ji032104
 
-> The device lm90 can be controlled by the vdd rail.
-> Adding the power control support to power on/off the vdd rail.
-> And make sure that power is enabled before accessing the device.
+* Pantelis Antoniou <panto@antoniou-consulting.com> [130807 09:31]:
+> Hi Tony,
 > 
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> ---
->  drivers/hwmon/lm90.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 49 insertions(+)
+> On Aug 7, 2013, at 7:15 PM, Tony Lindgren wrote:
 > 
-> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-[...]
-> +static void lm90_power_control(struct i2c_client *client, bool is_enable)
-> +{
-> +	struct lm90_data *data = i2c_get_clientdata(client);
-> +	int ret;
-> +
-> +	if (!data->lm90_reg)
-> +		return;
-> +
-> +	mutex_lock(&data->update_lock);
-> +
-> +	if (is_enable)
-> +		ret = regulator_enable(data->lm90_reg);
-> +	else
-> +		ret = regulator_disable(data->lm90_reg);
-> +
-> +	if (ret < 0)
-> +		dev_err(&client->dev,
-> +			"Error in %s rail vdd, error %d\n",
-> +			(is_enable) ? "enabling" : "disabling", ret);
-> +	else
-> +		dev_info(&client->dev, "success in %s rail vdd\n",
-> +			 (is_enable) ? "enabling" : "disabling");
+> > * Pantelis Antoniou <panto@antoniou-consulting.com> [130806 02:44]:
+> >> On Aug 6, 2013, at 12:33 PM, Greg Kroah-Hartman wrote:
+> >>> On Tue, Aug 06, 2013 at 10:53:44AM +0300, Pantelis Antoniou wrote:
+> >>>> +
+> >>>> static int _omap_device_notifier_call(struct notifier_block *nb,
+> >>>> 				      unsigned long event, void *dev)
+> >>>> {
+> >>>> @@ -185,9 +211,13 @@ static int _omap_device_notifier_call(struct notifier_block *nb,
+> >>>> 	struct omap_device *od;
+> >>>> 
+> >>>> 	switch (event) {
+> >>>> -	case BUS_NOTIFY_DEL_DEVICE:
+> >>>> +	case BUS_NOTIFY_UNBOUND_DRIVER:
+> >>>> +		/* NOTIFY_DEL_DEVICE is not the right call...
+> >>>> +		 * we use a callback here, to make sure no-one is going to
+> >>>> +		 * try to use the omap_device data after they're deleted
+> >>>> +		 */
+> >>>> 		if (pdev->archdata.od)
+> >>>> -			omap_device_delete(pdev->archdata.od);
+> >>>> +			device_schedule_callback(dev, _omap_device_cleanup);
+> >>> 
+> >>> Really?  This is one sign that you are totally using the driver core
+> >>> incorrectly.  You shouldn't have to rely on notifier callbacks to handle
+> >>> device removals, your bus code should do that for you directly.
+> >>> 
+> >>> I don't like this at all, sorry.
+> >>> 
+> >> 
+> >> Don't shoot the messenger please...
+> > 
+> > As you're inititalizing capebus with DT, let's figure out what if
+> > anything you actually need from omap_device. I'd much rather remove
+> > dependencies than add more.
+> > 
+> 
+> There is no such thing as capebus anymore. This is just the path of
+> removing a platform device, which happens to also be an omap_device.
 
-dev_dbg() ?
+OK, so let's figure out the minimal fixes needed.
+ 
+> >> This is all about fixing a crash without messing too many things.
+> > 
+> > It seems this fix is only needed for supporting out-of-tree code?
+> > These features with omap_device we may not even want to support in
+> > the mainline tree as is being discussed..
+> > 
+> 
+> What out of tree code? The only thing this patch does is make sure we
+> don't crash when a perfectly valid call to platform_device_unregister() happens.
+> 
+> Drivers that don't use omap_device work just fine.
 
-> +
-> +	mutex_unlock(&data->update_lock);
-> +}
-> +
->  static int lm90_probe(struct i2c_client *client,
->  		      const struct i2c_device_id *id)
->  {
-> @@ -1406,6 +1434,20 @@ static int lm90_probe(struct i2c_client *client,
->  	i2c_set_clientdata(client, data);
->  	mutex_init(&data->update_lock);
->  
-> +	data->lm90_reg = regulator_get(&client->dev, "vdd");
-> +	if (IS_ERR_OR_NULL(data->lm90_reg)) {
+So what's the minimal set of fixes then?
 
-What about deferred probe?
-if (PTR_ERR(data->lm90_reg) == -EPROBE_DEFER)
-return -EPROBE_DEFER;
+Regards,
 
-> +		if (PTR_ERR(data->lm90_reg) == -ENODEV)
-> +			dev_info(&client->dev,
-> +				 "No regulator found for vdd. Assuming vdd is always powered.");
-
-On my opinion it is unnecessary message.
-
-> +		else
-> +			dev_warn(&client->dev,
-> +				 "Error [%ld] in getting the regulator handle for vdd.\n",
-> +				 PTR_ERR(data->lm90_reg));
-
-Ditto.
-
-> +		data->lm90_reg = NULL;
-
-You can just use !IS_ERR(data->lm90_reg) macro in the future,
-rather than set this to NULL.
-
-[...]
-
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Tony
