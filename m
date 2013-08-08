@@ -1,56 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966788Ab3HHWV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 18:21:27 -0400
-Received: from etezian.org ([198.101.225.253]:51873 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965419Ab3HHWV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 18:21:26 -0400
-Date: Fri, 9 Aug 2013 00:21:08 +0200
-From: Andi Shyti <andi@etezian.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Andi Shyti <andi@etezian.org>, oatilla@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] etzkx accelerometer support
-Message-ID: <20130808222108.GC11387@jack.whiskey>
-References: <cover.1371418586.git.andi@etezian.org>
- <20130616215110.GA10834@kroah.com>
- <20130616222648.GE4385@jack.whiskey>
- <20130617025854.GB12522@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130617025854.GB12522@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S966804Ab3HHWXG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 18:23:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53352 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965419Ab3HHWXD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 18:23:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/3] driver core: bus_type: add dev_groups
+Date: Thu,  8 Aug 2013 15:22:55 -0700
+Message-Id: <1376000577-29866-1-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+attribute groups are much more flexible than just a list of attributes,
+due to their support for visibility of the attributes, and binary
+attributes. Add dev_groups to struct bus_type which should be used
+instead of dev_attrs.
 
-> > > > these two patches provide the etzkx device driver which supports
-> > > > the following accelerometers:
-> > > 
-> > > Why isn't this a drivers/iio/accel/ driver instead of a misc driver?
-> > > Please make this an iio driver, then you will be using the correct
-> > > user/kernel api to talk to your device.
-> > 
-> > I was thinking it may be an issue, but it's not iio because the
-> > time I developed the driver, iio was in the first staging period
-> > and mainly because the on the board I'm using I cannot update the
-> > Kernel to use the latest iio.
-> > 
-> > I guess you don't like the promise "I can do it later" once the
-> > supplier sends me a development board (which is planned) :)
-> 
-> Sure, I'll gladly accept "I can do it later" from anyone, as long as you
-> don't mind my, "I will merge it later" as well :)
-> 
-> Sorry, I can't accept a driver now, that is known to going to be
-> changing the kernel/user api in the future.  So please, rewrite it to
-> use IIO, that's what that interface / subsystem is there for.
+dev_attrs will be removed from the structure soon.
 
-What about submitting this accelerometer driver under staging
-even if it's still not iio and slowly put it in shape?
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/base/base.h    | 5 +++++
+ drivers/base/bus.c     | 6 ++++++
+ drivers/base/core.c    | 7 +++----
+ include/linux/device.h | 4 +++-
+ 4 files changed, 17 insertions(+), 5 deletions(-)
 
-Andi
+diff --git a/drivers/base/base.h b/drivers/base/base.h
+index b8bdfe61..fccf954f 100644
+--- a/drivers/base/base.h
++++ b/drivers/base/base.h
+@@ -119,6 +119,11 @@ static inline int driver_match_device(struct device_driver *drv,
+ 	return drv->bus->match ? drv->bus->match(dev, drv) : 1;
+ }
+ 
++extern int device_add_groups(struct device *dev,
++			     const struct attribute_group **groups);
++extern void device_remove_groups(struct device *dev,
++				 const struct attribute_group **groups);
++
+ extern char *make_class_name(const char *name, struct kobject *kobj);
+ 
+ extern int devres_release_all(struct device *dev);
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index d414331b..7b2dc5ba 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -499,6 +499,9 @@ int bus_add_device(struct device *dev)
+ 		error = device_add_attrs(bus, dev);
+ 		if (error)
+ 			goto out_put;
++		error = device_add_groups(dev, bus->dev_groups);
++		if (error)
++			goto out_groups;
+ 		error = sysfs_create_link(&bus->p->devices_kset->kobj,
+ 						&dev->kobj, dev_name(dev));
+ 		if (error)
+@@ -513,6 +516,8 @@ int bus_add_device(struct device *dev)
+ 
+ out_subsys:
+ 	sysfs_remove_link(&bus->p->devices_kset->kobj, dev_name(dev));
++out_groups:
++	device_remove_groups(dev, bus->dev_groups);
+ out_id:
+ 	device_remove_attrs(bus, dev);
+ out_put:
+@@ -575,6 +580,7 @@ void bus_remove_device(struct device *dev)
+ 	sysfs_remove_link(&dev->bus->p->devices_kset->kobj,
+ 			  dev_name(dev));
+ 	device_remove_attrs(dev->bus, dev);
++	device_remove_groups(dev, dev->bus->dev_groups);
+ 	if (klist_node_attached(&dev->p->knode_bus))
+ 		klist_del(&dev->p->knode_bus);
+ 
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index e51c7878..09a99d60 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -491,8 +491,7 @@ static void device_remove_bin_attributes(struct device *dev,
+ 			device_remove_bin_file(dev, &attrs[i]);
+ }
+ 
+-static int device_add_groups(struct device *dev,
+-			     const struct attribute_group **groups)
++int device_add_groups(struct device *dev, const struct attribute_group **groups)
+ {
+ 	int error = 0;
+ 	int i;
+@@ -511,8 +510,8 @@ static int device_add_groups(struct device *dev,
+ 	return error;
+ }
+ 
+-static void device_remove_groups(struct device *dev,
+-				 const struct attribute_group **groups)
++void device_remove_groups(struct device *dev,
++			  const struct attribute_group **groups)
+ {
+ 	int i;
+ 
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 22b546a5..3aec4a68 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -66,6 +66,7 @@ extern void bus_remove_file(struct bus_type *, struct bus_attribute *);
+  * @bus_attrs:	Default attributes of the bus.
+  * @dev_attrs:	Default attributes of the devices on the bus.
+  * @drv_attrs:	Default attributes of the device drivers on the bus.
++ * @dev_groups:	Default attributes of the devices on the bus.
+  * @match:	Called, perhaps multiple times, whenever a new device or driver
+  *		is added for this bus. It should return a nonzero value if the
+  *		given device can be handled by the given driver.
+@@ -104,8 +105,9 @@ struct bus_type {
+ 	const char		*dev_name;
+ 	struct device		*dev_root;
+ 	struct bus_attribute	*bus_attrs;
+-	struct device_attribute	*dev_attrs;
++	struct device_attribute	*dev_attrs;	/* use dev_groups instead */
+ 	struct driver_attribute	*drv_attrs;
++	const struct attribute_group **dev_groups;
+ 
+ 	int (*match)(struct device *dev, struct device_driver *drv);
+ 	int (*uevent)(struct device *dev, struct kobj_uevent_env *env);
+-- 
+1.8.3.rc0.20.gb99dd2e
+
