@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965090Ab3HHNh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:37:29 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:43017 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757826Ab3HHNh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:37:28 -0400
-Message-ID: <52039F11.4010806@gmail.com>
-Date: Thu, 08 Aug 2013 15:37:21 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S965132Ab3HHNjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:39:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43618 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964960Ab3HHNjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 09:39:04 -0400
+Date: Thu, 8 Aug 2013 15:39:02 +0200
+From: David Sterba <dsterba@suse.cz>
+To: Sergei Trofimovich <slyich@gmail.com>
+Cc: linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
+        Josef Bacik <jbacik@fusionio.com>, linux-kernel@vger.kernel.org,
+        Sergei Trofimovich <slyfox@gentoo.org>
+Subject: Re: [PATCH 3/7] btrfs: cleanup: mark
+ 'btrfs_write_and_wait_marked_extents' as static
+Message-ID: <20130808133902.GU5284@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz,
+	Sergei Trofimovich <slyich@gmail.com>, linux-btrfs@vger.kernel.org,
+	Chris Mason <chris.mason@fusionio.com>,
+	Josef Bacik <jbacik@fusionio.com>, linux-kernel@vger.kernel.org,
+	Sergei Trofimovich <slyfox@gentoo.org>
+References: <1375911803-17318-1-git-send-email-slyich@gmail.com>
+ <1375911803-17318-4-git-send-email-slyich@gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Chen Gang <gang.chen@asianux.com>, Kees Cook <keescook@chromium.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, holt@sgi.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] kernel/sys.c: return the current gid when error occurs
-References: <5200AD26.8070701@asianux.com> <5200AD67.1030109@asianux.com> <52015ADB.30408@mit.edu> <20130807162147.GA31460@redhat.com>
-In-Reply-To: <20130807162147.GA31460@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375911803-17318-4-git-send-email-slyich@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/13 18:21, Oleg Nesterov wrote:
-> On 08/06, Andy Lutomirski wrote:
->>
->> I assume that what the man page means is that the return value is
->> whatever fsgid was prior to the call.  On error, fsgid isn't changed, so
->> the return value is still "current".
+On Thu, Aug 08, 2013 at 12:43:19AM +0300, Sergei Trofimovich wrote:
+> From: Sergei Trofimovich <slyfox@gentoo.org>
 > 
-> Probably... Still
+> Found by uselex.rb:
+> > btrfs_write_and_wait_marked_extents: [R]: exported from: fs/btrfs/btrfs.o fs/btrfs/transaction.o fs/btrfs/built-in.o
 > 
-> 	On success, the previous value of fsuid is returned.
-> 	On error, the current value of fsuid is returned.
+> Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+> ---
+>  fs/btrfs/transaction.c | 4 ++--
+>  fs/btrfs/transaction.h | 2 --
+>  2 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> looks confusing. sys_setfsuid() always returns the old value.
-> 
->> (FWIW, this behavior is awful and is probably the cause of a security
->> bug or three, since success and failure are indistinguishable.
-> 
-> At least this all looks strange.
-> 
-> I dunno if we can change this old behaviour. I won't be surprized
-> if someone already uses setfsuid(-1) as getfsuid().
-> 
-> And perhaps the man page should be changed. Add Michael.
+> diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+> index d58cce7..ff891d2 100644
+> --- a/fs/btrfs/transaction.c
+> +++ b/fs/btrfs/transaction.c
+> @@ -837,8 +837,8 @@ int btrfs_wait_marked_extents(struct btrfs_root *root,
+>   * them in one of two extent_io trees.  This is used to make sure all of
+>   * those extents are on disk for transaction or log commit
+>   */
+> -int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
+> -				struct extent_io_tree *dirty_pages, int mark)
+> +static int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
+> +					       struct extent_io_tree *dirty_pages, int mark)
 
-Thanks, Oleg. I've applied the following patch to setfsuid.2
-(and a similar patch to setfsgid.2).
+You may want to run the output through checkpatch.pl and fix obvious
+style violations (line too long).
 
-Cheers,
-
-Michael
-
---- a/man2/setfsuid.2
-+++ b/man2/setfsuid.2
-@@ -67,12 +67,8 @@ matches either the real user ID, effective user ID, saved set-user-ID, or
- the current value of
- .IR fsuid .
- .SH RETURN VALUE
--On success, the previous value of
--.I fsuid
--is returned.
--On error, the current value of
--.I fsuid
--is returned.
-+On both success and failure,
-+this call returns the previous filesystem user ID of the caller.
- .SH VERSIONS
- This system call is present in Linux since version 1.2.
- .\" This system call is present since Linux 1.1.44
-@@ -102,7 +98,16 @@ The glibc
- .BR setfsuid ()
- wrapper function transparently deals with the variation across kernel versions.
- .SH BUGS
--No error messages of any kind are returned to the caller.
-+No error indications of any kind are returned to the caller,
-+and the fact that both successful and unsuccessful calls return
-+the same value makes it impossible to directly determine
-+whether the call succeeded or failed.
-+Instead, the caller must resort to looking at the return value
-+from a further call such as
-+.IR setfsuid(\-1)
-+(which will always fail), in order to determine if a preceding call to
-+.BR setfsuid ()
-+changed the filesystem user ID.
- At the very
- least,
- .B EPERM
-
-
+david
