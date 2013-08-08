@@ -1,84 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724Ab3HHDmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 23:42:14 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:62489 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757259Ab3HHDmL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 23:42:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdZMCO9Cw=SMk4cq8k0+eqYrK=kKsjfAHut1=PXjxS_6jA@mail.gmail.com>
-References: <1374039105-17777-1-git-send-email-sonic.adi@gmail.com>
-	<CACRpkdZMCO9Cw=SMk4cq8k0+eqYrK=kKsjfAHut1=PXjxS_6jA@mail.gmail.com>
-Date: Thu, 8 Aug 2013 11:42:09 +0800
-Message-ID: <CAJxxZ0Nsbh1FFTvJ91G_84pwyEyBJw7VDWd5=gwgYejCg6JWOg@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: pinmux: Don't free pins requested by other devices
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Axel Lin <axel.lin@ingics.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "buildroot-devel@blackfin.uclinux.org" 
-	<buildroot-devel@blackfin.uclinux.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756560Ab3HHDlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 23:41:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:39575 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754778Ab3HHDlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 23:41:04 -0400
+X-IronPort-AV: E=Sophos;i="4.89,836,1367942400"; 
+   d="scan'208";a="8150461"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH part1 0/5] acpica: Split acpi_gbl_root_table_list initialization into two parts.
+Date: Thu, 8 Aug 2013 11:39:31 +0800
+Message-Id: <1375933176-15003-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 11:39:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 11:39:36,
+	Serialize complete at 2013/08/08 11:39:36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+[Problem]
 
-On Thu, Aug 8, 2013 at 12:23 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Jul 17, 2013 at 7:31 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
->
-> I'd like Stephen and Axel to have a look at this as well...
->
->> From: Sonic Zhang <sonic.zhang@analog.com>
->>
->> in pinmux_disable_setting after current device fails to request
->> the same pins.
->>
->> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
->
-> I don't quite understand the patch. Can you provide more context?
->
->> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
->> index 88cc509..9ebcf3b 100644
->> --- a/drivers/pinctrl/pinmux.c
->> +++ b/drivers/pinctrl/pinmux.c
->> @@ -482,13 +482,14 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
->>                                  pins[i]);
->>                         continue;
->>                 }
->> +               /* And release the pins */
->> +               if (desc->mux_usecount &&
->> +                       !strcmp(desc->mux_owner, setting->dev_name))
->> +                       pin_free(pctldev, pins[i], NULL);
->> +
->>                 desc->mux_setting = NULL;
->>         }
->>
->> -       /* And release the pins */
->> -       for (i = 0; i < num_pins; i++)
->> -               pin_free(pctldev, pins[i], NULL);
->> -
->
-> For pinmux_disable_setting() to inspect desc->mux_usecount seems
-> assymetric. This is something pin_free() should do, shouldn't it?
->
-> Should not this codepath be kept and a change made inside pin_free()
-> for the check above instead?
->
+The current Linux cannot migrate pages used by the kerenl because
+of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
+When the pa is changed, we cannot simply update the pagetable and
+keep the va unmodified. So the kernel pages are not migratable.
 
-You can't move this codepath into pin_free(), because the pointer to
-structure pinctrl_setting is not passed through pin_free(). But yes,
-checking desc->mux_usecount is not necessary here, because pin_free()
-has already handled that.
+There are also some other issues will cause the kernel pages not migratable.
+For example, the physical address may be cached somewhere and will be used.
+It is not to update all the caches.
 
-I will remove desc->mux_usecount checking in next patch.
+When doing memory hotplug in Linux, we first migrate all the pages in one
+memory device somewhere else, and then remove the device. But if pages are
+used by the kernel, they are not migratable. As a result, memory used by
+the kernel cannot be hot-removed.
 
-Regards,
+Modifying the kernel direct mapping mechanism is too difficult to do. And
+it may cause the kernel performance down and unstable. So we use the following
+way to do memory hotplug.
 
-Sonic
+
+[What we are doing]
+
+In Linux, memory in one numa node is divided into several zones. One of the
+zones is ZONE_MOVABLE, which the kernel won't use.
+
+In order to implement memory hotplug in Linux, we are going to arrange all
+hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
+
+To do this, we need ACPI's help.
+
+
+[How we do this]
+
+In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
+affinities in SRAT record every memory range in the system, and also, flags
+specifying if the memory range is hotpluggable.
+(Please refer to ACPI spec 5.0 5.2.16)
+
+With the help of SRAT, we have to do the following two things to achieve our
+goal:
+
+1. When doing memory hot-add, allow the users arranging hotpluggable as
+   ZONE_MOVABLE.
+   (This has been done by the MOVABLE_NODE functionality in Linux.)
+
+2. when the system is booting, prevent bootmem allocator from allocating
+   hotpluggable memory for the kernel before the memory initialization
+   finishes.
+   (This is what we are going to do. And we need to do some modification in
+    ACPICA. See below.)
+
+
+[About this patch-set]
+
+There is a bootmem allocator named memblock in Linux. memblock starts to work
+at very early time, and SRAT has not been parsed. So we don't know which memory
+is hotpluggable. In order to prevent memblock from allocating hotpluggable
+memory for the kernel, we need to obtain SRAT memory affinity info earlier.
+
+In the current Linux kernel, the acpica code iterates acpi_gbl_root_table_list,
+and install all the acpi tables into it at boot time. Then, it tries to find
+if there is any override table in global array acpi_tables_addr. If any, reinstall
+the override table into acpi_gbl_root_table_list.
+
+In Linux, global array acpi_tables_addr can be fulfilled by ACPI_INITRD_TABLE_OVERRIDE
+mechanism, which allows users to specify their own ACPI tables in initrd file, and
+override the ones from firmware.
+
+The whole procedure looks like the following:
+
+setup_arch()
+ |->   ......                                     /* Setup direct mapping pagetables */
+ |->acpi_initrd_override()                        /* Store all override tables in acpi_tables_addr. */
+ |...
+ |->acpi_boot_table_init()
+    |->acpi_table_init()
+       |                                                                                  (Linux code)
+......................................................................................................
+       |                                                                                 (ACPICA code)
+       |->acpi_initialize_tables()
+          |->acpi_tb_parse_root_table()           /* Parse RSDT or XSDT, find all tables in firmware */
+             |->for (each item in acpi_gbl_root_table_list)
+                |->acpi_tb_install_table()
+                   |->   ......                   /* Install one single table */
+                   |->acpi_tb_table_override()    /* Override one single table */
+
+It does the table installation and overriding one by one.
+
+In order to find SRAT at earlier time, we want to initialize acpi_gbl_root_table_list
+earlier. But at the same time, keep ACPI_INITRD_TABLE_OVERRIDE procedure works as well.
+
+The basic idea is, split the acpi_gbl_root_table_list initialization procedure into
+two steps:
+1. Install all tables from firmware, not one by one.
+2. Override any table if necessary, not one by one.
+
+After this patch-set, it will work like this:
+
+setup_arch()
+ |->     ......                                   /* Install all tables from firmware (Step 1) */
+ |->     ......                                   /* Try to find if any override SRAT in initrd file, if yes, use it */
+ |->     ......                                   /* Use the SRAT from firmware */
+ |->     ......                                   /* memblock starts to work */
+ |->     ......
+ |->acpi_initrd_override()                        /* Initialize acpi_tables_addr with all override table. */
+ |...
+ |->     ......                                   /* Do the table override work for all tables (Step 2) */
+
+
+In order to achieve this goal, we have to split all the following functions:
+
+ACPICA:
+    acpi_tb_install_table()
+    acpi_tb_parse_root_table()
+    acpi_initialize_tables()
+
+Linux acpi:
+    acpi_table_init()
+    acpi_boot_table_init()
+
+Since ACPICA code is not just used by the Linux, so we should keep the ACPICA
+side interfaces unmodified, and introduce new functions used in Linux.
+
+
+Tang Chen (5):
+  acpi, acpica: Split acpi_tb_install_table() into two parts.
+  acpi, acpica: Call two new functions instead of
+    acpi_tb_install_table() in acpi_tb_parse_root_table().
+  acpi, acpica: Split acpi_tb_parse_root_table() into two parts.
+  acpi, acpica: Call two new functions instead of
+    acpi_tb_parse_root_table() in acpi_initialize_tables().
+  acpi, acpica: Split acpi_initialize_tables() into two parts.
+
+ drivers/acpi/acpica/actables.h |    2 +
+ drivers/acpi/acpica/tbutils.c  |  184 +++++++++++++++++++++++++++++++++++-----
+ drivers/acpi/acpica/tbxface.c  |   69 ++++++++++++++--
+ 3 files changed, 228 insertions(+), 27 deletions(-)
+
