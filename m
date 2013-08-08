@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965507Ab3HHOA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:00:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44517 "EHLO mx2.suse.de"
+	id S965481Ab3HHOAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:00:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44499 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965475Ab3HHOAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:00:54 -0400
+	id S965137Ab3HHOAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:00:52 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 10/27] sched: numa: Slow scan rate if no NUMA hinting faults are being recorded
-Date: Thu,  8 Aug 2013 15:00:22 +0100
-Message-Id: <1375970439-5111-11-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/27] Revert "mm: sched: numa: Delay PTE scanning until a task is scheduled on a new node"
+Date: Thu,  8 Aug 2013 15:00:20 +0100
+Message-Id: <1375970439-5111-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375970439-5111-1-git-send-email-mgorman@suse.de>
 References: <1375970439-5111-1-git-send-email-mgorman@suse.de>
@@ -22,39 +22,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NUMA PTE scanning slows if a NUMA hinting fault was trapped and no page
-was migrated. For long-lived but idle processes there may be no faults
-but the scan rate will be high and just waste CPU. This patch will slow
-the scan rate for processes that are not trapping faults.
+PTE scanning and NUMA hinting fault handling is expensive so commit
+5bca2303 ("mm: sched: numa: Delay PTE scanning until a task is scheduled
+on a new node") deferred the PTE scan until a task had been scheduled on
+another node. The problem is that in the purely shared memory case that
+this may never happen and no NUMA hinting fault information will be
+captured. We are not ruling out the possibility that something better
+can be done here but for now, this patch needs to be reverted and depend
+entirely on the scan_delay to avoid punishing short-lived processes.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ include/linux/mm_types.h | 10 ----------
+ kernel/fork.c            |  3 ---
+ kernel/sched/fair.c      | 18 ------------------
+ kernel/sched/features.h  |  4 +---
+ 4 files changed, 1 insertion(+), 34 deletions(-)
 
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index fb425aa..86f3a56 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -426,20 +426,10 @@ struct mm_struct {
+ 
+ 	/* numa_scan_seq prevents two threads setting pte_numa */
+ 	int numa_scan_seq;
+-
+-	/*
+-	 * The first node a task was scheduled on. If a task runs on
+-	 * a different node than Make PTE Scan Go Now.
+-	 */
+-	int first_nid;
+ #endif
+ 	struct uprobes_state uprobes_state;
+ };
+ 
+-/* first nid will either be a valid NID or one of these values */
+-#define NUMA_PTE_SCAN_INIT	-1
+-#define NUMA_PTE_SCAN_ACTIVE	-2
+-
+ static inline void mm_init_cpumask(struct mm_struct *mm)
+ {
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 403d2bb..61e799e 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -820,9 +820,6 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	mm->pmd_huge_pte = NULL;
+ #endif
+-#ifdef CONFIG_NUMA_BALANCING
+-	mm->first_nid = NUMA_PTE_SCAN_INIT;
+-#endif
+ 	if (!mm_init(mm, tsk))
+ 		goto fail_nomem;
+ 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2f16703..056ddc9 100644
+index cc2ee69..bb5d978 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -975,6 +975,18 @@ void task_numa_work(struct callback_head *work)
+@@ -901,24 +901,6 @@ void task_numa_work(struct callback_head *work)
+ 		return;
  
- out:
  	/*
-+	 * If the whole process was scanned without updates then no NUMA
-+	 * hinting faults are being recorded and scan rate should be lower.
-+	 */
-+	if (mm->numa_scan_offset == 0 && !nr_pte_updates) {
-+		p->numa_scan_period = min(p->numa_scan_period_max,
-+			p->numa_scan_period << 1);
-+
-+		next_scan = now + msecs_to_jiffies(p->numa_scan_period);
-+		mm->numa_next_scan = next_scan;
-+	}
-+
-+	/*
- 	 * It is possible to reach the end of the VMA list but the last few
- 	 * VMAs are not guaranteed to the vma_migratable. If they are not, we
- 	 * would find the !migratable VMA on the next scan but not reset the
+-	 * We do not care about task placement until a task runs on a node
+-	 * other than the first one used by the address space. This is
+-	 * largely because migrations are driven by what CPU the task
+-	 * is running on. If it's never scheduled on another node, it'll
+-	 * not migrate so why bother trapping the fault.
+-	 */
+-	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
+-		mm->first_nid = numa_node_id();
+-	if (mm->first_nid != NUMA_PTE_SCAN_ACTIVE) {
+-		/* Are we running on a new node yet? */
+-		if (numa_node_id() == mm->first_nid &&
+-		    !sched_feat_numa(NUMA_FORCE))
+-			return;
+-
+-		mm->first_nid = NUMA_PTE_SCAN_ACTIVE;
+-	}
+-
+-	/*
+ 	 * Reset the scan period if enough time has gone by. Objective is that
+ 	 * scanning will be reduced if pages are properly placed. As tasks
+ 	 * can enter different phases this needs to be re-examined. Lacking
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index 99399f8..cba5c61 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -63,10 +63,8 @@ SCHED_FEAT(LB_MIN, false)
+ /*
+  * Apply the automatic NUMA scheduling policy. Enabled automatically
+  * at runtime if running on a NUMA machine. Can be controlled via
+- * numa_balancing=. Allow PTE scanning to be forced on UMA machines
+- * for debugging the core machinery.
++ * numa_balancing=
+  */
+ #ifdef CONFIG_NUMA_BALANCING
+ SCHED_FEAT(NUMA,	false)
+-SCHED_FEAT(NUMA_FORCE,	false)
+ #endif
 -- 
 1.8.1.4
 
