@@ -1,139 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757882Ab3HHOlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:41:32 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:50765 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab3HHOla (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:41:30 -0400
-Date: Thu, 8 Aug 2013 11:41:24 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] perf kvm: Update documentation with live command
-Message-ID: <20130808144124.GC2851@ghostprotocols.net>
-References: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
- <1375926999-75129-2-git-send-email-dsahern@gmail.com>
+	id S1757895Ab3HHOn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:43:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46188 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752006Ab3HHOnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:43:55 -0400
+Date: Thu, 8 Aug 2013 16:43:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH 1/3] memcg: limit the number of thresholds per-memcg
+Message-ID: <20130808144351.GD3189@dhcp22.suse.cz>
+References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
+ <20130807132210.GD27006@htj.dyndns.org>
+ <20130807134654.GJ8184@dhcp22.suse.cz>
+ <20130807135818.GG27006@htj.dyndns.org>
+ <20130807143727.GA13279@dhcp22.suse.cz>
+ <20130807220513.GA8068@shutemov.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375926999-75129-2-git-send-email-dsahern@gmail.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20130807220513.GA8068@shutemov.name>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 07, 2013 at 09:56:39PM -0400, David Ahern escreveu:
-> Update perf-kvm documentation with new live subcommand. Add -p/--pid option
-> for perf-kvm-stat-report as well.
-
-Minor nitpicks, that I'm fixing up, below. Applied.
- 
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-> ---
->  tools/perf/Documentation/perf-kvm.txt |   46 +++++++++++++++++++++++++++++++--
->  1 file changed, 44 insertions(+), 2 deletions(-)
+On Thu 08-08-13 01:05:13, Kirill A. Shutemov wrote:
+> On Wed, Aug 07, 2013 at 04:37:27PM +0200, Michal Hocko wrote:
+> > On Wed 07-08-13 09:58:18, Tejun Heo wrote:
+> > > Hello,
+> > > 
+> > > On Wed, Aug 07, 2013 at 03:46:54PM +0200, Michal Hocko wrote:
+> > > > OK, I have obviously misunderstood your concern mentioned in the other
+> > > > email. Could you be more specific what is the DoS scenario which was
+> > > > your concern, then?
+> > > 
+> > > So, let's say the file is write-accessible to !priv user which is
+> > > under reasonable resource limits.  Normally this shouldn't affect priv
+> > > system tools which are monitoring the same event as it shouldn't be
+> > > able to deplete resources as long as the resource control mechanisms
+> > > are configured and functioning properly; however, the memory usage
+> > > event puts all event listeners into a single contiguous table which a
+> > > !priv user can easily expand to a size where the table can no longer
+> > > be enlarged and if a priv system tool or another user tries to
+> > > register event afterwards, it'll fail.  IOW, it creates a shared
+> > > resource which isn't properly provisioned and can be trivially filled
+> > > up making it an easy DoS target.
+> > 
+> > OK, got your point. You are right and I haven't considered the size of
+> > the table and the size restrictions of kmalloc. Thanks for pointing this
+> > out!
+> > ---
+> > From cde8a3333296eddd288780e78803610127401b6a Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Wed, 7 Aug 2013 11:11:22 +0200
+> > Subject: [PATCH] memcg: limit the number of thresholds per-memcg
+> > 
+> > There is no limit for the maximum number of threshold events registered
+> > per memcg. It is even worse that all the events are stored in a
+> > per-memcg table which is enlarged when a new event is registered. This
+> > can lead to the following issue mentioned by Tejun:
+> > "
+> > So, let's say the file is write-accessible to !priv user which is
+> > under reasonable resource limits.  Normally this shouldn't affect priv
+> > system tools which are monitoring the same event as it shouldn't be
+> > able to deplete resources as long as the resource control mechanisms
+> > are configured and functioning properly; however, the memory usage
+> > event puts all event listeners into a single contiguous table which a
+> > !priv user can easily expand to a size where the table can no longer
+> > be enlarged and if a priv system tool or another user tries to
+> > register event afterwards, it'll fail.  IOW, it creates a shared
+> > resource which isn't properly provisioned and can be trivially filled
+> > up making it an easy DoS target.
+> > "
+> > 
+> > Let's be more strict and cap the number of events that might be
+> > registered. MAX_THRESHOLD_EVENTS value is more or less random. The
+> > expectation is that it should be high enough to cover reasonable
+> > usecases while not too high to allow excessive resources consumption.
+> > 1024 events consume something like 16KB which shouldn't be a big deal
+> > and it should be good enough.
 > 
-> diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
-> index 326f2cb..ac84db2 100644
-> --- a/tools/perf/Documentation/perf-kvm.txt
-> +++ b/tools/perf/Documentation/perf-kvm.txt
-> @@ -13,6 +13,7 @@ SYNOPSIS
->  	{top|record|report|diff|buildid-list}
->  'perf kvm' [--host] [--guest] [--guestkallsyms=<path> --guestmodules=<path>
->  	| --guestvmlinux=<path>] {top|record|report|diff|buildid-list|stat}
-> +'perf kvm stat [record|report|live] [<options>]
->  
->  DESCRIPTION
->  -----------
-> @@ -50,6 +51,10 @@ There are a couple of variants of perf kvm:
->    'perf kvm stat report' reports statistical data which includes events
->    handled time, samples, and so on.
->  
-> +  'perf kvm stat live' reports statistical data in a live mode (similar to
-> +  record + report but with statistical data updated live at a given display
-> +  rate).
-> +
->  OPTIONS
->  -------
->  -i::
-> @@ -85,13 +90,50 @@ STAT REPORT OPTIONS
->  --vcpu=<value>::
->         analyze events which occures on this vcpu. (default: all vcpus)
->  
-> ---events=<value>::
-> -       events to be analyzed. Possible values: vmexit, mmio, ioport.
+> Is it correct that you fix one local DoS by introducing a new one?
+> With the page the !priv user can block root from registering a threshold.
+> Is it really the way we want to fix it?
 
-
-> +--event=<value>::
-> +       event to be analyzed. Possible values: vmexit, mmio, ioport.
->         (default: vmexit)
->  -k::
->  --key=<value>::
->         Sorting key. Possible values: sample (default, sort by samples
-
-Here you start, correctly, with a capital letter.
-
->         number), time (sort by average time).
-> +-p::
-> +--pid=::
-> +    Analyze events only for given process ID(s) (comma separated list).
-> +
-> +STAT LIVE OPTIONS
-> +-----------------
-> +-d::
-> +--display::
-> +        Time in seconds between display updates
-> +
-> +-m::
-> +--mmap-pages=::
-> +    Number of mmap data pages. Must be a power of two.
-> +
-> +-a::
-> +--all-cpus::
-> +        System-wide collection from all CPUs.
-> +
-> +-p::
-> +--pid=::
-> +    Analyze events only for given process ID(s) (comma separated list).
-> +
-> +--vcpu=<value>::
-> +       analyze events which occures on this vcpu. (default: all vcpus)
-
-Here you don't.
-
-> +
-> +
-> +--event=<value>::
-> +       event to be analyzed. Possible values: vmexit, mmio, ioport.
-> +       (default: vmexit)
-
-Ditto
-
-> +-k::
-> +--key=<value>::
-> +       Sorting key. Possible values: sample (default, sort by samples
-> +       number), time (sort by average time).
-> +
-> +--duration=<value>::
-> +       Show events other than HLT that take longer than duration usecs.
->  
->  SEE ALSO
->  --------
-> -- 
-> 1.7.10.1
+OK, I will think about it some more.
+-- 
+Michal Hocko
+SUSE Labs
