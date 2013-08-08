@@ -1,36 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934279Ab3HHNzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:55:48 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:60631 "EHLO hydra.sisk.pl"
+	id S965474Ab3HHN5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:57:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51600 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933145Ab3HHNzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:55:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/35] cpufreq: Introduce cpufreq_table_validate_and_show()
-Date: Thu, 08 Aug 2013 16:06:04 +0200
-Message-ID: <2044456.sREencGa9X@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohponFNLjUBaXc3vsFW+Up3PamqPeFF2gjG06+qTSYawTjhw@mail.gmail.com>
-References: <cover.1375964117.git.viresh.kumar@linaro.org> <12886440.vo6SHbG01c@vostro.rjw.lan> <CAKohponFNLjUBaXc3vsFW+Up3PamqPeFF2gjG06+qTSYawTjhw@mail.gmail.com>
+	id S965097Ab3HHN5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 09:57:20 -0400
+From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Joe Lawrence <Joe.Lawrence@stratus.com>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>
+Subject: [PATCH] PCI: avoid NULL deref in alloc_pcie_link_state
+Date: Thu,  8 Aug 2013 15:57:07 +0200
+Message-Id: <1375970227-14794-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 08, 2013 07:23:36 PM Viresh Kumar wrote:
-> On 8 August 2013 19:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > I'm not going to take this for 3.12, sorry.  Please resend in the 3.12-rc1 /
-> > 3.12-rc2 time frame.
-> 
-> Okay.. By that time I will accumulate all reviews/Acks for it
-> and the next patchset that I will send.
+PCIe switch can be connected directly to the PCIe root complex in QEMU;
+ASPM does not expect this topology and dereferences NULL pointer when
+initializing.
 
-OK
+Downstream port can be also connected to the root complex without
+upstream one, so code checks for both, otherwise they dereference NULL
+on line drivers/pci/pcie/aspm.c:530 (alloc_pcie_link_state+13):
+  		parent = pdev->bus->parent->self->link_state;
+"pdev->bus->parent->self == NULL" if upstream port is connected directly
+to the root bus and "pdev->bus->parent == NULL" in the second case.
+
+v1 -> v2: (https://lkml.org/lkml/2013/6/19/753)
+ - Initialization is aborted in pcie_aspm_init_link_state, where other
+   special cases are being handled
+ - pci_is_root_bus is used
+ - Warning is printed
+
+Reproducer for "downstream -- root" and "downstream -- upstream -- root"
+(used qemu-kvm 1.5, q35 machine type might be missing on older ones)
+
+  for parent in pcie.0 upstream; do
+   qemu-kvm -m 128 -M q35 -nographic -no-reboot \
+     -device x3130-upstream,bus=pcie.0,id=upstream \
+     -device xio3130-downstream,bus=$parent,id=downstream,chassis=1 \
+     -device virtio-blk-pci,bus=downstream,id=virtio-zero,drive=zero \
+     -drive  file=/dev/zero,id=zero,format=raw \
+     -kernel bzImage -append "console=ttyS0 panic=3" # pcie_aspm=off
+  done
+
+ASPM in QEMU works if we connect upstream through root port
+  -device ioh3420,bus=pcie.0,id=root.0 \
+  -device x3130-upstream,bus=root.0,id=upstream
+
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+---
+ drivers/pci/pcie/aspm.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index 403a443..209cd7f 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -570,6 +570,15 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
+ 	    pdev->bus->self)
+ 		return;
+ 
++	/* We require at least two ports between downstream and root bus */
++	if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM &&
++	    (pci_is_root_bus(pdev->bus) ||
++	     pci_is_root_bus(pdev->bus->parent))) {
++		dev_warn(&pdev->dev, "ASPM disabled"
++		                     " (connected directly to root bus)\n");
++		return;
++	}
++
+ 	down_read(&pci_bus_sem);
+ 	if (list_empty(&pdev->subordinate->devices))
+ 		goto out;
+-- 
+1.8.3.1
 
