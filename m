@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966911Ab3HHXVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 19:21:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41110 "EHLO
+	id S966922Ab3HHXVh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 19:21:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41125 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966455Ab3HHXV1 (ORCPT
+	with ESMTP id S966455Ab3HHXVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 19:21:27 -0400
-Date: Thu, 8 Aug 2013 16:21:09 -0700
-From: tip-bot for Srivatsa Vaddagiri <tipbot@zytor.com>
-Message-ID: <tip-20a89c88f7d2458e12f66d7850cf17deec7daa1c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, gleb@redhat.com, raghavendra.kt@linux.vnet.ibm.com,
-        suzuki@in.ibm.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, gleb@redhat.com,
-        raghavendra.kt@linux.vnet.ibm.com, suzuki@in.ibm.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20130806114501.20643.5734.sendpatchset@codeblue.in.ibm.com>
-References: <20130806114501.20643.5734.sendpatchset@codeblue.in.ibm.com>
+	Thu, 8 Aug 2013 19:21:34 -0400
+Date: Thu, 8 Aug 2013 16:20:18 -0700
+From: tip-bot for Jeremy Fitzhardinge <tipbot@zytor.com>
+Message-ID: <tip-00de643f44ed84156e18f8b9afa8613d3b37a298@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        konrad.wilk@oracle.com, jeremy@goop.org,
+        raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
+        hpa@linux.intel.com, attilio.rao@citrix.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, jeremy@goop.org,
+        raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
+        hpa@linux.intel.com, attilio.rao@citrix.com
+In-Reply-To: <20130806114313.20643.60805.sendpatchset@codeblue.in.ibm.com>
+References: <20130806114313.20643.60805.sendpatchset@codeblue.in.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/spinlocks] kvm guest :
-  Add configuration support to enable debug information for KVM Guests
-Git-Commit-ID: 20a89c88f7d2458e12f66d7850cf17deec7daa1c
+Subject: [tip:x86/spinlocks] x86, pvticketlock:
+  When paravirtualizing ticket locks, increment by 2
+Git-Commit-ID: 00de643f44ed84156e18f8b9afa8613d3b37a298
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,48 +32,107 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 08 Aug 2013 16:21:15 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 08 Aug 2013 16:20:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  20a89c88f7d2458e12f66d7850cf17deec7daa1c
-Gitweb:     http://git.kernel.org/tip/20a89c88f7d2458e12f66d7850cf17deec7daa1c
-Author:     Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-AuthorDate: Tue, 6 Aug 2013 17:15:01 +0530
+Commit-ID:  00de643f44ed84156e18f8b9afa8613d3b37a298
+Gitweb:     http://git.kernel.org/tip/00de643f44ed84156e18f8b9afa8613d3b37a298
+Author:     Jeremy Fitzhardinge <jeremy@goop.org>
+AuthorDate: Tue, 6 Aug 2013 17:13:13 +0530
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 8 Aug 2013 16:07:30 -0700
+CommitDate: Thu, 8 Aug 2013 16:06:50 -0700
 
-kvm guest : Add configuration support to enable debug information for KVM Guests
+x86, pvticketlock: When paravirtualizing ticket locks, increment by 2
 
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20130806114501.20643.5734.sendpatchset@codeblue.in.ibm.com
-Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
+Increment ticket head/tails by 2 rather than 1 to leave the LSB free
+to store a "is in slowpath state" bit.  This halves the number
+of possible CPUs for a given ticket size, but this shouldn't matter
+in practice - kernels built for 32k+ CPU systems are probably
+specially built for the hardware rather than a generic distro
+kernel.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Link: http://lkml.kernel.org/r/20130806114313.20643.60805.sendpatchset@codeblue.in.ibm.com
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Tested-by: Attilio Rao <attilio.rao@citrix.com>
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Acked-by: Gleb Natapov <gleb@redhat.com>
 Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/Kconfig | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/x86/include/asm/spinlock.h       | 10 +++++-----
+ arch/x86/include/asm/spinlock_types.h | 10 +++++++++-
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 112e712..b1fb846 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -657,6 +657,15 @@ config KVM_GUEST
- 	  underlying device model, the host provides the guest with
- 	  timing infrastructure such as time of day, and system time
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 7442410..04a5cd5 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -78,7 +78,7 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
+  */
+ static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
+ {
+-	register struct __raw_tickets inc = { .tail = 1 };
++	register struct __raw_tickets inc = { .tail = TICKET_LOCK_INC };
  
-+config KVM_DEBUG_FS
-+	bool "Enable debug information for KVM Guests in debugfs"
-+	depends on KVM_GUEST && DEBUG_FS
-+	default n
-+	---help---
-+	  This option enables collection of various statistics for KVM guest.
-+	  Statistics are displayed in debugfs filesystem. Enabling this option
-+	  may incur significant overhead.
+ 	inc = xadd(&lock->tickets, inc);
+ 
+@@ -104,7 +104,7 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ 	if (old.tickets.head != old.tickets.tail)
+ 		return 0;
+ 
+-	new.head_tail = old.head_tail + (1 << TICKET_SHIFT);
++	new.head_tail = old.head_tail + (TICKET_LOCK_INC << TICKET_SHIFT);
+ 
+ 	/* cmpxchg is a full barrier, so nothing can move before it */
+ 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
+@@ -112,9 +112,9 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ 
+ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
+ {
+-	__ticket_t next = lock->tickets.head + 1;
++	__ticket_t next = lock->tickets.head + TICKET_LOCK_INC;
+ 
+-	__add(&lock->tickets.head, 1, UNLOCK_LOCK_PREFIX);
++	__add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX);
+ 	__ticket_unlock_kick(lock, next);
+ }
+ 
+@@ -129,7 +129,7 @@ static inline int arch_spin_is_contended(arch_spinlock_t *lock)
+ {
+ 	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
+ 
+-	return (__ticket_t)(tmp.tail - tmp.head) > 1;
++	return (__ticket_t)(tmp.tail - tmp.head) > TICKET_LOCK_INC;
+ }
+ #define arch_spin_is_contended	arch_spin_is_contended
+ 
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index 83fd3c7..e96fcbd 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -3,7 +3,13 @@
+ 
+ #include <linux/types.h>
+ 
+-#if (CONFIG_NR_CPUS < 256)
++#ifdef CONFIG_PARAVIRT_SPINLOCKS
++#define __TICKET_LOCK_INC	2
++#else
++#define __TICKET_LOCK_INC	1
++#endif
 +
- source "arch/x86/lguest/Kconfig"
++#if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
+ typedef u8  __ticket_t;
+ typedef u16 __ticketpair_t;
+ #else
+@@ -11,6 +17,8 @@ typedef u16 __ticket_t;
+ typedef u32 __ticketpair_t;
+ #endif
  
- config PARAVIRT_TIME_ACCOUNTING
++#define TICKET_LOCK_INC	((__ticket_t)__TICKET_LOCK_INC)
++
+ #define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
+ 
+ typedef struct arch_spinlock {
