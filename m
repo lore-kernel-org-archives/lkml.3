@@ -1,122 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933682Ab3HHB44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 21:56:56 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:38241 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab3HHB4v (ORCPT
+	id S933737Ab3HHB5c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 21:57:32 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:61348 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294Ab3HHB5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 21:56:51 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: [PATCH 2/2] perf kvm: Update documentation with live command
-Date: Wed,  7 Aug 2013 21:56:39 -0400
-Message-Id: <1375926999-75129-2-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
-References: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
+	Wed, 7 Aug 2013 21:57:30 -0400
+Date: Wed, 7 Aug 2013 22:03:42 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Stephen Boyd <sboyd@codeaurora.org>
+cc: Will Deacon <will.deacon@arm.com>, Vince Weaver <vincent.weaver@maine.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
+Subject: Re: perf,arm -- another (different) fuzzer oops
+In-Reply-To: <5202D5B0.9020107@codeaurora.org>
+Message-ID: <alpine.DEB.2.10.1308072157320.16962@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1308071611290.14098@vincent-weaver-1.um.maine.edu> <20130807223129.GA17118@mudshark.cambridge.arm.com> <5202D5B0.9020107@codeaurora.org>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-763390395-1375927430=:16962"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update perf-kvm documentation with new live subcommand. Add -p/--pid option
-for perf-kvm-stat-report as well.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
----
- tools/perf/Documentation/perf-kvm.txt |   46 +++++++++++++++++++++++++++++++--
- 1 file changed, 44 insertions(+), 2 deletions(-)
+--8323329-763390395-1375927430=:16962
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 
-diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
-index 326f2cb..ac84db2 100644
---- a/tools/perf/Documentation/perf-kvm.txt
-+++ b/tools/perf/Documentation/perf-kvm.txt
-@@ -13,6 +13,7 @@ SYNOPSIS
- 	{top|record|report|diff|buildid-list}
- 'perf kvm' [--host] [--guest] [--guestkallsyms=<path> --guestmodules=<path>
- 	| --guestvmlinux=<path>] {top|record|report|diff|buildid-list|stat}
-+'perf kvm stat [record|report|live] [<options>]
- 
- DESCRIPTION
- -----------
-@@ -50,6 +51,10 @@ There are a couple of variants of perf kvm:
-   'perf kvm stat report' reports statistical data which includes events
-   handled time, samples, and so on.
- 
-+  'perf kvm stat live' reports statistical data in a live mode (similar to
-+  record + report but with statistical data updated live at a given display
-+  rate).
-+
- OPTIONS
- -------
- -i::
-@@ -85,13 +90,50 @@ STAT REPORT OPTIONS
- --vcpu=<value>::
-        analyze events which occures on this vcpu. (default: all vcpus)
- 
----events=<value>::
--       events to be analyzed. Possible values: vmexit, mmio, ioport.
-+--event=<value>::
-+       event to be analyzed. Possible values: vmexit, mmio, ioport.
-        (default: vmexit)
- -k::
- --key=<value>::
-        Sorting key. Possible values: sample (default, sort by samples
-        number), time (sort by average time).
-+-p::
-+--pid=::
-+    Analyze events only for given process ID(s) (comma separated list).
-+
-+STAT LIVE OPTIONS
-+-----------------
-+-d::
-+--display::
-+        Time in seconds between display updates
-+
-+-m::
-+--mmap-pages=::
-+    Number of mmap data pages. Must be a power of two.
-+
-+-a::
-+--all-cpus::
-+        System-wide collection from all CPUs.
-+
-+-p::
-+--pid=::
-+    Analyze events only for given process ID(s) (comma separated list).
-+
-+--vcpu=<value>::
-+       analyze events which occures on this vcpu. (default: all vcpus)
-+
-+
-+--event=<value>::
-+       event to be analyzed. Possible values: vmexit, mmio, ioport.
-+       (default: vmexit)
-+
-+-k::
-+--key=<value>::
-+       Sorting key. Possible values: sample (default, sort by samples
-+       number), time (sort by average time).
-+
-+--duration=<value>::
-+       Show events other than HLT that take longer than duration usecs.
- 
- SEE ALSO
- --------
--- 
-1.7.10.1
+On Wed, 7 Aug 2013, Stephen Boyd wrote:
 
+> Is config some really big value? It looks like config (or more
+> specifically event->attr.config) is ecececec which is larger than 9
+> (PERF_COUNT_HW_MAX). I'm fairly certain r4 is event->attr.type
+> (PERF_TYPE_HARDWARE) and so we're out of bounds on that array access in
+> armpmu_map_hw_event(). Does the below patch fix that?
+
+Yes, it was big values in attr.config.  I managed to bisect down to a
+simple test case, which is attached.  Oddly the test case has two events
+before the oops happens; I should double check to make sure both are 
+really necessary.
+
+I'll try this patch and see if it fixes things, thanks.
+
+Vince
+
+
+--8323329-763390395-1375927430=:16962
+Content-Type: TEXT/x-csrc; name=arm_perf_new_oops.c
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.DEB.2.10.1308072203420.16962@vincent-weaver-1.um.maine.edu>
+Content-Description: 
+Content-Disposition: attachment; filename=arm_perf_new_oops.c
+
+LyogbG9nX3RvX2NvZGUgb3V0cHV0IGZyb20gLi9uZXdfb29wcy5iaXNlY3Qx
+NSAqLw0KLyogYnkgVmluY2UgV2VhdmVyIDx2aW5jZW50LndlYXZlciBfYXRf
+IG1haW5lLmVkdSAqLw0KDQojaW5jbHVkZSA8c3RkaW8uaD4NCiNpbmNsdWRl
+IDx1bmlzdGQuaD4NCiNpbmNsdWRlIDxzdHJpbmcuaD4NCiNpbmNsdWRlIDxz
+aWduYWwuaD4NCiNpbmNsdWRlIDxzeXMvbW1hbi5oPg0KI2luY2x1ZGUgPHN5
+cy9zeXNjYWxsLmg+DQojaW5jbHVkZSA8c3lzL2lvY3RsLmg+DQojaW5jbHVk
+ZSA8c3lzL3ByY3RsLmg+DQojaW5jbHVkZSA8bGludXgvaHdfYnJlYWtwb2lu
+dC5oPg0KI2luY2x1ZGUgPGxpbnV4L3BlcmZfZXZlbnQuaD4NCg0KaW50IGZk
+WzEwMjRdOw0Kc3RydWN0IHBlcmZfZXZlbnRfYXR0ciBwZVsxMDI0XTsNCmNo
+YXIgKm1tYXBfcmVzdWx0WzEwMjRdOw0KI2RlZmluZSBNQVhfUkVBRF9TSVpF
+IDY1NTM2DQpzdGF0aWMgbG9uZyBsb25nIGRhdGFbTUFYX1JFQURfU0laRV07
+DQoNCmludCBmb3JrZWRfcGlkOw0KDQppbnQgcGVyZl9ldmVudF9vcGVuKHN0
+cnVjdCBwZXJmX2V2ZW50X2F0dHIgKmh3X2V2ZW50X3VwdHIsDQoJcGlkX3Qg
+cGlkLCBpbnQgY3B1LCBpbnQgZ3JvdXBfZmQsIHVuc2lnbmVkIGxvbmcgZmxh
+Z3MpIHsNCg0KCXJldHVybiBzeXNjYWxsKF9fTlJfcGVyZl9ldmVudF9vcGVu
+LGh3X2V2ZW50X3VwdHIsIHBpZCwgY3B1LA0KCQlncm91cF9mZCwgZmxhZ3Mp
+Ow0KfQ0KDQppbnQgbWFpbihpbnQgYXJnYywgY2hhciAqKmFyZ3YpIHsNCi8q
+IDEgKi8NCg0KCW1lbXNldCgmcGVbMF0sMCxzaXplb2Yoc3RydWN0IHBlcmZf
+ZXZlbnRfYXR0cikpOw0KCXBlWzBdLnR5cGU9UEVSRl9UWVBFX0hBUkRXQVJF
+Ow0KCXBlWzBdLmNvbmZpZz0weDJjYzYxMDA2Ow0KCXBlWzBdLnNhbXBsZV90
+eXBlPTA7IC8qIDAgKi8NCglwZVswXS5yZWFkX2Zvcm1hdD1QRVJGX0ZPUk1B
+VF9UT1RBTF9USU1FX0VOQUJMRUR8UEVSRl9GT1JNQVRfVE9UQUxfVElNRV9S
+VU5OSU5HfFBFUkZfRk9STUFUX0dST1VQOyAvKiBiICovDQoJcGVbMF0uZGlz
+YWJsZWQ9MTsNCglwZVswXS5leGNsdXNpdmU9MTsNCglwZVswXS5leGNsdWRl
+X2lkbGU9MTsNCglwZVswXS5jb21tPTE7DQoJcGVbMF0uaW5oZXJpdF9zdGF0
+PTE7DQoJcGVbMF0uZW5hYmxlX29uX2V4ZWM9MTsNCglwZVswXS5wcmVjaXNl
+X2lwPTA7IC8qIGFyYml0cmFyeSBza2lkICovDQoJcGVbMF0ubW1hcF9kYXRh
+PTE7DQoJcGVbMF0uc2FtcGxlX2lkX2FsbD0xOw0KCXBlWzBdLmV4Y2x1ZGVf
+aG9zdD0xOw0KCXBlWzBdLmV4Y2x1ZGVfZ3Vlc3Q9MTsNCglwZVswXS53YWtl
+dXBfZXZlbnRzPTIxNDc0ODM2NDc7DQoJcGVbMF0uYnBfdHlwZT1IV19CUkVB
+S1BPSU5UX0VNUFRZOw0KCXBlWzBdLmJyYW5jaF9zYW1wbGVfdHlwZT0yMTQ3
+NDgzNjQ4VUxMOw0KDQoJZmRbMF09cGVyZl9ldmVudF9vcGVuKCZwZVswXSww
+LDAsLTEsUEVSRl9GTEFHX0ZEX05PX0dST1VQIC8qMSovICk7DQoNCi8qIDIg
+Ki8NCg0KCW1lbXNldCgmcGVbMV0sMCxzaXplb2Yoc3RydWN0IHBlcmZfZXZl
+bnRfYXR0cikpOw0KCXBlWzFdLnR5cGU9UEVSRl9UWVBFX1JBVzsNCglwZVsx
+XS5zaXplPTgwOw0KCXBlWzFdLmNvbmZpZz0weGI2YzhhZDk5Ow0KCXBlWzFd
+LnNhbXBsZV90eXBlPTA7IC8qIDAgKi8NCglwZVsxXS5yZWFkX2Zvcm1hdD1Q
+RVJGX0ZPUk1BVF9UT1RBTF9USU1FX0VOQUJMRUR8UEVSRl9GT1JNQVRfSUR8
+MHg4MDAwMDAxMFVMTDsgLyogODAwMDAwMTUgKi8NCglwZVsxXS5pbmhlcml0
+PTE7DQoJcGVbMV0uZXhjbHVkZV91c2VyPTE7DQoJcGVbMV0uZXhjbHVkZV9o
+dj0xOw0KCXBlWzFdLm1tYXA9MTsNCglwZVsxXS5pbmhlcml0X3N0YXQ9MTsN
+CglwZVsxXS50YXNrPTE7DQoJcGVbMV0ucHJlY2lzZV9pcD0zOyAvKiBtdXN0
+IGhhdmUgemVybyBza2lkICovDQoJcGVbMV0uc2FtcGxlX2lkX2FsbD0xOw0K
+CXBlWzFdLmV4Y2x1ZGVfZ3Vlc3Q9MTsNCglwZVsxXS53YWtldXBfZXZlbnRz
+PTA7DQoJcGVbMV0uYnBfdHlwZT1IV19CUkVBS1BPSU5UX0VNUFRZOw0KDQoJ
+ZmRbMV09cGVyZl9ldmVudF9vcGVuKCZwZVsxXSwwLDAsLTEsUEVSRl9GTEFH
+X0ZEX05PX0dST1VQIC8qMSovICk7DQoNCgkvKiBSZXBsYXllZCAyIHN5c2Nh
+bGxzICovDQoJcmV0dXJuIDA7DQp9DQo=
+
+--8323329-763390395-1375927430=:16962--
