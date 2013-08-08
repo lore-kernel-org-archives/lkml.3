@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965960Ab3HHRXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 13:23:43 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:49493 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757910Ab3HHRXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 13:23:42 -0400
-Message-ID: <1375982622.2424.147.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] Staging: BCM: Removed more whitespace/Errors
-From: Joe Perches <joe@perches.com>
-To: Paul McQuade <paulmcquad@gmail.com>
-Cc: gregkh@linuxfoundation.org, Linux-Devel <devel@driverdev.osuosl.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 08 Aug 2013 10:23:42 -0700
-In-Reply-To: <5203CF75.802@gmail.com>
-References: <5203CF75.802@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S965982Ab3HHRZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 13:25:35 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47821 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965673Ab3HHRZd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 13:25:33 -0400
+Message-ID: <5203D487.5020507@wwwdotorg.org>
+Date: Thu, 08 Aug 2013 11:25:27 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [PATCH 1/2] include: dt-binding: input: create a DT header defining
+ key codes.
+References: <1375798370-2231-1-git-send-email-ldewangan@nvidia.com> <52014E50.6030508@wwwdotorg.org> <5203D138.4030107@nvidia.com> <20130808171331.GA6960@core.coreip.homeip.net>
+In-Reply-To: <20130808171331.GA6960@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please send your changes with an email client
-that does not require attaching patches.
+On 08/08/2013 11:13 AM, Dmitry Torokhov wrote:
+> On Thu, Aug 08, 2013 at 10:41:20PM +0530, Laxman Dewangan wrote:
+>> On Wednesday 07 August 2013 12:58 AM, Stephen Warren wrote:
+>>> (CC'ing DT bindings maintainers too, hence quoting a bit of the patch)
+>>>
+>>> On 08/06/2013 08:12 AM, Laxman Dewangan wrote:
+>>>> Many of Key device tree bindings uses the constant number as key code
+>>>> which matches with kernel header key code and then comment as follows
+>>>> for reference/better readability:
+>>>> 	linux,code = <102>; /* KEY_HOME */
+>>>>
+>>>> Create a DT header which defines all the key code so that DT key bindings
+>>>> can use it as follows:
+>>>> 	linux,code = <KEY_HOME>;
+...
+> I am uncomfortable that we are duplicating the whole list of keycodes
+> here. Do you think we could split keycodes and other event codes from
+> include/uapi/linux/input.h into include/uapi/linux/input-events.h and
+> unclude it directly into DTS?
 
-On Thu, 2013-08-08 at 18:03 +0100, Paul McQuade wrote:
-
-> -#define MAXIMUM_USB_TCB      128
-> -#define MAXIMUM_USB_RCB         128
-> +#define MAXIMUM_USB_TCB                        128
-> +#define MAXIMUM_USB_RCB                        128
->  
->  #define MAX_BUFFERS_PER_QUEUE   256
->  
->  #define MAX_DATA_BUFFER_SIZE    2048
- 
-If you're going to bother to change whitespace
-here, please align these like the others.
-
-There are also many style defect like:
-
-+               } else {
-+                               BCM_DEBUG_PRINT(Adapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Rx URB has got cancelled. status 
-
-so I stopped looking.
+Device tree files can only include headers in include/dt-bindings.
+Eventually/soon, all the DT files and the headers in the dt-bindings/
+directory will be split out into a separate git tree, which does not
+have access to include/uapi, or indeed any other Linux kernel header files.
 
