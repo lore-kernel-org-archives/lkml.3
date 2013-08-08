@@ -1,73 +1,473 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965854Ab3HHPVo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 11:21:44 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59922 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965802Ab3HHPVm (ORCPT
+	id S965851Ab3HHPXY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 11:23:24 -0400
+Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:43627 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965811Ab3HHPXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 11:21:42 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5203B78C.7010101@roeck-us.net>
-Date: Thu, 08 Aug 2013 08:21:48 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 8 Aug 2013 11:23:22 -0400
+Message-ID: <5203B7DA.8030706@overkiz.com>
+Date: Thu, 08 Aug 2013 17:23:06 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Wei Ni <wni@nvidia.com>, swarren@wwwdotorg.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        linux-tegra@vger.kernel.org, MLongnecker@nvidia.com,
-        khali@linux-fr.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
-References: <1375944991-29182-1-git-send-email-wni@nvidia.com> <1375944991-29182-2-git-send-email-wni@nvidia.com> <20130808110136.GA6427@sirena.org.uk> <52038035.7030803@roeck-us.net> <20130808130840.GC6427@sirena.org.uk>
-In-Reply-To: <20130808130840.GC6427@sirena.org.uk>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Richard Genoud <richard.genoud@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH] ARM: at91/dt: split sam9x5 peripheral definitions
+References: <1375870466-1093-1-git-send-email-b.brezillon@overkiz.com> <20130808140722.GA18627@ns203013.ovh.net>
+In-Reply-To: <20130808140722.GA18627@ns203013.ovh.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 13308418374750271660
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 06:08 AM, Mark Brown wrote:
-> On Thu, Aug 08, 2013 at 04:25:41AM -0700, Guenter Roeck wrote:
->> On 08/08/2013 04:01 AM, Mark Brown wrote:
->
->>> That said if you *are* going to do this you should request the
->>> regulator using devm_regulator_get_optional(), this is intended to
->>> support things that don't need regulators (though that's not the case
->>> here).
->
->> The lm90 driver works perfectly fine without regulator.
->
-> I'd be most surprised if the device worked without power, if the driver
-> fails to get and enable a regulator for it then that's not great
-> (especially if it does so silently).
->
-Correct, but it appears that the driver magically worked for a long time
-without it.
+Hello Jean-Christophe,
 
-Is it guaranteed that the driver keeps working for all cases where
-regulator support is enabled in the kernel, and where it used to work
-so far without mandating the existence of this specific regulator ?
-My main concern is having to deal with complaints that the driver stopped
-working for no good reason.
-
-In this context, is it common practice to name such regulators "vdd"
-or similar ? What if there are multiple LM90 or compatible chips
-in a system, connected to different power rails ? Who determines
-if the regulator is supposed to be named "vdd" or "vcc" or anything
-else, and to which power rails it is actually connected ? How can
-and does one guarantee that "vdd" is the correct regulator to use
-for all systems ? What if some other driver requests "vdd", but the chip
-it supports happens to be connected to a different power rail ?
-
-Sorry for my ignorance in that matter. I did browse through Documentation/power,
-but did not find a clear answer.
-
-> Note that the regulator API is written to stub itself out if not
-> enabled, the code should be able to assume that it's there.
+On 08/08/2013 16:07, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 12:14 Wed 07 Aug     , Boris BREZILLON wrote:
+>> This patch splits the sam9x5 peripheral definitions into:
+>> - a common base for all sam9x5 SoCs (at91sam9x5.dtsi)
+>> - several optional peripheral definitions which will be included by specific
+>>    sam9x5 SoCs (at91sam9x5_'periph name'.dtsi)
+>>
+>> This provides a better representation of the real hardware (drop unneeded
+>> dt nodes) and avoids future peripheral id conflict (lcdc and isi both use
+>> peripheral id 25).
+> I really don't like this
 >
-I am aware of that; this is why the driver should not dump an error message
-if the function returns NULL and bail out, as it did originally.
+> the mapping is soc specific (here familly) so I does not see any advantage
+> except move files so NO for me
+Let me explain in detail why I did that.
 
-Guenter
+This separation was part of the "at91 common clk" series and was here to 
+avoid the
+definition of unavailable clocks or definition of clocks with the same 
+id (which may result
+in bad clk registration).
+If we keep all the definitions in one .dtsi file (even the one which are 
+not really available),
+I may need to add a new property to each peripheral (and system) clk 
+node to specify the
+availabilty of the clock (something similar to 'status="disabled"' in 
+device nodes).
+
+As explained to Thomas, I thought device tree was here to give a real 
+description of the
+hardware parts (in case of sam9x5.dtsi the description of the common 
+parts of sam9x5 SoC
+family).
+If you define peripherals that are not present in a SoC (lets say macb0 
+for sam9g15) you break
+this rule.
+
+I'm not telling I have the right approach here, I'm just trying to 
+understand what should be done and
+what should not.
+
+Finally, I'd like to point that the memory footprint of the dtb file 
+generated after this patch has been
+applied is bit smaller (even if it won't make a real difference):
+
+with this patch:
+
+15937 arch/arm/boot/dts/at91-ariag25.dtb
+15860 arch/arm/boot/dts/at91sam9g15ek.dtb
+16905 arch/arm/boot/dts/at91sam9g25ek.dtb
+16473 arch/arm/boot/dts/at91sam9g35ek.dtb
+17341 arch/arm/boot/dts/at91sam9x25ek.dtb
+16473 arch/arm/boot/dts/at91sam9x35ek.dtb
+
+without this patch:
+
+16077 arch/arm/boot/dts/at91-ariag25.dtb
+16824 arch/arm/boot/dts/at91sam9g15ek.dtb
+16849 arch/arm/boot/dts/at91sam9g25ek.dtb
+16849 arch/arm/boot/dts/at91sam9g35ek.dtb
+15017 arch/arm/boot/dts/at91sam9m10g45ek.dtb
+17145 arch/arm/boot/dts/at91sam9x25ek.dtb
+16849 arch/arm/boot/dts/at91sam9x35ek.dtb
+
+Best Regards,
+
+Boris
+
+> Best Regards,
+> J.
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>> ---
+>>   arch/arm/boot/dts/at91sam9g25.dtsi       |    2 +
+>>   arch/arm/boot/dts/at91sam9g35.dtsi       |    1 +
+>>   arch/arm/boot/dts/at91sam9x25.dtsi       |   24 ++---------
+>>   arch/arm/boot/dts/at91sam9x35.dtsi       |    1 +
+>>   arch/arm/boot/dts/at91sam9x5.dtsi        |   67 ------------------------------
+>>   arch/arm/boot/dts/at91sam9x5_macb0.dtsi  |   56 +++++++++++++++++++++++++
+>>   arch/arm/boot/dts/at91sam9x5_macb1.dtsi  |   44 ++++++++++++++++++++
+>>   arch/arm/boot/dts/at91sam9x5_usart3.dtsi |   51 +++++++++++++++++++++++
+>>   8 files changed, 158 insertions(+), 88 deletions(-)
+>>   create mode 100644 arch/arm/boot/dts/at91sam9x5_macb0.dtsi
+>>   create mode 100644 arch/arm/boot/dts/at91sam9x5_macb1.dtsi
+>>   create mode 100644 arch/arm/boot/dts/at91sam9x5_usart3.dtsi
+>>
+>> diff --git a/arch/arm/boot/dts/at91sam9g25.dtsi b/arch/arm/boot/dts/at91sam9g25.dtsi
+>> index b4ec6fe..17b8799 100644
+>> --- a/arch/arm/boot/dts/at91sam9g25.dtsi
+>> +++ b/arch/arm/boot/dts/at91sam9g25.dtsi
+>> @@ -7,6 +7,8 @@
+>>    */
+>>   
+>>   #include "at91sam9x5.dtsi"
+>> +#include "at91sam9x5_usart3.dtsi"
+>> +#include "at91sam9x5_macb0.dtsi"
+>>   
+>>   / {
+>>   	model = "Atmel AT91SAM9G25 SoC";
+>> diff --git a/arch/arm/boot/dts/at91sam9g35.dtsi b/arch/arm/boot/dts/at91sam9g35.dtsi
+>> index bebf9f5..e35c2fc 100644
+>> --- a/arch/arm/boot/dts/at91sam9g35.dtsi
+>> +++ b/arch/arm/boot/dts/at91sam9g35.dtsi
+>> @@ -7,6 +7,7 @@
+>>    */
+>>   
+>>   #include "at91sam9x5.dtsi"
+>> +#include "at91sam9x5_macb0.dtsi"
+>>   
+>>   / {
+>>   	model = "Atmel AT91SAM9G35 SoC";
+>> diff --git a/arch/arm/boot/dts/at91sam9x25.dtsi b/arch/arm/boot/dts/at91sam9x25.dtsi
+>> index 49e94ab..c255421 100644
+>> --- a/arch/arm/boot/dts/at91sam9x25.dtsi
+>> +++ b/arch/arm/boot/dts/at91sam9x25.dtsi
+>> @@ -7,6 +7,9 @@
+>>    */
+>>   
+>>   #include "at91sam9x5.dtsi"
+>> +#include "at91sam9x5_usart3.dtsi"
+>> +#include "at91sam9x5_macb0.dtsi"
+>> +#include "at91sam9x5_macb1.dtsi"
+>>   
+>>   / {
+>>   	model = "Atmel AT91SAM9X25 SoC";
+>> @@ -22,27 +25,6 @@
+>>   				       0x80000000 0xfffd0000 0xb83fffff  /* pioC */
+>>   				       0x003fffff 0x003f8000 0x00000000  /* pioD */
+>>   				      >;
+>> -
+>> -				macb1 {
+>> -					pinctrl_macb1_rmii: macb1_rmii-0 {
+>> -						atmel,pins =
+>> -							<AT91_PIOC 16 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC16 periph B */
+>> -							 AT91_PIOC 18 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC18 periph B */
+>> -							 AT91_PIOC 19 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC19 periph B */
+>> -							 AT91_PIOC 20 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC20 periph B */
+>> -							 AT91_PIOC 21 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC21 periph B */
+>> -							 AT91_PIOC 27 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC27 periph B */
+>> -							 AT91_PIOC 28 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC28 periph B */
+>> -							 AT91_PIOC 29 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC29 periph B */
+>> -							 AT91_PIOC 30 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC30 periph B */
+>> -							 AT91_PIOC 31 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PC31 periph B */
+>> -					};
+>> -				};
+>> -			};
+>> -
+>> -			macb1: ethernet@f8030000 {
+>> -				pinctrl-names = "default";
+>> -				pinctrl-0 = <&pinctrl_macb1_rmii>;
+>>   			};
+>>   		};
+>>   	};
+>> diff --git a/arch/arm/boot/dts/at91sam9x35.dtsi b/arch/arm/boot/dts/at91sam9x35.dtsi
+>> index 1a3d525..8eac66c 100644
+>> --- a/arch/arm/boot/dts/at91sam9x35.dtsi
+>> +++ b/arch/arm/boot/dts/at91sam9x35.dtsi
+>> @@ -7,6 +7,7 @@
+>>    */
+>>   
+>>   #include "at91sam9x5.dtsi"
+>> +#include "at91sam9x5_macb0.dtsi"
+>>   
+>>   / {
+>>   	model = "Atmel AT91SAM9X35 SoC";
+>> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+>> index 57d45f5..05f4c74 100644
+>> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
+>> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+>> @@ -206,29 +206,6 @@
+>>   					};
+>>   				};
+>>   
+>> -				usart3 {
+>> -					pinctrl_usart3: usart3-0 {
+>> -						atmel,pins =
+>> -							<AT91_PIOC 22 AT91_PERIPH_B AT91_PINCTRL_PULL_UP	/* PC22 periph B with pullup */
+>> -							 AT91_PIOC 23 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PC23 periph B */
+>> -					};
+>> -
+>> -					pinctrl_usart3_rts: usart3_rts-0 {
+>> -						atmel,pins =
+>> -							<AT91_PIOC 24 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PC24 periph B */
+>> -					};
+>> -
+>> -					pinctrl_usart3_cts: usart3_cts-0 {
+>> -						atmel,pins =
+>> -							<AT91_PIOC 25 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PC25 periph B */
+>> -					};
+>> -
+>> -					pinctrl_usart3_sck: usart3_sck-0 {
+>> -						atmel,pins =
+>> -							<AT91_PIOC 26 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PC26 periph B */
+>> -					};
+>> -				};
+>> -
+>>   				uart0 {
+>>   					pinctrl_uart0: uart0-0 {
+>>   						atmel,pins =
+>> @@ -277,34 +254,6 @@
+>>   					};
+>>   				};
+>>   
+>> -				macb0 {
+>> -					pinctrl_macb0_rmii: macb0_rmii-0 {
+>> -						atmel,pins =
+>> -							<AT91_PIOB 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB0 periph A */
+>> -							 AT91_PIOB 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB1 periph A */
+>> -							 AT91_PIOB 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB2 periph A */
+>> -							 AT91_PIOB 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB3 periph A */
+>> -							 AT91_PIOB 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB4 periph A */
+>> -							 AT91_PIOB 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB5 periph A */
+>> -							 AT91_PIOB 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB6 periph A */
+>> -							 AT91_PIOB 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB7 periph A */
+>> -							 AT91_PIOB 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB9 periph A */
+>> -							 AT91_PIOB 10 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PB10 periph A */
+>> -					};
+>> -
+>> -					pinctrl_macb0_rmii_mii: macb0_rmii_mii-0 {
+>> -						atmel,pins =
+>> -							<AT91_PIOB 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB8 periph A */
+>> -							 AT91_PIOB 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB11 periph A */
+>> -							 AT91_PIOB 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB12 periph A */
+>> -							 AT91_PIOB 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB13 periph A */
+>> -							 AT91_PIOB 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB14 periph A */
+>> -							 AT91_PIOB 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB15 periph A */
+>> -							 AT91_PIOB 16 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB16 periph A */
+>> -							 AT91_PIOB 17 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PB17 periph A */
+>> -					};
+>> -				};
+>> -
+>>   				mmc0 {
+>>   					pinctrl_mmc0_slot0_clk_cmd_dat0: mmc0_slot0_clk_cmd_dat0-0 {
+>>   						atmel,pins =
+>> @@ -605,22 +554,6 @@
+>>   				status = "disabled";
+>>   			};
+>>   
+>> -			macb0: ethernet@f802c000 {
+>> -				compatible = "cdns,at32ap7000-macb", "cdns,macb";
+>> -				reg = <0xf802c000 0x100>;
+>> -				interrupts = <24 IRQ_TYPE_LEVEL_HIGH 3>;
+>> -				pinctrl-names = "default";
+>> -				pinctrl-0 = <&pinctrl_macb0_rmii>;
+>> -				status = "disabled";
+>> -			};
+>> -
+>> -			macb1: ethernet@f8030000 {
+>> -				compatible = "cdns,at32ap7000-macb", "cdns,macb";
+>> -				reg = <0xf8030000 0x100>;
+>> -				interrupts = <27 IRQ_TYPE_LEVEL_HIGH 3>;
+>> -				status = "disabled";
+>> -			};
+>> -
+>>   			i2c0: i2c@f8010000 {
+>>   				compatible = "atmel,at91sam9x5-i2c";
+>>   				reg = <0xf8010000 0x100>;
+>> diff --git a/arch/arm/boot/dts/at91sam9x5_macb0.dtsi b/arch/arm/boot/dts/at91sam9x5_macb0.dtsi
+>> new file mode 100644
+>> index 0000000..55731ff
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/at91sam9x5_macb0.dtsi
+>> @@ -0,0 +1,56 @@
+>> +/*
+>> + * at91sam9x5_macb0.dtsi - Device Tree Include file for AT91SAM9x5 SoC with 1
+>> + * Ethernet interface.
+>> + *
+>> + * Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
+>> + *
+>> + * Licensed under GPLv2.
+>> + */
+>> +
+>> +#include <dt-bindings/pinctrl/at91.h>
+>> +#include <dt-bindings/interrupt-controller/irq.h>
+>> +
+>> +/ {
+>> +	ahb {
+>> +		apb {
+>> +			pinctrl@fffff400 {
+>> +				macb0 {
+>> +					pinctrl_macb0_rmii: macb0_rmii-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOB 0 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB0 periph A */
+>> +							 AT91_PIOB 1 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB1 periph A */
+>> +							 AT91_PIOB 2 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB2 periph A */
+>> +							 AT91_PIOB 3 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB3 periph A */
+>> +							 AT91_PIOB 4 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB4 periph A */
+>> +							 AT91_PIOB 5 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB5 periph A */
+>> +							 AT91_PIOB 6 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB6 periph A */
+>> +							 AT91_PIOB 7 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB7 periph A */
+>> +							 AT91_PIOB 9 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB9 periph A */
+>> +							 AT91_PIOB 10 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PB10 periph A */
+>> +					};
+>> +
+>> +					pinctrl_macb0_rmii_mii: macb0_rmii_mii-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOB 8 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB8 periph A */
+>> +							 AT91_PIOB 11 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB11 periph A */
+>> +							 AT91_PIOB 12 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB12 periph A */
+>> +							 AT91_PIOB 13 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB13 periph A */
+>> +							 AT91_PIOB 14 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB14 periph A */
+>> +							 AT91_PIOB 15 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB15 periph A */
+>> +							 AT91_PIOB 16 AT91_PERIPH_A AT91_PINCTRL_NONE	/* PB16 periph A */
+>> +							 AT91_PIOB 17 AT91_PERIPH_A AT91_PINCTRL_NONE>;	/* PB17 periph A */
+>> +					};
+>> +				};
+>> +			};
+>> +
+>> +			macb0: ethernet@f802c000 {
+>> +				compatible = "cdns,at32ap7000-macb", "cdns,macb";
+>> +				reg = <0xf802c000 0x100>;
+>> +				interrupts = <24 IRQ_TYPE_LEVEL_HIGH 3>;
+>> +				pinctrl-names = "default";
+>> +				pinctrl-0 = <&pinctrl_macb0_rmii>;
+>> +				status = "disabled";
+>> +			};
+>> +		};
+>> +	};
+>> +};
+>> diff --git a/arch/arm/boot/dts/at91sam9x5_macb1.dtsi b/arch/arm/boot/dts/at91sam9x5_macb1.dtsi
+>> new file mode 100644
+>> index 0000000..77425a6
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/at91sam9x5_macb1.dtsi
+>> @@ -0,0 +1,44 @@
+>> +/*
+>> + * at91sam9x5_macb1.dtsi - Device Tree Include file for AT91SAM9x5 SoC with 2
+>> + * Ethernet interfaces.
+>> + *
+>> + * Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
+>> + *
+>> + * Licensed under GPLv2.
+>> + */
+>> +
+>> +#include <dt-bindings/pinctrl/at91.h>
+>> +#include <dt-bindings/interrupt-controller/irq.h>
+>> +
+>> +/ {
+>> +	ahb {
+>> +		apb {
+>> +			pinctrl@fffff400 {
+>> +				macb1 {
+>> +					pinctrl_macb1_rmii: macb1_rmii-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOC 16 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC16 periph B */
+>> +							 AT91_PIOC 18 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC18 periph B */
+>> +							 AT91_PIOC 19 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC19 periph B */
+>> +							 AT91_PIOC 20 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC20 periph B */
+>> +							 AT91_PIOC 21 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC21 periph B */
+>> +							 AT91_PIOC 27 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC27 periph B */
+>> +							 AT91_PIOC 28 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC28 periph B */
+>> +							 AT91_PIOC 29 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC29 periph B */
+>> +							 AT91_PIOC 30 AT91_PERIPH_B AT91_PINCTRL_NONE	/* PC30 periph B */
+>> +							 AT91_PIOC 31 AT91_PERIPH_B AT91_PINCTRL_NONE>;	/* PC31 periph B */
+>> +					};
+>> +				};
+>> +			};
+>> +
+>> +			macb1: ethernet@f8030000 {
+>> +				compatible = "cdns,at32ap7000-macb", "cdns,macb";
+>> +				reg = <0xf8030000 0x100>;
+>> +				interrupts = <27 IRQ_TYPE_LEVEL_HIGH 3>;
+>> +				pinctrl-names = "default";
+>> +				pinctrl-0 = <&pinctrl_macb1_rmii>;
+>> +				status = "disabled";
+>> +			};
+>> +		};
+>> +	};
+>> +};
+>> diff --git a/arch/arm/boot/dts/at91sam9x5_usart3.dtsi b/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
+>> new file mode 100644
+>> index 0000000..5589579
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/at91sam9x5_usart3.dtsi
+>> @@ -0,0 +1,51 @@
+>> +/*
+>> + * at91sam9x5_lcdc.dtsi - Device Tree Include file for AT91SAM9x5 SoC with
+>> + * 4 USART.
+>> + *
+>> + * Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
+>> + *
+>> + * Licensed under GPLv2.
+>> + */
+>> +
+>> +#include <dt-bindings/pinctrl/at91.h>
+>> +#include <dt-bindings/interrupt-controller/irq.h>
+>> +
+>> +/ {
+>> +	ahb {
+>> +		apb {
+>> +			pinctrl@fffff400 {
+>> +				usart3 {
+>> +					pinctrl_usart3: usart3-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOC 22 AT91_PERIPH_B AT91_PINCTRL_PULL_UP	/* PC22 periph B with pullup */
+>> +							 AT91_PIOC 23 AT91_PERIPH_B AT91_PINCTRL_NONE>;		/* PC23 periph B */
+>> +					};
+>> +
+>> +					pinctrl_usart3_rts: usart3_rts-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOC 24 AT91_PERIPH_B AT91_PINCTRL_NONE>;		/* PC24 periph B */
+>> +					};
+>> +
+>> +					pinctrl_usart3_cts: usart3_cts-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOC 25 AT91_PERIPH_B AT91_PINCTRL_NONE>;		/* PC25 periph B */
+>> +					};
+>> +
+>> +					pinctrl_usart3_sck: usart3_sck-0 {
+>> +						atmel,pins =
+>> +							<AT91_PIOC 26 AT91_PERIPH_B AT91_PINCTRL_NONE>;		/* PC26 periph B */
+>> +					};
+>> +				};
+>> +			};
+>> +
+>> +			usart3: serial@f8028000 {
+>> +				compatible = "atmel,at91sam9260-usart";
+>> +				reg = <0xf8028000 0x200>;
+>> +				interrupts = <8 IRQ_TYPE_LEVEL_HIGH 5>;
+>> +				pinctrl-names = "default";
+>> +				pinctrl-0 = <&pinctrl_usart3>;
+>> +				status = "disabled";
+>> +			};
+>> +		};
+>> +	};
+>> +};
+>> -- 
+>> 1.7.9.5
+>>
 
