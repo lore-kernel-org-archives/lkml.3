@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758171Ab3HHTIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 15:08:09 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:2730 "EHLO mms1.broadcom.com"
+	id S966196Ab3HHTJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 15:09:08 -0400
+Received: from mout.gmx.net ([212.227.15.15]:52886 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450Ab3HHTIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 15:08:07 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Christian Daudt" <csd@broadcom.com>
-To: "Christian Daudt" <csd@broadcom.com>
-cc: "Lee Jones" <lee.jones@linaro.org>, "Alex Elder" <elder@linaro.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        "Pawel Moll" <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Ian Campbell" <ian.campbell@citrix.com>,
-        "Russell King" <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ARM: dts: align sdio numbers to HW definition
-Date: Thu, 8 Aug 2013 12:07:53 -0700
-Message-ID: <1375988874-11303-1-git-send-email-csd@broadcom.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S966146Ab3HHTJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 15:09:06 -0400
+Message-ID: <5203ED45.3090604@gmx.net>
+Date: Thu, 08 Aug 2013 21:11:01 +0200
+From: Arne Jansen <sensille@gmx.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-X-WSS-ID: 7E1D342C31W82347457-01-01
-Content-Type: text/plain
+To: Zach Brown <zab@redhat.com>
+CC: dsterba@suse.cz, Sergei Trofimovich <slyich@gmail.com>,
+        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
+        Josef Bacik <jbacik@fusionio.com>, linux-kernel@vger.kernel.org,
+        Sergei Trofimovich <slyfox@gentoo.org>
+Subject: Re: [PATCH 6/7] btrfs: cleanup: removed unused 'btrfs_reada_detach'
+References: <1375911803-17318-1-git-send-email-slyich@gmail.com> <1375911803-17318-7-git-send-email-slyich@gmail.com> <520349BA.8080006@gmx.net> <20130808132614.GS5284@twin.jikos.cz> <20130808174657.GV12314@lenny.home.zabbo.net>
+In-Reply-To: <20130808174657.GV12314@lenny.home.zabbo.net>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:gHXcVfx8xqOmxahZ1I9luQOCrVuCrPP/DwnhPKoJZ1mPmvgyLJn
+ XRUxsjNKJVLL7VzFwRB8A4OBsHm+hgvDKv1UfWHTGiDOxHMhrW6q6SHkWxiq4LWHq5zoczJ
+ Dk7ap3LrvwN1G722mxM9+gIkvhLkg5ad3O1nnGpCVVJ4ZJLdg3TXlv6HtqgfEMhdrZSbwBM
+ y/9fu743UdoXvecyh4sDQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up the sdio numbering to be 1-base as defined in HW spec,
-instead of the current 0-base
+On 08/08/13 19:46, Zach Brown wrote:
+>>> even though the function is currently unused, I'm hesitating to remove it
+>>> as it's part of the reada-API and might be handy for anyone going to use
+>>> the API in the future.
+>>
+>> I agree. As replied here,
+>> http://www.mail-archive.com/linux-btrfs@vger.kernel.org/msg24047.html
+>> please keep the function.
+> 
+> If we're keeping score, put me down for being in favour of removing dead
+> untested code.  git ressurection is easy. 
 
-Reviewed-by: Alex Elder <elder@linaro.org>
-Signed-off-by: Christian Daudt <csd@broadcom.com>
+It's not really untested, it has been in use some time ago. But of
+course there's a chance that some changes broke it.
+Yes, git ressurection is easy. To inform potential users, you might
+just leave a comment like this:
 
-diff --git a/arch/arm/boot/dts/bcm11351-brt.dts b/arch/arm/boot/dts/bcm11351-brt.dts
-index 67ec524..647a78c 100644
---- a/arch/arm/boot/dts/bcm11351-brt.dts
-+++ b/arch/arm/boot/dts/bcm11351-brt.dts
-@@ -27,18 +27,18 @@
- 		status = "okay";
- 	};
- 
--	sdio0: sdio@0x3f180000 {
-+	sdio1: sdio@3f180000 {
- 		max-frequency = <48000000>;
- 		status = "okay";
- 	};
- 
--	sdio1: sdio@0x3f190000 {
-+	sdio2: sdio@3f190000 {
- 		non-removable;
- 		max-frequency = <48000000>;
- 		status = "okay";
- 	};
- 
--	sdio3: sdio@0x3f1b0000 {
-+	sdio4: sdio@3f1b0000 {
- 		max-frequency = <48000000>;
- 		status = "okay";
- 	};
-diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
-index 8f094ba..d34e49db 100644
---- a/arch/arm/boot/dts/bcm11351.dtsi
-+++ b/arch/arm/boot/dts/bcm11351.dtsi
-@@ -68,28 +68,28 @@
- 		clock-frequency = <32768>;
- 	};
- 
--	sdio0: sdio@0x3f180000 {
-+	sdio1: sdio@3f180000 {
- 		compatible = "bcm,kona-sdhci";
- 		reg = <0x3f180000 0x10000>;
- 		interrupts = <0x0 77 0x4>;
- 		status = "disabled";
- 	};
- 
--	sdio1: sdio@0x3f190000 {
-+	sdio2: sdio@3f190000 {
- 		compatible = "bcm,kona-sdhci";
- 		reg = <0x3f190000 0x10000>;
- 		interrupts = <0x0 76 0x4>;
- 		status = "disabled";
- 	};
- 
--	sdio2: sdio@0x3f1a0000 {
-+	sdio3: sdio@3f1a0000 {
- 		compatible = "bcm,kona-sdhci";
- 		reg = <0x3f1a0000 0x10000>;
- 		interrupts = <0x0 74 0x4>;
- 		status = "disabled";
- 	};
- 
--	sdio3: sdio@0x3f1b0000 {
-+	sdio4: sdio@3f1b0000 {
- 		compatible = "bcm,kona-sdhci";
- 		reg = <0x3f1b0000 0x10000>;
- 		interrupts = <0x0 73 0x4>;
--- 
-1.7.10.4
+/*
+ * There has been a function once to detach from a running reada.
+ * If you need such functionality, just revert the commit that
+ * added this comment.
+ */
 
+-Arne
+
+> 
+> - z
+> 
 
