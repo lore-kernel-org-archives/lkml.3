@@ -1,330 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569Ab3HHENI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 00:13:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57416 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab3HHENF (ORCPT
+	id S1754166Ab3HHEQC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 00:16:02 -0400
+Received: from 15.mo4.mail-out.ovh.net ([91.121.62.11]:59789 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752038Ab3HHEQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 00:13:05 -0400
-Date: Wed, 7 Aug 2013 21:12:49 -0700
-From: tip-bot for Kees Cook <tipbot@zytor.com>
-Message-ID: <tip-a02150610776f66b40257624822a879311592bb2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        keescook@chromium.org, zhangyanfei@cn.fujitsu.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, zhangyanfei@cn.fujitsu.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <20130708161517.GA4832@www.outflux.net>
-References: <20130708161517.GA4832@www.outflux.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/kaslr] x86, relocs: Move ELF relocation handling to C
-Git-Commit-ID: a02150610776f66b40257624822a879311592bb2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 8 Aug 2013 00:16:00 -0400
+X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 00:16:00 EDT
+Message-ID: <520319DE.5090100@overkiz.com>
+Date: Thu, 08 Aug 2013 06:09:02 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 07 Aug 2013 21:12:55 -0700 (PDT)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: Re: [PATCH 1/8] ARM: at91: move peripheral id definitions to dt-bindings
+ include dir
+References: <1375339733-3488-1-git-send-email-b.brezillon@overkiz.com> <1375339933-3643-1-git-send-email-b.brezillon@overkiz.com> <201308072224.30614.arnd@arndb.de>
+In-Reply-To: <201308072224.30614.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 1924444416330659844
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a02150610776f66b40257624822a879311592bb2
-Gitweb:     http://git.kernel.org/tip/a02150610776f66b40257624822a879311592bb2
-Author:     Kees Cook <keescook@chromium.org>
-AuthorDate: Mon, 8 Jul 2013 09:15:17 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 7 Aug 2013 21:00:04 -0700
+Hello Arnd,
 
-x86, relocs: Move ELF relocation handling to C
+On 07/08/2013 22:24, Arnd Bergmann wrote:
+> On Thursday 01 August 2013, Boris BREZILLON wrote:
+>> This patch moves peripheral id definitions from machine specific include
+>> dir (arch/arm/mach-at91/include/mach/'soc-name'.h) to dt-bindinds include
+>> dir (include/dt-bindings/at91/'soc-name'/peripherals.h).
+>>
+>> These definitions will be used inside dt to define interrupt ids and
+>> peripheral clk ids.
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> This seems counterproductive, why would you do that?
 
-Moves the relocation handling into C, after decompression. This requires
-that the decompressed size is passed to the decompression routine as
-well so that relocations can be found. Only kernels that need relocation
-support will use the code (currently just x86_32), but this is laying
-the ground work for 64-bit using it in support of KASLR.
+This was requested by Jean-Christophe Plagniol-Villard (and proposed by 
+Richard Genoud)
+for the 3rd version of the "ARM: at91: move to common clk framework" 
+patch series (see
+https://lkml.org/lkml/2013/7/29/361) and thought it was a good idea too 
+(even if I didn't know
+where to put the macro files as there are no soc specific macro files in 
+dt-bindings include
+dir).
 
-Based on work by Neill Clift and Michael Davidson.
+Indeed I found it much easier to detect bugs in dt definition using 
+macros because
+the macro names and dt node names are the same (it does not protect 
+against errors
+in the macro definitions).
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Link: http://lkml.kernel.org/r/20130708161517.GA4832@www.outflux.net
-Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Kconfig                     |  8 +++-
- arch/x86/Makefile                    |  8 ++--
- arch/x86/boot/compressed/head_32.S   | 31 ++-------------
- arch/x86/boot/compressed/head_64.S   |  1 +
- arch/x86/boot/compressed/misc.c      | 77 +++++++++++++++++++++++++++++++++++-
- arch/x86/include/asm/page_32_types.h |  2 +
- arch/x86/include/asm/page_64_types.h |  5 ---
- arch/x86/include/asm/page_types.h    |  5 +++
- 8 files changed, 97 insertions(+), 40 deletions(-)
+If you think these macro definitions should be dropped, I won't argue 
+against this.
+But please, have a talk with Jean-Christophe first.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b32ebf9..8002668 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1716,9 +1716,10 @@ config X86_NEED_RELOCS
- 	depends on X86_32 && RELOCATABLE
- 
- config PHYSICAL_ALIGN
--	hex "Alignment value to which kernel should be aligned" if X86_32
-+	hex "Alignment value to which kernel should be aligned"
- 	default "0x1000000"
--	range 0x2000 0x1000000
-+	range 0x2000 0x1000000 if X86_32
-+	range 0x200000 0x1000000 if X86_64
- 	---help---
- 	  This value puts the alignment restrictions on physical address
- 	  where kernel is loaded and run from. Kernel is compiled for an
-@@ -1736,6 +1737,9 @@ config PHYSICAL_ALIGN
- 	  end result is that kernel runs from a physical address meeting
- 	  above alignment restrictions.
- 
-+	  On 32-bit this value must be a multiple of 0x2000. On 64-bit
-+	  this value must be a multiple of 0x200000.
-+
- 	  Don't change this unless you know what you are doing.
- 
- config HOTPLUG_CPU
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 07639c6..41250fb 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -16,6 +16,10 @@ endif
- # e.g.: obj-y += foo_$(BITS).o
- export BITS
- 
-+ifdef CONFIG_X86_NEED_RELOCS
-+        LDFLAGS_vmlinux := --emit-relocs
-+endif
-+
- ifeq ($(CONFIG_X86_32),y)
-         BITS := 32
-         UTS_MACHINE := i386
-@@ -25,10 +29,6 @@ ifeq ($(CONFIG_X86_32),y)
-         KBUILD_AFLAGS += $(biarch)
-         KBUILD_CFLAGS += $(biarch)
- 
--        ifdef CONFIG_RELOCATABLE
--                LDFLAGS_vmlinux := --emit-relocs
--        endif
--
-         KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
- 
-         # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
-diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
-index 1e3184f..5d6f689 100644
---- a/arch/x86/boot/compressed/head_32.S
-+++ b/arch/x86/boot/compressed/head_32.S
-@@ -181,8 +181,9 @@ relocated:
- /*
-  * Do the decompression, and jump to the new kernel..
-  */
--	leal	z_extract_offset_negative(%ebx), %ebp
- 				/* push arguments for decompress_kernel: */
-+	pushl	$z_output_len	/* decompressed length */
-+	leal	z_extract_offset_negative(%ebx), %ebp
- 	pushl	%ebp		/* output address */
- 	pushl	$z_input_len	/* input_len */
- 	leal	input_data(%ebx), %eax
-@@ -191,33 +192,7 @@ relocated:
- 	pushl	%eax		/* heap area */
- 	pushl	%esi		/* real mode pointer */
- 	call	decompress_kernel
--	addl	$20, %esp
--
--#if CONFIG_RELOCATABLE
--/*
-- * Find the address of the relocations.
-- */
--	leal	z_output_len(%ebp), %edi
--
--/*
-- * Calculate the delta between where vmlinux was compiled to run
-- * and where it was actually loaded.
-- */
--	movl	%ebp, %ebx
--	subl	$LOAD_PHYSICAL_ADDR, %ebx
--	jz	2f	/* Nothing to be done if loaded at compiled addr. */
--/*
-- * Process relocations.
-- */
--
--1:	subl	$4, %edi
--	movl	(%edi), %ecx
--	testl	%ecx, %ecx
--	jz	2f
--	addl	%ebx, -__PAGE_OFFSET(%ebx, %ecx)
--	jmp	1b
--2:
--#endif
-+	addl	$24, %esp
- 
- /*
-  * Jump to the decompressed kernel.
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index 06e71c2..c337422 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -338,6 +338,7 @@ relocated:
- 	leaq	input_data(%rip), %rdx  /* input_data */
- 	movl	$z_input_len, %ecx	/* input_len */
- 	movq	%rbp, %r8		/* output target address */
-+	movq	$z_output_len, %r9	/* decompressed length */
- 	call	decompress_kernel
- 	popq	%rsi
- 
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 0319c88..434f077 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -271,6 +271,79 @@ static void error(char *x)
- 		asm("hlt");
- }
- 
-+#if CONFIG_X86_NEED_RELOCS
-+static void handle_relocations(void *output, unsigned long output_len)
-+{
-+	int *reloc;
-+	unsigned long delta, map, ptr;
-+	unsigned long min_addr = (unsigned long)output;
-+	unsigned long max_addr = min_addr + output_len;
-+
-+	/*
-+	 * Calculate the delta between where vmlinux was linked to load
-+	 * and where it was actually loaded.
-+	 */
-+	delta = min_addr - LOAD_PHYSICAL_ADDR;
-+	if (!delta) {
-+		debug_putstr("No relocation needed... ");
-+		return;
-+	}
-+	debug_putstr("Performing relocations... ");
-+
-+	/*
-+	 * The kernel contains a table of relocation addresses. Those
-+	 * addresses have the final load address of the kernel in virtual
-+	 * memory. We are currently working in the self map. So we need to
-+	 * create an adjustment for kernel memory addresses to the self map.
-+	 * This will involve subtracting out the base address of the kernel.
-+	 */
-+	map = delta - __START_KERNEL_map;
-+
-+	/*
-+	 * Process relocations: 32 bit relocations first then 64 bit after.
-+	 * Two sets of binary relocations are added to the end of the kernel
-+	 * before compression. Each relocation table entry is the kernel
-+	 * address of the location which needs to be updated stored as a
-+	 * 32-bit value which is sign extended to 64 bits.
-+	 *
-+	 * Format is:
-+	 *
-+	 * kernel bits...
-+	 * 0 - zero terminator for 64 bit relocations
-+	 * 64 bit relocation repeated
-+	 * 0 - zero terminator for 32 bit relocations
-+	 * 32 bit relocation repeated
-+	 *
-+	 * So we work backwards from the end of the decompressed image.
-+	 */
-+	for (reloc = output + output_len - sizeof(*reloc); *reloc; reloc--) {
-+		int extended = *reloc;
-+		extended += map;
-+
-+		ptr = (unsigned long)extended;
-+		if (ptr < min_addr || ptr > max_addr)
-+			error("32-bit relocation outside of kernel!\n");
-+
-+		*(uint32_t *)ptr += delta;
-+	}
-+#ifdef CONFIG_X86_64
-+	for (reloc--; *reloc; reloc--) {
-+		long extended = *reloc;
-+		extended += map;
-+
-+		ptr = (unsigned long)extended;
-+		if (ptr < min_addr || ptr > max_addr)
-+			error("64-bit relocation outside of kernel!\n");
-+
-+		*(uint64_t *)ptr += delta;
-+	}
-+#endif
-+}
-+#else
-+static inline void handle_relocations(void *output, unsigned long output_len)
-+{ }
-+#endif
-+
- static void parse_elf(void *output)
- {
- #ifdef CONFIG_X86_64
-@@ -325,7 +398,8 @@ static void parse_elf(void *output)
- asmlinkage void decompress_kernel(void *rmode, memptr heap,
- 				  unsigned char *input_data,
- 				  unsigned long input_len,
--				  unsigned char *output)
-+				  unsigned char *output,
-+				  unsigned long output_len)
- {
- 	real_mode = rmode;
- 
-@@ -365,6 +439,7 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
- 	debug_putstr("\nDecompressing Linux... ");
- 	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
- 	parse_elf(output);
-+	handle_relocations(output, output_len);
- 	debug_putstr("done.\nBooting the kernel.\n");
- 	return;
- }
-diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
-index ef17af0..f48b17d 100644
---- a/arch/x86/include/asm/page_32_types.h
-+++ b/arch/x86/include/asm/page_32_types.h
-@@ -15,6 +15,8 @@
-  */
- #define __PAGE_OFFSET		_AC(CONFIG_PAGE_OFFSET, UL)
- 
-+#define __START_KERNEL_map	__PAGE_OFFSET
-+
- #define THREAD_SIZE_ORDER	1
- #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
- 
-diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-index 6c896fb..43dcd80 100644
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -32,11 +32,6 @@
-  */
- #define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
- 
--#define __PHYSICAL_START	((CONFIG_PHYSICAL_START +	 	\
--				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
--				 ~(CONFIG_PHYSICAL_ALIGN - 1))
--
--#define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
- #define __START_KERNEL_map	_AC(0xffffffff80000000, UL)
- 
- /* See Documentation/x86/x86_64/mm.txt for a description of the memory map. */
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index 54c9787..f97fbe3 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -33,6 +33,11 @@
- 	(((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0 ) | \
- 	 VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
- 
-+#define __PHYSICAL_START	ALIGN(CONFIG_PHYSICAL_START, \
-+				      CONFIG_PHYSICAL_ALIGN)
-+
-+#define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
-+
- #ifdef CONFIG_X86_64
- #include <asm/page_64_types.h>
- #else
+Best Regards,
+
+Boris
+
+> There is no sharing of identifiers across SoCs here, you just move the
+> data around, and changing the .dts files to use the abstract macros would
+> just end up making them harder to understand, not easier, since you then
+> have to look up the numbers in another file.
+>
+> 	Arnd
+
