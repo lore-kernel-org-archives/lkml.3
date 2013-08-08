@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966151Ab3HHSaX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 14:30:23 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:57026 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966068Ab3HHSaS (ORCPT
+	id S966108Ab3HHSig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 14:38:36 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:50698 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758103Ab3HHSif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 14:30:18 -0400
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-To: tony.luck@intel.com, bp@alien8.de, bhelgaas@google.com,
-        rostedt@goodmis.org, rjw@sisk.pl, lance.ortiz@hp.com,
-        m.chehab@samsung.com
-Cc: linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Subject: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace event
-Date: Thu,  8 Aug 2013 23:57:51 +0530
-Message-Id: <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080818-6102-0000-0000-000003FD524F
+	Thu, 8 Aug 2013 14:38:35 -0400
+Message-ID: <5203E5A7.7060108@gmail.com>
+Date: Thu, 08 Aug 2013 11:38:31 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Huang Shijie <b32955@freescale.com>
+CC: dedekind1@gmail.com, Huang Shijie <shijie8@gmail.com>, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 1/3] mtd: add new fields to nand_flash_dev{}
+References: <1359349039-11510-1-git-send-email-b32955@freescale.com>				 <1359349039-11510-2-git-send-email-b32955@freescale.com>				 <1360684037.12703.117.camel@sauron.fi.intel.com>				 <CAMiH66ExMK8rPMw3kvs9M2b-0ZSkfxBYteTi8QTZf+XCzJw5Dw@mail.gmail.com>			 <1362234094.2745.9.camel@sauron> <513437DF.2030505@freescale.com>		 <1362383434.2943.5.camel@sauron> <5134566C.2090405@freescale.com>	 <1362385446.2943.7.camel@sauron> <51345DFA.7070601@freescale.com> <1362386776.2943.11.camel@sauron> <51346287.9010801@freescale.com>
+In-Reply-To: <51346287.9010801@freescale.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable memory error trace event in cper.c
+Hi Huang,
 
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
----
- drivers/acpi/apei/cper.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+For some reason, I just noticed your question here. But I think it's 
+important to answer.
 
-diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-index 33dc6a0..19a9c0b 100644
---- a/drivers/acpi/apei/cper.c
-+++ b/drivers/acpi/apei/cper.c
-@@ -32,6 +32,10 @@
- #include <linux/pci.h>
- #include <linux/aer.h>
- 
-+#define CREATE_TRACE_POINTS
-+#define TRACE_EVENT_GHES
-+#include <trace/events/ras.h>
-+
- /*
-  * CPER record ID need to be unique even after reboot, because record
-  * ID is used as index for ERST storage, while CPER records from
-@@ -193,8 +197,13 @@ static const char *cper_mem_err_type_strs[] = {
- 	"scrub uncorrected error",
- };
- 
--static void cper_print_mem(const char *pfx, const struct cper_sec_mem_err *mem)
-+static void cper_print_mem(const char *pfx,
-+		const struct acpi_hest_generic_status *estatus,
-+		const struct acpi_hest_generic_data *gdata,
-+		const struct cper_sec_mem_err *mem)
- {
-+	trace_ghes_platform_memory_event(estatus, gdata, mem);
-+
- 	if (mem->validation_bits & CPER_MEM_VALID_ERROR_STATUS)
- 		printk("%s""error_status: 0x%016llx\n", pfx, mem->error_status);
- 	if (mem->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)
-@@ -292,8 +301,10 @@ static const char *apei_estatus_section_flag_strs[] = {
- 	"latent error",
- };
- 
--static void apei_estatus_print_section(
--	const char *pfx, const struct acpi_hest_generic_data *gdata, int sec_no)
-+static void apei_estatus_print_section(const char *pfx,
-+		const struct acpi_hest_generic_status *estatus,
-+		const struct acpi_hest_generic_data *gdata,
-+		int sec_no)
- {
- 	uuid_le *sec_type = (uuid_le *)gdata->section_type;
- 	__u16 severity;
-@@ -320,7 +331,7 @@ static void apei_estatus_print_section(
- 		struct cper_sec_mem_err *mem_err = (void *)(gdata + 1);
- 		printk("%s""section_type: memory error\n", pfx);
- 		if (gdata->error_data_length >= sizeof(*mem_err))
--			cper_print_mem(pfx, mem_err);
-+			cper_print_mem(pfx, estatus, gdata, mem_err);
- 		else
- 			goto err_section_too_small;
- 	} else if (!uuid_le_cmp(*sec_type, CPER_SEC_PCIE)) {
-@@ -355,7 +366,7 @@ void apei_estatus_print(const char *pfx,
- 	gdata = (struct acpi_hest_generic_data *)(estatus + 1);
- 	while (data_len > sizeof(*gdata)) {
- 		gedata_len = gdata->error_data_length;
--		apei_estatus_print_section(pfx, gdata, sec_no);
-+		apei_estatus_print_section(pfx, estatus, gdata, sec_no);
- 		data_len -= gedata_len + sizeof(*gdata);
- 		gdata = (void *)(gdata + 1) + gedata_len;
- 		sec_no++;
--- 
-1.8.3.4
+On 03/04/2013 12:59 AM, Huang Shijie wrote:
+> 于 2013年03月04日 16:46, Artem Bityutskiy 写道:
+>> Thanks, I forgot we have this great table. BTW, please, do not forget to
+>> update it with information about these 4 chip you are adding,
+>> irrespective of the solution we end up with.
+> I also want to update the table, but i do not know how to do it.
 
+You can submit a patch against mtd-www.git. See:
+
+http://www.linux-mtd.infradead.org/faq/general.html#L_mtdwww
+
+You just need to edit the CSV table under nand-data/nanddata.csv.
+
+Brian
