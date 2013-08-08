@@ -1,100 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964790Ab3HHLkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 07:40:20 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:9277 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934065Ab3HHLkS (ORCPT
+	id S934198Ab3HHLuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 07:50:52 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:47455 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934065Ab3HHLuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 07:40:18 -0400
-X-AuditID: cbfec7f5-b7f5f6d00000105f-57-520383a031f9
-From: Tomasz Figa <t.figa@samsung.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Cho KyongHo <pullip.cho@samsung.com>,
-        "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v9 05/16] clk: exynos: add gate clock descriptions of
- System MMU
-Date: Thu, 08 Aug 2013 13:40:13 +0200
-Message-id: <1673985.XNpTEeH9vo@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-reply-to: <52037E4E.5050706@samsung.com>
-References: <002901ce941b$0130db50$039291f0$@samsung.com>
- <52037E4E.5050706@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e/4Zd0FzcxBBk9XCljcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
-	h1ktDr9pZ7U4+aeX0aLlei+Tg4DHk4PzmDxmN1xk8bhzbQ+bx/lNa5g9Ni+p95h8YzmjR9+W
-	VYwenzfJeVw5eoYpgDOKyyYlNSezLLVI3y6BK2P32iuMBQ/4K45cm8nWwHicp4uRk0NCwETi
-	26dZrBC2mMSFe+vZuhi5OIQEljJK3Hm1iRnC6WKS+Ph+GwtIFZuAmsTnhkdsILaIgL7EklUX
-	wWxmgQWsEku3mYPYwgJhEicOdQLFOThYBFQllh1zBQnzCmhKLJt8mh3E5hdQl3i37SkTSImo
-	gJvEhI/5IGFOAW2J7aungE0UEoiSWN+/lQWiVVDix+R7LBCb5CX27Z/KCmFrSazfeZxpAqPg
-	LCRls5CUzUJStoCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSOR93cG49JjVIUYBDkYl
-	Ht6OAKYgIdbEsuLK3EOMEhzMSiK8L7KYg4R4UxIrq1KL8uOLSnNSiw8xMnFwSjUwFt2K+Bfm
-	K+pZuC+Kc8uk6IsOT6dxX//Y/3rf2ydzTlU8sWsIYP7zmVno9xO32yJxdtON9gvs5l2QV5iZ
-	wlDBYromk9FKPSmyIPvEC2nFuJxZD/UE+4Osd793u1oRxH2uTKKzUoo5K2vGDpYdBXZ2z9zD
-	7vKdKrZm7VeYnuswSYObI0I5/5YSS3FGoqEWc1FxIgBXYoXwmgIAAA==
+	Thu, 8 Aug 2013 07:50:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAEtk5gcFrnbgGNeAU45-6TKR=m6=9QorFj_j_RX+ufGBfs5TuQ@mail.gmail.com>
+References: <CAEtk5gcFrnbgGNeAU45-6TKR=m6=9QorFj_j_RX+ufGBfs5TuQ@mail.gmail.com>
+Date: Thu, 8 Aug 2013 17:20:50 +0530
+Message-ID: <CABTtd+0XfYwv9MxkvxnMRQ+c6UHv6gbnOyqAmr__eMuRta36gQ@mail.gmail.com>
+Subject: Re: Linux apanic mechanism and difference from newer
+ ram_console/persistent_ram mechanism
+From: Yuva Raj <yuvaeasy@gmail.com>
+To: Vijay <thelonejoker@gmail.com>
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 of August 2013 13:17:34 Sylwester Nawrocki wrote:
-> On 08/08/2013 11:38 AM, Cho KyongHo wrote:
-> > This adds gate clocks of all System MMUs and their master IPs
-> > that are not apeared in clk-exynos5250.c
-> > Also fixes GATE_IP_ACP to 0x18800 and changed GATE_DA to GATE
-> > for System MMU clocks in clk-exynos4.c
-> > 
-> > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> > ---
-> > 
-> >  .../devicetree/bindings/clock/exynos5250-clock.txt |   26 +++++++++
-> >  drivers/clk/samsung/clk-exynos4.c                  |   27 +++------
-> >  drivers/clk/samsung/clk-exynos5250.c               |   57
-> >  ++++++++++++++++---- 3 files changed, 82 insertions(+), 28
-> >  deletions(-)
-> 
-> [...]
-> 
-> > @@ -349,19 +358,26 @@ static struct samsung_gate_clock
-> > exynos5250_gate_clks[] __initdata = {> 
-> >  	GATE(gscl3, "gscl3", "aclk266", GATE_IP_GSCL, 3, 0, 0),
-> >  	GATE(gscl_wa, "gscl_wa", "div_gscl_wa", GATE_IP_GSCL, 5, 0, 0),
-> >  	GATE(gscl_wb, "gscl_wb", "div_gscl_wb", GATE_IP_GSCL, 6, 0, 0),
-> > 
-> > -	GATE(smmu_gscl0, "smmu_gscl0", "aclk266", GATE_IP_GSCL, 7, 0, 0),
-> > -	GATE(smmu_gscl1, "smmu_gscl1", "aclk266", GATE_IP_GSCL, 8, 0, 0),
-> > -	GATE(smmu_gscl2, "smmu_gscl2", "aclk266", GATE_IP_GSCL, 9, 0, 0),
-> > -	GATE(smmu_gscl3, "smmu_gscl3", "aclk266", GATE_IP_GSCL, 10, 0, 0),
-> > +	GATE(smmu_gscl0, "smmu_gscl0", "none", GATE_IP_GSCL, 7, 0, 0),
-> > +	GATE(smmu_gscl1, "smmu_gscl1", "none", GATE_IP_GSCL, 8, 0, 0),
-> > +	GATE(smmu_gscl2, "smmu_gscl2", "none", GATE_IP_GSCL, 9, 0, 0),
-> > +	GATE(smmu_gscl3, "smmu_gscl3", "none", GATE_IP_GSCL, 10, 0, 0),
-> 
-> Why are the smmu clocks' parent clocks removed ? Shouldn't both the
-> gscaler gate clock and the gscaler smmu clock be still same, as it is in
-> case of exynos4 ?
+On Thu, Aug 8, 2013 at 3:03 PM, Vijay <thelonejoker@gmail.com> wrote:
+>
+> Hello,
+>
+>
+> I am new to the Kernel-Mailing list. I am not subscribed at the moment
+> and would really appreciate it, if I can be CC'd in the
+> reply/responses for my question.
+>
+> I am studying the different logging mechanisms on Linux in case of a
+> Kernel panic (OOPS). So far from  my search on the web, I have been
+> able to derive the following information, please correct me if wrong:
+>
+> - apanic was an old mechanism of getting the job done.
+> - ram_console/persistent_ram is a new mechanism.
+>
+> Could someone enlighten me about the following in this regard ?
+>
+> - What was the old apanic mechanism, at a high-level how did this work ?
 
-I agree with Sylwester.
+It is a mechanism used by Android for kernel message logging. It
+writes the log message into some specific offset in mtd partition . On
+the next boot if the panic magic presents in the mtd partition, then
+the panic message  will be displayed on the console. The driver module
+exports a  file named "apanic" to the "debugfs". The debugfs can be
+mounted on some directory using the command, " mount -t debugfs none
+/sys/kernel/debug" which requires debugfs support needs to be enabled
+in linux kernel.
+For more information on this go through the source code in link below.
 
-In fact, it is not a valid clock setup. A valid clock must be either root 
-clock (indicated by appropriate clock flag and specified frequency) or have 
-a valid parent.
+https://android.googlesource.com/kernel/msm.git/+/android-msm-2.6.35/drivers/misc/apanic.c
+>
+>
+> - Why was the apanic mechanism deprecated, in favor of the
+> ram_console/persistent_ram mechanism ?
+>
+This apanic driver is not part of a linux kernel. It is specific to
+android. It is deprecated in latest version of android. The reason
+could be writing into mtd partition may not be a good idea when kernel
+opps happens. Since the nand_write is slow as well as has limited
+write cycles. This is just my opinion. But i am not sure of the actual
+reason .
+>
+> - What advantages does the new ram_console/persistent_ram mechanism
+> bring to the table.
+>
+It is also a logging mechanism used by android for logging console
+messages. Here the logging messages goes into RAM area. In case of
+persistent_ram , the log messages goes to persistent memory area
+(which will be retained ) of RAM. This driver module creates a file
+named "last_kmsg" in the proc directory. The logged message can be
+read in next boot if the kernel oops and stops booting. For more
+information go through the source code given in the below link.
 
-Best regards,
-Tomasz
+https://android.googlesource.com/kernel/common.git/+/android-3.4/drivers/staging/android/ram_console.c
+>
+> - In what way is the ram_console/persistent_ram functionally different
+>
+> from the old apanic approach ?
+>
+The former logs into ram and the later logs into mtd.
 
+
+> I am just looking for pointers and high level answers, in some sense a
+> direction which I can take to research the mechanisms further. I would
+> appreciate any relevant information in this regard.
+>
+> Thanks
+
+
+ This mailing list is about latest linux kernel  features and patch
+works. So it is good to post these type of questions on
+http://kernelnewbies.org/  or on  google android development
+discussion page.
+
+ Yuvaraj.A
+
+On Thu, Aug 8, 2013 at 11:33 AM, Vijay <thelonejoker@gmail.com> wrote:
+> Hello,
+>
+> I am new to the Kernel-Mailing list. I am not subscribed at the moment
+> and would really appreciate it, if I can be CC'd in the
+> reply/responses for my question.
+>
+> I am studying the different logging mechanisms on Linux in case of a
+> Kernel panic (OOPS). So far from  my search on the web, I have been
+> able to derive the following information, please correct me if wrong:
+>
+> - apanic was an old mechanism of getting the job done.
+> - ram_console/persistent_ram is a new mechanism.
+>
+> Could someone enlighten me about the following in this regard ?
+>
+> - What was the old apanic mechanism, at a high-level how did this work ?
+>
+> - Why was the apanic mechanism deprecated, in favor of the
+> ram_console/persistent_ram mechanism ?
+>
+> - What advantages does the new ram_console/persistent_ram mechinsm
+> bring to the table.
+>
+> - In what way is the ram_console/persistent_ram functionally different
+> from the old apanic approach ?
+>
+> I am just looking for pointers and high level answers, in some sense a
+> direction which I can take to research the mechanisms further. I would
+> appreciate any relevant information in this regard.
+>
+> Thanks
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
