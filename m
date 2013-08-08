@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965056Ab3HHKSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:18:10 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53269 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S934224Ab3HHKRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:17:48 -0400
-X-IronPort-AV: E=Sophos;i="4.89,838,1367942400"; 
-   d="scan'208";a="8154037"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH part5 5/7] memblock, mem_hotplug: Make memblock skip hotpluggable regions by default.
-Date: Thu, 8 Aug 2013 18:16:17 +0800
-Message-Id: <1375956979-31877-6-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 18:16:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 18:16:19,
-	Serialize complete at 2013/08/08 18:16:19
+	id S965080Ab3HHKTX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 06:19:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36962 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965043Ab3HHKSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 06:18:09 -0400
+Date: Thu, 8 Aug 2013 12:18:07 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Dave Hansen <dave.hansen@intel.com>, Jan Kara <jack@suse.cz>,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] Add madvise(..., MADV_WILLWRITE)
+Message-ID: <20130808101807.GB4325@quack.suse.cz>
+References: <cover.1375729665.git.luto@amacapital.net>
+ <20130807134058.GC12843@quack.suse.cz>
+ <520286A4.1020101@intel.com>
+ <CALCETrXAz1fc7y07LhmxNh6zA_KZB4yv57NY2MrhUwKdkypB9w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXAz1fc7y07LhmxNh6zA_KZB4yv57NY2MrhUwKdkypB9w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux kernel cannot migrate pages used by the kernel. As a result, hotpluggable
-memory used by the kernel won't be able to be hot-removed. To solve this
-problem, the basic idea is to prevent memblock from allocating hotpluggable
-memory for the kernel at early time, and arrange all hotpluggable memory in
-ACPI SRAT(System Resource Affinity Table) as ZONE_MOVABLE when initializing
-zones.
+On Wed 07-08-13 11:00:52, Andy Lutomirski wrote:
+> On Wed, Aug 7, 2013 at 10:40 AM, Dave Hansen <dave.hansen@intel.com> wrote:
+> > On 08/07/2013 06:40 AM, Jan Kara wrote:
+> >>   One question before I look at the patches: Why don't you use fallocate()
+> >> in your application? The functionality you require seems to be pretty
+> >> similar to it - writing to an already allocated block is usually quick.
+> >
+> > One problem I've seen is that it still costs you a fault per-page to get
+> > the PTEs in to a state where you can write to the memory.  MADV_WILLNEED
+> > will do readahead to get the page cache filled, but it still leaves the
+> > pages unmapped.  Those faults get expensive when you're trying to do a
+> > couple hundred million of them all at once.
+> 
+> I have grand plans to teach the kernel to use hardware dirty tracking
+> so that (some?) pages can be left clean and writable for long periods
+> of time.  This will be hard.
+  Right that will be tough... Although with your application you could
+require such pages to be mlocked and then I could imagine we would get away
+at least from problems with dirty page accounting.
 
-In the previous patches, we have marked hotpluggable memory regions with
-MEMBLOCK_HOTPLUG flag in memblock.memory.
+> Even so, the second write fault to a page tends to take only a few
+> microseconds, while the first one often blocks in fs code.
+  So you wrote blocks are already preallocated with fallocate(). If you
+also preload pages in memory with MADV_WILLNEED is there still big
+difference between the first and subsequent write fault?
 
-In this patch, we make memblock skip these hotpluggable memory regions in
-the default allocate function.
+> (mmap_sem is a different story, but I see it as a separate issue.)
+  Yeah, agreed.
 
-memblock_find_in_range_node()
-  |-->for_each_free_mem_range_reverse()
-        |-->__next_free_mem_range_rev()
-
-The above is the only place where __next_free_mem_range_rev() is used. So
-skip hotpluggable memory regions when iterating memblock.memory to find
-free memory.
-
-In the later patches, a boot option named "movablenode" will be introduced
-to enable/disable using SRAT to arrange ZONE_MOVABLE.
-
-NOTE: This check will always be done. It is OK because if users didn't specify
-      movablenode option, the hotpluggable memory won't be marked. So this
-      check won't skip any memory, which means the kernel will act as before.
-
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- mm/memblock.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/mm/memblock.c b/mm/memblock.c
-index ecd8568..3ea4301 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -695,6 +695,10 @@ void __init_memblock __next_free_mem_range(u64 *idx, int nid,
-  * @out_nid: ptr to int for nid of the range, can be %NULL
-  *
-  * Reverse of __next_free_mem_range().
-+ *
-+ * Linux kernel cannot migrate pages used by itself. Memory hotplug users won't
-+ * be able to hot-remove hotpluggable memory used by the kernel. So this
-+ * function skip hotpluggable regions when allocating memory for the kernel.
-  */
- void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
- 					   phys_addr_t *out_start,
-@@ -719,6 +723,10 @@ void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
- 		if (nid != MAX_NUMNODES && nid != memblock_get_region_node(m))
- 			continue;
- 
-+		/* skip hotpluggable memory regions */
-+		if (m->flags & MEMBLOCK_HOTPLUG)
-+			continue;
-+
- 		/* scan areas before each reservation for intersection */
- 		for ( ; ri >= 0; ri--) {
- 			struct memblock_region *r = &rsv->regions[ri];
+								Honza
 -- 
-1.7.1
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
