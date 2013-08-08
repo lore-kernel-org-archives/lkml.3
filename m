@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab3HHEyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 00:54:51 -0400
-Received: from 19.mo4.mail-out.ovh.net ([87.98.179.66]:40586 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754264Ab3HHEyt (ORCPT
+	id S1755546Ab3HHFAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 01:00:33 -0400
+Received: from mo4.mail-out.ovh.net ([178.32.228.4]:45237 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab3HHFAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 00:54:49 -0400
+	Thu, 8 Aug 2013 01:00:32 -0400
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
@@ -17,16 +17,18 @@ To: Grant Likely <grant.likely@linaro.org>,
         Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH v3 00/19] ARM: at91: move to common clk framework
-Date: Thu,  8 Aug 2013 06:53:28 +0200
-Message-Id: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH v3 01/19] ARM: at91: move at91_pmc.h to include/linux/clk/at91_pmc.h
+Date: Thu,  8 Aug 2013 06:59:05 +0200
+Message-Id: <1375937945-3851-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 2676545554864175152
+In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
+References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 2770558197402466352
 X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -40,145 +42,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch moves at91_pmc.h header from machine specific directory
+(arch/arm/mach-at91/include/mach/at91_pmc.h) to clk include directory
+(include/linux/clk/at91_pmc.h).
+We need this to avoid reference to machine specific headers in clk
+drivers.
 
-This patch series is the 3rd version of the new at91 clock implementation
-(using common clk framework).
-
-Most of the clock provided by the PMC (Power Management Controller) are
-implemented :
-- main clock (main oscillator)
-- pll clocks
-- master clock
-- programmable clocks
-- utmi clock
-- peripheral clocks
-- system clocks
-
-This implementation is only compatible with device tree definition.
-The goal is to define the whole clock tree in the device tree.
-
-Please feel free to comment the dt bindinds.
-
-This patch series is based on linux-next and has been tested on sama5d31ek
-board using device tree. It compiles for other SoCs and both with and
-but it has not been tested (Richard, I did not add your Tested-by because
-a lot of things have changed since v2).
-
-BTW could other people test it on other boards (I only have a kizbox and
-a sama5d31ek dev kit).
-
-Best Regards,
-Boris
-
-Changes since v2:
- - fix several bugs in clk implementations
- - drop non-dt boards support
- - split the series to ease review and tests:
-   * 1 patch series for new clk implementations (this series)
-   * 1 patch series to move each at91 SoC to common clk framework (coming soon)
- - modify dt-bindings (add atmel,clk- prefix to atmel specific properties)
- - add clk macros for dt-bindings
- - add pmc framework (helper function to access pmc registers)
- - add interrupt support to enable passive wait in clk_prepare functions
-
-Changes since v1:
- - fix bugs in pll, programmable and system clock implementations
-   (wrong bit position).
- - add usb clock configuration support (ohci and udc drivers +
-   clk_lookup for non dt boards)
- - rework of the system clock interfaces (no need to define a parent clock,
-   system clock is a gate with no rate info)
- - change system, peripheral and programmable clk dt bindings (1 master node
-   and multiple child nodes each defining a system/peripheral or prog clock)
- - fix bugs in sama5 dt definition
-
-Boris BREZILLON (19):
-  ARM: at91: move at91_pmc.h to include/linux/clk/at91_pmc.h
-  ARM: at91: add Kconfig options for common clk support
-  clk: at91: add PMC base support
-  clk: at91: add PMC macro file for dt definitions
-  clk: at91: add PMC main clock
-  clk: at91: add PMC pll clocks
-  clk: at91: add pll id macros for pll dt bindings
-  clk: at91: add PMC master clock
-  clk: at91: add PMC system clocks
-  ARM: at91/dt: add system clk id definitions in dt-bindings include
-    dir
-  clk: at91: add PMC peripheral clocks
-  clk: at91: add peripheral clk macros for peripheral clk dt bindings
-  clk: at91: add PMC programmable clocks
-  clk: at91: add PMC utmi clock
-  clk: at91: add PMC usb clock
-  clk: at91: add PMC smd clock
-  clk: at91: add PMC clk device tree binding doc.
-  ARM: at91: move pit timer to common clk framework
-  ARM: at91: add new compatible strings for pmc driver
-
- .../devicetree/bindings/clock/at91-clock.txt       |  312 ++++++++++++
- arch/arm/mach-at91/Kconfig                         |   44 ++
- arch/arm/mach-at91/Kconfig.non_dt                  |    6 +
- arch/arm/mach-at91/Makefile                        |    2 +-
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
  arch/arm/mach-at91/at91rm9200.c                    |    2 +-
  arch/arm/mach-at91/at91sam9260.c                   |    2 +-
  arch/arm/mach-at91/at91sam9261.c                   |    2 +-
  arch/arm/mach-at91/at91sam9263.c                   |    2 +-
- arch/arm/mach-at91/at91sam926x_time.c              |   14 +-
  arch/arm/mach-at91/at91sam9g45.c                   |    2 +-
  arch/arm/mach-at91/at91sam9n12.c                   |    2 +-
  arch/arm/mach-at91/at91sam9rl.c                    |    2 +-
  arch/arm/mach-at91/at91sam9x5.c                    |    2 +-
- arch/arm/mach-at91/clock.c                         |    8 +-
- arch/arm/mach-at91/generic.h                       |    3 +-
+ arch/arm/mach-at91/clock.c                         |    2 +-
  arch/arm/mach-at91/pm.c                            |    2 +-
  arch/arm/mach-at91/pm_slowclock.S                  |    2 +-
  arch/arm/mach-at91/sama5d3.c                       |    2 +-
- arch/arm/mach-at91/setup.c                         |    8 +-
- drivers/clk/Makefile                               |    1 +
- drivers/clk/at91/Makefile                          |   12 +
- drivers/clk/at91/clk-main.c                        |  171 +++++++
- drivers/clk/at91/clk-master.c                      |  386 +++++++++++++++
- drivers/clk/at91/clk-peripheral.c                  |  401 ++++++++++++++++
- drivers/clk/at91/clk-pll.c                         |  506 ++++++++++++++++++++
- drivers/clk/at91/clk-plldiv.c                      |  137 ++++++
- drivers/clk/at91/clk-programmable.c                |  419 ++++++++++++++++
- drivers/clk/at91/clk-smd.c                         |  171 +++++++
- drivers/clk/at91/clk-system.c                      |  191 ++++++++
- drivers/clk/at91/clk-usb.c                         |  323 +++++++++++++
- drivers/clk/at91/clk-utmi.c                        |  161 +++++++
- drivers/clk/at91/pmc.c                             |  387 +++++++++++++++
- drivers/clk/at91/pmc.h                             |  111 +++++
+ arch/arm/mach-at91/setup.c                         |    2 +-
  drivers/usb/gadget/atmel_usba_udc.c                |    2 +-
- .../dt-bindings/clk/at91/at91rm9200/clk-system.h   |   16 +
- .../dt-bindings/clk/at91/at91sam9261/clk-system.h  |   15 +
- .../clk/at91/at91sam9x5/clk-peripheral.h           |   15 +
- include/dt-bindings/clk/at91/common/clk-pll.h      |   13 +
- include/dt-bindings/clk/at91/common/clk-system.h   |   21 +
- include/dt-bindings/clk/at91/common/pmc.h          |   20 +
- .../include/mach => include/linux/clk}/at91_pmc.h  |    4 +-
- 41 files changed, 3882 insertions(+), 20 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/at91-clock.txt
- create mode 100644 drivers/clk/at91/Makefile
- create mode 100644 drivers/clk/at91/clk-main.c
- create mode 100644 drivers/clk/at91/clk-master.c
- create mode 100644 drivers/clk/at91/clk-peripheral.c
- create mode 100644 drivers/clk/at91/clk-pll.c
- create mode 100644 drivers/clk/at91/clk-plldiv.c
- create mode 100644 drivers/clk/at91/clk-programmable.c
- create mode 100644 drivers/clk/at91/clk-smd.c
- create mode 100644 drivers/clk/at91/clk-system.c
- create mode 100644 drivers/clk/at91/clk-usb.c
- create mode 100644 drivers/clk/at91/clk-utmi.c
- create mode 100644 drivers/clk/at91/pmc.c
- create mode 100644 drivers/clk/at91/pmc.h
- create mode 100644 include/dt-bindings/clk/at91/at91rm9200/clk-system.h
- create mode 100644 include/dt-bindings/clk/at91/at91sam9261/clk-system.h
- create mode 100644 include/dt-bindings/clk/at91/at91sam9x5/clk-peripheral.h
- create mode 100644 include/dt-bindings/clk/at91/common/clk-pll.h
- create mode 100644 include/dt-bindings/clk/at91/common/clk-system.h
- create mode 100644 include/dt-bindings/clk/at91/common/pmc.h
- rename {arch/arm/mach-at91/include/mach => include/linux/clk}/at91_pmc.h (98%)
+ .../include/mach => include/linux/clk}/at91_pmc.h  |    2 +-
+ 15 files changed, 15 insertions(+), 15 deletions(-)
+ rename {arch/arm/mach-at91/include/mach => include/linux/clk}/at91_pmc.h (99%)
 
+diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+index 4aad93d..102dac6 100644
+--- a/arch/arm/mach-at91/at91rm9200.c
++++ b/arch/arm/mach-at91/at91rm9200.c
+@@ -12,13 +12,13 @@
+ 
+ #include <linux/module.h>
+ #include <linux/reboot.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <asm/system_misc.h>
+ #include <mach/at91rm9200.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/at91_st.h>
+ #include <mach/cpu.h>
+ 
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index 5de6074..16d7817 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/irq.h>
+@@ -20,7 +21,6 @@
+ #include <mach/cpu.h>
+ #include <mach/at91_dbgu.h>
+ #include <mach/at91sam9260.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_aic.h"
+ #include "at91_rstc.h"
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index 0e07932..c8f5958 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/irq.h>
+@@ -19,7 +20,6 @@
+ #include <asm/system_misc.h>
+ #include <mach/cpu.h>
+ #include <mach/at91sam9261.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_aic.h"
+ #include "at91_rstc.h"
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index 6ce7d18..cd8ad95 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/irq.h>
+@@ -18,7 +19,6 @@
+ #include <asm/mach/map.h>
+ #include <asm/system_misc.h>
+ #include <mach/at91sam9263.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_aic.h"
+ #include "at91_rstc.h"
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 474ee04..9794b20 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -12,13 +12,13 @@
+ 
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <asm/system_misc.h>
+ #include <mach/at91sam9g45.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "at91_aic.h"
+diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
+index c7d670d..5b83c66 100644
+--- a/arch/arm/mach-at91/at91sam9n12.c
++++ b/arch/arm/mach-at91/at91sam9n12.c
+@@ -8,12 +8,12 @@
+ 
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <mach/at91sam9n12.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "board.h"
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index d4ec0d9..947da95 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -10,6 +10,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/proc-fns.h>
+ #include <asm/irq.h>
+@@ -19,7 +20,6 @@
+ #include <mach/cpu.h>
+ #include <mach/at91_dbgu.h>
+ #include <mach/at91sam9rl.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_aic.h"
+ #include "at91_rstc.h"
+diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+index 2abee66..0c527da 100644
+--- a/arch/arm/mach-at91/at91sam9x5.c
++++ b/arch/arm/mach-at91/at91sam9x5.c
+@@ -8,12 +8,12 @@
+ 
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <mach/at91sam9x5.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "board.h"
+diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
+index 6b2630a..5f02aea 100644
+--- a/arch/arm/mach-at91/clock.c
++++ b/arch/arm/mach-at91/clock.c
+@@ -24,9 +24,9 @@
+ #include <linux/clk.h>
+ #include <linux/io.h>
+ #include <linux/of_address.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <mach/hardware.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include <asm/proc-fns.h>
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 15afb5d..692cacd 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -19,13 +19,13 @@
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/irq.h>
+ #include <linux/atomic.h>
+ #include <asm/mach/time.h>
+ #include <asm/mach/irq.h>
+ 
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "at91_aic.h"
+diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
+index 098c28d..2001877 100644
+--- a/arch/arm/mach-at91/pm_slowclock.S
++++ b/arch/arm/mach-at91/pm_slowclock.S
+@@ -13,8 +13,8 @@
+  */
+ 
+ #include <linux/linkage.h>
++#include <linux/clk/at91_pmc.h>
+ #include <mach/hardware.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/at91_ramc.h>
+ 
+ 
+diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
+index 4012797..0003949 100644
+--- a/arch/arm/mach-at91/sama5d3.c
++++ b/arch/arm/mach-at91/sama5d3.c
+@@ -9,12 +9,12 @@
+ 
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+ #include <mach/sama5d3.h>
+-#include <mach/at91_pmc.h>
+ #include <mach/cpu.h>
+ 
+ #include "soc.h"
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index b17fbcf..41aa68b 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -11,6 +11,7 @@
+ #include <linux/pm.h>
+ #include <linux/of_address.h>
+ #include <linux/pinctrl/machine.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ #include <asm/system_misc.h>
+ #include <asm/mach/map.h>
+@@ -18,7 +19,6 @@
+ #include <mach/hardware.h>
+ #include <mach/cpu.h>
+ #include <mach/at91_dbgu.h>
+-#include <mach/at91_pmc.h>
+ 
+ #include "at91_shdwc.h"
+ #include "soc.h"
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index f018017..3615ef5 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -326,7 +326,7 @@ static int vbus_is_present(struct usba_udc *udc)
+ 
+ #if defined(CONFIG_ARCH_AT91SAM9RL)
+ 
+-#include <mach/at91_pmc.h>
++#include <linux/clk/at91_pmc.h>
+ 
+ static void toggle_bias(int is_on)
+ {
+diff --git a/arch/arm/mach-at91/include/mach/at91_pmc.h b/include/linux/clk/at91_pmc.h
+similarity index 99%
+rename from arch/arm/mach-at91/include/mach/at91_pmc.h
+rename to include/linux/clk/at91_pmc.h
+index c604cc6..00c45b3 100644
+--- a/arch/arm/mach-at91/include/mach/at91_pmc.h
++++ b/include/linux/clk/at91_pmc.h
+@@ -1,5 +1,5 @@
+ /*
+- * arch/arm/mach-at91/include/mach/at91_pmc.h
++ * include/linux/clk/at91_pmc.h
+  *
+  * Copyright (C) 2005 Ivan Kokshaysky
+  * Copyright (C) SAN People
 -- 
 1.7.9.5
 
