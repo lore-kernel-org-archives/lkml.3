@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934250Ab3HHNHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:07:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21629 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934211Ab3HHNHv (ORCPT
+	id S934259Ab3HHNIz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:08:55 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35540 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934211Ab3HHNIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:07:51 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=48llYAvPBHsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=r-PqRJr4KhwA:10 a=8up54zFxcE44aTHxrR4A:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375967269.6848.46.camel@gandalf.local.home>
-Subject: Re: [BUG] hackbench locks up with perf in 3.11-rc1 and beyond
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameeter <cl@linux.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>
-Date: Thu, 08 Aug 2013 09:07:49 -0400
-In-Reply-To: <20130808050441.GA3214@lge.com>
-References: <1375934936.6848.41.camel@gandalf.local.home>
-	 <20130808050441.GA3214@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Aug 2013 09:08:54 -0400
+Date: Thu, 8 Aug 2013 14:08:40 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wei Ni <wni@nvidia.com>, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        linux-tegra@vger.kernel.org, MLongnecker@nvidia.com,
+        khali@linux-fr.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20130808130840.GC6427@sirena.org.uk>
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
+ <1375944991-29182-2-git-send-email-wni@nvidia.com>
+ <20130808110136.GA6427@sirena.org.uk>
+ <52038035.7030803@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dUQ3G7okZyz11iOi"
+Content-Disposition: inline
+In-Reply-To: <52038035.7030803@roeck-us.net>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-08 at 14:04 +0900, Joonsoo Kim wrote:
 
-> Sorry about it.
-> Now, I think that this is a buggy commit, so should be reverted.
-> 
-> For confirm that, could I ask a question about your configuration, Steven?
-> I guess, you may set 0 to all kmem caches's cpu_partial via sysfs, doesn't it?
+--dUQ3G7okZyz11iOi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Ah, you're right. As this box is also used to test the -rt patch,
-there's a script installed to disable all cpu_partials. This is because
-cpu_partials are known to cause non-deterministic behavior in -rt.
+On Thu, Aug 08, 2013 at 04:25:41AM -0700, Guenter Roeck wrote:
+> On 08/08/2013 04:01 AM, Mark Brown wrote:
 
-I forgot about that script, as this box is used for regular mainline
-testing as well.
+> >That said if you *are* going to do this you should request the
+> >regulator using devm_regulator_get_optional(), this is intended to
+> >support things that don't need regulators (though that's not the case
+> >here).
 
-> 
-> In this case, memory leak is possible in following case.
-> Code flow of possible leak is follwing case.
-> 
-> * in __slab_free()
-> 1. (!new.inuse || !prior) && !was_frozen
-> 2. !kmem_cache_debug && !prior
-> 3. new.frozen = 1
-> 4. after cmpxchg_double_slab, run the (!n) case with new.frozen=1
-> 5. with this patch, put_cpu_partial() doesn't do anything,
-> 	because this cache's cpu_partial is 0
-> 6. return
-> 
-> In step 5, leak occur.
-> 
-> I have a solution to prevent this problem, but in this stage, IMHO,
-> reverting it may be better.
+> The lm90 driver works perfectly fine without regulator.
 
-Yeah, I would suggest that too. As this seems to be a serious
-regression.
+I'd be most surprised if the device worked without power, if the driver
+fails to get and enable a regulator for it then that's not great
+(especially if it does so silently).
 
-Thanks!
+Note that the regulator API is written to stub itself out if not
+enabled, the code should be able to assume that it's there.
 
--- Steve
+--dUQ3G7okZyz11iOi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIbBAEBAgAGBQJSA5hVAAoJELSic+t+oim9t0gP92irDevC9fvT52swMQvNruRs
+ogXmFlGn4wuUsZPa81UK5wCmj8eWjV5sCqxeO3l2xlyBlA5UDzfmWQAjMEuJzTSg
+T0yOaXZq2vDUwvEuhpBfvvd1f3dDAAoSlIL/QN9uYfwLKSQCKMT/Ls4nG/3rmj5K
+jfumdG2JtSy8c1KHW4L6MHYcE5n/88Dzkb8WcSKS0cKYbAT1uCBSC/7PCg/5O/IT
+PhPTBzOo/DeUpk8RjBF+59mmkIHzytgR6c8WbVwtvg0wMnhfMv6O7Mhv5RaekWcA
+2SfYGdhGKBzHjz9a4Tw8pUhpO9jy2RzEW6PkbfI7vnHw7Fa7Lh9/ZU/pcu4JYcUW
+YZH+9vO7IAqJllQuxrKRI7rq51ukav0SKtgYfb/2Jqn3eEFSO4o6hStSR5NNQvhJ
+cA5GAdXQ5FIxgHLK7Ze7ijEmZHvW2WKcdGdtaPbkvCUjyzK8yhiMZin/sB3Yh1H3
+8MwoFBZqEvyUMmDVuB7QpHya9F/pQlAFYg9UcnUBt38+jSipBUn2i5mdEB/IbwHi
+GbMVeWTVMKExQlfaL+wcSIf0ZeT9heoWQT7gC/ARrYWkOS//u4BcKcB7BKm2UiAO
+r+iAQFGPjGQJOL7N8NPYRrvUta4Ing+GIFNjQ00m+sIRWlb/sucXAmPGT25Gw4jQ
+uOf2FdHbtv3oBXJEA9M=
+=j9PC
+-----END PGP SIGNATURE-----
+
+--dUQ3G7okZyz11iOi--
