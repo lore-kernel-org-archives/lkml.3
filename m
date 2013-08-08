@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965759Ab3HHPCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 11:02:22 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:46029 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965294Ab3HHPCT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 11:02:19 -0400
-Content-Type: text/plain; charset=GB2312
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable reprogramming in remove_hrtimer
-From: "ethan.zhao" <ethan.kernel@gmail.com>
-In-Reply-To: <1375774140.5412.9.camel@marge.simpson.net>
-Date: Thu, 8 Aug 2013 23:02:06 +0800
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, johlstei@codeaurora.org,
-        Yinghai Lu <yinghai@kernel.org>, Jin Feng <joe.jin@oracle.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BBA29515-CD89-47C5-B155-B71A6F6632DC@gmail.com>
-References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com> <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de> <CABawtvP4oLuvHOS3prbbgPShXVziV_wTo7i6KCqJ9KkoVdz0ag@mail.gmail.com> <20130730093519.GP3008@twins.programming.kicks-ass.net> <1375774140.5412.9.camel@marge.simpson.net>
-To: Mike Galbraith <bitbucket@online.de>
-X-Mailer: Apple Mail (2.1508)
+	id S965769Ab3HHPCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 11:02:53 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34846 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965294Ab3HHPCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 11:02:51 -0400
+Date: Thu, 8 Aug 2013 17:02:49 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Laszlo Ersek <lersek@redhat.com>
+Cc: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
+        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        "Jordan Justen (Intel address)" <jordan.l.justen@intel.com>
+Subject: Re: [edk2] Corrupted EFI region
+Message-ID: <20130808150249.GB27974@pd.tnic>
+References: <51FFC19A.1020204@redhat.com>
+ <20130805161247.GF31845@pd.tnic>
+ <51FFD5B0.9080000@redhat.com>
+ <20130805164731.GG31845@pd.tnic>
+ <52001896.1030509@redhat.com>
+ <20130805220808.GC14067@pd.tnic>
+ <20130806141036.GD14891@pd.tnic>
+ <520116D1.2010000@redhat.com>
+ <20130807151935.GJ17920@pd.tnic>
+ <5202889C.2080608@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5202889C.2080608@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 07, 2013 at 07:49:16PM +0200, Laszlo Ersek wrote:
 
-ÔÚ 2013-8-6£¬ÏÂÎç3:29£¬Mike Galbraith <bitbucket@online.de> Ð´µÀ£º
+[â€¦]
 
-> +int sched_needs_cpu(int cpu)
-> +{
-> +	return  cpu_rq(cpu)->avg_idle < sysctl_sched_migration_cost;
-> +}
-> +
-> #else /* CONFIG_NO_HZ_COMMON */
+> Now, lines 01 to 05 *do not happen*.
+>
+> More precisely, they don't happen in the kernel. They happen in the
+> firmware. Specifically, "OvmfPkg/Library/LoadLinuxLib/Linux.c".
+>
+> You're booting the kernel from the qemu command line. The kernel you
+> run is also an "[o]ld kernel[] without EFI handover protocol". So what
+> happens is, OVMF downloads the kernel image from qemu over fw_cfg,
+> figures it's an old kernel...
+
+Right, I think this is easier than having to go into the EFI shell each
+time and run bzImage.efi. Unless there's a faster way to do that along
+with passing it kernel command line parameters...
+
+[â€¦]
+
+> In one sentence, efi_memblock_x86_reserve_range() expects that
+> "boot_params.efi_info->efi_memmap" has been allocated as "loader data"
+> (by whomever), but SetupLinuxMemmap() violates this by allocating the
+> storage as "boot services data".
+>
+> This leads to double reservation attempts between
+> efi_memblock_x86_reserve_range(), and efi_reserve_boot_services().
+
+Ok, this makes sense.
+
+> The attached edk2 patch should fix it. Please confirm.
 > 
-> static inline bool got_nohz_idle_kick(void)
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -548,7 +548,7 @@ static ktime_t tick_nohz_stop_sched_tick
-> 		time_delta = timekeeping_max_deferment();
-> 	} while (read_seqretry(&jiffies_lock, seq));
+> Thanks,
+> Laszlo
 > 
-> -	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
-> +	if (sched_needs_cpu(cpu) || rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
-> 	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
-> 		next_jiffies = last_jiffies + 1;
-> 		delta_jiffies = 1;
 
-If the performace regression was caused by too much expensive clock device reprogramming and too frequent entering /exiting of C-states¡­   this patch should work.
-except the following result is almost always false under 3.11-rc3 code.
+> From 4a9e1f10fa2d06496f1983c25c47c6a1373d2f42 Mon Sep 17 00:00:00 2001
+> From: Laszlo Ersek <lersek@redhat.com>
+> Date: Wed, 7 Aug 2013 19:39:30 +0200
+> Subject: [PATCH] OvmfPkg: allocate the EFI memory map for Linux as Loader Data
+> 
+> In Linux, efi_memblock_x86_reserve_range() and efi_reserve_boot_services()
+> expect that whoever allocates the EFI memmap allocates it in Loader Data
+> type memory. Linux's own exit_boot()-->low_alloc() complies, but
+> SetupLinuxMemmap() in LoadLinuxLib doesn't.
+> 
+> The memory type discrepancy leads to efi_memblock_x86_reserve_range() and
+> efi_reserve_boot_services() both trying to reserve the range backing the
+> memmap, resulting in memmap entry truncation in
+> efi_reserve_boot_services().
+> 
+> This fix also makes this allocation consistent with all other persistent
+> allocations in  "OvmfPkg/Library/LoadLinuxLib/Linux.c".
+> 
+> Contributed-under: TianoCore Contribution Agreement 1.0
+> 
+> Signed-off-by: Laszlo Ersek <lersek@redhat.com>
 
-> return  cpu_rq(cpu)->avg_idle < sysctl_sched_migration_cost;
+Reported-and-tested-by: Borislav Petkov <bp@suse.de>
 
+Great, thanks for this.
 
+I guess we got that out of the way too. I finally can concentrate on my
+patches again :-)
 
-Ethan
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
