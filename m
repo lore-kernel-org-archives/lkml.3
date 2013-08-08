@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965247Ab3HHLZh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 07:25:37 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:53078 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757767Ab3HHLZf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 07:25:35 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <52038035.7030803@roeck-us.net>
-Date: Thu, 08 Aug 2013 04:25:41 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Wei Ni <wni@nvidia.com>, khali@linux-fr.org, swarren@wwwdotorg.org,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        MLongnecker@nvidia.com, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
-References: <1375944991-29182-1-git-send-email-wni@nvidia.com> <1375944991-29182-2-git-send-email-wni@nvidia.com> <20130808110136.GA6427@sirena.org.uk>
-In-Reply-To: <20130808110136.GA6427@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S965257Ab3HHL00 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 07:26:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35773 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965220Ab3HHL0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 07:26:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,838,1367996400"; 
+   d="scan'208";a="383802769"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 0/8] perf tools: add symbol filter to struct machine
+Date: Thu,  8 Aug 2013 14:32:19 +0300
+Message-Id: <1375961547-30267-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 04:01 AM, Mark Brown wrote:
-> On Thu, Aug 08, 2013 at 02:56:29PM +0800, Wei Ni wrote:
->
->> +	mutex_lock(&data->update_lock);
->> +
->> +	if (is_enable)
->> +		ret = regulator_enable(data->lm90_reg);
->> +	else
->> +		ret = regulator_disable(data->lm90_reg);
->> +
->> +	if (ret < 0)
->> +		dev_err(&client->dev,
->> +			"Error in %s rail vdd, error %d\n",
->> +			(is_enable) ? "enabling" : "disabling", ret);
->> +	else
->> +		dev_info(&client->dev, "success in %s rail vdd\n",
->> +			 (is_enable) ? "enabling" : "disabling");
->> +
->> +	mutex_unlock(&data->update_lock);
->
-> Two things here.  One is that it's not clear what this lokc is
-> protecting since the only thing in the locked region is the regulator
-> operation and that is thread safe.  The other thing is that I'm not
-> seeing anthing that ensures that enables and disables are matched -
-> regulators are reference counted so two enables need two disables.
->
->> +	data->lm90_reg = regulator_get(&client->dev, "vdd");
->> +	if (IS_ERR_OR_NULL(data->lm90_reg)) {
->
-> NULL is a valid regulator, use IS_ERR().
->
->> +		if (PTR_ERR(data->lm90_reg) == -ENODEV)
->> +			dev_info(&client->dev,
->> +				 "No regulator found for vdd. Assuming vdd is always powered.");
->> +		else
->> +			dev_warn(&client->dev,
->> +				 "Error [%ld] in getting the regulator handle for vdd.\n",
->> +				 PTR_ERR(data->lm90_reg));
->
-> You shouldn't just be ignoring errors here, though there are deployment
-> difficulties with making sure a stub regulator is provided.  These
-> should be getting easier after the next merge window, the stubs will be
-> being tweaked slightly to have an "assume it's there" option even when
-> regulators are used.  Especially in cases with device tree you should be
-> paying attention to -EPROBE_DEFER, that will accurately reflect if a
-> regulator is present but not loaded yet.
->
-> That said if you *are* going to do this you should request the
-> regulator using devm_regulator_get_optional(), this is intended to
-> support things that don't need regulators (though that's not the case
-> here).
->
-The lm90 driver works perfectly fine without regulator.
+Hi
 
-Guenter
+Here are some patches that add symbol filter to struct machine as
+we briefly discussed on irc.
 
+The first patch puts the symbol filter on both struct machine and
+struct machines so that guest machines added later inherit the same
+symbol filter.
+
+The next 4 patches change the tools to set the machines symbol filter.
+
+The final 3 patches remove symbol filter as a parameter in some cases
+where it is redundant.
+
+
+Adrian Hunter (8):
+      perf tools: add symbol filter to struct machine
+      perf top: set the machines symbol filter
+      perf report: set the machines symbol filter
+      perf mem: remove unused symbol filter member
+      perf annotate: set the machines symbol filter
+      perf tools: remove filter parameter of perf_event__preprocess_sample()
+      perf tools: remove filter parameter of thread__find_addr_location()
+      perf tools: remove filter parameter of thread__find_addr_map()
+
+ tools/perf/builtin-annotate.c   |  5 +++--
+ tools/perf/builtin-diff.c       |  2 +-
+ tools/perf/builtin-inject.c     |  2 +-
+ tools/perf/builtin-mem.c        |  4 +---
+ tools/perf/builtin-report.c     |  7 +++----
+ tools/perf/builtin-script.c     |  6 +++---
+ tools/perf/builtin-top.c        |  5 +++--
+ tools/perf/tests/code-reading.c |  2 +-
+ tools/perf/tests/hists_link.c   |  4 ++--
+ tools/perf/util/build-id.c      |  2 +-
+ tools/perf/util/event.c         | 20 ++++++++++----------
+ tools/perf/util/event.h         |  3 +--
+ tools/perf/util/machine.c       | 28 ++++++++++++++++++++++++----
+ tools/perf/util/machine.h       |  5 +++++
+ tools/perf/util/session.c       |  3 +--
+ tools/perf/util/thread.h        |  5 ++---
+ tools/perf/util/unwind.c        |  6 +++---
+ 17 files changed, 65 insertions(+), 44 deletions(-)
+
+
+Regards
+Adrian
