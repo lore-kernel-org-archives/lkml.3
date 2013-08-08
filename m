@@ -1,67 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3HHFtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 01:49:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:38911 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025Ab3HHFtM (ORCPT
+	id S1755067Ab3HHFux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 01:50:53 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:38158 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251Ab3HHFuv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 01:49:12 -0400
-Date: Thu, 8 Aug 2013 15:49:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Simon Horman <horms@verge.net.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Subject: linux-next: manual merge of the renesas tree with the leds tree
-Message-Id: <20130808154908.bf713709a9672dcd95b33a30@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__8_Aug_2013_15_49_08_+1000_rd09.PUEmHLNj+V."
+	Thu, 8 Aug 2013 01:50:51 -0400
+Date: Thu, 8 Aug 2013 01:50:32 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Dan Aloni <alonid@postram.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] netconsole: avoid a crash with multiple sysfs writers
+Message-ID: <20130808055032.GA3898@neilslaptop.think-freely.org>
+References: <1375866164-21933-1-git-send-email-alonid@postram.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1375866164-21933-1-git-send-email-alonid@postram.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__8_Aug_2013_15_49_08_+1000_rd09.PUEmHLNj+V.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Aug 07, 2013 at 12:02:44PM +0300, Dan Aloni wrote:
+> When my 'ifup eth' script was fired multiple times and ran concurrent on
+> my laptop, for some obscure /etc scripting reason, it was revealed
+> that the store_enabled() function in netconsole doesn't handle it nicely,
+> as recorded by the Oops below (a syslog paste, but not mangled too much
+> to prevent from discerning the traceback).
+> 
+> On Linux 3.10.4, this patch seeks to remedy the problem, and it has been
+> running stable on my laptop for a few days.
+> 
+> [52608.609325] BUG: unable to handle kernel NULL pointer dereference at 00000000000003e0
+> [52608.609331] IP: [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
+> [52608.609339] PGD 15e51a067 PUD 15433e067 PMD 0
+> [52608.609343] Oops: 0000 [#1] SMP re firewire_ohci firewire_core crc_itu_t [last unloaded: kvm_intel]
+> [52608.609347] Modules linked in: kvm_intel tun vfat fat ppdev parport_pc parport fuse ipt_MASQUERADE usb_storage nf_conntrack_netbios_ns nf_connAug  5 09:39:28 inception kernel: [52608.609419] CPU: 1 PID: 13467 Comm: netconsole-osir Tainted: PF          O 3.10.4-alonid #15ntrack_ipv4 bridge nf_defrag_ipv4 xt_conntrack nf_Aug  5 09:39:28 inception kernel: [52608.609422] Hardware name: LENOVO 24474KG/24474KG, BIOS G5ET90WW (2.50 ) 12/21/2012vm snd_hda_codec_hdmi mac80211 snd_hda_codec_realtek vsock Aug  5 09:39:28 inception kernel: [52608.609424] task: ffff88015a4397a0 ti: ffff8801ba446000 task.ti: ffff8801ba446000lloc nvidia(POF) videobuf2_memops snd_hwdep snd_seq videobuf2Aug  5 09:39:28 inception kernel: [52608.609426] RIP: 0010:[<ffffffff81532a17>]  [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0imer media snd i2c_i801 ptp lpc_ich mfd_core pps_cAug  5 09:39:28 inception kernel: [52608.609430] RSP: 0018:ffff8801ba447de8  EFLAGS: 00010286e_core crc_itu_t [last unloaded: kvm_intel]
+> [52608.609433] RAX: 0000000000000000 RBX: ffff880210bbcc68 RCX: 0000000000000000
+> [52608.609435] RDX: 0000000000000000 RSI: ffff8801ba447da0 RDI: ffff880210bbcc68
+> [52608.609437] RBP: ffff8801ba447e18 R08: 0000000000000000 R09: 0000000000000001
+> [52608.609439] R10: 000000000000000a R11: f000000000000000 R12: ffff880210bbcc68
+> [52608.609441] R13: ffff88020bc41000 R14: 0000000000000002 R15: 000000000000000200000000000
+> [52608.609443] FS:  00007f38d7bff740(0000) GS:ffff88021dc40000(0000) knlGS:0000000000000000
+> [52608.609446] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003300000000001427e0
+> [52608.609448] CR2: 00000000000003e0 CR3: 0000000154103000 CR4: 00000000001427e0
+> [52608.609450] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [52608.609452] netpoll: netconsole: local port 6665ess 10.0.0.27
+> [52608.609454] netpoll: netconsole: local IPv4 address 10.0.0.27
+> [52608.609456] netpoll: netconsole: interface 'em1'
+> [52608.609457] netpoll: netconsole: remote port 514ress 10.0.0.15
+> [52608.609459] netpoll: netconsole: remote IPv4 address 10.0.0.15:65:a8:9a:c7
+> [52608.609461] netpoll: netconsole: remote ethernet address 1c:6f:65:a8:9a:c7400
+> [52608.609463] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [52608.609464] Stack:801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
+> [52608.609466]  ffff8801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
+> [52608.609471]  0000000000000002 0000000000000002 ffff8801ba447e38 ffffffff81532af4
+> [52608.609475]  0000000000000000 ffff880210bbcc00 ffff8801ba447e78 ffffffff81420e7c
+> [52608.609479] Call Trace:
+> [52608.609484]  [<ffffffff81532af4>] netpoll_cleanup+0x24/0x50
+> [52608.609489]  [<ffffffff81420e7c>] store_enabled+0x5c/0xe0store+0x2e/0x40
+> [52608.609492]  [<ffffffff81420abe>] netconsole_target_attr_store+0x2e/0x40
+> [52608.609498]  [<ffffffff811ff2a2>] configfs_write_file+0xd2/0x130
+> [52608.609503]  [<ffffffff81188f95>] vfs_write+0xc5/0x1f0
+> [52608.609506]  [<ffffffff81189482>] SyS_write+0x52/0xa0/0x10
+> [52608.609511]  [<ffffffff81628c2e>] ? do_page_fault+0xe/0x10
+> [52608.609516]  [<ffffffff8162d402>] system_call_fastpath+0x16/0x1b
+> [52608.609517] Code: 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 48 83 ec 30 4c 89 65 e0 48 89 5d d8 49 89 fc 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 48 8
+> [52608.609559] RIP  [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
+> [52608.609563]  RSP <ffff8801ba447de8>
+> [52608.609564] CR2: 00000000000003e0
+> [52608.609567] ---[ end trace d25ec343349b61d2 ]---
+> 
+> Signed-off-by: Dan Aloni <alonid@postram.com>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Neil Horman <nhorman@tuxdriver.com>
+> ---
+>  drivers/net/netconsole.c | 13 ++++++++++++-
+>  1 file changed, 12 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+> index 4822aaf..dcb2134 100644
+> --- a/drivers/net/netconsole.c
+> +++ b/drivers/net/netconsole.c
+> @@ -102,6 +102,7 @@ struct netconsole_target {
+>  	struct config_item	item;
+>  #endif
+>  	int			enabled;
+> +	struct mutex		mutex;
+>  	struct netpoll		np;
+>  };
+>  
+> @@ -181,6 +182,7 @@ static struct netconsole_target *alloc_param_target(char *target_config)
+>  	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
+>  	nt->np.local_port = 6665;
+>  	nt->np.remote_port = 6666;
+> +	mutex_init(&nt->mutex);
+>  	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
+>  
+>  	/* Parse parameters and setup netpoll */
+> @@ -322,6 +324,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+>  		return -EINVAL;
+>  	}
+>  
+> +	mutex_lock(&nt->mutex);
+>  	if (enabled) {	/* 1 */
+>  
+>  		/*
+> @@ -331,8 +334,10 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+>  		netpoll_print_options(&nt->np);
+>  
+>  		err = netpoll_setup(&nt->np);
+> -		if (err)
+> +		if (err) {
+> +			mutex_unlock(&nt->mutex);
+>  			return err;
+> +		}
+>  
+>  		printk(KERN_INFO "netconsole: network logging started\n");
+>  
+> @@ -341,6 +346,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
+>  	}
+>  
+>  	nt->enabled = enabled;
+> +	mutex_unlock(&nt->mutex);
+>  
+>  	return strnlen(buf, count);
+>  }
+> @@ -597,6 +603,7 @@ static struct config_item *make_netconsole_target(struct config_group *group,
+>  	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
+>  	nt->np.local_port = 6665;
+>  	nt->np.remote_port = 6666;
+> +	mutex_init(&nt->mutex);
+>  	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
+>  
+>  	/* Initialize the config_item member */
+> @@ -682,7 +689,11 @@ restart:
+>  				 * we might sleep in __netpoll_cleanup()
+>  				 */
+>  				spin_unlock_irqrestore(&target_list_lock, flags);
+> +
+> +				mutex_lock(&nt->mutex);
+>  				__netpoll_cleanup(&nt->np);
+> +				mutex_unlock(&nt->mutex);
+> +
+NAK, you can't hold a mutex while calling __netpoll_cleanup.  __netpoll_cleanup
+may sleep and its illegal to hold a mutex while doing so.
+Neil
 
-Hi Simon,
-
-Today's linux-next merge of the renesas tree got a conflict in
-drivers/leds/leds-renesas-tpu.c between commit 33d693e59c42 ("leds: use
-dev_get_platdata()") from the leds tree and commit ae3e4c277669 ("leds:
-Remove leds-renesas-tpu driver") from the renesas tree.
-
-I fixed it up (the latter removed the file, so I did that) and can carry
-the fix as necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__8_Aug_2013_15_49_08_+1000_rd09.PUEmHLNj+V.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSAzFUAAoJEECxmPOUX5FEvCUP/jiiXwlszVgbmE/XmUkNovZd
-s0RG4Dt92jx+dS22KP95N3pB832z5c9O0DqCiQIS1ZXtsPaLlfYYeSKmhnE52Kbb
-Z6jNz9CPaFaX2k/ueUktAl21b8sMfiFz4eXsDCjUymmjXuErJExOoyiL5dcoNEFQ
-xMmitGoAAVdSPtwc4/CbcMSJwxyP4Mn0nP/n6V2uFERfrSFuQNCS2seZ7boN938q
-qTrUnVGi7qxbSH4GJCxt+zCwv+oTkC8KjSlMR/sfhUfiIgSKb7PG/DAOMLagn259
-qdaqzyTux1KRa8yz3WeEvvt7zNxjZaZ/iGlmbilv+FtfmLb/8XEpHywESRVBs1VB
-G0u5ZzUermIaPz7JRRspbagUGucK7Uie2sx/k85Mhr848iuKsG3G95h8xpE4hifS
-2Ea1203VXIrwIr1447vvhDV6ijsGpx1kK+jXoQeK0J3n2L9ZB0ugQQXIrehLBgau
-2aNVpHdu8sHyiGthD+v2WUKQfSx5oQkrEJsFWfu/aaaFxJtPqhOH1mngH5JrM3Xo
-8VwjmFcAZt05vEn5wQUcXa1w+55zLOFKj3eN4LqossYMbqwRVY4xTkVi6s+aC9Mf
-P7hTXNsdsO4to5vU3RwJqbd5L4vP3JJetyJ0VVms5Cjzg+apen4m0xnJm1nQS/QN
-F79aTv/HnKnhnaJh5N+E
-=OYr2
------END PGP SIGNATURE-----
-
---Signature=_Thu__8_Aug_2013_15_49_08_+1000_rd09.PUEmHLNj+V.--
