@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966858Ab3HHXhN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 19:37:13 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:3180 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966433Ab3HHXhK (ORCPT
+	id S966897Ab3HHX6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 19:58:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33713 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966520Ab3HHX6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 19:37:10 -0400
-Message-ID: <1376004959.10300.239.camel@misato.fc.hp.com>
-Subject: Re: Cannot hot remove a memory device
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
-Date: Thu, 08 Aug 2013 17:35:59 -0600
-In-Reply-To: <2966692.KbMK5bTkda@vostro.rjw.lan>
-References: <51FA1E41.20304@jp.fujitsu.com>
-	 <13789925.vhhiTlyGIy@vostro.rjw.lan>
-	 <1376002242.10300.235.camel@misato.fc.hp.com>
-	 <2966692.KbMK5bTkda@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Thu, 8 Aug 2013 19:58:30 -0400
+Date: Fri, 9 Aug 2013 09:58:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Michal Marek <mmarek@suse.cz>,
+        Kevin Hilman <khilman@linaro.org>, sedat.dilek@gmail.com,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux kbuild ML <linux-kbuild@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the ext4 tree
+Message-Id: <20130809095817.4fafdf8cb64428ea062a19b7@canb.auug.org.au>
+In-Reply-To: <20130808215449.GD3282@free.fr>
+References: <20130729110816.12958c3a26400f444a9a5012@canb.auug.org.au>
+	<CA+icZUUt4domktYZZn0Qp3BZoSFqmKic4qSnVP4cuTKwUww_=A@mail.gmail.com>
+	<20130807153840.4f2997b603397c07aca98b2d@canb.auug.org.au>
+	<87zjsted0c.fsf@linaro.org>
+	<20130808102228.d2034d3a4c986d2970926ab9@canb.auug.org.au>
+	<20130808103614.a039da2f236154b52329b28b@canb.auug.org.au>
+	<20130808191650.GB3282@free.fr>
+	<20130808215449.GD3282@free.fr>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__9_Aug_2013_09_58_17_+1000_ca.4epyt/2pxOUE."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-09 at 01:14 +0200, Rafael J. Wysocki wrote:
-> On Thursday, August 08, 2013 04:50:42 PM Toshi Kani wrote:
-> > On Fri, 2013-08-09 at 00:12 +0200, Rafael J. Wysocki wrote:
-> > > On Thursday, August 08, 2013 11:15:20 AM Toshi Kani wrote:
-> > > > On Fri, 2013-08-02 at 18:04 -0600, Toshi Kani wrote:
-> > > > > On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
-> > > > > > On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
-> > > > > > > On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
-> > > >  :
-> > > > > > > I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
-> > > > > > > handle is already set\n").  When two ACPI memory objects associate with
-> > > > > > > a same memory block, the bind procedure of the 2nd ACPI memory object
-> > > > > > > sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
-> > > > > > 
-> > > > > > That sound's plausible, but I wonder how we can fix that?
-> > > > > > 
-> > > > > > There's no way for a single physical device to have two different ACPI
-> > > > > > "companions".  It looks like the memory blocks should be 64 M each in that
-> > > > > > case.  Or we need to create two child devices for each memory block and
-> > > > > > associate each of them with an ACPI object.  That would lead to complications
-> > > > > > in the user space interface, though.
-> > > > > 
-> > > > > Right.  Even bigger issue is that I do not think __add_pages() and
-> > > > > __remove_pages() can add / delete a memory chunk that is less than
-> > > > > 128MB.  128MB is the granularity of them.  So, we may just have to fail
-> > > > > this case gracefully.
-> > > > 
-> > > > FYI: I have submitted the patch blow to close this part of the issue...
-> > > > 
-> > > > https://lkml.org/lkml/2013/8/8/396
-> > > 
-> > > That looks good to me, but we'd still need to make it possible to have
-> > > memory blocks smaller than 128 MB ...
-> > 
-> > Do you mean acpi_bind_one() needs to be able to handle such case?  If
-> > so, it should not be a problem since a memory block device won't be
-> > created when add_memory() fails with the change above.  So, there is no
-> > binding to be done.  If you mean add_memory() needs to be able to handle
-> > a smaller range, that's quite a tough one unless we make the section
-> > size smaller.
-> > 
-> > BTW, when add_memory() fails, the memory hot-add request still succeeds
-> > with no driver attached.  This seems logical, but the added device is
-> > useless when no handler is attached.  And it does not allow ejecting the
-> > device with no handler.  I am not too worry about this since this is a
-> > rare case, but it reminded me that the framework won't handle rollback.
-> 
-> That is a valid observation.
-> 
-> Perhaps we should add a flag that will cause acpi_bus_offline_companions()
-> to fail immediately if that flag is set for the given device?
-> 
-> Then, acpi_memory_enable_device() could set that flag for mem_device->device
-> when either add_memory() or acpi_bind_memory_blocks() fails?
+--Signature=_Fri__9_Aug_2013_09_58_17_+1000_ca.4epyt/2pxOUE.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I am not sure if we need a new flag, but I agree that we could allow
-ejecting a device with no handler attached.  We can probably skip any
-device specific part (such as offlining) when no handler is attached.
+Hi Yann,
 
-Thanks,
--Toshi
+On Thu, 8 Aug 2013 23:54:49 +0200 "Yann E. MORIN" <yann.morin.1998@free.fr>=
+ wrote:
+>
+> Ok, I've had a look in the linux-next archives, and I think I got it.
+> Is the following right?
+>=20
+>     git clean -d; git clean -dX     # To be sure tree is clean
+>     touch empty
+>     make KCONFIG_ALLCONFIG=3Dempty allmodconfig
+>     grep MODULES .config
+>     $ CONFIG_MODULES is not set
 
+Yes, that is what I am seeing.
+
+> If so, I think I found the reason: the modules symbol is _always_ set to
+> being valid as soon as KCONFIG_ALLCONFIG is read, even if it was not
+> present in that file.
+>=20
+> Since it is set to be valid, the following change means it is not
+> affected another value later on.
+>=20
+> So, I wonder what the best option is:
+>   1- revert the following, and find another solution,
+>   2- de-specialise the modules symbol,
+>   3- or further specialise the modules symbol.
+>=20
+> I'd be inclined to go for 1, but I have no straightforward idea so far.
+> It's late here, so I'll look more thouroughly this WE.
+
+Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__9_Aug_2013_09_58_17_+1000_ca.4epyt/2pxOUE.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSBDCeAAoJEECxmPOUX5FEqEsP/jq8vB7El1WhsydZeVb/YpYX
+PR/14PAEgXnRW4Fy4YDYUK49ZQKk2uFZg920EcNgvfBZ2sh2LE/7hOMIEMFrFlvk
+7iyyjZxebgWRqXJHf0Eu69qTnPOI++DXd0kqtnWr0DrCM9hSlKsakqFvVsRuP7hu
+AeXQKRvU2TMWIIlwXQDaB3C64ovfUysAX4nkSgu+U2lokQBT0cQFURWe14txCoLv
+EKeZ8RVgrmIvU18SlzzZE5RCNq1gxCRuRCyQQVF9PH3coEvXNWpYuet4IP+Ibb/B
+m5L8r0hShzKHLWsUV9oGrXTAPnr/UTtCxOLg9qJcl5+cWBzTtJCtaoyMo9+le3CS
+6GoS5NM5hBOmPdMDwNHCuI5+EIkxJ9rkkYlAxFU5/SXFVJU+QCWOnRZNoL+0yPnM
+VVpNNbloIS2fQJ/1bPR396pZ0/PXm8wJv1fPvCYcv+ICNdCfkB6qxFH/cvTN/TRl
+glepNgeE+8qkLweBVr00DfNCUImtiUrPMG4NlCXXaCOr0LQzF96ZHrmqH55wcJEb
+2//e6ppoxHcMHP9yhSbgMA/asZMeL57mH2h/0vp3eVqc84cH/oc4LeljKDagDenm
+TPyAVneNzrfT373wKfwba97BGTEOQL3n20oe8Qrn2BtdhWAmVBgd9Q41AHHz5p02
+lHxt9mNGGjo8irzL1poT
+=qjz5
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__9_Aug_2013_09_58_17_+1000_ca.4epyt/2pxOUE.--
