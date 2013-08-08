@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965826Ab3HHPRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 11:17:01 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:58005 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965745Ab3HHPQ7 (ORCPT
+	id S965832Ab3HHPUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 11:20:30 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:42578 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965775Ab3HHPU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 11:16:59 -0400
-Date: Thu, 8 Aug 2013 12:16:52 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 16/19] perf tool: Change perf_session__has_traces to
- actually check for tracepoints
-Message-ID: <20130808151652.GF6102@ghostprotocols.net>
-References: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
- <1375930261-77273-17-git-send-email-dsahern@gmail.com>
+	Thu, 8 Aug 2013 11:20:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375930261-77273-17-git-send-email-dsahern@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130807153030.GA25515@redhat.com>
+References: <20130807055157.GA32278@redhat.com>
+	<CAJd=RBCJv7=Qj6dPW2Ha=nq6JctnK3r7wYCAZTm=REVOZUNowg@mail.gmail.com>
+	<20130807153030.GA25515@redhat.com>
+Date: Thu, 8 Aug 2013 23:20:28 +0800
+Message-ID: <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
+Subject: Re: unused swap offset / bad page map.
+From: Hillf Danton <dhillf@gmail.com>
+To: Dave Jones <davej@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-mm@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 07, 2013 at 10:50:58PM -0400, David Ahern escreveu:
-> Any event can have RAW data attribute set. The intent of the function is
-> to determine if the session has tracepoints, so check for the type of each
-> event explicitly.
+On Wed, Aug 7, 2013 at 11:30 PM, Dave Jones <davej@redhat.com> wrote:
+> printk didn't trigger.
+>
+Is a corrupted page table entry encountered, according to the
+comment of swap_duplicate()?
 
-Thanks, applied.
+
+--- a/mm/swapfile.c	Wed Aug  7 17:27:22 2013
++++ b/mm/swapfile.c	Thu Aug  8 23:12:30 2013
+@@ -770,6 +770,7 @@ int free_swap_and_cache(swp_entry_t entr
+ 		unlock_page(page);
+ 		page_cache_release(page);
+ 	}
++	return 1;
+ 	return p != NULL;
+ }
+
+--
