@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757697Ab3HHF3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 01:29:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63960 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748Ab3HHF3Q (ORCPT
+	id S933210Ab3HHFbD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 01:31:03 -0400
+Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:48083 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756454Ab3HHFbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 01:29:16 -0400
-Message-ID: <1375939750.18565.11.camel@marge.simpson.net>
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer
-From: Mike Galbraith <bitbucket@online.de>
-To: "ethan.zhao" <ethan.kernel@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, johlstei@codeaurora.org,
-        Yinghai Lu <yinghai@kernel.org>, Jin Feng <joe.jin@oracle.com>,
-        Youquan Song <youquan.song@intel.com>, LenBrown <len.brown@intel.com>
-Date: Thu, 08 Aug 2013 07:29:10 +0200
-In-Reply-To: <BD6ACAD8-25D7-406B-A843-22696F9D8DCC@gmail.com>
-References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
-	 <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
-	 <CABawtvP4oLuvHOS3prbbgPShXVziV_wTo7i6KCqJ9KkoVdz0ag@mail.gmail.com>
-	 <20130730093519.GP3008@twins.programming.kicks-ass.net>
-	 <1375774140.5412.9.camel@marge.simpson.net>
-	 <1375775172.5412.14.camel@marge.simpson.net>
-	 <BD6ACAD8-25D7-406B-A843-22696F9D8DCC@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:+a3m22LJ8Kb/rNqN+O7qiOLavcRYR++CQo/UPy3B4eO
- i5r5t3zDB6PCvmd+bcQZGspL6rHsgRQEj6g0EHwQU1miuUhfGP
- 6m40irUC55ilOp340qZfPLejL9MMHtv9Qd7Ql15xrKmGJeHNqx
- lk3bv5MZxLYdRKcutxd4aCyM7qNMDM+a0+EXwmhVP4tQ7d8JYC
- cf+YlFmEM8JXCiNt4frqtJw6w9BZ40i/ccRgCv0Voo0nry/m+Z
- gbAaL0SAn3xGVk1gdWxaCFowVqoy0syFz17I21xErVeFGd38ai
- TOd0nZ7jXZGcIvhm4GScghIHlVG8e1XZXqgqj2CVHkykMTBWJZ
- FW6F37zicVXhfZkStZVQMen8NclkbZcqaYfYyz1qJacHinP8eV
- fHQjbJYLlYQWA==
+	Thu, 8 Aug 2013 01:31:01 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: [PATCH v3 04/19] clk: at91: add PMC macro file for dt definitions
+Date: Thu,  8 Aug 2013 07:04:30 +0200
+Message-Id: <1375938270-3965-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
+References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 2862037565202200624
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I got several copies of that, one would have been plenty.  Some people
-get all grumpy when they get repeats, and at least one, who shall remain
-unnamed, gets even grumpier when folks don't trim their replies, so be
-careful;)
+This patch adds a new macro file for PMC macros.
 
-On Thu, 2013-08-08 at 12:31 +0800, ethan.zhao wrote:
+This macro file includes the definitions of SR (status register) bit
+offsets and will be use to reference PMC irqs.
 
-> diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-> index 4137890..c27f04f 100644
-> --- a/arch/x86/include/asm/smp.h
-> +++ b/arch/x86/include/asm/smp.h
-> @@ -137,7 +137,7 @@ static inline void play_dead(void)
-> 
-> static inline void smp_send_reschedule(int cpu)
-> {
-> -       smp_ops.smp_send_reschedule(cpu);
-> +       /* smp_ops.smp_send_reschedule(cpu); */
-> }
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ include/dt-bindings/clk/at91/common/pmc.h |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+ create mode 100644 include/dt-bindings/clk/at91/common/pmc.h
 
-Hm.  You're much braver than I am.
-
--Mike
+diff --git a/include/dt-bindings/clk/at91/common/pmc.h b/include/dt-bindings/clk/at91/common/pmc.h
+new file mode 100644
+index 0000000..edc51d6
+--- /dev/null
++++ b/include/dt-bindings/clk/at91/common/pmc.h
+@@ -0,0 +1,20 @@
++/*
++ * This header provides constants for AT91 pmc status.
++ *
++ * The constants defined in this header are being used in dts.
++ */
++
++#ifndef _DT_BINDINGS_CLK_AT91_PMC_H
++#define _DT_BINDINGS_CLK_AT91_PMC_H
++
++#define AT91_PMC_MOSCS		0		/* MOSCS Flag */
++#define AT91_PMC_LOCKA		1		/* PLLA Lock */
++#define AT91_PMC_LOCKB		2		/* PLLB Lock */
++#define AT91_PMC_MCKRDY		3		/* Master Clock */
++#define AT91_PMC_LOCKU		6		/* UPLL Lock */
++#define AT91_PMC_PCKRDY(id)	(8 + id)	/* Programmable Clock */
++#define AT91_PMC_MOSCSELS	16		/* Main Oscillator Selection */
++#define AT91_PMC_MOSCRCS	17		/* Main On-Chip RC */
++#define AT91_PMC_CFDEV		18		/* Clock Failure Detector Event */
++
++#endif
+-- 
+1.7.9.5
 
