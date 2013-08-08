@@ -1,232 +1,514 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933930Ab3HHHci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 03:32:38 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:57552 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757596Ab3HHHch convert rfc822-to-8bit (ORCPT
+	id S1757689Ab3HHHgD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 03:36:03 -0400
+Received: from 13.mo4.mail-out.ovh.net ([178.33.251.8]:40110 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751211Ab3HHHgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 03:32:37 -0400
-Content-Type: text/plain; charset=GB2312
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable reprogramming in remove_hrtimer
-From: "ethan.zhao" <ethan.kernel@gmail.com>
-In-Reply-To: <20130729115701.GD3008@twins.programming.kicks-ass.net>
-Date: Thu, 8 Aug 2013 15:32:12 +0800
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, johlstei@codeaurora.org,
-        yinghai@kernel.org, joe.jin@oracle.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <24EECBCC-F655-404F-8946-73CC36095A5F@gmail.com>
-References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com> <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de> <20130729115701.GD3008@twins.programming.kicks-ass.net>
-To: Peter Zijlstra <peterz@infradead.org>
-X-Mailer: Apple Mail (2.1508)
+	Thu, 8 Aug 2013 03:36:01 -0400
+X-Greylist: delayed 9002 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 03:36:00 EDT
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: [PATCH v3 15/19] clk: at91: add PMC usb clock
+Date: Thu,  8 Aug 2013 09:15:53 +0200
+Message-Id: <1375946153-9694-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
+References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 5080060380246669360
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel 3.11-rc3 With peter's patch and disable C-state in BIOS, got 1 second better performance !
-[root@localhost ~]# time ./pip1m
+This patch adds new at91 usb clock implementation using common clk framework.
+This clock is used to clock usb ports (ohci, ehci and udc).
 
-real	0m4.399s
-user	0m0.092s
-sys	0m2.775s
-[root@localhost ~]# time ./pip1m
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/mach-at91/Kconfig |   11 ++
+ drivers/clk/at91/Makefile  |    1 +
+ drivers/clk/at91/clk-usb.c |  323 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/at91/pmc.c     |   11 ++
+ drivers/clk/at91/pmc.h     |    7 +
+ 5 files changed, 353 insertions(+)
+ create mode 100644 drivers/clk/at91/clk-usb.c
 
-real	0m4.352s
-user	0m0.099s
-sys	0m2.751s
-[root@localhost ~]# time ./pip1m
-
-real	0m4.328s
-user	0m0.102s
-sys	0m2.731s
-
-Compared with default kernel 3.11-rc3 and disable C-states in BIOS, test case 4
-4. Disable C1E C3 C6 C-states and SpeedStep in BIOS, default configuration of kernel 3.11-rc3.
-[root@localhost ~]# time ./pip1m
-
-real	0m5.371s
-user	0m0.102s
-sys	0m3.253s
-[root@localhost ~]# time ./pip1m
-
-real	0m5.329s
-user	0m0.075s
-sys	0m3.254s
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 6ad37da..b76dc4c 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -3,6 +3,9 @@ if ARCH_AT91
+ config HAVE_AT91_UTMI
+ 	bool
  
-
-That is great improvement, So it is worth to merge. 
-
-
-Thanks
-Ethan
-
++config HAVE_AT91_USB_CLK
++	bool
++
+ config HAVE_AT91_DBGU0
+ 	bool
  
-
-ÔÚ 2013-7-29£¬ÏÂÎç7:57£¬Peter Zijlstra <peterz@infradead.org> Ð´µÀ£º
-> 
-> So aside from the complete mess posted; how about something like this?
-> 
-> *completely untested etc..*
-> 
-> ---
-> include/linux/hrtimer.h |  5 +++++
-> kernel/hrtimer.c        | 60 +++++++++++++++++++++++--------------------------
-> 2 files changed, 33 insertions(+), 32 deletions(-)
-> 
-> diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-> index d19a5c2..f2bcb9c 100644
-> --- a/include/linux/hrtimer.h
-> +++ b/include/linux/hrtimer.h
-> @@ -185,6 +185,7 @@ struct hrtimer_cpu_base {
-> 	ktime_t				expires_next;
-> 	int				hres_active;
-> 	int				hang_detected;
-> +	int				timers_removed;
-> 	unsigned long			nr_events;
-> 	unsigned long			nr_retries;
-> 	unsigned long			nr_hangs;
-> @@ -261,6 +262,8 @@ static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
-> #ifdef CONFIG_HIGH_RES_TIMERS
-> struct clock_event_device;
-> 
-> +extern void hrtimer_enter_idle(void);
-> +
-> extern void hrtimer_interrupt(struct clock_event_device *dev);
-> 
-> /*
-> @@ -296,6 +299,8 @@ extern void clock_was_set_delayed(void);
-> # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
-> # define KTIME_MONOTONIC_RES	KTIME_LOW_RES
-> 
-> +static inline void hrtimer_enter_idle(void) { }
-> +
-> static inline void hrtimer_peek_ahead_timers(void) { }
-> 
-> /*
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index f0f4fe2..ffb16d3 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -673,6 +673,27 @@ static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-> 	return ktime_get_update_offsets(offs_real, offs_boot, offs_tai);
-> }
-> 
-> +static void __hrtimer_reprogram_all(struct hrtimer_cpu_base *base)
-> +{
-> +	if (!hrtimer_hres_active())
-> +		return;
-> +
-> +	raw_spin_lock(&base->lock);
-> +	hrtimer_update_base(base);
-> +	hrtimer_force_reprogram(base, 0);
-> +	raw_spin_unlock(&base->lock);
-> +}
-> +
-> +void hrtimer_enter_idle(void)
-> +{
-> +	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
-> +
-> +	if (base->timers_removed) {
-> +		base->timers_removed = 0;
-> +		__hrtimer_reprogramm_all(base);
-> +	}
-> +}
-> +
-> /*
->  * Retrigger next event is called after clock was set
->  *
-> @@ -682,13 +703,7 @@ static void retrigger_next_event(void *arg)
-> {
-> 	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
-> 
-> -	if (!hrtimer_hres_active())
-> -		return;
-> -
-> -	raw_spin_lock(&base->lock);
-> -	hrtimer_update_base(base);
-> -	hrtimer_force_reprogram(base, 0);
-> -	raw_spin_unlock(&base->lock);
-> +	__hrtimer_reprogram_all(base);
-> }
-> 
-> /*
-> @@ -907,7 +922,7 @@ static int enqueue_hrtimer(struct hrtimer *timer,
->  */
-> static void __remove_hrtimer(struct hrtimer *timer,
-> 			     struct hrtimer_clock_base *base,
-> -			     unsigned long newstate, int reprogram)
-> +			     unsigned long newstate)
-> {
-> 	struct timerqueue_node *next_timer;
-> 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
-> @@ -915,19 +930,10 @@ static void __remove_hrtimer(struct hrtimer *timer,
-> 
-> 	next_timer = timerqueue_getnext(&base->active);
-> 	timerqueue_del(&base->active, &timer->node);
-> -	if (&timer->node == next_timer) {
-> #ifdef CONFIG_HIGH_RES_TIMERS
-> -		/* Reprogram the clock event device. if enabled */
-> -		if (reprogram && hrtimer_hres_active()) {
-> -			ktime_t expires;
-> -
-> -			expires = ktime_sub(hrtimer_get_expires(timer),
-> -					    base->offset);
-> -			if (base->cpu_base->expires_next.tv64 == expires.tv64)
-> -				hrtimer_force_reprogram(base->cpu_base, 1);
-> -		}
-> +	if (hrtimer_hres_active() && &timer->node == next_timer)
-> +		base->cpu_base->timers_removed++;
-> #endif
-> -	}
-> 	if (!timerqueue_getnext(&base->active))
-> 		base->cpu_base->active_bases &= ~(1 << base->index);
-> out:
-> @@ -942,26 +948,16 @@ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
-> {
-> 	if (hrtimer_is_queued(timer)) {
-> 		unsigned long state;
-> -		int reprogram;
-> 
-> -		/*
-> -		 * Remove the timer and force reprogramming when high
-> -		 * resolution mode is active and the timer is on the current
-> -		 * CPU. If we remove a timer on another CPU, reprogramming is
-> -		 * skipped. The interrupt event on this CPU is fired and
-> -		 * reprogramming happens in the interrupt handler. This is a
-> -		 * rare case and less expensive than a smp call.
-> -		 */
-> 		debug_deactivate(timer);
-> 		timer_stats_hrtimer_clear_start_info(timer);
-> -		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
-> 		/*
-> 		 * We must preserve the CALLBACK state flag here,
-> 		 * otherwise we could move the timer base in
-> 		 * switch_hrtimer_base.
-> 		 */
-> 		state = timer->state & HRTIMER_STATE_CALLBACK;
-> -		__remove_hrtimer(timer, base, state, reprogram);
-> +		__remove_hrtimer(timer, base, state);
-> 		return 1;
-> 	}
-> 	return 0;
-> @@ -1243,7 +1239,7 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
-> 	WARN_ON(!irqs_disabled());
-> 
-> 	debug_deactivate(timer);
-> -	__remove_hrtimer(timer, base, HRTIMER_STATE_CALLBACK, 0);
-> +	__remove_hrtimer(timer, base, HRTIMER_STATE_CALLBACK);
-> 	timer_stats_account_hrtimer(timer);
-> 	fn = timer->function;
-> 
-> @@ -1690,7 +1686,7 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
-> 		 * timer could be seen as !active and just vanish away
-> 		 * under us on another CPU
-> 		 */
-> -		__remove_hrtimer(timer, old_base, HRTIMER_STATE_MIGRATE, 0);
-> +		__remove_hrtimer(timer, old_base, HRTIMER_STATE_MIGRATE);
-> 		timer->base = new_base;
-> 		/*
-> 		 * Enqueue the timers on the new cpu. This does not
+@@ -82,6 +85,7 @@ config SOC_SAMA5D3
+ 	select HAVE_AT91_DBGU1
+ 	select AT91_USE_OLD_CLK
+ 	select HAVE_AT91_UTMI
++	select HAVE_AT91_USB_CLK
+ 	help
+ 	  Select this if you are using one of Atmel's SAMA5D3 family SoC.
+ 	  This support covers SAMA5D31, SAMA5D33, SAMA5D34, SAMA5D35.
+@@ -96,12 +100,14 @@ config SOC_AT91RM9200
+ 	select MULTI_IRQ_HANDLER
+ 	select SPARSE_IRQ
+ 	select AT91_USE_OLD_CLK
++	select HAVE_AT91_USB_CLK
+ 
+ config SOC_AT91SAM9260
+ 	bool "AT91SAM9260, AT91SAM9XE or AT91SAM9G20"
+ 	select HAVE_AT91_DBGU0
+ 	select SOC_AT91SAM9
+ 	select AT91_USE_OLD_CLK
++	select HAVE_AT91_USB_CLK
+ 	help
+ 	  Select this if you are using one of Atmel's AT91SAM9260, AT91SAM9XE
+ 	  or AT91SAM9G20 SoC.
+@@ -112,6 +118,7 @@ config SOC_AT91SAM9261
+ 	select HAVE_FB_ATMEL
+ 	select SOC_AT91SAM9
+ 	select AT91_USE_OLD_CLK
++	select HAVE_AT91_USB_CLK
+ 	help
+ 	  Select this if you are using one of Atmel's AT91SAM9261 or AT91SAM9G10 SoC.
+ 
+@@ -121,6 +128,7 @@ config SOC_AT91SAM9263
+ 	select HAVE_FB_ATMEL
+ 	select SOC_AT91SAM9
+ 	select AT91_USE_OLD_CLK
++	select HAVE_AT91_USB_CLK
+ 
+ config SOC_AT91SAM9RL
+ 	bool "AT91SAM9RL"
+@@ -137,6 +145,7 @@ config SOC_AT91SAM9G45
+ 	select SOC_AT91SAM9
+ 	select AT91_USE_OLD_CLK
+ 	select HAVE_AT91_UTMI
++	select HAVE_AT91_USB_CLK
+ 	help
+ 	  Select this if you are using one of Atmel's AT91SAM9G45 family SoC.
+ 	  This support covers AT91SAM9G45, AT91SAM9G46, AT91SAM9M10 and AT91SAM9M11.
+@@ -148,6 +157,7 @@ config SOC_AT91SAM9X5
+ 	select SOC_AT91SAM9
+ 	select AT91_USE_OLD_CLK
+ 	select HAVE_AT91_UTMI
++	select HAVE_AT91_USB_CLK
+ 	help
+ 	  Select this if you are using one of Atmel's AT91SAM9x5 family SoC.
+ 	  This means that your SAM9 name finishes with a '5' (except if it is
+@@ -161,6 +171,7 @@ config SOC_AT91SAM9N12
+ 	select HAVE_FB_ATMEL
+ 	select SOC_AT91SAM9
+ 	select AT91_USE_OLD_CLK
++	select HAVE_AT91_USB_CLK
+ 	help
+ 	  Select this if you are using Atmel's AT91SAM9N12 SoC.
+ 
+diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+index a824883..61db058 100644
+--- a/drivers/clk/at91/Makefile
++++ b/drivers/clk/at91/Makefile
+@@ -8,3 +8,4 @@ obj-y += clk-system.o clk-peripheral.o
+ 
+ obj-$(CONFIG_AT91_PROGRAMMABLE_CLOCKS)	+= clk-programmable.o
+ obj-$(CONFIG_HAVE_AT91_UTMI)		+= clk-utmi.o
++obj-$(CONFIG_HAVE_AT91_USB_CLK)		+= clk-usb.o
+diff --git a/drivers/clk/at91/clk-usb.c b/drivers/clk/at91/clk-usb.c
+new file mode 100644
+index 0000000..12c20a0
+--- /dev/null
++++ b/drivers/clk/at91/clk-usb.c
+@@ -0,0 +1,323 @@
++/*
++ * drivers/clk/at91/clk-usb.c
++ *
++ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/clk/at91_pmc.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/io.h>
++
++#include "pmc.h"
++
++#define USB_SOURCE_MAX		2
++
++#define to_at91sam9x5_clk_usb(hw) \
++	container_of(hw, struct at91sam9x5_clk_usb, hw)
++struct at91sam9x5_clk_usb {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	u8 usbs0_unused; /* sam9n12 uses usbs0 to disable usb clock */
++};
++
++#define to_at91rm9200_clk_usb(hw) \
++	container_of(hw, struct at91rm9200_clk_usb, hw)
++struct at91rm9200_clk_usb {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	u32 divisors[4];
++};
++
++static unsigned long at91sam9x5_clk_usb_recalc_rate(struct clk_hw *hw,
++						    unsigned long parent_rate)
++{
++	u32 tmp;
++	u8 usbdiv;
++	struct at91sam9x5_clk_usb *usb = to_at91sam9x5_clk_usb(hw);
++	struct at91_pmc *pmc = usb->pmc;
++
++	tmp = pmc_read(pmc, AT91_PMC_USB);
++	usbdiv = (tmp & AT91_PMC_OHCIUSBDIV) >> 8;
++	return parent_rate / (usbdiv + 1);
++}
++
++static long at91sam9x5_clk_usb_round_rate(struct clk_hw *hw, unsigned long rate,
++					  unsigned long *parent_rate)
++{
++	unsigned long div;
++	unsigned long bestrate;
++	unsigned long tmp;
++
++	if (rate >= *parent_rate)
++		return *parent_rate;
++
++	div = *parent_rate / rate;
++	if (div > 15)
++		return *parent_rate / 16;
++
++	bestrate = *parent_rate / div;
++	tmp = *parent_rate / (div + 1);
++	if (bestrate - rate > rate - tmp)
++		bestrate = tmp;
++
++	return bestrate;
++}
++
++static int at91sam9x5_clk_usb_set_parent(struct clk_hw *hw, u8 index)
++{
++	u32 tmp;
++	struct at91sam9x5_clk_usb *usb = to_at91sam9x5_clk_usb(hw);
++	struct at91_pmc *pmc = usb->pmc;
++
++	if (usb->usbs0_unused)
++		index++;
++	if (index > 1)
++		return -EINVAL;
++	tmp = pmc_read(pmc, AT91_PMC_USB) & ~AT91_PMC_USBS;
++	if (index)
++		tmp |= AT91_PMC_USBS;
++	pmc_write(pmc, AT91_PMC_USB, tmp);
++	return 0;
++}
++
++static u8 at91sam9x5_clk_usb_get_parent(struct clk_hw *hw)
++{
++	struct at91sam9x5_clk_usb *usb = to_at91sam9x5_clk_usb(hw);
++	struct at91_pmc *pmc = usb->pmc;
++
++	if (usb->usbs0_unused)
++		return 0;
++
++	return pmc_read(pmc, AT91_PMC_USB) & AT91_PMC_USBS;
++}
++
++static int at91sam9x5_clk_usb_set_rate(struct clk_hw *hw, unsigned long rate,
++				       unsigned long parent_rate)
++{
++	u32 tmp;
++	struct at91sam9x5_clk_usb *usb = to_at91sam9x5_clk_usb(hw);
++	struct at91_pmc *pmc = usb->pmc;
++	unsigned long div = parent_rate / rate;
++
++	if (parent_rate % rate || div < 1 || div > 16)
++		return -EINVAL;
++
++	tmp = pmc_read(pmc, AT91_PMC_USB) & ~AT91_PMC_OHCIUSBDIV;
++	tmp |= (div - 1) << 8;
++	pmc_write(pmc, AT91_PMC_USB, tmp);
++
++	return 0;
++}
++
++static const struct clk_ops at91sam9x5_usb_ops = {
++	.recalc_rate = at91sam9x5_clk_usb_recalc_rate,
++	.round_rate = at91sam9x5_clk_usb_round_rate,
++	.get_parent = at91sam9x5_clk_usb_get_parent,
++	.set_parent = at91sam9x5_clk_usb_set_parent,
++	.set_rate = at91sam9x5_clk_usb_set_rate,
++};
++
++static struct clk * __init
++at91sam9x5_clk_register_usb(struct at91_pmc *pmc, const char *name,
++			    const char **parent_names, u8 num_parents,
++			    u8 usbs0_unused)
++{
++	struct at91sam9x5_clk_usb *usb;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	usb = kzalloc(sizeof(*usb), GFP_KERNEL);
++	if (!usb)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &at91sam9x5_usb_ops;
++	init.parent_names = parent_names;
++	init.num_parents = num_parents;
++	init.flags = CLK_SET_RATE_GATE | CLK_SET_PARENT_GATE;
++
++	usb->usbs0_unused = usbs0_unused;
++	usb->hw.init = &init;
++	usb->pmc = pmc;
++
++	clk = clk_register(NULL, &usb->hw);
++
++	if (IS_ERR(clk))
++		kfree(usb);
++
++	return clk;
++}
++
++static unsigned long at91rm9200_clk_usb_recalc_rate(struct clk_hw *hw,
++						    unsigned long parent_rate)
++{
++	struct at91rm9200_clk_usb *usb = to_at91rm9200_clk_usb(hw);
++	struct at91_pmc *pmc = usb->pmc;
++	u32 tmp;
++	u8 usbdiv;
++
++	tmp = pmc_read(pmc, AT91_CKGR_PLLBR);
++	usbdiv = (tmp & AT91_PMC_USBDIV) >> 28;
++	if (usb->divisors[usbdiv])
++		return parent_rate / usb->divisors[usbdiv];
++
++	return 0;
++}
++
++static long at91rm9200_clk_usb_round_rate(struct clk_hw *hw, unsigned long rate,
++					  unsigned long *parent_rate)
++{
++	struct at91rm9200_clk_usb *usb = to_at91rm9200_clk_usb(hw);
++	unsigned long bestrate = 0;
++	int bestdiff = -1;
++	unsigned long tmprate;
++	int tmpdiff;
++	int i = 0;
++
++	for (i = 0; i < 4; i++) {
++		if (!usb->divisors[i])
++			continue;
++		tmprate = *parent_rate / usb->divisors[i];
++		if (tmprate < rate)
++			tmpdiff = rate - tmprate;
++		else
++			tmpdiff = tmprate - rate;
++
++		if (bestdiff < 0 || bestdiff > tmpdiff) {
++			bestrate = tmprate;
++			bestdiff = tmpdiff;
++		}
++
++		if (!bestdiff)
++			break;
++	}
++
++	return bestrate;
++}
++
++static int at91rm9200_clk_usb_set_rate(struct clk_hw *hw, unsigned long rate,
++				       unsigned long parent_rate)
++{
++	u32 tmp;
++	int i;
++	struct at91rm9200_clk_usb *usb = to_at91rm9200_clk_usb(hw);
++	struct at91_pmc *pmc = usb->pmc;
++	unsigned long div = parent_rate / rate;
++
++	if (parent_rate % rate)
++		return -EINVAL;
++	for (i = 0; i < 4; i++) {
++		if (usb->divisors[i] == div) {
++			tmp = pmc_read(pmc, AT91_CKGR_PLLBR) &
++			      ~AT91_PMC_USBDIV;
++			tmp |= i << 8;
++			pmc_write(pmc, AT91_PMC_USB, tmp);
++			return 0;
++		}
++	}
++
++	return -EINVAL;
++}
++
++static const struct clk_ops at91rm9200_usb_ops = {
++	.recalc_rate = at91rm9200_clk_usb_recalc_rate,
++	.round_rate = at91rm9200_clk_usb_round_rate,
++	.set_rate = at91rm9200_clk_usb_set_rate,
++};
++
++static struct clk * __init
++at91rm9200_clk_register_usb(struct at91_pmc *pmc, const char *name,
++			    const char *parent_name, const u32 *divisors)
++{
++	struct at91rm9200_clk_usb *usb;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	usb = kzalloc(sizeof(*usb), GFP_KERNEL);
++	if (!usb)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &at91rm9200_usb_ops;
++	init.parent_names = &parent_name;
++	init.num_parents = 1;
++	init.flags = 0;
++
++	usb->hw.init = &init;
++	usb->pmc = pmc;
++	memcpy(usb->divisors, divisors, sizeof(usb->divisors));
++
++	clk = clk_register(NULL, &usb->hw);
++
++	if (IS_ERR(clk))
++		kfree(usb);
++
++	return clk;
++}
++
++void __init of_at91sam9x5_clk_usb_setup(struct device_node *np,
++					struct at91_pmc *pmc)
++{
++	struct clk *clk;
++	int i;
++	int num_parents;
++	u8 usbs0_unused;
++	const char *parent_names[USB_SOURCE_MAX];
++	const char *name = np->name;
++
++	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
++	if (num_parents <= 0 || num_parents > USB_SOURCE_MAX)
++		return;
++
++	for (i = 0; i < num_parents; i++) {
++		parent_names[i] = of_clk_get_parent_name(np, i);
++		if (!parent_names[i])
++			return;
++	}
++
++	usbs0_unused = of_property_read_bool(np, "atmel,usb-clk-src0-unused");
++	of_property_read_string(np, "clock-output-names", &name);
++
++	clk = at91sam9x5_clk_register_usb(pmc, name, parent_names, num_parents,
++					  usbs0_unused);
++
++	if (IS_ERR(clk))
++		return;
++
++	of_clk_add_provider(np, of_clk_src_simple_get, clk);
++}
++
++void __init of_at91rm9200_clk_usb_setup(struct device_node *np,
++					struct at91_pmc *pmc)
++{
++	struct clk *clk;
++	const char *parent_name;
++	const char *name = np->name;
++	u32 divisors[4] = {0, 0, 0, 0};
++
++	parent_name = of_clk_get_parent_name(np, 0);
++	if (!parent_name)
++		return;
++
++	of_property_read_u32_array(np, "atmel,clk-divisors", divisors, 4);
++	if (!divisors[0])
++		return;
++
++	of_property_read_string(np, "clock-output-names", &name);
++
++	clk = at91rm9200_clk_register_usb(pmc, name, parent_name, divisors);
++
++	if (IS_ERR(clk))
++		return;
++
++	of_clk_add_provider(np, of_clk_src_simple_get, clk);
++}
+diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+index 238f0d2..e46de3d 100644
+--- a/drivers/clk/at91/pmc.c
++++ b/drivers/clk/at91/pmc.c
+@@ -287,6 +287,17 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
+ 		.data = of_at91sam9x5_clk_utmi_setup,
+ 	},
+ #endif
++	/* USB clock */
++#if defined(CONFIG_HAVE_AT91_USB_CLK)
++	{
++		.compatible = "atmel,at91rm9200-clk-usb",
++		.data = of_at91rm9200_clk_usb_setup,
++	},
++	{
++		.compatible = "atmel,at91sam9x5-clk-usb",
++		.data = of_at91sam9x5_clk_usb_setup,
++	},
++#endif
+ 	{ /*sentinel*/ }
+ };
+ 
+diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+index 3ba9503..b2efff5 100644
+--- a/drivers/clk/at91/pmc.h
++++ b/drivers/clk/at91/pmc.h
+@@ -96,4 +96,11 @@ extern void __init of_at91sam9x5_clk_utmi_setup(struct device_node *np,
+ 						struct at91_pmc *pmc);
+ #endif
+ 
++#if defined(CONFIG_HAVE_AT91_USB_CLK)
++extern void __init of_at91rm9200_clk_usb_setup(struct device_node *np,
++					       struct at91_pmc *pmc);
++extern void __init of_at91sam9x5_clk_usb_setup(struct device_node *np,
++					       struct at91_pmc *pmc);
++#endif
++
+ #endif /* __PMC_H_ */
+-- 
+1.7.9.5
 
