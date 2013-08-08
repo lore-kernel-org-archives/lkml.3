@@ -1,161 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965399Ab3HHOA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:00:29 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:18061 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933500Ab3HHOAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:00:23 -0400
-X-AuditID: cbfec7f4-b7f5f6d000000ff6-b3-5203a474bb6e
-From: Tomasz Figa <t.figa@samsung.com>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v9 04/16] iommu/exynos: allocate lv2 page table from own
- slab
-Date: Thu, 08 Aug 2013 16:00:18 +0200
-Message-id: <2544843.sndV7usHTj@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-reply-to: <002801ce941a$fb6369e0$f22a3da0$@samsung.com>
-References: <002801ce941a$fb6369e0$f22a3da0$@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42I5/e/4Fd2SJcxBBtNWmFvcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
-	h1ktTv7pZbRoud7L5MDv8eTgPCaP2Q0XWTzuXNvD5nF+0xpmj81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4MpY1baOvaBXqmL2i52sDYx9ol2MnBwSAiYSqy/PYIaw
-	xSQu3FvP1sXIxSEksJRR4tLbI6wQTheTxIyvE9hAqtgE1CQ+NzwCs0UENCQ+X1nPCmIzC/xg
-	kfi0jQ/EFhYIltj07CcjiM0ioCrRvfQeWD2vgKbEkQ3T2UFsfgF1iXfbnjJ1MXJwiAq4SUz4
-	mA8S5hSwklg+/yALiC0kYCnx+sFtZohWQYkfk++xQKySl9i3fyrUWi2J9TuPM01gFJyFpGwW
-	krJZSMoWMDKvYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAiJuC87GBcfszrEKMDBqMTD2xHA
-	FCTEmlhWXJl7iFGCg1lJhPdFFnOQEG9KYmVValF+fFFpTmrxIUYmDk6pBkbDzv27kkQ3bPGR
-	np1ev8Y112vrd++tm97cuK66V6dwdfSpI2mMTJvnXBV4zP3NWNo19prPLgfPKv0Vd5I3ltW+
-	v/jrfMrLSTIrN72ZU69fr5H89ZqpxZFnlhMXygv5X21YmTxvTf2bg+8mX7sX2XKONyHGdmX4
-	dN/Ef8+vaydsL3tt2HzogVC6EktxRqKhFnNRcSIAGCWd1JYCAAA=
+	id S965444Ab3HHOAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:00:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44446 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965137Ab3HHOAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:00:44 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/27] mm: numa: Document automatic NUMA balancing sysctls
+Date: Thu,  8 Aug 2013 15:00:13 +0100
+Message-Id: <1375970439-5111-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1375970439-5111-1-git-send-email-mgorman@suse.de>
+References: <1375970439-5111-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 of August 2013 18:38:04 Cho KyongHo wrote:
-> Since kmalloc() does not guarantee that the allignment of 1KiB when it
-> allocates 1KiB, it is required to allocate lv2 page table from own
-> slab that guarantees alignment of 1KiB
-> 
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> ---
->  drivers/iommu/exynos-iommu.c |   24 ++++++++++++++++++++----
->  1 files changed, 20 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> index d90e6fa..a318049 100644
-> --- a/drivers/iommu/exynos-iommu.c
-> +++ b/drivers/iommu/exynos-iommu.c
-> @@ -100,6 +100,8 @@
->  #define REG_PB1_SADDR		0x054
->  #define REG_PB1_EADDR		0x058
-> 
-> +static struct kmem_cache *lv2table_kmem_cache;
-> +
->  static unsigned long *section_entry(unsigned long *pgtable, unsigned
-> long iova) {
->  	return pgtable + lv1ent_offset(iova);
-> @@ -765,7 +767,8 @@ static void exynos_iommu_domain_destroy(struct
-> iommu_domain *domain)
-> 
->  	for (i = 0; i < NUM_LV1ENTRIES; i++)
->  		if (lv1ent_page(priv->pgtable + i))
-> -			kfree(__va(lv2table_base(priv->pgtable + i)));
-> +			kmem_cache_free(lv2table_kmem_cache,
-> +					__va(lv2table_base(priv->pgtable + i)));
-> 
->  	free_pages((unsigned long)priv->pgtable, 2);
->  	free_pages((unsigned long)priv->lv2entcnt, 1);
-> @@ -861,7 +864,7 @@ static unsigned long *alloc_lv2entry(unsigned long
-> *sent, unsigned long iova, if (lv1ent_fault(sent)) {
->  		unsigned long *pent;
-> 
-> -		pent = kzalloc(LV2TABLE_SIZE, GFP_ATOMIC);
-> +		pent = kmem_cache_zalloc(lv2table_kmem_cache, GFP_ATOMIC);
->  		BUG_ON((unsigned long)pent & (LV2TABLE_SIZE - 1));
->  		if (!pent)
->  			return ERR_PTR(-ENOMEM);
-> @@ -881,7 +884,7 @@ static int lv1set_section(unsigned long *sent,
-> phys_addr_t paddr, short *pgcnt)
-> 
->  	if (lv1ent_page(sent)) {
->  		BUG_ON(*pgcnt != NUM_LV2ENTRIES);
-> -		kfree(page_entry(sent, 0));
-> +		kmem_cache_free(lv2table_kmem_cache, page_entry(sent, 0));
->  		*pgcnt = 0;
->  	}
-> 
-> @@ -1082,10 +1085,23 @@ static int __init exynos_iommu_init(void)
->  {
->  	int ret;
-> 
-> +	lv2table_kmem_cache = kmem_cache_create("exynos-iommu-lv2table",
-> +				LV2TABLE_SIZE, LV2TABLE_SIZE, 0, NULL);
-> +	if (!lv2table_kmem_cache) {
-> +		pr_err("%s: Failed to create kmem cache\n", __func__);
-> +		return -ENOMEM;
-> +	}
-> +
->  	ret = platform_driver_register(&exynos_sysmmu_driver);
-> 
->  	if (ret == 0)
-> -		bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
-> +		ret = bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
-> +
-> +	if (ret) {
-> +		pr_err("%s: Failed to register exynos-iommu driver.\n",
-> +								__func__);
-> +		kmem_cache_destroy(lv2table_kmem_cache);
-> +	}
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ Documentation/sysctl/kernel.txt | 66 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
-What about making the return value handling here cleaner? For example:
-
-	lv2table_kmem_cache = kmem_cache_create("exynos-iommu-lv2table",
-				LV2TABLE_SIZE, LV2TABLE_SIZE, 0, NULL);
-	if (!lv2table_kmem_cache) {
-		...
-		return -ENOMEM;
-	}
-
-	ret = platform_driver_register(&exynos_sysmmu_driver);
-	if (ret) {
-		...
-		goto err_destroy_kmem_cache;
-	}
-
-	ret = bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
-	if (ret) {
-		...
-		goto err_platform_unregister;
-	}
-
-	return 0;
-
-err_platform_unregister:
-	...
-err_destroy_kmem_cache:
-	...
-	return ret;
-}
-
-Best regards,
-Tomasz
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index ab7d16e..ccadb52 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -354,6 +354,72 @@ utilize.
+ 
+ ==============================================================
+ 
++numa_balancing
++
++Enables/disables automatic page fault based NUMA memory
++balancing. Memory is moved automatically to nodes
++that access it often.
++
++Enables/disables automatic NUMA memory balancing. On NUMA machines, there
++is a performance penalty if remote memory is accessed by a CPU. When this
++feature is enabled the kernel samples what task thread is accessing memory
++by periodically unmapping pages and later trapping a page fault. At the
++time of the page fault, it is determined if the data being accessed should
++be migrated to a local memory node.
++
++The unmapping of pages and trapping faults incur additional overhead that
++ideally is offset by improved memory locality but there is no universal
++guarantee. If the target workload is already bound to NUMA nodes then this
++feature should be disabled. Otherwise, if the system overhead from the
++feature is too high then the rate the kernel samples for NUMA hinting
++faults may be controlled by the numa_balancing_scan_period_min_ms,
++numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
++numa_balancing_scan_period_max_ms and numa_balancing_scan_size_mb sysctls.
++
++==============================================================
++
++numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
++numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
++numa_balancing_scan_size_mb
++
++Automatic NUMA balancing scans tasks address space and unmaps pages to
++detect if pages are properly placed or if the data should be migrated to a
++memory node local to where the task is running.  Every "scan delay" the task
++scans the next "scan size" number of pages in its address space. When the
++end of the address space is reached the scanner restarts from the beginning.
++
++In combination, the "scan delay" and "scan size" determine the scan rate.
++When "scan delay" decreases, the scan rate increases.  The scan delay and
++hence the scan rate of every task is adaptive and depends on historical
++behaviour. If pages are properly placed then the scan delay increases,
++otherwise the scan delay decreases.  The "scan size" is not adaptive but
++the higher the "scan size", the higher the scan rate.
++
++Higher scan rates incur higher system overhead as page faults must be
++trapped and potentially data must be migrated. However, the higher the scan
++rate, the more quickly a tasks memory is migrated to a local node if the
++workload pattern changes and minimises performance impact due to remote
++memory accesses. These sysctls control the thresholds for scan delays and
++the number of pages scanned.
++
++numa_balancing_scan_period_min_ms is the minimum delay in milliseconds
++between scans. It effectively controls the maximum scanning rate for
++each task.
++
++numa_balancing_scan_delay_ms is the starting "scan delay" used for a task
++when it initially forks.
++
++numa_balancing_scan_period_max_ms is the maximum delay between scans. It
++effectively controls the minimum scanning rate for each task.
++
++numa_balancing_scan_size_mb is how many megabytes worth of pages are
++scanned for a given scan.
++
++numa_balancing_scan_period_reset is a blunt instrument that controls how
++often a tasks scan delay is reset to detect sudden changes in task behaviour.
++
++==============================================================
++
+ osrelease, ostype & version:
+ 
+ # cat osrelease
+-- 
+1.8.1.4
 
