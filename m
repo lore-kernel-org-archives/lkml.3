@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966513Ab3HHURu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:17:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51922 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966368Ab3HHURK (ORCPT
+	id S966469Ab3HHUSX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:18:23 -0400
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:52141 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966197Ab3HHUOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 16:17:10 -0400
-Message-ID: <1375993023.2853.80.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] linux-firmware/AMD: add readme files for amd-ucode
-From: Ben Hutchings <ben@decadent.org.uk>
-To: suravee suthikulpanit <suravee.ml@gmail.com>
-Cc: "Hurwitz, Sherry" <sherry.hurwitz@amd.com>,
-        Marc Dietrich <marvin24@gmx.de>, David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 08 Aug 2013 22:17:03 +0200
-In-Reply-To: <CAJJHM5r9_2h1J=MqXssLAW=cJ8kwcUuG=TOJ_SQBsD0c0ybsuA@mail.gmail.com>
-References: <1374273832-5228-1-git-send-email-sherry.hurwitz@amd.com>
-	 <1581606.2MIpuxPjZY@ax5200p>
-	 <ACC57DAD9FA29445AB3FF28B6500CF4E60B03D19@sausexdag01.amd.com>
-	 <CAJJHM5r9_2h1J=MqXssLAW=cJ8kwcUuG=TOJ_SQBsD0c0ybsuA@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-B5ap34QQiJPYCtP900ra"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 80.83.48.229
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 8 Aug 2013 16:14:10 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 04/14] cgroup: cgroup_css_from_dir() now should be called with RCU read locked
+Date: Thu,  8 Aug 2013 16:13:41 -0400
+Message-Id: <1375992831-4650-5-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1375992831-4650-1-git-send-email-tj@kernel.org>
+References: <1375992831-4650-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cgroup->subsys[] will become RCU protected and thus all cgroup_css()
+usages should either be under RCU read lock or cgroup_mutex.  This
+patch updates cgroup_css_from_dir() which returns the matching
+cgroup_subsys_state given a directory file and subsys_id so that it
+requires RCU read lock and updates its sole user
+perf_cgroup_connect().
 
---=-B5ap34QQiJPYCtP900ra
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
+ kernel/cgroup.c      | 12 ++++++++++--
+ kernel/events/core.c |  3 +++
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
-On Wed, 2013-08-07 at 15:14 -0500, suravee suthikulpanit wrote:
-> Hi All,
->=20
->=20
-> I just would like to follow up the status of this patch.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 5c6dd7e..cbb6314 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -5616,8 +5616,14 @@ struct cgroup_subsys_state *css_lookup(struct cgroup_subsys *ss, int id)
+ }
+ EXPORT_SYMBOL_GPL(css_lookup);
+ 
+-/*
+- * get corresponding css from file open on cgroupfs directory
++/**
++ * cgroup_css_from_dir - get corresponding css from file open on cgroup dir
++ * @f: directory file of interest
++ * @id: subsystem id of interest
++ *
++ * Must be called under RCU read lock.  The caller is responsible for
++ * pinning the returned css if it needs to be accessed outside the RCU
++ * critical section.
+  */
+ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id)
+ {
+@@ -5625,6 +5631,8 @@ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id)
+ 	struct inode *inode;
+ 	struct cgroup_subsys_state *css;
+ 
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
+ 	inode = file_inode(f);
+ 	/* check in cgroup filesystem dir */
+ 	if (inode->i_op != &cgroup_dir_inode_operations)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index c199c4f..23261f9 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -591,6 +591,8 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 	if (!f.file)
+ 		return -EBADF;
+ 
++	rcu_read_lock();
++
+ 	css = cgroup_css_from_dir(f.file, perf_subsys_id);
+ 	if (IS_ERR(css)) {
+ 		ret = PTR_ERR(css);
+@@ -617,6 +619,7 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 		ret = -EINVAL;
+ 	}
+ out:
++	rcu_read_unlock();
+ 	fdput(f);
+ 	return ret;
+ }
+-- 
+1.8.3.1
 
-I've not applied it, and I think the documentation needs some changes to
-make it useful outside of www.amd64.org.
-
-Ben.
-
---=20
-Ben Hutchings
-The two most common things in the universe are hydrogen and stupidity.
-
---=-B5ap34QQiJPYCtP900ra
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIVAwUAUgP8v+e/yOyVhhEJAQq1KxAAnMOT3XuOIeZ/gSgTXxEatC/jSNoCudJ2
-nEybTsE9Y+V+XnH2kBF/CE/BZ+ML7ehHi8S/caJy0zBDj/Ai+8Xxs+EjaVzb4mag
-txTOos1LJPcPO3rXtoJ5AsQJbBki/rFT25GBiQz9Mdh7OHZUC2d8ZW/iKGRaEvbr
-7H9cNTR2iO0GlbGUZ7I2MkaOP+Dsgisyp//fG2ZpoFEc+2sMCUp8K9wDwMC24oJx
-5Bu3sHz84vN0HK891AplO0Xu6vauSQe5kyLx35r4hyKuZpqsvjn5yS9TUvef+0e7
-Eu1tnLouk8ZwRzLkGxeMYRNU/sZt0oDDcOvkyBidgn7Q0nIfKrtxKXuWqQFK2T2R
-INH+f0Az+c3VDY5RC46RHnXSixN/dPLQdXb2/6ALUyi2bhm9A25LjO1dSkm3JxYN
-U13LIWSeFzBY5xYJno2JcxliWvCX8NUeUWtgT5JmAzYRvzeKaI9VSi/GvT0NzDej
-5liqgjb6F6KhT79T4ZUZitLUqR1cpnzyASE2Xnl5nAyd0Oren26QV3kJWlr7ldmY
-/egxaSiWx833SBzocxjIOYjiNPg9tH/XvqQkra22U9PvRbis2QsKz9v75f4QoM+Y
-QVyxivRGYq4cxt/gv3bL2mT8HIUPijb5VbYj+RJBTp47nPv2HA1dyA16RMlnlVjn
-4m/7cWbD6A0=
-=0Wne
------END PGP SIGNATURE-----
-
---=-B5ap34QQiJPYCtP900ra--
