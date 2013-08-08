@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966695Ab3HHVIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 17:08:32 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:55117 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966674Ab3HHVIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 17:08:30 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Arnd Bergmann <arnd@arndb.de>, Roland McGrath <roland@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH 3/4] asm-generic: Add missing include guards
-Date: Thu,  8 Aug 2013 21:07:01 +0000
-Message-Id: <1375996022-8298-4-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375996022-8298-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1375996022-8298-1-git-send-email-linux@rasmusvillemoes.dk>
+	id S966659Ab3HHVLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 17:11:07 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3719 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966602Ab3HHVLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 17:11:05 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <52040962.6040003@broadcom.com>
+Date: Thu, 8 Aug 2013 14:10:58 -0700
+From: "Christian Daudt" <csd@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>
+cc: "Chris Ball" <cjb@laptop.org>, "Shawn Guo" <shawn.guo@linaro.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: change mmc_gpio_get_cd to call non-sleep gpio
+References: <1375994855-12472-1-git-send-email-csd@broadcom.com>
+ <Pine.LNX.4.64.1308082258260.29611@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1308082258260.29611@axis700.grange>
+X-WSS-ID: 7E1AD8842L872426877-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add include guards to include/asm-generic/{ide_iops,unistd,xor}.h.
+On 13-08-08 02:06 PM, Guennadi Liakhovetski wrote:
+> On Thu, 8 Aug 2013, Christian Daudt wrote:
+>
+>> Given that mmc_gpio_get_cd can be called in softirq
+>> context (by sdhci_tasklet_card -> sdhci_card_event ->
+>> sdhci_do_get_cd -> mmc_gpio_get_cd ), it is necessary
+>> for it to use gpio_get_value instead of
+>> gpio_get_value_cansleep
+>> Note that at present sdhci_card_event gets called both
+>> from mmc_gpio_cd_irqt and sdhci_tasklet_card, and from
+>> both it gets called immediately while the actual cd
+>> processing is debounced to 200ms later. I think that
+>> the better solution might be to move the sdhci_card_event
+>> callback into mmc_rescan and remove it from its 2
+>> present locations. That way the cd related callbacks
+>> are aligned with the actual cd detection code. I can
+>> submit a follow-up patch with these mods if that sounds
+>> like a better way to solve this.
+>>
+>> Signed-off-by: Christian Daudt <csd@broadcom.com>
+> I don't think this is a right approach. It will Oops if the card-detect
+> GPIO is provided by, e.g. an I2C GPIO controller. Instead the driver
+> should be fixed to only call this function from a sleeping context.
+I don't think that card-detect would ever be tied to i2c but I might be 
+wrong on that one... If there's agreement that moving sdhci_card_event 
+into just being called from mmc_rescan is the better way to solve this, 
+then I'll drop this patch and replace it with one that does just that.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- include/asm-generic/ide_iops.h |    4 ++++
- include/asm-generic/unistd.h   |    5 +++++
- include/asm-generic/xor.h      |    4 ++++
- 3 files changed, 13 insertions(+)
+  Thanks,
+    csd
 
-diff --git a/include/asm-generic/ide_iops.h b/include/asm-generic/ide_iops.h
-index 1b91d06..cfe2ab8 100644
---- a/include/asm-generic/ide_iops.h
-+++ b/include/asm-generic/ide_iops.h
-@@ -1,4 +1,6 @@
- /* Generic I/O and MEMIO string operations.  */
-+#ifndef _ASM_GENERIC_IDE_IOPS_H
-+#define _ASM_GENERIC_IDE_IOPS_H
- 
- #define __ide_insw	insw
- #define __ide_insl	insl
-@@ -36,3 +38,5 @@ static __inline__ void __ide_mm_outsl(void __iomem * port, void *addr, u32 count
- 		addr += 4;
- 	}
- }
-+
-+#endif /* _ASM_GENERIC_IDE_IOPS_H */
-diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
-index cccc86e..0cff2e9 100644
---- a/include/asm-generic/unistd.h
-+++ b/include/asm-generic/unistd.h
-@@ -1,3 +1,6 @@
-+#ifndef _ASM_GENERIC_UNISTD_H
-+#define _ASM_GENERIC_UNISTD_H
-+
- #include <uapi/asm-generic/unistd.h>
- #include <linux/export.h>
- 
-@@ -10,3 +13,5 @@
- #define __ARCH_WANT_STAT64
- #define __ARCH_WANT_SYS_LLSEEK
- #endif
-+
-+#endif /* _ASM_GENERIC_UNISTD_H */
-diff --git a/include/asm-generic/xor.h b/include/asm-generic/xor.h
-index b4d8432..d063878 100644
---- a/include/asm-generic/xor.h
-+++ b/include/asm-generic/xor.h
-@@ -12,6 +12,8 @@
-  * (for example /usr/src/linux/COPYING); if not, write to the Free
-  * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
-+#ifndef _ASM_GENERIC_XOR_H
-+#define _ASM_GENERIC_XOR_H
- 
- #include <linux/prefetch.h>
- 
-@@ -716,3 +718,5 @@ static struct xor_block_template xor_block_32regs_p __maybe_unused = {
- 		xor_speed(&xor_block_32regs);	\
- 		xor_speed(&xor_block_32regs_p);	\
- 	} while (0)
-+
-+#endif /* _ASM_GENERIC_XOR_H */
--- 
-1.7.9.5
 
