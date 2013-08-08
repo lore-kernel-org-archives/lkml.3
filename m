@@ -1,122 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966231Ab3HHTUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 15:20:07 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3857 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966162Ab3HHTUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 15:20:04 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-From: "Christian Daudt" <csd@broadcom.com>
-To: "Christian Daudt" <csd@broadcom.com>
-cc: "Russell King" <linux@arm.linux.org.uk>, "Arnd Bergmann" <arnd@arndb.de>,
-        "Markus Mayer" <markus.mayer@linaro.org>,
-        "Stephen Warren" <swarren@nvidia.com>,
-        "Shawn Guo" <shawn.guo@linaro.org>, "Olof Johansson" <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: bcm: Make secure API call optional
-Date: Thu, 8 Aug 2013 12:19:54 -0700
-Message-ID: <1375989594-12193-1-git-send-email-csd@broadcom.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-X-WSS-ID: 7E1D31FF31W82352161-01-01
-Content-Type: text/plain
+	id S966241Ab3HHTXf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 15:23:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14390 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966189Ab3HHTXc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 15:23:32 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=tvvMzHJ_TWIA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=XlcgNrZLg9MA:10 a=VnNF1IyMAAAA:8 a=Yng7hyX3xpuInTk1LSYA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Thu, 8 Aug 2013 15:23:29 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, bp@alien8.de, bhelgaas@google.com, rjw@sisk.pl,
+        lance.ortiz@hp.com, m.chehab@samsung.com, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mce: acpi/apei: trace: Include PCIe AER trace event
+ conditionally
+Message-ID: <20130808152329.1f98b5e0@gandalf.local.home>
+In-Reply-To: <1375986471-27113-2-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+	<1375986471-27113-2-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current bcm_kona_smc_init function throws a BUG_ON if there's no SMC
-device node defined in the device tree.
+[ attempting to try out claws-mail, hopefully this messages isn't
+scrambled ;-) ]
 
-Since secure API access is optional depending the chip configuration,
-fix this by allowing the rest of the code to run even if there's no SMC
-device node defined
+On Thu,  8 Aug 2013 23:57:49 +0530
+"Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> wrote:
 
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Signed-off-by: Christian Daudt <csd@broadcom.com>
+> Since we'll be adding multiple trace events to ras.h, we need to protect
+> each block appropriately so that they only get included in the right
+> places. Update PCIe AER trace event for this purpose.
 
-diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
-index 56d9d19..e32c1b3 100644
---- a/arch/arm/mach-bcm/bcm_kona_smc.c
-+++ b/arch/arm/mach-bcm/bcm_kona_smc.c
-@@ -41,13 +41,14 @@ static const struct of_device_id bcm_kona_smc_ids[] __initconst = {
- };
- 
- /* Map in the bounce area */
--void __init bcm_kona_smc_init(void)
-+int __init bcm_kona_smc_init(void)
- {
- 	struct device_node *node;
- 
- 	/* Read buffer addr and size from the device tree node */
- 	node = of_find_matching_node(NULL, bcm_kona_smc_ids);
--	BUG_ON(!node);
-+	if (!node)
-+		return -ENODEV;
- 
- 	/* Don't care about size or flags of the DT node */
- 	bridge_data.buffer_addr =
-@@ -59,7 +60,9 @@ void __init bcm_kona_smc_init(void)
- 
- 	bridge_data.initialized = 1;
- 
--	pr_info("Secure API initialized!\n");
-+	pr_info("Kona Secure API initialized\n");
-+
-+	return 0;
- }
- 
- /* __bcm_kona_smc() should only run on CPU 0, with pre-emption disabled */
-diff --git a/arch/arm/mach-bcm/bcm_kona_smc.h b/arch/arm/mach-bcm/bcm_kona_smc.h
-index 3bedbed1..d098a7e 100644
---- a/arch/arm/mach-bcm/bcm_kona_smc.h
-+++ b/arch/arm/mach-bcm/bcm_kona_smc.h
-@@ -64,7 +64,7 @@
- #define SSAPI_BRCM_START_VC_CORE	0x0E000008
- 
- #ifndef	__ASSEMBLY__
--extern void bcm_kona_smc_init(void);
-+extern int __init bcm_kona_smc_init(void);
- 
- extern unsigned bcm_kona_smc(unsigned service_id,
- 			     unsigned arg0,
-diff --git a/arch/arm/mach-bcm/board_bcm.c b/arch/arm/mach-bcm/board_bcm.c
-index 2859932..70cc44f 100644
---- a/arch/arm/mach-bcm/board_bcm.c
-+++ b/arch/arm/mach-bcm/board_bcm.c
-@@ -29,15 +29,18 @@ static int __init kona_l2_cache_init(void)
- 	if (!IS_ENABLED(CONFIG_CACHE_L2X0))
- 		return 0;
- 
-+	if (bcm_kona_smc_init() < 0) {
-+		pr_info("Kona secure API not available. Skipping L2 init\n");
-+		return 0;
-+	}
-+
- 	bcm_kona_smc(SSAPI_ENABLE_L2_CACHE, 0, 0, 0, 0);
- 
- 	/*
- 	 * The aux_val and aux_mask have no effect since L2 cache is already
- 	 * enabled.  Pass 0s for aux_val and 1s for aux_mask for default value.
- 	 */
--	l2x0_of_init(0, ~0);
--
--	return 0;
-+	return l2x0_of_init(0, ~0);
- }
- 
- static void __init board_init(void)
-@@ -45,8 +48,6 @@ static void __init board_init(void)
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL,
- 		&platform_bus);
- 
--	bcm_kona_smc_init();
--
- 	kona_l2_cache_init();
- }
- 
--- 
-1.7.10.4
+Why not make a separate file for each? You will have to define
+TRACE_EVENT_PCIE_AER for the users as well. That is, the places that
+include ras.h and use the trace_aer_*() tracepoints.
 
+
+> 
+> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+> ---
+>  drivers/pci/pcie/aer/aerdrv_errprint.c | 1 +
+>  include/trace/events/ras.h             | 2 +-
+>  2 files changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
+> index 2c7c9f5..4d06859 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_errprint.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
+> @@ -24,6 +24,7 @@
+>  #include "aerdrv.h"
+>  
+>  #define CREATE_TRACE_POINTS
+> +#define TRACE_EVENT_PCIE_AER
+>  #include <trace/events/ras.h>
+>  
+>  #define AER_AGENT_RECEIVER		0
+> diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+> index 88b8783..4a66142 100644
+> --- a/include/trace/events/ras.h
+> +++ b/include/trace/events/ras.h
+> @@ -1,7 +1,7 @@
+>  #undef TRACE_SYSTEM
+>  #define TRACE_SYSTEM ras
+>  
+> -#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#if (!defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)) && defined()
+
+I think it would look cleaner to encapsulate the one define with the
+other:
+
+#ifdef TRACE_EVENT_PCIE_AER
+#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
+
+
+-- Steve
+
+>  #define _TRACE_AER_H
+>  
+>  #include <linux/tracepoint.h>
 
