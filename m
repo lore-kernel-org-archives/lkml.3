@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757863Ab3HHNoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:44:16 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:19427 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab3HHNoO (ORCPT
+	id S965155Ab3HHNp0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:45:26 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42063 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757841Ab3HHNpY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:44:14 -0400
-X-AuditID: cbfec7f4-b7f5f6d000000ff6-cc-5203a0ab4e4f
-From: Tomasz Figa <t.figa@samsung.com>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v9 02/16] iommu/exynos: add missing cache flush for removed
- page table entries
-Date: Thu, 08 Aug 2013 15:44:09 +0200
-Message-id: <1726114.ptuhYydfjT@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-reply-to: <002601ce941a$e987ba50$bc972ef0$@samsung.com>
-References: <002601ce941a$e987ba50$bc972ef0$@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e/4Vd3VC5iDDBony1vcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
-	h1ktTv7pZbRoud7L5MDv8eTgPCaP2Q0XWTzuXNvD5nF+0xpmj81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4MqY/WAha8FjroqdHV0sDYyvOboYOTkkBEwkPt08ygRh
-	i0lcuLeerYuRi0NIYCmjxPG7G5khnC4mifYDbcwgVWwCahKfGx6xgdgiAhoSn6+sZwWxmQV+
-	sEh82sYHYgsLpEh8vNfPDmKzCKhK7Nu7GMzmFdCUOLL0DwuIzS+gLvFu21OgzRwcogJuEhM+
-	5oOEOQWsJG7+b2YFCQsJWEq8Oe4C0Sko8WPyPRaITfIS+/ZPhdqqJbF+53GmCYyCs5CUzUJS
-	NgtJ2QJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIfH2ZQfj4mNWhxgFOBiVeHg7ApiC
-	hFgTy4orcw8xSnAwK4nwvshiDhLiTUmsrEotyo8vKs1JLT7EyMTBKdXAaLwo0X1qVk3D1+s6
-	Yr8YUtlmnAxKTny99bNGgx5b+0Wv9PiCj0Jul/6f/+LQI5/95AWT3zybH1yGy+cWbt3qdcGr
-	PcZ6yZ03K/VvS+nuaXVYJjr1pPZ9aY9Duqnv9ZhfbYmvc5tr4hEQ9LhT/dOLYDUlue7DyR+X
-	6nu0Ru1MbV90kGfTi+9cSizFGYmGWsxFxYkAtc+uIpUCAAA=
+	Thu, 8 Aug 2013 09:45:24 -0400
+Message-ID: <1375969519.12043.142.camel@hornet>
+Subject: Re: RFC: device thermal limits represented in device tree nodes
+From: Pawel Moll <pawel.moll@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Durgadoss R <durgadoss.r@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>, Wei Ni <wni@nvidia.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 08 Aug 2013 14:45:19 +0100
+In-Reply-To: <20130808085346.GC14648@e106331-lin.cambridge.arm.com>
+References: <51ED40E3.5020703@ti.com> <51EF3186.9060001@wwwdotorg.org>
+	 <1374664745.25700.118.camel@hornet> <51EFED19.5090900@ti.com>
+	 <1374768928.3213.31.camel@hornet> <51F15E42.1060409@ti.com>
+	 <1374773611.3213.44.camel@hornet> <51F2D443.6040909@ti.com>
+	 <1375787649.12043.34.camel@hornet> <5202AB95.9020605@ti.com>
+	 <20130808085346.GC14648@e106331-lin.cambridge.arm.com>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 08 Aug 2013 13:45:19.0166 (UTC) FILETIME=[855C55E0:01CE943D]
+X-MC-Unique: 113080814452201901
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 of August 2013 18:37:34 Cho KyongHo wrote:
-> This commit adds cache flush for removed small and large page entries
-> in exynos_iommu_unmap(). Missing cache flush of removed page table
-> entries can cause missing page fault interrupt when a master IP
-> accesses an unmapped area.
+On Thu, 2013-08-08 at 09:53 +0100, Mark Rutland wrote:
+> On Wed, Aug 07, 2013 at 09:18:29PM +0100, Eduardo Valentin wrote:
+> > Pawel, all,
+> > 
+> > On 06-08-2013 07:14, Pawel Moll wrote:
+> > > Apologies about the delay, I was "otherwise engaged" for a week...
+> > > 
+> > 
+> > I do also excuse for my delay, as I was also "engaged" for a week or so.
+> > 
+> > > I hope you haven't lost all motivation to work on this subject, as it's
+> > > really worth the while!
+> > 
+> > Not really! quite the opposite. Although I was looking at some other
+> > stuff, I got this series also tested on different boards and wrote down
+> > a couple of improvements I will be working in the coming days. Indeed,
+> > it is worth moving forward with this work.
+> > 
+> > > 
+> > > On Fri, 2013-07-26 at 20:55 +0100, Eduardo Valentin wrote:
+> > >> On 25-07-2013 13:33, Pawel Moll wrote:
+> > >>> On Thu, 2013-07-25 at 18:20 +0100, Eduardo Valentin wrote:
+> > >>>>>> 	thermal_zone {
+> > >>>>>> 		type = "CPU";
+> > >>>>>
+> > >>>>> So what does this exactly mean? What is so special about CPU? What other
+> > >>>>> types you've got there? (Am I just lazy not looking at the numerous
+> > >>>>> links you provided? ;-)
+> > >>>>
+> > >>>> Hehehe. OK. Type is supposed to describe what your zone is representing.
+> > >>>
+> > >>> As in "a name"? So, for example "The board", "PSU"? What I meant to ask
+> > >>> was: does the string carry any meaning?
+> > > 
+> > > You haven't commended on this...
+> > 
+> > The string is supposed to carry meaning, yes. Couple of common used:
+> > CPU, GPU, PCB, LCD
 > 
-> Tested-by: Grant Grundler <grundler@chromium.org>
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> ---
->  drivers/iommu/exynos-iommu.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> index 233f382..d545a25 100644
-> --- a/drivers/iommu/exynos-iommu.c
-> +++ b/drivers/iommu/exynos-iommu.c
-> @@ -1002,6 +1002,7 @@ static size_t exynos_iommu_unmap(struct
-> iommu_domain *domain, if (lv2ent_small(ent)) {
->  		*ent = 0;
->  		size = SPAGE_SIZE;
-> +		pgtable_flush(ent, ent + 1);
->  		priv->lv2entcnt[lv1ent_offset(iova)] += 1;
->  		goto done;
->  	}
-> @@ -1010,6 +1011,7 @@ static size_t exynos_iommu_unmap(struct
-> iommu_domain *domain, BUG_ON(size < LPAGE_SIZE);
-> 
->  	memset(ent, 0, sizeof(*ent) * SPAGES_PER_LPAGE);
-> +	pgtable_flush(ent, ent + SPAGES_PER_LPAGE);
-> 
->  	size = LPAGE_SIZE;
->  	priv->lv2entcnt[lv1ent_offset(iova)] += SPAGES_PER_LPAGE;
+> I think the point Pawel was getting at is that the string doesn't have a
+> *well-defined* meaning that always allows an OS to figure out the set of
+> relevant devices. If we have a thermal zone for "LCD", and have multiple
+> LCDs, which LCDs are covered? If we have a "PCB" zone, does this cover all
+> the devices attached to the PCB, a subset thereof, or the substrate of
+> the PCB itself?
 
-Looks reasonable.
+Or: what happens if I type "lcd" instead of "LCD"? Would there be any
+decision made based on this string? Or is it just a label to be used
+somewhere in debugging messages?
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Paweł
 
-Best regards,
-Tomasz
 
