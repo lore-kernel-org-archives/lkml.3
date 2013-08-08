@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965586Ab3HHOq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:46:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20709 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965524Ab3HHOq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:46:56 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAK3OfOj6E_thwgwdZUDXrr_7XW4xJkzwxdGU6gKcEJ3twOsm=A@mail.gmail.com>
-References: <CAK3OfOj6E_thwgwdZUDXrr_7XW4xJkzwxdGU6gKcEJ3twOsm=A@mail.gmail.com> <20130801173846.28023.19009.stgit@warthog.procyon.org.uk> <20130801173854.28023.82045.stgit@warthog.procyon.org.uk>
-To: Nico Williams <nico@cryptonector.com>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
-        simo@redhat.com, linux-kernel@vger.kernel.org, krbdev@mit.edu
-Subject: Re: [PATCH 1/2] KEYS: Implement a big key type that can save to tmpfs
-Date: Thu, 08 Aug 2013 15:46:45 +0100
-Message-ID: <16961.1375973205@warthog.procyon.org.uk>
+	id S965624Ab3HHOrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:47:31 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:49185 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965321Ab3HHOr1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:47:27 -0400
+Date: Thu, 8 Aug 2013 11:39:44 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] perf kvm: option to print events that exceed a
+ duration -v2
+Message-ID: <20130808143944.GB2851@ghostprotocols.net>
+References: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nico Williams <nico@cryptonector.com> wrote:
+Em Wed, Aug 07, 2013 at 09:56:38PM -0400, David Ahern escreveu:
+> This is useful to spot high latency blips. It is normal for HLT
+> reasons to have long exit times, so strip those from the duration
+> check.
+> 
+> v2: changed threshold to duration per acme's request
 
-> b) how to create tmpfs locations in which to store credentials (which
-> can be unbounded in size, so storing them in the kernel is silly;
-
-Ummm...  tmpfs stores them in the kernel too - though it can page them out to
-swap.
-
-I have altered my big-key implementation to just store small items in an
-internal buffer and big items in a tmpfs file.  This means that small items
-will use up _less_ kernel memory if they're in a key because they won't require
-the overhead of a dentry struct and an inode struct.
-
-> (b) can be solved in many ways, and the simplest is to have a
-> filesystem where top-level directories named after UIDs "exist" as
-> soon as they are referenced and as long as they are non-empty.  You
-> can use autofs + tmpfs, or a variant of tmpfs for this.
-
-Don't forget to add user namespaces into the mix :-/
-
-David
+Thanks, applied.
