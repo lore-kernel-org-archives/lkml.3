@@ -1,60 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965980Ab3HHSG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 14:06:57 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:47908 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab3HHSGz (ORCPT
+	id S966057Ab3HHSHI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 14:07:08 -0400
+Received: from nereida.gnuservers.com.ar ([207.192.69.134]:42281 "EHLO
+	nereida.gnuservers.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538Ab3HHSHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 14:06:55 -0400
+	Thu, 8 Aug 2013 14:07:00 -0400
+X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 14:07:00 EDT
+Date: Thu, 8 Aug 2013 19:58:39 +0200
+From: Maximiliano Curia <maxy@debian.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Margarita Manterola <margamanterola@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Large pastes into readline enabled programs causes breakage from
+ v2.6.31 onwards
+Message-ID: <20130808175839.GB21618@gnuservers.com.ar>
+References: <CAP+fKSpvJqeh8JCHisByDBsGWPOWOcDN4qeVYJOn1tgg8HR0eg@mail.gmail.com>
+ <51F1B015.50804@hurleysoftware.com>
+ <20130730124117.41DC55E4006@freak.gnuservers.com.ar>
+ <51F7E4ED.4050409@hurleysoftware.com>
 MIME-Version: 1.0
-In-Reply-To: <20130808092615.GF14648@e106331-lin.cambridge.arm.com>
-References: <1375812017-6287-1-git-send-email-jwerner@chromium.org>
-	<20130807163045.GK28558@e106331-lin.cambridge.arm.com>
-	<CAODwPW9DmVdzHbHN0NUK0fYUNw0tj2ktyh-20no30r14_JayFQ@mail.gmail.com>
-	<20130808092615.GF14648@e106331-lin.cambridge.arm.com>
-Date: Thu, 8 Aug 2013 11:06:54 -0700
-X-Google-Sender-Auth: k0NIGgMv6Uws0san_OE_Yb6a97Q
-Message-ID: <CAODwPW-j=JjunZU3zewrE1_-WoW-RXLmKVQypzxmo_BOYjc3VA@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v5] usb: phy-samsung-usb: Simplify PMU register handling
-From: Julius Werner <jwerner@chromium.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
+Content-Disposition: inline
+In-Reply-To: <51F7E4ED.4050409@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'm not sure I understand. The old documentation referred to the
-> USBDEVICE_PHY_CONTROL and USBHOST_PHY_CONTROL registers for a phy, and
-> your new version only refers to (usb device) PHY_CONTROL. Regardless of
-> multiple phys, you're suggesting that we describe less of each phy.
-> That seems like taking away usable information. Unless I've
-> misunderstood?
 
-Well that's just the thing that's confusing right now, and which I am
-trying to fix: every PHY is either DEVICE or HOST and thus has only
-one PMU register. The current code describes the PMU register space
-for all PHYs on the system in the DT entry of every PHY and then
-calculates which register to use with hardcoded offsets. I think it
-makes much more sense if every PHY only describes its own register and
-doesn't need to do address arithmetic later on.
+--98e8jtXdkpgskNou
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-As Vivek said there is one exception in an old Exynos4, but that is
-currently not implemented in the upstream kernel anyway, and if it
-ever will be it's still much easier to special case one weird chip
-than to have a super complicated and confusing mechanism for all of
-them.
+Hi,
+
+> n_tty_set_room() in drivers/tty/n_tty.c (3.10 mainline)
+
+> From n_tty_set_room():
+
+> 	/*
+> 	 * If we are doing input canonicalization, and there are no
+> 	 * pending newlines, let characters through without limit, so
+> 	 * that erase characters will be handled.  Other excess
+> 	 * characters will be beeped.
+> 	 */
+> 	if (left <=3D 0)
+> 		left =3D ldata->icanon && !ldata->canon_data;
+> 	old_left =3D tty->receive_room;
+> 	tty->receive_room =3D left;
+
+I took a long look at this code and thought about how it could be made to w=
+ork
+for readline's case and also for the canonical readers.  I came up with this
+simple patch:
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 4bf0fc0..2ba7f4e 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -149,7 +149,8 @@ static int set_room(struct tty_struct *tty)
+         * characters will be beeped.
+         */
+        if (left <=3D 0)
+-               left =3D ldata->icanon && !ldata->canon_data;
++               if (waitqueue_active(&tty->read_wait))
++                       left =3D ldata->icanon && !ldata->canon_data;
+        old_left =3D tty->receive_room;
+        tty->receive_room =3D left;
+
+This is of course just an idea, but I tested this and it worked correctly f=
+or
+the cases I was testing.
+
+The effect of this patch is that when there is a canonical reader waiting f=
+or
+input, it maintains the previous behavior, but when there's no reader (like
+when readline is changing modes), it blocks and doesn't lose any characters.
+
+Another approach would be to recalculate the size of canon_data when the mo=
+de
+is changed, but this would probably be much more invasive, and awfully less
+efficient since it would imply going through the buffer.
+
+What do you think? Is the proposed solution, or something along those lines,
+acceptable?
+
+If there are other cases that need to be taken into account and that I
+currently don't know about, please let me know.
+
+--=20
+"If you think your users are idiots, only idiots will use it."
+-- Linus Torvalds
+Saludos /\/\ /\ >< `/
+
+--98e8jtXdkpgskNou
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSA9xOAAoJEMcZdpmymyMqqKAQAKOdlZujej9YRw6QZONBfGul
+VW7tCuzfUM0i0ozY76Y6JQQPcBVTe639GPGosRk4+vSAl1WZcqcPQ9WN3Y8u8rL8
+pu09M7Omg6ccuC6kGGvlpLYmsBELsgB9zCs7izEMaVBMzL4un2/g7L2HqFhK2WhU
+21AKTQ0l3pxqSun4sLfiOnKvuusPikr+ZORIW7PJRQwxBEaBmEfhD0lq38mpajeu
+rEK+Tm9vP3uOqtJlkFoCvQW5VsYpxst3Sb18elCA/GshWysanNGMcV4cbwljORH3
++OxR15mlaTS6UnM5P5owQVlGCROmssjY3HCMKOP6hwtCmAWpViNjwSXFY/Vcie3d
+4I+fmRKzVMiu8fHqgr/qcsocGx2KFJECLAffegj8Q+2v4k0M9KncQiO5F8e96ccS
+rboaesEHeJ+5s0hFyNGZT/CQ5R3a+eEde6DWDIra7xfweYZuUQCEKjxwtVrMBev0
+KxiCpscR6FnzRP6r19pPJiQk6VPoSLRmJPWoaXavyy107TTug60lkvzvKDoBXxwp
+0z1rnzDz3+8Mzh8Iw7MeEj05pWpAi1Ey7+Ls81a62J+VJib8pmIz+WSJMDV0vgLN
+HSMRDYepmnDhpTXLCKBbu6wPdJCJgDNG0stI0WwI3n6ne3PR15ydHF8UNxaaKta+
+5akk754ksTFBd06H+aff
+=jeSh
+-----END PGP SIGNATURE-----
+
+--98e8jtXdkpgskNou--
