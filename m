@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934121Ab3HHIuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:50:18 -0400
-Received: from 6.mo4.mail-out.ovh.net ([188.165.36.253]:54245 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934009Ab3HHIuQ (ORCPT
+	id S934084Ab3HHIvu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:51:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49982 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934009Ab3HHIvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:50:16 -0400
-X-Greylist: delayed 13356 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 04:50:16 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 6/6] ARM: at91/dt: remove old main clk definition from sama5d3xcm.dtsi
-Date: Thu,  8 Aug 2013 10:50:02 +0200
-Message-Id: <1375951802-11060-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 6670393999350724787
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 8 Aug 2013 04:51:48 -0400
+Date: Thu, 8 Aug 2013 10:51:33 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Ingo Molnar <mingo@kernel.org>, David Daney <david.daney@cavium.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Borislav Petkov <bp@suse.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] extable: Skip sorting if the table is empty
+Message-ID: <20130808085133.GP6104@pengutronix.de>
+References: <1374047711-21518-1-git-send-email-u.kleine-koenig@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1374047711-21518-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the old main clk node which is now useless as sama5d3
-SoCs and boards are no longer compatible with the old at91 clk
-implementations.
+Hello,
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/boot/dts/sama5d3xcm.dtsi |   11 -----------
- 1 file changed, 11 deletions(-)
+[adding akpm to Cc:]
 
-diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
-index f19d5bf..81c3957 100644
---- a/arch/arm/boot/dts/sama5d3xcm.dtsi
-+++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
-@@ -18,17 +18,6 @@
- 		reg = <0x20000000 0x20000000>;
- 	};
- 
--	clocks {
--		#address-cells = <1>;
--		#size-cells = <1>;
--		ranges;
--
--		main_clock: clock@0 {
--			compatible = "atmel,osc", "fixed-clock";
--			clock-frequency = <12000000>;
--		};
--	};
--
- 	ahb {
- 		apb {
- 			spi0: spi@f0004000 {
+On Wed, Jul 17, 2013 at 09:55:11AM +0200, Uwe Kleine-König wrote:
+> At least on ARM no-MMU the extable is empty and so there is nothing to
+> sort. So add a check for the table to be empty which effectively only
+> changes that the misleading pr_notice is suppressed.
+> 
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> ---
+> Hello,
+> 
+> I first tried to select BUILDTIME_EXTABLE_SORT for ARM no-MMU, too, but that
+> failed to build with
+> 
+> 	no __ex_table in  file: vmlinux
+> 
+> . I didn't dig deeper for the reasons, but maybe this is worth fixing, too?
+this doesn't appear in current next and I didn't get any feed back yet.
+
+What do you think?
+
+Thanks
+Uwe
+
+>  kernel/extable.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/extable.c b/kernel/extable.c
+> index 67460b9..832cb28 100644
+> --- a/kernel/extable.c
+> +++ b/kernel/extable.c
+> @@ -41,7 +41,7 @@ u32 __initdata main_extable_sort_needed = 1;
+>  /* Sort the kernel's built-in exception table */
+>  void __init sort_main_extable(void)
+>  {
+> -	if (main_extable_sort_needed) {
+> +	if (main_extable_sort_needed && __stop___ex_table > __start___ex_table) {
+>  		pr_notice("Sorting __ex_table...\n");
+>  		sort_extable(__start___ex_table, __stop___ex_table);
+>  	}
+
 -- 
-1.7.9.5
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
