@@ -1,62 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965796Ab3HHNxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:53:16 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:42969 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965782Ab3HHNxK (ORCPT
+	id S965807Ab3HHNxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:53:39 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:40408 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965748Ab3HHNxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:53:10 -0400
+	Thu, 8 Aug 2013 09:53:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <12886440.vo6SHbG01c@vostro.rjw.lan>
+References: <cover.1375964117.git.viresh.kumar@linaro.org>
+	<12886440.vo6SHbG01c@vostro.rjw.lan>
+Date: Thu, 8 Aug 2013 19:23:36 +0530
+Message-ID: <CAKohponFNLjUBaXc3vsFW+Up3PamqPeFF2gjG06+qTSYawTjhw@mail.gmail.com>
+Subject: Re: [PATCH 00/35] cpufreq: Introduce cpufreq_table_validate_and_show()
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 35/35] cpufreq: tegra: use cpufreq_table_validate_and_show()
-Date: Thu,  8 Aug 2013 19:18:37 +0530
-Message-Id: <568f3dbd414b050bb2319d960fb5044a5aed8ee3.1375964117.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1375964117.git.viresh.kumar@linaro.org>
-References: <cover.1375964117.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1375964117.git.viresh.kumar@linaro.org>
-References: <cover.1375964117.git.viresh.kumar@linaro.org>
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lets use cpufreq_table_validate_and_show() instead of calling
-cpufreq_frequency_table_cpuinfo() and cpufreq_frequency_table_get_attr().
+On 8 August 2013 19:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> I'm not going to take this for 3.12, sorry.  Please resend in the 3.12-rc1 /
+> 3.12-rc2 time frame.
 
-Cc: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/tegra-cpufreq.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-index cd66b85..b50d2c4 100644
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ b/drivers/cpufreq/tegra-cpufreq.c
-@@ -215,8 +215,7 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
- 	clk_prepare_enable(emc_clk);
- 	clk_prepare_enable(cpu_clk);
- 
--	cpufreq_frequency_table_cpuinfo(policy, freq_table);
--	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
-+	cpufreq_table_validate_and_show(policy, freq_table);
- 	policy->cur = tegra_getspeed(policy->cpu);
- 	target_cpu_speed[policy->cpu] = policy->cur;
- 
-@@ -233,7 +232,6 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
- 
- static int tegra_cpu_exit(struct cpufreq_policy *policy)
- {
--	cpufreq_frequency_table_cpuinfo(policy, freq_table);
- 	clk_disable_unprepare(emc_clk);
- 	return 0;
- }
--- 
-1.7.12.rc2.18.g61b472e
-
+Okay.. By that time I will accumulate all reviews/Acks for it
+and the next patchset that I will send.
