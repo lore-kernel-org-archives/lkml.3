@@ -1,154 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab3HHXXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 19:23:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41375 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966696Ab3HHXXF (ORCPT
+	id S966858Ab3HHXhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 19:37:13 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:3180 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966433Ab3HHXhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 19:23:05 -0400
-Date: Thu, 8 Aug 2013 16:20:50 -0700
-From: tip-bot for Jeremy Fitzhardinge <tipbot@zytor.com>
-Message-ID: <tip-38eddb85894561ab32c1de4171e1c1582f0efa78@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, jeremy@goop.org,
-        raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, jeremy@goop.org,
-        raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <20130806114412.20643.84141.sendpatchset@codeblue.in.ibm.com>
-References: <20130806114412.20643.84141.sendpatchset@codeblue.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/spinlocks] xen, pvticketlock:
-  Allow interrupts to be enabled while blocking
-Git-Commit-ID: 38eddb85894561ab32c1de4171e1c1582f0efa78
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 08 Aug 2013 16:20:56 -0700 (PDT)
+	Thu, 8 Aug 2013 19:37:10 -0400
+Message-ID: <1376004959.10300.239.camel@misato.fc.hp.com>
+Subject: Re: Cannot hot remove a memory device
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
+Date: Thu, 08 Aug 2013 17:35:59 -0600
+In-Reply-To: <2966692.KbMK5bTkda@vostro.rjw.lan>
+References: <51FA1E41.20304@jp.fujitsu.com>
+	 <13789925.vhhiTlyGIy@vostro.rjw.lan>
+	 <1376002242.10300.235.camel@misato.fc.hp.com>
+	 <2966692.KbMK5bTkda@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  38eddb85894561ab32c1de4171e1c1582f0efa78
-Gitweb:     http://git.kernel.org/tip/38eddb85894561ab32c1de4171e1c1582f0efa78
-Author:     Jeremy Fitzhardinge <jeremy@goop.org>
-AuthorDate: Tue, 6 Aug 2013 17:14:12 +0530
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 8 Aug 2013 16:07:01 -0700
+On Fri, 2013-08-09 at 01:14 +0200, Rafael J. Wysocki wrote:
+> On Thursday, August 08, 2013 04:50:42 PM Toshi Kani wrote:
+> > On Fri, 2013-08-09 at 00:12 +0200, Rafael J. Wysocki wrote:
+> > > On Thursday, August 08, 2013 11:15:20 AM Toshi Kani wrote:
+> > > > On Fri, 2013-08-02 at 18:04 -0600, Toshi Kani wrote:
+> > > > > On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
+> > > > > > On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
+> > > > > > > On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
+> > > >  :
+> > > > > > > I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
+> > > > > > > handle is already set\n").  When two ACPI memory objects associate with
+> > > > > > > a same memory block, the bind procedure of the 2nd ACPI memory object
+> > > > > > > sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
+> > > > > > 
+> > > > > > That sound's plausible, but I wonder how we can fix that?
+> > > > > > 
+> > > > > > There's no way for a single physical device to have two different ACPI
+> > > > > > "companions".  It looks like the memory blocks should be 64 M each in that
+> > > > > > case.  Or we need to create two child devices for each memory block and
+> > > > > > associate each of them with an ACPI object.  That would lead to complications
+> > > > > > in the user space interface, though.
+> > > > > 
+> > > > > Right.  Even bigger issue is that I do not think __add_pages() and
+> > > > > __remove_pages() can add / delete a memory chunk that is less than
+> > > > > 128MB.  128MB is the granularity of them.  So, we may just have to fail
+> > > > > this case gracefully.
+> > > > 
+> > > > FYI: I have submitted the patch blow to close this part of the issue...
+> > > > 
+> > > > https://lkml.org/lkml/2013/8/8/396
+> > > 
+> > > That looks good to me, but we'd still need to make it possible to have
+> > > memory blocks smaller than 128 MB ...
+> > 
+> > Do you mean acpi_bind_one() needs to be able to handle such case?  If
+> > so, it should not be a problem since a memory block device won't be
+> > created when add_memory() fails with the change above.  So, there is no
+> > binding to be done.  If you mean add_memory() needs to be able to handle
+> > a smaller range, that's quite a tough one unless we make the section
+> > size smaller.
+> > 
+> > BTW, when add_memory() fails, the memory hot-add request still succeeds
+> > with no driver attached.  This seems logical, but the added device is
+> > useless when no handler is attached.  And it does not allow ejecting the
+> > device with no handler.  I am not too worry about this since this is a
+> > rare case, but it reminded me that the framework won't handle rollback.
+> 
+> That is a valid observation.
+> 
+> Perhaps we should add a flag that will cause acpi_bus_offline_companions()
+> to fail immediately if that flag is set for the given device?
+> 
+> Then, acpi_memory_enable_device() could set that flag for mem_device->device
+> when either add_memory() or acpi_bind_memory_blocks() fails?
 
-xen, pvticketlock: Allow interrupts to be enabled while blocking
+I am not sure if we need a new flag, but I agree that we could allow
+ejecting a device with no handler attached.  We can probably skip any
+device specific part (such as offlining) when no handler is attached.
 
-If interrupts were enabled when taking the spinlock, we can leave them
-enabled while blocking to get the lock.
+Thanks,
+-Toshi
 
-If we can enable interrupts while waiting for the lock to become
-available, and we take an interrupt before entering the poll,
-and the handler takes a spinlock which ends up going into
-the slow state (invalidating the per-cpu "lock" and "want" values),
-then when the interrupt handler returns the event channel will
-remain pending so the poll will return immediately, causing it to
-return out to the main spinlock loop.
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Link: http://lkml.kernel.org/r/20130806114412.20643.84141.sendpatchset@codeblue.in.ibm.com
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/xen/spinlock.c | 46 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 40 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 546112e..0438b93 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -142,7 +142,20 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	 * partially setup state.
- 	 */
- 	local_irq_save(flags);
--
-+	/*
-+	 * We don't really care if we're overwriting some other
-+	 * (lock,want) pair, as that would mean that we're currently
-+	 * in an interrupt context, and the outer context had
-+	 * interrupts enabled.  That has already kicked the VCPU out
-+	 * of xen_poll_irq(), so it will just return spuriously and
-+	 * retry with newly setup (lock,want).
-+	 *
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
- 	w->want = want;
- 	smp_wmb();
- 	w->lock = lock;
-@@ -157,24 +170,43 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	/* Only check lock once pending cleared */
- 	barrier();
- 
--	/* Mark entry to slowpath before doing the pickup test to make
--	   sure we don't deadlock with an unlocker. */
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
- 	__ticket_enter_slowpath(lock);
- 
--	/* check again make sure it didn't become free while
--	   we weren't looking  */
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking
-+	 */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
- 		add_stats(TAKEN_SLOW_PICKUP, 1);
- 		goto out;
- 	}
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
-+
- 	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
- 	xen_poll_irq(irq);
- 	add_stats(TAKEN_SLOW_SPURIOUS, !xen_test_irq_pending(irq));
-+
-+	local_irq_save(flags);
-+
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- out:
- 	cpumask_clear_cpu(cpu, &waiting_cpus);
- 	w->lock = NULL;
-+
- 	local_irq_restore(flags);
-+
- 	spin_time_accum_blocked(start);
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
-@@ -188,7 +220,9 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	for_each_cpu(cpu, &waiting_cpus) {
- 		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
- 
--		if (w->lock == lock && w->want == next) {
-+		/* Make sure we read lock before want */
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == next) {
- 			add_stats(RELEASED_SLOW_KICKED, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
- 			break;
