@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab3HHGuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 02:50:09 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:38941 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab3HHGuI (ORCPT
+	id S1757375Ab3HHGyQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 02:54:16 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:52745 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756062Ab3HHGyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 02:50:08 -0400
+	Thu, 8 Aug 2013 02:54:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130802093559.GB2884@e106331-lin.cambridge.arm.com>
-References: <1374137426-6763-1-git-send-email-jonas.jensen@gmail.com>
-	<20130802093559.GB2884@e106331-lin.cambridge.arm.com>
-Date: Thu, 8 Aug 2013 08:50:07 +0200
-Message-ID: <CACmBeS0wbCSU+3DJwtyN5CuX8GDCNWJxeiDq8YUrfTL8DwU_1w@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: Add device tree binding file for MOXA ART
- SoCs interrupt controller
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "arm@kernel.org" <arm@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <0000013f61e7609b-a8d1907b-8169-4f77-ab83-a624a8d0ab4a-000000@email.amazonses.com>
+References: <CAOtvUMc5w3zNe8ed6qX0OOM__3F_hOTqvFa1AkdXF0PHvzGZqg@mail.gmail.com>
+	<1371672168-9869-1-git-send-email-gilad@benyossef.com>
+	<0000013f61e7609b-a8d1907b-8169-4f77-ab83-a624a8d0ab4a-000000@email.amazonses.com>
+Date: Thu, 8 Aug 2013 09:54:13 +0300
+Message-ID: <CAOtvUMe=QQni4Ouu=P_vh8QSb4ZdnaX_fW1twn3QFcOjYgJBGA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] mm: make vmstat_update periodic run conditional
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On 2 August 2013 11:35, Mark Rutland <mark.rutland@arm.com> wrote:
->>     The MOXA ART irqchip driver was added without accompanying devicetree document.
->>     ( in next-20130716   drivers/irqchip/irq-moxart.c )
+On Thu, Jun 20, 2013 at 5:05 PM, Christoph Lameter <cl@linux.com> wrote:
 >
-> Aaargh. That should not have happened >:(
-
-Sorry about this, my plan was to submit all documents along with
-moxart platform support. At the time I did not know it is more normal
-to push the binding along with the driver.
-
->> +- interrupt-mask: Specifies if the interrupt is edge or level-triggered
->> +  each bit represent an interrupt 0-31 where 1 signify edge
+> On Wed, 19 Jun 2013, Gilad Ben-Yossef wrote:
 >
-> For the GIC, this gets descrbied in the interrupt sepcifier rather than
-> on the interrupt controller's root node. Is there a reason to do this
-> differently here?
+> > +static void vmstat_update(struct work_struct *w)
+> > +{
+> > +     int cpu, this_cpu = smp_processor_id();
+> > +
+> > +     if (unlikely(this_cpu == vmstat_monitor_cpu))
+> > +             for_each_cpu_not(cpu, &vmstat_cpus)
+> > +                     if (need_vmstat(cpu))
+> > +                             start_cpu_timer(cpu);
+> > +
+> > +     if (likely(refresh_cpu_vm_stats(this_cpu) || (this_cpu ==
+> > vmstat_monitor_cpu)))
+> > +             schedule_delayed_work(&__get_cpu_var(vmstat_work),
+> > +
+> > round_jiffies_relative(sysctl_stat_interval));
+> > +     else
+> > +             cpumask_clear_cpu(this_cpu, &vmstat_cpus);
+>
+> The clearing of vmstat_cpus could be avoided if this processor is not
+> running tickless. Frequent updates to vmstat_cpus could become an issue.
 
-The reason is, IRQ types must be written to the controller as two u32
-registers (IRQ_MODE_REG and IRQ_LEVEL_REG). I could not find an easier
-way (that uses generic things) to do it.
+I like the idea of tying the vmstat disabling to the tickless logic
+but I seem to have run
+into a bit of a chicken and egg problem here:
 
-It's true that "interrupt-mask" is redundant, DT "interrupts" hold the
-same information. I just never found nice way to collect it from DT.
+vmstat_update runs from the vmstat work queue item by the workqueue
+kernel thread.
 
-See registers written on line 111:
-http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/drivers/irqchip/irq-moxart.c#n111
+If this code is running, it means there are at least two schedulable tasks:
+1. The workqueue kernel thread, because it is running.
+2. At least one more task, otherwise were were in idle and the
+workqueue kernel thread
+would not execute this work item.
+
+Unfortunately, having two schedulable tasks means we're not running
+tickless, so the check
+will never trigger - or have I've missed something obvious?
+
+Thanks,
+Gilad
 
 
-Best regards,
-Jonas
+--
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a situation
+where the homework eats your dog?"
+ -- Jean-Baptiste Queru
