@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965703Ab3HHODb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:03:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44628 "EHLO mx2.suse.de"
+	id S965582Ab3HHOBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:01:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44577 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965535Ab3HHOBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:01:09 -0400
+	id S965535Ab3HHOBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:01:02 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 23/27] mm: numa: Scan pages with elevated page_mapcount
-Date: Thu,  8 Aug 2013 15:00:35 +0100
-Message-Id: <1375970439-5111-24-git-send-email-mgorman@suse.de>
+Subject: [PATCH 17/27] sched: Update NUMA hinting faults once per scan
+Date: Thu,  8 Aug 2013 15:00:29 +0100
+Message-Id: <1375970439-5111-18-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375970439-5111-1-git-send-email-mgorman@suse.de>
 References: <1375970439-5111-1-git-send-email-mgorman@suse.de>
@@ -22,155 +22,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently automatic NUMA balancing is unable to distinguish between false
-shared versus private pages except by ignoring pages with an elevated
-page_mapcount entirely. This avoids shared pages bouncing between the
-nodes whose task is using them but that is ignored quite a lot of data.
+NUMA hinting faults counts and placement decisions are both recorded in the
+same array which distorts the samples in an unpredictable fashion. The values
+linearly accumulate during the scan and then decay creating a sawtooth-like
+pattern in the per-node counts. It also means that placement decisions are
+time sensitive. At best it means that it is very difficult to state that
+the buffer holds a decaying average of past faulting behaviour. At worst,
+it can confuse the load balancer if it sees one node with an artifically high
+count due to very recent faulting activity and may create a bouncing effect.
 
-This patch kicks away the training wheels in preparation for adding support
-for identifying shared/private pages is now in place. The ordering is so
-that the impact of the shared/private detection can be easily measured. Note
-that the patch does not migrate shared, file-backed within vmas marked
-VM_EXEC as these are generally shared library pages. Migrating such pages
-is not beneficial as there is an expectation they are read-shared between
-caches and iTLB and iCache pressure is generally low.
+This patch adds a second array. numa_faults stores the historical data
+which is used for placement decisions. numa_faults_buffer holds the
+fault activity during the current scan window. When the scan completes,
+numa_faults decays and the values from numa_faults_buffer are copied
+across.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/migrate.h |  7 ++++---
- mm/huge_memory.c        |  5 +----
- mm/memory.c             |  7 ++-----
- mm/migrate.c            | 17 ++++++-----------
- mm/mprotect.c           |  4 +---
- 5 files changed, 14 insertions(+), 26 deletions(-)
+ include/linux/sched.h | 13 +++++++++++++
+ kernel/sched/core.c   |  1 +
+ kernel/sched/fair.c   | 16 +++++++++++++---
+ 3 files changed, 27 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index a405d3dc..e7e26af 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -92,11 +92,12 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
- #endif /* CONFIG_MIGRATION */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d65e31c..d017be9 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1335,7 +1335,20 @@ struct task_struct {
+ 	u64 node_stamp;			/* migration stamp  */
+ 	struct callback_head numa_work;
  
- #ifdef CONFIG_NUMA_BALANCING
--extern int migrate_misplaced_page(struct page *page, int node);
--extern int migrate_misplaced_page(struct page *page, int node);
-+extern int migrate_misplaced_page(struct page *page,
-+				  struct vm_area_struct *vma, int node);
- extern bool migrate_ratelimited(int node);
- #else
--static inline int migrate_misplaced_page(struct page *page, int node)
-+static inline int migrate_misplaced_page(struct page *page,
-+					 struct vm_area_struct *vma, int node)
- {
- 	return -EAGAIN; /* can't migrate now */
++	/*
++	 * Exponential decaying average of faults on a per-node basis.
++	 * Scheduling placement decisions are made based on the these counts.
++	 * The values remain static for the duration of a PTE scan
++	 */
+ 	unsigned long *numa_faults;
++
++	/*
++	 * numa_faults_buffer records faults per node during the current
++	 * scan window. When the scan completes, the counts in numa_faults
++	 * decay and these values are copied.
++	 */
++	unsigned long *numa_faults_buffer;
++
+ 	int numa_preferred_nid;
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 194559e..aad32ff 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1637,6 +1637,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->numa_preferred_nid = -1;
+ 	p->numa_work.next = &p->numa_work;
+ 	p->numa_faults = NULL;
++	p->numa_faults_buffer = NULL;
+ #endif /* CONFIG_NUMA_BALANCING */
  }
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 52c4706..a6153eb 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1478,12 +1478,9 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 			ret = HPAGE_PMD_NR;
- 			BUG_ON(pmd_write(entry));
- 		} else {
--			struct page *page = pmd_page(*pmd);
- 			ret = 1;
  
--			/* only check non-shared pages */
--			if (page_mapcount(page) == 1 &&
--			    !pmd_numa(*pmd)) {
-+			if (!pmd_numa(*pmd)) {
- 				entry = pmdp_get_and_clear(mm, addr, pmd);
- 				entry = pmd_mknuma(entry);
- 				ret = HPAGE_PMD_NR;
-diff --git a/mm/memory.c b/mm/memory.c
-index 7170707..0e7010c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3579,7 +3579,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index ee8da21..8ca8901 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -892,8 +892,14 @@ static void task_numa_placement(struct task_struct *p)
+ 
+ 	/* Find the node with the highest number of faults */
+ 	for (nid = 0; nid < nr_node_ids; nid++) {
+-		unsigned long faults = p->numa_faults[nid];
++		unsigned long faults;
++
++		/* Decay existing window and copy faults since last scan */
+ 		p->numa_faults[nid] >>= 1;
++		p->numa_faults[nid] += p->numa_faults_buffer[nid];
++		p->numa_faults_buffer[nid] = 0;
++
++		faults = p->numa_faults[nid];
+ 		if (faults > max_faults) {
+ 			max_faults = faults;
+ 			max_nid = nid;
+@@ -919,9 +925,13 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 	if (unlikely(!p->numa_faults)) {
+ 		int size = sizeof(*p->numa_faults) * nr_node_ids;
+ 
+-		p->numa_faults = kzalloc(size, GFP_KERNEL|__GFP_NOWARN);
++		/* numa_faults and numa_faults_buffer share the allocation */
++		p->numa_faults = kzalloc(size * 2, GFP_KERNEL|__GFP_NOWARN);
+ 		if (!p->numa_faults)
+ 			return;
++
++		BUG_ON(p->numa_faults_buffer);
++		p->numa_faults_buffer = p->numa_faults + nr_node_ids;
  	}
  
- 	/* Migrate to the requested node */
--	migrated = migrate_misplaced_page(page, target_nid);
-+	migrated = migrate_misplaced_page(page, vma, target_nid);
- 	if (migrated)
- 		page_nid = target_nid;
- 
-@@ -3644,16 +3644,13 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		page = vm_normal_page(vma, addr, pteval);
- 		if (unlikely(!page))
- 			continue;
--		/* only check non-shared pages */
--		if (unlikely(page_mapcount(page) != 1))
--			continue;
- 
- 		last_nid = page_nid_last(page);
- 		page_nid = page_to_nid(page);
- 		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
- 		pte_unmap_unlock(pte, ptl);
- 		if (target_nid != -1) {
--			migrated = migrate_misplaced_page(page, target_nid);
-+			migrated = migrate_misplaced_page(page, vma, target_nid);
- 			if (migrated)
- 				page_nid = target_nid;
- 		} else {
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 6f0c244..08ac3ba 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1596,7 +1596,8 @@ int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
-  * node. Caller is expected to have an elevated reference count on
-  * the page that will be dropped by this function before returning.
-  */
--int migrate_misplaced_page(struct page *page, int node)
-+int migrate_misplaced_page(struct page *page, struct vm_area_struct *vma,
-+			   int node)
- {
- 	pg_data_t *pgdat = NODE_DATA(node);
- 	int isolated;
-@@ -1604,10 +1605,11 @@ int migrate_misplaced_page(struct page *page, int node)
- 	LIST_HEAD(migratepages);
- 
  	/*
--	 * Don't migrate pages that are mapped in multiple processes.
--	 * TODO: Handle false sharing detection instead of this hammer
-+	 * Don't migrate file pages that are mapped in multiple processes
-+	 * with execute permissions as they are probably shared libraries.
- 	 */
--	if (page_mapcount(page) != 1)
-+	if (page_mapcount(page) != 1 && page_is_file_cache(page) &&
-+	    (vma->vm_flags & VM_EXEC))
- 		goto out;
+@@ -939,7 +949,7 @@ void task_numa_fault(int node, int pages, bool migrated)
  
- 	/*
-@@ -1658,13 +1660,6 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 	int page_lru = page_is_file_cache(page);
+ 	task_numa_placement(p);
  
- 	/*
--	 * Don't migrate pages that are mapped in multiple processes.
--	 * TODO: Handle false sharing detection instead of this hammer
--	 */
--	if (page_mapcount(page) != 1)
--		goto out_dropref;
--
--	/*
- 	 * Rate-limit the amount of data that is being migrated to a node.
- 	 * Optimal placement is no good if the memory bus is saturated and
- 	 * all the time is being spent migrating!
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 8e7e9bd..df64356 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -69,9 +69,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 					if (last_nid != this_nid)
- 						all_same_node = false;
+-	p->numa_faults[node] += pages;
++	p->numa_faults_buffer[node] += pages;
+ }
  
--					/* only check non-shared pages */
--					if (!pte_numa(oldpte) &&
--					    page_mapcount(page) == 1) {
-+					if (!pte_numa(oldpte)) {
- 						ptent = pte_mknuma(ptent);
- 						updated = true;
- 					}
+ static void reset_ptenuma_scan(struct task_struct *p)
 -- 
 1.8.1.4
 
