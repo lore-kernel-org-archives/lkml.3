@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933831Ab3HHG5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 02:57:15 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:8157 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933531Ab3HHG5D (ORCPT
+	id S933863Ab3HHG5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 02:57:45 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19764 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756447Ab3HHG47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 02:57:03 -0400
+	Thu, 8 Aug 2013 02:56:59 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 07 Aug 2013 23:57:03 -0700
+	by hqnvupgp08.nvidia.com on Wed, 07 Aug 2013 23:55:15 -0700
 From: Wei Ni <wni@nvidia.com>
 To: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>
 CC: <MLongnecker@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
         <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, Wei Ni <wni@nvidia.com>
-Subject: [PATCH v2 3/3] Documentation: dt: hwmon: add OF document for lm90
-Date: Thu, 8 Aug 2013 14:56:31 +0800
-Message-ID: <1375944991-29182-4-git-send-email-wni@nvidia.com>
+Subject: [PATCH v2 1/3] hwmon: (lm90) Add power control
+Date: Thu, 8 Aug 2013 14:56:29 +0800
+Message-ID: <1375944991-29182-2-git-send-email-wni@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375944991-29182-1-git-send-email-wni@nvidia.com>
 References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
@@ -27,40 +27,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add OF document for lm90 in Documentation/devicetree/.
+The device lm90 can be controlled by the vdd rail.
+Adding the power control support to power on/off the vdd rail.
+And make sure that power is enabled before accessing the device.
 
 Signed-off-by: Wei Ni <wni@nvidia.com>
 ---
- Documentation/devicetree/bindings/hwmon/lm90.txt |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/hwmon/lm90.txt
+ drivers/hwmon/lm90.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/hwmon/lm90.txt b/Documentation/devicetree/bindings/hwmon/lm90.txt
-new file mode 100644
-index 0000000..8024f11
---- /dev/null
-+++ b/Documentation/devicetree/bindings/hwmon/lm90.txt
-@@ -0,0 +1,20 @@
-+* LM90 series thermometer.
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index cdff742..306a348 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -89,6 +89,7 @@
+ #include <linux/err.h>
+ #include <linux/mutex.h>
+ #include <linux/sysfs.h>
++#include <linux/regulator/consumer.h>
+ 
+ /*
+  * Addresses to scan
+@@ -302,6 +303,7 @@ static const struct lm90_params lm90_params[] = {
+ struct lm90_data {
+ 	struct device *hwmon_dev;
+ 	struct mutex update_lock;
++	struct regulator *lm90_reg;
+ 	char valid; /* zero until following fields are valid */
+ 	unsigned long last_updated; /* in jiffies */
+ 	int kind;
+@@ -1391,6 +1393,32 @@ static void lm90_init_client(struct i2c_client *client)
+ 		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
+ }
+ 
++static void lm90_power_control(struct i2c_client *client, bool is_enable)
++{
++	struct lm90_data *data = i2c_get_clientdata(client);
++	int ret;
 +
-+Required node properties:
-+- compatible: manufacture and chip name,
-+              which are listed in the Documentation/hwmon/lm90
-+- reg: I2C bus address of the device
++	if (!data->lm90_reg)
++		return;
 +
-+Optional properties:
-+- vdd-supply: vdd regulator for the supply voltage. If this is not set,
-+              assuming vdd is always powered.
-+- interrupts: lm90 can support interrupt mode, you can set interrupt here.
++	mutex_lock(&data->update_lock);
 +
-+Example lm90 node:
++	if (is_enable)
++		ret = regulator_enable(data->lm90_reg);
++	else
++		ret = regulator_disable(data->lm90_reg);
 +
-+nct1008 {
-+	compatible = "onnn,nct1008";
-+	reg = <0x4c>;
-+	vdd-supply = <&palmas_ldo6_reg>;
-+	interrupt-parent = <&gpio>;
-+	interrupts = <TEGRA_GPIO(O, 4) IRQ_TYPE_LEVEL_LOW>;
++	if (ret < 0)
++		dev_err(&client->dev,
++			"Error in %s rail vdd, error %d\n",
++			(is_enable) ? "enabling" : "disabling", ret);
++	else
++		dev_info(&client->dev, "success in %s rail vdd\n",
++			 (is_enable) ? "enabling" : "disabling");
++
++	mutex_unlock(&data->update_lock);
++}
++
+ static int lm90_probe(struct i2c_client *client,
+ 		      const struct i2c_device_id *id)
+ {
+@@ -1406,6 +1434,20 @@ static int lm90_probe(struct i2c_client *client,
+ 	i2c_set_clientdata(client, data);
+ 	mutex_init(&data->update_lock);
+ 
++	data->lm90_reg = regulator_get(&client->dev, "vdd");
++	if (IS_ERR_OR_NULL(data->lm90_reg)) {
++		if (PTR_ERR(data->lm90_reg) == -ENODEV)
++			dev_info(&client->dev,
++				 "No regulator found for vdd. Assuming vdd is always powered.");
++		else
++			dev_warn(&client->dev,
++				 "Error [%ld] in getting the regulator handle for vdd.\n",
++				 PTR_ERR(data->lm90_reg));
++		data->lm90_reg = NULL;
++	}
++
++	lm90_power_control(client, true);
++
+ 	/* Set the device type */
+ 	data->kind = id->driver_data;
+ 	if (data->kind == adm1032) {
+@@ -1473,6 +1515,10 @@ exit_remove_files:
+ 	lm90_remove_files(client, data);
+ exit_restore:
+ 	lm90_restore_conf(client, data);
++	lm90_power_control(client, false);
++	if (data->lm90_reg)
++		regulator_put(data->lm90_reg);
++
+ 	return err;
+ }
+ 
+@@ -1483,6 +1529,9 @@ static int lm90_remove(struct i2c_client *client)
+ 	hwmon_device_unregister(data->hwmon_dev);
+ 	lm90_remove_files(client, data);
+ 	lm90_restore_conf(client, data);
++	lm90_power_control(client, false);
++	if (data->lm90_reg)
++		regulator_put(data->lm90_reg);
+ 
+ 	return 0;
+ }
 -- 
 1.7.9.5
 
