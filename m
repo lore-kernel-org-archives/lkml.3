@@ -1,205 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965900Ab3HHRRb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 13:17:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35468 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965361Ab3HHRRa (ORCPT
+	id S965811Ab3HHRTB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 13:19:01 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:5076 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965361Ab3HHRS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 13:17:30 -0400
-Date: Thu, 8 Aug 2013 18:16:50 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-Message-ID: <20130808171650.GH27325@e106331-lin.cambridge.arm.com>
-References: <51F97842.6050200@linaro.org>
- <068436c6-ff98-428f-8875-bb1c6f86466b@TX2EHSMHS008.ehs.local>
- <51F97CE3.9030306@linaro.org>
- <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local>
- <51F99747.4060901@linaro.org>
- <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local>
- <51FA9AE8.1060004@linaro.org>
- <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local>
- <51FA9F54.3060704@linaro.org>
- <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local>
+	Thu, 8 Aug 2013 13:18:58 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 08 Aug 2013 10:18:58 -0700
+Message-ID: <5203D642.60405@nvidia.com>
+Date: Thu, 8 Aug 2013 23:02:50 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [PATCH 1/2] include: dt-binding: input: create a DT header defining
+ key codes.
+References: <1375798370-2231-1-git-send-email-ldewangan@nvidia.com> <52014E50.6030508@wwwdotorg.org> <5203D138.4030107@nvidia.com> <20130808171331.GA6960@core.coreip.homeip.net>
+In-Reply-To: <20130808171331.GA6960@core.coreip.homeip.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 06:11:26PM +0100, Sören Brinkmann wrote:
-> Hi Daniel,
-> 
-> On Thu, Aug 01, 2013 at 07:48:04PM +0200, Daniel Lezcano wrote:
-> > On 08/01/2013 07:43 PM, Sören Brinkmann wrote:
-> > > On Thu, Aug 01, 2013 at 07:29:12PM +0200, Daniel Lezcano wrote:
-> > >> On 08/01/2013 01:38 AM, Sören Brinkmann wrote:
-> > >>> On Thu, Aug 01, 2013 at 01:01:27AM +0200, Daniel Lezcano wrote:
-> > >>>> On 08/01/2013 12:18 AM, Sören Brinkmann wrote:
-> > >>>>> On Wed, Jul 31, 2013 at 11:08:51PM +0200, Daniel Lezcano wrote:
-> > >>>>>> On 07/31/2013 10:58 PM, Sören Brinkmann wrote:
-> > >>>>>>> On Wed, Jul 31, 2013 at 10:49:06PM +0200, Daniel Lezcano wrote:
-> > >>>>>>>> On 07/31/2013 12:34 AM, Sören Brinkmann wrote:
-> > >>>>>>>>> On Tue, Jul 30, 2013 at 10:47:15AM +0200, Daniel Lezcano wrote:
-> > >>>>>>>>>> On 07/30/2013 02:03 AM, Sören Brinkmann wrote:
-> > >>>>>>>>>>> Hi Daniel,
-> > >>>>>>>>>>>
-> > >>>>>>>>>>> On Mon, Jul 29, 2013 at 02:51:49PM +0200, Daniel Lezcano wrote:
-> > >>>>>>>>>>> (snip)
-> > >>>>>>>>>>>>
-> > >>>>>>>>>>>> the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
-> > >>>>>>>>>>>> timer will be stopped when entering to the idle state. In this case, the
-> > >>>>>>>>>>>> cpuidle framework will call clockevents_notify(ENTER) and switches to a
-> > >>>>>>>>>>>> broadcast timer and will call clockevents_notify(EXIT) when exiting the
-> > >>>>>>>>>>>> idle state, switching the local timer back in use.
-> > >>>>>>>>>>>
-> > >>>>>>>>>>> I've been thinking about this, trying to understand how this makes my
-> > >>>>>>>>>>> boot attempts on Zynq hang. IIUC, the wrongly provided TIMER_STOP flag
-> > >>>>>>>>>>> would make the timer core switch to a broadcast device even though it
-> > >>>>>>>>>>> wouldn't be necessary. But shouldn't it still work? It sounds like we do
-> > >>>>>>>>>>> something useless, but nothing wrong in a sense that it should result in
-> > >>>>>>>>>>> breakage. I guess I'm missing something obvious. This timer system will
-> > >>>>>>>>>>> always remain a mystery to me.
-> > >>>>>>>>>>>
-> > >>>>>>>>>>> Actually this more or less leads to the question: What is this
-> > >>>>>>>>>>> 'broadcast timer'. I guess that is some clockevent device which is
-> > >>>>>>>>>>> common to all cores? (that would be the cadence_ttc for Zynq). Is the
-> > >>>>>>>>>>> hang pointing to some issue with that driver?
-> > >>>>>>>>>>
-> > >>>>>>>>>> If you look at the /proc/timer_list, which timer is used for broadcasting ?
-> > >>>>>>>>>
-> > >>>>>>>>> So, the correct run results (full output attached).
-> > >>>>>>>>>
-> > >>>>>>>>> The vanilla kernel uses the twd timers as local timers and the TTC as
-> > >>>>>>>>> broadcast device:
-> > >>>>>>>>>     Tick Device: mode:     1
-> > >>>>>>>>>     Broadcast device
-> > >>>>>>>>>     Clock Event Device: ttc_clockevent
-> > >>>>>>>>>
-> > >>>>>>>>> When I remove the offending CPUIDLE flag and add the DT fragment to
-> > >>>>>>>>> enable the global timer, the twd timers are still used as local timers
-> > >>>>>>>>> and the broadcast device is the global timer:
-> > >>>>>>>>>     Tick Device: mode:     1
-> > >>>>>>>>>     Broadcast device
-> > >>>>>>>>>     Clock Event Device: arm_global_timer
-> > >>>>>>>>>
-> > >>>>>>>>> Again, since boot hangs in the actually broken case, I don't see way to
-> > >>>>>>>>> obtain this information for that case.
-> > >>>>>>>>
-> > >>>>>>>> Can't you use the maxcpus=1 option to ensure the system to boot up ?
-> > >>>>>>>
-> > >>>>>>> Right, that works. I forgot about that option after you mentioned, that
-> > >>>>>>> it is most likely not that useful.
-> > >>>>>>>
-> > >>>>>>> Anyway, this are those sysfs files with an unmodified cpuidle driver and
-> > >>>>>>> the gt enabled and having maxcpus=1 set.
-> > >>>>>>>
-> > >>>>>>> /proc/timer_list:
-> > >>>>>>>       Tick Device: mode:     1
-> > >>>>>>>       Broadcast device
-> > >>>>>>>       Clock Event Device: arm_global_timer
-> > >>>>>>>        max_delta_ns:   12884902005
-> > >>>>>>>        min_delta_ns:   1000
-> > >>>>>>>        mult:           715827876
-> > >>>>>>>        shift:          31
-> > >>>>>>>        mode:           3
-> > >>>>>>
-> > >>>>>> Here the mode is 3 (CLOCK_EVT_MODE_ONESHOT)
-> > >>>>>>
-> > >>>>>> The previous timer_list output you gave me when removing the offending
-> > >>>>>> cpuidle flag, it was 1 (CLOCK_EVT_MODE_SHUTDOWN).
-> > >>>>>>
-> > >>>>>> Is it possible you try to get this output again right after onlining the
-> > >>>>>> cpu1 in order to check if the broadcast device switches to SHUTDOWN ?
-> > >>>>>
-> > >>>>> How do I do that? I tried to online CPU1 after booting with maxcpus=1
-> > >>>>> and that didn't end well:
-> > >>>>>         # echo 1 > online && cat /proc/timer_list
-> > >>>>
-> > >>>> Hmm, I was hoping to have a small delay before the kernel hangs but
-> > >>>> apparently this is not the case... :(
-> > >>>>
-> > >>>> I suspect the global timer is shutdown at one moment but I don't
-> > >>>> understand why and when.
-> > >>>>
-> > >>>> Can you add a stack trace in the "clockevents_shutdown" function with
-> > >>>> the clockevent device name ? Perhaps, we may see at boot time an
-> > >>>> interesting trace when it hangs.
-> > >>>
-> > >>> I did this change:
-> > >>>   diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-> > >>>   index 38959c8..3ab11c1 100644
-> > >>>   --- a/kernel/time/clockevents.c
-> > >>>   +++ b/kernel/time/clockevents.c
-> > >>>   @@ -92,6 +92,8 @@ void clockevents_set_mode(struct clock_event_device *dev,
-> > >>>     */
-> > >>>    void clockevents_shutdown(struct clock_event_device *dev)
-> > >>>    {
-> > >>>   +       pr_info("ce->name:%s\n", dev->name);
-> > >>>   +       dump_stack();
-> > >>>           clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
-> > >>>           dev->next_event.tv64 = KTIME_MAX;
-> > >>>    }
-> > >>>
-> > >>> It is hit a few times during boot, so I attach a full boot log. I really
-> > >>> don't know what to look for, but I hope you can spot something in it. I
-> > >>> really appreciate you taking the time.
-> > >>
-> > >> Thanks for the traces.
-> > >
-> > > Sure.
-> > >
-> > >>
-> > >> If you try without the ttc_clockevent configured in the kernel (but with
-> > >> twd and gt), does it boot ?
-> > >
-> > > Absence of the TTC doesn't seem to make any difference. It hangs at the
-> > > same location.
-> >
-> > Ok, IMO there is a problem with the broadcast device registration (may
-> > be vs twd).
-> 
-> I have an idea, but no real evidence to prove it:
-> Some of the registers in the arm_global_timer are banked per CPU. I.e.
-> some code must be executed on the CPU the timer is associated with
-> (struct clock_event_device.cpumask) to have the intended effect
-> As far as I can tell, there is no guarantee, that the set_mode()
-> and program_next_event() calls execute on the correct CPU.
+On Thursday 08 August 2013 10:43 PM, Dmitry Torokhov wrote:
+> On Thu, Aug 08, 2013 at 10:41:20PM +0530, Laxman Dewangan wrote:
+>> On Wednesday 07 August 2013 12:58 AM, Stephen Warren wrote:
+>>> (CC'ing DT bindings maintainers too, hence quoting a bit of the patch)
+>>>
+>>> On 08/06/2013 08:12 AM, Laxman Dewangan wrote:
+>>>> Many of Key device tree bindings uses the constant number as key code
+>>>> which matches with kernel header key code and then comment as follows
+>>>> for reference/better readability:
+>>>> 	linux,code = <102>; /* KEY_HOME */
+>>>>
+>>>> Create a DT header which defines all the key code so that DT key bindings
+>>>> can use it as follows:
+>>>> 	linux,code = <KEY_HOME>;
+>>> This looks fine to me.
+>>> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+>>>
+>>> A comment in support of the patch: This is adding OS-specific content to
+>>> the DT. However, the bindings this header file supports are already
+>>> written that way. There's not really any alternative here, since some
+>>> numbering scheme had to be chosen for keycodes, and it may as well be
+>>> the same set as the first/primary OS that'll use the binding.
+>>>
+>>> As far as merging it, this patch should probably go through the core DT
+>>> tree, perhaps in a topic branch so that e.g. Tegra an MVEBU can merge it
+>>> in to apply your subsequent patches (or we can just wait until the next
+>>> kernel release to merge them in).
+>> Do I need to include anyone for this patch to be applied or can go
+>> through Dmitry's input git branch?
+> I am uncomfortable that we are duplicating the whole list of keycodes
+> here. Do you think we could split keycodes and other event codes from
+> include/uapi/linux/input.h into include/uapi/linux/input-events.h and
+> unclude it directly into DTS?
 
-I believe the core clockevents code enforces that, or all other percpu
-clockevent_device drivers would be horrifically broken.
+Yes, it will be very much possible to split this but I am not sure it is 
+allowed to include the header in DTS file which is not inside 
+include/dt-bindings.
+If there is no limitation/restriction then we can split this adn amke 
+single header for key code which will be used by code and dts.
 
-Thanks,
-Mark.
 
-> If this was correct, shutting down the timer for the CPU entering
-> idle might actually shut down the timer for the running CPU, if
-> set_mode() executes on the CPU which is _not_ about to enter idle.
-> 
-> I tried to prove this by adding some really ugly smp_call_any() wrappers
-> in kernel/time/clockevents.c for the calls to set_mode() and
-> program_net_event() but that ends in all kinds of dead locks.
-> 
->         Sören
-> 
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
