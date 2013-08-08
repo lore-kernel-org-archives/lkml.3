@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934136Ab3HHIzg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:55:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:26062 "EHLO song.cn.fujitsu.com"
+	id S964775Ab3HHI5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:57:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28566 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S934047Ab3HHIzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:55:32 -0400
+	id S934053Ab3HHIzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 04:55:35 -0400
 X-IronPort-AV: E=Sophos;i="4.89,837,1367942400"; 
-   d="scan'208";a="8153189"
+   d="scan'208";a="8153192"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
@@ -21,72 +21,74 @@ To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH part3 1/5] x86, acpi: Call two new functions instead of acpi_initialize_tables() in acpi_table_init().
-Date: Thu, 8 Aug 2013 16:54:02 +0800
-Message-Id: <1375952046-28490-2-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH part3 3/5] x86, acpi: Rename check_multiple_madt() and make it global.
+Date: Thu, 8 Aug 2013 16:54:04 +0800
+Message-Id: <1375952046-28490-4-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375952046-28490-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375952046-28490-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/08 16:54:04,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 16:54:05,
-	Serialize complete at 2013/08/08 16:54:05
+ 2013/08/08 16:54:07,
+	Serialize complete at 2013/08/08 16:54:07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous patches introduces two new functions:
-    acpi_initialize_tables_firmware() and acpi_initialize_tables_override(),
-which work just the same as acpi_initialize_tables() if they are called
-in sequence.
+Since we split acpi_table_init() into two steps, and want to do
+the two steps separately, we need to do check_multiple_madt() after
+acpi_table_init_override().
 
-In order to split acpi_table_init() on acpi side, call these two functions
-in acpi_table_init().
+But we also have to keep acpi_table_init() as before because it
+is also used in ia64, we have to do check_multiple_madt() directly
+in acpi_boot_table_init() in x86.
 
-Since acpi_table_init() is also used in ia64, we keep it works as before.
+This patch make check_multiple_madt() global, and rename it to
+acpi_check_multiple_madt() because all interfaces provided by
+drivers/acpi/tables.c begins with "acpi_".
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
- drivers/acpi/tables.c |    5 ++++-
- include/acpi/acpixf.h |    4 ++++
- 2 files changed, 8 insertions(+), 1 deletions(-)
+ drivers/acpi/tables.c |    4 ++--
+ include/linux/acpi.h  |    1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-index d67a1fe..c8f2d01 100644
+index 4913a85..45727b2 100644
 --- a/drivers/acpi/tables.c
 +++ b/drivers/acpi/tables.c
-@@ -349,10 +349,13 @@ int __init acpi_table_init(void)
+@@ -314,7 +314,7 @@ int __init acpi_table_parse(char *id, acpi_tbl_table_handler handler)
+  * but some report two.  Provide a knob to use either.
+  * (don't you wish instance 0 and 1 were not the same?)
+  */
+-static void __init check_multiple_madt(void)
++void __init acpi_check_multiple_madt(void)
  {
- 	acpi_status status;
+ 	struct acpi_table_header *table = NULL;
+ 	acpi_size tbl_size;
+@@ -369,7 +369,7 @@ int __init acpi_table_init(void)
  
--	status = acpi_initialize_tables(initial_tables, ACPI_MAX_TABLES, 0);
-+	status = acpi_initialize_tables_firmware(initial_tables,
-+						 ACPI_MAX_TABLES, 0);
- 	if (ACPI_FAILURE(status))
- 		return 1;
+ 	acpi_table_init_override();
  
-+	acpi_initialize_tables_override();
-+
- 	check_multiple_madt();
+-	check_multiple_madt();
++	acpi_check_multiple_madt();
+ 
  	return 0;
  }
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index 22d497e..99c9d7b 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -115,6 +115,10 @@ extern u32 acpi_rsdt_forced;
-  * Initialization
-  */
- acpi_status
-+acpi_initialize_tables_firmware(struct acpi_table_desc *initial_storage,
-+				u32 initial_table_count, u8 allow_resize);
-+void acpi_initialize_tables_override(void);
-+acpi_status
- acpi_initialize_tables(struct acpi_table_desc *initial_storage,
- 		       u32 initial_table_count, u8 allow_resize);
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 9704179..44a3e5f 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -95,6 +95,7 @@ void acpi_boot_table_init (void);
+ int acpi_mps_check (void);
+ int acpi_numa_init (void);
  
++void acpi_check_multiple_madt(void);
+ int acpi_table_init_firmware(void);
+ void acpi_table_init_override(void);
+ int acpi_table_init (void);
 -- 
 1.7.1
 
