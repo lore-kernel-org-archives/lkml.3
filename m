@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965478Ab3HHOqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:46:50 -0400
-Received: from a10-51.smtp-out.amazonses.com ([54.240.10.51]:51921 "EHLO
-	a10-51.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965438Ab3HHOqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:46:47 -0400
-X-Greylist: delayed 879 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 10:46:47 EDT
-Date: Thu, 8 Aug 2013 14:32:05 +0000
-From: Christoph Lameter <cl@gentwo.org>
-To: Kent Overstreet <kmo@daterainc.com>
-cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [PATCH] idr: Use this_cpu_ptr() for percpu_ida
-In-Reply-To: <20130807195733.GB11612@kmo-pixel>
-Message-ID: <000001405e5776ba-bcc96088-b5e8-4abe-b98e-2e9d7d9b112b-000000@email.amazonses.com>
-References: <1375896905-6074-1-git-send-email-kmo@daterainc.com> <1375896905-6074-5-git-send-email-kmo@daterainc.com> <0000014059ec4c34-1bb53d48-c9ee-4e71-81b8-253026431c5c-000000@email.amazonses.com> <20130807183345.GA11612@kmo-pixel>
- <000001405a4b39ef-0715410a-5061-41e9-9414-86559f16570d-000000@email.amazonses.com> <20130807195733.GB11612@kmo-pixel>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.08.08-54.240.10.51
+	id S965586Ab3HHOq7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:46:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20709 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965524Ab3HHOq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:46:56 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAK3OfOj6E_thwgwdZUDXrr_7XW4xJkzwxdGU6gKcEJ3twOsm=A@mail.gmail.com>
+References: <CAK3OfOj6E_thwgwdZUDXrr_7XW4xJkzwxdGU6gKcEJ3twOsm=A@mail.gmail.com> <20130801173846.28023.19009.stgit@warthog.procyon.org.uk> <20130801173854.28023.82045.stgit@warthog.procyon.org.uk>
+To: Nico Williams <nico@cryptonector.com>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+        simo@redhat.com, linux-kernel@vger.kernel.org, krbdev@mit.edu
+Subject: Re: [PATCH 1/2] KEYS: Implement a big key type that can save to tmpfs
+Date: Thu, 08 Aug 2013 15:46:45 +0100
+Message-ID: <16961.1375973205@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Aug 2013, Kent Overstreet wrote:
+Nico Williams <nico@cryptonector.com> wrote:
 
-> One thing that was bugging me - I was never able to figure out for sure
-> if smp_processor_id() returns a number in the range [0, nr_cpu_ids), at
-> least I couldn't find where it was documented - could you tell me if
-> that's true?
+> b) how to create tmpfs locations in which to store credentials (which
+> can be unbounded in size, so storing them in the kernel is silly;
 
-I always assumed that it was in the range 0 ... nr_cpu_ids - 1 and that is
-the assumption under which the kernel code was written. Things would break
-horribly if smp_process_id would return nr_cpu_ids or higher.
+Ummm...  tmpfs stores them in the kernel too - though it can page them out to
+swap.
 
+I have altered my big-key implementation to just store small items in an
+internal buffer and big items in a tmpfs file.  This means that small items
+will use up _less_ kernel memory if they're in a key because they won't require
+the overhead of a dentry struct and an inode struct.
+
+> (b) can be solved in many ways, and the simplest is to have a
+> filesystem where top-level directories named after UIDs "exist" as
+> soon as they are referenced and as long as they are non-empty.  You
+> can use autofs + tmpfs, or a variant of tmpfs for this.
+
+Don't forget to add user namespaces into the mix :-/
+
+David
