@@ -1,197 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933743Ab3HHGSm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 02:18:42 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:58104 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932632Ab3HHGSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 02:18:40 -0400
-X-Greylist: delayed 1658 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 02:18:40 EDT
-Date: Thu, 8 Aug 2013 08:18:37 +0200
-Message-Id: <201308080618.r786IbPg010818@localhost.localdomain>
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Wim Van Sebroeck <wim@iguana.be>, <scottwood@freescale.com>
-CC: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v3] Enhanced support for MPC8xx/8xxx watchdog
+	id S933461Ab3HHGcW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 02:32:22 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:52285 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755758Ab3HHGcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 02:32:20 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7f5f6d00000105f-a4-52033b71f946
+Content-transfer-encoding: 8BIT
+Message-id: <1375943536.30982.1.camel@AMDC1943>
+Subject: Re: [PATCH] [TRIVIAL] ARM: msm: fix compilation error in gpiomux
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 08 Aug 2013 08:32:16 +0200
+In-reply-to: <20130807210804.GB14845@codeaurora.org>
+References: <1375857279-18082-1-git-send-email-k.kozlowski@samsung.com>
+ <20130807174053.GA17551@codeaurora.org> <20130807210804.GB14845@codeaurora.org>
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t/xa7pF1sxBBp2JFv+OTWGyeLz8H5vF
+	1GVtrBabHl9jtZi4/yy7xeVdc9gsbl/mtfhxppvFgcOjpbmHzeNyXy+Tx+nJ+1k8Ni+p9/i8
+	SS6ANYrLJiU1J7MstUjfLoErY+X0ncwFbewVm17/YWlgvM/axcjJISFgIrFy00EWCFtM4sK9
+	9WxdjFwcQgJLGSX2HX7JDJLgFRCU+DH5HlARBwezgLzEkUvZIGFmAXWJSfMWMUPUf2aUODtr
+	KSNEvb7E0WUf2UFsYQFPibeX3oLF2QSMJTYvX8IGYosANX/fcRJsGbNAM5PE3b65YAkWAVWJ
+	A9vfgi3mBLru4oQHTBAbZjJKnPrSwwRxqpLE7vZO9gmMArOQHDgL4cBZSA5cwMi8ilE0tTS5
+	oDgpPddIrzgxt7g0L10vOT93EyMk1L/uYFx6zOoQowAHoxIPb0cAU5AQa2JZcWXuIUYJDmYl
+	Ed6LxUAh3pTEyqrUovz4otKc1OJDjEwcnFINjM0VbbNU5NrK31quCJeLXPBWZ+fMjPNK+nz/
+	WNsfTz6ippjsw880d9mL43mvmna+jL787s3Sz/ffuIgcyJ8pJvVsUeLJFv4DeY9Z30922J+v
+	/u9y2L66LzdTbZ4GmCl3K7HWMR/ucXP8qPj3X0ZAvkG/rNjLbX7MZXUGjJelj61VsY0RfC+8
+	RImlOCPRUIu5qDgRAKVCjahTAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the behaviour of the MPC8xx/8xxx watchdog. On the MPC8xx,
-at 133Mhz, the maximum timeout of the watchdog timer is 1s, which means it must
-be pinged twice a second. This is not in line with the Linux watchdog concept
-which is based on a default watchdog timeout around 60s.
-This patch introduces an intermediate layer between the CPU and the userspace.
-The kernel pings the watchdog at the required frequency at the condition that
-userspace tools refresh it regularly.
-Existing parameter 'timeout' is renamed 'hw_timeout'.
-The new parameter 'timeout' allows to set up the userspace timeout.
-This patch also adds the WDIOC_SETTIMEOUT ioctl to the driver.
+On śro, 2013-08-07 at 14:08 -0700, Stephen Boyd wrote:
+> On 08/07, David Brown wrote:
+> > On Wed, Aug 07, 2013 at 08:34:39AM +0200, Krzysztof Kozlowski wrote:
+> > >Fix compilation error in gpiomux (CONFIG_MSM_GPIOMUX=y):
+> > >arch/arm/mach-msm/gpiomux.c:24:13: error: static declaration of
+> > >	???__msm_gpiomux_write??? follows non-static declaration
+> > >arch/arm/mach-msm/gpiomux.h:85:6: note: previous declaration of
+> > >	???__msm_gpiomux_write??? was here
+> > >
+> > >Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > 
+> > Thanks, I'll pull this in.
+> > 
+> >  <https://patchwork.kernel.org/patch/2839921/>
+> > 
+> 
+> I believe this is fixed by Rohit's patch that has already been
+> taken in a pull request?
+> 
+> https://lkml.org/lkml/2013/7/26/608
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Yes, Rohit's patch fixes the problem so this is already in linux-msm
+tree.
 
---- linux-3.8.13/drivers/watchdog/mpc8xxx_wdt.c	2013-05-11 22:57:46.000000000 +0200
-+++ linux/drivers/watchdog/mpc8xxx_wdt.c	2013-08-08 02:12:15.000000000 +0200
-@@ -52,10 +52,18 @@
- static struct mpc8xxx_wdt __iomem *wd_base;
- static int mpc8xxx_wdt_init_late(void);
- 
--static u16 timeout = 0xffff;
--module_param(timeout, ushort, 0);
-+#define WD_TIMO 60			/* Default timeout = 60 seconds */
-+
-+static uint timeout = WD_TIMO;
-+module_param(timeout, uint, 0);
- MODULE_PARM_DESC(timeout,
--	"Watchdog timeout in ticks. (0<timeout<65536, default=65535)");
-+	"Watchdog SW timeout in seconds. (0 < timeout < 65536s, default = "
-+				__MODULE_STRING(WD_TIMO) "s)");
-+static u16 hw_timeout = 0xffff;
-+module_param(hw_timeout, ushort, 0);
-+MODULE_PARM_DESC(hw_timeout,
-+	"Watchdog HW timeout in ticks. (0 < hw_timeout < 65536, "
-+		"default = 65535)");
- 
- static bool reset = 1;
- module_param(reset, bool, 0);
-@@ -72,10 +80,16 @@
-  * to 0
-  */
- static int prescale = 1;
--static unsigned int timeout_sec;
-+static unsigned int hw_timeout_sec;
- 
-+/*
-+ * wdt_auto is set to 1 when watchdog is automatically refreshed by the kernel
-+ * (when /dev/watchdog is not open)
-+ */
-+static bool wdt_auto = 1;
- static unsigned long wdt_is_open;
- static DEFINE_SPINLOCK(wdt_spinlock);
-+static unsigned long wdt_last_ping;
- 
- static void mpc8xxx_wdt_keepalive(void)
- {
-@@ -91,9 +105,20 @@
- 
- static void mpc8xxx_wdt_timer_ping(unsigned long arg)
- {
--	mpc8xxx_wdt_keepalive();
--	/* We're pinging it twice faster than needed, just to be sure. */
--	mod_timer(&wdt_timer, jiffies + HZ * timeout_sec / 2);
-+	if (wdt_auto)
-+		wdt_last_ping = jiffies;
-+
-+	if (jiffies - wdt_last_ping <= timeout * HZ) {
-+		mpc8xxx_wdt_keepalive();
-+		/* We're pinging it twice faster than needed, to be sure. */
-+		mod_timer(&wdt_timer, jiffies + HZ * hw_timeout_sec / 2);
-+	}
-+}
-+
-+static void mpc8xxx_wdt_sw_keepalive(void)
-+{
-+	wdt_last_ping = jiffies;
-+	mpc8xxx_wdt_timer_ping(0);
- }
- 
- static void mpc8xxx_wdt_pr_warn(const char *msg)
-@@ -106,7 +131,7 @@
- 				 size_t count, loff_t *ppos)
- {
- 	if (count)
--		mpc8xxx_wdt_keepalive();
-+		mpc8xxx_wdt_sw_keepalive();
- 	return count;
- }
- 
-@@ -126,11 +151,11 @@
- 	if (reset)
- 		tmp |= SWCRR_SWRI;
- 
--	tmp |= timeout << 16;
-+	tmp |= hw_timeout << 16;
- 
- 	out_be32(&wd_base->swcrr, tmp);
- 
--	del_timer_sync(&wdt_timer);
-+	wdt_auto = 0;
- 
- 	return nonseekable_open(inode, file);
- }
-@@ -138,7 +163,8 @@
- static int mpc8xxx_wdt_release(struct inode *inode, struct file *file)
- {
- 	if (!nowayout)
--		mpc8xxx_wdt_timer_ping(0);
-+		wdt_auto = 1;
-+
- 	else
- 		mpc8xxx_wdt_pr_warn("watchdog closed");
- 	clear_bit(0, &wdt_is_open);
-@@ -155,6 +181,7 @@
- 		.firmware_version = 1,
- 		.identity = "MPC8xxx",
- 	};
-+	int r;
- 
- 	switch (cmd) {
- 	case WDIOC_GETSUPPORT:
-@@ -163,10 +190,15 @@
- 	case WDIOC_GETBOOTSTATUS:
- 		return put_user(0, p);
- 	case WDIOC_KEEPALIVE:
--		mpc8xxx_wdt_keepalive();
-+		mpc8xxx_wdt_sw_keepalive();
- 		return 0;
- 	case WDIOC_GETTIMEOUT:
--		return put_user(timeout_sec, p);
-+		return put_user(timeout, p);
-+	case WDIOC_SETTIMEOUT:
-+		r = get_user(timeout, p);
-+		if (timeout > UINT_MAX / HZ)
-+			timeout = UINT_MAX / HZ;
-+		return r;
- 	default:
- 		return -ENOTTY;
- 	}
-@@ -215,21 +247,26 @@
- 		ret = -ENOSYS;
- 		goto err_unmap;
- 	}
-+	if (enabled)
-+		hw_timeout = in_be32(&wd_base->swcrr) >> 16;
- 
- 	/* Calculate the timeout in seconds */
- 	if (prescale)
--		timeout_sec = (timeout * wdt_type->prescaler) / freq;
-+		hw_timeout_sec = (hw_timeout * wdt_type->prescaler) / freq;
- 	else
--		timeout_sec = timeout / freq;
-+		hw_timeout_sec = hw_timeout / freq;
- 
-+	/* Make sure the timeout is not too big */
-+	if (timeout > UINT_MAX / HZ)
-+		timeout = UINT_MAX / HZ;
- #ifdef MODULE
- 	ret = mpc8xxx_wdt_init_late();
- 	if (ret)
- 		goto err_unmap;
- #endif
- 
--	pr_info("WDT driver for MPC8xxx initialized. mode:%s timeout=%d (%d seconds)\n",
--		reset ? "reset" : "interrupt", timeout, timeout_sec);
-+	pr_info("WDT driver for MPC8xxx initialized. mode:%s timeout = %d (%d seconds)\n",
-+		reset ? "reset" : "interrupt", hw_timeout, hw_timeout_sec);
- 
- 	/*
- 	 * If the watchdog was previously enabled or we're running on
-@@ -273,6 +310,7 @@
- 		.compatible = "fsl,mpc823-wdt",
- 		.data = &(struct mpc8xxx_wdt_type) {
- 			.prescaler = 0x800,
-+			.hw_enabled = true,
- 		},
- 	},
- 	{},
+
+Best regards,
+Krzysztof
+
+
