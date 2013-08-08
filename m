@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965059Ab3HHKaw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:30:52 -0400
-Received: from 1.mo4.mail-out.ovh.net ([178.33.248.196]:44690 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965015Ab3HHKav (ORCPT
+	id S965066Ab3HHKcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 06:32:53 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:40895 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965016Ab3HHKcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:30:51 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 6/6] ARM: at91/dt: remove old main clk definition from sama5d3xcm.dtsi
-Date: Thu,  8 Aug 2013 12:30:37 +0200
-Message-Id: <1375957837-11600-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375951572-10829-1-git-send-email-b.brezillon@overkiz.com>
-References: <1375951572-10829-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 8369095483690547379
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 8 Aug 2013 06:32:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <51F8A4FF.8020803@ti.com>
+References: <1371999607-6483-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1371999607-6483-7-git-send-email-prabhakar.csengg@gmail.com> <51F8A4FF.8020803@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Thu, 8 Aug 2013 16:02:30 +0530
+Message-ID: <CA+V-a8smEd_75Ab-_vxjBATr8Q9Sefs0tpxc+kgQJRtuLJad=w@mail.gmail.com>
+Subject: Re: [PATCH v3 6/6] ARM: davinci: da850: configure system
+ configuration chip(CFGCHIP3) for emac
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Heiko Schocher <hs@denx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the old main clk node which is now useless as sama5d3
-SoCs and boards are no longer compatible with the old at91 clk
-implementations.
+Hi Sekhar,
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/boot/dts/sama5d3xcm.dtsi |   11 -----------
- 1 file changed, 11 deletions(-)
+Sorry for the  delayed response I was on leave and now back again up
+and running.
 
-diff --git a/arch/arm/boot/dts/sama5d3xcm.dtsi b/arch/arm/boot/dts/sama5d3xcm.dtsi
-index f19d5bf..81c3957 100644
---- a/arch/arm/boot/dts/sama5d3xcm.dtsi
-+++ b/arch/arm/boot/dts/sama5d3xcm.dtsi
-@@ -18,17 +18,6 @@
- 		reg = <0x20000000 0x20000000>;
- 	};
- 
--	clocks {
--		#address-cells = <1>;
--		#size-cells = <1>;
--		ranges;
--
--		main_clock: clock@0 {
--			compatible = "atmel,osc", "fixed-clock";
--			clock-frequency = <12000000>;
--		};
--	};
--
- 	ahb {
- 		apb {
- 			spi0: spi@f0004000 {
--- 
-1.7.9.5
+On Wed, Jul 31, 2013 at 11:17 AM, Sekhar Nori <nsekhar@ti.com> wrote:
+> On Sunday 23 June 2013 08:30 PM, Prabhakar Lad wrote:
+>> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>>
+>> This patch makes a common function for to configure emac and calls
+>> it appropriately in DT and non DT boot mode. The system configuration
+>> chip CFGCHIP3, controls the emac module. This patch appropriately
+>> configures this register for emac and sets DA850_MII_MDIO_CLKEN_PIN
+>> GPIO pin appropriately.
+>>
+[Snip]
 
+>> +     if (rmii_enabled)
+>> +             val |= BIT(8);
+>> +     else
+>> +             val &= ~BIT(8);
+>> +
+>> +     /* configure the CFGCHIP3 register for RMII or MII */
+>> +     writel(val, cfg_chip3_base);
+>> +
+>> +     ret = davinci_cfg_reg(DA850_GPIO2_6);
+>> +     if (ret)
+>> +             pr_warn("%s:GPIO(2,6) mux setup failed\n", __func__);
+>> +
+>> +     ret = gpio_request(DA850_MII_MDIO_CLKEN_PIN, "mdio_clk_en");
+>> +     if (ret) {
+>> +             pr_warn("Cannot open GPIO %d\n", DA850_MII_MDIO_CLKEN_PIN);
+>> +             return;
+>> +     }
+>
+> You cannot do this in SoC specific code. All boards wont use a GPIO to
+> choose between MII/RMII. You need to do this in a EVM specific manner.
+> This just means you retain the GPIO part of code in board-da850-evm.c
+
+OK
+
+> and for the DT case use a board specific GPIO node. See a similar
+> example in arch/arm/boot/dts/ste-nomadik-s8815.dts and how the code uses
+Alrite something similar to usb-s8815 node.
+
+> it in arch/arm/mach-nomadik/cpu-8815.c.
+>
+But I don't see any code to access this node in this file, can
+you point me to right direction ?
+
+Regards,
+--Prabhakar Lad
