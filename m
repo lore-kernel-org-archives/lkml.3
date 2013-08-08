@@ -1,475 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965404Ab3HHOdm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:33:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45784 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934265Ab3HHOdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:33:40 -0400
-Date: Thu, 8 Aug 2013 16:33:36 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, Jens Axboe <axboe@kernel.dk>,
-        Vivek Goyal <vgoyal@redhat.com>, Matt Helsley <matthltc@us.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Aristeu Rozanski <aris@redhat.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org
-Subject: Re: [PATCH cgroup/for-3.12] cgroup: make css_for_each_descendant()
- and friends include the origin css in the iteration
-Message-ID: <20130808143336.GC3189@dhcp22.suse.cz>
-References: <20130804230703.GA12029@htj.dyndns.org>
+	id S965432Ab3HHOeZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:34:25 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:46971 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965243Ab3HHOeX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:34:23 -0400
+Message-ID: <5203AC6B.7090007@gmail.com>
+Date: Thu, 08 Aug 2013 16:34:19 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130804230703.GA12029@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: lkml <linux-kernel@vger.kernel.org>
+CC: mtk.manpages@gmail.com
+Subject: man-pages-3.53 is released
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ohh, this one totally sliped through cracs.
+Gidday,
 
-On Sun 04-08-13 19:07:03, Tejun Heo wrote:
-[...]
-> From 0e84b0865ab8a87f1c1443e4777c20c7f14e13b6 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Sun, 4 Aug 2013 19:01:23 -0400
-> 
-> Previously, all css descendant iterators didn't include the origin
-> (root of subtree) css in the iteration.  The reasons were maintaining
-> consistency with css_for_each_child() and that at the time of
-> introduction more use cases needed skipping the origin anyway;
-> however, given that css_is_descendant() considers self to be a
-> descendant, omitting the origin css has become more confusing and
-> looking at the accumulated use cases rather clearly indicates that
-> including origin would result in simpler code overall.
-> 
-> While this is a change which can easily lead to subtle bugs, cgroup
-> API including the iterators has recently gone through major
-> restructuring and no out-of-tree changes will be applicable without
-> adjustments making this a relatively acceptable opportunity for this
-> type of change.
-> 
-> The conversions are mostly straight-forward.  If the iteration block
-> had explicit origin handling before or after, it's moved inside the
-> iteration.  If not, if (pos == origin) continue; is added.  Some
-> conversions add extra reference get/put around origin handling by
-> consolidating origin handling and the rest.  While the extra ref
-> operations aren't strictly necessary, this shouldn't cause any
-> noticeable difference.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Matt Helsley <matthltc@us.ibm.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Balbir Singh <bsingharora@gmail.com>
-> Cc: Aristeu Rozanski <aris@redhat.com>
+I've released man-pages-3.53 - man pages for Linux.
 
-yes I like it. I found it strange to omit the root during walk.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Tarball download:
+    http://www.kernel.org/doc/man-pages/download.html
+Git repository:
+    https://git.kernel.org/cgit/docs/man-pages/man-pages.git/
+Online changelog:
+    http://man7.org/linux/man-pages/changelog.html#release_3.53
 
-> ---
->  block/blk-cgroup.c       |  8 ++------
->  block/blk-cgroup.h       |  4 +++-
->  block/blk-throttle.c     |  3 ---
->  include/linux/cgroup.h   | 17 +++++++++--------
->  kernel/cgroup.c          | 29 +++++++++++------------------
->  kernel/cgroup_freezer.c  | 29 ++++++++++++++++-------------
->  kernel/cpuset.c          | 42 ++++++++++++++++++++++++++----------------
->  mm/memcontrol.c          |  9 +--------
->  security/device_cgroup.c |  2 +-
->  9 files changed, 69 insertions(+), 74 deletions(-)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 54ad002..e90c7c1 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -615,12 +615,10 @@ u64 blkg_stat_recursive_sum(struct blkg_policy_data *pd, int off)
->  	struct blkcg_policy *pol = blkcg_policy[pd->plid];
->  	struct blkcg_gq *pos_blkg;
->  	struct cgroup_subsys_state *pos_css;
-> -	u64 sum;
-> +	u64 sum = 0;
->  
->  	lockdep_assert_held(pd->blkg->q->queue_lock);
->  
-> -	sum = blkg_stat_read((void *)pd + off);
-> -
->  	rcu_read_lock();
->  	blkg_for_each_descendant_pre(pos_blkg, pos_css, pd_to_blkg(pd)) {
->  		struct blkg_policy_data *pos_pd = blkg_to_pd(pos_blkg, pol);
-> @@ -650,13 +648,11 @@ struct blkg_rwstat blkg_rwstat_recursive_sum(struct blkg_policy_data *pd,
->  	struct blkcg_policy *pol = blkcg_policy[pd->plid];
->  	struct blkcg_gq *pos_blkg;
->  	struct cgroup_subsys_state *pos_css;
-> -	struct blkg_rwstat sum;
-> +	struct blkg_rwstat sum = { };
->  	int i;
->  
->  	lockdep_assert_held(pd->blkg->q->queue_lock);
->  
-> -	sum = blkg_rwstat_read((void *)pd + off);
-> -
->  	rcu_read_lock();
->  	blkg_for_each_descendant_pre(pos_blkg, pos_css, pd_to_blkg(pd)) {
->  		struct blkg_policy_data *pos_pd = blkg_to_pd(pos_blkg, pol);
-> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-> index 8555386..ae6969a 100644
-> --- a/block/blk-cgroup.h
-> +++ b/block/blk-cgroup.h
-> @@ -291,6 +291,7 @@ struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
->   * read locked.  If called under either blkcg or queue lock, the iteration
->   * is guaranteed to include all and only online blkgs.  The caller may
->   * update @pos_css by calling css_rightmost_descendant() to skip subtree.
-> + * @p_blkg is included in the iteration and the first node to be visited.
->   */
->  #define blkg_for_each_descendant_pre(d_blkg, pos_css, p_blkg)		\
->  	css_for_each_descendant_pre((pos_css), &(p_blkg)->blkcg->css)	\
-> @@ -304,7 +305,8 @@ struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg, struct request_queue *q,
->   * @p_blkg: target blkg to walk descendants of
->   *
->   * Similar to blkg_for_each_descendant_pre() but performs post-order
-> - * traversal instead.  Synchronization rules are the same.
-> + * traversal instead.  Synchronization rules are the same.  @p_blkg is
-> + * included in the iteration and the last node to be visited.
->   */
->  #define blkg_for_each_descendant_post(d_blkg, pos_css, p_blkg)		\
->  	css_for_each_descendant_post((pos_css), &(p_blkg)->blkcg->css)	\
-> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-> index 8cefa7f..8331aba 100644
-> --- a/block/blk-throttle.c
-> +++ b/block/blk-throttle.c
-> @@ -1379,7 +1379,6 @@ static int tg_set_conf(struct cgroup_subsys_state *css, struct cftype *cft,
->  	 * restrictions in the whole hierarchy and allows them to bypass
->  	 * blk-throttle.
->  	 */
-> -	tg_update_has_rules(tg);
->  	blkg_for_each_descendant_pre(blkg, pos_css, ctx.blkg)
->  		tg_update_has_rules(blkg_to_tg(blkg));
->  
-> @@ -1639,8 +1638,6 @@ void blk_throtl_drain(struct request_queue *q)
->  	blkg_for_each_descendant_post(blkg, pos_css, td->queue->root_blkg)
->  		tg_drain_bios(&blkg_to_tg(blkg)->service_queue);
->  
-> -	tg_drain_bios(&td_root_tg(td)->service_queue);
-> -
->  	/* finally, transfer bios from top-level tg's into the td */
->  	tg_drain_bios(&td->service_queue);
->  
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index e33eb7b..ed925f5 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -775,7 +775,8 @@ css_rightmost_descendant(struct cgroup_subsys_state *pos);
->   * @pos: the css * to use as the loop cursor
->   * @root: css whose descendants to walk
->   *
-> - * Walk @root's descendants.  Must be called under rcu_read_lock().  A
-> + * Walk @root's descendants.  @root is included in the iteration and the
-> + * first node to be visited.  Must be called under rcu_read_lock().  A
->   * descendant css which hasn't finished ->css_online() or already has
->   * finished ->css_offline() may show up during traversal and it's each
->   * subsystem's responsibility to verify that each @pos is alive.
-> @@ -797,13 +798,12 @@ css_rightmost_descendant(struct cgroup_subsys_state *pos);
->   *
->   * my_update_state(@css)
->   * {
-> - *	Lock @css;
-> - *	Update @css's state;
-> - *	Unlock @css;
-> - *
->   *	css_for_each_descendant_pre(@pos, @css) {
->   *		Lock @pos;
-> - *		Verify @pos is alive and inherit state from @pos's parent;
-> + *		if (@pos == @css)
-> + *			Update @css's state;
-> + *		else
-> + *			Verify @pos is alive and inherit state from its parent;
->   *		Unlock @pos;
->   *	}
->   * }
-> @@ -841,8 +841,9 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
->   * @css: css whose descendants to walk
->   *
->   * Similar to css_for_each_descendant_pre() but performs post-order
-> - * traversal instead.  Note that the walk visibility guarantee described in
-> - * pre-order walk doesn't apply the same to post-order walks.
-> + * traversal instead.  @root is included in the iteration and the last
-> + * node to be visited.  Note that the walk visibility guarantee described
-> + * in pre-order walk doesn't apply the same to post-order walks.
->   */
->  #define css_for_each_descendant_post(pos, css)				\
->  	for ((pos) = css_next_descendant_post(NULL, (css)); (pos);	\
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 2bc45d3..4a19c8d 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -2839,17 +2839,6 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
->  
->  	mutex_unlock(&cgroup_mutex);
->  
-> -	/* @root always needs to be updated */
-> -	inode = root->dentry->d_inode;
-> -	mutex_lock(&inode->i_mutex);
-> -	mutex_lock(&cgroup_mutex);
-> -	ret = cgroup_addrm_files(root, cfts, is_add);
-> -	mutex_unlock(&cgroup_mutex);
-> -	mutex_unlock(&inode->i_mutex);
-> -
-> -	if (ret)
-> -		goto out_deact;
-> -
->  	/* add/rm files for all cgroups created before */
->  	rcu_read_lock();
->  	css_for_each_descendant_pre(css, cgroup_css(root, ss->subsys_id)) {
-> @@ -2878,7 +2867,6 @@ static int cgroup_cfts_commit(struct cftype *cfts, bool is_add)
->  	}
->  	rcu_read_unlock();
->  	dput(prev);
-> -out_deact:
->  	deactivate_super(sb);
->  	return ret;
->  }
-> @@ -3070,7 +3058,8 @@ EXPORT_SYMBOL_GPL(css_next_child);
->   * @root: css whose descendants to walk
->   *
->   * To be used by css_for_each_descendant_pre().  Find the next descendant
-> - * to visit for pre-order traversal of @root's descendants.
-> + * to visit for pre-order traversal of @root's descendants.  @root is
-> + * included in the iteration and the first node to be visited.
->   *
->   * While this function requires RCU read locking, it doesn't require the
->   * whole traversal to be contained in a single RCU critical section.  This
-> @@ -3085,9 +3074,9 @@ css_next_descendant_pre(struct cgroup_subsys_state *pos,
->  
->  	WARN_ON_ONCE(!rcu_read_lock_held());
->  
-> -	/* if first iteration, pretend we just visited @root */
-> +	/* if first iteration, visit @root */
->  	if (!pos)
-> -		pos = root;
-> +		return root;
->  
->  	/* visit the first child if exists */
->  	next = css_next_child(NULL, pos);
-> @@ -3157,7 +3146,8 @@ css_leftmost_descendant(struct cgroup_subsys_state *pos)
->   * @root: css whose descendants to walk
->   *
->   * To be used by css_for_each_descendant_post().  Find the next descendant
-> - * to visit for post-order traversal of @root's descendants.
-> + * to visit for post-order traversal of @root's descendants.  @root is
-> + * included in the iteration and the last node to be visited.
->   *
->   * While this function requires RCU read locking, it doesn't require the
->   * whole traversal to be contained in a single RCU critical section.  This
-> @@ -3178,14 +3168,17 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
->  		return next != root ? next : NULL;
->  	}
->  
-> +	/* if we visited @root, we're done */
-> +	if (pos == root)
-> +		return NULL;
-> +
->  	/* if there's an unvisited sibling, visit its leftmost descendant */
->  	next = css_next_child(pos, css_parent(pos));
->  	if (next)
->  		return css_leftmost_descendant(next);
->  
->  	/* no sibling left, visit parent */
-> -	next = css_parent(pos);
-> -	return next != root ? next : NULL;
-> +	return css_parent(pos);
->  }
->  EXPORT_SYMBOL_GPL(css_next_descendant_post);
->  
-> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> index 224da9a..f0ff64d 100644
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-> @@ -311,7 +311,6 @@ static int freezer_read(struct cgroup_subsys_state *css, struct cftype *cft,
->  	/* update states bottom-up */
->  	css_for_each_descendant_post(pos, css)
->  		update_if_frozen(pos);
-> -	update_if_frozen(css);
->  
->  	rcu_read_unlock();
->  
-> @@ -391,11 +390,6 @@ static void freezer_change_state(struct freezer *freezer, bool freeze)
->  {
->  	struct cgroup_subsys_state *pos;
->  
-> -	/* update @freezer */
-> -	spin_lock_irq(&freezer->lock);
-> -	freezer_apply_state(freezer, freeze, CGROUP_FREEZING_SELF);
-> -	spin_unlock_irq(&freezer->lock);
-> -
->  	/*
->  	 * Update all its descendants in pre-order traversal.  Each
->  	 * descendant will try to inherit its parent's FREEZING state as
-> @@ -406,14 +400,23 @@ static void freezer_change_state(struct freezer *freezer, bool freeze)
->  		struct freezer *pos_f = css_freezer(pos);
->  		struct freezer *parent = parent_freezer(pos_f);
->  
-> -		/*
-> -		 * Our update to @parent->state is already visible which is
-> -		 * all we need.  No need to lock @parent.  For more info on
-> -		 * synchronization, see freezer_post_create().
-> -		 */
->  		spin_lock_irq(&pos_f->lock);
-> -		freezer_apply_state(pos_f, parent->state & CGROUP_FREEZING,
-> -				    CGROUP_FREEZING_PARENT);
-> +
-> +		if (pos_f == freezer) {
-> +			freezer_apply_state(pos_f, freeze,
-> +					    CGROUP_FREEZING_SELF);
-> +		} else {
-> +			/*
-> +			 * Our update to @parent->state is already visible
-> +			 * which is all we need.  No need to lock @parent.
-> +			 * For more info on synchronization, see
-> +			 * freezer_post_create().
-> +			 */
-> +			freezer_apply_state(pos_f,
-> +					    parent->state & CGROUP_FREEZING,
-> +					    CGROUP_FREEZING_PARENT);
-> +		}
-> +
->  		spin_unlock_irq(&pos_f->lock);
->  	}
->  	rcu_read_unlock();
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index bf69717..72a0383 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -222,7 +222,8 @@ static struct cpuset top_cpuset = {
->   *
->   * Walk @des_cs through the online descendants of @root_cs.  Must be used
->   * with RCU read locked.  The caller may modify @pos_css by calling
-> - * css_rightmost_descendant() to skip subtree.
-> + * css_rightmost_descendant() to skip subtree.  @root_cs is included in the
-> + * iteration and the first node to be visited.
->   */
->  #define cpuset_for_each_descendant_pre(des_cs, pos_css, root_cs)	\
->  	css_for_each_descendant_pre((pos_css), &(root_cs)->css)		\
-> @@ -506,6 +507,9 @@ static void update_domain_attr_tree(struct sched_domain_attr *dattr,
->  
->  	rcu_read_lock();
->  	cpuset_for_each_descendant_pre(cp, pos_css, root_cs) {
-> +		if (cp == root_cs)
-> +			continue;
-> +
->  		/* skip the whole subtree if @cp doesn't have any CPU */
->  		if (cpumask_empty(cp->cpus_allowed)) {
->  			pos_css = css_rightmost_descendant(pos_css);
-> @@ -613,6 +617,8 @@ static int generate_sched_domains(cpumask_var_t **domains,
->  
->  	rcu_read_lock();
->  	cpuset_for_each_descendant_pre(cp, pos_css, &top_cpuset) {
-> +		if (cp == &top_cpuset)
-> +			continue;
->  		/*
->  		 * Continue traversing beyond @cp iff @cp has some CPUs and
->  		 * isn't load balancing.  The former is obvious.  The
-> @@ -875,15 +881,17 @@ static void update_tasks_cpumask_hier(struct cpuset *root_cs,
->  	struct cpuset *cp;
->  	struct cgroup_subsys_state *pos_css;
->  
-> -	if (update_root)
-> -		update_tasks_cpumask(root_cs, heap);
-> -
->  	rcu_read_lock();
->  	cpuset_for_each_descendant_pre(cp, pos_css, root_cs) {
-> -		/* skip the whole subtree if @cp have some CPU */
-> -		if (!cpumask_empty(cp->cpus_allowed)) {
-> -			pos_css = css_rightmost_descendant(pos_css);
-> -			continue;
-> +		if (cp == root_cs) {
-> +			if (!update_root)
-> +				continue;
-> +		} else {
-> +			/* skip the whole subtree if @cp have some CPU */
-> +			if (!cpumask_empty(cp->cpus_allowed)) {
-> +				pos_css = css_rightmost_descendant(pos_css);
-> +				continue;
-> +			}
->  		}
->  		if (!css_tryget(&cp->css))
->  			continue;
-> @@ -1130,15 +1138,17 @@ static void update_tasks_nodemask_hier(struct cpuset *root_cs,
->  	struct cpuset *cp;
->  	struct cgroup_subsys_state *pos_css;
->  
-> -	if (update_root)
-> -		update_tasks_nodemask(root_cs, heap);
-> -
->  	rcu_read_lock();
->  	cpuset_for_each_descendant_pre(cp, pos_css, root_cs) {
-> -		/* skip the whole subtree if @cp have some CPU */
-> -		if (!nodes_empty(cp->mems_allowed)) {
-> -			pos_css = css_rightmost_descendant(pos_css);
-> -			continue;
-> +		if (cp == root_cs) {
-> +			if (!update_root)
-> +				continue;
-> +		} else {
-> +			/* skip the whole subtree if @cp have some CPU */
-> +			if (!nodes_empty(cp->mems_allowed)) {
-> +				pos_css = css_rightmost_descendant(pos_css);
-> +				continue;
-> +			}
->  		}
->  		if (!css_tryget(&cp->css))
->  			continue;
-> @@ -2237,7 +2247,7 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
->  
->  		rcu_read_lock();
->  		cpuset_for_each_descendant_pre(cs, pos_css, &top_cpuset) {
-> -			if (!css_tryget(&cs->css))
-> +			if (cs == &top_cpuset || !css_tryget(&cs->css))
->  				continue;
->  			rcu_read_unlock();
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 240ae72..68a37c0 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1129,14 +1129,7 @@ static struct mem_cgroup *__mem_cgroup_iter_next(struct mem_cgroup *root,
->  {
->  	struct cgroup_subsys_state *prev_css, *next_css;
->  
-> -	/*
-> -	 * Root is not visited by cgroup iterators so it needs an
-> -	 * explicit visit.
-> -	 */
-> -	if (!last_visited)
-> -		return root;
-> -
-> -	prev_css = (last_visited == root) ? NULL : &last_visited->css;
-> +	prev_css = last_visited ? &last_visited->css : NULL;
->  skip_node:
->  	next_css = css_next_descendant_pre(prev_css, &root->css);
->  
-> diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-> index 9bf230a..c123628 100644
-> --- a/security/device_cgroup.c
-> +++ b/security/device_cgroup.c
-> @@ -456,7 +456,7 @@ static int propagate_exception(struct dev_cgroup *devcg_root,
->  		 * methods), and online ones are safe to access outside RCU
->  		 * read lock without bumping refcnt.
->  		 */
-> -		if (!is_devcg_online(devcg))
-> +		if (pos == &devcg_root->css || !is_devcg_online(devcg))
->  			continue;
->  
->  		rcu_read_unlock();
-> -- 
-> 1.8.3.1
-> 
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2013/08/man-pages-353-is-released.html
 
--- 
-Michal Hocko
-SUSE Labs
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
+
+A few changes in this release that may be of interest to readers of
+this list are given below.
+
+Cheers,
+
+Michael
+
+
+==================== Changes in man-pages-3.53 ====================
+
+New and rewritten pages
+-----------------------
+
+restart_syscall.2
+    Michael Kerrisk
+        New page for restart_syscall(2) system call
+
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+fchownat.2
+    Michael Kerrisk
+        Document AT_EMPTY_PATH
+
+fstatat.2
+    Michael Kerrisk
+        Document AT_EMPTY_PATH
+
+linkat.2
+    Michael Kerrisk
+        Document AT_EMPTY_PATH
+
+open.2
+    Michael Kerrisk [Al Viro]
+        Document O_PATH
+            See also https://bugzilla.redhat.com/show_bug.cgi?id=885740
+
+
+Changes to individual pages
+---------------------------
+
+open.2
+    Michael Kerrisk [Geoffrey Thomas]
+        Remove warning that O_DIRECTORY is only for use with opendir(3)
+            O_DIRECTORY can also be used with, for example, O_PATH.
+
+perf_event_open.2
+    Vince Weaver
+        Improve PERF_SAMPLE_BRANCH_STACK documentation
+    Vince Weaver
+        Fix indentation of the MMAP layout section
+            The indentation of the MMAP layout section wasn't quite right.
+            I think this improves things but I admit I'm not an expert at the
+            low-level indentation directives.
+    Vince Weaver
+        Update PERF_IOC_FLAG_GROUP info
+            It turns out PERF_IOC_FLAG_GROUP was broken from 75f937f24bd9
+            (in Linux 2.6.31, the initial perf_event release) until
+            724b6daa1 (Linux 3.4).
+
+            I've done some extensive kernel source code digging plus
+            running tests of various kernels and I hope the info
+            presented is accurate now.
+
+            (Patch edited somewhat by mtk.)
+    Vince Weaver
+        Improve sysfs files documentation
+            This improves the documentation of the various
+            perf_event_open()-related sysfs files.
+
+ptrace.2
+    Denys Vlasenko  [Oleg Nesterov, Dmitry V. Levin]
+        If SEIZE was used, initial auto-attach stop is EVENT_STOP
+            For every PTRACE_O_TRACEfoo option, mention that old-style SIGSTOP
+            is replaced by PTRACE_EVENT_STOP if PTRACE_SEIZE attach was used.
+
+            Mention the same thing again in the description of
+            PTRACE_EVENT_STOP.
+    Denys Vlasenko  [Oleg Nesterov, Dmitry V. Levin]
+        Mention that PTRACE_PEEK* libc API and kernel API are different
+    Denys Vlasenko  [Oleg Nesterov, Dmitry V. Levin]
+        Clarify PTRACE_INTERRUPT, PTRACE_LISTEN, and group-stop behavior
+
+readlink.2
+    Michael Kerrisk
+        Document use of empty 'pathname' argument
+
+capabilities.7
+    Michael Kerrisk
+        Add open_by_handle_at(2) under CAP_DAC_READ_SEARCH
+
+ld.so.8
+    Michael Kerrisk
+        Rework rpath token expansion text
+    Michael Kerrisk
+        Describe $PLATFORM rpath token
+    Michael Kerrisk
+        Describe $LIB rpath token
+    Michael Kerrisk
+        Document LD_BIND_NOT
+
