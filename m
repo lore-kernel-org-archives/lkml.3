@@ -1,191 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964979Ab3HHJnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 05:43:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16337 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S934203Ab3HHJm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 05:42:58 -0400
-X-IronPort-AV: E=Sophos;i="4.89,838,1367942400"; 
-   d="scan'208";a="8153672"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH part4 3/4] x86, acpica, acpi: Try to find SRAT in firmware earlier.
-Date: Thu, 8 Aug 2013 17:41:22 +0800
-Message-Id: <1375954883-30225-4-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375954883-30225-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1375954883-30225-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 17:41:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 17:41:27,
-	Serialize complete at 2013/08/08 17:41:27
+	id S964898Ab3HHJqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 05:46:18 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60393 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964841Ab3HHJqR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 05:46:17 -0400
+Date: Thu, 8 Aug 2013 10:46:08 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>
+Subject: Re: [PATCH v3 3/5] devicetree: create a separate binding
+ description for sata_highbank
+Message-ID: <20130808094608.GI14648@e106331-lin.cambridge.arm.com>
+References: <1375890758-30265-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1375890758-30265-3-git-send-email-mark.langsdorf@calxeda.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375890758-30265-3-git-send-email-mark.langsdorf@calxeda.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduce early_acpi_firmware_srat() to find the
-phys addr of SRAT provided by firmware. And call it in
-find_hotpluggable_memory().
+On Wed, Aug 07, 2013 at 04:52:36PM +0100, Mark Langsdorf wrote:
+> The Calxeda sata_highbank driver has been adding its descriptions to the
+> ahci driver. Separate them properly.
+> 
+> Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> ---
+> Changes from v2
+> 	Fixed some indenting.
+> Changes from v1
+> 	None.
+> 
+>  .../devicetree/bindings/ata/ahci-platform.txt      | 18 +++---------
+>  .../devicetree/bindings/ata/sata_highbank.txt      | 32 ++++++++++++++++++++++
+>  2 files changed, 36 insertions(+), 14 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/ata/sata_highbank.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> index 3ec0c5c..89de156 100644
+> --- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> +++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> @@ -4,27 +4,17 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
+>  Each SATA controller should have its own node.
+>  
+>  Required properties:
+> -- compatible        : compatible list, contains "calxeda,hb-ahci" or "snps,spear-ahci"
+> +- compatible        : compatible list, contains "snps,spear-ahci"
+>  - interrupts        : <interrupt mapping for SATA IRQ>
+>  - reg               : <registers mapping>
+>  
+>  Optional properties:
+> -- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
+> -			SATA port to a combophy and a lane within that
+> -			combophy
+> -- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
+> -			which indicates that the driver supports SGPIO
+> -			indicator lights using the indicated GPIOs
+> -- calxeda,led-order : a u32 array that map port numbers to offsets within the
+> -			SGPIO bitstream.
+>  - dma-coherent      : Present if dma operations are coherent
+>  
+>  Example:
+>          sata@ffe08000 {
+> -		compatible = "calxeda,hb-ahci";
+> -                reg = <0xffe08000 0x1000>;
+> -                interrupts = <115>;
+> -		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
+> -					&combophy0 2 &combophy0 3>;
+> +		compatible = "snps,spear-ahci";
+> +		reg = <0xffe08000 0x1000>;
+> +		interrupts = <115>;
+>  
+>          };
+> diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+> new file mode 100644
+> index 0000000..1ac6d3d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+> @@ -0,0 +1,32 @@
+> +* Calxeda AHCI SATA Controller
+> +
+> +SATA nodes are defined to describe on-chip Serial ATA controllers.
+> +The Calxeda SATA controller mostly conforms to the AHCI interface
+> +with some special extensions to add functionality.
+> +Each SATA controller should have its own node.
+> +
+> +Required properties:
+> +- compatible        : compatible list, contains "calxeda,hb-ahci"
+> +- interrupts        : <interrupt mapping for SATA IRQ>
+> +- reg               : <registers mapping>
+> +
+> +Optional properties:
+> +- dma-coherent      : Present if dma operations are coherent
+> +- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
+> +			SATA port to a combophy and a lane within that
+> +			combophy
+> +- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
+> +			which indicates that the driver supports SGPIO
+> +			indicator lights using the indicated GPIOs
+> +- calxeda,led-order : a u32 array that map port numbers to offsets within the
+> +			SGPIO bitstream.
+> +
+> +Example:
+> +        sata@ffe08000 {
+> +		compatible = "calxeda,hb-ahci";
+> +		reg = <0xffe08000 0x1000>;
+> +		interrupts = <115>;
+> +		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
+> +					&combophy0 2 &combophy0 3>;
+> +
+> +        };
 
-Since we have initialized acpi_gbl_root_table_list earlier,
-and store all the tables' phys addrs and signatures in it,
-it is easy to find the SRAT.
+It would be nice to have examples for the remaining optional properties,
+but otherwise:
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
- drivers/acpi/acpica/tbxface.c |   32 ++++++++++++++++++++++++++++++++
- drivers/acpi/osl.c            |   22 ++++++++++++++++++++++
- include/acpi/acpixf.h         |    4 ++++
- include/linux/acpi.h          |    4 ++++
- mm/memory_hotplug.c           |    8 ++++++--
- 5 files changed, 68 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
-index ecaa5e1..a025dcc 100644
---- a/drivers/acpi/acpica/tbxface.c
-+++ b/drivers/acpi/acpica/tbxface.c
-@@ -236,6 +236,38 @@ acpi_status acpi_reallocate_root_table(void)
- 	return_ACPI_STATUS(status);
- }
- 
-+/**
-+ * acpi_get_table_desc - Get the acpi table descriptor of a specific table.
-+ * @signature: The signature of the table to be found.
-+ * @out_desc: The out returned descriptor.
-+ *
-+ * Iterate over acpi_gbl_root_table_list to find a specific table and then
-+ * return its phys addr.
-+ *
-+ * NOTE: The caller has the responsibility to allocate memory for @out_desc.
-+ *
-+ * Return AE_OK on success, AE_NOT_FOUND if the table is not found.
-+ */
-+acpi_status acpi_get_table_desc(char *signature,
-+				struct acpi_table_desc *out_desc)
-+{
-+	struct acpi_table_desc *desc;
-+	int pos, count = acpi_gbl_root_table_list.current_table_count;
-+
-+	for (pos = 0; pos < count; pos++) {
-+		desc = &acpi_gbl_root_table_list.tables[pos];
-+
-+		if (!ACPI_COMPARE_NAME(&desc->signature, signature))
-+			continue;
-+
-+		memcpy(out_desc, desc, sizeof(struct acpi_table_desc));
-+
-+		return_ACPI_STATUS(AE_OK);
-+	}
-+
-+	return_ACPI_STATUS(AE_NOT_FOUND);
-+}
-+
- /*******************************************************************************
-  *
-  * FUNCTION:    acpi_get_table_header
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index dcbca3e..ec490fe 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -53,6 +53,7 @@
- #include <acpi/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/processor.h>
-+#include <acpi/acpixf.h>
- 
- #define _COMPONENT		ACPI_OS_SERVICES
- ACPI_MODULE_NAME("osl");
-@@ -760,6 +761,27 @@ void __init acpi_initrd_override(void *data, size_t size)
- }
- #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
- 
-+#ifdef CONFIG_ACPI_NUMA
-+/*******************************************************************************
-+ *
-+ * FUNCTION:    early_acpi_firmware_srat
-+ *
-+ * RETURN:      Phys addr of SRAT on success, 0 on error.
-+ *
-+ * DESCRIPTION: Get the phys addr of SRAT provided by firmware.
-+ *
-+ ******************************************************************************/
-+phys_addr_t __init early_acpi_firmware_srat(void)
-+{
-+	struct acpi_table_desc table_desc;
-+
-+	if (acpi_get_table_desc(ACPI_SIG_SRAT, &table_desc))
-+		return 0;
-+
-+	return table_desc.address;
-+}
-+#endif	/* CONFIG_ACPI_NUMA */
-+
- static void acpi_table_taint(struct acpi_table_header *table)
- {
- 	pr_warn(PREFIX
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index 99c9d7b..daa7c10 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -188,6 +188,10 @@ acpi_status acpi_find_root_pointer(acpi_size *rsdp_address);
- acpi_status acpi_unload_table_id(acpi_owner_id id);
- 
- acpi_status
-+acpi_get_table_desc(char *signature,
-+		    struct acpi_table_desc *out_desc);
-+
-+acpi_status
- acpi_get_table_header(acpi_string signature,
- 		      u32 instance, struct acpi_table_header *out_table_header);
- 
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index bdcb9dd..280078c 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -97,6 +97,10 @@ static inline phys_addr_t early_acpi_override_srat(void)
- }
- #endif	/* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
- 
-+#ifdef CONFIG_ACPI_NUMA
-+phys_addr_t early_acpi_firmware_srat(void);
-+#endif  /* CONFIG_ACPI_NUMA */
-+
- char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
- void __acpi_unmap_table(char *map, unsigned long size);
- int early_acpi_boot_init(void);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 2a57888..2dfb06f 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -107,8 +107,12 @@ void __init find_hotpluggable_memory(void)
- 
- 	/* Try to find if SRAT is overridden */
- 	srat_paddr = early_acpi_override_srat();
--	if (!srat_paddr)
--		return;
-+	if (!srat_paddr) {
-+		/* Try to find SRAT from firmware if it wasn't overridden */
-+		srat_paddr = early_acpi_firmware_srat();
-+		if (!srat_paddr)
-+			return;
-+	}
- 
- 	/* Will parse SRAT and find out hotpluggable memory here */
- }
--- 
-1.7.1
-
+Acked-by: Mark Rutland <mark.rutland@arm.com>
