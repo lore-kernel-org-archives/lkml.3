@@ -1,45 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965700Ab3HHOCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:02:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44746 "EHLO mx2.suse.de"
+	id S965679Ab3HHOCv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:02:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44661 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965275Ab3HHOCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:02:19 -0400
-Date: Thu, 8 Aug 2013 16:02:18 +0200
-From: David Sterba <dsterba@suse.cz>
-To: Sergei Trofimovich <slyich@gmail.com>
-Cc: linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
-        Josef Bacik <jbacik@fusionio.com>, linux-kernel@vger.kernel.org,
-        Sergei Trofimovich <slyfox@gentoo.org>
-Subject: Re: [PATCH 7/7] btrfs: cleanup: removed unused
- 'btrfs_get_inode_ref_index'
-Message-ID: <20130808140218.GV5284@twin.jikos.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz,
-	Sergei Trofimovich <slyich@gmail.com>, linux-btrfs@vger.kernel.org,
-	Chris Mason <chris.mason@fusionio.com>,
-	Josef Bacik <jbacik@fusionio.com>, linux-kernel@vger.kernel.org,
-	Sergei Trofimovich <slyfox@gentoo.org>
-References: <1375911803-17318-1-git-send-email-slyich@gmail.com>
- <1375911803-17318-8-git-send-email-slyich@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375911803-17318-8-git-send-email-slyich@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S965613Ab3HHOBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:01:14 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 27/27] sched: Retry migration of tasks to CPU on a preferred node
+Date: Thu,  8 Aug 2013 15:00:39 +0100
+Message-Id: <1375970439-5111-28-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1375970439-5111-1-git-send-email-mgorman@suse.de>
+References: <1375970439-5111-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 12:43:23AM +0300, Sergei Trofimovich wrote:
-> From: Sergei Trofimovich <slyfox@gentoo.org>
-> 
-> Found by uselex.rb:
-> > btrfs_get_inode_ref_index: [R]: exported from: fs/btrfs/inode-item.o fs/btrfs/btrfs.o fs/btrfs/built-in.o
-> 
-> Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+When a preferred node is selected for a tasks there is an attempt to migrate
+the task to a CPU there. This may fail in which case the task will only
+migrate if the active load balancer takes action. This may never happen if
+the conditions are not right. This patch will check at NUMA hinting fault
+time if another attempt should be made to migrate the task. It will only
+make an attempt once every five seconds.
 
-Safe to remove.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ include/linux/sched.h |  1 +
+ kernel/sched/fair.c   | 40 +++++++++++++++++++++++-----------------
+ 2 files changed, 24 insertions(+), 17 deletions(-)
 
-Reviewed-by: David Sterba <dsterba@suse.cz>
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index bbafa60..cd67c95 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1333,6 +1333,7 @@ struct task_struct {
+ 	int numa_migrate_seq;
+ 	unsigned int numa_scan_period;
+ 	unsigned int numa_scan_period_max;
++	unsigned long numa_migrate_retry;
+ 	u64 node_stamp;			/* migration stamp  */
+ 	struct callback_head numa_work;
+ 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9ea4d5c..7cffbf5 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -989,6 +989,22 @@ static int task_numa_find_cpu(struct task_struct *p, int nid)
+ 	return dst_cpu;
+ }
+ 
++/* Attempt to migrate a task to a CPU on the preferred node. */
++static void numa_migrate_preferred(struct task_struct *p)
++{
++	int preferred_cpu = task_cpu(p);
++
++	/* Success if task is already running on preferred CPU */
++	p->numa_migrate_retry = 0;
++	if (cpu_to_node(preferred_cpu) == p->numa_preferred_nid)
++		return;
++
++	/* Otherwise, try migrate to a CPU on the preferred node */
++	preferred_cpu = task_numa_find_cpu(p, p->numa_preferred_nid);
++	if (migrate_task_to(p, preferred_cpu) != 0)
++		p->numa_migrate_retry = jiffies + HZ*5;
++}
++
+ static void task_numa_placement(struct task_struct *p)
+ {
+ 	int seq, nid, max_nid = -1;
+@@ -1023,27 +1039,13 @@ static void task_numa_placement(struct task_struct *p)
+ 		}
+ 	}
+ 
+-	/*
+-	 * Record the preferred node as the node with the most faults,
+-	 * requeue the task to be running on the idlest CPU on the
+-	 * preferred node and reset the scanning rate to recheck
+-	 * the working set placement.
+-	 */
++	/* Preferred node as the node with the most faults */
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
+-		int preferred_cpu;
+-
+-		/*
+-		 * If the task is not on the preferred node then find
+-		 * a suitable CPU to migrate to.
+-		 */
+-		preferred_cpu = task_cpu(p);
+-		if (cpu_to_node(preferred_cpu) != max_nid)
+-			preferred_cpu = task_numa_find_cpu(p, max_nid);
+ 
+-		/* Update the preferred nid and migrate task if possible */
++		/* Queue task on preferred node if possible */
+ 		p->numa_preferred_nid = max_nid;
+ 		p->numa_migrate_seq = 0;
+-		migrate_task_to(p, preferred_cpu);
++		numa_migrate_preferred(p);
+ 	}
+ }
+ 
+@@ -1099,6 +1101,10 @@ void task_numa_fault(int last_nidpid, int node, int pages, bool migrated)
+ 
+ 	task_numa_placement(p);
+ 
++	/* Retry task to preferred node migration if it previously failed */
++	if (p->numa_migrate_retry && time_after(jiffies, p->numa_migrate_retry))
++		numa_migrate_preferred(p);
++
+ 	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
+ }
+ 
+-- 
+1.8.1.4
+
