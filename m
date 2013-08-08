@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966427Ab3HHUOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:14:16 -0400
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:51539 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966392Ab3HHUOL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S966396Ab3HHUOL (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 8 Aug 2013 16:14:11 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:46841 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966362Ab3HHUOI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 16:14:08 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/14] cgroup: make cgroup_file_open() rcu_read_lock() around cgroup_css() and add cfent->css
-Date: Thu,  8 Aug 2013 16:13:42 -0400
-Message-Id: <1375992831-4650-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 03/14] cgroup: add cgroup_subsys_state->parent
+Date: Thu,  8 Aug 2013 16:13:40 -0400
+Message-Id: <1375992831-4650-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1375992831-4650-1-git-send-email-tj@kernel.org>
 References: <1375992831-4650-1-git-send-email-tj@kernel.org>
@@ -21,143 +21,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the planned unified hierarchy, each css (cgroup_subsys_state) will
-be RCU protected so that it can be created and destroyed individually
-while allowing RCU accesses, and cgroup_css() will soon require either
-holding cgroup_mutex or RCU read lock.
+With the planned unified hierarchy, css's (cgroup_subsys_state) will
+be RCU protected and allowed to be attached and detached dynamically
+over the course of a cgroup's lifetime.  This means that css's will
+stay accessible after being detached from its cgroup - the matching
+pointer in cgroup->subsys[] cleared - for ref draining and RCU grace
+period.
 
-This patch updates cgroup_file_open() such that it acquires the
-associated css under rcu_read_lock().  While cgroup_file_css() usages
-in other file operations are safe due to the reference from open,
-cgroup_css() wouldn't know that and will still trigger warnings.  It'd
-be cleanest to store the acquired css in file->prvidate_data for
-further file operations but that's already used by seqfile.  This
-patch instead adds cfent->css to cache the associated css.  Note that
-while this field is initialized during cfe init, it should only be
-considered valid while the file is open.
+cgroup core still wants to guarantee that the parent css is never
+destroyed before its children and css_parent() always returns the
+parent regardless of the state of the child css as long as it's
+accessible.
 
-This patch doesn't change visible behavior.
+This patch makes css's hold onto their parents and adds css->parent so
+that the parent css is never detroyed before its children and can be
+determined without consulting the cgroups.
+
+cgroup->dummy_css is also updated to point to the parent dummy_css;
+however, it doesn't need to worry about object lifetime as the parent
+cgroup is already pinned by the child.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 48 +++++++++++++++++++++++++++++++-----------------
- 1 file changed, 31 insertions(+), 17 deletions(-)
+ include/linux/cgroup.h | 13 ++++---------
+ kernel/cgroup.c        | 18 +++++++++++++++---
+ 2 files changed, 19 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index cbb6314..d63beff 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -117,6 +117,7 @@ struct cfent {
- 	struct list_head		node;
- 	struct dentry			*dentry;
- 	struct cftype			*type;
-+	struct cgroup_subsys_state	*css;
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 12d66fe..8a5dc91 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -75,6 +75,9 @@ struct cgroup_subsys_state {
+ 	/* reference count - access via css_[try]get() and css_put() */
+ 	struct percpu_ref refcnt;
  
- 	/* file xattrs */
- 	struct simple_xattrs		xattrs;
-@@ -2301,17 +2302,6 @@ static int cgroup_sane_behavior_show(struct cgroup_subsys_state *css,
- 	return 0;
++	/* the parent css */
++	struct cgroup_subsys_state *parent;
++
+ 	unsigned long flags;
+ 	/* ID for this css, if possible */
+ 	struct css_id __rcu *id;
+@@ -666,15 +669,7 @@ struct cgroup_subsys {
+ static inline
+ struct cgroup_subsys_state *css_parent(struct cgroup_subsys_state *css)
+ {
+-	struct cgroup *parent_cgrp = css->cgroup->parent;
+-
+-	if (!parent_cgrp)
+-		return NULL;
+-
+-	if (css->ss)
+-		return parent_cgrp->subsys[css->ss->subsys_id];
+-	else
+-		return &parent_cgrp->dummy_css;
++	return css->parent;
  }
  
--/* return the css for the given cgroup file */
--static struct cgroup_subsys_state *cgroup_file_css(struct cfent *cfe)
--{
--	struct cftype *cft = cfe->type;
--	struct cgroup *cgrp = __d_cgrp(cfe->dentry->d_parent);
--
--	if (cft->ss)
--		return cgroup_css(cgrp, cft->ss->subsys_id);
--	return &cgrp->dummy_css;
--}
--
- /* A buffer size big enough for numbers or short strings */
- #define CGROUP_LOCAL_BUFFER_SIZE 64
+ /**
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 0b28097..5c6dd7e 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4264,6 +4264,9 @@ static void css_free_work_fn(struct work_struct *work)
+ 	struct cgroup_subsys_state *css =
+ 		container_of(work, struct cgroup_subsys_state, destroy_work);
  
-@@ -2388,7 +2378,7 @@ static ssize_t cgroup_file_write(struct file *file, const char __user *buf,
- {
- 	struct cfent *cfe = __d_cfe(file->f_dentry);
- 	struct cftype *cft = __d_cft(file->f_dentry);
--	struct cgroup_subsys_state *css = cgroup_file_css(cfe);
-+	struct cgroup_subsys_state *css = cfe->css;
- 
- 	if (cft->write)
- 		return cft->write(css, cft, file, buf, nbytes, ppos);
-@@ -2430,7 +2420,7 @@ static ssize_t cgroup_file_read(struct file *file, char __user *buf,
- {
- 	struct cfent *cfe = __d_cfe(file->f_dentry);
- 	struct cftype *cft = __d_cft(file->f_dentry);
--	struct cgroup_subsys_state *css = cgroup_file_css(cfe);
-+	struct cgroup_subsys_state *css = cfe->css;
- 
- 	if (cft->read)
- 		return cft->read(css, cft, file, buf, nbytes, ppos);
-@@ -2456,7 +2446,7 @@ static int cgroup_seqfile_show(struct seq_file *m, void *arg)
- {
- 	struct cfent *cfe = m->private;
- 	struct cftype *cft = cfe->type;
--	struct cgroup_subsys_state *css = cgroup_file_css(cfe);
-+	struct cgroup_subsys_state *css = cfe->css;
- 
- 	if (cft->read_map) {
- 		struct cgroup_map_cb cb = {
-@@ -2479,7 +2469,8 @@ static int cgroup_file_open(struct inode *inode, struct file *file)
- {
- 	struct cfent *cfe = __d_cfe(file->f_dentry);
- 	struct cftype *cft = __d_cft(file->f_dentry);
--	struct cgroup_subsys_state *css = cgroup_file_css(cfe);
-+	struct cgroup *cgrp = __d_cgrp(cfe->dentry->d_parent);
-+	struct cgroup_subsys_state *css;
- 	int err;
- 
- 	err = generic_file_open(inode, file);
-@@ -2491,7 +2482,18 @@ static int cgroup_file_open(struct inode *inode, struct file *file)
- 	 * unpinned either on open failure or release.  This ensures that
- 	 * @css stays alive for all file operations.
- 	 */
--	if (css->ss && !css_tryget(css))
-+	rcu_read_lock();
-+	if (cft->ss) {
-+		css = cgroup_css(cgrp, cft->ss->subsys_id);
-+		if (!css_tryget(css))
-+			css = NULL;
-+	} else {
-+		css = &cgrp->dummy_css;
-+	}
-+	rcu_read_unlock();
++	if (css->parent)
++		css_put(css->parent);
 +
-+	/* css should match @cfe->css, see cgroup_add_file() for details */
-+	if (!css || WARN_ON_ONCE(css != cfe->css))
- 		return -ENODEV;
+ 	cgroup_dput(css->cgroup);
+ }
  
- 	if (cft->read_map || cft->read_seq_string) {
-@@ -2510,7 +2512,7 @@ static int cgroup_file_release(struct inode *inode, struct file *file)
- {
- 	struct cfent *cfe = __d_cfe(file->f_dentry);
- 	struct cftype *cft = __d_cft(file->f_dentry);
--	struct cgroup_subsys_state *css = cgroup_file_css(cfe);
-+	struct cgroup_subsys_state *css = cfe->css;
- 	int ret = 0;
- 
- 	if (cft->release)
-@@ -2772,6 +2774,18 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cftype *cft)
- 	dentry->d_fsdata = cfe;
- 	simple_xattrs_init(&cfe->xattrs);
- 
-+	/*
-+	 * cfe->css is used by read/write/close to determine the associated
-+	 * css.  file->private_data would be a better place but that's
-+	 * already used by seqfile.  Note that open will use the usual
-+	 * cgroup_css() and css_tryget() to acquire the css and this
-+	 * caching doesn't affect css lifetime management.
-+	 */
-+	if (cft->ss)
-+		cfe->css = cgroup_css(cgrp, cft->ss->subsys_id);
+@@ -4290,8 +4293,12 @@ static void init_cgroup_css(struct cgroup_subsys_state *css,
+ 	css->ss = ss;
+ 	css->flags = 0;
+ 	css->id = NULL;
+-	if (cgrp == cgroup_dummy_top)
++
++	if (cgrp->parent)
++		css->parent = cgroup_css(cgrp->parent, ss->subsys_id);
 +	else
-+		cfe->css = &cgrp->dummy_css;
+ 		css->flags |= CSS_ROOT;
 +
- 	mode = cgroup_file_mode(cft);
- 	error = cgroup_create_file(dentry, mode | S_IFREG, cgrp->root->sb);
- 	if (!error) {
+ 	BUG_ON(cgroup_css(cgrp, ss->subsys_id));
+ 	cgrp->subsys[ss->subsys_id] = css;
+ }
+@@ -4388,6 +4395,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	cgrp->dentry = dentry;
+ 
+ 	cgrp->parent = parent;
++	cgrp->dummy_css.parent = &parent->dummy_css;
+ 	cgrp->root = parent->root;
+ 
+ 	if (notify_on_release(parent))
+@@ -4436,9 +4444,13 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
+ 	root->number_of_cgroups++;
+ 
+-	/* each css holds a ref to the cgroup's dentry */
+-	for_each_root_subsys(root, ss)
++	/* each css holds a ref to the cgroup's dentry and the parent css */
++	for_each_root_subsys(root, ss) {
++		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss->subsys_id);
++
+ 		dget(dentry);
++		percpu_ref_get(&css->parent->refcnt);
++	}
+ 
+ 	/* hold a ref to the parent's dentry */
+ 	dget(parent->dentry);
 -- 
 1.8.3.1
 
