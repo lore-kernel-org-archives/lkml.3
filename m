@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab3HHEgD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 00:36:03 -0400
-Received: from 8.mo4.mail-out.ovh.net ([188.165.33.112]:44672 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750832Ab3HHEgB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 00:36:01 -0400
-Message-ID: <52031A4E.8010605@overkiz.com>
-Date: Thu, 08 Aug 2013 06:10:54 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1755460Ab3HHEjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 00:39:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:11606 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832Ab3HHEjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 00:39:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,836,1367996400"; 
+   d="scan'208";a="279231317"
+Date: Wed, 7 Aug 2013 21:39:06 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Use gcc alias instead of assembler aliases for syscalls
+Message-ID: <20130808043906.GB23412@tassilo.jf.intel.com>
+References: <1375740575-7640-1-git-send-email-andi@firstfloor.org>
+ <20130807165421.0b60ee9acbd1571426188448@linux-foundation.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: Re: [PATCH] pinctrl: at91: choose appropriate handler for level interrupts
-References: <1374331893-16009-1-git-send-email-b.brezillon@overkiz.com> <CACRpkdbte37s-nG-QqmbD=TrVEsSDBFTRX0fjbfUfHpwHSjLDw@mail.gmail.com>
-In-Reply-To: <CACRpkdbte37s-nG-QqmbD=TrVEsSDBFTRX0fjbfUfHpwHSjLDw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 1955969613871806685
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130807165421.0b60ee9acbd1571426188448@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 20:59, Linus Walleij wrote:
-> On Sat, Jul 20, 2013 at 4:51 PM, Boris BREZILLON
-> <b.brezillon@overkiz.com> wrote:
->
->> The current implementation handle both edge and level interrupts with the
->> 'handle_simple_irq' handler.
->>
->> Level interrupts are active as long as the pin stays at the configured
->> level (low or high). In this case we have to use 'handle_level_irq' which
->> mask the interrupt until the handle has treated it.
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> Patch applied with Alexandre's Tested-by tag.
-Thanks
->
-> Worst thing that can happen is that I have to revert it.
-> Now it will atleast get some testing in linux-next.
->
-> Yours,
-> Linus Walleij
+On Wed, Aug 07, 2013 at 04:54:21PM -0700, Andrew Morton wrote:
+> On Mon,  5 Aug 2013 15:09:35 -0700 Andi Kleen <andi@firstfloor.org> wrote:
+> 
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > Use standard gcc __attribute__((alias(foo))) to define
+> > the syscall aliases instead of custom assembler macros.
+> > 
+> > This is far cleaner, and also fixes my LTO kernel build.
+> > 
+> 
+> This makes my x86_64 allmodconfig build emit screenfuls of
 
+Ok I can reproduce with MODVERSIONS. Very mysterious, as I 
+didn't change EXPORT_SYMBOL. Will look into it.
+
+Thanks.
+
+-Andi
