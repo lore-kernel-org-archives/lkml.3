@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964914Ab3HHJkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 05:40:09 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:40985 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964860Ab3HHJkD (ORCPT
+	id S964943Ab3HHJkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 05:40:22 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:54848 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964819Ab3HHJkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 05:40:03 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-fd-520367648b2a
+	Thu, 8 Aug 2013 05:40:13 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-05-5203677c6fd5
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
         "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
@@ -22,42 +22,42 @@ Cc: "'Joerg Roedel'" <joro@8bytes.org>, "'Kukjin Kim'" <kgene.kim@samsung.com>,
         "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
         kvmarm@lists.cs.columbia.edu,
         "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: [PATCH v9 10/16] iommu/exynos: remove custom fault handler
-Date: Thu, 08 Aug 2013 18:39:48 +0900
-Message-id: <002e01ce941b$394d2cf0$abe786d0$@samsung.com>
+Subject: [PATCH v9 11/16] iommu/exynos: remove calls to Runtime PM API functions
+Date: Thu, 08 Aug 2013 18:40:12 +0900
+Message-id: <002f01ce941b$47796910$d66c3b30$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6UF56Ec+VhGDh2S2aXDkvojSDaqQ==
+Thread-index: Ac6UF6crUyZZ3JhpTr6Ox4P2C4gD8g==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+ZsW5KOnOQwentlhZ37p5jtZh/BEi8
-	OvKDyWLBfmuLztkb2C16F1xls/h46ji7xabH11gtLu+aw2Yx4/w+JosLKzayW0xZdJjV4uSf
-	XkaLluu9TA58Hk8OzmPymN1wkcXjzrU9bB7nN61h9ti8pN5j8o3ljB59W1YxenzeJOdx5egZ
-	pgDOKC6blNSczLLUIn27BK6MZ62vWQs2aFTs+dLD1MDYptjFyMEhIWAi8WK7QhcjJ5ApJnHh
-	3nq2LkYuDiGBZYwSm99cZIZImEgsa2lghkgsYpSYNvkKlPOXUeLFroMsIFVsAloSq+ceZwRJ
-	iAj8ZpS49WwOK4jDLPCfSWLr7SZ2kCphAWeJR8da2EBsFgFVidlzt4Lt4BWwlHiw+x4LhC0o
-	8WMyhM0MNHX9zuNMELa8xOY1b6FuUpDYcfY1I4gtIqAn8fXNJqgaEYl9L96BXSEhMJdDovPt
-	IWaIZQIS3yYfYoF4WlZi0wGoOZISB1fcYJnAKDYLyepZSFbPQrJ6FpIVCxhZVjGKphYkFxQn
-	pRcZ6xUn5haX5qXrJefnbmKERH//Dsa7B6wPMSYDrZ/ILCWanA9MHnkl8YbGZkYWpiamxkbm
-	lmakCSuJ86q1WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYHT+deDP/OKAe4vr06ZJh/Gn
-	9W2zmvi7Zv5GgYTY+jc7Ga8q+sZ9zju8ochitejp7avm1pd9yX3U4aX4ba19/aVn21/muL+a
-	Yv9pJVeGlNMTg6uzdd7N+epW/PzrdYUQwb/6nsHvPP9vm9SfeTO6j73+zi7P4Gv/1rrOflrT
-	dOD7U/ckl5Cbp2uUWIozEg21mIuKEwEL4xm8FAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsVy+t9jAd2UdOYggzXbTCzu3D3HajH/CJB4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsVy+t8zfd2adOYggxNbtCzu3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZvHx1HF2i02Pr7FaXN41h81ixvl9TBYXVmxkt5iy6DCrxck/
+	vYwWLdd7mRz4PJ4cnMfkMbvhIovHnWt72DzOb1rD7LF5Sb3H5BvLGT36tqxi9Pi8Sc7jytEz
+	TAGcUVw2Kak5mWWpRfp2CVwZJ76rFKwUqTi/YC57A+MFgS5GTg4JAROJtv7jjBC2mMSFe+vZ
+	uhi5OIQEljFKTF38jbmLkQOsaP/KcIj4IkaJiftPsIE0CAn8ZZTYNS8OxGYT0JJYPRdkEBeH
+	iMBvRolbz+awgjjMAv+ZJLbebmIHqRIWCJB4OP8UmM0ioCpx6Ng0FhCbV8BS4sKStYwQtqDE
+	j8n3wOLMQFPX7zzOBGHLS2xe85YZ4lQFiR1nXzOCXCcioCexbZc9RImIxL4X78COkBBYyCGx
+	9PZ2ZohdAhLfJh9igfhGVmLTAagxkhIHV9xgmcAoNgvJ5llINs9CsnkWkhULGFlWMYqmFiQX
+	FCelF5noFSfmFpfmpesl5+duYoTE/YQdjPcOWB9iTAZaP5FZSjQ5H5g28kriDY3NjCxMTUyN
+	jcwtzUgTVhLnVW+xDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAyJpTovjw4lXFJs0NTpGK
+	SpvOFvOtvun2L8PFb1b7r6mbPRzeJZ1rVn30/9XWyX1G/9WPzr3N/HmKKdfi2ZwVHdN2yHmx
+	XvvWLvbObs8/gz/9Kf4vbrJ7yvMvvn8tPkPViSl6iaPKnI9duRJnZyz5dH213tlL8ncadW89
+	m7T7dvY5/xQ599M3+JRYijMSDbWYi4oTAflix+kRAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNKsWRmVeSWpSXmKPExsVy+t9jAd2adOYgg0MvVC3u3D3HajH/CJB4
 	deQHk8WC/dYWnbM3sFv0LrjKZvHx1HF2i02Pr7FaXN41h81ixvl9TBYXVmxkt5iy6DCrxck/
 	vYwWLdd7mRz4PJ4cnMfkMbvhIovHnWt72DzOb1rD7LF5Sb3H5BvLGT36tqxi9Pi8Sc7jytEz
 	TAGcUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	xysplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM561vmYt2KBRsedLD1MD
-	Y5tiFyMnh4SAicSylgZmCFtM4sK99WxdjFwcQgKLGCWmTb7CDOH8ZZR4sesgC0gVm4CWxOq5
-	xxlBEiICvxklbj2bwwriMAv8Z5LYeruJHaRKWMBZ4tGxFjYQm0VAVWL23K1gO3gFLCUe7L7H
-	AmELSvyYDGEzA01dv/M4E4QtL7F5zVuomxQkdpx9zQhiiwjoSXx9swmqRkRi34t3jBMYBWYh
-	GTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwcnkmtYNxZYPFIUYB
-	DkYlHt6OAKYgIdbEsuLK3EOMEhzMSiK8F4uBQrwpiZVVqUX58UWlOanFhxiTgT6dyCwlmpwP
-	THx5JfGGxiZmRpZGZhZGJubmpAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp1cC4ff0Ldang
-	xJ4nH0t+bD9sL5BYF+x7r1b50+n5pwufrjOw0Wg7onHX2uXlq5nf/xdNkWFYH1Kp9+tjmPL9
-	VXo7rF5qW+trTY8o31vu6C3X6fcwzMV1C3PIu3e/10ftMDH0OrQ/z1/Spea/x+xJCoubjTlk
-	G8J1Vjrk7bi6J9jKY0bCUrn8AwJKLMUZiYZazEXFiQDz1z2zcgMAAA==
+	xysplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM058VylYKVJxfsFc9gbG
+	CwJdjBwcEgImEvtXhncxcgKZYhIX7q1n62Lk4hASWMQoMXH/CTaQhJDAX0aJXfPiQGw2AS2J
+	1XOPM4IUiQj8ZpS49WwOK4jDLPCfSWLr7SZ2kCphgQCJh/NPgdksAqoSh45NYwGxeQUsJS4s
+	WcsIYQtK/Jh8DyzODDR1/c7jTBC2vMTmNW+ZIU5SkNhx9jUjyKUiAnoS23bZQ5SISOx78Y5x
+	AqPALCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4qz6R2MK5s
+	sDjEKMDBqMTD2xHAFCTEmlhWXJl7iFGCg1lJhPdiMVCINyWxsiq1KD++qDQntfgQYzLQoxOZ
+	pUST84EJL68k3tDYxMzI0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGFsZ
+	+fadmnd5dYFm/5lWzkD9PdW8QbdbvndV2BupHfRZVzo9KcD8H3uMZMXpmSzbdFrrv8ouXKqU
+	taq6qe5m1MqpE1cun/bK8ntH/YMr+owdst2z1y35c0FISGdjkt7xSv6OrfK7nikt539cy/40
+	+Qt3ScWKpmczO/cIddxqeLomRNl5onJ4gBJLcUaioRZzUXEiAHwZNMNuAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -65,160 +65,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit removes custom fault handler. The device drivers that
-need to register fault handler can register
-with iommu_set_fault_handler().
+Runtime power management by exynos-iommu driver independently from
+master H/W's runtime pm is not useful for power saving since attaching
+master H/W in probing time turns on its local power endlessly.
+Thus this removes runtime pm API calls.
+Runtime PM support is added in the following commits to exynos-iommu
+driver.
 
-Reviewed-by: Grant Grundler <grundler@chromium.org>
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |   71 ++++++++++--------------------------------
- 1 files changed, 17 insertions(+), 54 deletions(-)
+ drivers/iommu/exynos-iommu.c |   20 --------------------
+ 1 files changed, 0 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 88b9139..e8f3e82 100644
+index e8f3e82..686e3c8 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -131,16 +131,6 @@ enum exynos_sysmmu_inttype {
- 	SYSMMU_FAULTS_NUM
- };
+@@ -491,15 +491,8 @@ int exynos_sysmmu_enable(struct device *dev, unsigned long pgtable)
  
--/*
-- * @itype: type of fault.
-- * @pgtable_base: the physical address of page table base. This is 0 if @itype
-- *                is SYSMMU_BUSERROR.
-- * @fault_addr: the device (virtual) address that the System MMU tried to
-- *             translated. This is 0 if @itype is SYSMMU_BUSERROR.
-- */
--typedef int (*sysmmu_fault_handler_t)(enum exynos_sysmmu_inttype itype,
--			unsigned long pgtable_base, unsigned long fault_addr);
--
- static unsigned short fault_reg_offset[SYSMMU_FAULTS_NUM] = {
- 	REG_PAGE_FAULT_ADDR,
- 	REG_AR_FAULT_ADDR,
-@@ -182,7 +172,6 @@ struct sysmmu_drvdata {
- 	int activations;
- 	rwlock_t lock;
- 	struct iommu_domain *domain;
--	sysmmu_fault_handler_t fault_handler;
- 	unsigned long pgtable;
- 	void __iomem *sfrbases[0];
- };
-@@ -318,34 +307,17 @@ finish:
- 	read_unlock_irqrestore(&data->lock, flags);
- }
+ 	BUG_ON(!memblock_is_memory(pgtable));
  
--static void __set_fault_handler(struct sysmmu_drvdata *data,
--					sysmmu_fault_handler_t handler)
--{
--	unsigned long flags;
--
--	write_lock_irqsave(&data->lock, flags);
--	data->fault_handler = handler;
--	write_unlock_irqrestore(&data->lock, flags);
--}
--
--void exynos_sysmmu_set_fault_handler(struct device *dev,
--					sysmmu_fault_handler_t handler)
--{
--	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
--
--	__set_fault_handler(data, handler);
--}
--
--static int default_fault_handler(enum exynos_sysmmu_inttype itype,
--		     unsigned long pgtable_base, unsigned long fault_addr)
-+static void show_fault_information(const char *name,
-+		enum exynos_sysmmu_inttype itype,
-+		unsigned long pgtable_base, unsigned long fault_addr)
- {
- 	unsigned long *ent;
- 
- 	if ((itype >= SYSMMU_FAULTS_NUM) || (itype < SYSMMU_PAGEFAULT))
- 		itype = SYSMMU_FAULT_UNKNOWN;
- 
--	pr_err("%s occurred at 0x%lx(Page table base: 0x%lx)\n",
--			sysmmu_fault_name[itype], fault_addr, pgtable_base);
-+	pr_err("%s occurred at 0x%lx by %s(Page table base: 0x%lx)\n",
-+		sysmmu_fault_name[itype], fault_addr, name, pgtable_base);
- 
- 	ent = section_entry(__va(pgtable_base), fault_addr);
- 	pr_err("\tLv1 entry: 0x%lx\n", *ent);
-@@ -358,16 +330,12 @@ static int default_fault_handler(enum exynos_sysmmu_inttype itype,
- 	pr_err("Generating Kernel OOPS... because it is unrecoverable.\n");
- 
- 	BUG();
--
--	return 0;
- }
- 
- static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- {
- 	/* SYSMMU is in blocked when interrupt occurred. */
- 	struct sysmmu_drvdata *data = dev_id;
--	struct resource *irqres;
--	struct platform_device *pdev;
- 	enum exynos_sysmmu_inttype itype;
- 	unsigned long addr = -1;
- 
-@@ -377,16 +345,17 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- 
- 	WARN_ON(!is_sysmmu_active(data));
- 
--	pdev = to_platform_device(data->sysmmu);
--	for (i = 0; i < (pdev->num_resources / 2); i++) {
--		irqres = platform_get_resource(pdev, IORESOURCE_IRQ, i);
-+	for (i = 0; i < data->nsfrs; i++) {
-+		struct resource *irqres;
-+		irqres = platform_get_resource(to_platform_device(data->sysmmu),
-+						IORESOURCE_IRQ, i);
- 		if (irqres && ((int)irqres->start == irq))
- 			break;
- 	}
- 
- 	clk_enable(data->clk_master);
- 
--	if (i == pdev->num_resources) {
-+	if (i == data->nsfrs) {
- 		itype = SYSMMU_FAULT_UNKNOWN;
- 	} else {
- 		itype = (enum exynos_sysmmu_inttype)
-@@ -402,19 +371,15 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- 		ret = report_iommu_fault(data->domain, data->dev,
- 				addr, itype);
- 
--	if ((ret == -ENOSYS) && data->fault_handler) {
--		unsigned long base = data->pgtable;
--		if (itype != SYSMMU_FAULT_UNKNOWN)
--			base = __raw_readl(
--					data->sfrbases[i] + REG_PT_BASE_ADDR);
--		ret = data->fault_handler(itype, base, addr);
+-	ret = pm_runtime_get_sync(data->sysmmu);
+-	if (ret < 0) {
+-		dev_dbg(data->sysmmu, "Failed to enable\n");
+-		return ret;
 -	}
 -
- 	if (!ret && (itype != SYSMMU_FAULT_UNKNOWN))
- 		__raw_writel(1 << itype, data->sfrbases[i] + REG_INT_CLEAR);
--	else
--		dev_dbg(data->sysmmu, "%s is not handled.\n",
--				sysmmu_fault_name[itype]);
-+	else {
-+		unsigned long ba = data->pgtable;
-+		if (itype != SYSMMU_FAULT_UNKNOWN)
-+			ba = __raw_readl(data->sfrbases[i] + REG_PT_BASE_ADDR);
-+		show_fault_information(dev_name(data->sysmmu),
-+					itype, ba, addr);
-+	}
+ 	ret = __exynos_sysmmu_enable(data, pgtable, NULL);
+ 	if (WARN_ON(ret < 0)) {
+-		pm_runtime_put(data->sysmmu);
+ 		dev_err(data->sysmmu,
+ 			"Already enabled with page table %#lx\n",
+ 			data->pgtable);
+@@ -516,7 +509,6 @@ static bool exynos_sysmmu_disable(struct device *dev)
+ 	bool disabled;
  
- 	if (itype != SYSMMU_FAULT_UNKNOWN)
- 		sysmmu_unblock(data->sfrbases[i]);
-@@ -663,8 +628,6 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
+ 	disabled = __exynos_sysmmu_disable(data);
+-	pm_runtime_put(data->sysmmu);
  
- 	pm_runtime_enable(dev);
+ 	return disabled;
+ }
+@@ -626,8 +618,6 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
+ 		}
+ 	}
  
--	__set_fault_handler(data, &default_fault_handler);
+-	pm_runtime_enable(dev);
 -
  	data->sysmmu = dev;
  	data->clk = devm_clk_get(dev, "sysmmu");
  	if (IS_ERR(data->clk)) {
+@@ -759,12 +749,6 @@ static int exynos_iommu_attach_device(struct iommu_domain *domain,
+ 	unsigned long flags;
+ 	int ret;
+ 
+-	ret = pm_runtime_get_sync(data->sysmmu);
+-	if (ret < 0)
+-		return ret;
+-
+-	ret = 0;
+-
+ 	spin_lock_irqsave(&priv->lock, flags);
+ 
+ 	ret = __exynos_sysmmu_enable(data, __pa(priv->pgtable), domain);
+@@ -781,7 +765,6 @@ static int exynos_iommu_attach_device(struct iommu_domain *domain,
+ 	if (ret < 0) {
+ 		dev_err(dev, "%s: Failed to attach IOMMU with pgtable %#lx\n",
+ 				__func__, __pa(priv->pgtable));
+-		pm_runtime_put(data->sysmmu);
+ 	} else if (ret > 0) {
+ 		dev_dbg(dev, "%s: IOMMU with pgtable 0x%lx already attached\n",
+ 					__func__, __pa(priv->pgtable));
+@@ -826,9 +809,6 @@ static void exynos_iommu_detach_device(struct iommu_domain *domain,
+ 
+ finish:
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+-
+-	if (found)
+-		pm_runtime_put(data->sysmmu);
+ }
+ 
+ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
 -- 
 1.7.2.5
 
