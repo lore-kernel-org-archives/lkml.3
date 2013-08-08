@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966096Ab3HHS2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 14:28:47 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:33910 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758051Ab3HHS2p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 14:28:45 -0400
+	id S966114Ab3HHS25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 14:28:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35576 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966076Ab3HHS2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 14:28:55 -0400
+Date: Thu, 8 Aug 2013 20:28:53 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] x86, AMD: cleanup: merge common code in early
+ microcode loading
+Message-ID: <20130808182853.GD27974@pd.tnic>
+References: <20130723230026.394a5ee1@googlemail.com>
+ <20130724133254.GE30777@pd.tnic>
+ <3E5A0FA7E9CA944F9D5414FEC6C712205A53B73A@ORSMSX106.amr.corp.intel.com>
+ <78b1bca9-80bb-4e60-af3a-738424babfd0@email.android.com>
+ <20130808100238.GA27974@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <1516548.d7oQuzQS7g@amdc1227>
-References: <002701ce941a$eecebdb0$cc6c3910$@samsung.com>
-	<1516548.d7oQuzQS7g@amdc1227>
-Date: Thu, 8 Aug 2013 11:28:44 -0700
-X-Google-Sender-Auth: G0EtLPxe2ouDjADSAdDvemUqPCQ
-Message-ID: <CANEJEGu1ponghpfvyUsQX16+TZWUV+0KXJ7AehjXpju2N_H+Ew@mail.gmail.com>
-Subject: Re: [PATCH v9 03/16] iommu/exynos: fix page table maintenance
-From: Grant Grundler <grundler@chromium.org>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Cho KyongHo <pullip.cho@samsung.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Subash Patel <supash.ramaswamy@linaro.org>,
-        Grant Grundler <grundler@chromium.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu, Sachin Kamat <sachin.kamat@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130808100238.GA27974@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tomasz,
+On Thu, Aug 08, 2013 at 12:02:38PM +0200, Borislav Petkov wrote:
+> On Wed, Aug 07, 2013 at 07:22:39PM -0700, H. Peter Anvin wrote:
+> > How much does this matter?
+> 
+> I know what you're asking :-)
+> 
+> And no, it doesn't really matter as we fail in the patch version check
+> so maybe only a comment will suffice here so that people don't get
+> confused.
 
-On Thu, Aug 8, 2013 at 6:54 AM, Tomasz Figa <t.figa@samsung.com> wrote:
-...
->> +     BUG_ON(lv1ent_section(sent));
->
-> Is this condition really a critical one, to the point that the system
-> should not continue execution?
->
-...
->>       if (lv1ent_page(sent)) {
->> -             if (*pgcnt != NUM_LV2ENTRIES)
->> -                     return -EADDRINUSE;
->> -
->> +             BUG_ON(*pgcnt != NUM_LV2ENTRIES);
->
-> Ditto.
+IOW, something like that:
 
-I can't speak to the previous BUG_ON(). I believe the EADDRESSINUSE
-failures could be either WARN_ON or BUG_ON.   This condition is
-clearly a bug in the generic IOMMU allocator and I think that's why
-KyongHo Cho used BUG_ON.
+---
+From: Borislav Petkov <bp@suse.de>
+Date: Thu, 8 Aug 2013 20:26:24 +0200
+Subject: [PATCH] x86, microcode: Clarify loading on the AP
 
-Handing out duplicate addresses will generally lead to some sort of
-data corruption or other fault depending on how robust the underlying
-device drivers are written.  So my preference is a BUG_ON to
-immediately flag this condition instead of hoping a device driver will
-correctly handling the dma mapping failure (Some do, most currently
-don't).
+Hold it down why we're calling the AP microcode loading routine on the
+BSP too, for future reference.
 
-WARN_ON() + return -EADDRESSINUSE would be a good alternative.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/kernel/cpu/common.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-thanks,
-grant
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 25eb2747b063..58d37a27d317 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1226,8 +1226,12 @@ void cpu_init(void)
+ 	int i;
+ 
+ 	/*
+-	 * Load microcode on this cpu if a valid microcode is available.
+-	 * This is early microcode loading procedure.
++	 * Load microcode on this cpu if a valid microcode is available. This
++	 * is early microcode loading procedure. We execute this on the BSP too
++	 * but since a microcode has been potentially already applied on the
++	 * BSP, we will return prematurely here. It is easier to simply call it
++	 * again than filtering all the possible cases when we're not running
++	 * on the BSP.
+ 	 */
+ 	load_ucode_ap();
+ 
+-- 
+1.8.3
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
