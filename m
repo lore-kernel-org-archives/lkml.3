@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab3HHWNi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 18:13:38 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:33033 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758174Ab3HHWNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 18:13:36 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
-Subject: Re: Cannot hot remove a memory device
-Date: Fri, 09 Aug 2013 00:12:22 +0200
-Message-ID: <13789925.vhhiTlyGIy@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1375982120.10300.212.camel@misato.fc.hp.com>
-References: <51FA1E41.20304@jp.fujitsu.com> <1375488280.10300.124.camel@misato.fc.hp.com> <1375982120.10300.212.camel@misato.fc.hp.com>
+	id S1758233Ab3HHWRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 18:17:30 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:53473 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758182Ab3HHWR2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 18:17:28 -0400
+Message-ID: <520418F5.2030804@codeaurora.org>
+Date: Thu, 08 Aug 2013 15:17:25 -0700
+From: Rohit Vaswani <rvaswani@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] [TRIVIAL] ARM: msm: fix compilation error in gpiomux
+References: <1375857279-18082-1-git-send-email-k.kozlowski@samsung.com> <20130807174053.GA17551@codeaurora.org> <20130807210804.GB14845@codeaurora.org> <1375943536.30982.1.camel@AMDC1943>
+In-Reply-To: <1375943536.30982.1.camel@AMDC1943>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 08, 2013 11:15:20 AM Toshi Kani wrote:
-> On Fri, 2013-08-02 at 18:04 -0600, Toshi Kani wrote:
-> > On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
-> > > On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
-> > > > On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
->  :
-> > > > I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
-> > > > handle is already set\n").  When two ACPI memory objects associate with
-> > > > a same memory block, the bind procedure of the 2nd ACPI memory object
-> > > > sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
-> > > 
-> > > That sound's plausible, but I wonder how we can fix that?
-> > > 
-> > > There's no way for a single physical device to have two different ACPI
-> > > "companions".  It looks like the memory blocks should be 64 M each in that
-> > > case.  Or we need to create two child devices for each memory block and
-> > > associate each of them with an ACPI object.  That would lead to complications
-> > > in the user space interface, though.
-> > 
-> > Right.  Even bigger issue is that I do not think __add_pages() and
-> > __remove_pages() can add / delete a memory chunk that is less than
-> > 128MB.  128MB is the granularity of them.  So, we may just have to fail
-> > this case gracefully.
-> 
-> FYI: I have submitted the patch blow to close this part of the issue...
-> 
-> https://lkml.org/lkml/2013/8/8/396
+On 8/7/2013 11:32 PM, Krzysztof Kozlowski wrote:
+> On śro, 2013-08-07 at 14:08 -0700, Stephen Boyd wrote:
+>> On 08/07, David Brown wrote:
+>>> On Wed, Aug 07, 2013 at 08:34:39AM +0200, Krzysztof Kozlowski wrote:
+>>>> Fix compilation error in gpiomux (CONFIG_MSM_GPIOMUX=y):
+>>>> arch/arm/mach-msm/gpiomux.c:24:13: error: static declaration of
+>>>> 	???__msm_gpiomux_write??? follows non-static declaration
+>>>> arch/arm/mach-msm/gpiomux.h:85:6: note: previous declaration of
+>>>> 	???__msm_gpiomux_write??? was here
+>>>>
+>>>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>>> Thanks, I'll pull this in.
+>>>
+>>>   <https://patchwork.kernel.org/patch/2839921/>
+>>>
+>> I believe this is fixed by Rohit's patch that has already been
+>> taken in a pull request?
+>>
+>> https://lkml.org/lkml/2013/7/26/608
+> Yes, Rohit's patch fixes the problem so this is already in linux-msm
+> tree.
+>
 
-That looks good to me, but we'd still need to make it possible to have
-memory blocks smaller than 128 MB ...
+David, please can you confirm which pull request has this patch ?
+> Best regards,
+> Krzysztof
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-Rafael
+
+Thanks,
+Rohit Vaswani
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
 
