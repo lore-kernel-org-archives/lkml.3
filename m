@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966560Ab3HHUrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:47:51 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:1482 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966546Ab3HHUrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 16:47:49 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-From: "Christian Daudt" <csd@broadcom.com>
-To: "Christian Daudt" <csd@broadcom.com>
-cc: "Chris Ball" <cjb@laptop.org>,
-        "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>,
-        "Shawn Guo" <shawn.guo@linaro.org>, linux-mmc@vger.kernel.org,
+	id S966568Ab3HHUvJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:51:09 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38020 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966544Ab3HHUvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 16:51:07 -0400
+Message-ID: <1375994967.29639.4.camel@concerto>
+Subject: Re: [PATCH 22/23] thp, mm: split huge page on mmap file page
+From: Khalid Aziz <khalid.aziz@oracle.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        Ning Qu <quning@google.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: change mmc_gpio_get_cd to call non-sleep gpio
-Date: Thu, 8 Aug 2013 13:47:34 -0700
-Message-ID: <1375994855-12472-1-git-send-email-csd@broadcom.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-X-WSS-ID: 7E1ADDF31R078647768-01-01
-Content-Type: text/plain
+Date: Thu, 08 Aug 2013 14:49:27 -0600
+In-Reply-To: <1375582645-29274-23-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
+	 <1375582645-29274-23-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Given that mmc_gpio_get_cd can be called in softirq
-context (by sdhci_tasklet_card -> sdhci_card_event ->
-sdhci_do_get_cd -> mmc_gpio_get_cd ), it is necessary
-for it to use gpio_get_value instead of
-gpio_get_value_cansleep
-Note that at present sdhci_card_event gets called both
-from mmc_gpio_cd_irqt and sdhci_tasklet_card, and from
-both it gets called immediately while the actual cd
-processing is debounced to 200ms later. I think that
-the better solution might be to move the sdhci_card_event
-callback into mmc_rescan and remove it from its 2
-present locations. That way the cd related callbacks
-are aligned with the actual cd detection code. I can
-submit a follow-up patch with these mods if that sounds
-like a better way to solve this.
+On Sun, 2013-08-04 at 05:17 +0300, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> We are not ready to mmap file-backed tranparent huge pages. Let's split
+> them on fault attempt.
+> 
+> Later we'll implement mmap() properly and this code path be used for
+> fallback cases.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  mm/filemap.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index ed65af5..f7857ef 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1743,6 +1743,8 @@ retry_find:
+>  			goto no_cached_page;
+>  	}
+>  
+> +	if (PageTransCompound(page))
+> +		split_huge_page(compound_trans_head(page));
 
-Signed-off-by: Christian Daudt <csd@broadcom.com>
+Since PageTransCompound(page) returns true for transparent huge pages as
+well as hugetlbfs pages, could this code split hugetlbfs pages on an
+mmap() on to hugetlbfs pages? hugetlbfs pages are not supposed to be
+split, right?
 
-diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
-index 3242351..897b298 100644
---- a/drivers/mmc/core/slot-gpio.c
-+++ b/drivers/mmc/core/slot-gpio.c
-@@ -87,7 +87,7 @@ int mmc_gpio_get_cd(struct mmc_host *host)
- 	if (!ctx || !gpio_is_valid(ctx->cd_gpio))
- 		return -ENOSYS;
- 
--	return !gpio_get_value_cansleep(ctx->cd_gpio) ^
-+	return !gpio_get_value(ctx->cd_gpio) ^
- 		!!(host->caps2 & MMC_CAP2_CD_ACTIVE_HIGH);
- }
- EXPORT_SYMBOL(mmc_gpio_get_cd);
--- 
-1.7.10.4
+>  	if (!lock_page_or_retry(page, vma->vm_mm, vmf->flags)) {
+>  		page_cache_release(page);
+>  		return ret | VM_FAULT_RETRY;
 
+--
+Khalid
 
