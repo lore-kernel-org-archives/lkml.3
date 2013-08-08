@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965952Ab3HHP0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 11:26:40 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:52154 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965891Ab3HHPZH (ORCPT
+	id S965925Ab3HHP0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 11:26:38 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:40190 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965893Ab3HHPZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 11:25:07 -0400
+	Thu, 8 Aug 2013 11:25:08 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk
 Cc: bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH 5/9] nfs: use check_submounts_and_drop()
-Date: Thu,  8 Aug 2013 17:24:46 +0200
-Message-Id: <1375975490-18673-6-git-send-email-miklos@szeredi.hu>
+        mszeredi@suse.cz
+Subject: [PATCH 6/9] sysfs: use check_submounts_and_drop()
+Date: Thu,  8 Aug 2013 17:24:47 +0200
+Message-Id: <1375975490-18673-7-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375975490-18673-1-git-send-email-miklos@szeredi.hu>
 References: <1375975490-18673-1-git-send-email-miklos@szeredi.hu>
@@ -33,34 +33,49 @@ Non-directories can also be mounted on.  And just like directories we don't
 want these to disappear with invalidation.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- fs/nfs/dir.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ fs/sysfs/dir.c | 20 ++++++++------------
+ 1 file changed, 8 insertions(+), 12 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index e474ca2b..7468735 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1135,14 +1135,13 @@ out_zap_parent:
- 	if (inode && S_ISDIR(inode->i_mode)) {
- 		/* Purge readdir caches. */
- 		nfs_zap_caches(inode);
--		/* If we have submounts, don't unhash ! */
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index e068e74..fde8856 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -297,7 +297,6 @@ static int sysfs_dentry_delete(const struct dentry *dentry)
+ static int sysfs_dentry_revalidate(struct dentry *dentry, unsigned int flags)
+ {
+ 	struct sysfs_dirent *sd;
+-	int is_dir;
+ 	int type;
+ 
+ 	if (flags & LOOKUP_RCU)
+@@ -341,18 +340,15 @@ out_bad:
+ 	 * is performed at its new name the dentry will be readded
+ 	 * to the dcache hashes.
+ 	 */
+-	is_dir = (sysfs_type(sd) == SYSFS_DIR);
+ 	mutex_unlock(&sysfs_mutex);
+-	if (is_dir) {
+-		/* If we have submounts we must allow the vfs caches
+-		 * to lie about the state of the filesystem to prevent
+-		 * leaks and other nasty things.
+-		 */
 -		if (have_submounts(dentry))
 -			goto out_valid;
- 		if (dentry->d_flags & DCACHE_DISCONNECTED)
- 			goto out_valid;
 -		shrink_dcache_parent(dentry);
- 	}
+-	}
 -	d_drop(dentry);
-+	/* If we have submounts, don't unhash ! */
++
++	/* If we have submounts we must allow the vfs caches
++	 * to lie about the state of the filesystem to prevent
++	 * leaks and other nasty things.
++	 */
 +	if (check_submounts_and_drop(dentry) != 0)
 +		goto out_valid;
 +
- 	dput(parent);
- 	dfprintk(LOOKUPCACHE, "NFS: %s(%s/%s) is invalid\n",
- 			__func__, dentry->d_parent->d_name.name,
+ 	return 0;
+ }
+ 
 -- 
 1.8.1.4
 
