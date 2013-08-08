@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934076Ab3HHCw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 22:52:57 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:55007 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934001Ab3HHCvv (ORCPT
+	id S934094Ab3HHCxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:53:07 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:38117 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934079Ab3HHCxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 22:51:51 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, mingo@kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 16/19] perf tool: Change perf_session__has_traces to actually check for tracepoints
-Date: Wed,  7 Aug 2013 22:50:58 -0400
-Message-Id: <1375930261-77273-17-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
-References: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
+	Wed, 7 Aug 2013 22:53:03 -0400
+Message-ID: <5203098F.908@linux.vnet.ibm.com>
+Date: Thu, 08 Aug 2013 08:29:27 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH  V12 0/14] Paravirtualized ticket spinlocks
+References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com> <52016412.1020608@zytor.com> <5201B6FB.5080807@linux.vnet.ibm.com> <5201D180.9080005@zytor.com> <5201ED01.7000803@linux.vnet.ibm.com>
+In-Reply-To: <5201ED01.7000803@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080802-9264-0000-0000-000004495F48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any event can have RAW data attribute set. The intent of the function is
-to determine if the session has tracepoints, so check for the type of each
-event explicitly.
+On 08/07/2013 12:15 PM, Raghavendra K T wrote:
+> On 08/07/2013 10:18 AM, H. Peter Anvin wrote:
+>> tip:master is not a stable branch; it is more like linux-next.  We need
+>> to figure out which topic branches are dependencies for this set.
+>
+> Okay. I 'll start looking at the branches that would get affected.
+> (Xen, kvm are obvious ones).
+> Please do let me know the branches I might have to check for.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/session.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+On Linus tree,
+I am seeing patch getting applied to arch/x86/Kconfig at some offset
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 0eada12..83bdcfa 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1401,12 +1401,15 @@ int perf_session__process_events(struct perf_session *self,
- 
- bool perf_session__has_traces(struct perf_session *session, const char *msg)
- {
--	if (!(perf_evlist__sample_type(session->evlist) & PERF_SAMPLE_RAW)) {
--		pr_err("No trace sample to read. Did you call 'perf %s'?\n", msg);
--		return false;
-+	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (evsel->attr.type == PERF_TYPE_TRACEPOINT)
-+			return true;
- 	}
- 
--	return true;
-+	pr_err("No trace sample to read. Did you call 'perf %s'?\n", msg);
-+	return false;
- }
- 
- int maps__set_kallsyms_ref_reloc_sym(struct map **maps,
--- 
-1.7.10.1
+Hunk #1 succeeded at 632 (offset -31 lines).
+Hunk #2 succeeded at 657 (offset -31 lines).
+
+since patches are based on -rc4, Xen, kvm should not have problem
+as pointed by Gleb, Konrad.
+I did not see change in tip's jumplabel/core-spinlock tree that would
+affect it.
+
+Peter, could you please point me to the conflict, so that I can help
+there which saves time and trouble to maintainers.
+
 
