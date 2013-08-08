@@ -1,97 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934108Ab3HHIqt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:46:49 -0400
-Received: from 19.mo4.mail-out.ovh.net ([87.98.179.66]:33099 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934009Ab3HHIqp (ORCPT
+	id S934139Ab3HHIrS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:47:18 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:58791 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933813Ab3HHIrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:46:45 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH 1/6] ARM: at91: prepare sama5 dt boards transition to common clk
-Date: Thu,  8 Aug 2013 10:46:31 +0200
-Message-Id: <1375951592-10867-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 6611002778854455475
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 8 Aug 2013 04:47:14 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Meerwald <p.meerwald@bct-electronic.com>
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH 1/3] leds-pca9633: Add support for PCA9634
+Date: Thu,  8 Aug 2013 10:47:02 +0200
+Message-Id: <1375951624-15186-2-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1375951624-15186-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1375951624-15186-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepare the transition to common clk for sama5 dt boards by
-replacing the timer init callback.
+Add support for PCA9634 chip, which belongs to the same family as the
+9633 but with support for 8 outputs instead of 4.
 
-Clocks registration cannot be done in early init callback (as formerly done
-by the old clk implementation) because it requires dynamic allocation
-which is not ready yet during early init.
-
-In the other hand, at91 clocks must be registered before
-at91sam926x_pit_init is called because PIT (Periodic Interval Timer) driver
-request the master clk (mck).
-
-A new function (at91sama5_dt_timer_init) is created to fullfil these needs.
-This function registers all at91 clks using the dt definition before
-calling the PIT init function.
-The device tree clock registration is enabled only if common clk is
-selected. Else the old clk registration is been done during
-at91_dt_initialize call.
-
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- arch/arm/mach-at91/board-dt-sama5.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/leds/Kconfig        |    7 ++--
+ drivers/leds/leds-pca9633.c |   74 +++++++++++++++++++++++++++++++------------
+ 2 files changed, 58 insertions(+), 23 deletions(-)
 
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index ad95f6a..10b6913 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -16,6 +16,7 @@
- #include <linux/of_irq.h>
- #include <linux/of_platform.h>
- #include <linux/phy.h>
-+#include <linux/clk-provider.h>
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index e43402d..023af58 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -280,12 +280,13 @@ config LEDS_PCA955X
+ 	  devices include PCA9550, PCA9551, PCA9552, and PCA9553.
  
- #include <asm/setup.h>
- #include <asm/irq.h>
-@@ -26,6 +27,13 @@
- #include "at91_aic.h"
- #include "generic.h"
+ config LEDS_PCA9633
+-	tristate "LED support for PCA9633 I2C chip"
++	tristate "LED support for PCA963x I2C chip"
+ 	depends on LEDS_CLASS
+ 	depends on I2C
+ 	help
+-	  This option enables support for LEDs connected to the PCA9633
+-	  LED driver chip accessed via the I2C bus.
++	  This option enables support for LEDs connected to the PCA963x
++	  LED driver chip accessed via the I2C bus. Supported
++	  devices include PCA9633 and PCA9634
  
-+static void __init sama5_dt_timer_init(void)
-+{
-+#if defined(CONFIG_COMMON_CLK)
-+	of_clk_init(NULL);
-+#endif
-+	at91sam926x_pit_init();
-+}
+ config LEDS_WM831X_STATUS
+ 	tristate "LED support for status LEDs on WM831x PMICs"
+diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
+index 9aae567..070358a 100644
+--- a/drivers/leds/leds-pca9633.c
++++ b/drivers/leds/leds-pca9633.c
+@@ -1,7 +1,9 @@
+ /*
+  * Copyright 2011 bct electronic GmbH
++ * Copyright 2013 Qtechnology/AS
+  *
+  * Author: Peter Meerwald <p.meerwald@bct-electronic.com>
++ * Author: Ricardo Ribalda <ricardo.ribalda@gmail.com>
+  *
+  * Based on leds-pca955x.c
+  *
+@@ -10,6 +12,7 @@
+  * directory of this archive for more details.
+  *
+  * LED driver for the PCA9633 I2C LED driver (7-bit slave address 0x62)
++ * LED driver for the PCA9634 I2C LED driver (7-bit slave address set by hw.)
+  *
+  */
  
- static const struct of_device_id irq_of_match[] __initconst = {
+@@ -33,20 +36,42 @@
+ #define PCA9633_MODE1		0x00
+ #define PCA9633_MODE2		0x01
+ #define PCA9633_PWM_BASE	0x02
+-#define PCA9633_LEDOUT		0x08
++
++enum pca9633_type {
++	pca9633,
++	pca9634,
++};
++
++struct pca9633_chipdef {
++	u8			ledout_base;
++	int			n_leds;
++};
++
++static struct pca9633_chipdef pca9633_chipdefs[] = {
++	[pca9633] = {
++		.ledout_base	= 0x8,
++		.n_leds		= 4,
++	},
++	[pca9634] = {
++		.ledout_base	= 0xc,
++		.n_leds		= 8,
++	},
++};
  
-@@ -77,7 +85,7 @@ static const char *sama5_dt_board_compat[] __initdata = {
+ static const struct i2c_device_id pca9633_id[] = {
+-	{ "pca9633", 0 },
++	{ "pca9633", pca9633 },
++	{ "pca9634", pca9634 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, pca9633_id);
  
- DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
- 	/* Maintainer: Atmel */
--	.init_time	= at91sam926x_pit_init,
-+	.init_time	= sama5_dt_timer_init,
- 	.map_io		= at91_map_io,
- 	.handle_irq	= at91_aic5_handle_irq,
- 	.init_early	= at91_dt_initialize,
+ struct pca9633_led {
+ 	struct i2c_client *client;
++	struct pca9633_chipdef *chipdef;
+ 	struct work_struct work;
+ 	enum led_brightness brightness;
+ 	struct led_classdev led_cdev;
+-	int led_num; /* 0 .. 3 potentially */
++	int led_num; /* 0 .. 7 potentially */
+ 	char name[32];
+ };
+ 
+@@ -54,24 +79,26 @@ static void pca9633_led_work(struct work_struct *work)
+ {
+ 	struct pca9633_led *pca9633 = container_of(work,
+ 		struct pca9633_led, work);
+-	u8 ledout = i2c_smbus_read_byte_data(pca9633->client, PCA9633_LEDOUT);
+-	int shift = 2 * pca9633->led_num;
++	u8 ledout_addr = pca9633->chipdef->ledout_base + (pca9633->led_num / 4);
++	u8 ledout;
++	int shift = 2 * (pca9633->led_num % 4);
+ 	u8 mask = 0x3 << shift;
+ 
++	ledout = i2c_smbus_read_byte_data(pca9633->client, ledout_addr);
+ 	switch (pca9633->brightness) {
+ 	case LED_FULL:
+-		i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
++		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
+ 			(ledout & ~mask) | (PCA9633_LED_ON << shift));
+ 		break;
+ 	case LED_OFF:
+-		i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
++		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
+ 			ledout & ~mask);
+ 		break;
+ 	default:
+ 		i2c_smbus_write_byte_data(pca9633->client,
+ 			PCA9633_PWM_BASE + pca9633->led_num,
+ 			pca9633->brightness);
+-		i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
++		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
+ 			(ledout & ~mask) | (PCA9633_LED_PWM << shift));
+ 		break;
+ 	}
+@@ -98,26 +125,30 @@ static int pca9633_probe(struct i2c_client *client,
+ {
+ 	struct pca9633_led *pca9633;
+ 	struct pca9633_platform_data *pdata;
++	struct pca9633_chipdef *chip;
+ 	int i, err;
+ 
++	chip = &pca9633_chipdefs[id->driver_data];
+ 	pdata = client->dev.platform_data;
+ 
+-	if (pdata) {
+-		if (pdata->leds.num_leds <= 0 || pdata->leds.num_leds > 4) {
+-			dev_err(&client->dev, "board info must claim at most 4 LEDs");
+-			return -EINVAL;
+-		}
++	if (pdata && (pdata->leds.num_leds < 1 ||
++				 pdata->leds.num_leds > chip->n_leds)) {
++		dev_err(&client->dev, "board info must claim 1-%d LEDs",
++								chip->n_leds);
++		return -EINVAL;
+ 	}
+ 
+-	pca9633 = devm_kzalloc(&client->dev, 4 * sizeof(*pca9633), GFP_KERNEL);
++	pca9633 = devm_kzalloc(&client->dev, chip->n_leds * sizeof(*pca9633),
++								GFP_KERNEL);
+ 	if (!pca9633)
+ 		return -ENOMEM;
+ 
+ 	i2c_set_clientdata(client, pca9633);
+ 
+-	for (i = 0; i < 4; i++) {
++	for (i = 0; i < chip->n_leds; i++) {
+ 		pca9633[i].client = client;
+ 		pca9633[i].led_num = i;
++		pca9633[i].chipdef = chip;
+ 
+ 		/* Platform data can specify LED names and default triggers */
+ 		if (pdata && i < pdata->leds.num_leds) {
+@@ -151,7 +182,9 @@ static int pca9633_probe(struct i2c_client *client,
+ 		i2c_smbus_write_byte_data(client, PCA9633_MODE2, 0x01);
+ 
+ 	/* Turn off LEDs */
+-	i2c_smbus_write_byte_data(client, PCA9633_LEDOUT, 0x00);
++	i2c_smbus_write_byte_data(client, chip->ledout_base, 0x00);
++	if (chip->n_leds > 4)
++		i2c_smbus_write_byte_data(client, chip->ledout_base + 1, 0x00);
+ 
+ 	return 0;
+ 
+@@ -169,10 +202,11 @@ static int pca9633_remove(struct i2c_client *client)
+ 	struct pca9633_led *pca9633 = i2c_get_clientdata(client);
+ 	int i;
+ 
+-	for (i = 0; i < 4; i++) {
+-		led_classdev_unregister(&pca9633[i].led_cdev);
+-		cancel_work_sync(&pca9633[i].work);
+-	}
++	for (i = 0; i < pca9633->chipdef->n_leds; i++)
++		if (pca9633[i].client != NULL) {
++			led_classdev_unregister(&pca9633[i].led_cdev);
++			cancel_work_sync(&pca9633[i].work);
++		}
+ 
+ 	return 0;
+ }
 -- 
-1.7.9.5
+1.7.10.4
 
