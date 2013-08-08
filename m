@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933953Ab3HHCvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 22:51:36 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:32828 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933925Ab3HHCva (ORCPT
+	id S933999Ab3HHCvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:51:48 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:46436 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933946Ab3HHCvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 22:51:30 -0400
+	Wed, 7 Aug 2013 22:51:45 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, mingo@kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
@@ -14,9 +14,9 @@ Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 08/19] perf symbol: Save vmlinux or kallsyms path loaded
-Date: Wed,  7 Aug 2013 22:50:50 -0400
-Message-Id: <1375930261-77273-9-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 14/19] perf sched: pass event to evsel handlers using data element
+Date: Wed,  7 Aug 2013 22:50:56 -0400
+Message-Id: <1375930261-77273-15-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
 References: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
@@ -24,10 +24,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save vmlinux or kallsyms path loaded using embedded default lookup (ie.,
-not a user specified path). Upcoming perf sched timehist command requires
-kernel symbols for properly computing idle times and prints a warning
-if the kernel symbols are not loaded.
+Upcoming timehist command needs access to the event. Use the existing
+handler.data element to do that.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -37,35 +35,30 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/util/symbol.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ tools/perf/builtin-sched.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index c655b9e..1f777f9 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1192,6 +1192,8 @@ int dso__load_vmlinux(struct dso *dso, struct map *map,
- 			dso->data_type = DSO_BINARY_TYPE__VMLINUX;
- 		dso__set_long_name(dso, (char *)vmlinux);
- 		dso__set_loaded(dso, map->type);
-+		if (symbol_conf.vmlinux_name == NULL)
-+			symbol_conf.vmlinux_name = strdup(symfs_vmlinux);
- 		pr_debug("Using %s for symbols\n", symfs_vmlinux);
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index f809cc7..1ec1ff4 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1415,7 +1415,7 @@ typedef int (*tracepoint_handler)(struct perf_tool *tool,
+ 				  struct machine *machine);
+ 
+ static int perf_sched__process_tracepoint_sample(struct perf_tool *tool __maybe_unused,
+-						 union perf_event *event __maybe_unused,
++						 union perf_event *event,
+ 						 struct perf_sample *sample,
+ 						 struct perf_evsel *evsel,
+ 						 struct machine *machine)
+@@ -1427,6 +1427,7 @@ static int perf_sched__process_tracepoint_sample(struct perf_tool *tool __maybe_
+ 
+ 	if (evsel->handler.func != NULL) {
+ 		tracepoint_handler f = evsel->handler.func;
++		evsel->handler.data = event;
+ 		err = f(tool, evsel, sample, machine);
  	}
  
-@@ -1325,8 +1327,11 @@ static int dso__load_kernel_sym(struct dso *dso, struct map *map,
- 
- do_kallsyms:
- 	err = dso__load_kallsyms(dso, kallsyms_filename, map, filter);
--	if (err > 0)
-+	if (err > 0) {
-+		if (symbol_conf.kallsyms_name == NULL)
-+			symbol_conf.kallsyms_name = strdup(kallsyms_filename);
- 		pr_debug("Using %s for symbols\n", kallsyms_filename);
-+	}
- 	free(kallsyms_allocated_filename);
- 
- 	if (err > 0 && !dso__is_kcore(dso)) {
 -- 
 1.7.10.1
 
