@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965037Ab3HHKZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:25:07 -0400
-Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:4914 "EHLO
-	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965013Ab3HHKZE (ORCPT
+	id S965031Ab3HHK25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 06:28:57 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40415 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964991Ab3HHK2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:25:04 -0400
-Message-ID: <520371E3.2010802@xs4all.nl>
-Date: Thu, 08 Aug 2013 12:24:35 +0200
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	Thu, 8 Aug 2013 06:28:55 -0400
+Date: Thu, 8 Aug 2013 11:28:32 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
+Message-ID: <20130808102832.GT6427@sirena.org.uk>
 MIME-Version: 1.0
-To: =?UTF-8?B?Sm9uIEFybmUgSsO4cmdlbnNlbg==?= <jonarne@jonarne.no>
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.chehab@samsung.com, hans.verkuil@cisco.com,
-        prabhakar.csengg@gmail.com, laurent.pinchart@ideasonboard.com,
-        andriy.shevchenko@linux.intel.com, ezequiel.garcia@free-electrons.com,
-        timo.teras@iki.fi
-Subject: Re: [RFC v4 0/3] saa7115: Implement i2c_board_info.platform_data
-References: <1375535977-28913-1-git-send-email-jonarne@jonarne.no>
-In-Reply-To: <1375535977-28913-1-git-send-email-jonarne@jonarne.no>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FxsMg9mYBDvYslEH"
+Content-Disposition: inline
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] spi fix for v3.11
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2013 03:19 PM, Jon Arne Jørgensen wrote:
-> This patch set adds handling of the i2c_board_info struct to the saa7115 driver.
-> The main goal of this patch is to give the different devices with the gm7113c
-> chip an opportunity to configure the chip to their needs.
-> 
-> I've only implemented the overrides I know are necessary to get the stk1160
-> and the smi2021 drivers to work.
-> 
-> This is the forth version of this patch series.
-> There are only minor changes since version 3 of this patch series.
-> I've mostly just changed some comments, and removed some debug statements
-> in the last patch in the series.
-> 
-> The third version of the RFC was posted on 2013/7/4 and can be found here:
-> http://lkml.indiana.edu/hypermail/linux/kernel/1307.0/01931.html
-> 
-> The second version of the RFC was posted on 2013/5/31 and can be found here:
-> http://lkml.indiana.edu/hypermail/linux/kernel/1305.3/03747.html
-> 
-> The first version of the RFC can be found here:
-> https://lkml.org/lkml/2013/5/29/558
-> 
-> Jon Arne Jørgensen (3):
->   saa7115: Fix saa711x_set_v4lstd for gm7113c
->   saa7115: Do not load saa7115_init_misc for gm7113c
->   saa7115: Implement i2c_board_info.platform_data
-> 
->  drivers/media/i2c/saa7115.c      | 167 +++++++++++++++++++++++++++++++--------
->  drivers/media/i2c/saa711x_regs.h |  19 +++++
->  include/media/saa7115.h          |  64 +++++++++++++++
->  3 files changed, 216 insertions(+), 34 deletions(-)
-> 
 
-For this patch series:
+--FxsMg9mYBDvYslEH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+The following changes since commit 5ae90d8e467e625e447000cb4335c4db973b1095:
 
-I'll merge this Monday at the latest.
+  Linux 3.11-rc3 (2013-07-28 20:53:33 -0700)
 
-	Hans
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git tags/spi-v3.11-rc4
+
+for you to fetch changes up to 89c66ee890af18500fa4598db300cc07c267f900:
+
+  spi: spi-davinci: Fix direction in dma_map_single() (2013-07-29 20:27:54 +0100)
+
+----------------------------------------------------------------
+spi: Simple fix for davinci
+
+Just one update for SPI, a simple fix to the davinci driver to correct
+the direction for which DMA is mapped following the dmaengine
+conversion.
+
+----------------------------------------------------------------
+Christian Eggers (1):
+      spi: spi-davinci: Fix direction in dma_map_single()
+
+ drivers/spi/spi-davinci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--FxsMg9mYBDvYslEH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSA3LNAAoJELSic+t+oim93S8QAIrszkekJv8twZY+yo9uadYD
+R0NPlst/u0miF/y00NGzhifuFQsy+FjtZNDZHNlwkdzxrL+qTkXpWsoz1xNPOQI+
+0+J8S3LnCwTYp43yl6XXzJw3m3nLPphGs9NzVIYP1iKr36Cns40MnZMgcV+jY0hG
+hDON7gRrfQYtfhEG3oGDDGSB9gueDhli+1WENA+j0fMeIRL6aSsX5xgf+7+lLRoM
+Zje8uQd4YRv2nAAZCPeh1qL9E3JgN/uRUtAVLk1KgFLqQIw3c9hgx5tlGFl4W1t1
+eY05AGiAi727QxKAJQJClaxeqFXd+eCzg7aELu9MkcBNMp6rb+/DPxLG6sigd0o2
+xOWMoGBEvOy+8nUHucEi7+cSkQ55fnn9WEx/PDE4aIVNPinzenBUyHi42/UF6C3X
+5H4ZpUoOScYhuC4PG5HY4GIqSHUB8GEUDIVhBKoOvOf//cSKJ6XPZha9MFKnNd7w
+qqniGYPG9J4g+L5c8ZDbSOp79vqdgFKEPp2loJ6A6IMIf53uIxpXzLFjo/SoxYzc
+uwJrjymtO9lbOFLaCMRaNG29qqV2vnjDJC2dyZATqVNajGcMAyWXmzWE2G2J4BHs
+ik0foTZxUxdrYJuZ4qclUHmGvEO1NVz5oGIjQWPL2j6t4p9dO4WW0zxzVldX8lld
+usCAHKXmvfwbLl5hAv+5
+=uhrL
+-----END PGP SIGNATURE-----
+
+--FxsMg9mYBDvYslEH--
