@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966600Ab3HHVCF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 17:02:05 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:50184
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S966576Ab3HHVCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 17:02:04 -0400
-X-Greylist: delayed 921 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 17:02:03 EDT
-Date: Thu, 8 Aug 2013 16:49:27 -0400
-From: Philip R Auld <pauld@egenera.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <pauld@egenera.com>
-Subject: 3.11.0-rc4 wireless and networkmanager stopped working
-Message-ID: <20130808204927.GB25383@annuminas.egenera.com>
-MIME-Version: 1.0
+	id S966612Ab3HHVCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 17:02:33 -0400
+Received: from server506d.appriver.com ([50.56.144.156]:63516 "EHLO
+	server506.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S966586Ab3HHVCb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 17:02:31 -0400
+X-Note-AR-ScanTimeLocal: 8/8/2013 4:02:30 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-Virus-Scan: V-
+X-Note-SnifferID: 0
+X-Note: TCH-CT/SI:0-200/SG:2 8/8/2013 4:01:59 PM
+X-GBUdb-Analysis: 0, 10.242.229.139, Ugly c=1 p=-0.964472 Source White
+X-Signature-Violations: 0-0-0-4387-c
+X-Note-419: 15.6011 ms. Fail:0 Chk:1343 of 1343 total
+X-Note: SCH-CT/SI:0-1343/SG:1 8/8/2013 4:02:13 PM
+X-Note: Spam Tests Failed: 
+X-Country-Path: PRIVATE->PRIVATE->UNITED STATES
+X-Note-Sending-IP: 10.242.229.139
+X-Note-Reverse-DNS: 
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G319 G320 G321 G322 G326 G327 G434 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: VALID
+X-Note: Headers Injected
+Subject: Re: [PATCH] aoe: adjust ref of head for compound page tails
+MIME-Version: 1.0 (Apple Message framework v1085)
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [209.92.242.194]
-X-ClientProxiedBy: CO1PR06CA007.namprd06.prod.outlook.com (10.242.160.17) To
- BLUPR07MB116.namprd07.prod.outlook.com (10.242.200.16)
-X-Forefront-PRVS: 093290AD39
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(164054003)(199002)(189002)(33656001)(83072001)(46406003)(65816001)(47446002)(52956002)(81542001)(23726002)(47736001)(81686001)(51856001)(76786001)(80022001)(46386002)(16406001)(66066001)(83322001)(50986001)(49866001)(74876001)(69226001)(42186004)(54356001)(76482001)(47976001)(4396001)(53806001)(74706001)(45336002)(77982001)(74366001)(59766001)(79102001)(81342001)(46102001)(76796001)(74502001)(63696002)(47776003)(31966008)(50466002)(76176001)(74662001)(56776001)(56816003)(80976001)(77096001)(54316002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR07MB116;H:annuminas.egenera.com;CLIP:209.92.242.194;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: egenera.com
+From: Ed Cashin <ecashin@coraid.com>
+In-Reply-To: <20130808125629.a5d6a55638743e2deee43065@linux-foundation.org>
+Date: Thu, 8 Aug 2013 17:02:27 -0400
+CC: <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-ID: <2B226FB4-EC31-48EF-AD3E-2B25047A89E8@coraid.com>
+References: <cover.1375320764.git.ecashin@coraid.com> <0c8aff39249c1da6b9cc3356650149d065c3ebd2.1375320764.git.ecashin@coraid.com> <20130807140021.57a40fb31807f16b525f6ff3@linux-foundation.org> <EB4C2185-3868-42A3-A88D-F9642962D336@coraid.com> <20130807142647.6614d3ec88a7af12cba4505a@linux-foundation.org> <782613DB-4C38-450C-BBC2-E14FA64D44AC@coraid.com> <20130807163507.954590c479a07886a8ae6cb1@linux-foundation.org> <FA421A63-C90D-42A2-B5A3-0B55AB22673F@coraid.com> <20130807170548.b4bb3355d3aec8f280c7feff@linux-foundation.org> <6E6337F8-28E9-4361-A7E5-063C6AFFE5BD@coraid.com> <20130808125629.a5d6a55638743e2deee43065@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1085)
+X-Rerouted-By-Exchange: 
+X-Rerouted-By-Exchange: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, 
+On Aug 8, 2013, at 3:56 PM, Andrew Morton wrote:
 
-    Wireless networking on my opensuse 12.3 system has been changing in recent
-kernels. Initially, I used an ifup style setup. That stopped worked around 3.5
-or 3.6. When that happened I switched to networkmanager and it worked... for
-a while.
+> On Wed, 7 Aug 2013 20:50:09 -0400 Ed Cashin <ecashin@coraid.com> wrote:
+...
+>> When the workaround was created, it was with the assumption that the zero-count pages are not always tail pages, and that seemed to be the case in 2007, but as I said, I don't have a mechanism for detecting that now, so I cannot say whether it really happens with today's kernel.
+> 
+> It sounds we should pull out all that code and retest.  It shouldn't be
+> needed - if this results in some failure then I suspect core MM will
+> need changes.
 
-That stopped working as well at, I think, 3.8 (I did not use 3.7). 
-At that point I reverted to the vendor kernel. 
+OK.  I'll look into that.  It sure would be nice to get rid of it.
 
-At 3.11.0-rc3 I udpated my tree and built it again - same .config (modulo
-changes for new entries) and lo and behold wifi started working.
+> Why don't you have a "mechanism for detecting that"?  It's a matter of
+> pointing AOE at some hugetlb pages?
 
-Today I updated to 3.11.0-rc4 and again built with the same basic .config
-and it's back to where it was before. 
+No, I was testing with hugetlb pages already.  But there are many use case combinations, and I meant that aoe has no mechanism that has been in the aoe code all these years to catch specific (possibly rare) use cases that result in zero-count pages.  It would be something like this:
 
-Something between rc3 and rc4 re-breaks networkmanager. 
++static void
++check_page_counts(struct bio *bio)
++{
++       struct bio_vec *bv;
++       int n;
++       int i;
++
++       bio_for_each_segment(bv, bio, i) {
++               n = page_count(bv->bv_page);
++               WARN_ONCE(n <= 0,
++                       "aoe: page %d in bio has non-positive count %d\n",
++                       i, n);
++       }
++}
 
-Fwiw, the symptom is a failure to get an IP. It claims to find the 
-base station and iwconfig output looks reasonable. The DHCP never 
-completes.
+I'll add that when I try testing without the page count manipulation.
 
-Fwiw it's an iwl3945.
-
-Just switching back and forth between rc3 and rc4 makes it work or not.
-No other changes. 
+-- 
+  Ed Cashin
+  ecashin@coraid.com
 
 
-
-Thanks,
-
-
-Phil
