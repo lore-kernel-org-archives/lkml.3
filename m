@@ -1,186 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933993Ab3HHID2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:03:28 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:34301 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933852Ab3HHIA3 (ORCPT
+	id S934005Ab3HHIKi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:10:38 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:4720 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933982Ab3HHIKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:00:29 -0400
-From: Milo Kim <woogyom.kim@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Milo Kim <milo.kim@ti.com>
-Subject: [PATCH 03/10] leds: lp5521: restore legacy device attributes
-Date: Thu,  8 Aug 2013 16:59:47 +0900
-Message-Id: <1375948794-6286-4-git-send-email-milo.kim@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
-References: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
+	Thu, 8 Aug 2013 04:10:34 -0400
+Message-ID: <52035270.3010409@huawei.com>
+Date: Thu, 8 Aug 2013 16:10:24 +0800
+From: "Peter Huang(Peng)" <peter.huangpeng@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: <linux-kernel@vger.kernel.org>, <linqiangmin@huawei.com>,
+        <luonengjun@huawei.com>, Majun <harry.majun@huawei.com>
+CC: <oscar.zhangbo@huawei.com>
+Subject: Does PVOPS guest os support online "suspend/resume"?
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.68.207]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git commit 9ce7cb170f97f83a78dc948bf7d25690f15e1328
-may cause an application confict, engineN_mode and engineN_load.
-This interface should be maintained for compatibility.
+While suspend and resume a PVOPS guest os while it's running, we found that it
+would get its block/net io stucked. However, non-PVOPS guest os has no such
+problem.
 
-Restored device attributes are 'engineN_mode' and 'engineN_load'.
-A 'selftest' attribute macro is replaced with LP55xx common macro.
+In non-PVOPS guest os, although they don't have blkfront SUSPEND method either,
+their xen-driver doesn't resume blkfront device, thus, they would't have any problem
+after suspend/resume.
 
-Use a mutex in lp5521_update_program_memory()
-: This function is called when an user-application writes a 'engineN_load' file
-or pattern data is loaded from generic firmware interface.
-So, writing program memory should be protected.
-If an error occurs on accessing this area, just it returns as -EINVAL quickly.
-This error code is exact same as old driver function, lp5521_do_store_load()
-because it should be kept for an user-application compatibility.
-Even the driver is changed, we can use the application without re-compiling
-sources.
 
-'led_pattern' attribute is not included
-: engineN_mode and _load were created for custom user-application.
-'led_pattern' is an exception. I added this attribute not for custom application
-but for simple test. Now it is used only in LP5562 driver, not LP5521.
+I'm wondering why the 2 types of driver(PVOPS and non-PVOPS) are different here.
+Is that because:
+1) PVOPS kernel doesn't take this situation into accont, and has a bug here?
+or
+2) PVOPS has other ways to avoid such problem?
 
-Signed-off-by: Milo Kim <milo.kim@ti.com>
----
- drivers/leds/leds-lp5521.c |  104 ++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 100 insertions(+), 4 deletions(-)
+thank you in advance.
 
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 9e28dd0..c00f922 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -251,10 +251,20 @@ static int lp5521_update_program_memory(struct lp55xx_chip *chip,
- 		goto err;
- 
- 	program_size = i;
--	for (i = 0; i < program_size; i++)
--		lp55xx_write(chip, addr[idx] + i, pattern[i]);
- 
--	return 0;
-+	mutex_lock(&chip->lock);
-+
-+	for (i = 0; i < program_size; i++) {
-+		ret = lp55xx_write(chip, addr[idx] + i, pattern[i]);
-+		if (ret) {
-+			mutex_unlock(&chip->lock);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	mutex_unlock(&chip->lock);
-+
-+	return size;
- 
- err:
- 	dev_err(&chip->cl->dev, "wrong pattern format\n");
-@@ -365,6 +375,80 @@ static void lp5521_led_brightness_work(struct work_struct *work)
- 	mutex_unlock(&chip->lock);
- }
- 
-+static ssize_t show_engine_mode(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf, int nr)
-+{
-+	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
-+	struct lp55xx_chip *chip = led->chip;
-+	enum lp55xx_engine_mode mode = chip->engines[nr - 1].mode;
-+
-+	switch (mode) {
-+	case LP55XX_ENGINE_RUN:
-+		return sprintf(buf, "run\n");
-+	case LP55XX_ENGINE_LOAD:
-+		return sprintf(buf, "load\n");
-+	case LP55XX_ENGINE_DISABLED:
-+	default:
-+		return sprintf(buf, "disabled\n");
-+	}
-+}
-+show_mode(1)
-+show_mode(2)
-+show_mode(3)
-+
-+static ssize_t store_engine_mode(struct device *dev,
-+				 struct device_attribute *attr,
-+				 const char *buf, size_t len, int nr)
-+{
-+	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
-+	struct lp55xx_chip *chip = led->chip;
-+	struct lp55xx_engine *engine = &chip->engines[nr - 1];
-+
-+	mutex_lock(&chip->lock);
-+
-+	chip->engine_idx = nr;
-+
-+	if (!strncmp(buf, "run", 3)) {
-+		lp5521_run_engine(chip, true);
-+		engine->mode = LP55XX_ENGINE_RUN;
-+	} else if (!strncmp(buf, "load", 4)) {
-+		lp5521_stop_engine(chip);
-+		lp5521_load_engine(chip);
-+		engine->mode = LP55XX_ENGINE_LOAD;
-+	} else if (!strncmp(buf, "disabled", 8)) {
-+		lp5521_stop_engine(chip);
-+		engine->mode = LP55XX_ENGINE_DISABLED;
-+	}
-+
-+	mutex_unlock(&chip->lock);
-+
-+	return len;
-+}
-+store_mode(1)
-+store_mode(2)
-+store_mode(3)
-+
-+static ssize_t store_engine_load(struct device *dev,
-+			     struct device_attribute *attr,
-+			     const char *buf, size_t len, int nr)
-+{
-+	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
-+	struct lp55xx_chip *chip = led->chip;
-+
-+	mutex_lock(&chip->lock);
-+
-+	chip->engine_idx = nr;
-+	lp5521_load_engine(chip);
-+
-+	mutex_unlock(&chip->lock);
-+
-+	return lp5521_update_program_memory(chip, buf, len);
-+}
-+store_load(1)
-+store_load(2)
-+store_load(3)
-+
- static ssize_t lp5521_selftest(struct device *dev,
- 			       struct device_attribute *attr,
- 			       char *buf)
-@@ -381,9 +465,21 @@ static ssize_t lp5521_selftest(struct device *dev,
- }
- 
- /* device attributes */
--static DEVICE_ATTR(selftest, S_IRUGO, lp5521_selftest, NULL);
-+static LP55XX_DEV_ATTR_RW(engine1_mode, show_engine1_mode, store_engine1_mode);
-+static LP55XX_DEV_ATTR_RW(engine2_mode, show_engine2_mode, store_engine2_mode);
-+static LP55XX_DEV_ATTR_RW(engine3_mode, show_engine3_mode, store_engine3_mode);
-+static LP55XX_DEV_ATTR_WO(engine1_load, store_engine1_load);
-+static LP55XX_DEV_ATTR_WO(engine2_load, store_engine2_load);
-+static LP55XX_DEV_ATTR_WO(engine3_load, store_engine3_load);
-+static LP55XX_DEV_ATTR_RO(selftest, lp5521_selftest);
- 
- static struct attribute *lp5521_attributes[] = {
-+	&dev_attr_engine1_mode.attr,
-+	&dev_attr_engine2_mode.attr,
-+	&dev_attr_engine3_mode.attr,
-+	&dev_attr_engine1_load.attr,
-+	&dev_attr_engine2_load.attr,
-+	&dev_attr_engine3_load.attr,
- 	&dev_attr_selftest.attr,
- 	NULL
- };
--- 
-1.7.9.5
+reproduce steps:
+-------------------
+1/1
+
+Steps to reproduce:
+------------------
+1)suspend guest os
+Note: do not migrate/shutdown the guest os.
+2)resume guest os
+
+(Think about rolling-back(resume) during core-dumping(suspend) a guest, such
+problem would cause the guest os unoprationable.)
+
+====================================================================
+we found warning messages in guest os:
+--------------------------------------------------------------------
+Aug 2 10:17:34 localhost kernel: [38592.985159] platform pcspkr: resume
+Aug 2 10:17:34 localhost kernel: [38592.989890] platform vesafb.0: resume
+Aug 2 10:17:34 localhost kernel: [38592.996075] input input0: type resume
+Aug 2 10:17:34 localhost kernel: [38593.001330] input input1: type resume
+Aug 2 10:17:34 localhost kernel: [38593.005496] vbd vbd-51712: legacy resume
+Aug 2 10:17:34 localhost kernel: [38593.011506] WARNING: g.e. still in use!
+Aug 2 10:17:34 localhost kernel: [38593.016909] WARNING: leaking g.e. and page still in use!
+Aug 2 10:17:34 localhost kernel: [38593.026204] xen vbd-51760: legacy resume
+Aug 2 10:17:34 localhost kernel: [38593.033070] vif vif-0: legacy resume
+Aug 2 10:17:34 localhost kernel: [38593.039327] WARNING: g.e. still in use!
+Aug 2 10:17:34 localhost kernel: [38593.045304] WARNING: leaking g.e. and page still in use!
+Aug 2 10:17:34 localhost kernel: [38593.052101] WARNING: g.e. still in use!
+Aug 2 10:17:34 localhost kernel: [38593.057965] WARNING: leaking g.e. and page still in use!
+Aug 2 10:17:34 localhost kernel: [38593.066795] serial8250 serial8250: resume
+Aug 2 10:17:34 localhost kernel: [38593.073556] input input2: type resume
+Aug 2 10:17:34 localhost kernel: [38593.079385] platform Fixed MDIO bus.0: resume
+Aug 2 10:17:34 localhost kernel: [38593.086285] usb usb1: type resume
+------------------------------------------------------
+
+which means that we refers to a grant-table while it's in use.
+
+The reason results in that:
+suspend/resume codes:
+--------------------------------------------------------
+//drivers/xen/manage.c
+static void do_suspend(void)
+{
+int err;
+struct suspend_info si;
+
+shutting_down = SHUTDOWN_SUSPEND;
+
+………………
+err = dpm_suspend_start(PMSG_FREEZE);
+………………
+dpm_resume_start(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
+
+if (err) {
+pr_err("failed to start xen_suspend: %d\n", err);
+si.cancelled = 1;
+}
+//NOTE: si.cancelled = 1
+
+out_resume:
+if (!si.cancelled) {
+xen_arch_resume();
+xs_resume();
+} else
+xs_suspend_cancel();
+
+dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE); //blkfront device got resumed here.
+
+out_thaw:
+#ifdef CONFIG_PREEMPT
+thaw_processes();
+out:
+#endif
+shutting_down = SHUTDOWN_INVALID;
+}
+------------------------------------
+
+Func "dpm_suspend_start" suspends devices, and "dpm_resume_end" resumes devices.
+However, we found that the device "blkfront" has no SUSPEND method but RESUME method.
+
+-------------------------------------
+//drivers/block/xen-blkfront.c
+static DEFINE_XENBUS_DRIVER(blkfront, ,
+.probe = blkfront_probe,
+.remove = blkfront_remove,
+.resume = blkfront_resume, // only RESUME method found here.
+.otherend_changed = blkback_changed,
+.is_ready = blkfront_is_ready,
+);
+--------------------------------------
+
+It resumes blkfront device when it didn't get suspended, which caused the prolem above.
+
+
+=========================================
+In order to check whether it's the problem of PVOPS or hypervisor(xen)/dom0, we suspend/resume
+other non-PVOPS guest oses, no such problem occured.
+
+Other non-PVOPS are using their own xen drivers, as shown in https://github.com/jpaton/xen-4.1-LJX1/
+blob/master/unmodified_drivers/linux-2.6/platform-pci/machine_reboot.c :
+
+int __xen_suspend(int fast_suspend, void (*resume_notifier)(int))
+{
+int err, suspend_cancelled, nr_cpus;
+struct ap_suspend_info info;
+
+xenbus_suspend();
+
+……………………
+preempt_enable();
+
+if (!suspend_cancelled)
+xenbus_resume(); //when the guest os get resumed, suspend_cancelled == 1, thus it wouldn't
+enter xenbus_resume_uvp here.
+else
+xenbus_suspend_cancel(); //It gets here. so the blkfront wouldn't resume.
+
+return 0;
+}
+
+
 
