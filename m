@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966537Ab3HHUpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:45:10 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47869 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966438Ab3HHUpJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 16:45:09 -0400
-Date: Thu, 8 Aug 2013 23:44:55 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Paul McQuade <paulmcquad@gmail.com>
-Cc: gregkh@linuxfoundation.org, Linux-Devel <devel@driverdev.osuosl.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] Staging: BCM: Removed more whitespace/Errors
-Message-ID: <20130808204455.GC5502@mwanda>
-References: <5203CF75.802@gmail.com>
+	id S966560Ab3HHUrv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:47:51 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:1482 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966546Ab3HHUrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 16:47:49 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+From: "Christian Daudt" <csd@broadcom.com>
+To: "Christian Daudt" <csd@broadcom.com>
+cc: "Chris Ball" <cjb@laptop.org>,
+        "Guennadi Liakhovetski" <g.liakhovetski@gmx.de>,
+        "Shawn Guo" <shawn.guo@linaro.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mmc: change mmc_gpio_get_cd to call non-sleep gpio
+Date: Thu, 8 Aug 2013 13:47:34 -0700
+Message-ID: <1375994855-12472-1-git-send-email-csd@broadcom.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5203CF75.802@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-WSS-ID: 7E1ADDF31R078647768-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 06:03:49PM +0100, Paul McQuade wrote:
-> -int InterfaceFileDownload( PVOID psIntfAdapter,
-> -                        struct file *flp,
-> -                        unsigned int on_chip_loc);
-> +int InterfaceFileDownload(PVOID psIntfAdapter,
-> +						struct file *flp,
-> +						unsigned int on_chip_loc);
+Given that mmc_gpio_get_cd can be called in softirq
+context (by sdhci_tasklet_card -> sdhci_card_event ->
+sdhci_do_get_cd -> mmc_gpio_get_cd ), it is necessary
+for it to use gpio_get_value instead of
+gpio_get_value_cansleep
+Note that at present sdhci_card_event gets called both
+from mmc_gpio_cd_irqt and sdhci_tasklet_card, and from
+both it gets called immediately while the actual cd
+processing is debounced to 200ms later. I think that
+the better solution might be to move the sdhci_card_event
+callback into mmc_rescan and remove it from its 2
+present locations. That way the cd related callbacks
+are aligned with the actual cd detection code. I can
+submit a follow-up patch with these mods if that sounds
+like a better way to solve this.
+
+Signed-off-by: Christian Daudt <csd@broadcom.com>
+
+diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
+index 3242351..897b298 100644
+--- a/drivers/mmc/core/slot-gpio.c
++++ b/drivers/mmc/core/slot-gpio.c
+@@ -87,7 +87,7 @@ int mmc_gpio_get_cd(struct mmc_host *host)
+ 	if (!ctx || !gpio_is_valid(ctx->cd_gpio))
+ 		return -ENOSYS;
+ 
+-	return !gpio_get_value_cansleep(ctx->cd_gpio) ^
++	return !gpio_get_value(ctx->cd_gpio) ^
+ 		!!(host->caps2 & MMC_CAP2_CD_ACTIVE_HIGH);
+ }
+ EXPORT_SYMBOL(mmc_gpio_get_cd);
+-- 
+1.7.10.4
 
 
-The very first line in this patch is totally wrong...  :(
-
-This is an automated patch.  I'm not going to review any further.
-Automated patches create a problem for reviews because they are
-far harder to review than they are to generate.  I'm not sure what
-the solution is...
-
-Anyway, the patch is very wrong.
-
-regards,
-dan carpenter
