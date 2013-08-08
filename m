@@ -1,109 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965769Ab3HHPCx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 11:02:53 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34846 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965294Ab3HHPCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 11:02:51 -0400
-Date: Thu, 8 Aug 2013 17:02:49 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Laszlo Ersek <lersek@redhat.com>
-Cc: edk2-devel@lists.sourceforge.net, David Woodhouse <dwmw2@infradead.org>,
-        linux-efi@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        "Jordan Justen (Intel address)" <jordan.l.justen@intel.com>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130808150249.GB27974@pd.tnic>
-References: <51FFC19A.1020204@redhat.com>
- <20130805161247.GF31845@pd.tnic>
- <51FFD5B0.9080000@redhat.com>
- <20130805164731.GG31845@pd.tnic>
- <52001896.1030509@redhat.com>
- <20130805220808.GC14067@pd.tnic>
- <20130806141036.GD14891@pd.tnic>
- <520116D1.2010000@redhat.com>
- <20130807151935.GJ17920@pd.tnic>
- <5202889C.2080608@redhat.com>
+	id S965771Ab3HHPGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 11:06:55 -0400
+Received: from mail-ye0-f172.google.com ([209.85.213.172]:45009 "EHLO
+	mail-ye0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965702Ab3HHPGy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 11:06:54 -0400
+Date: Thu, 8 Aug 2013 12:06:47 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 07/19] perf top: Use new idle_sym check
+Message-ID: <20130808150647.GB6102@ghostprotocols.net>
+References: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
+ <1375930261-77273-8-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <5202889C.2080608@redhat.com>
+In-Reply-To: <1375930261-77273-8-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 07:49:16PM +0200, Laszlo Ersek wrote:
+Em Wed, Aug 07, 2013 at 10:50:49PM -0400, David Ahern escreveu:
+> Avoids strcmp processing each sample.
 
-[â€¦]
+How so? This is done just when loading a DSO, when then each symbol is
+checked against this list.
 
-> Now, lines 01 to 05 *do not happen*.
->
-> More precisely, they don't happen in the kernel. They happen in the
-> firmware. Specifically, "OvmfPkg/Library/LoadLinuxLib/Linux.c".
->
-> You're booting the kernel from the qemu command line. The kernel you
-> run is also an "[o]ld kernel[] without EFI handover protocol". So what
-> happens is, OVMF downloads the kernel image from qemu over fw_cfg,
-> figures it's an old kernel...
+Tangentially, Frédéric, wasn't there a patchset from you that marks the
+context of idle samples, in perf_event_header->misc, additiotally to
+PERF_RECORD_MISC_KERNEL, etc? I think there were some for IRQ context as
+well, right?
 
-Right, I think this is easier than having to go into the EFI shell each
-time and run bzImage.efi. Unless there's a faster way to do that along
-with passing it kernel command line parameters...
+- Arnaldo
 
-[â€¦]
-
-> In one sentence, efi_memblock_x86_reserve_range() expects that
-> "boot_params.efi_info->efi_memmap" has been allocated as "loader data"
-> (by whomever), but SetupLinuxMemmap() violates this by allocating the
-> storage as "boot services data".
->
-> This leads to double reservation attempts between
-> efi_memblock_x86_reserve_range(), and efi_reserve_boot_services().
-
-Ok, this makes sense.
-
-> The attached edk2 patch should fix it. Please confirm.
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>  tools/perf/builtin-top.c |   25 ++-----------------------
+>  1 file changed, 2 insertions(+), 23 deletions(-)
 > 
-> Thanks,
-> Laszlo
-> 
-
-> From 4a9e1f10fa2d06496f1983c25c47c6a1373d2f42 Mon Sep 17 00:00:00 2001
-> From: Laszlo Ersek <lersek@redhat.com>
-> Date: Wed, 7 Aug 2013 19:39:30 +0200
-> Subject: [PATCH] OvmfPkg: allocate the EFI memory map for Linux as Loader Data
-> 
-> In Linux, efi_memblock_x86_reserve_range() and efi_reserve_boot_services()
-> expect that whoever allocates the EFI memmap allocates it in Loader Data
-> type memory. Linux's own exit_boot()-->low_alloc() complies, but
-> SetupLinuxMemmap() in LoadLinuxLib doesn't.
-> 
-> The memory type discrepancy leads to efi_memblock_x86_reserve_range() and
-> efi_reserve_boot_services() both trying to reserve the range backing the
-> memmap, resulting in memmap entry truncation in
-> efi_reserve_boot_services().
-> 
-> This fix also makes this allocation consistent with all other persistent
-> allocations in  "OvmfPkg/Library/LoadLinuxLib/Linux.c".
-> 
-> Contributed-under: TianoCore Contribution Agreement 1.0
-> 
-> Signed-off-by: Laszlo Ersek <lersek@redhat.com>
-
-Reported-and-tested-by: Borislav Petkov <bp@suse.de>
-
-Great, thanks for this.
-
-I guess we got that out of the way too. I finally can concentrate on my
-patches again :-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index 440c3b3..8eb0e3a 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -634,26 +634,9 @@ repeat:
+>  	return NULL;
+>  }
+>  
+> -/* Tag samples to be skipped. */
+> -static const char *skip_symbols[] = {
+> -	"intel_idle",
+> -	"default_idle",
+> -	"native_safe_halt",
+> -	"cpu_idle",
+> -	"enter_idle",
+> -	"exit_idle",
+> -	"mwait_idle",
+> -	"mwait_idle_with_hints",
+> -	"poll_idle",
+> -	"ppc64_runlatch_off",
+> -	"pseries_dedicated_idle_sleep",
+> -	NULL
+> -};
+> -
+>  static int symbol_filter(struct map *map __maybe_unused, struct symbol *sym)
+>  {
+>  	const char *name = sym->name;
+> -	int i;
+>  
+>  	/*
+>  	 * ppc64 uses function descriptors and appends a '.' to the
+> @@ -671,12 +654,8 @@ static int symbol_filter(struct map *map __maybe_unused, struct symbol *sym)
+>  	    strstr(name, "_text_end"))
+>  		return 1;
+>  
+> -	for (i = 0; skip_symbols[i]; i++) {
+> -		if (!strcmp(skip_symbols[i], name)) {
+> -			sym->ignore = true;
+> -			break;
+> -		}
+> -	}
+> +	if (symbol__is_idle(sym))
+> +		sym->ignore = true;
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.7.10.1
