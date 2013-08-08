@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933684Ab3HHGQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 02:16:33 -0400
-Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:53148 "EHLO
+	id S1756401Ab3HHGSR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 02:18:17 -0400
+Received: from 7.mo4.mail-out.ovh.net ([178.33.253.54]:52912 "EHLO
 	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932632Ab3HHGQc (ORCPT
+	with ESMTP id S1755067Ab3HHGSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 02:16:32 -0400
+	Thu, 8 Aug 2013 02:18:15 -0400
+X-Greylist: delayed 7033 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 02:18:15 EDT
 From: Boris BREZILLON <b.brezillon@overkiz.com>
 To: Grant Likely <grant.likely@linaro.org>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
@@ -22,13 +23,13 @@ Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Boris BREZILLON <b.brezillon@overkiz.com>
 X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH v3 10/19] ARM: at91/dt: add system clk id definitions in dt-bindings include dir
-Date: Thu,  8 Aug 2013 08:15:04 +0200
-Message-Id: <1375942504-9010-1-git-send-email-b.brezillon@overkiz.com>
+Subject: [PATCH v3 11/19] clk: at91: add PMC peripheral clocks
+Date: Thu,  8 Aug 2013 08:16:51 +0200
+Message-Id: <1375942611-9048-1-git-send-email-b.brezillon@overkiz.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
 References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 4054084090394671152
+X-Ovh-Tracer-Id: 4083076013160298544
 X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
 X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
 X-OVH-SPAMSTATE: OK
@@ -42,92 +43,479 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds system clk ids definitions into dt-bindinds include dir
-(include/dt-bindings/clk/at91/'soc-name'/system-clk.h).
+This patch adds new at91 peripheral clock implementation using common clk
+framework.
 
-These definitions will be used by dt definition to define and reference
-system clks.
+Almost all peripherals provided by at91 SoCs need a clock to work properly.
+This clock is enabled/disabled using PCER/PCDR resgisters.
+
+Each peripheral is given an id (see atmel's datasheets) which is used to
+define and reference peripheral clocks.
+
+Some new SoCs (at91sam9x5 and sama5d3) provide a new register (PCR) where you
+can configure the peripheral clock as a division of the master clock.
+This will help reducing the peripherals power comsumption.
 
 Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 ---
- .../dt-bindings/clk/at91/at91rm9200/clk-system.h   |   16 +++++++++++++++
- .../dt-bindings/clk/at91/at91sam9261/clk-system.h  |   15 ++++++++++++++
- include/dt-bindings/clk/at91/common/clk-system.h   |   21 ++++++++++++++++++++
- 3 files changed, 52 insertions(+)
- create mode 100644 include/dt-bindings/clk/at91/at91rm9200/clk-system.h
- create mode 100644 include/dt-bindings/clk/at91/at91sam9261/clk-system.h
- create mode 100644 include/dt-bindings/clk/at91/common/clk-system.h
+ drivers/clk/at91/Makefile         |    2 +-
+ drivers/clk/at91/clk-peripheral.c |  401 +++++++++++++++++++++++++++++++++++++
+ drivers/clk/at91/pmc.c            |    9 +
+ drivers/clk/at91/pmc.h            |    5 +
+ 4 files changed, 416 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/at91/clk-peripheral.c
 
-diff --git a/include/dt-bindings/clk/at91/at91rm9200/clk-system.h b/include/dt-bindings/clk/at91/at91rm9200/clk-system.h
+diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+index c2b7068..04deba3 100644
+--- a/drivers/clk/at91/Makefile
++++ b/drivers/clk/at91/Makefile
+@@ -4,4 +4,4 @@
+ 
+ obj-y += pmc.o
+ obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
+-obj-y += clk-system.o
++obj-y += clk-system.o clk-peripheral.o
+diff --git a/drivers/clk/at91/clk-peripheral.c b/drivers/clk/at91/clk-peripheral.c
 new file mode 100644
-index 0000000..43bccd5
+index 0000000..1612739
 --- /dev/null
-+++ b/include/dt-bindings/clk/at91/at91rm9200/clk-system.h
-@@ -0,0 +1,16 @@
++++ b/drivers/clk/at91/clk-peripheral.c
+@@ -0,0 +1,401 @@
 +/*
-+ * This header provides constants for AT91RM9200 system clocks.
++ * drivers/clk/at91/clk-peripheral.c
 + *
-+ * The constants defined in this header are being used in dts.
++ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
 + */
 +
-+#ifndef _DT_BINDINGS_CLK_AT91RM9200_SYSTEM_H
-+#define _DT_BINDINGS_CLK_AT91RM9200_SYSTEM_H
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/clk/at91_pmc.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/io.h>
 +
-+#include <dt-bindings/clk/at91/common/system-clk.h>
++#include "pmc.h"
 +
-+#define AT91RM9200_UDP_SYS_CLK		1
-+#define AT91RM9200_MCKUDP_SYS_CLK	2
-+#define AT91RM9200_UHP_SYS_CLK		4
++#define PERIPHERAL_MAX		64
 +
-+#endif
-diff --git a/include/dt-bindings/clk/at91/at91sam9261/clk-system.h b/include/dt-bindings/clk/at91/at91sam9261/clk-system.h
-new file mode 100644
-index 0000000..28a140a
---- /dev/null
-+++ b/include/dt-bindings/clk/at91/at91sam9261/clk-system.h
-@@ -0,0 +1,15 @@
-+/*
-+ * This header provides constants for AT91SAM9261 system clocks.
-+ *
-+ * The constants defined in this header are being used in dts.
-+ */
++#define PERIPHERAL_AT91RM9200	0
++#define PERIPHERAL_AT91SAM9X5	1
 +
-+#ifndef _DT_BINDINGS_CLK_AT91SAM9261_SYSTEM_H
-+#define _DT_BINDINGS_CLK_AT91SAM9261_SYSTEM_H
++#define to_clk_peripheral(hw) container_of(hw, struct clk_peripheral, hw)
++struct clk_peripheral {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	u32 id;
++};
 +
-+#include <dt-bindings/clk/at91/common/system-clk.h>
++#define to_clk_sam9x5_peripheral(hw) \
++	container_of(hw, struct clk_sam9x5_peripheral, hw)
++struct clk_sam9x5_peripheral {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	u32 id;
++	u8 div;
++	u8 have_div_support;
++};
 +
-+#define AT91SAM9261_HCK0_SYS_CLK	16
-+#define AT91SAM9261_HCK1_SYS_CLK	17
++static int clk_peripheral_enable(struct clk_hw *hw)
++{
++	struct clk_peripheral *periph = to_clk_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	int offset = AT91_PMC_PCER;
 +
-+#endif
-diff --git a/include/dt-bindings/clk/at91/common/clk-system.h b/include/dt-bindings/clk/at91/common/clk-system.h
-new file mode 100644
-index 0000000..c0fb124
---- /dev/null
-+++ b/include/dt-bindings/clk/at91/common/clk-system.h
-@@ -0,0 +1,21 @@
-+/*
-+ * This header provides constants for AT91 system clocks.
-+ *
-+ * The constants defined in this header are being used in dts.
-+ */
++	if (periph->id < 2)
++		return 0;
++	if (periph->id > 31)
++		offset = AT91_PMC_PCER1;
++	pmc_write(pmc, offset, 1 << (periph->id & 31));
++	return 0;
++}
 +
-+#ifndef _DT_BINDINGS_CLK_AT91_SYSTEM_H
-+#define _DT_BINDINGS_CLK_AT91_SYSTEM_H
++static void clk_peripheral_disable(struct clk_hw *hw)
++{
++	struct clk_peripheral *periph = to_clk_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	int offset = AT91_PMC_PCDR;
 +
-+#define AT91_PCK_SYS_CLK	0
-+#define AT91_DDRCK_SYS_CLK	2
-+#define AT91_LCDCK_SYS_CLK	3
-+#define AT91_SMDCK_SYS_CLK	4
-+#define AT91_UHP_SYS_CLK	6
-+#define AT91_UDP_SYS_CLK	7
++	if (periph->id < 2)
++		return;
++	if (periph->id > 31)
++		offset = AT91_PMC_PCDR1;
++	pmc_write(pmc, offset, 1 << (periph->id & 31));
++}
 +
-+#define AT91_PROG_SYS_CLK(id)	(8 + id)
++static int clk_peripheral_is_enabled(struct clk_hw *hw)
++{
++	struct clk_peripheral *periph = to_clk_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	int offset = AT91_PMC_PCSR;
 +
-+#define AT91_MAX_SYS_CLKS	32
++	if (periph->id < 2)
++		return 1;
++	if (periph->id > 31)
++		offset = AT91_PMC_PCSR1;
++	return !!(pmc_read(pmc, offset) & (1 << (periph->id & 31)));
++}
 +
-+#endif
++static const struct clk_ops peripheral_ops = {
++	.enable = clk_peripheral_enable,
++	.disable = clk_peripheral_disable,
++	.is_enabled = clk_peripheral_is_enabled,
++};
++
++static struct clk * __init
++at91_clk_register_peripheral(struct at91_pmc *pmc, const char *name,
++			     const char *parent_name, u32 id)
++{
++	struct clk_peripheral *periph;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	if (!pmc || !name || !parent_name)
++		return ERR_PTR(-EINVAL);
++
++	id &= 31;
++	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
++	if (!periph)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &peripheral_ops;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++	init.flags = 0;
++
++	periph->id = id;
++	periph->hw.init = &init;
++	periph->pmc = pmc;
++
++	clk = clk_register(NULL, &periph->hw);
++	if (IS_ERR(clk))
++		kfree(periph);
++
++	return clk;
++}
++
++static int clk_sam9x5_peripheral_enable(struct clk_hw *hw)
++{
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++
++	if (periph->id < 2)
++		return 0;
++	pmc_write(pmc, AT91_PMC_PCR,
++		       (periph->id & AT91_PMC_PCR_PID) |
++		       AT91_PMC_PCR_CMD |
++		       AT91_PMC_PCR_DIV(periph->div) |
++		       AT91_PMC_PCR_EN);
++	return 0;
++}
++
++static void clk_sam9x5_peripheral_disable(struct clk_hw *hw)
++{
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++
++	if (periph->id < 2)
++		return;
++
++	pmc_write(pmc, AT91_PMC_PCR,
++		       (periph->id & AT91_PMC_PCR_PID) |
++		       AT91_PMC_PCR_CMD);
++}
++
++static int clk_sam9x5_peripheral_is_enabled(struct clk_hw *hw)
++{
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	int ret;
++
++	if (periph->id < 2)
++		return 1;
++	pmc_lock(pmc);
++	pmc_write(pmc, AT91_PMC_PCR,
++		  (periph->id & AT91_PMC_PCR_PID));
++	ret = !!(pmc_read(pmc, AT91_PMC_PCR) & AT91_PMC_PCR_EN);
++	pmc_unlock(pmc);
++
++	return ret;
++}
++
++static unsigned long
++clk_sam9x5_peripheral_recalc_rate(struct clk_hw *hw,
++				  unsigned long parent_rate)
++{
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	struct at91_pmc *pmc = periph->pmc;
++	u32 shift;
++
++	if (periph->id < 2 || !periph->have_div_support)
++		return parent_rate;
++	pmc_lock(pmc);
++	pmc_write(pmc, AT91_PMC_PCR,
++		       (periph->id & AT91_PMC_PCR_PID));
++	shift = (pmc_read(pmc, AT91_PMC_PCR) >> 16) & 0x3;
++	pmc_unlock(pmc);
++	return parent_rate >> shift;
++}
++
++static long clk_sam9x5_peripheral_round_rate(struct clk_hw *hw,
++					     unsigned long rate,
++					     unsigned long *parent_rate)
++{
++	int shift;
++	unsigned long best_rate;
++	unsigned long best_diff;
++	unsigned long cur_rate;
++	unsigned long cur_diff;
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++
++	if (periph->id < 2 || !periph->have_div_support)
++		return *parent_rate;
++	if (rate >= *parent_rate)
++		return rate;
++	best_diff = *parent_rate - rate;
++	best_rate = *parent_rate;
++	for (shift = 1; shift < 4; shift++) {
++		cur_rate = *parent_rate >> shift;
++		if (cur_rate < rate)
++			cur_diff = rate - cur_rate;
++		else
++			cur_diff = cur_rate - rate;
++		if (cur_diff < best_diff) {
++			best_diff = cur_diff;
++			best_rate = cur_rate;
++		}
++		if (!best_diff || cur_rate < rate)
++			break;
++	}
++	return best_rate;
++}
++
++static int clk_sam9x5_peripheral_set_rate(struct clk_hw *hw,
++					  unsigned long rate,
++					  unsigned long parent_rate)
++{
++	int shift;
++	struct clk_sam9x5_peripheral *periph = to_clk_sam9x5_peripheral(hw);
++	if (periph->id < 2 || !periph->have_div_support) {
++		if (parent_rate == rate)
++			return 0;
++		else
++			return -EINVAL;
++	}
++
++	for (shift = 0; shift < 4; shift++) {
++		if (parent_rate >> shift == rate) {
++			periph->div = shift;
++			return 0;
++		}
++	}
++
++	return -EINVAL;
++}
++
++static const struct clk_ops sam9x5_peripheral_ops = {
++	.enable = clk_sam9x5_peripheral_enable,
++	.disable = clk_sam9x5_peripheral_disable,
++	.is_enabled = clk_sam9x5_peripheral_is_enabled,
++	.recalc_rate = clk_sam9x5_peripheral_recalc_rate,
++	.round_rate = clk_sam9x5_peripheral_round_rate,
++	.set_rate = clk_sam9x5_peripheral_set_rate,
++};
++
++static struct clk * __init
++at91_clk_register_sam9x5_peripheral(struct at91_pmc *pmc, const char *name,
++				    const char *parent_name, u32 id,
++				    u32 default_div)
++{
++	struct clk_sam9x5_peripheral *periph;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	if (!pmc || !name || !parent_name)
++		return ERR_PTR(-EINVAL);
++
++	periph = kzalloc(sizeof(*periph), GFP_KERNEL);
++	if (!periph)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &sam9x5_peripheral_ops;
++	init.parent_names = (parent_name ? &parent_name : NULL);
++	init.num_parents = (parent_name ? 1 : 0);
++	init.flags = CLK_SET_RATE_GATE;
++
++	periph->id = id;
++	periph->hw.init = &init;
++	periph->div = default_div;
++	periph->pmc = pmc;
++
++	clk = clk_register(NULL, &periph->hw);
++
++	if (IS_ERR(clk))
++		kfree(periph);
++
++	return clk;
++}
++
++struct clk_periph_data {
++	struct clk **clks;
++	u8 *ids;
++	unsigned int clk_num;
++};
++
++static struct clk * __init
++of_clk_src_periph_get(struct of_phandle_args *clkspec, void *data)
++{
++	struct clk_periph_data *clk_data = data;
++	unsigned int id = clkspec->args[0];
++	int i;
++
++	if (id >= PERIPHERAL_MAX)
++		goto err;
++
++	for (i = 0; i < clk_data->clk_num; i++) {
++		if (clk_data->ids[i] == id)
++			return clk_data->clks[i];
++	}
++
++err:
++	pr_err("%s: invalid clock id %d\n", __func__, id);
++	return ERR_PTR(-EINVAL);
++}
++
++static void __init
++of_at91_clk_periph_setup(struct device_node *np, struct at91_pmc *pmc, u8 type)
++{
++	int num;
++	int i;
++	u32 id;
++	struct clk *clk;
++	const char *parent_name;
++	const char *name;
++	u32 divisor;
++	struct clk **clks;
++	u8 *ids;
++	struct clk_periph_data *clktab;
++	struct device_node *periphclknp;
++
++	parent_name = of_clk_get_parent_name(np, 0);
++	if (!parent_name)
++		return;
++
++	num = of_get_child_count(np);
++	if (!num || num > PERIPHERAL_MAX)
++		return;
++
++	clktab = kzalloc(sizeof(*clktab), GFP_KERNEL);
++	if (!clktab)
++		return;
++
++	ids = kzalloc(num * sizeof(*ids), GFP_KERNEL);
++	if (!ids)
++		goto out_free_clktab;
++
++	clks = kzalloc(num * sizeof(*clks), GFP_KERNEL);
++	if (!clks)
++		goto out_free_ids;
++
++	i = 0;
++	for_each_child_of_node(np, periphclknp) {
++		name = periphclknp->name;
++
++		if (of_property_read_u32(periphclknp, "atmel,clk-id", &id))
++			goto out_free_clks;
++		if (id >= PERIPHERAL_MAX)
++			goto out_free_clks;
++
++		if (type == PERIPHERAL_AT91RM9200) {
++			clk = at91_clk_register_peripheral(pmc, name,
++							   parent_name, id);
++		} else {
++			if (of_property_read_u32(periphclknp,
++						 "atmel,clk-default-divisor",
++						 &divisor))
++				divisor = 0;
++
++			clk = at91_clk_register_sam9x5_peripheral(pmc, name,
++								  parent_name,
++								  id,
++								  divisor);
++		}
++		if (IS_ERR(clk))
++			goto out_free_clks;
++
++		clks[i] = clk;
++		ids[i++] = id;
++	}
++
++	clktab->clk_num = num;
++	clktab->clks = clks;
++	clktab->ids = ids;
++	of_clk_add_provider(np, of_clk_src_periph_get, clktab);
++	return;
++
++out_free_clks:
++	kfree(clks);
++out_free_ids:
++	kfree(ids);
++out_free_clktab:
++	kfree(clktab);
++}
++
++void __init of_at91rm9200_clk_periph_setup(struct device_node *np,
++					   struct at91_pmc *pmc)
++{
++	of_at91_clk_periph_setup(np, pmc, PERIPHERAL_AT91RM9200);
++}
++
++void __init of_at91sam9x5_clk_periph_setup(struct device_node *np,
++					   struct at91_pmc *pmc)
++{
++	of_at91_clk_periph_setup(np, pmc, PERIPHERAL_AT91SAM9X5);
++}
+diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+index c674ef2..1a56f1c 100644
+--- a/drivers/clk/at91/pmc.c
++++ b/drivers/clk/at91/pmc.c
+@@ -256,6 +256,15 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
+ 		.compatible = "atmel,at91rm9200-clk-system",
+ 		.data = of_at91rm9200_clk_sys_setup,
+ 	},
++	/* Peripheral clocks */
++	{
++		.compatible = "atmel,at91rm9200-clk-peripheral",
++		.data = of_at91rm9200_clk_periph_setup,
++	},
++	{
++		.compatible = "atmel,at91sam9x5-clk-peripheral",
++		.data = of_at91sam9x5_clk_periph_setup,
++	},
+ 	{ /*sentinel*/ }
+ };
+ 
+diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+index f88ef41..08c30fb 100644
+--- a/drivers/clk/at91/pmc.h
++++ b/drivers/clk/at91/pmc.h
+@@ -77,4 +77,9 @@ extern void __init of_at91sam9x5_clk_master_setup(struct device_node *np,
+ extern void __init of_at91rm9200_clk_sys_setup(struct device_node *np,
+ 					       struct at91_pmc *pmc);
+ 
++extern void __init of_at91rm9200_clk_periph_setup(struct device_node *np,
++						  struct at91_pmc *pmc);
++extern void __init of_at91sam9x5_clk_periph_setup(struct device_node *np,
++						  struct at91_pmc *pmc);
++
+ #endif /* __PMC_H_ */
 -- 
 1.7.9.5
 
