@@ -1,105 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab3HHNmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:42:31 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:17433 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3HHNm3 (ORCPT
+	id S965123Ab3HHNnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:43:43 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:59885 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757836Ab3HHNnk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:42:29 -0400
-X-AuditID: cbfec7f4-b7f5f6d000000ff6-b8-5203a0430ce4
-From: Tomasz Figa <t.figa@samsung.com>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v9 01/16] iommu/exynos: do not include removed header
-Date: Thu, 08 Aug 2013 15:42:24 +0200
-Message-id: <21505674.fdNgPGp76O@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-reply-to: <002501ce941a$e3d87f40$ab897dc0$@samsung.com>
-References: <002501ce941a$e3d87f40$ab897dc0$@samsung.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42I5/e/4VV3nBcxBBt/nClvcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
-	h1ktTv7pZbRoud7L5MDv8eTgPCaP2Q0XWTzuXNvD5nF+0xpmj81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4Mro+djEXLCSp+LCZtMGxkauLkZODgkBE4lpLW1MELaY
-	xIV769m6GLk4hASWMkosOvkAyulikvjRNpcZpIpNQE3ic8MjNhBbREBD4vOV9awgNrPADxaJ
-	T9v4QGxhAU+Jh5MbWUBsFgFViSczb4DV8ApoSVycdBZsG7+AusS7bU+BbA4OUQE3iQkf80HC
-	nAJWEifn7QRbJSRgKdH75xMTRKugxI/J91ggVslL7Ns/FWqtlsT6nceZJjAKzkJSNgtJ2Swk
-	ZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihMTblx2Mi49ZHWIU4GBU4uHtCGAKEmJN
-	LCuuzD3EKMHBrCTC+yKLOUiINyWxsiq1KD++qDQntfgQIxMHp1QDI1dBvoXDgr8RTiHX4hL0
-	+i8YfJv5LVfv1lV9A8/MCZzLP1/lnaC2Xtm3Q/TkQemV+doPFlr7npuqzHPl0O7b+YvaO3T7
-	lzcXvuk+adRkH/xt3jO5G4s25ZyomjfzpG8GQ/bKzW0rM6Zs2zY3lW1rdzS/eanSbN3Np9fy
-	H13cNKW0MDRnx7e47UosxRmJhlrMRcWJAPSbcBmVAgAA
+	Thu, 8 Aug 2013 09:43:40 -0400
+Date: Thu, 08 Aug 2013 08:43:37 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [RFC v02 1/5] PowerCap: Documentation
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, rjw@sisk.pl,
+        arjan@linux.intel.com, len.brown@intel.com,
+        jacob.jun.pan@linux.intel.com, corbet@lwn.net, joe@perches.com,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+In-Reply-To: <1375891965-6921-2-git-send-email-srinivas.pandruvada@linux.intel.com>
+	(from srinivas.pandruvada@linux.intel.com on Wed Aug  7 11:12:41 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1375969417.2737.0@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KyongHo,
-
-On Thursday 08 of August 2013 18:37:25 Cho KyongHo wrote:
-> This commit remove <mach/sysmmu.h> which is removed.
-
-I would prefer a more meaningful commit message, something among following 
-lines:
-
-8<---
-Commit 25e9d28d92 (ARM: EXYNOS: remove system mmu initialization from 
-exynos tree) removed arch/arm/mach-exynos/mach/sysmmu.h header without 
-removing remaining use of it from exynos-iommu driver, thus causing a 
-compilation error.
-
-This patch fixes the error by removing respective include line from exynos-
-iommu.c.
---->8
-
-Also a sentence explaining why linux/kernel.h header must be included would 
-be nice.
-
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-
-Please note that as far as I'm aware of, tags should be made using western 
-name writing convention, i.e. starting with first name.
-
-Best regards,
-Tomasz
-
+On 08/07/2013 11:12:41 AM, Srinivas Pandruvada wrote:
+> Added power cap framework documentation. This explains the use of  
+> power capping
+> framework, sysfs and programming interface.
+> There are two documents:
+> Documentation/powercap/PowerCappingFramework.txt: Explains use case  
+> and API in
+> details.
+> Documentation/ABI/testing/sysfs-class-powercap: Explains ABIs.
+> 
+> Reviewed-by: Len Brown <len.brown@intel.com>
+> Signed-off-by: Srinivas Pandruvada  
+> <srinivas.pandruvada@linux.intel.com>
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 > ---
->  drivers/iommu/exynos-iommu.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> index 3f32d64..233f382 100644
-> --- a/drivers/iommu/exynos-iommu.c
-> +++ b/drivers/iommu/exynos-iommu.c
-> @@ -12,6 +12,7 @@
->  #define DEBUG
->  #endif
-> 
-> +#include <linux/kernel.h>
->  #include <linux/io.h>
->  #include <linux/interrupt.h>
->  #include <linux/platform_device.h>
-> @@ -29,8 +30,6 @@
->  #include <asm/cacheflush.h>
->  #include <asm/pgtable.h>
-> 
-> -#include <mach/sysmmu.h>
-> -
->  /* We does not consider super section mapping (16MB) */
->  #define SECT_ORDER 20
->  #define LPAGE_ORDER 16
+>  Documentation/ABI/testing/sysfs-class-powercap   | 165 ++++++
+>  Documentation/powercap/PowerCappingFramework.txt | 686  
+> +++++++++++++++++++++++
+...
+> --- /dev/null
+> +++ b/Documentation/powercap/PowerCappingFramework.txt
+> @@ -0,0 +1,686 @@
+> +Power Capping Framework
+> +==================================
+> +
+> +The Linux Power Capping Framework provides user-space with a common
+> +API to kernel-mode power-capping drivers.  At the same time,
+> +it provides the hardware-specific power-capping drivers with
+> +a uniform API to user-space.
+
+s/.  At the same time, it provides/, and/
+
+> +Terminology
+> +=========================
+> +The Power Capping framework organizes power capping devices under a  
+> tree structure.
+> +At the root level, each device is under some "controller", which is  
+> the enabler
+> +of technology.
+
+A controller is the enabler of technology?
+
+What does that mean?
+
+> For example this can be "RAPL".
+
+Ah, clears it right up.
+
+> +Under each controllers,
+
+each doesn't take a plural.
+
+> there are multiple power zones, which can be independently
+> +monitored and controlled.
+> +Each power zone can be organized as a tree with parent, children and  
+> siblings.
+> +Each power zone defines attributes to enable power monitoring and  
+> constraints.
+> +
+> +Example sysfs interface tree:
+> +
+> +/sys/devices/virtual/power_cap
+> +└── intel-rapl
+... intel intel intel intel...
+> +
+> +For example, above powercap sysfs tree represents RAPL(Running  
+> Average Power Limit)
+> +type controls available in the Intel® 64 and IA-32 Processor  
+> Architectures. Here
+
+What are the chances of this ever being applied to a non-intel  
+processor? (Should it be under Documentation/x86, or is it presented as  
+something with a nonzero chance of actually ever being generic?)
+
+> +under controller "intel-rapl" there are two CPU packages  
+> (package-0/1), which can
+> +provide power monitoring and controls (intel-rapl:0 and  
+> intel-rapl:1). Each power
+> +zone has a name.
+> +For example:
+> +cat /sys/class/power_cap/intel-rapl/intel-rapl:0/name
+> +package-0
+> +
+> +In addition to providing monitoring and control at package level,  
+> each package
+> +is further divided into child power zones (called domains in the RAPL
+> specifications).
+
+Where are the RAPL specifications, and is this framework just an  
+implementation of them or is it more generic?
+
+> +Here zones represent controls for core and dram  parts. These zones  
+> can be represented
+> +as children of package.
+> +For example:
+> +cat /sys/class/power_cap/intel-rapl/intel-rapl:0/intel-rapl:0:1/name
+> +dram
+> +
+> +Under RAPL framework there are two constraints, one for
+> +short term and one for long term, with two different time windows.  
+> These can be
+> +represented as two constraints, with different time windows, power  
+> limits and names.
+> +For example:
+> +	constraint_0_name
+> +	constraint_0_power_limit_uw
+> +	constraint_0_time_window_us
+> +	constraint_1_name
+> +	constraint_1_power_limit_uw
+> +	constraint_1_time_window_us
+> +
+> +Power Zone Attributes
+> +=================================
+> +Monitoring attributes
+> +----------------------
+> +
+> +energy_uj (rw): Current energy counter in micro joules. Write "0" to  
+> reset.
+> +If the counter can not be reset, then this attribute is read only.
+> +
+> +max_energy_range_uj (ro): Range of the above energy counter in  
+> micro-joules.
+> +
+> +power_uw (rw): Current power in micro watts. Write "0" to resets the  
+> value.
+> +If the value can not be reset, then this attribute is read only.
+> +
+> +max_power_range_uw (ro): Range of the above power value in  
+> micro-watts.
+> +
+> +name (ro): Name of this power zone.
+> +
+> +It is possible that some domains can have both power and energy  
+> counters and
+> +ranges, but at least one is mandatory.
+> +
+> +Constraints
+> +----------------
+> +constraint_X_power_limit_uw (rw): Power limit in micro watts, which  
+> should be
+> +applicable for the time window specified by  
+> "constraint_X_time_window_us".
+> +
+> +constraint_X_time_window_us (rw): Time window in micro seconds.
+> +
+> +constraint_X_name (ro): An optional name of the constraint
+> +
+> +constraint_X_max_power_uw(ro): Maximum allowed power in micro watts.
+> +
+> +constraint_X_min_power_uw(ro): Minimum allowed power in micro watts.
+> +
+> +constraint_X_max_time_window_us(ro): Maximum allowed time window in  
+> micro seconds.
+> +
+> +constraint_X_min_time_window_us(ro): Minimum allowed time window in  
+> micro seconds.
+> +
+> +In addition each node has an attribute "type", which shows, whether  
+> is a controller
+> +or power zone. Except power_limit_uw and time_window_us other fields  
+> are optional.
+> +
+> +Power Cap Client Driver Interface
+> +==================================
+> +The API summary:
+> +
+> +Call powercap_allocate_controller to define a controller with a name.
+> +Call powercap_zone_register for each power zone for this controller.
+> +power zones can have other power zone as a parent or don't have a
+> +parent.
+
+Trying not to nitpick "english isn't a first language here", but...
+
+Power zones can have another power zone as a parent or no parent.
+
+> +During powercap_zone_register defines number of constraints and  
+> callbacks.
+> +
+> +To Free a power zone call powercap_zone_unregister.
+> +To free a controller call powercap_deallocate_controller.
+> +
+> +Rest of this document is generated by using kernel-doc on
+> +powercap.h
+
+Isn't that what Documentation/DocBook is for? (If powercap.h is  
+modified the need to update this file is nonobvious...)
+
+Rob
