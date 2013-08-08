@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965099Ab3HHKSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:18:16 -0400
+	id S965085Ab3HHKSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 06:18:15 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:61821 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S934223Ab3HHKRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:17:48 -0400
+	id S964884Ab3HHKRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 06:17:50 -0400
 X-IronPort-AV: E=Sophos;i="4.89,838,1367942400"; 
-   d="scan'208";a="8154036"
+   d="scan'208";a="8154040"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
@@ -21,80 +21,137 @@ To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH part5 1/7] x86: get pg_data_t's memory from other node
-Date: Thu, 8 Aug 2013 18:16:13 +0800
-Message-Id: <1375956979-31877-2-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH part5 7/7] x86, numa, acpi, memory-hotplug: Make movablenode have higher priority.
+Date: Thu, 8 Aug 2013 18:16:19 +0800
+Message-Id: <1375956979-31877-8-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/08 18:16:17,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 18:16:18,
-	Serialize complete at 2013/08/08 18:16:18
+ 2013/08/08 18:16:20,
+	Serialize complete at 2013/08/08 18:16:20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Arrange hotpluggable memory as ZONE_MOVABLE will cause NUMA performance down
+because the kernel cannot use movable memory. For users who don't use memory
+hotplug and who don't want to lose their NUMA performance, they need a way to
+disable this functionality. So we improved movablecore boot option.
 
-If system can create movable node which all memory of the node is allocated
-as ZONE_MOVABLE, setup_node_data() cannot allocate memory for the node's
-pg_data_t. So, use memblock_alloc_try_nid() instead of memblock_alloc_nid()
-to retry when the first allocation fails. Otherwise, the system could failed
-to boot.
+If users specify the original movablecore=nn@ss boot option, the kernel will
+arrange [ss, ss+nn) as ZONE_MOVABLE. The kernelcore=nn@ss boot option is similar
+except it specifies ZONE_NORMAL ranges.
 
-The node_data could be on hotpluggable node. And so could pagetable and
-vmemmap. But for now, doing so will break memory hot-remove path.
+Now, if users specify "movablenode" in kernel commandline, the kernel will
+arrange hotpluggable memory in SRAT as ZONE_MOVABLE. And if users do this, all
+the other movablecore=nn@ss and kernelcore=nn@ss options should be ignored.
 
-A node could have several memory devices. And the device who holds node
-data should be hot-removed in the last place. But in NUMA level, we don't
-know which memory_block (/sys/devices/system/node/nodeX/memoryXXX) belongs
-to which memory device. We only have node. So we can only do node hotplug.
+For those who don't want this, just specify nothing. The kernel will act as
+before.
 
-But in virtualization, developers are now developing memory hotplug in qemu,
-which support a single memory device hotplug. So a whole node hotplug will
-not satisfy virtualization users.
-
-So at last, we concluded that we'd better do memory hotplug and local node
-things (local node node data, pagetable, vmemmap, ...) in two steps.
-Please refer to https://lkml.org/lkml/2013/6/19/73
-
-For now, we put node_data of movable node to another node, and then improve
-it in the future.
-
-In the later patches, a boot option will be introduced to enable/disable this
-functionality. If users disable it, the node_data will still be put on the
-local node.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
 ---
- arch/x86/mm/numa.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |    5 +++++
+ mm/page_alloc.c          |   31 ++++++++++++++++++++++++++++---
+ 3 files changed, 34 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 8bf93ba..d532b6d 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -209,10 +209,9 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	 * Allocate node data.  Try node-local memory and then any node.
- 	 * Never allocate in DMA zone.
- 	 */
--	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
-+	nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
- 	if (!nd_pa) {
--		pr_err("Cannot find %zu bytes in node %d\n",
--		       nd_size, nid);
-+		pr_err("Cannot find %zu bytes in any node\n", nd_size);
- 		return;
- 	}
- 	nd = __va(nd_pa);
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index c0bd31c..e78e32f 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -64,6 +64,7 @@ int memblock_reserve(phys_addr_t base, phys_addr_t size);
+ void memblock_trim_memory(phys_addr_t align);
+ 
+ int memblock_mark_hotplug(phys_addr_t base, phys_addr_t size);
++bool memblock_is_hotpluggable(struct memblock_region *region);
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 3ea4301..c8eb5d2 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -610,6 +610,11 @@ int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
+ 	return 0;
+ }
+ 
++bool __init_memblock memblock_is_hotpluggable(struct memblock_region *region)
++{
++	return region->flags & MEMBLOCK_HOTPLUG;
++}
++
+ /**
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b100255..86d4381 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4948,9 +4948,35 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+ 	nodemask_t saved_node_state = node_states[N_MEMORY];
+ 	unsigned long totalpages = early_calculate_totalpages();
+ 	int usable_nodes = nodes_weight(node_states[N_MEMORY]);
++	struct memblock_type *type = &memblock.memory;
+ 
++	/* Need to find movable_zone earlier when movablenode is specified. */
++	find_usable_zone_for_movable();
++
++#ifdef CONFIG_MOVABLE_NODE
+ 	/*
+-	 * If movablecore was specified, calculate what size of
++	 * If movablenode is specified, ignore kernelcore and movablecore
++	 * options.
++	 */
++	if (movablenode_enable_srat) {
++		for (i = 0; i < type->cnt; i++) {
++			if (!memblock_is_hotpluggable(&type->regions[i]))
++				continue;
++
++			nid = type->regions[i].nid;
++
++			usable_startpfn = PFN_DOWN(type->regions[i].base);
++			zone_movable_pfn[nid] = zone_movable_pfn[nid] ?
++				min(usable_startpfn, zone_movable_pfn[nid]) :
++				usable_startpfn;
++		}
++
++		goto out;
++	}
++#endif
++
++	/*
++	 * If movablecore=nn[KMG] was specified, calculate what size of
+ 	 * kernelcore that corresponds so that memory usable for
+ 	 * any allocation type is evenly spread. If both kernelcore
+ 	 * and movablecore are specified, then the value of kernelcore
+@@ -4976,7 +5002,6 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+ 		goto out;
+ 
+ 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
+-	find_usable_zone_for_movable();
+ 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
+ 
+ restart:
+@@ -5067,12 +5092,12 @@ restart:
+ 	if (usable_nodes && required_kernelcore > usable_nodes)
+ 		goto restart;
+ 
++out:
+ 	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
+ 	for (nid = 0; nid < MAX_NUMNODES; nid++)
+ 		zone_movable_pfn[nid] =
+ 			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
+ 
+-out:
+ 	/* restore the node_state */
+ 	node_states[N_MEMORY] = saved_node_state;
+ }
 -- 
 1.7.1
 
