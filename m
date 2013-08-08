@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933934Ab3HHCva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 22:51:30 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:44932 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933898Ab3HHCv2 (ORCPT
+	id S933986Ab3HHCvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:51:44 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50792 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933946Ab3HHCvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 22:51:28 -0400
+	Wed, 7 Aug 2013 22:51:35 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, mingo@kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
@@ -14,9 +14,9 @@ Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/19] perf top: Use new idle_sym check
-Date: Wed,  7 Aug 2013 22:50:49 -0400
-Message-Id: <1375930261-77273-8-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 10/19] perf tool: Add option to print stack trace on single line
+Date: Wed,  7 Aug 2013 22:50:52 -0400
+Message-Id: <1375930261-77273-11-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
 References: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoids strcmp processing each sample.
+Option is used by upcoming timehist command.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -34,55 +34,55 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/builtin-top.c |   25 ++-----------------------
- 1 file changed, 2 insertions(+), 23 deletions(-)
+ tools/perf/util/session.c |    8 ++++++--
+ tools/perf/util/session.h |    1 +
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 440c3b3..8eb0e3a 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -634,26 +634,9 @@ repeat:
- 	return NULL;
- }
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index e5fd658..0d895e7 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1497,6 +1497,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
+ 	int print_sym = print_opts & PRINT_IP_OPT_SYM;
+ 	int print_dso = print_opts & PRINT_IP_OPT_DSO;
+ 	int print_symoffset = print_opts & PRINT_IP_OPT_SYMOFFSET;
++	int print_oneline = print_opts & PRINT_IP_OPT_ONELINE;
++	char s = print_oneline ? ' ' : '\t';
  
--/* Tag samples to be skipped. */
--static const char *skip_symbols[] = {
--	"intel_idle",
--	"default_idle",
--	"native_safe_halt",
--	"cpu_idle",
--	"enter_idle",
--	"exit_idle",
--	"mwait_idle",
--	"mwait_idle_with_hints",
--	"poll_idle",
--	"ppc64_runlatch_off",
--	"pseries_dedicated_idle_sleep",
--	NULL
--};
--
- static int symbol_filter(struct map *map __maybe_unused, struct symbol *sym)
- {
- 	const char *name = sym->name;
--	int i;
+ 	if (perf_event__preprocess_sample(event, machine, &al, sample,
+ 					  NULL) < 0) {
+@@ -1521,7 +1523,7 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
+ 				break;
  
- 	/*
- 	 * ppc64 uses function descriptors and appends a '.' to the
-@@ -671,12 +654,8 @@ static int symbol_filter(struct map *map __maybe_unused, struct symbol *sym)
- 	    strstr(name, "_text_end"))
- 		return 1;
+ 			if (print_ip)
+-				printf("%16" PRIx64, node->ip);
++				printf("%c%16" PRIx64, s, node->ip);
  
--	for (i = 0; skip_symbols[i]; i++) {
--		if (!strcmp(skip_symbols[i], name)) {
--			sym->ignore = true;
--			break;
--		}
--	}
-+	if (symbol__is_idle(sym))
-+		sym->ignore = true;
+ 			if (print_sym) {
+ 				printf(" ");
+@@ -1537,7 +1539,9 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
+ 				map__fprintf_dsoname(node->map, stdout);
+ 				printf(")");
+ 			}
+-			printf("\n");
++
++			if (!print_oneline)
++				printf("\n");
  
- 	return 0;
- }
+ 			callchain_cursor_advance(&callchain_cursor);
+ 		}
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 69e554a..7c00ccb 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -45,6 +45,7 @@ struct perf_session {
+ #define PRINT_IP_OPT_SYM		(1<<1)
+ #define PRINT_IP_OPT_DSO		(1<<2)
+ #define PRINT_IP_OPT_SYMOFFSET	(1<<3)
++#define PRINT_IP_OPT_ONELINE	(1<<4)
+ 
+ struct perf_tool;
+ 
 -- 
 1.7.10.1
 
