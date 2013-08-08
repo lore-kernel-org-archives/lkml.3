@@ -1,60 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933774Ab3HHCZM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 22:25:12 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:55895 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933558Ab3HHCZK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 22:25:10 -0400
-Date: Wed, 7 Aug 2013 22:31:28 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Stephen Boyd <sboyd@codeaurora.org>
-cc: Will Deacon <will.deacon@arm.com>, Vince Weaver <vincent.weaver@maine.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
-Subject: Re: perf,arm -- another (different) fuzzer oops
-In-Reply-To: <5202D5B0.9020107@codeaurora.org>
-Message-ID: <alpine.DEB.2.10.1308072227060.16962@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1308071611290.14098@vincent-weaver-1.um.maine.edu> <20130807223129.GA17118@mudshark.cambridge.arm.com> <5202D5B0.9020107@codeaurora.org>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S933806Ab3HHCZo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:25:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56715 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933558Ab3HHCZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 22:25:33 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C712205A53B73A@ORSMSX106.amr.corp.intel.com>
+References: <20130723230026.394a5ee1@googlemail.com> <20130724133254.GE30777@pd.tnic> <3E5A0FA7E9CA944F9D5414FEC6C712205A53B73A@ORSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: RE: [PATCH 3/5] x86, AMD: cleanup: merge common code in early microcode loading
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 07 Aug 2013 19:22:39 -0700
+To: "Yu, Fenghua" <fenghua.yu@intel.com>, Borislav Petkov <bp@alien8.de>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <78b1bca9-80bb-4e60-af3a-738424babfd0@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Aug 2013, Stephen Boyd wrote:
+How much does this matter?
 
-> ---8<----
-> 
-> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> index d9f5cd4..21f7790 100644
-> --- a/arch/arm/kernel/perf_event.c
-> +++ b/arch/arm/kernel/perf_event.c
-> @@ -53,7 +53,12 @@ armpmu_map_cache_event(const unsigned (*cache_map)
->  static int
->  armpmu_map_hw_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
->  {
-> -       int mapping = (*event_map)[config];
-> +       int mapping;
-> +
-> +       if (config >= PERF_COUNT_HW_MAX)
-> +               return -ENOENT;
-> +
-> +       mapping = (*event_map)[config];
->         return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
->  }
+"Yu, Fenghua" <fenghua.yu@intel.com> wrote:
+>> From: Yu, Fenghua
+>> Sent: Wednesday, August 07, 2013 3:46 PM
+>> 
+>> > From: Borislav Petkov [mailto:bp@alien8.de]
+>> > Sent: Wednesday, July 24, 2013 6:33 AM
+>> > On Tue, Jul 23, 2013 at 11:00:26PM +0200, Torsten Kaiser wrote:
+>> > > Extract common checks and initialisations from load_ucode_ap()
+>and
+>> > > save_microcode_in_initrd_amd() to load_microcode_amd_early().
+>> > > load_ucode_ap() gets a quick exit for !cpu, because for the BSP
+>> there
+>> > is
+>> > > already a different function dealing with its update.
+>> > >
+>> > > The original code already didn't anything, because without
+>> > load_microcode_amd()
+>> > > getting called apply_microcode_amd() could not do anything.
+>> > >
+>> > > Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+>> > >
+>> > > --- a/arch/x86/kernel/microcode_amd_early.c	2013-07-22
+>> > 06:22:32.000000000 +0200
+>> > > +++ b/arch/x86/kernel/microcode_amd_early.c	2013-07-23
+>> > 20:00:04.889508712 +0200
+>> > > @@ -196,6 +196,23 @@ void __init load_ucode_amd_bsp(void)
+>> > >  	apply_ucode_in_initrd(cd.data, cd.size);
+>> > >  }
+>> > >
+>> > > +static int load_microcode_amd_early(void)
+>> > > +{
+>> > > +	enum ucode_state ret;
+>> > > +	void *ucode;
+>> > > +
+>> > > +	if (ucode_loaded || !ucode_size || !initrd_start)
+>> > > +		return 0;
+>> > > +
+>> > > +	ucode = (void *)(initrd_start + ucode_offset);
+>> > > +	ret = load_microcode_amd(0, ucode, ucode_size);
+>> > > +	if (ret != UCODE_OK)
+>> > > +		return -EINVAL;
+>> > > +
+>> > > +	ucode_loaded = true;
+>> > > +	return 0;
+>> > > +}
+>> > > +
+>> > >  #ifdef CONFIG_X86_32
+>> > >  u8 amd_bsp_mpb[MPB_MAX_SIZE];
+>> > >
+>> > > @@ -258,17 +275,13 @@ void load_ucode_amd_ap(void)
+>> > >
+>> > >  	collect_cpu_info_amd_early(&cpu_data(cpu), ucode_cpu_info +
+>cpu);
+>> > >
+>> > > -	if (cpu && !ucode_loaded) {
+>> > > -		void *ucode;
+>> > > -
+>> > > -		if (!ucode_size || !initrd_start)
+>> > > -			return;
+>> > > +	/* BSP via load_ucode_amd_bsp() */
+>> > > +	if (!cpu)
+>> > > +		return;
+>> >
+>> > Ok, this is really misleading. Fenghua, what's the reason for
+>calling
+>> > load_ucode_ap() on the BSP too?
+>> >
+>> > We have on the one hand:
+>> >
+>> > x86_64_start_kernel
+>> > |->load_ucode_bsp
+>> >
+>> > and on the other:
+>> >
+>> > x86_64_start_kernel
+>> > |-> x86_64_start_reservations
+>> >     |-> start_kernel
+>> >         |-> trap_init
+>> > 	    |-> cpu_init
+>> > 	        |-> load_ucode_ap()
+>> >
+>> > so we attempt to load the ucode twice on the BSP.
+>> >
+>> 
+>> You are right. Though the second time loading attempt will not find a
+>> valid/newer ucode patch to update. So this won't cause a real/serious
+>> problem. But we had better to fix this anyway.
+>> 
+>> > IMO, we should do this in cpu_init:
+>> >
+>> > 	if (cpu)
+>> > 		load_ucode_ap();
+>> >
+>> > no?
+>> 
+>> This check won't work when CPU0 is hot added. So we need to find a
+>> better way to fix this.
+>> 
+>
+>Maybe need to change the check as follows to take care of CPU0 hot add
+>case?
+>
+>if ((cpu && system_state == SYSTEM_BOOTING) || (system_state ==
+>SYSTEM_RUNNING))
+>	load_ucode_ap();
+>
+>Thanks.
+>
+>-Fenghua
 
-I've tested this patch and my testcase no longer causes the kernel to 
-oops, so 
-
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
-
-Thanks,
-
-Vince
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
