@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965409Ab3HHNuU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:50:20 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:63736 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965394Ab3HHNuP (ORCPT
+	id S965429Ab3HHNuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:50:24 -0400
+Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:42395
+	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965407Ab3HHNuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:50:15 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 11/35] cpufreq: dbx500: use cpufreq_table_validate_and_show()
-Date: Thu,  8 Aug 2013 19:18:13 +0530
-Message-Id: <e343e827df7be24f11ecdaf849f2874bf1ba4b24.1375964117.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1375964117.git.viresh.kumar@linaro.org>
-References: <cover.1375964117.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1375964117.git.viresh.kumar@linaro.org>
-References: <cover.1375964117.git.viresh.kumar@linaro.org>
+	Thu, 8 Aug 2013 09:50:20 -0400
+Message-ID: <5203A21A.4060806@newflow.co.uk>
+Date: Thu, 08 Aug 2013 14:50:18 +0100
+From: Mark Jackson <mpfj-list@newflow.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: ARM: AM335x: Reboot broken in 3.11
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lets use cpufreq_table_validate_and_show() instead of calling
-cpufreq_frequency_table_cpuinfo() and cpufreq_frequency_table_get_attr().
+Rebooting appears to have broken in 3.11 (at some point before rc1).
 
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/dbx500-cpufreq.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Here is the console output:-
 
-diff --git a/drivers/cpufreq/dbx500-cpufreq.c b/drivers/cpufreq/dbx500-cpufreq.c
-index 26321cd..ea03b92 100644
---- a/drivers/cpufreq/dbx500-cpufreq.c
-+++ b/drivers/cpufreq/dbx500-cpufreq.c
-@@ -87,10 +87,8 @@ static int dbx500_cpufreq_init(struct cpufreq_policy *policy)
- 	int res;
- 
- 	/* get policy fields based on the table */
--	res = cpufreq_frequency_table_cpuinfo(policy, freq_table);
--	if (!res)
--		cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
--	else {
-+	res = cpufreq_table_validate_and_show(policy, freq_table);
-+	if (res)
- 		pr_err("dbx500-cpufreq: Failed to read policy table\n");
- 		return res;
- 	}
--- 
-1.7.12.rc2.18.g61b472e
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 3.11.0-rc1-00006-gf550793 (mpfj@mpfj-nanobone) (gcc version 4.6.3 (Buildroot 2013.02-dirty) ) #328 Thu Aug 8 14:36:16 BST 2013
+...
+Welcome to Buildroot
+nanobone login: root
+Password:
+# reboot
+#
+[   23.867076] UBIFS: background thread "ubifs_bgt0_0" stops
+The system is going down NOW!
+Sent SIGTERM to all processes
+Sent SIGKILL to all processes
+Requesting system reboot
+[   25.924496] reboot: Restarting system
 
+... and at this point the CPU seems to just freeze.
+
+In 3v10, the board would reboot correctly back into uboot, etc.
+
+I've also noticed that some of the output LEDs light up dim when the kernel
+is booting on, and they come on full brightness at the reboot "freeze" point.
+There are 4 LEDs affected and they are all connected to UART transmit pins.
+
+Before I start bisecting, does anyone have any ideas ?
+
+Cheers
+Mark J.
