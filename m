@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966332Ab3HHUOD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:14:03 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44765 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966197Ab3HHUOB (ORCPT
+	id S966364Ab3HHUOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:14:08 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:56413 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966197Ab3HHUOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 16:14:01 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH] PM / QoS: Fix workqueue deadlock when using pm_qos_update_request_timeout()
-Date: Thu,  8 Aug 2013 13:13:57 -0700
-Message-Id: <1375992837-1673-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.rc1.21.gfb56570
+	Thu, 8 Aug 2013 16:14:04 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHSET cgroup/for-3.12] cgroup: decouple cgroup_subsys_state lifetime from that of cgroup
+Date: Thu,  8 Aug 2013 16:13:37 -0400
+Message-Id: <1375992831-4650-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pm_qos_update_request_timeout() updates a qos and then schedules
-a delayed work item to bring the qos back down to the default
-after the timeout. When the work item runs, pm_qos_work_fn() will
-call pm_qos_update_request() and deadlock because it tries to
-cancel itself via cancel_delayed_work_sync(). Future callers of
-that qos will also hang waiting to cancel the work that is
-canceling itself. Before ed1ac6e (PM: don't use
-[delayed_]work_pending(), 2013-01-11) this didn't happen because
-the work function wouldn't try to cancel itself.
+Hello,
 
-Let's just do the little bit of pm_qos_update_request() here so
-that we don't deadlock.
+Currently a css's (cgroup_subsys_state) lifetime is tied to that of
+the cgroup it's attached to.  css's are created when the cgroup is
+created and destroyed together.  The access rules depend on it too -
+e.g. css's can be dereferenced while holding RCU read lock because
+cgroup is protected with RCU.
 
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- kernel/power/qos.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+With the planned unified hierarchy, we'll be dynamically creating and
+destroying css's through the lifetime of a cgroup, so we can no longer
+hitch css lifetime management onto cgroup's.  This patchset separates
+out css lifetime management from that of cgroup.  After the patchset,
+each css is individually RCU protected.
 
-diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-index 06fe285..d52d314 100644
---- a/kernel/power/qos.c
-+++ b/kernel/power/qos.c
-@@ -308,7 +308,11 @@ static void pm_qos_work_fn(struct work_struct *work)
- 						  struct pm_qos_request,
- 						  work);
- 
--	pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
-+	if (PM_QOS_DEFAULT_VALUE != req->node.prio)
-+		pm_qos_update_target(
-+				pm_qos_array[req->pm_qos_class]->constraints,
-+				&req->node, PM_QOS_UPDATE_REQ,
-+				PM_QOS_DEFAULT_VALUE);
- }
- 
- /**
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+This patchset contains the following 14 patches.
 
+ 0001-cgroup-always-use-cgroup_css.patch
+ 0002-cgroup-rename-cgroup_subsys_state-dput_work-and-its-.patch
+ 0003-cgroup-add-cgroup_subsys_state-parent.patch
+ 0004-cgroup-cgroup_css_from_dir-now-should-be-called-with.patch
+ 0005-cgroup-make-cgroup_file_open-rcu_read_lock-around-cg.patch
+ 0006-cgroup-add-__rcu-modifier-to-cgroup-subsys.patch
+ 0007-cgroup-reorganize-css-init-exit-paths.patch
+ 0008-cgroup-move-cgroup-subsys-assignment-to-online_css.patch
+ 0009-cgroup-bounce-cgroup_subsys_state-ref-kill-confirmat.patch
+ 0010-cgroup-replace-cgroup-css_kill_cnt-with-nr_css.patch
+ 0011-cgroup-decouple-cgroup_subsys_state-destruction-from.patch
+ 0012-cgroup-factor-out-kill_css.patch
+ 0013-cgroup-move-subsys-file-removal-to-kill_css.patch
+ 0014-cgroup-RCU-protect-each-cgroup_subsys_state-release.patch
+
+The patchset is on top of
+
+  cgroup/for-3.12 61584e3f4 ("cgroup: Merge branch 'for-3.11-fixes' into for-3.12")
++ [1] cgroup: use cgroup_subsys_state as the primary subsystem interface handle
++ [2] cgroup: cgroup: make css_for_each_descendant() and friends include the origin css in the iteration
+
+and available in the following branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-rcufy-css
+
+diffstat follows.
+
+ include/linux/cgroup.h |   24 +-
+ kernel/cgroup.c        |  423 +++++++++++++++++++++++++++++--------------------
+ kernel/events/core.c   |    3
+ 3 files changed, 268 insertions(+), 182 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] https://lkml.org/lkml/2013/8/1/722
+[2] https://lkml.org/lkml/2013/8/4/130
