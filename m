@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934207Ab3HHJhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 05:37:31 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:50208 "EHLO
+	id S934227Ab3HHJhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 05:37:48 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:50265 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964857Ab3HHJh1 (ORCPT
+	with ESMTP id S934210Ab3HHJhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 05:37:27 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-be-520366d51d50
+	Thu, 8 Aug 2013 05:37:45 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-66-520366e7686d
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
         "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
@@ -22,42 +22,42 @@ Cc: "'Joerg Roedel'" <joro@8bytes.org>, "'Kukjin Kim'" <kgene.kim@samsung.com>,
         "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
         kvmarm@lists.cs.columbia.edu,
         "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: [PATCH v9 01/16] iommu/exynos: do not include removed header
-Date: Thu, 08 Aug 2013 18:37:25 +0900
-Message-id: <002501ce941a$e3d87f40$ab897dc0$@samsung.com>
+Subject: [PATCH v9 03/16] iommu/exynos: fix page table maintenance
+Date: Thu, 08 Aug 2013 18:37:43 +0900
+Message-id: <002701ce941a$eecebdb0$cc6c3910$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6UF0ttA7tvTqQNRBmHuCApMD1fpQ==
+Thread-index: Ac6UF1wiqpgTyfXjSuapcrtO0oW7xA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPIsWRmVeSWpSXmKPExsVy+t8zI92racxBBp8/m1jcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLfoXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCwurNjIbjFl0WFWi5N/
-	ehktWq73MjnweTw5OI/JY3bDRRaPO9f2sHmc37SG2WPzknqPyTeWM3r0bVnF6PF5k5zHlaNn
-	mAI4o7hsUlJzMstSi/TtErgy+qbNZC+YzFbx6IBpA2MvaxcjJ4eEgInE7ssf2SBsMYkL99aD
-	2UICyxgltq4Sh6m5/XElYxcjF1B8OqPEuXMLmCCcv4wSbafvgnWwCWhJrJ57HKxKROA3o8St
-	Z3NYQRxmgf9MEltvN7F3MXJwCAu4Svy+EQnSwCKgKnHg8GOwZl4BS4kvcxuYIWxBiR+T77GA
-	2MxAQ9fvPM4EYctLbF7zlhniJAWJHWdfM4LYIgJ6EptO7GOHqBGR2PfiHdgREgILOSSePXjD
-	CLFMQOLb5EMsIDdICMhKbDoANUdS4uCKGywTGMVmIVk9C8nqWUhWz0KyYgEjyypG0dSC5ILi
-	pPQiQ73ixNzi0rx0veT83E2MkMjv3cF4+4D1IcZkoPUTmaVEk/OBiSOvJN7Q2MzIwtTE1NjI
-	3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwHSxz3bf1uavJ6SSbD4QcL
-	TTiXuieEn/vH66vgwL6v78TJ3iqjYzxbpM9opm1pLD58PX6B/AV/xge55RrPfZ4JrJp/ffEj
-	Lfk3C5y4vDKYPFcetDdyEs1S3H+zT/HE1asd9/V5WsRj9xxmrWJX3G3IkVLaGXS5vnBu7YT8
-	Y3+vsUxiE879zKrEUpyRaKjFXFScCACsnyhhEgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLKsWRmVeSWpSXmKPExsVy+t9jQd2racxBBgd26lvcuXuO1WL+ESDx
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPIsWRmVeSWpSXmKPExsVy+t8zQ90XacxBBm0iFnfunmO1mH8ESLw6
+	8oPJYsF+a4vO2RvYLXoXXGWz+HjqOLvFpsfXWC0u75rDZjHj/D4miwsrNrJbTFl0mNXi5J9e
+	RouW671MDnweTw7OY/KY3XCRxePOtT1sHuc3rWH22Lyk3mPyjeWMHn1bVjF6fN4k53Hl6Bmm
+	AM4oLpuU1JzMstQifbsEroxJJ5azFLxQr1h94AtLA+Nb+S5GTg4JAROJH0f2MULYYhIX7q1n
+	62Lk4hASWMYo8Wj+U2a4ouanrBCJRYwSx7buYYJw/jJKNE77xApSxSagJbF67nFGkISIwG9G
+	iVvP5oC1MAv8Z5LYeruJvYuRg0NYwEli/xx/kAYWAVWJ12efsoCEeQUsJRasiQUJ8woISvyY
+	fI8FxGYGmrl+53EmCFteYvOat1AXKUjsOPsa7GwRAT2Jztt7GCFqRCT2vXgHdoOEwFIOiSuz
+	PjBC7BKQ+Db5ENguCQFZiU0HoOZIShxccYNlAqPYLCSrZyFZPQvJ6llIVixgZFnFKJpakFxQ
+	nJReZKhXnJhbXJqXrpecn7uJERL5vTsYbx+wPsSYDLR+IrOUaHI+MHHklcQbGpsZWZiamBob
+	mVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFxX/iRRffsN+izHGhZc1a1
+	TuvNVtN5JTFKie/6VU40/Cz7M8Ns3pwvfHx7V7EWZBxu2S+w//iFTUpLV/C6dSpZfYv0V1V0
+	KM/aIaW20XD5uvLJczQURQokDX6lPzmQ+uz3WfPajWqt8dYqjDGtW/6+ujp9uuXaR1c2nsmp
+	1Q7aLBw071jiJV13JZbijERDLeai4kQAKopu/xIDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLKsWRmVeSWpSXmKPExsVy+t9jAd3nacxBBnsOmFvcuXuO1WL+ESDx
 	6sgPJosF+60tOmdvYLfoXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCwurNjIbjFl0WFWi5N/
 	ehktWq73MjnweTw5OI/JY3bDRRaPO9f2sHmc37SG2WPzknqPyTeWM3r0bVnF6PF5k5zHlaNn
 	mAI4oxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
-	jldSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZvRNm8leMJmt4tEB0wbG
-	XtYuRk4OCQETidsfVzJC2GISF+6tZ+ti5OIQEpjOKHHu3AImCOcvo0Tb6btsIFVsAloSq+ce
-	ZwRJiAj8ZpS49WwOK4jDLPCfSWLr7Sb2LkYODmEBV4nfNyJBGlgEVCUOHH4M1swrYCnxZW4D
-	M4QtKPFj8j0WEJsZaOj6nceZIGx5ic1r3jJDnKQgsePsa7DzRAT0JDad2McOUSMise/FO8YJ
-	jAKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOLE8k9rBuLLB
-	4hCjAAejEg9vRwBTkBBrYllxZe4hRgkOZiUR3ovFQCHelMTKqtSi/Pii0pzU4kOMyUCfTmSW
-	Ek3OBya9vJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgnBYq
-	o90bolFcVLVNnO9Q3JPiS72H5//f8cxn+aTvn5ZLNolFLFy1OdNZNq8wZaVtXYL8W25Tn+4/
-	GRVzenmL+rw+H1hceoNdu1da4K3N2d3f4k8k7mqe8M4lVXu2ttnC7f3v+v/ueuX2WvfOulQP
-	+Tffqu9vSJxiPm/7x52fHk117jwtGf+vR4mlOCPRUIu5qDgRAMlqb4ZwAwAA
+	jldSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAGEtYxZkw6sZyl4IV6xeoDX1ga
+	GN/KdzFyckgImEj8aH7KCmGLSVy4t56ti5GLQ0hgEaPEsa17mCCcv4wSjdM+gVWxCWhJrJ57
+	nBEkISLwm1Hi1rM5rCAOs8B/Jomtt5vYuxg5OIQFnCT2z/EHaWARUJV4ffYpC0iYV8BSYsGa
+	WJAwr4CgxI/J91hAbGagmet3HmeCsOUlNq95ywxxkYLEjrOvGUFsEQE9ic7bexghakQk9r14
+	xziBUWAWklGzkIyahWTULCQtCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEJ5ZnUjsY
+	VzZYHGIU4GBU4uHtCGAKEmJNLCuuzD3EKMHBrCTCe7EYKMSbklhZlVqUH19UmpNafIgxGejR
+	icxSosn5wKSXVxJvaGxiZmRpZGZhZGJuTpqwkjjvgVbrQCGB9MSS1OzU1ILUIpgtTBycUg2M
+	IfVqp2PO1kf8vcdmtv6K/g9GxdcXYtgYosv3z3Ga5y94Nvb53Ij5tuek78048++MTJxtbZ/7
+	xqp+w9wgIWWXaH7L1c+Un2831bVmEGIx21rrHnMo7a7nmV1p55qYBa7sfzw9Za458/uJE/yU
+	ptrNnyfK265x5cn6jP/9vM3BgstT/WJ3eVUrsRRnJBpqMRcVJwIAvXDga3ADAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -65,34 +65,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit remove <mach/sysmmu.h> which is removed.
+This prevents allocating lv2 page table for the lv1 page table entry
+that already has 1MB page mapping. In addition, changed to BUG_ON
+instead of returning -EADDRINUSE.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/iommu/exynos-iommu.c |   68 ++++++++++++++++++++++++-----------------
+ 1 files changed, 40 insertions(+), 28 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 3f32d64..233f382 100644
+index d545a25..d90e6fa 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -12,6 +12,7 @@
- #define DEBUG
- #endif
+@@ -52,11 +52,11 @@
+ #define lv2ent_large(pent) ((*(pent) & 3) == 1)
  
-+#include <linux/kernel.h>
- #include <linux/io.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
-@@ -29,8 +30,6 @@
- #include <asm/cacheflush.h>
- #include <asm/pgtable.h>
+ #define section_phys(sent) (*(sent) & SECT_MASK)
+-#define section_offs(iova) ((iova) & 0xFFFFF)
++#define section_offs(iova) ((iova) & ~SECT_MASK)
+ #define lpage_phys(pent) (*(pent) & LPAGE_MASK)
+-#define lpage_offs(iova) ((iova) & 0xFFFF)
++#define lpage_offs(iova) ((iova) & ~LPAGE_MASK)
+ #define spage_phys(pent) (*(pent) & SPAGE_MASK)
+-#define spage_offs(iova) ((iova) & 0xFFF)
++#define spage_offs(iova) ((iova) & ~SPAGE_MASK)
  
--#include <mach/sysmmu.h>
+ #define lv1ent_offset(iova) ((iova) >> SECT_ORDER)
+ #define lv2ent_offset(iova) (((iova) & 0xFF000) >> SPAGE_ORDER)
+@@ -856,13 +856,15 @@ finish:
+ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
+ 					short *pgcounter)
+ {
++	BUG_ON(lv1ent_section(sent));
++
+ 	if (lv1ent_fault(sent)) {
+ 		unsigned long *pent;
+ 
+ 		pent = kzalloc(LV2TABLE_SIZE, GFP_ATOMIC);
+ 		BUG_ON((unsigned long)pent & (LV2TABLE_SIZE - 1));
+ 		if (!pent)
+-			return NULL;
++			return ERR_PTR(-ENOMEM);
+ 
+ 		*sent = mk_lv1ent_page(__pa(pent));
+ 		*pgcounter = NUM_LV2ENTRIES;
+@@ -875,15 +877,11 @@ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
+ 
+ static int lv1set_section(unsigned long *sent, phys_addr_t paddr, short *pgcnt)
+ {
+-	if (lv1ent_section(sent))
+-		return -EADDRINUSE;
++	BUG_ON(lv1ent_section(sent));
+ 
+ 	if (lv1ent_page(sent)) {
+-		if (*pgcnt != NUM_LV2ENTRIES)
+-			return -EADDRINUSE;
 -
- /* We does not consider super section mapping (16MB) */
- #define SECT_ORDER 20
- #define LPAGE_ORDER 16
++		BUG_ON(*pgcnt != NUM_LV2ENTRIES);
+ 		kfree(page_entry(sent, 0));
+-
+ 		*pgcnt = 0;
+ 	}
+ 
+@@ -894,24 +892,24 @@ static int lv1set_section(unsigned long *sent, phys_addr_t paddr, short *pgcnt)
+ 	return 0;
+ }
+ 
++static void clear_page_table(unsigned long *ent, int n)
++{
++	if (n > 0)
++		memset(ent, 0, sizeof(*ent) * n);
++}
++
+ static int lv2set_page(unsigned long *pent, phys_addr_t paddr, size_t size,
+ 								short *pgcnt)
+ {
+ 	if (size == SPAGE_SIZE) {
+-		if (!lv2ent_fault(pent))
+-			return -EADDRINUSE;
+-
++		BUG_ON(!lv2ent_fault(pent));
+ 		*pent = mk_lv2ent_spage(paddr);
+ 		pgtable_flush(pent, pent + 1);
+ 		*pgcnt -= 1;
+ 	} else { /* size == LPAGE_SIZE */
+ 		int i;
+ 		for (i = 0; i < SPAGES_PER_LPAGE; i++, pent++) {
+-			if (!lv2ent_fault(pent)) {
+-				memset(pent, 0, sizeof(*pent) * i);
+-				return -EADDRINUSE;
+-			}
+-
++			BUG_ON(!lv2ent_fault(pent));
+ 			*pent = mk_lv2ent_lpage(paddr);
+ 		}
+ 		pgtable_flush(pent - SPAGES_PER_LPAGE, pent);
+@@ -944,17 +942,16 @@ static int exynos_iommu_map(struct iommu_domain *domain, unsigned long iova,
+ 		pent = alloc_lv2entry(entry, iova,
+ 					&priv->lv2entcnt[lv1ent_offset(iova)]);
+ 
+-		if (!pent)
+-			ret = -ENOMEM;
++		if (IS_ERR(pent))
++			ret = PTR_ERR(pent);
+ 		else
+ 			ret = lv2set_page(pent, paddr, size,
+ 					&priv->lv2entcnt[lv1ent_offset(iova)]);
+ 	}
+ 
+-	if (ret) {
+-		pr_debug("%s: Failed to map iova 0x%lx/0x%x bytes\n",
+-							__func__, iova, size);
+-	}
++	if (ret)
++		pr_err("%s: Failed(%d) to map 0x%#x bytes @ %#lx\n",
++			__func__, ret, size, iova);
+ 
+ 	spin_unlock_irqrestore(&priv->pgtablelock, flags);
+ 
+@@ -968,6 +965,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+ 	struct sysmmu_drvdata *data;
+ 	unsigned long flags;
+ 	unsigned long *ent;
++	size_t err_pgsize;
+ 
+ 	BUG_ON(priv->pgtable == NULL);
+ 
+@@ -976,7 +974,10 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+ 	ent = section_entry(priv->pgtable, iova);
+ 
+ 	if (lv1ent_section(ent)) {
+-		BUG_ON(size < SECT_SIZE);
++		if (WARN_ON(size < SECT_SIZE)) {
++			err_pgsize = SECT_SIZE;
++			goto err;
++		}
+ 
+ 		*ent = 0;
+ 		pgtable_flush(ent, ent + 1);
+@@ -1008,9 +1009,12 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+ 	}
+ 
+ 	/* lv1ent_large(ent) == true here */
+-	BUG_ON(size < LPAGE_SIZE);
++	if (WARN_ON(size < LPAGE_SIZE)) {
++		err_pgsize = LPAGE_SIZE;
++		goto err;
++	}
+ 
+-	memset(ent, 0, sizeof(*ent) * SPAGES_PER_LPAGE);
++	clear_page_table(ent, SPAGES_PER_LPAGE);
+ 	pgtable_flush(ent, ent + SPAGES_PER_LPAGE);
+ 
+ 	size = LPAGE_SIZE;
+@@ -1023,8 +1027,16 @@ done:
+ 		sysmmu_tlb_invalidate_entry(data->dev, iova);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+-
+ 	return size;
++err:
++	spin_unlock_irqrestore(&priv->pgtablelock, flags);
++
++	pr_err("%s: Failed due to size(%#x) @ %#lx is"\
++		" smaller than page size %#x\n",
++		__func__, size, iova, err_pgsize);
++
++	return 0;
++
+ }
+ 
+ static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
 -- 
 1.7.2.5
 
