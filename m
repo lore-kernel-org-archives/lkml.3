@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965617Ab3HHOE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:04:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44596 "EHLO mx2.suse.de"
+	id S965719Ab3HHOFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:05:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44550 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933500Ab3HHOBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:01:04 -0400
+	id S965522Ab3HHOA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:00:59 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 19/27] sched: Resist moving tasks towards nodes with fewer hinting faults
-Date: Thu,  8 Aug 2013 15:00:31 +0100
-Message-Id: <1375970439-5111-20-git-send-email-mgorman@suse.de>
+Subject: [PATCH 14/27] mm: Do not flush TLB during protection change if !pte_present && !migration_entry
+Date: Thu,  8 Aug 2013 15:00:26 +0100
+Message-Id: <1375970439-5111-15-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375970439-5111-1-git-send-email-mgorman@suse.de>
 References: <1375970439-5111-1-git-send-email-mgorman@suse.de>
@@ -22,92 +22,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just as "sched: Favour moving tasks towards the preferred node" favours
-moving tasks towards nodes with a higher number of recorded NUMA hinting
-faults, this patch resists moving tasks towards nodes with lower faults.
+NUMA PTE scanning is expensive both in terms of the scanning itself and
+the TLB flush if there are any updates. Currently non-present PTEs are
+accounted for as an update and incurring a TLB flush where it is only
+necessary for anonymous migration entries. This patch addresses the
+problem and should reduce TLB flushes.
 
-[mgorman@suse.de: changelog]
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c     | 33 +++++++++++++++++++++++++++++++++
- kernel/sched/features.h |  8 ++++++++
- 2 files changed, 41 insertions(+)
+ mm/mprotect.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index dad3ae9..f828803 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4057,12 +4057,43 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
- 
- 	return false;
- }
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 1f4ab1c..8e7e9bd 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -101,8 +101,9 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 				make_migration_entry_read(&entry);
+ 				set_pte_at(mm, addr, pte,
+ 					swp_entry_to_pte(entry));
 +
-+
-+static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
-+{
-+	int src_nid, dst_nid;
-+
-+	if (!sched_feat(NUMA) || !sched_feat(NUMA_RESIST_LOWER))
-+		return false;
-+
-+	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
-+		return false;
-+
-+	src_nid = cpu_to_node(env->src_cpu);
-+	dst_nid = cpu_to_node(env->dst_cpu);
-+
-+	if (src_nid == dst_nid ||
-+	    p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
-+		return false;
-+
-+	if (p->numa_faults[dst_nid] < p->numa_faults[src_nid])
-+ 		return true;
-+ 
-+ 	return false;
-+}
-+
- #else
- static inline bool migrate_improves_locality(struct task_struct *p,
- 					     struct lb_env *env)
- {
- 	return false;
- }
-+
-+static inline bool migrate_degrades_locality(struct task_struct *p,
-+					     struct lb_env *env)
-+{
-+	return false;
-+}
- #endif
- 
- /*
-@@ -4125,6 +4156,8 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
- 	 * 3) too many balance attempts have failed.
- 	 */
- 	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
-+	if (!tsk_cache_hot)
-+		tsk_cache_hot = migrate_degrades_locality(p, env);
- 
- 	if (migrate_improves_locality(p, env)) {
- #ifdef CONFIG_SCHEDSTATS
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index d9278ce..5716929 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -74,4 +74,12 @@ SCHED_FEAT(NUMA,	false)
-  * balancing.
-  */
- SCHED_FEAT(NUMA_FAVOUR_HIGHER, true)
-+
-+/*
-+ * NUMA_RESIST_LOWER will resist moving tasks towards nodes where a
-+ * lower number of hinting faults have been recorded. As this has
-+ * the potential to prevent a task ever migrating to a new node
-+ * due to CPU overload it is disabled by default.
-+ */
-+SCHED_FEAT(NUMA_RESIST_LOWER, false)
- #endif
++				pages++;
+ 			}
+-			pages++;
+ 		}
+ 	} while (pte++, addr += PAGE_SIZE, addr != end);
+ 	arch_leave_lazy_mmu_mode();
 -- 
 1.8.1.4
 
