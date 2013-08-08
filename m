@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965274Ab3HHL0c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 07:26:32 -0400
+	id S965289Ab3HHL0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 07:26:38 -0400
 Received: from mga09.intel.com ([134.134.136.24]:35773 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965259Ab3HHL02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 07:26:28 -0400
+	id S965259Ab3HHL0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 07:26:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,838,1367996400"; 
-   d="scan'208";a="383802782"
+   d="scan'208";a="383802863"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 1/8] perf tools: add symbol filter to struct machine
-Date: Thu,  8 Aug 2013 14:32:20 +0300
-Message-Id: <1375961547-30267-2-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 3/8] perf report: set the machines symbol filter
+Date: Thu,  8 Aug 2013 14:32:22 +0300
+Message-Id: <1375961547-30267-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375961547-30267-1-git-send-email-adrian.hunter@intel.com>
 References: <1375961547-30267-1-git-send-email-adrian.hunter@intel.com>
@@ -28,102 +28,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The symbol filter needs to be applied machine-wide, so
-add it to struct machine.
-
-Currently tools pass the symbol filter as a parameter to
-various map-related functions.  However a need to load a
-map can occur anywhere in the code, at which point the
-filter is needed.
+Take into use the machines' symbol filter member.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/machine.c | 20 ++++++++++++++++++++
- tools/perf/util/machine.h |  5 +++++
- 2 files changed, 25 insertions(+)
+ tools/perf/builtin-report.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 6fcc358..4c7e0a28 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -25,6 +25,8 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- 	machine->kmaps.machine = machine;
- 	machine->pid = pid;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d785d89..f06a5a2 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -49,7 +49,6 @@ struct perf_report {
+ 	bool			mem_mode;
+ 	struct perf_read_values	show_threads_values;
+ 	const char		*pretty_printing_style;
+-	symbol_filter_t		annotate_init;
+ 	const char		*cpu_list;
+ 	const char		*symbol_filter_str;
+ 	float			min_percent;
+@@ -306,7 +305,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 	int ret;
  
-+	machine->symbol_filter = NULL;
-+
- 	machine->root_dir = strdup(root_dir);
- 	if (machine->root_dir == NULL)
- 		return -ENOMEM;
-@@ -95,6 +97,7 @@ void machines__init(struct machines *machines)
- {
- 	machine__init(&machines->host, "", HOST_KERNEL_ID);
- 	machines->guests = RB_ROOT;
-+	machines->symbol_filter = NULL;
- }
- 
- void machines__exit(struct machines *machines)
-@@ -118,6 +121,8 @@ struct machine *machines__add(struct machines *machines, pid_t pid,
- 		return NULL;
- 	}
- 
-+	machine->symbol_filter = machines->symbol_filter;
-+
- 	while (*p != NULL) {
- 		parent = *p;
- 		pos = rb_entry(parent, struct machine, rb_node);
-@@ -133,6 +138,21 @@ struct machine *machines__add(struct machines *machines, pid_t pid,
- 	return machine;
- }
- 
-+void machines__set_symbol_filter(struct machines *machines,
-+				 symbol_filter_t symbol_filter)
-+{
-+	struct rb_node *nd;
-+
-+	machines->symbol_filter = symbol_filter;
-+	machines->host.symbol_filter = symbol_filter;
-+
-+	for (nd = rb_first(&machines->guests); nd; nd = rb_next(nd)) {
-+		struct machine *machine = rb_entry(nd, struct machine, rb_node);
-+
-+		machine->symbol_filter = symbol_filter;
-+	}
-+}
-+
- struct machine *machines__find(struct machines *machines, pid_t pid)
- {
- 	struct rb_node **p = &machines->guests.rb_node;
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 5bb6244..603ffba 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -29,6 +29,7 @@ struct machine {
- 	struct list_head  kernel_dsos;
- 	struct map_groups kmaps;
- 	struct map	  *vmlinux_maps[MAP__NR_TYPES];
-+	symbol_filter_t	  symbol_filter;
- };
- 
- static inline
-@@ -51,6 +52,7 @@ typedef void (*machine__process_t)(struct machine *machine, void *data);
- struct machines {
- 	struct machine host;
- 	struct rb_root guests;
-+	symbol_filter_t symbol_filter;
- };
- 
- void machines__init(struct machines *machines);
-@@ -68,6 +70,9 @@ struct machine *machines__findnew(struct machines *machines, pid_t pid);
- void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size);
- char *machine__mmap_name(struct machine *machine, char *bf, size_t size);
- 
-+void machines__set_symbol_filter(struct machines *machines,
-+				 symbol_filter_t symbol_filter);
-+
- int machine__init(struct machine *machine, const char *root_dir, pid_t pid);
- void machine__exit(struct machine *machine);
- void machine__delete_dead_threads(struct machine *machine);
+ 	if (perf_event__preprocess_sample(event, machine, &al, sample,
+-					  rep->annotate_init) < 0) {
++					  machine->symbol_filter) < 0) {
+ 		fprintf(stderr, "problem processing %d event, skipping it.\n",
+ 			event->header.type);
+ 		return -1;
+@@ -924,7 +923,8 @@ repeat:
+ 	 */
+ 	if (use_browser == 1 && sort__has_sym) {
+ 		symbol_conf.priv_size = sizeof(struct annotation);
+-		report.annotate_init  = symbol__annotate_init;
++		machines__set_symbol_filter(&session->machines,
++					    symbol__annotate_init);
+ 		/*
+  		 * For searching by name on the "Browse map details".
+  		 * providing it only in verbose mode not to bloat too
 -- 
 1.7.11.7
 
