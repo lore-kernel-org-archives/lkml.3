@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab3HHGyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 02:54:16 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:52745 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062Ab3HHGyP (ORCPT
+	id S1757525Ab3HHG5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 02:57:00 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19760 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab3HHG46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 02:54:15 -0400
+	Thu, 8 Aug 2013 02:56:58 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 07 Aug 2013 23:56:58 -0700
+From: Wei Ni <wni@nvidia.com>
+To: <khali@linux-fr.org>, <linux@roeck-us.net>, <swarren@wwwdotorg.org>
+CC: <MLongnecker@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
+        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Wei Ni <wni@nvidia.com>
+Subject: [PATCH v2 0/3] Add power control for lm90
+Date: Thu, 8 Aug 2013 14:56:28 +0800
+Message-ID: <1375944991-29182-1-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <0000013f61e7609b-a8d1907b-8169-4f77-ab83-a624a8d0ab4a-000000@email.amazonses.com>
-References: <CAOtvUMc5w3zNe8ed6qX0OOM__3F_hOTqvFa1AkdXF0PHvzGZqg@mail.gmail.com>
-	<1371672168-9869-1-git-send-email-gilad@benyossef.com>
-	<0000013f61e7609b-a8d1907b-8169-4f77-ab83-a624a8d0ab4a-000000@email.amazonses.com>
-Date: Thu, 8 Aug 2013 09:54:13 +0300
-Message-ID: <CAOtvUMe=QQni4Ouu=P_vh8QSb4ZdnaX_fW1twn3QFcOjYgJBGA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] mm: make vmstat_update periodic run conditional
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 5:05 PM, Christoph Lameter <cl@linux.com> wrote:
->
-> On Wed, 19 Jun 2013, Gilad Ben-Yossef wrote:
->
-> > +static void vmstat_update(struct work_struct *w)
-> > +{
-> > +     int cpu, this_cpu = smp_processor_id();
-> > +
-> > +     if (unlikely(this_cpu == vmstat_monitor_cpu))
-> > +             for_each_cpu_not(cpu, &vmstat_cpus)
-> > +                     if (need_vmstat(cpu))
-> > +                             start_cpu_timer(cpu);
-> > +
-> > +     if (likely(refresh_cpu_vm_stats(this_cpu) || (this_cpu ==
-> > vmstat_monitor_cpu)))
-> > +             schedule_delayed_work(&__get_cpu_var(vmstat_work),
-> > +
-> > round_jiffies_relative(sysctl_stat_interval));
-> > +     else
-> > +             cpumask_clear_cpu(this_cpu, &vmstat_cpus);
->
-> The clearing of vmstat_cpus could be avoided if this processor is not
-> running tickless. Frequent updates to vmstat_cpus could become an issue.
+The device lm90 can be controlled by the vdd rail.
+Add function to power on/off the vdd.
+Enable the nct1008 on Tegra114 Dalmore board, and set the vdd-regulator.
 
-I like the idea of tying the vmstat disabling to the tickless logic
-but I seem to have run
-into a bit of a chicken and egg problem here:
+This series is v2, previous version patches:
+[v1]: http://www.mail-archive.com/linux-tegra@vger.kernel.org/msg12034.html
 
-vmstat_update runs from the vmstat work queue item by the workqueue
-kernel thread.
+Changes from v1:
+1. if get regulator failed, we should continue to run probe function,
+not return fail.
+2. call regulator_put() in error handler and remove function.
+3. add LM90 DT binding document.
 
-If this code is running, it means there are at least two schedulable tasks:
-1. The workqueue kernel thread, because it is running.
-2. At least one more task, otherwise were were in idle and the
-workqueue kernel thread
-would not execute this work item.
+Wei Ni (3):
+  hwmon: (lm90) Add power control
+  ARM: dt: t114 dalmore: add dt entry for nct1008
+  Documentation: dt: hwmon: add OF document for lm90
 
-Unfortunately, having two schedulable tasks means we're not running
-tickless, so the check
-will never trigger - or have I've missed something obvious?
+ Documentation/devicetree/bindings/hwmon/lm90.txt |   20 +++++++++
+ arch/arm/boot/dts/tegra114-dalmore.dts           |   10 ++++-
+ drivers/hwmon/lm90.c                             |   49 ++++++++++++++++++++++
+ 3 files changed, 78 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/hwmon/lm90.txt
 
-Thanks,
-Gilad
+-- 
+1.7.9.5
 
-
---
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a situation
-where the homework eats your dog?"
- -- Jean-Baptiste Queru
