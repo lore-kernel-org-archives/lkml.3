@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966255Ab3HHTXp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 15:23:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25064 "EHLO mx1.redhat.com"
+	id S966251Ab3HHTYg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 15:24:36 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1227 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966218Ab3HHTXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 15:23:34 -0400
-Date: Thu, 8 Aug 2013 21:17:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Long Gao <gaolong@kylinos.com.cn>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Patch for lost wakeups
-Message-ID: <20130808191749.GA12062@redhat.com>
-References: <tencent_26310211398C21034BD3B2F9@qq.com> <CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com>
+	id S966205Ab3HHTYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 15:24:35 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+From: "Christian Daudt" <csd@broadcom.com>
+To: "Christian Daudt" <csd@broadcom.com>
+cc: "Russell King" <linux@arm.linux.org.uk>,
+        "Stephen Warren" <swarren@nvidia.com>,
+        "Olof Johansson" <olof@lixom.net>,
+        "Markus Mayer" <markus.mayer@linaro.org>,
+        "Arnd Bergmann" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: bcm: Rename board_bcm
+Date: Thu, 8 Aug 2013 12:24:23 -0700
+Message-ID: <1375989863-17144-1-git-send-email-csd@broadcom.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-WSS-ID: 7E1D300931W82353273-01-01
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08, Linus Torvalds wrote:
->
-> As a result, doing a "recalc_sigpending_and_wake(()"
+In order to support multiple SoC models in the mach-bcm
+directory, board_bcm.c is being renamed board_bcm281xx.c
 
-and btw it should die, I think.
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
+Signed-off-by: Christian Daudt <csd@broadcom.com>
 
-> is definitely
-> incorrect, because sigpending state cannot actually have changed.
+diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
+index 6adb6aec..873817e 100644
+--- a/arch/arm/mach-bcm/Makefile
++++ b/arch/arm/mach-bcm/Makefile
+@@ -10,6 +10,6 @@
+ # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ 
+-obj-$(CONFIG_ARCH_BCM)		:= board_bcm.o bcm_kona_smc.o bcm_kona_smc_asm.o
++obj-$(CONFIG_ARCH_BCM)		:= board_bcm281xx.o bcm_kona_smc.o bcm_kona_smc_asm.o
+ plus_sec := $(call as-instr,.arch_extension sec,+sec)
+ AFLAGS_bcm_kona_smc_asm.o	:=-Wa,-march=armv7-a$(plus_sec)
+diff --git a/arch/arm/mach-bcm/board_bcm.c b/arch/arm/mach-bcm/board_bcm281xx.c
+similarity index 100%
+rename from arch/arm/mach-bcm/board_bcm.c
+rename to arch/arm/mach-bcm/board_bcm281xx.c
+-- 
+1.7.10.4
 
-Yes, if we need to wakeup in this case something is already wrong.
-
->  - somebody setting TASK_SLEEPING -> __schedule() testing the
-> signal_pending_state()
->
-> and as far as I can tell we have proper barriers for those (the
-> scheduler gets the rq lock
-
-Yes, but... ttwu() takse another lock, ->pi_lock to test ->state.
-
-This looks racy, even if wmb() actually acts as mb(), we don't
-have mb() on the other side and schedule() can miss SIGPENDING?
-
-Unless the task does set_current_state(TASK_INTERRUPTIBLE) which
-adds mb(). But, just for example, sigsuspend() relies on schedule().
-
->         smp_wmb();
->         raw_spin_lock_irqsave(&p->pi_lock, flags);
->         if (!(p->state & state))
->
-> before it tests the task state. And the wmb() *together* with the
-> spinlock really should be a full memory barrier (nothing can get out
-> from the spinlock, and any writes before this had better be serialized
-> by the wmb and the write inherent in the spinlock itself). But this is
-> definitely some subtle stuff.
-
-So perhaps it makes sense to re-test after s/smp_wmb/smp_mb/ ?
-
-And perhaps we can add smp_mb__before_lock(), we alredy have
-smp_mb__after_lock().
-
-And of course, there could be another bug. I just did
-"grep recalc_sigpending" and immediately found at least one buggy
-user, fs/dlm/user.c which calls it lockless.
-
-> >  Every time Xorg hangs up,  the status of Xorg is read as following(cat /proc/2597/status):
-
-Gao, could you show /proc/pid/stack just in case?
-
-Oleg.
 
