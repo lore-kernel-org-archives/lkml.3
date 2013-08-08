@@ -1,39 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965808Ab3HHPKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 11:10:04 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48680 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965740Ab3HHPKC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 11:10:02 -0400
-Date: Thu, 8 Aug 2013 08:09:54 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: axboe@kernel.dk, neilb@suse.de, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org
-Subject: Re: [PATCH 0/22] Immutable biovecs, block layer changes
-Message-ID: <20130808150954.GA30092@infradead.org>
-References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
+	id S965822Ab3HHPKU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 11:10:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1539 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965740Ab3HHPKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 11:10:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,840,1367996400"; 
+   d="scan'208";a="383903957"
+Message-ID: <5203B68A.1070306@linux.intel.com>
+Date: Thu, 08 Aug 2013 08:17:30 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Rob Landley <rob@landley.net>
+CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, rjw@sisk.pl,
+        arjan@linux.intel.com, len.brown@intel.com,
+        jacob.jun.pan@linux.intel.com, corbet@lwn.net, joe@perches.com
+Subject: Re: [RFC v02 1/5] PowerCap: Documentation
+References: <1375969417.2737.0@driftwood>
+In-Reply-To: <1375969417.2737.0@driftwood>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 02:54:09PM -0700, Kent Overstreet wrote:
-> _However_, I have more patches (that depend on this patch series) to get
-> that back - segment merging improvements that get rid of
-> bi_seg_front_size, bi_seg_back_size, and bi_phys_segments. Once all that
-> is in it should be a net reduction to the size of struct bio.
-
-What is preventing you from sending those out as well?  While it's not
-absolutely nessecary it would certainly be good if we'd avoid a struct
-bio size regression.
+On 08/08/2013 06:43 AM, Rob Landley wrote:
+> On 08/07/2013 11:12:41 AM, Srinivas Pandruvada wrote:
+>> Added power cap framework documentation. This explains the use of 
+>> power capping
+>> framework, sysfs and programming interface.
+>> There are two documents:
+>> Documentation/powercap/PowerCappingFramework.txt: Explains use case 
+>> and API in
+>> details.
+>> Documentation/ABI/testing/sysfs-class-powercap: Explains ABIs.
+>>
+>> Reviewed-by: Len Brown <len.brown@intel.com>
+>> Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+>> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+>> Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+>> ---
+>>  Documentation/ABI/testing/sysfs-class-powercap   | 165 ++++++
+>>  Documentation/powercap/PowerCappingFramework.txt | 686 
+>> +++++++++++++++++++++++
+> ...
+>> --- /dev/null
+>> +++ b/Documentation/powercap/PowerCappingFramework.txt
+>> @@ -0,0 +1,686 @@
+>> +Power Capping Framework
+>> +==================================
+>> +
+>> +The Linux Power Capping Framework provides user-space with a common
+>> +API to kernel-mode power-capping drivers.  At the same time,
+>> +it provides the hardware-specific power-capping drivers with
+>> +a uniform API to user-space.
+>
+> s/.  At the same time, it provides/, and/
+>
+>> +Terminology
+>> +=========================
+>> +The Power Capping framework organizes power capping devices under a 
+>> tree structure.
+>> +At the root level, each device is under some "controller", which is 
+>> the enabler
+>> +of technology.
+>
+> A controller is the enabler of technology?
+>
+> What does that mean?
+>
+>> For example this can be "RAPL".
+>
+> Ah, clears it right up.
+>
+>> +Under each controllers,
+>
+> each doesn't take a plural.
+>
+>> there are multiple power zones, which can be independently
+>> +monitored and controlled.
+>> +Each power zone can be organized as a tree with parent, children and 
+>> siblings.
+>> +Each power zone defines attributes to enable power monitoring and 
+>> constraints.
+>> +
+>> +Example sysfs interface tree:
+>> +
+>> +/sys/devices/virtual/power_cap
+>> +└── intel-rapl
+> ... intel intel intel intel...
+>> +
+>> +For example, above powercap sysfs tree represents RAPL(Running 
+>> Average Power Limit)
+>> +type controls available in the Intel® 64 and IA-32 Processor 
+>> Architectures. Here
+>
+> What are the chances of this ever being applied to a non-intel 
+> processor? (Should it be under Documentation/x86, or is it presented 
+> as something with a nonzero chance of actually ever being generic?)
+>
+This framework has nothing to do with Intel processors. This is not 
+processor specific. It can be even used for non processor parts like a 
+wireless module.
+Any part which allows some configuration of its power budget, can use 
+this framework.
+>> +under controller "intel-rapl" there are two CPU packages 
+>> (package-0/1), which can
+>> +provide power monitoring and controls (intel-rapl:0 and 
+>> intel-rapl:1). Each power
+>> +zone has a name.
+>> +For example:
+>> +cat /sys/class/power_cap/intel-rapl/intel-rapl:0/name
+>> +package-0
+>> +
+>> +In addition to providing monitoring and control at package level, 
+>> each package
+>> +is further divided into child power zones (called domains in the RAPL
+>> specifications).
+>
+> Where are the RAPL specifications, and is this framework just an 
+> implementation of them or is it more generic?
+RAPL specifications are part of Intel Software Developer's manual. This 
+can be downloaded from Intel website.
+>> +Here zones represent controls for core and dram  parts. These zones 
+>> can be represented
+>> +as children of package.
+>> +For example:
+>> +cat /sys/class/power_cap/intel-rapl/intel-rapl:0/intel-rapl:0:1/name
+>> +dram
+>> +
+>> +Under RAPL framework there are two constraints, one for
+>> +short term and one for long term, with two different time windows. 
+>> These can be
+>> +represented as two constraints, with different time windows, power 
+>> limits and names.
+>> +For example:
+>> +    constraint_0_name
+>> +    constraint_0_power_limit_uw
+>> +    constraint_0_time_window_us
+>> +    constraint_1_name
+>> +    constraint_1_power_limit_uw
+>> +    constraint_1_time_window_us
+>> +
+>> +Power Zone Attributes
+>> +=================================
+>> +Monitoring attributes
+>> +----------------------
+>> +
+>> +energy_uj (rw): Current energy counter in micro joules. Write "0" to 
+>> reset.
+>> +If the counter can not be reset, then this attribute is read only.
+>> +
+>> +max_energy_range_uj (ro): Range of the above energy counter in 
+>> micro-joules.
+>> +
+>> +power_uw (rw): Current power in micro watts. Write "0" to resets the 
+>> value.
+>> +If the value can not be reset, then this attribute is read only.
+>> +
+>> +max_power_range_uw (ro): Range of the above power value in micro-watts.
+>> +
+>> +name (ro): Name of this power zone.
+>> +
+>> +It is possible that some domains can have both power and energy 
+>> counters and
+>> +ranges, but at least one is mandatory.
+>> +
+>> +Constraints
+>> +----------------
+>> +constraint_X_power_limit_uw (rw): Power limit in micro watts, which 
+>> should be
+>> +applicable for the time window specified by 
+>> "constraint_X_time_window_us".
+>> +
+>> +constraint_X_time_window_us (rw): Time window in micro seconds.
+>> +
+>> +constraint_X_name (ro): An optional name of the constraint
+>> +
+>> +constraint_X_max_power_uw(ro): Maximum allowed power in micro watts.
+>> +
+>> +constraint_X_min_power_uw(ro): Minimum allowed power in micro watts.
+>> +
+>> +constraint_X_max_time_window_us(ro): Maximum allowed time window in 
+>> micro seconds.
+>> +
+>> +constraint_X_min_time_window_us(ro): Minimum allowed time window in 
+>> micro seconds.
+>> +
+>> +In addition each node has an attribute "type", which shows, whether 
+>> is a controller
+>> +or power zone. Except power_limit_uw and time_window_us other fields 
+>> are optional.
+>> +
+>> +Power Cap Client Driver Interface
+>> +==================================
+>> +The API summary:
+>> +
+>> +Call powercap_allocate_controller to define a controller with a name.
+>> +Call powercap_zone_register for each power zone for this controller.
+>> +power zones can have other power zone as a parent or don't have a
+>> +parent.
+>
+> Trying not to nitpick "english isn't a first language here", but...
+>
+> Power zones can have another power zone as a parent or no parent.
+>
+Thanks for pointing out grammatical errors. I have to let our technical 
+writer reviews this.
+>> +During powercap_zone_register defines number of constraints and 
+>> callbacks.
+>> +
+>> +To Free a power zone call powercap_zone_unregister.
+>> +To free a controller call powercap_deallocate_controller.
+>> +
+>> +Rest of this document is generated by using kernel-doc on
+>> +powercap.h
+>
+> Isn't that what Documentation/DocBook is for? (If powercap.h is 
+> modified the need to update this file is nonobvious...)
+Yes. But at RFC stage, it is easy to review, if I paste here.
+>
+> Rob
 
