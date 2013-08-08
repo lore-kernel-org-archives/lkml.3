@@ -1,167 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730Ab3HHGeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 02:34:20 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:61571 "EHLO
+	id S933594Ab3HHGeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 02:34:19 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:42502 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755758Ab3HHGeR (ORCPT
+	with ESMTP id S1755822Ab3HHGeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 02:34:17 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-06-52033be8c00a
+X-AuditID: 9c93017e-b7b62ae000000eeb-04-52033be7eb16
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
         LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/3] perf tools: Separate out GTK codes to libperf-gtk.so
-Date: Thu,  8 Aug 2013 15:34:08 +0900
-Message-Id: <1375943650-2273-2-git-send-email-namhyung@kernel.org>
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH/RFC 0/3] perf ui/gtk: Separate out GTK code to a shared object (v3)
+Date: Thu,  8 Aug 2013 15:34:07 +0900
+Message-Id: <1375943650-2273-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375943650-2273-1-git-send-email-namhyung@kernel.org>
-References: <1375943650-2273-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate out GTK codes to a shared object called libperf-gtk.so.  This
-time only GTK codes are built with -fPIC and libperf remains as is.
+Hi,
 
-Cc: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Makefile        | 39 ++++++++++++++++++++++++++++-----------
- tools/perf/config/Makefile | 14 ++++++++++----
- 2 files changed, 38 insertions(+), 15 deletions(-)
+This is v3 of gtk code separation patchset to reduce library
+dependencies of the perf executable.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e0d3d9f96771..dba23d201f27 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -113,6 +113,7 @@ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
- BUILTIN_OBJS =
- LIB_H =
- LIB_OBJS =
-+GTK_OBJS =
- PYRF_OBJS =
- SCRIPT_SH =
- 
-@@ -485,13 +486,19 @@ ifndef NO_SLANG
- endif
- 
- ifndef NO_GTK2
--  LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/util.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
--  LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
-+  ALL_PROGRAMS += $(OUTPUT)libperf-gtk.so
-+
-+  GTK_OBJS += $(OUTPUT)ui/gtk/browser.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/hists.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/setup.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/util.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/helpline.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/progress.o
-+  GTK_OBJS += $(OUTPUT)ui/gtk/annotate.o
-+
-+install-gtk: $(OUTPUT)libperf-gtk.so
-+	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(libdir_SQ)'
-+	$(INSTALL) $(OUTPUT)libperf-gtk.so '$(DESTDIR_SQ)$(libdir_SQ)'
- endif
- 
- ifndef NO_LIBPERL
-@@ -545,6 +552,12 @@ $(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
-                $(BUILTIN_OBJS) $(LIBS) -o $@
- 
-+$(GTK_OBJS): $(OUTPUT)%.o: %.c $(LIB_H)
-+	$(QUIET_CC)$(CC) -o $@ -c -fPIC $(CFLAGS) $(GTK_CFLAGS) $<
-+
-+$(OUTPUT)libperf-gtk.so: $(GTK_OBJS) $(PERFLIBS)
-+	$(QUIET_LINK)$(CC) -o $@ -shared $(ALL_LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
-+
- $(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
- 		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
-@@ -763,7 +776,9 @@ check: $(OUTPUT)common-cmds.h
- 
- ### Installation rules
- 
--install-bin: all
-+install-gtk:
-+
-+install-bin: all install-gtk
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
- 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
- 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
-@@ -796,15 +811,17 @@ $(INSTALL_DOC_TARGETS):
- ### Cleaning rules
- 
- clean: $(LIBTRACEEVENT)-clean $(LIBLK)-clean
--	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
-+	$(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(GTK_OBJS)
-+	$(RM) $(OUTPUT)perf-archive $(OUTPUT)perf.o $(LANG_BINDINGS)
- 	$(RM) $(ALL_PROGRAMS) perf
--	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope*
-+	$(RM) *.spec *.pyc *.pyo */*.pyc */*.pyo
-+	$(RM) $(OUTPUT)common-cmds.h TAGS tags cscope*
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
- 	$(RM) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS
- 	$(RM) $(OUTPUT)util/*-bison*
- 	$(RM) $(OUTPUT)util/*-flex*
- 	$(python-clean)
- 
--.PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK)
-+.PHONY: all install clean strip $(LIBTRACEEVENT) $(LIBLK) install-gtk
- .PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
- .PHONY: .FORCE-PERF-VERSION-FILE TAGS tags cscope .FORCE-PERF-CFLAGS
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 214e17e97e5c..6bdfd0302c4e 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -267,11 +267,11 @@ ifndef NO_GTK2
-     NO_GTK2 := 1
-   else
-     ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
--      CFLAGS += -DHAVE_GTK_INFO_BAR
-+      GTK_CFLAGS := -DHAVE_GTK_INFO_BAR
-     endif
--    CFLAGS += -DGTK2_SUPPORT
--    CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
--    EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
-+    GTK_CFLAGS += -DGTK2_SUPPORT
-+    GTK_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-+    GTK_LIBS := $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
-   endif
- endif
- 
-@@ -456,7 +456,12 @@ else
- sysconfdir = $(prefix)/etc
- ETC_PERFCONFIG = etc/perfconfig
- endif
-+ifeq ($(IS_X86_64),1)
-+lib = lib64
-+else
- lib = lib
-+endif
-+libdir = $(prefix)/$(lib)
- 
- # Shell quote (do not use $(call) to accommodate ancient setups);
- ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
-@@ -469,6 +474,7 @@ template_dir_SQ = $(subst ','\'',$(template_dir))
- htmldir_SQ = $(subst ','\'',$(htmldir))
- prefix_SQ = $(subst ','\'',$(prefix))
- sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
-+libdir_SQ = $(subst ','\'',$(libdir))
- 
- ifneq ($(filter /%,$(firstword $(perfexecdir))),)
- perfexec_instdir = $(perfexecdir)
+I only built libperf-gtk.so with -fPIC, and it's not linked to libperf
+at build time.  All unresolved symbols used for perf should be
+resolved at runtime via perf executable (so libperf.a) - I didn't know
+that the linker permits unresolved symbols in a shared library at
+build time.
+
+Tested on my x86-64 machine only.  It seems work well for me.
+
+v3 changes:
+ * fix build failure on O= option
+ * fix build failure on NO_GTK2= option
+ * add Reviewed-by tag from Pekka
+ * patch 1 of previous series already merged
+
+You can find it on my 'perf/separate-v3' branch in my tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks
+Namhyung
+
+
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+
+Namhyung Kim (3):
+  perf tools: Separate out GTK codes to libperf-gtk.so
+  perf tools: Setup GTK browser dynamically
+  perf tools: Run dynamic loaded GTK browser
+
+ tools/perf/Makefile           | 39 +++++++++++++++++++++++----------
+ tools/perf/builtin-annotate.c | 26 +++++++++++++++++++---
+ tools/perf/builtin-report.c   | 16 ++++++++++++--
+ tools/perf/config/Makefile    | 12 ++++++++---
+ tools/perf/ui/gtk/annotate.c  | 13 ++++++++---
+ tools/perf/ui/gtk/gtk.h       | 16 ++++++++++++++
+ tools/perf/ui/setup.c         | 50 +++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/ui/ui.h            | 12 +----------
+ tools/perf/util/annotate.h    | 24 ---------------------
+ tools/perf/util/hist.h        | 15 -------------
+ 10 files changed, 149 insertions(+), 74 deletions(-)
+
 -- 
 1.7.11.7
 
