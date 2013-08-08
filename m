@@ -1,365 +1,647 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab3HHRDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 13:03:03 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:54244 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab3HHRDB (ORCPT
+	id S1758076Ab3HHRDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 13:03:54 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:45669 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab3HHRDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 13:03:01 -0400
-Message-ID: <5203CF41.4040607@gmail.com>
-Date: Thu, 08 Aug 2013 18:02:57 +0100
+	Thu, 8 Aug 2013 13:03:52 -0400
+Message-ID: <5203CF75.802@gmail.com>
+Date: Thu, 08 Aug 2013 18:03:49 +0100
 From: Paul McQuade <paulmcquad@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: gregkh@linuxfoundation.org, Linux-kernel <linux-kernel@vger.kernel.org>
-CC: Linux-Devel <devel@driverdev.osuosl.org>
-Subject: [PATCH 1/2] Staging: BCM: removed whitespaces and Errors.
+To: gregkh@linuxfoundation.org
+CC: Linux-Devel <devel@driverdev.osuosl.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] Staging: BCM: Removed more whitespace/Errors
 Content-Type: multipart/mixed;
- boundary="------------070001090807090304030002"
+ boundary="------------060504010103000207090504"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a multi-part message in MIME format.
---------------070001090807090304030002
+--------------060504010103000207090504
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 
 
 
---------------070001090807090304030002
+--------------060504010103000207090504
 Content-Type: text/x-patch;
- name="0001-Staging-BCM-removed-whitespaces-and-Errors.patch"
+ name="0002-Staging-BCM-Removed-more-whitespace-Errors.patch"
 Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment;
- filename*0="0001-Staging-BCM-removed-whitespaces-and-Errors.patch"
+ filename*0="0002-Staging-BCM-Removed-more-whitespace-Errors.patch"
 
->From 6e70cd8754968f37e82f6a4d8b9dffffa75ff6e0 Mon Sep 17 00:00:00 2001
+>From 9f6231ce16996e35545e20ce1d91abc058f2a6fb Mon Sep 17 00:00:00 2001
 From: Paul McQuade <paulmcquad@gmail.com>
-Date: Thu, 8 Aug 2013 16:09:46 +0100
-Subject: [PATCH 1/2] Staging: BCM: removed whitespaces and Errors.
+Date: Thu, 8 Aug 2013 17:49:22 +0100
+Subject: [PATCH 2/2] Staging: BCM: Removed more whitespace/Errors
 
-BCM Driver had a lot of whitespaces and errors.
-Some of them are removed by this patch.
+Interface Whitespace/Errors Removed with the help of checkpatch.pl
 
 Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
 ---
- drivers/staging/bcm/InterfaceDld.c      |    2 +-
- drivers/staging/bcm/InterfaceIdleMode.c |   16 ++---
- drivers/staging/bcm/InterfaceIsr.c      |  109 ++++++++++++++-----------------
- drivers/staging/bcm/InterfaceMisc.c     |    2 +-
- drivers/staging/bcm/headers.h           |    4 +-
- 5 files changed, 59 insertions(+), 74 deletions(-)
+ drivers/staging/bcm/InterfaceMacros.h |    6 +-
+ drivers/staging/bcm/InterfaceMisc.h   |   14 +--
+ drivers/staging/bcm/InterfaceRx.c     |  166 ++++++++++++++-------------------
+ drivers/staging/bcm/InterfaceTx.c     |  135 +++++++++++----------------
+ 4 files changed, 136 insertions(+), 185 deletions(-)
 
-diff --git a/drivers/staging/bcm/InterfaceDld.c b/drivers/staging/bcm/InterfaceDld.c
-index 348ad75..fe7fb4c 100644
---- a/drivers/staging/bcm/InterfaceDld.c
-+++ b/drivers/staging/bcm/InterfaceDld.c
-@@ -115,7 +115,7 @@ int InterfaceFileReadbackFromChip(PVOID arg, struct file *flp, unsigned int on_c
- 			while (len) {
- 				if (*(unsigned int *)&buff_readback[len] != *(unsigned int *)&buff[len]) {
- 					BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "Firmware Download is not proper %d", fw_down);
--					BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "Val from Binary %x, Val From Read Back %x ", *(unsigned int *)&buff[len], *(unsigned int*)&buff_readback[len]);
-+					BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "Val from Binary %x, Val From Read Back %x ", *(unsigned int *)&buff[len], *(unsigned int *)&buff_readback[len]);
- 					BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "len =%x!!!", len);
- 					Status = -EIO;
- 					goto exit;
-diff --git a/drivers/staging/bcm/InterfaceIdleMode.c b/drivers/staging/bcm/InterfaceIdleMode.c
-index 5347828..22150db 100644
---- a/drivers/staging/bcm/InterfaceIdleMode.c
-+++ b/drivers/staging/bcm/InterfaceIdleMode.c
-@@ -52,7 +52,7 @@ int InterfaceIdleModeRespond(struct bcm_mini_adapter *Adapter, unsigned int *pui
+diff --git a/drivers/staging/bcm/InterfaceMacros.h b/drivers/staging/bcm/InterfaceMacros.h
+index 7001caf..efa528e 100644
+--- a/drivers/staging/bcm/InterfaceMacros.h
++++ b/drivers/staging/bcm/InterfaceMacros.h
+@@ -3,14 +3,14 @@
  
- 	if (ntohl(*puiBuffer) == GO_TO_IDLE_MODE_PAYLOAD) {
- 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, " Got GO_TO_IDLE_MODE_PAYLOAD(210) Msg Subtype");
--		if (ntohl(*(puiBuffer+1)) == 0 ) {
-+		if (ntohl(*(puiBuffer+1)) == 0) {
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "Got IDLE MODE WAKE UP Response From F/W");
+ #define BCM_USB_MAX_READ_LENGTH 2048
  
- 			status = wrmalt (Adapter, SW_ABORT_IDLEMODE_LOC, &uiRegRead, sizeof(uiRegRead));
-@@ -95,8 +95,7 @@ int InterfaceIdleModeRespond(struct bcm_mini_adapter *Adapter, unsigned int *pui
- 			wake_up(&Adapter->lowpower_mode_wait_queue);
+-#define MAXIMUM_USB_TCB      128
+-#define MAXIMUM_USB_RCB 	 128
++#define MAXIMUM_USB_TCB			128
++#define MAXIMUM_USB_RCB			128
  
- 		} else {
--			if (TRUE == Adapter->IdleMode)
--			{
-+			if (TRUE == Adapter->IdleMode) {
- 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "Device is already in Idle mode....");
- 				return status ;
- 			}
-@@ -168,8 +167,7 @@ static int InterfaceAbortIdlemode(struct bcm_mini_adapter *Adapter, unsigned int
- 	if (Adapter->ulPowerSaveMode == DEVICE_POWERSAVE_MODE_AS_MANUAL_CLOCK_GATING) {
- 		value = 0x80000000;
- 		status = wrmalt(Adapter, DEBUG_INTERRUPT_GENERATOR_REGISTOR, &value, sizeof(value));
--		if (status)
--		{
-+		if (status) {
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "WRM to DEBUG_INTERRUPT_GENERATOR_REGISTOR Register failed");
- 			return status;
- 		}
-@@ -196,7 +194,7 @@ static int InterfaceAbortIdlemode(struct bcm_mini_adapter *Adapter, unsigned int
- 		/* mdelay(25); */
+ #define MAX_BUFFERS_PER_QUEUE   256
  
- 		timeout = jiffies +  msecs_to_jiffies(50) ;
--		while ( timeout > jiffies ) {
-+		while (timeout > jiffies) {
- 			itr++ ;
- 			rdmalt(Adapter, CHIP_ID_REG, &chip_id, sizeof(UINT));
- 			if (0xbece3200 == (chip_id&~(0xF0)))
-@@ -204,7 +202,7 @@ static int InterfaceAbortIdlemode(struct bcm_mini_adapter *Adapter, unsigned int
- 			if (chip_id == Adapter->chip_id)
- 				break;
- 		}
--		if (timeout < jiffies )
-+		if (timeout < jiffies)
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "Not able to read chip-id even after 25 msec");
- 		else
- 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "Number of completed iteration to read chip-id :%lu", itr);
-@@ -242,14 +240,14 @@ void InterfaceHandleShutdownModeWakeup(struct bcm_mini_adapter *Adapter)
- 		uiRegVal = 0;
- 		Status = wrmalt(Adapter, DEBUG_INTERRUPT_GENERATOR_REGISTOR, &uiRegVal, sizeof(uiRegVal));
- 		if (Status) {
--			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,"WRM to DEBUG_INTERRUPT_GENERATOR_REGISTOR Failed with err :%d", Status);
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "WRM to DEBUG_INTERRUPT_GENERATOR_REGISTOR Failed with err :%d", Status);
- 			return;
- 		}
- 	}
+ #define MAX_DATA_BUFFER_SIZE    2048
  
-     else {
+-//Num of Asynchronous reads pending
++/* Num of Asynchronous reads pending */
+ #define NUM_RX_DESC 64
  
--        /* clear Interrupt EP registers. */
-+		/* clear Interrupt EP registers. */
- 		bytes = rdmalt(Adapter, DEVICE_INT_OUT_EP_REG0, &uiRegVal, sizeof(uiRegVal));
- 		if (bytes < 0) {
- 			Status = bytes;
-diff --git a/drivers/staging/bcm/InterfaceIsr.c b/drivers/staging/bcm/InterfaceIsr.c
-index 8322f1b..2c8b801 100644
---- a/drivers/staging/bcm/InterfaceIsr.c
-+++ b/drivers/staging/bcm/InterfaceIsr.c
-@@ -11,101 +11,92 @@ static void read_int_callback(struct urb *urb/*, struct pt_regs *regs*/)
- 		pr_info(PFX "%s: interrupt status %d\n",
- 			Adapter->dev->name, status);
+ #define SYS_CFG 0x0F000C00
+diff --git a/drivers/staging/bcm/InterfaceMisc.h b/drivers/staging/bcm/InterfaceMisc.h
+index bce6869..cb3e0cc 100644
+--- a/drivers/staging/bcm/InterfaceMisc.h
++++ b/drivers/staging/bcm/InterfaceMisc.h
+@@ -14,13 +14,13 @@ InterfaceWRM(struct bcm_interface_adapter *psIntfAdapter,
+ 			INT len);
  
--	if(Adapter->device_removed == TRUE)
--	{
--		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Device has Got Removed.");
-+	if (Adapter->device_removed == TRUE) {
-+		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Device has Got Removed.");
- 		return ;
- 	}
  
--	if(((Adapter->bPreparingForLowPowerMode == TRUE) && (Adapter->bDoSuspend == TRUE)) ||
-+	if (((Adapter->bPreparingForLowPowerMode == TRUE) && (Adapter->bDoSuspend == TRUE)) ||
- 		psIntfAdapter->bSuspended ||
--		psIntfAdapter->bPreparingForBusSuspend)
--	{
--			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt call back is called while suspending the device");
--			return ;
-+		psIntfAdapter->bPreparingForBusSuspend) {
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Interrupt call back is called while suspending the device");
-+			return;
- 	}
+-int InterfaceFileDownload( PVOID psIntfAdapter,
+-                        struct file *flp,
+-                        unsigned int on_chip_loc);
++int InterfaceFileDownload(PVOID psIntfAdapter,
++						struct file *flp,
++						unsigned int on_chip_loc);
  
--	//BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "interrupt urb status %d", status);
--	switch (status) {
-+	/*BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "interrupt urb status %d", status);*/
-+		switch (status)
- 	    /* success */
--	    case STATUS_SUCCESS:
--		if ( urb->actual_length )
--		{
-+		case STATUS_SUCCESS:
-+		if (urb->actual_length) {
+-int InterfaceFileReadbackFromChip( PVOID psIntfAdapter,
+-                        struct file *flp,
+-                        unsigned int on_chip_loc);
++int InterfaceFileReadbackFromChip(PVOID psIntfAdapter,
++						struct file *flp,
++						unsigned int on_chip_loc);
  
--			if(psIntfAdapter->ulInterruptData[1] & 0xFF)
--			{
--				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Got USIM interrupt");
-+			if (psIntfAdapter->ulInterruptData[1] & 0xFF) {
-+				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Got USIM interrupt");
- 			}
  
--			if(psIntfAdapter->ulInterruptData[1] & 0xFF00)
--			{
-+			if (psIntfAdapter->ulInterruptData[1] & 0xFF00) {
- 				atomic_set(&Adapter->CurrNumFreeTxDesc,
- 					(psIntfAdapter->ulInterruptData[1] & 0xFF00) >> 8);
- 				atomic_set (&Adapter->uiMBupdate, TRUE);
--				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "TX mailbox contains %d",
-+				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "TX mailbox contains %d",
- 					atomic_read(&Adapter->CurrNumFreeTxDesc));
- 			}
--			if(psIntfAdapter->ulInterruptData[1] >> 16)
--			{
--				Adapter->CurrNumRecvDescs=
-+			if (psIntfAdapter->ulInterruptData[1] >> 16) {
-+				Adapter->CurrNumRecvDescs =
- 					(psIntfAdapter->ulInterruptData[1]  >> 16);
--				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"RX mailbox contains %d",
-+				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "RX mailbox contains %d",
- 					Adapter->CurrNumRecvDescs);
- 				InterfaceRx(psIntfAdapter);
- 			}
--			if(Adapter->fw_download_done &&
-+			if (Adapter->fw_download_done &&
- 				!Adapter->downloadDDR &&
--				atomic_read(&Adapter->CurrNumFreeTxDesc))
--			{
--				psIntfAdapter->psAdapter->downloadDDR +=1;
-+				atomic_read(&Adapter->CurrNumFreeTxDesc)) {
-+				psIntfAdapter->psAdapter->downloadDDR += 1;
- 				wake_up(&Adapter->tx_packet_wait_queue);
- 			}
--			if(FALSE == Adapter->waiting_to_fw_download_done)
--			{
-+			if (FALSE == Adapter->waiting_to_fw_download_done) {
- 				Adapter->waiting_to_fw_download_done = TRUE;
- 				wake_up(&Adapter->ioctl_fw_dnld_wait_queue);
- 			}
--			if(!atomic_read(&Adapter->TxPktAvail))
--			{
-+			if (!atomic_read(&Adapter->TxPktAvail)) {
- 				atomic_set(&Adapter->TxPktAvail, 1);
- 				wake_up(&Adapter->tx_packet_wait_queue);
- 			}
--			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Firing interrupt in URB");
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Firing interrupt in URB");
- 		}
- 		break;
--		case -ENOENT :
-+		case -ENOENT:
- 		{
--			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"URB has got disconnected ....");
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "URB has got disconnected ....");
- 			return ;
- 		}
- 		case -EINPROGRESS:
- 		{
--			//This situation may happened when URBunlink is used. for detail check usb_unlink_urb documentation.
--			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Impossibe condition has occurred... something very bad is going on");
--			break ;
--			//return;
-+			/*This situation may happened when URBunlink is used. for detail check usb_unlink_urb documentation.*/
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Impossibe condition has occurred... something very bad is going on");
-+			break;
-+			/*return;*/
- 		}
- 		case -EPIPE:
- 		{
--				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt IN endPoint  has got halted/stalled...need to clear this");
-+				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Interrupt IN endPoint  has got halted/stalled...need to clear this");
- 				Adapter->bEndPointHalted = TRUE ;
- 				wake_up(&Adapter->tx_packet_wait_queue);
- 				urb->status = STATUS_SUCCESS ;
- 				return;
- 		}
- 	    /* software-driven interface shutdown */
--	    case -ECONNRESET: //URB got unlinked.
--	    case -ESHUTDOWN:		// hardware gone. this is the serious problem.
--	    						//Occurs only when something happens with the host controller device
--	    case -ENODEV : //Device got removed
--		case -EINVAL : //Some thing very bad happened with the URB. No description is available.
--	    	BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"interrupt urb error %d", status);
-+	    case -ECONNRESET: /*URB got unlinked.*/
-+	    case -ESHUTDOWN:		/* hardware gone. this is the serious problem.*/
-+		/* Occurs only when something happens with the host controller device*/
-+	    case -ENODEV: /* Device got removed */
-+		case -EINVAL: /* Some thing very bad happened with the URB. No description is available.*/
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "interrupt urb error %d", status);
- 			urb->status = STATUS_SUCCESS ;
--			break ;
--			//return;
-+			break;
-+			/*return;*/
- 	    default:
--			//This is required to check what is the defaults conditions when it occurs..
--			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL,"GOT DEFAULT INTERRUPT URB STATUS :%d..Please Analyze it...", status);
-+			/*This is required to check what is the defaults conditions when it occurs..*/
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "GOT DEFAULT INTERRUPT URB STATUS :%d..Please Analyze it...", status);
- 		break;
- 	}
+ int BcmRDM(PVOID arg,
+@@ -39,4 +39,4 @@ VOID Bcm_kill_all_URBs(struct bcm_interface_adapter *psIntfAdapter);
  
-@@ -117,9 +108,8 @@ static void read_int_callback(struct urb *urb/*, struct pt_regs *regs*/)
- int CreateInterruptUrb(struct bcm_interface_adapter *psIntfAdapter)
+ #define DISABLE_USB_ZERO_LEN_INT 0x0F011878
+ 
+-#endif // __INTERFACE_MISC_H
++#endif /* __INTERFACE_MISC_H */
+diff --git a/drivers/staging/bcm/InterfaceRx.c b/drivers/staging/bcm/InterfaceRx.c
+index 26f5bc7..6b155c5 100644
+--- a/drivers/staging/bcm/InterfaceRx.c
++++ b/drivers/staging/bcm/InterfaceRx.c
+@@ -1,11 +1,11 @@
+ #include "headers.h"
+ 
+-static int SearchVcid(struct bcm_mini_adapter *Adapter,unsigned short usVcid)
++static int SearchVcid(struct bcm_mini_adapter *Adapter, unsigned short usVcid)
  {
- 	psIntfAdapter->psInterruptUrb = usb_alloc_urb(0, GFP_KERNEL);
--	if (!psIntfAdapter->psInterruptUrb)
--	{
--		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Cannot allocate interrupt urb");
-+	if (!psIntfAdapter->psInterruptUrb) {
-+		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Cannot allocate interrupt urb");
- 		return -ENOMEM;
- 	}
- 	psIntfAdapter->psInterruptUrb->transfer_buffer =
-@@ -137,7 +127,7 @@ int CreateInterruptUrb(struct bcm_interface_adapter *psIntfAdapter)
- 					read_int_callback, psIntfAdapter,
- 					psIntfAdapter->sIntrIn.int_in_interval);
+-	int iIndex=0;
++	int iIndex = 0;
  
--	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt Interval: %d\n",
-+	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Interrupt Interval: %d\n",
- 				psIntfAdapter->sIntrIn.int_in_interval);
- 	return 0;
+-	for(iIndex=(NO_OF_QUEUES-1);iIndex>=0;iIndex--)
+-		if(Adapter->PackInfo[iIndex].usVCID_Value == usVcid)
++	for (iIndex = (NO_OF_QUEUES-1); iIndex >= 0; iIndex--)
++		if (Adapter->PackInfo[iIndex].usVCID_Value == usVcid)
+ 			return iIndex;
+ 	return NO_OF_QUEUES+1;
+ 
+@@ -18,14 +18,13 @@ GetBulkInRcb(struct bcm_interface_adapter *psIntfAdapter)
+ 	struct bcm_usb_rcb *pRcb = NULL;
+ 	UINT index = 0;
+ 
+-	if((atomic_read(&psIntfAdapter->uNumRcbUsed) < MAXIMUM_USB_RCB) &&
+-		(psIntfAdapter->psAdapter->StopAllXaction == FALSE))
+-	{
++	if ((atomic_read(&psIntfAdapter->uNumRcbUsed) < MAXIMUM_USB_RCB) &&
++		(psIntfAdapter->psAdapter->StopAllXaction == FALSE)) {
+ 		index = atomic_read(&psIntfAdapter->uCurrRcb);
+ 		pRcb = &psIntfAdapter->asUsbRcb[index];
+ 		pRcb->bUsed = TRUE;
+-		pRcb->psIntfAdapter= psIntfAdapter;
+-		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Got Rx desc %d used %d",
++		pRcb->psIntfAdapter = psIntfAdapter;
++		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Got Rx desc %d used %d",
+ 			index, atomic_read(&psIntfAdapter->uNumRcbUsed));
+ 		index = (index + 1) % MAXIMUM_USB_RCB;
+ 		atomic_set(&psIntfAdapter->uCurrRcb, index);
+@@ -40,9 +39,9 @@ static void read_bulk_callback(struct urb *urb)
+ 	struct sk_buff *skb = NULL;
+ 	BOOLEAN bHeaderSupressionEnabled = FALSE;
+ 	int QueueIndex = NO_OF_QUEUES + 1;
+-	UINT uiIndex=0;
++	UINT uiIndex = 0;
+ 	int process_done = 1;
+-	//int idleflag = 0 ;
++	/*int idleflag = 0; */
+ 	struct bcm_usb_rcb *pRcb = (struct bcm_usb_rcb *)urb->context;
+ 	struct bcm_interface_adapter *psIntfAdapter = pRcb->psIntfAdapter;
+ 	struct bcm_mini_adapter *Adapter = psIntfAdapter->psAdapter;
+@@ -52,49 +51,40 @@ static void read_bulk_callback(struct urb *urb)
+ 		pr_info(PFX "%s: rx urb status %d length %d\n",
+ 			Adapter->dev->name, urb->status, urb->actual_length);
+ 
+-	if((Adapter->device_removed == TRUE)  ||
++	if ((Adapter->device_removed == TRUE)  ||
+ 		(TRUE == Adapter->bEndPointHalted) ||
+-		(0 == urb->actual_length)
+-		)
+-	{
+-	 	pRcb->bUsed = FALSE;
+- 		atomic_dec(&psIntfAdapter->uNumRcbUsed);
++		(0 == urb->actual_length)) {
++		pRcb->bUsed = FALSE;
++		atomic_dec(&psIntfAdapter->uNumRcbUsed);
+ 		return;
+ 	}
+ 
+-	if(urb->status != STATUS_SUCCESS)
+-	{
+-		if(urb->status == -EPIPE)
+-		{
++	if (urb->status != STATUS_SUCCESS) {
++		if (urb->status == -EPIPE) {
+ 			Adapter->bEndPointHalted = TRUE ;
+ 			wake_up(&Adapter->tx_packet_wait_queue);
+-		}
+-		else
+-		{
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL,"Rx URB has got cancelled. status :%d", urb->status);
++		} else {
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Rx URB has got cancelled. status :%d", urb->status);
+ 		}
+ 		pRcb->bUsed = FALSE;
+- 		atomic_dec(&psIntfAdapter->uNumRcbUsed);
++		atomic_dec(&psIntfAdapter->uNumRcbUsed);
+ 		urb->status = STATUS_SUCCESS ;
+-		return ;
++		return;
+ 	}
+ 
+-	if(Adapter->bDoSuspend && (Adapter->bPreparingForLowPowerMode))
+-	{
+-		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL,"device is going in low power mode while PMU option selected..hence rx packet should not be process");
+-		return ;
++	if (Adapter->bDoSuspend && (Adapter->bPreparingForLowPowerMode)) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "device is going in low power mode while PMU option selected..hence rx packet should not be process");
++		return;
+ 	}
+ 
+-	BCM_DEBUG_PRINT(Adapter,DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Read back done len %d\n", pLeader->PLength);
+-	if(!pLeader->PLength)
+-	{
+-		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Leader Length 0");
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Read back done len %d\n", pLeader->PLength);
++	if (!pLeader->PLength) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Leader Length 0");
+ 		atomic_dec(&psIntfAdapter->uNumRcbUsed);
+ 		return;
+ 	}
+-	BCM_DEBUG_PRINT(Adapter,DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Leader Status:0x%hX, Length:0x%hX, VCID:0x%hX", pLeader->Status,pLeader->PLength,pLeader->Vcid);
+-	if(MAX_CNTL_PKT_SIZE < pLeader->PLength)
+-	{
++	BCM_DEBUG_PRINT(Adapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "Leader Status:0x%hX, Length:0x%hX, VCID:0x%hX", pLeader->Status, pLeader->PLength, pLeader->Vcid);
++	if (MAX_CNTL_PKT_SIZE < pLeader->PLength) {
+ 		if (netif_msg_rx_err(Adapter))
+ 			pr_info(PFX "%s: corrupted leader length...%d\n",
+ 				Adapter->dev->name, pLeader->PLength);
+@@ -103,65 +93,58 @@ static void read_bulk_callback(struct urb *urb)
+ 		return;
+ 	}
+ 
+-	QueueIndex = SearchVcid( Adapter,pLeader->Vcid);
+-	if(QueueIndex < NO_OF_QUEUES)
+-	{
++	QueueIndex = SearchVcid(Adapter, pLeader->Vcid);
++	if (QueueIndex < NO_OF_QUEUES) {
+ 		bHeaderSupressionEnabled =
+ 			Adapter->PackInfo[QueueIndex].bHeaderSuppressionEnabled;
+ 		bHeaderSupressionEnabled =
+ 			bHeaderSupressionEnabled & Adapter->bPHSEnabled;
+ 	}
+ 
+-	skb = dev_alloc_skb (pLeader->PLength + SKB_RESERVE_PHS_BYTES + SKB_RESERVE_ETHERNET_HEADER);//2   //2 for allignment
+-	if(!skb)
+-	{
+-		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0, "NO SKBUFF!!! Dropping the Packet");
++	skb = dev_alloc_skb (pLeader->PLength + SKB_RESERVE_PHS_BYTES + SKB_RESERVE_ETHERNET_HEADER);/*2  2 for allignment*/
++	if (!skb) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "NO SKBUFF!!! Dropping the Packet");
+ 		atomic_dec(&psIntfAdapter->uNumRcbUsed);
+ 		return;
+ 	}
+     /* If it is a control Packet, then call handle_bcm_packet ()*/
+-	if((ntohs(pLeader->Vcid) == VCID_CONTROL_PACKET) ||
+-	    (!(pLeader->Status >= 0x20  &&  pLeader->Status <= 0x3F)))
+-	{
+-	    BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_RX, RX_CTRL, DBG_LVL_ALL, "Received control pkt...");
++	if ((ntohs(pLeader->Vcid) == VCID_CONTROL_PACKET) ||
++	    (!(pLeader->Status >= 0x20  &&  pLeader->Status <= 0x3F))) {
++	    BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_CTRL, DBG_LVL_ALL, "Received control pkt...");
+ 		*(PUSHORT)skb->data = pLeader->Status;
+-       	memcpy(skb->data+sizeof(USHORT), urb->transfer_buffer +
++		memcpy(skb->data + sizeof(USHORT), urb->transfer_buffer +
+ 			(sizeof(struct bcm_leader)), pLeader->PLength);
+ 		skb->len = pLeader->PLength + sizeof(USHORT);
+ 
+ 		spin_lock(&Adapter->control_queue_lock);
+-		ENQUEUEPACKET(Adapter->RxControlHead,Adapter->RxControlTail,skb);
++		ENQUEUEPACKET(Adapter->RxControlHead, Adapter->RxControlTail, skb);
+ 		spin_unlock(&Adapter->control_queue_lock);
+ 
+ 		atomic_inc(&Adapter->cntrlpktCnt);
+ 		wake_up(&Adapter->process_rx_cntrlpkt);
+-	}
+-	else
+-	{
+-		/*
+-		  * Data Packet, Format a proper Ethernet Header
+-        	  * and give it to the stack
+-		  */
+-        BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "Received Data pkt...");
++	} else {
++	/*
++	 * Data Packet, Format a proper Ethernet Header
++     * and give it to the stack
++	 */
++		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "Received Data pkt...");
+ 		skb_reserve(skb, 2 + SKB_RESERVE_PHS_BYTES);
+ 		memcpy(skb->data+ETH_HLEN, (PUCHAR)urb->transfer_buffer + sizeof(struct bcm_leader), pLeader->PLength);
+ 		skb->dev = Adapter->dev;
+ 
+ 		/* currently skb->len has extra ETH_HLEN bytes in the beginning */
+ 		skb_put (skb, pLeader->PLength + ETH_HLEN);
+-		Adapter->PackInfo[QueueIndex].uiTotalRxBytes+=pLeader->PLength;
+-		Adapter->PackInfo[QueueIndex].uiThisPeriodRxBytes+= pLeader->PLength;
+-        BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "Received Data pkt of len :0x%X", pLeader->PLength);
++		Adapter->PackInfo[QueueIndex].uiTotalRxBytes += pLeader->PLength;
++		Adapter->PackInfo[QueueIndex].uiThisPeriodRxBytes += pLeader->PLength;
++		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "Received Data pkt of len :0x%X", pLeader->PLength);
+ 
+-		if(netif_running(Adapter->dev))
+-		{
++		if (netif_running(Adapter->dev)) {
+ 			/* Moving ahead by ETH_HLEN to the data ptr as received from FW */
+ 			skb_pull(skb, ETH_HLEN);
+ 			PHSReceive(Adapter, pLeader->Vcid, skb, &skb->len,
+-					NULL,bHeaderSupressionEnabled);
++					NULL, bHeaderSupressionEnabled);
+ 
+-			if(!Adapter->PackInfo[QueueIndex].bEthCSSupport)
+-			{
++			if (!Adapter->PackInfo[QueueIndex].bEthCSSupport) {
+ 				skb_push(skb, ETH_HLEN);
+ 
+ 				memcpy(skb->data, skb->dev->dev_addr, 6);
+@@ -169,29 +152,25 @@ static void read_bulk_callback(struct urb *urb)
+ 				(*(skb->data+11))++;
+ 				*(skb->data+12) = 0x08;
+ 				*(skb->data+13) = 0x00;
+-				pLeader->PLength+=ETH_HLEN;
++				pLeader->PLength += ETH_HLEN;
+ 			}
+-
+ 			skb->protocol = eth_type_trans(skb, Adapter->dev);
+ 			process_done = netif_rx(skb);
+-		}
+-		else
+-		{
+-		    BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "i/f not up hance freeing SKB...");
++		} else {
++		    BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DATA, DBG_LVL_ALL, "i/f not up hance freeing SKB...");
+ 			dev_kfree_skb(skb);
+ 		}
+ 
+ 		++Adapter->dev->stats.rx_packets;
+ 		Adapter->dev->stats.rx_bytes += pLeader->PLength;
+ 
+-		for(uiIndex = 0 ; uiIndex < MIBS_MAX_HIST_ENTRIES ; uiIndex++)
+-		{
+-			if((pLeader->PLength <= MIBS_PKTSIZEHIST_RANGE*(uiIndex+1))
++		for (uiIndex = 0 ; uiIndex < MIBS_MAX_HIST_ENTRIES ; uiIndex++) {
++			if ((pLeader->PLength <= MIBS_PKTSIZEHIST_RANGE*(uiIndex+1))
+ 				&& (pLeader->PLength > MIBS_PKTSIZEHIST_RANGE*(uiIndex)))
+ 				Adapter->aRxPktSizeHist[uiIndex]++;
+ 		}
+ 	}
+- 	Adapter->PrevNumRecvDescs++;
++	Adapter->PrevNumRecvDescs++;
+ 	pRcb->bUsed = FALSE;
+ 	atomic_dec(&psIntfAdapter->uNumRcbUsed);
  }
-@@ -147,18 +137,15 @@ INT StartInterruptUrb(struct bcm_interface_adapter *psIntfAdapter)
- {
- 	INT status = 0;
+@@ -202,21 +181,17 @@ static int ReceiveRcb(struct bcm_interface_adapter *psIntfAdapter, struct bcm_us
+ 	int retval = 0;
  
--	if( FALSE == psIntfAdapter->psAdapter->device_removed &&
+ 	usb_fill_bulk_urb(urb, psIntfAdapter->udev, usb_rcvbulkpipe(
+-			psIntfAdapter->udev, psIntfAdapter->sBulkIn.bulk_in_endpointAddr),
+-		  	urb->transfer_buffer, BCM_USB_MAX_READ_LENGTH, read_bulk_callback,
++			psIntfAdapter->udev, psIntfAdapter->sBulkIn.bulk_in_endpointAddr), urb->transfer_buffer, BCM_USB_MAX_READ_LENGTH, read_bulk_callback,
+ 			pRcb);
+-	if(FALSE == psIntfAdapter->psAdapter->device_removed &&
 +	if (FALSE == psIntfAdapter->psAdapter->device_removed &&
- 		FALSE == psIntfAdapter->psAdapter->bEndPointHalted &&
- 		FALSE == psIntfAdapter->bSuspended &&
- 		FALSE == psIntfAdapter->bPreparingForBusSuspend &&
--		FALSE == psIntfAdapter->psAdapter->StopAllXaction)
+ 	   FALSE == psIntfAdapter->psAdapter->bEndPointHalted &&
+ 	   FALSE == psIntfAdapter->bSuspended &&
+-	   FALSE == psIntfAdapter->bPreparingForBusSuspend)
 -	{
-+		FALSE == psIntfAdapter->psAdapter->StopAllXaction) {
- 		status = usb_submit_urb(psIntfAdapter->psInterruptUrb, GFP_ATOMIC);
--		if (status)
++	   FALSE == psIntfAdapter->bPreparingForBusSuspend) {
+ 		retval = usb_submit_urb(urb, GFP_ATOMIC);
+-		if (retval)
 -		{
--			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Cannot send int urb %d\n", status);
--			if(status == -EPIPE)
+-			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "failed submitting read urb, error %d", retval);
+-			//if this return value is because of pipe halt. need to clear this.
+-			if(retval == -EPIPE)
 -			{
-+		if (status) {
-+			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Cannot send int urb %d\n", status);
-+			if (status == -EPIPE) {
++		if (retval) {
++			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_RX, RX_DPC, DBG_LVL_ALL, "failed submitting read urb, error %d", retval);
++			/* if this return value is because of pipe halt. need to clear this.*/
++			if (retval == -EPIPE) {
  				psIntfAdapter->psAdapter->bEndPointHalted = TRUE ;
  				wake_up(&psIntfAdapter->psAdapter->tx_packet_wait_queue);
  			}
-diff --git a/drivers/staging/bcm/InterfaceMisc.c b/drivers/staging/bcm/InterfaceMisc.c
-index afca010..d9fa2bb 100644
---- a/drivers/staging/bcm/InterfaceMisc.c
-+++ b/drivers/staging/bcm/InterfaceMisc.c
-@@ -104,7 +104,7 @@ int BcmRDM(void *arg,
- 	void *buff,
- 	int len)
+@@ -245,17 +220,16 @@ BOOLEAN InterfaceRx (struct bcm_interface_adapter *psIntfAdapter)
+ 	USHORT RxDescCount = NUM_RX_DESC - atomic_read(&psIntfAdapter->uNumRcbUsed);
+ 	struct bcm_usb_rcb *pRcb = NULL;
+ 
+-//	RxDescCount = psIntfAdapter->psAdapter->CurrNumRecvDescs -
+-//				psIntfAdapter->psAdapter->PrevNumRecvDescs;
+-	while(RxDescCount)
+-	{
++/*	RxDescCount = psIntfAdapter->psAdapter->CurrNumRecvDescs -
++*				psIntfAdapter->psAdapter->PrevNumRecvDescs;
++*/
++	while (RxDescCount) {
+ 		pRcb = GetBulkInRcb(psIntfAdapter);
+-		if(pRcb == NULL)
+-		{
+-			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_PRINTK, 0, 0, "Unable to get Rcb pointer");
++		if (pRcb == NULL) {
++			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_PRINTK, 0, 0, "Unable to get Rcb pointer");
+ 			return FALSE;
+ 		}
+-		//atomic_inc(&psIntfAdapter->uNumRcbUsed);
++		/*atomic_inc(&psIntfAdapter->uNumRcbUsed);*/
+ 		ReceiveRcb(psIntfAdapter, pRcb);
+ 		RxDescCount--;
+     }
+diff --git a/drivers/staging/bcm/InterfaceTx.c b/drivers/staging/bcm/InterfaceTx.c
+index b8c7855..5b6828b 100644
+--- a/drivers/staging/bcm/InterfaceTx.c
++++ b/drivers/staging/bcm/InterfaceTx.c
+@@ -3,7 +3,7 @@
+ /*this is transmit call-back(BULK OUT)*/
+ static void write_bulk_callback(struct urb *urb/*, struct pt_regs *regs*/)
  {
--	return InterfaceRDM((struct bcm_interface_adapter*)arg, addr, buff, len);
-+	return InterfaceRDM((struct bcm_interface_adapter *)arg, addr, buff, len);
+-	struct bcm_usb_tcb *pTcb= (struct bcm_usb_tcb *)urb->context;
++	struct bcm_usb_tcb *pTcb = (struct bcm_usb_tcb *)urb->context;
+ 	struct bcm_interface_adapter *psIntfAdapter = pTcb->psIntfAdapter;
+ 	struct bcm_link_request *pControlMsg = (struct bcm_link_request *)urb->transfer_buffer;
+ 	struct bcm_mini_adapter *psAdapter = psIntfAdapter->psAdapter ;
+@@ -13,16 +13,12 @@ static void write_bulk_callback(struct urb *urb/*, struct pt_regs *regs*/)
+     if (unlikely(netif_msg_tx_done(Adapter)))
+ 	    pr_info(PFX "%s: transmit status %d\n", Adapter->dev->name, urb->status);
+ 
+-	if(urb->status != STATUS_SUCCESS)
+-	{
+-		if(urb->status == -EPIPE)
+-		{
++	if (urb->status != STATUS_SUCCESS) {
++		if (urb->status == -EPIPE) {
+ 			psIntfAdapter->psAdapter->bEndPointHalted = TRUE ;
+ 			wake_up(&psIntfAdapter->psAdapter->tx_packet_wait_queue);
+-		}
+-		else
+-		{
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL,"Tx URB has got cancelled. status :%d", urb->status);
++		} else {
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Tx URB has got cancelled. status :%d", urb->status);
+ 		}
+ 	}
+ 
+@@ -31,69 +27,59 @@ static void write_bulk_callback(struct urb *urb/*, struct pt_regs *regs*/)
+ 
+ 
+ 
+-	if(TRUE == psAdapter->bPreparingForLowPowerMode)
+-	{
+-
+-		if(((pControlMsg->szData[0] == GO_TO_IDLE_MODE_PAYLOAD) &&
+-			(pControlMsg->szData[1] == TARGET_CAN_GO_TO_IDLE_MODE)))
++	if (TRUE == psAdapter->bPreparingForLowPowerMode) {
+ 
+-		{
++		if (((pControlMsg->szData[0] == GO_TO_IDLE_MODE_PAYLOAD) &&
++			(pControlMsg->szData[1] == TARGET_CAN_GO_TO_IDLE_MODE))) {
+ 			bpowerDownMsg = TRUE ;
+-			//This covers the bus err while Idle Request msg sent down.
+-			if(urb->status != STATUS_SUCCESS)
+-			{
++			/* This covers the bus err while Idle Request msg sent down.*/
++			if (urb->status != STATUS_SUCCESS) {
+ 				psAdapter->bPreparingForLowPowerMode = FALSE ;
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL,"Idle Mode Request msg failed to reach to Modem");
+-				//Signalling the cntrl pkt path in Ioctl
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Idle Mode Request msg failed to reach to Modem");
++				/* Signalling the cntrl pkt path in Ioctl */
+ 				wake_up(&psAdapter->lowpower_mode_wait_queue);
+ 				StartInterruptUrb(psIntfAdapter);
+ 				goto err_exit;
+ 			}
+ 
+-			if(psAdapter->bDoSuspend == FALSE)
+-			{
++			if (psAdapter->bDoSuspend == FALSE) {
+ 				psAdapter->IdleMode = TRUE;
+-				//since going in Idle mode completed hence making this var false;
++				/* since going in Idle mode completed hence making this var false;*/
+ 				psAdapter->bPreparingForLowPowerMode = FALSE ;
+ 
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Host Entered in Idle Mode State...");
+-				//Signalling the cntrl pkt path in Ioctl
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Host Entered in Idle Mode State...");
++				/*Signalling the cntrl pkt path in Ioctl */
+ 				wake_up(&psAdapter->lowpower_mode_wait_queue);
+ 			}
+ 
+-		}
+-		else if((pControlMsg->Leader.Status == LINK_UP_CONTROL_REQ) &&
++		} else if ((pControlMsg->Leader.Status == LINK_UP_CONTROL_REQ) &&
+ 			(pControlMsg->szData[0] == LINK_UP_ACK) &&
+ 			(pControlMsg->szData[1] == LINK_SHUTDOWN_REQ_FROM_FIRMWARE)  &&
+-			(pControlMsg->szData[2] == SHUTDOWN_ACK_FROM_DRIVER))
+-		{
+-			//This covers the bus err while shutdown Request msg sent down.
+-			if(urb->status != STATUS_SUCCESS)
+-			{
++			(pControlMsg->szData[2] == SHUTDOWN_ACK_FROM_DRIVER)) {
++			/*This covers the bus err while shutdown Request msg sent down.*/
++			if (urb->status != STATUS_SUCCESS) {
+ 				psAdapter->bPreparingForLowPowerMode = FALSE ;
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL,"Shutdown Request Msg failed to reach to Modem");
+-				//Signalling the cntrl pkt path in Ioctl
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Shutdown Request Msg failed to reach to Modem");
++				/*Signalling the cntrl pkt path in Ioctl*/
+ 				wake_up(&psAdapter->lowpower_mode_wait_queue);
+ 				StartInterruptUrb(psIntfAdapter);
+ 				goto err_exit;
+ 			}
+ 
+ 			bpowerDownMsg = TRUE ;
+-			if(psAdapter->bDoSuspend == FALSE)
+-			{
++			if (psAdapter->bDoSuspend == FALSE) {
+ 				psAdapter->bShutStatus = TRUE;
+-				//since going in shutdown mode completed hence making this var false;
++				/*since going in shutdown mode completed hence making this var false;*/
+ 				psAdapter->bPreparingForLowPowerMode = FALSE ;
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL,"Host Entered in shutdown Mode State...");
+-				//Signalling the cntrl pkt path in Ioctl
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Host Entered in shutdown Mode State...");
++				/*Signalling the cntrl pkt path in Ioctl*/
+ 				wake_up(&psAdapter->lowpower_mode_wait_queue);
+ 			}
+ 		}
+ 
+-		if(psAdapter->bDoSuspend && bpowerDownMsg)
+-		{
+-			//issuing bus suspend request
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL,"Issuing the Bus suspend request to USB stack");
++		if (psAdapter->bDoSuspend && bpowerDownMsg)	{
++			/*issuing bus suspend request*/
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Issuing the Bus suspend request to USB stack");
+ 			psIntfAdapter->bPreparingForBusSuspend = TRUE;
+ 			schedule_work(&psIntfAdapter->usbSuspendWork);
+ 
+@@ -101,9 +87,9 @@ static void write_bulk_callback(struct urb *urb/*, struct pt_regs *regs*/)
+ 
+ 	}
+ 
+-err_exit :
++err_exit:
+ 	usb_free_coherent(urb->dev, urb->transfer_buffer_length,
+- 			urb->transfer_buffer, urb->transfer_dma);
++	urb->transfer_buffer, urb->transfer_dma);
  }
  
- int BcmWRM(void *arg,
-diff --git a/drivers/staging/bcm/headers.h b/drivers/staging/bcm/headers.h
-index da47db8..b7327ed 100644
---- a/drivers/staging/bcm/headers.h
-+++ b/drivers/staging/bcm/headers.h
-@@ -1,6 +1,6 @@
  
- /*******************************************************************
--* 		Headers.h
-+*			Headers.h
- *******************************************************************/
- #ifndef __HEADERS_H__
- #define __HEADERS_H__
-@@ -34,7 +34,7 @@
- #include <linux/tcp.h>
- #include <linux/udp.h>
- #include <linux/usb.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <net/ip.h>
+@@ -112,15 +98,15 @@ static struct bcm_usb_tcb *GetBulkOutTcb(struct bcm_interface_adapter *psIntfAda
+ 	struct bcm_usb_tcb *pTcb = NULL;
+ 	UINT index = 0;
  
- #include "Typedefs.h"
+-	if((atomic_read(&psIntfAdapter->uNumTcbUsed) < MAXIMUM_USB_TCB) &&
+-		(psIntfAdapter->psAdapter->StopAllXaction ==FALSE))
+-	{
++	if ((atomic_read(&psIntfAdapter->uNumTcbUsed) < MAXIMUM_USB_TCB) &&
++		(psIntfAdapter->psAdapter->StopAllXaction == FALSE)) {
+ 		index = atomic_read(&psIntfAdapter->uCurrTcb);
+ 		pTcb = &psIntfAdapter->asUsbTcb[index];
+ 		pTcb->bUsed = TRUE;
+-		pTcb->psIntfAdapter= psIntfAdapter;
+-		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Got Tx desc %d used %d",
+-			index, atomic_read(&psIntfAdapter->uNumTcbUsed));
++		pTcb->psIntfAdapter = psIntfAdapter;
++	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_TX, NEXT_SEND,
++	DBG_LVL_ALL, "Got Tx desc %d used %d",
++		index, atomic_read(&psIntfAdapter->uNumTcbUsed));
+ 		index = (index + 1) % MAXIMUM_USB_TCB;
+ 		atomic_set(&psIntfAdapter->uCurrTcb, index);
+ 		atomic_inc(&psIntfAdapter->uNumTcbUsed);
+@@ -134,44 +120,36 @@ static int TransmitTcb(struct bcm_interface_adapter *psIntfAdapter, struct bcm_u
+ 	struct urb *urb = pTcb->urb;
+ 	int retval = 0;
+ 
+-	urb->transfer_buffer = usb_alloc_coherent(psIntfAdapter->udev, len,
+- 						GFP_ATOMIC, &urb->transfer_dma);
+-	if (!urb->transfer_buffer)
+-	{
+-		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_PRINTK, 0, 0, "Error allocating memory\n");
++	urb->transfer_buffer = usb_alloc_coherent(psIntfAdapter->udev, len, GFP_ATOMIC, &urb->transfer_dma);
++	if (!urb->transfer_buffer) {
++		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_PRINTK, 0, 0, "Error allocating memory\n");
+ 		return  -ENOMEM;
+ 	}
+ 	memcpy(urb->transfer_buffer, data, len);
+ 	urb->transfer_buffer_length = len;
+ 
+-	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Sending Bulk out packet\n");
+-	//For T3B,INT OUT end point will be used as bulk out end point
+-	if((psIntfAdapter->psAdapter->chip_id == T3B) && (psIntfAdapter->bHighSpeedDevice == TRUE))
+-	{
++	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "Sending Bulk out packet\n");
++	/*For T3B,INT OUT end point will be used as bulk out end point*/
++	if ((psIntfAdapter->psAdapter->chip_id == T3B) && (psIntfAdapter->bHighSpeedDevice == TRUE)) {
+ 		usb_fill_int_urb(urb, psIntfAdapter->udev,
+-	    	psIntfAdapter->sBulkOut.bulk_out_pipe,
+-			urb->transfer_buffer, len, write_bulk_callback, pTcb,
+-			psIntfAdapter->sBulkOut.int_out_interval);
+-	}
+-	else
+-	{
++		psIntfAdapter->sBulkOut.bulk_out_pipe,
++		urb->transfer_buffer, len, write_bulk_callback, pTcb,
++		psIntfAdapter->sBulkOut.int_out_interval);
++	} else {
+ 	usb_fill_bulk_urb(urb, psIntfAdapter->udev,
+ 		  psIntfAdapter->sBulkOut.bulk_out_pipe,
+ 		  urb->transfer_buffer, len, write_bulk_callback, pTcb);
+ 	}
+ 	urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP; /* For DMA transfer */
+ 
+-	if(FALSE == psIntfAdapter->psAdapter->device_removed &&
++	if (FALSE == psIntfAdapter->psAdapter->device_removed &&
+ 	   FALSE == psIntfAdapter->psAdapter->bEndPointHalted &&
+ 	   FALSE == psIntfAdapter->bSuspended &&
+-	   FALSE == psIntfAdapter->bPreparingForBusSuspend)
+-	{
++	   FALSE == psIntfAdapter->bPreparingForBusSuspend) {
+ 		retval = usb_submit_urb(urb, GFP_ATOMIC);
+-		if (retval)
+-		{
+-			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "failed submitting write urb, error %d", retval);
+-			if(retval == -EPIPE)
+-			{
++		if (retval)	{
++			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "failed submitting write urb, error %d", retval);
++			if (retval == -EPIPE) {
+ 				psIntfAdapter->psAdapter->bEndPointHalted = TRUE ;
+ 				wake_up(&psIntfAdapter->psAdapter->tx_packet_wait_queue);
+ 			}
+@@ -182,13 +160,12 @@ static int TransmitTcb(struct bcm_interface_adapter *psIntfAdapter, struct bcm_u
+ 
+ int InterfaceTransmitPacket(PVOID arg, PVOID data, UINT len)
+ {
+-	struct bcm_usb_tcb *pTcb= NULL;
++	struct bcm_usb_tcb *pTcb = NULL;
+ 
+ 	struct bcm_interface_adapter *psIntfAdapter = (struct bcm_interface_adapter *)arg;
+-	pTcb= GetBulkOutTcb(psIntfAdapter);
+-	if(pTcb == NULL)
+-	{
+-		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_PRINTK, 0, 0, "No URB to transmit packet, dropping packet");
++	pTcb = GetBulkOutTcb(psIntfAdapter);
++	if (pTcb == NULL) {
++		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_PRINTK, 0, 0, "No URB to transmit packet, dropping packet");
+ 		return -EFAULT;
+ 	}
+ 	return TransmitTcb(psIntfAdapter, pTcb, data, len);
 -- 
 1.7.10.4
 
 
---------------070001090807090304030002--
+--------------060504010103000207090504--
