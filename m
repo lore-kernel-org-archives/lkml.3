@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965405Ab3HHOJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:09:57 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:43098 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965324Ab3HHOJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:09:54 -0400
-Message-ID: <1375970993.2424.142.camel@joe-AO722>
-Subject: Re: [PATCH part2 3/4] acpi: Remove "continue" in macro
- INVALID_TABLE().
-From: Joe Perches <joe@perches.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Thu, 08 Aug 2013 07:09:53 -0700
-In-Reply-To: <52038C84.4080608@cn.fujitsu.com>
-References: <1375938239-18769-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375938239-18769-4-git-send-email-tangchen@cn.fujitsu.com>
-	 <1375939646.2424.132.camel@joe-AO722> <52038C84.4080608@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S965360Ab3HHOKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:10:34 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:52942 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757880Ab3HHNta (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 09:49:30 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 05/35] cpufreq: acpi-cpufreq: use cpufreq_table_validate_and_show()
+Date: Thu,  8 Aug 2013 19:18:07 +0530
+Message-Id: <01b9e673a0f3791720ef0f0b66d6ffc2dd331219.1375964117.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1375964117.git.viresh.kumar@linaro.org>
+References: <cover.1375964117.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1375964117.git.viresh.kumar@linaro.org>
+References: <cover.1375964117.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-08 at 20:18 +0800, Tang Chen wrote:
-> Hi Joe,
+Lets use cpufreq_table_validate_and_show() instead of calling
+cpufreq_frequency_table_cpuinfo() and cpufreq_frequency_table_get_attr().
 
-Hello Tang.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/acpi-cpufreq.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-> On 08/08/2013 01:27 PM, Joe Perches wrote:
-> > On Thu, 2013-08-08 at 13:03 +0800, Tang Chen wrote:
-> >
-> >> Change it to the style like other macros:
-> >>
-> >>   #define INVALID_TABLE(x, path, name)                                    \
-> >>           do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
-> >
-> > Single statement macros do _not_ need to use
-> > 	"do { foo(); } while (0)"
-> > and should be written as
-> > 	"foo()"
-> 
-> OK, will remove the do {} while (0).
-> 
-> But I think we'd better keep the macro, or rename it to something
-> more meaningful. At least we can use it to avoid adding "ACPI OVERRIDE:"
-> prefix every time. Maybe this is why it is defined.
-
-No, it's just silly.
-
-If you really think that the #define is better, use
-something like HW_ERR does and embed that #define
-in the pr_err.
-
-#define ACPI_OVERRIDE	"ACPI OVERRIDE: "
-
-	pr_err(ACPI_OVERRIDE "Table smaller than ACPI header [%s%s]\n",
-	       cpio_path, file.name);
-
-It's only used a few times by a single file so
-I think it's unnecessary.
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index 9b5d1b1..75e829d 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -837,7 +837,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	data->freq_table[valid_states].frequency = CPUFREQ_TABLE_END;
+ 	perf->state = 0;
+ 
+-	result = cpufreq_frequency_table_cpuinfo(policy, data->freq_table);
++	result = cpufreq_table_validate_and_show(policy, data->freq_table);
+ 	if (result)
+ 		goto err_freqfree;
+ 
+@@ -868,8 +868,6 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 			(u32) perf->states[i].power,
+ 			(u32) perf->states[i].transition_latency);
+ 
+-	cpufreq_frequency_table_get_attr(data->freq_table, policy->cpu);
+-
+ 	/*
+ 	 * the first call to ->target() should result in us actually
+ 	 * writing something to the appropriate registers.
+-- 
+1.7.12.rc2.18.g61b472e
 
