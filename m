@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965679Ab3HHOCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:02:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44661 "EHLO mx2.suse.de"
+	id S965660Ab3HHODK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:03:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44636 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965613Ab3HHOBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:01:14 -0400
+	id S965596Ab3HHOBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:01:10 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 27/27] sched: Retry migration of tasks to CPU on a preferred node
-Date: Thu,  8 Aug 2013 15:00:39 +0100
-Message-Id: <1375970439-5111-28-git-send-email-mgorman@suse.de>
+Subject: [PATCH 24/27] sched: Remove check that skips small VMAs
+Date: Thu,  8 Aug 2013 15:00:36 +0100
+Message-Id: <1375970439-5111-25-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375970439-5111-1-git-send-email-mgorman@suse.de>
 References: <1375970439-5111-1-git-send-email-mgorman@suse.de>
@@ -22,101 +22,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a preferred node is selected for a tasks there is an attempt to migrate
-the task to a CPU there. This may fail in which case the task will only
-migrate if the active load balancer takes action. This may never happen if
-the conditions are not right. This patch will check at NUMA hinting fault
-time if another attempt should be made to migrate the task. It will only
-make an attempt once every five seconds.
+task_numa_work skips small VMAs. At the time the logic was to reduce the
+scanning overhead which was considerable. It is a dubious hack at best.
+It would make much more sense to cache where faults have been observed
+and only rescan those regions during subsequent PTE scans. Remove this
+hack as motivation to do it properly in the future.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- include/linux/sched.h |  1 +
- kernel/sched/fair.c   | 40 +++++++++++++++++++++++-----------------
- 2 files changed, 24 insertions(+), 17 deletions(-)
+ kernel/sched/fair.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index bbafa60..cd67c95 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1333,6 +1333,7 @@ struct task_struct {
- 	int numa_migrate_seq;
- 	unsigned int numa_scan_period;
- 	unsigned int numa_scan_period_max;
-+	unsigned long numa_migrate_retry;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
- 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9ea4d5c..7cffbf5 100644
+index f07073b..b66c662 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -989,6 +989,22 @@ static int task_numa_find_cpu(struct task_struct *p, int nid)
- 	return dst_cpu;
- }
+@@ -1127,10 +1127,6 @@ void task_numa_work(struct callback_head *work)
+ 		if (!vma_migratable(vma))
+ 			continue;
  
-+/* Attempt to migrate a task to a CPU on the preferred node. */
-+static void numa_migrate_preferred(struct task_struct *p)
-+{
-+	int preferred_cpu = task_cpu(p);
-+
-+	/* Success if task is already running on preferred CPU */
-+	p->numa_migrate_retry = 0;
-+	if (cpu_to_node(preferred_cpu) == p->numa_preferred_nid)
-+		return;
-+
-+	/* Otherwise, try migrate to a CPU on the preferred node */
-+	preferred_cpu = task_numa_find_cpu(p, p->numa_preferred_nid);
-+	if (migrate_task_to(p, preferred_cpu) != 0)
-+		p->numa_migrate_retry = jiffies + HZ*5;
-+}
-+
- static void task_numa_placement(struct task_struct *p)
- {
- 	int seq, nid, max_nid = -1;
-@@ -1023,27 +1039,13 @@ static void task_numa_placement(struct task_struct *p)
- 		}
- 	}
- 
--	/*
--	 * Record the preferred node as the node with the most faults,
--	 * requeue the task to be running on the idlest CPU on the
--	 * preferred node and reset the scanning rate to recheck
--	 * the working set placement.
--	 */
-+	/* Preferred node as the node with the most faults */
- 	if (max_faults && max_nid != p->numa_preferred_nid) {
--		int preferred_cpu;
+-		/* Skip small VMAs. They are not likely to be of relevance */
+-		if (vma->vm_end - vma->vm_start < HPAGE_SIZE)
+-			continue;
 -
--		/*
--		 * If the task is not on the preferred node then find
--		 * a suitable CPU to migrate to.
--		 */
--		preferred_cpu = task_cpu(p);
--		if (cpu_to_node(preferred_cpu) != max_nid)
--			preferred_cpu = task_numa_find_cpu(p, max_nid);
- 
--		/* Update the preferred nid and migrate task if possible */
-+		/* Queue task on preferred node if possible */
- 		p->numa_preferred_nid = max_nid;
- 		p->numa_migrate_seq = 0;
--		migrate_task_to(p, preferred_cpu);
-+		numa_migrate_preferred(p);
- 	}
- }
- 
-@@ -1099,6 +1101,10 @@ void task_numa_fault(int last_nidpid, int node, int pages, bool migrated)
- 
- 	task_numa_placement(p);
- 
-+	/* Retry task to preferred node migration if it previously failed */
-+	if (p->numa_migrate_retry && time_after(jiffies, p->numa_migrate_retry))
-+		numa_migrate_preferred(p);
-+
- 	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages;
- }
- 
+ 		do {
+ 			start = max(start, vma->vm_start);
+ 			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
 -- 
 1.8.1.4
 
