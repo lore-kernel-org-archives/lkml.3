@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966601Ab3HHXGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 19:06:38 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:40555 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966386Ab3HHXGh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 19:06:37 -0400
-Date: Thu, 8 Aug 2013 16:06:31 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Huang Shijie <b32955@freescale.com>
-Cc: dwmw2@infradead.org, dedekind1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, vikram186@gmail.com
-Subject: Re: [PATCH v6 00/10] mtd: add datasheet's ECC information to
- nand_chip{}
-Message-ID: <20130808230630.GA14434@norris.computersforpeace.net>
-References: <1368760654-28754-1-git-send-email-b32955@freescale.com>
- <CAN8TOE-QvScbPUEPyrs-fYVQZmPu1h-wWX2hjz46KYtaWRckBw@mail.gmail.com>
- <520357DF.3030403@freescale.com>
+	id S966660Ab3HHXJm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 19:09:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40500 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966354Ab3HHXJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 19:09:40 -0400
+Message-ID: <520423E9.80507@zytor.com>
+Date: Thu, 08 Aug 2013 16:04:09 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520357DF.3030403@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>, mingo@redhat.com,
+        jeremy@goop.org, x86@kernel.org, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, habanero@linux.vnet.ibm.com,
+        xen-devel@lists.xensource.com, peterz@infradead.org,
+        mtosatti@redhat.com, stefano.stabellini@eu.citrix.com,
+        andi@firstfloor.org, attilio.rao@citrix.com, ouyang@cs.pitt.edu,
+        gregkh@suse.de, agraf@suse.de, chegu_vinod@hp.com,
+        torvalds@linux-foundation.org, avi.kivity@gmail.com,
+        tglx@linutronix.de, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH  V12 0/14] Paravirtualized ticket spinlocks
+References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com> <52016412.1020608@zytor.com> <5201B6FB.5080807@linux.vnet.ibm.com> <5201D180.9080005@zytor.com> <5201ED01.7000803@linux.vnet.ibm.com> <20130808005012.GI2810@phenom.dumpdata.com> <20130808010251.GJ15901@redhat.com> <52040A05.5080107@zytor.com>
+In-Reply-To: <52040A05.5080107@zytor.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 04:33:35PM +0800, Huang Shijie wrote:
-> Hi Artem & Brian:
-> >Hi Huang and others,
-> >
-> >On Thu, May 16, 2013 at 8:17 PM, Huang Shijie<b32955@freescale.com>  wrote:
-> >>1.) Why add the ECC information to the nand_chip{} ?
-...
-> >Reviewed-by: Brian Norris<computersforpeace@gmail.com>
-> >Tested-by: Brian Norris<computersforpeace@gmail.com>
-> >
-> >Thanks for the work Huang.
-> >
-> Could you please merge this patch set?
+On 08/08/2013 02:13 PM, H. Peter Anvin wrote:
+> On 08/07/2013 06:02 PM, Gleb Natapov wrote:
+>> On Wed, Aug 07, 2013 at 08:50:12PM -0400, Konrad Rzeszutek Wilk wrote:
+>>> On Wed, Aug 07, 2013 at 12:15:21PM +0530, Raghavendra K T wrote:
+>>>> On 08/07/2013 10:18 AM, H. Peter Anvin wrote:
+>>>>>> Please let me know, if I should rebase again.
+>>>>>>
+>>>>>
+>>>>> tip:master is not a stable branch; it is more like linux-next.  We need
+>>>>> to figure out which topic branches are dependencies for this set.
+>>>>
+>>>> Okay. I 'll start looking at the branches that would get affected.
+>>>> (Xen, kvm are obvious ones).
+>>>> Please do let me know the branches I might have to check for.
+>>>
+>>> >From the Xen standpoint anything past v3.11-rc4 would work.
+>>>
+>> For KVM as early as past v3.11-rc1 would be OK.
+>>
+> 
+> I'm still completely confused as to the base of this patchset.  The
+> first patch has the following hunk for arch/x86/include/asm/paravirt.h:
+> 
 
-Thanks for the reminder. I haven't sorted through all the piles of
-backed up stuff yet!
+Okay, I figured it out.
 
-I made a few minor changes (for checkpatch.pl, regarding
-__attribute__((packed)), and to make the style a little more
-easily-read) and tested the generic stuff on my platform. I've pushed
-the series to l2-mtd.git. Thanks for the patience!
+One of several problems with the formatting of this patchset is that it
+has one- and two-digit patch numbers in the headers, which meant that my
+scripts tried to apply patch 10 first.
 
-Brian
+	-hpa
+
+
