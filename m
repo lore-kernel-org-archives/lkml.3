@@ -1,71 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964779Ab3HHMAk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 08:00:40 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58969 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab3HHMAi (ORCPT
+	id S964895Ab3HHMAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 08:00:52 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:12460 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964794Ab3HHMAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 08:00:38 -0400
-Message-ID: <5203885D.8040401@ti.com>
-Date: Thu, 8 Aug 2013 07:00:29 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 8 Aug 2013 08:00:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 08 Aug 2013 05:00:48 -0700
+From: Bill Huang <bilhuang@nvidia.com>
+To: <sameo@linux.intel.com>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>, <rob@landley.net>,
+        <lee.jones@linaro.org>, <broonie@linaro.org>, <nm@ti.com>,
+        <j-keerthy@ti.com>, <grant.likely@linaro.org>, <ian@slimlogic.co.uk>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Bill Huang <bilhuang@nvidia.com>,
+        Mallikarjun Kasoju <mkasoju@nvidia.com>
+Subject: [PATCH RESEND v2 1/1] mfd: palmas: Add power off control
+Date: Thu, 8 Aug 2013 04:45:05 -0700
+Message-ID: <1375962305-7438-1-git-send-email-bilhuang@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: OPP: rename functions? (was [PATCH] OPP: Export opp_add())
-References: <58acb4a8a4e98089078de3ed71999730b6d97b4b.1375521724.git.viresh.kumar@linaro.org> <1611420.5h2rr9N0mt@vostro.rjw.lan> <52026C66.2080509@ti.com> <1999730.6oshSp9AC9@vostro.rjw.lan>
-In-Reply-To: <1999730.6oshSp9AC9@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 05:53 PM, Rafael J. Wysocki wrote:
-> On Wednesday, August 07, 2013 10:48:54 AM Nishanth Menon wrote:
->> Rafael,
->> offline question:
->
-> Not really offline. :-)
->
+Hook up "pm_power_off" to palmas power off routine if there is DT
+property "ti,system-power-controller" defined, so platform which is
+powered by this regulator can be powered off properly.
 
-:D..
+Signed-off-by: Mallikarjun Kasoju <mkasoju@nvidia.com>
+Signed-off-by: Bill Huang <bilhuang@nvidia.com>
+---
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |    5 +++
+ drivers/mfd/palmas.c                               |   33 ++++++++++++++++++--
+ include/linux/mfd/palmas.h                         |    1 +
+ 3 files changed, 37 insertions(+), 2 deletions(-)
 
->> On 08/06/2013 09:15 AM, Rafael J. Wysocki wrote:
->>> On Tuesday, August 06, 2013 08:08:20 AM Nishanth Menon wrote:
->>>> change in subject to reflect new discussion.
->>>>
->>>> On 05:53-20130806, Randy Dunlap wrote:
->>>>> On 08/03/2013 02:25 AM, Viresh Kumar wrote:
->>
->>>>>> +EXPORT_SYMBOL_GPL(opp_add);
->>>>>
->>>>> Could it be renamed to pm_opp_add() or power_opp_add() ?
->>>>> The name is a bit too unspecific IMO.
->>>> Though this has nothing specific with this patch, an interesting point.
->>>>
->>>> git grep -w opp . showed drivers/tty/n_tty.c,
->>>> drivers/sbus/char/openprom.c and arch/powerpc/kvm/mpic.c using
->>>> variables named opp to mean what ever they had in context. rest(around
->>>> 40 odd files) seem to use opp as in Documentation/power/opp.txt..
->>>>
->>>> We could go with a pm_ prefix or even dev_pm_opp_ prefix to be more
->>>> specific, though I prefer just pm_. If Rafael and others are ok, I can
->>>> post a series out.
->>>
->>> Yup, that would be useful.  I'm for dev_pm_opp_ if that matters.
->>
->> Given that there would be quiet a few conflicts, do you have a
->> suggestion around what baseline I should submit this?
->
-> Well, ideally, on top of 3.12-rc1 when it's out and put it into linux-next
-> right after that.
-
-Will do. Thanks on the hint.
-
+diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+index 30b0581..4adca2a 100644
+--- a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
++++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+@@ -36,6 +36,9 @@ Optional nodes:
+ 	       ti,smps-range - OTP has the wrong range set for the hardware so override
+ 	       0 - low range, 1 - high range.
+ 
++- ti,system-power-controller: Telling whether or not this pmic is controlling
++			      the system power.
++
+ Example:
+ 
+ #include <dt-bindings/interrupt-controller/irq.h>
+@@ -48,6 +51,8 @@ pmic {
+ 
+ 	ti,ldo6-vibrator;
+ 
++	ti,system-power-controller;
++
+ 	regulators {
+ 		smps12_reg : smps12 {
+ 			regulator-name = "smps12";
+diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+index e4d1c70..220a34d 100644
+--- a/drivers/mfd/palmas.c
++++ b/drivers/mfd/palmas.c
+@@ -229,6 +229,32 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
+ 					PALMAS_POWER_CTRL_ENABLE2_MASK;
+ 	if (i2c->irq)
+ 		palmas_set_pdata_irq_flag(i2c, pdata);
++
++	pdata->pm_off = of_property_read_bool(node,
++			"ti,system-power-controller");
++}
++
++static struct palmas *palmas_dev;
++static void palmas_power_off(void)
++{
++	unsigned int addr;
++	int ret, slave;
++
++	if (!palmas_dev)
++		return;
++
++	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PMU_CONTROL_BASE);
++	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_DEV_CTRL);
++
++	ret = regmap_update_bits(
++			palmas_dev->regmap[slave],
++			addr,
++			PALMAS_DEV_CTRL_DEV_ON,
++			0);
++
++	if (ret)
++		pr_err("%s: Unable to write to DEV_CTRL_DEV_ON: %d\n",
++				__func__, ret);
+ }
+ 
+ static unsigned int palmas_features = PALMAS_PMIC_FEATURE_SMPS10_BOOST;
+@@ -423,10 +449,13 @@ no_irq:
+ 	 */
+ 	if (node) {
+ 		ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
+-		if (ret < 0)
++		if (ret < 0) {
+ 			goto err_irq;
+-		else
++		} else if (pdata->pm_off && !pm_power_off) {
++			palmas_dev = palmas;
++			pm_power_off = palmas_power_off;
+ 			return ret;
++		}
+ 	}
+ 
+ 	return ret;
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index 1a8dd7a..061cce0 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -258,6 +258,7 @@ struct palmas_platform_data {
+ 	 */
+ 	int mux_from_pdata;
+ 	u8 pad1, pad2;
++	bool pm_off;
+ 
+ 	struct palmas_pmic_platform_data *pmic_pdata;
+ 	struct palmas_gpadc_platform_data *gpadc_pdata;
 -- 
-Regards,
-Nishanth Menon
+1.7.9.5
+
