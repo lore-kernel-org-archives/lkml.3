@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966158Ab3HHSue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 14:50:34 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41323 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966076Ab3HHSud (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 14:50:33 -0400
-Message-ID: <5203E874.7070907@wwwdotorg.org>
-Date: Thu, 08 Aug 2013 12:50:28 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, swarren@nvidia.com, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mturquette@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/6] clk: Tegra: Add CPU0 clock driver
-References: <cover.1375886595.git.viresh.kumar@linaro.org> <8d192a13cb7e088943da40689d62bc6353bd8604.1375886595.git.viresh.kumar@linaro.org> <52028620.6000608@wwwdotorg.org> <CAKohpokVgcMfmKmjkxc9Dr3z6mBKad23uUdB4ydN_xzGHdfedQ@mail.gmail.com> <52028859.20008@wwwdotorg.org> <CAKohpokK7F7tYJnisVjF=NCRb9zUjQNzrFdXs+QsPSb4oqyytA@mail.gmail.com> <52029713.5070808@wwwdotorg.org> <CAKohpoky9-E2XoxAQy_oQ3sMxvAv5ZfBdDQPd6zUxcSwyKmzXg@mail.gmail.com>
-In-Reply-To: <CAKohpoky9-E2XoxAQy_oQ3sMxvAv5ZfBdDQPd6zUxcSwyKmzXg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S966171Ab3HHSuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 14:50:50 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42666 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S966070Ab3HHSut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 14:50:49 -0400
+Message-ID: <1375987848.2424.163.camel@joe-AO722>
+Subject: Re: Review [2/2] Staging: BCM: Removed more whitespace/Errors
+From: Joe Perches <joe@perches.com>
+To: Paul McQuade <paulmcquad@gmail.com>
+Cc: gregkh@linuxfoundation.org, Linux-Devel <devel@driverdev.osuosl.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 08 Aug 2013 11:50:48 -0700
+In-Reply-To: <5203D6E4.9080201@gmail.com>
+References: <5203D6E4.9080201@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 08:42 PM, Viresh Kumar wrote:
-> On 8 August 2013 00:20, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> Right, and that's *exactly* what having a cpufreq driver is for; to
->> implement the details of CPU clock management.
+On Thu, 2013-08-08 at 18:35 +0100, Paul McQuade wrote:
+>  From 9f6231ce16996e35545e20ce1d91abc058f2a6fb Mon Sep 17 00:00:00 2001
+> From: Paul McQuade <paulmcquad@gmail.com>
+> Date: Thu, 8 Aug 2013 17:49:22 +0100
+> Subject: [PATCH 2/2] Staging: BCM: Removed more whitespace/Errors
 > 
-> cpufreq drivers used to keep such information since a long time,
-> probably because there wasn't another place to keep them and
-> provide generic API's (like generic clock framework).. And so this
-> replication started to get in place which we are trying to get rid of
-> now.
-> 
-> All cpufreq drivers share a lot of common code which can go
-> away and so cpufreq-cpu0 was introduced..
-> 
-> With this patchset this replication goes away for tegra atleast at
-> the cost of a platform specific clk-cpu driver.. I think that's a good
-> deal, isn't it?
+> Interface Whitespace/Errors Removed with the help of checkpatch.pl
 
-I think this patch series is simply moving the custom per-SoC code
-somewhere else (clock driver) so that the cpufreq drivers can be
-simpler. However, the clock drivers are more complex, and now represent
-concepts that aren't really clocks.
+Hey Paul.
 
-So, no I'm not sure it's good.
+A suggestion for you:
 
-> And that's the only way you can use these generic drivers that we
-> have...
+Use the latest version of -next.
+Apply this patch: https://patchwork.kernel.org/patch/2839733/
 
-I don't think so. I think it's reasonable to have a per-SoC cpufreq
-driver whose primary content is the parameterization data and/or custom
-hooks for a unified core cpufreq driver. The duplicate parts of each
-cpufreq driver can be moved into the core cpufreq driver, but the
-non-duplicate parts remain. That's how many other subsystems work (MMC,
-USB, ASoC spring to mind).
+Try this:
+
+First convert the // comments to /* */ style
+
+$ ./scripts/checkpatch.pl --strict -f --types=c99_comments --fix drivers/staging/bcm/*.[ch]
+$ find drivers/staging/bcm/ -name "*.EXPERIMENTAL-checkpatch-fixes" | \
+  while read file ; do mv $file ${file%.EXPERIMENTAL-checkpatch-fixes}; done
+
+Commit this to a new git branch and then do
+
+$ ./scripts/checkpatch.pl --strict -f --types=spacing --fix drivers/staging/bcm/*.[ch]
+$ find drivers/staging/bcm/ -name "*.EXPERIMENTAL-checkpatch-fixes" | \
+  while read file ; do mv $file ${file%.EXPERIMENTAL-checkpatch-fixes}; done
+
+This produces a pretty big diff
+
+$ git diff --stat drivers/staging
+ drivers/staging/bcm/Adapter.h           |    2 +-
+ drivers/staging/bcm/Bcmchar.c           |   24 +-
+ drivers/staging/bcm/Bcmnet.c            |    2 +-
+ drivers/staging/bcm/DDRInit.c           | 1576 +++++++++++++++---------------
+ drivers/staging/bcm/IPv6Protocol.c      |    4 +-
+ drivers/staging/bcm/InterfaceIdleMode.c |   26 +-
+ drivers/staging/bcm/InterfaceInit.c     |   12 +-
+ drivers/staging/bcm/InterfaceIsr.c      |   82 +-
+ drivers/staging/bcm/InterfaceMisc.h     |    4 +-
+ drivers/staging/bcm/InterfaceRx.c       |  102 +-
+ drivers/staging/bcm/InterfaceTx.c       |   84 +-
+ drivers/staging/bcm/PHSModule.c         |    2 +-
+ drivers/staging/bcm/PHSModule.h         |   14 +-
+ drivers/staging/bcm/Prototypes.h        |   48 +-
+ drivers/staging/bcm/Qos.c               |    4 +-
+ drivers/staging/bcm/Queue.h             |   10 +-
+ drivers/staging/bcm/Transmit.c          |    4 +-
+ drivers/staging/bcm/hostmibs.c          |   10 +-
+ drivers/staging/bcm/nvm.c               |   12 +-
+ 19 files changed, 1011 insertions(+), 1011 deletions(-)
+
+You could investigate the differences here and
+determine what you want to do with them.
+
+The biggest diff is in DDRIinit.c.
+
+Most all of these changes are space additions after comma.
+
+Here's an example:
+
+diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
+index 1d19484..e8900c1 100644
+--- a/drivers/staging/bcm/DDRInit.c
++++ b/drivers/staging/bcm/DDRInit.c
+@@ -7,527 +7,527 @@
+ 
+     /* DDR INIT-133Mhz */
+ #define T3_SKIP_CLOCK_PROGRAM_DUMP_133MHZ 12  /* index for 0x0F007000 */
+-static struct bcm_ddr_setting asT3_DDRSetting133MHz[]= {/* # DPLL Clock Setting */
+-                                        {0x0F000800,0x00007212},
+-                                        {0x0f000820,0x07F13FFF},
+-                                        {0x0f000810,0x00000F95},
+-                                        {0x0f000860,0x00000000},
+-                                        {0x0f000880,0x000003DD},
++static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {/* # DPLL Clock Setting */
++                                        {0x0F000800, 0x00007212},
++                                        {0x0f000820, 0x07F13FFF},
++                                        {0x0f000810, 0x00000F95},
++                                        {0x0f000860, 0x00000000},
++                                        {0x0f000880, 0x000003DD},
+
+
+These are all poor style.
+These should actually look like:
+
++static struct bcm_ddr_setting asT3_DDRSetting133MHz[] = {/* # DPLL Clock Setting */
++	{0x0F000800, 0x00007212},
++	{0x0f000820, 0x07F13FFF},
++	{0x0f000810, 0x00000F95},
++	{0x0f000860, 0x00000000},
++	{0x0f000880, 0x000003DD},
+
+the --fix option won't do that.
+You'll have to do that by hand.
+
+Maybe just do a git checkout drivers/staging/bcm/DDRIinit.c
+before committing the other changes.
+
