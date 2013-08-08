@@ -1,235 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964946Ab3HHKEM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:04:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36545 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934100Ab3HHKEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:04:10 -0400
-Date: Thu, 8 Aug 2013 12:04:04 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Jan Kara <jack@suse.cz>, Matthew Wilcox <willy@linux.intel.com>,
-        Dave Hansen <dave@sr71.net>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, Andi Kleen <ak@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Ning Qu <quning@google.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/23] radix-tree: implement preload for multiple
- contiguous elements
-Message-ID: <20130808100404.GA4325@quack.suse.cz>
-References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1375582645-29274-2-git-send-email-kirill.shutemov@linux.intel.com>
- <20130805111739.GA25691@quack.suse.cz>
- <20130807163236.0F17DE0090@blue.fi.intel.com>
- <20130807200032.GE26516@quack.suse.cz>
- <20130807202403.7BCEEE0090@blue.fi.intel.com>
- <20130807203650.GI26516@quack.suse.cz>
- <20130807213736.AC732E0090@blue.fi.intel.com>
- <20130808084505.31EACE0090@blue.fi.intel.com>
+	id S964963Ab3HHKGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 06:06:51 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:38853 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934100Ab3HHKGt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 06:06:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130808084505.31EACE0090@blue.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.01.1308081141400.17424@pmeerw.net>
+References: <1375951624-15186-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1375951624-15186-3-git-send-email-ricardo.ribalda@gmail.com> <alpine.DEB.2.01.1308081141400.17424@pmeerw.net>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Thu, 8 Aug 2013 12:06:28 +0200
+Message-ID: <CAPybu_3PfCcwC-+72kfCD=JaXYAOOwtajNzcBh1txP5goBSS6Q@mail.gmail.com>
+Subject: Re: [PATCH 2/3] leds-pca9633: Unique naming of the LEDs
+To: Peter Meerwald <p.meerwald@bct-electronic.com>
+Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 08-08-13 11:45:05, Kirill A. Shutemov wrote:
-> From 35ba5687ea7aea98645da34ddd0be01a9de8b32d Mon Sep 17 00:00:00 2001
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> Date: Wed, 9 Jan 2013 13:25:47 +0200
-> Subject: [PATCH] radix-tree: implement preload for multiple contiguous
->  elements
-> 
-> The radix tree is variable-height, so an insert operation not only has
-> to build the branch to its corresponding item, it also has to build the
-> branch to existing items if the size has to be increased (by
-> radix_tree_extend).
-> 
-> The worst case is a zero height tree with just a single item at index 0,
-> and then inserting an item at index ULONG_MAX. This requires 2 new branches
-> of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-> 
-> Radix tree is usually protected by spin lock. It means we want to
-> pre-allocate required memory before taking the lock.
-> 
-> Currently radix_tree_preload() only guarantees enough nodes to insert
-> one element. It's a hard limit. For transparent huge page cache we want
-> to insert HPAGE_PMD_NR (512 on x86-64) entries to address_space at once.
-> 
-> This patch introduces radix_tree_preload_count(). It allows to
-> preallocate nodes enough to insert a number of *contiguous* elements.
-> The feature costs about 9KiB per-CPU on x86_64, details below.
-> 
-> Preload uses per-CPU array to store nodes. The total cost of preload is
-> "array size" * sizeof(void*) * NR_CPUS. We want to increase array size
-> to be able to handle 512 entries at once.
-> 
-> Size of array depends on system bitness and on RADIX_TREE_MAP_SHIFT.
-> 
-> We have three possible RADIX_TREE_MAP_SHIFT:
-> 
->  #ifdef __KERNEL__
->  #define RADIX_TREE_MAP_SHIFT	(CONFIG_BASE_SMALL ? 4 : 6)
->  #else
->  #define RADIX_TREE_MAP_SHIFT	3	/* For more stressful testing */
->  #endif
-> 
-> We are not going to use transparent huge page cache on small machines or
-> in userspace, so we are interested in RADIX_TREE_MAP_SHIFT=6.
-> 
-> On 64-bit system old array size is 21, new is 37. Per-CPU feature
-> overhead is
->  for preload array:
->    (37 - 21) * sizeof(void*) = 128 bytes
->  plus, if the preload array is full
->    (37 - 21) * sizeof(struct radix_tree_node) = 16 * 560 = 8960 bytes
->  total: 9088 bytes
-> 
-> On 32-bit system old array size is 11, new is 22. Per-CPU feature
-> overhead is
->  for preload array:
->    (22 - 11) * sizeof(void*) = 44 bytes
->  plus, if the preload array is full
->    (22 - 11) * sizeof(struct radix_tree_node) = 11 * 296 = 3256 bytes
->  total: 3300 bytes
-> 
-> Since only THP uses batched preload at the moment, we disable (set max
-> preload to 1) it if !CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE. This can be
-> changed in the future.
-> 
-> Signed-off-by: Matthew Wilcox <willy@linux.intel.com>
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Acked-by: Dave Hansen <dave.hansen@linux.intel.com>
-> ---
->  include/linux/radix-tree.h | 11 ++++++
->  lib/radix-tree.c           | 89 +++++++++++++++++++++++++++++++++++++++++-----
->  2 files changed, 91 insertions(+), 9 deletions(-)
-> 
-> diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-> index 4039407..3bf0b3e 100644
-> --- a/include/linux/radix-tree.h
-> +++ b/include/linux/radix-tree.h
-> @@ -83,6 +83,16 @@ do {									\
->  	(root)->rnode = NULL;						\
->  } while (0)
->  
-> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE_PAGECACHE
-> +/*
-> + * At the moment only THP uses preload for more then on item for batched
-> + * pagecache manipulations.
-> + */
-> +#define RADIX_TREE_PRELOAD_NR	512
-> +#else
-> +#define RADIX_TREE_PRELOAD_NR	1
-> +#endif
-> +
->  /**
->   * Radix-tree synchronization
->   *
-> @@ -232,6 +242,7 @@ unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
->  				unsigned long index, unsigned long max_scan);
->  int radix_tree_preload(gfp_t gfp_mask);
->  int radix_tree_maybe_preload(gfp_t gfp_mask);
-> +int radix_tree_maybe_preload_contig(unsigned size, gfp_t gfp_mask);
->  void radix_tree_init(void);
->  void *radix_tree_tag_set(struct radix_tree_root *root,
->  			unsigned long index, unsigned int tag);
-> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-> index 7811ed3..980e4c4 100644
-> --- a/lib/radix-tree.c
-> +++ b/lib/radix-tree.c
-> @@ -84,14 +84,54 @@ static struct kmem_cache *radix_tree_node_cachep;
->   * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
->   * Hence:
->   */
-> -#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
-> +#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
-> +
-> +/*
-> + * Inserting N contiguous items is more complex. To simplify calculation, let's
-> + * limit N (validated in radix_tree_init()):
-> + *  - N is multiplier of RADIX_TREE_MAP_SIZE (or 1);
-  Is this limitation really worth the one reserved item you save?
+Hello Peter
+
+Thanks for your comment, I have added also the bus number to the name,
+and fix the commit message.
+
+I will wait for some more comments and then I will resend it again.
+
+Thanks!
+
+On Thu, Aug 8, 2013 at 11:45 AM, Peter Meerwald
+<p.meerwald@bct-electronic.com> wrote:
+> Hello,
+>
+>> If there are more than one pca963x chips on the system and there are
+>> some LEDs without platform_data names, the driver wont be able to
+>> provide unique naming to them.
+>
+>> This patch adds the i2c adress to the name of the unnamed LEDs, making
+>> them unique.
+>
+> there still could be pca963x chips with the same address on different
+> I2C busses; the I2C address itself is not unique
+>
+> spelling/nitpicking of commit message: 'is more than one pca963x chip',
+> 'address'
+>
+> regards, p.
+>
+>> [  555.346827] ------------[ cut here ]------------
+>> [  555.346844] WARNING: at /build/linux-voe0Su/linux-3.9.8/fs/sysfs/dir.c:536 sysfs_add_one+0x8b/0x9d()
+>> [  555.346847] Hardware name: QT5022
+>> [  555.346850] sysfs: cannot create duplicate filename '/class/leds/pca9633:6'
+>> [  555.346853] Modules linked in: qt5038_platform(O+) leds_pca9633(O) hid_generic ledtrig_default_on rfcomm bnep bluetooth binfmt_misc nfsd auth_rpcgss nfs_acl nfs lockd dns_resolver fscache sunrpc nls_utf8 nls_cp437 vfat fat loop fuse joydev hid_multitouch usbhid hid acpi_cpufreq mperf kvm_amd kvm evdev pn533 nfc arc4 microcode pcspkr efivars k10temp ath9k ath9k_common ath9k_hw ath fglrx(PO) mac80211 cfg80211 video rfkill processor thermal_sys sp5100_tco button i2c_piix4 ext4 crc16 jbd2 mbcache sg sd_mod crc_t10dif ahci libahci igb i2c_algo_bit i2c_core dca ptp pps_core ehci_pci ohci_hcd ehci_hcd libata usbcore usb_common scsi_mod [last unloaded: leds_pca963x]
+>> [  555.346940] Pid: 4766, comm: insmod Tainted: P        W  O 3.9-1-amd64 #1 Debian 3.9.8-1
+>> [  555.346943] Call Trace:
+>> [  555.346956]  [<ffffffff8103d153>] ? warn_slowpath_common+0x76/0x8c
+>> [  555.346962]  [<ffffffff8103d202>] ? warn_slowpath_fmt+0x47/0x49
+>> [  555.346968]  [<ffffffff8116005d>] ? sysfs_pathname+0x3b/0x41
+>> [  555.346973]  [<ffffffff81160767>] ? sysfs_add_one+0x8b/0x9d
+>> [  555.346978]  [<ffffffff811610a4>] ? sysfs_do_create_link_sd+0xe8/0x174
+>> [  555.346985]  [<ffffffff81279250>] ? device_add+0x243/0x5ab
+>> [  555.346991]  [<ffffffff81060a16>] ? complete_all+0x31/0x40
+>> [  555.346998]  [<ffffffff8104991a>] ? init_timer_key+0xc/0x56
+>> [  555.347004]  [<ffffffff8127964c>] ? device_create_vargs+0x82/0xb6
+>> [  555.347009]  [<ffffffff812796af>] ? device_create+0x2f/0x31
+>> [  555.347014]  [<ffffffff81060add>] ? should_resched+0x5/0x23
+>> [  555.347021]  [<ffffffff812a3a92>] ? led_classdev_register+0x24/0x103
+>> [  555.347028]  [<ffffffffa09d01c0>] ? pca9633_probe+0x173/0x239 [leds_pca9633]
+>> [  555.347035]  [<ffffffff8127b504>] ? __driver_attach+0x73/0x73
+>> [  555.347049]  [<ffffffffa009dfc9>] ? i2c_device_probe+0x63/0x88 [i2c_core]
+>> [  555.347057]  [<ffffffff8127b373>] ? driver_probe_device+0x92/0x1b0
+>> [  555.347064]  [<ffffffff81279c5c>] ? bus_for_each_drv+0x43/0x7d
+>> [  555.347070]  [<ffffffff8127b2af>] ? device_attach+0x68/0x83
+>> [  555.347078]  [<ffffffff8127a990>] ? bus_probe_device+0x25/0x8d
+>> [  555.347083]  [<ffffffff812793f7>] ? device_add+0x3ea/0x5ab
+>> [  555.347088]  [<ffffffff81060a16>] ? complete_all+0x31/0x40
+>> [  555.347094]  [<ffffffff8104991a>] ? init_timer_key+0xc/0x56
+>> [  555.347104]  [<ffffffffa009d3a1>] ? i2c_new_device+0x10d/0x179 [i2c_core]
+>> [  555.347112]  [<ffffffffa008f036>] ? qt5038_init+0x36/0x1000 [qt5038_platform]
+>> [  555.347119]  [<ffffffffa008f000>] ? 0xffffffffa008efff
+>> [  555.347125]  [<ffffffff8100209e>] ? do_one_initcall+0x74/0x128
+>> [  555.347131]  [<ffffffffa008f000>] ? 0xffffffffa008efff
+>> [  555.347137]  [<ffffffff810836f5>] ? load_module+0x1af7/0x1dfc
+>> [  555.347144]  [<ffffffff810801c5>] ? free_notes_attrs+0x3c/0x3c
+>> [  555.347150]  [<ffffffff81083a98>] ? sys_init_module+0x9e/0xab
+>> [  555.347157]  [<ffffffff8138be29>] ? system_call_fastpath+0x16/0x1b
+>> [  555.347161] ---[ end trace ad00b85794e0de4d ]---
+>> [  555.347448] leds-pca9633: probe of 0-006b failed with error -17
+>>
+>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+>> ---
+>>  drivers/leds/leds-pca9633.c |    7 ++++---
+>>  1 file changed, 4 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
+>> index 070358a..4dd7793 100644
+>> --- a/drivers/leds/leds-pca9633.c
+>> +++ b/drivers/leds/leds-pca9633.c
+>> @@ -159,10 +159,11 @@ static int pca9633_probe(struct i2c_client *client,
+>>                       if (pdata->leds.leds[i].default_trigger)
+>>                               pca9633[i].led_cdev.default_trigger =
+>>                                       pdata->leds.leds[i].default_trigger;
+>> -             } else {
+>> -                     snprintf(pca9633[i].name, sizeof(pca9633[i].name),
+>> -                              "pca9633:%d", i);
+>>               }
+>> +             if (!pdata || i >= pdata->leds.num_leds ||
+>> +                                             !pdata->leds.leds[i].name)
+>> +                     snprintf(pca9633[i].name, sizeof(pca9633[i].name),
+>> +                              "pca9633:%.2x:%d", client->addr, i);
+>>
+>>               pca9633[i].led_cdev.name = pca9633[i].name;
+>>               pca9633[i].led_cdev.brightness_set = pca9633_led_set;
+>>
+>
+> --
+>
+> Peter Meerwald
+> +43-664-2444418 (mobile)
 
 
-> + *  - N <= number of items 2-level tree can contain:
-> + *    1UL << (2 * RADIX_TREE_MAP_SHIFT).
-> + *
-> + * No limitation on insert index alignment.
-> + *
-> + * Then the worst case is tree with only one element at index 0 and we add N
-> + * items where at least one index requires max tree high and we cross boundary
-> + * between items in root node.
-> + *
-> + * Basically, at least one index is less then
-> + *
-> + * 1UL << ((RADIX_TREE_MAX_PATH - 1) * RADIX_TREE_MAP_SHIFT)
-> + *
-> + * and one is equal to.
-> + *
-> + * In this case we need:
-> + *
-> + * - RADIX_TREE_MAX_PATH nodes to build new path to item with index 0;
-> + * - N / RADIX_TREE_MAP_SIZE + 1 nodes for last level nodes for new items:
-> + *    - +1 is for misalinged case;
-> + * - 2 * (RADIX_TREE_MAX_PATH - 2) - 1 nodes to build path to last level nodes:
-> + *    - -2, because root node and last level nodes are already accounted);
-> + *    - -1, because one second level node is shared between item with index 0
-> + *      and item below the boundary;
-> + *
-> + * Hence:
-> + */
-> +#if RADIX_TREE_PRELOAD_NR > 1
-> +#define RADIX_TREE_PRELOAD_MAX \
-> +	( RADIX_TREE_MAX_PATH + \
-> +	  RADIX_TREE_PRELOAD_NR / RADIX_TREE_MAP_SIZE + 1 + \
-> +	  2 * (RADIX_TREE_MAX_PATH - 2) - 1)
-> +#else
-> +#define RADIX_TREE_PRELOAD_MAX RADIX_TREE_PRELOAD_MIN
-> +#endif
->  
->  /*
->   * Per-cpu pool of preloaded nodes
->   */
->  struct radix_tree_preload {
->  	int nr;
-> -	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_SIZE];
-> +	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_MAX];
->  };
->  static DEFINE_PER_CPU(struct radix_tree_preload, radix_tree_preloads) = { 0, };
->  
-> @@ -263,29 +303,35 @@ radix_tree_node_free(struct radix_tree_node *node)
->  
->  /*
->   * Load up this CPU's radix_tree_node buffer with sufficient objects to
-> - * ensure that the addition of a single element in the tree cannot fail.  On
-> - * success, return zero, with preemption disabled.  On error, return -ENOMEM
-> + * ensure that the addition of *contiguous* items in the tree cannot fail.
-> + * On success, return zero, with preemption disabled.  On error, return -ENOMEM
->   * with preemption not disabled.
->   *
->   * To make use of this facility, the radix tree must be initialised without
->   * __GFP_WAIT being passed to INIT_RADIX_TREE().
->   */
-> -static int __radix_tree_preload(gfp_t gfp_mask)
-> +static int __radix_tree_preload_contig(unsigned size, gfp_t gfp_mask)
->  {
->  	struct radix_tree_preload *rtp;
->  	struct radix_tree_node *node;
->  	int ret = -ENOMEM;
-> +	int preload_target = RADIX_TREE_PRELOAD_MIN +
-> +		DIV_ROUND_UP(size - 1, RADIX_TREE_MAP_SIZE);
-  So you should also warn if size % RADIX_TREE_MAP_SIZE != 0, right?
-Otherwise the patch looks fine.
-
-								Honza
 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Ricardo Ribalda
