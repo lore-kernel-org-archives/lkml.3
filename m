@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933801Ab3HHCsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 22:48:39 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:35877 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab3HHCsh (ORCPT
+	id S1757633Ab3HHCvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:51:10 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:44525 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab3HHCvJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 22:48:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <52029736.8040007@wwwdotorg.org>
-References: <cover.1375886595.git.viresh.kumar@linaro.org>
-	<6610c86618b781b00eba446ca19035e077d99691.1375886595.git.viresh.kumar@linaro.org>
-	<520287EA.5060508@wwwdotorg.org>
-	<CAKohpokOn4-RZE5mfoM+2p8jszWoGfOErrLShZmv86OgCMv+JA@mail.gmail.com>
-	<5202898A.6050006@wwwdotorg.org>
-	<CAKohpom3o1y+xXof3iKCn6SWxYKNAE=aBGO2P3JF+Y0Ce4GmQQ@mail.gmail.com>
-	<52029736.8040007@wwwdotorg.org>
-Date: Thu, 8 Aug 2013 08:18:36 +0530
-Message-ID: <CAKohpo=tKYx8KC6jX+qoqGKJBwpJbhGUD5cM4ErOMJ4NMB+hRA@mail.gmail.com>
-Subject: Re: [PATCH 5/6] ARM: Tegra: start using cpufreq-cpu0 driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>, Shawn Guo <shawn.guo@linaro.org>
-Cc: rjw@sisk.pl, swarren@nvidia.com, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mturquette@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 7 Aug 2013 22:51:09 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, mingo@kernel.org
+Cc: David Ahern <dsahern@gmail.com>
+Subject: [PATCH 00/19] perf sched: Add timehist subcommand
+Date: Wed,  7 Aug 2013 22:50:42 -0400
+Message-Id: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 August 2013 00:21, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/07/2013 11:59 AM, Viresh Kumar wrote:
->> On 7 August 2013 23:23, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> That link only describes why we shouldn't have a dedicated compatible
->>> value for cpufreq. I certainly agree with that. However, I think it's
->>> reasonable that whatever code binds to:
->>>
->>>         compatible = "arm,cortex-a9";
->>>
->>> ... should instantiate any virtual devices that relate to the CPU.
->>
->> But how would we know here if platform really wants us to probe
->> cpufreq-cpu0 driver? On multiplatform kernel there can be multiple
->> cpufreq drivers available and there has to be some sort of code
->> in DT or platform code that reflects which driver we want to use.
->
-> Presumably the code would look at the top-level DT node's compatible
-> value (e.g. "nvidia,tegra20").
+Ingo/Arnaldo:
 
-So you are actually asking us to get a compatibility list inside
-cpufreq-cpu0 driver which will list all the platforms for which this driver
-would work?
+I have a lot of patches queued up on top of this set. Before I go much farther
+and the queue grows longer I wanted to throw out this set for comments, review
+and inclusion where possible. Most of the patches are cleanups and re-workings
+leading up to the new command. The patches I have after this continue to add
+more features and options to the timehist command to match what I have been
+using for the past few years.
 
-Honestly speaking I wasn't in favor of getting a platform-device
-registered for cpufreq-cpu0 earlier and had few discussion on the
-thread I passed to you.
+David Ahern (19):
+  perf: sample after exit loses thread correlation - v3
+  perf sched: simplify arguments to read_events
+  perf sched: remove thread lookup in sample handler
+  perf sched: remove sched_process_exit tracepoint
+  perf sched: remove sched_process_fork tracepoint
+  perf symbol: add optimization for idle kernel symbols
+  perf top: use new idle_sym check
+  perf symbol: save vmlinux or kallsyms path loaded
+  perf tool: Simplify options to perf_evsel__print_ip
+  perf tool: Add option to print stack trace on single line
+  perf tool: Add option to limit stack depth in callchain dumps
+  perf tool: Add support for exclude symbol list to symbol_conf
+  perf tool: Skip symbols in exclude list while printing callchain
+  perf sched: pass event to evsel handlers using data element
+  perf sched: Add timehist command
+  perf tool: Change perf_session__has_traces to actually check for tracepoints
+  perf sched timehist: add support for context-switch event
+  perf sched timehist: print all events in verbose mode
+  perf sched timehist: add pid/tid option
 
-The problem with the new solution you just proposed is, for every
-new platform that comes in we need to update this file.. And that's
-it probably..
+ tools/perf/builtin-sched.c  |  959 ++++++++++++++++++++++++++++++++++++++++---
+ tools/perf/builtin-script.c |   29 +-
+ tools/perf/builtin-top.c    |   25 +-
+ tools/perf/util/machine.c   |   37 +-
+ tools/perf/util/session.c   |   39 +-
+ tools/perf/util/session.h   |    8 +-
+ tools/perf/util/symbol.c    |   71 +++-
+ tools/perf/util/symbol.h    |    8 +-
+ 8 files changed, 1063 insertions(+), 113 deletions(-)
 
-Don't know how others would see it...
-@Rafael/Rob/Shawn: Any suggestions here?
+-- 
+1.7.10.1
+
