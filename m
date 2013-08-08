@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964827Ab3HHJ3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 05:29:08 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:55368 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934118Ab3HHJ3G (ORCPT
+	id S964824Ab3HHJbC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 05:31:02 -0400
+Received: from 20.mo4.mail-out.ovh.net ([46.105.33.73]:46984 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934186Ab3HHJbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 05:29:06 -0400
-Subject: Re: [PATCH 4/5] omap: Avoid crashes in the case of hwmod misconfiguration
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <87siyl19uk.fsf@linaro.org>
-Date: Thu, 8 Aug 2013 12:29:00 +0300
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        =?iso-8859-1?Q?Beno=EEt_Coussno?= <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Koen Kooi <koen@circuitco.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <AB1CC181-58F8-4C58-9789-71A9A90B2E17@antoniou-consulting.com>
-References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com> <1375775624-12250-5-git-send-email-panto@antoniou-consulting.com> <87siyl19uk.fsf@linaro.org>
-To: Kevin Hilman <khilman@linaro.org>
-X-Mailer: Apple Mail (2.1085)
+	Thu, 8 Aug 2013 05:31:00 -0400
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Russell King <linux@arm.linux.org.uk>, Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: [PATCH 2/6] ARM: at91: prepare common clk transition for sama5d3 SoC
+Date: Thu,  8 Aug 2013 11:21:30 +0200
+Message-Id: <1375953690-11207-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375951572-10829-1-git-send-email-b.brezillon@overkiz.com>
+References: <1375951572-10829-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 7201818755200022707
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+This patch enclose sama5d3 old clk registration in
+"#if defined(CONFIG_OLD_CLK_AT91) #endif" sections.
 
-On Aug 8, 2013, at 12:15 AM, Kevin Hilman wrote:
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ arch/arm/mach-at91/sama5d3.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-> Pantelis Antoniou <panto@antoniou-consulting.com> writes:
-> 
->> omap hwmod is really sensitive to hwmod misconfiguration.
->> Getting a minor clock wrong always ended up in a crash.
->> Attempt to be more resilient by not assigning variables with
->> error codes and then attempting to use them.
->> 
->> Without this patch, missing a clock ends up with something like this:
->> omap_hwmod: ehrpwm0: cannot clk_get opt_clk ehrpwm0_tbclk!
-> 
-> Definitely agree we should not be crashing when given bad data.
-> 
-> nit Re: "missing clock".  I don't think there will be any crash if a
-> clock is missing.  This looks to me more like the clock name is wrong
-> (tbclk instead of dbclk?), not missing.
-> 
-
-Yes, I'll rephrase.
-
-> [...]
-> 
->> index 7341eff..42cb7d4 100644
->> --- a/arch/arm/mach-omap2/omap_hwmod.c
->> +++ b/arch/arm/mach-omap2/omap_hwmod.c
->> @@ -784,7 +784,9 @@ static int _init_interface_clks(struct omap_hwmod *oh)
->> 		if (IS_ERR(c)) {
->> 			pr_warning("omap_hwmod: %s: cannot clk_get interface_clk %s\n",
->> 				   oh->name, os->clk);
->> -			ret = -EINVAL;
->> +			if (ret == 0)
->> +				ret = -EINVAL;
->> +			continue;
-> 
-> the 'if (ret == 0)' adds confusion IMO.  If we don't care additional
-> failures, errors, then just add a 'break' instead of these 3 lines.
-> 
-> [...]
-> 
-
-
-I tried to carry on as much as possible even on the presence of errors.
-The remaining clocks won't be initialized, but that might be OK.
-
-> Kevin
-
-Regards
-
--- Pantelis
+diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
+index 0003949..3426098 100644
+--- a/arch/arm/mach-at91/sama5d3.c
++++ b/arch/arm/mach-at91/sama5d3.c
+@@ -19,9 +19,10 @@
+ 
+ #include "soc.h"
+ #include "generic.h"
+-#include "clock.h"
+ #include "sam9_smc.h"
+ 
++#if defined(CONFIG_OLD_CLK_AT91)
++#include "clock.h"
+ /* --------------------------------------------------------------------
+  *  Clocks
+  * -------------------------------------------------------------------- */
+@@ -361,6 +362,7 @@ static void __init sama5d3_register_clocks(void)
+ 	clk_register(&pck1);
+ 	clk_register(&pck2);
+ }
++#endif
+ 
+ /* --------------------------------------------------------------------
+  *  AT91SAM9x5 processor initialization
+@@ -373,5 +375,7 @@ static void __init sama5d3_map_io(void)
+ 
+ AT91_SOC_START(sama5d3)
+ 	.map_io = sama5d3_map_io,
++#if defined(CONFIG_OLD_CLK_AT91)
+ 	.register_clocks = sama5d3_register_clocks,
++#endif
+ AT91_SOC_END
+-- 
+1.7.9.5
 
