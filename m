@@ -1,279 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966528Ab3HHXDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 19:03:16 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:43062 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966339Ab3HHXDO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 19:03:14 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v9 14/16] iommu/exynos: add support for power management subsystems.
-Date: Fri, 09 Aug 2013 01:03:05 +0200
-Message-ID: <1949492.N82v2nAcIY@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.4-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <003201ce941b$6e5a90e0$4b0fb2a0$@samsung.com>
-References: <003201ce941b$6e5a90e0$4b0fb2a0$@samsung.com>
+	id S966561Ab3HHXDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 19:03:48 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33090 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966339Ab3HHXDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 19:03:46 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
+Subject: Re: Cannot hot remove a memory device
+Date: Fri, 09 Aug 2013 01:14:04 +0200
+Message-ID: <2966692.KbMK5bTkda@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1376002242.10300.235.camel@misato.fc.hp.com>
+References: <51FA1E41.20304@jp.fujitsu.com> <13789925.vhhiTlyGIy@vostro.rjw.lan> <1376002242.10300.235.camel@misato.fc.hp.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KyongHo,
-
-nit: Please drop the trailing dot at the end of patch subject.
-
-On Thursday 08 of August 2013 18:41:17 Cho KyongHo wrote:
-> This adds support for Advance Power Management and Runtime Power
-> Management.
-
-This patch adds support for system-wide and runtime power management.
-
-> Since System MMU is located in the same local power domain of its
-> master H/W, System MMU must be initialized before it is working if
-> its power domain was ever turned off. TLB invalidation according to
-> unmapping on page tables must also be performed while power domain is
-> turned on.
+On Thursday, August 08, 2013 04:50:42 PM Toshi Kani wrote:
+> On Fri, 2013-08-09 at 00:12 +0200, Rafael J. Wysocki wrote:
+> > On Thursday, August 08, 2013 11:15:20 AM Toshi Kani wrote:
+> > > On Fri, 2013-08-02 at 18:04 -0600, Toshi Kani wrote:
+> > > > On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
+> > > > > On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
+> > > > > > On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
+> > >  :
+> > > > > > I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
+> > > > > > handle is already set\n").  When two ACPI memory objects associate with
+> > > > > > a same memory block, the bind procedure of the 2nd ACPI memory object
+> > > > > > sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
+> > > > > 
+> > > > > That sound's plausible, but I wonder how we can fix that?
+> > > > > 
+> > > > > There's no way for a single physical device to have two different ACPI
+> > > > > "companions".  It looks like the memory blocks should be 64 M each in that
+> > > > > case.  Or we need to create two child devices for each memory block and
+> > > > > associate each of them with an ACPI object.  That would lead to complications
+> > > > > in the user space interface, though.
+> > > > 
+> > > > Right.  Even bigger issue is that I do not think __add_pages() and
+> > > > __remove_pages() can add / delete a memory chunk that is less than
+> > > > 128MB.  128MB is the granularity of them.  So, we may just have to fail
+> > > > this case gracefully.
+> > > 
+> > > FYI: I have submitted the patch blow to close this part of the issue...
+> > > 
+> > > https://lkml.org/lkml/2013/8/8/396
+> > 
+> > That looks good to me, but we'd still need to make it possible to have
+> > memory blocks smaller than 128 MB ...
 > 
-> This patch ensures that resume and runtime_resume(restore_state)
-> functions in this driver is called before the calls to resume and
-> runtime_resume callback functions in the drivers of master H/Ws.
-> Likewise, suspend and runtime_suspend(save_state) functions in this
-> driver is called after the calls to suspend and runtime_suspend in the
-> drivers of master H/Ws.
+> Do you mean acpi_bind_one() needs to be able to handle such case?  If
+> so, it should not be a problem since a memory block device won't be
+> created when add_memory() fails with the change above.  So, there is no
+> binding to be done.  If you mean add_memory() needs to be able to handle
+> a smaller range, that's quite a tough one unless we make the section
+> size smaller.
 > 
-> In order to get benefit of this support, the master H/W and its System
-> MMU must resides in the same power domain in terms of Linux kernel. If
-> a master H/W does not use generic I/O power domain, its driver must
-> call iommu_attach_device() after its local power domain is turned on,
-> iommu_detach_device before turned off.
+> BTW, when add_memory() fails, the memory hot-add request still succeeds
+> with no driver attached.  This seems logical, but the added device is
+> useless when no handler is attached.  And it does not allow ejecting the
+> device with no handler.  I am not too worry about this since this is a
+> rare case, but it reminded me that the framework won't handle rollback.
 
-I don't get the point of this last paragraph. What a power domain can be 
-in other terms? Is there any other way to support power domains on Exynos 
-than generic power domains?
+That is a valid observation.
 
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> ---
->  drivers/iommu/exynos-iommu.c |  235
-> +++++++++++++++++++++++++++++++++++++++++- 1 files changed, 231
-> insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> index 9e64483..56aead9 100644
-> --- a/drivers/iommu/exynos-iommu.c
-> +++ b/drivers/iommu/exynos-iommu.c
-> @@ -28,6 +28,7 @@
->  #include <linux/export.h>
->  #include <linux/of.h>
->  #include <linux/of_platform.h>
-> +#include <linux/pm_domain.h>
->  #include <linux/notifier.h>
-> 
->  #include <asm/cacheflush.h>
-> @@ -186,6 +187,7 @@ struct sysmmu_drvdata {
->  	int activations;
->  	rwlock_t lock;
->  	struct iommu_domain *domain;
-> +	bool runtime_active;
->  	unsigned long pgtable;
->  	void __iomem *sfrbases[0];
->  };
-> @@ -438,7 +440,8 @@ static bool __sysmmu_disable(struct sysmmu_drvdata
-> *data) data->pgtable = 0;
->  		data->domain = NULL;
-> 
-> -		__sysmmu_disable_nocount(data);
-> +		if (data->runtime_active)
-> +			__sysmmu_disable_nocount(data);
-> 
->  		dev_dbg(data->sysmmu, "Disabled\n");
->  	} else  {
-> @@ -505,7 +508,8 @@ static int __sysmmu_enable(struct sysmmu_drvdata
-> *data, data->pgtable = pgtable;
->  		data->domain = domain;
-> 
-> -		__sysmmu_enable_nocount(data);
-> +		if (data->runtime_active)
-> +			__sysmmu_enable_nocount(data);
-> 
->  		dev_dbg(data->sysmmu, "Enabled\n");
->  	} else {
-> @@ -609,7 +613,7 @@ static void sysmmu_tlb_invalidate_entry(struct
-> device *dev, unsigned long iova) data =
-> dev_get_drvdata(client->sysmmu[i]);
-> 
->  		read_lock_irqsave(&data->lock, flags);
-> -		if (is_sysmmu_active(data)) {
-> +		if (is_sysmmu_active(data) && data->runtime_active) {
->  			int i;
->  			clk_enable(data->clk_master);
->  			for (i = 0; i < data->nsfrs; i++)
-> @@ -637,7 +641,8 @@ void exynos_sysmmu_tlb_invalidate(struct device
-> *dev) data = dev_get_drvdata(client->sysmmu[i]);
-> 
->  		read_lock_irqsave(&data->lock, flags);
-> -		if (is_sysmmu_active(data)) {
-> +		if (is_sysmmu_active(data) &&
-> +				data->runtime_active) {
+Perhaps we should add a flag that will cause acpi_bus_offline_companions()
+to fail immediately if that flag is set for the given device?
 
-nit: The whole if condition fits into single line.
+Then, acpi_memory_enable_device() could set that flag for mem_device->device
+when either add_memory() or acpi_bind_memory_blocks() fails?
 
->  			int i;
->  			for (i = 0; i < data->nsfrs; i++) {
->  				clk_enable(data->clk_master);
-> @@ -711,6 +716,8 @@ static int __init exynos_sysmmu_probe(struct
-> platform_device *pdev) }
->  	}
-> 
-> +	pm_runtime_enable(dev);
-> +
->  	data->sysmmu = dev;
-> 
->  	data->clk = devm_clk_get(dev, "sysmmu");
-> @@ -736,6 +743,8 @@ static int __init exynos_sysmmu_probe(struct
-> platform_device *pdev) return ret;
->  	}
-> 
-> +	data->runtime_active = !pm_runtime_enabled(dev);
-> +
->  	rwlock_init(&data->lock);
-> 
->  	platform_set_drvdata(pdev, data);
-> @@ -744,6 +753,34 @@ static int __init exynos_sysmmu_probe(struct
-> platform_device *pdev) return ret;
->  }
-> 
-> +#ifdef CONFIG_PM_SLEEP
-> +static int sysmmu_suspend(struct device *dev)
-> +{
-> +	struct sysmmu_drvdata *data = dev_get_drvdata(dev);
-> +	unsigned long flags;
-> +	read_lock_irqsave(&data->lock, flags);
-> +	if (is_sysmmu_active(data) &&
-> +		(!pm_runtime_enabled(dev) || data->runtime_active))
-> +		__sysmmu_disable_nocount(data);
-> +	read_unlock_irqrestore(&data->lock, flags);
-> +	return 0;
-> +}
-> +
-> +static int sysmmu_resume(struct device *dev)
-> +{
-> +	struct sysmmu_drvdata *data = dev_get_drvdata(dev);
-> +	unsigned long flags;
-> +	read_lock_irqsave(&data->lock, flags);
-> +	if (is_sysmmu_active(data) &&
-> +		(!pm_runtime_enabled(dev) || data->runtime_active))
-> +		__sysmmu_enable_nocount(data);
-> +	read_unlock_irqrestore(&data->lock, flags);
-> +	return 0;
-> +}
-> +#endif
-> +
-> +static SIMPLE_DEV_PM_OPS(sysmmu_pm_ops, sysmmu_suspend, sysmmu_resume);
-> +
->  #ifdef CONFIG_OF
->  static struct of_device_id sysmmu_of_match[] __initconst = {
->  	{ .compatible	= "samsung,exynos4210-sysmmu", },
-> @@ -756,6 +793,7 @@ static struct platform_driver exynos_sysmmu_driver
-> __refdata = { .driver	= {
->  		.owner		= THIS_MODULE,
->  		.name		= "exynos-sysmmu",
-> +		.pm		= &sysmmu_pm_ops,
->  		.of_match_table	= of_match_ptr(sysmmu_of_match),
->  	}
->  };
-> @@ -1141,6 +1179,163 @@ static int __init exynos_iommu_init(void)
->  }
->  subsys_initcall(exynos_iommu_init);
-> 
-> +#ifdef CONFIG_PM_SLEEP
-> +static int sysmmu_pm_genpd_suspend(struct device *dev)
-> +{
-> +	struct exynos_iommu_client *client = dev->archdata.iommu;
-> +	int ret = 0;
-> +	int i;
-> +
-> +	for (i = 0; i < client->num_sysmmu; i++) {
-> +		ret = pm_generic_suspend(client->sysmmu[i]);
-> +		if (ret)
-> +			break;
-> +	}
-> +
-> +	if (!ret)
-> +		ret = pm_generic_suspend(dev);
-> +
-> +	if (ret) {
-> +		int j;
-> +
-> +		for (j = 0; j < i; j++)
-> +			pm_generic_resume(client->sysmmu[j]);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int sysmmu_pm_genpd_resume(struct device *dev)
-> +{
-> +	struct exynos_iommu_client *client = dev->archdata.iommu;
-> +	int ret = 0;
-> +	int i;
-> +
-> +	for (i = 0; i < client->num_sysmmu; i++) {
-> +		ret = pm_generic_resume(client->sysmmu[i]);
-> +		if (ret)
-> +			break;
-
-Error handling here can be cleaned up a lot.
-
-s/break/goto err_suspend/
-
-> +	}
-> +
-> +	if (!ret)
-
-Now you can drop this check.
-
-> +		ret = pm_generic_resume(dev);
-
-	ret = pm_generic_resume(dev);
-	if (ret)
-		goto err_suspend;
-
-	return 0;
-
-> +
-
-err_suspend:
-> +	if (ret) {
-
-This check can be dropped here as well now.
-
-> +		int j;
-> +
-> +		for (j = 0; j < i; j++)
-> +			pm_generic_suspend(client->sysmmu[j]);
-> +	}
-> +
-> +	return ret;
-> +}
-> +#endif
-
-Best regards,
-Tomasz
+Rafael
 
