@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965474Ab3HHN5X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:57:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51600 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965097Ab3HHN5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:57:20 -0400
-From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Joe Lawrence <Joe.Lawrence@stratus.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>
-Subject: [PATCH] PCI: avoid NULL deref in alloc_pcie_link_state
-Date: Thu,  8 Aug 2013 15:57:07 +0200
-Message-Id: <1375970227-14794-1-git-send-email-rkrcmar@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S965569Ab3HHN5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:57:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33350 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933145Ab3HHN5w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 09:57:52 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=pR7EoCbdL7wA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=paP5AUKnsW4A:10 a=VwQbUJbxAAAA:8 a=dSN7wDdwjuLQdvHoveIA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375970270.6848.60.camel@gandalf.local.home>
+Subject: Re: [PATCH] Revert "slub: do not put a slab to cpu partial list
+ when cpu_partial is 0"
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Christoph Lameeter <cl@linux.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>
+Date: Thu, 08 Aug 2013 09:57:50 -0400
+In-Reply-To: <1375967992.6848.55.camel@gandalf.local.home>
+References: <1375967992.6848.55.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCIe switch can be connected directly to the PCIe root complex in QEMU;
-ASPM does not expect this topology and dereferences NULL pointer when
-initializing.
+On Thu, 2013-08-08 at 09:19 -0400, Steven Rostedt wrote:
 
-Downstream port can be also connected to the root complex without
-upstream one, so code checks for both, otherwise they dereference NULL
-on line drivers/pci/pcie/aspm.c:530 (alloc_pcie_link_state+13):
-  		parent = pdev->bus->parent->self->link_state;
-"pdev->bus->parent->self == NULL" if upstream port is connected directly
-to the root bus and "pdev->bus->parent == NULL" in the second case.
+> Link:
+> https://lkml.kernel.org/r/1375934936.6848.41.camel@gandalf.local.home
+> 
 
-v1 -> v2: (https://lkml.org/lkml/2013/6/19/753)
- - Initialization is aborted in pcie_aspm_init_link_state, where other
-   special cases are being handled
- - pci_is_root_bus is used
- - Warning is printed
+Evolution is really pissing me off. The wrapping that is used when I
+compose a message is not the same as what is sent. This looked fine when
+I hit send, but it should have been (/me switches to Preformatted mode):
 
-Reproducer for "downstream -- root" and "downstream -- upstream -- root"
-(used qemu-kvm 1.5, q35 machine type might be missing on older ones)
+Link: https://lkml.kernel.org/r/1375934936.6848.41.camel@gandalf.local.home
 
-  for parent in pcie.0 upstream; do
-   qemu-kvm -m 128 -M q35 -nographic -no-reboot \
-     -device x3130-upstream,bus=pcie.0,id=upstream \
-     -device xio3130-downstream,bus=$parent,id=downstream,chassis=1 \
-     -device virtio-blk-pci,bus=downstream,id=virtio-zero,drive=zero \
-     -drive  file=/dev/zero,id=zero,format=raw \
-     -kernel bzImage -append "console=ttyS0 panic=3" # pcie_aspm=off
-  done
+Anyone know how to fix Evolution to have the same wrap in the composer
+as what is sent?
 
-ASPM in QEMU works if we connect upstream through root port
-  -device ioh3420,bus=pcie.0,id=root.0 \
-  -device x3130-upstream,bus=root.0,id=upstream
+I'm using Debian testing, XFCE desktop, and Evolution 3.4.4.
 
-Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
----
- drivers/pci/pcie/aspm.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Thanks,
 
-diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
-index 403a443..209cd7f 100644
---- a/drivers/pci/pcie/aspm.c
-+++ b/drivers/pci/pcie/aspm.c
-@@ -570,6 +570,15 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
- 	    pdev->bus->self)
- 		return;
- 
-+	/* We require at least two ports between downstream and root bus */
-+	if (pci_pcie_type(pdev) == PCI_EXP_TYPE_DOWNSTREAM &&
-+	    (pci_is_root_bus(pdev->bus) ||
-+	     pci_is_root_bus(pdev->bus->parent))) {
-+		dev_warn(&pdev->dev, "ASPM disabled"
-+		                     " (connected directly to root bus)\n");
-+		return;
-+	}
-+
- 	down_read(&pci_bus_sem);
- 	if (list_empty(&pdev->subordinate->devices))
- 		goto out;
--- 
-1.8.3.1
+-- Steve
+
 
