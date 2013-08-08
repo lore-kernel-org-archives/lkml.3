@@ -1,153 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab3HHFux (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 01:50:53 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:38158 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752251Ab3HHFuv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 01:50:51 -0400
-Date: Thu, 8 Aug 2013 01:50:32 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Dan Aloni <alonid@postram.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] netconsole: avoid a crash with multiple sysfs writers
-Message-ID: <20130808055032.GA3898@neilslaptop.think-freely.org>
-References: <1375866164-21933-1-git-send-email-alonid@postram.com>
+	id S1755822Ab3HHFvF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 01:51:05 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:57968 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755445Ab3HHFvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 01:51:02 -0400
+Message-ID: <520331C1.4060406@c-s.fr>
+Date: Thu, 08 Aug 2013 07:50:57 +0200
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1375866164-21933-1-git-send-email-alonid@postram.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Scott Wood <scottwood@freescale.com>
+CC: Wim Van Sebroeck <wim@iguana.be>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Subject: Re: [v2] Enhanced support for MPC8xx/8xxx watchdog
+References: <201302280852.r1S8qMYu003742@localhost.localdomain> <20130625230431.GA29393@home.buserror.net>
+In-Reply-To: <20130625230431.GA29393@home.buserror.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 12:02:44PM +0300, Dan Aloni wrote:
-> When my 'ifup eth' script was fired multiple times and ran concurrent on
-> my laptop, for some obscure /etc scripting reason, it was revealed
-> that the store_enabled() function in netconsole doesn't handle it nicely,
-> as recorded by the Oops below (a syslog paste, but not mangled too much
-> to prevent from discerning the traceback).
-> 
-> On Linux 3.10.4, this patch seeks to remedy the problem, and it has been
-> running stable on my laptop for a few days.
-> 
-> [52608.609325] BUG: unable to handle kernel NULL pointer dereference at 00000000000003e0
-> [52608.609331] IP: [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
-> [52608.609339] PGD 15e51a067 PUD 15433e067 PMD 0
-> [52608.609343] Oops: 0000 [#1] SMP re firewire_ohci firewire_core crc_itu_t [last unloaded: kvm_intel]
-> [52608.609347] Modules linked in: kvm_intel tun vfat fat ppdev parport_pc parport fuse ipt_MASQUERADE usb_storage nf_conntrack_netbios_ns nf_connAug  5 09:39:28 inception kernel: [52608.609419] CPU: 1 PID: 13467 Comm: netconsole-osir Tainted: PF          O 3.10.4-alonid #15ntrack_ipv4 bridge nf_defrag_ipv4 xt_conntrack nf_Aug  5 09:39:28 inception kernel: [52608.609422] Hardware name: LENOVO 24474KG/24474KG, BIOS G5ET90WW (2.50 ) 12/21/2012vm snd_hda_codec_hdmi mac80211 snd_hda_codec_realtek vsock Aug  5 09:39:28 inception kernel: [52608.609424] task: ffff88015a4397a0 ti: ffff8801ba446000 task.ti: ffff8801ba446000lloc nvidia(POF) videobuf2_memops snd_hwdep snd_seq videobuf2Aug  5 09:39:28 inception kernel: [52608.609426] RIP: 0010:[<ffffffff81532a17>]  [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0imer media snd i2c_i801 ptp lpc_ich mfd_core pps_cAug  5 09:39:28 inception kernel: [52608.609430] RSP: 0018:ffff8801ba447de8  EFLAGS: 00010286e_core crc_itu_t [last unloaded: kvm_intel]
-> [52608.609433] RAX: 0000000000000000 RBX: ffff880210bbcc68 RCX: 0000000000000000
-> [52608.609435] RDX: 0000000000000000 RSI: ffff8801ba447da0 RDI: ffff880210bbcc68
-> [52608.609437] RBP: ffff8801ba447e18 R08: 0000000000000000 R09: 0000000000000001
-> [52608.609439] R10: 000000000000000a R11: f000000000000000 R12: ffff880210bbcc68
-> [52608.609441] R13: ffff88020bc41000 R14: 0000000000000002 R15: 000000000000000200000000000
-> [52608.609443] FS:  00007f38d7bff740(0000) GS:ffff88021dc40000(0000) knlGS:0000000000000000
-> [52608.609446] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003300000000001427e0
-> [52608.609448] CR2: 00000000000003e0 CR3: 0000000154103000 CR4: 00000000001427e0
-> [52608.609450] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [52608.609452] netpoll: netconsole: local port 6665ess 10.0.0.27
-> [52608.609454] netpoll: netconsole: local IPv4 address 10.0.0.27
-> [52608.609456] netpoll: netconsole: interface 'em1'
-> [52608.609457] netpoll: netconsole: remote port 514ress 10.0.0.15
-> [52608.609459] netpoll: netconsole: remote IPv4 address 10.0.0.15:65:a8:9a:c7
-> [52608.609461] netpoll: netconsole: remote ethernet address 1c:6f:65:a8:9a:c7400
-> [52608.609463] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [52608.609464] Stack:801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
-> [52608.609466]  ffff8801ba447e08 ffff880210bbcc68 ffffffffffffffea ffff88020bc41000
-> [52608.609471]  0000000000000002 0000000000000002 ffff8801ba447e38 ffffffff81532af4
-> [52608.609475]  0000000000000000 ffff880210bbcc00 ffff8801ba447e78 ffffffff81420e7c
-> [52608.609479] Call Trace:
-> [52608.609484]  [<ffffffff81532af4>] netpoll_cleanup+0x24/0x50
-> [52608.609489]  [<ffffffff81420e7c>] store_enabled+0x5c/0xe0store+0x2e/0x40
-> [52608.609492]  [<ffffffff81420abe>] netconsole_target_attr_store+0x2e/0x40
-> [52608.609498]  [<ffffffff811ff2a2>] configfs_write_file+0xd2/0x130
-> [52608.609503]  [<ffffffff81188f95>] vfs_write+0xc5/0x1f0
-> [52608.609506]  [<ffffffff81189482>] SyS_write+0x52/0xa0/0x10
-> [52608.609511]  [<ffffffff81628c2e>] ? do_page_fault+0xe/0x10
-> [52608.609516]  [<ffffffff8162d402>] system_call_fastpath+0x16/0x1b
-> [52608.609517] Code: 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 48 83 ec 30 4c 89 65 e0 48 89 5d d8 49 89 fc 4c 89 6d e8 4c 89 75 f0 4c 89 7d f8 48 8
-> [52608.609559] RIP  [<ffffffff81532a17>] __netpoll_cleanup+0x27/0xe0
-> [52608.609563]  RSP <ffff8801ba447de8>
-> [52608.609564] CR2: 00000000000003e0
-> [52608.609567] ---[ end trace d25ec343349b61d2 ]---
-> 
-> Signed-off-by: Dan Aloni <alonid@postram.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Neil Horman <nhorman@tuxdriver.com>
-> ---
->  drivers/net/netconsole.c | 13 ++++++++++++-
->  1 file changed, 12 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-> index 4822aaf..dcb2134 100644
-> --- a/drivers/net/netconsole.c
-> +++ b/drivers/net/netconsole.c
-> @@ -102,6 +102,7 @@ struct netconsole_target {
->  	struct config_item	item;
->  #endif
->  	int			enabled;
-> +	struct mutex		mutex;
->  	struct netpoll		np;
->  };
->  
-> @@ -181,6 +182,7 @@ static struct netconsole_target *alloc_param_target(char *target_config)
->  	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
->  	nt->np.local_port = 6665;
->  	nt->np.remote_port = 6666;
-> +	mutex_init(&nt->mutex);
->  	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
->  
->  	/* Parse parameters and setup netpoll */
-> @@ -322,6 +324,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
->  		return -EINVAL;
->  	}
->  
-> +	mutex_lock(&nt->mutex);
->  	if (enabled) {	/* 1 */
->  
->  		/*
-> @@ -331,8 +334,10 @@ static ssize_t store_enabled(struct netconsole_target *nt,
->  		netpoll_print_options(&nt->np);
->  
->  		err = netpoll_setup(&nt->np);
-> -		if (err)
-> +		if (err) {
-> +			mutex_unlock(&nt->mutex);
->  			return err;
-> +		}
->  
->  		printk(KERN_INFO "netconsole: network logging started\n");
->  
-> @@ -341,6 +346,7 @@ static ssize_t store_enabled(struct netconsole_target *nt,
->  	}
->  
->  	nt->enabled = enabled;
-> +	mutex_unlock(&nt->mutex);
->  
->  	return strnlen(buf, count);
->  }
-> @@ -597,6 +603,7 @@ static struct config_item *make_netconsole_target(struct config_group *group,
->  	strlcpy(nt->np.dev_name, "eth0", IFNAMSIZ);
->  	nt->np.local_port = 6665;
->  	nt->np.remote_port = 6666;
-> +	mutex_init(&nt->mutex);
->  	memset(nt->np.remote_mac, 0xff, ETH_ALEN);
->  
->  	/* Initialize the config_item member */
-> @@ -682,7 +689,11 @@ restart:
->  				 * we might sleep in __netpoll_cleanup()
->  				 */
->  				spin_unlock_irqrestore(&target_list_lock, flags);
-> +
-> +				mutex_lock(&nt->mutex);
->  				__netpoll_cleanup(&nt->np);
-> +				mutex_unlock(&nt->mutex);
-> +
-NAK, you can't hold a mutex while calling __netpoll_cleanup.  __netpoll_cleanup
-may sleep and its illegal to hold a mutex while doing so.
-Neil
+Le 26/06/2013 01:04, Scott Wood a écrit :
+> On Thu, Feb 28, 2013 at 09:52:22AM +0100, LEROY Christophe wrote:
+>> This patch modifies the behaviour of the MPC8xx/8xxx watchdog. On the MPC8xx,
+>> at 133Mhz, the maximum timeout of the watchdog timer is 1s, which means it must
+>> be pinged twice a second. This is not in line with the Linux watchdog concept
+>> which is based on a default watchdog timeout around 60s.
+>> This patch introduces an intermediate layer between the CPU and the userspace.
+>> The kernel pings the watchdog at the required frequency at the condition that
+>> userspace tools refresh it regularly.
+>> Existing parameter 'timeout' is renamed 'hw_time'.
+>> The new parameter 'timeout' allows to set up the userspace timeout.
+>> The driver also implements the WDIOC_SETTIMEOUT ioctl.
+>>
+>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+>>
+>>
+>> diff -ur linux-3.7.9/drivers/watchdog/mpc8xxx_wdt.c linux/drivers/watchdog/mpc8xxx_wdt.c
+>> --- linux-3.7.9/drivers/watchdog/mpc8xxx_wdt.c	2013-02-17 19:53:32.000000000 +0100
+>> +++ linux/drivers/watchdog/mpc8xxx_wdt.c	2013-02-27 16:00:07.000000000 +0100
+>> @@ -52,10 +52,17 @@
+>>   static struct mpc8xxx_wdt __iomem *wd_base;
+>>   static int mpc8xxx_wdt_init_late(void);
+>>   
+>> -static u16 timeout = 0xffff;
+>> -module_param(timeout, ushort, 0);
+>> +#define WD_TIMO 10			/* Default timeout = 10 seconds */
+> If the default Linux watchdog timeout is normally 60 seconds, why is it 10
+> here?
+Looks like each driver has its own default value, but agreed, I change 
+it to 60 seconds
+
+>> +static uint timeout = WD_TIMO;
+>> +module_param(timeout, uint, 0);
+>>   MODULE_PARM_DESC(timeout,
+>> -	"Watchdog timeout in ticks. (0<timeout<65536, default=65535)");
+>> +	"Watchdog SW timeout in seconds. (0 < timeout < 65536s, default = "
+>> +				__MODULE_STRING(WD_TIMO) "s)");
+>> +static u16 hw_timo = 0xffff;
+>> +module_param(hw_timo, ushort, 0);
+>> +MODULE_PARM_DESC(hw_timo,
+>> +	"Watchdog HW timeout in ticks. (0 < hw_timo < 65536, default = 65535)");
+> hw_timeout would be more legibile -- this is a public interface.
+Ok
+>
+>>   static bool reset = 1;
+>>   module_param(reset, bool, 0);
+>> @@ -72,10 +79,12 @@
+>>    * to 0
+>>    */
+>>   static int prescale = 1;
+>> -static unsigned int timeout_sec;
+>> +static unsigned int hw_timo_sec;
+>>   
+>> +static int wdt_auto = 1;
+> bool, and add a comment indicating what this means.
+Ok
+>
+>>   static unsigned long wdt_is_open;
+>>   static DEFINE_SPINLOCK(wdt_spinlock);
+>> +static unsigned long wdt_last_ping;
+>>   
+>>   static void mpc8xxx_wdt_keepalive(void)
+>>   {
+>> @@ -91,9 +100,20 @@
+>>   
+>>   static void mpc8xxx_wdt_timer_ping(unsigned long arg)
+>>   {
+>> -	mpc8xxx_wdt_keepalive();
+>> -	/* We're pinging it twice faster than needed, just to be sure. */
+>> -	mod_timer(&wdt_timer, jiffies + HZ * timeout_sec / 2);
+>> +	if (wdt_auto)
+>> +		wdt_last_ping = jiffies;
+>> +
+>> +	if (jiffies - wdt_last_ping <= timeout * HZ) {
+> So timeout cannot be more than UINT_MAX / HZ...  Might want to check for
+> that, just in case.
+Ok.
+>
+> What happens if there's a race?  If another CPU updates wdt_last_ping in
+> parallel, then you could see wdt_last_ping greater than the value you
+> read for jiffies.  Since this is an unsigned comparison, it will fail to
+> call keepalive.  You might get saved by pinging it twice as often as
+> necessary, but you shouldn't rely on that.
+Euh ... This watchdog is integrated inside the CPU, so there is no 
+chance that any external CPU get access to it.
+>
+>> +		mpc8xxx_wdt_keepalive();
+>> +		/* We're pinging it twice faster than needed, to be sure. */
+>> +		mod_timer(&wdt_timer, jiffies + HZ * hw_timo_sec / 2);
+>> +	}
+>> +}
+>> +
+>> +static void mpc8xxx_wdt_sw_keepalive(void)
+>> +{
+>> +	wdt_last_ping = jiffies;
+>> +	mpc8xxx_wdt_timer_ping(0);
+>>   }
+> This isn't new with this patch, but it looks like
+> mpc8xxx_wdt_keepalive() can be called either from timer context, or with
+> interrupts enabled... yet it uses a bare spin_lock() rather than an
+> irq-safe version.  This should be fixed.
+Ok, I'll propose another patch for that. Indeed, is the spin_lock needed 
+at all ? If we get two writes interleaved, it will make it anyway.
+
+Christophe
 
