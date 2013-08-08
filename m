@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966338Ab3HHUJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:09:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42379 "EHLO mx1.redhat.com"
+	id S966353Ab3HHUJh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:09:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28469 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965961Ab3HHUJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 16:09:29 -0400
-Subject: [PATCH v5 1/9] pci: Create pci_reset_bridge_secondary_bus()
+	id S965961Ab3HHUJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 16:09:35 -0400
+Subject: [PATCH v5 2/9] pci: Add hotplug_slot_ops.reset_slot()
 To: bhelgaas@google.com, linux-pci@vger.kernel.org
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: alexander.h.duyck@intel.com, ddutile@redhat.com,
         indou.takao@jp.fujitsu.com, linux-kernel@vger.kernel.org
-Date: Thu, 08 Aug 2013 14:09:24 -0600
-Message-ID: <20130808200924.2932.63092.stgit@bling.home>
+Date: Thu, 08 Aug 2013 14:09:31 -0600
+Message-ID: <20130808200930.2932.88666.stgit@bling.home>
 In-Reply-To: <20130808200444.2932.17381.stgit@bling.home>
 References: <20130808200444.2932.17381.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -23,78 +23,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the secondary bus reset code from pci_parent_bus_reset() into its own
-function.  Export it as we'll later be calling it from hotplug controllers
-and elsewhere.
+This optional callback allows htoplug controllers to perform slot
+specific resets.  These may be necessary in cases where a normal
+secondary bus reset can interact with controller logic and expose
+spurious hotplugs.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- drivers/pci/pci.c   |   32 +++++++++++++++++++++++---------
- include/linux/pci.h |    1 +
- 2 files changed, 24 insertions(+), 9 deletions(-)
+ include/linux/pci_hotplug.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index e37fea6..d468608 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3215,9 +3215,30 @@ static int pci_pm_reset(struct pci_dev *dev, int probe)
- 	return 0;
- }
+diff --git a/include/linux/pci_hotplug.h b/include/linux/pci_hotplug.h
+index 8db71dc..bd32109 100644
+--- a/include/linux/pci_hotplug.h
++++ b/include/linux/pci_hotplug.h
+@@ -63,6 +63,9 @@ enum pcie_link_width {
+  * @get_adapter_status: Called to get see if an adapter is present in the slot or not.
+  *	If this field is NULL, the value passed in the struct hotplug_slot_info
+  *	will be used when this value is requested by a user.
++ * @reset_slot: Optional interface to allow override of a bus reset for the
++ *	slot for cases where a secondary bus reset can result in spurious
++ *	hotplug events or where a slot can be reset independent of the bus.
+  *
+  * The table of function pointers that is passed to the hotplug pci core by a
+  * hotplug pci driver.  These functions are called by the hotplug pci core when
+@@ -80,6 +83,7 @@ struct hotplug_slot_ops {
+ 	int (*get_attention_status)	(struct hotplug_slot *slot, u8 *value);
+ 	int (*get_latch_status)		(struct hotplug_slot *slot, u8 *value);
+ 	int (*get_adapter_status)	(struct hotplug_slot *slot, u8 *value);
++	int (*reset_slot)		(struct hotplug_slot *slot, int probe);
+ };
  
--static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
-+/**
-+ * pci_reset_bridge_secondary_bus - Reset the secondary bus on a PCI bridge.
-+ * @dev: Bridge device
-+ *
-+ * Use the bridge control register to assert reset on the secondary bus.
-+ * Devices on the secondary bus are left in power-on state.
-+ */
-+void pci_reset_bridge_secondary_bus(struct pci_dev *dev)
- {
- 	u16 ctrl;
-+
-+	pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &ctrl);
-+	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
-+	msleep(100);
-+
-+	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
-+	pci_write_config_word(dev, PCI_BRIDGE_CONTROL, ctrl);
-+	msleep(100);
-+}
-+EXPORT_SYMBOL_GPL(pci_reset_bridge_secondary_bus);
-+
-+static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
-+{
- 	struct pci_dev *pdev;
- 
- 	if (pci_is_root_bus(dev->bus) || dev->subordinate || !dev->bus->self)
-@@ -3230,14 +3251,7 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
- 	if (probe)
- 		return 0;
- 
--	pci_read_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, &ctrl);
--	ctrl |= PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
--	msleep(100);
--
--	ctrl &= ~PCI_BRIDGE_CTL_BUS_RESET;
--	pci_write_config_word(dev->bus->self, PCI_BRIDGE_CONTROL, ctrl);
--	msleep(100);
-+	pci_reset_bridge_secondary_bus(dev->bus->self);
- 
- 	return 0;
- }
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 0fd1f15..35c1bc4 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -924,6 +924,7 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
- int __pci_reset_function(struct pci_dev *dev);
- int __pci_reset_function_locked(struct pci_dev *dev);
- int pci_reset_function(struct pci_dev *dev);
-+void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
- void pci_update_resource(struct pci_dev *dev, int resno);
- int __must_check pci_assign_resource(struct pci_dev *dev, int i);
- int __must_check pci_reassign_resource(struct pci_dev *dev, int i, resource_size_t add_size, resource_size_t align);
+ /**
 
