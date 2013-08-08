@@ -1,187 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab3HHFXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 01:23:50 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:37598 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756959Ab3HHFXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 01:23:48 -0400
-X-IronPort-AV: E=Sophos;i="4.89,836,1367942400"; 
-   d="scan'208";a="8151262"
-Message-ID: <52032C5B.5090809@cn.fujitsu.com>
-Date: Thu, 08 Aug 2013 13:27:55 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        C.Emde@osadl.org
-Subject: Re: [PATCH 0/8] rcu: Ensure rcu read site is deadlock-immunity
-References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com> <20130807123827.GB4306@linux.vnet.ibm.com> <20130808003635.GA9487@linux.vnet.ibm.com> <5202F8CC.2020703@cn.fujitsu.com> <1375927932.6848.33.camel@gandalf.local.home> <5203036B.2080606@cn.fujitsu.com> <20130808023356.GG4306@linux.vnet.ibm.com> <52030C37.3000106@cn.fujitsu.com> <20130808041825.GH4306@linux.vnet.ibm.com>
-In-Reply-To: <20130808041825.GH4306@linux.vnet.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 13:22:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 13:22:22,
-	Serialize complete at 2013/08/08 13:22:22
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1757631Ab3HHF0D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 01:26:03 -0400
+Received: from 14.mo4.mail-out.ovh.net ([46.105.40.29]:59674 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755748Ab3HHF0B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 01:26:01 -0400
+X-Greylist: delayed 1409 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 01:26:00 EDT
+From: Boris BREZILLON <b.brezillon@overkiz.com>
+To: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
+Subject: [PATCH v3 05/19] clk: at91: add PMC main clock
+Date: Thu,  8 Aug 2013 07:06:09 +0200
+Message-Id: <1375938369-4002-1-git-send-email-b.brezillon@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
+References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
+X-Ovh-Tracer-Id: 2891029487896655920
+X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 12:18 PM, Paul E. McKenney wrote:
-> On Thu, Aug 08, 2013 at 11:10:47AM +0800, Lai Jiangshan wrote:
->> On 08/08/2013 10:33 AM, Paul E. McKenney wrote:
->>> On Thu, Aug 08, 2013 at 10:33:15AM +0800, Lai Jiangshan wrote:
->>>> On 08/08/2013 10:12 AM, Steven Rostedt wrote:
->>>>> On Thu, 2013-08-08 at 09:47 +0800, Lai Jiangshan wrote:
->>>>>
->>>>>>> [  393.641012]        CPU0
->>>>>>> [  393.641012]        ----
->>>>>>> [  393.641012]   lock(&lock->wait_lock);
->>>>>>> [  393.641012]   <Interrupt>
->>>>>>> [  393.641012]     lock(&lock->wait_lock);
->>>>>>
->>>>>> Patch2 causes it!
->>>>>> When I found all lock which can (chained) nested in rcu_read_unlock_special(),
->>>>>> I didn't notice rtmutex's lock->wait_lock is not nested in irq-disabled.
->>>>>>
->>>>>> Two ways to fix it:
->>>>>> 1) change rtmutex's lock->wait_lock, make it alwasys irq-disabled.
->>>>>> 2) revert my patch2
->>>>>
->>>>> Your patch 2 states:
->>>>>
->>>>> "After patch 10f39bb1, "special & RCU_READ_UNLOCK_BLOCKED" can't be true
->>>>> in irq nor softirq.(due to RCU_READ_UNLOCK_BLOCKED can only be set
->>>>> when preemption)"
->>>>
->>>> Patch5 adds "special & RCU_READ_UNLOCK_BLOCKED" back in irq nor softirq.
->>>> This new thing is handle in patch5 if I did not do wrong things in patch5.
->>>> (I don't notice rtmutex's lock->wait_lock is not irqs-disabled in patch5)
->>>>
->>>>>
->>>>> But then below we have:
->>>>>
->>>>>
->>>>>>
->>>>>>> [  393.641012] 
->>>>>>> [  393.641012]  *** DEADLOCK ***
->>>>>>> [  393.641012] 
->>>>>>> [  393.641012] no locks held by rcu_torture_rea/697.
->>>>>>> [  393.641012] 
->>>>>>> [  393.641012] stack backtrace:
->>>>>>> [  393.641012] CPU: 3 PID: 697 Comm: rcu_torture_rea Not tainted 3.11.0-rc1+ #1
->>>>>>> [  393.641012] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
->>>>>>> [  393.641012]  ffffffff8586fea0 ffff88001fcc3a78 ffffffff8187b4cb ffffffff8104a261
->>>>>>> [  393.641012]  ffff88001e1a20c0 ffff88001fcc3ad8 ffffffff818773e4 0000000000000000
->>>>>>> [  393.641012]  ffff880000000000 ffff880000000001 ffffffff81010a0a 0000000000000001
->>>>>>> [  393.641012] Call Trace:
->>>>>>> [  393.641012]  <IRQ>  [<ffffffff8187b4cb>] dump_stack+0x4f/0x84
->>>>>>> [  393.641012]  [<ffffffff8104a261>] ? console_unlock+0x291/0x410
->>>>>>> [  393.641012]  [<ffffffff818773e4>] print_usage_bug+0x1f5/0x206
->>>>>>> [  393.641012]  [<ffffffff81010a0a>] ? save_stack_trace+0x2a/0x50
->>>>>>> [  393.641012]  [<ffffffff810ae603>] mark_lock+0x283/0x2e0
->>>>>>> [  393.641012]  [<ffffffff810ada10>] ? print_irq_inversion_bug.part.40+0x1f0/0x1f0
->>>>>>> [  393.641012]  [<ffffffff810aef66>] __lock_acquire+0x906/0x1d40
->>>>>>> [  393.641012]  [<ffffffff810ae94b>] ? __lock_acquire+0x2eb/0x1d40
->>>>>>> [  393.641012]  [<ffffffff810ae94b>] ? __lock_acquire+0x2eb/0x1d40
->>>>>>> [  393.641012]  [<ffffffff810b0a65>] lock_acquire+0x95/0x210
->>>>>>> [  393.641012]  [<ffffffff818860f3>] ? rt_mutex_unlock+0x53/0x100
->>>>>>> [  393.641012]  [<ffffffff81886d26>] _raw_spin_lock+0x36/0x50
->>>>>>> [  393.641012]  [<ffffffff818860f3>] ? rt_mutex_unlock+0x53/0x100
->>>>>>> [  393.641012]  [<ffffffff818860f3>] rt_mutex_unlock+0x53/0x100
-> 
-> The really strange thing here is that I thought that your passing false
-> in as the new second parameter to rcu_read_unlock_special() was supposed
-> to prevent rt_mutex_unlock() from being called.
-> 
-> But then why is the call from rcu_preempt_note_context_switch() also
-> passing false?  I would have expected that one to pass true.  Probably
-> I don't understand your intent with the "unlock" argument.
-> 
->>>>>>> [  393.641012]  [<ffffffff810ee3ca>] rcu_read_unlock_special+0x17a/0x2a0
->>>>>>> [  393.641012]  [<ffffffff810ee803>] rcu_check_callbacks+0x313/0x950
->>>>>>> [  393.641012]  [<ffffffff8107a6bd>] ? hrtimer_run_queues+0x1d/0x180
->>>>>>> [  393.641012]  [<ffffffff810abb9d>] ? trace_hardirqs_off+0xd/0x10
->>>>>>> [  393.641012]  [<ffffffff8105bae3>] update_process_times+0x43/0x80
->>>>>>> [  393.641012]  [<ffffffff810a9801>] tick_sched_handle.isra.10+0x31/0x40
->>>>>>> [  393.641012]  [<ffffffff810a98f7>] tick_sched_timer+0x47/0x70
->>>>>>> [  393.641012]  [<ffffffff8107941c>] __run_hrtimer+0x7c/0x490
->>>>>>> [  393.641012]  [<ffffffff810a260d>] ? ktime_get_update_offsets+0x4d/0xe0
->>>>>>> [  393.641012]  [<ffffffff810a98b0>] ? tick_nohz_handler+0xa0/0xa0
->>>>>>> [  393.641012]  [<ffffffff8107a017>] hrtimer_interrupt+0x107/0x260
->>>>>
->>>>> The hrtimer_interrupt is calling a rt_mutex_unlock? How did that happen?
->>>>> Did it first call a rt_mutex_lock?
->>>>>
->>>>> If patch two was the culprit, I'm thinking the idea behind patch two is
->>>>> wrong. The only option is to remove patch number two!
->>>>
->>>> removing patch number two can solve the problem found be Paul, but it is not the best.
->>>> because I can't declare that rcu is deadlock-immunity
->>>> (it will be deadlock if rcu read site overlaps with rtmutex's lock->wait_lock
->>>> if I only remove patch2)
->>>> I must do more things, but I think it is still better than changing rtmutex's lock->wait_lock.
->>>
->>> NP, I will remove your current patches and wait for an updated set.
->>
->> Hi, Paul
->>
->> Could you agree that moving the rt_mutex_unlock() to rcu_preempt_note_context_switch()?
-> 
-> My guess is that changing rcu_preempt_note_context_switch()'s call to
-> rcu_read_unlock_special(t, true) would accomplish this in a nicer way.
-> Except that I would first need to understand why rcu_check_callbacks()'s
-> call to rcu_read_unlock_special() resulted in rt_mutex_unlock() being
-> called.
-> 
-> Oh!
-> 
-> In rcu_read_unlock_special, shouldn't the:
-> 
-> 	if (unlikely(unlock && irqs_disabled_flags(flags))) {
+This patch adds new at91 main oscillator clock implementation using common
+clk framework.
 
-Sorry.
-@unlock means it is called from rcu_read_unlock() path.
+If rate is not provided during clock registration it is calculated using
+the slow clock (main clk parent in this case) rate and MCFR register.
 
-if rcu_read_unlock() is called from irqs_disabled context,
-it may be called from suspect lock(scheduler locks, ...) context,
-so it can't require rnp->lock or invoke wakeup() in rcu_read_unlock_special().
+Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+---
+ drivers/clk/at91/Makefile   |    1 +
+ drivers/clk/at91/clk-main.c |  171 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/at91/pmc.c      |    5 ++
+ drivers/clk/at91/pmc.h      |    3 +
+ 4 files changed, 180 insertions(+)
+ create mode 100644 drivers/clk/at91/clk-main.c
 
-
-> 
-> Instead be:
-> 
-> 	if (unlikely(!unlock || irqs_disabled_flags(flags))) {
-> 
-> Here I am guessing that the "unlock" parameter means "It is OK for
-> rcu_read_unlock_special() to invoke rt_mutex_unlock()", so it would be
-> passed in as false from rcu_check_callbacks() and true everywhere else.
-> If it means something else, please let me know what that might be.
-> 
-> Though at this point, it is not clear to me how it helps to call
-> rcu_read_unlock_special() from rcu_check_callbacks().  After all,
-> rcu_check_callbacks() has interrupts disabled always, and so it is never
-> safe for anything that it calls to invoke rt_mutex_unlock().
-> 
-> In any case, the opinion that really matters is not mine, but rather
-> that of the hundreds of millions of computer systems that might soon be
-> executing this code.  As RCU maintainer, I just try my best to predict
-> what their opinions will be.  ;-)
-> 
-> 							Thanx, Paul
-> 
->> thanks,
->> Lai
->>
->>>
->>> 							Thanx, Paul
->>>
->>>
->>
-> 
-> 
+diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+index 1d4fb21..44105bd 100644
+--- a/drivers/clk/at91/Makefile
++++ b/drivers/clk/at91/Makefile
+@@ -3,3 +3,4 @@
+ #
+ 
+ obj-y += pmc.o
++obj-y += clk-main.o
+diff --git a/drivers/clk/at91/clk-main.c b/drivers/clk/at91/clk-main.c
+new file mode 100644
+index 0000000..68738dd
+--- /dev/null
++++ b/drivers/clk/at91/clk-main.c
+@@ -0,0 +1,171 @@
++/*
++ * drivers/clk/at91/clk-main.c
++ *
++ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/clk/at91_pmc.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/sched.h>
++#include <linux/wait.h>
++
++#include "pmc.h"
++
++#define to_clk_main(hw) container_of(hw, struct clk_main, hw)
++struct clk_main {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++	unsigned long rate;
++	unsigned int irq;
++	wait_queue_head_t wait;
++};
++
++static irqreturn_t clk_main_irq_handler(int irq, void *dev_id)
++{
++	struct clk_main *clkmain = (struct clk_main *)dev_id;
++
++	wake_up(&clkmain->wait);
++	disable_irq_nosync(clkmain->irq);
++
++	return IRQ_HANDLED;
++}
++
++static int clk_main_prepare(struct clk_hw *hw)
++{
++	struct clk_main *clkmain = to_clk_main(hw);
++	struct at91_pmc *pmc = clkmain->pmc;
++
++	while (!(pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MOSCS)) {
++		enable_irq(clkmain->irq);
++		wait_event(clkmain->wait,
++			   pmc_read(pmc, AT91_PMC_SR) & AT91_PMC_MOSCS);
++	}
++
++	return 0;
++}
++
++static int clk_main_is_prepared(struct clk_hw *hw)
++{
++	struct clk_main *clkmain = to_clk_main(hw);
++
++	return !!(pmc_read(clkmain->pmc, AT91_PMC_SR) & AT91_PMC_MOSCS);
++}
++
++static unsigned long clk_main_recalc_rate(struct clk_hw *hw,
++					  unsigned long parent_rate)
++{
++	u32 tmp;
++	struct clk_main *clkmain = to_clk_main(hw);
++	struct at91_pmc *pmc = clkmain->pmc;
++
++	if (clkmain->rate)
++		return clkmain->rate;
++
++	while (!((tmp = pmc_read(pmc, AT91_CKGR_MCFR)) & AT91_PMC_MAINRDY))
++		;
++
++	tmp &= AT91_PMC_MAINF;
++	clkmain->rate = (tmp * parent_rate) / 16;
++
++	return clkmain->rate;
++}
++
++static const struct clk_ops main_ops = {
++	.prepare = clk_main_prepare,
++	.is_prepared = clk_main_is_prepared,
++	.recalc_rate = clk_main_recalc_rate,
++};
++
++static struct clk * __init
++at91_clk_register_main(struct at91_pmc *pmc,
++		       unsigned int irq,
++		       const char *name,
++		       const char *parent_name,
++		       unsigned long rate)
++{
++	int ret;
++	struct clk_main *clkmain;
++	struct clk *clk = NULL;
++	struct clk_init_data init;
++
++	if (!pmc || !irq || !name)
++		return ERR_PTR(-EINVAL);
++
++	if (!rate && !parent_name)
++		return ERR_PTR(-EINVAL);
++
++	clkmain = kzalloc(sizeof(*clkmain), GFP_KERNEL);
++	if (!clkmain)
++		return ERR_PTR(-ENOMEM);
++
++	init.name = name;
++	init.ops = &main_ops;
++	init.parent_names = parent_name ? &parent_name : NULL;
++	init.num_parents = parent_name ? 1 : 0;
++	init.flags = parent_name ? 0 : CLK_IS_ROOT;
++
++	clkmain->hw.init = &init;
++	clkmain->rate = rate;
++	clkmain->pmc = pmc;
++	clkmain->irq = irq;
++	init_waitqueue_head(&clkmain->wait);
++	irq_set_status_flags(clkmain->irq, IRQ_NOAUTOEN);
++	ret = request_irq(clkmain->irq, clk_main_irq_handler,
++			  IRQF_TRIGGER_HIGH, "clk-main", clkmain);
++	if (ret)
++		return ERR_PTR(ret);
++
++	clk = clk_register(NULL, &clkmain->hw);
++
++	if (IS_ERR(clk)) {
++		free_irq(clkmain->irq, clkmain);
++		kfree(clkmain);
++	}
++
++	return clk;
++}
++
++
++
++static void __init
++of_at91_clk_main_setup(struct device_node *np, struct at91_pmc *pmc)
++{
++	struct clk *clk;
++	unsigned int irq;
++	const char *parent_name;
++	const char *name = np->name;
++	u32 rate = 0;
++
++	parent_name = of_clk_get_parent_name(np, 0);
++	of_property_read_string(np, "clock-output-names", &name);
++	of_property_read_u32(np, "clock-frequency", &rate);
++	irq = irq_of_parse_and_map(np, 0);
++	if (!irq)
++		return;
++
++	clk = at91_clk_register_main(pmc, irq, name, parent_name, rate);
++
++	if (!IS_ERR(clk))
++		return;
++
++	of_clk_add_provider(np, of_clk_src_simple_get, clk);
++}
++
++void __init of_at91rm9200_clk_main_setup(struct device_node *np,
++					 struct at91_pmc *pmc)
++{
++	of_at91_clk_main_setup(np, pmc);
++}
+diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+index f6bd03d..42f0c19 100644
+--- a/drivers/clk/at91/pmc.c
++++ b/drivers/clk/at91/pmc.c
+@@ -216,6 +216,11 @@ out_free_pmc:
+ }
+ 
+ static const struct of_device_id pmc_clk_ids[] __initdata = {
++	/* Main clock */
++	{
++		.compatible = "atmel,at91rm9200-clk-main",
++		.data = of_at91rm9200_clk_main_setup
++	},
+ 	{ /*sentinel*/ }
+ };
+ 
+diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+index b7e8397..294e230 100644
+--- a/drivers/clk/at91/pmc.h
++++ b/drivers/clk/at91/pmc.h
+@@ -55,4 +55,7 @@ static inline void pmc_write(struct at91_pmc *pmc, int offset, u32 value)
+ 	return writel_relaxed(value, pmc->regbase + offset);
+ }
+ 
++extern void __init of_at91rm9200_clk_main_setup(struct device_node *np,
++						struct at91_pmc *pmc);
++
+ #endif /* __PMC_H_ */
+-- 
+1.7.9.5
 
