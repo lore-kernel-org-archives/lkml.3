@@ -1,77 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865Ab3HHI0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:26:08 -0400
-Received: from 16.mo4.mail-out.ovh.net ([188.165.55.104]:39532 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756454Ab3HHI0A (ORCPT
+	id S1757704Ab3HHIaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:30:13 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51674 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756416Ab3HHIaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:26:00 -0400
-X-Greylist: delayed 4122 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Aug 2013 04:25:59 EDT
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH v3 19/19] ARM: at91: add new compatible strings for pmc driver
-Date: Thu,  8 Aug 2013 10:19:25 +0200
-Message-Id: <1375949965-10586-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 6153042992502569008
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 8 Aug 2013 04:30:10 -0400
+Message-ID: <5203570E.3020201@hitachi.com>
+Date: Thu, 08 Aug 2013 17:30:06 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v4 02/11] tracing: add basic event trigger framework
+References: <cover.1375111640.git.tom.zanussi@linux.intel.com> <9660276cae921dfe8450cc259c99cd8b41ebb862.1375111640.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <9660276cae921dfe8450cc259c99cd8b41ebb862.1375111640.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new compatible string for PMC node to prepare the
-transition to common clk.
+(2013/07/30 1:40), Tom Zanussi wrote:
+> +struct event_command {
+> +	struct list_head	list;
+> +	char			*name;
+> +	enum trigger_mode	trigger_mode;
+> +	bool			post_trigger;
+> +	int			(*func)(struct event_command *cmd_ops,
+> +					void *cmd_data,	char *glob, char *cmd,
+> +					char *params, int enable);
+> +	int			(*reg)(char *glob,
+> +				       struct event_trigger_ops *trigger_ops,
+> +				       void *trigger_data, void *cmd_data);
+> +	void			(*unreg)(char *glob,
+> +					 struct event_trigger_ops *trigger_ops,
+> +					 void *trigger_data, void *cmd_data);
+> +	int			(*set_filter)(char *filter_str,
+> +					      void *trigger_data,
+> +					      void *cmd_data);
 
-These compatible string come from pmc driver in clk subsystem and are
-needed to provide new device tree compatibility with old at91 clks
-(device tree using common clks will use the new compatible strings).
+I think you should pass trace_event_file *file (see below) instead of ambiguous
+void *cmd_data, because all handler implementations expect that.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- arch/arm/mach-at91/clock.c |    6 ++++++
- 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/mach-at91/clock.c b/arch/arm/mach-at91/clock.c
-index 5f02aea..4d4463a 100644
---- a/arch/arm/mach-at91/clock.c
-+++ b/arch/arm/mach-at91/clock.c
-@@ -884,6 +884,12 @@ static int __init at91_pmc_init(unsigned long main_clock)
- #if defined(CONFIG_OF)
- static struct of_device_id pmc_ids[] = {
- 	{ .compatible = "atmel,at91rm9200-pmc" },
-+	{ .compatible = "atmel,at91sam9260-pmc" },
-+	{ .compatible = "atmel,at91sam9g45-pmc" },
-+	{ .compatible = "atmel,at91sam9n12-pmc" },
-+	{ .compatible = "atmel,at91sam9x5-pmc" },
-+	{ .compatible = "atmel,at91sam9g35-pmc" },
-+	{ .compatible = "atmel,sama5d3-pmc" },
- 	{ /*sentinel*/ }
- };
- 
+[...]
+> +#include <linux/module.h>
+> +#include <linux/ctype.h>
+> +#include <linux/mutex.h>
+> +#include <linux/slab.h>
+> +
+> +#include "trace.h"
+> +
+> +static LIST_HEAD(trigger_commands);
+> +static DEFINE_MUTEX(trigger_cmd_mutex);
+> +
+> +struct event_trigger_data {
+> +	struct ftrace_event_file	*file;
+> +	unsigned long			count;
+> +	int				ref;
+> +	bool				enable;
+> +	struct event_trigger_ops	*ops;
+> +	enum trigger_mode		mode;
+> +	struct event_filter		*filter;
+> +	char				*filter_str;
+> +	struct list_head		list;
+> +};
+> +
+> +struct trigger_iterator {
+> +	struct ftrace_event_file	*file;
+> +};
+
+Why would you define this trigger_iterator even if it has
+only one member? This means all iterators can be replaced
+by the file. I'd like to keep it simple.
+
+> +
+> +void event_triggers_call(struct ftrace_event_file *file)
+> +{
+> +	struct event_trigger_data *data;
+> +
+> +	if (list_empty(&file->triggers))
+> +		return;
+> +
+> +	preempt_disable_notrace();
+> +	list_for_each_entry_rcu(data, &file->triggers, list)
+> +		data->ops->func((void **)&data);
+> +	preempt_enable_notrace();
+> +}
+> +EXPORT_SYMBOL_GPL(event_triggers_call);
+> +
+> +static void *trigger_next(struct seq_file *m, void *t, loff_t *pos)
+> +{
+> +	struct trigger_iterator *iter = m->private;
+> +
+> +	return seq_list_next(t, &iter->file->triggers, pos);
+> +}
+> +
+> +static void *trigger_start(struct seq_file *m, loff_t *pos)
+> +{
+> +	struct trigger_iterator *iter = m->private;
+> +
+> +	mutex_lock(&event_mutex);
+> +
+> +	return seq_list_start(&iter->file->triggers, *pos);
+> +}
+
+By Oleg's bugfixes, we are now using event_file_data(filp)
+please refer the f_start/trace_format_open implementation
+which is the closest usage of the trigger file.
+
+
+> +static int event_trigger_regex_open(struct inode *inode, struct file *file)
+> +{
+> +	struct trigger_iterator *iter;
+> +	int ret = 0;
+> +
+> +	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+> +	if (!iter)
+> +		return -ENOMEM;
+> +
+> +	mutex_lock(&event_mutex);
+> +
+> +	iter->file = inode->i_private;
+> +
+> +	if (file->f_mode & FMODE_READ) {
+> +		ret = seq_open(file, &event_triggers_seq_ops);
+> +		if (!ret) {
+> +			struct seq_file *m = file->private_data;
+> +			m->private = iter;
+> +		} else {
+> +			/* Failed */
+> +			kfree(iter);
+> +		}
+> +	} else
+> +		file->private_data = iter;
+> +
+> +	mutex_unlock(&event_mutex);
+> +
+> +	return ret;
+> +}
+
+As you can see in trace_format_open(), now file->private_data and
+m->private will point struct file *, don't need to allocate something.
+
+> +static ssize_t event_trigger_regex_write(struct file *file,
+> +					 const char __user *ubuf,
+> +					 size_t cnt, loff_t *ppos, int enable)
+> +{
+> +	struct trigger_iterator *iter = file->private_data;
+> +	ssize_t ret;
+> +	char *buf;
+> +
+> +	if (!cnt)
+> +		return 0;
+> +
+> +	if (cnt >= PAGE_SIZE)
+> +		return -EINVAL;
+> +
+> +	if (file->f_mode & FMODE_READ) {
+> +		struct seq_file *m = file->private_data;
+> +		iter = m->private;
+> +	} else
+> +		iter = file->private_data;
+> +
+> +	buf = (char *)__get_free_page(GFP_TEMPORARY);
+> +	if (!buf)
+> +		return -ENOMEM;
+> +
+> +	if (copy_from_user(buf, ubuf, cnt)) {
+> +		free_page((unsigned long) buf);
+> +		return -EFAULT;
+> +	}
+> +	buf[cnt] = '\0';
+> +	strim(buf);
+> +
+> +	ret = trigger_process_regex(iter, buf, enable);
+
+You also need to get event_mutex while processing event_file to
+prevent unexpected releasing.
+
+> +
+> +	free_page((unsigned long) buf);
+> +	if (ret < 0)
+> +		goto out;
+> +
+> +	*ppos += cnt;
+> +	ret = cnt;
+> + out:
+> +	return ret;
+> +}
+
+Thank you,
+
 -- 
-1.7.9.5
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
