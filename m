@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934157Ab3HHIzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:55:38 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:28553 "EHLO song.cn.fujitsu.com"
+	id S934167Ab3HHIz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:55:59 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26062 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S934042Ab3HHIzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:55:33 -0400
+	id S934097Ab3HHIzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 04:55:36 -0400
 X-IronPort-AV: E=Sophos;i="4.89,837,1367942400"; 
-   d="scan'208";a="8153190"
+   d="scan'208";a="8153194"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
@@ -21,63 +21,135 @@ To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
         zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH part3 0/5] acpi, acpica: Initialize acpi_gbl_root_table_list earlier and override it later.
-Date: Thu, 8 Aug 2013 16:54:01 +0800
-Message-Id: <1375952046-28490-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH part3 5/5] x86, acpi: Initialize acpi golbal root table list earlier.
+Date: Thu, 8 Aug 2013 16:54:06 +0800
+Message-Id: <1375952046-28490-6-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375952046-28490-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375952046-28490-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/08/08 16:54:04,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 16:54:05,
-	Serialize complete at 2013/08/08 16:54:05
+ 2013/08/08 16:54:08,
+	Serialize complete at 2013/08/08 16:54:08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to prevent bootmem allocator (memblock) from allocating hotpluggable 
-memory for the kernel, we need to obtain SRAT earlier.
+As the previous patches split the acpi_gbl_root_table_list initialization
+procedure into two steps: install and override, this patch does the "install"
+steps earlier, right after memblock is ready.
 
-In part1 patch-set, we have split acpi_gbl_root_table_list initialization into
-two steps: install and override.
+In this way, we are able to find SRAT in firmware earlier. And then, we can
+prevent memblock from allocating hotpluggable memory for the kernel.
 
-This patch-set will do install step earlier. This will help us to find SRAT provided 
-by firmware earlier in later patches. 
-
-The current kernel looks like this:
-
-setup_arch()
- |->acpi_initrd_override()         /* Find all tables specified by users in initrd,
- |                                    and store them in acpi_tables_addr array. */
- |......
- |->acpi_boot_table_init()         /* Find all tables in firmware and install them
-                                      into acpi_gbl_root_table_list. Check acpi_tables_addr,
-                                      if any table needs to be overrided, override it. */
-
-After this patch-set, the kernel will look like this:
-
-setup_arch()
- |->early_acpi_boot_table_init()   /* Find all tables in firmware and install them 
- |                                    into acpi_gbl_root_table_list. No override. */
- |
- |->acpi_initrd_override()         /* Find all tables specified by users in initrd,
- |                                    and store them in acpi_tables_addr array. */
- |......
- |->acpi_boot_table_init()         /* Check acpi_tables_addr, if any table needs to 
-                                      be overrided, override it. */
-
-
-Tang Chen (5):
-  x86, acpi: Call two new functions instead of acpi_initialize_tables()
-    in acpi_table_init().
-  x86, acpi: Split acpi_table_init() into two parts.
-  x86, acpi: Rename check_multiple_madt() and make it global.
-  x86, acpi: Split acpi_boot_table_init() into two parts.
-  x86, acpi: Initialize acpi golbal root table list earlier.
-
- arch/x86/kernel/acpi/boot.c |   32 ++++++++++++++++++++------------
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ arch/x86/kernel/acpi/boot.c |   30 +++++++++++++++++-------------
  arch/x86/kernel/setup.c     |    8 +++++++-
- drivers/acpi/tables.c       |   29 +++++++++++++++++++++++------
- include/acpi/acpixf.h       |    4 ++++
- include/linux/acpi.h        |    4 ++++
- 5 files changed, 58 insertions(+), 19 deletions(-)
+ include/linux/acpi.h        |    1 +
+ 3 files changed, 25 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index ddb0bc1..30daefd 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1497,6 +1497,23 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 	{}
+ };
+ 
++void __init early_acpi_boot_table_init(void)
++{
++	dmi_check_system(acpi_dmi_table);
++
++	/*
++	 * If acpi_disabled, bail out
++	 */
++	if (acpi_disabled)
++		return; 
++
++	/*
++	 * Initialize the ACPI boot-time table parser.
++	 */
++	if (acpi_table_init_firmware())
++		disable_acpi();
++}
++
+ /*
+  * acpi_boot_table_init() and acpi_boot_init()
+  *  called from setup_arch(), always.
+@@ -1504,9 +1521,6 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+  *	2. enumerates lapics
+  *	3. enumerates io-apics
+  *
+- * acpi_table_init() is separate to allow reading SRAT without
+- * other side effects.
+- *
+  * side effects of acpi_boot_init:
+  *	acpi_lapic = 1 if LAPIC found
+  *	acpi_ioapic = 1 if IOAPIC found
+@@ -1518,22 +1532,12 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 
+ void __init acpi_boot_table_init(void)
+ {
+-	dmi_check_system(acpi_dmi_table);
+-
+ 	/*
+ 	 * If acpi_disabled, bail out
+ 	 */
+ 	if (acpi_disabled)
+ 		return; 
+ 
+-	/*
+-	 * Initialize the ACPI boot-time table parser.
+-	 */
+-	if (acpi_table_init_firmware()) {
+-		disable_acpi();
+-		return;
+-	}
+-
+ 	acpi_table_init_override();
+ 
+ 	acpi_check_multiple_madt();
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f8ec578..fdb5a26 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1074,6 +1074,12 @@ void __init setup_arch(char **cmdline_p)
+ 	memblock_x86_fill();
+ 
+ 	/*
++	 * Parse the ACPI tables from firmware for possible boot-time SMP
++	 * configuration.
++	 */
++	early_acpi_boot_table_init();
++
++	/*
+ 	 * The EFI specification says that boot service code won't be called
+ 	 * after ExitBootServices(). This is, in fact, a lie.
+ 	 */
+@@ -1130,7 +1136,7 @@ void __init setup_arch(char **cmdline_p)
+ 	io_delay_init();
+ 
+ 	/*
+-	 * Parse the ACPI tables for possible boot-time SMP configuration.
++	 * Finish parsing the ACPI tables.
+ 	 */
+ 	acpi_boot_table_init();
+ 
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 44a3e5f..c5e7b2a 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -91,6 +91,7 @@ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
+ void __acpi_unmap_table(char *map, unsigned long size);
+ int early_acpi_boot_init(void);
+ int acpi_boot_init (void);
++void early_acpi_boot_table_init (void);
+ void acpi_boot_table_init (void);
+ int acpi_mps_check (void);
+ int acpi_numa_init (void);
+-- 
+1.7.1
 
