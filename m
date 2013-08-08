@@ -1,219 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966493Ab3HHURL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:17:11 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:43600 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966402Ab3HHUOP (ORCPT
+	id S966519Ab3HHURU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:17:20 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:22840 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966402Ab3HHURP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 16:14:15 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/14] cgroup: reorganize css init / exit paths
-Date: Thu,  8 Aug 2013 16:13:44 -0400
-Message-Id: <1375992831-4650-8-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1375992831-4650-1-git-send-email-tj@kernel.org>
-References: <1375992831-4650-1-git-send-email-tj@kernel.org>
+	Thu, 8 Aug 2013 16:17:15 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/8sRpfuN6SJEaqsQwvA44Pb0optg08RsA=
+Date: Thu, 8 Aug 2013 16:17:09 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci <linux-pci@vger.kernel.org>
+Subject: Re: linux-next: Tree for Aug 8 (not CONFIG_PCI_MSI conflict)
+Message-ID: <20130808201709.GN8204@titan.lakedaemon.net>
+References: <20130808170822.82bf33d3cf5100f5e2646815@canb.auug.org.au>
+ <5203F978.2050504@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5203F978.2050504@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-css (cgroup_subsys_state) lifetime management is about to be
-restructured.  In prepartion, make the following mostly trivial
-changes.
+On Thu, Aug 08, 2013 at 01:03:04PM -0700, Randy Dunlap wrote:
+> On 08/08/13 00:08, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Changes since 20130807:
+> > 
+> 
+> on i386 and x86_64:
+> when CONFIG_PCI_MSI is not enabled:
+> 
+> There are many of these errors:
+> include/linux/msi.h:65:6: error: expected identifier or '(' before 'void'
+> include/linux/msi.h:65:6: error: expected ')' before numeric constant
+> 
+> because arch/x86/include/asm/pci.h defines:
+> #define default_teardown_msi_irqs	NULL
 
-* init_cgroup_css() is renamed to init_css() so that it's consistent
-  with other css handling functions.
+Grrr.  That's us (mvebu tree)  I've forwarded this to Thomas, the author
+of the patch.  Hopefully we'll have this worked out soon.
 
-* alloc_css_id(), online_css() and offline_css() updated to take @css
-  instead of cgroups and subsys IDs.
+Thanks for testing,
 
-* Merge two separate loops - one around percpu_ref_get() and the other
-  around online_css() - into one.  This changes the order of
-  operations a bit without any consequences.
-
-The first two changes don't make any functional differences and while
-the last one does change behavior, it is of no consequence.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c | 60 +++++++++++++++++++++++++--------------------------------
- 1 file changed, 26 insertions(+), 34 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index c271016..2a93bae 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -838,8 +838,7 @@ static struct backing_dev_info cgroup_backing_dev_info = {
- 	.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK,
- };
- 
--static int alloc_css_id(struct cgroup_subsys *ss,
--			struct cgroup *parent, struct cgroup *child);
-+static int alloc_css_id(struct cgroup_subsys_state *child_css);
- 
- static struct inode *cgroup_new_inode(umode_t mode, struct super_block *sb)
- {
-@@ -4308,9 +4307,8 @@ static void css_release(struct percpu_ref *ref)
- 	schedule_work(&css->destroy_work);
- }
- 
--static void init_cgroup_css(struct cgroup_subsys_state *css,
--			       struct cgroup_subsys *ss,
--			       struct cgroup *cgrp)
-+static void init_css(struct cgroup_subsys_state *css, struct cgroup_subsys *ss,
-+		     struct cgroup *cgrp)
- {
- 	css->cgroup = cgrp;
- 	css->ss = ss;
-@@ -4327,9 +4325,9 @@ static void init_cgroup_css(struct cgroup_subsys_state *css,
- }
- 
- /* invoke ->css_online() on a new CSS and mark it online if successful */
--static int online_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
-+static int online_css(struct cgroup_subsys_state *css)
- {
--	struct cgroup_subsys_state *css = cgroup_css(cgrp, ss->subsys_id);
-+	struct cgroup_subsys *ss = css->ss;
- 	int ret = 0;
- 
- 	lockdep_assert_held(&cgroup_mutex);
-@@ -4342,9 +4340,9 @@ static int online_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
- }
- 
- /* if the CSS is online, invoke ->css_offline() on it and mark it offline */
--static void offline_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
-+static void offline_css(struct cgroup_subsys_state *css)
- {
--	struct cgroup_subsys_state *css = cgroup_css(cgrp, ss->subsys_id);
-+	struct cgroup_subsys *ss = css->ss;
- 
- 	lockdep_assert_held(&cgroup_mutex);
- 
-@@ -4442,10 +4440,10 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 			goto err_free_all;
- 		}
- 
--		init_cgroup_css(css, ss, cgrp);
-+		init_css(css, ss, cgrp);
- 
- 		if (ss->use_id) {
--			err = alloc_css_id(ss, parent, cgrp);
-+			err = alloc_css_id(css);
- 			if (err)
- 				goto err_free_all;
- 		}
-@@ -4467,20 +4465,18 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
- 	root->number_of_cgroups++;
- 
--	/* each css holds a ref to the cgroup's dentry and the parent css */
-+	/* hold a ref to the parent's dentry */
-+	dget(parent->dentry);
-+
- 	for_each_root_subsys(root, ss) {
- 		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss->subsys_id);
- 
-+		/* each css holds a ref to the cgroup and the parent css */
- 		dget(dentry);
- 		percpu_ref_get(&css->parent->refcnt);
--	}
- 
--	/* hold a ref to the parent's dentry */
--	dget(parent->dentry);
--
--	/* creation succeeded, notify subsystems */
--	for_each_root_subsys(root, ss) {
--		err = online_css(ss, cgrp);
-+		/* creation succeeded, notify subsystems */
-+		err = online_css(css);
- 		if (err)
- 			goto err_destroy;
- 
-@@ -4700,7 +4696,7 @@ static void cgroup_offline_fn(struct work_struct *work)
- 	 * initate destruction.
- 	 */
- 	for_each_root_subsys(cgrp->root, ss)
--		offline_css(ss, cgrp);
-+		offline_css(cgroup_css(cgrp, ss->subsys_id));
- 
- 	/*
- 	 * Put the css refs from cgroup_destroy_locked().  Each css holds
-@@ -4778,7 +4774,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
- 	css = ss->css_alloc(cgroup_css(cgroup_dummy_top, ss->subsys_id));
- 	/* We don't handle early failures gracefully */
- 	BUG_ON(IS_ERR(css));
--	init_cgroup_css(css, ss, cgroup_dummy_top);
-+	init_css(css, ss, cgroup_dummy_top);
- 
- 	/* Update the init_css_set to contain a subsys
- 	 * pointer to this state - since the subsystem is
-@@ -4793,7 +4789,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
- 	 * need to invoke fork callbacks here. */
- 	BUG_ON(!list_empty(&init_task.tasks));
- 
--	BUG_ON(online_css(ss, cgroup_dummy_top));
-+	BUG_ON(online_css(cgroup_css(cgroup_dummy_top, ss->subsys_id)));
- 
- 	mutex_unlock(&cgroup_mutex);
- 
-@@ -4866,8 +4862,8 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 	ss->root = &cgroup_dummy_root;
- 
- 	/* our new subsystem will be attached to the dummy hierarchy. */
--	init_cgroup_css(css, ss, cgroup_dummy_top);
--	/* init_idr must be after init_cgroup_css because it sets css->id. */
-+	init_css(css, ss, cgroup_dummy_top);
-+	/* init_idr must be after init_css() because it sets css->id. */
- 	if (ss->use_id) {
- 		ret = cgroup_init_idr(ss, css);
- 		if (ret)
-@@ -4897,7 +4893,7 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 	}
- 	write_unlock(&css_set_lock);
- 
--	ret = online_css(ss, cgroup_dummy_top);
-+	ret = online_css(cgroup_css(cgroup_dummy_top, ss->subsys_id));
- 	if (ret)
- 		goto err_unload;
- 
-@@ -4936,7 +4932,7 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
- 
- 	mutex_lock(&cgroup_mutex);
- 
--	offline_css(ss, cgroup_dummy_top);
-+	offline_css(cgroup_css(cgroup_dummy_top, ss->subsys_id));
- 
- 	if (ss->use_id)
- 		idr_destroy(&ss->idr);
-@@ -5588,20 +5584,16 @@ static int __init_or_module cgroup_init_idr(struct cgroup_subsys *ss,
- 	return 0;
- }
- 
--static int alloc_css_id(struct cgroup_subsys *ss, struct cgroup *parent,
--			struct cgroup *child)
-+static int alloc_css_id(struct cgroup_subsys_state *child_css)
- {
--	int subsys_id, i, depth = 0;
--	struct cgroup_subsys_state *parent_css, *child_css;
-+	struct cgroup_subsys_state *parent_css = css_parent(child_css);
- 	struct css_id *child_id, *parent_id;
-+	int i, depth;
- 
--	subsys_id = ss->subsys_id;
--	parent_css = cgroup_css(parent, subsys_id);
--	child_css = cgroup_css(child, subsys_id);
- 	parent_id = rcu_dereference_protected(parent_css->id, true);
- 	depth = parent_id->depth + 1;
- 
--	child_id = get_new_cssid(ss, depth);
-+	child_id = get_new_cssid(child_css->ss, depth);
- 	if (IS_ERR(child_id))
- 		return PTR_ERR(child_id);
- 
--- 
-1.8.3.1
-
+Jason.
