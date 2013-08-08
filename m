@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966073Ab3HHSUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 14:20:14 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:60298 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965337Ab3HHSUL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 14:20:11 -0400
-Message-ID: <5203E158.6010407@gmail.com>
-Date: Thu, 08 Aug 2013 13:20:08 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S966089Ab3HHSVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 14:21:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51383 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966003Ab3HHSU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 14:20:58 -0400
+Date: Thu, 8 Aug 2013 20:15:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Denys Vlasenko <dvlasenk@redhat.com>
+Subject: Re: [PATCH 0/1] (Was: Linux 3.11-rc4)
+Message-ID: <20130808181521.GA11138@redhat.com>
+References: <CA+55aFwTX47vLvZckozZub0rUEo-aCBe7weqe=4mfQGfrW7NUA@mail.gmail.com> <CAMP44s2bOniz4qx5y9h4ppHRUjiPVGL+igSwO5NUJd4zpObxFw@mail.gmail.com> <20130806154314.GA398@redhat.com> <CANOLnOMPhOH5uUBqWwV-YNSeA_YHxL_dDa0ftL4jcWRgGwkfiQ@mail.gmail.com> <CA+55aFxt1iqJXW=bsETugWVxj9LwZXkq0FT836YMJVsRP9juEQ@mail.gmail.com> <20130807192734.GA8395@redhat.com> <CA+55aFw7P7LYNFQzy6nrn9DDn5a0UdYYQNx_7sibShvZPLEcmg@mail.gmail.com> <20130808154107.GA28971@redhat.com> <20130808165427.GC32049@somewhere>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] MAINTAINERS: Add Kumar to Device Tree Binding maintainers
- group
-References: <1375977075-21674-1-git-send-email-galak@codeaurora.org>
-In-Reply-To: <1375977075-21674-1-git-send-email-galak@codeaurora.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130808165427.GC32049@somewhere>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 10:51 AM, Kumar Gala wrote:
-> I'm tossing my hat into the ring of maintainers/reviewers for device tree
-> bindings based on history of dealing with DT on embedded PPC and starting
-> work on ARM SoCs.
-> 
-> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Cc: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Olof Johansson <olof@lixom.net>
+On 08/08, Frederic Weisbecker wrote:
+>
+> I'm all for fixing this. May be we can start by backporting a patch that
+> ignores the value of gen_len for instruction breakpoints in x86?
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Or perhaps we can start with the something like below.
 
-Rob
+But probably we should move "attr.bp_len == HW_BREAKPOINT_LEN_1" check
+from arch_build_bp_info() to its caller, arch_validate_hwbkpt_settings().
 
-> ---
->  MAINTAINERS | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index defc053..fe7aac6 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6062,6 +6062,7 @@ M:	Pawel Moll <pawel.moll@arm.com>
->  M:	Mark Rutland <mark.rutland@arm.com>
->  M:	Stephen Warren <swarren@wwwdotorg.org>
->  M:	Ian Campbell <ian.campbell@citrix.com>
-> +M:	Kumar Gala <galak@codeaurora.org>
->  L:	devicetree@vger.kernel.org
->  S:	Maintained
->  F:	Documentation/devicetree/
-> 
+Because:
+
+> But this bp_len
+> should rather be used for range breakpoints on archs that support it.
+
+Yes, exactly, and we already have the patches for amd, so bp->len can
+be actually != 1 but currently we can't support because it is checked
+in arch_build_bp_info().
+
+Oleg.
+
+--- x/arch/x86/kernel/hw_breakpoint.c
++++ x/arch/x86/kernel/hw_breakpoint.c
+@@ -208,19 +208,16 @@ int arch_bp_generic_fields(int x86_len, 
+ {
+ 	/* Type */
+ 	switch (x86_type) {
+-	case X86_BREAKPOINT_EXECUTE:
+-		if (x86_len != X86_BREAKPOINT_LEN_X)
+-			return -EINVAL;
+-
+-		*gen_type = HW_BREAKPOINT_X;
+-		*gen_len = sizeof(long);
+-		return 0;
+ 	case X86_BREAKPOINT_WRITE:
+ 		*gen_type = HW_BREAKPOINT_W;
+ 		break;
+ 	case X86_BREAKPOINT_RW:
+ 		*gen_type = HW_BREAKPOINT_W | HW_BREAKPOINT_R;
+ 		break;
++	case X86_BREAKPOINT_EXECUTE:
++		*gen_type = HW_BREAKPOINT_X;
++		if (x86_len == X86_BREAKPOINT_LEN_1)
++			break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -265,15 +262,11 @@ static int arch_build_bp_info(struct per
+ 		break;
+ 	case HW_BREAKPOINT_X:
+ 		info->type = X86_BREAKPOINT_EXECUTE;
+-		/*
+-		 * x86 inst breakpoints need to have a specific undefined len.
+-		 * But we still need to check userspace is not trying to setup
+-		 * an unsupported length, to get a range breakpoint for example.
+-		 */
+-		if (bp->attr.bp_len == sizeof(long)) {
+-			info->len = X86_BREAKPOINT_LEN_X;
+-			return 0;
+-		}
++		/* until we change tools/perf */
++		if (bp->attr.bp_len == sizeof(long))
++			bp->attr.bp_len = HW_BREAKPOINT_LEN_1;
++		if (bp->attr.bp_len == HW_BREAKPOINT_LEN_1)
++			break;
+ 	default:
+ 		return -EINVAL;
+ 	}
 
