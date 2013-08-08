@@ -1,84 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934218Ab3HHKRi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:17:38 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:37727 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934193Ab3HHKRg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:17:36 -0400
-Date: Thu, 8 Aug 2013 11:17:30 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Andrew Fish <afish@apple.com>
-Cc: edk2-devel@lists.sourceforge.net, Laszlo Ersek <lersek@redhat.com>,
-        linux-efi@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Brian Richardson <brian.richardson@intel.com>,
-        Colin Ian King <colin.king@canonical.com>
-Subject: Re: [edk2] Corrupted EFI region
-Message-ID: <20130808101730.GJ2515@console-pimps.org>
-References: <51FFD5B0.9080000@redhat.com>
- <20130805164731.GG31845@pd.tnic>
- <52001896.1030509@redhat.com>
- <20130805220808.GC14067@pd.tnic>
- <20130806141036.GD14891@pd.tnic>
- <520116D1.2010000@redhat.com>
- <20130807151935.GJ17920@pd.tnic>
- <CCFD3CBD-62B0-4046-B96D-18CB1A815F72@apple.com>
- <20130807201908.GG2515@console-pimps.org>
- <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D5982201-6DC4-469F-812A-74A8402ADEE9@apple.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965114Ab3HHKSS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 06:18:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49522 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S964874Ab3HHKRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 06:17:49 -0400
+X-IronPort-AV: E=Sophos;i="4.89,838,1367942400"; 
+   d="scan'208";a="8154038"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH part5 4/7] memblock, mem_hotplug: Introduce MEMBLOCK_HOTPLUG flag to mark hotpluggable regions.
+Date: Thu, 8 Aug 2013 18:16:16 +0800
+Message-Id: <1375956979-31877-5-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 18:16:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 18:16:19,
+	Serialize complete at 2013/08/08 18:16:19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Aug, at 02:10:28PM, Andrew Fish wrote:
-> Well the issue I see is I don't think OS X or Windows are doing this.
-> So I'm guessing there is some unique thing beings done on the Linux
-> side and we don't have good tests to catch bugs in the EFI
-> implementations. If the Linux loader hides the bugs and we don't hit
-> them with other operating systems they are never going to get fixed.
-> It would be good if we could track down some of these issues and make
-> a request for some tests that can help catch these issues. The tests
-> would be part of UEFI.org, but since some of us play in both worlds we
-> can forward the known issues to the UEFI test work group. 
+In find_hotpluggable_memory, once we find out a memory region which is
+hotpluggable, we want to mark them in memblock.memory. So that we could
+control memblock allocator not to allocte hotpluggable memory for the kernel
+later.
 
-I'm all for helping to develop tests that catch these kind of bugs.
-What's the next step?
+To achieve this goal, we introduce MEMBLOCK_HOTPLUG flag to indicate the
+hotpluggable memory regions in memblock and a function memblock_mark_hotplug()
+to mark hotpluggable memory if we find one.
 
-> Is it possible to have a switch to turn off the not required behavior
-> (hiding EFI implementation bugs) so that bad platforms could be
-> detected? This would be a good thing to try on platforms at the
-> upcoming UEFI Plugfest hosted by the Linux Foundation and the UEFI
-> Forum, so the bad behavior can be detected and the vendors can fix the
-> issue. 
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ include/linux/memblock.h |   11 +++++++++++
+ mm/memblock.c            |   26 ++++++++++++++++++++++++++
+ mm/memory_hotplug.c      |    3 ++-
+ 3 files changed, 39 insertions(+), 1 deletions(-)
 
-We don't tend to provide switches for the kernel to turn off workarounds
-because users run the risk of inadvertently stopping their machines from
-booting correctly. Also, because the major distributions will always
-enable the workarounds, the kernel would need to be built manually to
-see any kind of informative error message.
-
-What we do have though is the Firmware Testsuite - fwts,
-
-  https://wiki.ubuntu.com/Kernel/Reference/fwts
-
-I know that Brian (Cc'd) has been doing some excellent advocacy work,
-getting people at plugfetsts to run this testsuite which tests for
-implementation bugs from within a Linux environment.
-
-> PS Also maybe it would be possible to key this work around behavior on
-> the EFI/UEFI version. So for example no work-around after UEFI v2.3.1?
-
-That would really depend on who has seen this bug and on which
-platforms. Is there a particular reason that mapping the boot services
-regions as-is would cause problems?
-
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index e89e0cd..c0bd31c 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -19,6 +19,9 @@
+ 
+ #define INIT_MEMBLOCK_REGIONS	128
+ 
++/* Definition of memblock flags. */
++#define MEMBLOCK_HOTPLUG	0x1	/* hotpluggable region */
++
+ struct memblock_region {
+ 	phys_addr_t base;
+ 	phys_addr_t size;
+@@ -60,6 +63,8 @@ int memblock_free(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve(phys_addr_t base, phys_addr_t size);
+ void memblock_trim_memory(phys_addr_t align);
+ 
++int memblock_mark_hotplug(phys_addr_t base, phys_addr_t size);
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+ 			  unsigned long *out_end_pfn, int *out_nid);
+@@ -119,6 +124,12 @@ void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
+ 	     i != (u64)ULLONG_MAX;					\
+ 	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid))
+ 
++static inline void memblock_set_region_flags(struct memblock_region *r,
++					     unsigned long flags)
++{
++	r->flags = flags;
++}
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ int memblock_set_node(phys_addr_t base, phys_addr_t size, int nid);
+ 
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 0841a6e..ecd8568 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -585,6 +585,32 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ }
+ 
+ /**
++ * memblock_mark_hotplug - Mark hotpluggable memory with flag MEMBLOCK_HOTPLUG.
++ * @base: the base phys addr of the region
++ * @size: the size of the region
++ *
++ * This function isolates region [@base, @base + @size), and mark it with flag
++ * MEMBLOCK_HOTPLUG.
++ *
++ * Return 0 on succees, -errno on failure.
++ */
++int __init_memblock memblock_mark_hotplug(phys_addr_t base, phys_addr_t size)
++{
++	struct memblock_type *type = &memblock.memory;
++	int i, ret, start_rgn, end_rgn;
++
++	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
++	if (ret)
++		return ret;
++
++	for (i = start_rgn; i < end_rgn; i++)
++		memblock_set_region_flags(&type->regions[i], MEMBLOCK_HOTPLUG);
++
++	memblock_merge_regions(type);
++	return 0;
++}
++
++/**
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+  * @nid: node selector, %MAX_NUMNODES for all nodes
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index e63f947..e4db758 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -171,7 +171,8 @@ void __init find_hotpluggable_memory(void)
+ 		if (kernel_resides_in_region(base, size))
+ 			continue;
+ 
+-		/* Will mark hotpluggable memory regions here */
++		/* Mark hotpluggable memory regions in memblock.memory */
++		memblock_mark_hotplug(base, size);
+ 	}
+ 
+ 	early_iounmap(srat_vaddr, length);
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.7.1
+
