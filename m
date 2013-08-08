@@ -1,186 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965170Ab3HHKps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:45:48 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11928 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965127Ab3HHKpn (ORCPT
+	id S965192Ab3HHKqJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 06:46:09 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46209 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965169Ab3HHKqD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:45:43 -0400
-Message-ID: <52037468.30401@huawei.com>
-Date: Thu, 8 Aug 2013 18:35:20 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 8 Aug 2013 06:46:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,838,1367996400"; 
+   d="scan'208";a="377993664"
+From: "Wang, Rui Y" <rui.y.wang@intel.com>
+To: "liuj97@gmail.com" <liuj97@gmail.com>
+CC: "Sosnowski, Maciej" <maciej.sosnowski@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "chenkeping@huawei.com" <chenkeping@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: RE: [RFC PATCH v2 3/7] dmaengine: enhance dmaengine to support DMA
+ device hotplug
+Thread-Topic: [RFC PATCH v2 3/7] dmaengine: enhance dmaengine to support DMA
+ device hotplug
+Thread-Index: AQHOlCCB+28Ly1YRVEaaE9McdbeL6pmLGXpg
+Date: Thu, 8 Aug 2013 10:45:58 +0000
+Message-ID: <FC9702EC51E4CA40A875703BEBD6CEF80183DA53@SHSMSX101.ccr.corp.intel.com>
+References: <1337003229-9158-1-git-send-email-jiang.liu@huawei.com>
+	<1337003229-9158-4-git-send-email-jiang.liu@huawei.com>
+ <CANVTcTan9N=Bvf=-vDwOQhS13y+JtWfqApF75yuksQuFBBVDZw@mail.gmail.com>
+In-Reply-To: <CANVTcTan9N=Bvf=-vDwOQhS13y+JtWfqApF75yuksQuFBBVDZw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, <jovi.zhangwei@gmail.com>
-Subject: [RFC] ktap: enable scripting for Linux tracing subsystem
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Jiang,
+See my comments inline.
 
-ktap was released 0.2 at several days ago, you can read the release note
-in: http://lwn.net/Articles/561568/
+> -----Original Message-----
+> From: Jiang Liu <liuj97@gmail.com>
+> Date: Mon, 14 May 2012 21:47:05 +0800
+> Subject: [RFC PATCH v2 3/7] dmaengine: enhance dmaengine to support DMA
+> device hotplug
+> To: Dan Williams <dan.j.williams@intel.com>, Maciej Sosnowski
+> <maciej.sosnowski@intel.com>, Vinod Koul <vinod.koul@intel.com>
+> Cc: Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>,
+> linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+> 
+> From: Jiang Liu <liuj97@gmail.com>
+> 
+> From: Jiang Liu <liuj97@gmail.com>
+> 
+> To support DMA device hotplug, dmaengine must correctly manage reference
+> count for DMA channels. On the other hand, DMA hot path is performance
+> critical, reference count management code should avoid polluting global shared
+> cachelines, otherwise it may cause heavy performance penalty.
+> 
+> This patch introduces a lightweight DMA channel reference count management
+> mechanism by using percpu counter. When DMA device hotplug is disabled,
+> there's no performance penalty. When hotplug is enabled, a
+> dma_find_channel()/dma_put_channel() pair adds two local memory accesses
+> to the hot path.
+> 
+> Signed-off-by: Jiang Liu <liuj97@gmail.com>
+> ---
+>  drivers/dma/dmaengine.c   |  112
+> +++++++++++++++++++++++++++++++++++++++++----
+>  include/linux/dmaengine.h |   29 +++++++++++-
+>  2 files changed, 129 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c index
+> d3b1c48..eca45c0 100644
+> --- a/drivers/dma/dmaengine.c
+> +++ b/drivers/dma/dmaengine.c
+> @@ -61,12 +61,20 @@
+>  #include <linux/rculist.h>
+>  #include <linux/idr.h>
+>  #include <linux/slab.h>
+> +#include <linux/sched.h>
+> 
+>  static DEFINE_MUTEX(dma_list_mutex);
+>  static DEFINE_IDR(dma_idr);
+>  static LIST_HEAD(dma_device_list);
+>  static long dmaengine_client_count;
+> 
+> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
+> +static atomic_t dmaengine_dirty;
+> +static struct static_key dmaengine_quiesce = STATIC_KEY_INIT_FALSE;
+> +static DECLARE_WAIT_QUEUE_HEAD(dmaengine_wait_queue);
+> +DEFINE_PER_CPU(long, dmaengine_chan_ref_count);
+> +#endif	/* CONFIG_DMA_ENGINE_HOTPLUG */
+> +
+>  /* --- sysfs implementation --- */
+> 
+>  /**
+> @@ -305,10 +313,40 @@ arch_initcall(dma_channel_table_init);
+>   */
+>  struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type)
+> {
+> -	return this_cpu_read(channel_table[tx_type]->chan);
+> +	struct dma_chan *chan = this_cpu_read(channel_table[tx_type]->chan);
+> +
+> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
+> +	this_cpu_inc(dmaengine_chan_ref_count);
+> +	if (static_key_false(&dmaengine_quiesce))
+> +		chan = NULL;
+> +#endif
+> +
+> +	return chan;
+>  }
+>  EXPORT_SYMBOL(dma_find_channel);
+> 
+> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
+> +struct dma_chan *dma_get_channel(struct dma_chan *chan) {
+> +	if (static_key_false(&dmaengine_quiesce))
+> +		atomic_inc(&dmaengine_dirty);
+> +	this_cpu_inc(dmaengine_chan_ref_count);
+> +
+> +	return chan;
+> +}
+> +EXPORT_SYMBOL(dma_get_channel);
+> +#endif
+> +
+> +/**
+> + * dma_has_capability - check whether any channel supports tx_type
+> + * @tx_type: transaction type
+> + */
+> +bool dma_has_capability(enum dma_transaction_type tx_type) {
+> +	return !!this_cpu_read(channel_table[tx_type]->chan);
+> +}
+> +EXPORT_SYMBOL(dma_has_capability);
+> +
+>  /*
+>   * net_dma_find_channel - find a channel for net_dma
+>   * net_dma has alignment requirements
+> @@ -316,10 +354,15 @@ EXPORT_SYMBOL(dma_find_channel);  struct
+> dma_chan *net_dma_find_channel(void)  {
+>  	struct dma_chan *chan = dma_find_channel(DMA_MEMCPY);
+> -	if (chan && !is_dma_copy_aligned(chan->device, 1, 1, 1))
+> -		return NULL;
+> 
+> -	return chan;
+> +	if (chan && is_dma_copy_aligned(chan->device, 1, 1, 1))
+> +		return chan;
+> +
+> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
+> +	this_cpu_dec(dmaengine_chan_ref_count);
+> +#endif
+> +
+> +	return NULL;
+>  }
+>  EXPORT_SYMBOL(net_dma_find_channel);
+> 
+> @@ -393,6 +436,37 @@ static struct dma_chan *nth_chan(enum
+> dma_transaction_type cap, int n)
+>  	return ret;
+>  }
+> 
+> +static void dma_channel_quiesce(void)
+> +{
+> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
+> +	int cpu;
+> +	long ref_count;
+> +	int quiesce_count = 0;
+> +
+> +	static_key_slow_inc(&dmaengine_quiesce);
+> +
+> +	do {
+> +		atomic_set(&dmaengine_dirty, 0);
+> +		schedule_timeout(1);
+> +
+> +		if (atomic_read(&dmaengine_dirty)) {
+> +			quiesce_count = 0;
+> +			continue;
+> +		}
+> +
+> +		ref_count = 0;
+> +		for_each_possible_cpu(cpu)
+> +			ref_count += per_cpu(dmaengine_chan_ref_count, cpu);
+> +		if (ref_count == 0)
+> +			quiesce_count++;
+> +		else
+> +			quiesce_count = 0;
+> +	} while (quiesce_count < 10);
+> +
+> +	static_key_slow_dec(&dmaengine_quiesce);
+> +#endif
+> +}
+> +
 
-The public location of ktap is in: https://github.com/ktap/ktap.git	
+The purpose of dma_channel_quiesce() is unclear to me. It waits until dmaengine_chan_ref_count is 0, but how do you prevent someone from using dma after it returns?
 
-ktap v0.2 release brought a lots of new valuable changes, in summary,
-the architecture of ktap is easy to integrate with current tracing
-infrastructure, that's why I want to start this RFC discussion now.
+<snip>
 
-The highlight features of ktap includes:
+> @@ -767,14 +848,22 @@ void dma_async_device_unregister(struct
+> dma_device *device)
+> 
+>  	mutex_lock(&dma_list_mutex);
+>  	list_del_rcu(&device->global_node);
+> -	dma_channel_rebalance();
+> +	dma_channel_rebalance(true);
+>  	mutex_unlock(&dma_list_mutex);
+> 
+>  	/* Check whether it's called from module exit function. */
+>  	if (try_module_get(device->dev->driver->owner)) {
+> +#ifndef	CONFIG_DMA_ENGINE_HOTPLUG
+>  		dev_warn(device->dev,
+>  			"%s isn't called from module exit function.\n",
+>  			__func__);
+> +#else
+> +		list_for_each_entry(chan, &device->channels, device_node) {
+> +			/* TODO: notify clients to release channels*/
+> +			wait_event(dmaengine_wait_queue,
+> +				   chan->client_count == 0);
+> +		}
 
-   - support tracepoints, k(ret)probe, u(ret)probe, function tracing,
-     and timer
-   - support x86, x86-64, powerpc, arm, and preempt-rt kernel
-   - support kernel 3.1 and later versions, include Linux mainline
-   - similar event syntax interface with perf
-   - support event filter
-   - unified backend perf callback mechanism
-   - ring buffer transport (same with ftrace)
-   - oneline scripting
+How do you notify clients to release the channels? Is there an updated version which handles this? There're resources (e.g. timers) that must be free'd, which can only happen when someone calls dma_chan_put() until client_count reaches 0 and device_free_chan_resources() gets called. 
 
-To make us understand deeply on ktap, the contents splits into 5 parts:
-Introduction, The design, Implementation, Link, Upstream.
-
-1. Introduction
----------------
-
-ktap is a simple and lightweight dynamic tracing tool for Linux, it's
-similar with Linux mainstream dynamic tracing tool systemtap, and Dtrace
-in Solaris.
-ktap have different design principles from Linux mainstream dynamic
-tracing tool in that it's based on bytecode interpreter, so it doesn't
-depend upon GCC, doesn't require compiling kernel module for each
-script, fulfilling the embedded ecosystem's tracing needs.
-
-ktap doesn't invent any new tracing build-block, it leverage current
-tracing building blocks(tracepoint, kprobe, uprobe, function tracing,
-pmu)in Linux kernel, it just combine all these tracing building blocks
-together, to explore as a unified script tracing interface.
-
-
-2. The design
--------------
-
-                   ktap compiler      io thread
-                        |                ^
-                 -------|----------------|-----------
-                        |                |
-                        v                |
-                     ktapvm --------> ringbuffer
-                        |
-                        |
-                        v
-                 tracepoints kprobe uprobe
-                 pmu hw_breakpoint timer
-
-ktap compiler: responsible for compile source script to bytecode, then
-use ioctl to notify ktapvm load and execute bytecode.
-
-ktapvm: core script engine, responsible for load and execute bytecode,
-calling into built-in or library function, also interact with ringbuffer
-transport. ktapvm register perf event by id, the overflow callback will
-call by event is hit, then calling into ktap script engine.
-
-ringbuffer: this is based on ftrace ring buffer, responsible for
-transport to userspace. Possibly ktap will share same ring buffer output
-code with ftrace in future.
-
-io thread: reading the ring buffer, output to stdout.
-
-
-3. Implementation
------------------
-
-The script engine and compiler is based on lua initially, a widely used
-fast dynamic typed language, registered based, extendable interpreter,
-support associative array.
-(Note that ktap already changed a lot on interpreter core and compiler,
-so it's cannot call it as lua anymore :-))
-
-Language syntax is C-like, so it's easy to make us(kernel developers) to
-adapt it, smooth learning curve.
-
-ktapvm code of lines is only 5K+, and userspace compiler is only 4K+,
-code is very easy to read and review, especially ktapvm, easy to hack,
-it just have 40 bytecodes.
-
-One thing need to aware is ktap tracing core is heavily based on perf
-event, in this point of view, ktap is a kernel script interface for perf
-tool, there already have perf-script tools(based on python/perl), ktap
-differences with perf-script is we can programming each event when event
-is hit, in real time manner.
-
-Currently debuginfo is not handled, ktap just reuse perf-probe, in case
-some embedded Linux system don't have available debuginfo, they still
-could get local variable or register based on
-kprobe-tracer/uprobe-tracer, so debuginfo won't hurt the simplicity of
-ktap, which recognized as largest advantage of ktap.
-
-The event filter in ktap is based on kernel tracing event filter.
-
-Based on these design, I'm also willing to discuss perf-ktap integrating
-if others want too.
-
-This is the whole design overview for ktap, it reuse current tracing
-building block, to keep its simplicity.
-
-More info is available in ktap/doc/, and sample scripts is in scripts/
-
-4. Link
--------
-
-There have ktap v0.1 review on LWN(wrote by Corbet):
-http://lwn.net/Articles/551314/
-
-example in that link have a little out of date.
-
-
-5. Upstream
------------
-
-why I want to upstream ktap now?
-
-ktap is still in early stage, there have many items in my todo list, but
-small start is a good start, it would be good to shape and polish this
-tool under eyes of community, community collaboration will make ktap to
-be more valuable for all of us, it have been shown that ktap is very
-useful for embedded Linux system, and we are enter an age where embedded
-system is deployed to large user base than before.
-
-I hope in future we will have a robust, low overhead, mature, extendable
-kernel interpreter.
-
-I appreciate any feedback from you, thank you.
-
-jovi
-
-
-
-
-
-
-
-
-
-
-
-
-
+Rui Wang
 
 
