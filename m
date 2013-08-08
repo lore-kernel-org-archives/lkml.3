@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933972Ab3HHIAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:00:31 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:42205 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933776Ab3HHIAW (ORCPT
+	id S933993Ab3HHID2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:03:28 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:34301 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933852Ab3HHIA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:00:22 -0400
+	Thu, 8 Aug 2013 04:00:29 -0400
 From: Milo Kim <woogyom.kim@gmail.com>
 To: Bryan Wu <cooloney@gmail.com>
 Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
         linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
         Milo Kim <milo.kim@ti.com>
-Subject: [PATCH 01/10] leds: lp55xx: add common data structure for program
-Date: Thu,  8 Aug 2013 16:59:45 +0900
-Message-Id: <1375948794-6286-2-git-send-email-milo.kim@ti.com>
+Subject: [PATCH 03/10] leds: lp5521: restore legacy device attributes
+Date: Thu,  8 Aug 2013 16:59:47 +0900
+Message-Id: <1375948794-6286-4-git-send-email-milo.kim@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
 References: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
@@ -22,71 +22,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LP55xx family devices have internal three program engines which are used for
-loading LED patterns.
-To maintain legacy device attributes, specific data structure is used, 'mode'
-and 'led_mux'.
-The mode is used for showing/storing current engine mode such like disabled,
-load and run.
-Then led_mux is used for showing/storing current output LED selection.
-This is only for LP5523/55231.
+git commit 9ce7cb170f97f83a78dc948bf7d25690f15e1328
+may cause an application confict, engineN_mode and engineN_load.
+This interface should be maintained for compatibility.
+
+Restored device attributes are 'engineN_mode' and 'engineN_load'.
+A 'selftest' attribute macro is replaced with LP55xx common macro.
+
+Use a mutex in lp5521_update_program_memory()
+: This function is called when an user-application writes a 'engineN_load' file
+or pattern data is loaded from generic firmware interface.
+So, writing program memory should be protected.
+If an error occurs on accessing this area, just it returns as -EINVAL quickly.
+This error code is exact same as old driver function, lp5521_do_store_load()
+because it should be kept for an user-application compatibility.
+Even the driver is changed, we can use the application without re-compiling
+sources.
+
+'led_pattern' attribute is not included
+: engineN_mode and _load were created for custom user-application.
+'led_pattern' is an exception. I added this attribute not for custom application
+but for simple test. Now it is used only in LP5562 driver, not LP5521.
 
 Signed-off-by: Milo Kim <milo.kim@ti.com>
 ---
- drivers/leds/leds-lp55xx-common.h |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ drivers/leds/leds-lp5521.c |  104 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 100 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/leds/leds-lp55xx-common.h b/drivers/leds/leds-lp55xx-common.h
-index dbbf86d..04c1d4f 100644
---- a/drivers/leds/leds-lp55xx-common.h
-+++ b/drivers/leds/leds-lp55xx-common.h
-@@ -20,6 +20,13 @@ enum lp55xx_engine_index {
- 	LP55XX_ENGINE_1,
- 	LP55XX_ENGINE_2,
- 	LP55XX_ENGINE_3,
-+	LP55XX_ENGINE_MAX = LP55XX_ENGINE_3,
-+};
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index 9e28dd0..c00f922 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -251,10 +251,20 @@ static int lp5521_update_program_memory(struct lp55xx_chip *chip,
+ 		goto err;
+ 
+ 	program_size = i;
+-	for (i = 0; i < program_size; i++)
+-		lp55xx_write(chip, addr[idx] + i, pattern[i]);
+ 
+-	return 0;
++	mutex_lock(&chip->lock);
 +
-+enum lp55xx_engine_mode {
-+	LP55XX_ENGINE_DISABLED,
-+	LP55XX_ENGINE_LOAD,
-+	LP55XX_ENGINE_RUN,
- };
- 
- struct lp55xx_led;
-@@ -72,6 +79,16 @@ struct lp55xx_device_config {
- };
- 
- /*
-+ * struct lp55xx_engine
-+ * @mode       : Engine mode
-+ * @led_mux    : Mux bits for LED selection. Only used in LP5523
-+ */
-+struct lp55xx_engine {
-+	enum lp55xx_engine_mode mode;
-+	u16 led_mux;
-+};
++	for (i = 0; i < program_size; i++) {
++		ret = lp55xx_write(chip, addr[idx] + i, pattern[i]);
++		if (ret) {
++			mutex_unlock(&chip->lock);
++			return -EINVAL;
++		}
++	}
 +
-+/*
-  * struct lp55xx_chip
-  * @cl         : I2C communication for access registers
-  * @pdata      : Platform specific data
-@@ -79,6 +96,7 @@ struct lp55xx_device_config {
-  * @num_leds   : Number of registered LEDs
-  * @cfg        : Device specific configuration data
-  * @engine_idx : Selected engine number
-+ * @engines    : Engine structure for the device attribute R/W interface
-  * @fw         : Firmware data for running a LED pattern
-  */
- struct lp55xx_chip {
-@@ -89,6 +107,7 @@ struct lp55xx_chip {
- 	int num_leds;
- 	struct lp55xx_device_config *cfg;
- 	enum lp55xx_engine_index engine_idx;
-+	struct lp55xx_engine engines[LP55XX_ENGINE_MAX];
- 	const struct firmware *fw;
- };
++	mutex_unlock(&chip->lock);
++
++	return size;
  
+ err:
+ 	dev_err(&chip->cl->dev, "wrong pattern format\n");
+@@ -365,6 +375,80 @@ static void lp5521_led_brightness_work(struct work_struct *work)
+ 	mutex_unlock(&chip->lock);
+ }
+ 
++static ssize_t show_engine_mode(struct device *dev,
++				struct device_attribute *attr,
++				char *buf, int nr)
++{
++	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
++	struct lp55xx_chip *chip = led->chip;
++	enum lp55xx_engine_mode mode = chip->engines[nr - 1].mode;
++
++	switch (mode) {
++	case LP55XX_ENGINE_RUN:
++		return sprintf(buf, "run\n");
++	case LP55XX_ENGINE_LOAD:
++		return sprintf(buf, "load\n");
++	case LP55XX_ENGINE_DISABLED:
++	default:
++		return sprintf(buf, "disabled\n");
++	}
++}
++show_mode(1)
++show_mode(2)
++show_mode(3)
++
++static ssize_t store_engine_mode(struct device *dev,
++				 struct device_attribute *attr,
++				 const char *buf, size_t len, int nr)
++{
++	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
++	struct lp55xx_chip *chip = led->chip;
++	struct lp55xx_engine *engine = &chip->engines[nr - 1];
++
++	mutex_lock(&chip->lock);
++
++	chip->engine_idx = nr;
++
++	if (!strncmp(buf, "run", 3)) {
++		lp5521_run_engine(chip, true);
++		engine->mode = LP55XX_ENGINE_RUN;
++	} else if (!strncmp(buf, "load", 4)) {
++		lp5521_stop_engine(chip);
++		lp5521_load_engine(chip);
++		engine->mode = LP55XX_ENGINE_LOAD;
++	} else if (!strncmp(buf, "disabled", 8)) {
++		lp5521_stop_engine(chip);
++		engine->mode = LP55XX_ENGINE_DISABLED;
++	}
++
++	mutex_unlock(&chip->lock);
++
++	return len;
++}
++store_mode(1)
++store_mode(2)
++store_mode(3)
++
++static ssize_t store_engine_load(struct device *dev,
++			     struct device_attribute *attr,
++			     const char *buf, size_t len, int nr)
++{
++	struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
++	struct lp55xx_chip *chip = led->chip;
++
++	mutex_lock(&chip->lock);
++
++	chip->engine_idx = nr;
++	lp5521_load_engine(chip);
++
++	mutex_unlock(&chip->lock);
++
++	return lp5521_update_program_memory(chip, buf, len);
++}
++store_load(1)
++store_load(2)
++store_load(3)
++
+ static ssize_t lp5521_selftest(struct device *dev,
+ 			       struct device_attribute *attr,
+ 			       char *buf)
+@@ -381,9 +465,21 @@ static ssize_t lp5521_selftest(struct device *dev,
+ }
+ 
+ /* device attributes */
+-static DEVICE_ATTR(selftest, S_IRUGO, lp5521_selftest, NULL);
++static LP55XX_DEV_ATTR_RW(engine1_mode, show_engine1_mode, store_engine1_mode);
++static LP55XX_DEV_ATTR_RW(engine2_mode, show_engine2_mode, store_engine2_mode);
++static LP55XX_DEV_ATTR_RW(engine3_mode, show_engine3_mode, store_engine3_mode);
++static LP55XX_DEV_ATTR_WO(engine1_load, store_engine1_load);
++static LP55XX_DEV_ATTR_WO(engine2_load, store_engine2_load);
++static LP55XX_DEV_ATTR_WO(engine3_load, store_engine3_load);
++static LP55XX_DEV_ATTR_RO(selftest, lp5521_selftest);
+ 
+ static struct attribute *lp5521_attributes[] = {
++	&dev_attr_engine1_mode.attr,
++	&dev_attr_engine2_mode.attr,
++	&dev_attr_engine3_mode.attr,
++	&dev_attr_engine1_load.attr,
++	&dev_attr_engine2_load.attr,
++	&dev_attr_engine3_load.attr,
+ 	&dev_attr_selftest.attr,
+ 	NULL
+ };
 -- 
 1.7.9.5
 
