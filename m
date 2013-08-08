@@ -1,84 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab3HHFbD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 01:31:03 -0400
-Received: from 4.mo4.mail-out.ovh.net ([178.32.98.131]:48083 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756454Ab3HHFbB (ORCPT
+	id S1755959Ab3HHFii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 01:38:38 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:45065 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227Ab3HHFig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 01:31:01 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH v3 04/19] clk: at91: add PMC macro file for dt definitions
-Date: Thu,  8 Aug 2013 07:04:30 +0200
-Message-Id: <1375938270-3965-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 2862037565202200624
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 8 Aug 2013 01:38:36 -0400
+Message-ID: <52032ED4.2030202@ozlabs.ru>
+Date: Thu, 08 Aug 2013 15:38:28 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Divy Le ray <divy@chelsio.com>
+CC: Jay Fenlason <fenlason@redhat.com>, Santosh Rastapur <santosh@chelsio.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG cxgb3: Check and handle the dma mapping errors
+References: <51FF14F8.7000204@ozlabs.ru> <20130805184107.GA2998@redhat.com> <52027BEF.5040602@chelsio.com>
+In-Reply-To: <52027BEF.5040602@chelsio.com>
+Content-Type: multipart/mixed;
+ boundary="------------060508070806080405000502"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new macro file for PMC macros.
+This is a multi-part message in MIME format.
+--------------060508070806080405000502
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 
-This macro file includes the definitions of SR (status register) bit
-offsets and will be use to reference PMC irqs.
+On 08/08/2013 02:55 AM, Divy Le ray wrote:
+> On 08/05/2013 11:41 AM, Jay Fenlason wrote:
+>> On Mon, Aug 05, 2013 at 12:59:04PM +1000, Alexey Kardashevskiy wrote:
+>>> Hi!
+>>>
+>>> Recently I started getting multiple errors like this:
+>>>
+>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>> c000001fbdaaa882 npages 1
+>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>> c000001fbdaaa882 npages 1
+>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>> c000001fbdaaa882 npages 1
+>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>> c000001fbdaaa882 npages 1
+>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>> c000001fbdaaa882 npages 1
+>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>> c000001fbdaaa882 npages 1
+>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>> c000001fbdaaa882 npages 1
+>>> ... and so on
+>>>
+>>> This is all happening on a PPC64 "powernv" platform machine. To trigger the
+>>> error state, it is enough to _flood_ ping CXGB3 card from another machine
+>>> (which has Emulex 10Gb NIC + Cisco switch). Just do "ping -f 172.20.1.2"
+>>> and wait 10-15 seconds.
+>>>
+>>>
+>>> The messages are coming from arch/powerpc/kernel/iommu.c and basically
+>>> mean that the driver requested more pages than the DMA window has which is
+>>> normally 1GB (there could be another possible source of errors -
+>>> ppc_md.tce_build callback - but on powernv platform it always succeeds).
+>>>
+>>>
+>>> The patch after which it broke is:
+>>> commit f83331bab149e29fa2c49cf102c0cd8c3f1ce9f9
+>>> Author: Santosh Rastapur <santosh@chelsio.com>
+>>> Date:   Tue May 21 04:21:29 2013 +0000
+>>> cxgb3: Check and handle the dma mapping errors
+>>>
+>>> Any quick ideas? Thanks!
+>> That patch adds error checking to detect failed dma mapping requests.
+>> Before it, the code always assumed that dma mapping requests succeded,
+>> whether they actually do or not, so the fact that the older kernel
+>> does not log errors only means that the failures are being ignored,
+>> and any appearance of working is through pure luck.  The machine could
+>> have just crashed at that point.
+>>
+>> What is the observed behavior of the system by the machine initiating
+>> the ping flood?  Do the older and newer kernels differ in the
+>> percentage of pings that do not receive replies?  O the newer kernel,
+>> when the mapping errors are detected, the packet that it is trying to
+>> transmit is dropped, but I'm not at all sure what happens on the older
+>> kernel after the dma mapping fails.  As I mentioned earlier, I'm
+>> surprised it does not crash.  Perhaps the folks from Chelsio have a
+>> better idea what happens after a dma mapping error is ignored?
+> 
+> Hi,
+> 
+> It should definitely not be ignored. It should not happen this reliably
+> either.
+> I wonder if we are not hitting a leak of iommu entries.
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- include/dt-bindings/clk/at91/common/pmc.h |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
- create mode 100644 include/dt-bindings/clk/at91/common/pmc.h
+Yes we do. I did some more tests with socklib from here
+http://junkcode.samba.org/ftp/unpacked/junkcode/socklib/
 
-diff --git a/include/dt-bindings/clk/at91/common/pmc.h b/include/dt-bindings/clk/at91/common/pmc.h
-new file mode 100644
-index 0000000..edc51d6
---- /dev/null
-+++ b/include/dt-bindings/clk/at91/common/pmc.h
-@@ -0,0 +1,20 @@
-+/*
-+ * This header provides constants for AT91 pmc status.
-+ *
-+ * The constants defined in this header are being used in dts.
-+ */
-+
-+#ifndef _DT_BINDINGS_CLK_AT91_PMC_H
-+#define _DT_BINDINGS_CLK_AT91_PMC_H
-+
-+#define AT91_PMC_MOSCS		0		/* MOSCS Flag */
-+#define AT91_PMC_LOCKA		1		/* PLLA Lock */
-+#define AT91_PMC_LOCKB		2		/* PLLB Lock */
-+#define AT91_PMC_MCKRDY		3		/* Master Clock */
-+#define AT91_PMC_LOCKU		6		/* UPLL Lock */
-+#define AT91_PMC_PCKRDY(id)	(8 + id)	/* Programmable Clock */
-+#define AT91_PMC_MOSCSELS	16		/* Main Oscillator Selection */
-+#define AT91_PMC_MOSCRCS	17		/* Main On-Chip RC */
-+#define AT91_PMC_CFDEV		18		/* Clock Failure Detector Event */
-+
-+#endif
+The test is basically sock_source sending packets to sock_sink. If block
+size is >=512 bytes, there is no leak, if I set packet size to <=256 bytes,
+it starts leaking, smaller block size means faster leak. The type of the
+other adapter does not really matter, can be the same Emulex adapter.
+
+I am attaching a small patch which I made in order to detect the leak.
+Without the patch, no leak happens, I double checked.
+
+
 -- 
-1.7.9.5
+Alexey
 
+--------------060508070806080405000502
+Content-Type: text/x-patch;
+ name="cxgb3_debug.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="cxgb3_debug.patch"
+
+commit 8327d4ca1d63a96454897ef7e5603bf78c9a76c5
+Author:     Alexey Kardashevskiy <aik@ozlabs.ru>
+AuthorDate: Thu Aug 8 15:33:55 2013 +1000
+Commit:     Alexey Kardashevskiy <aik@ozlabs.ru>
+CommitDate: Thu Aug 8 15:33:55 2013 +1000
+
+    cxgb3: debug patch
+    
+    Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+
+diff --git a/drivers/net/ethernet/chelsio/cxgb3/sge.c b/drivers/net/ethernet/chelsio/cxgb3/sge.c
+index 687ec4a..4165c0b 100644
+--- a/drivers/net/ethernet/chelsio/cxgb3/sge.c
++++ b/drivers/net/ethernet/chelsio/cxgb3/sge.c
+@@ -46,6 +46,15 @@
+ #include "firmware_exports.h"
+ #include "cxgb3_offload.h"
+ 
++
++unsigned long _cxgb3_maps, _cxgb3_unmaps;
++#define _FLUSH() printk("+%lu -%lu diff=%lu\n", _cxgb3_maps, _cxgb3_unmaps, _cxgb3_maps - _cxgb3_unmaps)
++#define _INC(n) _cxgb3_maps += (n); if (printk_ratelimit())  _FLUSH()
++#define _DEC(n) _cxgb3_unmaps += (n); if (printk_ratelimit()) _FLUSH()
++static int backtraced = 0;
++#define _CXBUG() _FLUSH(); if (!backtraced) { dump_stack(); backtraced = 1; }
++
++
+ #define USE_GTS 0
+ 
+ #define SGE_RX_SM_BUF_SIZE 1536
+@@ -246,6 +255,7 @@ static inline void unmap_skb(struct sk_buff *skb, struct sge_txq *q,
+ 	if (frag_idx == 0 && skb_headlen(skb)) {
+ 		pci_unmap_single(pdev, be64_to_cpu(sgp->addr[0]),
+ 				 skb_headlen(skb), PCI_DMA_TODEVICE);
++		_DEC(1);
+ 		j = 1;
+ 	}
+ 
+@@ -256,6 +266,7 @@ static inline void unmap_skb(struct sk_buff *skb, struct sge_txq *q,
+ 		pci_unmap_page(pdev, be64_to_cpu(sgp->addr[j]),
+ 			       skb_frag_size(&skb_shinfo(skb)->frags[frag_idx]),
+ 			       PCI_DMA_TODEVICE);
++		_DEC(1);
+ 		j ^= 1;
+ 		if (j == 0) {
+ 			sgp++;
+@@ -355,15 +366,19 @@ static void clear_rx_desc(struct pci_dev *pdev, const struct sge_fl *q,
+ 	if (q->use_pages && d->pg_chunk.page) {
+ 		(*d->pg_chunk.p_cnt)--;
+ 		if (!*d->pg_chunk.p_cnt)
++		{
+ 			pci_unmap_page(pdev,
+ 				       d->pg_chunk.mapping,
+ 				       q->alloc_size, PCI_DMA_FROMDEVICE);
+ 
++			_DEC(1);
++		}
+ 		put_page(d->pg_chunk.page);
+ 		d->pg_chunk.page = NULL;
+ 	} else {
+ 		pci_unmap_single(pdev, dma_unmap_addr(d, dma_addr),
+ 				 q->buf_size, PCI_DMA_FROMDEVICE);
++		_DEC(1);
+ 		kfree_skb(d->skb);
+ 		d->skb = NULL;
+ 	}
+@@ -416,7 +431,11 @@ static inline int add_one_rx_buf(void *va, unsigned int len,
+ 
+ 	mapping = pci_map_single(pdev, va, len, PCI_DMA_FROMDEVICE);
+ 	if (unlikely(pci_dma_mapping_error(pdev, mapping)))
++	{
++		_CXBUG();
+ 		return -ENOMEM;
++	}
++	_INC(1);
+ 
+ 	dma_unmap_addr_set(sd, dma_addr, mapping);
+ 
+@@ -458,8 +477,10 @@ static int alloc_pg_chunk(struct adapter *adapter, struct sge_fl *q,
+ 		if (unlikely(pci_dma_mapping_error(adapter->pdev, mapping))) {
+ 			__free_pages(q->pg_chunk.page, order);
+ 			q->pg_chunk.page = NULL;
++			_CXBUG();
+ 			return -EIO;
+ 		}
++		_INC(1);
+ 		q->pg_chunk.mapping = mapping;
+ 	}
+ 	sd->pg_chunk = q->pg_chunk;
+@@ -816,6 +837,7 @@ recycle:
+ use_orig_buf:
+ 	pci_unmap_single(adap->pdev, dma_unmap_addr(sd, dma_addr),
+ 			 fl->buf_size, PCI_DMA_FROMDEVICE);
++	_DEC(1);
+ 	skb = sd->skb;
+ 	skb_put(skb, len);
+ 	__refill_fl(adap, fl);
+@@ -887,10 +909,13 @@ recycle:
+ 				    PCI_DMA_FROMDEVICE);
+ 	(*sd->pg_chunk.p_cnt)--;
+ 	if (!*sd->pg_chunk.p_cnt && sd->pg_chunk.page != fl->pg_chunk.page)
++	{
+ 		pci_unmap_page(adap->pdev,
+ 			       sd->pg_chunk.mapping,
+ 			       fl->alloc_size,
+ 			       PCI_DMA_FROMDEVICE);
++		_DEC(1);
++	}
+ 	if (!skb) {
+ 		__skb_put(newskb, SGE_RX_PULL_LEN);
+ 		memcpy(newskb->data, sd->pg_chunk.va, SGE_RX_PULL_LEN);
+@@ -972,7 +997,7 @@ static int map_skb(struct pci_dev *pdev, const struct sk_buff *skb,
+ 			       PCI_DMA_TODEVICE);
+ 	if (pci_dma_mapping_error(pdev, *addr))
+ 		goto out_err;
+-
++	_INC(1);
+ 	si = skb_shinfo(skb);
+ 	end = &si->frags[si->nr_frags];
+ 
+@@ -981,16 +1006,23 @@ static int map_skb(struct pci_dev *pdev, const struct sk_buff *skb,
+ 					   DMA_TO_DEVICE);
+ 		if (pci_dma_mapping_error(pdev, *addr))
+ 			goto unwind;
++		_INC(1);
+ 	}
+ 	return 0;
+ 
+ unwind:
++	_CXBUG();
+ 	while (fp-- > si->frags)
++	{
+ 		dma_unmap_page(&pdev->dev, *--addr, skb_frag_size(fp),
+ 			       DMA_TO_DEVICE);
++		_DEC(1);
++	}
+ 
+ 	pci_unmap_single(pdev, addr[-1], skb_headlen(skb), PCI_DMA_TODEVICE);
++	_DEC(1);
+ out_err:
++	_CXBUG();
+ 	return -ENOMEM;
+ }
+ 
+@@ -1584,13 +1616,18 @@ static void deferred_unmap_destructor(struct sk_buff *skb)
+ 	p = dui->addr;
+ 
+ 	if (skb_tail_pointer(skb) - skb_transport_header(skb))
++	{
+ 		pci_unmap_single(dui->pdev, *p++, skb_tail_pointer(skb) -
+ 				 skb_transport_header(skb), PCI_DMA_TODEVICE);
+-
++		_DEC(1);
++	}
+ 	si = skb_shinfo(skb);
+ 	for (i = 0; i < si->nr_frags; i++)
++	{
+ 		pci_unmap_page(dui->pdev, *p++, skb_frag_size(&si->frags[i]),
+ 			       PCI_DMA_TODEVICE);
++		_DEC(1);
++	}
+ }
+ 
+ static void setup_deferred_unmapping(struct sk_buff *skb, struct pci_dev *pdev,
+@@ -2143,11 +2180,13 @@ static void lro_add_page(struct adapter *adap, struct sge_qset *qs,
+ 
+ 	(*sd->pg_chunk.p_cnt)--;
+ 	if (!*sd->pg_chunk.p_cnt && sd->pg_chunk.page != fl->pg_chunk.page)
++	{
+ 		pci_unmap_page(adap->pdev,
+ 			       sd->pg_chunk.mapping,
+ 			       fl->alloc_size,
+ 			       PCI_DMA_FROMDEVICE);
+-
++		_DEC(1);
++	}
+ 	if (!skb) {
+ 		put_page(sd->pg_chunk.page);
+ 		if (complete)
+
+--------------060508070806080405000502--
