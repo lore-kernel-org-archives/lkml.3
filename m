@@ -1,131 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab3HHP1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 11:27:39 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:64867 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965835Ab3HHPZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 11:25:01 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk
-Cc: bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz, Steven Whitehouse <swhiteho@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 2/9] vfs: check unlinked ancestors before mount
-Date: Thu,  8 Aug 2013 17:24:43 +0200
-Message-Id: <1375975490-18673-3-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1375975490-18673-1-git-send-email-miklos@szeredi.hu>
-References: <1375975490-18673-1-git-send-email-miklos@szeredi.hu>
+	id S965874Ab3HHPg1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 11:36:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965787Ab3HHPg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 11:36:26 -0400
+Date: Thu, 8 Aug 2013 11:36:15 -0400
+From: Dave Jones <davej@redhat.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: unused swap offset / bad page map.
+Message-ID: <20130808153615.GA6197@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20130807055157.GA32278@redhat.com>
+ <CAJd=RBCJv7=Qj6dPW2Ha=nq6JctnK3r7wYCAZTm=REVOZUNowg@mail.gmail.com>
+ <20130807153030.GA25515@redhat.com>
+ <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBCyZU8PR7mbFUdKsWq3OH+5HccEWKMEH5u7GNHNy3esWg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Thu, Aug 08, 2013 at 11:20:28PM +0800, Hillf Danton wrote:
+ > On Wed, Aug 7, 2013 at 11:30 PM, Dave Jones <davej@redhat.com> wrote:
+ > > printk didn't trigger.
+ > >
+ > Is a corrupted page table entry encountered, according to the
+ > comment of swap_duplicate()?
+ > 
+ > 
+ > --- a/mm/swapfile.c	Wed Aug  7 17:27:22 2013
+ > +++ b/mm/swapfile.c	Thu Aug  8 23:12:30 2013
+ > @@ -770,6 +770,7 @@ int free_swap_and_cache(swp_entry_t entr
+ >  		unlock_page(page);
+ >  		page_cache_release(page);
+ >  	}
+ > +	return 1;
+ >  	return p != NULL;
+ >  }
 
-We check submounts before doing d_drop() on a non-empty directory dentry in
-NFS (have_submounts()), but we do not exclude a racing mount.  Nor do we
-prevent mounts to be added to the disconnected subtree using relative paths
-after the d_drop().
+Travelling for a week, I'll check it out when I get back.
 
-This patch fixes these issues by checking for unlinked (unhashed, non-root)
-ancestors before proceeding with the mount.  This is done after setting
-DCACHE_MOUNTED on the soon-to-be mountpoint and with the rename seqlock
-taken for write.  This ensures that the only one of
-check_submounts_and_drop() or has_unlinked_ancestor() can succeed.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: David Howells <dhowells@redhat.com>
-CC: Steven Whitehouse <swhiteho@redhat.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/dcache.c    | 35 +++++++++++++++++++++++++++++++++++
- fs/internal.h  |  1 +
- fs/namespace.c |  9 +++++++++
- 3 files changed, 45 insertions(+)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 020004d..1333445 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1103,6 +1103,41 @@ rename_retry:
- }
- EXPORT_SYMBOL(have_submounts);
- 
-+static bool __has_unlinked_ancestor(struct dentry *dentry)
-+{
-+	struct dentry *this;
-+
-+	for (this = dentry; !IS_ROOT(this); this = this->d_parent) {
-+		int is_unhashed;
-+
-+		/* Need exclusion wrt. check_submounts_and_drop() */
-+		spin_lock(&this->d_lock);
-+		is_unhashed = d_unhashed(this);
-+		spin_unlock(&this->d_lock);
-+
-+		if (is_unhashed)
-+			return true;
-+	}
-+	return false;
-+}
-+
-+/*
-+ * Called by mount code to check if the mountpoint is reachable (e.g. NFS can
-+ * unhash a directory dentry and then the complete subtree can become
-+ * unreachable).
-+ */
-+bool has_unlinked_ancestor(struct dentry *dentry)
-+{
-+	bool found;
-+
-+	/* Need exclusion wrt. check_submounts_and_drop() */
-+	write_seqlock(&rename_lock);
-+	found = __has_unlinked_ancestor(dentry);
-+	write_sequnlock(&rename_lock);
-+
-+	return found;
-+}
-+
- /*
-  * Search the dentry child list of the specified parent,
-  * and move any unused dentries to the end of the unused
-diff --git a/fs/internal.h b/fs/internal.h
-index 7c5f01c..d232355 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -126,6 +126,7 @@ extern int invalidate_inodes(struct super_block *, bool);
-  * dcache.c
-  */
- extern struct dentry *__d_alloc(struct super_block *, const struct qstr *);
-+extern bool has_unlinked_ancestor(struct dentry *dentry);
- 
- /*
-  * read_write.c
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 7b1ca9b..bb92a9c 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -634,6 +634,15 @@ static struct mountpoint *new_mountpoint(struct dentry *dentry)
- 	}
- 	dentry->d_flags |= DCACHE_MOUNTED;
- 	spin_unlock(&dentry->d_lock);
-+
-+	if (has_unlinked_ancestor(dentry)) {
-+		spin_lock(&dentry->d_lock);
-+		dentry->d_flags &= ~DCACHE_MOUNTED;
-+		spin_unlock(&dentry->d_lock);
-+		kfree(mp);
-+		return ERR_PTR(-ENOENT);
-+	}
-+
- 	mp->m_dentry = dentry;
- 	mp->m_count = 1;
- 	list_add(&mp->m_hash, chain);
--- 
-1.8.1.4
+	Dave
 
