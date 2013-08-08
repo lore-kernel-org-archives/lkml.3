@@ -1,103 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613Ab3HHBbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 21:31:17 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:25308 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757525Ab3HHBbQ (ORCPT
+	id S932420Ab3HHBep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 21:34:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37917 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932192Ab3HHBen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 21:31:16 -0400
-X-Spam-Score: -100.8
-Message-ID: <5202F4A3.5070603@asianux.com>
-Date: Thu, 08 Aug 2013 09:30:11 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 7 Aug 2013 21:34:43 -0400
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Oleg Nesterov <oleg@redhat.com>, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        holt@sgi.com, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] kernel/sys.c: return the current gid when error occurs
-References: <5200AD26.8070701@asianux.com> <5200AD67.1030109@asianux.com> <52015ADB.30408@mit.edu> <20130807162147.GA31460@redhat.com> <CALCETrVELXkdccJZQRsm_9mtXrD-8nW_sRW_p-SWNVsXcqX2Cg@mail.gmail.com>
-In-Reply-To: <CALCETrVELXkdccJZQRsm_9mtXrD-8nW_sRW_p-SWNVsXcqX2Cg@mail.gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51DAF84A.3070202@gmail.com>
+References: <20130708161517.GA4832@www.outflux.net>
+	<51DAF84A.3070202@gmail.com>
+Date: Wed, 7 Aug 2013 18:34:42 -0700
+X-Google-Sender-Auth: lkGv_lTz_W17qED2vG9uJ0LmOpo
+Message-ID: <CAGXu5jK--uyNcg3LTRFj2zNQv7gxkHKXvSB-D_FELu9ONrP15A@mail.gmail.com>
+Subject: Re: [PATCH v2] x86, relocs: move ELF relocation handling to C
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@alien8.de>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Jacob Shin <jacob.shin@amd.com>, Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 12:58 AM, Andy Lutomirski wrote:
-> On Wed, Aug 7, 2013 at 9:21 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->> On 08/06, Andy Lutomirski wrote:
->>>
->>> I assume that what the man page means is that the return value is
->>> whatever fsgid was prior to the call.  On error, fsgid isn't changed, so
->>> the return value is still "current".
+On Mon, Jul 8, 2013 at 10:35 AM, Zhang Yanfei <zhangyanfei.yes@gmail.com> wrote:
+> On 07/09/2013 12:15 AM, Kees Cook wrote:
+>> Moves the relocation handling into C, after decompression. This requires
+>> that the decompressed size is passed to the decompression routine as
+>> well so that relocations can be found. Only kernels that need relocation
+>> support will use the code (currently just x86_32), but this is laying
+>> the ground work for 64-bit using it in support of KASLR.
 >>
->> Probably... Still
+>> Based on work by Neill Clift and Michael Davidson.
 >>
->>         On success, the previous value of fsuid is returned.
->>         On error, the current value of fsuid is returned.
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>
+> Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
+Hi Peter,
+
+Can this get added to tip?
+
+Thanks,
+
+-Kees
+
+>
+>> ---
+>> v2:
+>>  - several suggestions from Zhang Yanfei:
+>>    - adjusted Kconfig ranges to be per-architecture, updated help text.
+>>    - used ALIGN macro
+>> ---
+>>  arch/x86/Kconfig                     |    8 +++-
+>>  arch/x86/Makefile                    |    8 ++--
+>>  arch/x86/boot/compressed/head_32.S   |   31 ++------------
+>>  arch/x86/boot/compressed/head_64.S   |    1 +
+>>  arch/x86/boot/compressed/misc.c      |   77 +++++++++++++++++++++++++++++++++-
+>>  arch/x86/include/asm/page_32_types.h |    2 +
+>>  arch/x86/include/asm/page_64_types.h |    5 ---
+>>  arch/x86/include/asm/page_types.h    |    5 +++
+>>  8 files changed, 97 insertions(+), 40 deletions(-)
 >>
->> looks confusing. sys_setfsuid() always returns the old value.
+>> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>> index 265c672..7598b55 100644
+>> --- a/arch/x86/Kconfig
+>> +++ b/arch/x86/Kconfig
+>> @@ -1715,9 +1715,10 @@ config X86_NEED_RELOCS
+>>       depends on X86_32 && RELOCATABLE
 >>
->>> (FWIW, this behavior is awful and is probably the cause of a security
->>> bug or three, since success and failure are indistinguishable.
+>>  config PHYSICAL_ALIGN
+>> -     hex "Alignment value to which kernel should be aligned" if X86_32
+>> +     hex "Alignment value to which kernel should be aligned"
+>>       default "0x1000000"
+>> -     range 0x2000 0x1000000
+>> +     range 0x2000 0x1000000 if X86_32
+>> +     range 0x200000 0x1000000 if X86_64
+>>       ---help---
+>>         This value puts the alignment restrictions on physical address
+>>         where kernel is loaded and run from. Kernel is compiled for an
+>> @@ -1735,6 +1736,9 @@ config PHYSICAL_ALIGN
+>>         end result is that kernel runs from a physical address meeting
+>>         above alignment restrictions.
 >>
->> At least this all looks strange.
+>> +       On 32-bit this value must be a multiple of 0x2000. On 64-bit
+>> +       this value must be a multiple of 0x200000.
+>> +
+>>         Don't change this unless you know what you are doing.
 >>
->> I dunno if we can change this old behaviour. I won't be surprized
->> if someone already uses setfsuid(-1) as getfsuid().
-> 
-
-Oh, really it is.
-
-Hmm... as a pair function, we need add getfsuid() too, if we do not add
-it, it will make negative effect with setfsuid().
-
-Since it is a system call, we have to keep compitable.
-
-So in my opinion, better add getfsuid2()/setfsuid2() instead of current
-setfsuid()
-
-  for getfsuid2() can just reference to getuid() definition.
-  for setfsuid2() can just reference to setuid() definition.
-    (which can return error code when failure occurs).
-
-If possible, I will/should sent the related patches for it.
-
-> I suspect that changing this without introducing security or other
-> bugs is impossible.  If someone wanted to add new_setfsuid that
-> returned an error when it failed, that would be a different story.
-> (I'm not going to do that myself.)
-> 
+>>  config HOTPLUG_CPU
+>> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+>> index 07639c6..41250fb 100644
+>> --- a/arch/x86/Makefile
+>> +++ b/arch/x86/Makefile
+>> @@ -16,6 +16,10 @@ endif
+>>  # e.g.: obj-y += foo_$(BITS).o
+>>  export BITS
 >>
->> And perhaps the man page should be changed. Add Michael.
-> 
-> Agreed.  The text is a bit odd.
-> 
-
-I agree that the text is odd, since it is an system call API, we have
-to change it to match our current kernel implementation which is:
-
-  "for system call, whether succeed or not, it always return the previous value, the caller can not know whether succeed or not directly"
-  "if the caller need know about success or not, the demo like below"
-  "	setfsuid(new);"
-  "	if (setfsuid(-1) != new)"
-  "		/* report failure */" 
-
-And better to give an additional comment:
-
-  "currently, new system call getfsuid2()/setfsuid2() are supplied, setfsuid() is obseleted"
-
+>> +ifdef CONFIG_X86_NEED_RELOCS
+>> +        LDFLAGS_vmlinux := --emit-relocs
+>> +endif
+>> +
+>>  ifeq ($(CONFIG_X86_32),y)
+>>          BITS := 32
+>>          UTS_MACHINE := i386
+>> @@ -25,10 +29,6 @@ ifeq ($(CONFIG_X86_32),y)
+>>          KBUILD_AFLAGS += $(biarch)
+>>          KBUILD_CFLAGS += $(biarch)
 >>
->> Oleg.
+>> -        ifdef CONFIG_RELOCATABLE
+>> -                LDFLAGS_vmlinux := --emit-relocs
+>> -        endif
+>> -
+>>          KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
 >>
-> 
-> 
-> 
+>>          # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
+>> diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+>> index 1e3184f..5d6f689 100644
+>> --- a/arch/x86/boot/compressed/head_32.S
+>> +++ b/arch/x86/boot/compressed/head_32.S
+>> @@ -181,8 +181,9 @@ relocated:
+>>  /*
+>>   * Do the decompression, and jump to the new kernel..
+>>   */
+>> -     leal    z_extract_offset_negative(%ebx), %ebp
+>>                               /* push arguments for decompress_kernel: */
+>> +     pushl   $z_output_len   /* decompressed length */
+>> +     leal    z_extract_offset_negative(%ebx), %ebp
+>>       pushl   %ebp            /* output address */
+>>       pushl   $z_input_len    /* input_len */
+>>       leal    input_data(%ebx), %eax
+>> @@ -191,33 +192,7 @@ relocated:
+>>       pushl   %eax            /* heap area */
+>>       pushl   %esi            /* real mode pointer */
+>>       call    decompress_kernel
+>> -     addl    $20, %esp
+>> -
+>> -#if CONFIG_RELOCATABLE
+>> -/*
+>> - * Find the address of the relocations.
+>> - */
+>> -     leal    z_output_len(%ebp), %edi
+>> -
+>> -/*
+>> - * Calculate the delta between where vmlinux was compiled to run
+>> - * and where it was actually loaded.
+>> - */
+>> -     movl    %ebp, %ebx
+>> -     subl    $LOAD_PHYSICAL_ADDR, %ebx
+>> -     jz      2f      /* Nothing to be done if loaded at compiled addr. */
+>> -/*
+>> - * Process relocations.
+>> - */
+>> -
+>> -1:   subl    $4, %edi
+>> -     movl    (%edi), %ecx
+>> -     testl   %ecx, %ecx
+>> -     jz      2f
+>> -     addl    %ebx, -__PAGE_OFFSET(%ebx, %ecx)
+>> -     jmp     1b
+>> -2:
+>> -#endif
+>> +     addl    $24, %esp
+>>
+>>  /*
+>>   * Jump to the decompressed kernel.
+>> diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+>> index 06e71c2..c337422 100644
+>> --- a/arch/x86/boot/compressed/head_64.S
+>> +++ b/arch/x86/boot/compressed/head_64.S
+>> @@ -338,6 +338,7 @@ relocated:
+>>       leaq    input_data(%rip), %rdx  /* input_data */
+>>       movl    $z_input_len, %ecx      /* input_len */
+>>       movq    %rbp, %r8               /* output target address */
+>> +     movq    $z_output_len, %r9      /* decompressed length */
+>>       call    decompress_kernel
+>>       popq    %rsi
+>>
+>> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+>> index 7cb56c6..b756a04 100644
+>> --- a/arch/x86/boot/compressed/misc.c
+>> +++ b/arch/x86/boot/compressed/misc.c
+>> @@ -267,6 +267,79 @@ static void error(char *x)
+>>               asm("hlt");
+>>  }
+>>
+>> +#if CONFIG_X86_NEED_RELOCS
+>> +static void handle_relocations(void *output, unsigned long output_len)
+>> +{
+>> +     int *reloc;
+>> +     unsigned long delta, map, ptr;
+>> +     unsigned long min_addr = (unsigned long)output;
+>> +     unsigned long max_addr = min_addr + output_len;
+>> +
+>> +     /*
+>> +      * Calculate the delta between where vmlinux was linked to load
+>> +      * and where it was actually loaded.
+>> +      */
+>> +     delta = min_addr - LOAD_PHYSICAL_ADDR;
+>> +     if (!delta) {
+>> +             debug_putstr("No relocation needed... ");
+>> +             return;
+>> +     }
+>> +     debug_putstr("Performing relocations... ");
+>> +
+>> +     /*
+>> +      * The kernel contains a table of relocation addresses. Those
+>> +      * addresses have the final load address of the kernel in virtual
+>> +      * memory. We are currently working in the self map. So we need to
+>> +      * create an adjustment for kernel memory addresses to the self map.
+>> +      * This will involve subtracting out the base address of the kernel.
+>> +      */
+>> +     map = delta - __START_KERNEL_map;
+>> +
+>> +     /*
+>> +      * Process relocations: 32 bit relocations first then 64 bit after.
+>> +      * Two sets of binary relocations are added to the end of the kernel
+>> +      * before compression. Each relocation table entry is the kernel
+>> +      * address of the location which needs to be updated stored as a
+>> +      * 32-bit value which is sign extended to 64 bits.
+>> +      *
+>> +      * Format is:
+>> +      *
+>> +      * kernel bits...
+>> +      * 0 - zero terminator for 64 bit relocations
+>> +      * 64 bit relocation repeated
+>> +      * 0 - zero terminator for 32 bit relocations
+>> +      * 32 bit relocation repeated
+>> +      *
+>> +      * So we work backwards from the end of the decompressed image.
+>> +      */
+>> +     for (reloc = output + output_len - sizeof(*reloc); *reloc; reloc--) {
+>> +             int extended = *reloc;
+>> +             extended += map;
+>> +
+>> +             ptr = (unsigned long)extended;
+>> +             if (ptr < min_addr || ptr > max_addr)
+>> +                     error("32-bit relocation outside of kernel!\n");
+>> +
+>> +             *(uint32_t *)ptr += delta;
+>> +     }
+>> +#ifdef CONFIG_X86_64
+>> +     for (reloc--; *reloc; reloc--) {
+>> +             long extended = *reloc;
+>> +             extended += map;
+>> +
+>> +             ptr = (unsigned long)extended;
+>> +             if (ptr < min_addr || ptr > max_addr)
+>> +                     error("64-bit relocation outside of kernel!\n");
+>> +
+>> +             *(uint64_t *)ptr += delta;
+>> +     }
+>> +#endif
+>> +}
+>> +#else
+>> +static inline void handle_relocations(void *output, unsigned long output_len)
+>> +{ }
+>> +#endif
+>> +
+>>  static void parse_elf(void *output)
+>>  {
+>>  #ifdef CONFIG_X86_64
+>> @@ -321,7 +394,8 @@ static void parse_elf(void *output)
+>>  asmlinkage void decompress_kernel(void *rmode, memptr heap,
+>>                                 unsigned char *input_data,
+>>                                 unsigned long input_len,
+>> -                               unsigned char *output)
+>> +                               unsigned char *output,
+>> +                               unsigned long output_len)
+>>  {
+>>       real_mode = rmode;
+>>
+>> @@ -361,6 +435,7 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+>>       debug_putstr("\nDecompressing Linux... ");
+>>       decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+>>       parse_elf(output);
+>> +     handle_relocations(output, output_len);
+>>       debug_putstr("done.\nBooting the kernel.\n");
+>>       return;
+>>  }
+>> diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
+>> index ef17af0..f48b17d 100644
+>> --- a/arch/x86/include/asm/page_32_types.h
+>> +++ b/arch/x86/include/asm/page_32_types.h
+>> @@ -15,6 +15,8 @@
+>>   */
+>>  #define __PAGE_OFFSET                _AC(CONFIG_PAGE_OFFSET, UL)
+>>
+>> +#define __START_KERNEL_map   __PAGE_OFFSET
+>> +
+>>  #define THREAD_SIZE_ORDER    1
+>>  #define THREAD_SIZE          (PAGE_SIZE << THREAD_SIZE_ORDER)
+>>
+>> diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+>> index 6c896fb..43dcd80 100644
+>> --- a/arch/x86/include/asm/page_64_types.h
+>> +++ b/arch/x86/include/asm/page_64_types.h
+>> @@ -32,11 +32,6 @@
+>>   */
+>>  #define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
+>>
+>> -#define __PHYSICAL_START     ((CONFIG_PHYSICAL_START +               \
+>> -                               (CONFIG_PHYSICAL_ALIGN - 1)) &        \
+>> -                              ~(CONFIG_PHYSICAL_ALIGN - 1))
+>> -
+>> -#define __START_KERNEL               (__START_KERNEL_map + __PHYSICAL_START)
+>>  #define __START_KERNEL_map   _AC(0xffffffff80000000, UL)
+>>
+>>  /* See Documentation/x86/x86_64/mm.txt for a description of the memory map. */
+>> diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+>> index 54c9787..f97fbe3 100644
+>> --- a/arch/x86/include/asm/page_types.h
+>> +++ b/arch/x86/include/asm/page_types.h
+>> @@ -33,6 +33,11 @@
+>>       (((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0 ) | \
+>>        VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+>>
+>> +#define __PHYSICAL_START     ALIGN(CONFIG_PHYSICAL_START, \
+>> +                                   CONFIG_PHYSICAL_ALIGN)
+>> +
+>> +#define __START_KERNEL               (__START_KERNEL_map + __PHYSICAL_START)
+>> +
+>>  #ifdef CONFIG_X86_64
+>>  #include <asm/page_64_types.h>
+>>  #else
+>
+>
+> --
+> Thanks.
+> Zhang Yanfei
 
-Thanks.
+
+
 -- 
-Chen Gang
+Kees Cook
+Chrome OS Security
