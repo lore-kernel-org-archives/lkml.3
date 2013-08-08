@@ -1,232 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965164Ab3HHK7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:59:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8614 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965129Ab3HHK7R convert rfc822-to-8bit (ORCPT
+	id S965169Ab3HHLCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 07:02:18 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47056 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757726Ab3HHLCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:59:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,838,1367996400"; 
-   d="scan'208";a="383791885"
-From: "Wang, Rui Y" <rui.y.wang@intel.com>
-To: "liuj97@gmail.com" <liuj97@gmail.com>
-CC: "Sosnowski, Maciej" <maciej.sosnowski@intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "chenkeping@huawei.com" <chenkeping@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Guo, Chaohong" <chaohong.guo@intel.com>
-Subject: RE: [RFC PATCH v2 3/7] dmaengine: enhance dmaengine to support DMA
- device hotplug
-Thread-Topic: [RFC PATCH v2 3/7] dmaengine: enhance dmaengine to support DMA
- device hotplug
-Thread-Index: AQHOlCCB+28Ly1YRVEaaE9McdbeL6pmLGXpg
-Date: Thu, 8 Aug 2013 10:59:03 +0000
-Message-ID: <FC9702EC51E4CA40A875703BEBD6CEF80183DA88@SHSMSX101.ccr.corp.intel.com>
-References: <1337003229-9158-1-git-send-email-jiang.liu@huawei.com>
-	<1337003229-9158-4-git-send-email-jiang.liu@huawei.com>
- <CANVTcTan9N=Bvf=-vDwOQhS13y+JtWfqApF75yuksQuFBBVDZw@mail.gmail.com>
-In-Reply-To: <CANVTcTan9N=Bvf=-vDwOQhS13y+JtWfqApF75yuksQuFBBVDZw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 8 Aug 2013 07:02:17 -0400
+Date: Thu, 8 Aug 2013 12:01:36 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wei Ni <wni@nvidia.com>
+Cc: khali@linux-fr.org, linux@roeck-us.net, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        MLongnecker@nvidia.com, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Message-ID: <20130808110136.GA6427@sirena.org.uk>
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
+ <1375944991-29182-2-git-send-email-wni@nvidia.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uT8OcDz013Sgpw/5"
+Content-Disposition: inline
+In-Reply-To: <1375944991-29182-2-git-send-email-wni@nvidia.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resend adding cc list)
 
-Hi Jiang,
-See my comments inline.
+--uT8OcDz013Sgpw/5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> -----Original Message-----
-> From: Jiang Liu <liuj97@gmail.com>
-> Date: Mon, 14 May 2012 21:47:05 +0800
-> Subject: [RFC PATCH v2 3/7] dmaengine: enhance dmaengine to support DMA
-> device hotplug
-> To: Dan Williams <dan.j.williams@intel.com>, Maciej Sosnowski
-> <maciej.sosnowski@intel.com>, Vinod Koul <vinod.koul@intel.com>
-> Cc: Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>,
-> linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-> 
-> From: Jiang Liu <liuj97@gmail.com>
-> 
-> From: Jiang Liu <liuj97@gmail.com>
-> 
-> To support DMA device hotplug, dmaengine must correctly manage reference
-> count for DMA channels. On the other hand, DMA hot path is performance
-> critical, reference count management code should avoid polluting global shared
-> cachelines, otherwise it may cause heavy performance penalty.
-> 
-> This patch introduces a lightweight DMA channel reference count management
-> mechanism by using percpu counter. When DMA device hotplug is disabled,
-> there's no performance penalty. When hotplug is enabled, a
-> dma_find_channel()/dma_put_channel() pair adds two local memory accesses
-> to the hot path.
-> 
-> Signed-off-by: Jiang Liu <liuj97@gmail.com>
-> ---
->  drivers/dma/dmaengine.c   |  112
-> +++++++++++++++++++++++++++++++++++++++++----
->  include/linux/dmaengine.h |   29 +++++++++++-
->  2 files changed, 129 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c index
-> d3b1c48..eca45c0 100644
-> --- a/drivers/dma/dmaengine.c
-> +++ b/drivers/dma/dmaengine.c
-> @@ -61,12 +61,20 @@
->  #include <linux/rculist.h>
->  #include <linux/idr.h>
->  #include <linux/slab.h>
-> +#include <linux/sched.h>
-> 
->  static DEFINE_MUTEX(dma_list_mutex);
->  static DEFINE_IDR(dma_idr);
->  static LIST_HEAD(dma_device_list);
->  static long dmaengine_client_count;
-> 
-> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
-> +static atomic_t dmaengine_dirty;
-> +static struct static_key dmaengine_quiesce = STATIC_KEY_INIT_FALSE;
-> +static DECLARE_WAIT_QUEUE_HEAD(dmaengine_wait_queue);
-> +DEFINE_PER_CPU(long, dmaengine_chan_ref_count);
-> +#endif	/* CONFIG_DMA_ENGINE_HOTPLUG */
+On Thu, Aug 08, 2013 at 02:56:29PM +0800, Wei Ni wrote:
+
+> +	mutex_lock(&data->update_lock);
 > +
->  /* --- sysfs implementation --- */
-> 
->  /**
-> @@ -305,10 +313,40 @@ arch_initcall(dma_channel_table_init);
->   */
->  struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type)
-> {
-> -	return this_cpu_read(channel_table[tx_type]->chan);
-> +	struct dma_chan *chan = this_cpu_read(channel_table[tx_type]->chan);
+> +	if (is_enable)
+> +		ret = regulator_enable(data->lm90_reg);
+> +	else
+> +		ret = regulator_disable(data->lm90_reg);
 > +
-> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
-> +	this_cpu_inc(dmaengine_chan_ref_count);
-> +	if (static_key_false(&dmaengine_quiesce))
-> +		chan = NULL;
-> +#endif
+> +	if (ret < 0)
+> +		dev_err(&client->dev,
+> +			"Error in %s rail vdd, error %d\n",
+> +			(is_enable) ? "enabling" : "disabling", ret);
+> +	else
+> +		dev_info(&client->dev, "success in %s rail vdd\n",
+> +			 (is_enable) ? "enabling" : "disabling");
 > +
-> +	return chan;
->  }
->  EXPORT_SYMBOL(dma_find_channel);
-> 
-> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
-> +struct dma_chan *dma_get_channel(struct dma_chan *chan) {
-> +	if (static_key_false(&dmaengine_quiesce))
-> +		atomic_inc(&dmaengine_dirty);
-> +	this_cpu_inc(dmaengine_chan_ref_count);
-> +
-> +	return chan;
-> +}
-> +EXPORT_SYMBOL(dma_get_channel);
-> +#endif
-> +
-> +/**
-> + * dma_has_capability - check whether any channel supports tx_type
-> + * @tx_type: transaction type
-> + */
-> +bool dma_has_capability(enum dma_transaction_type tx_type) {
-> +	return !!this_cpu_read(channel_table[tx_type]->chan);
-> +}
-> +EXPORT_SYMBOL(dma_has_capability);
-> +
->  /*
->   * net_dma_find_channel - find a channel for net_dma
->   * net_dma has alignment requirements
-> @@ -316,10 +354,15 @@ EXPORT_SYMBOL(dma_find_channel);  struct
-> dma_chan *net_dma_find_channel(void)  {
->  	struct dma_chan *chan = dma_find_channel(DMA_MEMCPY);
-> -	if (chan && !is_dma_copy_aligned(chan->device, 1, 1, 1))
-> -		return NULL;
-> 
-> -	return chan;
-> +	if (chan && is_dma_copy_aligned(chan->device, 1, 1, 1))
-> +		return chan;
-> +
-> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
-> +	this_cpu_dec(dmaengine_chan_ref_count);
-> +#endif
-> +
-> +	return NULL;
->  }
->  EXPORT_SYMBOL(net_dma_find_channel);
-> 
-> @@ -393,6 +436,37 @@ static struct dma_chan *nth_chan(enum
-> dma_transaction_type cap, int n)
->  	return ret;
->  }
-> 
-> +static void dma_channel_quiesce(void)
-> +{
-> +#ifdef	CONFIG_DMA_ENGINE_HOTPLUG
-> +	int cpu;
-> +	long ref_count;
-> +	int quiesce_count = 0;
-> +
-> +	static_key_slow_inc(&dmaengine_quiesce);
-> +
-> +	do {
-> +		atomic_set(&dmaengine_dirty, 0);
-> +		schedule_timeout(1);
-> +
-> +		if (atomic_read(&dmaengine_dirty)) {
-> +			quiesce_count = 0;
-> +			continue;
-> +		}
-> +
-> +		ref_count = 0;
-> +		for_each_possible_cpu(cpu)
-> +			ref_count += per_cpu(dmaengine_chan_ref_count, cpu);
-> +		if (ref_count == 0)
-> +			quiesce_count++;
+> +	mutex_unlock(&data->update_lock);
+
+Two things here.  One is that it's not clear what this lokc is
+protecting since the only thing in the locked region is the regulator
+operation and that is thread safe.  The other thing is that I'm not
+seeing anthing that ensures that enables and disables are matched -
+regulators are reference counted so two enables need two disables.
+
+> +	data->lm90_reg = regulator_get(&client->dev, "vdd");
+> +	if (IS_ERR_OR_NULL(data->lm90_reg)) {
+
+NULL is a valid regulator, use IS_ERR().
+
+> +		if (PTR_ERR(data->lm90_reg) == -ENODEV)
+> +			dev_info(&client->dev,
+> +				 "No regulator found for vdd. Assuming vdd is always powered.");
 > +		else
-> +			quiesce_count = 0;
-> +	} while (quiesce_count < 10);
-> +
-> +	static_key_slow_dec(&dmaengine_quiesce);
-> +#endif
-> +}
-> +
+> +			dev_warn(&client->dev,
+> +				 "Error [%ld] in getting the regulator handle for vdd.\n",
+> +				 PTR_ERR(data->lm90_reg));
 
-The purpose of dma_channel_quiesce() is unclear to me. It waits until dmaengine_chan_ref_count is 0, but how do you prevent someone from using dma after it returns?
+You shouldn't just be ignoring errors here, though there are deployment
+difficulties with making sure a stub regulator is provided.  These
+should be getting easier after the next merge window, the stubs will be
+being tweaked slightly to have an "assume it's there" option even when
+regulators are used.  Especially in cases with device tree you should be
+paying attention to -EPROBE_DEFER, that will accurately reflect if a
+regulator is present but not loaded yet.
 
-<snip>
+That said if you *are* going to do this you should request the
+regulator using devm_regulator_get_optional(), this is intended to
+support things that don't need regulators (though that's not the case
+here).
 
-> @@ -767,14 +848,22 @@ void dma_async_device_unregister(struct
-> dma_device *device)
-> 
->  	mutex_lock(&dma_list_mutex);
->  	list_del_rcu(&device->global_node);
-> -	dma_channel_rebalance();
-> +	dma_channel_rebalance(true);
->  	mutex_unlock(&dma_list_mutex);
-> 
->  	/* Check whether it's called from module exit function. */
->  	if (try_module_get(device->dev->driver->owner)) {
-> +#ifndef	CONFIG_DMA_ENGINE_HOTPLUG
->  		dev_warn(device->dev,
->  			"%s isn't called from module exit function.\n",
->  			__func__);
-> +#else
-> +		list_for_each_entry(chan, &device->channels, device_node) {
-> +			/* TODO: notify clients to release channels*/
-> +			wait_event(dmaengine_wait_queue,
-> +				   chan->client_count == 0);
-> +		}
+--uT8OcDz013Sgpw/5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-How do you notify clients to release the channels? Is there an updated version which handles this? There're resources (e.g. timers) that must be free'd, which can only happen when someone calls dma_chan_put() until client_count reaches 0 and device_free_chan_resources() gets called. 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Rui Wang
+iQIcBAEBAgAGBQJSA3qNAAoJELSic+t+oim9glQP/0z1b5xAw7AUj74owA9E/qHC
+NSXv4/bK/EnkWOtBznNOTaW/HttDJWNkaUCQokY8ekRKreZw+GrvAUUnkh3jFMtN
+079QSAhr8JiNdDdsGdj/uaOHnVDbfmFCqmg0qX+mYWzEJIGn9Ew9gjkDx3bv/jwU
+SFQGHJ0BRkHyCUq/xwrODpKVwKzR512QzGazKzooMhKqxFpTQauHQvGQJlmGm512
+DWZ9WbZKQfI47rx7McuwkGc4PFYx3uwAr2287/D/2lJT0r7CZBFahb0MjmoioRr3
+j/zVxczE7WhiKWQDD5YQ4uphsMPYjYYruaouYrs0vtfInRRNuZ5hqIiRsUznhjAL
+EQuunC1hG0DXJErFGVdjc3seGVTjQtXsJq+aC7uCghSW1T4SRoHx71BAL8NQzgpE
+9Dz67JG/LJt4IxUdCqW8/zwMlb23gyXcKNFF+NRDQZ9lF9bi6n4gP5jMcEH2AfWE
+6OS5VfV5kNuQFHUj3FN9DP9Vv5C5Tlx70HjWuUEmUFgtoK5BdglRvWhtY+u7Jo2P
+lJcIo7krQs6/2ihKAKiEShIU5biIiE6sx7fOWZw0qVOV6EOIejL9urN2FCBfNAll
+jAO44psuQDJB/b/yWlQG1cqynzh1jOOGDhaAREDFCZVZhlFnKdNzo7fgujpxeSCI
+HQkHyyn5mBW0nAnWd0g2
+=q1TX
+-----END PGP SIGNATURE-----
 
-
+--uT8OcDz013Sgpw/5--
