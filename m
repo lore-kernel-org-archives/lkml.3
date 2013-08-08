@@ -1,1997 +1,414 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965994Ab3HHR32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 13:29:28 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:56731 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965843Ab3HHR3Z (ORCPT
+	id S1758096Ab3HHRaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 13:30:16 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:45453 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757888Ab3HHRaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 13:29:25 -0400
+	Thu, 8 Aug 2013 13:30:14 -0400
+Date: Thu, 8 Aug 2013 13:29:40 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2013-08-08
+Message-ID: <20130808172940.GC30925@tuxdriver.com>
 MIME-Version: 1.0
-In-Reply-To: <002c01ce8dc5$ef5f3170$ce1d9450$@samsung.com>
-References: <002c01ce8dc5$ef5f3170$ce1d9450$@samsung.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 8 Aug 2013 11:29:04 -0600
-Message-ID: <CAErSpo78+4yfMEsK_pAK1TW-UmfG0CR9uScx_EQdmfh1B4kQUA@mail.gmail.com>
-Subject: Re: [PATCH V5] pci: exynos: split into two parts such as Synopsys
- part and Exynos part
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Mohit KUMAR <Mohit.KUMAR@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Sean Cross <xobs@kosagi.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        SRIKANTH TUMKUR SHIVANAND <ts.srikanth@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 2:14 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> Exynos PCIe IP consists of Synopsys specific part and Exynos
-> specific part. Only core block is a Synopsys designware part;
-> other parts are Exynos specific.
-> Also, the Synopsys designware part can be shared with other
-> platforms; thus, it can be split two parts such as Synopsys
-> designware part and Exynos specific part.
->
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> Cc: Pratyush Anand <pratyush.anand@st.com>
-> Cc: Mohit KUMAR <Mohit.KUMAR@st.com>
 
-Applied to pci/misc for v3.12.  Thanks!
+--J/dobhs11T7y2rNN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
-> Changes since v4:
-> - fixed section mismatch warnings
-> - fixed sparse warnings
->
->  .../devicetree/bindings/pci/designware-pcie.txt    |    3 +
->  arch/arm/boot/dts/exynos5440.dtsi                  |    2 +
->  drivers/pci/host/Makefile                          |    3 +-
->  drivers/pci/host/pci-exynos.c                      |  530 ++++++++++
->  drivers/pci/host/pcie-designware.c                 | 1011 ++++++--------------
->  drivers/pci/host/pcie-designware.h                 |   65 ++
->  6 files changed, 874 insertions(+), 740 deletions(-)
->  create mode 100644 drivers/pci/host/pci-exynos.c
->  create mode 100644 drivers/pci/host/pcie-designware.h
->
-> diff --git a/Documentation/devicetree/bindings/pci/designware-pcie.txt b/Documentation/devicetree/bindings/pci/designware-pcie.txt
-> index e2371f5..eabcb4b 100644
-> --- a/Documentation/devicetree/bindings/pci/designware-pcie.txt
-> +++ b/Documentation/devicetree/bindings/pci/designware-pcie.txt
-> @@ -18,6 +18,7 @@ Required properties:
->  - interrupt-map-mask and interrupt-map: standard PCI properties
->         to define the mapping of the PCIe interface to interrupt
->         numbers.
-> +- num-lanes: number of lanes to use
->  - reset-gpio: gpio pin number of power good signal
->
->  Example:
-> @@ -41,6 +42,7 @@ SoC specific DT Entry:
->                 #interrupt-cells = <1>;
->                 interrupt-map-mask = <0 0 0 0>;
->                 interrupt-map = <0x0 0 &gic 53>;
-> +               num-lanes = <4>;
->         };
->
->         pcie@2a0000 {
-> @@ -60,6 +62,7 @@ SoC specific DT Entry:
->                 #interrupt-cells = <1>;
->                 interrupt-map-mask = <0 0 0 0>;
->                 interrupt-map = <0x0 0 &gic 56>;
-> +               num-lanes = <4>;
->         };
->
->  Board specific DT Entry:
-> diff --git a/arch/arm/boot/dts/exynos5440.dtsi b/arch/arm/boot/dts/exynos5440.dtsi
-> index 606da5f..68ee827 100644
-> --- a/arch/arm/boot/dts/exynos5440.dtsi
-> +++ b/arch/arm/boot/dts/exynos5440.dtsi
-> @@ -275,6 +275,7 @@
->                 #interrupt-cells = <1>;
->                 interrupt-map-mask = <0 0 0 0>;
->                 interrupt-map = <0x0 0 &gic 53>;
-> +               num-lanes = <4>;
->         };
->
->         pcie@2a0000 {
-> @@ -294,5 +295,6 @@
->                 #interrupt-cells = <1>;
->                 interrupt-map-mask = <0 0 0 0>;
->                 interrupt-map = <0x0 0 &gic 56>;
-> +               num-lanes = <4>;
->         };
->  };
-> diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
-> index 086d850..ab79ccb 100644
-> --- a/drivers/pci/host/Makefile
-> +++ b/drivers/pci/host/Makefile
-> @@ -1,2 +1,3 @@
-> -obj-$(CONFIG_PCI_MVEBU) += pci-mvebu.o
->  obj-$(CONFIG_PCIE_DW) += pcie-designware.o
-> +obj-$(CONFIG_PCI_EXYNOS) += pci-exynos.o
-> +obj-$(CONFIG_PCI_MVEBU) += pci-mvebu.o
-> diff --git a/drivers/pci/host/pci-exynos.c b/drivers/pci/host/pci-exynos.c
-> new file mode 100644
-> index 0000000..012ca8a
-> --- /dev/null
-> +++ b/drivers/pci/host/pci-exynos.c
-> @@ -0,0 +1,530 @@
-> +/*
-> + * PCIe host controller driver for Samsung EXYNOS SoCs
-> + *
-> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-> + *             http://www.samsung.com
-> + *
-> + * Author: Jingoo Han <jg1.han@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/delay.h>
-> +#include <linux/gpio.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/pci.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/resource.h>
-> +#include <linux/signal.h>
-> +#include <linux/types.h>
-> +
-> +#include "pcie-designware.h"
-> +
-> +#define to_exynos_pcie(x)      container_of(x, struct exynos_pcie, pp)
-> +
-> +struct exynos_pcie {
-> +       void __iomem            *elbi_base;
-> +       void __iomem            *phy_base;
-> +       void __iomem            *block_base;
-> +       int                     reset_gpio;
-> +       struct clk              *clk;
-> +       struct clk              *bus_clk;
-> +       struct pcie_port        pp;
-> +};
-> +
-> +/* PCIe ELBI registers */
-> +#define PCIE_IRQ_PULSE                 0x000
-> +#define IRQ_INTA_ASSERT                        (0x1 << 0)
-> +#define IRQ_INTB_ASSERT                        (0x1 << 2)
-> +#define IRQ_INTC_ASSERT                        (0x1 << 4)
-> +#define IRQ_INTD_ASSERT                        (0x1 << 6)
-> +#define PCIE_IRQ_LEVEL                 0x004
-> +#define PCIE_IRQ_SPECIAL               0x008
-> +#define PCIE_IRQ_EN_PULSE              0x00c
-> +#define PCIE_IRQ_EN_LEVEL              0x010
-> +#define PCIE_IRQ_EN_SPECIAL            0x014
-> +#define PCIE_PWR_RESET                 0x018
-> +#define PCIE_CORE_RESET                        0x01c
-> +#define PCIE_CORE_RESET_ENABLE         (0x1 << 0)
-> +#define PCIE_STICKY_RESET              0x020
-> +#define PCIE_NONSTICKY_RESET           0x024
-> +#define PCIE_APP_INIT_RESET            0x028
-> +#define PCIE_APP_LTSSM_ENABLE          0x02c
-> +#define PCIE_ELBI_RDLH_LINKUP          0x064
-> +#define PCIE_ELBI_LTSSM_ENABLE         0x1
-> +#define PCIE_ELBI_SLV_AWMISC           0x11c
-> +#define PCIE_ELBI_SLV_ARMISC           0x120
-> +#define PCIE_ELBI_SLV_DBI_ENABLE       (0x1 << 21)
-> +
-> +/* PCIe Purple registers */
-> +#define PCIE_PHY_GLOBAL_RESET          0x000
-> +#define PCIE_PHY_COMMON_RESET          0x004
-> +#define PCIE_PHY_CMN_REG               0x008
-> +#define PCIE_PHY_MAC_RESET             0x00c
-> +#define PCIE_PHY_PLL_LOCKED            0x010
-> +#define PCIE_PHY_TRSVREG_RESET         0x020
-> +#define PCIE_PHY_TRSV_RESET            0x024
-> +
-> +/* PCIe PHY registers */
-> +#define PCIE_PHY_IMPEDANCE             0x004
-> +#define PCIE_PHY_PLL_DIV_0             0x008
-> +#define PCIE_PHY_PLL_BIAS              0x00c
-> +#define PCIE_PHY_DCC_FEEDBACK          0x014
-> +#define PCIE_PHY_PLL_DIV_1             0x05c
-> +#define PCIE_PHY_TRSV0_EMP_LVL         0x084
-> +#define PCIE_PHY_TRSV0_DRV_LVL         0x088
-> +#define PCIE_PHY_TRSV0_RXCDR           0x0ac
-> +#define PCIE_PHY_TRSV0_LVCC            0x0dc
-> +#define PCIE_PHY_TRSV1_EMP_LVL         0x144
-> +#define PCIE_PHY_TRSV1_RXCDR           0x16c
-> +#define PCIE_PHY_TRSV1_LVCC            0x19c
-> +#define PCIE_PHY_TRSV2_EMP_LVL         0x204
-> +#define PCIE_PHY_TRSV2_RXCDR           0x22c
-> +#define PCIE_PHY_TRSV2_LVCC            0x25c
-> +#define PCIE_PHY_TRSV3_EMP_LVL         0x2c4
-> +#define PCIE_PHY_TRSV3_RXCDR           0x2ec
-> +#define PCIE_PHY_TRSV3_LVCC            0x31c
-> +
-> +static void exynos_pcie_sideband_dbi_w_mode(struct pcie_port *pp, bool on)
-> +{
-> +       u32 val;
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +
-> +       if (on) {
-> +               val = readl(exynos_pcie->elbi_base + PCIE_ELBI_SLV_AWMISC);
-> +               val |= PCIE_ELBI_SLV_DBI_ENABLE;
-> +               writel(val, exynos_pcie->elbi_base + PCIE_ELBI_SLV_AWMISC);
-> +       } else {
-> +               val = readl(exynos_pcie->elbi_base + PCIE_ELBI_SLV_AWMISC);
-> +               val &= ~PCIE_ELBI_SLV_DBI_ENABLE;
-> +               writel(val, exynos_pcie->elbi_base + PCIE_ELBI_SLV_AWMISC);
-> +       }
-> +}
-> +
-> +static void exynos_pcie_sideband_dbi_r_mode(struct pcie_port *pp, bool on)
-> +{
-> +       u32 val;
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +
-> +       if (on) {
-> +               val = readl(exynos_pcie->elbi_base + PCIE_ELBI_SLV_ARMISC);
-> +               val |= PCIE_ELBI_SLV_DBI_ENABLE;
-> +               writel(val, exynos_pcie->elbi_base + PCIE_ELBI_SLV_ARMISC);
-> +       } else {
-> +               val = readl(exynos_pcie->elbi_base + PCIE_ELBI_SLV_ARMISC);
-> +               val &= ~PCIE_ELBI_SLV_DBI_ENABLE;
-> +               writel(val, exynos_pcie->elbi_base + PCIE_ELBI_SLV_ARMISC);
-> +       }
-> +}
-> +
-> +static void exynos_pcie_assert_core_reset(struct pcie_port *pp)
-> +{
-> +       u32 val;
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +       void __iomem *elbi_base = exynos_pcie->elbi_base;
-> +
-> +       val = readl(elbi_base + PCIE_CORE_RESET);
-> +       val &= ~PCIE_CORE_RESET_ENABLE;
-> +       writel(val, elbi_base + PCIE_CORE_RESET);
-> +       writel(0, elbi_base + PCIE_PWR_RESET);
-> +       writel(0, elbi_base + PCIE_STICKY_RESET);
-> +       writel(0, elbi_base + PCIE_NONSTICKY_RESET);
-> +}
-> +
-> +static void exynos_pcie_deassert_core_reset(struct pcie_port *pp)
-> +{
-> +       u32 val;
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +       void __iomem *elbi_base = exynos_pcie->elbi_base;
-> +       void __iomem *block_base = exynos_pcie->block_base;
-> +
-> +       val = readl(elbi_base + PCIE_CORE_RESET);
-> +       val |= PCIE_CORE_RESET_ENABLE;
-> +       writel(val, elbi_base + PCIE_CORE_RESET);
-> +       writel(1, elbi_base + PCIE_STICKY_RESET);
-> +       writel(1, elbi_base + PCIE_NONSTICKY_RESET);
-> +       writel(1, elbi_base + PCIE_APP_INIT_RESET);
-> +       writel(0, elbi_base + PCIE_APP_INIT_RESET);
-> +       writel(1, block_base + PCIE_PHY_MAC_RESET);
-> +}
-> +
-> +static void exynos_pcie_assert_phy_reset(struct pcie_port *pp)
-> +{
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +       void __iomem *block_base = exynos_pcie->block_base;
-> +
-> +       writel(0, block_base + PCIE_PHY_MAC_RESET);
-> +       writel(1, block_base + PCIE_PHY_GLOBAL_RESET);
-> +}
-> +
-> +static void exynos_pcie_deassert_phy_reset(struct pcie_port *pp)
-> +{
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +       void __iomem *elbi_base = exynos_pcie->elbi_base;
-> +       void __iomem *block_base = exynos_pcie->block_base;
-> +
-> +       writel(0, block_base + PCIE_PHY_GLOBAL_RESET);
-> +       writel(1, elbi_base + PCIE_PWR_RESET);
-> +       writel(0, block_base + PCIE_PHY_COMMON_RESET);
-> +       writel(0, block_base + PCIE_PHY_CMN_REG);
-> +       writel(0, block_base + PCIE_PHY_TRSVREG_RESET);
-> +       writel(0, block_base + PCIE_PHY_TRSV_RESET);
-> +}
-> +
-> +static void exynos_pcie_init_phy(struct pcie_port *pp)
-> +{
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +       void __iomem *phy_base = exynos_pcie->phy_base;
-> +
-> +       /* DCC feedback control off */
-> +       writel(0x29, phy_base + PCIE_PHY_DCC_FEEDBACK);
-> +
-> +       /* set TX/RX impedance */
-> +       writel(0xd5, phy_base + PCIE_PHY_IMPEDANCE);
-> +
-> +       /* set 50Mhz PHY clock */
-> +       writel(0x14, phy_base + PCIE_PHY_PLL_DIV_0);
-> +       writel(0x12, phy_base + PCIE_PHY_PLL_DIV_1);
-> +
-> +       /* set TX Differential output for lane 0 */
-> +       writel(0x7f, phy_base + PCIE_PHY_TRSV0_DRV_LVL);
-> +
-> +       /* set TX Pre-emphasis Level Control for lane 0 to minimum */
-> +       writel(0x0, phy_base + PCIE_PHY_TRSV0_EMP_LVL);
-> +
-> +       /* set RX clock and data recovery bandwidth */
-> +       writel(0xe7, phy_base + PCIE_PHY_PLL_BIAS);
-> +       writel(0x82, phy_base + PCIE_PHY_TRSV0_RXCDR);
-> +       writel(0x82, phy_base + PCIE_PHY_TRSV1_RXCDR);
-> +       writel(0x82, phy_base + PCIE_PHY_TRSV2_RXCDR);
-> +       writel(0x82, phy_base + PCIE_PHY_TRSV3_RXCDR);
-> +
-> +       /* change TX Pre-emphasis Level Control for lanes */
-> +       writel(0x39, phy_base + PCIE_PHY_TRSV0_EMP_LVL);
-> +       writel(0x39, phy_base + PCIE_PHY_TRSV1_EMP_LVL);
-> +       writel(0x39, phy_base + PCIE_PHY_TRSV2_EMP_LVL);
-> +       writel(0x39, phy_base + PCIE_PHY_TRSV3_EMP_LVL);
-> +
-> +       /* set LVCC */
-> +       writel(0x20, phy_base + PCIE_PHY_TRSV0_LVCC);
-> +       writel(0xa0, phy_base + PCIE_PHY_TRSV1_LVCC);
-> +       writel(0xa0, phy_base + PCIE_PHY_TRSV2_LVCC);
-> +       writel(0xa0, phy_base + PCIE_PHY_TRSV3_LVCC);
-> +}
-> +
-> +static void exynos_pcie_assert_reset(struct pcie_port *pp)
-> +{
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +
-> +       if (exynos_pcie->reset_gpio >= 0)
-> +               devm_gpio_request_one(pp->dev, exynos_pcie->reset_gpio,
-> +                               GPIOF_OUT_INIT_HIGH, "RESET");
-> +       return;
-> +}
-> +
-> +static int exynos_pcie_establish_link(struct pcie_port *pp)
-> +{
-> +       u32 val;
-> +       int count = 0;
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +       void __iomem *elbi_base = exynos_pcie->elbi_base;
-> +       void __iomem *block_base = exynos_pcie->block_base;
-> +       void __iomem *phy_base = exynos_pcie->phy_base;
-> +
-> +       if (dw_pcie_link_up(pp)) {
-> +               dev_err(pp->dev, "Link already up\n");
-> +               return 0;
-> +       }
-> +
-> +       /* assert reset signals */
-> +       exynos_pcie_assert_core_reset(pp);
-> +       exynos_pcie_assert_phy_reset(pp);
-> +
-> +       /* de-assert phy reset */
-> +       exynos_pcie_deassert_phy_reset(pp);
-> +
-> +       /* initialize phy */
-> +       exynos_pcie_init_phy(pp);
-> +
-> +       /* pulse for common reset */
-> +       writel(1, block_base + PCIE_PHY_COMMON_RESET);
-> +       udelay(500);
-> +       writel(0, block_base + PCIE_PHY_COMMON_RESET);
-> +
-> +       /* de-assert core reset */
-> +       exynos_pcie_deassert_core_reset(pp);
-> +
-> +       /* setup root complex */
-> +       dw_pcie_setup_rc(pp);
-> +
-> +       /* assert reset signal */
-> +       exynos_pcie_assert_reset(pp);
-> +
-> +       /* assert LTSSM enable */
-> +       writel(PCIE_ELBI_LTSSM_ENABLE, elbi_base + PCIE_APP_LTSSM_ENABLE);
-> +
-> +       /* check if the link is up or not */
-> +       while (!dw_pcie_link_up(pp)) {
-> +               mdelay(100);
-> +               count++;
-> +               if (count == 10) {
-> +                       while (readl(phy_base + PCIE_PHY_PLL_LOCKED) == 0) {
-> +                               val = readl(block_base + PCIE_PHY_PLL_LOCKED);
-> +                               dev_info(pp->dev, "PLL Locked: 0x%x\n", val);
-> +                       }
-> +                       dev_err(pp->dev, "PCIe Link Fail\n");
-> +                       return -EINVAL;
-> +               }
-> +       }
-> +
-> +       dev_info(pp->dev, "Link up\n");
-> +
-> +       return 0;
-> +}
-> +
-> +static void exynos_pcie_clear_irq_pulse(struct pcie_port *pp)
-> +{
-> +       u32 val;
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +       void __iomem *elbi_base = exynos_pcie->elbi_base;
-> +
-> +       val = readl(elbi_base + PCIE_IRQ_PULSE);
-> +       writel(val, elbi_base + PCIE_IRQ_PULSE);
-> +       return;
-> +}
-> +
-> +static void exynos_pcie_enable_irq_pulse(struct pcie_port *pp)
-> +{
-> +       u32 val;
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +       void __iomem *elbi_base = exynos_pcie->elbi_base;
-> +
-> +       /* enable INTX interrupt */
-> +       val = IRQ_INTA_ASSERT | IRQ_INTB_ASSERT |
-> +               IRQ_INTC_ASSERT | IRQ_INTD_ASSERT,
-> +       writel(val, elbi_base + PCIE_IRQ_EN_PULSE);
-> +       return;
-> +}
-> +
-> +static irqreturn_t exynos_pcie_irq_handler(int irq, void *arg)
-> +{
-> +       struct pcie_port *pp = arg;
-> +
-> +       exynos_pcie_clear_irq_pulse(pp);
-> +       return IRQ_HANDLED;
-> +}
-> +
-> +static void exynos_pcie_enable_interrupts(struct pcie_port *pp)
-> +{
-> +       exynos_pcie_enable_irq_pulse(pp);
-> +       return;
-> +}
-> +
-> +static inline void exynos_pcie_readl_rc(struct pcie_port *pp,
-> +                                       void __iomem *dbi_base, u32 *val)
-> +{
-> +       exynos_pcie_sideband_dbi_r_mode(pp, true);
-> +       *val = readl(dbi_base);
-> +       exynos_pcie_sideband_dbi_r_mode(pp, false);
-> +       return;
-> +}
-> +
-> +static inline void exynos_pcie_writel_rc(struct pcie_port *pp,
-> +                                       u32 val, void __iomem *dbi_base)
-> +{
-> +       exynos_pcie_sideband_dbi_w_mode(pp, true);
-> +       writel(val, dbi_base);
-> +       exynos_pcie_sideband_dbi_w_mode(pp, false);
-> +       return;
-> +}
-> +
-> +static int exynos_pcie_rd_own_conf(struct pcie_port *pp, int where, int size,
-> +                               u32 *val)
-> +{
-> +       int ret;
-> +
-> +       exynos_pcie_sideband_dbi_r_mode(pp, true);
-> +       ret = cfg_read(pp->dbi_base + (where & ~0x3), where, size, val);
-> +       exynos_pcie_sideband_dbi_r_mode(pp, false);
-> +       return ret;
-> +}
-> +
-> +static int exynos_pcie_wr_own_conf(struct pcie_port *pp, int where, int size,
-> +                               u32 val)
-> +{
-> +       int ret;
-> +
-> +       exynos_pcie_sideband_dbi_w_mode(pp, true);
-> +       ret = cfg_write(pp->dbi_base + (where & ~0x3), where, size, val);
-> +       exynos_pcie_sideband_dbi_w_mode(pp, false);
-> +       return ret;
-> +}
-> +
-> +static int exynos_pcie_link_up(struct pcie_port *pp)
-> +{
-> +       struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-> +       u32 val = readl(exynos_pcie->elbi_base + PCIE_ELBI_RDLH_LINKUP);
-> +
-> +       if (val == PCIE_ELBI_LTSSM_ENABLE)
-> +               return 1;
-> +
-> +       return 0;
-> +}
-> +
-> +static void exynos_pcie_host_init(struct pcie_port *pp)
-> +{
-> +       exynos_pcie_establish_link(pp);
-> +       exynos_pcie_enable_interrupts(pp);
-> +}
-> +
-> +static struct pcie_host_ops exynos_pcie_host_ops = {
-> +       .readl_rc = exynos_pcie_readl_rc,
-> +       .writel_rc = exynos_pcie_writel_rc,
-> +       .rd_own_conf = exynos_pcie_rd_own_conf,
-> +       .wr_own_conf = exynos_pcie_wr_own_conf,
-> +       .link_up = exynos_pcie_link_up,
-> +       .host_init = exynos_pcie_host_init,
-> +};
-> +
-> +static int add_pcie_port(struct pcie_port *pp, struct platform_device *pdev)
-> +{
-> +       int ret;
-> +
-> +       pp->irq = platform_get_irq(pdev, 1);
-> +       if (!pp->irq) {
-> +               dev_err(&pdev->dev, "failed to get irq\n");
-> +               return -ENODEV;
-> +       }
-> +       ret = devm_request_irq(&pdev->dev, pp->irq, exynos_pcie_irq_handler,
-> +                               IRQF_SHARED, "exynos-pcie", pp);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "failed to request irq\n");
-> +               return ret;
-> +       }
-> +
-> +       pp->root_bus_nr = -1;
-> +       pp->ops = &exynos_pcie_host_ops;
-> +
-> +       spin_lock_init(&pp->conf_lock);
-> +       ret = dw_pcie_host_init(pp);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "failed to initialize host\n");
-> +               return ret;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int __init exynos_pcie_probe(struct platform_device *pdev)
-> +{
-> +       struct exynos_pcie *exynos_pcie;
-> +       struct pcie_port *pp;
-> +       struct device_node *np = pdev->dev.of_node;
-> +       struct resource *elbi_base;
-> +       struct resource *phy_base;
-> +       struct resource *block_base;
-> +       int ret;
-> +
-> +       exynos_pcie = devm_kzalloc(&pdev->dev, sizeof(*exynos_pcie),
-> +                               GFP_KERNEL);
-> +       if (!exynos_pcie) {
-> +               dev_err(&pdev->dev, "no memory for exynos pcie\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       pp = &exynos_pcie->pp;
-> +
-> +       pp->dev = &pdev->dev;
-> +
-> +       exynos_pcie->reset_gpio = of_get_named_gpio(np, "reset-gpio", 0);
-> +
-> +       exynos_pcie->clk = devm_clk_get(&pdev->dev, "pcie");
-> +       if (IS_ERR(exynos_pcie->clk)) {
-> +               dev_err(&pdev->dev, "Failed to get pcie rc clock\n");
-> +               return PTR_ERR(exynos_pcie->clk);
-> +       }
-> +       ret = clk_prepare_enable(exynos_pcie->clk);
-> +       if (ret)
-> +               return ret;
-> +
-> +       exynos_pcie->bus_clk = devm_clk_get(&pdev->dev, "pcie_bus");
-> +       if (IS_ERR(exynos_pcie->bus_clk)) {
-> +               dev_err(&pdev->dev, "Failed to get pcie bus clock\n");
-> +               ret = PTR_ERR(exynos_pcie->bus_clk);
-> +               goto fail_clk;
-> +       }
-> +       ret = clk_prepare_enable(exynos_pcie->bus_clk);
-> +       if (ret)
-> +               goto fail_clk;
-> +
-> +       elbi_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       exynos_pcie->elbi_base = devm_ioremap_resource(&pdev->dev, elbi_base);
-> +       if (IS_ERR(exynos_pcie->elbi_base))
-> +               return PTR_ERR(exynos_pcie->elbi_base);
-> +
-> +       phy_base = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> +       exynos_pcie->phy_base = devm_ioremap_resource(&pdev->dev, phy_base);
-> +       if (IS_ERR(exynos_pcie->phy_base))
-> +               return PTR_ERR(exynos_pcie->phy_base);
-> +
-> +       block_base = platform_get_resource(pdev, IORESOURCE_MEM, 2);
-> +       exynos_pcie->block_base = devm_ioremap_resource(&pdev->dev, block_base);
-> +       if (IS_ERR(exynos_pcie->block_base))
-> +               return PTR_ERR(exynos_pcie->block_base);
-> +
-> +       ret = add_pcie_port(pp, pdev);
-> +       if (ret < 0)
-> +               goto fail_bus_clk;
-> +
-> +       platform_set_drvdata(pdev, exynos_pcie);
-> +       return 0;
-> +
-> +fail_bus_clk:
-> +       clk_disable_unprepare(exynos_pcie->bus_clk);
-> +fail_clk:
-> +       clk_disable_unprepare(exynos_pcie->clk);
-> +       return ret;
-> +}
-> +
-> +static int __exit exynos_pcie_remove(struct platform_device *pdev)
-> +{
-> +       struct exynos_pcie *exynos_pcie = platform_get_drvdata(pdev);
-> +
-> +       clk_disable_unprepare(exynos_pcie->bus_clk);
-> +       clk_disable_unprepare(exynos_pcie->clk);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct of_device_id exynos_pcie_of_match[] = {
-> +       { .compatible = "samsung,exynos5440-pcie", },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, exynos_pcie_of_match);
-> +
-> +static struct platform_driver exynos_pcie_driver = {
-> +       .remove         = __exit_p(exynos_pcie_remove),
-> +       .driver = {
-> +               .name   = "exynos-pcie",
-> +               .owner  = THIS_MODULE,
-> +               .of_match_table = of_match_ptr(exynos_pcie_of_match),
-> +       },
-> +};
-> +
-> +/* Exynos PCIe driver does not allow module unload */
-> +
-> +static int __init pcie_init(void)
-> +{
-> +       return platform_driver_probe(&exynos_pcie_driver, exynos_pcie_probe);
-> +}
-> +subsys_initcall(pcie_init);
-> +
-> +MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
-> +MODULE_DESCRIPTION("Samsung PCIe host controller driver");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-> index 26bdbda..77b0c25 100644
-> --- a/drivers/pci/host/pcie-designware.c
-> +++ b/drivers/pci/host/pcie-designware.c
-> @@ -1,5 +1,5 @@
->  /*
-> - * PCIe host controller driver for Samsung EXYNOS SoCs
-> + * Synopsys Designware PCIe host controller driver
->   *
->   * Copyright (C) 2013 Samsung Electronics Co., Ltd.
->   *             http://www.samsung.com
-> @@ -11,74 +11,28 @@
->   * published by the Free Software Foundation.
->   */
->
-> -#include <linux/clk.h>
-> -#include <linux/delay.h>
-> -#include <linux/gpio.h>
-> -#include <linux/interrupt.h>
->  #include <linux/kernel.h>
-> -#include <linux/list.h>
->  #include <linux/module.h>
-> -#include <linux/of.h>
->  #include <linux/of_address.h>
-> -#include <linux/of_gpio.h>
-> -#include <linux/of_pci.h>
->  #include <linux/pci.h>
->  #include <linux/pci_regs.h>
-> -#include <linux/platform_device.h>
-> -#include <linux/resource.h>
-> -#include <linux/signal.h>
-> -#include <linux/slab.h>
->  #include <linux/types.h>
->
-> -struct pcie_port_info {
-> -       u32             cfg0_size;
-> -       u32             cfg1_size;
-> -       u32             io_size;
-> -       u32             mem_size;
-> -       phys_addr_t     io_bus_addr;
-> -       phys_addr_t     mem_bus_addr;
-> -};
-> -
-> -struct pcie_port {
-> -       struct device           *dev;
-> -       u8                      controller;
-> -       u8                      root_bus_nr;
-> -       void __iomem            *dbi_base;
-> -       void __iomem            *elbi_base;
-> -       void __iomem            *phy_base;
-> -       void __iomem            *purple_base;
-> -       u64                     cfg0_base;
-> -       void __iomem            *va_cfg0_base;
-> -       u64                     cfg1_base;
-> -       void __iomem            *va_cfg1_base;
-> -       u64                     io_base;
-> -       u64                     mem_base;
-> -       spinlock_t              conf_lock;
-> -       struct resource         cfg;
-> -       struct resource         io;
-> -       struct resource         mem;
-> -       struct pcie_port_info   config;
-> -       struct clk              *clk;
-> -       struct clk              *bus_clk;
-> -       int                     irq;
-> -       int                     reset_gpio;
-> -};
-> -
-> -/*
-> - * Exynos PCIe IP consists of Synopsys specific part and Exynos
-> - * specific part. Only core block is a Synopsys designware part;
-> - * other parts are Exynos specific.
-> - */
-> +#include "pcie-designware.h"
->
->  /* Synopsis specific PCIE configuration registers */
->  #define PCIE_PORT_LINK_CONTROL         0x710
->  #define PORT_LINK_MODE_MASK            (0x3f << 16)
-> +#define PORT_LINK_MODE_1_LANES         (0x1 << 16)
-> +#define PORT_LINK_MODE_2_LANES         (0x3 << 16)
->  #define PORT_LINK_MODE_4_LANES         (0x7 << 16)
->
->  #define PCIE_LINK_WIDTH_SPEED_CONTROL  0x80C
->  #define PORT_LOGIC_SPEED_CHANGE                (0x1 << 17)
->  #define PORT_LOGIC_LINK_WIDTH_MASK     (0x1ff << 8)
-> -#define PORT_LOGIC_LINK_WIDTH_4_LANES  (0x7 << 8)
-> +#define PORT_LOGIC_LINK_WIDTH_1_LANES  (0x1 << 8)
-> +#define PORT_LOGIC_LINK_WIDTH_2_LANES  (0x2 << 8)
-> +#define PORT_LOGIC_LINK_WIDTH_4_LANES  (0x4 << 8)
->
->  #define PCIE_MSI_ADDR_LO               0x820
->  #define PCIE_MSI_ADDR_HI               0x824
-> @@ -108,69 +62,16 @@ struct pcie_port {
->  #define PCIE_ATU_FUNC(x)               (((x) & 0x7) << 16)
->  #define PCIE_ATU_UPPER_TARGET          0x91C
->
-> -/* Exynos specific PCIE configuration registers */
-> -
-> -/* PCIe ELBI registers */
-> -#define PCIE_IRQ_PULSE                 0x000
-> -#define IRQ_INTA_ASSERT                        (0x1 << 0)
-> -#define IRQ_INTB_ASSERT                        (0x1 << 2)
-> -#define IRQ_INTC_ASSERT                        (0x1 << 4)
-> -#define IRQ_INTD_ASSERT                        (0x1 << 6)
-> -#define PCIE_IRQ_LEVEL                 0x004
-> -#define PCIE_IRQ_SPECIAL               0x008
-> -#define PCIE_IRQ_EN_PULSE              0x00c
-> -#define PCIE_IRQ_EN_LEVEL              0x010
-> -#define PCIE_IRQ_EN_SPECIAL            0x014
-> -#define PCIE_PWR_RESET                 0x018
-> -#define PCIE_CORE_RESET                        0x01c
-> -#define PCIE_CORE_RESET_ENABLE         (0x1 << 0)
-> -#define PCIE_STICKY_RESET              0x020
-> -#define PCIE_NONSTICKY_RESET           0x024
-> -#define PCIE_APP_INIT_RESET            0x028
-> -#define PCIE_APP_LTSSM_ENABLE          0x02c
-> -#define PCIE_ELBI_RDLH_LINKUP          0x064
-> -#define PCIE_ELBI_LTSSM_ENABLE         0x1
-> -#define PCIE_ELBI_SLV_AWMISC           0x11c
-> -#define PCIE_ELBI_SLV_ARMISC           0x120
-> -#define PCIE_ELBI_SLV_DBI_ENABLE       (0x1 << 21)
-> -
-> -/* PCIe Purple registers */
-> -#define PCIE_PHY_GLOBAL_RESET          0x000
-> -#define PCIE_PHY_COMMON_RESET          0x004
-> -#define PCIE_PHY_CMN_REG               0x008
-> -#define PCIE_PHY_MAC_RESET             0x00c
-> -#define PCIE_PHY_PLL_LOCKED            0x010
-> -#define PCIE_PHY_TRSVREG_RESET         0x020
-> -#define PCIE_PHY_TRSV_RESET            0x024
-> -
-> -/* PCIe PHY registers */
-> -#define PCIE_PHY_IMPEDANCE             0x004
-> -#define PCIE_PHY_PLL_DIV_0             0x008
-> -#define PCIE_PHY_PLL_BIAS              0x00c
-> -#define PCIE_PHY_DCC_FEEDBACK          0x014
-> -#define PCIE_PHY_PLL_DIV_1             0x05c
-> -#define PCIE_PHY_TRSV0_EMP_LVL         0x084
-> -#define PCIE_PHY_TRSV0_DRV_LVL         0x088
-> -#define PCIE_PHY_TRSV0_RXCDR           0x0ac
-> -#define PCIE_PHY_TRSV0_LVCC            0x0dc
-> -#define PCIE_PHY_TRSV1_EMP_LVL         0x144
-> -#define PCIE_PHY_TRSV1_RXCDR           0x16c
-> -#define PCIE_PHY_TRSV1_LVCC            0x19c
-> -#define PCIE_PHY_TRSV2_EMP_LVL         0x204
-> -#define PCIE_PHY_TRSV2_RXCDR           0x22c
-> -#define PCIE_PHY_TRSV2_LVCC            0x25c
-> -#define PCIE_PHY_TRSV3_EMP_LVL         0x2c4
-> -#define PCIE_PHY_TRSV3_RXCDR           0x2ec
-> -#define PCIE_PHY_TRSV3_LVCC            0x31c
-> -
-> -static struct hw_pci exynos_pci;
-> +static struct hw_pci dw_pci;
-> +
-> +unsigned long global_io_offset;
->
->  static inline struct pcie_port *sys_to_pcie(struct pci_sys_data *sys)
->  {
->         return sys->private_data;
->  }
->
-> -static inline int cfg_read(void *addr, int where, int size, u32 *val)
-> +int cfg_read(void __iomem *addr, int where, int size, u32 *val)
->  {
->         *val = readl(addr);
->
-> @@ -184,7 +85,7 @@ static inline int cfg_read(void *addr, int where, int size, u32 *val)
->         return PCIBIOS_SUCCESSFUL;
->  }
->
-> -static inline int cfg_write(void *addr, int where, int size, u32 val)
-> +int cfg_write(void __iomem *addr, int where, int size, u32 val)
->  {
->         if (size == 4)
->                 writel(val, addr);
-> @@ -198,155 +99,241 @@ static inline int cfg_write(void *addr, int where, int size, u32 val)
->         return PCIBIOS_SUCCESSFUL;
->  }
->
-> -static void exynos_pcie_sideband_dbi_w_mode(struct pcie_port *pp, bool on)
-> +static inline void dw_pcie_readl_rc(struct pcie_port *pp,
-> +                               void __iomem *dbi_addr, u32 *val)
->  {
-> -       u32 val;
-> -
-> -       if (on) {
-> -               val = readl(pp->elbi_base + PCIE_ELBI_SLV_AWMISC);
-> -               val |= PCIE_ELBI_SLV_DBI_ENABLE;
-> -               writel(val, pp->elbi_base + PCIE_ELBI_SLV_AWMISC);
-> -       } else {
-> -               val = readl(pp->elbi_base + PCIE_ELBI_SLV_AWMISC);
-> -               val &= ~PCIE_ELBI_SLV_DBI_ENABLE;
-> -               writel(val, pp->elbi_base + PCIE_ELBI_SLV_AWMISC);
-> -       }
-> -}
-> -
-> -static void exynos_pcie_sideband_dbi_r_mode(struct pcie_port *pp, bool on)
-> -{
-> -       u32 val;
-> -
-> -       if (on) {
-> -               val = readl(pp->elbi_base + PCIE_ELBI_SLV_ARMISC);
-> -               val |= PCIE_ELBI_SLV_DBI_ENABLE;
-> -               writel(val, pp->elbi_base + PCIE_ELBI_SLV_ARMISC);
-> -       } else {
-> -               val = readl(pp->elbi_base + PCIE_ELBI_SLV_ARMISC);
-> -               val &= ~PCIE_ELBI_SLV_DBI_ENABLE;
-> -               writel(val, pp->elbi_base + PCIE_ELBI_SLV_ARMISC);
-> -       }
-> -}
-> -
-> -static inline void readl_rc(struct pcie_port *pp, void *dbi_base, u32 *val)
-> -{
-> -       exynos_pcie_sideband_dbi_r_mode(pp, true);
-> -       *val = readl(dbi_base);
-> -       exynos_pcie_sideband_dbi_r_mode(pp, false);
-> -       return;
-> +       if (pp->ops->readl_rc)
-> +               pp->ops->readl_rc(pp, dbi_addr, val);
-> +       else
-> +               *val = readl(dbi_addr);
->  }
->
-> -static inline void writel_rc(struct pcie_port *pp, u32 val, void *dbi_base)
-> +static inline void dw_pcie_writel_rc(struct pcie_port *pp,
-> +                               u32 val, void __iomem *dbi_addr)
->  {
-> -       exynos_pcie_sideband_dbi_w_mode(pp, true);
-> -       writel(val, dbi_base);
-> -       exynos_pcie_sideband_dbi_w_mode(pp, false);
-> -       return;
-> +       if (pp->ops->writel_rc)
-> +               pp->ops->writel_rc(pp, val, dbi_addr);
-> +       else
-> +               writel(val, dbi_addr);
->  }
->
-> -static int exynos_pcie_rd_own_conf(struct pcie_port *pp, int where, int size,
-> +int dw_pcie_rd_own_conf(struct pcie_port *pp, int where, int size,
->                                 u32 *val)
->  {
->         int ret;
->
-> -       exynos_pcie_sideband_dbi_r_mode(pp, true);
-> -       ret = cfg_read(pp->dbi_base + (where & ~0x3), where, size, val);
-> -       exynos_pcie_sideband_dbi_r_mode(pp, false);
-> +       if (pp->ops->rd_own_conf)
-> +               ret = pp->ops->rd_own_conf(pp, where, size, val);
-> +       else
-> +               ret = cfg_read(pp->dbi_base + (where & ~0x3), where, size, val);
-> +
->         return ret;
->  }
->
-> -static int exynos_pcie_wr_own_conf(struct pcie_port *pp, int where, int size,
-> +int dw_pcie_wr_own_conf(struct pcie_port *pp, int where, int size,
->                                 u32 val)
->  {
->         int ret;
->
-> -       exynos_pcie_sideband_dbi_w_mode(pp, true);
-> -       ret = cfg_write(pp->dbi_base + (where & ~0x3), where, size, val);
-> -       exynos_pcie_sideband_dbi_w_mode(pp, false);
-> +       if (pp->ops->wr_own_conf)
-> +               ret = pp->ops->wr_own_conf(pp, where, size, val);
-> +       else
-> +               ret = cfg_write(pp->dbi_base + (where & ~0x3), where, size,
-> +                               val);
-> +
->         return ret;
->  }
->
-> -static void exynos_pcie_prog_viewport_cfg0(struct pcie_port *pp, u32 busdev)
-> +int dw_pcie_link_up(struct pcie_port *pp)
-> +{
-> +       if (pp->ops->link_up)
-> +               return pp->ops->link_up(pp);
-> +       else
-> +               return 0;
-> +}
-> +
-> +int __init dw_pcie_host_init(struct pcie_port *pp)
-> +{
-> +       struct device_node *np = pp->dev->of_node;
-> +       struct of_pci_range range;
-> +       struct of_pci_range_parser parser;
-> +       u32 val;
-> +
-> +       if (of_pci_range_parser_init(&parser, np)) {
-> +               dev_err(pp->dev, "missing ranges property\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       /* Get the I/O and memory ranges from DT */
-> +       for_each_of_pci_range(&parser, &range) {
-> +               unsigned long restype = range.flags & IORESOURCE_TYPE_BITS;
-> +               if (restype == IORESOURCE_IO) {
-> +                       of_pci_range_to_resource(&range, np, &pp->io);
-> +                       pp->io.name = "I/O";
-> +                       pp->io.start = max_t(resource_size_t,
-> +                                            PCIBIOS_MIN_IO,
-> +                                            range.pci_addr + global_io_offset);
-> +                       pp->io.end = min_t(resource_size_t,
-> +                                          IO_SPACE_LIMIT,
-> +                                          range.pci_addr + range.size
-> +                                          + global_io_offset);
-> +                       pp->config.io_size = resource_size(&pp->io);
-> +                       pp->config.io_bus_addr = range.pci_addr;
-> +               }
-> +               if (restype == IORESOURCE_MEM) {
-> +                       of_pci_range_to_resource(&range, np, &pp->mem);
-> +                       pp->mem.name = "MEM";
-> +                       pp->config.mem_size = resource_size(&pp->mem);
-> +                       pp->config.mem_bus_addr = range.pci_addr;
-> +               }
-> +               if (restype == 0) {
-> +                       of_pci_range_to_resource(&range, np, &pp->cfg);
-> +                       pp->config.cfg0_size = resource_size(&pp->cfg)/2;
-> +                       pp->config.cfg1_size = resource_size(&pp->cfg)/2;
-> +               }
-> +       }
-> +
-> +       if (!pp->dbi_base) {
-> +               pp->dbi_base = devm_ioremap(pp->dev, pp->cfg.start,
-> +                                       resource_size(&pp->cfg));
-> +               if (!pp->dbi_base) {
-> +                       dev_err(pp->dev, "error with ioremap\n");
-> +                       return -ENOMEM;
-> +               }
-> +       }
-> +
-> +       pp->cfg0_base = pp->cfg.start;
-> +       pp->cfg1_base = pp->cfg.start + pp->config.cfg0_size;
-> +       pp->io_base = pp->io.start;
-> +       pp->mem_base = pp->mem.start;
-> +
-> +       pp->va_cfg0_base = devm_ioremap(pp->dev, pp->cfg0_base,
-> +                                       pp->config.cfg0_size);
-> +       if (!pp->va_cfg0_base) {
-> +               dev_err(pp->dev, "error with ioremap in function\n");
-> +               return -ENOMEM;
-> +       }
-> +       pp->va_cfg1_base = devm_ioremap(pp->dev, pp->cfg1_base,
-> +                                       pp->config.cfg1_size);
-> +       if (!pp->va_cfg1_base) {
-> +               dev_err(pp->dev, "error with ioremap\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       if (of_property_read_u32(np, "num-lanes", &pp->lanes)) {
-> +               dev_err(pp->dev, "Failed to parse the number of lanes\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       if (pp->ops->host_init)
-> +               pp->ops->host_init(pp);
-> +
-> +       dw_pcie_wr_own_conf(pp, PCI_BASE_ADDRESS_0, 4, 0);
-> +
-> +       /* program correct class for RC */
-> +       dw_pcie_wr_own_conf(pp, PCI_CLASS_DEVICE, 2, PCI_CLASS_BRIDGE_PCI);
-> +
-> +       dw_pcie_rd_own_conf(pp, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, &val);
-> +       val |= PORT_LOGIC_SPEED_CHANGE;
-> +       dw_pcie_wr_own_conf(pp, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, val);
-> +
-> +       dw_pci.nr_controllers = 1;
-> +       dw_pci.private_data = (void **)&pp;
-> +
-> +       pci_common_init(&dw_pci);
-> +       pci_assign_unassigned_resources();
-> +#ifdef CONFIG_PCI_DOMAINS
-> +       dw_pci.domain++;
-> +#endif
-> +
-> +       return 0;
-> +}
-> +
-> +static void dw_pcie_prog_viewport_cfg0(struct pcie_port *pp, u32 busdev)
->  {
->         u32 val;
->         void __iomem *dbi_base = pp->dbi_base;
->
->         /* Program viewport 0 : OUTBOUND : CFG0 */
->         val = PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0;
-> -       writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> -       writel_rc(pp, pp->cfg0_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> -       writel_rc(pp, (pp->cfg0_base >> 32), dbi_base + PCIE_ATU_UPPER_BASE);
-> -       writel_rc(pp, pp->cfg0_base + pp->config.cfg0_size - 1,
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> +       dw_pcie_writel_rc(pp, pp->cfg0_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> +       dw_pcie_writel_rc(pp, (pp->cfg0_base >> 32),
-> +                       dbi_base + PCIE_ATU_UPPER_BASE);
-> +       dw_pcie_writel_rc(pp, pp->cfg0_base + pp->config.cfg0_size - 1,
->                         dbi_base + PCIE_ATU_LIMIT);
-> -       writel_rc(pp, busdev, dbi_base + PCIE_ATU_LOWER_TARGET);
-> -       writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> -       writel_rc(pp, PCIE_ATU_TYPE_CFG0, dbi_base + PCIE_ATU_CR1);
-> +       dw_pcie_writel_rc(pp, busdev, dbi_base + PCIE_ATU_LOWER_TARGET);
-> +       dw_pcie_writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> +       dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_CFG0, dbi_base + PCIE_ATU_CR1);
->         val = PCIE_ATU_ENABLE;
-> -       writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
->  }
->
-> -static void exynos_pcie_prog_viewport_cfg1(struct pcie_port *pp, u32 busdev)
-> +static void dw_pcie_prog_viewport_cfg1(struct pcie_port *pp, u32 busdev)
->  {
->         u32 val;
->         void __iomem *dbi_base = pp->dbi_base;
->
->         /* Program viewport 1 : OUTBOUND : CFG1 */
->         val = PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1;
-> -       writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> -       writel_rc(pp, PCIE_ATU_TYPE_CFG1, dbi_base + PCIE_ATU_CR1);
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> +       dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_CFG1, dbi_base + PCIE_ATU_CR1);
->         val = PCIE_ATU_ENABLE;
-> -       writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> -       writel_rc(pp, pp->cfg1_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> -       writel_rc(pp, (pp->cfg1_base >> 32), dbi_base + PCIE_ATU_UPPER_BASE);
-> -       writel_rc(pp, pp->cfg1_base + pp->config.cfg1_size - 1,
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> +       dw_pcie_writel_rc(pp, pp->cfg1_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> +       dw_pcie_writel_rc(pp, (pp->cfg1_base >> 32),
-> +                       dbi_base + PCIE_ATU_UPPER_BASE);
-> +       dw_pcie_writel_rc(pp, pp->cfg1_base + pp->config.cfg1_size - 1,
->                         dbi_base + PCIE_ATU_LIMIT);
-> -       writel_rc(pp, busdev, dbi_base + PCIE_ATU_LOWER_TARGET);
-> -       writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
-> +       dw_pcie_writel_rc(pp, busdev, dbi_base + PCIE_ATU_LOWER_TARGET);
-> +       dw_pcie_writel_rc(pp, 0, dbi_base + PCIE_ATU_UPPER_TARGET);
->  }
->
-> -static void exynos_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
-> +static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
->  {
->         u32 val;
->         void __iomem *dbi_base = pp->dbi_base;
->
->         /* Program viewport 0 : OUTBOUND : MEM */
->         val = PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0;
-> -       writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> -       writel_rc(pp, PCIE_ATU_TYPE_MEM, dbi_base + PCIE_ATU_CR1);
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> +       dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_MEM, dbi_base + PCIE_ATU_CR1);
->         val = PCIE_ATU_ENABLE;
-> -       writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> -       writel_rc(pp, pp->mem_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> -       writel_rc(pp, (pp->mem_base >> 32), dbi_base + PCIE_ATU_UPPER_BASE);
-> -       writel_rc(pp, pp->mem_base + pp->config.mem_size - 1,
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> +       dw_pcie_writel_rc(pp, pp->mem_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> +       dw_pcie_writel_rc(pp, (pp->mem_base >> 32),
-> +                       dbi_base + PCIE_ATU_UPPER_BASE);
-> +       dw_pcie_writel_rc(pp, pp->mem_base + pp->config.mem_size - 1,
->                         dbi_base + PCIE_ATU_LIMIT);
-> -       writel_rc(pp, pp->config.mem_bus_addr,
-> +       dw_pcie_writel_rc(pp, pp->config.mem_bus_addr,
->                         dbi_base + PCIE_ATU_LOWER_TARGET);
-> -       writel_rc(pp, upper_32_bits(pp->config.mem_bus_addr),
-> +       dw_pcie_writel_rc(pp, upper_32_bits(pp->config.mem_bus_addr),
->                         dbi_base + PCIE_ATU_UPPER_TARGET);
->  }
->
-> -static void exynos_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
-> +static void dw_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
->  {
->         u32 val;
->         void __iomem *dbi_base = pp->dbi_base;
->
->         /* Program viewport 1 : OUTBOUND : IO */
->         val = PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1;
-> -       writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> -       writel_rc(pp, PCIE_ATU_TYPE_IO, dbi_base + PCIE_ATU_CR1);
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_VIEWPORT);
-> +       dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_IO, dbi_base + PCIE_ATU_CR1);
->         val = PCIE_ATU_ENABLE;
-> -       writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> -       writel_rc(pp, pp->io_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> -       writel_rc(pp, (pp->io_base >> 32), dbi_base + PCIE_ATU_UPPER_BASE);
-> -       writel_rc(pp, pp->io_base + pp->config.io_size - 1,
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ATU_CR2);
-> +       dw_pcie_writel_rc(pp, pp->io_base, dbi_base + PCIE_ATU_LOWER_BASE);
-> +       dw_pcie_writel_rc(pp, (pp->io_base >> 32),
-> +                       dbi_base + PCIE_ATU_UPPER_BASE);
-> +       dw_pcie_writel_rc(pp, pp->io_base + pp->config.io_size - 1,
->                         dbi_base + PCIE_ATU_LIMIT);
-> -       writel_rc(pp, pp->config.io_bus_addr,
-> +       dw_pcie_writel_rc(pp, pp->config.io_bus_addr,
->                         dbi_base + PCIE_ATU_LOWER_TARGET);
-> -       writel_rc(pp, upper_32_bits(pp->config.io_bus_addr),
-> +       dw_pcie_writel_rc(pp, upper_32_bits(pp->config.io_bus_addr),
->                         dbi_base + PCIE_ATU_UPPER_TARGET);
->  }
->
-> -static int exynos_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
-> +static int dw_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->                 u32 devfn, int where, int size, u32 *val)
->  {
->         int ret = PCIBIOS_SUCCESSFUL;
-> @@ -357,19 +344,19 @@ static int exynos_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->         address = where & ~0x3;
->
->         if (bus->parent->number == pp->root_bus_nr) {
-> -               exynos_pcie_prog_viewport_cfg0(pp, busdev);
-> +               dw_pcie_prog_viewport_cfg0(pp, busdev);
->                 ret = cfg_read(pp->va_cfg0_base + address, where, size, val);
-> -               exynos_pcie_prog_viewport_mem_outbound(pp);
-> +               dw_pcie_prog_viewport_mem_outbound(pp);
->         } else {
-> -               exynos_pcie_prog_viewport_cfg1(pp, busdev);
-> +               dw_pcie_prog_viewport_cfg1(pp, busdev);
->                 ret = cfg_read(pp->va_cfg1_base + address, where, size, val);
-> -               exynos_pcie_prog_viewport_io_outbound(pp);
-> +               dw_pcie_prog_viewport_io_outbound(pp);
->         }
->
->         return ret;
->  }
->
-> -static int exynos_pcie_wr_other_conf(struct pcie_port *pp, struct pci_bus *bus,
-> +static int dw_pcie_wr_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->                 u32 devfn, int where, int size, u32 val)
->  {
->         int ret = PCIBIOS_SUCCESSFUL;
-> @@ -380,59 +367,25 @@ static int exynos_pcie_wr_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->         address = where & ~0x3;
->
->         if (bus->parent->number == pp->root_bus_nr) {
-> -               exynos_pcie_prog_viewport_cfg0(pp, busdev);
-> +               dw_pcie_prog_viewport_cfg0(pp, busdev);
->                 ret = cfg_write(pp->va_cfg0_base + address, where, size, val);
-> -               exynos_pcie_prog_viewport_mem_outbound(pp);
-> +               dw_pcie_prog_viewport_mem_outbound(pp);
->         } else {
-> -               exynos_pcie_prog_viewport_cfg1(pp, busdev);
-> +               dw_pcie_prog_viewport_cfg1(pp, busdev);
->                 ret = cfg_write(pp->va_cfg1_base + address, where, size, val);
-> -               exynos_pcie_prog_viewport_io_outbound(pp);
-> +               dw_pcie_prog_viewport_io_outbound(pp);
->         }
->
->         return ret;
->  }
->
-> -static unsigned long global_io_offset;
->
-> -static int exynos_pcie_setup(int nr, struct pci_sys_data *sys)
-> -{
-> -       struct pcie_port *pp;
-> -
-> -       pp = sys_to_pcie(sys);
-> -
-> -       if (!pp)
-> -               return 0;
-> -
-> -       if (global_io_offset < SZ_1M && pp->config.io_size > 0) {
-> -               sys->io_offset = global_io_offset - pp->config.io_bus_addr;
-> -               pci_ioremap_io(sys->io_offset, pp->io.start);
-> -               global_io_offset += SZ_64K;
-> -               pci_add_resource_offset(&sys->resources, &pp->io,
-> -                                       sys->io_offset);
-> -       }
-> -
-> -       sys->mem_offset = pp->mem.start - pp->config.mem_bus_addr;
-> -       pci_add_resource_offset(&sys->resources, &pp->mem, sys->mem_offset);
-> -
-> -       return 1;
-> -}
-> -
-> -static int exynos_pcie_link_up(struct pcie_port *pp)
-> -{
-> -       u32 val = readl(pp->elbi_base + PCIE_ELBI_RDLH_LINKUP);
-> -
-> -       if (val == PCIE_ELBI_LTSSM_ENABLE)
-> -               return 1;
-> -
-> -       return 0;
-> -}
-> -
-> -static int exynos_pcie_valid_config(struct pcie_port *pp,
-> +static int dw_pcie_valid_config(struct pcie_port *pp,
->                                 struct pci_bus *bus, int dev)
->  {
->         /* If there is no link, then there is no device */
->         if (bus->number != pp->root_bus_nr) {
-> -               if (!exynos_pcie_link_up(pp))
-> +               if (!dw_pcie_link_up(pp))
->                         return 0;
->         }
->
-> @@ -450,7 +403,7 @@ static int exynos_pcie_valid_config(struct pcie_port *pp,
->         return 1;
->  }
->
-> -static int exynos_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
-> +static int dw_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
->                         int size, u32 *val)
->  {
->         struct pcie_port *pp = sys_to_pcie(bus->sysdata);
-> @@ -462,23 +415,23 @@ static int exynos_pcie_rd_conf(struct pci_bus *bus, u32 devfn, int where,
->                 return -EINVAL;
->         }
->
-> -       if (exynos_pcie_valid_config(pp, bus, PCI_SLOT(devfn)) == 0) {
-> +       if (dw_pcie_valid_config(pp, bus, PCI_SLOT(devfn)) == 0) {
->                 *val = 0xffffffff;
->                 return PCIBIOS_DEVICE_NOT_FOUND;
->         }
->
->         spin_lock_irqsave(&pp->conf_lock, flags);
->         if (bus->number != pp->root_bus_nr)
-> -               ret = exynos_pcie_rd_other_conf(pp, bus, devfn,
-> +               ret = dw_pcie_rd_other_conf(pp, bus, devfn,
->                                                 where, size, val);
->         else
-> -               ret = exynos_pcie_rd_own_conf(pp, where, size, val);
-> +               ret = dw_pcie_rd_own_conf(pp, where, size, val);
->         spin_unlock_irqrestore(&pp->conf_lock, flags);
->
->         return ret;
->  }
->
-> -static int exynos_pcie_wr_conf(struct pci_bus *bus, u32 devfn,
-> +static int dw_pcie_wr_conf(struct pci_bus *bus, u32 devfn,
->                         int where, int size, u32 val)
->  {
->         struct pcie_port *pp = sys_to_pcie(bus->sysdata);
-> @@ -490,34 +443,56 @@ static int exynos_pcie_wr_conf(struct pci_bus *bus, u32 devfn,
->                 return -EINVAL;
->         }
->
-> -       if (exynos_pcie_valid_config(pp, bus, PCI_SLOT(devfn)) == 0)
-> +       if (dw_pcie_valid_config(pp, bus, PCI_SLOT(devfn)) == 0)
->                 return PCIBIOS_DEVICE_NOT_FOUND;
->
->         spin_lock_irqsave(&pp->conf_lock, flags);
->         if (bus->number != pp->root_bus_nr)
-> -               ret = exynos_pcie_wr_other_conf(pp, bus, devfn,
-> +               ret = dw_pcie_wr_other_conf(pp, bus, devfn,
->                                                 where, size, val);
->         else
-> -               ret = exynos_pcie_wr_own_conf(pp, where, size, val);
-> +               ret = dw_pcie_wr_own_conf(pp, where, size, val);
->         spin_unlock_irqrestore(&pp->conf_lock, flags);
->
->         return ret;
->  }
->
-> -static struct pci_ops exynos_pcie_ops = {
-> -       .read = exynos_pcie_rd_conf,
-> -       .write = exynos_pcie_wr_conf,
-> +static struct pci_ops dw_pcie_ops = {
-> +       .read = dw_pcie_rd_conf,
-> +       .write = dw_pcie_wr_conf,
->  };
->
-> -static struct pci_bus *exynos_pcie_scan_bus(int nr,
-> -                                       struct pci_sys_data *sys)
-> +int dw_pcie_setup(int nr, struct pci_sys_data *sys)
-> +{
-> +       struct pcie_port *pp;
-> +
-> +       pp = sys_to_pcie(sys);
-> +
-> +       if (!pp)
-> +               return 0;
-> +
-> +       if (global_io_offset < SZ_1M && pp->config.io_size > 0) {
-> +               sys->io_offset = global_io_offset - pp->config.io_bus_addr;
-> +               pci_ioremap_io(sys->io_offset, pp->io.start);
-> +               global_io_offset += SZ_64K;
-> +               pci_add_resource_offset(&sys->resources, &pp->io,
-> +                                       sys->io_offset);
-> +       }
-> +
-> +       sys->mem_offset = pp->mem.start - pp->config.mem_bus_addr;
-> +       pci_add_resource_offset(&sys->resources, &pp->mem, sys->mem_offset);
-> +
-> +       return 1;
-> +}
-> +
-> +struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
->  {
->         struct pci_bus *bus;
->         struct pcie_port *pp = sys_to_pcie(sys);
->
->         if (pp) {
->                 pp->root_bus_nr = sys->busnr;
-> -               bus = pci_scan_root_bus(NULL, sys->busnr, &exynos_pcie_ops,
-> +               bus = pci_scan_root_bus(NULL, sys->busnr, &dw_pcie_ops,
->                                         sys, &sys->resources);
->         } else {
->                 bus = NULL;
-> @@ -527,20 +502,20 @@ static struct pci_bus *exynos_pcie_scan_bus(int nr,
->         return bus;
->  }
->
-> -static int exynos_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
-> +int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
->  {
->         struct pcie_port *pp = sys_to_pcie(dev->bus->sysdata);
->
->         return pp->irq;
->  }
->
-> -static struct hw_pci exynos_pci = {
-> -       .setup          = exynos_pcie_setup,
-> -       .scan           = exynos_pcie_scan_bus,
-> -       .map_irq        = exynos_pcie_map_irq,
-> +static struct hw_pci dw_pci = {
-> +       .setup          = dw_pcie_setup,
-> +       .scan           = dw_pcie_scan_bus,
-> +       .map_irq        = dw_pcie_map_irq,
->  };
->
-> -static void exynos_pcie_setup_rc(struct pcie_port *pp)
-> +void dw_pcie_setup_rc(struct pcie_port *pp)
->  {
->         struct pcie_port_info *config = &pp->config;
->         void __iomem *dbi_base = pp->dbi_base;
-> @@ -549,509 +524,67 @@ static void exynos_pcie_setup_rc(struct pcie_port *pp)
->         u32 memlimit;
->
->         /* set the number of lines as 4 */
-> -       readl_rc(pp, dbi_base + PCIE_PORT_LINK_CONTROL, &val);
-> +       dw_pcie_readl_rc(pp, dbi_base + PCIE_PORT_LINK_CONTROL, &val);
->         val &= ~PORT_LINK_MODE_MASK;
-> -       val |= PORT_LINK_MODE_4_LANES;
-> -       writel_rc(pp, val, dbi_base + PCIE_PORT_LINK_CONTROL);
-> +       switch (pp->lanes) {
-> +       case 1:
-> +               val |= PORT_LINK_MODE_1_LANES;
-> +               break;
-> +       case 2:
-> +               val |= PORT_LINK_MODE_2_LANES;
-> +               break;
-> +       case 4:
-> +               val |= PORT_LINK_MODE_4_LANES;
-> +               break;
-> +       }
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_PORT_LINK_CONTROL);
->
->         /* set link width speed control register */
-> -       readl_rc(pp, dbi_base + PCIE_LINK_WIDTH_SPEED_CONTROL, &val);
-> +       dw_pcie_readl_rc(pp, dbi_base + PCIE_LINK_WIDTH_SPEED_CONTROL, &val);
->         val &= ~PORT_LOGIC_LINK_WIDTH_MASK;
-> -       val |= PORT_LOGIC_LINK_WIDTH_4_LANES;
-> -       writel_rc(pp, val, dbi_base + PCIE_LINK_WIDTH_SPEED_CONTROL);
-> +       switch (pp->lanes) {
-> +       case 1:
-> +               val |= PORT_LOGIC_LINK_WIDTH_1_LANES;
-> +               break;
-> +       case 2:
-> +               val |= PORT_LOGIC_LINK_WIDTH_2_LANES;
-> +               break;
-> +       case 4:
-> +               val |= PORT_LOGIC_LINK_WIDTH_4_LANES;
-> +               break;
-> +       }
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCIE_LINK_WIDTH_SPEED_CONTROL);
->
->         /* setup RC BARs */
-> -       writel_rc(pp, 0x00000004, dbi_base + PCI_BASE_ADDRESS_0);
-> -       writel_rc(pp, 0x00000004, dbi_base + PCI_BASE_ADDRESS_1);
-> +       dw_pcie_writel_rc(pp, 0x00000004, dbi_base + PCI_BASE_ADDRESS_0);
-> +       dw_pcie_writel_rc(pp, 0x00000004, dbi_base + PCI_BASE_ADDRESS_1);
->
->         /* setup interrupt pins */
-> -       readl_rc(pp, dbi_base + PCI_INTERRUPT_LINE, &val);
-> +       dw_pcie_readl_rc(pp, dbi_base + PCI_INTERRUPT_LINE, &val);
->         val &= 0xffff00ff;
->         val |= 0x00000100;
-> -       writel_rc(pp, val, dbi_base + PCI_INTERRUPT_LINE);
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCI_INTERRUPT_LINE);
->
->         /* setup bus numbers */
-> -       readl_rc(pp, dbi_base + PCI_PRIMARY_BUS, &val);
-> +       dw_pcie_readl_rc(pp, dbi_base + PCI_PRIMARY_BUS, &val);
->         val &= 0xff000000;
->         val |= 0x00010100;
-> -       writel_rc(pp, val, dbi_base + PCI_PRIMARY_BUS);
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCI_PRIMARY_BUS);
->
->         /* setup memory base, memory limit */
->         membase = ((u32)pp->mem_base & 0xfff00000) >> 16;
->         memlimit = (config->mem_size + (u32)pp->mem_base) & 0xfff00000;
->         val = memlimit | membase;
-> -       writel_rc(pp, val, dbi_base + PCI_MEMORY_BASE);
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCI_MEMORY_BASE);
->
->         /* setup command register */
-> -       readl_rc(pp, dbi_base + PCI_COMMAND, &val);
-> +       dw_pcie_readl_rc(pp, dbi_base + PCI_COMMAND, &val);
->         val &= 0xffff0000;
->         val |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY |
->                 PCI_COMMAND_MASTER | PCI_COMMAND_SERR;
-> -       writel_rc(pp, val, dbi_base + PCI_COMMAND);
-> -}
-> -
-> -static void exynos_pcie_assert_core_reset(struct pcie_port *pp)
-> -{
-> -       u32 val;
-> -       void __iomem *elbi_base = pp->elbi_base;
-> -
-> -       val = readl(elbi_base + PCIE_CORE_RESET);
-> -       val &= ~PCIE_CORE_RESET_ENABLE;
-> -       writel(val, elbi_base + PCIE_CORE_RESET);
-> -       writel(0, elbi_base + PCIE_PWR_RESET);
-> -       writel(0, elbi_base + PCIE_STICKY_RESET);
-> -       writel(0, elbi_base + PCIE_NONSTICKY_RESET);
-> -}
-> -
-> -static void exynos_pcie_deassert_core_reset(struct pcie_port *pp)
-> -{
-> -       u32 val;
-> -       void __iomem *elbi_base = pp->elbi_base;
-> -       void __iomem *purple_base = pp->purple_base;
-> -
-> -       val = readl(elbi_base + PCIE_CORE_RESET);
-> -       val |= PCIE_CORE_RESET_ENABLE;
-> -       writel(val, elbi_base + PCIE_CORE_RESET);
-> -       writel(1, elbi_base + PCIE_STICKY_RESET);
-> -       writel(1, elbi_base + PCIE_NONSTICKY_RESET);
-> -       writel(1, elbi_base + PCIE_APP_INIT_RESET);
-> -       writel(0, elbi_base + PCIE_APP_INIT_RESET);
-> -       writel(1, purple_base + PCIE_PHY_MAC_RESET);
-> -}
-> -
-> -static void exynos_pcie_assert_phy_reset(struct pcie_port *pp)
-> -{
-> -       void __iomem *purple_base = pp->purple_base;
-> -
-> -       writel(0, purple_base + PCIE_PHY_MAC_RESET);
-> -       writel(1, purple_base + PCIE_PHY_GLOBAL_RESET);
-> -}
-> -
-> -static void exynos_pcie_deassert_phy_reset(struct pcie_port *pp)
-> -{
-> -       void __iomem *elbi_base = pp->elbi_base;
-> -       void __iomem *purple_base = pp->purple_base;
-> -
-> -       writel(0, purple_base + PCIE_PHY_GLOBAL_RESET);
-> -       writel(1, elbi_base + PCIE_PWR_RESET);
-> -       writel(0, purple_base + PCIE_PHY_COMMON_RESET);
-> -       writel(0, purple_base + PCIE_PHY_CMN_REG);
-> -       writel(0, purple_base + PCIE_PHY_TRSVREG_RESET);
-> -       writel(0, purple_base + PCIE_PHY_TRSV_RESET);
-> -}
-> -
-> -static void exynos_pcie_init_phy(struct pcie_port *pp)
-> -{
-> -       void __iomem *phy_base = pp->phy_base;
-> -
-> -       /* DCC feedback control off */
-> -       writel(0x29, phy_base + PCIE_PHY_DCC_FEEDBACK);
-> -
-> -       /* set TX/RX impedance */
-> -       writel(0xd5, phy_base + PCIE_PHY_IMPEDANCE);
-> -
-> -       /* set 50Mhz PHY clock */
-> -       writel(0x14, phy_base + PCIE_PHY_PLL_DIV_0);
-> -       writel(0x12, phy_base + PCIE_PHY_PLL_DIV_1);
-> -
-> -       /* set TX Differential output for lane 0 */
-> -       writel(0x7f, phy_base + PCIE_PHY_TRSV0_DRV_LVL);
-> -
-> -       /* set TX Pre-emphasis Level Control for lane 0 to minimum */
-> -       writel(0x0, phy_base + PCIE_PHY_TRSV0_EMP_LVL);
-> -
-> -       /* set RX clock and data recovery bandwidth */
-> -       writel(0xe7, phy_base + PCIE_PHY_PLL_BIAS);
-> -       writel(0x82, phy_base + PCIE_PHY_TRSV0_RXCDR);
-> -       writel(0x82, phy_base + PCIE_PHY_TRSV1_RXCDR);
-> -       writel(0x82, phy_base + PCIE_PHY_TRSV2_RXCDR);
-> -       writel(0x82, phy_base + PCIE_PHY_TRSV3_RXCDR);
-> -
-> -       /* change TX Pre-emphasis Level Control for lanes */
-> -       writel(0x39, phy_base + PCIE_PHY_TRSV0_EMP_LVL);
-> -       writel(0x39, phy_base + PCIE_PHY_TRSV1_EMP_LVL);
-> -       writel(0x39, phy_base + PCIE_PHY_TRSV2_EMP_LVL);
-> -       writel(0x39, phy_base + PCIE_PHY_TRSV3_EMP_LVL);
-> -
-> -       /* set LVCC */
-> -       writel(0x20, phy_base + PCIE_PHY_TRSV0_LVCC);
-> -       writel(0xa0, phy_base + PCIE_PHY_TRSV1_LVCC);
-> -       writel(0xa0, phy_base + PCIE_PHY_TRSV2_LVCC);
-> -       writel(0xa0, phy_base + PCIE_PHY_TRSV3_LVCC);
-> -}
-> -
-> -static void exynos_pcie_assert_reset(struct pcie_port *pp)
-> -{
-> -       if (pp->reset_gpio >= 0)
-> -               devm_gpio_request_one(pp->dev, pp->reset_gpio,
-> -                               GPIOF_OUT_INIT_HIGH, "RESET");
-> -       return;
-> -}
-> -
-> -static int exynos_pcie_establish_link(struct pcie_port *pp)
-> -{
-> -       u32 val;
-> -       int count = 0;
-> -       void __iomem *elbi_base = pp->elbi_base;
-> -       void __iomem *purple_base = pp->purple_base;
-> -       void __iomem *phy_base = pp->phy_base;
-> -
-> -       if (exynos_pcie_link_up(pp)) {
-> -               dev_err(pp->dev, "Link already up\n");
-> -               return 0;
-> -       }
-> -
-> -       /* assert reset signals */
-> -       exynos_pcie_assert_core_reset(pp);
-> -       exynos_pcie_assert_phy_reset(pp);
-> -
-> -       /* de-assert phy reset */
-> -       exynos_pcie_deassert_phy_reset(pp);
-> -
-> -       /* initialize phy */
-> -       exynos_pcie_init_phy(pp);
-> -
-> -       /* pulse for common reset */
-> -       writel(1, purple_base + PCIE_PHY_COMMON_RESET);
-> -       udelay(500);
-> -       writel(0, purple_base + PCIE_PHY_COMMON_RESET);
-> -
-> -       /* de-assert core reset */
-> -       exynos_pcie_deassert_core_reset(pp);
-> -
-> -       /* setup root complex */
-> -       exynos_pcie_setup_rc(pp);
-> -
-> -       /* assert reset signal */
-> -       exynos_pcie_assert_reset(pp);
-> -
-> -       /* assert LTSSM enable */
-> -       writel(PCIE_ELBI_LTSSM_ENABLE, elbi_base + PCIE_APP_LTSSM_ENABLE);
-> -
-> -       /* check if the link is up or not */
-> -       while (!exynos_pcie_link_up(pp)) {
-> -               mdelay(100);
-> -               count++;
-> -               if (count == 10) {
-> -                       while (readl(phy_base + PCIE_PHY_PLL_LOCKED) == 0) {
-> -                               val = readl(purple_base + PCIE_PHY_PLL_LOCKED);
-> -                               dev_info(pp->dev, "PLL Locked: 0x%x\n", val);
-> -                       }
-> -                       dev_err(pp->dev, "PCIe Link Fail\n");
-> -                       return -EINVAL;
-> -               }
-> -       }
-> -
-> -       dev_info(pp->dev, "Link up\n");
-> -
-> -       return 0;
-> -}
-> -
-> -static void exynos_pcie_clear_irq_pulse(struct pcie_port *pp)
-> -{
-> -       u32 val;
-> -       void __iomem *elbi_base = pp->elbi_base;
-> -
-> -       val = readl(elbi_base + PCIE_IRQ_PULSE);
-> -       writel(val, elbi_base + PCIE_IRQ_PULSE);
-> -       return;
-> -}
-> -
-> -static void exynos_pcie_enable_irq_pulse(struct pcie_port *pp)
-> -{
-> -       u32 val;
-> -       void __iomem *elbi_base = pp->elbi_base;
-> -
-> -       /* enable INTX interrupt */
-> -       val = IRQ_INTA_ASSERT | IRQ_INTB_ASSERT |
-> -               IRQ_INTC_ASSERT | IRQ_INTD_ASSERT,
-> -       writel(val, elbi_base + PCIE_IRQ_EN_PULSE);
-> -       return;
-> -}
-> -
-> -static irqreturn_t exynos_pcie_irq_handler(int irq, void *arg)
-> -{
-> -       struct pcie_port *pp = arg;
-> -
-> -       exynos_pcie_clear_irq_pulse(pp);
-> -       return IRQ_HANDLED;
-> -}
-> -
-> -static void exynos_pcie_enable_interrupts(struct pcie_port *pp)
-> -{
-> -       exynos_pcie_enable_irq_pulse(pp);
-> -       return;
-> -}
-> -
-> -static void exynos_pcie_host_init(struct pcie_port *pp)
-> -{
-> -       struct pcie_port_info *config = &pp->config;
-> -       u32 val;
-> -
-> -       /* Keep first 64K for IO */
-> -       pp->cfg0_base = pp->cfg.start;
-> -       pp->cfg1_base = pp->cfg.start + config->cfg0_size;
-> -       pp->io_base = pp->io.start;
-> -       pp->mem_base = pp->mem.start;
-> -
-> -       /* enable link */
-> -       exynos_pcie_establish_link(pp);
-> -
-> -       exynos_pcie_wr_own_conf(pp, PCI_BASE_ADDRESS_0, 4, 0);
-> -
-> -       /* program correct class for RC */
-> -       exynos_pcie_wr_own_conf(pp, PCI_CLASS_DEVICE, 2, PCI_CLASS_BRIDGE_PCI);
-> -
-> -       exynos_pcie_rd_own_conf(pp, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, &val);
-> -       val |= PORT_LOGIC_SPEED_CHANGE;
-> -       exynos_pcie_wr_own_conf(pp, PCIE_LINK_WIDTH_SPEED_CONTROL, 4, val);
-> -
-> -       exynos_pcie_enable_interrupts(pp);
-> -}
-> -
-> -static int add_pcie_port(struct pcie_port *pp, struct platform_device *pdev)
-> -{
-> -       struct resource *elbi_base;
-> -       struct resource *phy_base;
-> -       struct resource *purple_base;
-> -       int ret;
-> -
-> -       elbi_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -       if (!elbi_base) {
-> -               dev_err(&pdev->dev, "couldn't get elbi base resource\n");
-> -               return -EINVAL;
-> -       }
-> -       pp->elbi_base = devm_ioremap_resource(&pdev->dev, elbi_base);
-> -       if (IS_ERR(pp->elbi_base))
-> -               return PTR_ERR(pp->elbi_base);
-> -
-> -       phy_base = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> -       if (!phy_base) {
-> -               dev_err(&pdev->dev, "couldn't get phy base resource\n");
-> -               return -EINVAL;
-> -       }
-> -       pp->phy_base = devm_ioremap_resource(&pdev->dev, phy_base);
-> -       if (IS_ERR(pp->phy_base))
-> -               return PTR_ERR(pp->phy_base);
-> -
-> -       purple_base = platform_get_resource(pdev, IORESOURCE_MEM, 2);
-> -       if (!purple_base) {
-> -               dev_err(&pdev->dev, "couldn't get purple base resource\n");
-> -               return -EINVAL;
-> -       }
-> -       pp->purple_base = devm_ioremap_resource(&pdev->dev, purple_base);
-> -       if (IS_ERR(pp->purple_base))
-> -               return PTR_ERR(pp->purple_base);
-> -
-> -       pp->irq = platform_get_irq(pdev, 1);
-> -       if (!pp->irq) {
-> -               dev_err(&pdev->dev, "failed to get irq\n");
-> -               return -ENODEV;
-> -       }
-> -       ret = devm_request_irq(&pdev->dev, pp->irq, exynos_pcie_irq_handler,
-> -                               IRQF_SHARED, "exynos-pcie", pp);
-> -       if (ret) {
-> -               dev_err(&pdev->dev, "failed to request irq\n");
-> -               return ret;
-> -       }
-> -
-> -       pp->dbi_base = devm_ioremap(&pdev->dev, pp->cfg.start,
-> -                               resource_size(&pp->cfg));
-> -       if (!pp->dbi_base) {
-> -               dev_err(&pdev->dev, "error with ioremap\n");
-> -               return -ENOMEM;
-> -       }
-> -
-> -       pp->root_bus_nr = -1;
-> -
-> -       spin_lock_init(&pp->conf_lock);
-> -       exynos_pcie_host_init(pp);
-> -       pp->va_cfg0_base = devm_ioremap(&pdev->dev, pp->cfg0_base,
-> -                                       pp->config.cfg0_size);
-> -       if (!pp->va_cfg0_base) {
-> -               dev_err(pp->dev, "error with ioremap in function\n");
-> -               return -ENOMEM;
-> -       }
-> -       pp->va_cfg1_base = devm_ioremap(&pdev->dev, pp->cfg1_base,
-> -                                       pp->config.cfg1_size);
-> -       if (!pp->va_cfg1_base) {
-> -               dev_err(pp->dev, "error with ioremap\n");
-> -               return -ENOMEM;
-> -       }
-> -
-> -       return 0;
-> -}
-> -
-> -static int __init exynos_pcie_probe(struct platform_device *pdev)
-> -{
-> -       struct pcie_port *pp;
-> -       struct device_node *np = pdev->dev.of_node;
-> -       struct of_pci_range range;
-> -       struct of_pci_range_parser parser;
-> -       int ret;
-> -
-> -       pp = devm_kzalloc(&pdev->dev, sizeof(*pp), GFP_KERNEL);
-> -       if (!pp) {
-> -               dev_err(&pdev->dev, "no memory for pcie port\n");
-> -               return -ENOMEM;
-> -       }
-> -
-> -       pp->dev = &pdev->dev;
-> -
-> -       if (of_pci_range_parser_init(&parser, np)) {
-> -               dev_err(&pdev->dev, "missing ranges property\n");
-> -               return -EINVAL;
-> -       }
-> -
-> -       /* Get the I/O and memory ranges from DT */
-> -       for_each_of_pci_range(&parser, &range) {
-> -               unsigned long restype = range.flags & IORESOURCE_TYPE_BITS;
-> -               if (restype == IORESOURCE_IO) {
-> -                       of_pci_range_to_resource(&range, np, &pp->io);
-> -                       pp->io.name = "I/O";
-> -                       pp->io.start = max_t(resource_size_t,
-> -                                            PCIBIOS_MIN_IO,
-> -                                            range.pci_addr + global_io_offset);
-> -                       pp->io.end = min_t(resource_size_t,
-> -                                          IO_SPACE_LIMIT,
-> -                                          range.pci_addr + range.size
-> -                                          + global_io_offset);
-> -                       pp->config.io_size = resource_size(&pp->io);
-> -                       pp->config.io_bus_addr = range.pci_addr;
-> -               }
-> -               if (restype == IORESOURCE_MEM) {
-> -                       of_pci_range_to_resource(&range, np, &pp->mem);
-> -                       pp->mem.name = "MEM";
-> -                       pp->config.mem_size = resource_size(&pp->mem);
-> -                       pp->config.mem_bus_addr = range.pci_addr;
-> -               }
-> -               if (restype == 0) {
-> -                       of_pci_range_to_resource(&range, np, &pp->cfg);
-> -                       pp->config.cfg0_size = resource_size(&pp->cfg)/2;
-> -                       pp->config.cfg1_size = resource_size(&pp->cfg)/2;
-> -               }
-> -       }
-> -
-> -       pp->reset_gpio = of_get_named_gpio(np, "reset-gpio", 0);
-> -
-> -       pp->clk = devm_clk_get(&pdev->dev, "pcie");
-> -       if (IS_ERR(pp->clk)) {
-> -               dev_err(&pdev->dev, "Failed to get pcie rc clock\n");
-> -               return PTR_ERR(pp->clk);
-> -       }
-> -       ret = clk_prepare_enable(pp->clk);
-> -       if (ret)
-> -               return ret;
-> -
-> -       pp->bus_clk = devm_clk_get(&pdev->dev, "pcie_bus");
-> -       if (IS_ERR(pp->bus_clk)) {
-> -               dev_err(&pdev->dev, "Failed to get pcie bus clock\n");
-> -               ret = PTR_ERR(pp->bus_clk);
-> -               goto fail_clk;
-> -       }
-> -       ret = clk_prepare_enable(pp->bus_clk);
-> -       if (ret)
-> -               goto fail_clk;
-> -
-> -       ret = add_pcie_port(pp, pdev);
-> -       if (ret < 0)
-> -               goto fail_bus_clk;
-> -
-> -       pp->controller = exynos_pci.nr_controllers;
-> -       exynos_pci.nr_controllers = 1;
-> -       exynos_pci.private_data = (void **)&pp;
-> -
-> -       pci_common_init(&exynos_pci);
-> -       pci_assign_unassigned_resources();
-> -#ifdef CONFIG_PCI_DOMAINS
-> -       exynos_pci.domain++;
-> -#endif
-> -
-> -       platform_set_drvdata(pdev, pp);
-> -       return 0;
-> -
-> -fail_bus_clk:
-> -       clk_disable_unprepare(pp->bus_clk);
-> -fail_clk:
-> -       clk_disable_unprepare(pp->clk);
-> -       return ret;
-> -}
-> -
-> -static int __exit exynos_pcie_remove(struct platform_device *pdev)
-> -{
-> -       struct pcie_port *pp = platform_get_drvdata(pdev);
-> -
-> -       clk_disable_unprepare(pp->bus_clk);
-> -       clk_disable_unprepare(pp->clk);
-> -
-> -       return 0;
-> -}
-> -
-> -static const struct of_device_id exynos_pcie_of_match[] = {
-> -       { .compatible = "samsung,exynos5440-pcie", },
-> -       {},
-> -};
-> -MODULE_DEVICE_TABLE(of, exynos_pcie_of_match);
-> -
-> -static struct platform_driver exynos_pcie_driver = {
-> -       .remove         = __exit_p(exynos_pcie_remove),
-> -       .driver = {
-> -               .name   = "exynos-pcie",
-> -               .owner  = THIS_MODULE,
-> -               .of_match_table = of_match_ptr(exynos_pcie_of_match),
-> -       },
-> -};
-> -
-> -static int exynos_pcie_abort(unsigned long addr, unsigned int fsr,
-> -                       struct pt_regs *regs)
-> -{
-> -       unsigned long pc = instruction_pointer(regs);
-> -       unsigned long instr = *(unsigned long *)pc;
-> -
-> -       WARN_ONCE(1, "pcie abort\n");
-> -
-> -       /*
-> -        * If the instruction being executed was a read,
-> -        * make it look like it read all-ones.
-> -        */
-> -       if ((instr & 0x0c100000) == 0x04100000) {
-> -               int reg = (instr >> 12) & 15;
-> -               unsigned long val;
-> -
-> -               if (instr & 0x00400000)
-> -                       val = 255;
-> -               else
-> -                       val = -1;
-> -
-> -               regs->uregs[reg] = val;
-> -               regs->ARM_pc += 4;
-> -               return 0;
-> -       }
-> -
-> -       if ((instr & 0x0e100090) == 0x00100090) {
-> -               int reg = (instr >> 12) & 15;
-> -
-> -               regs->uregs[reg] = -1;
-> -               regs->ARM_pc += 4;
-> -               return 0;
-> -       }
-> -
-> -       return 1;
-> -}
-> -
-> -/* Exynos PCIe driver does not allow module unload */
-> -
-> -static int __init pcie_init(void)
-> -{
-> -       hook_fault_code(16 + 6, exynos_pcie_abort, SIGBUS, 0,
-> -                       "imprecise external abort");
-> -
-> -       platform_driver_probe(&exynos_pcie_driver, exynos_pcie_probe);
-> -
-> -       return 0;
-> +       dw_pcie_writel_rc(pp, val, dbi_base + PCI_COMMAND);
->  }
-> -subsys_initcall(pcie_init);
->
->  MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
-> -MODULE_DESCRIPTION("Samsung PCIe host controller driver");
-> +MODULE_DESCRIPTION("Designware PCIe host controller driver");
->  MODULE_LICENSE("GPL v2");
-> diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-> new file mode 100644
-> index 0000000..133820f
-> --- /dev/null
-> +++ b/drivers/pci/host/pcie-designware.h
-> @@ -0,0 +1,65 @@
-> +/*
-> + * Synopsys Designware PCIe host controller driver
-> + *
-> + * Copyright (C) 2013 Samsung Electronics Co., Ltd.
-> + *             http://www.samsung.com
-> + *
-> + * Author: Jingoo Han <jg1.han@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +struct pcie_port_info {
-> +       u32             cfg0_size;
-> +       u32             cfg1_size;
-> +       u32             io_size;
-> +       u32             mem_size;
-> +       phys_addr_t     io_bus_addr;
-> +       phys_addr_t     mem_bus_addr;
-> +};
-> +
-> +struct pcie_port {
-> +       struct device           *dev;
-> +       u8                      root_bus_nr;
-> +       void __iomem            *dbi_base;
-> +       u64                     cfg0_base;
-> +       void __iomem            *va_cfg0_base;
-> +       u64                     cfg1_base;
-> +       void __iomem            *va_cfg1_base;
-> +       u64                     io_base;
-> +       u64                     mem_base;
-> +       spinlock_t              conf_lock;
-> +       struct resource         cfg;
-> +       struct resource         io;
-> +       struct resource         mem;
-> +       struct pcie_port_info   config;
-> +       int                     irq;
-> +       u32                     lanes;
-> +       struct pcie_host_ops    *ops;
-> +};
-> +
-> +struct pcie_host_ops {
-> +       void (*readl_rc)(struct pcie_port *pp,
-> +                       void __iomem *dbi_base, u32 *val);
-> +       void (*writel_rc)(struct pcie_port *pp,
-> +                       u32 val, void __iomem *dbi_base);
-> +       int (*rd_own_conf)(struct pcie_port *pp, int where, int size, u32 *val);
-> +       int (*wr_own_conf)(struct pcie_port *pp, int where, int size, u32 val);
-> +       int (*link_up)(struct pcie_port *pp);
-> +       void (*host_init)(struct pcie_port *pp);
-> +};
-> +
-> +extern unsigned long global_io_offset;
-> +
-> +int cfg_read(void __iomem *addr, int where, int size, u32 *val);
-> +int cfg_write(void __iomem *addr, int where, int size, u32 val);
-> +int dw_pcie_wr_own_conf(struct pcie_port *pp, int where, int size, u32 val);
-> +int dw_pcie_rd_own_conf(struct pcie_port *pp, int where, int size, u32 *val);
-> +int dw_pcie_link_up(struct pcie_port *pp);
-> +void dw_pcie_setup_rc(struct pcie_port *pp);
-> +int dw_pcie_host_init(struct pcie_port *pp);
-> +int dw_pcie_setup(int nr, struct pci_sys_data *sys);
-> +struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys);
-> +int dw_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8 pin);
-> --
-> 1.7.10.4
->
->
+Dave,
+
+This is a batch of fixes intended for the 3.11 queue...
+
+Regarding the mac80211 (and related) bits, Johannes says:
+
+"I have a fix from Chris for an infinite loop along with fixes from
+myself to prevent it entering the loop to start with (continue using
+disabled channels, many thanks to Chris for his debug/test help) and a
+workaround for broken APs that advertise a bad HT primary channel in
+their beacons. Additionally, a fix for another attrbuf race in mac80211
+and a fix to clean up properly while P2P GO interfaces go down."
+
+Along with that...
+
+Solomon Peachy corrects a range check in cw1200 that would lead to
+a BUG_ON when starting AP mode.
+
+Stanislaw Gruszka provides an iwl4965 patch to power-up the device
+earlier (avoiding microcode errors), and another iwl4965 fix that
+resets the firmware after turning rfkill off (resolving a bug in the
+Red Hat Bugzilla).
+
+Please let me know if there are problems!
+
+John
+
+---
+
+The following changes since commit 3e3be275851bc6fc90bfdcd732cd95563acd982b:
+
+  ipv6: don't stop backtracking in fib6_lookup_1 if subtree does not match =
+(2013-08-07 17:17:19 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
+avem
+
+for you to fetch changes up to 1826ff2357d69d3a2627df51e4ba07d24087b698:
+
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/li=
+nville/wireless into for-davem (2013-08-08 13:12:42 -0400)
+
+----------------------------------------------------------------
+
+Chris Wright (1):
+      mac80211: fix infinite loop in ieee80211_determine_chantype
+
+Johannes Berg (5):
+      nl80211: fix another nl80211_fam.attrbuf race
+      mac80211: don't wait for TX status forever
+      mac80211: ignore HT primary channel while connected
+      cfg80211: fix P2P GO interface teardown
+      mac80211: continue using disabled channels while connected
+
+John W. Linville (2):
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
+nto for-davem
+
+Solomon Peachy (1):
+      cw1200: Fix spurious BUG_ON() trigger when starting AP mode.
+
+Stanislaw Gruszka (2):
+      iwl4965: set power mode early
+      iwl4965: reset firmware after rfkill off
+
+ drivers/net/wireless/cw1200/sta.c        |  7 ++---
+ drivers/net/wireless/iwlegacy/4965-mac.c | 16 +++++-----
+ drivers/net/wireless/iwlegacy/common.c   |  1 +
+ net/mac80211/mlme.c                      | 54 +++++++++++++++++++++-------=
+----
+ net/wireless/core.c                      |  1 +
+ net/wireless/nl80211.c                   |  6 ++--
+ 6 files changed, 52 insertions(+), 33 deletions(-)
+
+diff --git a/drivers/net/wireless/cw1200/sta.c b/drivers/net/wireless/cw120=
+0/sta.c
+index 7365674..010b252 100644
+--- a/drivers/net/wireless/cw1200/sta.c
++++ b/drivers/net/wireless/cw1200/sta.c
+@@ -1406,11 +1406,8 @@ static void cw1200_do_unjoin(struct cw1200_common *p=
+riv)
+ 	if (!priv->join_status)
+ 		goto done;
+=20
+-	if (priv->join_status > CW1200_JOIN_STATUS_IBSS) {
+-		wiphy_err(priv->hw->wiphy, "Unexpected: join status: %d\n",
+-			  priv->join_status);
+-		BUG_ON(1);
+-	}
++	if (priv->join_status =3D=3D CW1200_JOIN_STATUS_AP)
++		goto done;
+=20
+ 	cancel_work_sync(&priv->update_filtering_work);
+ 	cancel_work_sync(&priv->set_beacon_wakeup_period_work);
+diff --git a/drivers/net/wireless/iwlegacy/4965-mac.c b/drivers/net/wireles=
+s/iwlegacy/4965-mac.c
+index b9b2bb5..f2ed62e 100644
+--- a/drivers/net/wireless/iwlegacy/4965-mac.c
++++ b/drivers/net/wireless/iwlegacy/4965-mac.c
+@@ -4460,12 +4460,12 @@ il4965_irq_tasklet(struct il_priv *il)
+ 		 * is killed. Hence update the killswitch state here. The
+ 		 * rfkill handler will care about restarting if needed.
+ 		 */
+-		if (!test_bit(S_ALIVE, &il->status)) {
+-			if (hw_rf_kill)
+-				set_bit(S_RFKILL, &il->status);
+-			else
+-				clear_bit(S_RFKILL, &il->status);
++		if (hw_rf_kill) {
++			set_bit(S_RFKILL, &il->status);
++		} else {
++			clear_bit(S_RFKILL, &il->status);
+ 			wiphy_rfkill_set_hw_state(il->hw->wiphy, hw_rf_kill);
++			il_force_reset(il, true);
+ 		}
+=20
+ 		handled |=3D CSR_INT_BIT_RF_KILL;
+@@ -5334,6 +5334,9 @@ il4965_alive_start(struct il_priv *il)
+=20
+ 	il->active_rate =3D RATES_MASK;
+=20
++	il_power_update_mode(il, true);
++	D_INFO("Updated power mode\n");
++
+ 	if (il_is_associated(il)) {
+ 		struct il_rxon_cmd *active_rxon =3D
+ 		    (struct il_rxon_cmd *)&il->active;
+@@ -5364,9 +5367,6 @@ il4965_alive_start(struct il_priv *il)
+ 	D_INFO("ALIVE processing complete.\n");
+ 	wake_up(&il->wait_command_queue);
+=20
+-	il_power_update_mode(il, true);
+-	D_INFO("Updated power mode\n");
+-
+ 	return;
+=20
+ restart:
+diff --git a/drivers/net/wireless/iwlegacy/common.c b/drivers/net/wireless/=
+iwlegacy/common.c
+index 3195aad..b03e22e 100644
+--- a/drivers/net/wireless/iwlegacy/common.c
++++ b/drivers/net/wireless/iwlegacy/common.c
+@@ -4660,6 +4660,7 @@ il_force_reset(struct il_priv *il, bool external)
+=20
+ 	return 0;
+ }
++EXPORT_SYMBOL(il_force_reset);
+=20
+ int
+ il_mac_change_interface(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index ae31968..cc9e02d 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -31,10 +31,12 @@
+ #include "led.h"
+=20
+ #define IEEE80211_AUTH_TIMEOUT		(HZ / 5)
++#define IEEE80211_AUTH_TIMEOUT_LONG	(HZ / 2)
+ #define IEEE80211_AUTH_TIMEOUT_SHORT	(HZ / 10)
+ #define IEEE80211_AUTH_MAX_TRIES	3
+ #define IEEE80211_AUTH_WAIT_ASSOC	(HZ * 5)
+ #define IEEE80211_ASSOC_TIMEOUT		(HZ / 5)
++#define IEEE80211_ASSOC_TIMEOUT_LONG	(HZ / 2)
+ #define IEEE80211_ASSOC_TIMEOUT_SHORT	(HZ / 10)
+ #define IEEE80211_ASSOC_MAX_TRIES	3
+=20
+@@ -209,8 +211,9 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_da=
+ta *sdata,
+ 			     struct ieee80211_channel *channel,
+ 			     const struct ieee80211_ht_operation *ht_oper,
+ 			     const struct ieee80211_vht_operation *vht_oper,
+-			     struct cfg80211_chan_def *chandef, bool verbose)
++			     struct cfg80211_chan_def *chandef, bool tracking)
+ {
++	struct ieee80211_if_managed *ifmgd =3D &sdata->u.mgd;
+ 	struct cfg80211_chan_def vht_chandef;
+ 	u32 ht_cfreq, ret;
+=20
+@@ -229,7 +232,7 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_da=
+ta *sdata,
+ 	ht_cfreq =3D ieee80211_channel_to_frequency(ht_oper->primary_chan,
+ 						  channel->band);
+ 	/* check that channel matches the right operating channel */
+-	if (channel->center_freq !=3D ht_cfreq) {
++	if (!tracking && channel->center_freq !=3D ht_cfreq) {
+ 		/*
+ 		 * It's possible that some APs are confused here;
+ 		 * Netgear WNDR3700 sometimes reports 4 higher than
+@@ -237,11 +240,10 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_=
+data *sdata,
+ 		 * since we look at probe response/beacon data here
+ 		 * it should be OK.
+ 		 */
+-		if (verbose)
+-			sdata_info(sdata,
+-				   "Wrong control channel: center-freq: %d ht-cfreq: %d ht->primary_ch=
+an: %d band: %d - Disabling HT\n",
+-				   channel->center_freq, ht_cfreq,
+-				   ht_oper->primary_chan, channel->band);
++		sdata_info(sdata,
++			   "Wrong control channel: center-freq: %d ht-cfreq: %d ht->primary_cha=
+n: %d band: %d - Disabling HT\n",
++			   channel->center_freq, ht_cfreq,
++			   ht_oper->primary_chan, channel->band);
+ 		ret =3D IEEE80211_STA_DISABLE_HT | IEEE80211_STA_DISABLE_VHT;
+ 		goto out;
+ 	}
+@@ -295,7 +297,7 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_da=
+ta *sdata,
+ 				channel->band);
+ 		break;
+ 	default:
+-		if (verbose)
++		if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT))
+ 			sdata_info(sdata,
+ 				   "AP VHT operation IE has invalid channel width (%d), disable VHT\n",
+ 				   vht_oper->chan_width);
+@@ -304,7 +306,7 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_da=
+ta *sdata,
+ 	}
+=20
+ 	if (!cfg80211_chandef_valid(&vht_chandef)) {
+-		if (verbose)
++		if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT))
+ 			sdata_info(sdata,
+ 				   "AP VHT information is invalid, disable VHT\n");
+ 		ret =3D IEEE80211_STA_DISABLE_VHT;
+@@ -317,7 +319,7 @@ ieee80211_determine_chantype(struct ieee80211_sub_if_da=
+ta *sdata,
+ 	}
+=20
+ 	if (!cfg80211_chandef_compatible(chandef, &vht_chandef)) {
+-		if (verbose)
++		if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT))
+ 			sdata_info(sdata,
+ 				   "AP VHT information doesn't match HT, disable VHT\n");
+ 		ret =3D IEEE80211_STA_DISABLE_VHT;
+@@ -333,18 +335,27 @@ out:
+ 	if (ret & IEEE80211_STA_DISABLE_VHT)
+ 		vht_chandef =3D *chandef;
+=20
++	/*
++	 * Ignore the DISABLED flag when we're already connected and only
++	 * tracking the APs beacon for bandwidth changes - otherwise we
++	 * might get disconnected here if we connect to an AP, update our
++	 * regulatory information based on the AP's country IE and the
++	 * information we have is wrong/outdated and disables the channel
++	 * that we're actually using for the connection to the AP.
++	 */
+ 	while (!cfg80211_chandef_usable(sdata->local->hw.wiphy, chandef,
+-					IEEE80211_CHAN_DISABLED)) {
++					tracking ? 0 :
++						   IEEE80211_CHAN_DISABLED)) {
+ 		if (WARN_ON(chandef->width =3D=3D NL80211_CHAN_WIDTH_20_NOHT)) {
+ 			ret =3D IEEE80211_STA_DISABLE_HT |
+ 			      IEEE80211_STA_DISABLE_VHT;
+-			goto out;
++			break;
+ 		}
+=20
+ 		ret |=3D chandef_downgrade(chandef);
+ 	}
+=20
+-	if (chandef->width !=3D vht_chandef.width && verbose)
++	if (chandef->width !=3D vht_chandef.width && !tracking)
+ 		sdata_info(sdata,
+ 			   "capabilities/regulatory prevented using AP HT/VHT configuration, do=
+wngraded\n");
+=20
+@@ -384,7 +395,7 @@ static int ieee80211_config_bw(struct ieee80211_sub_if_=
+data *sdata,
+=20
+ 	/* calculate new channel (type) based on HT/VHT operation IEs */
+ 	flags =3D ieee80211_determine_chantype(sdata, sband, chan, ht_oper,
+-					     vht_oper, &chandef, false);
++					     vht_oper, &chandef, true);
+=20
+ 	/*
+ 	 * Downgrade the new channel if we associated with restricted
+@@ -3394,10 +3405,13 @@ static int ieee80211_probe_auth(struct ieee80211_su=
+b_if_data *sdata)
+=20
+ 	if (tx_flags =3D=3D 0) {
+ 		auth_data->timeout =3D jiffies + IEEE80211_AUTH_TIMEOUT;
+-		ifmgd->auth_data->timeout_started =3D true;
++		auth_data->timeout_started =3D true;
+ 		run_again(sdata, auth_data->timeout);
+ 	} else {
+-		auth_data->timeout_started =3D false;
++		auth_data->timeout =3D
++			round_jiffies_up(jiffies + IEEE80211_AUTH_TIMEOUT_LONG);
++		auth_data->timeout_started =3D true;
++		run_again(sdata, auth_data->timeout);
+ 	}
+=20
+ 	return 0;
+@@ -3434,7 +3448,11 @@ static int ieee80211_do_assoc(struct ieee80211_sub_i=
+f_data *sdata)
+ 		assoc_data->timeout_started =3D true;
+ 		run_again(sdata, assoc_data->timeout);
+ 	} else {
+-		assoc_data->timeout_started =3D false;
++		assoc_data->timeout =3D
++			round_jiffies_up(jiffies +
++					 IEEE80211_ASSOC_TIMEOUT_LONG);
++		assoc_data->timeout_started =3D true;
++		run_again(sdata, assoc_data->timeout);
+ 	}
+=20
+ 	return 0;
+@@ -3829,7 +3847,7 @@ static int ieee80211_prep_channel(struct ieee80211_su=
+b_if_data *sdata,
+ 	ifmgd->flags |=3D ieee80211_determine_chantype(sdata, sband,
+ 						     cbss->channel,
+ 						     ht_oper, vht_oper,
+-						     &chandef, true);
++						     &chandef, false);
+=20
+ 	sdata->needed_rx_chains =3D min(ieee80211_ht_vht_rx_chains(sdata, cbss),
+ 				      local->rx_chains);
+diff --git a/net/wireless/core.c b/net/wireless/core.c
+index 4f9f216..a8c29fa 100644
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -765,6 +765,7 @@ void cfg80211_leave(struct cfg80211_registered_device *=
+rdev,
+ 		cfg80211_leave_mesh(rdev, dev);
+ 		break;
+ 	case NL80211_IFTYPE_AP:
++	case NL80211_IFTYPE_P2P_GO:
+ 		cfg80211_stop_ap(rdev, dev);
+ 		break;
+ 	default:
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index 25d217d..3fcba69 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -441,10 +441,12 @@ static int nl80211_prepare_wdev_dump(struct sk_buff *=
+skb,
+ 			goto out_unlock;
+ 		}
+ 		*rdev =3D wiphy_to_dev((*wdev)->wiphy);
+-		cb->args[0] =3D (*rdev)->wiphy_idx;
++		/* 0 is the first index - add 1 to parse only once */
++		cb->args[0] =3D (*rdev)->wiphy_idx + 1;
+ 		cb->args[1] =3D (*wdev)->identifier;
+ 	} else {
+-		struct wiphy *wiphy =3D wiphy_idx_to_wiphy(cb->args[0]);
++		/* subtract the 1 again here */
++		struct wiphy *wiphy =3D wiphy_idx_to_wiphy(cb->args[0] - 1);
+ 		struct wireless_dev *tmp;
+=20
+ 		if (!wiphy) {
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
+
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSA9WDAAoJEJctW/TcYTgGw0IP/iRFmNAB8Z5rP7UtE0bXfrHs
+CQqXfWKh7SxP7jjjZYkf2gp94nSHggkikWtSb5bZmLNlPU31Oiik1RD92g9O+s8l
+NJ0lKj8tbPcA2EDHCWW+C13iL1LvjLmiOZIiRe3p1OWlMyAb5VP5KFZYNUzJLx8+
+/CQBwqj/zRsoXaoTv+X0ERh0WqTxSF3foBsLsd88IUWlW18jmyCfRSm90wh/iiwy
+c4Pj8rve2yc0F971LLS9Aaz06YdQMX2Y3SLOdtauTX2b4YiVYbcHzt2k+LaFzdRs
+IwDp5kL6KFx1kuqGlbdfxXtfgjc4hQTEhjwfqItYfEFQ/xWPXkXed4t0Qdhg2TgV
+vvlabEK4G61sG2sUfYAmmbscNHvlCiqIBOzCCZngla7rg9EDlQSRFwRZDySf3TF8
+4MgLpYfYtPkLcatqpqNYqwJjnC5vqSo8ZLD+1L9nGX7V0xAhMmtgk2mOMDkhWiUV
+28siF3nea6k1N0KYtLNTQjcsD51jSJoGQgu//ijNlVy2oZIoax8knVguNObLmgGY
+cvNZXQQDpQcrc2hr9vuWzds3LI/+tpaXwhsPtTfym1gte0AimodWildpoBKCdrid
+pjGmUnzxEw6rhtjyaJhDl5g2nKf4UR8pdh9aTNX4BYcYmkqoRP6MCNx8KLTHPb4Z
+pw3sCh5ldrWOakBH0IfR
+=eTnb
+-----END PGP SIGNATURE-----
+
+--J/dobhs11T7y2rNN--
