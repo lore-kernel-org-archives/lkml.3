@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965218Ab3HHLNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 07:13:51 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36931 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965178Ab3HHLNs (ORCPT
+	id S965223Ab3HHLRk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 07:17:40 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:10737 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757728Ab3HHLRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 07:13:48 -0400
-Message-ID: <52037D50.2050109@huawei.com>
-Date: Thu, 8 Aug 2013 19:13:20 +0800
-From: Rui Xiang <rui.xiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Gao feng <gaofeng@cn.fujitsu.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        <containers@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <netfilter-devel@vger.kernel.org>, <serge.hallyn@ubuntu.com>,
-        <akpm@linux-foundation.org>, <guz.fnst@cn.fujitsu.com>,
-        <libo.chen@huawei.com>
-Subject: Re: [PATCH v3 00/11] Add namespace support for syslog
-References: <1375861035-24320-1-git-send-email-rui.xiang@huawei.com> <878v0evssv.fsf@xmission.com> <5202F65F.40002@cn.fujitsu.com>
-In-Reply-To: <5202F65F.40002@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.188]
-X-CFilter-Loop: Reflected
+	Thu, 8 Aug 2013 07:17:38 -0400
+X-AuditID: cbfec7f4-b7f5f6d000000ff6-1b-52037e50a61b
+Message-id: <52037E4E.5050706@samsung.com>
+Date: Thu, 08 Aug 2013 13:17:34 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, "'Joerg Roedel'" <joro@8bytes.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Prathyush'" <prathyush.k@samsung.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
+        "'Grant Grundler'" <grundler@chromium.org>,
+        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
+        kvmarm@lists.cs.columbia.edu,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>
+Subject: Re: [PATCH v9 05/16] clk: exynos: add gate clock descriptions of
+ System MMU
+References: <002901ce941b$0130db50$039291f0$@samsung.com>
+In-reply-to: <002901ce941b$0130db50$039291f0$@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsVy+t/xa7oBdcxBBvt7uC3u3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZvHx1HF2i02Pr7FaXN41h81ixvl9TBYXVmxkt/jXe5DRYsqi
+	w6wWJ//0Mlq0XO9lcuD3eHJwHpPH7IaLLB53ru1h8zi/aQ2zx+Yl9R6Tbyxn9OjbsorR4/Mm
+	OY8rR88wBXBGcdmkpOZklqUW6dslcGUcXLGCqeABT8X/6T+ZGxh3cXUxcnJICJhILHz4gAnC
+	FpO4cG89G4gtJLCUUWL+04guRi4g+xOjxMEHh5hBErwCWhK/Fqxm7GLk4GARUJX484QRJMwm
+	YCjRe7QPzBYVCJBYvOQcO0S5oMSPyfdYQGwRAQ2Jz1fWs4LYzAI/WCQ+beMDsYUFwiROHOqE
+	2mspcf5SA9g9nAJWEue7nkPV60jsb53GBmHLS2xe85Z5AqPALCQrZiEpm4WkbAEj8ypG0dTS
+	5ILipPRcQ73ixNzi0rx0veT83E2MkLj6soNx8TGrQ4wCHIxKPLwdAUxBQqyJZcWVuYcYJTiY
+	lUR4X2QxBwnxpiRWVqUW5ccXleakFh9iZOLglGpg7NydvfbvlEWz5zrt+RauEL9z2WHrm1Xe
+	/ud2bPq//sirHzm8Ny+s3le9Ya5NXFQJo/viU+vtvvqYtSTUJolp3grlUF/CrLApxUNolvab
+	zMiFndtEJ7xJe17Ela54WPv1ZoVnzyovPzspFaKYuZNrB9/7cwmrwj4fuxIn1SaecOlEOIPS
+	IX4NAyWW4oxEQy3mouJEAPHkkYeJAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/8 9:37, Gao feng wrote:
-> On 08/07/2013 03:55 PM, Eric W. Biederman wrote:
->>
->> Since this still has not been addressed.  I am going to repeat Andrews
->> objection again.
->>
->> Isn't there a better way to get iptables information out than to use
->> syslog.  I did not have time to follow up on that but it did appear that
->> someone did have a better way to get the information out.
->>
->> Essentially the argument against this goes.  The kernel logging facility
->> is really not a particularly good tool to be using for anything other
->> than kernel debugging information, and there appear to be no substantial
->> uses for a separate syslog that should not be done in other ways.
+On 08/08/2013 11:38 AM, Cho KyongHo wrote:
+> This adds gate clocks of all System MMUs and their master IPs
+> that are not apeared in clk-exynos5250.c
+> Also fixes GATE_IP_ACP to 0x18800 and changed GATE_DA to GATE
+> for System MMU clocks in clk-exynos4.c
 > 
-> containerizing syslog is not only for iptables, it also isolates the /dev/kmsg,
-> /proc/kmsg, syslog(2)... user space tools in container may use this interface
-> to read/generate syslog.
-> 
-> But I don't know how important/urgent this containerizing syslog work is,
-> Rui Xiang, can you find an important/popular user space tool which uses this
-> interfaces to generate kernel syslog?
-> 
+> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> ---
+>  .../devicetree/bindings/clock/exynos5250-clock.txt |   26 +++++++++
+>  drivers/clk/samsung/clk-exynos4.c                  |   27 +++------
+>  drivers/clk/samsung/clk-exynos5250.c               |   57 ++++++++++++++++----
+>  3 files changed, 82 insertions(+), 28 deletions(-)
+[...]
+> @@ -349,19 +358,26 @@ static struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
+>  	GATE(gscl3, "gscl3", "aclk266", GATE_IP_GSCL, 3, 0, 0),
+>  	GATE(gscl_wa, "gscl_wa", "div_gscl_wa", GATE_IP_GSCL, 5, 0, 0),
+>  	GATE(gscl_wb, "gscl_wb", "div_gscl_wb", GATE_IP_GSCL, 6, 0, 0),
+> -	GATE(smmu_gscl0, "smmu_gscl0", "aclk266", GATE_IP_GSCL, 7, 0, 0),
+> -	GATE(smmu_gscl1, "smmu_gscl1", "aclk266", GATE_IP_GSCL, 8, 0, 0),
+> -	GATE(smmu_gscl2, "smmu_gscl2", "aclk266", GATE_IP_GSCL, 9, 0, 0),
+> -	GATE(smmu_gscl3, "smmu_gscl3", "aclk266", GATE_IP_GSCL, 10, 0, 0),
+> +	GATE(smmu_gscl0, "smmu_gscl0", "none", GATE_IP_GSCL, 7, 0, 0),
+> +	GATE(smmu_gscl1, "smmu_gscl1", "none", GATE_IP_GSCL, 8, 0, 0),
+> +	GATE(smmu_gscl2, "smmu_gscl2", "none", GATE_IP_GSCL, 9, 0, 0),
+> +	GATE(smmu_gscl3, "smmu_gscl3", "none", GATE_IP_GSCL, 10, 0, 0),
 
-There are some other cases. Some warnings (bad mount options for tmpfs,
-bad uid owner for many of them, etc) emerged in the container should
-be exported to the container. Some belong on the host - if they show 
-a corrupt superblock which may indicate an attempt by the container 
-to crash the kernel. Like these, Kernel will print out warnings when 
-userspace in container uses a deprecated something or other, and these
-logs should be invisible and specific for current container.
-
-I can't say this work is terribly compelling and important, but the 
-impact may be obvious, IMO.
-
-
-Thanks.
-
-
+Why are the smmu clocks' parent clocks removed ? Shouldn't both the gscaler
+gate clock and the gscaler smmu clock be still same, as it is in case of
+exynos4 ?
