@@ -1,218 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965453Ab3HHOxC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:53:02 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:56503 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757852Ab3HHOxA (ORCPT
+	id S965524Ab3HHOxy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:53:54 -0400
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:37907 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965097Ab3HHOxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:53:00 -0400
+	Thu, 8 Aug 2013 10:53:52 -0400
+Date: Thu, 8 Aug 2013 11:53:36 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 01/19] perf: sample after exit loses thread correlation -
+ v3
+Message-ID: <20130808145336.GD2851@ghostprotocols.net>
+References: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
+ <1375930261-77273-2-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <5202764C.2000709@redhat.com>
-References: <1375799403-28544-1-git-send-email-miklos@szeredi.hu>
-	<1375799403-28544-5-git-send-email-miklos@szeredi.hu>
-	<52015739.4050702@redhat.com>
-	<CAJfpegsD8cgnW59crKABjTE1E5aNpmyO=91ubtNxxp=LnwjgDg@mail.gmail.com>
-	<5202764C.2000709@redhat.com>
-Date: Thu, 8 Aug 2013 16:46:54 +0200
-Message-ID: <CAJfpegsGJHxRyi64QYV+BehR7U_g6Hy00fFHOO_moxF0R=zWig@mail.gmail.com>
-Subject: Re: [PATCH 4/4] fuse: drop dentry on failed revalidate
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Anand Avati <avati@redhat.com>
-Cc: Ric Wheeler <rwheeler@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Brian Foster <bfoster@redhat.com>, David Howells <dhowells@redhat.com>,
-        Eric Paris <eparis@redhat.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux NFS list <linux-nfs@vger.kernel.org>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>
-Content-Type: multipart/mixed; boundary=047d7b6788f4ac529804e370ba6c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375930261-77273-2-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b6788f4ac529804e370ba6c
-Content-Type: text/plain; charset=UTF-8
+Em Wed, Aug 07, 2013 at 10:50:43PM -0400, David Ahern escreveu:
+> Occassionally events (e.g., context-switch, sched tracepoints) are losing
+> the conversion of sample data associated with a thread. For example:
 
-On Wed, Aug 7, 2013 at 6:31 PM, Anand Avati <avati@redhat.com> wrote:
-> Thanks for attaching the thread. Was very educative! I still do not quite
-> understand - will umount() still work when inode_permission()[->getattr()]
-> on the ancestors fail (with ESTALE etc.)?
+Humm, if we have a tool that traverses the list of threads in a machine
+it will not know, after one of them exits, about it being dead, so I
+think this needs to add a thread->dead, no?
 
-Several cases:
+As of now, from what I can remember, the closest to such a tool would
+be:
 
-1) mountpoint was removed
-2) mountpoint's ancestor removed
-3) mountpoint or ancestor moved
+ perf top --sort pid
 
-1) and 3) would only cause revalidate to fail, not inode operations
-(permission or getattr) since the inodes of ancestors still exist.
+But that uses hist_entries that would eventually be decayed as samples
+would cease to be taken at most a few moments after the EXIT event.
 
-2) could error out if the ->permission got to the server.  I'm not
-sure it will and I don't have an NFS setup handy to test.
+But at least for debugging purposes, machine__fprintf() would list dead
+threads as being present, i.e. alive till its pid gets reused.
 
-So it doesn't necessarily work but it can be made to work, and as
-Linus pointed out, it might still be the least worst option.
+This is the only, minor, problem that I see with this solution, what do
+you think?
 
-BTW, attaching a little fuse filesystem that I've been testing this
-with.  It's read-only, but the point here is that the tree is modified
-*externally*, so that's not an issue.
-
-Thanks,
-Miklos
-
---047d7b6788f4ac529804e370ba6c
-Content-Type: text/x-csrc; charset=US-ASCII; name="fuse_lo.c"
-Content-Disposition: attachment; filename="fuse_lo.c"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hk42t8bq0
-
-LyoKICBGVVNFOiBGaWxlc3lzdGVtIGluIFVzZXJzcGFjZQogIENvcHlyaWdodCAoQykgMjAwMS0y
-MDA3ICBNaWtsb3MgU3plcmVkaSA8bWlrbG9zQHN6ZXJlZGkuaHU+CgogIFRoaXMgcHJvZ3JhbSBj
-YW4gYmUgZGlzdHJpYnV0ZWQgdW5kZXIgdGhlIHRlcm1zIG9mIHRoZSBHTlUgR1BMLgogIFNlZSB0
-aGUgZmlsZSBDT1BZSU5HLgoqLwoKLyogZ2NjIC1XYWxsIGZ1c2VfbG8uYyBgcGtnLWNvbmZpZyBm
-dXNlIC0tY2ZsYWdzIC0tbGlic2AgLW8gZnVzZV9sbyAqLwoKI2RlZmluZSBfR05VX1NPVVJDRQoj
-ZGVmaW5lIEZVU0VfVVNFX1ZFUlNJT04gMzAKCiNpbmNsdWRlIDxmdXNlX2xvd2xldmVsLmg+CiNp
-bmNsdWRlIDx1bmlzdGQuaD4KI2luY2x1ZGUgPHN0ZGxpYi5oPgojaW5jbHVkZSA8c3RkaW8uaD4K
-I2luY2x1ZGUgPHN0ZGRlZi5oPgojaW5jbHVkZSA8c3RkYm9vbC5oPgojaW5jbHVkZSA8c3RyaW5n
-Lmg+CiNpbmNsdWRlIDxkaXJlbnQuaD4KI2luY2x1ZGUgPGFzc2VydC5oPgojaW5jbHVkZSA8ZXJy
-bm8uaD4KI2luY2x1ZGUgPGVyci5oPgoKc3RydWN0IGxvX2lub2RlIHsKCXN0cnVjdCBsb19pbm9k
-ZSAqbmV4dDsKCXN0cnVjdCBsb19pbm9kZSAqcHJldjsKCWludCBmZDsKCWlub190IGlubzsKCWRl
-dl90IGRldjsKCXVpbnQ2NF90IG5sb29rdXA7Cn07CgpzdHJ1Y3QgbG9fZGF0YSB7CglpbnQgZGVi
-dWc7CglzdHJ1Y3QgbG9faW5vZGUgcm9vdDsKfTsKCnN0YXRpYyBzdHJ1Y3QgbG9fZGF0YSAqbG9f
-ZGF0YShmdXNlX3JlcV90IHJlcSkKewoJcmV0dXJuIChzdHJ1Y3QgbG9fZGF0YSAqKSBmdXNlX3Jl
-cV91c2VyZGF0YShyZXEpOwp9CgpzdGF0aWMgc3RydWN0IGxvX2lub2RlICpsb19pbm9kZShmdXNl
-X3JlcV90IHJlcSwgZnVzZV9pbm9fdCBpbm8pCnsKCWlmIChpbm8gPT0gRlVTRV9ST09UX0lEKQoJ
-CXJldHVybiAmbG9fZGF0YShyZXEpLT5yb290OwoJZWxzZQoJCXJldHVybiAoc3RydWN0IGxvX2lu
-b2RlICopICh1aW50cHRyX3QpIGlubzsgCn0KCnN0YXRpYyBpbnQgbG9fZmQoZnVzZV9yZXFfdCBy
-ZXEsIGZ1c2VfaW5vX3QgaW5vKQp7CglyZXR1cm4gbG9faW5vZGUocmVxLCBpbm8pLT5mZDsKfQoK
-c3RhdGljIGJvb2wgbG9fZGVidWcoZnVzZV9yZXFfdCByZXEpCnsKCXJldHVybiBsb19kYXRhKHJl
-cSktPmRlYnVnICE9IDA7Cn0KCnN0YXRpYyB2b2lkIGxvX2dldGF0dHIoZnVzZV9yZXFfdCByZXEs
-IGZ1c2VfaW5vX3QgaW5vLAoJCQkgICAgIHN0cnVjdCBmdXNlX2ZpbGVfaW5mbyAqZmkpCnsKCWlu
-dCByZXM7CglzdHJ1Y3Qgc3RhdCBidWY7CgoJcmVzID0gZnN0YXRhdChsb19mZChyZXEsIGlubyks
-ICIiLCAmYnVmLCBBVF9FTVBUWV9QQVRIIHwgQVRfU1lNTElOS19OT0ZPTExPVyk7CglpZiAocmVz
-ID09IC0xKQoJCXJldHVybiAodm9pZCkgZnVzZV9yZXBseV9lcnIocmVxLCBlcnJubyk7CgoJZnVz
-ZV9yZXBseV9hdHRyKHJlcSwgJmJ1ZiwgMS4wKTsKfQoKc3RhdGljIHN0cnVjdCBsb19pbm9kZSAq
-bG9fZmluZChmdXNlX3JlcV90IHJlcSwgc3RydWN0IHN0YXQgKnN0KQp7CglzdHJ1Y3QgbG9fZGF0
-YSAqbG8gPSBsb19kYXRhKHJlcSk7CglzdHJ1Y3QgbG9faW5vZGUgKnA7CgoJZm9yIChwID0gbG8t
-PnJvb3QubmV4dDsgcCAhPSAmbG8tPnJvb3Q7IHAgPSBwLT5uZXh0KSB7CgkJaWYgKHAtPmlubyA9
-PSBzdC0+c3RfaW5vICYmIHAtPmRldiA9PSBzdC0+c3RfZGV2KQoJCQlyZXR1cm4gcDsKCX0KCXJl
-dHVybiBOVUxMOwp9CgpzdGF0aWMgdm9pZCBsb19sb29rdXAoZnVzZV9yZXFfdCByZXEsIGZ1c2Vf
-aW5vX3QgcGFyZW50LCBjb25zdCBjaGFyICpuYW1lKQp7CglpbnQgbmV3ZmQ7CglpbnQgcmVzOwoJ
-aW50IHNhdmVycjsKCXN0cnVjdCBsb19pbm9kZSAqaW5vZGU7CglzdHJ1Y3QgZnVzZV9lbnRyeV9w
-YXJhbSBlID0gewoJCWUuYXR0cl90aW1lb3V0ID0gMS4wLAoJCWUuZW50cnlfdGltZW91dCA9IDEu
-MCwKCX07CgoJbmV3ZmQgPSBvcGVuYXQobG9fZmQocmVxLCBwYXJlbnQpLCBuYW1lLCBPX1BBVEgg
-fCBPX05PRk9MTE9XKTsKCWlmIChuZXdmZCA9PSAtMSkKCQlnb3RvIG91dF9lcnI7CgoJcmVzID0g
-ZnN0YXRhdChuZXdmZCwgIiIsICZlLmF0dHIsIEFUX0VNUFRZX1BBVEggfCBBVF9TWU1MSU5LX05P
-Rk9MTE9XKTsKCWlmIChyZXMgPT0gLTEpCgkJZ290byBvdXRfZXJyOwoKCWlub2RlID0gbG9fZmlu
-ZChyZXEsICZlLmF0dHIpOwoJaWYgKGlub2RlKSB7CgkJY2xvc2UobmV3ZmQpOwoJCW5ld2ZkID0g
-LTE7Cgl9IGVsc2UgewoJCXN0cnVjdCBsb19pbm9kZSAqcHJldiA9ICZsb19kYXRhKHJlcSktPnJv
-b3Q7CgkJc3RydWN0IGxvX2lub2RlICpuZXh0ID0gcHJldi0+bmV4dDsKCQlzYXZlcnIgPSBFTk9N
-RU07CgkJaW5vZGUgPSBjYWxsb2MoMSwgc2l6ZW9mKHN0cnVjdCBsb19pbm9kZSkpOwoJCWlmICgh
-aW5vZGUpCgkJCWdvdG8gb3V0X2VycjsKCgkJaW5vZGUtPmZkID0gbmV3ZmQ7CgkJaW5vZGUtPmlu
-byA9IGUuYXR0ci5zdF9pbm87CgkJaW5vZGUtPmRldiA9IGUuYXR0ci5zdF9kZXY7CgoJCW5leHQt
-PnByZXYgPSBpbm9kZTsKCQlpbm9kZS0+bmV4dCA9IG5leHQ7CgkJaW5vZGUtPnByZXYgPSBwcmV2
-OwoJCXByZXYtPm5leHQgPSBpbm9kZTsKCX0KCWlub2RlLT5ubG9va3VwKys7CgllLmlubyA9ICh1
-aW50cHRyX3QpIGlub2RlOwoKCWlmIChsb19kZWJ1ZyhyZXEpKQoJCWZwcmludGYoc3RkZXJyLCAi
-ICAlbGxpLyVzIC0+ICVsbGlcbiIsCgkJCSh1bnNpZ25lZCBsb25nIGxvbmcpIHBhcmVudCwgbmFt
-ZSwgKHVuc2lnbmVkIGxvbmcgbG9uZykgZS5pbm8pOwoKCWZ1c2VfcmVwbHlfZW50cnkocmVxLCAm
-ZSk7CglyZXR1cm47CgpvdXRfZXJyOgoJc2F2ZXJyID0gZXJybm87CglpZiAobmV3ZmQgIT0gLTEp
-CgkJY2xvc2UobmV3ZmQpOwoJZnVzZV9yZXBseV9lcnIocmVxLCBzYXZlcnIpOwp9CgpzdGF0aWMg
-dm9pZCBsb19mcmVlKHN0cnVjdCBsb19pbm9kZSAqaW5vZGUpCnsKCXN0cnVjdCBsb19pbm9kZSAq
-cHJldiA9IGlub2RlLT5wcmV2OwoJc3RydWN0IGxvX2lub2RlICpuZXh0ID0gaW5vZGUtPm5leHQ7
-CgoJbmV4dC0+cHJldiA9IHByZXY7CglwcmV2LT5uZXh0ID0gbmV4dDsKCWNsb3NlKGlub2RlLT5m
-ZCk7CglmcmVlKGlub2RlKTsKfQoKc3RhdGljIHZvaWQgbG9fZm9yZ2V0KGZ1c2VfcmVxX3QgcmVx
-LCBmdXNlX2lub190IGlubywgdWludDY0X3Qgbmxvb2t1cCkKewoJc3RydWN0IGxvX2lub2RlICpp
-bm9kZSA9IGxvX2lub2RlKHJlcSwgaW5vKTsKCglpZiAobG9fZGVidWcocmVxKSkgewoJCWZwcmlu
-dGYoc3RkZXJyLCAiICBmb3JnZXQgJWxsaSAlbGxpIC0lbGxpXG4iLAoJCQkodW5zaWduZWQgbG9u
-ZyBsb25nKSBpbm8sICh1bnNpZ25lZCBsb25nIGxvbmcpIGlub2RlLT5ubG9va3VwLAoJCQkodW5z
-aWduZWQgbG9uZyBsb25nKSBubG9va3VwKTsKCX0KCglhc3NlcnQoaW5vZGUtPm5sb29rdXAgPj0g
-bmxvb2t1cCk7Cglpbm9kZS0+bmxvb2t1cCAtPSBubG9va3VwOwoKCWlmICghaW5vZGUtPm5sb29r
-dXApCgkJbG9fZnJlZShpbm9kZSk7CgoJZnVzZV9yZXBseV9ub25lKHJlcSk7Cn0KCnN0YXRpYyB2
-b2lkIGxvX3JlYWRsaW5rKGZ1c2VfcmVxX3QgcmVxLCBmdXNlX2lub190IGlubykKewoJY2hhciBi
-dWZbUEFUSF9NQVggKyAxXTsKCWludCByZXM7CgoJcmVzID0gcmVhZGxpbmthdChsb19mZChyZXEs
-IGlubyksICIiLCBidWYsIHNpemVvZihidWYpKTsKCWlmIChyZXMgPT0gLTEpCgkJcmV0dXJuICh2
-b2lkKSBmdXNlX3JlcGx5X2VycihyZXEsIGVycm5vKTsKCglpZiAocmVzID09IHNpemVvZihidWYp
-KQoJCXJldHVybiAodm9pZCkgZnVzZV9yZXBseV9lcnIocmVxLCBFTkFNRVRPT0xPTkcpOwoKCWJ1
-ZltyZXNdID0gJ1wwJzsKCglmdXNlX3JlcGx5X3JlYWRsaW5rKHJlcSwgYnVmKTsKfQoKc3RydWN0
-IGxvX2RpcnAgewoJRElSICpkcDsKCXN0cnVjdCBkaXJlbnQgKmVudHJ5OwoJb2ZmX3Qgb2Zmc2V0
-Owp9OwoKc3RhdGljIHN0cnVjdCBsb19kaXJwICpsb19kaXJwKHN0cnVjdCBmdXNlX2ZpbGVfaW5m
-byAqZmkpCnsKCXJldHVybiAoc3RydWN0IGxvX2RpcnAgKikgKHVpbnRwdHJfdCkgZmktPmZoOwp9
-CgpzdGF0aWMgdm9pZCBsb19vcGVuZGlyKGZ1c2VfcmVxX3QgcmVxLCBmdXNlX2lub190IGlubywg
-c3RydWN0IGZ1c2VfZmlsZV9pbmZvICpmaSkKewoJaW50IGZkID0gLTE7CglpbnQgZXJyb3IgPSBF
-Tk9NRU07CglzdHJ1Y3QgbG9fZGlycCAqZCA9IGNhbGxvYygxLCBzaXplb2Yoc3RydWN0IGxvX2Rp
-cnApKTsKCWlmIChkID09IE5VTEwpCgkJZ290byBvdXRfZXJyOwoKCWZkID0gb3BlbmF0KGxvX2Zk
-KHJlcSwgaW5vKSwgIi4iLCBPX1JET05MWSk7CglpZiAoZmQgPT0gLTEpCgkJZ290byBvdXRfZXJy
-bm87CgoJZC0+ZHAgPSBmZG9wZW5kaXIoZmQpOwoJaWYgKGQtPmRwID09IE5VTEwpCgkJZ290byBv
-dXRfZXJybm87CgoJZC0+b2Zmc2V0ID0gMDsKCWQtPmVudHJ5ID0gTlVMTDsKCglmaS0+ZmggPSAo
-dWludHB0cl90KSBkOwoJZnVzZV9yZXBseV9vcGVuKHJlcSwgZmkpOwoJcmV0dXJuOwoKb3V0X2Vy
-cm5vOgoJZXJyb3IgPSBlcnJubzsKb3V0X2VycjoKCWZyZWUoZCk7CglpZiAoZmQgIT0gLTEpCgkJ
-Y2xvc2UoZmQpOwoJZnVzZV9yZXBseV9lcnIocmVxLCBlcnJvcik7Cn0KCnN0YXRpYyB2b2lkIGxv
-X3JlYWRkaXIoZnVzZV9yZXFfdCByZXEsIGZ1c2VfaW5vX3QgaW5vLCBzaXplX3Qgc2l6ZSwgb2Zm
-X3Qgb2Zmc2V0LAoJCSAgICAgICBzdHJ1Y3QgZnVzZV9maWxlX2luZm8gKmZpKQp7CglzdHJ1Y3Qg
-bG9fZGlycCAqZCA9IGxvX2RpcnAoZmkpOwoJY2hhciAqYnVmOwoJY2hhciAqcDsKCXNpemVfdCBy
-ZW07CgoJKHZvaWQpIGlubzsKCglidWYgPSBjYWxsb2Moc2l6ZSwgMSk7CglpZiAoIWJ1ZikKCQly
-ZXR1cm4gKHZvaWQpIGZ1c2VfcmVwbHlfZXJyKHJlcSwgRU5PTUVNKTsKCglpZiAob2Zmc2V0ICE9
-IGQtPm9mZnNldCkgewoJCXNlZWtkaXIoZC0+ZHAsIG9mZnNldCk7CgkJZC0+ZW50cnkgPSBOVUxM
-OwoJCWQtPm9mZnNldCA9IG9mZnNldDsKCX0KCXAgPSBidWY7CglyZW0gPSBzaXplOwoJd2hpbGUg
-KDEpIHsKCQlzaXplX3QgZW50c2l6ZTsKCQlzdHJ1Y3Qgc3RhdCBzdDsKCQlvZmZfdCBuZXh0b2Zm
-OwoKCQlpZiAoIWQtPmVudHJ5KSB7CgkJCWVycm5vID0gMDsKCQkJZC0+ZW50cnkgPSByZWFkZGly
-KGQtPmRwKTsKCQkJaWYgKCFkLT5lbnRyeSkgewoJCQkJaWYgKGVycm5vICYmIHJlbSA9PSBzaXpl
-KSB7CgkJCQkJaW50IHNhdmVyciA9IGVycm5vOwoJCQkJCWZyZWUoYnVmKTsKCQkJCQlyZXR1cm4g
-KHZvaWQpIGZ1c2VfcmVwbHlfZXJyKHJlcSwgc2F2ZXJyKTsKCQkJCX0KCgkJCQlicmVhazsKCQkJ
-fQoJCX0KCgkJbWVtc2V0KCZzdCwgMCwgc2l6ZW9mKHN0KSk7CgkJc3Quc3RfaW5vID0gZC0+ZW50
-cnktPmRfaW5vOwoJCXN0LnN0X21vZGUgPSBkLT5lbnRyeS0+ZF90eXBlIDw8IDEyOwoJCW5leHRv
-ZmYgPSB0ZWxsZGlyKGQtPmRwKTsKCgkJZW50c2l6ZSA9IGZ1c2VfYWRkX2RpcmVudHJ5KHJlcSwg
-cCwgcmVtLCBkLT5lbnRyeS0+ZF9uYW1lLCAmc3QsIG5leHRvZmYpOwoJCWlmIChlbnRzaXplID4g
-cmVtKQoJCQlicmVhazsKCgkJcCArPSBlbnRzaXplOwoJCXJlbSAtPSBlbnRzaXplOwoKCQlkLT5l
-bnRyeSA9IE5VTEw7CgkJZC0+b2Zmc2V0ID0gbmV4dG9mZjsKCX0KCglmdXNlX3JlcGx5X2J1Zihy
-ZXEsIGJ1Ziwgc2l6ZSAtIHJlbSk7CglmcmVlKGJ1Zik7Cn0KCnN0YXRpYyB2b2lkIGxvX3JlbGVh
-c2VkaXIoZnVzZV9yZXFfdCByZXEsIGZ1c2VfaW5vX3QgaW5vLCBzdHJ1Y3QgZnVzZV9maWxlX2lu
-Zm8gKmZpKQp7CglzdHJ1Y3QgbG9fZGlycCAqZCA9IGxvX2RpcnAoZmkpOwoJKHZvaWQpIGlubzsK
-CWNsb3NlZGlyKGQtPmRwKTsKCWZyZWUoZCk7CglmdXNlX3JlcGx5X2VycihyZXEsIDApOwp9Cgpz
-dGF0aWMgdm9pZCBsb19vcGVuKGZ1c2VfcmVxX3QgcmVxLCBmdXNlX2lub190IGlubywKCQkJICBz
-dHJ1Y3QgZnVzZV9maWxlX2luZm8gKmZpKQp7CglpbnQgZmQ7CgljaGFyIGJ1Zls2NF07CgoJc3By
-aW50ZihidWYsICIvcHJvYy9zZWxmL2ZkLyVpIiwgbG9fZmQocmVxLCBpbm8pKTsKCWZkID0gb3Bl
-bihidWYsIGZpLT5mbGFncyAmIH5PX05PRk9MTE9XKTsKCWlmIChmZCA9PSAtMSkKCQlyZXR1cm4g
-KHZvaWQpIGZ1c2VfcmVwbHlfZXJyKHJlcSwgZXJybm8pOwoKCWZpLT5maCA9IGZkOwoJZnVzZV9y
-ZXBseV9vcGVuKHJlcSwgZmkpOwp9CgpzdGF0aWMgdm9pZCBsb19yZWxlYXNlKGZ1c2VfcmVxX3Qg
-cmVxLCBmdXNlX2lub190IGlubywgc3RydWN0IGZ1c2VfZmlsZV9pbmZvICpmaSkKewoJY2xvc2Uo
-ZmktPmZoKTsKCWZ1c2VfcmVwbHlfZXJyKHJlcSwgMCk7Cn0KCnN0YXRpYyB2b2lkIGxvX3JlYWQo
-ZnVzZV9yZXFfdCByZXEsIGZ1c2VfaW5vX3QgaW5vLCBzaXplX3Qgc2l6ZSwKCQkJICBvZmZfdCBv
-ZmZzZXQsIHN0cnVjdCBmdXNlX2ZpbGVfaW5mbyAqZmkpCnsKCXN0cnVjdCBmdXNlX2J1ZnZlYyBi
-dWYgPSBGVVNFX0JVRlZFQ19JTklUKHNpemUpOwoKCSh2b2lkKSBpbm87CgoJYnVmLmJ1ZlswXS5m
-bGFncyA9IEZVU0VfQlVGX0lTX0ZEIHwgRlVTRV9CVUZfRkRfU0VFSzsKCWJ1Zi5idWZbMF0uZmQg
-PSBmaS0+Zmg7CglidWYuYnVmWzBdLnBvcyA9IG9mZnNldDsKCglmdXNlX3JlcGx5X2RhdGEocmVx
-LCAmYnVmLCBGVVNFX0JVRl9TUExJQ0VfTU9WRSk7Cn0KCnN0YXRpYyBzdHJ1Y3QgZnVzZV9sb3ds
-ZXZlbF9vcHMgbG9fb3BlciA9IHsKCS5sb29rdXAJCT0gbG9fbG9va3VwLAoJLmZvcmdldAkJPSBs
-b19mb3JnZXQsCgkuZ2V0YXR0cgk9IGxvX2dldGF0dHIsCgkucmVhZGxpbmsJPSBsb19yZWFkbGlu
-aywKCS5vcGVuZGlyCT0gbG9fb3BlbmRpciwKCS5yZWFkZGlyCT0gbG9fcmVhZGRpciwKCS5yZWxl
-YXNlZGlyCT0gbG9fcmVsZWFzZWRpciwKCS5vcGVuCQk9IGxvX29wZW4sCgkucmVsZWFzZQk9IGxv
-X3JlbGVhc2UsCgkucmVhZAkJPSBsb19yZWFkLAp9OwoKI2RlZmluZSBMT19PUFQodCwgcCwgdikg
-eyB0LCBvZmZzZXRvZihzdHJ1Y3QgbG9fZGF0YSwgcCksIHYgfQoKc3RhdGljIGNvbnN0IHN0cnVj
-dCBmdXNlX29wdCBsb19vcHRzW10gPSB7CglGVVNFX09QVF9LRVkoImRlYnVnIiwJCSAgICAgIEZV
-U0VfT1BUX0tFWV9LRUVQKSwKCUZVU0VfT1BUX0tFWSgiLWQiLAkJICAgICAgRlVTRV9PUFRfS0VZ
-X0tFRVApLAoJTE9fT1BUKCJkZWJ1ZyIsCQkgICAgICBkZWJ1ZywgMSksCglMT19PUFQoIi1kIiwJ
-CSAgICAgIGRlYnVnLCAxKSwKCUZVU0VfT1BUX0VORAp9OwoKaW50IG1haW4oaW50IGFyZ2MsIGNo
-YXIgKmFyZ3ZbXSkKewoJc3RydWN0IGZ1c2VfYXJncyBhcmdzID0gRlVTRV9BUkdTX0lOSVQoYXJn
-YywgYXJndik7CglzdHJ1Y3QgZnVzZV9jaGFuICpjaDsKCWNoYXIgKm1vdW50cG9pbnQ7CglpbnQg
-cmV0ID0gLTE7CglzdHJ1Y3QgbG9fZGF0YSBsbyA9IHsgfTsKCglpZiAoZnVzZV9vcHRfcGFyc2Uo
-JmFyZ3MsICZsbywgbG9fb3B0cywgTlVMTCkgPT0gLTEpCgkJZXhpdCgxKTsKCWxvLnJvb3QubmV4
-dCA9IGxvLnJvb3QucHJldiA9ICZsby5yb290OwoJbG8ucm9vdC5mZCA9IG9wZW4oIi8iLCBPX1BB
-VEgpOwoJbG8ucm9vdC5ubG9va3VwID0gMjsKCWlmIChsby5yb290LmZkID09IC0xKQoJCWVycigx
-LCAib3BlbihcIi9cIiwgT19QQVRIKSIpOwoKCWlmIChmdXNlX3BhcnNlX2NtZGxpbmUoJmFyZ3Ms
-ICZtb3VudHBvaW50LCBOVUxMLCBOVUxMKSAhPSAtMSAmJgoJICAgIChjaCA9IGZ1c2VfbW91bnQo
-bW91bnRwb2ludCwgJmFyZ3MpKSAhPSBOVUxMKSB7CgkJc3RydWN0IGZ1c2Vfc2Vzc2lvbiAqc2U7
-CgkJc2UgPSBmdXNlX2xvd2xldmVsX25ldygmYXJncywgJmxvX29wZXIsIHNpemVvZihsb19vcGVy
-KSwgJmxvKTsKCQlpZiAoc2UgIT0gTlVMTCkgewoJCQlpZiAoZnVzZV9zZXRfc2lnbmFsX2hhbmRs
-ZXJzKHNlKSAhPSAtMSkgewoJCQkJZnVzZV9zZXNzaW9uX2FkZF9jaGFuKHNlLCBjaCk7CgkJCQly
-ZXQgPSBmdXNlX3Nlc3Npb25fbG9vcChzZSk7CgkJCQlmdXNlX3JlbW92ZV9zaWduYWxfaGFuZGxl
-cnMoc2UpOwoJCQkJZnVzZV9zZXNzaW9uX3JlbW92ZV9jaGFuKGNoKTsKCQkJfQoJCQlmdXNlX3Nl
-c3Npb25fZGVzdHJveShzZSk7CgkJfQoJCWZ1c2VfdW5tb3VudChtb3VudHBvaW50LCBjaCk7CgkJ
-ZnJlZShtb3VudHBvaW50KTsKCX0KCWZ1c2Vfb3B0X2ZyZWVfYXJncygmYXJncyk7CgoJd2hpbGUg
-KGxvLnJvb3QubmV4dCAhPSAmbG8ucm9vdCkKCQlsb19mcmVlKGxvLnJvb3QubmV4dCk7CgoJcmV0
-dXJuIHJldCA/IDEgOiAwOwp9Cg==
---047d7b6788f4ac529804e370ba6c--
+- Arnaldo
+ 
+> $ perf record -e sched:sched_switch -c 1 -a -- sleep 5
+> $ perf script
+> <selected events shown>
+>     ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+>     ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+> :30482 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+> 
+> The last line lost the conversion from tid to comm. If you look at the events
+> (perf script -D) you see why - SAMPLE event is generated after the EXIT:
+> 
+> 0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+> 0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+> ... thread: :30482:30482
+> 
+> When perf processes the EXIT event the thread is moved to the dead_threads
+> list. When the SAMPLE event is processed no thread exists for the pid so a new
+> one is created by machine__findnew_thread.
+> 
+> This patch address the problem by delaying the move to the dead_threads list
+> until the tid is re-used (per Adrian's suggestion).
+> 
+> With this patch we get the previous example shows:
+> 
+>   ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+>   ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+>   ls 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+> 
+> and
+> 
+>   0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+>   0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+>   ... thread: ls:30482
+> 
+> v3: re-do from a time based check to a delayed move to dead_threads list
+> 
+> v2: Rebased to latest perf/core branch. Changed time comparison to use
+>     a macro which explicitly shows the time basis
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  tools/perf/util/machine.c |   37 +++++++++++++++++++------------------
+>  1 file changed, 19 insertions(+), 18 deletions(-)
+> 
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index 6fcc358..7784a9d 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -1011,11 +1011,27 @@ out_problem:
+>  	return 0;
+>  }
+>  
+> +static void machine__remove_thread(struct machine *machine, struct thread *th)
+> +{
+> +	machine->last_match = NULL;
+> +	rb_erase(&th->rb_node, &machine->threads);
+> +	/*
+> +	 * We may have references to this thread, for instance in some hist_entry
+> +	 * instances, so just move them to a separate list.
+> +	 */
+> +	list_add_tail(&th->node, &machine->dead_threads);
+> +}
+> +
+>  int machine__process_fork_event(struct machine *machine, union perf_event *event)
+>  {
+> -	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
+> +	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+>  	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
+>  
+> +	/* if a thread currently exists for the thread id remove it */
+> +	if (thread != NULL)
+> +		machine__remove_thread(machine, thread);
+> +
+> +	thread = machine__findnew_thread(machine, event->fork.tid);
+>  	if (dump_trace)
+>  		perf_event__fprintf_task(event, stdout);
+>  
+> @@ -1028,27 +1044,12 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
+>  	return 0;
+>  }
+>  
+> -static void machine__remove_thread(struct machine *machine, struct thread *th)
+> -{
+> -	machine->last_match = NULL;
+> -	rb_erase(&th->rb_node, &machine->threads);
+> -	/*
+> -	 * We may have references to this thread, for instance in some hist_entry
+> -	 * instances, so just move them to a separate list.
+> -	 */
+> -	list_add_tail(&th->node, &machine->dead_threads);
+> -}
+> -
+> -int machine__process_exit_event(struct machine *machine, union perf_event *event)
+> +int machine__process_exit_event(struct machine *machine __maybe_unused,
+> +				union perf_event *event)
+>  {
+> -	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+> -
+>  	if (dump_trace)
+>  		perf_event__fprintf_task(event, stdout);
+>  
+> -	if (thread != NULL)
+> -		machine__remove_thread(machine, thread);
+> -
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.10.1
