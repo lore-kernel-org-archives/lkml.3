@@ -1,62 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966510Ab3HHUk1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:40:27 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:32795 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966356Ab3HHUk0 (ORCPT
+	id S966534Ab3HHUkk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:40:40 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:48948 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966415Ab3HHUk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 16:40:26 -0400
-Message-ID: <52040236.2080701@wwwdotorg.org>
-Date: Thu, 08 Aug 2013 14:40:22 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+Date: Thu, 8 Aug 2013 13:40:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH 5/8] rcu: eliminate deadlock for rcu read site
+Message-ID: <20130808204020.GA31127@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
+ <1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Wei Ni <wni@nvidia.com>, khali@linux-fr.org, linux@roeck-us.net,
-        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
-        MLongnecker@nvidia.com, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/3] ARM: dt: t114 dalmore: add dt entry for nct1008
-References: <1375944991-29182-1-git-send-email-wni@nvidia.com> <1375944991-29182-3-git-send-email-wni@nvidia.com> <52040146.7060703@cogentembedded.com>
-In-Reply-To: <52040146.7060703@cogentembedded.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080820-2398-0000-0000-00000149AA27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 02:36 PM, Sergei Shtylyov wrote:
-> Hello.
+On Wed, Aug 07, 2013 at 06:25:01PM +0800, Lai Jiangshan wrote:
+> Background)
 > 
-> On 08/08/2013 10:56 AM, Wei Ni wrote:
+> Although all articles declare that rcu read site is deadlock-immunity.
+> It is not true for rcu-preempt, it will be deadlock if rcu read site
+> overlaps with scheduler lock.
 > 
->> Enable thermal sensor nct1008 for t114 dalmore.
+> ec433f0c, 10f39bb1 and 016a8d5b just partially solve it. But rcu read site
+> is still not deadlock-immunity. And the problem described in 016a8d5b
+> is still existed(rcu_read_unlock_special() calls wake_up).
 > 
->> Signed-off-by: Wei Ni <wni@nvidia.com>
->> ---
->>   arch/arm/boot/dts/tegra114-dalmore.dts |   10 +++++++++-
->>   1 file changed, 9 insertions(+), 1 deletion(-)
+> Aim)
 > 
->> diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts
->> b/arch/arm/boot/dts/tegra114-dalmore.dts
->> index b5a42f0..9d4d2b2 100644
->> --- a/arch/arm/boot/dts/tegra114-dalmore.dts
->> +++ b/arch/arm/boot/dts/tegra114-dalmore.dts
->> @@ -738,6 +738,14 @@
->>               realtek,ldo1-en-gpios =
->>                   <&gpio TEGRA_GPIO(V, 3) GPIO_ACTIVE_HIGH>;
->>           };
->> +
->> +        nct1008 {
+> We want to fix the problem forever, we want to keep rcu read site
+> is deadlock-immunity as books say.
 > 
->    ePAPR [1] says: "the name of a node should be somewhat generic,
-> reflecting the function of the device and not its precise programming
-> model". So I suggest "thermal"
+> How)
+> 
+> The problem is solved by "if rcu_read_unlock_special() is called inside
+> any lock which can be (chained) nested in rcu_read_unlock_special(),
+> we defer rcu_read_unlock_special()".
+> This kind locks include rnp->lock, scheduler locks, perf ctx->lock, locks
+> in printk()/WARN_ON() and all locks nested in these locks or chained nested
+> in these locks.
+> 
+> The problem is reduced to "how to distinguish all these locks(context)",
+> We don't distinguish all these locks, we know that all these locks
+> should be nested in local_irqs_disable().
+> 
+> we just consider if rcu_read_unlock_special() is called in irqs-disabled
+> context, it may be called in these suspect locks, we should defer
+> rcu_read_unlock_special().
+> 
+> The algorithm enlarges the probability of deferring, but the probability
+> is still very very low.
+> 
+> Deferring does add a small overhead, but it offers us:
+> 	1) really deadlock-immunity for rcu read site
+> 	2) remove the overhead of the irq-work(250 times per second in avg.)
 
-True, although there's quite some precedent for node-names being the
-chip name for external chips in existing DTs. If we change this node
-name, I'd like to see a patch that makes all the other "nct1008" nodes
-match the new name...
+One problem here -- it may take quite some time for a set_need_resched()
+to take effect.  This is especially a problem for RCU priority boosting,
+but can also needlessly delay preemptible-RCU grace periods because
+local_irq_restore() and friends don't check the TIF_NEED_RESCHED bit.
+
+OK, alternatives...
+
+o	Keep the current rule saying that if the scheduler is going
+	to exit an RCU read-side critical section while holding
+	one of its spinlocks, preemption has to have been disabled
+	throughout the full duration of that critical section.
+	Well, we can certainly do this, but it would be nice to get
+	rid of this rule.
+
+o	Use per-CPU variables, possibly injecting delay.  This has ugly
+	disadvantages as noted above.
+
+o	irq_work_queue() can wait a jiffy (or on some architectures,
+	quite a bit longer) before actually doing anything.
+
+o	raise_softirq() is more immediate and is an easy change, but
+	adds a softirq vector -- which people are really trying to
+	get rid of.  Also, wakeup_softirqd() calls things that acquire
+	the scheduler locks, which is exactly what we were trying to
+	avoid doing.
+
+o	invoke_rcu_core() can invoke raise_softirq() as above.
+
+o	IPI to self.  From what I can see, not all architectures
+	support this.  Easy to fake if you have at least two CPUs,
+	but not so good from an OS jitter viewpoint...
+
+o	Add a check to local_irq_disable() and friends.  I would guess
+	that this suggestion would not make architecture maintainers
+	happy.
+
+Other thoughts?
+
+							Thanx, Paul
+
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  include/linux/rcupdate.h |    2 +-
+>  kernel/rcupdate.c        |    2 +-
+>  kernel/rcutree_plugin.h  |   47 +++++++++++++++++++++++++++++++++++++++++----
+>  3 files changed, 44 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 4b14bdc..00b4220 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -180,7 +180,7 @@ extern void synchronize_sched(void);
+> 
+>  extern void __rcu_read_lock(void);
+>  extern void __rcu_read_unlock(void);
+> -extern void rcu_read_unlock_special(struct task_struct *t);
+> +extern void rcu_read_unlock_special(struct task_struct *t, bool unlock);
+>  void synchronize_rcu(void);
+> 
+>  /*
+> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+> index cce6ba8..33b89a3 100644
+> --- a/kernel/rcupdate.c
+> +++ b/kernel/rcupdate.c
+> @@ -90,7 +90,7 @@ void __rcu_read_unlock(void)
+>  #endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+>  		barrier();  /* assign before ->rcu_read_unlock_special load */
+>  		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+> -			rcu_read_unlock_special(t);
+> +			rcu_read_unlock_special(t, true);
+>  		barrier();  /* ->rcu_read_unlock_special load before assign */
+>  		t->rcu_read_lock_nesting = 0;
+>  	}
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index fc8b36f..997b424 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -242,15 +242,16 @@ static void rcu_preempt_note_context_switch(int cpu)
+>  				       ? rnp->gpnum
+>  				       : rnp->gpnum + 1);
+>  		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> -	} else if (t->rcu_read_lock_nesting < 0 &&
+> -		   !WARN_ON_ONCE(t->rcu_read_lock_nesting != INT_MIN) &&
+> -		   t->rcu_read_unlock_special) {
+> +	} else if (t->rcu_read_lock_nesting == 0 ||
+> +		   (t->rcu_read_lock_nesting < 0 &&
+> +		   !WARN_ON_ONCE(t->rcu_read_lock_nesting != INT_MIN))) {
+> 
+>  		/*
+>  		 * Complete exit from RCU read-side critical section on
+>  		 * behalf of preempted instance of __rcu_read_unlock().
+>  		 */
+> -		rcu_read_unlock_special(t);
+> +		if (t->rcu_read_unlock_special)
+> +			rcu_read_unlock_special(t, false);
+>  	}
+> 
+>  	/*
+> @@ -333,7 +334,7 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
+>   * notify RCU core processing or task having blocked during the RCU
+>   * read-side critical section.
+>   */
+> -void rcu_read_unlock_special(struct task_struct *t)
+> +void rcu_read_unlock_special(struct task_struct *t, bool unlock)
+>  {
+>  	int empty;
+>  	int empty_exp;
+> @@ -364,6 +365,42 @@ void rcu_read_unlock_special(struct task_struct *t)
+> 
+>  	/* Clean up if blocked during RCU read-side critical section. */
+>  	if (special & RCU_READ_UNLOCK_BLOCKED) {
+> +		/*
+> +		 * If rcu read lock overlaps with scheduler lock,
+> +		 * rcu_read_unlock_special() may lead to deadlock:
+> +		 *
+> +		 * rcu_read_lock();
+> +		 * preempt_schedule[_irq]() (when preemption)
+> +		 * scheduler lock; (or some other locks can be (chained) nested
+> +		 *                  in rcu_read_unlock_special()/rnp->lock)
+> +		 * access and check rcu data
+> +		 * rcu_read_unlock();
+> +		 *   rcu_read_unlock_special();
+> +		 *     wake_up();                 DEAD LOCK
+> +		 *
+> +		 * To avoid all these kinds of deadlock, we should quit
+> +		 * rcu_read_unlock_special() here and defer it to
+> +		 * rcu_preempt_note_context_switch() or next outmost
+> +		 * rcu_read_unlock() if we consider this case may happen.
+> +		 *
+> +		 * Although we can't know whether current _special()
+> +		 * is nested in scheduler lock or not. But we know that
+> +		 * irqs are always disabled in this case. so we just quit
+> +		 * and defer it to rcu_preempt_note_context_switch()
+> +		 * when irqs are disabled.
+> +		 *
+> +		 * It means we always defer _special() when it is
+> +		 * nested in irqs disabled context, but
+> +		 *	(special & RCU_READ_UNLOCK_BLOCKED) &&
+> +		 *	irqs_disabled_flags(flags)
+> +		 * is still unlikely to be true.
+> +		 */
+> +		if (unlikely(unlock && irqs_disabled_flags(flags))) {
+> +			set_need_resched();
+> +			local_irq_restore(flags);
+> +			return;
+> +		}
+> +
+>  		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BLOCKED;
+> 
+>  		/*
+> -- 
+> 1.7.4.4
+> 
 
