@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093Ab3HHRED (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 13:04:03 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:9681 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab3HHRD6 (ORCPT
+	id S1758106Ab3HHREO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 13:04:14 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:53537 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab3HHREK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 13:03:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 08 Aug 2013 10:03:58 -0700
-Message-ID: <5203D2BE.1010807@nvidia.com>
-Date: Thu, 8 Aug 2013 22:47:50 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 8 Aug 2013 13:04:10 -0400
+Subject: [PATCH 2/2] powerpc/pseries: Add backward compatibilty to read old
+ kernel oops-log
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: mahesh@linux.vne.ibm.com
+Date: Thu, 08 Aug 2013 22:34:00 +0530
+Message-ID: <20130808170358.9914.98084.stgit@aruna-ThinkPad-T420>
+In-Reply-To: <20130808170253.9914.25346.stgit@aruna-ThinkPad-T420>
+References: <20130808170253.9914.25346.stgit@aruna-ThinkPad-T420>
+User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "broonie@kernel.org" <broonie@kernel.org>
-Subject: Re: [PATCH V4] drivers/rtc/rtc-palmas.c: support for backup battery
- charging
-References: <1375871392-871-1-git-send-email-ldewangan@nvidia.com> <20130807163804.GL28558@e106331-lin.cambridge.arm.com> <520295F3.2020401@nvidia.com> <20130808093340.GG14648@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130808093340.GG14648@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080816-0260-0000-0000-00000370FED8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 August 2013 03:03 PM, Mark Rutland wrote:
-> On Wed, Aug 07, 2013 at 07:46:11PM +0100, Laxman Dewangan wrote:
->>> What happens if we charge at the wrong current?
->> Not much sure but I think it can create battery damage.
-> If we charge a battery supporting >100mA at a current <100mA, will that
-> cause damage? Or only if we charge above it's supported current?
+Older kernels has just length information in their header. Handle it
+while reading old kernel oops log from pstore.
 
-Over-current charging can only damage. Lower charging current will not 
-damage, just will take more time to charge.
+Applies on top of powerpc/pseries: Fix buffer overflow when reading from pstore
 
->
-> If the latter's true, it might make sense to invert the condition and
-> describe that the battery may be charged at a higher current, with the
-> default being <100mA. That way a missing property in the dt will only
-> result in sub-optimal charging rather than battery damage.
->
-Ok, fine with this. In this case property will be 
-"ti,backup-battery-charge-high-current".
+Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+---
+ arch/powerpc/platforms/pseries/nvram.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
+diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
+index 893f360..6a5f2b1 100644
+--- a/arch/powerpc/platforms/pseries/nvram.c
++++ b/arch/powerpc/platforms/pseries/nvram.c
+@@ -720,15 +720,25 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
+ 
+ 	if (nvram_type_ids[read_type] == PSTORE_TYPE_DMESG) {
+ 		int length, unzipped_len;
++		size_t hdr_size;
+ 
+ 		oops_hdr = (struct oops_log_info *)buff;
+-		length = oops_hdr->report_length;
++		if (oops_hdr->version < OOPS_HDR_VERSION) {
++			/* Old format oops header had 2-byte record size */
++			hdr_size = sizeof(u16);
++			length = oops_hdr->version;
++			time->tv_sec = 0;
++			time->tv_nsec = 0;
++		} else {
++			hdr_size = sizeof(*oops_hdr);
++			length = oops_hdr->report_length;
++			time->tv_sec = oops_hdr->timestamp;
++			time->tv_nsec = 0;
++		}
+ 		*buf = kmalloc(length, GFP_KERNEL);
+ 		if (*buf == NULL)
+ 			return -ENOMEM;
+-		memcpy(*buf, buff + sizeof(*oops_hdr), length);
+-		time->tv_sec = oops_hdr->timestamp;
+-		time->tv_nsec = 0;
++		memcpy(*buf, buff + hdr_size, length);
+ 		kfree(buff);
+ 
+ 		if (err_type == ERR_TYPE_KERNEL_PANIC_GZ) {
 
