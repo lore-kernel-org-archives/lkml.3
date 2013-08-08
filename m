@@ -1,314 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab3HHRC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 13:02:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35211 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752896Ab3HHRC1 (ORCPT
+	id S1758072Ab3HHRDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 13:03:03 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:54244 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab3HHRDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 13:02:27 -0400
-Date: Thu, 8 Aug 2013 18:02:00 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v1 10/14] clk: msm: Add support for MSM8960's
- multimedia clock controller (MMCC)
-Message-ID: <20130808170200.GF27325@e106331-lin.cambridge.arm.com>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
- <1374713022-6049-11-git-send-email-sboyd@codeaurora.org>
+	Thu, 8 Aug 2013 13:03:01 -0400
+Message-ID: <5203CF41.4040607@gmail.com>
+Date: Thu, 08 Aug 2013 18:02:57 +0100
+From: Paul McQuade <paulmcquad@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374713022-6049-11-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: gregkh@linuxfoundation.org, Linux-kernel <linux-kernel@vger.kernel.org>
+CC: Linux-Devel <devel@driverdev.osuosl.org>
+Subject: [PATCH 1/2] Staging: BCM: removed whitespaces and Errors.
+Content-Type: multipart/mixed;
+ boundary="------------070001090807090304030002"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+This is a multi-part message in MIME format.
+--------------070001090807090304030002
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-On Thu, Jul 25, 2013 at 01:43:38AM +0100, Stephen Boyd wrote:
-> Fill in the data and wire up the multimedia clock controller to
-> the MSM clock driver. This should allow multimedia device drivers
-> to control their clocks on 8960 based platforms.
-> 
-> Cc: devicetree@vger.kernel.org
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  .../devicetree/bindings/clock/qcom,mmcc.txt        |  38 ++++++
->  drivers/clk/msm/Kconfig                            |   8 ++
->  drivers/clk/msm/Makefile                           |   1 +
->  drivers/clk/msm/core.c                             |   3 +
->  drivers/clk/msm/internal.h                         |   1 +
->  drivers/clk/msm/mmcc-8960.c                        | 142 +++++++++++++++++++++
->  6 files changed, 193 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/qcom,mmcc.txt
->  create mode 100644 drivers/clk/msm/mmcc-8960.c
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/qcom,mmcc.txt b/Documentation/devicetree/bindings/clock/qcom,mmcc.txt
-> new file mode 100644
-> index 0000000..e06577e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/qcom,mmcc.txt
-> @@ -0,0 +1,38 @@
-> +MSM Multimedia Clock Controller Binding
-> +-----------------------------------------
-> +
-> +Required properties :
-> +- compatible : shall contain at least "qcom,mmcc" and only one of the
-> +	       following:
-> +
-> +			"qcom,mmcc-8660"
-> +			"qcom,mmcc-8960"
-> +
-> +- reg : shall contain base register location and length
-> +- clocks : shall contain clocks supplied by the clock controller
-> +
-> +Example:
-> +	clock-controller@4000000 {
-> +		compatible = "qcom,mmcc-8960", "qcom,mmcc";
-> +		reg = <0x4000000 0x1000>;
-> +
-> +		clocks {
-> +			pll2: pll2 {
-> +				#clock-cells = <0>;
-> +				compatible = "qcom,pll";
-> +				clocks = <&pxo>;
-> +			};
-> +
-> +			mdp_rcg: mdp_rcg {
-> +				#clock-cells = <0>;
-> +				compatible = "qcom,mn8-dyn-clock";
-> +				clocks = <&pxo>, <&pll2>, <&vpll8>;
-> +			};
-> +
-> +			mdp_cxc: mdp_cxc {
-> +				#clock-cells = <0>;
-> +				compatible = "qcom,cxc-clock";
-> +				clocks = <&mdp_rcg>;
-> +			};
-> +		};
-> +	};
 
-Similar to my comments on the previous patch, this seems odd to me.
-There's either not enough information in the binding, or there's not
-enough in the documentation.
 
-Thanks,
-Mark.
+--------------070001090807090304030002
+Content-Type: text/x-patch;
+ name="0001-Staging-BCM-removed-whitespaces-and-Errors.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-Staging-BCM-removed-whitespaces-and-Errors.patch"
 
-> diff --git a/drivers/clk/msm/Kconfig b/drivers/clk/msm/Kconfig
-> index 3eaffb6..6147380 100644
-> --- a/drivers/clk/msm/Kconfig
-> +++ b/drivers/clk/msm/Kconfig
-> @@ -11,4 +11,12 @@ config MSM_GCC_8960
->  	  Say Y if you want to use peripheral devices such as UART, SPI,
->  	  i2c, USB, SD/eMMC, SATA, PCIe, etc.
->  
-> +config MSM_MMCC_8960
-> +	bool "MSM8960 Multimedia Clock Controller"
-> +	select MSM_GCC_8960
-> +	help
-> +	  Support for the multimedia clock controller on msm8960 devices.
-> +	  Say Y if you want to support multimedia devices such as display,
-> +	  graphics, video encode/decode, camera, etc.
-> +
->  endif
-> diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
-> index c785943..ae199f5 100644
-> --- a/drivers/clk/msm/Makefile
-> +++ b/drivers/clk/msm/Makefile
-> @@ -8,3 +8,4 @@ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
->  clk-msm-$(CONFIG_COMMON_CLK_MSM) += core.o
->  
->  clk-msm-$(CONFIG_MSM_GCC_8960) += gcc-8960.o
-> +clk-msm-$(CONFIG_MSM_MMCC_8960) += mmcc-8960.o
-> diff --git a/drivers/clk/msm/core.c b/drivers/clk/msm/core.c
-> index b8e702b..4e8b8d0 100644
-> --- a/drivers/clk/msm/core.c
-> +++ b/drivers/clk/msm/core.c
-> @@ -176,6 +176,9 @@ static const struct of_device_id msm_cc_match_table[] = {
->  #ifdef CONFIG_MSM_GCC_8960
->  	{ .compatible = "qcom,gcc-8960", .data = &msm_gcc_8960_matches },
->  #endif
-> +#ifdef CONFIG_MSM_MMCC_8960
-> +	{ .compatible = "qcom,mmcc-8960", .data = &msm_mmcc_8960_matches },
-> +#endif
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(of, msm_cc_match_table);
-> diff --git a/drivers/clk/msm/internal.h b/drivers/clk/msm/internal.h
-> index b0ffda7..45435a8 100644
-> --- a/drivers/clk/msm/internal.h
-> +++ b/drivers/clk/msm/internal.h
-> @@ -22,5 +22,6 @@ struct msm_clk_match {
->  };
->  
->  extern const struct msm_clk_match msm_gcc_8960_matches;
-> +extern const struct msm_clk_match msm_mmcc_8960_matches;
->  
->  #endif
-> diff --git a/drivers/clk/msm/mmcc-8960.c b/drivers/clk/msm/mmcc-8960.c
-> new file mode 100644
-> index 0000000..e7b7867
-> --- /dev/null
-> +++ b/drivers/clk/msm/mmcc-8960.c
-> @@ -0,0 +1,142 @@
-> +/*
-> + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +
-> +#include "internal.h"
-> +#include "clk-pll.h"
-> +#include "clk-rcg.h"
-> +#include "clk-branch.h"
-> +
-> +static struct pll_desc pll2_desc = {
-> +	.l_reg = 0x320,
-> +	.m_reg = 0x324,
-> +	.n_reg = 0x328,
-> +	.config_reg = 0x32c,
-> +	.mode_reg = 0x31c,
-> +	.status_reg = 0x334,
-> +	.status_bit = 16,
-> +};
-> +
-> +#define PXO	0
-> +#define PLL2	1
-> +#define PLL8	2
-> +
-> +static u8 mmcc_pxo_pll2_pll8_map[] = {
-> +	[PXO]	= 0,
-> +	[PLL2]	= 1,
-> +	[PLL8]	= 2,
-> +};
-> +
-> +static struct freq_tbl clk_tbl_mdp[] = {
-> +	{   9600000, PLL8, 0, 1, 40 },
-> +	{  13710000, PLL8, 0, 1, 28 },
-> +	{  27000000, PXO,  0, 0,  0 },
-> +	{  29540000, PLL8, 0, 1, 13 },
-> +	{  34910000, PLL8, 0, 1, 11 },
-> +	{  38400000, PLL8, 0, 1, 10 },
-> +	{  59080000, PLL8, 0, 2, 13 },
-> +	{  76800000, PLL8, 0, 1,  5 },
-> +	{  85330000, PLL8, 0, 2,  9 },
-> +	{  96000000, PLL8, 0, 1,  4 },
-> +	{ 128000000, PLL8, 0, 1,  3 },
-> +	{ 160000000, PLL2, 0, 1,  5 },
-> +	{ 177780000, PLL2, 0, 2,  9 },
-> +	{ 200000000, PLL2, 0, 1,  4 },
-> +	{ 228571000, PLL2, 0, 2,  7 },
-> +	{ 266667000, PLL2, 0, 1,  3 },
-> +	{ }
-> +};
-> +
-> +static struct rcg_dyn_desc mdp_rcg = {
-> +	.ctl_reg = 0xc0,
-> +	.ns_reg = 0xd0,
-> +	.md0_reg = 0xc4,
-> +	.md1_reg = 0xc8,
-> +	.ctl_bit = 2,
-> +	.mnctr0_en_bit = 8,
-> +	.mnctr1_en_bit = 5,
-> +	.mnctr0_reset_bit = 31,
-> +	.mnctr1_reset_bit = 30,
-> +	.mnctr0_mode_shift = 9,
-> +	.mnctr1_mode_shift = 6,
-> +	.src0_sel_shift = 3,
-> +	.src1_sel_shift = 0,
-> +	.n0_val_shift = 22,
-> +	.n1_val_shift = 14,
-> +	.m0_val_shift = 8,
-> +	.m1_val_shift = 8,
-> +	.mux_sel_bit = 11,
-> +	.parent_map = mmcc_pxo_pll2_pll8_map,
-> +	.freq_tbl = clk_tbl_mdp,
-> +};
-> +
-> +static struct branch_desc mdp_cxc = {
-> +	.ctl_reg = 0xc0,
-> +	.halt_reg = 0x1d0,
-> +	.ctl_bit = 0,
-> +	.halt_bit = 10,
-> +	.halt_check = BRANCH_HALT,
-> +};
-> +
-> +static struct freq_tbl clk_tbl_rot[] = {
-> +	{  27000000, PXO,   1 },
-> +	{  29540000, PLL8, 13 },
-> +	{  32000000, PLL8, 12 },
-> +	{  38400000, PLL8, 10 },
-> +	{  48000000, PLL8,  8 },
-> +	{  54860000, PLL8,  7 },
-> +	{  64000000, PLL8,  6 },
-> +	{  76800000, PLL8,  5 },
-> +	{  96000000, PLL8,  4 },
-> +	{ 100000000, PLL2,  8 },
-> +	{ 114290000, PLL2,  7 },
-> +	{ 133330000, PLL2,  6 },
-> +	{ 160000000, PLL2,  5 },
-> +	{ 200000000, PLL2,  4 },
-> +	{ }
-> +};
-> +
-> +static struct rcg_dyn_desc rot_rcg = {
-> +	.ctl_reg = 0xe0,
-> +	.ns_reg = 0xe8,
-> +	.ctl_bit = 2,
-> +	.pre_div0_shift = 22,
-> +	.pre_div1_shift = 26,
-> +	.src0_sel_shift = 16,
-> +	.src1_sel_shift = 19,
-> +	.mux_sel_bit = 30,
-> +	.parent_map = mmcc_pxo_pll2_pll8_map,
-> +	.freq_tbl = clk_tbl_rot,
-> +};
-> +
-> +static struct branch_desc rot_cxc = {
-> +	.ctl_reg = 0xe0,
-> +	.halt_reg = 0x1d0,
-> +	.ctl_bit = 0,
-> +	.halt_bit = 15,
-> +	.halt_check = BRANCH_HALT,
-> +};
-> +
-> +static struct of_clk_match msm_mmcc_clk_match[] = {
-> +	{ .name = "pll2", .driver_data = &pll2_desc },
-> +	{ .name = "mdp_rcg", .driver_data = &mdp_rcg },
-> +	{ .name = "mdp_cxc", .driver_data = &mdp_cxc },
-> +	{ .name = "rot_rcg", .driver_data = &rot_rcg },
-> +	{ .name = "rot_cxc", .driver_data = &rot_cxc },
-> +};
-> +
-> +const struct msm_clk_match msm_mmcc_8960_matches = {
-> +	.matches = msm_mmcc_clk_match,
-> +	.size = ARRAY_SIZE(msm_mmcc_clk_match)
-> +};
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+>From 6e70cd8754968f37e82f6a4d8b9dffffa75ff6e0 Mon Sep 17 00:00:00 2001
+From: Paul McQuade <paulmcquad@gmail.com>
+Date: Thu, 8 Aug 2013 16:09:46 +0100
+Subject: [PATCH 1/2] Staging: BCM: removed whitespaces and Errors.
+
+BCM Driver had a lot of whitespaces and errors.
+Some of them are removed by this patch.
+
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ drivers/staging/bcm/InterfaceDld.c      |    2 +-
+ drivers/staging/bcm/InterfaceIdleMode.c |   16 ++---
+ drivers/staging/bcm/InterfaceIsr.c      |  109 ++++++++++++++-----------------
+ drivers/staging/bcm/InterfaceMisc.c     |    2 +-
+ drivers/staging/bcm/headers.h           |    4 +-
+ 5 files changed, 59 insertions(+), 74 deletions(-)
+
+diff --git a/drivers/staging/bcm/InterfaceDld.c b/drivers/staging/bcm/InterfaceDld.c
+index 348ad75..fe7fb4c 100644
+--- a/drivers/staging/bcm/InterfaceDld.c
++++ b/drivers/staging/bcm/InterfaceDld.c
+@@ -115,7 +115,7 @@ int InterfaceFileReadbackFromChip(PVOID arg, struct file *flp, unsigned int on_c
+ 			while (len) {
+ 				if (*(unsigned int *)&buff_readback[len] != *(unsigned int *)&buff[len]) {
+ 					BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "Firmware Download is not proper %d", fw_down);
+-					BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "Val from Binary %x, Val From Read Back %x ", *(unsigned int *)&buff[len], *(unsigned int*)&buff_readback[len]);
++					BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "Val from Binary %x, Val From Read Back %x ", *(unsigned int *)&buff[len], *(unsigned int *)&buff_readback[len]);
+ 					BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "len =%x!!!", len);
+ 					Status = -EIO;
+ 					goto exit;
+diff --git a/drivers/staging/bcm/InterfaceIdleMode.c b/drivers/staging/bcm/InterfaceIdleMode.c
+index 5347828..22150db 100644
+--- a/drivers/staging/bcm/InterfaceIdleMode.c
++++ b/drivers/staging/bcm/InterfaceIdleMode.c
+@@ -52,7 +52,7 @@ int InterfaceIdleModeRespond(struct bcm_mini_adapter *Adapter, unsigned int *pui
+ 
+ 	if (ntohl(*puiBuffer) == GO_TO_IDLE_MODE_PAYLOAD) {
+ 		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, " Got GO_TO_IDLE_MODE_PAYLOAD(210) Msg Subtype");
+-		if (ntohl(*(puiBuffer+1)) == 0 ) {
++		if (ntohl(*(puiBuffer+1)) == 0) {
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "Got IDLE MODE WAKE UP Response From F/W");
+ 
+ 			status = wrmalt (Adapter, SW_ABORT_IDLEMODE_LOC, &uiRegRead, sizeof(uiRegRead));
+@@ -95,8 +95,7 @@ int InterfaceIdleModeRespond(struct bcm_mini_adapter *Adapter, unsigned int *pui
+ 			wake_up(&Adapter->lowpower_mode_wait_queue);
+ 
+ 		} else {
+-			if (TRUE == Adapter->IdleMode)
+-			{
++			if (TRUE == Adapter->IdleMode) {
+ 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "Device is already in Idle mode....");
+ 				return status ;
+ 			}
+@@ -168,8 +167,7 @@ static int InterfaceAbortIdlemode(struct bcm_mini_adapter *Adapter, unsigned int
+ 	if (Adapter->ulPowerSaveMode == DEVICE_POWERSAVE_MODE_AS_MANUAL_CLOCK_GATING) {
+ 		value = 0x80000000;
+ 		status = wrmalt(Adapter, DEBUG_INTERRUPT_GENERATOR_REGISTOR, &value, sizeof(value));
+-		if (status)
+-		{
++		if (status) {
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "WRM to DEBUG_INTERRUPT_GENERATOR_REGISTOR Register failed");
+ 			return status;
+ 		}
+@@ -196,7 +194,7 @@ static int InterfaceAbortIdlemode(struct bcm_mini_adapter *Adapter, unsigned int
+ 		/* mdelay(25); */
+ 
+ 		timeout = jiffies +  msecs_to_jiffies(50) ;
+-		while ( timeout > jiffies ) {
++		while (timeout > jiffies) {
+ 			itr++ ;
+ 			rdmalt(Adapter, CHIP_ID_REG, &chip_id, sizeof(UINT));
+ 			if (0xbece3200 == (chip_id&~(0xF0)))
+@@ -204,7 +202,7 @@ static int InterfaceAbortIdlemode(struct bcm_mini_adapter *Adapter, unsigned int
+ 			if (chip_id == Adapter->chip_id)
+ 				break;
+ 		}
+-		if (timeout < jiffies )
++		if (timeout < jiffies)
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "Not able to read chip-id even after 25 msec");
+ 		else
+ 			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, IDLE_MODE, DBG_LVL_ALL, "Number of completed iteration to read chip-id :%lu", itr);
+@@ -242,14 +240,14 @@ void InterfaceHandleShutdownModeWakeup(struct bcm_mini_adapter *Adapter)
+ 		uiRegVal = 0;
+ 		Status = wrmalt(Adapter, DEBUG_INTERRUPT_GENERATOR_REGISTOR, &uiRegVal, sizeof(uiRegVal));
+ 		if (Status) {
+-			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,"WRM to DEBUG_INTERRUPT_GENERATOR_REGISTOR Failed with err :%d", Status);
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "WRM to DEBUG_INTERRUPT_GENERATOR_REGISTOR Failed with err :%d", Status);
+ 			return;
+ 		}
+ 	}
+ 
+     else {
+ 
+-        /* clear Interrupt EP registers. */
++		/* clear Interrupt EP registers. */
+ 		bytes = rdmalt(Adapter, DEVICE_INT_OUT_EP_REG0, &uiRegVal, sizeof(uiRegVal));
+ 		if (bytes < 0) {
+ 			Status = bytes;
+diff --git a/drivers/staging/bcm/InterfaceIsr.c b/drivers/staging/bcm/InterfaceIsr.c
+index 8322f1b..2c8b801 100644
+--- a/drivers/staging/bcm/InterfaceIsr.c
++++ b/drivers/staging/bcm/InterfaceIsr.c
+@@ -11,101 +11,92 @@ static void read_int_callback(struct urb *urb/*, struct pt_regs *regs*/)
+ 		pr_info(PFX "%s: interrupt status %d\n",
+ 			Adapter->dev->name, status);
+ 
+-	if(Adapter->device_removed == TRUE)
+-	{
+-		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Device has Got Removed.");
++	if (Adapter->device_removed == TRUE) {
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Device has Got Removed.");
+ 		return ;
+ 	}
+ 
+-	if(((Adapter->bPreparingForLowPowerMode == TRUE) && (Adapter->bDoSuspend == TRUE)) ||
++	if (((Adapter->bPreparingForLowPowerMode == TRUE) && (Adapter->bDoSuspend == TRUE)) ||
+ 		psIntfAdapter->bSuspended ||
+-		psIntfAdapter->bPreparingForBusSuspend)
+-	{
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt call back is called while suspending the device");
+-			return ;
++		psIntfAdapter->bPreparingForBusSuspend) {
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Interrupt call back is called while suspending the device");
++			return;
+ 	}
+ 
+-	//BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "interrupt urb status %d", status);
+-	switch (status) {
++	/*BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "interrupt urb status %d", status);*/
++		switch (status)
+ 	    /* success */
+-	    case STATUS_SUCCESS:
+-		if ( urb->actual_length )
+-		{
++		case STATUS_SUCCESS:
++		if (urb->actual_length) {
+ 
+-			if(psIntfAdapter->ulInterruptData[1] & 0xFF)
+-			{
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Got USIM interrupt");
++			if (psIntfAdapter->ulInterruptData[1] & 0xFF) {
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Got USIM interrupt");
+ 			}
+ 
+-			if(psIntfAdapter->ulInterruptData[1] & 0xFF00)
+-			{
++			if (psIntfAdapter->ulInterruptData[1] & 0xFF00) {
+ 				atomic_set(&Adapter->CurrNumFreeTxDesc,
+ 					(psIntfAdapter->ulInterruptData[1] & 0xFF00) >> 8);
+ 				atomic_set (&Adapter->uiMBupdate, TRUE);
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "TX mailbox contains %d",
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "TX mailbox contains %d",
+ 					atomic_read(&Adapter->CurrNumFreeTxDesc));
+ 			}
+-			if(psIntfAdapter->ulInterruptData[1] >> 16)
+-			{
+-				Adapter->CurrNumRecvDescs=
++			if (psIntfAdapter->ulInterruptData[1] >> 16) {
++				Adapter->CurrNumRecvDescs =
+ 					(psIntfAdapter->ulInterruptData[1]  >> 16);
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"RX mailbox contains %d",
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "RX mailbox contains %d",
+ 					Adapter->CurrNumRecvDescs);
+ 				InterfaceRx(psIntfAdapter);
+ 			}
+-			if(Adapter->fw_download_done &&
++			if (Adapter->fw_download_done &&
+ 				!Adapter->downloadDDR &&
+-				atomic_read(&Adapter->CurrNumFreeTxDesc))
+-			{
+-				psIntfAdapter->psAdapter->downloadDDR +=1;
++				atomic_read(&Adapter->CurrNumFreeTxDesc)) {
++				psIntfAdapter->psAdapter->downloadDDR += 1;
+ 				wake_up(&Adapter->tx_packet_wait_queue);
+ 			}
+-			if(FALSE == Adapter->waiting_to_fw_download_done)
+-			{
++			if (FALSE == Adapter->waiting_to_fw_download_done) {
+ 				Adapter->waiting_to_fw_download_done = TRUE;
+ 				wake_up(&Adapter->ioctl_fw_dnld_wait_queue);
+ 			}
+-			if(!atomic_read(&Adapter->TxPktAvail))
+-			{
++			if (!atomic_read(&Adapter->TxPktAvail)) {
+ 				atomic_set(&Adapter->TxPktAvail, 1);
+ 				wake_up(&Adapter->tx_packet_wait_queue);
+ 			}
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Firing interrupt in URB");
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Firing interrupt in URB");
+ 		}
+ 		break;
+-		case -ENOENT :
++		case -ENOENT:
+ 		{
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"URB has got disconnected ....");
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "URB has got disconnected ....");
+ 			return ;
+ 		}
+ 		case -EINPROGRESS:
+ 		{
+-			//This situation may happened when URBunlink is used. for detail check usb_unlink_urb documentation.
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Impossibe condition has occurred... something very bad is going on");
+-			break ;
+-			//return;
++			/*This situation may happened when URBunlink is used. for detail check usb_unlink_urb documentation.*/
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Impossibe condition has occurred... something very bad is going on");
++			break;
++			/*return;*/
+ 		}
+ 		case -EPIPE:
+ 		{
+-				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt IN endPoint  has got halted/stalled...need to clear this");
++				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Interrupt IN endPoint  has got halted/stalled...need to clear this");
+ 				Adapter->bEndPointHalted = TRUE ;
+ 				wake_up(&Adapter->tx_packet_wait_queue);
+ 				urb->status = STATUS_SUCCESS ;
+ 				return;
+ 		}
+ 	    /* software-driven interface shutdown */
+-	    case -ECONNRESET: //URB got unlinked.
+-	    case -ESHUTDOWN:		// hardware gone. this is the serious problem.
+-	    						//Occurs only when something happens with the host controller device
+-	    case -ENODEV : //Device got removed
+-		case -EINVAL : //Some thing very bad happened with the URB. No description is available.
+-	    	BCM_DEBUG_PRINT(Adapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"interrupt urb error %d", status);
++	    case -ECONNRESET: /*URB got unlinked.*/
++	    case -ESHUTDOWN:		/* hardware gone. this is the serious problem.*/
++		/* Occurs only when something happens with the host controller device*/
++	    case -ENODEV: /* Device got removed */
++		case -EINVAL: /* Some thing very bad happened with the URB. No description is available.*/
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "interrupt urb error %d", status);
+ 			urb->status = STATUS_SUCCESS ;
+-			break ;
+-			//return;
++			break;
++			/*return;*/
+ 	    default:
+-			//This is required to check what is the defaults conditions when it occurs..
+-			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL,"GOT DEFAULT INTERRUPT URB STATUS :%d..Please Analyze it...", status);
++			/*This is required to check what is the defaults conditions when it occurs..*/
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, NEXT_SEND, DBG_LVL_ALL, "GOT DEFAULT INTERRUPT URB STATUS :%d..Please Analyze it...", status);
+ 		break;
+ 	}
+ 
+@@ -117,9 +108,8 @@ static void read_int_callback(struct urb *urb/*, struct pt_regs *regs*/)
+ int CreateInterruptUrb(struct bcm_interface_adapter *psIntfAdapter)
+ {
+ 	psIntfAdapter->psInterruptUrb = usb_alloc_urb(0, GFP_KERNEL);
+-	if (!psIntfAdapter->psInterruptUrb)
+-	{
+-		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Cannot allocate interrupt urb");
++	if (!psIntfAdapter->psInterruptUrb) {
++		BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Cannot allocate interrupt urb");
+ 		return -ENOMEM;
+ 	}
+ 	psIntfAdapter->psInterruptUrb->transfer_buffer =
+@@ -137,7 +127,7 @@ int CreateInterruptUrb(struct bcm_interface_adapter *psIntfAdapter)
+ 					read_int_callback, psIntfAdapter,
+ 					psIntfAdapter->sIntrIn.int_in_interval);
+ 
+-	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Interrupt Interval: %d\n",
++	BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Interrupt Interval: %d\n",
+ 				psIntfAdapter->sIntrIn.int_in_interval);
+ 	return 0;
+ }
+@@ -147,18 +137,15 @@ INT StartInterruptUrb(struct bcm_interface_adapter *psIntfAdapter)
+ {
+ 	INT status = 0;
+ 
+-	if( FALSE == psIntfAdapter->psAdapter->device_removed &&
++	if (FALSE == psIntfAdapter->psAdapter->device_removed &&
+ 		FALSE == psIntfAdapter->psAdapter->bEndPointHalted &&
+ 		FALSE == psIntfAdapter->bSuspended &&
+ 		FALSE == psIntfAdapter->bPreparingForBusSuspend &&
+-		FALSE == psIntfAdapter->psAdapter->StopAllXaction)
+-	{
++		FALSE == psIntfAdapter->psAdapter->StopAllXaction) {
+ 		status = usb_submit_urb(psIntfAdapter->psInterruptUrb, GFP_ATOMIC);
+-		if (status)
+-		{
+-			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter,DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL,"Cannot send int urb %d\n", status);
+-			if(status == -EPIPE)
+-			{
++		if (status) {
++			BCM_DEBUG_PRINT(psIntfAdapter->psAdapter, DBG_TYPE_OTHERS, INTF_INIT, DBG_LVL_ALL, "Cannot send int urb %d\n", status);
++			if (status == -EPIPE) {
+ 				psIntfAdapter->psAdapter->bEndPointHalted = TRUE ;
+ 				wake_up(&psIntfAdapter->psAdapter->tx_packet_wait_queue);
+ 			}
+diff --git a/drivers/staging/bcm/InterfaceMisc.c b/drivers/staging/bcm/InterfaceMisc.c
+index afca010..d9fa2bb 100644
+--- a/drivers/staging/bcm/InterfaceMisc.c
++++ b/drivers/staging/bcm/InterfaceMisc.c
+@@ -104,7 +104,7 @@ int BcmRDM(void *arg,
+ 	void *buff,
+ 	int len)
+ {
+-	return InterfaceRDM((struct bcm_interface_adapter*)arg, addr, buff, len);
++	return InterfaceRDM((struct bcm_interface_adapter *)arg, addr, buff, len);
+ }
+ 
+ int BcmWRM(void *arg,
+diff --git a/drivers/staging/bcm/headers.h b/drivers/staging/bcm/headers.h
+index da47db8..b7327ed 100644
+--- a/drivers/staging/bcm/headers.h
++++ b/drivers/staging/bcm/headers.h
+@@ -1,6 +1,6 @@
+ 
+ /*******************************************************************
+-* 		Headers.h
++*			Headers.h
+ *******************************************************************/
+ #ifndef __HEADERS_H__
+ #define __HEADERS_H__
+@@ -34,7 +34,7 @@
+ #include <linux/tcp.h>
+ #include <linux/udp.h>
+ #include <linux/usb.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include <net/ip.h>
+ 
+ #include "Typedefs.h"
+-- 
+1.7.10.4
+
+
+--------------070001090807090304030002--
