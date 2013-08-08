@@ -1,163 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934019Ab3HHImS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:42:18 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:58534 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933886Ab3HHImM (ORCPT
+	id S934058Ab3HHImb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:42:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:48985 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933886Ab3HHImV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:42:12 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520359E9.1000600@roeck-us.net>
-Date: Thu, 08 Aug 2013 01:42:17 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Wei Ni <wni@nvidia.com>
-CC: khali@linux-fr.org, swarren@wwwdotorg.org, MLongnecker@nvidia.com,
-        linux-arm-kernel@lists.infradead.org, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
-References: <1375944991-29182-1-git-send-email-wni@nvidia.com> <1375944991-29182-2-git-send-email-wni@nvidia.com>
-In-Reply-To: <1375944991-29182-2-git-send-email-wni@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Aug 2013 04:42:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,837,1367996400"; 
+   d="scan'208";a="343426506"
+Message-ID: <1375951326.403.25.camel@smile>
+Subject: Re: [PATCH 1/3] dmatest: make module parameters writable
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Dan Williams <djbw@fb.com>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jiang <dave.jiang@intel.com>,
+        "Blin, Jerome" <jerome.blin@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+Date: Thu, 08 Aug 2013 11:42:06 +0300
+In-Reply-To: <CE2134A4.1D1FD%djbw@fb.com>
+References: <CE2134A4.1D1FD%djbw@fb.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 11:56 PM, Wei Ni wrote:
-> The device lm90 can be controlled by the vdd rail.
-> Adding the power control support to power on/off the vdd rail.
-> And make sure that power is enabled before accessing the device.
->
-> Signed-off-by: Wei Ni <wni@nvidia.com>
-> ---
->   drivers/hwmon/lm90.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
->   1 file changed, 49 insertions(+)
->
-> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-> index cdff742..306a348 100644
-> --- a/drivers/hwmon/lm90.c
-> +++ b/drivers/hwmon/lm90.c
-> @@ -89,6 +89,7 @@
->   #include <linux/err.h>
->   #include <linux/mutex.h>
->   #include <linux/sysfs.h>
-> +#include <linux/regulator/consumer.h>
->
->   /*
->    * Addresses to scan
-> @@ -302,6 +303,7 @@ static const struct lm90_params lm90_params[] = {
->   struct lm90_data {
->   	struct device *hwmon_dev;
->   	struct mutex update_lock;
-> +	struct regulator *lm90_reg;
->   	char valid; /* zero until following fields are valid */
->   	unsigned long last_updated; /* in jiffies */
->   	int kind;
-> @@ -1391,6 +1393,32 @@ static void lm90_init_client(struct i2c_client *client)
->   		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
->   }
->
-> +static void lm90_power_control(struct i2c_client *client, bool is_enable)
-> +{
-> +	struct lm90_data *data = i2c_get_clientdata(client);
-> +	int ret;
-> +
-> +	if (!data->lm90_reg)
-> +		return;
-> +
-> +	mutex_lock(&data->update_lock);
-> +
+On Fri, 2013-08-02 at 17:49 +0000, Dan Williams wrote: 
+> 
+> On 7/31/13 7:28 AM, "Andy Shevchenko" <andriy.shevchenko@linux.intel.com>
+> wrote:
+> 
+> >On Tue, 2013-07-23 at 18:36 +0300, Andy Shevchenko wrote:
+> >> The debugfs interface brought a copy of the test case parameters. This
+> >>makes
+> >> different set of values under /sys/module/dmatest/parameters/ and
+> >> /sys/kernel/debug/dmatest/. The user might be confused by the
+> >>divergence of
+> >> values.
+> >> 
+> >> The proposed solution in this patch is to make module parameters
+> >>writable and
+> >> remove them from the debugfs. Though we're still using debugfs to
+> >>control test
+> >> runner and getting results.
+> >> 
+> >> Documentation part is updated accordingly.
+> >> 
+> >> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> >> Suggested-by: Dan Williams <djbw@fb.com>
+> >
+> >Dan, do you have any comments against this series?
+> >I'd like to have this incorporated into v3.12.
+> 
+> I like this direction, and these can go in as is.  
 
-This is only called during probe and remove, so the mutex is unnecessary.
+So, could it be considered as your ACK?
+If so, I think it would be better to push it early to be in time for
+v3.12
 
-> +	if (is_enable)
-> +		ret = regulator_enable(data->lm90_reg);
-> +	else
-> +		ret = regulator_disable(data->lm90_reg);
-> +
-> +	if (ret < 0)
-> +		dev_err(&client->dev,
-> +			"Error in %s rail vdd, error %d\n",
-> +			(is_enable) ? "enabling" : "disabling", ret);
-> +	else
-> +		dev_info(&client->dev, "success in %s rail vdd\n",
-> +			 (is_enable) ? "enabling" : "disabling");
-> +
-which reduces the function to (pretty much unnecessary) messages and an if statement
-which you only need because you have the function.
+> But I think with a bit
+> more work we can eventually trim the Œresults' file and the
+> thread_{add|get}_result infrastructure.  Ideally we could move all result
+> reporting to ftrace and let a module parameter control which errors are
+> reported.
+> 
+> However, unless I missed it, I don¹t see this support[1] upstream yet.
+> 
+> 
+> --
+> Dan
+> 
+> [1]: https://lwn.net/Articles/432186/
+> 
 
-You should just call regulator_enable in probe and regulator_disable in remove.
-
-Guenter
-
-> +	mutex_unlock(&data->update_lock);
-> +}
-> +
->   static int lm90_probe(struct i2c_client *client,
->   		      const struct i2c_device_id *id)
->   {
-> @@ -1406,6 +1434,20 @@ static int lm90_probe(struct i2c_client *client,
->   	i2c_set_clientdata(client, data);
->   	mutex_init(&data->update_lock);
->
-> +	data->lm90_reg = regulator_get(&client->dev, "vdd");
-
-You should use devm_regulator_get(). Then you also don't need the call to regulator_put().
-
-> +	if (IS_ERR_OR_NULL(data->lm90_reg)) {
-
-The function never returns NULL except if the regulator subsystem is not configured,
-so IS_ERR() is more appropriate.
-
-If the regulator subsystem is not configured, you especially don't need or want
-to pollute the log with an error message.
-
-> +		if (PTR_ERR(data->lm90_reg) == -ENODEV)
-> +			dev_info(&client->dev,
-> +				 "No regulator found for vdd. Assuming vdd is always powered.");
-> +		else
-> +			dev_warn(&client->dev,
-> +				 "Error [%ld] in getting the regulator handle for vdd.\n",
-> +				 PTR_ERR(data->lm90_reg));
-
-I consider the messages unnecessary and confusing. You are polluting the log
-of pretty much every PC user who has one of the supported chips in the system,
-and of everyone else not using regulators for this chip.
-
-> +		data->lm90_reg = NULL;
-
-As pointed out, this is unnecessary, and you should handle -EPROBE_DEFER correctly.
-
-> +	}
-> +
-> +	lm90_power_control(client, true);
-> +
->   	/* Set the device type */
->   	data->kind = id->driver_data;
->   	if (data->kind == adm1032) {
-> @@ -1473,6 +1515,10 @@ exit_remove_files:
->   	lm90_remove_files(client, data);
->   exit_restore:
->   	lm90_restore_conf(client, data);
-> +	lm90_power_control(client, false);
-> +	if (data->lm90_reg)
-> +		regulator_put(data->lm90_reg);
-> +
->   	return err;
->   }
->
-> @@ -1483,6 +1529,9 @@ static int lm90_remove(struct i2c_client *client)
->   	hwmon_device_unregister(data->hwmon_dev);
->   	lm90_remove_files(client, data);
->   	lm90_restore_conf(client, data);
-> +	lm90_power_control(client, false);
-> +	if (data->lm90_reg)
-> +		regulator_put(data->lm90_reg);
->
->   	return 0;
->   }
->
-
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
