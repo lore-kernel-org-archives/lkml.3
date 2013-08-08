@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933558Ab3HHB4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 21:56:48 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:54105 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab3HHB4r (ORCPT
+	id S933682Ab3HHB44 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 21:56:56 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:38241 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294Ab3HHB4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 21:56:47 -0400
+	Wed, 7 Aug 2013 21:56:51 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -15,19 +15,18 @@ Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] perf kvm: option to print events that exceed a duration -v2
-Date: Wed,  7 Aug 2013 21:56:38 -0400
-Message-Id: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 2/2] perf kvm: Update documentation with live command
+Date: Wed,  7 Aug 2013 21:56:39 -0400
+Message-Id: <1375926999-75129-2-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
+References: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is useful to spot high latency blips. It is normal for HLT
-reasons to have long exit times, so strip those from the duration
-check.
-
-v2: changed threshold to duration per acme's request
+Update perf-kvm documentation with new live subcommand. Add -p/--pid option
+for perf-kvm-stat-report as well.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -39,99 +38,85 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-kvm.c |   25 +++++++++++++++++++++----
- tools/perf/perf.h        |    3 +++
- 2 files changed, 24 insertions(+), 4 deletions(-)
+ tools/perf/Documentation/perf-kvm.txt |   46 +++++++++++++++++++++++++++++++--
+ 1 file changed, 44 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 2ceec81..fa2f3d7 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -106,6 +106,7 @@ struct perf_kvm_stat {
- 	u64 total_time;
- 	u64 total_count;
- 	u64 lost_events;
-+	u64 duration;
+diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
+index 326f2cb..ac84db2 100644
+--- a/tools/perf/Documentation/perf-kvm.txt
++++ b/tools/perf/Documentation/perf-kvm.txt
+@@ -13,6 +13,7 @@ SYNOPSIS
+ 	{top|record|report|diff|buildid-list}
+ 'perf kvm' [--host] [--guest] [--guestkallsyms=<path> --guestmodules=<path>
+ 	| --guestvmlinux=<path>] {top|record|report|diff|buildid-list|stat}
++'perf kvm stat [record|report|live] [<options>]
  
- 	const char *pid_str;
- 	struct intlist *pid_list;
-@@ -473,7 +474,7 @@ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
- static bool handle_end_event(struct perf_kvm_stat *kvm,
- 			     struct vcpu_event_record *vcpu_record,
- 			     struct event_key *key,
--			     u64 timestamp)
-+			     struct perf_sample *sample)
- {
- 	struct kvm_event *event;
- 	u64 time_begin, time_diff;
-@@ -510,12 +511,24 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
- 	vcpu_record->start_time = 0;
+ DESCRIPTION
+ -----------
+@@ -50,6 +51,10 @@ There are a couple of variants of perf kvm:
+   'perf kvm stat report' reports statistical data which includes events
+   handled time, samples, and so on.
  
- 	/* seems to happen once in a while during live mode */
--	if (timestamp < time_begin) {
-+	if (sample->time < time_begin) {
- 		pr_debug("End time before begin time; skipping event.\n");
- 		return true;
- 	}
- 
--	time_diff = timestamp - time_begin;
-+	time_diff = sample->time - time_begin;
++  'perf kvm stat live' reports statistical data in a live mode (similar to
++  record + report but with statistical data updated live at a given display
++  rate).
 +
-+	if (kvm->duration && time_diff > kvm->duration) {
-+		char decode[32];
+ OPTIONS
+ -------
+ -i::
+@@ -85,13 +90,50 @@ STAT REPORT OPTIONS
+ --vcpu=<value>::
+        analyze events which occures on this vcpu. (default: all vcpus)
+ 
+---events=<value>::
+-       events to be analyzed. Possible values: vmexit, mmio, ioport.
++--event=<value>::
++       event to be analyzed. Possible values: vmexit, mmio, ioport.
+        (default: vmexit)
+ -k::
+ --key=<value>::
+        Sorting key. Possible values: sample (default, sort by samples
+        number), time (sort by average time).
++-p::
++--pid=::
++    Analyze events only for given process ID(s) (comma separated list).
 +
-+		kvm->events_ops->decode_key(kvm, &event->key, decode);
-+		if (strcmp(decode, "HLT")) {
-+			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
-+				 sample->time, sample->pid, vcpu_record->vcpu_id,
-+				 decode, time_diff/1000);
-+		}
-+	}
++STAT LIVE OPTIONS
++-----------------
++-d::
++--display::
++        Time in seconds between display updates
 +
- 	return update_kvm_event(event, vcpu, time_diff);
- }
- 
-@@ -562,7 +575,7 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
- 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
- 
- 	if (kvm->events_ops->is_end_event(evsel, sample, &key))
--		return handle_end_event(kvm, vcpu_record, &key, sample->time);
-+		return handle_end_event(kvm, vcpu_record, &key, sample);
- 
- 	return true;
- }
-@@ -1429,6 +1442,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
- 			"key for sorting: sample(sort by samples number)"
- 			" time (sort by avg time)"),
-+		OPT_U64(0, "duration", &kvm->duration,
-+		    "show events other than HALT that take longer than duration usecs"),
- 		OPT_END()
- 	};
- 	const char * const live_usage[] = {
-@@ -1467,6 +1482,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 			usage_with_options(live_usage, live_options);
- 	}
- 
-+	kvm->duration *= NSEC_PER_USEC;   /* convert usec to nsec */
++-m::
++--mmap-pages=::
++    Number of mmap data pages. Must be a power of two.
 +
- 	/*
- 	 * target related setups
- 	 */
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 32bd102..cf20187 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -125,6 +125,9 @@
- #ifndef NSEC_PER_SEC
- # define NSEC_PER_SEC			1000000000ULL
- #endif
-+#ifndef NSEC_PER_USEC
-+# define NSEC_PER_USEC			1000ULL
-+#endif
++-a::
++--all-cpus::
++        System-wide collection from all CPUs.
++
++-p::
++--pid=::
++    Analyze events only for given process ID(s) (comma separated list).
++
++--vcpu=<value>::
++       analyze events which occures on this vcpu. (default: all vcpus)
++
++
++--event=<value>::
++       event to be analyzed. Possible values: vmexit, mmio, ioport.
++       (default: vmexit)
++
++-k::
++--key=<value>::
++       Sorting key. Possible values: sample (default, sort by samples
++       number), time (sort by average time).
++
++--duration=<value>::
++       Show events other than HLT that take longer than duration usecs.
  
- static inline unsigned long long rdclock(void)
- {
+ SEE ALSO
+ --------
 -- 
 1.7.10.1
 
