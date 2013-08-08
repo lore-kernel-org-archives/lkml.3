@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966686Ab3HHVPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 17:15:33 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:54778 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966651Ab3HHVPb (ORCPT
+	id S966697Ab3HHVSy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 17:18:54 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58408 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966555Ab3HHVSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 17:15:31 -0400
-Date: Thu, 8 Aug 2013 14:15:29 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: axboe@kernel.dk, neilb@suse.de, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, dm-devel@redhat.com,
-        linux-raid@vger.kernel.org
-Subject: Re: [PATCH 0/22] Immutable biovecs, block layer changes
-Message-ID: <20130808211529.GB15409@kmo-pixel>
-References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
- <20130808150954.GA30092@infradead.org>
+	Thu, 8 Aug 2013 17:18:52 -0400
+Date: Thu, 8 Aug 2013 22:18:25 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wei Ni <wni@nvidia.com>, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        linux-tegra@vger.kernel.org, MLongnecker@nvidia.com,
+        khali@linux-fr.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20130808211825.GN6427@sirena.org.uk>
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
+ <1375944991-29182-2-git-send-email-wni@nvidia.com>
+ <20130808110136.GA6427@sirena.org.uk>
+ <52038035.7030803@roeck-us.net>
+ <20130808130840.GC6427@sirena.org.uk>
+ <5203B78C.7010101@roeck-us.net>
+ <20130808171554.GI6427@sirena.org.uk>
+ <20130808200026.GA18226@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kzMQwe+b+L5ZMwhV"
 Content-Disposition: inline
-In-Reply-To: <20130808150954.GA30092@infradead.org>
+In-Reply-To: <20130808200026.GA18226@roeck-us.net>
+X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 08:09:54AM -0700, Christoph Hellwig wrote:
-> On Wed, Aug 07, 2013 at 02:54:09PM -0700, Kent Overstreet wrote:
-> > _However_, I have more patches (that depend on this patch series) to get
-> > that back - segment merging improvements that get rid of
-> > bi_seg_front_size, bi_seg_back_size, and bi_phys_segments. Once all that
-> > is in it should be a net reduction to the size of struct bio.
-> 
-> What is preventing you from sending those out as well?  While it's not
-> absolutely nessecary it would certainly be good if we'd avoid a struct
-> bio size regression.
 
-There's still some fairly significant changes, and I don't want to make
-too many invasive changes at once.
+--kzMQwe+b+L5ZMwhV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Main thing is making generic_make_request() take arbitrary size bios.
-After this series that's just two simple patches, but then the changes
-to make use of that will be changing behaviour in non obvious ways.
+On Thu, Aug 08, 2013 at 01:00:26PM -0700, Guenter Roeck wrote:
+> On Thu, Aug 08, 2013 at 06:15:54PM +0100, Mark Brown wrote:
 
-The way the merging changes work is it enables multi page bvecs - so a
-bvec can point to many physically contiguous pages. This moves segment
-merging to bio_add_page(), and gets rid of bi_phys_segments - now
-bi_vcnt == bi_phys_segments, we just split the bio if it's too big.
+> > Sure, that's the transition issues I mentioned - the regulator API does
+> > have stubbing facilities which should cover things and it's very easy to
+> > define stub regulators if you need to.  Like I say I expect this to be a
+> > lot easier after the next merge window as another way of doing stubs is
+> > being added which should make this even easier by avoiding disrupting
+> > drivers that do genuinely want to check for absent supplies and handle
+> > that better.
 
-Then, with bio_add_page() building up large bios and the block layer
-splitting them as necessary, there shouldn't be any need for segment
-merging across bios anymore (because generally when that would've
-happened before, now we'd just be sending one larger bio down).
+> We will need to make sure that all dts files using any of the compatible chips
+> are updated accordingly. There are several entries in various dts files for
+> adm1032, adt7461, lm90, and nct1008.
 
-The remaining patches aren't terribly complicated though (less
-complicated than this patch series). Trickiest bit is multipage bvecs,
-and that's mostly just lots of code auditing - the way I convert
-existing code is by adding bio_for_each_page() - analagous to
-bio_for_each_segment, but giving you bvecs that point to single pages.
-So it's an easy conversion, just have to make sure nothing's missed.
+Yes, and probably also board files as well.  Or either just accept
+bisection trouble for now or wait till the better stubbing is in there -
+that will mean that for DT systems the core will just assume the supply
+is really there and not fail requests if it's not in the DT.
+
+> > The names requested by a driver are defined with regard to the device
+> > and should be the names used by the chip itself as defined in the
+
+> 9 votes for vdd, 11 votes for vcc, one undecided (no datasheet available).
+> Guess one is as good as the other ;-).
+
+What I've suggested before is to use the name from the part for which
+the driver is named.  Assuming the vendor doesn't randomly change their
+datasheet (but that causes problems for hardware engineers so tends to
+be avoided).
+
+--kzMQwe+b+L5ZMwhV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSBAseAAoJELSic+t+oim9HdkP/1clAmlXHvLIfuDu7yuIR1Ec
+UABcJ4gtxJBYR8zc729KpJaLhsjS+LxxuKVFI0PFgUAXmOEO1jHpwy+VR9JW5eee
+e7WdPzet8WZpldswORMJNOOHoE0vZpTs+0Qg2gj2dr7CJX9gyKQeb6pGS05qFHkS
+LNCmWGU97sTnruiIqeSTvTVECDUp4ImE6AskOsSHnTwOIBeLiHHtelLQHXaUqSh7
+3MCzj5C1Qy1VyQkFTIPezhW5pl7u7IBkgXkjBW7ki8tIDMC7Ic4wy/X7oEr7BMMx
+fCimtqRXt/lpNcAzb3SdvnFiU7NigzJ2aEawoU9CzfhYcCu0Yf1qo43VDhjDWEkG
+n5wCymITmin+LFZnl4+uZ+uQr9HG3C5AdffIvlmCNblEUzxCruj6DTepilSKoUEy
+thnaLAHqhrvvf/cvyQx3L7bCcpIy6GwUVUzNI+6H/3b6+BIxLYCBbOB6EHufeCLA
+hcTOUOiyrftSlwzy594PqY8svbHkT3nGptDSOobkWJDEtqABPCj/AwrUB2wMYP5u
+Zya/KSAtO5hD3DzUaBmO1o5nhrYwMt1U7fnYEipJudFE/gJSaa3hDZuifSjElrNw
+/seCyI+eThDBP59ZEICqhqpg1ZqbWPveHA+lZgkjlR2l61EJTUhKs8xnAJFtdyT4
+E3SpSfLRmIV9DOuNM9Hd
+=9ID7
+-----END PGP SIGNATURE-----
+
+--kzMQwe+b+L5ZMwhV--
