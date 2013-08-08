@@ -1,175 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab3HHDlI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 23:41:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:39575 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754778Ab3HHDlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 23:41:04 -0400
-X-IronPort-AV: E=Sophos;i="4.89,836,1367942400"; 
-   d="scan'208";a="8150461"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
-Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: [PATCH part1 0/5] acpica: Split acpi_gbl_root_table_list initialization into two parts.
-Date: Thu, 8 Aug 2013 11:39:31 +0800
-Message-Id: <1375933176-15003-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 11:39:34,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/08 11:39:36,
-	Serialize complete at 2013/08/08 11:39:36
+	id S1756364Ab3HHDtp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 23:49:45 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:64827 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754307Ab3HHDto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 23:49:44 -0400
+Date: Wed, 7 Aug 2013 20:49:41 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Alex Thorlton <athorlton@sgi.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>
+Subject: Re: [PATCHv2] Add per-process flag to control thp
+In-Reply-To: <20130806150807.GA2456@sgi.com>
+Message-ID: <alpine.DEB.2.02.1308072046560.28256@chino.kir.corp.google.com>
+References: <20130802205735.GS26476@sgi.com> <20130805160306.a620c88ba9098b98a0f93665@linux-foundation.org> <20130806150807.GA2456@sgi.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Problem]
+On Tue, 6 Aug 2013, Alex Thorlton wrote:
 
-The current Linux cannot migrate pages used by the kerenl because
-of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
-When the pa is changed, we cannot simply update the pagetable and
-keep the va unmodified. So the kernel pages are not migratable.
+> I've gotten my hands on some of the benchmarks/code that were used to
+> originally uncover the performance issues we're seeing.  I'm currently
+> trying to separate out the performance issues that are being caused by
+> the kernel code from issues involving hardware - the cost of remote
+> memory accesses is a bit higher on our systems with node controllers vs.
+> glueless QPI/Hypertransport-based systems.  
+> 
 
-There are also some other issues will cause the kernel pages not migratable.
-For example, the physical address may be cached somewhere and will be used.
-It is not to update all the caches.
-
-When doing memory hotplug in Linux, we first migrate all the pages in one
-memory device somewhere else, and then remove the device. But if pages are
-used by the kernel, they are not migratable. As a result, memory used by
-the kernel cannot be hot-removed.
-
-Modifying the kernel direct mapping mechanism is too difficult to do. And
-it may cause the kernel performance down and unstable. So we use the following
-way to do memory hotplug.
-
-
-[What we are doing]
-
-In Linux, memory in one numa node is divided into several zones. One of the
-zones is ZONE_MOVABLE, which the kernel won't use.
-
-In order to implement memory hotplug in Linux, we are going to arrange all
-hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
-
-To do this, we need ACPI's help.
-
-
-[How we do this]
-
-In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
-affinities in SRAT record every memory range in the system, and also, flags
-specifying if the memory range is hotpluggable.
-(Please refer to ACPI spec 5.0 5.2.16)
-
-With the help of SRAT, we have to do the following two things to achieve our
-goal:
-
-1. When doing memory hot-add, allow the users arranging hotpluggable as
-   ZONE_MOVABLE.
-   (This has been done by the MOVABLE_NODE functionality in Linux.)
-
-2. when the system is booting, prevent bootmem allocator from allocating
-   hotpluggable memory for the kernel before the memory initialization
-   finishes.
-   (This is what we are going to do. And we need to do some modification in
-    ACPICA. See below.)
-
-
-[About this patch-set]
-
-There is a bootmem allocator named memblock in Linux. memblock starts to work
-at very early time, and SRAT has not been parsed. So we don't know which memory
-is hotpluggable. In order to prevent memblock from allocating hotpluggable
-memory for the kernel, we need to obtain SRAT memory affinity info earlier.
-
-In the current Linux kernel, the acpica code iterates acpi_gbl_root_table_list,
-and install all the acpi tables into it at boot time. Then, it tries to find
-if there is any override table in global array acpi_tables_addr. If any, reinstall
-the override table into acpi_gbl_root_table_list.
-
-In Linux, global array acpi_tables_addr can be fulfilled by ACPI_INITRD_TABLE_OVERRIDE
-mechanism, which allows users to specify their own ACPI tables in initrd file, and
-override the ones from firmware.
-
-The whole procedure looks like the following:
-
-setup_arch()
- |->   ......                                     /* Setup direct mapping pagetables */
- |->acpi_initrd_override()                        /* Store all override tables in acpi_tables_addr. */
- |...
- |->acpi_boot_table_init()
-    |->acpi_table_init()
-       |                                                                                  (Linux code)
-......................................................................................................
-       |                                                                                 (ACPICA code)
-       |->acpi_initialize_tables()
-          |->acpi_tb_parse_root_table()           /* Parse RSDT or XSDT, find all tables in firmware */
-             |->for (each item in acpi_gbl_root_table_list)
-                |->acpi_tb_install_table()
-                   |->   ......                   /* Install one single table */
-                   |->acpi_tb_table_override()    /* Override one single table */
-
-It does the table installation and overriding one by one.
-
-In order to find SRAT at earlier time, we want to initialize acpi_gbl_root_table_list
-earlier. But at the same time, keep ACPI_INITRD_TABLE_OVERRIDE procedure works as well.
-
-The basic idea is, split the acpi_gbl_root_table_list initialization procedure into
-two steps:
-1. Install all tables from firmware, not one by one.
-2. Override any table if necessary, not one by one.
-
-After this patch-set, it will work like this:
-
-setup_arch()
- |->     ......                                   /* Install all tables from firmware (Step 1) */
- |->     ......                                   /* Try to find if any override SRAT in initrd file, if yes, use it */
- |->     ......                                   /* Use the SRAT from firmware */
- |->     ......                                   /* memblock starts to work */
- |->     ......
- |->acpi_initrd_override()                        /* Initialize acpi_tables_addr with all override table. */
- |...
- |->     ......                                   /* Do the table override work for all tables (Step 2) */
-
-
-In order to achieve this goal, we have to split all the following functions:
-
-ACPICA:
-    acpi_tb_install_table()
-    acpi_tb_parse_root_table()
-    acpi_initialize_tables()
-
-Linux acpi:
-    acpi_table_init()
-    acpi_boot_table_init()
-
-Since ACPICA code is not just used by the Linux, so we should keep the ACPICA
-side interfaces unmodified, and introduce new functions used in Linux.
-
-
-Tang Chen (5):
-  acpi, acpica: Split acpi_tb_install_table() into two parts.
-  acpi, acpica: Call two new functions instead of
-    acpi_tb_install_table() in acpi_tb_parse_root_table().
-  acpi, acpica: Split acpi_tb_parse_root_table() into two parts.
-  acpi, acpica: Call two new functions instead of
-    acpi_tb_parse_root_table() in acpi_initialize_tables().
-  acpi, acpica: Split acpi_initialize_tables() into two parts.
-
- drivers/acpi/acpica/actables.h |    2 +
- drivers/acpi/acpica/tbutils.c  |  184 +++++++++++++++++++++++++++++++++++-----
- drivers/acpi/acpica/tbxface.c  |   69 ++++++++++++++--
- 3 files changed, 228 insertions(+), 27 deletions(-)
-
+We've seen some issues where accessing remote hugepages causes performance 
+degradations over accessing local pages that affects some workloads, but 
+that seems like a mempolicy issue rather than madvise.  You probably want 
+local hugepages but not fallback to remote hugepages before allocating 
+local pages?  It would be interesting to see /proc/pid/numa_maps and 
+/proc/pid/smaps for workloads that don't like thp.
