@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965251Ab3HHNtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:49:14 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:40977 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757850Ab3HHNtI (ORCPT
+	id S965291Ab3HHNtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:49:32 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:42250 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757847Ab3HHNtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:49:08 -0400
+	Thu, 8 Aug 2013 09:49:23 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        Eric Miao <eric.y.miao@gmail.com>
-Subject: [PATCH 02/35] cpufreq: pxa: call cpufreq_frequency_table_get_attr()
-Date: Thu,  8 Aug 2013 19:18:04 +0530
-Message-Id: <9b7c9159120d0423a65365414448ceed38621d29.1375964117.git.viresh.kumar@linaro.org>
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH 04/35] cpufreq: sparc: call cpufreq_frequency_table_get_attr()
+Date: Thu,  8 Aug 2013 19:18:06 +0530
+Message-Id: <2a23a50adec189d064cb934e7f3568ab0367d3c4.1375964117.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1375964117.git.viresh.kumar@linaro.org>
 References: <cover.1375964117.git.viresh.kumar@linaro.org>
@@ -30,49 +30,53 @@ This exposes frequency table of driver to cpufreq core and is required for core
 to guess what the index for a target frequency is, when it calls
 cpufreq_frequency_table_target(). And so this driver needs to expose it.
 
-Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/pxa2xx-cpufreq.c | 6 +++++-
- drivers/cpufreq/pxa3xx-cpufreq.c | 8 ++++++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/cpufreq/sparc-us2e-cpufreq.c | 6 +++++-
+ drivers/cpufreq/sparc-us3-cpufreq.c  | 7 ++++++-
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/pxa2xx-cpufreq.c b/drivers/cpufreq/pxa2xx-cpufreq.c
-index fb3981a..c7ea005 100644
---- a/drivers/cpufreq/pxa2xx-cpufreq.c
-+++ b/drivers/cpufreq/pxa2xx-cpufreq.c
-@@ -453,10 +453,14 @@ static int pxa_cpufreq_init(struct cpufreq_policy *policy)
- 		find_freq_tables(&pxa255_freq_table, &pxa255_freqs);
- 		pr_info("PXA255 cpufreq using %s frequency table\n",
- 			pxa255_turbo_table ? "turbo" : "run");
-+
- 		cpufreq_frequency_table_cpuinfo(policy, pxa255_freq_table);
-+		cpufreq_frequency_table_get_attr(pxa255_freq_table, policy->cpu);
- 	}
--	else if (cpu_is_pxa27x())
-+	else if (cpu_is_pxa27x()) {
- 		cpufreq_frequency_table_cpuinfo(policy, pxa27x_freq_table);
-+		cpufreq_frequency_table_get_attr(pxa27x_freq_table, policy->cpu);
-+	}
+diff --git a/drivers/cpufreq/sparc-us2e-cpufreq.c b/drivers/cpufreq/sparc-us2e-cpufreq.c
+index cf5bc2c..80e6d92 100644
+--- a/drivers/cpufreq/sparc-us2e-cpufreq.c
++++ b/drivers/cpufreq/sparc-us2e-cpufreq.c
+@@ -307,6 +307,7 @@ static int __init us2e_freq_cpu_init(struct cpufreq_policy *policy)
+ 	unsigned long clock_tick = sparc64_get_clock_tick(cpu) / 1000;
+ 	struct cpufreq_frequency_table *table =
+ 		&us2e_freq_table[cpu].table[0];
++	int ret;
  
- 	printk(KERN_INFO "PXA CPU frequency change support initialized\n");
+ 	table[0].driver_data = 0;
+ 	table[0].frequency = clock_tick / 1;
+@@ -324,7 +325,10 @@ static int __init us2e_freq_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.transition_latency = 0;
+ 	policy->cur = clock_tick;
  
-diff --git a/drivers/cpufreq/pxa3xx-cpufreq.c b/drivers/cpufreq/pxa3xx-cpufreq.c
-index 9c92ef0..f53f28d6 100644
---- a/drivers/cpufreq/pxa3xx-cpufreq.c
-+++ b/drivers/cpufreq/pxa3xx-cpufreq.c
-@@ -91,7 +91,7 @@ static int setup_freqs_table(struct cpufreq_policy *policy,
- 			     struct pxa3xx_freq_info *freqs, int num)
- {
- 	struct cpufreq_frequency_table *table;
--	int i;
-+	int i, ret;
+-	return cpufreq_frequency_table_cpuinfo(policy, table);
++	ret = cpufreq_frequency_table_cpuinfo(policy, table);
++	if (!ret)
++		cpufreq_frequency_table_get_attr(table, policy->cpu);
++	return ret;
+ }
  
- 	table = kzalloc((num + 1) * sizeof(*table), GFP_KERNEL);
- 	if (table == NULL)
-@@ -108,7 +108,11 @@ static int setup_freqs_table(struct cpufreq_policy *policy,
- 	pxa3xx_freqs_num = num;
- 	pxa3xx_freqs_table = table;
+ static int us2e_freq_cpu_exit(struct cpufreq_policy *policy)
+diff --git a/drivers/cpufreq/sparc-us3-cpufreq.c b/drivers/cpufreq/sparc-us3-cpufreq.c
+index ac76b48..73a90de 100644
+--- a/drivers/cpufreq/sparc-us3-cpufreq.c
++++ b/drivers/cpufreq/sparc-us3-cpufreq.c
+@@ -168,6 +168,7 @@ static int __init us3_freq_cpu_init(struct cpufreq_policy *policy)
+ 	unsigned long clock_tick = sparc64_get_clock_tick(cpu) / 1000;
+ 	struct cpufreq_frequency_table *table =
+ 		&us3_freq_table[cpu].table[0];
++	int ret;
+ 
+ 	table[0].driver_data = 0;
+ 	table[0].frequency = clock_tick / 1;
+@@ -181,7 +182,11 @@ static int __init us3_freq_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.transition_latency = 0;
+ 	policy->cur = clock_tick;
  
 -	return cpufreq_frequency_table_cpuinfo(policy, table);
 +	ret = cpufreq_frequency_table_cpuinfo(policy, table);
@@ -82,7 +86,7 @@ index 9c92ef0..f53f28d6 100644
 +	return ret;
  }
  
- static void __update_core_freq(struct pxa3xx_freq_info *info)
+ static int us3_freq_cpu_exit(struct cpufreq_policy *policy)
 -- 
 1.7.12.rc2.18.g61b472e
 
