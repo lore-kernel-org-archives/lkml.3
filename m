@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933784Ab3HHCmu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 22:42:50 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:63953 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933682Ab3HHCmt (ORCPT
+	id S933743Ab3HHCrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:47:18 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:35523 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933272Ab3HHCrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 22:42:49 -0400
+	Wed, 7 Aug 2013 22:47:17 -0400
+Date: Wed, 7 Aug 2013 22:53:31 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
+Subject: Re: perf,arm -- another (different) fuzzer oops
+In-Reply-To: <alpine.DEB.2.10.1308072227060.16962@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1308072251210.20629@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1308071611290.14098@vincent-weaver-1.um.maine.edu> <20130807223129.GA17118@mudshark.cambridge.arm.com> <5202D5B0.9020107@codeaurora.org> <alpine.DEB.2.10.1308072227060.16962@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <52029713.5070808@wwwdotorg.org>
-References: <cover.1375886595.git.viresh.kumar@linaro.org>
-	<8d192a13cb7e088943da40689d62bc6353bd8604.1375886595.git.viresh.kumar@linaro.org>
-	<52028620.6000608@wwwdotorg.org>
-	<CAKohpokVgcMfmKmjkxc9Dr3z6mBKad23uUdB4ydN_xzGHdfedQ@mail.gmail.com>
-	<52028859.20008@wwwdotorg.org>
-	<CAKohpokK7F7tYJnisVjF=NCRb9zUjQNzrFdXs+QsPSb4oqyytA@mail.gmail.com>
-	<52029713.5070808@wwwdotorg.org>
-Date: Thu, 8 Aug 2013 08:12:48 +0530
-Message-ID: <CAKohpoky9-E2XoxAQy_oQ3sMxvAv5ZfBdDQPd6zUxcSwyKmzXg@mail.gmail.com>
-Subject: Re: [PATCH 1/6] clk: Tegra: Add CPU0 clock driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: rjw@sisk.pl, swarren@nvidia.com, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mturquette@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 August 2013 00:20, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> Right, and that's *exactly* what having a cpufreq driver is for; to
-> implement the details of CPU clock management.
+On Wed, 7 Aug 2013, Vince Weaver wrote:
 
-cpufreq drivers used to keep such information since a long time,
-probably because there wasn't another place to keep them and
-provide generic API's (like generic clock framework).. And so this
-replication started to get in place which we are trying to get rid of
-now.
+> On Wed, 7 Aug 2013, Stephen Boyd wrote:
+> 
+> > ---8<----
+> > 
+> > diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> > index d9f5cd4..21f7790 100644
+> > --- a/arch/arm/kernel/perf_event.c
+> > +++ b/arch/arm/kernel/perf_event.c
+> > @@ -53,7 +53,12 @@ armpmu_map_cache_event(const unsigned (*cache_map)
+> >  static int
+> >  armpmu_map_hw_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
+> >  {
+> > -       int mapping = (*event_map)[config];
+> > +       int mapping;
+> > +
+> > +       if (config >= PERF_COUNT_HW_MAX)
+> > +               return -ENOENT;
+> > +
+> > +       mapping = (*event_map)[config];
+> >         return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
+> >  }
+> 
+> I've tested this patch and my testcase no longer causes the kernel to 
+> oops, so 
+> 
+> Tested-by: Vince Weaver <vincent.weaver@maine.edu>
 
-All cpufreq drivers share a lot of common code which can go
-away and so cpufreq-cpu0 was introduced..
+P.S.  I re-ran the fuzzer again after applying the patch and the good news 
+      is there were no further oopsen.  The bad news is the machine locked 
+      up solid.  I'll investigate further when I'm not remote.
 
-With this patchset this replication goes away for tegra atleast at
-the cost of a platform specific clk-cpu driver.. I think that's a good
-deal, isn't it?
-
-And that's the only way you can use these generic drivers that we
-have...
+Vince
