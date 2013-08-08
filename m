@@ -1,263 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965148Ab3HHKpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 06:45:44 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:9474 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965110Ab3HHKpj (ORCPT
+	id S965170Ab3HHKps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 06:45:48 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11928 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965127Ab3HHKpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 06:45:39 -0400
-X-AuditID: cbfec7f5-b7f5f6d00000105f-71-520376d0058a
-Message-id: <520376CE.3000109@samsung.com>
-Date: Thu, 08 Aug 2013 12:45:34 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Cho KyongHo <pullip.cho@samsung.com>
-Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v9 06/16] ARM: dts: Add description of System MMU of Exynos
- SoCs
-References: <002a01ce941b$0d9a31c0$28ce9540$@samsung.com>
-In-reply-to: <002a01ce941b$0d9a31c0$28ce9540$@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsVy+t/xy7oXypiDDE5MEbG4c/ccq8X8I0Di
-	1ZEfTBYL9ltbdM7ewG7Ru+Aqm8XHU8fZLTY9vsZqcXnXHDaLGef3MVlcWLGR3eJf70FGiymL
-	DrNanPzTy2jRcr2XyYHf48nBeUwesxsusnjcubaHzeP8pjXMHpuX1HtMvrGc0aNvyypGj8+b
-	5DyuHD3DFMAZxWWTkpqTWZZapG+XwJXx7VwzS8Fz64ote9vYGxjn6XcxcnJICJhIXFz8ghHC
-	FpO4cG89G4gtJLCUUWLbsrouRi4g+xOjxNV795hBErwCWhKHVx5iB7FZBFQl7nS/ZQWx2QQM
-	JXqP9oENEhUIkFi85Bw7RL2gxI/J91hAbBEBDYnPV9aD1TML/GCR+LSND8QWFgiTOPHpLwvE
-	YkuJd7tbweZwClhJnJ67gQmiXkdif+s0NghbXmLzmrfMExgFZiFZMQtJ2SwkZQsYmVcxiqaW
-	JhcUJ6XnGukVJ+YWl+al6yXn525ihETW1x2MS49ZHWIU4GBU4uHtCGAKEmJNLCuuzD3EKMHB
-	rCTC+yKLOUiINyWxsiq1KD++qDQntfgQIxMHp1QD454J+j4r1DwLj1afmSujm26aLDfFJNJJ
-	fccuxY5L29h9lJ6vTrtkamwjXCzldUAluXWa+r1LucziSu0/4mPPFh73V2/bU2fqLXwl8fyS
-	UMHpR1i3Hjv+qXXdyVTvZauWrovZZKm4VubHzk1+gilvPZ47G6gddGJb8PtTdrTQM43X1VZe
-	mXEWSizFGYmGWsxFxYkAhzQx1IoCAAA=
+	Thu, 8 Aug 2013 06:45:43 -0400
+Message-ID: <52037468.30401@huawei.com>
+Date: Thu, 8 Aug 2013 18:35:20 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, <jovi.zhangwei@gmail.com>
+Subject: [RFC] ktap: enable scripting for Linux tracing subsystem
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On 08/08/2013 11:38 AM, Cho KyongHo wrote:
+ktap was released 0.2 at several days ago, you can read the release note
+in: http://lwn.net/Articles/561568/
 
-How about something along the lines of:
+The public location of ktap is in: https://github.com/ktap/ktap.git	
 
-"This patch adds dts entries for the SYSMMU devices found on Exynos4
-and Exynos5 SoC series and the SYSMMU binding documentation."
+ktap v0.2 release brought a lots of new valuable changes, in summary,
+the architecture of ktap is easy to integrate with current tracing
+infrastructure, that's why I want to start this RFC discussion now.
 
-instead of this empty changelog ?
+The highlight features of ktap includes:
 
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-> ---
->  .../bindings/iommu/samsung,exynos4210-sysmmu.txt   |  103 +++++++
->  arch/arm/boot/dts/exynos4.dtsi                     |  122 ++++++++
->  arch/arm/boot/dts/exynos4210.dtsi                  |   25 ++
->  arch/arm/boot/dts/exynos4x12.dtsi                  |   82 ++++++
->  arch/arm/boot/dts/exynos5250.dtsi                  |  290 ++++++++++++++++++++
->  5 files changed, 622 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/iommu/samsung,exynos4210-sysmmu.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/iommu/samsung,exynos4210-sysmmu.txt
-> b/Documentation/devicetree/bindings/iommu/samsung,exynos4210-sysmmu.txt
-> new file mode 100644
-> index 0000000..92f0a33
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iommu/samsung,exynos4210-sysmmu.txt
-> @@ -0,0 +1,103 @@
-> +Samsung Exynos4210 IOMMU H/W, System MMU (System Memory Management Unit)
-> +
-> +Samsung's Exynos architecture contains System MMU that enables scattered
-> +physical memory chunks visible as a contiguous region to DMA-capable peripheral
-> +devices like MFC, FIMC, FIMD, GScaler, FIMC-IS and so forth.
+   - support tracepoints, k(ret)probe, u(ret)probe, function tracing,
+     and timer
+   - support x86, x86-64, powerpc, arm, and preempt-rt kernel
+   - support kernel 3.1 and later versions, include Linux mainline
+   - similar event syntax interface with perf
+   - support event filter
+   - unified backend perf callback mechanism
+   - ring buffer transport (same with ftrace)
+   - oneline scripting
 
-s/so forth/and more ?
+To make us understand deeply on ktap, the contents splits into 5 parts:
+Introduction, The design, Implementation, Link, Upstream.
 
-> +
-> +System MMU is a sort of IOMMU and support identical translation table format to
+1. Introduction
+---------------
 
-s/support/supports ?
+ktap is a simple and lightweight dynamic tracing tool for Linux, it's
+similar with Linux mainstream dynamic tracing tool systemtap, and Dtrace
+in Solaris.
+ktap have different design principles from Linux mainstream dynamic
+tracing tool in that it's based on bytecode interpreter, so it doesn't
+depend upon GCC, doesn't require compiling kernel module for each
+script, fulfilling the embedded ecosystem's tracing needs.
 
-> +ARMv7 translation tables with minimum set of page properties including access
-> +permissions, shareability and security protection. In addition, System MMU has
-> +another capabilities like L2 TLB or block-fetch buffers to minimize translation
-> +latency.
-> +
-> +A System MMU is dedicated to a single master peripheral device.  Thus, it is
-> +important to specify the correct System MMU in the device node of its master
-> +device. Whereas a System MMU is dedicated to a master device, the master device
-> +may have more than one System MMU.
-> +
-> +Required properties:
-> +- compatible: Should be "samsung,exynos4210-sysmmu"
-> +- reg: A tuple of base address and size of System MMU registers.
-> +- interrupt-parent: The phandle of the interrupt controller of System MMU
-> +- interrupts: A tuple of numbers that indicates the interrupt source.
-
-The interrupt specifier depends on the interrupt controller (interrupt-parent). 
-So it might not always be a "tuple of numbers". It's probably better to say,
-e.g.:
-
-- interrupts: Should contain the SYSMMU controller interrupt.
-
-> +- clock-names: Should be "sysmmu" if the System MMU is needed to gate its clock.
-> +               Please refer to the following documents:
-> +	       Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +	       Documentation/devicetree/bindings/clock/exynos4-clock.txt
-> +	       Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-
-You could replace "Documentation/devicetree/bindings/clock" with "../clock"
-
-> +	       Optional "master" if the clock to the System MMU is gated by
-> +	       another gate clock other than "sysmmu". The System MMU driver
-> +	       sets "master" the parent of "sysmmu".
-> +	       Exynos4 SoCs, there needs no "master" clocks.
-> +	       Exynos5 SoCs, some System MMUs must have "master" clocks.
-> +- clocks: Required if the System MMU is needed to gate its clock.
-> +	  Please refer to the documents listed above.
-> +- samsung,power-domain: Required if the System MMU is needed to gate its power.
-
-Isn't it required always when an SoC support Power Domains and the SYSMMU
-belongs to a power domain ? Perhaps something like:
-
-- samsung,power-domain: Required if the System MMU belongs to a Power Domain.
-
-would be more appropriate ?
-
-> +	  Please refer to the following document:
-> +	  Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-> +
-> +Required properties for the master peripheral devices:
-> +- iommu: phandles to the System MMUs of the device
-> +
-> +Examples:
-> +A System MMU is dedicated to a single master device.
-> +	gsc_0:  gsc@0x13e00000 {
-> +		compatible = "samsung,exynos5-gsc";
-> +		reg = <0x13e00000 0x1000>;
-> +		interrupts = <0 85 0>;
-> +		samsung,power-domain = <&pd_gsc>;
-> +		clocks = <&clock 256>;
-> +		clock-names = "gscl";
-
-You could omit all the above properties, perhaps just leaving
-'compatible' property, simply replacing them with:
-		...
-
-since the only relevant property hers is 'iommu' ? Just a suggestion
-though.
-
-> +		iommu = <&sysmmu_gsc1>;
-
-Shouldn't this be:
-
-		iommu = <&sysmmu_gsc0>;
-? 
-It also probably makes sense to put the SYMMU device node above 
-the master device node.
-
-> +	};
-> +
-> +	sysmmu_gsc0: sysmmu@13E80000 {
-> +		compatible = "samsung,exynos4210-sysmmu";
-> +		reg = <0x13E80000 0x1000>;
-> +		interrupt-parent = <&combiner>;
-> +		interrupt-names = "sysmmu-gsc0";
-> +		interrupts = <2 0>;
-> +		clock-names = "sysmmu", "master";
-> +		clocks = <&clock 262>, <&clock 256>;
-> +		samsung,power-domain = <&pd_gsc>;
-> +		status = "ok";
-> +	};
-> +
-> +MFC has 2 System MMUs for each port that MFC is attached. Thus it seems natural
-> +to define 2 System MMUs for each port of the MFC:
-> +
-> +	mfc: codec@13400000 {
-> +		compatible = "samsung,mfc-v5";
-> +		reg = <0x13400000 0x10000>;
-> +		interrupts = <0 94 0>;
-> +		samsung,power-domain = <&pd_mfc>;
-> +		clocks = <&clock 170>, <&clock 273>;
-> +		clock-names = "sclk_mfc", "mfc";
-> +		status = "ok";
-> +		iommu = <&sysmmu_mfc_l>, <&sysmmu_mfc_r>;
-> +	};
-
-How about putting this node as last one in this example ?
-
-> +	sysmmu_mfc_l: sysmmu@13620000 {
-> +		compatible = "samsung,exynos4210-sysmmu";
-> +		reg = <0x13620000 0x1000>;
-> +		interrupt-parent = <&combiner>;
-> +		interrupt-names = "sysmmu-mfc-l";
-> +		interrupts = <5 5>;
-> +		clock-names = "sysmmu";
-> +		clocks = <&clock 274>;
-> +		samsung,power-domain = <&pd_mfc>;
-> +		status = "ok";
-> +	};
-> +
-> +	sysmmu_mfc_r: sysmmu@13630000 {
-> +		compatible = "samsung,exynos4210-sysmmu";
-> +		reg = <0x13630000 0x1000>;
-> +		interrupt-parent = <&combiner>;
-> +		interrupt-names = "sysmmu-mfc-r";
-> +		interrupts = <5 6>;
-> +		clock-names = "sysmmu";
-> +		clocks = <&clock 275>;
-> +		samsung,power-domain = <&pd_mfc>;
-> +		status = "ok";
-> +	};
-> +
-> diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
-> index 597cfcf..6265984 100644
-> --- a/arch/arm/boot/dts/exynos4.dtsi
-> +++ b/arch/arm/boot/dts/exynos4.dtsi
-> @@ -251,6 +251,7 @@
->  		clocks = <&clock 170>, <&clock 273>;
->  		clock-names = "sclk_mfc", "mfc";
->  		status = "disabled";
-> +		iommu = <&sysmmu_mfc_l>, <&sysmmu_mfc_r>;
->  	};
->  
->  	serial@13800000 {
-> @@ -485,5 +486,126 @@
->  		clock-names = "sclk_fimd", "fimd";
->  		samsung,power-domain = <&pd_lcd0>;
->  		status = "disabled";
-> +		iommu = <&sysmmu_fimd0>;
-> +	};
-> +
-> +	sysmmu_mfc_l: sysmmu@13620000 {
-> +		compatible = "samsung,exynos4210-sysmmu";
-> +		reg = <0x13620000 0x1000>;
-> +		interrupt-parent = <&combiner>;
-> +		interrupt-names = "sysmmu-mfc-l";
-
-Do you really need 'interrupt-names' property, when there is only
-one interrupt in each node. Isn't it just a leftover from previous
-iterations ? I can't see it mentioned in the binding documentation.
-
-> +		interrupts = <5 5>;
-> +		clock-names = "sysmmu";
-> +		clocks = <&clock 274>;
-> +		samsung,power-domain = <&pd_mfc>;
-> +		status = "ok";
-> +	};
+ktap doesn't invent any new tracing build-block, it leverage current
+tracing building blocks(tracepoint, kprobe, uprobe, function tracing,
+pmu)in Linux kernel, it just combine all these tracing building blocks
+together, to explore as a unified script tracing interface.
 
 
-Thanks,
-Sylwester
+2. The design
+-------------
+
+                   ktap compiler      io thread
+                        |                ^
+                 -------|----------------|-----------
+                        |                |
+                        v                |
+                     ktapvm --------> ringbuffer
+                        |
+                        |
+                        v
+                 tracepoints kprobe uprobe
+                 pmu hw_breakpoint timer
+
+ktap compiler: responsible for compile source script to bytecode, then
+use ioctl to notify ktapvm load and execute bytecode.
+
+ktapvm: core script engine, responsible for load and execute bytecode,
+calling into built-in or library function, also interact with ringbuffer
+transport. ktapvm register perf event by id, the overflow callback will
+call by event is hit, then calling into ktap script engine.
+
+ringbuffer: this is based on ftrace ring buffer, responsible for
+transport to userspace. Possibly ktap will share same ring buffer output
+code with ftrace in future.
+
+io thread: reading the ring buffer, output to stdout.
+
+
+3. Implementation
+-----------------
+
+The script engine and compiler is based on lua initially, a widely used
+fast dynamic typed language, registered based, extendable interpreter,
+support associative array.
+(Note that ktap already changed a lot on interpreter core and compiler,
+so it's cannot call it as lua anymore :-))
+
+Language syntax is C-like, so it's easy to make us(kernel developers) to
+adapt it, smooth learning curve.
+
+ktapvm code of lines is only 5K+, and userspace compiler is only 4K+,
+code is very easy to read and review, especially ktapvm, easy to hack,
+it just have 40 bytecodes.
+
+One thing need to aware is ktap tracing core is heavily based on perf
+event, in this point of view, ktap is a kernel script interface for perf
+tool, there already have perf-script tools(based on python/perl), ktap
+differences with perf-script is we can programming each event when event
+is hit, in real time manner.
+
+Currently debuginfo is not handled, ktap just reuse perf-probe, in case
+some embedded Linux system don't have available debuginfo, they still
+could get local variable or register based on
+kprobe-tracer/uprobe-tracer, so debuginfo won't hurt the simplicity of
+ktap, which recognized as largest advantage of ktap.
+
+The event filter in ktap is based on kernel tracing event filter.
+
+Based on these design, I'm also willing to discuss perf-ktap integrating
+if others want too.
+
+This is the whole design overview for ktap, it reuse current tracing
+building block, to keep its simplicity.
+
+More info is available in ktap/doc/, and sample scripts is in scripts/
+
+4. Link
+-------
+
+There have ktap v0.1 review on LWN(wrote by Corbet):
+http://lwn.net/Articles/551314/
+
+example in that link have a little out of date.
+
+
+5. Upstream
+-----------
+
+why I want to upstream ktap now?
+
+ktap is still in early stage, there have many items in my todo list, but
+small start is a good start, it would be good to shape and polish this
+tool under eyes of community, community collaboration will make ktap to
+be more valuable for all of us, it have been shown that ktap is very
+useful for embedded Linux system, and we are enter an age where embedded
+system is deployed to large user base than before.
+
+I hope in future we will have a robust, low overhead, mature, extendable
+kernel interpreter.
+
+I appreciate any feedback from you, thank you.
+
+jovi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
