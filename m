@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966075Ab3HHS1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 14:27:53 -0400
-Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:58385 "HELO
-	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758051Ab3HHS1t (ORCPT
+	id S966096Ab3HHS2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 14:28:47 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:33910 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758051Ab3HHS2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 14:27:49 -0400
+	Thu, 8 Aug 2013 14:28:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <52027662.6060103@interlog.com>
-References: <1375746189.18481.23.camel@dabdike.int.hansenpartnership.com>
- <1375750501-21902-1-git-send-email-roland@kernel.org> <52025BE3.5020002@redhat.com>
- <CAL1RGDW_nPZPBH=X-fOM4sddhVNkojEp4gUQseSJJaJAxfNqqQ@mail.gmail.com> <52027662.6060103@interlog.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Thu, 8 Aug 2013 11:27:28 -0700
-X-Google-Sender-Auth: K6azcsSjy9o3XPQnCzB0Xw4_kFA
-Message-ID: <CAL1RGDUtfpzrQNhRhj9H4j5CQBOk51k6xf4f969w2GMvoz5wTA@mail.gmail.com>
-Subject: Re: [PATCH v2] [SCSI] sg: Fix user memory corruption when SG_IO is
- interrupted by a signal
-To: Doug Gilbert <dgilbert@interlog.com>
-Cc: David Milburn <dmilburn@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>,
-        Costa Sapuntzakis <costa@purestorage.com>,
-        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@purestorage.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        David Jeffery <djeffery@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1516548.d7oQuzQS7g@amdc1227>
+References: <002701ce941a$eecebdb0$cc6c3910$@samsung.com>
+	<1516548.d7oQuzQS7g@amdc1227>
+Date: Thu, 8 Aug 2013 11:28:44 -0700
+X-Google-Sender-Auth: G0EtLPxe2ouDjADSAdDvemUqPCQ
+Message-ID: <CANEJEGu1ponghpfvyUsQX16+TZWUV+0KXJ7AehjXpju2N_H+Ew@mail.gmail.com>
+Subject: Re: [PATCH v9 03/16] iommu/exynos: fix page table maintenance
+From: Grant Grundler <grundler@chromium.org>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Cho KyongHo <pullip.cho@samsung.com>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Subash Patel <supash.ramaswamy@linaro.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        kvmarm@lists.cs.columbia.edu, Sachin Kamat <sachin.kamat@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 7, 2013 at 9:31 AM, Douglas Gilbert <dgilbert@interlog.com> wrote:
-> So what kind of signal was leading to your "stomping on the memory"?
-> Was it user generated or something like SIGIO, SIGPIPE or a RT signal?
+Tomasz,
 
-It was sometimes SIGHUP (for reopening log files) and sometimes
-SIGALARM (for various periodic things).
-
-> To get around the SG_IO ioctl restart problem (for non idempotent
-> SCSI commands) could we replace a -ERESTARTSYS return value
-> with -EINTR ?
+On Thu, Aug 8, 2013 at 6:54 AM, Tomasz Figa <t.figa@samsung.com> wrote:
+...
+>> +     BUG_ON(lv1ent_section(sent));
 >
-> As I noted in a previous post, for robust user space code using the
-> SG_IO ioctl, masking signals during the IO may help.
+> Is this condition really a critical one, to the point that the system
+> should not continue execution?
+>
+...
+>>       if (lv1ent_page(sent)) {
+>> -             if (*pgcnt != NUM_LV2ENTRIES)
+>> -                     return -EADDRINUSE;
+>> -
+>> +             BUG_ON(*pgcnt != NUM_LV2ENTRIES);
+>
+> Ditto.
 
-Yes, absolutely.  But process A should be able to keep its memory
-uncorrupted even if process B is coded wrong :)
+I can't speak to the previous BUG_ON(). I believe the EADDRESSINUSE
+failures could be either WARN_ON or BUG_ON.   This condition is
+clearly a bug in the generic IOMMU allocator and I think that's why
+KyongHo Cho used BUG_ON.
 
-> And what about bsg? Is it any better or worse than sg in the case
-> of interrupted SG_IO ioctls? Apart from the interface (sg_io_hdr
-> v3 versus v4) it should be a drop in replacement for sg.
+Handing out duplicate addresses will generally lead to some sort of
+data corruption or other fault depending on how robust the underlying
+device drivers are written.  So my preference is a BUG_ON to
+immediately flag this condition instead of hoping a device driver will
+correctly handling the dma mapping failure (Some do, most currently
+don't).
 
-As far as I can tell bsg looks much better w.r.t. signals -- I don't
-see anywhere that it schedules work onto a workqueue or other kernel
-thread, and it looks like the SG_IO ioctl there actually has nowhere
-that checks for signals.  All sleeps will be uninterruptible, which I
-guess may be better or worse depending on your perspective.
+WARN_ON() + return -EADDRESSINUSE would be a good alternative.
 
- - R.
+thanks,
+grant
