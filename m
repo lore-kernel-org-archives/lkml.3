@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966516Ab3HHUmg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 16:42:36 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44704 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966415Ab3HHUmf (ORCPT
+	id S966537Ab3HHUpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 16:45:10 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47869 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966438Ab3HHUpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 16:42:35 -0400
-Message-ID: <520402B9.20003@gmail.com>
-Date: Thu, 08 Aug 2013 16:42:33 -0400
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 8 Aug 2013 16:45:09 -0400
+Date: Thu, 8 Aug 2013 23:44:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Paul McQuade <paulmcquad@gmail.com>
+Cc: gregkh@linuxfoundation.org, Linux-Devel <devel@driverdev.osuosl.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Staging: BCM: Removed more whitespace/Errors
+Message-ID: <20130808204455.GC5502@mwanda>
+References: <5203CF75.802@gmail.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 01/19] perf: sample after exit loses thread correlation
- - v3
-References: <1375930261-77273-1-git-send-email-dsahern@gmail.com> <1375930261-77273-2-git-send-email-dsahern@gmail.com> <20130808145336.GD2851@ghostprotocols.net>
-In-Reply-To: <20130808145336.GD2851@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5203CF75.802@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/8/13 10:53 AM, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Aug 07, 2013 at 10:50:43PM -0400, David Ahern escreveu:
->> Occassionally events (e.g., context-switch, sched tracepoints) are losing
->> the conversion of sample data associated with a thread. For example:
->
-> Humm, if we have a tool that traverses the list of threads in a machine
-> it will not know, after one of them exits, about it being dead, so I
-> think this needs to add a thread->dead, no?
->
-> As of now, from what I can remember, the closest to such a tool would
-> be:
->
->   perf top --sort pid
->
-> But that uses hist_entries that would eventually be decayed as samples
-> would cease to be taken at most a few moments after the EXIT event.
->
-> But at least for debugging purposes, machine__fprintf() would list dead
-> threads as being present, i.e. alive till its pid gets reused.
->
-> This is the only, minor, problem that I see with this solution, what do
-> you think?
+On Thu, Aug 08, 2013 at 06:03:49PM +0100, Paul McQuade wrote:
+> -int InterfaceFileDownload( PVOID psIntfAdapter,
+> -                        struct file *flp,
+> -                        unsigned int on_chip_loc);
+> +int InterfaceFileDownload(PVOID psIntfAdapter,
+> +						struct file *flp,
+> +						unsigned int on_chip_loc);
 
-I can add the exit timestamp to the thread struct. non-0 means it has 
-died. Ok with that as an indicator?
 
-David
+The very first line in this patch is totally wrong...  :(
 
+This is an automated patch.  I'm not going to review any further.
+Automated patches create a problem for reviews because they are
+far harder to review than they are to generate.  I'm not sure what
+the solution is...
+
+Anyway, the patch is very wrong.
+
+regards,
+dan carpenter
