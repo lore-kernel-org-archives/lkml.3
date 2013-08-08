@@ -1,93 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933883Ab3HHHGI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 03:06:08 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:55531 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933665Ab3HHHGD (ORCPT
+	id S933837Ab3HHHGB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 03:06:01 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:35578 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933665Ab3HHHGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 03:06:03 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-1d-52034359d18e
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: [PATCH] f2fs: fix a build failure due to missing the kobject header
-Date: Thu, 08 Aug 2013 16:05:32 +0900
-Message-id: <1375945532-15766-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.3.1.437.g0dbd812
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t8zQ91IZ+Ygg2uT5C2u7/rLZHFpkbvF
-	nr0nWSwu75rDZvFjer0Dq8fuBZ+ZPPq2rGL0+LxJLoA5issmJTUnsyy1SN8ugSvjy5enbAX7
-	OSvu7O9gbGB8zN7FyMkhIWAiMe3oNxYIW0ziwr31bF2MXBxCAssYJRZc64Er2vHgJlRiOqNE
-	07VPLBBOG5PEqRVPgBwODjYBbYnN+w1AGkQEmCUWTD3PCFLDLLCTUaLh8FsmkISwgI/E750H
-	waayCKhKTHsykQmkl1fAXWLRcgWIZboSi04cZAXplRB4zCZxa9YPFoh6AYlvkw+B7ZIQkJXY
-	dIAZol5S4uCKGywTGAUXMDKsYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAgJxYk7GO8fsD7E
-	mAw0biKzlGhyPjCU80riDY3NjCxMTUyNjcwtzUgTVhLnVW+xDhQSSE8sSc1OTS1ILYovKs1J
-	LT7EyMTBKdXAqMTHXPnaIeOpi4PPwRI908k88vttuQ/2bjZ7d0xuyvvFn7T6j9R9PXDx8sSL
-	pxxnW97Y+pG/zN4uovEUS/RS24N7P03Z/vDr8QuTp7El5Co5TFH9qOfzgYW1bWFLpUfcklPN
-	jzyKp5QU+jh46/nWSy7vncUQl8q8ymOFwN/rhjdf+b1X/d0yXYmlOCPRUIu5qDgRAKerA9Jb	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jQd1IZ+Ygg5/XpCyu7/rLZHFpkbvF
-	nr0nWSwu75rDZvFjer0Dq8fuBZ+ZPPq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJ
-	OzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdoo5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
-	xghd35AguB4jAzSQsI4x48uXp2wF+zkr7uzvYGxgfMzexcjJISFgIrHjwU02CFtM4sK99UA2
-	F4eQwHRGiaZrn1ggnDYmiVMrngA5HBxsAtoSm/cbgDSICDBLLJh6nhGkhllgJ6NEw+G3TCAJ
-	YQEfid87D4JtYBFQlZj2ZCITSC+vgLvEouUKEMt0JRadOMg6gZF7ASPDKkbR1ILkguKk9FxD
-	veLE3OLSvHS95PzcTYzgQH8mtYNxZYPFIUYBDkYlHt6OAKYgIdbEsuLK3EOMEhzMSiK8F4uB
-	QrwpiZVVqUX58UWlOanFhxiTgZZPZJYSTc4HRmFeSbyhsYmZkaWRmYWRibk5acJK4rwHWq0D
-	hQTSE0tSs1NTC1KLYLYwcXBKNTAmX5XYxL5/QpC5Q596UJj/U13VkLNbzi+JzZ++eXdllM1k
-	zviJKrdfaftkGEX0P+RUYOSanHnS9dXF0PiQSqZpjc7eHca/y15e8F+2OGlqaRzXfLfXjwpD
-	rWStMw5bLjGTWfwo8c3Bn9f2sRfmC9wKETovuyW2t/zYHMFjMer/HTdmJ8z82afEUpyRaKjF
-	XFScCABePlXVuAIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 8 Aug 2013 03:06:00 -0400
+Date: Thu, 8 Aug 2013 00:05:51 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        C.Emde@osadl.org
+Subject: Re: [PATCH 0/8] rcu: Ensure rcu read site is deadlock-immunity
+Message-ID: <20130808070551.GL4306@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
+ <20130807123827.GB4306@linux.vnet.ibm.com>
+ <20130808003635.GA9487@linux.vnet.ibm.com>
+ <5202F8CC.2020703@cn.fujitsu.com>
+ <1375927932.6848.33.camel@gandalf.local.home>
+ <5203036B.2080606@cn.fujitsu.com>
+ <20130808023356.GG4306@linux.vnet.ibm.com>
+ <52030C37.3000106@cn.fujitsu.com>
+ <20130808041825.GH4306@linux.vnet.ibm.com>
+ <52032C5B.5090809@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52032C5B.5090809@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080807-5406-0000-0000-00000B42CF1E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch should resolve the following error reported by kbuild test robot.
+On Thu, Aug 08, 2013 at 01:27:55PM +0800, Lai Jiangshan wrote:
+> On 08/08/2013 12:18 PM, Paul E. McKenney wrote:
+> > On Thu, Aug 08, 2013 at 11:10:47AM +0800, Lai Jiangshan wrote:
+> >> On 08/08/2013 10:33 AM, Paul E. McKenney wrote:
+> >>> On Thu, Aug 08, 2013 at 10:33:15AM +0800, Lai Jiangshan wrote:
+> >>>> On 08/08/2013 10:12 AM, Steven Rostedt wrote:
+> >>>>> On Thu, 2013-08-08 at 09:47 +0800, Lai Jiangshan wrote:
+> >>>>>
+> >>>>>>> [  393.641012]        CPU0
+> >>>>>>> [  393.641012]        ----
+> >>>>>>> [  393.641012]   lock(&lock->wait_lock);
+> >>>>>>> [  393.641012]   <Interrupt>
+> >>>>>>> [  393.641012]     lock(&lock->wait_lock);
+> >>>>>>
+> >>>>>> Patch2 causes it!
+> >>>>>> When I found all lock which can (chained) nested in rcu_read_unlock_special(),
+> >>>>>> I didn't notice rtmutex's lock->wait_lock is not nested in irq-disabled.
+> >>>>>>
+> >>>>>> Two ways to fix it:
+> >>>>>> 1) change rtmutex's lock->wait_lock, make it alwasys irq-disabled.
+> >>>>>> 2) revert my patch2
+> >>>>>
+> >>>>> Your patch 2 states:
+> >>>>>
+> >>>>> "After patch 10f39bb1, "special & RCU_READ_UNLOCK_BLOCKED" can't be true
+> >>>>> in irq nor softirq.(due to RCU_READ_UNLOCK_BLOCKED can only be set
+> >>>>> when preemption)"
+> >>>>
+> >>>> Patch5 adds "special & RCU_READ_UNLOCK_BLOCKED" back in irq nor softirq.
+> >>>> This new thing is handle in patch5 if I did not do wrong things in patch5.
+> >>>> (I don't notice rtmutex's lock->wait_lock is not irqs-disabled in patch5)
+> >>>>
+> >>>>>
+> >>>>> But then below we have:
+> >>>>>
+> >>>>>
+> >>>>>>
+> >>>>>>> [  393.641012] 
+> >>>>>>> [  393.641012]  *** DEADLOCK ***
+> >>>>>>> [  393.641012] 
+> >>>>>>> [  393.641012] no locks held by rcu_torture_rea/697.
+> >>>>>>> [  393.641012] 
+> >>>>>>> [  393.641012] stack backtrace:
+> >>>>>>> [  393.641012] CPU: 3 PID: 697 Comm: rcu_torture_rea Not tainted 3.11.0-rc1+ #1
+> >>>>>>> [  393.641012] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+> >>>>>>> [  393.641012]  ffffffff8586fea0 ffff88001fcc3a78 ffffffff8187b4cb ffffffff8104a261
+> >>>>>>> [  393.641012]  ffff88001e1a20c0 ffff88001fcc3ad8 ffffffff818773e4 0000000000000000
+> >>>>>>> [  393.641012]  ffff880000000000 ffff880000000001 ffffffff81010a0a 0000000000000001
+> >>>>>>> [  393.641012] Call Trace:
+> >>>>>>> [  393.641012]  <IRQ>  [<ffffffff8187b4cb>] dump_stack+0x4f/0x84
+> >>>>>>> [  393.641012]  [<ffffffff8104a261>] ? console_unlock+0x291/0x410
+> >>>>>>> [  393.641012]  [<ffffffff818773e4>] print_usage_bug+0x1f5/0x206
+> >>>>>>> [  393.641012]  [<ffffffff81010a0a>] ? save_stack_trace+0x2a/0x50
+> >>>>>>> [  393.641012]  [<ffffffff810ae603>] mark_lock+0x283/0x2e0
+> >>>>>>> [  393.641012]  [<ffffffff810ada10>] ? print_irq_inversion_bug.part.40+0x1f0/0x1f0
+> >>>>>>> [  393.641012]  [<ffffffff810aef66>] __lock_acquire+0x906/0x1d40
+> >>>>>>> [  393.641012]  [<ffffffff810ae94b>] ? __lock_acquire+0x2eb/0x1d40
+> >>>>>>> [  393.641012]  [<ffffffff810ae94b>] ? __lock_acquire+0x2eb/0x1d40
+> >>>>>>> [  393.641012]  [<ffffffff810b0a65>] lock_acquire+0x95/0x210
+> >>>>>>> [  393.641012]  [<ffffffff818860f3>] ? rt_mutex_unlock+0x53/0x100
+> >>>>>>> [  393.641012]  [<ffffffff81886d26>] _raw_spin_lock+0x36/0x50
+> >>>>>>> [  393.641012]  [<ffffffff818860f3>] ? rt_mutex_unlock+0x53/0x100
+> >>>>>>> [  393.641012]  [<ffffffff818860f3>] rt_mutex_unlock+0x53/0x100
+> > 
+> > The really strange thing here is that I thought that your passing false
+> > in as the new second parameter to rcu_read_unlock_special() was supposed
+> > to prevent rt_mutex_unlock() from being called.
+> > 
+> > But then why is the call from rcu_preempt_note_context_switch() also
+> > passing false?  I would have expected that one to pass true.  Probably
+> > I don't understand your intent with the "unlock" argument.
+> > 
+> >>>>>>> [  393.641012]  [<ffffffff810ee3ca>] rcu_read_unlock_special+0x17a/0x2a0
+> >>>>>>> [  393.641012]  [<ffffffff810ee803>] rcu_check_callbacks+0x313/0x950
+> >>>>>>> [  393.641012]  [<ffffffff8107a6bd>] ? hrtimer_run_queues+0x1d/0x180
+> >>>>>>> [  393.641012]  [<ffffffff810abb9d>] ? trace_hardirqs_off+0xd/0x10
+> >>>>>>> [  393.641012]  [<ffffffff8105bae3>] update_process_times+0x43/0x80
+> >>>>>>> [  393.641012]  [<ffffffff810a9801>] tick_sched_handle.isra.10+0x31/0x40
+> >>>>>>> [  393.641012]  [<ffffffff810a98f7>] tick_sched_timer+0x47/0x70
+> >>>>>>> [  393.641012]  [<ffffffff8107941c>] __run_hrtimer+0x7c/0x490
+> >>>>>>> [  393.641012]  [<ffffffff810a260d>] ? ktime_get_update_offsets+0x4d/0xe0
+> >>>>>>> [  393.641012]  [<ffffffff810a98b0>] ? tick_nohz_handler+0xa0/0xa0
+> >>>>>>> [  393.641012]  [<ffffffff8107a017>] hrtimer_interrupt+0x107/0x260
+> >>>>>
+> >>>>> The hrtimer_interrupt is calling a rt_mutex_unlock? How did that happen?
+> >>>>> Did it first call a rt_mutex_lock?
+> >>>>>
+> >>>>> If patch two was the culprit, I'm thinking the idea behind patch two is
+> >>>>> wrong. The only option is to remove patch number two!
+> >>>>
+> >>>> removing patch number two can solve the problem found be Paul, but it is not the best.
+> >>>> because I can't declare that rcu is deadlock-immunity
+> >>>> (it will be deadlock if rcu read site overlaps with rtmutex's lock->wait_lock
+> >>>> if I only remove patch2)
+> >>>> I must do more things, but I think it is still better than changing rtmutex's lock->wait_lock.
+> >>>
+> >>> NP, I will remove your current patches and wait for an updated set.
+> >>
+> >> Hi, Paul
+> >>
+> >> Could you agree that moving the rt_mutex_unlock() to rcu_preempt_note_context_switch()?
+> > 
+> > My guess is that changing rcu_preempt_note_context_switch()'s call to
+> > rcu_read_unlock_special(t, true) would accomplish this in a nicer way.
+> > Except that I would first need to understand why rcu_check_callbacks()'s
+> > call to rcu_read_unlock_special() resulted in rt_mutex_unlock() being
+> > called.
+> > 
+> > Oh!
+> > 
+> > In rcu_read_unlock_special, shouldn't the:
+> > 
+> > 	if (unlikely(unlock && irqs_disabled_flags(flags))) {
+> 
+> Sorry.
+> @unlock means it is called from rcu_read_unlock() path.
+> 
+> if rcu_read_unlock() is called from irqs_disabled context,
+> it may be called from suspect lock(scheduler locks, ...) context,
+> so it can't require rnp->lock or invoke wakeup() in rcu_read_unlock_special().
 
-All error/warnings:
+Hmmm...  And the case where it rcu_read_unlock_special() is
+called from rcu_preempt_note_context_switch()?
 
-   In file included from fs/f2fs/dir.c:13:0:
-   >> fs/f2fs/f2fs.h:435:17: error: field 's_kobj' has incomplete type
-        struct kobject s_kobj;
+							Thanx, Paul
 
-The failure was caused by missing the kobject header file in dir.c.
-So, this patch move the header file to the right location, f2fs.h.
-
-CC: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/f2fs.h  | 1 +
- fs/f2fs/super.c | 1 -
- 2 files changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 13db10b..d8e386ce 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -17,6 +17,7 @@
- #include <linux/slab.h>
- #include <linux/crc32.h>
- #include <linux/magic.h>
-+#include <linux/kobject.h>
- 
- /*
-  * For mount options
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index 94c0e20..66d1ec1 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -23,7 +23,6 @@
- #include <linux/exportfs.h>
- #include <linux/blkdev.h>
- #include <linux/f2fs_fs.h>
--#include <linux/kobject.h>
- #include <linux/sysfs.h>
- 
- #include "f2fs.h"
--- 
-1.8.3.1.437.g0dbd812
+> > Instead be:
+> > 
+> > 	if (unlikely(!unlock || irqs_disabled_flags(flags))) {
+> > 
+> > Here I am guessing that the "unlock" parameter means "It is OK for
+> > rcu_read_unlock_special() to invoke rt_mutex_unlock()", so it would be
+> > passed in as false from rcu_check_callbacks() and true everywhere else.
+> > If it means something else, please let me know what that might be.
+> > 
+> > Though at this point, it is not clear to me how it helps to call
+> > rcu_read_unlock_special() from rcu_check_callbacks().  After all,
+> > rcu_check_callbacks() has interrupts disabled always, and so it is never
+> > safe for anything that it calls to invoke rt_mutex_unlock().
+> > 
+> > In any case, the opinion that really matters is not mine, but rather
+> > that of the hundreds of millions of computer systems that might soon be
+> > executing this code.  As RCU maintainer, I just try my best to predict
+> > what their opinions will be.  ;-)
+> > 
+> > 							Thanx, Paul
+> > 
+> >> thanks,
+> >> Lai
+> >>
+> >>>
+> >>> 							Thanx, Paul
+> >>>
+> >>>
+> >>
+> > 
+> > 
+> 
 
