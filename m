@@ -1,83 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757720Ab3HHIAV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 04:00:21 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:60200 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757642Ab3HHIAT (ORCPT
+	id S933990Ab3HHIAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 04:00:33 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:47483 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933849Ab3HHIA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 04:00:19 -0400
+	Thu, 8 Aug 2013 04:00:26 -0400
 From: Milo Kim <woogyom.kim@gmail.com>
 To: Bryan Wu <cooloney@gmail.com>
 Cc: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
         linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
         Milo Kim <milo.kim@ti.com>
-Subject: [PATCH 00/10] leds: lp5521,5523: restore device attributes for running LED patterns
-Date: Thu,  8 Aug 2013 16:59:44 +0900
-Message-Id: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
+Subject: [PATCH 02/10] leds: lp55xx: add common macros for device attributes
+Date: Thu,  8 Aug 2013 16:59:46 +0900
+Message-Id: <1375948794-6286-3-git-send-email-milo.kim@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
+References: <1375948794-6286-1-git-send-email-milo.kim@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set resolves the application conflict by restoring sysfs files.
+This patch provides common macros for LP5521 and LP5523 device attributes and
+functions.
 
-For LP5521
-  engine1/2/3_mode
-  engine1/2/3_load
+(Device attributes)
+LP5521: 'mode', 'load' and 'selftest'
+LP5523: 'mode', 'load', 'leds' and 'selftest'
 
-For LP5523
-  engine1/2/3_mode
-  engine1/2/3_load
-  engine1/2/3_leds
+(Permissions)
+mode: R/W
+load: Write-only
+leds: R/W
+selftest: Read-only
 
-Those attributes are accessed when LED pattern is run by custom application.
-Those were removed when LED pattern interface was changed to generic firmware
-interface. Please refer to commits below.
+Couple of lines are duplicate, so use these macros for adding device attributes
+in LP5521 and LP5523 drivers.
 
-  git commit 9ce7cb170f97f83a78dc948bf7d25690f15e1328
-  (leds-lp5521: use generic firmware interface)
+Signed-off-by: Milo Kim <milo.kim@ti.com>
+---
+ drivers/leds/leds-lp55xx-common.h |   47 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
-  git commit db6eaf8388a413a5ee1b4547ce78506b9c6456b0
-  (leds-lp5523: use generic firmware interface)
-
-Necessary attributes are restored in this patch-set.
-
-(Other changes)
-New data structure is added for handling values from/to an application.
-Few code fixes for reducing writing I2C commands.
-Add LP55xx common macros for code refactoring.
-Documentation updates.
-
-You can also pull from the location below
-This branch is based on 'for-next' of linux-leds.
-
-  https://github.com/milokim/lp55xx.git resolve-missing-sysfs
-
-Milo Kim (10):
-  leds: lp55xx: add common data structure for program
-  leds: lp55xx: add common macros for device attributes
-  leds: lp5521: restore legacy device attributes
-  leds: lp5521: remove unnecessary writing commands
-  leds: lp5523: make separate API for loading engine
-  leds: lp5523: LED MUX configuration on initializing
-  leds: lp5523: restore legacy device attributes
-  leds: lp5523: remove unnecessary writing commands
-  Documentation: leds-lp5521,lp5523: update device attribute
-    information
-  leds: lp5562: use LP55xx common macros for device attributes
-
- Documentation/leds/leds-lp5521.txt |   20 ++-
- Documentation/leds/leds-lp5523.txt |   21 ++-
- drivers/leds/leds-lp5521.c         |  114 +++++++++++--
- drivers/leds/leds-lp5523.c         |  321 ++++++++++++++++++++++++++++++++++--
- drivers/leds/leds-lp5562.c         |    4 +-
- drivers/leds/leds-lp55xx-common.h  |   66 ++++++++
- 6 files changed, 511 insertions(+), 35 deletions(-)
-
+diff --git a/drivers/leds/leds-lp55xx-common.h b/drivers/leds/leds-lp55xx-common.h
+index 04c1d4f..cceab48 100644
+--- a/drivers/leds/leds-lp55xx-common.h
++++ b/drivers/leds/leds-lp55xx-common.h
+@@ -29,6 +29,53 @@ enum lp55xx_engine_mode {
+ 	LP55XX_ENGINE_RUN,
+ };
+ 
++#define LP55XX_DEV_ATTR_RW(name, show, store)	\
++	DEVICE_ATTR(name, S_IRUGO | S_IWUSR, show, store)
++#define LP55XX_DEV_ATTR_RO(name, show)		\
++	DEVICE_ATTR(name, S_IRUGO, show, NULL)
++#define LP55XX_DEV_ATTR_WO(name, store)		\
++	DEVICE_ATTR(name, S_IWUSR, NULL, store)
++
++#define show_mode(nr)							\
++static ssize_t show_engine##nr##_mode(struct device *dev,		\
++				    struct device_attribute *attr,	\
++				    char *buf)				\
++{									\
++	return show_engine_mode(dev, attr, buf, nr);			\
++}
++
++#define store_mode(nr)							\
++static ssize_t store_engine##nr##_mode(struct device *dev,		\
++				     struct device_attribute *attr,	\
++				     const char *buf, size_t len)	\
++{									\
++	return store_engine_mode(dev, attr, buf, len, nr);		\
++}
++
++#define show_leds(nr)							\
++static ssize_t show_engine##nr##_leds(struct device *dev,		\
++			    struct device_attribute *attr,		\
++			    char *buf)					\
++{									\
++	return show_engine_leds(dev, attr, buf, nr);			\
++}
++
++#define store_leds(nr)						\
++static ssize_t store_engine##nr##_leds(struct device *dev,	\
++			     struct device_attribute *attr,	\
++			     const char *buf, size_t len)	\
++{								\
++	return store_engine_leds(dev, attr, buf, len, nr);	\
++}
++
++#define store_load(nr)							\
++static ssize_t store_engine##nr##_load(struct device *dev,		\
++				     struct device_attribute *attr,	\
++				     const char *buf, size_t len)	\
++{									\
++	return store_engine_load(dev, attr, buf, len, nr);		\
++}
++
+ struct lp55xx_led;
+ struct lp55xx_chip;
+ 
 -- 
 1.7.9.5
 
