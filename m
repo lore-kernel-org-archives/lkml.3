@@ -1,196 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966080Ab3HHRtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 13:49:14 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:46228 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965213Ab3HHRtM (ORCPT
+	id S1757963Ab3HHR7P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 13:59:15 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:41540 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab3HHR7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 13:49:12 -0400
-Date: Thu, 8 Aug 2013 18:51:20 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, luto@amacapital.net,
-        xemul@parallels.com, mpm@selenic.com, xiaoguangrong@linux.vnet.ibm.com,
-        mtosatti@redhat.com, kosaki.motohiro@gmail.com, sfr@canb.auug.org.au,
-        peterz@infradead.org, aneesh.kumar@linux.vnet.ibm.com
-Subject: Re: [patch 2/2] [PATCH] mm: Save soft-dirty bits on file pages
-Message-ID: <20130808145120.GA1775@moon>
-References: <20130730204154.407090410@gmail.com>
- <20130730204654.966378702@gmail.com>
- <20130807132812.60ad4bfe85127794094d385e@linux-foundation.org>
+	Thu, 8 Aug 2013 13:59:13 -0400
+Date: Thu, 8 Aug 2013 10:59:18 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Wei Ni <wni@nvidia.com>, "khali@linux-fr.org" <khali@linux-fr.org>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
+Message-ID: <20130808175918.GA15013@roeck-us.net>
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
+ <1375944991-29182-2-git-send-email-wni@nvidia.com>
+ <520359E9.1000600@roeck-us.net>
+ <52036920.4050808@nvidia.com>
+ <52037F9A.7070802@roeck-us.net>
+ <5203D659.4050907@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="r5Pyd7+fXNt84Ff3"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130807132812.60ad4bfe85127794094d385e@linux-foundation.org>
+In-Reply-To: <5203D659.4050907@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Aug 07, 2013 at 01:28:12PM -0700, Andrew Morton wrote:
+On Thu, Aug 08, 2013 at 11:33:13AM -0600, Stephen Warren wrote:
+> On 08/08/2013 05:23 AM, Guenter Roeck wrote:
+> > On 08/08/2013 02:47 AM, Wei Ni wrote:
+> ...
+> >> I think get_regulator() will return error values, not only
+> >> -EPROBE_DEFER, so we should set data->lm90_reg to NULL to handle other
+> >> error values.
+> >>
+> > Matter of opinion if you want to check for IS_ERR or NULL later on.
 > 
-> Good god.
+> No, if regulator returns either:
 > 
-> I wonder if these can be turned into out-of-line functions in some form
-> which humans can understand.
+> * Something valid
+> * Someting IS_ERR()
 > 
-> or
+> ... then everywhere has to check the value using IS_ERR().
 > 
-> #define pte_to_pgoff(pte)
-> 	frob(pte, PTE_FILE_SHIFT1, PTE_FILE_BITS1) +
-> 	frob(PTE_FILE_SHIFT2, PTE_FILE_BITS2) +
-> 	frob(PTE_FILE_SHIFT3, PTE_FILE_BITS3) +
-> 	frob(PTE_FILE_SHIFT4, PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
+> If regulator returns either:
+> 
+> * Something valid
+> * Someting NULL
+> 
+> ... then everywhere has to check the value against NULL.
+> 
+Other drivers calling get_regulator() don't check against NULL,
+so it should not be needed here either.
 
-Hi, here is what I ended up with. Please take a look (I decided to post
-patch in the thread since it's related to the context of the mails).
+Guenter
 
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=pte-sft-dirty-file-cleanup-2
-
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: mm: Cleanup pte_to_pgoff and pgoff_to_pte helpers
-
-Andrew asked if there a way to make pte_to_pgoff
-and pgoff_to_pte macro helpers somehow more readable.
-
-With this patch it should be more understandable what
-is happening with bits when they come to and from pte
-entry.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
----
-
-Guys, is there a reason for "if _PAGE_BIT_FILE < _PAGE_BIT_PROTNONE"
-test present in this pgtable-2level.h file at all? I can't imagine
-where it can be false on x86.
-
- arch/x86/include/asm/pgtable-2level.h |   82 +++++++++++++++++-----------------
- 1 file changed, 41 insertions(+), 41 deletions(-)
-
-Index: linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/pgtable-2level.h
-+++ linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-@@ -55,6 +55,9 @@ static inline pmd_t native_pmdp_get_and_
- #define native_pmdp_get_and_clear(xp) native_local_pmdp_get_and_clear(xp)
- #endif
- 
-+#define _mfrob(v,r,m,l)		((((v) >> (r)) & (m)) << (l))
-+#define __frob(v,r,l)		(((v) >> (r)) << (l))
-+
- #ifdef CONFIG_MEM_SOFT_DIRTY
- 
- /*
-@@ -71,31 +74,27 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
- #define PTE_FILE_BITS3		(PTE_FILE_SHIFT4 - PTE_FILE_SHIFT3 - 1)
- 
--#define pte_to_pgoff(pte)						\
--	((((pte).pte_low >> (PTE_FILE_SHIFT1))				\
--	  & ((1U << PTE_FILE_BITS1) - 1)))				\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT2))			\
--	    & ((1U << PTE_FILE_BITS2) - 1))				\
--	   << (PTE_FILE_BITS1))						\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT3))			\
--	    & ((1U << PTE_FILE_BITS3) - 1))				\
--	   << (PTE_FILE_BITS1 + PTE_FILE_BITS2))			\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT4)))			\
--	    << (PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3))
--
--#define pgoff_to_pte(off)						\
--	((pte_t) { .pte_low =						\
--	 ((((off)) & ((1U << PTE_FILE_BITS1) - 1)) << PTE_FILE_SHIFT1)	\
--	 + ((((off) >> PTE_FILE_BITS1)					\
--	     & ((1U << PTE_FILE_BITS2) - 1))				\
--	    << PTE_FILE_SHIFT2)						\
--	 + ((((off) >> (PTE_FILE_BITS1 + PTE_FILE_BITS2))		\
--	     & ((1U << PTE_FILE_BITS3) - 1))				\
--	    << PTE_FILE_SHIFT3)						\
--	 + ((((off) >>							\
--	      (PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)))	\
--	    << PTE_FILE_SHIFT4)						\
--	 + _PAGE_FILE })
-+#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
-+#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
-+#define PTE_FILE_MASK3		((1U << PTE_FILE_BITS3) - 1)
-+
-+#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
-+#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
-+#define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
-+
-+#define pte_to_pgoff(pte)							    \
-+	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
-+	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
-+	 _mfrob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3, PTE_FILE_LSHIFT3) + \
-+	 __frob((pte).pte_low, PTE_FILE_SHIFT4, PTE_FILE_LSHIFT4))
-+
-+#define pgoff_to_pte(off)							\
-+	((pte_t) { .pte_low =							\
-+	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
-+	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
-+	_mfrob(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3, PTE_FILE_SHIFT3)	+	\
-+	__frob(off, PTE_FILE_LSHIFT4, PTE_FILE_SHIFT4)			+	\
-+	_PAGE_FILE })
- 
- #else /* CONFIG_MEM_SOFT_DIRTY */
- 
-@@ -115,22 +114,23 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_BITS1		(PTE_FILE_SHIFT2 - PTE_FILE_SHIFT1 - 1)
- #define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
- 
--#define pte_to_pgoff(pte)						\
--	((((pte).pte_low >> PTE_FILE_SHIFT1)				\
--	  & ((1U << PTE_FILE_BITS1) - 1))				\
--	 + ((((pte).pte_low >> PTE_FILE_SHIFT2)				\
--	     & ((1U << PTE_FILE_BITS2) - 1)) << PTE_FILE_BITS1)		\
--	 + (((pte).pte_low >> PTE_FILE_SHIFT3)				\
--	    << (PTE_FILE_BITS1 + PTE_FILE_BITS2)))
--
--#define pgoff_to_pte(off)						\
--	((pte_t) { .pte_low =						\
--	 (((off) & ((1U << PTE_FILE_BITS1) - 1)) << PTE_FILE_SHIFT1)	\
--	 + ((((off) >> PTE_FILE_BITS1) & ((1U << PTE_FILE_BITS2) - 1))	\
--	    << PTE_FILE_SHIFT2)						\
--	 + (((off) >> (PTE_FILE_BITS1 + PTE_FILE_BITS2))		\
--	    << PTE_FILE_SHIFT3)						\
--	 + _PAGE_FILE })
-+#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
-+#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
-+
-+#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
-+#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
-+
-+#define pte_to_pgoff(pte)							    \
-+	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
-+	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
-+	 __frob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_LSHIFT3))
-+
-+#define pgoff_to_pte(off)							\
-+	((pte_t) { .pte_low =							\
-+	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
-+	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
-+	__frob(off, PTE_FILE_LSHIFT3, PTE_FILE_SHIFT3)			+	\
-+	_PAGE_FILE })
- 
- #endif /* CONFIG_MEM_SOFT_DIRTY */
- 
-
---r5Pyd7+fXNt84Ff3--
+> checking against both IS_ERR() and NULL shouldn't ever happen, and
+> likewise IS_ERR_OR_NULL() is deprecated.
+> 
