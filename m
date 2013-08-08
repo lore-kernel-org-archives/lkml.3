@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934116Ab3HHCxu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 22:53:50 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:61053 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933925Ab3HHCvm (ORCPT
+	id S934102Ab3HHCxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:53:48 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:40885 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933868Ab3HHCxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 22:51:42 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org, mingo@kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 13/19] perf tool: Skip symbols in exclude list while printing callchain
-Date: Wed,  7 Aug 2013 22:50:55 -0400
-Message-Id: <1375930261-77273-14-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
-References: <1375930261-77273-1-git-send-email-dsahern@gmail.com>
+	Wed, 7 Aug 2013 22:53:46 -0400
+Message-ID: <5203081C.8050403@huawei.com>
+Date: Thu, 8 Aug 2013 10:53:16 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, <hannes@cmpxchg.org>,
+        <bsingharora@gmail.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific
+ to memcg
+References: <1375632446-2581-1-git-send-email-tj@kernel.org> <20130805160107.GM10146@dhcp22.suse.cz> <20130805162958.GF19631@mtj.dyndns.org> <20130805191641.GA24003@dhcp22.suse.cz> <20130805194431.GD23751@mtj.dyndns.org> <20130806155804.GC31138@dhcp22.suse.cz> <20130806161509.GB10779@mtj.dyndns.org> <20130807121836.GF8184@dhcp22.suse.cz> <20130807124321.GA27006@htj.dyndns.org> <20130807132613.GH8184@dhcp22.suse.cz> <20130807133645.GE27006@htj.dyndns.org>
+In-Reply-To: <20130807133645.GE27006@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leverage new exclude symbol list to allow user to not see certain functions
-in a backtrace. For example repeating patterns like:
-    do_select  core_sys_select  sys_select
-can be reduced to just sys_select when dumping callchains, consuming less
-real estate on the screen while still conveying the essential message - the
-process is in a select call.
+>> If somebody needs a notification interface (and there is no one available
+>> right now) then you cannot prevent from such a pointless work anyway...
+> 
+> I'm gonna add one for freezer state transitions.  It'll be simple
+> "this file changed" thing and will probably apply that to at least oom
+> and vmpressure.  I'm relatively confident that it's gonna be pretty
+> simple and that's gonna be the cgroup event mechanism.
+> 
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/session.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 5a89964..0eada12 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1522,6 +1522,9 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 			if (!node)
- 				break;
- 
-+			if (symbol__is_excluded(node->sym))
-+				goto next;
-+
- 			if (print_ip)
- 				printf("%c%16" PRIx64, s, node->ip);
- 
-@@ -1543,9 +1546,10 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 			if (!print_oneline)
- 				printf("\n");
- 
--			callchain_cursor_advance(&callchain_cursor);
--
- 			stack_depth--;
-+
-+next:
-+			callchain_cursor_advance(&callchain_cursor);
- 		}
- 
- 	} else {
--- 
-1.7.10.1
+I would like to see this happen. I have a feeling that we're deprecating
+features a bit aggressively without providing alternatives.
 
