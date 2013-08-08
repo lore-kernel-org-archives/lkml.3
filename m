@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab3HHFyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 01:54:25 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:41841 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab3HHFyY (ORCPT
+	id S1755977Ab3HHGDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 02:03:46 -0400
+Received: from mail-la0-f66.google.com ([209.85.215.66]:40602 "EHLO
+	mail-la0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754895Ab3HHGDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 01:54:24 -0400
-Message-ID: <5203328C.6040706@hitachi.com>
-Date: Thu, 08 Aug 2013 14:54:20 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 8 Aug 2013 02:03:45 -0400
 MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 06/11] tracing: add 'enable_event' and 'disable_event'
- event trigger commands
-References: <cover.1375111640.git.tom.zanussi@linux.intel.com> <bf0caa30e9bd252e3712d4d677f5787641fc1c54.1375111640.git.tom.zanussi@linux.intel.com>
-In-Reply-To: <bf0caa30e9bd252e3712d4d677f5787641fc1c54.1375111640.git.tom.zanussi@linux.intel.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Date: Thu, 8 Aug 2013 11:33:43 +0530
+Message-ID: <CAEtk5gcFrnbgGNeAU45-6TKR=m6=9QorFj_j_RX+ufGBfs5TuQ@mail.gmail.com>
+Subject: Linux apanic mechanism and difference from newer ram_console/persistent_ram
+ mechanism
+From: Vijay <thelonejoker@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: john.stultz@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/30 1:41), Tom Zanussi wrote:
-> +
-> +static int
-> +event_enable_trigger_func(struct event_command *cmd_ops, void *cmd_data,
-> +			  char *glob, char *cmd, char *param, int enabled)
-> +{
-> +	struct trace_array *tr = top_trace_array();
+Hello,
 
-OK, here is the problem. top_trace_array() always returns the default
-instance. So, following change will solve the problem.
+I am new to the Kernel-Mailing list. I am not subscribed at the moment
+and would really appreciate it, if I can be CC'd in the
+reply/responses for my question.
 
-	struct trigger_iterator *iter = cmd_data;
-	struct trace_array *tr = iter->file->tr;
+I am studying the different logging mechanisms on Linux in case of a
+Kernel panic (OOPS). So far from  my search on the web, I have been
+able to derive the following information, please correct me if wrong:
 
-However, I think we still have a race problem on accessing event_file.
+- apanic was an old mechanism of getting the job done.
+- ram_console/persistent_ram is a new mechanism.
 
-Thank you,
+Could someone enlighten me about the following in this regard ?
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+- What was the old apanic mechanism, at a high-level how did this work ?
 
+- Why was the apanic mechanism deprecated, in favor of the
+ram_console/persistent_ram mechanism ?
 
+- What advantages does the new ram_console/persistent_ram mechinsm
+bring to the table.
+
+- In what way is the ram_console/persistent_ram functionally different
+from the old apanic approach ?
+
+I am just looking for pointers and high level answers, in some sense a
+direction which I can take to research the mechanisms further. I would
+appreciate any relevant information in this regard.
+
+Thanks
