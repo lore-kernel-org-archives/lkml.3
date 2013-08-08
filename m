@@ -1,132 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964898Ab3HHJqS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 05:46:18 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60393 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964841Ab3HHJqR (ORCPT
+	id S964906Ab3HHJrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 05:47:12 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:14295 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757710Ab3HHJrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 05:46:17 -0400
-Date: Thu, 8 Aug 2013 10:46:08 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "sergei.shtylyov@cogentembedded.com" 
-	<sergei.shtylyov@cogentembedded.com>
-Subject: Re: [PATCH v3 3/5] devicetree: create a separate binding
- description for sata_highbank
-Message-ID: <20130808094608.GI14648@e106331-lin.cambridge.arm.com>
-References: <1375890758-30265-1-git-send-email-mark.langsdorf@calxeda.com>
- <1375890758-30265-3-git-send-email-mark.langsdorf@calxeda.com>
+	Thu, 8 Aug 2013 05:47:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 08 Aug 2013 02:45:25 -0700
+Message-ID: <52036920.4050808@nvidia.com>
+Date: Thu, 8 Aug 2013 17:47:12 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375890758-30265-3-git-send-email-mark.langsdorf@calxeda.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com> <1375944991-29182-2-git-send-email-wni@nvidia.com> <520359E9.1000600@roeck-us.net>
+In-Reply-To: <520359E9.1000600@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 04:52:36PM +0100, Mark Langsdorf wrote:
-> The Calxeda sata_highbank driver has been adding its descriptions to the
-> ahci driver. Separate them properly.
+On 08/08/2013 04:42 PM, Guenter Roeck wrote:
+> On 08/07/2013 11:56 PM, Wei Ni wrote:
+>> The device lm90 can be controlled by the vdd rail.
+>> Adding the power control support to power on/off the vdd rail.
+>> And make sure that power is enabled before accessing the device.
+>>
+>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>> ---
+>>   drivers/hwmon/lm90.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+>>   1 file changed, 49 insertions(+)
+>>
+>> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+>> index cdff742..306a348 100644
+>> --- a/drivers/hwmon/lm90.c
+>> +++ b/drivers/hwmon/lm90.c
+>> @@ -89,6 +89,7 @@
+>>   #include <linux/err.h>
+>>   #include <linux/mutex.h>
+>>   #include <linux/sysfs.h>
+>> +#include <linux/regulator/consumer.h>
+>>
+>>   /*
+>>    * Addresses to scan
+>> @@ -302,6 +303,7 @@ static const struct lm90_params lm90_params[] = {
+>>   struct lm90_data {
+>>   	struct device *hwmon_dev;
+>>   	struct mutex update_lock;
+>> +	struct regulator *lm90_reg;
+>>   	char valid; /* zero until following fields are valid */
+>>   	unsigned long last_updated; /* in jiffies */
+>>   	int kind;
+>> @@ -1391,6 +1393,32 @@ static void lm90_init_client(struct i2c_client *client)
+>>   		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
+>>   }
+>>
+>> +static void lm90_power_control(struct i2c_client *client, bool is_enable)
+>> +{
+>> +	struct lm90_data *data = i2c_get_clientdata(client);
+>> +	int ret;
+>> +
+>> +	if (!data->lm90_reg)
+>> +		return;
+>> +
+>> +	mutex_lock(&data->update_lock);
+>> +
 > 
-> Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> ---
-> Changes from v2
-> 	Fixed some indenting.
-> Changes from v1
-> 	None.
-> 
->  .../devicetree/bindings/ata/ahci-platform.txt      | 18 +++---------
->  .../devicetree/bindings/ata/sata_highbank.txt      | 32 ++++++++++++++++++++++
->  2 files changed, 36 insertions(+), 14 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/ata/sata_highbank.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> index 3ec0c5c..89de156 100644
-> --- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> +++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> @@ -4,27 +4,17 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
->  Each SATA controller should have its own node.
->  
->  Required properties:
-> -- compatible        : compatible list, contains "calxeda,hb-ahci" or "snps,spear-ahci"
-> +- compatible        : compatible list, contains "snps,spear-ahci"
->  - interrupts        : <interrupt mapping for SATA IRQ>
->  - reg               : <registers mapping>
->  
->  Optional properties:
-> -- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
-> -			SATA port to a combophy and a lane within that
-> -			combophy
-> -- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
-> -			which indicates that the driver supports SGPIO
-> -			indicator lights using the indicated GPIOs
-> -- calxeda,led-order : a u32 array that map port numbers to offsets within the
-> -			SGPIO bitstream.
->  - dma-coherent      : Present if dma operations are coherent
->  
->  Example:
->          sata@ffe08000 {
-> -		compatible = "calxeda,hb-ahci";
-> -                reg = <0xffe08000 0x1000>;
-> -                interrupts = <115>;
-> -		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
-> -					&combophy0 2 &combophy0 3>;
-> +		compatible = "snps,spear-ahci";
-> +		reg = <0xffe08000 0x1000>;
-> +		interrupts = <115>;
->  
->          };
-> diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-> new file mode 100644
-> index 0000000..1ac6d3d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-> @@ -0,0 +1,32 @@
-> +* Calxeda AHCI SATA Controller
-> +
-> +SATA nodes are defined to describe on-chip Serial ATA controllers.
-> +The Calxeda SATA controller mostly conforms to the AHCI interface
-> +with some special extensions to add functionality.
-> +Each SATA controller should have its own node.
-> +
-> +Required properties:
-> +- compatible        : compatible list, contains "calxeda,hb-ahci"
-> +- interrupts        : <interrupt mapping for SATA IRQ>
-> +- reg               : <registers mapping>
-> +
-> +Optional properties:
-> +- dma-coherent      : Present if dma operations are coherent
-> +- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
-> +			SATA port to a combophy and a lane within that
-> +			combophy
-> +- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
-> +			which indicates that the driver supports SGPIO
-> +			indicator lights using the indicated GPIOs
-> +- calxeda,led-order : a u32 array that map port numbers to offsets within the
-> +			SGPIO bitstream.
-> +
-> +Example:
-> +        sata@ffe08000 {
-> +		compatible = "calxeda,hb-ahci";
-> +		reg = <0xffe08000 0x1000>;
-> +		interrupts = <115>;
-> +		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
-> +					&combophy0 2 &combophy0 3>;
-> +
-> +        };
+> This is only called during probe and remove, so the mutex is unnecessary.
 
-It would be nice to have examples for the remaining optional properties,
-but otherwise:
+I considered that we may call this function in suspend/resume routine,
+so I add this mutex.
+But as you said, currently we doesn't have these routine yet, the mutex
+is unnecessary, so I will remove it.
 
-Acked-by: Mark Rutland <mark.rutland@arm.com>
+> 
+>> +	if (is_enable)
+>> +		ret = regulator_enable(data->lm90_reg);
+>> +	else
+>> +		ret = regulator_disable(data->lm90_reg);
+>> +
+>> +	if (ret < 0)
+>> +		dev_err(&client->dev,
+>> +			"Error in %s rail vdd, error %d\n",
+>> +			(is_enable) ? "enabling" : "disabling", ret);
+>> +	else
+>> +		dev_info(&client->dev, "success in %s rail vdd\n",
+>> +			 (is_enable) ? "enabling" : "disabling");
+>> +
+> which reduces the function to (pretty much unnecessary) messages and an if statement
+> which you only need because you have the function.
+> 
+> You should just call regulator_enable in probe and regulator_disable in remove.
+
+Ok, I will remove these messages and this function.
+
+> 
+> Guenter
+> 
+>> +	mutex_unlock(&data->update_lock);
+>> +}
+>> +
+>>   static int lm90_probe(struct i2c_client *client,
+>>   		      const struct i2c_device_id *id)
+>>   {
+>> @@ -1406,6 +1434,20 @@ static int lm90_probe(struct i2c_client *client,
+>>   	i2c_set_clientdata(client, data);
+>>   	mutex_init(&data->update_lock);
+>>
+>> +	data->lm90_reg = regulator_get(&client->dev, "vdd");
+> 
+> You should use devm_regulator_get(). Then you also don't need the call to regulator_put().
+
+Oh, yes, you are right, I will do it.
+
+> 
+>> +	if (IS_ERR_OR_NULL(data->lm90_reg)) {
+> 
+> The function never returns NULL except if the regulator subsystem is not configured,
+> so IS_ERR() is more appropriate.
+> 
+> If the regulator subsystem is not configured, you especially don't need or want
+> to pollute the log with an error message.
+> 
+>> +		if (PTR_ERR(data->lm90_reg) == -ENODEV)
+>> +			dev_info(&client->dev,
+>> +				 "No regulator found for vdd. Assuming vdd is always powered.");
+>> +		else
+>> +			dev_warn(&client->dev,
+>> +				 "Error [%ld] in getting the regulator handle for vdd.\n",
+>> +				 PTR_ERR(data->lm90_reg));
+> 
+> I consider the messages unnecessary and confusing. You are polluting the log
+> of pretty much every PC user who has one of the supported chips in the system,
+> and of everyone else not using regulators for this chip.
+
+Ok, I will remove these codes.
+So I will write something like:
+if (!IS_ERR(data->lm90_reg)) {
+    ret = regulator_enable(data->lm90_reg);
+    if (ret < 0) {
+        dev_err();
+        return ret;
+    }
+} else {
+    if (PTR_ERR(data->lm90_reg) == -EPROBE_DEFER)
+        return -EPRPBE_DEFER;
+
+        data->lm90_reg = !!IS_ERR(data->lm90_reg);
+}
+
+> 
+>> +		data->lm90_reg = NULL;
+> 
+> As pointed out, this is unnecessary, and you should handle -EPROBE_DEFER correctly.
+
+I think get_regulator() will return error values, not only
+-EPROBE_DEFER, so we should set data->lm90_reg to NULL to handle other
+error values.
+
+> 
+>> +	}
+>> +
+>> +	lm90_power_control(client, true);
+>> +
+>>   	/* Set the device type */
+>>   	data->kind = id->driver_data;
+>>   	if (data->kind == adm1032) {
+>> @@ -1473,6 +1515,10 @@ exit_remove_files:
+>>   	lm90_remove_files(client, data);
+>>   exit_restore:
+>>   	lm90_restore_conf(client, data);
+>> +	lm90_power_control(client, false);
+>> +	if (data->lm90_reg)
+>> +		regulator_put(data->lm90_reg);
+>> +
+>>   	return err;
+>>   }
+>>
+>> @@ -1483,6 +1529,9 @@ static int lm90_remove(struct i2c_client *client)
+>>   	hwmon_device_unregister(data->hwmon_dev);
+>>   	lm90_remove_files(client, data);
+>>   	lm90_restore_conf(client, data);
+>> +	lm90_power_control(client, false);
+>> +	if (data->lm90_reg)
+>> +		regulator_put(data->lm90_reg);
+>>
+>>   	return 0;
+>>   }
+>>
+> 
+
