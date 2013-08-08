@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966258Ab3HHTZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 15:25:58 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:64888 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966217Ab3HHTZ4 (ORCPT
+	id S966266Ab3HHT2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 15:28:11 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55101 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966205Ab3HHT2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 15:25:56 -0400
+	Thu, 8 Aug 2013 15:28:09 -0400
+Date: Thu, 8 Aug 2013 20:27:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, Wei Ni <wni@nvidia.com>,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        linux-tegra@vger.kernel.org, MLongnecker@nvidia.com,
+        khali@linux-fr.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20130808192747.GM6427@sirena.org.uk>
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
+ <1375944991-29182-2-git-send-email-wni@nvidia.com>
+ <520359E9.1000600@roeck-us.net>
+ <5203D5B6.3060806@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <20130808185340.GA13926@quack.suse.cz>
-References: <cover.1375729665.git.luto@amacapital.net> <20130807134058.GC12843@quack.suse.cz>
- <520286A4.1020101@intel.com> <CALCETrXAz1fc7y07LhmxNh6zA_KZB4yv57NY2MrhUwKdkypB9w@mail.gmail.com>
- <20130808101807.GB4325@quack.suse.cz> <CALCETrX1GXr58ujqAVT5_DtOx+8GEiyb9svK-SGH9d+7SXiNqQ@mail.gmail.com>
- <20130808185340.GA13926@quack.suse.cz>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 8 Aug 2013 12:25:35 -0700
-Message-ID: <CALCETrVXTXzXAmUsmmWxwr6vK+Vux7_pUzWPYyHjxEbn3ObABg@mail.gmail.com>
-Subject: Re: [RFC 0/3] Add madvise(..., MADV_WILLWRITE)
-To: Jan Kara <jack@suse.cz>
-Cc: Dave Hansen <dave.hansen@intel.com>, linux-mm@kvack.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8d7KAgWmJ23Ts4y"
+Content-Disposition: inline
+In-Reply-To: <5203D5B6.3060806@wwwdotorg.org>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 8, 2013 at 11:53 AM, Jan Kara <jack@suse.cz> wrote:
-> On Thu 08-08-13 08:56:28, Andy Lutomirski wrote:
->> On Thu, Aug 8, 2013 at 3:18 AM, Jan Kara <jack@suse.cz> wrote:
->> > On Wed 07-08-13 11:00:52, Andy Lutomirski wrote:
->> >> On Wed, Aug 7, 2013 at 10:40 AM, Dave Hansen <dave.hansen@intel.com> wrote:
->> >> > On 08/07/2013 06:40 AM, Jan Kara wrote:
->> >> >>   One question before I look at the patches: Why don't you use fallocate()
->> >> >> in your application? The functionality you require seems to be pretty
->> >> >> similar to it - writing to an already allocated block is usually quick.
->> >> >
->> >> > One problem I've seen is that it still costs you a fault per-page to get
->> >> > the PTEs in to a state where you can write to the memory.  MADV_WILLNEED
->> >> > will do readahead to get the page cache filled, but it still leaves the
->> >> > pages unmapped.  Those faults get expensive when you're trying to do a
->> >> > couple hundred million of them all at once.
->> >>
->> >> I have grand plans to teach the kernel to use hardware dirty tracking
->> >> so that (some?) pages can be left clean and writable for long periods
->> >> of time.  This will be hard.
->> >   Right that will be tough... Although with your application you could
->> > require such pages to be mlocked and then I could imagine we would get away
->> > at least from problems with dirty page accounting.
->>
->> True.  The nasty part will be all the code that assumes that the acts
->> of un-write-protecting and dirtying are the same thing, for example
->> __block_write_begin, which is why I don't really believe in my
->> willwrite patches...
->>
->> >
->> >> Even so, the second write fault to a page tends to take only a few
->> >> microseconds, while the first one often blocks in fs code.
->> >   So you wrote blocks are already preallocated with fallocate(). If you
->> > also preload pages in memory with MADV_WILLNEED is there still big
->> > difference between the first and subsequent write fault?
->>
->> I haven't measured it yet, because I suspect that my patches are
->> rather buggy in their current form.
->   I think you're mistaking MADV_WILLNEED with your MADV_WILLWRITE.
-> MADV_WILLNEED will just trigger readahead for the range - thus you should
-> have all pages with their block mappings set up in memory. Now the first
-> writeable fault will still have to do some work, namely converting
-> unwritten extents in extent tree to written ones. So there is going to be
-> some difference between the first and subsequent writeable faults. But I'd
-> like to see whether the difference is really worth the effort with new
-> MADV_... call.
->
 
-Whoops -- I read your email too quickly.  I haven't tried
-MADV_WILLNEED, but I think I tried reading each page to fault them in.
- Is there any reason to expect MADV_WILLNEED to do any better?  I'll
-try to do some new tests to see how well this all works.
+--n8d7KAgWmJ23Ts4y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-(I imagine that freshly fallocated files are somehow different when
-read, since there aren't zeros on the disk backing them until they get
-written.)
+On Thu, Aug 08, 2013 at 11:30:30AM -0600, Stephen Warren wrote:
+> On 08/08/2013 02:42 AM, Guenter Roeck wrote:
 
---Andy
+> > If the regulator subsystem is not configured, you especially don't need
+> > or want
+> > to pollute the log with an error message.
 
->                                                                 Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+> DT parsing errors should be reported. However, if there's nothing to
+> parse, it's not an error.
 
+> So, I think this should report an error message *if* there is a DT
+> property that defines the regulator to use. If there's no property, just
+> use no regulator. If there is a property, it had better be possible to
+> parse it.
 
+On a DT system you should get this behaviour simply by paying attention
+to the error code from the regualtor API - the core should complain
+loudly if the DT is incomprehensible.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+--n8d7KAgWmJ23Ts4y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSA/EwAAoJELSic+t+oim9TR4P/37WBWSfsgZOLTVV5ZTrSRrS
++o1DaSk7HykNQZhG3a+uNJwYeUnt05jOrpIDVXXPphCZoWx7PEdPy834fY0PuBku
+vbbNJnu7l5dTSORL9EonPhkeVTxcsVKCb0GGihvFFqtB+R/suZRZkUvdySJ5+V82
+BuihUkXnZakLrTEgSrjBwY8E/3fYzQYZAVbnJ6cIzm0LFYYduqjMmM4Mjty2zlHr
+z+60/KzSNAkE+lu6Dt+INgssF1JPKzsRrKdX3K8rFVHzmVE2bVuHdkLItTxYs680
+PPyyYv5Cd4ch/trTXxjY3l1woe6edgEVDiLN1x6EHHcGeEm/M/sR+9DwjBkQIT+z
+fSb+GJZCZO03LIILmHKWLrwicR+4J3Dx2WtDoZFmUj62uQfhDPfxs9QxuLye3JR6
+jx1klB1fXp3PlqZsC6Mh30E5bajUtVpkTkt2cLMkfDNgUi4y8dPUDO0APk8da3pM
+lv31J0EmmxpvQa41TaQ68d5UWOeat0TZ3+tW7wfHvhSISeb8vZeKCBTFN7LQELxq
+yrOR2MA8RBY5pJCHBpSJfPp3n3iqGkehQUTaeZvzNCkbFJE7m+C7T9kwAsF0Bgmo
+GcEt6H473uXr1tNH+8bXYx0VCeBpjZkB35UZ9Rh6n2g6UoLN+TgKlyRLpfu2QrVL
+F5MHmPNfOW+rHMpjOKZM
+=rZ0d
+-----END PGP SIGNATURE-----
+
+--n8d7KAgWmJ23Ts4y--
