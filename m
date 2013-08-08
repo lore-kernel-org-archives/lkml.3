@@ -1,52 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965451Ab3HHOhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:37:05 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:47946 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965243Ab3HHOhC (ORCPT
+	id S1757882Ab3HHOlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:41:32 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:50765 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab3HHOla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:37:02 -0400
+	Thu, 8 Aug 2013 10:41:30 -0400
+Date: Thu, 8 Aug 2013 11:41:24 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] perf kvm: Update documentation with live command
+Message-ID: <20130808144124.GC2851@ghostprotocols.net>
+References: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
+ <1375926999-75129-2-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1375971749.4276.61.camel@weser.hi.pengutronix.de>
-References: <cover.1375886595.git.viresh.kumar@linaro.org>
-	<d4cd498d9b63d761039b025216e65278dc8e0e37.1375886595.git.viresh.kumar@linaro.org>
-	<52028719.8070908@wwwdotorg.org>
-	<CAKohpo=MpOyMGFTGeZWmoCRwmZ7+nQtP_yCGokPanEVYL0xbMw@mail.gmail.com>
-	<52029811.9080704@wwwdotorg.org>
-	<1375970318.4276.52.camel@weser.hi.pengutronix.de>
-	<CAKohpon=GGn5-8ucTrrf6TyPMn3+1Oh6Sd5bAj_ztpVDONZ3QA@mail.gmail.com>
-	<1375971749.4276.61.camel@weser.hi.pengutronix.de>
-Date: Thu, 8 Aug 2013 20:07:01 +0530
-Message-ID: <CAKohpo=zYBVha_L7D+FWUEO=a6byeiuGtNBmh-CRhSmfkT=QrQ@mail.gmail.com>
-Subject: Re: [PATCH 2/6] ARM: Tegra: Add CPU's OPPs for using cpufreq-cpu0 driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lucas Stach <l.stach@pengutronix.de>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linaro-kernel@lists.linaro.org, swarren@nvidia.com,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>, linux-pm@vger.kernel.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, rjw@sisk.pl,
-        Rob Herring <rob.herring@calxeda.com>, mturquette@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375926999-75129-2-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 August 2013 19:52, Lucas Stach <l.stach@pengutronix.de> wrote:
-> You can certainly define the mapping table in DT where a specialized
-> Tegra cpufreq driver could read it in and then map frequency to voltage.
-> But that's a runtime decision, as Speedo and process ID are fuse values
-> and can not be represented in DT.
+Em Wed, Aug 07, 2013 at 09:56:39PM -0400, David Ahern escreveu:
+> Update perf-kvm documentation with new live subcommand. Add -p/--pid option
+> for perf-kvm-stat-report as well.
 
-> The problem with this is that the hardware description now associates
-> voltages with certain frequencies and even if they are not used by the
-> Linux driver they are plain wrong.
+Minor nitpicks, that I'm fixing up, below. Applied.
+ 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+> ---
+>  tools/perf/Documentation/perf-kvm.txt |   46 +++++++++++++++++++++++++++++++--
+>  1 file changed, 44 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
+> index 326f2cb..ac84db2 100644
+> --- a/tools/perf/Documentation/perf-kvm.txt
+> +++ b/tools/perf/Documentation/perf-kvm.txt
+> @@ -13,6 +13,7 @@ SYNOPSIS
+>  	{top|record|report|diff|buildid-list}
+>  'perf kvm' [--host] [--guest] [--guestkallsyms=<path> --guestmodules=<path>
+>  	| --guestvmlinux=<path>] {top|record|report|diff|buildid-list|stat}
+> +'perf kvm stat [record|report|live] [<options>]
+>  
+>  DESCRIPTION
+>  -----------
+> @@ -50,6 +51,10 @@ There are a couple of variants of perf kvm:
+>    'perf kvm stat report' reports statistical data which includes events
+>    handled time, samples, and so on.
+>  
+> +  'perf kvm stat live' reports statistical data in a live mode (similar to
+> +  record + report but with statistical data updated live at a given display
+> +  rate).
+> +
+>  OPTIONS
+>  -------
+>  -i::
+> @@ -85,13 +90,50 @@ STAT REPORT OPTIONS
+>  --vcpu=<value>::
+>         analyze events which occures on this vcpu. (default: all vcpus)
+>  
+> ---events=<value>::
+> -       events to be analyzed. Possible values: vmexit, mmio, ioport.
 
-Hmm. I understand.
-Then we probably need mach-tegra/opp.c to call opp_add() for all such
-OPPs.. Neither DT nor cpufreq driver are the right place for this.
+
+> +--event=<value>::
+> +       event to be analyzed. Possible values: vmexit, mmio, ioport.
+>         (default: vmexit)
+>  -k::
+>  --key=<value>::
+>         Sorting key. Possible values: sample (default, sort by samples
+
+Here you start, correctly, with a capital letter.
+
+>         number), time (sort by average time).
+> +-p::
+> +--pid=::
+> +    Analyze events only for given process ID(s) (comma separated list).
+> +
+> +STAT LIVE OPTIONS
+> +-----------------
+> +-d::
+> +--display::
+> +        Time in seconds between display updates
+> +
+> +-m::
+> +--mmap-pages=::
+> +    Number of mmap data pages. Must be a power of two.
+> +
+> +-a::
+> +--all-cpus::
+> +        System-wide collection from all CPUs.
+> +
+> +-p::
+> +--pid=::
+> +    Analyze events only for given process ID(s) (comma separated list).
+> +
+> +--vcpu=<value>::
+> +       analyze events which occures on this vcpu. (default: all vcpus)
+
+Here you don't.
+
+> +
+> +
+> +--event=<value>::
+> +       event to be analyzed. Possible values: vmexit, mmio, ioport.
+> +       (default: vmexit)
+
+Ditto
+
+> +-k::
+> +--key=<value>::
+> +       Sorting key. Possible values: sample (default, sort by samples
+> +       number), time (sort by average time).
+> +
+> +--duration=<value>::
+> +       Show events other than HLT that take longer than duration usecs.
+>  
+>  SEE ALSO
+>  --------
+> -- 
+> 1.7.10.1
