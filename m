@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965607Ab3HHNvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 09:51:45 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:40377 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965593Ab3HHNvl (ORCPT
+	id S965623Ab3HHNvv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 09:51:51 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:34967 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965593Ab3HHNvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 09:51:41 -0400
+	Thu, 8 Aug 2013 09:51:47 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 23/35] cpufreq: pasemi: use cpufreq_table_validate_and_show()
-Date: Thu,  8 Aug 2013 19:18:25 +0530
-Message-Id: <b8ba08315a80d680f71bfe7cdde8d1c7b39f875b.1375964117.git.viresh.kumar@linaro.org>
+Subject: [PATCH 24/35] cpufreq: pmac: use cpufreq_table_validate_and_show()
+Date: Thu,  8 Aug 2013 19:18:26 +0530
+Message-Id: <5543f97ceba9becba711bd29e57d781a19c1ad26.1375964117.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1375964117.git.viresh.kumar@linaro.org>
 References: <cover.1375964117.git.viresh.kumar@linaro.org>
@@ -30,27 +30,40 @@ cpufreq_frequency_table_cpuinfo() and cpufreq_frequency_table_get_attr().
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/pasemi-cpufreq.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/cpufreq/pmac32-cpufreq.c | 3 +--
+ drivers/cpufreq/pmac64-cpufreq.c | 4 +---
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/cpufreq/pasemi-cpufreq.c b/drivers/cpufreq/pasemi-cpufreq.c
-index 534e43a..23bc8a82 100644
---- a/drivers/cpufreq/pasemi-cpufreq.c
-+++ b/drivers/cpufreq/pasemi-cpufreq.c
-@@ -219,12 +219,10 @@ static int pas_cpufreq_cpu_init(struct cpufreq_policy *policy)
+diff --git a/drivers/cpufreq/pmac32-cpufreq.c b/drivers/cpufreq/pmac32-cpufreq.c
+index 38cdc63..0b3efdb 100644
+--- a/drivers/cpufreq/pmac32-cpufreq.c
++++ b/drivers/cpufreq/pmac32-cpufreq.c
+@@ -407,8 +407,7 @@ static int pmac_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.transition_latency	= transition_latency;
+ 	policy->cur = cur_freq;
  
- 	ppc_proc_freq = policy->cur * 1000ul;
+-	cpufreq_frequency_table_get_attr(pmac_cpu_freqs, policy->cpu);
+-	return cpufreq_frequency_table_cpuinfo(policy, pmac_cpu_freqs);
++	return cpufreq_table_validate_and_show(policy, pmac_cpu_freqs);
+ }
  
--	cpufreq_frequency_table_get_attr(pas_freqs, policy->cpu);
--
- 	/* this ensures that policy->cpuinfo_min and policy->cpuinfo_max
- 	 * are set correctly
- 	 */
--	return cpufreq_frequency_table_cpuinfo(policy, pas_freqs);
-+	return cpufreq_table_validate_and_show(policy, pas_freqs);
+ static u32 read_gpio(struct device_node *np)
+diff --git a/drivers/cpufreq/pmac64-cpufreq.c b/drivers/cpufreq/pmac64-cpufreq.c
+index b6850d9..366be61 100644
+--- a/drivers/cpufreq/pmac64-cpufreq.c
++++ b/drivers/cpufreq/pmac64-cpufreq.c
+@@ -362,10 +362,8 @@ static int g5_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	 * cpufreq core if in the secondary policy we tell it that
+ 	 * it actually must be one policy together with all others. */
+ 	cpumask_copy(policy->cpus, cpu_online_mask);
+-	cpufreq_frequency_table_get_attr(g5_cpu_freqs, policy->cpu);
  
- out_unmap_sdcpwr:
- 	iounmap(sdcpwr_mapbase);
+-	return cpufreq_frequency_table_cpuinfo(policy,
+-		g5_cpu_freqs);
++	return cpufreq_table_validate_and_show(policy, g5_cpu_freqs);
+ }
+ 
+ 
 -- 
 1.7.12.rc2.18.g61b472e
 
