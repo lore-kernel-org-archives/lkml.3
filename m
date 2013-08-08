@@ -1,547 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933806Ab3HHHNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 03:13:45 -0400
-Received: from mo4.mail-out.ovh.net ([178.32.228.4]:35775 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933594Ab3HHHNo (ORCPT
+	id S933856Ab3HHHPA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 03:15:00 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:21682 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab3HHHO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 03:13:44 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH v3 13/19] clk: at91: add PMC programmable clocks
-Date: Thu,  8 Aug 2013 09:12:18 +0200
-Message-Id: <1375945938-9614-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 5020106209771943984
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Thu, 8 Aug 2013 03:14:58 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-2e-520345708f56
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Bjorn Helgaas'" <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>
+References: <002501ce9324$8066f5a0$8134e0e0$@samsung.com>
+ <CAErSpo4YuSEsUp6wyXEJyySvqUwOisdq7BURL-eVmzWL+qSgHw@mail.gmail.com>
+In-reply-to: <CAErSpo4YuSEsUp6wyXEJyySvqUwOisdq7BURL-eVmzWL+qSgHw@mail.gmail.com>
+Subject: Re: [PATCH V5] pci: exynos: split into two parts such as Synopsys part
+ and Exynos part
+Date: Thu, 08 Aug 2013 16:14:56 +0900
+Message-id: <005101ce9406$fc649d50$f52dd7f0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIk6IcNfCPbK6AAbqXC+2uAIBCzuQF9Z8I6mNJRMpA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGKsWRmVeSWpSXmKPExsVy+t8zI90CV+Ygg9e7DC3+TjrGbrGkKcPi
+	5SFNi/lHzrFaXF54idWid8FVNosLT3vYLC7vmsNmcXbecTaLGef3MVlsnPqL0aL9krLFz13z
+	WCwajz5gtWh98oDRgd/j969JjB47Z91l91iwqdTj+8L57B59W1Yxejz9sZfZ4/iN7UwenzfJ
+	BXBEcdmkpOZklqUW6dslcGV09L9jKmjnr1jTMJ2xgXE5dxcjJ4eEgInE92XzmSFsMYkL99az
+	dTFycQgJLGOUmDRxE2sXIwdY0e/VTBDx6YwSC+9Nh3J+MUqsXXWGDaSbTUBN4suXw+wgtoiA
+	psTsFVvAipgF3jNLrF61iB2io4FRYvufP4wgVZwCwRKfZn1nBbGFBRIlJi7+wgSyjkVAVeJZ
+	IxNImFfAUmLOxilsELagxI/J91hAbGYBLYn1O48zQdjyEpvXvIV6QUFix9nXjBBHWEm8PvwN
+	qkZEYt+Ld4wgN0gI7OGQaO6cD7aXRUBA4tvkQywQb8pKbDoANUdS4uCKGywTGCVmIVk9C8nq
+	WUhWz0KyYgEjyypG0dSC5ILipPQiY73ixNzi0rx0veT83E2MkDTRv4Px7gHrQ4zJQOsnMkuJ
+	JucD00xeSbyhsZmRhamJqbGRuaUZacJK4rxqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODil
+	GhiT65faeyjIalXesDD0/sz5buNf05C8H/PWi1yeW/IsvOlOv1Cc3uV/K4zSQvZoK81bdLz5
+	yEJbZlG7LydPl831k4iaYJczn9dFTz1i+op3d+s9r52vYnBoVHw4zTWUJTmi8JYUC9ctPy9Z
+	fjluFvW64N8TnUW2r1zF/bat2k8m6VOf4Okts5VYijMSDbWYi4oTAV4uCGcpAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMKsWRmVeSWpSXmKPExsVy+t9jQd0CV+Ygg9cntS3+TjrGbrGkKcPi
+	5SFNi/lHzrFaXF54idWid8FVNosLT3vYLC7vmsNmcXbecTaLGef3MVlsnPqL0aL9krLFz13z
+	WCwajz5gtWh98oDRgd/j969JjB47Z91l91iwqdTj+8L57B59W1Yxejz9sZfZ4/iN7UwenzfJ
+	BXBENTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCd
+	rqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM6Oh/x1TQzl+xpmE6YwPj
+	cu4uRg4OCQETid+rmboYOYFMMYkL99azdTFycQgJTGeUWHhvOhOE84tRYu2qM2wgVWwCahJf
+	vhxmB7FFBDQlZq/YAlbELPCeWWL1qkXsEB0NjBLb//xhBKniFAiW+DTrOyuILSyQKDFx8Rcm
+	kNUsAqoSzxrBVvMKWErM2TiFDcIWlPgx+R4LiM0soCWxfudxJghbXmLzmrfMEKcqSOw4+5oR
+	4ggrideHv0HViEjse/GOcQKj0Cwko2YhGTULyahZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7N
+	S9dLzs/dxAhOQs+kdjCubLA4xCjAwajEw9sRwBQkxJpYVlyZe4hRgoNZSYT3YjFQiDclsbIq
+	tSg/vqg0J7X4EGMy0KMTmaVEk/OBCTKvJN7Q2MTMyNLIzMLIxNycNGElcd4DrdaBQgLpiSWp
+	2ampBalFMFuYODilGhj1hJ6Y7J6oG2OwKzHw3QGd2OoDS2wmmzNmfSrfm5z4ZPqjlg//9FXv
+	u27VmL7eeunHdg/7Wxv2l6v9OjPhUj/TF7fGE88e+ZxYx9qxn73XX2HG51qu8zV9X/YpTDXr
+	niWd87+yiKvROVc7Nn/1SY6K9lBHayXBdBvRx3fVbX3jXJfsixXrOazEUpyRaKjFXFScCAC7
+	FL1FhgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new at91 programmable clocks implementation using common clk
-framework.
-A programmable clock is a clock which can be exported on a given pin to clock
-external devices.
-Each programmable clock is given an id (from 0 to 8).
-The number of available programmable clocks depends on the SoC you're using.
-Programmable clock driver only implements the clock setting (clock rate and
-parent setting). It must be chained to a system clock in order to
-enable/disable the generated clock.
-The PCKX pins used to output the clock signals must be assigned to the
-appropriate peripheral (see atmel's datasheets).
+On Thursday, August 08, 2013 2:05 AM, Bjorn Helgaas wrote:
+> On Tue, Aug 6, 2013 at 10:13 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> > On Wednesday, July 31, 2013 5:14 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> >> Exynos PCIe IP consists of Synopsys specific part and Exynos
+> >> specific part. Only core block is a Synopsys designware part;
+> >> other parts are Exynos specific.
+> >> Also, the Synopsys designware part can be shared with other
+> >> platforms; thus, it can be split two parts such as Synopsys
+> >> designware part and Exynos specific part.
+> >>
+> >> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> >> Cc: Pratyush Anand <pratyush.anand@st.com>
+> >> Cc: Mohit KUMAR <Mohit.KUMAR@st.com>
+> >
+> > Hi Bjorn Helgaas,
+> >
+> > There is no comment for last 2 weeks.
+> > Will you accept this patch?
+> 
+> I don't have any problem with this, since it's really arch code.  Do
+> you want me to merge it, or do you have a standard path for merging
+> Exynos and/or Designware changes?
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clk/at91/Makefile           |    2 +
- drivers/clk/at91/clk-programmable.c |  419 +++++++++++++++++++++++++++++++++++
- drivers/clk/at91/pmc.c              |   15 ++
- drivers/clk/at91/pmc.h              |    9 +
- 4 files changed, 445 insertions(+)
- create mode 100644 drivers/clk/at91/clk-programmable.c
+Hi Bjorn,
 
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-index 04deba3..3873b62 100644
---- a/drivers/clk/at91/Makefile
-+++ b/drivers/clk/at91/Makefile
-@@ -5,3 +5,5 @@
- obj-y += pmc.o
- obj-y += clk-main.o clk-pll.o clk-plldiv.o clk-master.o
- obj-y += clk-system.o clk-peripheral.o
-+
-+obj-$(CONFIG_AT91_PROGRAMMABLE_CLOCKS)	+= clk-programmable.o
-diff --git a/drivers/clk/at91/clk-programmable.c b/drivers/clk/at91/clk-programmable.c
-new file mode 100644
-index 0000000..f40de6a
---- /dev/null
-+++ b/drivers/clk/at91/clk-programmable.c
-@@ -0,0 +1,419 @@
-+/*
-+ * drivers/clk/at91/clk-programmable.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91_pmc.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/io.h>
-+#include <linux/wait.h>
-+#include <linux/sched.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+
-+#include "pmc.h"
-+
-+#define PROG_SOURCE_MAX		5
-+#define PROG_MAX		8
-+
-+struct clk_programmable_layout {
-+	u8 pres_shift;
-+	u8 css_mask;
-+	u8 have_slck_mck;
-+};
-+
-+#define to_clk_programmable(hw) container_of(hw, struct clk_programmable, hw)
-+struct clk_programmable {
-+	struct clk_hw hw;
-+	struct at91_pmc *pmc;
-+	unsigned int irq;
-+	wait_queue_head_t wait;
-+	u8 id;
-+	u8 css;
-+	u8 pres;
-+	u8 slckmck;
-+	const struct clk_programmable_layout *layout;
-+};
-+
-+static irqreturn_t clk_programmable_irq_handler(int irq, void *dev_id)
-+{
-+	struct clk_programmable *prog = (struct clk_programmable *)dev_id;
-+
-+	wake_up(&prog->wait);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int clk_programmable_prepare(struct clk_hw *hw)
-+{
-+	u32 tmp;
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	struct at91_pmc *pmc = prog->pmc;
-+	const struct clk_programmable_layout *layout = prog->layout;
-+
-+	tmp = prog->css | (prog->pres << layout->pres_shift);
-+	if (layout->have_slck_mck && prog->slckmck)
-+		tmp |= 1 << 8;
-+
-+	pmc_write(pmc, AT91_PMC_PCKR(prog->id), tmp);
-+
-+	while (!(pmc_read(pmc, AT91_PMC_SR) & (1 << (prog->id + 8))))
-+		wait_event(prog->wait,
-+			   pmc_read(pmc, AT91_PMC_SR) & (1 << (prog->id + 8)));
-+
-+	return 0;
-+}
-+
-+static int clk_programmable_is_ready(struct clk_hw *hw)
-+{
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	struct at91_pmc *pmc = prog->pmc;
-+
-+	return !!(pmc_read(pmc, AT91_PMC_SR) & (1 << (prog->id + 8)));
-+}
-+
-+static unsigned long clk_programmable_recalc_rate(struct clk_hw *hw,
-+						  unsigned long parent_rate)
-+{
-+	u32 tmp;
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	struct at91_pmc *pmc = prog->pmc;
-+	const struct clk_programmable_layout *layout = prog->layout;
-+
-+	tmp = pmc_read(pmc, AT91_PMC_PCKR(prog->id));
-+	prog->pres = (tmp >> layout->pres_shift) & 0x7;
-+
-+	return parent_rate >> prog->pres;
-+}
-+
-+static long clk_programmable_round_rate(struct clk_hw *hw, unsigned long rate,
-+					unsigned long *parent_rate)
-+{
-+	unsigned long best_rate = *parent_rate;
-+	unsigned long best_diff;
-+	unsigned long new_diff;
-+	unsigned long cur_rate;
-+	int shift = shift;
-+
-+	if (rate > *parent_rate)
-+		return *parent_rate;
-+	else
-+		best_diff = *parent_rate - rate;
-+
-+	if (!best_diff)
-+		return best_rate;
-+
-+	for (shift = 1; shift < 7; shift++) {
-+		cur_rate = *parent_rate >> shift;
-+
-+		if (cur_rate > rate)
-+			new_diff = cur_rate - rate;
-+		else
-+			new_diff = rate - cur_rate;
-+
-+		if (!new_diff)
-+			return cur_rate;
-+
-+		if (new_diff < best_diff) {
-+			best_diff = new_diff;
-+			best_rate = cur_rate;
-+		}
-+
-+		if (rate > cur_rate)
-+			break;
-+
-+	}
-+
-+	return best_rate;
-+}
-+
-+static int clk_programmable_set_parent(struct clk_hw *hw, u8 index)
-+{
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	const struct clk_programmable_layout *layout = prog->layout;
-+	if (index > layout->css_mask) {
-+		if (index == 4 && layout->have_slck_mck) {
-+			prog->css = 0;
-+			prog->slckmck = 1;
-+			return 0;
-+		} else
-+			return -EINVAL;
-+	}
-+
-+	prog->css = index;
-+	return 0;
-+}
-+
-+static u8 clk_programmable_get_parent(struct clk_hw *hw)
-+{
-+	u32 tmp;
-+	u8 ret;
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	struct at91_pmc *pmc = prog->pmc;
-+	const struct clk_programmable_layout *layout = prog->layout;
-+
-+	tmp = pmc_read(pmc, AT91_PMC_PCKR(prog->id));
-+	prog->css = tmp & layout->css_mask;
-+	ret = prog->css;
-+	if (layout->have_slck_mck) {
-+		prog->slckmck = !!(tmp & (1 << 8));
-+		if (prog->slckmck && !ret)
-+			ret = 4;
-+	}
-+
-+	return ret;
-+}
-+
-+static int clk_programmable_set_rate(struct clk_hw *hw, unsigned long rate,
-+				     unsigned long parent_rate)
-+{
-+	struct clk_programmable *prog = to_clk_programmable(hw);
-+	unsigned long best_rate = parent_rate;
-+	unsigned long best_diff;
-+	unsigned long new_diff;
-+	unsigned long cur_rate;
-+	int shift = 0;
-+
-+	if (rate > parent_rate)
-+		return parent_rate;
-+	else
-+		best_diff = parent_rate - rate;
-+
-+	if (!best_diff) {
-+		prog->pres = shift;
-+		return 0;
-+	}
-+
-+	for (shift = 1; shift < 7; shift++) {
-+		cur_rate = parent_rate >> shift;
-+
-+		if (cur_rate > rate)
-+			new_diff = cur_rate - rate;
-+		else
-+			new_diff = rate - cur_rate;
-+
-+		if (!new_diff)
-+			break;
-+
-+		if (new_diff < best_diff) {
-+			best_diff = new_diff;
-+			best_rate = cur_rate;
-+		}
-+
-+		if (rate > cur_rate)
-+			break;
-+
-+	}
-+
-+	prog->pres = shift;
-+	return 0;
-+}
-+
-+static const struct clk_ops programmable_ops = {
-+	.prepare = clk_programmable_prepare,
-+	.is_prepared = clk_programmable_is_ready,
-+	.recalc_rate = clk_programmable_recalc_rate,
-+	.round_rate = clk_programmable_round_rate,
-+	.get_parent = clk_programmable_get_parent,
-+	.set_parent = clk_programmable_set_parent,
-+	.set_rate = clk_programmable_set_rate,
-+};
-+
-+static struct clk * __init
-+at91_clk_register_programmable(struct at91_pmc *pmc, unsigned int irq,
-+			       const char *name, const char **parent_names,
-+			       u8 num_parents, u8 id,
-+			       const struct clk_programmable_layout *layout)
-+{
-+	int ret;
-+	struct clk_programmable *prog;
-+	struct clk *clk = NULL;
-+	struct clk_init_data init;
-+	char irq_name[11];
-+
-+	id &= 7;
-+
-+	prog = kzalloc(sizeof(*prog), GFP_KERNEL);
-+	if (!prog)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &programmable_ops;
-+	init.parent_names = parent_names;
-+	init.num_parents = num_parents;
-+	init.flags = CLK_SET_RATE_GATE | CLK_SET_PARENT_GATE;
-+
-+	prog->id = id;
-+	prog->layout = layout;
-+	prog->hw.init = &init;
-+	prog->pmc = pmc;
-+	prog->irq = irq;
-+	init_waitqueue_head(&prog->wait);
-+	irq_set_status_flags(prog->irq, IRQ_NOAUTOEN);
-+	snprintf(irq_name, sizeof(irq_name), "clk-prog%d", id);
-+	ret = request_irq(prog->irq, clk_programmable_irq_handler,
-+			  IRQF_TRIGGER_HIGH, irq_name, prog);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	clk = clk_register(NULL, &prog->hw);
-+
-+	if (IS_ERR(clk))
-+		kfree(prog);
-+
-+	return clk;
-+}
-+
-+static const struct clk_programmable_layout at91rm9200_programmable_layout = {
-+	.pres_shift = 2,
-+	.css_mask = 0x3,
-+	.have_slck_mck = 0,
-+};
-+
-+static const struct clk_programmable_layout at91sam9g45_programmable_layout = {
-+	.pres_shift = 2,
-+	.css_mask = 0x3,
-+	.have_slck_mck = 1,
-+};
-+
-+static const struct clk_programmable_layout at91sam9x5_programmable_layout = {
-+	.pres_shift = 4,
-+	.css_mask = 0x7,
-+	.have_slck_mck = 0,
-+};
-+
-+struct clk_prog_data {
-+	struct clk **clks;
-+	u8 *ids;
-+	unsigned int clk_num;
-+};
-+
-+static struct clk * __init
-+of_clk_src_periph_get(struct of_phandle_args *clkspec, void *data)
-+{
-+	struct clk_prog_data *clk_data = data;
-+	unsigned int id = clkspec->args[0];
-+	int i;
-+
-+	if (id >= PROG_MAX)
-+		goto err;
-+
-+	for (i = 0; i < clk_data->clk_num; i++) {
-+		if (clk_data->ids[i] == id)
-+			return clk_data->clks[i];
-+	}
-+
-+err:
-+	pr_err("%s: invalid clock id %d\n", __func__, id);
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+static void __init
-+of_at91_clk_prog_setup(struct device_node *np, struct at91_pmc *pmc,
-+		       const struct clk_programmable_layout *layout)
-+{
-+	int num;
-+	u32 id;
-+	int i;
-+	unsigned int irq;
-+	struct clk *clk;
-+	int num_parents;
-+	u8 *ids;
-+	struct clk **clks;
-+	struct clk_prog_data *clktab;
-+	const char *parent_names[PROG_SOURCE_MAX];
-+	const char *name;
-+	struct device_node *progclknp;
-+
-+	num_parents = of_count_phandle_with_args(np, "clocks", "#clock-cells");
-+	if (num_parents <= 0 || num_parents > PROG_SOURCE_MAX)
-+		return;
-+
-+	for (i = 0; i < num_parents; ++i) {
-+		parent_names[i] = of_clk_get_parent_name(np, i);
-+		if (!parent_names[i])
-+			return;
-+	}
-+
-+	num = of_get_child_count(np);
-+	if (!num || num > PROG_MAX)
-+		return;
-+
-+	clktab = kzalloc(sizeof(*clktab), GFP_KERNEL);
-+	if (!clktab)
-+		return;
-+
-+	ids = kzalloc(num * sizeof(*ids), GFP_KERNEL);
-+	if (!ids)
-+		goto out_free_clktab;
-+
-+	clks = kzalloc(num * sizeof(*clks), GFP_KERNEL);
-+	if (!clks)
-+		goto out_free_ids;
-+
-+	i = 0;
-+	for_each_child_of_node(np, progclknp) {
-+		name = progclknp->name;
-+
-+		if (of_property_read_u32(progclknp, "atmel,clk-id", &id))
-+			goto out_free_clks;
-+		if (id >= PROG_MAX)
-+			goto out_free_clks;
-+
-+		irq = irq_of_parse_and_map(np, 0);
-+		if (!irq)
-+			goto out_free_clks;
-+
-+		clk = at91_clk_register_programmable(pmc, irq, name,
-+						     parent_names, num_parents,
-+						     id, layout);
-+		if (IS_ERR(clk))
-+			goto out_free_clks;
-+
-+		clks[i] = clk;
-+		ids[i++] = id;
-+	}
-+
-+	clktab->clk_num = num;
-+	clktab->clks = clks;
-+	clktab->ids = ids;
-+	of_clk_add_provider(np, of_clk_src_periph_get, clktab);
-+	return;
-+
-+out_free_clks:
-+	kfree(clks);
-+out_free_ids:
-+	kfree(ids);
-+out_free_clktab:
-+	kfree(clktab);
-+}
-+
-+
-+void __init of_at91rm9200_clk_prog_setup(struct device_node *np,
-+					 struct at91_pmc *pmc)
-+{
-+	of_at91_clk_prog_setup(np, pmc, &at91rm9200_programmable_layout);
-+}
-+
-+void __init of_at91sam9g45_clk_prog_setup(struct device_node *np,
-+					  struct at91_pmc *pmc)
-+{
-+	of_at91_clk_prog_setup(np, pmc, &at91sam9g45_programmable_layout);
-+}
-+
-+void __init of_at91sam9x5_clk_prog_setup(struct device_node *np,
-+					 struct at91_pmc *pmc)
-+{
-+	of_at91_clk_prog_setup(np, pmc, &at91sam9x5_programmable_layout);
-+}
-diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-index 1a56f1c..66a627d 100644
---- a/drivers/clk/at91/pmc.c
-+++ b/drivers/clk/at91/pmc.c
-@@ -265,6 +265,21 @@ static const struct of_device_id pmc_clk_ids[] __initdata = {
- 		.compatible = "atmel,at91sam9x5-clk-peripheral",
- 		.data = of_at91sam9x5_clk_periph_setup,
- 	},
-+	/* Programmable clocks */
-+#if defined(CONFIG_AT91_PROGRAMMABLE_CLOCKS)
-+	{
-+		.compatible = "atmel,at91rm9200-clk-programmable",
-+		.data = of_at91rm9200_clk_prog_setup,
-+	},
-+	{
-+		.compatible = "atmel,at91sam9g45-clk-programmable",
-+		.data = of_at91sam9g45_clk_prog_setup,
-+	},
-+	{
-+		.compatible = "atmel,at91sam9x5-clk-programmable",
-+		.data = of_at91sam9x5_clk_prog_setup,
-+	},
-+#endif
- 	{ /*sentinel*/ }
- };
- 
-diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-index 08c30fb..5f20dc1 100644
---- a/drivers/clk/at91/pmc.h
-+++ b/drivers/clk/at91/pmc.h
-@@ -82,4 +82,13 @@ extern void __init of_at91rm9200_clk_periph_setup(struct device_node *np,
- extern void __init of_at91sam9x5_clk_periph_setup(struct device_node *np,
- 						  struct at91_pmc *pmc);
- 
-+#if defined(CONFIG_AT91_PROGRAMMABLE_CLOCKS)
-+extern void __init of_at91rm9200_clk_prog_setup(struct device_node *np,
-+						struct at91_pmc *pmc);
-+extern void __init of_at91sam9g45_clk_prog_setup(struct device_node *np,
-+						 struct at91_pmc *pmc);
-+extern void __init of_at91sam9x5_clk_prog_setup(struct device_node *np,
-+						struct at91_pmc *pmc);
-+#endif
-+
- #endif /* __PMC_H_ */
--- 
-1.7.9.5
+I want you to merge it. :)
+Thank you.
+
+Best regards,
+Jingoo Han
+
+> 
+> Bjorn
+> 
+> In case you need it:
+> 
+> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> >> ---
+> >> Changes since v4:
+> >> - fixed section mismatch warnings
+> >> - fixed sparse warnings
+> >>
+> >>  .../devicetree/bindings/pci/designware-pcie.txt    |    3 +
+> >>  arch/arm/boot/dts/exynos5440.dtsi                  |    2 +
+> >>  drivers/pci/host/Makefile                          |    3 +-
+> >>  drivers/pci/host/pci-exynos.c                      |  530 ++++++++++
+> >>  drivers/pci/host/pcie-designware.c                 | 1011 ++++++--------------
+> >>  drivers/pci/host/pcie-designware.h                 |   65 ++
+> >>  6 files changed, 874 insertions(+), 740 deletions(-)
+> >>  create mode 100644 drivers/pci/host/pci-exynos.c
+> >>  create mode 100644 drivers/pci/host/pcie-designware.h
+> >
 
