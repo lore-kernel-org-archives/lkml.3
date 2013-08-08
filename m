@@ -1,89 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab3HHDiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 23:38:12 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:40533 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992Ab3HHDiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 23:38:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <52027F39.5050805@wwwdotorg.org>
-References: <1374039105-17777-1-git-send-email-sonic.adi@gmail.com>
-	<CACRpkdZMCO9Cw=SMk4cq8k0+eqYrK=kKsjfAHut1=PXjxS_6jA@mail.gmail.com>
-	<52027F39.5050805@wwwdotorg.org>
-Date: Thu, 8 Aug 2013 11:38:08 +0800
-Message-ID: <CAJxxZ0OaXH1QTuwoHs0zHxhL8CXNRmpo2zZ+SQJB+z_7U8MLrQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: pinmux: Don't free pins requested by other devices
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Axel Lin <axel.lin@ingics.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "buildroot-devel@blackfin.uclinux.org" 
-	<buildroot-devel@blackfin.uclinux.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757675Ab3HHDlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 23:41:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:21567 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755602Ab3HHDlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Aug 2013 23:41:06 -0400
+X-IronPort-AV: E=Sophos;i="4.89,836,1367942400"; 
+   d="scan'208";a="8150466"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: [PATCH part1 5/5] acpi, acpica: Split acpi_initialize_tables() into two parts.
+Date: Thu, 8 Aug 2013 11:39:36 +0800
+Message-Id: <1375933176-15003-6-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375933176-15003-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1375933176-15003-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 11:39:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 11:39:40,
+	Serialize complete at 2013/08/08 11:39:40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+This patch splits acpi_initialize_tables() into two steps, and
+introduces two new functions:
+    acpi_initialize_tables_firmware() and acpi_tb_root_table_override(),
+which work just the same as acpi_initialize_tables() if they are called
+in sequence.
 
-On Thu, Aug 8, 2013 at 1:09 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 08/07/2013 10:23 AM, Linus Walleij wrote:
->> On Wed, Jul 17, 2013 at 7:31 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
->>
->> I'd like Stephen and Axel to have a look at this as well...
->>
->>> From: Sonic Zhang <sonic.zhang@analog.com>
->>>
->>> in pinmux_disable_setting after current device fails to request
->>> the same pins.
->>>
->>> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
->>
->> I don't quite understand the patch. Can you provide more context?
->
-> Yes, the commit description needs to describe the problem this solves.
->
-> I'm *guessing* the issue is:
->
-> Something tries to enable a new mux setting on some pins. One of those
-> pins is already owned by something else. So, applying the current
-> setting fails. So, pinctrl core attempts to unapply the partially
-> applied setting. This ends up incorrectly over-writing the conflicting
-> ownership of the pins with NULL, and hence forgetting about it.
->
-> I think a better change would be something more along the lines of:
->
->   for (i = 0; i < num_pins; i++)
-> +       if (this_device_owns_pin(pins[i])
->                 pin_free(pctldev, pins[i], NULL);
->
-> ?
->
-> Where this_device_owns_pin() might be someting like:
->
->         desc->owning_setting == setting
->
-> (which would be a new field that needed to be assigned during
-> pinmux_enable_setting).
->
-> Or perhaps the strcmp() is fine.
->
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ drivers/acpi/acpica/tbxface.c |   64 ++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 57 insertions(+), 7 deletions(-)
 
-You are right. One peripheral may share part of its pins with the 2nd
-peripheral and the other pins with the 3rd. If it requests all pins
-when part of them has already be requested and owned by the 2nd
-peripheral, this request fails and pinmux_disable_setting() is called.
-The pinmux_disable_setting() frees all pins of the first peripheral
-without checking if the pin is owned by itself or the 2nd, which
-results in the malfunction of the 2nd peripheral driver.
+diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
+index 98e4cad..ecaa5e1 100644
+--- a/drivers/acpi/acpica/tbxface.c
++++ b/drivers/acpi/acpica/tbxface.c
+@@ -72,8 +72,7 @@ acpi_status acpi_allocate_root_table(u32 initial_table_count)
+ }
+ 
+ /*******************************************************************************
+- *
+- * FUNCTION:    acpi_initialize_tables
++ * FUNCTION:    acpi_initialize_tables_firmware
+  *
+  * PARAMETERS:  initial_table_array - Pointer to an array of pre-allocated
+  *                                    struct acpi_table_desc structures. If NULL, the
+@@ -86,8 +85,6 @@ acpi_status acpi_allocate_root_table(u32 initial_table_count)
+  *
+  * RETURN:      Status
+  *
+- * DESCRIPTION: Initialize the table manager, get the RSDP and RSDT/XSDT.
+- *
+  * NOTE:        Allows static allocation of the initial table array in order
+  *              to avoid the use of dynamic memory in confined environments
+  *              such as the kernel boot sequence where it may not be available.
+@@ -98,8 +95,8 @@ acpi_status acpi_allocate_root_table(u32 initial_table_count)
+  ******************************************************************************/
+ 
+ acpi_status __init
+-acpi_initialize_tables(struct acpi_table_desc * initial_table_array,
+-		       u32 initial_table_count, u8 allow_resize)
++acpi_initialize_tables_firmware(struct acpi_table_desc * initial_table_array,
++				u32 initial_table_count, u8 allow_resize)
+ {
+ 	acpi_physical_address rsdp_address;
+ 	acpi_status status;
+@@ -144,10 +141,63 @@ acpi_initialize_tables(struct acpi_table_desc * initial_table_array,
+ 	 * in a common, more useable format.
+ 	 */
+ 	status = acpi_tb_root_table_install(rsdp_address);
++
++	return_ACPI_STATUS(status);
++}
++
++/*******************************************************************************
++ *
++ * FUNCTION:    acpi_initialize_tables
++ *
++ * PARAMETERS:  None
++ *
++ * RETURN:      None
++ *
++ * DESCRIPTION: Allow host OS to replace any table installed in global root
++ *              table list.
++ *
++ ******************************************************************************/
++
++void acpi_initialize_tables_override(void)
++{
++	acpi_tb_root_table_override();
++}
++
++/*******************************************************************************
++ *
++ * FUNCTION:    acpi_initialize_tables
++ *
++ * PARAMETERS:  initial_table_array - Pointer to an array of pre-allocated
++ *                                    struct acpi_table_desc structures. If NULL, the
++ *                                    array is dynamically allocated.
++ *              initial_table_count - Size of initial_table_array, in number of
++ *                                    struct acpi_table_desc structures
++ *              allow_resize        - Flag to tell Table Manager if resize of
++ *                                    pre-allocated array is allowed. Ignored
++ *                                    if initial_table_array is NULL.
++ *
++ * RETURN:      Status
++ *
++ * DESCRIPTION: Initialize the table manager, get the RSDP and RSDT/XSDT.
++ *
++ ******************************************************************************/
++
++acpi_status __init
++acpi_initialize_tables(struct acpi_table_desc * initial_table_array,
++		       u32 initial_table_count, u8 allow_resize)
++{
++	acpi_status status;
++
++	status = acpi_initialize_tables_firmware(initial_table_array,
++					initial_table_count, allow_resize);
+ 	if (ACPI_FAILURE(status))
+ 		return_ACPI_STATUS(status);
+ 
+-	acpi_tb_root_table_override();
++	/*
++	 * Allow host OS to replace any table installed in global root
++	 * table list.
++	 */
++	acpi_initialize_tables_override();
+ 
+ 	return_ACPI_STATUS(AE_OK);
+ }
+-- 
+1.7.1
 
-I am fine to compare owner's pinctrl_setting structure other than name string.
-
-Regards,
-
-Sonic
