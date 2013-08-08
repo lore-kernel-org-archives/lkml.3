@@ -1,474 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab3HHFVE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 01:21:04 -0400
-Received: from 10.mo4.mail-out.ovh.net ([188.165.33.109]:37325 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755495Ab3HHFVA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 01:21:00 -0400
-From: Boris BREZILLON <b.brezillon@overkiz.com>
-To: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Josh Wu <josh.wu@atmel.com>, Richard Genoud <richard.genoud@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH v3 03/19] clk: at91: add PMC base support
-Date: Thu,  8 Aug 2013 07:01:06 +0200
-Message-Id: <1375938066-3889-1-git-send-email-b.brezillon@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-References: <1375937608-3773-1-git-send-email-b.brezillon@overkiz.com>
-X-Ovh-Tracer-Id: 2804335194732918832
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrtdehucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1756815Ab3HHFXo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 01:23:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755495Ab3HHFXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 01:23:42 -0400
+Message-ID: <1375939416.3509.120.camel@ul30vt.home>
+Subject: Re: [PATCH v4 8/9] pci: Tune secondary bus reset timing
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, ddutile@redhat.com,
+        indou.takao@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Date: Wed, 07 Aug 2013 23:23:36 -0600
+In-Reply-To: <52029262.3060402@intel.com>
+References: <20130805193200.9260.38729.stgit@bling.home>
+	  <20130805193753.9260.35206.stgit@bling.home> <52018664.1080103@intel.com>
+	 <1375844191.3509.15.camel@ul30vt.home> <52029262.3060402@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds at91 PMC (Power Management Controller) base support.
+On Wed, 2013-08-07 at 11:30 -0700, Alexander Duyck wrote:
+> On 08/06/2013 07:56 PM, Alex Williamson wrote:
+> > On Tue, 2013-08-06 at 16:27 -0700, Alexander Duyck wrote:
+> >> On 08/05/2013 12:37 PM, Alex Williamson wrote:
+> >>> The PCI spec indicates that with stable power, reset needs to be
+> >>> asserted for a minimum of 1ms (Trst).  Seems like we should be able
+> >>> to assume power is stable for a runtime secondary bus reset.  The
+> >>> current code has always used 100ms with no explanation where that
+> >>> came from.  The aer_do_secondary_bus_reset() function uses 2ms, but
+> >>> that seems to be a misinterpretation of the PCIe spec, where hot
+> >>> reset is implemented by TS1 ordered sets containing the hot reset
+> >>> command.  After a 2ms delay the state machine enters the detect state,
+> >>> but to generate a link down, only two consecutive TS1 hot reset
+> >>> ordered sets are requred.  1ms should be plenty for that.
+> >> The reason for doing a 2ms sleep is because the are supposed to be
+> >> sending the Hot Reset TS1 Ordered-Sets continuously for 2ms per all of
+> >> the documents I have read.
+> > Could you point to one of those references?  In the PCIe v3 spec I'm
+> > seeing things like 4.2.6.11 Hot Reset:
+> >
+> >       * If two consecutive TS1 Ordered Sets are received on any Lane
+> >         with the Hot Reset bit asserted and configured Link and Lane
+> >         numbers, then:
+> >               * LinkUp = 0b (False)
+> >               * If no higher Layer is directing the Physical Layer to
+> >                 remain in Hot Reset, the next state is Detect
+> >               * Otherwise, all Lanes in the configured Link continue to
+> >                 transmit TS1 Ordered Sets with the Hot Reset bit
+> >                 asserted and the configured Link and Lane numbers.
+> >       * Otherwise, after a 2 ms timeout next state is Detect.
+> >
+> > The next section has something similar for propagation of hot resets.
+> >
+> > Nowhere there does it say TS1 Ordered Sets need to be sent continuously
+> > for 2ms.  A hot reset is initiated only by two consecutive TS1 Ordered
+> > Sets with the Hot Reset bit asserted.  The 2ms timeout seems to be the
+> > delay before the link moves to the Detect state after we stop asserting
+> > hot reset.  1ms seems like more than enough time for two TS1 Ordered
+> > Sets to propagate down a multi-level hierarchy at 2.5GT/s. 
+> >
+> 
+> My original implementation is actually based on page 536 of the "PCI
+> Express System Architecture".  However based on the PCIe spec itself I
+> think the point is that the port is supposed to stay in Hot Reset for
+> 2ms after receiving the in-band message.  For a bridge port it means
+> that is supposed to be sending the Hot Reset message for those 2ms on
+> all downstream facing ports.  After the timer expires then it stops
+> sending the Hot Reset TS1 Ordered Sets and then will transition to the
+> Detect state.
 
-All at91 clocks managed by the PMC unit will use this framework.
+Conveniently page 536 is available for preview on google :)  What that
+suggests to me is that the minimum "nobody home", unconnected link
+timeout is 2ms.  Downstream ports may exit to the Detect state after
+either a 2ms timeout expires or after two hot-reset-TS1s are received
+from the downstream device.  The other 2ms case is that an upstream port
+in the Hot Reset state will always wait for the 2ms timeout to expire
+after the last pair of hot-reset-TS1s is received before entering the
+Detect state.
 
-This framework provides the following fonctionalities:
-- define a new struct at91_pmc to hide PMC internals (lock, PMC memory
-  mapping, irq domain, ...)
-- read/write helper functions (pmc_read/write) to access PMC registers
-- lock/unlock helper functions (pmc_lock/unlock) to lock/unlock access to
-  pmc registers
-- a new irq domain and its associated irq chip to request PMC specific
-  interrupts (useful for clk prepare callbacks)
+> My main concern here is that the previous code was not triggering a Hot
+> Reset on all ports previously.  What was happening was that some of the
+> ports would only get as far as Recovery as the upstream port was only
+> sending a couple of TS1 frames and not allowing the downstream ports
+> time to switch to Recovery themselves and discover the Hot Reset.
 
-The PMC unit is declared as a dt clk provider (CLK_OF_DECLARE), and every
-clk using this framework will declare a table of of_at91_clk_init_cb_t
-and add it to the pmc_clk_ids table.
+Was that the original code that had no delay between set and clear of
+the bridge control register?  1ms is pretty long time vs no delay.
 
-When the pmc dt clock setup function is called (by of_clk_init function),
-it triggers the registration of every supported child clk (those matching
-the definitions in pmc_clk_ids).
+> >> The 1ms number you quote is the minimum time
+> >> for a conventional PCI bus.  I'm not completely sure of that applies as
+> >> well to PCIe, nor does it represent the maximum recommended value.
+> > Correct, 1ms comes from conventional PCI.  PCIe is designed to be
+> > software compatible with conventional PCI so it makes sense that PCIe
+> > would do something within the timing boundaries of conventional PCI.  I
+> > didn't see any reference to a maximum recommended value for this
+> > parameter.
+> 
+> I don't want to implement things to minimum specification as there are
+> too many marginal parts where the minimum doesn't work.  I would rather
+> not have to add a ton of quirks for all of the parts out there that
+> didn't quite meet up to the specification.  By using a value of 2ms we
+> are matching what the PCIe bridge behavior is supposed to be by sending
+> the Hot Reset TS1 ordered sets for 2ms.
 
-This patch copies at91_pmc_base (memory mapping) and at91sam9_idle
-(function) from arch/arm/mach-at91/clock.c (which is not compiled if
-COMMON_CLK_AT91 is enabled).
+The minimum requirement is 2 hot-reset-TS1.  We're sending ~2.5 million
+(if we can assume 1 per transfer cycle).
 
-Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
----
- drivers/clk/Makefile      |    1 +
- drivers/clk/at91/Makefile |    5 +
- drivers/clk/at91/pmc.c    |  298 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/at91/pmc.h    |   58 +++++++++
- 4 files changed, 362 insertions(+)
- create mode 100644 drivers/clk/at91/Makefile
- create mode 100644 drivers/clk/at91/pmc.c
- create mode 100644 drivers/clk/at91/pmc.h
+> >> If we stop early we risk not resetting the full device tree on the
+> >> secondary bus which is the bug I was resolving by adding the 2ms delay. 
+> >> Previously we saw that some devices were only getting their PCIe link
+> >> retrained without performing a hot reset when the bit was not held for
+> >> long enough.  I would prefer to keep this at 2 ms in order to account
+> >> for the fact that PCIe has to go though link recovery states before it
+> >> can perform the hot reset.
+> > I'm not going to sweat over 1ms or 2ms but I do want to be able to
+> > document why we're setting it to one or the other.  If it's warm
+> > fuzzies, so be it, but I'd prefer if we could find actual spec or
+> > hardware examples to back it up.  Thanks,
+> >
+> > Alex
+> 
+> I think our difference is that I based my value on the in-band message
+> behavior and your value is based on the recommended minimum time for the
+> Secondary Bus Reset.  The downstream ports of a bridge that receives the
+> in-band Hot Reset notification are supposed to send a continuous stream
+> of TS1 Ordered sets with the Hot Reset bit set for 2ms.  Based on all of
+> the conditions in the spec the device should start a 2ms timer, and all
+> downstream ports should begin transmitting the TS1 Ordered sets with the
+> Hot Reset bit asserted, then after the 2ms timer expires it should
+> switch to the detect state.  I verified with a PCIe analyzer that this
+> was what the AER code was doing after I had changed it and added the sleep.
+>
+> What I found is that most parts will stop transmitting the TS1 ordered
+> sets as soon as you clear the Secondary Bus Reset bit.
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 4038c2b..c256a20 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -32,6 +32,7 @@ obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
- obj-$(CONFIG_ARCH_ZYNQ)		+= zynq/
- obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
- obj-$(CONFIG_PLAT_SAMSUNG)	+= samsung/
-+obj-$(CONFIG_COMMON_CLK_AT91)	+= at91/
- 
- obj-$(CONFIG_X86)		+= x86/
- 
-diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-new file mode 100644
-index 0000000..1d4fb21
---- /dev/null
-+++ b/drivers/clk/at91/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for at91 specific clk
-+#
-+
-+obj-y += pmc.o
-diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-new file mode 100644
-index 0000000..f6bd03d
---- /dev/null
-+++ b/drivers/clk/at91/pmc.c
-@@ -0,0 +1,298 @@
-+/*
-+ * drivers/clk/at91/pmc.c
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/clk/at91_pmc.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/irqchip/chained_irq.h>
-+#include <linux/irqdomain.h>
-+#include <linux/of_irq.h>
-+
-+#include <asm/proc-fns.h>
-+
-+#include "pmc.h"
-+
-+void __iomem *at91_pmc_base;
-+EXPORT_SYMBOL_GPL(at91_pmc_base);
-+
-+void at91sam9_idle(void)
-+{
-+	at91_pmc_write(AT91_PMC_SCDR, AT91_PMC_PCK);
-+	cpu_do_idle();
-+}
-+
-+static void pmc_irq_mask(struct irq_data *d)
-+{
-+	struct at91_pmc *pmc = irq_data_get_irq_chip_data(d);
-+
-+	pmc_write(pmc, AT91_PMC_IDR, 1 << d->hwirq);
-+}
-+
-+static void pmc_irq_unmask(struct irq_data *d)
-+{
-+	struct at91_pmc *pmc = irq_data_get_irq_chip_data(d);
-+
-+	pmc_write(pmc, AT91_PMC_IER, 1 << d->hwirq);
-+}
-+
-+static int pmc_irq_set_type(struct irq_data *d, unsigned type)
-+{
-+	if (type != IRQ_TYPE_LEVEL_HIGH) {
-+		pr_warn("PMC: type not supported (support only IRQ_TYPE_LEVEL_HIGH type)\n");
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct irq_chip pmc_irq = {
-+	.name = "PMC",
-+	.irq_disable = pmc_irq_mask,
-+	.irq_mask = pmc_irq_mask,
-+	.irq_unmask = pmc_irq_unmask,
-+	.irq_set_type = pmc_irq_set_type,
-+};
-+
-+static struct lock_class_key pmc_lock_class;
-+
-+static int pmc_irq_map(struct irq_domain *h, unsigned int virq,
-+		       irq_hw_number_t hw)
-+{
-+	struct at91_pmc	*pmc = h->host_data;
-+
-+	irq_set_lockdep_class(virq, &pmc_lock_class);
-+
-+	irq_set_chip_and_handler(virq, &pmc_irq,
-+				 handle_level_irq);
-+	set_irq_flags(virq, IRQF_VALID);
-+	irq_set_chip_data(virq, pmc);
-+
-+	return 0;
-+}
-+
-+static int pmc_irq_domain_xlate(struct irq_domain *d,
-+				struct device_node *ctrlr,
-+				const u32 *intspec, unsigned int intsize,
-+				irq_hw_number_t *out_hwirq,
-+				unsigned int *out_type)
-+{
-+	struct at91_pmc *pmc = d->host_data;
-+	const struct at91_pmc_caps *caps = pmc->caps;
-+
-+	if (WARN_ON(intsize < 2))
-+		return -EINVAL;
-+	*out_hwirq = intspec[0];
-+	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
-+
-+	if (!(caps->available_irqs & (1 << *out_hwirq)))
-+		return -EINVAL;
-+
-+	if (*out_type != IRQ_TYPE_LEVEL_HIGH)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static struct irq_domain_ops pmc_irq_ops = {
-+	.map	= pmc_irq_map,
-+	.xlate	= pmc_irq_domain_xlate,
-+};
-+
-+static irqreturn_t pmc_irq_handler(int irq, void *data)
-+{
-+	struct at91_pmc *pmc = (struct at91_pmc *)data;
-+	unsigned long sr;
-+	int n;
-+
-+	sr = pmc_read(pmc, AT91_PMC_SR) & pmc_read(pmc, AT91_PMC_IMR);
-+	if (!sr)
-+		return IRQ_NONE;
-+
-+	for_each_set_bit(n, &sr, BITS_PER_LONG)
-+		generic_handle_irq(irq_find_mapping(pmc->irqdomain, n));
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static const struct at91_pmc_caps at91rm9200_caps = {
-+	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_LOCKB |
-+			  AT91_PMC_MCKRDY | AT91_PMC_PCK0RDY |
-+			  AT91_PMC_PCK1RDY | AT91_PMC_PCK2RDY |
-+			  AT91_PMC_PCK3RDY,
-+};
-+
-+static const struct at91_pmc_caps at91sam9260_caps = {
-+	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_LOCKB |
-+			  AT91_PMC_MCKRDY | AT91_PMC_PCK0RDY |
-+			  AT91_PMC_PCK1RDY,
-+};
-+
-+static const struct at91_pmc_caps at91sam9g45_caps = {
-+	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_MCKRDY |
-+			  AT91_PMC_LOCKU | AT91_PMC_PCK0RDY |
-+			  AT91_PMC_PCK1RDY,
-+};
-+
-+static const struct at91_pmc_caps at91sam9n12_caps = {
-+	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_LOCKB |
-+			  AT91_PMC_MCKRDY | AT91_PMC_PCK0RDY |
-+			  AT91_PMC_PCK1RDY | AT91_PMC_MOSCSELS |
-+			  AT91_PMC_MOSCRCS | AT91_PMC_CFDEV,
-+};
-+
-+static const struct at91_pmc_caps at91sam9x5_caps = {
-+	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_MCKRDY |
-+			  AT91_PMC_LOCKU | AT91_PMC_PCK0RDY |
-+			  AT91_PMC_PCK1RDY | AT91_PMC_MOSCSELS |
-+			  AT91_PMC_MOSCRCS | AT91_PMC_CFDEV,
-+};
-+
-+static const struct at91_pmc_caps at91sam9g35_caps = {
-+	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_MCKRDY |
-+			  AT91_PMC_PCK0RDY | AT91_PMC_PCK1RDY |
-+			  AT91_PMC_MOSCSELS | AT91_PMC_MOSCRCS |
-+			  AT91_PMC_CFDEV,
-+};
-+
-+static const struct at91_pmc_caps sama5d3_caps = {
-+	.available_irqs = AT91_PMC_MOSCS | AT91_PMC_LOCKA | AT91_PMC_MCKRDY |
-+			  AT91_PMC_LOCKU | AT91_PMC_PCK0RDY |
-+			  AT91_PMC_PCK1RDY | AT91_PMC_PCK2RDY |
-+			  AT91_PMC_MOSCSELS | AT91_PMC_MOSCRCS |
-+			  AT91_PMC_CFDEV,
-+};
-+
-+static struct at91_pmc *__init at91_pmc_init(struct device_node *np,
-+					     void __iomem *regbase, int virq,
-+					     const struct at91_pmc_caps *caps)
-+{
-+	struct at91_pmc *pmc;
-+
-+	if (!regbase || !virq ||  !caps)
-+		return NULL;
-+
-+	at91_pmc_base = regbase;
-+
-+	pmc = kzalloc(sizeof(*pmc), GFP_KERNEL);
-+	if (!pmc)
-+		return NULL;
-+
-+	spin_lock_init(&pmc->lock);
-+	pmc->regbase = regbase;
-+	pmc->virq = virq;
-+	pmc->caps = caps;
-+
-+	pmc->irqdomain = irq_domain_add_linear(np, 32, &pmc_irq_ops, pmc);
-+
-+	if (!pmc->irqdomain)
-+		goto out_free_pmc;
-+
-+	pmc_write(pmc, AT91_PMC_IDR, 0xffffffff);
-+	if (request_irq(pmc->virq, pmc_irq_handler, IRQF_SHARED, "pmc", pmc))
-+		goto out_remove_irqdomain;
-+
-+	return pmc;
-+
-+out_remove_irqdomain:
-+	irq_domain_remove(pmc->irqdomain);
-+out_free_pmc:
-+	kfree(pmc);
-+
-+	return NULL;
-+}
-+
-+static const struct of_device_id pmc_clk_ids[] __initdata = {
-+	{ /*sentinel*/ }
-+};
-+
-+static void __init of_at91_pmc_setup(struct device_node *np,
-+				     const struct at91_pmc_caps *caps)
-+{
-+	struct at91_pmc *pmc;
-+	struct device_node *childnp;
-+	void (*clk_setup)(struct device_node *, struct at91_pmc *);
-+	const struct of_device_id *clk_id;
-+	void __iomem *regbase = of_iomap(np, 0);
-+	int virq;
-+
-+	if (!regbase)
-+		return;
-+
-+	virq = irq_of_parse_and_map(np, 0);
-+	if (!virq)
-+		return;
-+
-+	pmc = at91_pmc_init(np, regbase, virq, caps);
-+	if (!pmc)
-+		return;
-+	for_each_child_of_node(np, childnp) {
-+		clk_id = of_match_node(pmc_clk_ids, childnp);
-+		if (!clk_id)
-+			continue;
-+		clk_setup = clk_id->data;
-+		clk_setup(childnp, pmc);
-+	}
-+}
-+
-+static void __init of_at91rm9200_pmc_setup(struct device_node *np)
-+{
-+	of_at91_pmc_setup(np, &at91rm9200_caps);
-+}
-+CLK_OF_DECLARE(at91rm9200_clk_main, "atmel,at91rm9200-pmc",
-+	       of_at91rm9200_pmc_setup);
-+
-+static void __init of_at91sam9260_pmc_setup(struct device_node *np)
-+{
-+	of_at91_pmc_setup(np, &at91sam9260_caps);
-+}
-+CLK_OF_DECLARE(at91sam9260_clk_main, "atmel,at91sam9260-pmc",
-+	       of_at91sam9260_pmc_setup);
-+
-+static void __init of_at91sam9g45_pmc_setup(struct device_node *np)
-+{
-+	of_at91_pmc_setup(np, &at91sam9g45_caps);
-+}
-+CLK_OF_DECLARE(at91sam9g45_clk_main, "atmel,at91sam9g45-pmc",
-+	       of_at91sam9g45_pmc_setup);
-+
-+static void __init of_at91sam9n12_pmc_setup(struct device_node *np)
-+{
-+	of_at91_pmc_setup(np, &at91sam9n12_caps);
-+}
-+CLK_OF_DECLARE(at91sam9n12_clk_main, "atmel,at91sam9n12-pmc",
-+	       of_at91sam9n12_pmc_setup);
-+
-+static void __init of_at91sam9x5_pmc_setup(struct device_node *np)
-+{
-+	of_at91_pmc_setup(np, &at91sam9x5_caps);
-+}
-+CLK_OF_DECLARE(at91sam9x5_clk_main, "atmel,at91sam9x5-pmc",
-+	       of_at91sam9x5_pmc_setup);
-+
-+static void __init of_at91sam9g35_pmc_setup(struct device_node *np)
-+{
-+	of_at91_pmc_setup(np, &at91sam9g35_caps);
-+}
-+CLK_OF_DECLARE(at91sam9g35_clk_main, "atmel,at91sam9g35-pmc",
-+	       of_at91sam9g35_pmc_setup);
-+
-+static void __init of_sama5d3_pmc_setup(struct device_node *np)
-+{
-+	of_at91_pmc_setup(np, &sama5d3_caps);
-+}
-+CLK_OF_DECLARE(sama5d3_clk_main, "atmel,sama5d3-pmc",
-+	       of_sama5d3_pmc_setup);
-diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-new file mode 100644
-index 0000000..b7e8397
---- /dev/null
-+++ b/drivers/clk/at91/pmc.h
-@@ -0,0 +1,58 @@
-+/*
-+ * drivers/clk/at91/pmc.h
-+ *
-+ *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#ifndef __PMC_H_
-+#define __PMC_H_
-+
-+#include <linux/io.h>
-+#include <linux/irqdomain.h>
-+#include <linux/spinlock.h>
-+
-+struct clk_range {
-+	unsigned long min;
-+	unsigned long max;
-+};
-+
-+#define CLK_RANGE(MIN, MAX) {.min = MIN, .max = MAX,}
-+
-+struct at91_pmc_caps {
-+	u32 available_irqs;
-+};
-+
-+struct at91_pmc {
-+	void __iomem *regbase;
-+	int virq;
-+	spinlock_t lock;
-+	const struct at91_pmc_caps *caps;
-+	struct irq_domain *irqdomain;
-+};
-+
-+static inline void pmc_lock(struct at91_pmc *pmc)
-+{
-+	spin_lock(&pmc->lock);
-+}
-+
-+static inline void pmc_unlock(struct at91_pmc *pmc)
-+{
-+	spin_unlock(&pmc->lock);
-+}
-+
-+static inline u32 pmc_read(struct at91_pmc *pmc, int offset)
-+{
-+	return readl_relaxed(pmc->regbase + offset);
-+}
-+
-+static inline void pmc_write(struct at91_pmc *pmc, int offset, u32 value)
-+{
-+	return writel_relaxed(value, pmc->regbase + offset);
-+}
-+
-+#endif /* __PMC_H_ */
--- 
-1.7.9.5
+If what I state above is correct, then the downstream port of the Bridge
+is able to immediately move to Detect after it receives two
+hot-reset-TS1s from the downstream device.  I suspect this is what you
+were seeing.
+
+> So if you set
+> the bit and clear it 1 ms later you might only get to send a few ordered
+> sets and that may not be enough depending on how fast the part can
+> transition between L0/L0s/L1, Recovery, and Hot Reset.
+
+I would guess what you were seeing previously with a back-to-back
+set/clear of the bridge control register was that the bridge never
+really entered Hot Reset.  Perhaps it wasn't even set long enough to be
+latched into the hardware.  As long as we get the bridge to enter Hot
+Reset, I think the protocol takes care of itself.  For example:
+
+root port        switch           endpoint
++-----+          +-----+          +-----+
+|  X  |<---A'----|  Y  |<---B'----|  Z  |
+|     |----A---->|     |----B---->|     |
++-----+          +-----+          +-----+
+
+Say root port X makes it into the Hot Reset state and we have some way
+to immediately detect this and clear the bridge control register.  X
+will still continue to send hot-reset-TS1 until either a) the 2ms timer
+expires or b) it receives two hot-reset-TS1s on link A'.  If link A is
+up, switch Y will certainly receive two host-reset-TS1s within that 2ms
+and enters the Hot Reset state on it's upstream port.  Switch Y then
+begins sending hot-reset-TS1s on link A'.  At the same time, Y directs
+it's downstream ports to enter Hot Reset "as soon as possible", and
+begins sending hot-reset-TS1s on link B.  Once X receives two
+hot-reset-TS1s on link A', X enters the Detect state.  hot-reset-TS1s on
+link A cease.  2ms after the upstream port of Y receives the last two
+hot-reset-TS1s, those ports also enter the detect phase.
+
+The downstream port of Y behaves the same.  We left off with Y's
+downsteam port in Hot Reset sending hot-reset-TS1s down link B.  It
+continues to do this for 2ms or until two hot-reset-TS1s are received on
+link B'.  The protocol takes care of propagating the Hot Reset to
+subordinate devices regardless of whether we're still directing the
+original bridge to stay in Hot Reset.
+
+If the above is a correct interpretation, the the only requirement on
+how long we assert the secondary bus reset bit is how long it takes the
+bridge to enter the Hot Reset state.  Intuitively, 1ms seems like more
+than enough time and is software compatible with conventional PCI which
+is generally a design goal for PCIe.  If we factor in link recovery
+time, the maximum L1 latency is 64us, which is a pretty small fraction
+of 1ms.
+
+Did you experiment at all with 1ms?  I'm trying to come up with a reason
+to make it 2ms, but the spec isn't supporting it.  Maybe the comment
+should be "This could probably be 1ms, but we're more comfortable with
+2ms.".  Thanks,
+
+Alex
 
