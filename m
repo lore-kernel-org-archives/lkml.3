@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965444Ab3HHOAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 10:00:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44446 "EHLO mx2.suse.de"
+	id S965462Ab3HHOAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 10:00:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44476 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965137Ab3HHOAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 10:00:44 -0400
+	id S965137Ab3HHOAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 10:00:49 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/27] mm: numa: Document automatic NUMA balancing sysctls
-Date: Thu,  8 Aug 2013 15:00:13 +0100
-Message-Id: <1375970439-5111-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 05/27] mm, numa: Sanitize task_numa_fault() callsites
+Date: Thu,  8 Aug 2013 15:00:17 +0100
+Message-Id: <1375970439-5111-6-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375970439-5111-1-git-send-email-mgorman@suse.de>
 References: <1375970439-5111-1-git-send-email-mgorman@suse.de>
@@ -22,88 +22,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Peter Zijlstra <peterz@infradead.org>
+
+There are three callers of task_numa_fault():
+
+ - do_huge_pmd_numa_page():
+     Accounts against the current node, not the node where the
+     page resides, unless we migrated, in which case it accounts
+     against the node we migrated to.
+
+ - do_numa_page():
+     Accounts against the current node, not the node where the
+     page resides, unless we migrated, in which case it accounts
+     against the node we migrated to.
+
+ - do_pmd_numa_page():
+     Accounts not at all when the page isn't migrated, otherwise
+     accounts against the node we migrated towards.
+
+This seems wrong to me; all three sites should have the same
+sementaics, furthermore we should accounts against where the page
+really is, we already know where the task is.
+
+So modify all three sites to always account; we did after all receive
+the fault; and always account to where the page is after migration,
+regardless of success.
+
+They all still differ on when they clear the PTE/PMD; ideally that
+would get sorted too.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- Documentation/sysctl/kernel.txt | 66 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
+ mm/huge_memory.c | 21 ++++++++++++---------
+ mm/memory.c      | 53 +++++++++++++++++++++--------------------------------
+ 2 files changed, 33 insertions(+), 41 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index ab7d16e..ccadb52 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -354,6 +354,72 @@ utilize.
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 4ebe3aa..bf59194 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1292,9 +1292,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ {
+ 	struct page *page;
+ 	unsigned long haddr = addr & HPAGE_PMD_MASK;
++	int page_nid = -1, this_nid = numa_node_id();
+ 	int target_nid;
+-	int src_nid = -1;
+-	bool migrated;
++	bool migrated = false;
  
- ==============================================================
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
+@@ -1311,9 +1311,9 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		goto clear_pmdnuma;
  
-+numa_balancing
-+
-+Enables/disables automatic page fault based NUMA memory
-+balancing. Memory is moved automatically to nodes
-+that access it often.
-+
-+Enables/disables automatic NUMA memory balancing. On NUMA machines, there
-+is a performance penalty if remote memory is accessed by a CPU. When this
-+feature is enabled the kernel samples what task thread is accessing memory
-+by periodically unmapping pages and later trapping a page fault. At the
-+time of the page fault, it is determined if the data being accessed should
-+be migrated to a local memory node.
-+
-+The unmapping of pages and trapping faults incur additional overhead that
-+ideally is offset by improved memory locality but there is no universal
-+guarantee. If the target workload is already bound to NUMA nodes then this
-+feature should be disabled. Otherwise, if the system overhead from the
-+feature is too high then the rate the kernel samples for NUMA hinting
-+faults may be controlled by the numa_balancing_scan_period_min_ms,
-+numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
-+numa_balancing_scan_period_max_ms and numa_balancing_scan_size_mb sysctls.
-+
-+==============================================================
-+
-+numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
-+numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
-+numa_balancing_scan_size_mb
-+
-+Automatic NUMA balancing scans tasks address space and unmaps pages to
-+detect if pages are properly placed or if the data should be migrated to a
-+memory node local to where the task is running.  Every "scan delay" the task
-+scans the next "scan size" number of pages in its address space. When the
-+end of the address space is reached the scanner restarts from the beginning.
-+
-+In combination, the "scan delay" and "scan size" determine the scan rate.
-+When "scan delay" decreases, the scan rate increases.  The scan delay and
-+hence the scan rate of every task is adaptive and depends on historical
-+behaviour. If pages are properly placed then the scan delay increases,
-+otherwise the scan delay decreases.  The "scan size" is not adaptive but
-+the higher the "scan size", the higher the scan rate.
-+
-+Higher scan rates incur higher system overhead as page faults must be
-+trapped and potentially data must be migrated. However, the higher the scan
-+rate, the more quickly a tasks memory is migrated to a local node if the
-+workload pattern changes and minimises performance impact due to remote
-+memory accesses. These sysctls control the thresholds for scan delays and
-+the number of pages scanned.
-+
-+numa_balancing_scan_period_min_ms is the minimum delay in milliseconds
-+between scans. It effectively controls the maximum scanning rate for
-+each task.
-+
-+numa_balancing_scan_delay_ms is the starting "scan delay" used for a task
-+when it initially forks.
-+
-+numa_balancing_scan_period_max_ms is the maximum delay between scans. It
-+effectively controls the minimum scanning rate for each task.
-+
-+numa_balancing_scan_size_mb is how many megabytes worth of pages are
-+scanned for a given scan.
-+
-+numa_balancing_scan_period_reset is a blunt instrument that controls how
-+often a tasks scan delay is reset to detect sudden changes in task behaviour.
-+
-+==============================================================
-+
- osrelease, ostype & version:
+ 	get_page(page);
+-	src_nid = numa_node_id();
++	page_nid = page_to_nid(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (src_nid == page_to_nid(page))
++	if (page_nid == this_nid)
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
  
- # cat osrelease
+ 	target_nid = mpol_misplaced(page, vma, haddr);
+@@ -1338,11 +1338,12 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	/* Migrate the THP to the requested node */
+ 	migrated = migrate_misplaced_transhuge_page(mm, vma,
+ 				pmdp, pmd, addr, page, target_nid);
+-	if (!migrated)
++	if (migrated)
++		page_nid = target_nid;
++	else
+ 		goto check_same;
+ 
+-	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
+-	return 0;
++	goto out;
+ 
+ check_same:
+ 	spin_lock(&mm->page_table_lock);
+@@ -1355,8 +1356,10 @@ clear_pmdnuma:
+ 	update_mmu_cache_pmd(vma, addr, pmdp);
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
+-	if (src_nid != -1)
+-		task_numa_fault(src_nid, HPAGE_PMD_NR, false);
++
++out:
++	if (page_nid != -1)
++		task_numa_fault(page_nid, HPAGE_PMD_NR, migrated);
+ 	return 0;
+ }
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index 871b881..b0307f2 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3517,12 +3517,12 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ }
+ 
+ int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
+-				unsigned long addr, int current_nid)
++				unsigned long addr, int page_nid)
+ {
+ 	get_page(page);
+ 
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (current_nid == numa_node_id())
++	if (page_nid == numa_node_id())
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+ 
+ 	return mpol_misplaced(page, vma, addr);
+@@ -3533,7 +3533,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ {
+ 	struct page *page = NULL;
+ 	spinlock_t *ptl;
+-	int current_nid = -1;
++	int page_nid = -1;
+ 	int target_nid;
+ 	bool migrated = false;
+ 
+@@ -3568,15 +3568,10 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return 0;
+ 	}
+ 
+-	current_nid = page_to_nid(page);
+-	target_nid = numa_migrate_prep(page, vma, addr, current_nid);
++	page_nid = page_to_nid(page);
++	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
+ 	pte_unmap_unlock(ptep, ptl);
+ 	if (target_nid == -1) {
+-		/*
+-		 * Account for the fault against the current node if it not
+-		 * being replaced regardless of where the page is located.
+-		 */
+-		current_nid = numa_node_id();
+ 		put_page(page);
+ 		goto out;
+ 	}
+@@ -3584,11 +3579,11 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	/* Migrate to the requested node */
+ 	migrated = migrate_misplaced_page(page, target_nid);
+ 	if (migrated)
+-		current_nid = target_nid;
++		page_nid = target_nid;
+ 
+ out:
+-	if (current_nid != -1)
+-		task_numa_fault(current_nid, 1, migrated);
++	if (page_nid != -1)
++		task_numa_fault(page_nid, 1, migrated);
+ 	return 0;
+ }
+ 
+@@ -3603,7 +3598,6 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	unsigned long offset;
+ 	spinlock_t *ptl;
+ 	bool numa = false;
+-	int local_nid = numa_node_id();
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	pmd = *pmdp;
+@@ -3626,9 +3620,10 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
+ 		pte_t pteval = *pte;
+ 		struct page *page;
+-		int curr_nid = local_nid;
++		int page_nid = -1;
+ 		int target_nid;
+-		bool migrated;
++		bool migrated = false;
++
+ 		if (!pte_present(pteval))
+ 			continue;
+ 		if (!pte_numa(pteval))
+@@ -3650,25 +3645,19 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		if (unlikely(page_mapcount(page) != 1))
+ 			continue;
+ 
+-		/*
+-		 * Note that the NUMA fault is later accounted to either
+-		 * the node that is currently running or where the page is
+-		 * migrated to.
+-		 */
+-		curr_nid = local_nid;
+-		target_nid = numa_migrate_prep(page, vma, addr,
+-					       page_to_nid(page));
+-		if (target_nid == -1) {
++		page_nid = page_to_nid(page);
++		target_nid = numa_migrate_prep(page, vma, addr, page_nid);
++		pte_unmap_unlock(pte, ptl);
++		if (target_nid != -1) {
++			migrated = migrate_misplaced_page(page, target_nid);
++			if (migrated)
++				page_nid = target_nid;
++		} else {
+ 			put_page(page);
+-			continue;
+ 		}
+ 
+-		/* Migrate to the requested node */
+-		pte_unmap_unlock(pte, ptl);
+-		migrated = migrate_misplaced_page(page, target_nid);
+-		if (migrated)
+-			curr_nid = target_nid;
+-		task_numa_fault(curr_nid, 1, migrated);
++		if (page_nid != -1)
++			task_numa_fault(page_nid, 1, migrated);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
 -- 
 1.8.1.4
 
