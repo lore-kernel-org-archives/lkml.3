@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933743Ab3HHCrS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Aug 2013 22:47:18 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:35523 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933272Ab3HHCrR (ORCPT
+	id S933801Ab3HHCsj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Aug 2013 22:48:39 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:35877 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab3HHCsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Aug 2013 22:47:17 -0400
-Date: Wed, 7 Aug 2013 22:53:31 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "trinity@vger.kernel.org" <trinity@vger.kernel.org>
-Subject: Re: perf,arm -- another (different) fuzzer oops
-In-Reply-To: <alpine.DEB.2.10.1308072227060.16962@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1308072251210.20629@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1308071611290.14098@vincent-weaver-1.um.maine.edu> <20130807223129.GA17118@mudshark.cambridge.arm.com> <5202D5B0.9020107@codeaurora.org> <alpine.DEB.2.10.1308072227060.16962@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 7 Aug 2013 22:48:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <52029736.8040007@wwwdotorg.org>
+References: <cover.1375886595.git.viresh.kumar@linaro.org>
+	<6610c86618b781b00eba446ca19035e077d99691.1375886595.git.viresh.kumar@linaro.org>
+	<520287EA.5060508@wwwdotorg.org>
+	<CAKohpokOn4-RZE5mfoM+2p8jszWoGfOErrLShZmv86OgCMv+JA@mail.gmail.com>
+	<5202898A.6050006@wwwdotorg.org>
+	<CAKohpom3o1y+xXof3iKCn6SWxYKNAE=aBGO2P3JF+Y0Ce4GmQQ@mail.gmail.com>
+	<52029736.8040007@wwwdotorg.org>
+Date: Thu, 8 Aug 2013 08:18:36 +0530
+Message-ID: <CAKohpo=tKYx8KC6jX+qoqGKJBwpJbhGUD5cM4ErOMJ4NMB+hRA@mail.gmail.com>
+Subject: Re: [PATCH 5/6] ARM: Tegra: start using cpufreq-cpu0 driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>, Shawn Guo <shawn.guo@linaro.org>
+Cc: rjw@sisk.pl, swarren@nvidia.com, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mturquette@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Aug 2013, Vince Weaver wrote:
+On 8 August 2013 00:21, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 08/07/2013 11:59 AM, Viresh Kumar wrote:
+>> On 7 August 2013 23:23, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>> That link only describes why we shouldn't have a dedicated compatible
+>>> value for cpufreq. I certainly agree with that. However, I think it's
+>>> reasonable that whatever code binds to:
+>>>
+>>>         compatible = "arm,cortex-a9";
+>>>
+>>> ... should instantiate any virtual devices that relate to the CPU.
+>>
+>> But how would we know here if platform really wants us to probe
+>> cpufreq-cpu0 driver? On multiplatform kernel there can be multiple
+>> cpufreq drivers available and there has to be some sort of code
+>> in DT or platform code that reflects which driver we want to use.
+>
+> Presumably the code would look at the top-level DT node's compatible
+> value (e.g. "nvidia,tegra20").
 
-> On Wed, 7 Aug 2013, Stephen Boyd wrote:
-> 
-> > ---8<----
-> > 
-> > diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> > index d9f5cd4..21f7790 100644
-> > --- a/arch/arm/kernel/perf_event.c
-> > +++ b/arch/arm/kernel/perf_event.c
-> > @@ -53,7 +53,12 @@ armpmu_map_cache_event(const unsigned (*cache_map)
-> >  static int
-> >  armpmu_map_hw_event(const unsigned (*event_map)[PERF_COUNT_HW_MAX], u64 config)
-> >  {
-> > -       int mapping = (*event_map)[config];
-> > +       int mapping;
-> > +
-> > +       if (config >= PERF_COUNT_HW_MAX)
-> > +               return -ENOENT;
-> > +
-> > +       mapping = (*event_map)[config];
-> >         return mapping == HW_OP_UNSUPPORTED ? -ENOENT : mapping;
-> >  }
-> 
-> I've tested this patch and my testcase no longer causes the kernel to 
-> oops, so 
-> 
-> Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+So you are actually asking us to get a compatibility list inside
+cpufreq-cpu0 driver which will list all the platforms for which this driver
+would work?
 
-P.S.  I re-ran the fuzzer again after applying the patch and the good news 
-      is there were no further oopsen.  The bad news is the machine locked 
-      up solid.  I'll investigate further when I'm not remote.
+Honestly speaking I wasn't in favor of getting a platform-device
+registered for cpufreq-cpu0 earlier and had few discussion on the
+thread I passed to you.
 
-Vince
+The problem with the new solution you just proposed is, for every
+new platform that comes in we need to update this file.. And that's
+it probably..
+
+Don't know how others would see it...
+@Rafael/Rob/Shawn: Any suggestions here?
