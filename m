@@ -1,198 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815Ab3HHFXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 01:23:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755495Ab3HHFXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 01:23:42 -0400
-Message-ID: <1375939416.3509.120.camel@ul30vt.home>
-Subject: Re: [PATCH v4 8/9] pci: Tune secondary bus reset timing
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, ddutile@redhat.com,
-        indou.takao@jp.fujitsu.com, linux-kernel@vger.kernel.org
-Date: Wed, 07 Aug 2013 23:23:36 -0600
-In-Reply-To: <52029262.3060402@intel.com>
-References: <20130805193200.9260.38729.stgit@bling.home>
-	  <20130805193753.9260.35206.stgit@bling.home> <52018664.1080103@intel.com>
-	 <1375844191.3509.15.camel@ul30vt.home> <52029262.3060402@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1757639Ab3HHFXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 01:23:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:37598 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756959Ab3HHFXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 01:23:48 -0400
+X-IronPort-AV: E=Sophos;i="4.89,836,1367942400"; 
+   d="scan'208";a="8151262"
+Message-ID: <52032C5B.5090809@cn.fujitsu.com>
+Date: Thu, 08 Aug 2013 13:27:55 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        C.Emde@osadl.org
+Subject: Re: [PATCH 0/8] rcu: Ensure rcu read site is deadlock-immunity
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com> <20130807123827.GB4306@linux.vnet.ibm.com> <20130808003635.GA9487@linux.vnet.ibm.com> <5202F8CC.2020703@cn.fujitsu.com> <1375927932.6848.33.camel@gandalf.local.home> <5203036B.2080606@cn.fujitsu.com> <20130808023356.GG4306@linux.vnet.ibm.com> <52030C37.3000106@cn.fujitsu.com> <20130808041825.GH4306@linux.vnet.ibm.com>
+In-Reply-To: <20130808041825.GH4306@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 13:22:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/08 13:22:22,
+	Serialize complete at 2013/08/08 13:22:22
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 11:30 -0700, Alexander Duyck wrote:
-> On 08/06/2013 07:56 PM, Alex Williamson wrote:
-> > On Tue, 2013-08-06 at 16:27 -0700, Alexander Duyck wrote:
-> >> On 08/05/2013 12:37 PM, Alex Williamson wrote:
-> >>> The PCI spec indicates that with stable power, reset needs to be
-> >>> asserted for a minimum of 1ms (Trst).  Seems like we should be able
-> >>> to assume power is stable for a runtime secondary bus reset.  The
-> >>> current code has always used 100ms with no explanation where that
-> >>> came from.  The aer_do_secondary_bus_reset() function uses 2ms, but
-> >>> that seems to be a misinterpretation of the PCIe spec, where hot
-> >>> reset is implemented by TS1 ordered sets containing the hot reset
-> >>> command.  After a 2ms delay the state machine enters the detect state,
-> >>> but to generate a link down, only two consecutive TS1 hot reset
-> >>> ordered sets are requred.  1ms should be plenty for that.
-> >> The reason for doing a 2ms sleep is because the are supposed to be
-> >> sending the Hot Reset TS1 Ordered-Sets continuously for 2ms per all of
-> >> the documents I have read.
-> > Could you point to one of those references?  In the PCIe v3 spec I'm
-> > seeing things like 4.2.6.11 Hot Reset:
-> >
-> >       * If two consecutive TS1 Ordered Sets are received on any Lane
-> >         with the Hot Reset bit asserted and configured Link and Lane
-> >         numbers, then:
-> >               * LinkUp = 0b (False)
-> >               * If no higher Layer is directing the Physical Layer to
-> >                 remain in Hot Reset, the next state is Detect
-> >               * Otherwise, all Lanes in the configured Link continue to
-> >                 transmit TS1 Ordered Sets with the Hot Reset bit
-> >                 asserted and the configured Link and Lane numbers.
-> >       * Otherwise, after a 2 ms timeout next state is Detect.
-> >
-> > The next section has something similar for propagation of hot resets.
-> >
-> > Nowhere there does it say TS1 Ordered Sets need to be sent continuously
-> > for 2ms.  A hot reset is initiated only by two consecutive TS1 Ordered
-> > Sets with the Hot Reset bit asserted.  The 2ms timeout seems to be the
-> > delay before the link moves to the Detect state after we stop asserting
-> > hot reset.  1ms seems like more than enough time for two TS1 Ordered
-> > Sets to propagate down a multi-level hierarchy at 2.5GT/s. 
-> >
+On 08/08/2013 12:18 PM, Paul E. McKenney wrote:
+> On Thu, Aug 08, 2013 at 11:10:47AM +0800, Lai Jiangshan wrote:
+>> On 08/08/2013 10:33 AM, Paul E. McKenney wrote:
+>>> On Thu, Aug 08, 2013 at 10:33:15AM +0800, Lai Jiangshan wrote:
+>>>> On 08/08/2013 10:12 AM, Steven Rostedt wrote:
+>>>>> On Thu, 2013-08-08 at 09:47 +0800, Lai Jiangshan wrote:
+>>>>>
+>>>>>>> [  393.641012]        CPU0
+>>>>>>> [  393.641012]        ----
+>>>>>>> [  393.641012]   lock(&lock->wait_lock);
+>>>>>>> [  393.641012]   <Interrupt>
+>>>>>>> [  393.641012]     lock(&lock->wait_lock);
+>>>>>>
+>>>>>> Patch2 causes it!
+>>>>>> When I found all lock which can (chained) nested in rcu_read_unlock_special(),
+>>>>>> I didn't notice rtmutex's lock->wait_lock is not nested in irq-disabled.
+>>>>>>
+>>>>>> Two ways to fix it:
+>>>>>> 1) change rtmutex's lock->wait_lock, make it alwasys irq-disabled.
+>>>>>> 2) revert my patch2
+>>>>>
+>>>>> Your patch 2 states:
+>>>>>
+>>>>> "After patch 10f39bb1, "special & RCU_READ_UNLOCK_BLOCKED" can't be true
+>>>>> in irq nor softirq.(due to RCU_READ_UNLOCK_BLOCKED can only be set
+>>>>> when preemption)"
+>>>>
+>>>> Patch5 adds "special & RCU_READ_UNLOCK_BLOCKED" back in irq nor softirq.
+>>>> This new thing is handle in patch5 if I did not do wrong things in patch5.
+>>>> (I don't notice rtmutex's lock->wait_lock is not irqs-disabled in patch5)
+>>>>
+>>>>>
+>>>>> But then below we have:
+>>>>>
+>>>>>
+>>>>>>
+>>>>>>> [  393.641012] 
+>>>>>>> [  393.641012]  *** DEADLOCK ***
+>>>>>>> [  393.641012] 
+>>>>>>> [  393.641012] no locks held by rcu_torture_rea/697.
+>>>>>>> [  393.641012] 
+>>>>>>> [  393.641012] stack backtrace:
+>>>>>>> [  393.641012] CPU: 3 PID: 697 Comm: rcu_torture_rea Not tainted 3.11.0-rc1+ #1
+>>>>>>> [  393.641012] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+>>>>>>> [  393.641012]  ffffffff8586fea0 ffff88001fcc3a78 ffffffff8187b4cb ffffffff8104a261
+>>>>>>> [  393.641012]  ffff88001e1a20c0 ffff88001fcc3ad8 ffffffff818773e4 0000000000000000
+>>>>>>> [  393.641012]  ffff880000000000 ffff880000000001 ffffffff81010a0a 0000000000000001
+>>>>>>> [  393.641012] Call Trace:
+>>>>>>> [  393.641012]  <IRQ>  [<ffffffff8187b4cb>] dump_stack+0x4f/0x84
+>>>>>>> [  393.641012]  [<ffffffff8104a261>] ? console_unlock+0x291/0x410
+>>>>>>> [  393.641012]  [<ffffffff818773e4>] print_usage_bug+0x1f5/0x206
+>>>>>>> [  393.641012]  [<ffffffff81010a0a>] ? save_stack_trace+0x2a/0x50
+>>>>>>> [  393.641012]  [<ffffffff810ae603>] mark_lock+0x283/0x2e0
+>>>>>>> [  393.641012]  [<ffffffff810ada10>] ? print_irq_inversion_bug.part.40+0x1f0/0x1f0
+>>>>>>> [  393.641012]  [<ffffffff810aef66>] __lock_acquire+0x906/0x1d40
+>>>>>>> [  393.641012]  [<ffffffff810ae94b>] ? __lock_acquire+0x2eb/0x1d40
+>>>>>>> [  393.641012]  [<ffffffff810ae94b>] ? __lock_acquire+0x2eb/0x1d40
+>>>>>>> [  393.641012]  [<ffffffff810b0a65>] lock_acquire+0x95/0x210
+>>>>>>> [  393.641012]  [<ffffffff818860f3>] ? rt_mutex_unlock+0x53/0x100
+>>>>>>> [  393.641012]  [<ffffffff81886d26>] _raw_spin_lock+0x36/0x50
+>>>>>>> [  393.641012]  [<ffffffff818860f3>] ? rt_mutex_unlock+0x53/0x100
+>>>>>>> [  393.641012]  [<ffffffff818860f3>] rt_mutex_unlock+0x53/0x100
 > 
-> My original implementation is actually based on page 536 of the "PCI
-> Express System Architecture".  However based on the PCIe spec itself I
-> think the point is that the port is supposed to stay in Hot Reset for
-> 2ms after receiving the in-band message.  For a bridge port it means
-> that is supposed to be sending the Hot Reset message for those 2ms on
-> all downstream facing ports.  After the timer expires then it stops
-> sending the Hot Reset TS1 Ordered Sets and then will transition to the
-> Detect state.
-
-Conveniently page 536 is available for preview on google :)  What that
-suggests to me is that the minimum "nobody home", unconnected link
-timeout is 2ms.  Downstream ports may exit to the Detect state after
-either a 2ms timeout expires or after two hot-reset-TS1s are received
-from the downstream device.  The other 2ms case is that an upstream port
-in the Hot Reset state will always wait for the 2ms timeout to expire
-after the last pair of hot-reset-TS1s is received before entering the
-Detect state.
-
-> My main concern here is that the previous code was not triggering a Hot
-> Reset on all ports previously.  What was happening was that some of the
-> ports would only get as far as Recovery as the upstream port was only
-> sending a couple of TS1 frames and not allowing the downstream ports
-> time to switch to Recovery themselves and discover the Hot Reset.
-
-Was that the original code that had no delay between set and clear of
-the bridge control register?  1ms is pretty long time vs no delay.
-
-> >> The 1ms number you quote is the minimum time
-> >> for a conventional PCI bus.  I'm not completely sure of that applies as
-> >> well to PCIe, nor does it represent the maximum recommended value.
-> > Correct, 1ms comes from conventional PCI.  PCIe is designed to be
-> > software compatible with conventional PCI so it makes sense that PCIe
-> > would do something within the timing boundaries of conventional PCI.  I
-> > didn't see any reference to a maximum recommended value for this
-> > parameter.
+> The really strange thing here is that I thought that your passing false
+> in as the new second parameter to rcu_read_unlock_special() was supposed
+> to prevent rt_mutex_unlock() from being called.
 > 
-> I don't want to implement things to minimum specification as there are
-> too many marginal parts where the minimum doesn't work.  I would rather
-> not have to add a ton of quirks for all of the parts out there that
-> didn't quite meet up to the specification.  By using a value of 2ms we
-> are matching what the PCIe bridge behavior is supposed to be by sending
-> the Hot Reset TS1 ordered sets for 2ms.
-
-The minimum requirement is 2 hot-reset-TS1.  We're sending ~2.5 million
-(if we can assume 1 per transfer cycle).
-
-> >> If we stop early we risk not resetting the full device tree on the
-> >> secondary bus which is the bug I was resolving by adding the 2ms delay. 
-> >> Previously we saw that some devices were only getting their PCIe link
-> >> retrained without performing a hot reset when the bit was not held for
-> >> long enough.  I would prefer to keep this at 2 ms in order to account
-> >> for the fact that PCIe has to go though link recovery states before it
-> >> can perform the hot reset.
-> > I'm not going to sweat over 1ms or 2ms but I do want to be able to
-> > document why we're setting it to one or the other.  If it's warm
-> > fuzzies, so be it, but I'd prefer if we could find actual spec or
-> > hardware examples to back it up.  Thanks,
-> >
-> > Alex
+> But then why is the call from rcu_preempt_note_context_switch() also
+> passing false?  I would have expected that one to pass true.  Probably
+> I don't understand your intent with the "unlock" argument.
 > 
-> I think our difference is that I based my value on the in-band message
-> behavior and your value is based on the recommended minimum time for the
-> Secondary Bus Reset.  The downstream ports of a bridge that receives the
-> in-band Hot Reset notification are supposed to send a continuous stream
-> of TS1 Ordered sets with the Hot Reset bit set for 2ms.  Based on all of
-> the conditions in the spec the device should start a 2ms timer, and all
-> downstream ports should begin transmitting the TS1 Ordered sets with the
-> Hot Reset bit asserted, then after the 2ms timer expires it should
-> switch to the detect state.  I verified with a PCIe analyzer that this
-> was what the AER code was doing after I had changed it and added the sleep.
->
-> What I found is that most parts will stop transmitting the TS1 ordered
-> sets as soon as you clear the Secondary Bus Reset bit.
+>>>>>>> [  393.641012]  [<ffffffff810ee3ca>] rcu_read_unlock_special+0x17a/0x2a0
+>>>>>>> [  393.641012]  [<ffffffff810ee803>] rcu_check_callbacks+0x313/0x950
+>>>>>>> [  393.641012]  [<ffffffff8107a6bd>] ? hrtimer_run_queues+0x1d/0x180
+>>>>>>> [  393.641012]  [<ffffffff810abb9d>] ? trace_hardirqs_off+0xd/0x10
+>>>>>>> [  393.641012]  [<ffffffff8105bae3>] update_process_times+0x43/0x80
+>>>>>>> [  393.641012]  [<ffffffff810a9801>] tick_sched_handle.isra.10+0x31/0x40
+>>>>>>> [  393.641012]  [<ffffffff810a98f7>] tick_sched_timer+0x47/0x70
+>>>>>>> [  393.641012]  [<ffffffff8107941c>] __run_hrtimer+0x7c/0x490
+>>>>>>> [  393.641012]  [<ffffffff810a260d>] ? ktime_get_update_offsets+0x4d/0xe0
+>>>>>>> [  393.641012]  [<ffffffff810a98b0>] ? tick_nohz_handler+0xa0/0xa0
+>>>>>>> [  393.641012]  [<ffffffff8107a017>] hrtimer_interrupt+0x107/0x260
+>>>>>
+>>>>> The hrtimer_interrupt is calling a rt_mutex_unlock? How did that happen?
+>>>>> Did it first call a rt_mutex_lock?
+>>>>>
+>>>>> If patch two was the culprit, I'm thinking the idea behind patch two is
+>>>>> wrong. The only option is to remove patch number two!
+>>>>
+>>>> removing patch number two can solve the problem found be Paul, but it is not the best.
+>>>> because I can't declare that rcu is deadlock-immunity
+>>>> (it will be deadlock if rcu read site overlaps with rtmutex's lock->wait_lock
+>>>> if I only remove patch2)
+>>>> I must do more things, but I think it is still better than changing rtmutex's lock->wait_lock.
+>>>
+>>> NP, I will remove your current patches and wait for an updated set.
+>>
+>> Hi, Paul
+>>
+>> Could you agree that moving the rt_mutex_unlock() to rcu_preempt_note_context_switch()?
+> 
+> My guess is that changing rcu_preempt_note_context_switch()'s call to
+> rcu_read_unlock_special(t, true) would accomplish this in a nicer way.
+> Except that I would first need to understand why rcu_check_callbacks()'s
+> call to rcu_read_unlock_special() resulted in rt_mutex_unlock() being
+> called.
+> 
+> Oh!
+> 
+> In rcu_read_unlock_special, shouldn't the:
+> 
+> 	if (unlikely(unlock && irqs_disabled_flags(flags))) {
 
-If what I state above is correct, then the downstream port of the Bridge
-is able to immediately move to Detect after it receives two
-hot-reset-TS1s from the downstream device.  I suspect this is what you
-were seeing.
+Sorry.
+@unlock means it is called from rcu_read_unlock() path.
 
-> So if you set
-> the bit and clear it 1 ms later you might only get to send a few ordered
-> sets and that may not be enough depending on how fast the part can
-> transition between L0/L0s/L1, Recovery, and Hot Reset.
+if rcu_read_unlock() is called from irqs_disabled context,
+it may be called from suspect lock(scheduler locks, ...) context,
+so it can't require rnp->lock or invoke wakeup() in rcu_read_unlock_special().
 
-I would guess what you were seeing previously with a back-to-back
-set/clear of the bridge control register was that the bridge never
-really entered Hot Reset.  Perhaps it wasn't even set long enough to be
-latched into the hardware.  As long as we get the bridge to enter Hot
-Reset, I think the protocol takes care of itself.  For example:
 
-root port        switch           endpoint
-+-----+          +-----+          +-----+
-|  X  |<---A'----|  Y  |<---B'----|  Z  |
-|     |----A---->|     |----B---->|     |
-+-----+          +-----+          +-----+
-
-Say root port X makes it into the Hot Reset state and we have some way
-to immediately detect this and clear the bridge control register.  X
-will still continue to send hot-reset-TS1 until either a) the 2ms timer
-expires or b) it receives two hot-reset-TS1s on link A'.  If link A is
-up, switch Y will certainly receive two host-reset-TS1s within that 2ms
-and enters the Hot Reset state on it's upstream port.  Switch Y then
-begins sending hot-reset-TS1s on link A'.  At the same time, Y directs
-it's downstream ports to enter Hot Reset "as soon as possible", and
-begins sending hot-reset-TS1s on link B.  Once X receives two
-hot-reset-TS1s on link A', X enters the Detect state.  hot-reset-TS1s on
-link A cease.  2ms after the upstream port of Y receives the last two
-hot-reset-TS1s, those ports also enter the detect phase.
-
-The downstream port of Y behaves the same.  We left off with Y's
-downsteam port in Hot Reset sending hot-reset-TS1s down link B.  It
-continues to do this for 2ms or until two hot-reset-TS1s are received on
-link B'.  The protocol takes care of propagating the Hot Reset to
-subordinate devices regardless of whether we're still directing the
-original bridge to stay in Hot Reset.
-
-If the above is a correct interpretation, the the only requirement on
-how long we assert the secondary bus reset bit is how long it takes the
-bridge to enter the Hot Reset state.  Intuitively, 1ms seems like more
-than enough time and is software compatible with conventional PCI which
-is generally a design goal for PCIe.  If we factor in link recovery
-time, the maximum L1 latency is 64us, which is a pretty small fraction
-of 1ms.
-
-Did you experiment at all with 1ms?  I'm trying to come up with a reason
-to make it 2ms, but the spec isn't supporting it.  Maybe the comment
-should be "This could probably be 1ms, but we're more comfortable with
-2ms.".  Thanks,
-
-Alex
+> 
+> Instead be:
+> 
+> 	if (unlikely(!unlock || irqs_disabled_flags(flags))) {
+> 
+> Here I am guessing that the "unlock" parameter means "It is OK for
+> rcu_read_unlock_special() to invoke rt_mutex_unlock()", so it would be
+> passed in as false from rcu_check_callbacks() and true everywhere else.
+> If it means something else, please let me know what that might be.
+> 
+> Though at this point, it is not clear to me how it helps to call
+> rcu_read_unlock_special() from rcu_check_callbacks().  After all,
+> rcu_check_callbacks() has interrupts disabled always, and so it is never
+> safe for anything that it calls to invoke rt_mutex_unlock().
+> 
+> In any case, the opinion that really matters is not mine, but rather
+> that of the hundreds of millions of computer systems that might soon be
+> executing this code.  As RCU maintainer, I just try my best to predict
+> what their opinions will be.  ;-)
+> 
+> 							Thanx, Paul
+> 
+>> thanks,
+>> Lai
+>>
+>>>
+>>> 							Thanx, Paul
+>>>
+>>>
+>>
+> 
+> 
 
