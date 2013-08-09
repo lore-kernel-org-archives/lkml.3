@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967522Ab3HIKqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:46:31 -0400
+	id S967634Ab3HIKql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:46:41 -0400
 Received: from mga03.intel.com ([143.182.124.21]:22271 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967291Ab3HIKq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:46:28 -0400
+	id S967576Ab3HIKqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:46:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,845,1367996400"; 
-   d="scan'208";a="279834450"
+   d="scan'208";a="279834483"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V10 09/13] perf tools: move perf_evlist__config() to a new source file
-Date: Fri,  9 Aug 2013 13:51:55 +0300
-Message-Id: <1376045519-13832-10-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V10 11/13] perf tools: expand perf_event__synthesize_sample()
+Date: Fri,  9 Aug 2013 13:51:57 +0300
+Message-Id: <1376045519-13832-12-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
 References: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
@@ -28,103 +28,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf_evlist__config() must be moved to a separate source
-file to avoid Python link errors when adding support for
-PERF_SAMPLE_IDENTIFIER.
-
-It is appropriate to do this because perf_evlist__config()
-is a helper function for event recording.  It is used by
-tools to apply recording options to perf_evlist.  It is
-not used by the Python API.
+Expand perf_event__synthesize_sample() to handle all
+sample format bits.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/Makefile      |  1 +
- tools/perf/util/evlist.c | 24 ------------------------
- tools/perf/util/record.c | 27 +++++++++++++++++++++++++++
- 3 files changed, 28 insertions(+), 24 deletions(-)
- create mode 100644 tools/perf/util/record.c
+ tools/perf/builtin-inject.c |  4 +-
+ tools/perf/util/event.h     |  1 +
+ tools/perf/util/evsel.c     | 94 ++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 97 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e0d3d9f..868358c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -360,6 +360,7 @@ LIB_OBJS += $(OUTPUT)util/rblist.o
- LIB_OBJS += $(OUTPUT)util/intlist.o
- LIB_OBJS += $(OUTPUT)util/vdso.o
- LIB_OBJS += $(OUTPUT)util/stat.o
-+LIB_OBJS += $(OUTPUT)util/record.o
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index ffacd46..9b336fd 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -301,7 +301,9 @@ found:
+ 	sample_sw.period = sample->period;
+ 	sample_sw.time	 = sample->time;
+ 	perf_event__synthesize_sample(event_sw, evsel->attr.sample_type,
+-				      &sample_sw, false);
++				      evsel->attr.sample_regs_user,
++				      evsel->attr.read_format, &sample_sw,
++				      false);
+ 	build_id__mark_dso_hit(tool, event_sw, &sample_sw, evsel, machine);
+ 	return perf_event__repipe(tool, event_sw, &sample_sw, machine);
+ }
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index b0921fe..c5f87e1 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -245,6 +245,7 @@ int perf_event__preprocess_sample(const union perf_event *self,
+ const char *perf_event__name(unsigned int id);
  
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 2e5c0b7..e734926 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -89,30 +89,6 @@ void perf_evlist__make_sample_types_compatible(struct perf_evlist *evlist)
- 	perf_evlist__set_id_pos(evlist);
+ int perf_event__synthesize_sample(union perf_event *event, u64 type,
++				  u64 sample_regs_user, u64 read_format,
+ 				  const struct perf_sample *sample,
+ 				  bool swapped);
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index aa7fd5f..798ac62 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1443,11 +1443,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
  }
  
--void perf_evlist__config(struct perf_evlist *evlist,
--			struct perf_record_opts *opts)
--{
--	struct perf_evsel *evsel;
--	/*
--	 * Set the evsel leader links before we configure attributes,
--	 * since some might depend on this info.
--	 */
--	if (opts->group)
--		perf_evlist__set_leader(evlist);
--
--	if (evlist->cpus->map[0] < 0)
--		opts->no_inherit = true;
--
--	list_for_each_entry(evsel, &evlist->entries, node) {
--		perf_evsel__config(evsel, opts);
--
--		if (evlist->nr_entries > 1)
--			perf_evsel__set_sample_id(evsel);
--	}
--
--	perf_evlist__make_sample_types_compatible(evlist);
--}
--
- static void perf_evlist__purge(struct perf_evlist *evlist)
+ int perf_event__synthesize_sample(union perf_event *event, u64 type,
++				  u64 sample_regs_user, u64 read_format,
+ 				  const struct perf_sample *sample,
+ 				  bool swapped)
  {
- 	struct perf_evsel *pos, *n;
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-new file mode 100644
-index 0000000..67291e4
---- /dev/null
-+++ b/tools/perf/util/record.c
-@@ -0,0 +1,27 @@
-+#include "evlist.h"
-+#include "evsel.h"
-+#include "cpumap.h"
+ 	u64 *array;
+-
++	size_t sz;
+ 	/*
+ 	 * used for cross-endian analysis. See git commit 65014ab3
+ 	 * for why this goofiness is needed.
+@@ -1520,6 +1521,97 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+ 		array++;
+ 	}
+ 
++	if (type & PERF_SAMPLE_READ) {
++		if (read_format & PERF_FORMAT_GROUP)
++			*array = sample->read.group.nr;
++		else
++			*array = sample->read.one.value;
++		array++;
 +
-+void perf_evlist__config(struct perf_evlist *evlist,
-+			 struct perf_record_opts *opts)
-+{
-+	struct perf_evsel *evsel;
-+	/*
-+	 * Set the evsel leader links before we configure attributes,
-+	 * since some might depend on this info.
-+	 */
-+	if (opts->group)
-+		perf_evlist__set_leader(evlist);
++		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
++			*array = sample->read.time_enabled;
++			array++;
++		}
 +
-+	if (evlist->cpus->map[0] < 0)
-+		opts->no_inherit = true;
++		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
++			*array = sample->read.time_running;
++			array++;
++		}
 +
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		perf_evsel__config(evsel, opts);
-+
-+		if (evlist->nr_entries > 1)
-+			perf_evsel__set_sample_id(evsel);
++		/* PERF_FORMAT_ID is forced for PERF_SAMPLE_READ */
++		if (read_format & PERF_FORMAT_GROUP) {
++			sz = sample->read.group.nr *
++			     sizeof(struct sample_read_value);
++			memcpy(array, sample->read.group.values, sz);
++			array = (void *)array + sz;
++		} else {
++			*array = sample->read.one.id;
++			array++;
++		}
 +	}
 +
-+	perf_evlist__make_sample_types_compatible(evlist);
-+}
++	if (type & PERF_SAMPLE_CALLCHAIN) {
++		sz = (sample->callchain->nr + 1) * sizeof(u64);
++		memcpy(array, sample->callchain, sz);
++		array = (void *)array + sz;
++	}
++
++	if (type & PERF_SAMPLE_RAW) {
++		u.val32[0] = sample->raw_size;
++		if (WARN_ONCE(swapped,
++			      "Endianness of raw data not corrected!\n")) {
++			/*
++			 * Inverse of what is done in perf_evsel__parse_sample
++			 */
++			u.val32[0] = bswap_32(u.val32[0]);
++			u.val32[1] = bswap_32(u.val32[1]);
++			u.val64 = bswap_64(u.val64);
++		}
++		*array = u.val64;
++		array = (void *)array + sizeof(u32);
++
++		memcpy(array, sample->raw_data, sample->raw_size);
++		array = (void *)array + sample->raw_size;
++	}
++
++	if (type & PERF_SAMPLE_BRANCH_STACK) {
++		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
++		sz += sizeof(u64);
++		memcpy(array, sample->branch_stack, sz);
++		array = (void *)array + sz;
++	}
++
++	if (type & PERF_SAMPLE_REGS_USER) {
++		if (sample->user_regs.regs && sample_regs_user) {
++			*array++ = sample_regs_user;
++			sz = hweight_long(sample_regs_user) * sizeof(u64);
++			memcpy(array, sample->user_regs.regs, sz);
++			array = (void *)array + sz;
++		} else {
++			*array++ = 0;
++		}
++	}
++
++	if (type & PERF_SAMPLE_STACK_USER) {
++		sz = sample->user_stack.size;
++		*array++ = sz;
++		if (sz) {
++			memcpy(array, sample->user_stack.data, sz);
++			array = (void *)array + sz;
++			*array++ = sz;
++		}
++	}
++
++	if (type & PERF_SAMPLE_WEIGHT) {
++		*array = sample->weight;
++		array++;
++	}
++
++	if (type & PERF_SAMPLE_DATA_SRC) {
++		*array = sample->data_src;
++		array++;
++	}
++
+ 	return 0;
+ }
+ 
 -- 
 1.7.11.7
 
