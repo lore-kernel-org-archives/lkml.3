@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030232Ab3HIB7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:59:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55869 "EHLO
+	id S1030299Ab3HICDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:03:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55910 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967747Ab3HIB73 (ORCPT
+	with ESMTP id S1030230Ab3HIB7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:29 -0400
+	Thu, 8 Aug 2013 21:59:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 081/102] s390: add support for IBM zBC12 machine
-Date: Thu,  8 Aug 2013 18:57:57 -0700
-Message-Id: <20130809015029.323154441@linuxfoundation.org>
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 089/102] sfc: Enable RX scatter for flows steered by RFS
+Date: Thu,  8 Aug 2013 18:58:05 -0700
+Message-Id: <20130809015031.311990254@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,71 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit 594712276e737961d30e11eae80d403b2b3815df upstream.
+[ Upstream commit 7aa0076c497d6f0d5d957b431d0d80e1e9780274 ]
 
-Just add the new model number where appropiate.
+Received packets are only scattered if this is enabled in both the
+matching filter and the receiving queue.  This was not being done for
+filters inserted for RFS, so any packet requiring more than a single
+descriptor was dropped.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/s390/Kconfig         |    7 ++++---
- arch/s390/kernel/setup.c  |    1 +
- arch/s390/mm/init.c       |    1 +
- arch/s390/oprofile/init.c |    2 +-
- 4 files changed, 7 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/sfc/filter.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -227,11 +227,12 @@ config MARCH_Z196
- 	  not work on older machines.
+--- a/drivers/net/ethernet/sfc/filter.c
++++ b/drivers/net/ethernet/sfc/filter.c
+@@ -1196,7 +1196,9 @@ int efx_filter_rfs(struct net_device *ne
+ 	EFX_BUG_ON_PARANOID(skb_headlen(skb) < nhoff + 4 * ip->ihl + 4);
+ 	ports = (const __be16 *)(skb->data + nhoff + 4 * ip->ihl);
  
- config MARCH_ZEC12
--	bool "IBM zEC12"
-+	bool "IBM zBC12 and zEC12"
- 	select HAVE_MARCH_ZEC12_FEATURES if 64BIT
- 	help
--	  Select this to enable optimizations for IBM zEC12 (2827 series). The
--	  kernel will be slightly faster but will not work on older machines.
-+	  Select this to enable optimizations for IBM zBC12 and zEC12 (2828 and
-+	  2827 series). The kernel will be slightly faster but will not work on
-+	  older machines.
- 
- endchoice
- 
---- a/arch/s390/kernel/setup.c
-+++ b/arch/s390/kernel/setup.c
-@@ -998,6 +998,7 @@ static void __init setup_hwcaps(void)
- 		strcpy(elf_platform, "z196");
- 		break;
- 	case 0x2827:
-+	case 0x2828:
- 		strcpy(elf_platform, "zEC12");
- 		break;
- 	}
---- a/arch/s390/mm/init.c
-+++ b/arch/s390/mm/init.c
-@@ -69,6 +69,7 @@ static void __init setup_zero_pages(void
- 		order = 2;
- 		break;
- 	case 0x2827:	/* zEC12 */
-+	case 0x2828:	/* zEC12 */
- 	default:
- 		order = 5;
- 		break;
---- a/arch/s390/oprofile/init.c
-+++ b/arch/s390/oprofile/init.c
-@@ -440,7 +440,7 @@ static int oprofile_hwsampler_init(struc
- 		switch (id.machine) {
- 		case 0x2097: case 0x2098: ops->cpu_type = "s390/z10"; break;
- 		case 0x2817: case 0x2818: ops->cpu_type = "s390/z196"; break;
--		case 0x2827:              ops->cpu_type = "s390/zEC12"; break;
-+		case 0x2827: case 0x2828: ops->cpu_type = "s390/zEC12"; break;
- 		default: return -ENODEV;
- 		}
- 	}
+-	efx_filter_init_rx(&spec, EFX_FILTER_PRI_HINT, 0, rxq_index);
++	efx_filter_init_rx(&spec, EFX_FILTER_PRI_HINT,
++			   efx->rx_scatter ? EFX_FILTER_FLAG_RX_SCATTER : 0,
++			   rxq_index);
+ 	rc = efx_filter_set_ipv4_full(&spec, ip->protocol,
+ 				      ip->daddr, ports[1], ip->saddr, ports[0]);
+ 	if (rc)
 
 
