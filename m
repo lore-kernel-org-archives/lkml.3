@@ -1,173 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031721Ab3HIXaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 19:30:19 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:54861 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031651Ab3HIX0c (ORCPT
+	id S1031640Ab3HIXeQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 19:34:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:49651 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031474Ab3HIXeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 19:26:32 -0400
-From: Roy Franz <roy.franz@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
-        linux@arm.linux.org.uk
-Cc: leif.lindholm@linaro.org, dave.martin@arm.com, msalter@redhat.com,
-        Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH 03/16] Rename memory allocation/free functions
-Date: Fri,  9 Aug 2013 16:26:04 -0700
-Message-Id: <1376090777-20090-4-git-send-email-roy.franz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
-References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
+	Fri, 9 Aug 2013 19:34:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <5204B93A.6030409@cn.fujitsu.com>
+References: <1375954883-30225-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1375954883-30225-3-git-send-email-tangchen@cn.fujitsu.com>
+	<CAE9FiQXUS9+heHagD45WAyO22NiGDMo3j2JumzvscypVhnjn9A@mail.gmail.com>
+	<5204B93A.6030409@cn.fujitsu.com>
+Date: Fri, 9 Aug 2013 16:34:13 -0700
+X-Google-Sender-Auth: Wz_8luU764qbVSPq6yQzTeb53Y8
+Message-ID: <CAE9FiQWSjkrFHBr3UrTYSpaCa8ThVrtPPVcaCyJrD0sGHcei3w@mail.gmail.com>
+Subject: Re: [PATCH part4 2/4] x86, acpica, acpi: Try to find if SRAT is
+ overrided earlier.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename them to be more similar, as low_free() could be used to free
-memory allocated by both high_alloc() and low_alloc().
-high_alloc() -> efi_high_alloc()
-low_alloc()  -> efi_low_alloc()
-low_free()   -> efi_free()
+On Fri, Aug 9, 2013 at 2:41 AM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+> On 08/09/2013 12:29 AM, Yinghai Lu wrote:
+> ......
+>
+>>
+>> Please check if you can reuse first half of my patchset, so find and copy
+>> override table earlier. the copied acpi tables could be near kernel code
+>> range.
+>>
+>
+> I don't think we need to do the finding step at that early time, in
+> head64.c stage.
+>
+> Before pagetables are setup, we can use early_ioremap() to map the
+> memory we want to access. We don't need to use phys addr. We can do
+> it in setup_arch(), which has nothing to do with 32bit or 64bit.
 
-Signed-off-by: Roy Franz <roy.franz@linaro.org>
----
- arch/x86/boot/compressed/eboot.c       |   19 ++++++++++---------
- drivers/firmware/efi/efi-stub-helper.c |   14 +++++++-------
- 2 files changed, 17 insertions(+), 16 deletions(-)
+if override the acpi tables early, you don't need to check firmware srat and
+then override srat.
+just check last one will be used by kernel.
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 65b6a34..2a4430a 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -457,7 +457,8 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
- 		return NULL;
- 	}
- 
--	status = low_alloc(sys_table, 0x4000, 1, (unsigned long *)&boot_params);
-+	status = efi_low_alloc(sys_table, 0x4000, 1,
-+			       (unsigned long *)&boot_params);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table, "Failed to alloc lowmem for boot params\n");
- 		return NULL;
-@@ -503,7 +504,7 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
- 
- 			options_size++;	/* NUL termination */
- 
--			status = low_alloc(sys_table, options_size, 1,
-+			status = efi_low_alloc(sys_table, options_size, 1,
- 					   &cmdline);
- 			if (status != EFI_SUCCESS) {
- 				efi_printk(sys_table, "Failed to alloc mem for cmdline\n");
-@@ -537,9 +538,9 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
- 	return boot_params;
- fail2:
- 	if (options_size)
--		low_free(sys_table, options_size, hdr->cmd_line_ptr);
-+		efi_free(sys_table, options_size, hdr->cmd_line_ptr);
- fail:
--	low_free(sys_table, 0x4000, (unsigned long)boot_params);
-+	efi_free(sys_table, 0x4000, (unsigned long)boot_params);
- 	return NULL;
- }
- 
-@@ -562,7 +563,7 @@ static efi_status_t exit_boot(struct boot_params *boot_params,
- again:
- 	size += sizeof(*mem_map) * 2;
- 	_size = size;
--	status = low_alloc(sys_table, size, 1, (unsigned long *)&mem_map);
-+	status = efi_low_alloc(sys_table, size, 1, (unsigned long *)&mem_map);
- 	if (status != EFI_SUCCESS)
- 		return status;
- 
-@@ -570,7 +571,7 @@ get_map:
- 	status = efi_call_phys5(sys_table->boottime->get_memory_map, &size,
- 				mem_map, &key, &desc_size, &desc_version);
- 	if (status == EFI_BUFFER_TOO_SMALL) {
--		low_free(sys_table, _size, (unsigned long)mem_map);
-+		efi_free(sys_table, _size, (unsigned long)mem_map);
- 		goto again;
- 	}
- 
-@@ -672,7 +673,7 @@ get_map:
- 	return EFI_SUCCESS;
- 
- free_mem_map:
--	low_free(sys_table, _size, (unsigned long)mem_map);
-+	efi_free(sys_table, _size, (unsigned long)mem_map);
- 	return status;
- }
- 
-@@ -695,7 +696,7 @@ static efi_status_t relocate_kernel(struct setup_header *hdr)
- 				EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
- 				nr_pages, &start);
- 	if (status != EFI_SUCCESS) {
--		status = low_alloc(sys_table, hdr->init_size,
-+		status = efi_low_alloc(sys_table, hdr->init_size,
- 				   hdr->kernel_alignment, &start);
- 		if (status != EFI_SUCCESS)
- 			efi_printk(sys_table, "Failed to alloc mem for kernel\n");
-@@ -743,7 +744,7 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
- 	}
- 
- 	gdt->size = 0x800;
--	status = low_alloc(sys_table, gdt->size, 8,
-+	status = efi_low_alloc(sys_table, gdt->size, 8,
- 			   (unsigned long *)&gdt->address);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table, "Failed to alloc mem for gdt\n");
-diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-index bd6c1a2..0218d535 100644
---- a/drivers/firmware/efi/efi-stub-helper.c
-+++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -86,7 +86,7 @@ fail:
- /*
-  * Allocate at the highest possible address that is not above 'max'.
-  */
--static efi_status_t high_alloc(efi_system_table_t *sys_table_arg,
-+static efi_status_t efi_high_alloc(efi_system_table_t *sys_table_arg,
- 			       unsigned long size, unsigned long align,
- 			       unsigned long *addr, unsigned long max)
- {
-@@ -165,8 +165,8 @@ fail:
- /*
-  * Allocate at the lowest possible address.
-  */
--static efi_status_t low_alloc(efi_system_table_t *sys_table_arg,
--		unsigned long size, unsigned long align,
-+static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
-+			      unsigned long size, unsigned long align,
- 			      unsigned long *addr)
- {
- 	unsigned long map_size, desc_size;
-@@ -226,7 +226,7 @@ fail:
- 	return status;
- }
- 
--static void low_free(efi_system_table_t *sys_table_arg, unsigned long size,
-+static void efi_free(efi_system_table_t *sys_table_arg, unsigned long size,
- 		     unsigned long addr)
- {
- 	unsigned long nr_pages;
-@@ -407,8 +407,8 @@ grow:
- 		 * addresses in memory, so allocate enough memory for
- 		 * all the initrd's.
- 		 */
--		status = high_alloc(sys_table_arg, initrd_total, 0x1000,
--				   &initrd_addr, hdr->initrd_addr_max);
-+		status = efi_high_alloc(sys_table_arg, initrd_total, 0x1000,
-+				    &initrd_addr, hdr->initrd_addr_max);
- 		if (status != EFI_SUCCESS) {
- 			efi_printk(sys_table_arg, "Failed to alloc highmem for initrds\n");
- 			goto close_handles;
-@@ -456,7 +456,7 @@ grow:
- 	return status;
- 
- free_initrd_total:
--	low_free(sys_table_arg, initrd_total, initrd_addr);
-+	efi_free(sys_table_arg, initrd_total, initrd_addr);
- 
- close_handles:
- 	for (k = j; k < i; k++)
--- 
-1.7.10.4
+So you don't need to dig initrd to find srat anymore.
 
+>
+>
+>> Move finding in head64.c stage could help xen/dom0 a bit.
+>> as Konrad is working on patchset with acpi override in xen hypervisor.
+>> We can avoid override acpi table two times. Esp xen like to change
+>> DMAR to XMAR.
+>
+>
+> Would you please give some more info about this, and explain why finding
+> override tables in head64.c stage is helpful for xen ?
+
+xen usually can change acpi tables and pass to dom0 kernel. like change DMAR
+to hide it to dom0 kernel.
+
+also distribution could have same kernel to support bare metal and dom0.
+
+so if we find the override kernel early in head64.c, dom0 path will not copy
+actually as no one try to find that for them.
+
+Yinghai
