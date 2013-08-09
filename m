@@ -1,88 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967993Ab3HIPnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:43:16 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:59896 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967927Ab3HIPnO (ORCPT
+	id S967998Ab3HIPpB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:45:01 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:63803 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967927Ab3HIPpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:43:14 -0400
+	Fri, 9 Aug 2013 11:45:00 -0400
+Date: Fri, 9 Aug 2013 17:44:56 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 4/7] nohz_full: Add full-system idle states
+ and variables
+Message-ID: <20130809154454.GB13339@somewhere>
+References: <20130726231848.GA12967@linux.vnet.ibm.com>
+ <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1374880764-14248-4-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <001a01ce9505$59c28b20$0d47a160$%jun@samsung.com>
-References: <1373470926-19314-1-git-send-email-dianders@chromium.org>
-	<1375825071-20922-1-git-send-email-dianders@chromium.org>
-	<1375825071-20922-4-git-send-email-dianders@chromium.org>
-	<001a01ce9505$59c28b20$0d47a160$%jun@samsung.com>
-Date: Fri, 9 Aug 2013 08:43:13 -0700
-X-Google-Sender-Auth: qJWe4i-o3WSnFRpCo-stk0X8GYM
-Message-ID: <CAD=FV=VO=50uMXfwY5iNa+xiamRiHTSpTMXs+EdMeUTawkeyqw@mail.gmail.com>
-Subject: Re: [PATCH v4 3/4] mmc: dw_mmc: Always setup the bus after suspend/resume
-From: Doug Anderson <dianders@chromium.org>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374880764-14248-4-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seungwon,
+On Fri, Jul 26, 2013 at 04:19:21PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> This commit adds control variables and states for full-system idle.
+> The system will progress through the states in numerical order when
+> the system is fully idle (other than the timekeeping CPU), and reset
+> down to the initial state if any non-timekeeping CPU goes non-idle.
+> The current state is kept in full_sysidle_state.
+> 
+> A RCU_SYSIDLE_SMALL macro is defined, and systems with this number
+> of CPUs or fewer move through the states more aggressively.  The idea
+> is that the resulting memory contention is less of a problem on small
+> systems.  Architectures can adjust this value (which defaults to 8)
+> using CONFIG_ARCH_RCU_SYSIDLE_SMALL.
+> 
+> One flavor of RCU will be in charge of driving the state machine,
+> defined by rcu_sysidle_state.  This should be the busiest flavor of RCU.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/rcutree_plugin.h | 28 ++++++++++++++++++++++++++++
+>  1 file changed, 28 insertions(+)
+> 
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 814ff47..3edae39 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -2380,6 +2380,34 @@ static void rcu_kick_nohz_cpu(int cpu)
+>  #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
+>  
+>  /*
+> + * Handle small systems specially, accelerating their transition into
+> + * full idle state.  Allow arches to override this code's idea of
+> + * what constitutes a "small" system.
+> + */
+> +#ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL
+> +#define RCU_SYSIDLE_SMALL CONFIG_ARCH_RCU_SYSIDLE_SMALL
+> +#else /* #ifdef CONFIG_ARCH_RCU_SYSIDLE_SMALL */
+> +#define RCU_SYSIDLE_SMALL 8
+> +#endif
+> +
+> +/*
+> + * Define RCU flavor that holds sysidle state.  This needs to be the
+> + * most active flavor of RCU.
+> + */
+> +#ifdef CONFIG_PREEMPT_RCU
+> +static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_preempt_state;
+> +#else /* #ifdef CONFIG_PREEMPT_RCU */
+> +static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_sched_state;
+> +#endif /* #else #ifdef CONFIG_PREEMPT_RCU */
 
-On Fri, Aug 9, 2013 at 6:35 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> On Wed, August 07, 2013, Doug Anderson wrote:
->> After suspend/resume all of the dw_mmc registers are reset to
->> defaults.  We restore most of them, but specifically don't setup the
->> clock registers after resume unless we've got a powered card.  Things
->> still work because the core will eventually call set_ios() and we'll
->> set things up.
->
-> Hmm, I didn't get the need of this call during resume.
-> I think set_ios is only valid where core layer calls.
-> Besides, important things is ios's parameters.
-> If suspend has finished successfully, last call of set_ios() is from mmc_power_off().
-> On seeing fields of 'mmc->ios' stored last, these values aren't proper in resume phase.
-> Please check mmc_power_off() function.
-> In case MMC_PM_KEEP_POWER it could be kept.
+Why the maybe_unused here? Couldn't we get rid of it if those definitions were
+under NO_HZ_FULL_SYSIDLE?
 
-Most of my reasoning has to do with the fact that the state of the
-system after suspend/resume should not be significantly different than
-the state of the system before suspend/resume.  If the state of the
-system is different in the two cases it points out potential problems
-or inefficiencies.
+> +
+> +static int __maybe_unused full_sysidle_state; /* Current system-idle state. */
 
-To make this more concrete:
+Ditto here?
 
-1. Boot up a system with no card in the SD Card slot.
-2. Note down the value of registers like CLKDIV, CLKENA, etc.
-3. Suspend / resume (S2R)
-4. Check the values of CLKDIV, CLKENA, etc.
+> +#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
+> +#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
+> +#define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
+> +#define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
+> +#define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
 
-You will notice that they are different.  This is a bad sign and can
-be a source of bugs (though I don't know of any).  ...or it could mean
-that power draw is different (could be better, could be worse) after a
-suspend/resume cycle.
+This may be better as an enum. This way the variables that store such values can
+carry this type and the review becomes easier.
 
-
-Said another way, if the value of CLKDIV, CLKENA, etc is not important
-when a card is not inserted, why do they get initialized at boot time?
-
-
-In general, I think that the mmc core code makes the assumption that
-it's up to the driver to make sure that its state is preserved across
-S2R.  For dw_mmc the driver doesn't do the "brute force" that some
-drivers do of just saving and restoring all registers using a copy
-loop.  Instead, the dw_mmc driver runs code that tries to set the
-state back to something reasonable.  Without my patch the dw_mmc
-driver doesn't run any code that restores these registers.
-dw_mci_set_ios() will do so.
-
-Another option would be to forcibly save/restore registers in suspend/resume.
-
--Doug
+> +
+> +/*
+>   * Invoked to note exit from irq or task transition to idle.  Note that
+>   * usermode execution does -not- count as idle here!  After all, we want
+>   * to detect full-system idle states, not RCU quiescent states and grace
+> -- 
+> 1.8.1.5
+> 
