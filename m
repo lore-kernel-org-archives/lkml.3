@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030620Ab3HIS0T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 14:26:19 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:56609 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967991Ab3HIS0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 14:26:17 -0400
-From: Kumar Gaurav <kumargauravgupta3@gmail.com>
-To: davem@davemloft.net, jiri@resnulli.us, gregkh@linuxfoundation.org,
-        yongjun_wei@trendmicro.com.cn, konszert@marvell.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Kumar Gaurav <kumargauravgupta3@gmail.com>
-Subject: [PATCH 17/17] net:ethernet:lantiq_etop.c: Removed deprecated IRQF_DISABLED
-Date: Fri,  9 Aug 2013 23:55:59 +0530
-Message-Id: <1376072759-11814-1-git-send-email-kumargauravgupta3@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S968107Ab3HIS1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 14:27:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51223 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965075Ab3HIS1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 14:27:35 -0400
+Message-ID: <52053485.7070902@zytor.com>
+Date: Fri, 09 Aug 2013 11:27:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+CC: Jan Engelhardt <jengelh@inai.de>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-modules <linux-modules@vger.kernel.org>
+Subject: Re: [PATCH] depmod: add missing "else" clause
+References: <1375912738-25114-1-git-send-email-jengelh@inai.de> <1375912738-25114-2-git-send-email-jengelh@inai.de> <CAKi4VA+-NnohHc5cMirN=B5uizLQBDnaZ5Aiq24AFe=puFDNJg@mail.gmail.com>
+In-Reply-To: <CAKi4VA+-NnohHc5cMirN=B5uizLQBDnaZ5Aiq24AFe=puFDNJg@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed IRQF_DISABLED as it is deprecated and fixed a coding style issue
-of more than 80 chars on single line by sliting the line in two.
+On 08/09/2013 08:03 AM, Lucas De Marchi wrote:
+> Hi Jan,
+> 
+> 
+> On Wed, Aug 7, 2013 at 6:58 PM, Jan Engelhardt <jengelh@inai.de> wrote:
+>>
+>> It occurred to an openSUSE user that our mkinitrd would throw a
+>> warning when used with kmod:
+>>
+>> libkmod: conf_files_list: unsupported file mode /dev/null: 0x21b6
+>>
+>> Grepping for the error message revealed that there might be a missing
+>> "else" keyword here, since it is unusual to put an "if" directly after
+>> closing brace.
+>> ---
+>>  libkmod/libkmod-config.c | 2 +-
+>>  tools/depmod.c           | 2 +-
+>>  2 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/libkmod/libkmod-config.c b/libkmod/libkmod-config.c
+>> index 201c349..cb4cf61 100644
+>> --- a/libkmod/libkmod-config.c
+>> +++ b/libkmod/libkmod-config.c
+>> @@ -833,7 +833,7 @@ static int conf_files_list(struct kmod_ctx *ctx, struct kmod_list **list,
+>>         if (S_ISREG(st.st_mode)) {
+>>                 conf_files_insert_sorted(ctx, list, path, NULL);
+>>                 return 0;
+>> -       } if (!S_ISDIR(st.st_mode)) {
+>> +       } else if (!S_ISDIR(st.st_mode)) {
+>>                 ERR(ctx, "unsupported file mode %s: %#x\n",
+>>                                                         path, st.st_mode);
+>>                 return -EINVAL;
+>> diff --git a/tools/depmod.c b/tools/depmod.c
+>> index 4a02631..985cf3a 100644
+>> --- a/tools/depmod.c
+>> +++ b/tools/depmod.c
+>> @@ -848,7 +848,7 @@ static int cfg_files_list(struct cfg_file ***p_files, size_t *p_n_files,
+>>         if (S_ISREG(st.st_mode)) {
+>>                 cfg_files_insert_sorted(p_files, p_n_files, path, NULL);
+>>                 return 0;
+>> -       } if (!S_ISDIR(st.st_mode)) {
+>> +       } else if (!S_ISDIR(st.st_mode)) {
+>>                 ERR("unsupported file mode %s: %#x\n", path, st.st_mode);
+>>                 return -EINVAL;
+>>         }
+>> --
+> 
+> Applied, thanks.
+> 
+> Please make sure to CC linux-modules@vger.kernel.org
+> 
 
-Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
----
- drivers/net/ethernet/lantiq_etop.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Also please note that this is a stylistic change only, since the
+previous if clause ends with a return.
 
-diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
-index bfdb0686..04c3a82 100644
---- a/drivers/net/ethernet/lantiq_etop.c
-+++ b/drivers/net/ethernet/lantiq_etop.c
-@@ -282,7 +282,7 @@ ltq_etop_hw_init(struct net_device *dev)
- 
- 		if (IS_TX(i)) {
- 			ltq_dma_alloc_tx(&ch->dma);
--			request_irq(irq, ltq_etop_dma_irq, IRQF_DISABLED,
-+			request_irq(irq, ltq_etop_dma_irq, 0,
- 				"etop_tx", priv);
- 		} else if (IS_RX(i)) {
- 			ltq_dma_alloc_rx(&ch->dma);
-@@ -291,7 +291,7 @@ ltq_etop_hw_init(struct net_device *dev)
- 				if (ltq_etop_alloc_skb(ch))
- 					return -ENOMEM;
- 			ch->dma.desc = 0;
--			request_irq(irq, ltq_etop_dma_irq, IRQF_DISABLED,
-+			request_irq(irq, ltq_etop_dma_irq, 0,
- 				"etop_rx", priv);
- 		}
- 		ch->dma.irq = irq;
-@@ -653,7 +653,9 @@ ltq_etop_init(struct net_device *dev)
- 	if (err)
- 		goto err_netdev;
- 
--	/* Set addr_assign_type here, ltq_etop_set_mac_address would reset it. */
-+	/* Set addr_assign_type here,
-+	 *ltq_etop_set_mac_address would reset it.
-+	 */
- 	if (random_mac)
- 		dev->addr_assign_type = NET_ADDR_RANDOM;
- 
--- 
-1.7.9.5
+	-hpa
+
 
