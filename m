@@ -1,58 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967041Ab3HIAud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 20:50:33 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:38495 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966966Ab3HIAub (ORCPT
+	id S967046Ab3HIAxT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 20:53:19 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:35558 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966976Ab3HIAxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 20:50:31 -0400
-Date: Thu, 8 Aug 2013 20:50:26 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH 1/3] memcg: limit the number of thresholds per-memcg
-Message-ID: <20130809005026.GE13427@mtj.dyndns.org>
-References: <1375874907-22013-1-git-send-email-mhocko@suse.cz>
- <20130807132210.GD27006@htj.dyndns.org>
- <20130807134654.GJ8184@dhcp22.suse.cz>
- <20130807135818.GG27006@htj.dyndns.org>
- <20130807143727.GA13279@dhcp22.suse.cz>
- <20130807220513.GA8068@shutemov.name>
- <20130808144351.GD3189@dhcp22.suse.cz>
+	Thu, 8 Aug 2013 20:53:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130808144351.GD3189@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFECyb-aAHk0RzBGPmGOhRkm8=chwyAM=DdwE=6Z4VLR9sqFRA@mail.gmail.com>
+References: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
+	<1375847113-24884-17-git-send-email-roy.franz@linaro.org>
+	<20130807180548.GA12592@localhost.localdomain>
+	<CAFECyb-aAHk0RzBGPmGOhRkm8=chwyAM=DdwE=6Z4VLR9sqFRA@mail.gmail.com>
+Date: Thu, 8 Aug 2013 17:53:16 -0700
+Message-ID: <CAFECyb9Qh1TzGcjK2AMkKWZTsvTh2MgF1yeDzxYpLE7skMLg7g@mail.gmail.com>
+Subject: Re: [PATCH 16/17] Add EFI stub for ARM
+From: Roy Franz <roy.franz@linaro.org>
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        matt.fleming@intel.com,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Dave - here is an updated patch for head.S, I'm still working on the
+rest.  I will make the EFI stub depend on !CPU_ENDIAN_BE32 to make the
+stub LE only for now.  I think I have addressed the rest of your
+comments in head.S in the patch below.  I will send a complete new
+series once I have the other changes, mostly in efi-stub.c, complete.
 
-On Thu, Aug 08, 2013 at 04:43:51PM +0200, Michal Hocko wrote:
-> > Is it correct that you fix one local DoS by introducing a new one?
-> > With the page the !priv user can block root from registering a threshold.
-> > Is it really the way we want to fix it?
-> 
-> OK, I will think about it some more.
+Thanks,
+Roy
 
-The only thing the patch does is replacing implicit global resource
-limit with an explicit one.  Whether that's useful or not, I don't
-know, but it doesn't really change the nature of the problem or
-actually fix anything.  The only way to fix it is rewriting the whole
-thing so that allocations are broken up per source, which I don't
-think is a good idea at this point.  I'd just add a comment noting why
-it's broken.  Given that delegating to !priv users is horribly broken
-anyway, I don't think this worsens the situation by too much anyway.
 
-Thanks.
 
--- 
-tejun
+diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+index 75189f1..5401a3a 100644
+--- a/arch/arm/boot/compressed/head.S
++++ b/arch/arm/boot/compressed/head.S
+@@ -10,6 +10,7 @@
+  */
+ #include <linux/linkage.h>
+ #include <asm/assembler.h>
++#include "efi-stub.h"
+
+  .arch armv7-a
+ /*
+@@ -120,21 +121,99 @@
+  */
+  .align
+  .arm @ Always enter in ARM state
++ .text
+ start:
+  .type start,#function
+- .rept 7
++#ifdef CONFIG_EFI_STUB
++ @ Magic MSDOS signature for PE/COFF + ADD opcode
++ .word 0x62805a4d
++#else
++ mov r0, r0
++#endif
++ .rept 5
+  mov r0, r0
+  .endr
+-   ARM( mov r0, r0 )
+-   ARM( b 1f )
+- THUMB( adr r12, BSYM(1f) )
+- THUMB( bx r12 )
++
++ adrl r12, BSYM(zimage_continue)
++ ARM( mov     pc, r12 )
++ THUMB( bx r12     )
++ @ zimage_continue will be in ARM or thumb mode as configured
+
+  .word 0x016f2818 @ Magic numbers to help the loader
+  .word start @ absolute load/run zImage address
+  .word _edata @ zImage end address
++
++#ifdef CONFIG_EFI_STUB
++ @ Portions of the MSDOS file header must be at offset
++ @ 0x3c from the start of the file.  All PE/COFF headers
++ @ are kept contiguous for simplicity.
++#include "efi-header.S"
++
++efi_stub_entry:
++ @ The EFI stub entry point is not at a fixed address, however
++ @ this address must be set in the PE/COFF header.
++ @ EFI entry point is in A32 mode, switch to T32 if configured.
++ THUMB( adr r12, BSYM(1f) )
++ THUMB( bx r12 )
+  THUMB( .thumb )
+ 1:
++ @ Save lr on stack for possible return to EFI firmware.
++ @ Don't care about fp, but need 64 bit alignment....
++ stmfd sp!, {fp, lr}
++
++ @ allocate space on stack for return of new entry point of
++ @ zImage, as EFI stub may copy the kernel.  Pass address
++ @ of space in r2 - EFI stub will fill in the pointer.
++
++ sub sp, sp, #8 @ we only need 4 bytes,
++ @ but keep stack 8 byte aligned.
++ mov r2, sp
++ @ Pass our actual runtime start address in pointer data
++ adr r11, LC0 @ address of LC0 at run time
++ ldr r12, [r11, #0] @ address of LC0 at link time
++
++ sub r3, r11, r12 @ calculate the delta offset
++ str r3, [r2, #0]
++ bl efi_entry
++
++ @ get new zImage entry address from stack, put into r3
++ ldr r3, [sp, #0]
++ add sp, sp, #8   @ restore stack
++
++ @ Check for error return from EFI stub
++ mov r1, #EFI_STUB_ERROR
++ cmp r0, r1
++ beq efi_load_fail
++
++
++ @ Save return values of efi_entry
++ stmfd sp!, {r0, r3}
++ bl cache_clean_flush
++ bl cache_off
++ ldmfd   sp!, {r0, r3}
++
++ @ Set parameters for booting zImage according to boot protocol
++ @ put FDT address in r2, it was returned by efi_entry()
++ @ r1 is FDT machine type, and r0 needs to be 0
++ mov r2, r0
++ mov r1, #0xFFFFFFFF
++ mov r0, #0
++
++ @ Branch to (possibly) relocated zImage that is in r3
++ @ Make sure we are in A32 mode, as zImage requires
++ THUMB( bx r3 )
++ ARM( mov pc, r3 )
++
++efi_load_fail:
++ @ Return EFI_LOAD_ERROR to EFI firmware on error.
++ @ Switch back to ARM mode for EFI is done based on
++ @ return address on stack
++ ldr r0, =0x80000001
++ ldmfd sp!, {fp, pc}
++#endif
++
++ THUMB( .thumb )
++zimage_continue:
+  mrs r9, cpsr
+ #ifdef CONFIG_ARM_VIRT_EXT
+  bl __hyp_stub_install @ get into SVC mode, reversibly
+@@ -167,7 +246,6 @@ not_angel:
+  * by the linker here, but it should preserve r7, r8, and r9.
+  */
+
+- .text
+
+ #ifdef CONFIG_AUTO_ZRELADDR
+  @ determine final kernel image address
