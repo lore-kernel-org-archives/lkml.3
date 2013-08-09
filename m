@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967622Ab3HIGY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 02:24:27 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53312 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967319Ab3HIGYZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 02:24:25 -0400
-Date: Fri, 9 Aug 2013 02:24:05 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Dan Aloni <alonid@postram.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] netconsole: avoid a crash with multiple sysfs writers
-Message-ID: <20130809062405.GA8031@neilslaptop.think-freely.org>
-References: <1375866164-21933-1-git-send-email-alonid@postram.com>
- <20130808055032.GA3898@neilslaptop.think-freely.org>
- <CAOE7D0tj3suE8bnpd4ijL1zVLr83OB28KdRR7OOLkEnDOCM4_A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOE7D0tj3suE8bnpd4ijL1zVLr83OB28KdRR7OOLkEnDOCM4_A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	id S1030278Ab3HIGZY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 02:25:24 -0400
+Received: from gate.crashing.org ([63.228.1.57]:36850 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030199Ab3HIGZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 02:25:23 -0400
+Message-ID: <1376029504.32100.16.camel@pasglop>
+Subject: Re: [PATCH v2] drivers/crypto/nx: saves chaining value from
+ co-processor
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Fionnuala Gunter <fin@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, herbert@gondor.hengli.com.au,
+        mhcerri@linux.vnet.ibm.com
+Date: Fri, 09 Aug 2013 16:25:04 +1000
+In-Reply-To: <1375917350.16050.14.camel@what-is-leg>
+References: <1375917350.16050.14.camel@what-is-leg>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 09:14:31AM +0300, Dan Aloni wrote:
-> On Thu, Aug 8, 2013 at 8:50 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> >
-> > On Wed, Aug 07, 2013 at 12:02:44PM +0300, Dan Aloni wrote:
-> [..]
-> >
-> > > When my 'ifup eth' script was fired multiple times and ran concurrent o> @@ -682,7 +689,11 @@ restart:
-> > >                                * we might sleep in __netpoll_cleanup()
-> > >                                */
-> > >                               spin_unlock_irqrestore(&target_list_lock, flags);
-> > > +
-> > > +                             mutex_lock(&nt->mutex);
-> > >                               __netpoll_cleanup(&nt->np);
-> > > +                             mutex_unlock(&nt->mutex);
-> > > +
-> > NAK, you can't hold a mutex while calling __netpoll_cleanup.  __netpoll_cleanup
-> > may sleep and its illegal to hold a mutex while doing so.
-> > Neil
-> >
+On Wed, 2013-08-07 at 18:15 -0500, Fionnuala Gunter wrote:
+> This patch fixes a bug that is triggered when cts(cbc(aes)) is used with
+> nx-crypto driver on input larger than 32 bytes.
 > 
-> To my understanding, it mostly depends on locking order, and having
-> sleeplocks in the outer order and spinlocks in the inner order is
-> valid as long the locking order is not reversed.
+> The chaining value from co-processor was not being saved. This value is
+> needed because it is used as the IV by cts(cbc(aes)).
 > 
-> Also, drivers/net/team/team.c - another netpoll user, already does the
-> same thing I intended in this patch - it locks the outer team->lock
-> mutex in team_uninit() while calling team_port_del() and then
-> team_port_disable_netpoll() calls __netpoll_cleanup().
-> 
-Sorry, you're right, I was under the impression that you were already in atomic
-context, but as long as you don't have preempt disabled when you try to take the
-mutex in any path, you should be ok.
+> Signed-off-by: Fionnuala Gunter <fin@linux.vnet.ibm.com>
+> Reviewed-by: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Herbert, I assume you will handle this along with all the other NX fixes
+and I can safely take them out of linuxppc patchwork ?
+
+Cheers,
+Ben.
+
+> ---
+> v2. changed signed-off-by to reviewed-by and added more details to
+> description
+> 
+> This bug appeared in the original submission (v3.5)
+> ---
+>  drivers/crypto/nx/nx-aes-cbc.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/crypto/nx/nx-aes-cbc.c
+> b/drivers/crypto/nx/nx-aes-cbc.c
+> index 35d483f..a2f99a9 100644
+> --- a/drivers/crypto/nx/nx-aes-cbc.c
+> +++ b/drivers/crypto/nx/nx-aes-cbc.c
+> @@ -95,6 +95,7 @@ static int cbc_aes_nx_crypt(struct blkcipher_desc
+> *desc,
+>         if (rc)
+>                 goto out;
+> 
+> +       memcpy(desc->info, csbcpb->cpb.aes_cbc.cv, AES_BLOCK_SIZE);
+>         atomic_inc(&(nx_ctx->stats->aes_ops));
+>         atomic64_add(csbcpb->csb.processed_byte_count,
+>                      &(nx_ctx->stats->aes_bytes));
+
 
