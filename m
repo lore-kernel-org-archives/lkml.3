@@ -1,128 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968153Ab3HIQjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:39:20 -0400
-Received: from mail-yh0-f74.google.com ([209.85.213.74]:63683 "EHLO
-	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968111Ab3HIQjR (ORCPT
+	id S968159Ab3HIQjw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:39:52 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60318 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968090Ab3HIQjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:39:17 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v5 1/4] mmc: dw_mmc: Invalidate cache of current_speed after suspend/resume
-Date: Fri,  9 Aug 2013 09:33:17 -0700
-Message-Id: <1376066000-5495-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1376066000-5495-1-git-send-email-dianders@chromium.org>
-References: <1375825071-20922-1-git-send-email-dianders@chromium.org>
- <1376066000-5495-1-git-send-email-dianders@chromium.org>
+	Fri, 9 Aug 2013 12:39:51 -0400
+Date: Fri, 9 Aug 2013 17:39:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: "Felipe F. Tonello" <eu@felipetonello.com>, alsa-devel@alsa-project.org,
+        Jaroslav Kysela <perex@perex.cz>, linux-kernel@vger.kernel.org
+Message-ID: <20130809163947.GK6427@sirena.org.uk>
+References: <1375430365-13232-2-git-send-email-eu@felipetonello.com>
+ <1376029315-3217-1-git-send-email-eu@felipetonello.com>
+ <s5h38qj2cqj.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uCT+dex/jsWOzqWN"
+Content-Disposition: inline
+In-Reply-To: <s5h38qj2cqj.wl%tiwai@suse.de>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 1/2] ALSA: Added jack detection KControl support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_mmc driver keeps a cache of the current slot->clock in order to
-avoid doing a whole lot of work every time set_ios() is called.
-However, after suspend/resume the register values are bogus so we need
-to ensure that the cached value is invalidated.
 
-Specifically I saw problems with the SD Card slot, which doesn't have
-MMC_KEEP_POWER.  Problems showed up when no card was inserted across
-suspend/resume.  In other words:
+--uCT+dex/jsWOzqWN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-1. At boot time, slot is all setup and configured to 400kHz.
-2. Suspend
-3. Resume; clock registers are reset (by suspend/resume) and not
-   restored since dw_mmc still thinks slot is configured for 400kHz
-   due to host->current_speed cache.
-4. Insert card.
-5. No code sees any need to change the clock for detecting the card,
-   since everyone thinks it's at 400kHz.  ...but it's not.
+On Fri, Aug 09, 2013 at 03:52:04PM +0200, Takashi Iwai wrote:
 
-Invalidating the current_speed also means that we don't need to call:
-  dw_mci_setup_bus(slot, true);
-...to force an update of the clock in the case when the slot was left
-powered.
+> Above all, the multiple indices don't work anyway with the snd_jack
+> stuff in the current form.  The index was introduced only for kjack,
+> and for HD-audio, snd_jack is provided just for a compatibility
+> reason, thus it doesn't matter much even if the multiple indices don't
+> work with it.=20
 
-Before this patch, many scenarios worked fine across suspend/resume
-since the core mmc code ends up adjusting the clock quite a bit
-during/suspend resume (and this ended up invalidating the cache for
-us).
+> That being said, before going further, we need to consider how to
+> handle the input jack stuff with multiple indices.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
----
-Changes in v5:
-- Remove force_clkinit as per Jaehoon
-- Update commit message to (hopefully) be clearer
+What's the big problem with indexes and input (hopefully also extcon...)
+reporting?
 
-Changes in v4: None
-Changes in v3: None
-Changes in v2:
-- Fix typo (some -> come)
-- Use ~0 instead of 0xFFFFFFFF; add comment about value
+> > -	snprintf(jack->name, sizeof(jack->name), "%s %s",
+> > +	snprintf(jack->name, sizeof(jack->name), "%s %s Jack",
+> >  		 card->shortname, jack->id);
 
- drivers/mmc/host/dw_mmc.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+> This breaks the compatibility with the existing code.
+> You must not change the name of the existing input jack element.
+> Some drivers create "Headphone" and some do "Headphone Jack", yes.
+> It's bad, but too late to change.
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index ee5f167..e614b03 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -629,13 +629,13 @@ static void mci_send_cmd(struct dw_mci_slot *slot, u32 cmd, u32 arg)
- 		cmd, arg, cmd_status);
- }
- 
--static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
-+static void dw_mci_setup_bus(struct dw_mci_slot *slot)
- {
- 	struct dw_mci *host = slot->host;
- 	u32 div;
- 	u32 clk_en_a;
- 
--	if (slot->clock != host->current_speed || force_clkinit) {
-+	if (slot->clock != host->current_speed) {
- 		div = host->bus_hz / slot->clock;
- 		if (host->bus_hz % slot->clock && host->bus_hz > slot->clock)
- 			/*
-@@ -819,7 +819,7 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
- 		drv_data->set_ios(slot->host, ios);
- 
- 	/* Slot specific timing and width adjustment */
--	dw_mci_setup_bus(slot, false);
-+	dw_mci_setup_bus(slot);
- 
- 	switch (ios->power_mode) {
- 	case MMC_POWER_UP:
-@@ -2511,13 +2511,19 @@ int dw_mci_resume(struct dw_mci *host)
- 		   DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
- 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
- 
-+	/*
-+	 * Invalidate the 'current_speed' value since CLKDIV has come up in
-+	 * default state and our cache is incorrect; set to something we know
-+	 * slot->clock won't be.
-+	 */
-+	host->current_speed = ~0;
-+
- 	for (i = 0; i < host->num_slots; i++) {
- 		struct dw_mci_slot *slot = host->slot[i];
- 		if (!slot)
- 			continue;
- 		if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER) {
- 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
--			dw_mci_setup_bus(slot, true);
- 		}
- 
- 		ret = mmc_resume_host(host->slot[i]->mmc);
--- 
-1.8.3
+We can probably do something cheap like just check if there's a "Jack"
+already in the name?
 
+--uCT+dex/jsWOzqWN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSBRtQAAoJELSic+t+oim92csP/1/rAohIUaj4FQEE21UNF+0Z
+ybPhiFETggXUWadf/szk2eOSzDywEZzoO4xSIgJ2cLw9sW/vHA5G894Rj8LoOdpq
+DEAFV2Rz34yR6IUDRuTyCH7P2PMOQV/RJHelNGSztQmNbof+Ig1AR3jDf9MRH12C
+m9OrAmUIXOn2k7z252uYAA03V4Tr5V7X5W9r+QKpENqga3vZjAzaWjEezTm9awGW
+1rk+SszkxketSpfqYXN6IIn0Rp5yK5uCWo966m3p24SjWIj08rr4IEcslJ2n3CFl
+yyWqVqDYr7D5/wqeS3/vgCGUrgbN3ps5Yx6cmPzHYP2DTB6SPZHxMEWDhbbdfFh9
+ZpIsiMmtSx3F/CLX4vxa6apITW52/rdlpTVqCdhIhAeGX9XFpPnDvCqT4oOPHa6f
+PJDT0rga8aXqF7t/OrjX9Sa0IZDlUy/thRe6Evsgyz//hCMnTr3p9fYaatJxsOgi
+AS3eJb/QK4EJOOR66+s1yTwx7j85KxDzVgS7cQEETvQyqlaa6T0tYiK+/a+kXNtK
+pSjp35zAm3JXFsryh1GQ3e8WJtOUMNywA4DggvBD8J1P6ZfBsGdLxLR4nJwPjaP7
+NeZVayKwZHdmFWiOHbK1I/U36wSvcnoe0I9cm4MsiZTG4vZPXL+3Bz6O/LqtjSUj
+9D72qtot2ywUHqi7hUjI
+=HvW9
+-----END PGP SIGNATURE-----
+
+--uCT+dex/jsWOzqWN--
