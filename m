@@ -1,241 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965757Ab3HIJ12 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 05:27:28 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42785 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966097Ab3HIJ1U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 05:27:20 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-c0-5204b5f11e09
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 19/20] mm, hugetlb: retry if failed to allocate and there is concurrent user
-Date: Fri,  9 Aug 2013 18:26:37 +0900
-Message-Id: <1376040398-11212-20-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S966268Ab3HIJ2V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 05:28:21 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:48238 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S965917Ab3HIJ1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 05:27:21 -0400
+X-IronPort-AV: E=Sophos;i="4.89,844,1367942400"; 
+   d="scan'208";a="8162828"
+Message-ID: <5204B6EF.6000905@cn.fujitsu.com>
+Date: Fri, 09 Aug 2013 17:31:27 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH 5/8] rcu: eliminate deadlock for rcu read site
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com> <1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com> <20130808204020.GA31127@linux.vnet.ibm.com>
+In-Reply-To: <20130808204020.GA31127@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 17:25:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 17:25:52,
+	Serialize complete at 2013/08/09 17:25:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If parallel fault occur, we can fail to allocate a hugepage,
-because many threads dequeue a hugepage to handle a fault of same address.
-This makes reserved pool shortage just for a little while and this cause
-faulting thread who can get hugepages to get a SIGBUS signal.
+On 08/09/2013 04:40 AM, Paul E. McKenney wrote:
+> On Wed, Aug 07, 2013 at 06:25:01PM +0800, Lai Jiangshan wrote:
+>> Background)
+>>
+>> Although all articles declare that rcu read site is deadlock-immunity.
+>> It is not true for rcu-preempt, it will be deadlock if rcu read site
+>> overlaps with scheduler lock.
+>>
+>> ec433f0c, 10f39bb1 and 016a8d5b just partially solve it. But rcu read site
+>> is still not deadlock-immunity. And the problem described in 016a8d5b
+>> is still existed(rcu_read_unlock_special() calls wake_up).
+>>
+>> Aim)
+>>
+>> We want to fix the problem forever, we want to keep rcu read site
+>> is deadlock-immunity as books say.
+>>
+>> How)
+>>
+>> The problem is solved by "if rcu_read_unlock_special() is called inside
+>> any lock which can be (chained) nested in rcu_read_unlock_special(),
+>> we defer rcu_read_unlock_special()".
+>> This kind locks include rnp->lock, scheduler locks, perf ctx->lock, locks
+>> in printk()/WARN_ON() and all locks nested in these locks or chained nested
+>> in these locks.
+>>
+>> The problem is reduced to "how to distinguish all these locks(context)",
+>> We don't distinguish all these locks, we know that all these locks
+>> should be nested in local_irqs_disable().
+>>
+>> we just consider if rcu_read_unlock_special() is called in irqs-disabled
+>> context, it may be called in these suspect locks, we should defer
+>> rcu_read_unlock_special().
+>>
+>> The algorithm enlarges the probability of deferring, but the probability
+>> is still very very low.
+>>
+>> Deferring does add a small overhead, but it offers us:
+>> 	1) really deadlock-immunity for rcu read site
+>> 	2) remove the overhead of the irq-work(250 times per second in avg.)
+> 
+> One problem here -- it may take quite some time for a set_need_resched()
+> to take effect.  This is especially a problem for RCU priority boosting,
+> but can also needlessly delay preemptible-RCU grace periods because
+> local_irq_restore() and friends don't check the TIF_NEED_RESCHED bit.
 
-To solve this problem, we already have a nice solution, that is,
-a hugetlb_instantiation_mutex. This blocks other threads to dive into
-a fault handler. This solve the problem clearly, but it introduce
-performance degradation, because it serialize all fault handling.
 
-Now, I try to remove a hugetlb_instantiation_mutex to get rid of
-performance degradation. For achieving it, at first, we should ensure that
-no one get a SIGBUS if there are enough hugepages.
+The final effect of deboosting(rt_mutex_unlock()) is also accomplished
+via set_need_resched()/set_tsk_need_resched().
+set_need_resched() is enough for RCU priority boosting issue here.
 
-For this purpose, if we fail to allocate a new hugepage when there is
-concurrent user, we return just 0, instead of VM_FAULT_SIGBUS. With this,
-these threads defer to get a SIGBUS signal until there is no
-concurrent user, and so, we can ensure that no one get a SIGBUS if there
-are enough hugepages.
+Since rcu_read_unlock_special() is deferred, it does take quite some time for
+QS report to take effect.
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index e29e28f..981c539 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -242,6 +242,7 @@ struct hstate {
- 	int next_nid_to_free;
- 	unsigned int order;
- 	unsigned long mask;
-+	unsigned long nr_dequeue_users;
- 	unsigned long max_huge_pages;
- 	unsigned long nr_huge_pages;
- 	unsigned long free_huge_pages;
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 8743e5c..0501fe5 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -561,6 +561,7 @@ retry_cpuset:
- 		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
- 			page = dequeue_huge_page_node(h, zone_to_nid(zone));
- 			if (page) {
-+				h->nr_dequeue_users++;
- 				if (!use_reserve)
- 					break;
- 
-@@ -577,6 +578,16 @@ retry_cpuset:
- 	return page;
- }
- 
-+static void commit_dequeued_huge_page(struct hstate *h, bool do_dequeue)
-+{
-+	if (!do_dequeue)
-+		return;
-+
-+	spin_lock(&hugetlb_lock);
-+	h->nr_dequeue_users--;
-+	spin_unlock(&hugetlb_lock);
-+}
-+
- static void update_and_free_page(struct hstate *h, struct page *page)
- {
- 	int i;
-@@ -1110,7 +1121,9 @@ static void vma_commit_reservation(struct hstate *h,
- }
- 
- static struct page *alloc_huge_page(struct vm_area_struct *vma,
--				    unsigned long addr, int use_reserve)
-+				    unsigned long addr, int use_reserve,
-+				    unsigned long *nr_dequeue_users,
-+				    bool *do_dequeue)
- {
- 	struct hugepage_subpool *spool = subpool_vma(vma);
- 	struct hstate *h = hstate_vma(vma);
-@@ -1138,8 +1151,11 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 		return ERR_PTR(-ENOSPC);
- 	}
- 	spin_lock(&hugetlb_lock);
-+	*do_dequeue = true;
- 	page = dequeue_huge_page_vma(h, vma, addr, use_reserve);
- 	if (!page) {
-+		*nr_dequeue_users = h->nr_dequeue_users;
-+		*do_dequeue = false;
- 		spin_unlock(&hugetlb_lock);
- 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
- 		if (!page) {
-@@ -1894,6 +1910,7 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->mask = ~((1ULL << (order + PAGE_SHIFT)) - 1);
- 	h->nr_huge_pages = 0;
- 	h->free_huge_pages = 0;
-+	h->nr_dequeue_users = 0;
- 	for (i = 0; i < MAX_NUMNODES; ++i)
- 		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
- 	INIT_LIST_HEAD(&h->hugepage_activelist);
-@@ -2500,6 +2517,8 @@ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
- 	int outside_reserve = 0;
- 	long chg;
- 	bool use_reserve = false;
-+	unsigned long nr_dequeue_users = 0;
-+	bool do_dequeue = false;
- 	int ret = 0;
- 	unsigned long mmun_start;	/* For mmu_notifiers */
- 	unsigned long mmun_end;		/* For mmu_notifiers */
-@@ -2551,11 +2570,17 @@ retry_avoidcopy:
- 		use_reserve = !chg;
- 	}
- 
--	new_page = alloc_huge_page(vma, address, use_reserve);
-+	new_page = alloc_huge_page(vma, address, use_reserve,
-+						&nr_dequeue_users, &do_dequeue);
- 
- 	if (IS_ERR(new_page)) {
- 		page_cache_release(old_page);
- 
-+		if (nr_dequeue_users) {
-+			ret = 0;
-+			goto out_lock;
-+		}
-+
- 		/*
- 		 * If a process owning a MAP_PRIVATE mapping fails to COW,
- 		 * it is due to references held by a child and an insufficient
-@@ -2580,6 +2605,9 @@ retry_avoidcopy:
- 			WARN_ON_ONCE(1);
- 		}
- 
-+		if (use_reserve)
-+			WARN_ON_ONCE(1);
-+
- 		ret = VM_FAULT_SIGBUS;
- 		goto out_lock;
- 	}
-@@ -2614,6 +2642,7 @@ retry_avoidcopy:
- 	page_cache_release(new_page);
- out_old_page:
- 	page_cache_release(old_page);
-+	commit_dequeued_huge_page(h, do_dequeue);
- out_lock:
- 	/* Caller expects lock to be held */
- 	spin_lock(&mm->page_table_lock);
-@@ -2666,6 +2695,8 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	pte_t new_pte;
- 	long chg;
- 	bool use_reserve;
-+	unsigned long nr_dequeue_users = 0;
-+	bool do_dequeue = false;
- 
- 	/*
- 	 * Currently, we are forced to kill the process in the event the
-@@ -2699,9 +2730,17 @@ retry:
- 		}
- 		use_reserve = !chg;
- 
--		page = alloc_huge_page(vma, address, use_reserve);
-+		page = alloc_huge_page(vma, address, use_reserve,
-+					&nr_dequeue_users, &do_dequeue);
- 		if (IS_ERR(page)) {
--			ret = VM_FAULT_SIGBUS;
-+			if (nr_dequeue_users)
-+				ret = 0;
-+			else {
-+				if (use_reserve)
-+					WARN_ON_ONCE(1);
-+
-+				ret = VM_FAULT_SIGBUS;
-+			}
- 			goto out;
- 		}
- 		clear_huge_page(page, address, pages_per_huge_page(h));
-@@ -2714,22 +2753,24 @@ retry:
- 			err = add_to_page_cache(page, mapping, idx, GFP_KERNEL);
- 			if (err) {
- 				put_page(page);
-+				commit_dequeued_huge_page(h, do_dequeue);
- 				if (err == -EEXIST)
- 					goto retry;
- 				goto out;
- 			}
- 			ClearPagePrivate(page);
-+			commit_dequeued_huge_page(h, do_dequeue);
- 
- 			spin_lock(&inode->i_lock);
- 			inode->i_blocks += blocks_per_huge_page(h);
- 			spin_unlock(&inode->i_lock);
- 		} else {
- 			lock_page(page);
-+			anon_rmap = 1;
- 			if (unlikely(anon_vma_prepare(vma))) {
- 				ret = VM_FAULT_OOM;
- 				goto backout_unlocked;
- 			}
--			anon_rmap = 1;
- 		}
- 	} else {
- 		/*
-@@ -2783,6 +2824,8 @@ retry:
- 	spin_unlock(&mm->page_table_lock);
- 	unlock_page(page);
- out:
-+	if (anon_rmap)
-+		commit_dequeued_huge_page(h, do_dequeue);
- 	return ret;
- 
- backout:
--- 
-1.7.9.5
+> 
+> OK, alternatives...
+> 
+> o	Keep the current rule saying that if the scheduler is going
+> 	to exit an RCU read-side critical section while holding
+> 	one of its spinlocks, preemption has to have been disabled
+
+Since rtmutex'lock->wait_lock is not irqs-disabled nor bh-disabled.
+
+This kind of spinlocks include scheduler locks, rtmutex'lock->wait_lock,
+all locks can be acquired in irq/SOFTIRQ.
+
+So this rule is not only applied for scheduler locks, it should also
+be applied for almost all spinlocks in the kernel.
+
+I was hard to accept that rcu read site is not deadlock-immunity.
+
+Thanks,
+Lai
+
+> 	throughout the full duration of that critical section.
+> 	Well, we can certainly do this, but it would be nice to get
+> 	rid of this rule.
+> 
+> o	Use per-CPU variables, possibly injecting delay.  This has ugly
+> 	disadvantages as noted above.
+> 
+> o	irq_work_queue() can wait a jiffy (or on some architectures,
+> 	quite a bit longer) before actually doing anything.
+> 
+> o	raise_softirq() is more immediate and is an easy change, but
+> 	adds a softirq vector -- which people are really trying to
+> 	get rid of.  Also, wakeup_softirqd() calls things that acquire
+> 	the scheduler locks, which is exactly what we were trying to
+> 	avoid doing.
+> 
+> o	invoke_rcu_core() can invoke raise_softirq() as above.
+> 
+> o	IPI to self.  From what I can see, not all architectures
+> 	support this.  Easy to fake if you have at least two CPUs,
+> 	but not so good from an OS jitter viewpoint...
+> 
+> o	Add a check to local_irq_disable() and friends.  I would guess
+> 	that this suggestion would not make architecture maintainers
+> 	happy.
+> 
+> Other thoughts?
+> 
+> 							Thanx, Paul
+> 
+>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> ---
+>>  include/linux/rcupdate.h |    2 +-
+>>  kernel/rcupdate.c        |    2 +-
+>>  kernel/rcutree_plugin.h  |   47 +++++++++++++++++++++++++++++++++++++++++----
+>>  3 files changed, 44 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+>> index 4b14bdc..00b4220 100644
+>> --- a/include/linux/rcupdate.h
+>> +++ b/include/linux/rcupdate.h
+>> @@ -180,7 +180,7 @@ extern void synchronize_sched(void);
+>>
+>>  extern void __rcu_read_lock(void);
+>>  extern void __rcu_read_unlock(void);
+>> -extern void rcu_read_unlock_special(struct task_struct *t);
+>> +extern void rcu_read_unlock_special(struct task_struct *t, bool unlock);
+>>  void synchronize_rcu(void);
+>>
+>>  /*
+>> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+>> index cce6ba8..33b89a3 100644
+>> --- a/kernel/rcupdate.c
+>> +++ b/kernel/rcupdate.c
+>> @@ -90,7 +90,7 @@ void __rcu_read_unlock(void)
+>>  #endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+>>  		barrier();  /* assign before ->rcu_read_unlock_special load */
+>>  		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+>> -			rcu_read_unlock_special(t);
+>> +			rcu_read_unlock_special(t, true);
+>>  		barrier();  /* ->rcu_read_unlock_special load before assign */
+>>  		t->rcu_read_lock_nesting = 0;
+>>  	}
+>> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+>> index fc8b36f..997b424 100644
+>> --- a/kernel/rcutree_plugin.h
+>> +++ b/kernel/rcutree_plugin.h
+>> @@ -242,15 +242,16 @@ static void rcu_preempt_note_context_switch(int cpu)
+>>  				       ? rnp->gpnum
+>>  				       : rnp->gpnum + 1);
+>>  		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+>> -	} else if (t->rcu_read_lock_nesting < 0 &&
+>> -		   !WARN_ON_ONCE(t->rcu_read_lock_nesting != INT_MIN) &&
+>> -		   t->rcu_read_unlock_special) {
+>> +	} else if (t->rcu_read_lock_nesting == 0 ||
+>> +		   (t->rcu_read_lock_nesting < 0 &&
+>> +		   !WARN_ON_ONCE(t->rcu_read_lock_nesting != INT_MIN))) {
+>>
+>>  		/*
+>>  		 * Complete exit from RCU read-side critical section on
+>>  		 * behalf of preempted instance of __rcu_read_unlock().
+>>  		 */
+>> -		rcu_read_unlock_special(t);
+>> +		if (t->rcu_read_unlock_special)
+>> +			rcu_read_unlock_special(t, false);
+>>  	}
+>>
+>>  	/*
+>> @@ -333,7 +334,7 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
+>>   * notify RCU core processing or task having blocked during the RCU
+>>   * read-side critical section.
+>>   */
+>> -void rcu_read_unlock_special(struct task_struct *t)
+>> +void rcu_read_unlock_special(struct task_struct *t, bool unlock)
+>>  {
+>>  	int empty;
+>>  	int empty_exp;
+>> @@ -364,6 +365,42 @@ void rcu_read_unlock_special(struct task_struct *t)
+>>
+>>  	/* Clean up if blocked during RCU read-side critical section. */
+>>  	if (special & RCU_READ_UNLOCK_BLOCKED) {
+>> +		/*
+>> +		 * If rcu read lock overlaps with scheduler lock,
+>> +		 * rcu_read_unlock_special() may lead to deadlock:
+>> +		 *
+>> +		 * rcu_read_lock();
+>> +		 * preempt_schedule[_irq]() (when preemption)
+>> +		 * scheduler lock; (or some other locks can be (chained) nested
+>> +		 *                  in rcu_read_unlock_special()/rnp->lock)
+>> +		 * access and check rcu data
+>> +		 * rcu_read_unlock();
+>> +		 *   rcu_read_unlock_special();
+>> +		 *     wake_up();                 DEAD LOCK
+>> +		 *
+>> +		 * To avoid all these kinds of deadlock, we should quit
+>> +		 * rcu_read_unlock_special() here and defer it to
+>> +		 * rcu_preempt_note_context_switch() or next outmost
+>> +		 * rcu_read_unlock() if we consider this case may happen.
+>> +		 *
+>> +		 * Although we can't know whether current _special()
+>> +		 * is nested in scheduler lock or not. But we know that
+>> +		 * irqs are always disabled in this case. so we just quit
+>> +		 * and defer it to rcu_preempt_note_context_switch()
+>> +		 * when irqs are disabled.
+>> +		 *
+>> +		 * It means we always defer _special() when it is
+>> +		 * nested in irqs disabled context, but
+>> +		 *	(special & RCU_READ_UNLOCK_BLOCKED) &&
+>> +		 *	irqs_disabled_flags(flags)
+>> +		 * is still unlikely to be true.
+>> +		 */
+>> +		if (unlikely(unlock && irqs_disabled_flags(flags))) {
+>> +			set_need_resched();
+>> +			local_irq_restore(flags);
+>> +			return;
+>> +		}
+>> +
+>>  		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BLOCKED;
+>>
+>>  		/*
+>> -- 
+>> 1.7.4.4
+>>
+> 
+> 
 
