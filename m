@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967281Ab3HIBvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:51:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55442 "EHLO
+	id S967191Ab3HIBmU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55246 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967192Ab3HIBmV (ORCPT
+	with ESMTP id S967052Ab3HIBln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:21 -0400
+	Thu, 8 Aug 2013 21:41:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [ 12/25] fanotify: info leak in copy_event_to_user()
-Date: Thu,  8 Aug 2013 18:41:48 -0700
-Message-Id: <20130809013651.845900045@linuxfoundation.org>
+        Michal Kazior <michal.kazior@tieto.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 04/22] nl80211: fix mgmt tx status and testmode reporting for netns
+Date: Thu,  8 Aug 2013 18:41:20 -0700
+Message-Id: <20130809013950.207346642@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
-References: <20130809013649.057678051@linuxfoundation.org>
+In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
+References: <20130809013949.226228694@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Michal Kazior <michal.kazior@tieto.com>
 
-commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f upstream.
+commit a0ec570f4f69c4cb700d743a915096c2c8f56a99 upstream.
 
-The ->reserved field isn't cleared so we leak one byte of stack
-information to userspace.
+These two events were sent to the default network
+namespace.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+This caused AP mode in a non-default netns to not
+work correctly. Mgmt tx status was multicasted to
+a different (default) netns instead of the one the
+AP was in.
+
+Signed-off-by: Michal Kazior <michal.kazior@tieto.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/fanotify/fanotify_user.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/wireless/nl80211.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -120,6 +120,7 @@ static int fill_event_metadata(struct fs
- 	metadata->event_len = FAN_EVENT_METADATA_LEN;
- 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
- 	metadata->vers = FANOTIFY_METADATA_VERSION;
-+	metadata->reserved = 0;
- 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
- 	metadata->pid = pid_vnr(event->tgid);
- 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -4454,12 +4454,14 @@ EXPORT_SYMBOL(cfg80211_testmode_alloc_ev
+ 
+ void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
+ {
++	struct cfg80211_registered_device *rdev = ((void **)skb->cb)[0];
+ 	void *hdr = ((void **)skb->cb)[1];
+ 	struct nlattr *data = ((void **)skb->cb)[2];
+ 
+ 	nla_nest_end(skb, data);
+ 	genlmsg_end(skb, hdr);
+-	genlmsg_multicast(skb, 0, nl80211_testmode_mcgrp.id, gfp);
++	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
++				nl80211_testmode_mcgrp.id, gfp);
+ }
+ EXPORT_SYMBOL(cfg80211_testmode_event);
+ #endif
+@@ -6745,7 +6747,8 @@ void nl80211_send_mgmt_tx_status(struct
+ 		return;
+ 	}
+ 
+-	genlmsg_multicast(msg, 0, nl80211_mlme_mcgrp.id, gfp);
++	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
++				nl80211_mlme_mcgrp.id, gfp);
+ 	return;
+ 
+  nla_put_failure:
 
 
