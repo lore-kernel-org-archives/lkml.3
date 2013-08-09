@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030303Ab3HICDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:03:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55915 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030234Ab3HIB7g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1030232Ab3HIB7g (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 8 Aug 2013 21:59:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55869 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967747Ab3HIB73 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 21:59:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 090/102] ipv6: take rtnl_lock and mark mrt6 table as freed on namespace cleanup
-Date: Thu,  8 Aug 2013 18:58:06 -0700
-Message-Id: <20130809015031.515966739@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 081/102] s390: add support for IBM zBC12 machine
+Date: Thu,  8 Aug 2013 18:57:57 -0700
+Message-Id: <20130809015029.323154441@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -28,94 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-[ Upstream commit 905a6f96a1b18e490a75f810d733ced93c39b0e5 ]
+commit 594712276e737961d30e11eae80d403b2b3815df upstream.
 
-Otherwise we end up dereferencing the already freed net->ipv6.mrt pointer
-which leads to a panic (from Srivatsa S. Bhat):
+Just add the new model number where appropiate.
 
-BUG: unable to handle kernel paging request at ffff882018552020
-IP: [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
-PGD 290a067 PUD 207ffe0067 PMD 207ff1d067 PTE 8000002018552060
-Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-Modules linked in: ebtable_nat ebtables nfs fscache nf_conntrack_ipv4 nf_defrag_ipv4 ipt_REJECT xt_CHECKSUM iptable_mangle iptable_filter ip_tables nfsd lockd nfs_acl exportfs auth_rpcgss autofs4 sunrpc 8021q garp bridge stp llc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
-+ip6_tables ipv6 vfat fat vhost_net macvtap macvlan vhost tun kvm_intel kvm uinput iTCO_wdt iTCO_vendor_support cdc_ether usbnet mii microcode i2c_i801 i2c_core lpc_ich mfd_core shpchp ioatdma dca mlx4_core be2net wmi acpi_cpufreq mperf ext4 jbd2 mbcache dm_mirror dm_region_hash dm_log dm_mod
-CPU: 0 PID: 7 Comm: kworker/u33:0 Not tainted 3.11.0-rc1-ea45e-a #4
-Hardware name: IBM  -[8737R2A]-/00Y2738, BIOS -[B2E120RUS-1.20]- 11/30/2012
-Workqueue: netns cleanup_net
-task: ffff8810393641c0 ti: ffff881039366000 task.ti: ffff881039366000
-RIP: 0010:[<ffffffffa0366b02>]  [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
-RSP: 0018:ffff881039367bd8  EFLAGS: 00010286
-RAX: ffff881039367fd8 RBX: ffff882018552000 RCX: dead000000200200
-RDX: 0000000000000000 RSI: ffff881039367b68 RDI: ffff881039367b68
-RBP: ffff881039367bf8 R08: ffff881039367b68 R09: 2222222222222222
-R10: 2222222222222222 R11: 2222222222222222 R12: ffff882015a7a040
-R13: ffff882014eb89c0 R14: ffff8820289e2800 R15: 0000000000000000
-FS:  0000000000000000(0000) GS:ffff88103fc00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: ffff882018552020 CR3: 0000000001c0b000 CR4: 00000000000407f0
-Stack:
- ffff881039367c18 ffff882014eb89c0 ffff882015e28c00 0000000000000000
- ffff881039367c18 ffffffffa034d9d1 ffff8820289e2800 ffff882014eb89c0
- ffff881039367c58 ffffffff815bdecb ffffffff815bddf2 ffff882014eb89c0
-Call Trace:
- [<ffffffffa034d9d1>] rawv6_close+0x21/0x40 [ipv6]
- [<ffffffff815bdecb>] inet_release+0xfb/0x220
- [<ffffffff815bddf2>] ? inet_release+0x22/0x220
- [<ffffffffa032686f>] inet6_release+0x3f/0x50 [ipv6]
- [<ffffffff8151c1d9>] sock_release+0x29/0xa0
- [<ffffffff81525520>] sk_release_kernel+0x30/0x70
- [<ffffffffa034f14b>] icmpv6_sk_exit+0x3b/0x80 [ipv6]
- [<ffffffff8152fff9>] ops_exit_list+0x39/0x60
- [<ffffffff815306fb>] cleanup_net+0xfb/0x1a0
- [<ffffffff81075e3a>] process_one_work+0x1da/0x610
- [<ffffffff81075dc9>] ? process_one_work+0x169/0x610
- [<ffffffff81076390>] worker_thread+0x120/0x3a0
- [<ffffffff81076270>] ? process_one_work+0x610/0x610
- [<ffffffff8107da2e>] kthread+0xee/0x100
- [<ffffffff8107d940>] ? __init_kthread_worker+0x70/0x70
- [<ffffffff8162a99c>] ret_from_fork+0x7c/0xb0
- [<ffffffff8107d940>] ? __init_kthread_worker+0x70/0x70
-Code: 20 48 89 5d e8 4c 89 65 f0 4c 89 6d f8 66 66 66 66 90 4c 8b 67 30 49 89 fd e8 db 3c 1e e1 49 8b 9c 24 90 08 00 00 48 85 db 74 06 <4c> 39 6b 20 74 20 bb f3 ff ff ff e8 8e 3c 1e e1 89 d8 4c 8b 65
-RIP  [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
- RSP <ffff881039367bd8>
-CR2: ffff882018552020
-
-Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6mr.c |    5 +++++
- 1 file changed, 5 insertions(+)
 
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -259,10 +259,12 @@ static void __net_exit ip6mr_rules_exit(
- {
- 	struct mr6_table *mrt, *next;
+---
+ arch/s390/Kconfig         |    7 ++++---
+ arch/s390/kernel/setup.c  |    1 +
+ arch/s390/mm/init.c       |    1 +
+ arch/s390/oprofile/init.c |    2 +-
+ 4 files changed, 7 insertions(+), 4 deletions(-)
+
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -227,11 +227,12 @@ config MARCH_Z196
+ 	  not work on older machines.
  
-+	rtnl_lock();
- 	list_for_each_entry_safe(mrt, next, &net->ipv6.mr6_tables, list) {
- 		list_del(&mrt->list);
- 		ip6mr_free_table(mrt);
+ config MARCH_ZEC12
+-	bool "IBM zEC12"
++	bool "IBM zBC12 and zEC12"
+ 	select HAVE_MARCH_ZEC12_FEATURES if 64BIT
+ 	help
+-	  Select this to enable optimizations for IBM zEC12 (2827 series). The
+-	  kernel will be slightly faster but will not work on older machines.
++	  Select this to enable optimizations for IBM zBC12 and zEC12 (2828 and
++	  2827 series). The kernel will be slightly faster but will not work on
++	  older machines.
+ 
+ endchoice
+ 
+--- a/arch/s390/kernel/setup.c
++++ b/arch/s390/kernel/setup.c
+@@ -998,6 +998,7 @@ static void __init setup_hwcaps(void)
+ 		strcpy(elf_platform, "z196");
+ 		break;
+ 	case 0x2827:
++	case 0x2828:
+ 		strcpy(elf_platform, "zEC12");
+ 		break;
  	}
-+	rtnl_unlock();
- 	fib_rules_unregister(net->ipv6.mr6_rules_ops);
- }
- #else
-@@ -289,7 +291,10 @@ static int __net_init ip6mr_rules_init(s
- 
- static void __net_exit ip6mr_rules_exit(struct net *net)
- {
-+	rtnl_lock();
- 	ip6mr_free_table(net->ipv6.mrt6);
-+	net->ipv6.mrt6 = NULL;
-+	rtnl_unlock();
- }
- #endif
- 
+--- a/arch/s390/mm/init.c
++++ b/arch/s390/mm/init.c
+@@ -69,6 +69,7 @@ static void __init setup_zero_pages(void
+ 		order = 2;
+ 		break;
+ 	case 0x2827:	/* zEC12 */
++	case 0x2828:	/* zEC12 */
+ 	default:
+ 		order = 5;
+ 		break;
+--- a/arch/s390/oprofile/init.c
++++ b/arch/s390/oprofile/init.c
+@@ -440,7 +440,7 @@ static int oprofile_hwsampler_init(struc
+ 		switch (id.machine) {
+ 		case 0x2097: case 0x2098: ops->cpu_type = "s390/z10"; break;
+ 		case 0x2817: case 0x2818: ops->cpu_type = "s390/z196"; break;
+-		case 0x2827:              ops->cpu_type = "s390/zEC12"; break;
++		case 0x2827: case 0x2828: ops->cpu_type = "s390/zEC12"; break;
+ 		default: return -ENODEV;
+ 		}
+ 	}
 
 
