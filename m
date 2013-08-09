@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967914Ab3HIPdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:33:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56886 "EHLO mx1.redhat.com"
+	id S967931Ab3HIPdP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:33:15 -0400
+Received: from mout.gmx.net ([212.227.15.15]:53784 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965247Ab3HIPcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:32:50 -0400
-Date: Fri, 9 Aug 2013 11:32:26 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kexec: Disable at runtime if the kernel enforces module
- signing
-Message-ID: <20130809153225.GH12688@redhat.com>
-References: <1376033797-24970-1-git-send-email-matthew.garrett@nebula.com>
- <20130809110200.GA9631@redhat.com>
- <1376060830.2021.12.camel@x230>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376060830.2021.12.camel@x230>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965059Ab3HIPdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 11:33:11 -0400
+Date: Fri, 9 Aug 2013 17:33:06 +0200
+From: Michael Brunner <mibru@gmx.de>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Kevin Strasser <strassek@engr.orst.edu>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Chris Healy <chealy@imsco-us.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org
+Subject: [PATCH] gpio: Fix platform driver name in Kontron PLD GPIO driver
+Message-ID: <20130809173306.1ba24b59@mail.gmx.de>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:DPyqE9hb8/eEQnqTjH7KZgN3u8SgsyIyCXGQEWCrwJ6TDdOYO1K
+ BPML4mar6K2kpZpdX/GriGLHia4xMvRc3tATSIVnxtEcTbfe+AQI4357UdUMR+i5QLd3ETe
+ /dMfmFNeeBWCICEkADsCoP9YhjIPWr3ziDG7bLHRjarh7TcZeK+KZMfZblTgNLYOsMwluZj
+ h+mVUq6Zr8qhkdfBB3iXw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 03:07:13PM +0000, Matthew Garrett wrote:
-> On Fri, 2013-08-09 at 07:02 -0400, Vivek Goyal wrote:
-> > On Fri, Aug 09, 2013 at 03:36:37AM -0400, Matthew Garrett wrote:
-> > > kexec permits the loading and execution of arbitrary code in ring 0, which
-> > > is something that module signing enforcement is meant to prevent. It makes
-> > > sense to disable kexec in this situation.
-> > > 
-> > 
-> > But in the process we wipe out running kernel's context and boot into a new
-> > kernel. So how different it is than root booting a new kernel through BIOS
-> > which does not enforce module signing.
-> 
-> What wipes the current kernel's context? KEXEC_JUMP is explicitly
-> designed to allow you to hop back and forth, but even without it you
-> should be able to reconstruct the original context. And there's no need
-> to boot a new kernel, either. All the attacker needs is the physical
-> address of the sig_enforce boolean, and then they launch a simple kexec
-> payload that simply flips that back and returns to the original kernel -
-> it's not like kexec limits you to booting Linux.
-> 
-> > Also it would be nice if we introduce new features, then we make other
-> > features work with those new features instead of disabling existing
-> > features and leave it to other people to make them work.
-> 
-> Sure, it'd be nice if security features got introduced with
-> consideration to other kernel features that allow them to be
-> circumvented, but this approach seems better than making them
-> incompatible at the Kconfig level.
+This patch changes the driver name to be consistent with the name that
+is registered as cell name in the MFD driver. Otherwise the driver won't
+load.
 
-So how would one go about making kexec work when module signature
-enforcement is on?
+Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
+---
+ drivers/gpio/gpio-kempld.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I guess same solution which is required to make it work with secureboot.
-Sign /sbin/kexec and let /sbin/kexec very signature of kernel. IOW, any
-code which runs at priviliged level should be signature verified with
-keys in system_keyring.
-
-Thanks
-Vivek
+diff --git a/drivers/gpio/gpio-kempld.c b/drivers/gpio/gpio-kempld.c
+index 1bdc3a2..d3ed563 100644
+--- a/drivers/gpio/gpio-kempld.c
++++ b/drivers/gpio/gpio-kempld.c
+@@ -210,7 +210,7 @@ static int kempld_gpio_remove(struct
+platform_device *pdev) 
+ static struct platform_driver kempld_gpio_driver = {
+        .driver = {
+-               .name = "gpio-kempld",
++               .name = "kempld-gpio",
+                .owner = THIS_MODULE,
+        },
+        .probe          = kempld_gpio_probe,
