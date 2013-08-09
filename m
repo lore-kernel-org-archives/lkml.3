@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967577Ab3HILmx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 07:42:53 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:27967 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934248Ab3HILmv (ORCPT
+	id S967630Ab3HILoc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 07:44:32 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34520 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934248Ab3HILob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 07:42:51 -0400
-Date: Fri, 9 Aug 2013 13:42:48 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Steven Rostedt <rostedt@goodmis.org>, Michal Marek <mmarek@suse.cz>,
-        Kevin Hilman <khilman@linaro.org>, sedat.dilek@gmail.com,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux kbuild ML <linux-kbuild@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the ext4 tree
-Message-ID: <20130809114248.GA5691@merkur.ravnborg.org>
-References: <20130729110816.12958c3a26400f444a9a5012@canb.auug.org.au> <CA+icZUUt4domktYZZn0Qp3BZoSFqmKic4qSnVP4cuTKwUww_=A@mail.gmail.com> <20130807153840.4f2997b603397c07aca98b2d@canb.auug.org.au> <87zjsted0c.fsf@linaro.org> <20130808102228.d2034d3a4c986d2970926ab9@canb.auug.org.au> <20130808103614.a039da2f236154b52329b28b@canb.auug.org.au> <20130808191650.GB3282@free.fr> <20130808215449.GD3282@free.fr>
+	Fri, 9 Aug 2013 07:44:31 -0400
+Date: Fri, 9 Aug 2013 12:44:26 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Ionut Nicu <ioan.nicu.ext@nsn.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130809114426.GZ6427@sirena.org.uk>
+References: <5204BFC7.4090106@nsn.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="z8fvYVVi1MVTXPE1"
 Content-Disposition: inline
-In-Reply-To: <20130808215449.GD3282@free.fr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <5204BFC7.4090106@nsn.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] regmap: flat: use the cache_present bitmap
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 11:54:49PM +0200, Yann E. MORIN wrote:
-> Stephen, All,
-> 
-> On 2013-08-08 21:16 +0200, Yann E. MORIN spake thusly:
-> > On 2013-08-08 10:36 +1000, Stephen Rothwell spake thusly:
-> > > On Thu, 8 Aug 2013 10:22:28 +1000 Stephen Rothwell <sfr@canb.auug.org.au>
-> > > wrote:
-> > > >
-> > > > More quick testing with an empty file: v3.9 is OK, v3.10 gives
-> > > > CONFIG_MODULES unset.
-> > 
-> > Sorry, I don't understand the above. Can you elaborate on what you did,
-> > what you got, what expected, so I can try to reproduce and fix this,
-> > please?
-> 
-> Ok, I've had a look in the linux-next archives, and I think I got it.
-> Is the following right?
-> 
->     git clean -d; git clean -dX     # To be sure tree is clean
->     touch empty
->     make KCONFIG_ALLCONFIG=empty allmodconfig
->     grep MODULES .config
->     $ CONFIG_MODULES is not set
-> 
-> If so, I think I found the reason: the modules symbol is _always_ set to
-> being valid as soon as KCONFIG_ALLCONFIG is read, even if it was not
-> present in that file.
-> 
-> Since it is set to be valid, the following change means it is not
-> affected another value later on.
-> 
-> So, I wonder what the best option is:
->   1- revert the following, and find another solution,
->   2- de-specialise the modules symbol,
->   3- or further specialise the modules symbol.
 
-If we drop the special handling of "MODULES" and introduced
-the following in we may fix it - hopefully:
+--z8fvYVVi1MVTXPE1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-config MODULES
-	option modules
+On Fri, Aug 09, 2013 at 12:09:11PM +0200, Ionut Nicu wrote:
+> As opposed to the other regmap cache implementations,
+> regcache_flat didn't use the cache_present bitmap for
+> figuring out whether a register was cached or not, nor
+> did it mark a register as present in the cache when
+> regcache_flat_write() was called.
 
-The option handling is already in place. It is even documented :-)
+> This caused incorrect behaviour, such as returning
+> value 0 for non-volatile registers without first reading
+> their value from the device and storing it in the cache.
 
-At least we could then drop the sym_lookup here (zconf.y):
-        if (!modules_sym->prop) {
-                struct property *prop;
+The goal with the flat cache is to do as little work as possible for
+things like memory mapped devices where the cache operations are
+actually noticable in comparison with the I/O costs.  I would therefore
+exapect that anything using the flat cache would want to ensure that the
+cache is fully populated at init time, reading back from the device if
+nothing else (by setting num_reg_defaults_raw but not providing values),
+rather than do additional operations in the data path.
 
-                prop = prop_alloc(P_DEFAULT, modules_sym);
-                prop->expr = expr_alloc_symbol(sym_lookup("MODULES", 0));
-        }
-Without the sym_lookup I think the symbol will not be defined and tus not marked valid.
+--z8fvYVVi1MVTXPE1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Soory - no patch as I am busy with day-time job stuff.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-	Sam
+iQIcBAEBAgAGBQJSBNYXAAoJELSic+t+oim9LioQAJVAGE13aXWkdSKq7DGTV+F1
+b5c61ISk7Ysofp6D/dA7BKJ2CnNwDuEvTJiGuRvjr1PJfoseQuEzzKJwleG29bxq
+Q17Jw1LMFf+Ep7Z1sGvcsnGt5k+aw75wt5NTFmCv9zIh/Sy9gJhOpqXLaWAiWJs2
+3BHWczwlOUfPP9RhkqoSqQnz2fFCC6veipKJrYirdxTDX/yroTNq2EifGY4zfdML
+mqHrxNYo3hCocYRb/nBVidIFcx6AS4FIXGCujUiHY3ODdQLQEvByozk+xRU60bKt
+bQ6+nsFZWyTbY6Z5dPgornMN7SkGBLM3TFYKpmoEVZr5r9QMLyZzrzYKXOqHeq0q
+XAaZPLVBIabTnbIWdFxxW7NOnrF0KhQi8ezirYjxX8/cDiP8hxWLhbviiwHX+Rdp
+zDL9w/qTuLri9Jbe9b2e7nAPfzEXm9mi21yexO15E8TBYwXbFtosw9L6/xhxazhC
+y1NNxgq/jHNBfvAqT9i0QR8A592E/CD8tlRk3Sih+yk2hadIF27qEaXuSPDZbOIQ
+tD/EANoiELlQfVvShKM+N1LEkpwJcGtZTU9NMYlsm4m1dkDCXu76XYJF68idzAxH
+Wl4f4NVAiQqwi+t5D/Qz7IjaFcDqvMsqZbfiP7O4bRK9jLJh8ghFPNZbonzi/T3T
+vNXvsRfuHBefjnxKxgGn
+=n+Dx
+-----END PGP SIGNATURE-----
+
+--z8fvYVVi1MVTXPE1--
