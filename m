@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030767Ab3HITBp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:01:45 -0400
-Received: from fieldses.org ([174.143.236.118]:57399 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030743Ab3HITBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:01:44 -0400
-Date: Fri, 9 Aug 2013 15:01:40 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: nfsd fixes for 3.11
-Message-ID: <20130809190140.GD10500@fieldses.org>
-MIME-Version: 1.0
+	id S1030759Ab3HITJk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:09:40 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:31399 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030717Ab3HITJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 15:09:39 -0400
+Date: Fri, 9 Aug 2013 14:09:34 -0500
+From: scameron@beardog.cce.hp.com
+To: linux-kernel@vger.kernel.org
+Cc: jens.axboe@kernel.dk, tj@kernel.org, scameron@beardog.cce.hp.com
+Subject: Question about REQ_FLUSH and bios with data
+Message-ID: <20130809190934.GL9905@beardog.cce.hp.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some fixes for a 4.1 feature that in retrospect probably should have
-waited for 3.12.... But it appears to be working now.  Please pull:
 
-  git://linux-nfs.org/~bfields/linux.git for-3.11
+So, I'm working on a block driver using the make_request_fn
+interface, and have to handle a bio that comes in with
+(bi_rw & REQ_FLUSH) set AND data to transfer. 
 
---b.
+According to Documentation/block/writeback_cache_control.txt:
 
-----------------------------------------------------------------
-J. Bruce Fields (1):
-      nfsd4: Fix MACH_CRED NULL dereference
+	The REQ_FLUSH flag can be OR ed into the r/w flags of a
+	bio submitted from the filesystem and will make sure the
+	volatile cache of the storage device has been flushed
+	before the actual I/O operation is started. 
 
-Weston Andros Adamson (1):
-      nfsd: Fix SP4_MACH_CRED negotiation in EXCHANGE_ID
+So I've written code that handles that case, along with the
+various error cases I might encounter, I think, which leads
+to my question:
 
- fs/nfsd/nfs4proc.c  |    2 +-
- fs/nfsd/nfs4state.c |    2 ++
- fs/nfsd/nfs4xdr.c   |    5 ++---
- 3 files changed, 5 insertions(+), 4 deletions(-)
+How do I get such a bio with a data transfer AND the REQ_FLUSH bit
+set to come into the driver?   Just wondering how to test this case.
+
+Thanks,
+
+(I cc'ed Tejun Heo just because his name is in block/blk-flush.c)
+
+-- steve
+
