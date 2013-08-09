@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967536Ab3HICSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:18:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
+	id S967786Ab3HICSV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:18:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55656 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967479Ab3HIB6r (ORCPT
+	with ESMTP id S967492Ab3HIB6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:47 -0400
+	Thu, 8 Aug 2013 21:58:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 032/102] iwlwifi: mvm: refuse connection to APs with BI < 16
-Date: Thu,  8 Aug 2013 18:57:08 -0700
-Message-Id: <20130809015017.372088046@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 029/102] USB: mos7840: fix pointer casts
+Date: Thu,  8 Aug 2013 18:57:05 -0700
+Message-Id: <20130809015016.684644718@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,55 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 48bc13072109ea58465542aa1ee31b4e1065468a upstream.
+commit 683a0e4d7971c3186dc4d429027debfe309129aa upstream.
 
-Due to a firmware bug, it crashes when the beacon interval
-is smaller than 16. Avoid this by refusing the station state
-change creating the AP station, causing mac80211 to abandon
-the attempt to connect to the AP, and eventually wpa_s to
-blacklist it.
+Silence compiler warnings on 64-bit systems introduced by commit
+05cf0dec ("USB: mos7840: fix race in led handling") which uses the
+usb-serial data pointer to temporarily store the device type during
+probe but failed to add the required casts.
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[gregkh - change uintptr_t to unsigned long]
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/mvm/mac80211.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/usb/serial/mos7840.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -987,6 +987,21 @@ static int iwl_mvm_mac_sta_state(struct
- 	mutex_lock(&mvm->mutex);
- 	if (old_state == IEEE80211_STA_NOTEXIST &&
- 	    new_state == IEEE80211_STA_NONE) {
-+		/*
-+		 * Firmware bug - it'll crash if the beacon interval is less
-+		 * than 16. We can't avoid connecting at all, so refuse the
-+		 * station state change, this will cause mac80211 to abandon
-+		 * attempts to connect to this AP, and eventually wpa_s will
-+		 * blacklist the AP...
-+		 */
-+		if (vif->type == NL80211_IFTYPE_STATION &&
-+		    vif->bss_conf.beacon_int < 16) {
-+			IWL_ERR(mvm,
-+				"AP %pM beacon interval is %d, refusing due to firmware bug!\n",
-+				sta->addr, vif->bss_conf.beacon_int);
-+			ret = -EINVAL;
-+			goto out_unlock;
-+		}
- 		ret = iwl_mvm_add_sta(mvm, vif, sta);
- 	} else if (old_state == IEEE80211_STA_NONE &&
- 		   new_state == IEEE80211_STA_AUTH) {
-@@ -1015,6 +1030,7 @@ static int iwl_mvm_mac_sta_state(struct
- 	} else {
- 		ret = -EIO;
- 	}
-+ out_unlock:
- 	mutex_unlock(&mvm->mutex);
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -2236,14 +2236,14 @@ static int mos7840_probe(struct usb_seri
  
- 	return ret;
+ 	kfree(buf);
+ out:
+-	usb_set_serial_data(serial, (void *)device_type);
++	usb_set_serial_data(serial, (void *)(unsigned long)device_type);
+ 
+ 	return 0;
+ }
+ 
+ static int mos7840_calc_num_ports(struct usb_serial *serial)
+ {
+-	int device_type = (int)usb_get_serial_data(serial);
++	int device_type = (unsigned long)usb_get_serial_data(serial);
+ 	int mos7840_num_ports;
+ 
+ 	mos7840_num_ports = (device_type >> 4) & 0x000F;
+@@ -2254,7 +2254,7 @@ static int mos7840_calc_num_ports(struct
+ static int mos7840_port_probe(struct usb_serial_port *port)
+ {
+ 	struct usb_serial *serial = port->serial;
+-	int device_type = (int)usb_get_serial_data(serial);
++	int device_type = (unsigned long)usb_get_serial_data(serial);
+ 	struct moschip_port *mos7840_port;
+ 	int status;
+ 	int pnum;
 
 
