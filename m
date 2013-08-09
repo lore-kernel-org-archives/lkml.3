@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934378Ab3HIPQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:16:11 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:36670 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933972Ab3HIPQJ (ORCPT
+	id S964931Ab3HIPRA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:17:00 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:11547 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934081Ab3HIPQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:16:09 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <benoit.cousson@gmail.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Koen Kooi <koen@circuitco.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] omap: Properly handle resources for omap_devices
-References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com>
-	<1375775624-12250-4-git-send-email-panto@antoniou-consulting.com>
-	<87a9kt2vd8.fsf@linaro.org>
-	<A4346403-362E-4E74-9C5E-07509CBC0BF4@antoniou-consulting.com>
-Date: Fri, 09 Aug 2013 08:16:06 -0700
-In-Reply-To: <A4346403-362E-4E74-9C5E-07509CBC0BF4@antoniou-consulting.com>
-	(Pantelis Antoniou's message of "Thu, 8 Aug 2013 12:23:42 +0300")
-Message-ID: <87mwoqao95.fsf@kernel.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 9 Aug 2013 11:16:59 -0400
+X-IronPort-AV: E=Sophos;i="4.89,846,1367964000"; 
+   d="scan'208";a="28941801"
+Date: Fri, 9 Aug 2013 17:16:41 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Richard Genoud <richard.genoud@gmail.com>
+cc: trivial@kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trivial: convert comma to semicolon
+In-Reply-To: <CACQ1gAg__bY9pCnGnkf2QGHkBvssXXdS3bMJiuOJfh9e082jhA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1308091715310.2295@hadrien>
+References: <1375990372-19033-1-git-send-email-Julia.Lawall@lip6.fr> <1375990372-19033-2-git-send-email-Julia.Lawall@lip6.fr> <CACQ1gAg__bY9pCnGnkf2QGHkBvssXXdS3bMJiuOJfh9e082jhA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pantelis Antoniou <panto@antoniou-consulting.com> writes:
 
-> Hi Kevin,
->
-> On Aug 7, 2013, at 9:45 PM, Kevin Hilman wrote:
->
->> [fixing address for Benoit]
->> 
->> Pantelis Antoniou <panto@antoniou-consulting.com> writes:
->> 
->>> omap_device relies on the platform notifier callbacks managing resources
->>> behind the scenes. The resources were not properly linked causing crashes
->>> when removing the device.
->>> 
->>> Rework the resource modification code so that linking is performed properly,
->>> and make sure that no resources that have no parent (which can happen for DMA
->>> & IRQ resources) are ever left for cleanup by the core resource layer.
->>> 
->>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->> 
->> This one failed my "took more than 15 minutes to understand" test.  The
->> changelog is rather vague (especially about what "properly" means), and
->> the combination of moving code and changing it makes the patch rather
->> clunky to read, so I remain a bit confused about what the actual problem
->> is.  Please elaborate.
->> 
->> Also, could you share a crash dump as well as details about how to
->> reproduce this problem?
->> 
->> Thanks,
->> 
->> Kevin
->
-> It's the full patchset that fixes the problem:
->
-> Let me illustrate:
->
-> The kernel I use is located at:
->
-> git@github.com:pantoniou/linux-beagle-track-mainline.git
-> branch: merge-20130806 (there are topic branches for other stuff too)
 
-Sorry, I don't have the time to go through a bunch of out of tree
-branches to figure this out.  Can you create a simpler test case to
-reproduce this?  e.g. Does this happen when building the serial driver
-as a module and then removing it?  If not, why not?
+On Fri, 9 Aug 2013, Richard Genoud wrote:
+> > diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
+> > index 847cab6..8149b7b 100644
+> > --- a/drivers/clocksource/time-armada-370-xp.c
+> > +++ b/drivers/clocksource/time-armada-370-xp.c
+> > @@ -175,10 +175,10 @@ static int armada_370_xp_timer_setup(struct clock_event_device *evt)
+> >         evt->name               = "armada_370_xp_per_cpu_tick",
+> There's one missed just here !                                  ^
+>
+> >         evt->features           = CLOCK_EVT_FEAT_ONESHOT |
+> >                                   CLOCK_EVT_FEAT_PERIODIC;
+> > -       evt->shift              = 32,
+> > -       evt->rating             = 300,
+> > -       evt->set_next_event     = armada_370_xp_clkevt_next_event,
+> > -       evt->set_mode           = armada_370_xp_clkevt_mode,
+> > +       evt->shift              = 32;
+> > +       evt->rating             = 300;
+> > +       evt->set_next_event     = armada_370_xp_clkevt_next_event;
+> > +       evt->set_mode           = armada_370_xp_clkevt_mode;
+> >         evt->irq                = armada_370_xp_clkevt_irq;
+> >         evt->cpumask            = cpumask_of(cpu);
+> >
+> [snip]
+>
+> The rest looks good to me !
 
-Kevin
+Thanks for the feedback.  I was going to try to make a patch that does
+everything that this one does not, but it is not working out very well, so
+I will make a new patch that does everything.
+
+julia
