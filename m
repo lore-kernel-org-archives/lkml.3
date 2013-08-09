@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967331Ab3HIBya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:54:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55389 "EHLO
+	id S967369Ab3HIB62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:58:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55582 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967140Ab3HIBmN (ORCPT
+	with ESMTP id S967342Ab3HIB6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:13 -0400
+	Thu, 8 Aug 2013 21:58:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhu Yanhai <gaoyang.zyh@taobao.com>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 11/25] sched: Fix the broken sched_rr_get_interval()
-Date: Thu,  8 Aug 2013 18:41:47 -0700
-Message-Id: <20130809013651.623921789@linuxfoundation.org>
+        Nicolas Pitre <nico@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 005/102] ARM: update FIQ support for relocation of vectors
+Date: Thu,  8 Aug 2013 18:56:41 -0700
+Message-Id: <20130809015011.484451736@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
-References: <20130809013649.057678051@linuxfoundation.org>
+In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
+References: <20130809015010.208118575@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Zhu Yanhai <gaoyang.zyh@taobao.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit a59f4e079d19464eebb9b06513a1d4f55fdae5ba upstream.
+commit e39e3f3ebfef03450cf7bfa7a974a8c61f7980c8 upstream.
 
-The caller of sched_sliced() should pass se.cfs_rq and se as the
-arguments, however in sched_rr_get_interval() we gave it
-rq.cfs_rq and se, which made the following computation obviously
-wrong.
+FIQ should no longer copy the FIQ code into the user visible vector
+page.  Instead, it should use the hidden page.  This change makes
+that happen.
 
-The change was introduced by commit:
-
-  77034937dc45 sched: fix crash in sys_sched_rr_get_interval()
-
-... 5 years ago, while it had been the correct 'cfs_rq_of' before
-the commit. The change seems to be irrelevant to the commit
-msg, which was to return a 0 timeslice for tasks that are on an
-idle runqueue. So I believe that was just a plain typo.
-
-Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1357621012-15039-1-git-send-email-gaoyang.zyh@taobao.com
-[ Since this is an ABI and an old bug, we'll test this via a
-  slow upstream route, to hopefully discover any app breakage. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/fair.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/entry-armv.S |    3 +++
+ arch/arm/kernel/fiq.c        |   19 ++++++++++++++-----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
 
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5511,7 +5511,7 @@ static unsigned int get_rr_interval_fair
- 	 * idle runqueue:
- 	 */
- 	if (rq->cfs.load.weight)
--		rr_interval = NS_TO_JIFFIES(sched_slice(&rq->cfs, se));
-+		rr_interval = NS_TO_JIFFIES(sched_slice(cfs_rq_of(se), se));
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -1119,6 +1119,9 @@ vector_addrexcptn:
+ vector_fiq:
+ 	subs	pc, lr, #4
  
- 	return rr_interval;
++	.globl	vector_fiq_offset
++	.equ	vector_fiq_offset, vector_fiq
++
+ 	.section .vectors, "ax", %progbits
+ __vectors_start:
+ 	W(b)	vector_rst
+--- a/arch/arm/kernel/fiq.c
++++ b/arch/arm/kernel/fiq.c
+@@ -47,6 +47,11 @@
+ #include <asm/irq.h>
+ #include <asm/traps.h>
+ 
++#define FIQ_OFFSET ({					\
++		extern void *vector_fiq_offset;		\
++		(unsigned)&vector_fiq_offset;		\
++	})
++
+ static unsigned long no_fiq_insn;
+ 
+ /* Default reacquire function
+@@ -80,13 +85,16 @@ int show_fiq_list(struct seq_file *p, in
+ void set_fiq_handler(void *start, unsigned int length)
+ {
+ #if defined(CONFIG_CPU_USE_DOMAINS)
+-	memcpy((void *)0xffff001c, start, length);
++	void *base = (void *)0xffff0000;
+ #else
+-	memcpy(vectors_page + 0x1c, start, length);
++	void *base = vectors_page;
+ #endif
+-	flush_icache_range(0xffff001c, 0xffff001c + length);
++	unsigned offset = FIQ_OFFSET;
++
++	memcpy(base + offset, start, length);
++	flush_icache_range(0xffff0000 + offset, 0xffff0000 + offset + length);
+ 	if (!vectors_high())
+-		flush_icache_range(0x1c, 0x1c + length);
++		flush_icache_range(offset, offset + length);
+ }
+ 
+ int claim_fiq(struct fiq_handler *f)
+@@ -144,6 +152,7 @@ EXPORT_SYMBOL(disable_fiq);
+ 
+ void __init init_FIQ(int start)
+ {
+-	no_fiq_insn = *(unsigned long *)0xffff001c;
++	unsigned offset = FIQ_OFFSET;
++	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
+ 	fiq_start = start;
  }
 
 
