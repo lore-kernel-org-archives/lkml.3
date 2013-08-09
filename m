@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030714Ab3HIOrf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 10:47:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37319 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030474Ab3HIOre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 10:47:34 -0400
-Message-ID: <520500F2.2000200@ti.com>
-Date: Fri, 9 Aug 2013 09:47:14 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	id S1030699Ab3HIOtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 10:49:24 -0400
+Received: from smtpauth12.mfg.siteprotect.com ([64.26.60.150]:45175 "EHLO
+	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1030310Ab3HIOtX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 10:49:23 -0400
+Date: Fri, 9 Aug 2013 10:50:27 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 01/47] perf: Add PERF_EVENT_IOC_ID ioctl to return event
+ ID
+In-Reply-To: <1375909874-22073-2-git-send-email-acme@infradead.org>
+Message-ID: <alpine.DEB.2.02.1308091046040.17774@pianoman.cluster.toy>
+References: <1375909874-22073-1-git-send-email-acme@infradead.org> <1375909874-22073-2-git-send-email-acme@infradead.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Bill Huang <bilhuang@nvidia.com>
-CC: Lee Jones <lee.jones@linaro.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mallikarjun Kasoju <mkasoju@nvidia.com>
-Subject: Re: [PATCH RESEND v2 1/1] mfd: palmas: Add power off control
-References: <1375962305-7438-1-git-send-email-bilhuang@nvidia.com>  <20130808123203.GD14515@lee--X1> <1376053269.20259.34.camel@bilhuang-vm1>
-In-Reply-To: <1376053269.20259.34.camel@bilhuang-vm1>
-Content-Type: text/plain; charset="ISO-8859-9"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020206.52050172.0197,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 08:01 AM, Bill Huang wrote:
-> On Thu, 2013-08-08 at 20:32 +0800, Lee Jones wrote:
->> On Thu, 08 Aug 2013, Bill Huang wrote:
->>
->>> Hook up "pm_power_off" to palmas power off routine if there is DT
->>> property "ti,system-power-controller" defined, so platform which is
->>> powered by this regulator can be powered off properly.
->>>
->>> Signed-off-by: Mallikarjun Kasoju <mkasoju@nvidia.com>
->>> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
->>> ---
->>>   .../devicetree/bindings/regulator/palmas-pmic.txt  |    5 +++
->>>   drivers/mfd/palmas.c                               |   33 ++++++++++++++++++--
->>>   include/linux/mfd/palmas.h                         |    1 +
->>>   3 files changed, 37 insertions(+), 2 deletions(-)
->>
->> Was a clear conclusion reached between Nishanth and yourself?
->>
->> As he has strong opinions on this I'd ideally like his Ack before
->> applying the patch.
->>
-> Feel free to NACK if you are feeling this can't fit what you would like
-> to add, then I'll pass the ball to you for implementing Palmas power off
-> since you have already wrote part of the driver (with USB IRQ unmask?).
-Apologies on the delay in review. As long as we are ok with not having a 
-drivers/power/reset driver, I can buy this as a step #1. USB IRQ unmask 
-could go on top of it.
+On Wed, 7 Aug 2013, Arnaldo Carvalho de Melo wrote:
 
-Other than that,
-Acked-by: Nishanth Menon <nm@ti.com>
+> From: Jiri Olsa <jolsa@redhat.com>
+> 
+> The only way to get the event ID is by reading the event fd,
+> followed by parsing the ID value out of the returned data.
+> 
+> While this is ok for current read format used by perf tool,
+> it is not ok when we use PERF_FORMAT_GROUP format.
+> 
+> With this format the data are returned for the whole group
+> and there's no way to find out what ID belongs to our fd
+> (if we are not group leader event).
 
--- 
-Regards,
-Nishanth Menon
+I'm a little confused by this.
+
+If you have an event group (with PERF_FORMAT_GROUP) and you specify
+PERF_FORMAT_ID in read_format, then when you read you get the id
+values for each sibling event along with their values, right?
+
+This is how PAPI does things.  So I wouldn't say it's impossible to get 
+the event IDs with PERF_FORMAT_GROUP events.
+
+Though maybe you're saying it's hard to map sibling fds to id values if 
+you don't have the list of all fds in an event group in the order they 
+were added.  Which I guess may be true, but I'd think your analysis tool 
+would have other problems if you didn't have that mapping.
+
+Vince
