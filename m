@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966395Ab3HIJ2z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 05:28:55 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59885 "EHLO
+	id S966296Ab3HIJ2x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 05:28:53 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42785 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965936Ab3HIJ1Q (ORCPT
+	with ESMTP id S965956Ab3HIJ1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 05:27:16 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-ae-5204b5ee74ae
+	Fri, 9 Aug 2013 05:27:17 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-b2-5204b5eeca8f
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 14/20] mm, hugetlb: call vma_needs_reservation before entering alloc_huge_page()
-Date: Fri,  9 Aug 2013 18:26:32 +0900
-Message-Id: <1376040398-11212-15-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 15/20] mm, hugetlb: remove a check for return value of alloc_huge_page()
+Date: Fri,  9 Aug 2013 18:26:33 +0900
+Message-Id: <1376040398-11212-16-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -32,98 +32,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to validate that this failure is reasonable, we need to know
-whether allocation request is for reserved or not on caller function.
-So moving vma_needs_reservation() up to the caller of alloc_huge_page().
-There is no functional change in this patch and following patch use
-this information.
+Now, alloc_huge_page() only return -ENOSPEC if failed.
+So, we don't worry about other return value.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 8dff972..bc666cf 100644
+index bc666cf..24de2ca 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -1110,13 +1110,11 @@ static void vma_commit_reservation(struct hstate *h,
- }
- 
- static struct page *alloc_huge_page(struct vm_area_struct *vma,
--				    unsigned long addr, int avoid_reserve)
-+				    unsigned long addr, int use_reserve)
- {
- 	struct hugepage_subpool *spool = subpool_vma(vma);
- 	struct hstate *h = hstate_vma(vma);
- 	struct page *page;
--	long chg;
--	bool use_reserve;
- 	int ret, idx;
- 	struct hugetlb_cgroup *h_cg;
- 
-@@ -1129,10 +1127,6 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	 * need pages and subpool limit allocated allocated if no reserve
- 	 * mapping overlaps.
- 	 */
--	chg = vma_needs_reservation(h, vma, addr);
--	if (chg < 0)
--		return ERR_PTR(-ENOMEM);
--	use_reserve = (!chg && !avoid_reserve);
- 	if (!use_reserve)
- 		if (hugepage_subpool_get_pages(spool, 1))
- 			return ERR_PTR(-ENOSPC);
-@@ -2504,6 +2498,8 @@ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
- 	struct hstate *h = hstate_vma(vma);
- 	struct page *old_page, *new_page;
- 	int outside_reserve = 0;
-+	long chg;
-+	bool use_reserve;
- 	unsigned long mmun_start;	/* For mmu_notifiers */
- 	unsigned long mmun_end;		/* For mmu_notifiers */
- 
-@@ -2535,7 +2531,17 @@ retry_avoidcopy:
- 
- 	/* Drop page_table_lock as buddy allocator may be called */
- 	spin_unlock(&mm->page_table_lock);
--	new_page = alloc_huge_page(vma, address, outside_reserve);
-+	chg = vma_needs_reservation(h, vma, address);
-+	if (chg == -ENOMEM) {
-+		page_cache_release(old_page);
-+
-+		/* Caller expects lock to be held */
-+		spin_lock(&mm->page_table_lock);
-+		return VM_FAULT_OOM;
-+	}
-+	use_reserve = !chg && !outside_reserve;
-+
-+	new_page = alloc_huge_page(vma, address, use_reserve);
+@@ -2544,7 +2544,6 @@ retry_avoidcopy:
+ 	new_page = alloc_huge_page(vma, address, use_reserve);
  
  	if (IS_ERR(new_page)) {
- 		long err = PTR_ERR(new_page);
-@@ -2664,6 +2670,8 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	struct page *page;
- 	struct address_space *mapping;
- 	pte_t new_pte;
-+	long chg;
-+	bool use_reserve;
+-		long err = PTR_ERR(new_page);
+ 		page_cache_release(old_page);
+ 
+ 		/*
+@@ -2573,10 +2572,7 @@ retry_avoidcopy:
+ 
+ 		/* Caller expects lock to be held */
+ 		spin_lock(&mm->page_table_lock);
+-		if (err == -ENOMEM)
+-			return VM_FAULT_OOM;
+-		else
+-			return VM_FAULT_SIGBUS;
++		return VM_FAULT_SIGBUS;
+ 	}
  
  	/*
- 	 * Currently, we are forced to kill the process in the event the
-@@ -2689,7 +2697,15 @@ retry:
- 		size = i_size_read(mapping->host) >> huge_page_shift(h);
- 		if (idx >= size)
- 			goto out;
--		page = alloc_huge_page(vma, address, 0);
-+
-+		chg = vma_needs_reservation(h, vma, address);
-+		if (chg == -ENOMEM) {
-+			ret = VM_FAULT_OOM;
-+			goto out;
-+		}
-+		use_reserve = !chg;
-+
-+		page = alloc_huge_page(vma, address, use_reserve);
+@@ -2707,11 +2703,7 @@ retry:
+ 
+ 		page = alloc_huge_page(vma, address, use_reserve);
  		if (IS_ERR(page)) {
- 			ret = PTR_ERR(page);
- 			if (ret == -ENOMEM)
+-			ret = PTR_ERR(page);
+-			if (ret == -ENOMEM)
+-				ret = VM_FAULT_OOM;
+-			else
+-				ret = VM_FAULT_SIGBUS;
++			ret = VM_FAULT_SIGBUS;
+ 			goto out;
+ 		}
+ 		clear_huge_page(page, address, pages_per_huge_page(h));
 -- 
 1.7.9.5
 
