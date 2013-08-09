@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758335Ab3HIRZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 13:25:33 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59635 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758295Ab3HIRZc (ORCPT
+	id S1758327Ab3HIR2B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 13:28:01 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:44492 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672Ab3HIR17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 13:25:32 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Date: Fri,  9 Aug 2013 18:25:02 +0100
-Message-Id: <1376069102-15658-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.4.rc1
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] mfd: tps65010: Use power efficient workqueue for power polling
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 9 Aug 2013 13:27:59 -0400
+Date: Fri, 9 Aug 2013 10:27:57 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: srinivas.kandagatla@st.com, S??ren Brinkmann <soren.brinkmann@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+Message-ID: <20130809172757.GD14845@codeaurora.org>
+References: <51F97CE3.9030306@linaro.org>
+ <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local>
+ <51F99747.4060901@linaro.org>
+ <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local>
+ <51FA9AE8.1060004@linaro.org>
+ <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local>
+ <51FA9F54.3060704@linaro.org>
+ <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local>
+ <5204C54A.9020105@st.com>
+ <5204FA5D.3060908@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5204FA5D.3060908@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On 08/09, Daniel Lezcano wrote:
+> 
+> yes, but at least the broadcast mechanism should send an IPI to cpu0 to
+> wake it up, no ? As Stephen stated this kind of configuration should has
+> never been tested before so the tick broadcast code is not handling this
+> case properly IMHO.
+> 
 
-There is no need to use a per CPU workqueue to poll, especially with the
-5s delay used, so allow the scheduler to use any CPU.
+If you have a per-cpu tick device that isn't suffering from
+FEAT_C3_STOP why wouldn't you use that for the tick versus a
+per-cpu tick device that has FEAT_C3_STOP? It sounds like there
+is a bug in the preference logic or you should boost the rating
+of the arm global timer above the twd. Does this patch help? It
+should make the arm global timer the tick device and whatever the
+cadence timer you have into the broadcast device.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/mfd/tps65010.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/mfd/tps65010.c b/drivers/mfd/tps65010.c
-index 4d67692..8114567 100644
---- a/drivers/mfd/tps65010.c
-+++ b/drivers/mfd/tps65010.c
-@@ -242,8 +242,8 @@ static int dbg_show(struct seq_file *s, void *_)
- 	seq_printf(s, "mask2     %s\n", buf);
- 	/* ignore ackint2 */
+---8<----
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 218bcb5..d3539e5 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -77,6 +77,9 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
+ 	    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
+ 		return false;
  
--	schedule_delayed_work(&tps->work, POWER_POLL_DELAY);
--
-+	queue_delayed_work(system_power_efficient_wq, &tps->work,
-+			   POWER_POLL_DELAY);
- 
- 	/* VMAIN voltage, enable lowpower, etc */
- 	value = i2c_smbus_read_byte_data(tps->client, TPS_VDCDC1);
-@@ -400,7 +400,8 @@ static void tps65010_interrupt(struct tps65010 *tps)
- 			&& (tps->chgstatus & (TPS_CHG_USB|TPS_CHG_AC)))
- 		poll = 1;
- 	if (poll)
--		schedule_delayed_work(&tps->work, POWER_POLL_DELAY);
-+		queue_delayed_work(system_power_efficient_wq, &tps->work,
-+				   POWER_POLL_DELAY);
- 
- 	/* also potentially gpio-in rise or fall */
- }
-@@ -448,7 +449,7 @@ static irqreturn_t tps65010_irq(int irq, void *_tps)
- 
- 	disable_irq_nosync(irq);
- 	set_bit(FLAG_IRQ_ENABLE, &tps->flags);
--	schedule_delayed_work(&tps->work, 0);
-+	queue_delayed_work(system_power_efficient_wq, &tps->work, 0);
- 	return IRQ_HANDLED;
++	if (cpumask_equal(newdev->cpumask, cpumask_of(smp_processor_id())))
++		return false;
++
+ 	return !curdev || newdev->rating > curdev->rating;
  }
  
-@@ -718,7 +719,8 @@ int tps65010_set_vbus_draw(unsigned mA)
- 			&& test_and_set_bit(
- 				FLAG_VBUS_CHANGED, &the_tps->flags)) {
- 		/* gadget drivers call this in_irq() */
--		schedule_delayed_work(&the_tps->work, 0);
-+		queue_delayed_work(system_power_efficient_wq, &the_tps->work,
-+				   0);
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index 64522ec..1628b9f 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -245,6 +245,15 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
  	}
- 	local_irq_restore(flags);
  
+ 	/*
++	 * Prefer tick devices that don't suffer from FEAT_C3_STOP
++	 * regardless of their rating
++	 */
++	if (curdev && cpumask_equal(curdev->cpumask, newdev->cpumask) &&
++	    !(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
++	    (curdev->features & CLOCK_EVT_FEAT_C3STOP))
++		return true;
++
++	/*
+ 	 * Use the higher rated one, but prefer a CPU local device with a lower
+ 	 * rating than a non-CPU local device
+ 	 */
 -- 
-1.8.4.rc1
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
