@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968012Ab3HIPwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:52:01 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:58588 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934068Ab3HIPv6 (ORCPT
+	id S934392Ab3HIPxp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:53:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41400 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934068Ab3HIPxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:51:58 -0400
+	Fri, 9 Aug 2013 11:53:44 -0400
+Message-ID: <52051033.8050605@kernel.dk>
+Date: Fri, 09 Aug 2013 09:52:19 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <000e01ce94af$12710ef0$37532cd0$%jun@samsung.com>
-References: <CAD=FV=U3aT1KKtSwAFhYURJJerp70ij8h647=xyV51et4jYipg@mail.gmail.com>
-	<CAOesGMjaF2K0CnuWBj7xdXGAQk-XRetBstaQdd9EZzBYrmDjeA@mail.gmail.com>
-	<86mworfzsf.fsf@void.printf.net>
-	<000e01ce94af$12710ef0$37532cd0$%jun@samsung.com>
-Date: Fri, 9 Aug 2013 08:51:57 -0700
-Message-ID: <CAD=FV=X9G66zg+OQ5C0gkkkYDdrkegkZdmWNXRDiS2V5_yY+6w@mail.gmail.com>
-Subject: Re: dw_mmc: Does anyone use multiple slots?
-From: Doug Anderson <dianders@google.com>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
-        James Hogan <james.hogan@imgtec.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sonny Rao <sonnyrao@chromium.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+References: <1374296162.7397.1098.camel@haakon3.risingtidesystems.com> <20130722150359.GA16564@dhcp-26-207.brq.redhat.com> <1374527436.7397.1145.camel@haakon3.risingtidesystems.com> <20130725101641.GB31994@dhcp-26-207.brq.redhat.com> <1374790082.7397.1411.camel@haakon3.risingtidesystems.com> <20130726020928.GL29296@kernel.dk> <1374873276.7397.1512.camel@haakon3.risingtidesystems.com> <20130729114653.GB20951@mtj.dyndns.org> <20130809082335.GA25306@dhcp-26-207.brq.redhat.com> <5204FBA6.6040001@kernel.dk> <20130809150744.GB25306@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20130809150744.GB25306@dhcp-26-207.brq.redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Aug 8, 2013 at 8:18 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> On Fri, August 09, 2013, Chris Ball wrote:
->> On Fri, Aug 09 2013, Olof Johansson wrote:
->> > On Thu, Aug 8, 2013 at 5:16 PM, Doug Anderson <dianders@google.com> wrote:
->> >
->> >> I guess my overall question is: if there are no actual implementations
->> >> of multislot, shouldn't we kill it and simplify the code a whole lot?
->> >> If someone out there has a real multislot device they can step back in
->> >> and do it more correctly?
->> >>
->> >> Of course we need to find someone to actually go through and do the
->> >> killing of multislot, but finding that person might be easier if there
->> >> was some agreement that it was good to do.
->> >
->> > There clearly seems to be no in-tree users of multislot. If someone
->> > new comes in, we have the code in the history and can revert the
->> > removal (or at least use it as reference for re-introduction).
->> >
->> > I vote for removing it. It adds really annoying complexity for
->> > something that nobody uses.
+On 08/09/2013 09:07 AM, Alexander Gordeev wrote:
+> On Fri, Aug 09, 2013 at 08:24:38AM -0600, Jens Axboe wrote:
+>> On 08/09/2013 02:23 AM, Alexander Gordeev wrote:
+>>> +	ap->qc_tags = blk_mq_init_tags(ATA_MAX_QUEUE, 1, NUMA_NO_NODE);
+>>> +	if (!ap->qc_tags) {
+>>> +		kfree(ap);
+>>> +		return NULL;
+>>> +	}
 >>
->> I agree with Olof, for what it's worth.  (The maintainers of the
->> driver are Jaehoon and Seungwon, though.)
->
-> I feel like there is no actual use case for that though origin Synopsys IP supports.
-> Multi-slot  might be not useful in terms of performance because shared bus should be allowed.
-> (At least this is the way I see it, though)
-> As Exynos's host does so, other hosts which are introduced in Linux seems use one card per host.
-> If it's really not found now, I could agree on this topic.
+>> This should be blk_mq_init_tags(ATA_MAX_QUEUE - 1, 1, ...) since the
+>> total depth is normal_tags + reserved_tags.
+> 
+> Aha.. If blk_mq_init_tags() should be like this then?
+> 
+> diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
+> index dcbc2a4..b131a48 100644
+> --- a/block/blk-mq-tag.c
+> +++ b/block/blk-mq-tag.c
+> @@ -468,10 +468,9 @@ struct blk_mq_tags *blk_mq_init_tags(unsigned int nr_tags,
+>  	 * Rest of the tags start at the queue list
+>  	 */
+>  	tags->nr_free = 0;
+> -	while (nr_tags - tags->nr_reserved) {
+> +	while (nr_tags--) {
+>  		tags->freelist[tags->nr_free] = tags->nr_free +
+>  							tags->nr_reserved;
+> -		nr_tags--;
+>  		tags->nr_free++;
+>  	}
 
-This all sounds very promising.  Certainly we should wait a little
-longer to see if others find / respond to this thread, but otherwise
-we can go ahead?
+I misremembered, just checked the code. I think I used to have it like I
+described, but changed it since I thought it would be more logical to
+pass in full depth, and then what part of that is reserved. Looking at
+the current code, your patch looks correct as-is.
 
-It's possible to do this in somewhat small steps.  I think the first
-step is to remove num_slots and remove all loops over num_slots.  That
-actually sounds pretty easy/small, though it will touch a lot of code.
- After that we can try to move things out of the separate slot
-structure, I think.  That might be a bit of a bigger change.  I can
-keep that as a back burner task, but I wouldn't object at all to
-someone else doing it!  ;)
+-- 
+Jens Axboe
 
-The big question, though, is what to do about device tree bindings
-(cringe).  Really bus-width, wp-gpios, and disable-wp ought to be
-promoted up and we should remove the "slot" subnode.  ...but that of
-course breaks the stable API.
-
--Doug
