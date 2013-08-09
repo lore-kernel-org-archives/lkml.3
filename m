@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966132Ab3HIJaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 05:30:13 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52749 "EHLO
+	id S966461Ab3HIJal (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 05:30:41 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42785 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965887Ab3HIJ1O (ORCPT
+	with ESMTP id S965824Ab3HIJ1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 05:27:14 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-a8-5204b5ed2ecb
+	Fri, 9 Aug 2013 05:27:13 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-a4-5204b5ec14c8
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 10/20] mm, hugetlb: remove resv_map_put()
-Date: Fri,  9 Aug 2013 18:26:28 +0900
-Message-Id: <1376040398-11212-11-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 08/20] mm, hugetlb: region manipulation functions take resv_map rather list_head
+Date: Fri,  9 Aug 2013 18:26:26 +0900
+Message-Id: <1376040398-11212-9-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -32,53 +32,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In following patch, I change vma_resv_map() to return resv_map
-for all case. This patch prepares it by removing resv_map_put() which
-doesn't works properly with following change, because it works only for
-HPAGE_RESV_OWNER's resv_map, not for all resv_maps.
+To change a protection method for region tracking to find grained one,
+we pass the resv_map, instead of list_head, to region manipulation
+functions. This doesn't introduce any functional change, and it is just
+for preparing a next step.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 73034dd..869c3e0 100644
+index 8751e2c..d9cabf6 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -2212,15 +2212,6 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
- 		kref_get(&resv->refs);
+@@ -150,8 +150,9 @@ struct file_region {
+ 	long to;
+ };
+ 
+-static long region_add(struct list_head *head, long f, long t)
++static long region_add(struct resv_map *resv, long f, long t)
+ {
++	struct list_head *head = &resv->regions;
+ 	struct file_region *rg, *nrg, *trg;
+ 
+ 	/* Locate the region we are either in or before. */
+@@ -186,8 +187,9 @@ static long region_add(struct list_head *head, long f, long t)
+ 	return 0;
  }
  
--static void resv_map_put(struct vm_area_struct *vma)
--{
--	struct resv_map *resv = vma_resv_map(vma);
--
--	if (!resv)
--		return;
--	kref_put(&resv->refs, resv_map_release);
--}
--
- static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+-static long region_chg(struct list_head *head, long f, long t)
++static long region_chg(struct resv_map *resv, long f, long t)
  {
- 	struct hstate *h = hstate_vma(vma);
-@@ -2237,7 +2228,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
++	struct list_head *head = &resv->regions;
+ 	struct file_region *rg, *nrg;
+ 	long chg = 0;
+ 
+@@ -235,8 +237,9 @@ static long region_chg(struct list_head *head, long f, long t)
+ 	return chg;
+ }
+ 
+-static long region_truncate(struct list_head *head, long end)
++static long region_truncate(struct resv_map *resv, long end)
+ {
++	struct list_head *head = &resv->regions;
+ 	struct file_region *rg, *trg;
+ 	long chg = 0;
+ 
+@@ -265,8 +268,9 @@ static long region_truncate(struct list_head *head, long end)
+ 	return chg;
+ }
+ 
+-static long region_count(struct list_head *head, long f, long t)
++static long region_count(struct resv_map *resv, long f, long t)
+ {
++	struct list_head *head = &resv->regions;
+ 	struct file_region *rg;
+ 	long chg = 0;
+ 
+@@ -392,7 +396,7 @@ void resv_map_release(struct kref *ref)
+ 	struct resv_map *resv_map = container_of(ref, struct resv_map, refs);
+ 
+ 	/* Clear out any active regions before we release the map. */
+-	region_truncate(&resv_map->regions, 0);
++	region_truncate(resv_map, 0);
+ 	kfree(resv_map);
+ }
+ 
+@@ -1099,7 +1103,7 @@ static long vma_needs_reservation(struct hstate *h,
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+ 		struct resv_map *resv = vma_resv_map(vma);
+ 
+-		err = region_chg(&resv->regions, idx, idx + 1);
++		err = region_chg(resv, idx, idx + 1);
+ 		if (err < 0)
+ 			return err;
+ 		return 0;
+@@ -1121,9 +1125,8 @@ static void vma_commit_reservation(struct hstate *h,
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+ 		struct resv_map *resv = vma_resv_map(vma);
+ 
+-		/* Mark this page used in the map. */
+-		region_add(&resv->regions, idx, idx + 1);
+-	}
++	idx = vma_hugecache_offset(h, vma, addr);
++	region_add(resv, idx, idx + 1);
+ }
+ 
+ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+@@ -2211,7 +2214,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+ 		end = vma_hugecache_offset(h, vma, vma->vm_end);
+ 
  		reserve = (end - start) -
- 			region_count(resv, start, end);
+-			region_count(&resv->regions, start, end);
++			region_count(resv, start, end);
  
--		resv_map_put(vma);
-+		kref_put(&resv->refs, resv_map_release);
+ 		resv_map_put(vma);
  
- 		if (reserve) {
- 			hugetlb_acct_memory(h, -reserve);
-@@ -3164,8 +3155,8 @@ int hugetlb_reserve_pages(struct inode *inode,
- 		region_add(resv_map, from, to);
+@@ -3091,7 +3094,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 	if (!vma || vma->vm_flags & VM_MAYSHARE) {
+ 		resv_map = inode->i_mapping->private_data;
+ 
+-		chg = region_chg(&resv_map->regions, from, to);
++		chg = region_chg(resv_map, from, to);
+ 
+ 	} else {
+ 		resv_map = resv_map_alloc();
+@@ -3137,7 +3140,7 @@ int hugetlb_reserve_pages(struct inode *inode,
+ 	 * else has to be done for private mappings here
+ 	 */
+ 	if (!vma || vma->vm_flags & VM_MAYSHARE)
+-		region_add(&resv_map->regions, from, to);
++		region_add(resv_map, from, to);
  	return 0;
  out_err:
--	if (vma)
--		resv_map_put(vma);
-+	if (vma && is_vma_resv_set(vma, HPAGE_RESV_OWNER))
-+		kref_put(&resv_map->refs, resv_map_release);
- 	return ret;
- }
+ 	if (vma)
+@@ -3153,7 +3156,7 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
+ 	struct hugepage_subpool *spool = subpool_inode(inode);
  
+ 	if (resv_map)
+-		chg = region_truncate(&resv_map->regions, offset);
++		chg = region_truncate(resv_map, offset);
+ 	spin_lock(&inode->i_lock);
+ 	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
+ 	spin_unlock(&inode->i_lock);
 -- 
 1.7.9.5
 
