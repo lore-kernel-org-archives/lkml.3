@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966894Ab3HIK3T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:29:19 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:39449 "EHLO smtp5-g21.free.fr"
+	id S966949Ab3HIKaf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:30:35 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:15163 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966467Ab3HIK3S convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:29:18 -0400
-Date: Fri, 9 Aug 2013 12:30:20 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/1] ASoc: kirkwood: add DT support to the mvebu
- audio subsystem [OT]
-Message-ID: <20130809123020.70907621@armhf>
-In-Reply-To: <20130809094340.GO23006@n2100.arm.linux.org.uk>
-References: <20130808132201.2610aef3@armhf>
-	<5204A716.6070507@gmail.com>
-	<20130809091953.GO6427@sirena.org.uk>
-	<5204B7A6.9050907@gmail.com>
-	<20130809094340.GO23006@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S966467Ab3HIKae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:30:34 -0400
+X-IronPort-AV: E=Sophos;i="4.89,845,1367971200"; 
+   d="scan'208";a="42837718"
+Message-ID: <5204C4C6.4060605@citrix.com>
+Date: Fri, 9 Aug 2013 11:30:30 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
+CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andres Lagar-Cavilla <andres@lagarcavilla.org>,
+        <boris.ostrovsky@oracle.com>
+Subject: Re: [PATCH] Xen: Fix retry calls into PRIVCMD_MMAPBATCH*.
+References: <1375367170-13151-1-git-send-email-andreslc@gridcentric.ca>
+In-Reply-To: <1375367170-13151-1-git-send-email-andreslc@gridcentric.ca>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Aug 2013 10:43:40 +0100
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+On 01/08/13 15:26, Andres Lagar-Cavilla wrote:
+> From: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+> 
+> When a foreign mapper attempts to map guest frames that are paged out,
+> the mapper receives an ENOENT response and will have to try again
+> while a helper process pages the target frame back in.
+> 
+> Gating checks on PRIVCMD_MMAPBATCH* ioctl args were preventing retries
+> of mapping calls.
+> 
+> V2: Fixed autotranslated physmap mode breakage introduced by V1.
+> 
+> Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+> ---
+>  drivers/xen/privcmd.c |   41 +++++++++++++++++++++++++++++++++++------
+>  1 files changed, 35 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
+> index f8e5dd7..6ebdf98 100644
+> --- a/drivers/xen/privcmd.c
+> +++ b/drivers/xen/privcmd.c
+> @@ -43,9 +43,12 @@ MODULE_LICENSE("GPL");
+>  
+>  #define PRIV_VMA_LOCKED ((void *)1)
+>  
+> -#ifndef HAVE_ARCH_PRIVCMD_MMAP
+>  static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
+> -#endif
+> +
+> +static int privcmd_enforce_singleshot_mapping_granular(
+> +               struct vm_area_struct *vma,
+> +               unsigned long addr,
+> +               unsigned long nr_pages);
+>  
+>  static long privcmd_ioctl_hypercall(void __user *udata)
+>  {
+> @@ -422,14 +425,15 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
+>  	vma = find_vma(mm, m.addr);
+>  	if (!vma ||
+>  	    vma->vm_ops != &privcmd_vm_ops ||
+> -	    (m.addr != vma->vm_start) ||
+> -	    ((m.addr + (nr_pages << PAGE_SHIFT)) != vma->vm_end) ||
+> -	    !privcmd_enforce_singleshot_mapping(vma)) {
+> +	    (m.addr < vma->vm_start) ||
+> +	    ((m.addr + (nr_pages << PAGE_SHIFT)) > vma->vm_end) ||
+> +	    !privcmd_enforce_singleshot_mapping_granular(vma, m.addr, nr_pages)) {
+>  		up_write(&mm->mmap_sem);
+>  		ret = -EINVAL;
+>  		goto out;
 
-> Note that we do have another case not yet in tree, which is DRM, but
-> this case is different from that, because ASoC can cope with components
-> with independent initialisation.
+This change to the range checks allows the user to partially populate
+the VMA on the first call which will result in too few pages being
+allocated in the auto_translated_physmap case.
 
-No sure!
+Can you do the following behaviour instead?
 
-Sometimes, with the tda998x in HDMI mode, I get a black screen on my TV
-set. And, surprise, when I start the audio (playing something with
-vlc), the image appears!
+On the first call, require the user to try to populate fully the VMA.
 
-I dumped all (known) registers in the audio and video subsystems
-(tda998x, dove lcd, kirkwood audio), and there is no difference between
-normal display and black screen. So, some audio event should interact
-with the HDMI display.
+On subsequent calls, allow the user to specify a subset of pages
+(sub-range) provided all the pages in the subset are not populated.
 
-I don't think that the problem comes from the TV set, because, when
-there is a black screen, turning the TV off/on never makes it display
-normally again. Rebooting the cubox also lets the black screen.
-Only powering off/on the cubox could change the display back to normal.
-
-Now, playing some audio stream gives me immediately a normal display.
-
-Any idea?
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+David
