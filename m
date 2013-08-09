@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967764Ab3HICOu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:14:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55720 "EHLO
+	id S967773Ab3HICPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:15:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55715 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967503Ab3HIB66 (ORCPT
+	with ESMTP id S967574Ab3HIB65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:58 -0400
+	Thu, 8 Aug 2013 21:58:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Fjellstrom <thomas@fjellstrom.ca>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 044/102] ath: wil6210: Fix build error
-Date: Thu,  8 Aug 2013 18:57:20 -0700
-Message-Id: <20130809015020.242015405@linuxfoundation.org>
+        Jacob Keller <jacob.e.keller@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
+        Jack Morgan <jack.morgan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 043/102] ixgbe: Fix Tx Hang issue with lldpad on 82598EB
+Date: Thu,  8 Aug 2013 18:57:19 -0700
+Message-Id: <20130809015019.936960653@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -29,80 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-commit 5d21608a592a9afcac8d82c6478a564e911ce70b upstream.
+commit 1eb9ac14c34a948bf1538bfb9034e8ab29099a64 upstream.
 
-Building driver wil6210 in 3.10 and 3.11 kernels yields the following errors:
+This patch fixes an issue with the 82598EB device, where lldpad is causing Tx
+Hangs on the card as soon as it attempts to configure DCB for the device. The
+adapter will continually Tx hang and reset in a loop.
 
-  CC [M]  drivers/net/wireless/ath/wil6210/debugfs.o
-drivers/net/wireless/ath/wil6210/debugfs.c: In function 'wil_print_ring':
-drivers/net/wireless/ath/wil6210/debugfs.c:163:11: error: pointer targets in passing argument 5 of 'hex_dump_to_buffer' differ in signedness [-Werror=pointer-sign]
-           false);
-           ^
-In file included from include/linux/kernel.h:13:0,
-                 from include/linux/cache.h:4,
-                 from include/linux/time.h:4,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/net/wireless/ath/wil6210/debugfs.c:17:
-include/linux/printk.h:361:13: note: expected 'char *' but argument is of type 'unsigned char *'
- extern void hex_dump_to_buffer(const void *buf, size_t len,
-             ^
-drivers/net/wireless/ath/wil6210/debugfs.c: In function 'wil_txdesc_debugfs_show':
-drivers/net/wireless/ath/wil6210/debugfs.c:429:10: error: pointer targets in passing argument 5 of 'hex_dump_to_buffer' differ in signedness [-Werror=pointer-sign]
-          sizeof(printbuf), false);
-          ^
-In file included from include/linux/kernel.h:13:0,
-                 from include/linux/cache.h:4,
-                 from include/linux/time.h:4,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/net/wireless/ath/wil6210/debugfs.c:17:
-include/linux/printk.h:361:13: note: expected 'char *' but argument is of type 'unsigned char *'
- extern void hex_dump_to_buffer(const void *buf, size_t len,
-             ^
-cc1: all warnings being treated as errors
-make[5]: *** [drivers/net/wireless/ath/wil6210/debugfs.o] Error 1
-make[4]: *** [drivers/net/wireless/ath/wil6210] Error 2
-make[3]: *** [drivers/net/wireless/ath] Error 2
-make[2]: *** [drivers/net/wireless] Error 2
-make[1]: *** [drivers/net] Error 2
-make: *** [drivers] Error 2
-
-These errors are fixed by changing the type of the buffer from "unsigned char *" to "char *".
-
-Reported-by: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Tested-by: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Signed-off-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Tested-by: Jack Morgan <jack.morgan@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/wil6210/debugfs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/wil6210/debugfs.c
-+++ b/drivers/net/wireless/ath/wil6210/debugfs.c
-@@ -145,7 +145,7 @@ static void wil_print_ring(struct seq_fi
- 				   le16_to_cpu(hdr.type), hdr.flags);
- 			if (len <= MAX_MBOXITEM_SIZE) {
- 				int n = 0;
--				unsigned char printbuf[16 * 3 + 2];
-+				char printbuf[16 * 3 + 2];
- 				unsigned char databuf[MAX_MBOXITEM_SIZE];
- 				void __iomem *src = wmi_buffer(wil, d.addr) +
- 					sizeof(struct wil6210_mbox_hdr);
-@@ -416,7 +416,7 @@ static int wil_txdesc_debugfs_show(struc
- 		seq_printf(s, "  SKB = %p\n", skb);
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
+@@ -108,9 +108,8 @@ s32 ixgbe_dcb_config_tx_desc_arbiter_825
  
- 		if (skb) {
--			unsigned char printbuf[16 * 3 + 2];
-+			char printbuf[16 * 3 + 2];
- 			int i = 0;
- 			int len = skb_headlen(skb);
- 			void *p = skb->data;
+ 	/* Enable arbiter */
+ 	reg &= ~IXGBE_DPMCS_ARBDIS;
+-	/* Enable DFP and Recycle mode */
+-	reg |= (IXGBE_DPMCS_TDPAC | IXGBE_DPMCS_TRM);
+ 	reg |= IXGBE_DPMCS_TSOEF;
++
+ 	/* Configure Max TSO packet size 34KB including payload and headers */
+ 	reg |= (0x4 << IXGBE_DPMCS_MTSOS_SHIFT);
+ 
 
 
