@@ -1,152 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967769Ab3HILMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 07:12:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56065 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967445Ab3HILML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 07:12:11 -0400
-Date: Fri, 9 Aug 2013 13:12:07 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew de los Reyes <adlr@chromium.org>
-Subject: Re: [rtc-linux] Re: [PATCH 2/2 RESEND] rtc: rtc-hid-sensor-time:
- enable HID input processing early
-In-Reply-To: <5204BA2E.8000100@ahsoftware.de>
-Message-ID: <alpine.LNX.2.00.1308091310490.13089@pobox.suse.cz>
-References: <1375382342-25454-1-git-send-email-holler@ahsoftware.de> <1375382342-25454-2-git-send-email-holler@ahsoftware.de> <20130808151106.7ccaedd4ea3d4e5faa6aa220@linux-foundation.org> <5204BA2E.8000100@ahsoftware.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S967371Ab3HILfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 07:35:16 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:40709 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932107Ab3HILfO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 07:35:14 -0400
+Message-ID: <5204D3ED.70504@linaro.org>
+Date: Fri, 09 Aug 2013 17:05:09 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Russell King <rmk+kernel@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH RFC 46/51] ARM: DMA-API: better handing of DMA masks for
+ coherent allocations
+References: <20130801213420.GL23006@n2100.arm.linux.org.uk> <E1V51EE-0006uO-C2@rmk-PC.arm.linux.org.uk>
+In-Reply-To: <E1V51EE-0006uO-C2@rmk-PC.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Aug 2013, Alexander Holler wrote:
+On 08/02/2013 03:50 AM, Russell King wrote:
+> We need to start treating DMA masks as something which is specific to
+> the bus that the device resides on, otherwise we're going to hit all
+> sorts of nasty issues with LPAE and 32-bit DMA controllers in >32-bit
+> systems, where memory is offset from PFN 0.
+> 
+> In order to start doing this, we convert the DMA mask to a PFN using
+> the device specific dma_to_pfn() macro.  This is the reverse of the
+> pfn_to_dma() macro which is used to get the DMA address for the device.
+> 
+> This gives us a PFN mask, which we can then check against the PFN
+> limit of the DMA zone.
+> 
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> ---
+>  arch/arm/mm/dma-mapping.c |   49 ++++++++++++++++++++++++++++++++++++++++----
+>  arch/arm/mm/init.c        |    2 +
+>  arch/arm/mm/mm.h          |    2 +
+>  3 files changed, 48 insertions(+), 5 deletions(-)
+> 
 
+Tested on Arndale board with ARM_LPAE enabled.
 
-> =================================
-> [ INFO: inconsistent lock state ]
-> 3.10.5-dockstar-00038-g03242d1-dirty #408 Not tainted
-> ---------------------------------
-> inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
-> swapper/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
->  (&(&sd->dyn_callback_lock)->rlock){?.+...}, at: [<c02af9f8>]
-> sensor_hub_raw_event+0x10c/0x204
-> {HARDIRQ-ON-W} state was registered at:
-
-I think you need the patch below. Please let me know if it fixes it.
-
-
-
-
-
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] HID: sensor-hub: make dyn_callback_lock IRQ-safe
-
-dyn_callback_lock is being taken from IRQ context through hid_irq_in() ->
-hid_input_report() -> sensor_hub_raw_event() -> sensor_hub_get_callback(),
-therefore anyone else acquiring it needs to disable IRQs to disable deadlocks.
-
-Reported-by: Alexander Holler <holler@ahsoftware.de>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- drivers/hid/hid-sensor-hub.c |   24 ++++++++++++++----------
- 1 files changed, 14 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/hid/hid-sensor-hub.c b/drivers/hid/hid-sensor-hub.c
-index ca749810..b334e50 100644
---- a/drivers/hid/hid-sensor-hub.c
-+++ b/drivers/hid/hid-sensor-hub.c
-@@ -147,23 +147,24 @@ int sensor_hub_register_callback(struct hid_sensor_hub_device *hsdev,
- {
- 	struct hid_sensor_hub_callbacks_list *callback;
- 	struct sensor_hub_data *pdata = hid_get_drvdata(hsdev->hdev);
-+	unsigned long flags;
- 
--	spin_lock(&pdata->dyn_callback_lock);
-+	spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
- 	list_for_each_entry(callback, &pdata->dyn_callback_list, list)
- 		if (callback->usage_id == usage_id) {
--			spin_unlock(&pdata->dyn_callback_lock);
-+			spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
- 			return -EINVAL;
- 		}
- 	callback = kzalloc(sizeof(*callback), GFP_ATOMIC);
- 	if (!callback) {
--		spin_unlock(&pdata->dyn_callback_lock);
-+		spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
- 		return -ENOMEM;
- 	}
- 	callback->usage_callback = usage_callback;
- 	callback->usage_id = usage_id;
- 	callback->priv = NULL;
- 	list_add_tail(&callback->list, &pdata->dyn_callback_list);
--	spin_unlock(&pdata->dyn_callback_lock);
-+	spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
- 
- 	return 0;
- }
-@@ -174,15 +175,16 @@ int sensor_hub_remove_callback(struct hid_sensor_hub_device *hsdev,
- {
- 	struct hid_sensor_hub_callbacks_list *callback;
- 	struct sensor_hub_data *pdata = hid_get_drvdata(hsdev->hdev);
-+	unsigned long flags;
- 
--	spin_lock(&pdata->dyn_callback_lock);
-+	spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
- 	list_for_each_entry(callback, &pdata->dyn_callback_list, list)
- 		if (callback->usage_id == usage_id) {
- 			list_del(&callback->list);
- 			kfree(callback);
- 			break;
- 		}
--	spin_unlock(&pdata->dyn_callback_lock);
-+	spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
- 
- 	return 0;
- }
-@@ -359,15 +361,16 @@ static int sensor_hub_suspend(struct hid_device *hdev, pm_message_t message)
- {
- 	struct sensor_hub_data *pdata =  hid_get_drvdata(hdev);
- 	struct hid_sensor_hub_callbacks_list *callback;
-+	unsigned long flags;
- 
- 	hid_dbg(hdev, " sensor_hub_suspend\n");
--	spin_lock(&pdata->dyn_callback_lock);
-+	spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
- 	list_for_each_entry(callback, &pdata->dyn_callback_list, list) {
- 		if (callback->usage_callback->suspend)
- 			callback->usage_callback->suspend(
- 					pdata->hsdev, callback->priv);
- 	}
--	spin_unlock(&pdata->dyn_callback_lock);
-+	spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
- 
- 	return 0;
- }
-@@ -376,15 +379,16 @@ static int sensor_hub_resume(struct hid_device *hdev)
- {
- 	struct sensor_hub_data *pdata =  hid_get_drvdata(hdev);
- 	struct hid_sensor_hub_callbacks_list *callback;
-+	unsigned long flags;
- 
- 	hid_dbg(hdev, " sensor_hub_resume\n");
--	spin_lock(&pdata->dyn_callback_lock);
-+	spin_lock_irqsave(&pdata->dyn_callback_lock, flags);
- 	list_for_each_entry(callback, &pdata->dyn_callback_list, list) {
- 		if (callback->usage_callback->resume)
- 			callback->usage_callback->resume(
- 					pdata->hsdev, callback->priv);
- 	}
--	spin_unlock(&pdata->dyn_callback_lock);
-+	spin_unlock_irqrestore(&pdata->dyn_callback_lock, flags);
- 
- 	return 0;
- }
+Tested-by: Tushar Behera <tushar.behera@linaro.org>
 
 -- 
-Jiri Kosina
-SUSE Labs
+Tushar Behera
