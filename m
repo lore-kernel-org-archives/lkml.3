@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967740Ab3HICHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:07:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55835 "EHLO
+	id S1030388Ab3HICIw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:08:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55812 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967544Ab3HIB7W (ORCPT
+	with ESMTP id S967461Ab3HIB7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:22 -0400
+	Thu, 8 Aug 2013 21:59:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Roger=20Pau=20Monn=C3=A9?= <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 073/102] xen-blkfront: use a different scatterlist for each request
-Date: Thu,  8 Aug 2013 18:57:49 -0700
-Message-Id: <20130809015027.421581341@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [ 068/102] cpufreq: Fix cpufreq driver module refcount balance after suspend/resume
+Date: Thu,  8 Aug 2013 18:57:44 -0700
+Message-Id: <20130809015026.242310229@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -30,126 +30,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Pau Monne <roger.pau@citrix.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit b7649158a0d241f8d53d13ff7441858539e16656 upstream.
+commit 2a99859932281ed6c2ecdd988855f8f6838f6743 upstream.
 
-In blkif_queue_request blkfront iterates over the scatterlist in order
-to set the segments of the request, and in blkif_completion blkfront
-iterates over the raw request, which makes it hard to know the exact
-position of the source and destination memory positions.
+Since cpufreq_cpu_put() called by __cpufreq_remove_dev() drops the
+driver module refcount, __cpufreq_remove_dev() causes that refcount
+to become negative for the cpufreq driver after a suspend/resume
+cycle.
 
-This can be solved by allocating a scatterlist for each request, that
-will be keep until the request is finished, allowing us to copy the
-data back to the original memory without having to iterate over the
-raw request.
+This is not the only bad thing that happens there, however, because
+kobject_put() should only be called for the policy kobject at this
+point if the CPU is not the last one for that policy.
 
-Oracle-Bug: 16660413 - LARGE ASYNCHRONOUS READS APPEAR BROKEN ON 2.6.39-400
-CC: stable@vger.kernel.org
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Reported-and-Tested-by: Anne Milicia <anne.milicia@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Namely, if the given CPU is the last one for that policy, the
+policy kobject's refcount should be 1 at this point, as set by
+cpufreq_add_dev_interface(), and only needs to be dropped once for
+the kobject to go away.  This actually happens under the cpu == 1
+check, so it need not be done before by cpufreq_cpu_put().
+
+On the other hand, if the given CPU is not the last one for that
+policy, this means that cpufreq_add_policy_cpu() has been called
+at least once for that policy and cpufreq_cpu_get() has been
+called for it too.  To balance that cpufreq_cpu_get(), we need to
+call cpufreq_cpu_put() in that case.
+
+Thus, to fix the described problem and keep the reference
+counters balanced in both cases, move the cpufreq_cpu_get() call
+in __cpufreq_remove_dev() to the code path executed only for
+CPUs that share the policy with other CPUs.
+
+Reported-and-tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/block/xen-blkfront.c |   36 +++++++++++++++++-------------------
- 1 file changed, 17 insertions(+), 19 deletions(-)
+ drivers/cpufreq/cpufreq.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -75,6 +75,7 @@ struct blk_shadow {
- 	struct blkif_request req;
- 	struct request *request;
- 	struct grant *grants_used[BLKIF_MAX_SEGMENTS_PER_REQUEST];
-+	struct scatterlist sg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
- };
- 
- static DEFINE_MUTEX(blkfront_mutex);
-@@ -98,7 +99,6 @@ struct blkfront_info
- 	enum blkif_state connected;
- 	int ring_ref;
- 	struct blkif_front_ring ring;
--	struct scatterlist sg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
- 	unsigned int evtchn, irq;
- 	struct request_queue *rq;
- 	struct work_struct work;
-@@ -422,11 +422,11 @@ static int blkif_queue_request(struct re
- 			ring_req->u.discard.flag = 0;
- 	} else {
- 		ring_req->u.rw.nr_segments = blk_rq_map_sg(req->q, req,
--							   info->sg);
-+							   info->shadow[id].sg);
- 		BUG_ON(ring_req->u.rw.nr_segments >
- 		       BLKIF_MAX_SEGMENTS_PER_REQUEST);
- 
--		for_each_sg(info->sg, sg, ring_req->u.rw.nr_segments, i) {
-+		for_each_sg(info->shadow[id].sg, sg, ring_req->u.rw.nr_segments, i) {
- 			fsect = sg->offset >> 9;
- 			lsect = fsect + (sg->length >> 9) - 1;
- 
-@@ -867,12 +867,12 @@ static void blkif_completion(struct blk_
- 			     struct blkif_response *bret)
- {
- 	int i = 0;
--	struct bio_vec *bvec;
--	struct req_iterator iter;
--	unsigned long flags;
-+	struct scatterlist *sg;
- 	char *bvec_data;
- 	void *shared_data;
--	unsigned int offset = 0;
-+	int nseg;
-+
-+	nseg = s->req.u.rw.nr_segments;
- 
- 	if (bret->operation == BLKIF_OP_READ) {
- 		/*
-@@ -881,19 +881,16 @@ static void blkif_completion(struct blk_
- 		 * than PAGE_SIZE, we have to keep track of the current offset,
- 		 * to be sure we are copying the data from the right shared page.
- 		 */
--		rq_for_each_segment(bvec, s->request, iter) {
--			BUG_ON((bvec->bv_offset + bvec->bv_len) > PAGE_SIZE);
--			if (bvec->bv_offset < offset)
--				i++;
--			BUG_ON(i >= s->req.u.rw.nr_segments);
-+		for_each_sg(s->sg, sg, nseg, i) {
-+			BUG_ON(sg->offset + sg->length > PAGE_SIZE);
- 			shared_data = kmap_atomic(
- 				pfn_to_page(s->grants_used[i]->pfn));
--			bvec_data = bvec_kmap_irq(bvec, &flags);
--			memcpy(bvec_data, shared_data + bvec->bv_offset,
--				bvec->bv_len);
--			bvec_kunmap_irq(bvec_data, &flags);
-+			bvec_data = kmap_atomic(sg_page(sg));
-+			memcpy(bvec_data   + sg->offset,
-+			       shared_data + sg->offset,
-+			       sg->length);
-+			kunmap_atomic(bvec_data);
- 			kunmap_atomic(shared_data);
--			offset = bvec->bv_offset + bvec->bv_len;
- 		}
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1075,14 +1075,11 @@ static int __cpufreq_remove_dev(struct d
+ 				__func__, cpu_dev->id, cpu);
  	}
- 	/* Add the persistent grant into the list of free grants */
-@@ -1022,7 +1019,7 @@ static int setup_blkring(struct xenbus_d
- 			 struct blkfront_info *info)
- {
- 	struct blkif_sring *sring;
--	int err;
-+	int err, i;
  
- 	info->ring_ref = GRANT_INVALID_REF;
+-	if ((cpus == 1) && (cpufreq_driver->target))
+-		__cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+-
+-	pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
+-	cpufreq_cpu_put(data);
+-
+ 	/* If cpu is last user of policy, free policy */
+ 	if (cpus == 1) {
++		if (cpufreq_driver->target)
++			__cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
++
+ 		lock_policy_rwsem_read(cpu);
+ 		kobj = &data->kobj;
+ 		cmp = &data->kobj_unregister;
+@@ -1103,9 +1100,13 @@ static int __cpufreq_remove_dev(struct d
+ 		free_cpumask_var(data->related_cpus);
+ 		free_cpumask_var(data->cpus);
+ 		kfree(data);
+-	} else if (cpufreq_driver->target) {
+-		__cpufreq_governor(data, CPUFREQ_GOV_START);
+-		__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
++	} else {
++		pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
++		cpufreq_cpu_put(data);
++		if (cpufreq_driver->target) {
++			__cpufreq_governor(data, CPUFREQ_GOV_START);
++			__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
++		}
+ 	}
  
-@@ -1034,7 +1031,8 @@ static int setup_blkring(struct xenbus_d
- 	SHARED_RING_INIT(sring);
- 	FRONT_RING_INIT(&info->ring, sring, PAGE_SIZE);
- 
--	sg_init_table(info->sg, BLKIF_MAX_SEGMENTS_PER_REQUEST);
-+	for (i = 0; i < BLK_RING_SIZE; i++)
-+		sg_init_table(info->shadow[i].sg, BLKIF_MAX_SEGMENTS_PER_REQUEST);
- 
- 	/* Allocate memory for grants */
- 	err = fill_grant_buffer(info, BLK_RING_SIZE *
+ 	per_cpu(cpufreq_policy_cpu, cpu) = -1;
 
 
