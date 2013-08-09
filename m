@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968074Ab3HIQ04 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:26:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967935Ab3HIQ0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:26:55 -0400
-Date: Fri, 9 Aug 2013 18:21:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a
-	ring buffer
-Message-ID: <20130809162115.GB7144@redhat.com>
-References: <1376037909-17797-1-git-send-email-namhyung@kernel.org> <1376037909-17797-11-git-send-email-namhyung@kernel.org> <5204BCE6.2070102@hitachi.com> <20130809162002.GA7144@redhat.com>
+	id S968086Ab3HIQ3D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:29:03 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57457 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967927Ab3HIQ3A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 12:29:00 -0400
+Date: Fri, 9 Aug 2013 17:28:49 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: core: clarify usb-phy array binding
+Message-ID: <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
+References: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130809162002.GA7144@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09, Oleg Nesterov wrote:
->
-> Steven, Jovi, what should we do with that patch? It seems that it
-> was forgotten.
->
-> I can take these patches into my ubprobes branch
+On Fri, Aug 09, 2013 at 04:40:32PM +0100, Kumar Gala wrote:
+> The binding spec wasn't clear that the order of the phandles in the
+> usb-phy array has meaning.  Clarify this point in the binding that
+> it should be <USB2-HS-PHY, USB3-SS-PHY>.
+> 
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> ---
+>  Documentation/devicetree/bindings/usb/dwc3.txt | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+> index 7a95c65..8a9770b 100644
+> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+> @@ -6,7 +6,9 @@ Required properties:
+>   - compatible: must be "synopsys,dwc3"
+>   - reg : Address and length of the register set for the device
+>   - interrupts: Interrupts used by the dwc3 controller.
+> - - usb-phy : array of phandle for the PHY device
+> + - usb-phy : array of phandle for the PHY device.  The first element
+> +   in the array is expected to be a handle to the USB2/HS PHY and
+> +   the second element is expected to be a handle to the USB3/SS PHY
 
-I meant that patch from Jovi, sorry for confusion.
+Just to check - it's not valid to have a USB3 phy without a USB2 phy?
 
-Oleg.
-
+Mark.
