@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967813Ab3HICWu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:22:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55605 "EHLO
+	id S967341Ab3HIB6Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:58:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967373Ab3HIB6a (ORCPT
+	with ESMTP id S967140Ab3HIB6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:30 -0400
+	Thu, 8 Aug 2013 21:58:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 013/102] ARM: 7790/1: Fix deferred mm switch on VIVT processors
-Date: Thu,  8 Aug 2013 18:56:49 -0700
-Message-Id: <20130809015013.322063397@linuxfoundation.org>
+Subject: [ 001/102] ARM: poison the vectors page
+Date: Thu,  8 Aug 2013 18:56:37 -0700
+Message-Id: <20130809015010.545105906@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -28,91 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit bdae73cd374e28db544fdd9b77de689a36e3c129 upstream.
+commit f928d4f2a86f46b030fa0850385b4391fc2b5918 upstream.
 
-As of commit b9d4d42ad9 (ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on
-pre-ARMv6 CPUs), the mm switching on VIVT processors is done in the
-finish_arch_post_lock_switch() function to avoid whole cache flushing
-with interrupts disabled. The need for deferred mm switch is stored as a
-thread flag (TIF_SWITCH_MM). However, with preemption enabled, we can
-have another thread switch before finish_arch_post_lock_switch(). If the
-new thread has the same mm as the previous 'next' thread, the scheduler
-will not call switch_mm() and the TIF_SWITCH_MM flag won't be set for
-the new thread.
+Fill the empty regions of the vectors page with an exception generating
+instruction.  This ensures that any inappropriate branch to the vector
+page is appropriately trapped, rather than just encountering some code
+to execute.  (The vectors page was filled with zero before, which
+corresponds with the "andeq r0, r0, r0" instruction - a no-op.)
 
-This patch moves the switch pending flag to the mm_context_t structure
-since this is specific to the mm rather than thread.
-
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Acked-by Nicolas Pitre <nico@linaro.org>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/mmu.h         |    2 ++
- arch/arm/include/asm/mmu_context.h |   20 ++++++++++++++++----
- arch/arm/include/asm/thread_info.h |    1 -
- 3 files changed, 18 insertions(+), 5 deletions(-)
+ arch/arm/kernel/traps.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/arm/include/asm/mmu.h
-+++ b/arch/arm/include/asm/mmu.h
-@@ -6,6 +6,8 @@
- typedef struct {
- #ifdef CONFIG_CPU_HAS_ASID
- 	atomic64_t	id;
-+#else
-+	int		switch_pending;
- #endif
- 	unsigned int	vmalloc_seq;
- 	unsigned long	sigpage;
---- a/arch/arm/include/asm/mmu_context.h
-+++ b/arch/arm/include/asm/mmu_context.h
-@@ -55,7 +55,7 @@ static inline void check_and_switch_cont
- 		 * on non-ASID CPUs, the old mm will remain valid until the
- 		 * finish_arch_post_lock_switch() call.
- 		 */
--		set_ti_thread_flag(task_thread_info(tsk), TIF_SWITCH_MM);
-+		mm->context.switch_pending = 1;
- 	else
- 		cpu_switch_mm(mm->pgd, mm);
- }
-@@ -64,9 +64,21 @@ static inline void check_and_switch_cont
- 	finish_arch_post_lock_switch
- static inline void finish_arch_post_lock_switch(void)
- {
--	if (test_and_clear_thread_flag(TIF_SWITCH_MM)) {
--		struct mm_struct *mm = current->mm;
--		cpu_switch_mm(mm->pgd, mm);
-+	struct mm_struct *mm = current->mm;
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -817,10 +817,20 @@ void __init early_trap_init(void *vector
+ 	extern char __vectors_start[], __vectors_end[];
+ 	extern char __kuser_helper_start[], __kuser_helper_end[];
+ 	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
++	unsigned i;
+ 
+ 	vectors_page = vectors_base;
+ 
+ 	/*
++	 * Poison the vectors page with an undefined instruction.  This
++	 * instruction is chosen to be undefined for both ARM and Thumb
++	 * ISAs.  The Thumb version is an undefined instruction with a
++	 * branch back to the undefined instruction.
++	 */
++	for (i = 0; i < PAGE_SIZE / sizeof(u32); i++)
++		((u32 *)vectors_base)[i] = 0xe7fddef1;
 +
-+	if (mm && mm->context.switch_pending) {
-+		/*
-+		 * Preemption must be disabled during cpu_switch_mm() as we
-+		 * have some stateful cache flush implementations. Check
-+		 * switch_pending again in case we were preempted and the
-+		 * switch to this mm was already done.
-+		 */
-+		preempt_disable();
-+		if (mm->context.switch_pending) {
-+			mm->context.switch_pending = 0;
-+			cpu_switch_mm(mm->pgd, mm);
-+		}
-+		preempt_enable_no_resched();
- 	}
- }
- 
---- a/arch/arm/include/asm/thread_info.h
-+++ b/arch/arm/include/asm/thread_info.h
-@@ -156,7 +156,6 @@ extern int vfp_restore_user_hwstate(stru
- #define TIF_USING_IWMMXT	17
- #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
- #define TIF_RESTORE_SIGMASK	20
--#define TIF_SWITCH_MM		22	/* deferred switch_mm */
- 
- #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
- #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
++	/*
+ 	 * Copy the vectors, stubs and kuser helpers (in entry-armv.S)
+ 	 * into the vector page, mapped at 0xffff0000, and ensure these
+ 	 * are visible to the instruction stream.
 
 
