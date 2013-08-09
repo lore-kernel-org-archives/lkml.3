@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030228Ab3HICGk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:06:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55853 "EHLO
+	id S1030366Ab3HICG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:06:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55839 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967728Ab3HIB7Z (ORCPT
+	with ESMTP id S967717Ab3HIB7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:25 -0400
+	Thu, 8 Aug 2013 21:59:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 077/102] drm/radeon: never unpin UVD bo v3
-Date: Thu,  8 Aug 2013 18:57:53 -0700
-Message-Id: <20130809015028.350835908@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 076/102] cgroup: fix umount vs cgroup_cfts_commit() race
+Date: Thu,  8 Aug 2013 18:57:52 -0700
+Message-Id: <20130809015028.164969380@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,236 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian König <christian.koenig@amd.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 9cc2e0e9f13315559c85c9f99f141e420967c955 upstream.
+commit 084457f284abf6789d90509ee11dae383842b23b upstream.
 
-Changing the UVD BOs offset on suspend/resume doesn't work because the VCPU
-internally keeps pointers to it. Just keep it always pinned and save the
-content manually.
+cgroup_cfts_commit() uses dget() to keep cgroup alive after cgroup_mutex
+is dropped, but dget() won't prevent cgroupfs from being umounted. When
+the race happens, vfs will see some dentries with non-zero refcnt while
+umount is in process.
 
-Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=66425
+Keep running this:
+  mount -t cgroup -o blkio xxx /cgroup
+  umount /cgroup
 
-v2: fix compiler warning
-v3: fix CIK support
-v4: rebased for 3.10-stable tree
+And this:
+  modprobe cfq-iosched
+  rmmod cfs-iosched
 
-Note: a version of this patch needs to go to stable.
+After a while, the BUG() in shrink_dcache_for_umount_subtree() may
+be triggered:
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+  BUG: Dentry xxx{i=0,n=blkio.yyy} still in use (1) [umount of cgroup cgroup]
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/gpu/drm/radeon/radeon.h       |    3 -
- drivers/gpu/drm/radeon/radeon_fence.c |    2 
- drivers/gpu/drm/radeon/radeon_uvd.c   |  100 ++++++++++++++++------------------
- drivers/gpu/drm/radeon/rv770.c        |    2 
- 4 files changed, 52 insertions(+), 55 deletions(-)
+ kernel/cgroup.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -1145,6 +1145,8 @@ struct radeon_uvd {
- 	struct radeon_bo	*vcpu_bo;
- 	void			*cpu_addr;
- 	uint64_t		gpu_addr;
-+	void			*saved_bo;
-+	unsigned		fw_size;
- 	atomic_t		handles[RADEON_MAX_UVD_HANDLES];
- 	struct drm_file		*filp[RADEON_MAX_UVD_HANDLES];
- 	struct delayed_work	idle_work;
-@@ -1684,7 +1686,6 @@ struct radeon_device {
- 	const struct firmware *rlc_fw;	/* r6/700 RLC firmware */
- 	const struct firmware *mc_fw;	/* NI MC firmware */
- 	const struct firmware *ce_fw;	/* SI CE firmware */
--	const struct firmware *uvd_fw;	/* UVD firmware */
- 	struct r600_blit r600_blit;
- 	struct r600_vram_scratch vram_scratch;
- 	int msi_enabled; /* msi enabled */
---- a/drivers/gpu/drm/radeon/radeon_fence.c
-+++ b/drivers/gpu/drm/radeon/radeon_fence.c
-@@ -782,7 +782,7 @@ int radeon_fence_driver_start_ring(struc
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2769,13 +2769,17 @@ static void cgroup_cfts_commit(struct cg
+ {
+ 	LIST_HEAD(pending);
+ 	struct cgroup *cgrp, *n;
++	struct super_block *sb = ss->root->sb;
  
- 		} else {
- 			/* put fence directly behind firmware */
--			index = ALIGN(rdev->uvd_fw->size, 8);
-+			index = ALIGN(rdev->uvd.fw_size, 8);
- 			rdev->fence_drv[ring].cpu_addr = rdev->uvd.cpu_addr + index;
- 			rdev->fence_drv[ring].gpu_addr = rdev->uvd.gpu_addr + index;
+ 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
+-	if (cfts && ss->root != &rootnode) {
++	if (cfts && ss->root != &rootnode &&
++	    atomic_inc_not_zero(&sb->s_active)) {
+ 		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
+ 			dget(cgrp->dentry);
+ 			list_add_tail(&cgrp->cft_q_node, &pending);
  		}
---- a/drivers/gpu/drm/radeon/radeon_uvd.c
-+++ b/drivers/gpu/drm/radeon/radeon_uvd.c
-@@ -55,6 +55,7 @@ static void radeon_uvd_idle_work_handler
- int radeon_uvd_init(struct radeon_device *rdev)
- {
- 	struct platform_device *pdev;
-+	const struct firmware *fw;
- 	unsigned long bo_size;
- 	const char *fw_name;
- 	int i, r;
-@@ -104,7 +105,7 @@ int radeon_uvd_init(struct radeon_device
- 		return -EINVAL;
++	} else {
++		sb = NULL;
  	}
  
--	r = request_firmware(&rdev->uvd_fw, fw_name, &pdev->dev);
-+	r = request_firmware(&fw, fw_name, &pdev->dev);
- 	if (r) {
- 		dev_err(rdev->dev, "radeon_uvd: Can't load firmware \"%s\"\n",
- 			fw_name);
-@@ -114,7 +115,7 @@ int radeon_uvd_init(struct radeon_device
- 
- 	platform_device_unregister(pdev);
- 
--	bo_size = RADEON_GPU_PAGE_ALIGN(rdev->uvd_fw->size + 8) +
-+	bo_size = RADEON_GPU_PAGE_ALIGN(fw->size + 8) +
- 		  RADEON_UVD_STACK_SIZE + RADEON_UVD_HEAP_SIZE;
- 	r = radeon_bo_create(rdev, bo_size, PAGE_SIZE, true,
- 			     RADEON_GEM_DOMAIN_VRAM, NULL, &rdev->uvd.vcpu_bo);
-@@ -123,16 +124,35 @@ int radeon_uvd_init(struct radeon_device
- 		return r;
+ 	mutex_unlock(&cgroup_mutex);
+@@ -2798,6 +2802,9 @@ static void cgroup_cfts_commit(struct cg
+ 		dput(cgrp->dentry);
  	}
  
--	r = radeon_uvd_resume(rdev);
--	if (r)
-+	r = radeon_bo_reserve(rdev->uvd.vcpu_bo, false);
-+	if (r) {
-+		radeon_bo_unref(&rdev->uvd.vcpu_bo);
-+		dev_err(rdev->dev, "(%d) failed to reserve UVD bo\n", r);
- 		return r;
-+	}
- 
--	memset(rdev->uvd.cpu_addr, 0, bo_size);
--	memcpy(rdev->uvd.cpu_addr, rdev->uvd_fw->data, rdev->uvd_fw->size);
-+	r = radeon_bo_pin(rdev->uvd.vcpu_bo, RADEON_GEM_DOMAIN_VRAM,
-+			  &rdev->uvd.gpu_addr);
-+	if (r) {
-+		radeon_bo_unreserve(rdev->uvd.vcpu_bo);
-+		radeon_bo_unref(&rdev->uvd.vcpu_bo);
-+		dev_err(rdev->dev, "(%d) UVD bo pin failed\n", r);
-+		return r;
-+	}
- 
--	r = radeon_uvd_suspend(rdev);
--	if (r)
-+	r = radeon_bo_kmap(rdev->uvd.vcpu_bo, &rdev->uvd.cpu_addr);
-+	if (r) {
-+		dev_err(rdev->dev, "(%d) UVD map failed\n", r);
- 		return r;
-+	}
++	if (sb)
++		deactivate_super(sb);
 +
-+	radeon_bo_unreserve(rdev->uvd.vcpu_bo);
-+
-+	rdev->uvd.fw_size = fw->size;
-+	memset(rdev->uvd.cpu_addr, 0, bo_size);
-+	memcpy(rdev->uvd.cpu_addr, fw->data, fw->size);
-+
-+	release_firmware(fw);
- 
- 	for (i = 0; i < RADEON_MAX_UVD_HANDLES; ++i) {
- 		atomic_set(&rdev->uvd.handles[i], 0);
-@@ -144,71 +164,47 @@ int radeon_uvd_init(struct radeon_device
- 
- void radeon_uvd_fini(struct radeon_device *rdev)
- {
--	radeon_uvd_suspend(rdev);
--	radeon_bo_unref(&rdev->uvd.vcpu_bo);
--}
--
--int radeon_uvd_suspend(struct radeon_device *rdev)
--{
- 	int r;
- 
- 	if (rdev->uvd.vcpu_bo == NULL)
--		return 0;
-+		return;
- 
- 	r = radeon_bo_reserve(rdev->uvd.vcpu_bo, false);
- 	if (!r) {
- 		radeon_bo_kunmap(rdev->uvd.vcpu_bo);
- 		radeon_bo_unpin(rdev->uvd.vcpu_bo);
--		rdev->uvd.cpu_addr = NULL;
--		if (!radeon_bo_pin(rdev->uvd.vcpu_bo, RADEON_GEM_DOMAIN_CPU, NULL)) {
--			radeon_bo_kmap(rdev->uvd.vcpu_bo, &rdev->uvd.cpu_addr);
--		}
- 		radeon_bo_unreserve(rdev->uvd.vcpu_bo);
--
--		if (rdev->uvd.cpu_addr) {
--			radeon_fence_driver_start_ring(rdev, R600_RING_TYPE_UVD_INDEX);
--		} else {
--			rdev->fence_drv[R600_RING_TYPE_UVD_INDEX].cpu_addr = NULL;
--		}
- 	}
--	return r;
-+
-+	radeon_bo_unref(&rdev->uvd.vcpu_bo);
+ 	mutex_unlock(&cgroup_cft_mutex);
  }
- 
--int radeon_uvd_resume(struct radeon_device *rdev)
-+int radeon_uvd_suspend(struct radeon_device *rdev)
- {
--	int r;
-+	unsigned size;
- 
- 	if (rdev->uvd.vcpu_bo == NULL)
--		return -EINVAL;
-+		return 0;
- 
--	r = radeon_bo_reserve(rdev->uvd.vcpu_bo, false);
--	if (r) {
--		radeon_bo_unref(&rdev->uvd.vcpu_bo);
--		dev_err(rdev->dev, "(%d) failed to reserve UVD bo\n", r);
--		return r;
--	}
-+	size = radeon_bo_size(rdev->uvd.vcpu_bo);
-+	rdev->uvd.saved_bo = kmalloc(size, GFP_KERNEL);
-+	memcpy(rdev->uvd.saved_bo, rdev->uvd.cpu_addr, size);
- 
--	/* Have been pin in cpu unmap unpin */
--	radeon_bo_kunmap(rdev->uvd.vcpu_bo);
--	radeon_bo_unpin(rdev->uvd.vcpu_bo);
-+	return 0;
-+}
- 
--	r = radeon_bo_pin(rdev->uvd.vcpu_bo, RADEON_GEM_DOMAIN_VRAM,
--			  &rdev->uvd.gpu_addr);
--	if (r) {
--		radeon_bo_unreserve(rdev->uvd.vcpu_bo);
--		radeon_bo_unref(&rdev->uvd.vcpu_bo);
--		dev_err(rdev->dev, "(%d) UVD bo pin failed\n", r);
--		return r;
--	}
-+int radeon_uvd_resume(struct radeon_device *rdev)
-+{
-+	if (rdev->uvd.vcpu_bo == NULL)
-+		return -EINVAL;
- 
--	r = radeon_bo_kmap(rdev->uvd.vcpu_bo, &rdev->uvd.cpu_addr);
--	if (r) {
--		dev_err(rdev->dev, "(%d) UVD map failed\n", r);
--		return r;
-+	if (rdev->uvd.saved_bo != NULL) {
-+		unsigned size = radeon_bo_size(rdev->uvd.vcpu_bo);
-+		memcpy(rdev->uvd.cpu_addr, rdev->uvd.saved_bo, size);
-+		kfree(rdev->uvd.saved_bo);
-+		rdev->uvd.saved_bo = NULL;
- 	}
- 
--	radeon_bo_unreserve(rdev->uvd.vcpu_bo);
--
- 	return 0;
- }
- 
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -813,7 +813,7 @@ int rv770_uvd_resume(struct radeon_devic
- 
- 	/* programm the VCPU memory controller bits 0-27 */
- 	addr = rdev->uvd.gpu_addr >> 3;
--	size = RADEON_GPU_PAGE_ALIGN(rdev->uvd_fw->size + 4) >> 3;
-+	size = RADEON_GPU_PAGE_ALIGN(rdev->uvd.fw_size + 4) >> 3;
- 	WREG32(UVD_VCPU_CACHE_OFFSET0, addr);
- 	WREG32(UVD_VCPU_CACHE_SIZE0, size);
  
 
 
