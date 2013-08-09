@@ -1,189 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966456Ab3HIJ5G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 05:57:06 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:53182 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965803Ab3HIJ5E (ORCPT
+	id S934292Ab3HIKFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:05:09 -0400
+Received: from smtp-out-009.synserver.de ([212.40.185.9]:1177 "EHLO
+	smtp-out-008.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934235Ab3HIKFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 05:57:04 -0400
-Message-ID: <5204BCE6.2070102@hitachi.com>
-Date: Fri, 09 Aug 2013 18:56:54 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 9 Aug 2013 06:05:08 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 13192
+Message-ID: <5204BF06.3060806@metafoo.de>
+Date: Fri, 09 Aug 2013 12:05:58 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a
- ring buffer
-References: <1376037909-17797-1-git-send-email-namhyung@kernel.org> <1376037909-17797-11-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1376037909-17797-11-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Mark Brown <broonie@kernel.org>, Jean-Francois Moine <moinejf@free.fr>,
+        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH v4 1/1] ASoc: kirkwood: add DT support to
+ the mvebu audio subsystem
+References: <20130808132201.2610aef3@armhf> <5204A716.6070507@gmail.com> <20130809091953.GO6427@sirena.org.uk> <5204B7A6.9050907@gmail.com>
+In-Reply-To: <5204B7A6.9050907@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/09 17:45), Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+On 08/09/2013 11:34 AM, Sebastian Hesselbarth wrote:
+> On 08/09/13 11:19, Mark Brown wrote:
+>> On Fri, Aug 09, 2013 at 10:23:50AM +0200, Sebastian Hesselbarth wrote:
+>>> On 08/08/2013 01:22 PM, Jean-Francois Moine wrote:
+>>
+>>>> +i2s1: audio-controller@b4000 {
+>>>> +    compatible = "mrvl,mvebu-audio";
+>>>> +    reg = <0xb4000 0x2210>;
+>>>> +    interrupts = <21>, <22>;
+>>>> +    clocks = <&gate_clk 13>;
+>>>> +    clock-names = "internal";
+>>>> +};
+>>
+>>> Also we will need some phandle reference to the audio codec here. As
+>>> this property is ongoing work in ASoC core, I suggest we wait for it
+>>> and propose a binding afterwards.
+>>
+>> No, as discussed this should be in the binding for the audio subsystem
+>> not in the binding for an individual component in that subsystem.
+>>
 > 
-> Fetching from user space should be done in a non-atomic context.  So
-> use a temporary buffer and copy its content to the ring buffer
-> atomically.
+> Mark,
 > 
-> While at it, use __get_data_size() and store_trace_args() to reduce
-> code duplication.
+> I do understand there may be SoCs requiring sophisticated extra audio
+> nodes, but Marvell SoCs don't. I prefer having a single node for the
+> i2s controller *and* exploit the audio subsystem properties from that.
 
-I just concern using kmalloc() in the event handler. For fetching user
-memory which can be swapped out, that is true. But most of the cases,
-we can presume that it exists on the physical memory.
+It's not about SoCs, it's about the board. The audio fabric on a board can
+easily get complex enough to require its own driver. Speakers, mics, jacks
+and jack detection, external amplifiers, bluetooth, baseband, multiple
+CODECs. That's what the audio node describes.
 
-I'd like to ask the opinions of Srikar and Oleg.
-
-BTW, you'd better add to patch description why previously this is
-not needed, and your series needs it too. :)
-
-Thank you,
-
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  kernel/trace/trace_uprobe.c | 69 ++++++++++++++++++++++++++++++++++-----------
->  1 file changed, 53 insertions(+), 16 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index f991cac2b9ba..2888b95b063f 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -516,15 +516,31 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
->  	struct uprobe_trace_entry_head *entry;
->  	struct ring_buffer_event *event;
->  	struct ring_buffer *buffer;
-> -	void *data;
-> -	int size, i;
-> +	void *data, *tmp;
-> +	int size, dsize, esize;
->  	struct ftrace_event_call *call = &tu->p.call;
->  
-> -	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> +	dsize = __get_data_size(&tu->p, regs);
-> +	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> +
-> +	/*
-> +	 * A temporary buffer is used for storing fetched data before reserving
-> +	 * the ring buffer because fetching from user space should be done in a
-> +	 * non-atomic context.
-> +	 */
-> +	tmp = kmalloc(tu->p.size + dsize, GFP_KERNEL);
-> +	if (tmp == NULL)
-> +		return;
-> +
-> +	store_trace_args(esize, &tu->p, regs, tmp, dsize);
-> +
-> +	size = esize + tu->p.size + dsize;
->  	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
-> -						  size + tu->p.size, 0, 0);
-> -	if (!event)
-> +						  size, 0, 0);
-> +	if (!event) {
-> +		kfree(tmp);
->  		return;
-> +	}
->  
->  	entry = ring_buffer_event_data(event);
->  	if (is_ret_probe(tu)) {
-> @@ -536,13 +552,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
->  		data = DATAOF_TRACE_ENTRY(entry, false);
->  	}
->  
-> -	for (i = 0; i < tu->p.nr_args; i++) {
-> -		call_fetch(&tu->p.args[i].fetch, regs,
-> -			   data + tu->p.args[i].offset);
-> -	}
-> +	memcpy(data, tmp, tu->p.size + dsize);
->  
->  	if (!filter_current_check_discard(buffer, call, entry, event))
->  		trace_buffer_unlock_commit(buffer, event, 0, 0);
-> +
-> +	kfree(tmp);
->  }
->  
->  /* uprobe handler */
-> @@ -756,11 +771,30 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
->  	struct ftrace_event_call *call = &tu->p.call;
->  	struct uprobe_trace_entry_head *entry;
->  	struct hlist_head *head;
-> -	void *data;
-> -	int size, rctx, i;
-> +	void *data, *tmp;
-> +	int size, dsize, esize;
-> +	int rctx;
-> +
-> +	dsize = __get_data_size(&tu->p, regs);
-> +	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> +
-> +	/*
-> +	 * A temporary buffer is used for storing fetched data before reserving
-> +	 * the ring buffer because fetching from user space should be done in a
-> +	 * non-atomic context.
-> +	 */
-> +	tmp = kmalloc(tu->p.size + dsize, GFP_KERNEL);
-> +	if (tmp == NULL)
-> +		return;
->  
-> -	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> -	size = ALIGN(size + tu->p.size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-> +	store_trace_args(esize, &tu->p, regs, tmp, dsize);
-> +
-> +	size = esize + tu->p.size + dsize;
-> +	size = ALIGN(size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-> +	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough")) {
-> +		kfree(tmp);
-> +		return;
-> +	}
->  
->  	preempt_disable();
->  	head = this_cpu_ptr(call->perf_events);
-> @@ -780,15 +814,18 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
->  		data = DATAOF_TRACE_ENTRY(entry, false);
->  	}
->  
-> -	for (i = 0; i < tu->p.nr_args; i++) {
-> -		struct probe_arg *parg = &tu->p.args[i];
-> +	memcpy(data, tmp, tu->p.size + dsize);
-> +
-> +	if (size - esize > tu->p.size + dsize) {
-> +		int len = tu->p.size + dsize;
->  
-> -		call_fetch(&parg->fetch, regs, data + parg->offset);
-> +		memset(data + len, 0, size - esize - len);
->  	}
->  
->  	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
->   out:
->  	preempt_enable();
-> +	kfree(tmp);
->  }
->  
->  /* uprobe profile handler */
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+- Lars
 
