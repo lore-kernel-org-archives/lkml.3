@@ -1,134 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967058Ab3HIA5E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 20:57:04 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:9845 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967013Ab3HIA5B (ORCPT
+	id S1758246Ab3HIA6N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 20:58:13 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:18375 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758082Ab3HIA6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 20:57:01 -0400
-X-Spam-Score: -100.8
-Message-ID: <52043E1B.4060803@asianux.com>
-Date: Fri, 09 Aug 2013 08:55:55 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-CC: Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
-        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        holt@sgi.com, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] kernel/sys.c: return the current gid when error occurs
-References: <5200AD26.8070701@asianux.com> <5200AD67.1030109@asianux.com> <52015ADB.30408@mit.edu> <20130807162147.GA31460@redhat.com> <CALCETrVELXkdccJZQRsm_9mtXrD-8nW_sRW_p-SWNVsXcqX2Cg@mail.gmail.com> <5202F4A3.5070603@asianux.com> <CALCETrUiVT5p5oHEHTavJtdWo3d0BV+Fexurpr-Z9ockwX1SoQ@mail.gmail.com> <5202F8D6.3000607@asianux.com> <5203A2A4.7030402@gmail.com>
-In-Reply-To: <5203A2A4.7030402@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Aug 2013 20:58:11 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-8b-52043ea14b07
+Message-id: <52043EA3.3080704@samsung.com>
+Date: Fri, 09 Aug 2013 09:58:11 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, liuj97@gmail.com,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH] Revert
+ "mm/memory-hotplug: fix lowmem count overflow when offline pages"
+References: <1375260602-2462-1-git-send-email-jy0922.shim@samsung.com>
+ <1572085.gN7iX7IvMe@amdc1032> <3049413.HnxJdeugZK@amdc1032>
+In-reply-to: <3049413.HnxJdeugZK@amdc1032>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsWyRsSkRHehHUuQwa5NXBZz1q9hs9g4Yz2r
+	xbMt3BaXd81hs7i35j+rRfORjUwObB47Z91l99j0aRK7x4kZv1k8+rasYvT4vEkugDWKyyYl
+	NSezLLVI3y6BK+P/pUNsBYc4Kt41PGJpYJzC3sXIySEhYCLx408DlC0mceHeerYuRi4OIYGl
+	jBKzP89ihCk69n05C0RiEaPEu7cdjBDOK0aJf7cPs4FU8QpoSdz/9YkVxGYRUJWY9nEBC4jN
+	JqAncWfbcSYQW1QgTGLJt8dQ9YISPybfA6sREbCQWLviLZjNLFAnceXbXLDNwgLxEndfn2CC
+	WNbCKLFk2TywIk6gZfuO9jBBNFhLrJy0jRHClpfYvOYtM0iDhMAhdon/3TOYIS4SkPg2+RBQ
+	MwdQQlZi0wFmiNckJQ6uuMEygVFsFpKbZiEZOwvJ2AWMzKsYRVMLkguKk9KLTPWKE3OLS/PS
+	9ZLzczcxAuPt9L9nE3cw3j9gfYgxGWjlRGYp0eR8YLzmlcQbGpsZWZiamBobmVuakSasJM6r
+	3mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFRM/lq1fcFSyW0lG/IS/W3Ts0Pc37ztS/v
+	XOuJ/Fef7vUd0Ehac6bxE/tRmVllmal6t7VE9v2KODa3JPeho2bbgvU/XZ7u+/hAaGrPjPAT
+	Jz9f87JV+OX2TklomdTeFL35bPZZ+2fvEvnr1HzT/rHC1vbt15wP3OoX/j5pduLjtVNl7oZ9
+	Zps8S4mlOCPRUIu5qDgRAB/BXLzNAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jAd2FdixBBsvXM1vMWb+GzWLjjPWs
+	Fs+2cFtc3jWHzeLemv+sFs1HNjI5sHnsnHWX3WPTp0nsHidm/Gbx6NuyitHj8ya5ANaoBkab
+	jNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKALlBTKEnNK
+	gUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZ/y8dYis4xFHxruERSwPjFPYuRk4O
+	CQETiWPfl7NA2GISF+6tZ+ti5OIQEljEKPHubQcjhPOKUeLf7cNsIFW8AloS9399YgWxWQRU
+	JaZ9XADWzSagJ3Fn23EmEFtUIExiybfHUPWCEj8m3wOrERGwkFi74i2YzSxQJ3Hl21xGEFtY
+	IF7i7usTTBDLWhglliybB1bECbRs39EeJogGa4mVk7YxQtjyEpvXvGWewCgwC8mOWUjKZiEp
+	W8DIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOJqfSe9gXNVgcYhRgINRiYdXcTtzkBBr
+	YllxZe4hRgkOZiUR3hdZQCHelMTKqtSi/Pii0pzU4kOMycAgmMgsJZqcD0w0eSXxhsYmZkaW
+	RuaGFkbG5qQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAqH/j+1fBjkIOTu/8DYfv5xzY
+	9XzJyptXuB5sW39m74Tz2+MDL/n53Npfev38pqtX7inJNke+1pepOrdv3YJn4vaqqtHzerJF
+	zZwYs8y33Ld0TJWafmF1YoBewaGMjyqKDeUvvG5nFgTKL3tu1zPJU5trw7w6N9FaFTnbz9ez
+	Uld+qEkwcLs3Q4mlOCPRUIu5qDgRAHQCXSgqAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 09:52 PM, Michael Kerrisk (man-pages) wrote:
-> On 08/08/13 03:48, Chen Gang wrote:
->> On 08/08/2013 09:35 AM, Andy Lutomirski wrote:
->>> On Wed, Aug 7, 2013 at 6:30 PM, Chen Gang <gang.chen@asianux.com> wrote:
->>>> On 08/08/2013 12:58 AM, Andy Lutomirski wrote:
->>>>> On Wed, Aug 7, 2013 at 9:21 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>>>> On 08/06, Andy Lutomirski wrote:
->>>>>>>
->>>>>>> I assume that what the man page means is that the return value is
->>>>>>> whatever fsgid was prior to the call.  On error, fsgid isn't changed, so
->>>>>>> the return value is still "current".
->>>>>>
->>>>>> Probably... Still
->>>>>>
->>>>>>         On success, the previous value of fsuid is returned.
->>>>>>         On error, the current value of fsuid is returned.
->>>>>>
->>>>>> looks confusing. sys_setfsuid() always returns the old value.
->>>>>>
->>>>>>> (FWIW, this behavior is awful and is probably the cause of a security
->>>>>>> bug or three, since success and failure are indistinguishable.
->>>>>>
->>>>>> At least this all looks strange.
->>>>>>
->>>>>> I dunno if we can change this old behaviour. I won't be surprized
->>>>>> if someone already uses setfsuid(-1) as getfsuid().
->>>>>
->>>>
->>>> Oh, really it is.
->>>>
->>>> Hmm... as a pair function, we need add getfsuid() too, if we do not add
->>>> it, it will make negative effect with setfsuid().
->>>>
->>>> Since it is a system call, we have to keep compitable.
->>>>
->>>> So in my opinion, better add getfsuid2()/setfsuid2() instead of current
->>>> setfsuid()
->>>
->>> How about getfsuid() and setfsuid2()?
->>>
+On 07/31/2013 08:48 PM, Bartlomiej Zolnierkiewicz wrote:
+> On Wednesday, July 31, 2013 01:17:46 PM Bartlomiej Zolnierkiewicz wrote:
+>> Hi,
 >>
->> Hmm... I have 2 reasons, please check.
+>> On Wednesday, July 31, 2013 05:50:02 PM Joonyoung Shim wrote:
+>>> This reverts commit cea27eb2a202959783f81254c48c250ddd80e129.
+>> Could you please also include commit descriptions, i.e.
+>> commit cea27eb2a202959783f81254c48c250ddd80e129 ("mm/memory-hotplug: fix
+>> lowmem count overflow when offline pages")?
 >>
->> 1st reason: I checked history (just like Kees Cook suggested),
->> getfsuid() is mentioned before (you can google to find it), so need use
->> getfsuid2() to bypass the history complex.
->>
->> And 2nd reason: getfsuid() seems more like the pair of setfsuid(), not
->> for setfsuid2().
-> 
-> Time to apply the brakes... *Why* add new system calls here? I don't 
-> think there is any good reason. Yes, the existing APIs are rubbish,
-> but, as far as I can tell, they are also obsolete and unneeded.
-> The fsuid/fsgid mechanism was a bizarre Linuxism whose only purpose
-> was (as far as I know), to allow for the fact that Linux long ago
-> applied nonstandard rules when determining when one process could 
-> send signals to another. Quoting some book on the subject:
-> 
->     Why does Linux provide the file-system IDs and in what 
->     circumstances would we want the effective and file-system 
->     IDs to differ? The reasons are primarily historical.
->     The file-system IDs first appeared in Linux 1.2. In 
->     that kernel version, one process could send a signal to 
->     another if the effective user ID of the sender matched
->     the real or effective user ID of the target process. 
->     This affected certain programs such as the Linux NFS 
->     (Network File System) server program, which needed to be
->     able to access files as though it had the effective IDs 
->     of the corresponding client process. However, if the NFS 
->     server changed its effective user ID, it would be 
->     vulnerable to signals from unprivileged user processes. 
->     To prevent this possibility, the separate file-system user
->     and group IDs were devised. By leaving its effective IDs
->     unchanged, but changing its file-system IDs, the NFS 
->     server could masquerade as another user for the purpose of 
->     accessing files without being vulnerable to signals from
->     user processes.
-> 
->     From kernel 2.0 onward, Linux adopted the SUSv3-mandated 
->     rules regarding permission for sending signals, and these 
->     rules don't involve the effective user ID of the target
->     process. Thus, the file-system ID feature is no longer 
->     strictly necessary (a process can nowadays achieve the 
->     desired results by making judicious use of the system
->     calls described later in this chapter to change
->     the value of the effective user ID to and from an
->     unprivileged value, as required), but it remains for
->     compatibility with existing software.
-> 
-> So, I don't think anything needs fixing: there should be no 
-> new users of these system calls anyway.
-> 
+>>> Fixed to adjust totalhigh_pages when hot-removing memory by commit
+>>> 3dcc0571cd64816309765b7c7e4691a4cadf2ee7, so that commit occurs
+>>> duplicated decreasing of totalhigh_pages.
+>> Could you please describe it a bit more (because it is non-obvious) how
+>> the commit cea27eb effectively does the same totalhigh_pages adjustment
+>> that is present in the commit 3dcc057?
+> Err, the other way around. How the commit 3dcc057 ("mm: correctly update
+> zone->managed_pages") does what cea27eb ("mm/memory-hotplug: fix lowmem
+> count overflow when offline pages") did.
+>
 
-OK, thank you for your details, at least for me, what you says above
-sounds reasonable.
-
-> Cheers,
-> 
-> Michael
-> 
-> 
+OK, i updated to patch v2.
 
 Thanks.
--- 
-Chen Gang
