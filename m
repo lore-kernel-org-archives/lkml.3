@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967627Ab3HICNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:13:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55747 "EHLO
+	id S1030413Ab3HICNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:13:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967619Ab3HIB7E (ORCPT
+	with ESMTP id S967615Ab3HIB7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 21:59:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Lee <adam.lee@canonical.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 052/102] Bluetooth: fix wrong use of PTR_ERR() in btusb
-Date: Thu,  8 Aug 2013 18:57:28 -0700
-Message-Id: <20130809015022.277252585@linuxfoundation.org>
+        "Cho, Yu-Chen" <acho@suse.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 051/102] Bluetooth: Add support for Mediatek Bluetooth device [0e8d:763f]
+Date: Thu,  8 Aug 2013 18:57:27 -0700
+Message-Id: <20130809015022.035821149@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,115 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Lee <adam8157@gmail.com>
+From: "Cho, Yu-Chen" <acho@suse.com>
 
-commit d9c78e9738ccd0017b10b8f44462aafb61904a4a upstream.
+commit 178c059e7640aa8e50213400c6f3dde00189d979 upstream.
 
-PTR_ERR() returns a signed long type value which is limited by IS_ERR(),
-it must be a negative number whose range is [-MAX_ERRNO, 0).
+This patch adds support for Mediatek Bluetooth device
 
-The bug here returns negative numbers as error codes, then check it by
-"if (ret < 0)", but -PTR_ERR() is actually positive. The wrong use here
-leads to failure as below, even panic.
+T:  Bus=02 Lev=01 Prnt=01 Port=03 Cnt=01 Dev#=  2 Spd=480  MxCh= 0
+D:  Ver= 2.01 Cls=ef(misc ) Sub=02 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0e8d ProdID=763f Rev= 1.00
+S:  Manufacturer=MediaTek
+S:  Product=BT
+S:  SerialNumber=1.0
+C:* #Ifs= 2 Cfg#= 1 Atr=a0 MxPwr=450mA
+A:  FirstIf#= 0 IfCount= 2 Cls=ff(vend.) Sub=ff Prot=ff
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=125us
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=125us
+E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+I:  If#= 1 Alt= 6 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  63 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  63 Ivl=1ms
 
-[   12.958920] Bluetooth: hci0 command 0xfc8e tx timeout
-[   14.961765] Bluetooth: hci0 command 0xfc8e tx timeout
-[   16.964688] Bluetooth: hci0 command 0xfc8e tx timeout
-[   20.954501] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
-[   22.957358] Bluetooth: hci0 command 0xfc8e tx timeout
-[   30.948922] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
-[   32.951780] Bluetooth: hci0 command 0xfc8e tx timeout
-[   40.943359] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
-[   42.946219] Bluetooth: hci0 command 0xfc8e tx timeout
-[   50.937812] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
-[   52.940670] Bluetooth: hci0 command 0xfc8e tx timeout
-[   60.932236] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
-[   62.935092] Bluetooth: hci0 command 0xfc8e tx timeout
-[   70.926688] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
-[   72.929545] Bluetooth: hci0 command 0xfc8e tx timeout
-[   80.921111] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
-[   82.923969] Bluetooth: hci0 command 0xfc2f tx timeout
-[   90.915542] Bluetooth: hci0 sending Intel patch command (0xfc2f) failed (-110)
-[   92.918406] Bluetooth: hci0 command 0xfc11 tx timeout
-[  100.909955] Bluetooth: hci0 sending Intel patch command (0xfc11) failed (-110)
-[  102.912858] Bluetooth: hci0 command 0xfc60 tx timeout
-[  110.904394] Bluetooth: hci0 sending Intel patch command (0xfc60) failed (-110)
-[  112.907293] Bluetooth: hci0 command 0xfc11 tx timeout
-[  120.898831] Bluetooth: hci0 exiting Intel manufacturer mode failed (-110)
-[  120.904757] bluetoothd[1030]: segfault at 4 ip 00007f8b2eb55236 sp 00007fff53ff6920 error 4 in bluetoothd[7f8b2eaff000+cb000]
-
-Signed-off-by: Adam Lee <adam.lee@canonical.com>
+Signed-off-by: Cho, Yu-Chen <acho@suse.com>
 Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/bluetooth/btusb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 --- a/drivers/bluetooth/btusb.c
 +++ b/drivers/bluetooth/btusb.c
-@@ -1099,7 +1099,7 @@ static int btusb_setup_intel_patching(st
- 	if (IS_ERR(skb)) {
- 		BT_ERR("%s sending Intel patch command (0x%4.4x) failed (%ld)",
- 		       hdev->name, cmd->opcode, PTR_ERR(skb));
--		return -PTR_ERR(skb);
-+		return PTR_ERR(skb);
- 	}
+@@ -57,6 +57,9 @@ static struct usb_device_id btusb_table[
+ 	/* Apple-specific (Broadcom) devices */
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(0x05ac, 0xff, 0x01, 0x01) },
  
- 	/* It ensures that the returned event matches the event data read from
-@@ -1151,7 +1151,7 @@ static int btusb_setup_intel(struct hci_
- 	if (IS_ERR(skb)) {
- 		BT_ERR("%s sending initial HCI reset command failed (%ld)",
- 		       hdev->name, PTR_ERR(skb));
--		return -PTR_ERR(skb);
-+		return PTR_ERR(skb);
- 	}
- 	kfree_skb(skb);
- 
-@@ -1165,7 +1165,7 @@ static int btusb_setup_intel(struct hci_
- 	if (IS_ERR(skb)) {
- 		BT_ERR("%s reading Intel fw version command failed (%ld)",
- 		       hdev->name, PTR_ERR(skb));
--		return -PTR_ERR(skb);
-+		return PTR_ERR(skb);
- 	}
- 
- 	if (skb->len != sizeof(*ver)) {
-@@ -1223,7 +1223,7 @@ static int btusb_setup_intel(struct hci_
- 		BT_ERR("%s entering Intel manufacturer mode failed (%ld)",
- 		       hdev->name, PTR_ERR(skb));
- 		release_firmware(fw);
--		return -PTR_ERR(skb);
-+		return PTR_ERR(skb);
- 	}
- 
- 	if (skb->data[0]) {
-@@ -1280,7 +1280,7 @@ static int btusb_setup_intel(struct hci_
- 	if (IS_ERR(skb)) {
- 		BT_ERR("%s exiting Intel manufacturer mode failed (%ld)",
- 		       hdev->name, PTR_ERR(skb));
--		return -PTR_ERR(skb);
-+		return PTR_ERR(skb);
- 	}
- 	kfree_skb(skb);
- 
-@@ -1296,7 +1296,7 @@ exit_mfg_disable:
- 	if (IS_ERR(skb)) {
- 		BT_ERR("%s exiting Intel manufacturer mode failed (%ld)",
- 		       hdev->name, PTR_ERR(skb));
--		return -PTR_ERR(skb);
-+		return PTR_ERR(skb);
- 	}
- 	kfree_skb(skb);
- 
-@@ -1314,7 +1314,7 @@ exit_mfg_deactivate:
- 	if (IS_ERR(skb)) {
- 		BT_ERR("%s exiting Intel manufacturer mode failed (%ld)",
- 		       hdev->name, PTR_ERR(skb));
--		return -PTR_ERR(skb);
-+		return PTR_ERR(skb);
- 	}
- 	kfree_skb(skb);
++	/* MediaTek MT76x0E */
++	{ USB_DEVICE(0x0e8d, 0x763f) },
++
+ 	/* Broadcom SoftSailing reporting vendor specific */
+ 	{ USB_DEVICE(0x0a5c, 0x21e1) },
  
 
 
