@@ -1,147 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030216Ab3HIGRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 02:17:31 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46098 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966056Ab3HIGR3 (ORCPT
+	id S967480Ab3HIGVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 02:21:05 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:17606 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966649Ab3HIGVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 02:17:29 -0400
-X-AuditID: 9c93016f-b7cf0ae00000518f-d9-5204897768d1
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] perf tools: Separate out GTK codes to libperf-gtk.so
-References: <1375943650-2273-1-git-send-email-namhyung@kernel.org>
-	<1375943650-2273-2-git-send-email-namhyung@kernel.org>
-	<20130808152116.GG6102@ghostprotocols.net>
-Date: Fri, 09 Aug 2013 15:17:27 +0900
-In-Reply-To: <20130808152116.GG6102@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Thu, 8 Aug 2013 12:21:16 -0300")
-Message-ID: <874nazxua0.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 9 Aug 2013 02:21:03 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-11-52048a4db378
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 1/3] f2fs: fix the use of XATTR_NODE_OFFSET
+Date: Fri, 09 Aug 2013 15:20:28 +0900
+Message-id: <1376029230-303-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.3.1.437.g0dbd812
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrELMWRmVeSWpSXmKPExsVy+t8zQ13fLpYggyeXRSyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgypjbXFrQwFdx5mw/
+	SwNjL3cXIyeHhICJxIR/r5kgbDGJC/fWs3UxcnEICSxjlJi3/BUrTNHrrgZGiMR0RomG3VeY
+	IZw2JokH7ZOBMhwcbALaEpv3G4A0iAgwSyyYeh6sgVlgAqPE/0XvWUASwgLWElcmPWIHsVkE
+	VCXONdxlB+nlFXCVeDe1CmKZrsSiEwehFt9nk3i5lRWiXEDi2+RDLCDlEgKyEpsOMEOUSEoc
+	XHGDZQKj4AJGhlWMoqkFyQXFSelFxnrFibnFpXnpesn5uZsYIeHXv4Px7gHrQ4zJQOMmMkuJ
+	JucDwzevJN7Q2MzIwtTE1NjI3NKMNGElcV61FutAIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxS
+	DYzqBVGvDsRK1ey0zskyWsT0MOrf011nmK1Kk3w35RyW/e5qZ/dxk14vv0+i0k9BPRfZda0V
+	HqX77zuJKXZujtMuPWH8/NrW7RFui2aGXfGwWbeT84cc9woZhbvWz3937JPvveL3qrn3El9V
+	v35lZo3LHk4LixLJ6w/vry9mfzUjUlGXX6mMV4mlOCPRUIu5qDgRAO+auKRVAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsVy+t9jQV3fLpYgg/ZDAhbXd/1lsri0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
+	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
+	EgTXY2SABhLWMWbMbS4taOCrOHO2n6WBsZe7i5GTQ0LAROJ1VwMjhC0mceHeerYuRi4OIYHp
+	jBINu68wQzhtTBIP2icDVXFwsAloS2zebwDSICLALLFg6nlGkBpmgQmMEv8XvWcBSQgLWEtc
+	mfSIHcRmEVCVONdwlx2kl1fAVeLd1CqIZboSi04cZJ3AyL2AkWEVo2hqQXJBcVJ6rqFecWJu
+	cWleul5yfu4mRnB4P5PawbiyweIQowAHoxIPr+J25iAh1sSy4srcQ4wSHMxKIrwvsoBCvCmJ
+	lVWpRfnxRaU5qcWHGJOBlk9klhJNzgfGXl5JvKGxiZmRpZGZhZGJuTlpwkrivAdarQOFBNIT
+	S1KzU1MLUotgtjBxcEo1ME6NrW+t2+4ksXVVhprO+6Yr374FFEzvkzzZ2W6Y9vHMnYCDh59m
+	X5J0KIphfTjx+NW5At4BB9TZ9mzpff/q1uc3eaxPVvx7LycVcYttclFWfmeeXOPEk+uOf38b
+	JRu9pF6zbsPa4zWsMi0MrbZxVxg4V1hEe3fOcVz3xdl1cvrqSbq821JCJymxFGckGmoxFxUn
+	AgChC51kswIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+This patch fixes the use of XATTR_NODE_OFFSET.
 
-On Thu, 8 Aug 2013 12:21:16 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Aug 08, 2013 at 03:34:08PM +0900, Namhyung Kim escreveu:
->> Separate out GTK codes to a shared object called libperf-gtk.so.  This
->> time only GTK codes are built with -fPIC and libperf remains as is.
->
-> [acme@sandy linux]$ cat /etc/fedora-release 
-> Fedora release 18 (Spherical Cow)
-> [acme@sandy linux]$ 
->
-> Applying: perf tools: Separate out GTK codes to libperf-gtk.so
-> [perf/core c1ca5ea] perf tools: Separate out GTK codes to libperf-gtk.so
->  Author: Namhyung Kim <namhyung@kernel.org>
->  2 files changed, 38 insertions(+), 15 deletions(-)
-> [acme@sandy linux]$ make -j8 O=/tmp/build/perf -C tools/perf/ install-bin
->     CHK -fstack-protector-all
-> <SNIP>
->     CC /tmp/build/perf/scripts/perl/Perf-Trace-Util/Context.o
->     CC /tmp/build/perf/util/scripting-engines/trace-event-python.o
->     CC /tmp/build/perf/scripts/python/Perf-Trace-Util/Context.o
->     GEN perf-archive
->     GEN /tmp/build/perf/python/perf.so
->     CC /tmp/build/perf/perf.o
->     AR /tmp/build/perf/libperf.a
->     LINK /tmp/build/perf/perf
->     LINK /tmp/build/perf/libperf-gtk.so
-> /usr/bin/ld: /tmp/build/perf/ui/gtk/browser.o: relocation R_X86_64_32 against `.rodata.str1.1' can not be used when making a shared object; recompile with -fPIC
-> /tmp/build/perf/ui/gtk/browser.o: could not read symbols: Bad value
+o The offset should not use several MSB bits which are used by marking node
+blocks.
 
-Hmm.. this looks like the browser.o previously built without -fPIC.
+o IS_DNODE should handle XATTR_NODE_OFFSET to avoid potential abnormality
+during the fsync call.
 
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/f2fs.h | 12 +++++++-----
+ fs/f2fs/node.h |  4 ++++
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
-> collect2: error: ld returned 1 exit status
-> make: *** [/tmp/build/perf/libperf-gtk.so] Error 1
-> make: *** Waiting for unfinished jobs....
-> make: Leaving directory `/home/acme/git/linux/tools/perf'
-> [acme@sandy linux]$
->
-> And if I just do:
->
-> [acme@sandy linux]$ rm -rf /tmp/build/perf
-> [acme@sandy linux]$ mkdir /tmp/build/perf
-> [acme@sandy linux]$ make -j8 O=/tmp/build/perf -C tools/perf/ install-bin
->     CHK -fstack-protector-all
->     CHK -Wstack-protector
->     CHK -Wvolatile-register-var
->     CHK -D_FORTIFY_SOURCE=2
->     CHK bionic
->     CHK libelf
->     CHK libdw
->     CHK -DLIBELF_MMAP
->     CHK -DLIBELF_MMAP
->     CHK libunwind
->     CHK libaudit
->     CHK libslang
->     CHK gtk2
->     CHK -DHAVE_GTK_INFO_BAR
->     CHK perl
->     CHK python
->     CHK python version
->     CHK libbfd
->     CHK -DHAVE_STRLCPY
->     CHK -DHAVE_ON_EXIT
->     CHK -DBACKTRACE_SUPPORT
->     CHK libnuma
-> make: Entering directory `/home/acme/git/linux/tools/perf'
->     MKDIR /tmp/build/perf/arch/
->     MKDIR /tmp/build/perf/arch/x86/util/
->     MKDIR /tmp/build/perf/bench/
->     MKDIR /tmp/build/perf/scripts/perl/Perf-Trace-Util/
->     MKDIR /tmp/build/perf/scripts/python/Perf-Trace-Util/
->     MKDIR /tmp/build/perf/ui/
->     MKDIR /tmp/build/perf/ui/browsers/
->     MKDIR /tmp/build/perf/tests/
->     MKDIR /tmp/build/perf/ui/stdio/
->     MKDIR /tmp/build/perf/ui/tui/
->     MKDIR /tmp/build/perf/util/
->     MKDIR /tmp/build/perf/util/scripting-engines/
->     * new build flags or prefix
->     BISON /tmp/build/perf/util/pmu-bison.c
->     CC /tmp/build/perf/util/environment.o
-> <SNIP>
->     CC /tmp/build/perf/builtin-buildid-cache.o
-> Assembler messages:
-> Fatal error: can't create /tmp/build/perf/ui/gtk/setup.o: No such file or directory
-> make: *** [/tmp/build/perf/ui/gtk/setup.o] Error 1
-> make: *** Waiting for unfinished jobs....
-> Assembler messages:
-> Fatal error: can't create /tmp/build/perf/ui/gtk/util.o: No such file or directory
-> make: *** [/tmp/build/perf/ui/gtk/util.o] Error 1
-> Assembler messages:
-> Fatal error: can't create /tmp/build/perf/ui/gtk/progress.o: No such file or directory
-> make: *** [/tmp/build/perf/ui/gtk/progress.o] Error 1
-> Assembler messages:
-> Fatal error: can't create /tmp/build/perf/ui/gtk/browser.o: No such file or directory
-> make: *** [/tmp/build/perf/ui/gtk/browser.o] Error 1
-> Assembler messages:
-> Fatal error: can't create /tmp/build/perf/ui/gtk/helpline.o: No such file or directory
-> make: *** [/tmp/build/perf/ui/gtk/helpline.o] Error 1
-> Assembler messages:
-> Fatal error: can't create /tmp/build/perf/ui/gtk/annotate.o: No such file or directory
-> make: *** [/tmp/build/perf/ui/gtk/annotate.o] Error 1
-> Assembler messages:
-> Fatal error: can't create /tmp/build/perf/ui/gtk/hists.o: No such file or directory
-> make: *** [/tmp/build/perf/ui/gtk/hists.o] Error 1
-> make: Leaving directory `/home/acme/git/linux/tools/perf'
-> [acme@sandy linux]$ 
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index d8e386ce..eb8c45b 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -135,11 +135,13 @@ static inline int update_sits_in_cursum(struct f2fs_summary_block *rs, int i)
+ /*
+  * For INODE and NODE manager
+  */
+-#define XATTR_NODE_OFFSET	(-1)	/*
+-					 * store xattrs to one node block per
+-					 * file keeping -1 as its node offset to
+-					 * distinguish from index node blocks.
+-					 */
++/*
++ * XATTR_NODE_OFFSET stores xattrs to one node block per file keeping -1
++ * as its node offset to distinguish from index node blocks.
++ * But some bits are used to mark the node block.
++ */
++#define XATTR_NODE_OFFSET	((((unsigned int)-1) << OFFSET_BIT_SHIFT) \
++				>> OFFSET_BIT_SHIFT)
+ enum {
+ 	ALLOC_NODE,			/* allocate a new node page if needed */
+ 	LOOKUP_NODE,			/* look up a node without readahead */
+diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
+index 87349c4..3496bb3 100644
+--- a/fs/f2fs/node.h
++++ b/fs/f2fs/node.h
+@@ -229,6 +229,10 @@ static inline block_t next_blkaddr_of_node(struct page *node_page)
+ static inline bool IS_DNODE(struct page *node_page)
+ {
+ 	unsigned int ofs = ofs_of_node(node_page);
++
++	if (ofs == XATTR_NODE_OFFSET)
++		return false;
++
+ 	if (ofs == 3 || ofs == 4 + NIDS_PER_BLOCK ||
+ 			ofs == 5 + 2 * NIDS_PER_BLOCK)
+ 		return false;
+-- 
+1.8.3.1.437.g0dbd812
 
-Argh... sorry about that.  I forgot to add GTK_OBJS to DIRECTORY_DEPS.
-Will send v4 soon.
-
-Thanks,
-Namhyung
