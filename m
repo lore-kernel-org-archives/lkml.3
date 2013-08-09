@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030796Ab3HITNv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:13:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22008 "EHLO mx1.redhat.com"
+	id S1030806Ab3HITUh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:20:37 -0400
+Received: from 1wt.eu ([62.212.114.60]:35241 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030485Ab3HITNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:13:49 -0400
-Date: Fri, 9 Aug 2013 21:15:42 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Mike Christie <mchristie@fusionio.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-Message-ID: <20130809191542.GD25306@dhcp-26-207.brq.redhat.com>
-References: <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
- <51E83E32.9050306@cs.wisc.edu>
- <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
- <20130719003034.GG28005@kernel.dk>
- <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
- <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
- <1374248000.2266.20.camel@dabdike>
- <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
- <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
- <51EAA33C.9010405@fusionio.com>
-MIME-Version: 1.0
+	id S1030485Ab3HITUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 15:20:36 -0400
+Date: Fri, 9 Aug 2013 21:20:30 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 000/102] 3.10.6-stable review
+Message-ID: <20130809192030.GD4079@1wt.eu>
+References: <20130809015010.208118575@linuxfoundation.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51EAA33C.9010405@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 20, 2013 at 09:48:28AM -0500, Mike Christie wrote:
-> What about the attached only compile tested patch. The patch has the mq
-> block code work like the non mq code for bio cleanups.
+Hi Greg,
 
-Not sure if it is related to the patch or not, but it never returns from
-wait_for_completion_io(&wait) in blkdev_issue_flush():
+On Thu, Aug 08, 2013 at 06:56:36PM -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.6 release.
+> There are 102 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 
-# ps axl | awk '$10 ~ /D\+/'
-4     0   938   879  20   0 111216   656 blkdev D+   pts/1      0:00 fdisk/dev/sda
-#
-# cat /proc/938/stack
-[<ffffffff812a8a5c>] blkdev_issue_flush+0xfc/0x160
-[<ffffffff811ac606>] blkdev_fsync+0x96/0xc0
-[<ffffffff811a2f4d>] do_fsync+0x5d/0x90
-[<ffffffff811a3330>] SyS_fsync+0x10/0x20
-[<ffffffff81611582>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
+Just checked on my OpenBlocks AX3 (dual-core ARMv7 in thumbs mode),
+everything seems OK, I did not even notice any performance regression
+compared to 3.10.5 on syscall intensive workloads with the recent
+changes. I'm sure that I'm using the kuser helpers page since the
+system doesn't boot without. Also I did observe minor changes in
+/proc/self/maps, but I don't think they should have any impact, so
+all in all it's OK :
 
-Any ideas?
+3.10.6-rc1:
+root@ax3:~# cat /proc/self/maps 
+00008000-00014000 r-xp 00000000 01:00 258        /bin/cat
+0001c000-0001d000 rw-p 0000c000 01:00 258        /bin/cat
+0001d000-0003e000 rw-p 00000000 00:00 0          [vectors]
+b6ea6000-b6fc8000 r-xp 00000000 01:00 638        /lib/libc-2.17.so
+b6fc8000-b6fcf000 ---p 00122000 01:00 638        /lib/libc-2.17.so
+b6fcf000-b6fd1000 r--p 00121000 01:00 638        /lib/libc-2.17.so
+b6fd1000-b6fd2000 rw-p 00123000 01:00 638        /lib/libc-2.17.so
+b6fd2000-b6fd5000 rw-p 00000000 00:00 0          [vectors]
+b6fd5000-b6ff4000 r-xp 00000000 01:00 744        /lib/ld-2.17.so
+b6ff8000-b6ffa000 rw-p 00000000 00:00 0          [vectors]
+b6ffa000-b6ffb000 r-xp 00000000 00:00 0          [vectors]
+b6ffb000-b6ffc000 r--p 0001e000 01:00 744        /lib/ld-2.17.so
+b6ffc000-b6ffd000 rw-p 0001f000 01:00 744        /lib/ld-2.17.so
+be99d000-be9be000 rw-p 00000000 00:00 0          [vectors]
+ffff0000-ffff1000 r-xp 00000000 00:00 0          [vectors]
 
-Thanks!
+3.10.5:
+root@ax3:~# cat /proc/self/maps 
+00008000-00014000 r-xp 00000000 01:00 258        /bin/cat
+0001c000-0001d000 rw-p 0000c000 01:00 258        /bin/cat
+0001d000-0003e000 rw-p 00000000 00:00 0          [heap]
+b6e6f000-b6f91000 r-xp 00000000 01:00 638        /lib/libc-2.17.so
+b6f91000-b6f98000 ---p 00122000 01:00 638        /lib/libc-2.17.so
+b6f98000-b6f9a000 r--p 00121000 01:00 638        /lib/libc-2.17.so
+b6f9a000-b6f9b000 rw-p 00123000 01:00 638        /lib/libc-2.17.so
+b6f9b000-b6f9e000 rw-p 00000000 00:00 0 
+b6f9e000-b6fbd000 r-xp 00000000 01:00 744        /lib/ld-2.17.so
+b6fc2000-b6fc4000 rw-p 00000000 00:00 0 
+b6fc4000-b6fc5000 r--p 0001e000 01:00 744        /lib/ld-2.17.so
+b6fc5000-b6fc6000 rw-p 0001f000 01:00 744        /lib/ld-2.17.so
+be9e0000-bea01000 rw-p 00000000 00:00 0          [stack]
+ffff0000-ffff1000 r-xp 00000000 00:00 0          [vectors]
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Best regards,
+Willy
+
