@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030307Ab3HIB7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:59:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55964 "EHLO
+	id S1030333Ab3HIB7y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:59:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55960 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030271Ab3HIB7q (ORCPT
+	with ESMTP id S1030285Ab3HIB7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:46 -0400
+	Thu, 8 Aug 2013 21:59:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        David Spinadel <david.spinadel@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 101/102] iwlwifi: mvm: set SSID bits for passive channels
-Date: Thu,  8 Aug 2013 18:58:17 -0700
-Message-Id: <20130809015034.081855154@linuxfoundation.org>
+        "Richard W.M. Jones" <rjones@redhat.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Pravin B Shelar <pshelar@nicira.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 092/102] genetlink: release cb_lock before requesting additional module
+Date: Thu,  8 Aug 2013 18:58:08 -0700
+Message-Id: <20130809015032.015996005@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -28,62 +29,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Spinadel <david.spinadel@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit bb963c4a43eb5127eb0bbfa16c7a6a209b0af5db upstream.
+[ Upstream commit c74f2b2678f40b80265dd53556f1f778c8e1823f ]
 
-Set SSID bitmap for direct scan even on passive channels,
-for the passive-to-active feature. Without this patch only
-the SSID from probe request template is sent on passive
-channels, after passive-to-active switching, causing us to
-not find all desired networks.
+Requesting external module with cb_lock taken can result in
+the deadlock like showed below:
 
-Remove the unused passive scan mask constant.
+[ 2458.111347] Showing all locks held in the system:
+[ 2458.111347] 1 lock held by NetworkManager/582:
+[ 2458.111347]  #0:  (cb_lock){++++++}, at: [<ffffffff8162bc79>] genl_rcv+0x19/0x40
+[ 2458.111347] 1 lock held by modprobe/603:
+[ 2458.111347]  #0:  (cb_lock){++++++}, at: [<ffffffff8162baa5>] genl_lock_all+0x15/0x30
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: David Spinadel <david.spinadel@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ 2461.579457] SysRq : Show Blocked State
+[ 2461.580103]   task                        PC stack   pid father
+[ 2461.580103] NetworkManager  D ffff880034b84500  4040   582      1 0x00000080
+[ 2461.580103]  ffff8800197ff720 0000000000000046 00000000001d5340 ffff8800197fffd8
+[ 2461.580103]  ffff8800197fffd8 00000000001d5340 ffff880019631700 7fffffffffffffff
+[ 2461.580103]  ffff8800197ff880 ffff8800197ff878 ffff880019631700 ffff880019631700
+[ 2461.580103] Call Trace:
+[ 2461.580103]  [<ffffffff817355f9>] schedule+0x29/0x70
+[ 2461.580103]  [<ffffffff81731ad1>] schedule_timeout+0x1c1/0x360
+[ 2461.580103]  [<ffffffff810e69eb>] ? mark_held_locks+0xbb/0x140
+[ 2461.580103]  [<ffffffff817377ac>] ? _raw_spin_unlock_irq+0x2c/0x50
+[ 2461.580103]  [<ffffffff810e6b6d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+[ 2461.580103]  [<ffffffff81736398>] wait_for_completion_killable+0xe8/0x170
+[ 2461.580103]  [<ffffffff810b7fa0>] ? wake_up_state+0x20/0x20
+[ 2461.580103]  [<ffffffff81095825>] call_usermodehelper_exec+0x1a5/0x210
+[ 2461.580103]  [<ffffffff817362ed>] ? wait_for_completion_killable+0x3d/0x170
+[ 2461.580103]  [<ffffffff81095cc3>] __request_module+0x1b3/0x370
+[ 2461.580103]  [<ffffffff810e6b6d>] ? trace_hardirqs_on_caller+0xfd/0x1c0
+[ 2461.580103]  [<ffffffff8162c5c9>] ctrl_getfamily+0x159/0x190
+[ 2461.580103]  [<ffffffff8162d8a4>] genl_family_rcv_msg+0x1f4/0x2e0
+[ 2461.580103]  [<ffffffff8162d990>] ? genl_family_rcv_msg+0x2e0/0x2e0
+[ 2461.580103]  [<ffffffff8162da1e>] genl_rcv_msg+0x8e/0xd0
+[ 2461.580103]  [<ffffffff8162b729>] netlink_rcv_skb+0xa9/0xc0
+[ 2461.580103]  [<ffffffff8162bc88>] genl_rcv+0x28/0x40
+[ 2461.580103]  [<ffffffff8162ad6d>] netlink_unicast+0xdd/0x190
+[ 2461.580103]  [<ffffffff8162b149>] netlink_sendmsg+0x329/0x750
+[ 2461.580103]  [<ffffffff815db849>] sock_sendmsg+0x99/0xd0
+[ 2461.580103]  [<ffffffff810bb58f>] ? local_clock+0x5f/0x70
+[ 2461.580103]  [<ffffffff810e96e8>] ? lock_release_non_nested+0x308/0x350
+[ 2461.580103]  [<ffffffff815dbc6e>] ___sys_sendmsg+0x39e/0x3b0
+[ 2461.580103]  [<ffffffff810565af>] ? kvm_clock_read+0x2f/0x50
+[ 2461.580103]  [<ffffffff810218b9>] ? sched_clock+0x9/0x10
+[ 2461.580103]  [<ffffffff810bb2bd>] ? sched_clock_local+0x1d/0x80
+[ 2461.580103]  [<ffffffff810bb448>] ? sched_clock_cpu+0xa8/0x100
+[ 2461.580103]  [<ffffffff810e33ad>] ? trace_hardirqs_off+0xd/0x10
+[ 2461.580103]  [<ffffffff810bb58f>] ? local_clock+0x5f/0x70
+[ 2461.580103]  [<ffffffff810e3f7f>] ? lock_release_holdtime.part.28+0xf/0x1a0
+[ 2461.580103]  [<ffffffff8120fec9>] ? fget_light+0xf9/0x510
+[ 2461.580103]  [<ffffffff8120fe0c>] ? fget_light+0x3c/0x510
+[ 2461.580103]  [<ffffffff815dd1d2>] __sys_sendmsg+0x42/0x80
+[ 2461.580103]  [<ffffffff815dd222>] SyS_sendmsg+0x12/0x20
+[ 2461.580103]  [<ffffffff81741ad9>] system_call_fastpath+0x16/0x1b
+[ 2461.580103] modprobe        D ffff88000f2c8000  4632   603    602 0x00000080
+[ 2461.580103]  ffff88000f04fba8 0000000000000046 00000000001d5340 ffff88000f04ffd8
+[ 2461.580103]  ffff88000f04ffd8 00000000001d5340 ffff8800377d4500 ffff8800377d4500
+[ 2461.580103]  ffffffff81d0b260 ffffffff81d0b268 ffffffff00000000 ffffffff81d0b2b0
+[ 2461.580103] Call Trace:
+[ 2461.580103]  [<ffffffff817355f9>] schedule+0x29/0x70
+[ 2461.580103]  [<ffffffff81736d4d>] rwsem_down_write_failed+0xed/0x1a0
+[ 2461.580103]  [<ffffffff810bb200>] ? update_cpu_load_active+0x10/0xb0
+[ 2461.580103]  [<ffffffff8137b473>] call_rwsem_down_write_failed+0x13/0x20
+[ 2461.580103]  [<ffffffff8173492d>] ? down_write+0x9d/0xb2
+[ 2461.580103]  [<ffffffff8162baa5>] ? genl_lock_all+0x15/0x30
+[ 2461.580103]  [<ffffffff8162baa5>] genl_lock_all+0x15/0x30
+[ 2461.580103]  [<ffffffff8162cbb3>] genl_register_family+0x53/0x1f0
+[ 2461.580103]  [<ffffffffa01dc000>] ? 0xffffffffa01dbfff
+[ 2461.580103]  [<ffffffff8162d650>] genl_register_family_with_ops+0x20/0x80
+[ 2461.580103]  [<ffffffffa01dc000>] ? 0xffffffffa01dbfff
+[ 2461.580103]  [<ffffffffa017fe84>] nl80211_init+0x24/0xf0 [cfg80211]
+[ 2461.580103]  [<ffffffffa01dc000>] ? 0xffffffffa01dbfff
+[ 2461.580103]  [<ffffffffa01dc043>] cfg80211_init+0x43/0xdb [cfg80211]
+[ 2461.580103]  [<ffffffff810020fa>] do_one_initcall+0xfa/0x1b0
+[ 2461.580103]  [<ffffffff8105cb93>] ? set_memory_nx+0x43/0x50
+[ 2461.580103]  [<ffffffff810f75af>] load_module+0x1c6f/0x27f0
+[ 2461.580103]  [<ffffffff810f2c90>] ? store_uevent+0x40/0x40
+[ 2461.580103]  [<ffffffff810f82c6>] SyS_finit_module+0x86/0xb0
+[ 2461.580103]  [<ffffffff81741ad9>] system_call_fastpath+0x16/0x1b
+[ 2461.580103] Sched Debug Version: v0.10, 3.11.0-0.rc1.git4.1.fc20.x86_64 #1
+
+Problem start to happen after adding net-pf-16-proto-16-family-nl80211
+alias name to cfg80211 module by below commit (though that commit
+itself is perfectly fine):
+
+commit fb4e156886ce6e8309e912d8b370d192330d19d3
+Author: Marcel Holtmann <marcel@holtmann.org>
+Date:   Sun Apr 28 16:22:06 2013 -0700
+
+    nl80211: Add generic netlink module alias for cfg80211/nl80211
+
+Reported-and-tested-by: Jeff Layton <jlayton@redhat.com>
+Reported-by: Richard W.M. Jones <rjones@redhat.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reviewed-by: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- drivers/net/wireless/iwlwifi/mvm/fw-api-scan.h |    1 -
- drivers/net/wireless/iwlwifi/mvm/scan.c        |   11 ++---------
- 2 files changed, 2 insertions(+), 10 deletions(-)
+ net/netlink/genetlink.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/mvm/fw-api-scan.h
-+++ b/drivers/net/wireless/iwlwifi/mvm/fw-api-scan.h
-@@ -69,7 +69,6 @@
- /* Scan Commands, Responses, Notifications */
- 
- /* Masks for iwl_scan_channel.type flags */
--#define SCAN_CHANNEL_TYPE_PASSIVE	0
- #define SCAN_CHANNEL_TYPE_ACTIVE	BIT(0)
- #define SCAN_CHANNEL_NARROW_BAND	BIT(22)
- 
---- a/drivers/net/wireless/iwlwifi/mvm/scan.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/scan.c
-@@ -176,19 +176,12 @@ static void iwl_mvm_scan_fill_channels(s
- 	struct iwl_scan_channel *chan = (struct iwl_scan_channel *)
- 		(cmd->data + le16_to_cpu(cmd->tx_cmd.len));
- 	int i;
--	__le32 chan_type_value;
--
--	if (req->n_ssids > 0)
--		chan_type_value = cpu_to_le32(BIT(req->n_ssids + 1) - 1);
--	else
--		chan_type_value = SCAN_CHANNEL_TYPE_PASSIVE;
- 
- 	for (i = 0; i < cmd->channel_count; i++) {
- 		chan->channel = cpu_to_le16(req->channels[i]->hw_value);
-+		chan->type = cpu_to_le32(BIT(req->n_ssids) - 1);
- 		if (req->channels[i]->flags & IEEE80211_CHAN_PASSIVE_SCAN)
--			chan->type = SCAN_CHANNEL_TYPE_PASSIVE;
--		else
--			chan->type = chan_type_value;
-+			chan->type &= cpu_to_le32(~SCAN_CHANNEL_TYPE_ACTIVE);
- 		chan->active_dwell = cpu_to_le16(active_dwell);
- 		chan->passive_dwell = cpu_to_le16(passive_dwell);
- 		chan->iteration_count = cpu_to_le16(1);
+--- a/net/netlink/genetlink.c
++++ b/net/netlink/genetlink.c
+@@ -877,8 +877,10 @@ static int ctrl_getfamily(struct sk_buff
+ #ifdef CONFIG_MODULES
+ 		if (res == NULL) {
+ 			genl_unlock();
++			up_read(&cb_lock);
+ 			request_module("net-pf-%d-proto-%d-family-%s",
+ 				       PF_NETLINK, NETLINK_GENERIC, name);
++			down_read(&cb_lock);
+ 			genl_lock();
+ 			res = genl_family_find_byname(name);
+ 		}
 
 
