@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966026Ab3HIJ1S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 05:27:18 -0400
+	id S966443Ab3HIJ24 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 05:28:56 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52749 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965514Ab3HIJ1N (ORCPT
+	with ESMTP id S965941Ab3HIJ1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 05:27:13 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-a0-5204b5ecea5a
+	Fri, 9 Aug 2013 05:27:16 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-ac-5204b5ed7d61
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 06/20] mm, hugetlb: return a reserved page to a reserved pool if failed
-Date: Fri,  9 Aug 2013 18:26:24 +0900
-Message-Id: <1376040398-11212-7-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 13/20] mm, hugetlb: mm, hugetlb: unify chg and avoid_reserve to use_reserve
+Date: Fri,  9 Aug 2013 18:26:31 +0900
+Message-Id: <1376040398-11212-14-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -32,77 +32,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we fail with a reserved page, just calling put_page() is not sufficient,
-because put_page() invoke free_huge_page() at last step and it doesn't
-know whether a page comes from a reserved pool or not. So it doesn't do
-anything related to reserved count. This makes reserve count lower
-than how we need, because reserve count already decrease in
-dequeue_huge_page_vma(). This patch fix this situation.
+Currently, we have two variable to represent whether we can use reserved
+page or not, chg and avoid_reserve, respectively. With aggregating these,
+we can have more clean code. This makes no functinoal difference.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 6c8eec2..3f834f1 100644
+index 22ceb04..8dff972 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -572,6 +572,7 @@ retry_cpuset:
- 				if (!vma_has_reserves(vma, chg))
+@@ -531,8 +531,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
+ 
+ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 				struct vm_area_struct *vma,
+-				unsigned long address, int avoid_reserve,
+-				long chg)
++				unsigned long address, bool use_reserve)
+ {
+ 	struct page *page = NULL;
+ 	struct mempolicy *mpol;
+@@ -546,12 +545,10 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	 * A child process with MAP_PRIVATE mappings created by their parent
+ 	 * have no page reserves. This check ensures that reservations are
+ 	 * not "stolen". The child may still get SIGKILLed
++	 * Or, when parent process do COW, we cannot use reserved page.
++	 * In this case, ensure enough pages are in the pool.
+ 	 */
+-	if (chg && h->free_huge_pages - h->resv_huge_pages == 0)
+-		return NULL;
+-
+-	/* If reserves cannot be used, ensure enough pages are in the pool */
+-	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
++	if (!use_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
+ 		return NULL;
+ 
+ retry_cpuset:
+@@ -564,9 +561,7 @@ retry_cpuset:
+ 		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
+ 			page = dequeue_huge_page_node(h, zone_to_nid(zone));
+ 			if (page) {
+-				if (avoid_reserve)
+-					break;
+-				if (chg)
++				if (!use_reserve)
  					break;
  
-+				SetPagePrivate(page);
- 				h->resv_huge_pages--;
- 				break;
- 			}
-@@ -626,15 +627,20 @@ static void free_huge_page(struct page *page)
- 	int nid = page_to_nid(page);
- 	struct hugepage_subpool *spool =
- 		(struct hugepage_subpool *)page_private(page);
-+	bool restore_reserve;
+ 				SetPagePrivate(page);
+@@ -1121,6 +1116,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	struct hstate *h = hstate_vma(vma);
+ 	struct page *page;
+ 	long chg;
++	bool use_reserve;
+ 	int ret, idx;
+ 	struct hugetlb_cgroup *h_cg;
  
- 	set_page_private(page, 0);
- 	page->mapping = NULL;
- 	BUG_ON(page_count(page));
- 	BUG_ON(page_mapcount(page));
-+	restore_reserve = PagePrivate(page);
+@@ -1136,18 +1132,19 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	chg = vma_needs_reservation(h, vma, addr);
+ 	if (chg < 0)
+ 		return ERR_PTR(-ENOMEM);
+-	if (chg || avoid_reserve)
++	use_reserve = (!chg && !avoid_reserve);
++	if (!use_reserve)
+ 		if (hugepage_subpool_get_pages(spool, 1))
+ 			return ERR_PTR(-ENOSPC);
  
+ 	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
+ 	if (ret) {
+-		if (chg || avoid_reserve)
++		if (!use_reserve)
+ 			hugepage_subpool_put_pages(spool, 1);
+ 		return ERR_PTR(-ENOSPC);
+ 	}
  	spin_lock(&hugetlb_lock);
- 	hugetlb_cgroup_uncharge_page(hstate_index(h),
- 				     pages_per_huge_page(h), page);
-+	if (restore_reserve)
-+		h->resv_huge_pages++;
-+
- 	if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
- 		/* remove the page from active list */
- 		list_del(&page->lru);
-@@ -2616,6 +2622,8 @@ retry_avoidcopy:
- 	spin_lock(&mm->page_table_lock);
- 	ptep = huge_pte_offset(mm, address & huge_page_mask(h));
- 	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
-+		ClearPagePrivate(new_page);
-+
- 		/* Break COW */
- 		huge_ptep_clear_flush(vma, address, ptep);
- 		set_huge_pte_at(mm, address, ptep,
-@@ -2727,6 +2735,7 @@ retry:
- 					goto retry;
- 				goto out;
- 			}
-+			ClearPagePrivate(page);
- 
- 			spin_lock(&inode->i_lock);
- 			inode->i_blocks += blocks_per_huge_page(h);
-@@ -2773,8 +2782,10 @@ retry:
- 	if (!huge_pte_none(huge_ptep_get(ptep)))
- 		goto backout;
- 
--	if (anon_rmap)
-+	if (anon_rmap) {
-+		ClearPagePrivate(page);
- 		hugepage_add_new_anon_rmap(page, vma, address);
-+	}
- 	else
- 		page_dup_rmap(page);
- 	new_pte = make_huge_pte(vma, page, ((vma->vm_flags & VM_WRITE)
+-	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
++	page = dequeue_huge_page_vma(h, vma, addr, use_reserve);
+ 	if (!page) {
+ 		spin_unlock(&hugetlb_lock);
+ 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+@@ -1155,7 +1152,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 			hugetlb_cgroup_uncharge_cgroup(idx,
+ 						       pages_per_huge_page(h),
+ 						       h_cg);
+-			if (chg || avoid_reserve)
++			if (!use_reserve)
+ 				hugepage_subpool_put_pages(spool, 1);
+ 			return ERR_PTR(-ENOSPC);
+ 		}
 -- 
 1.7.9.5
 
