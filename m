@@ -1,178 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030521Ab3HIGqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 02:46:34 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:58852 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030481Ab3HIGqB (ORCPT
+	id S1754972Ab3HIGwQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 02:52:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54736 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555Ab3HIGwP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 02:46:01 -0400
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>,
-        Peter Meerwald <p.meerwald@bct-electronic.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v3 3/4] leds-pca9633: Add mutex to the ledout register
-Date: Fri,  9 Aug 2013 08:45:43 +0200
-Message-Id: <1376030744-22645-4-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1376030744-22645-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1376030744-22645-1-git-send-email-ricardo.ribalda@gmail.com>
+	Fri, 9 Aug 2013 02:52:15 -0400
+Message-ID: <1376031129.18997.43.camel@marge.simpson.net>
+Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
+ reprogramming in remove_hrtimer
+From: Mike Galbraith <bitbucket@online.de>
+To: "ethan.zhao" <ethan.kernel@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, johlstei@codeaurora.org,
+        Yinghai Lu <yinghai@kernel.org>, Jin Feng <joe.jin@oracle.com>
+Date: Fri, 09 Aug 2013 08:52:09 +0200
+In-Reply-To: <BBA29515-CD89-47C5-B155-B71A6F6632DC@gmail.com>
+References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
+	 <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
+	 <CABawtvP4oLuvHOS3prbbgPShXVziV_wTo7i6KCqJ9KkoVdz0ag@mail.gmail.com>
+	 <20130730093519.GP3008@twins.programming.kicks-ass.net>
+	 <1375774140.5412.9.camel@marge.simpson.net>
+	 <BBA29515-CD89-47C5-B155-B71A6F6632DC@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:l4MmiqnYr1J1TwrjejlfhIzDshqhfareZmjTs+dFlTN
+ ywgtVLV7+gVFYTb3pI9MskaELMxHEjm/DBIQP6sNrYRS4CFa7E
+ R1kadizejrzKa5KtwgAhZSotyjqxhVTZE/SdxGAPjnza0r4mM8
+ x3ufeokAizIr7ybkNMsF6pvT1xpr837T+zuk/f95PE4Mxl/40e
+ Jlfey0JjYZV9WY4sGpjryglZaUFDmdVS67wdTQqqq+xbf5VO3P
+ Wp0ksSvI6AZmTWjkIqtm7T6d23qXO9o3UsHD51QZGcIpvT33bQ
+ s30hurvzS83zyd6lefAn1geIUI/jNX7021xJgd0RZnRMsVvGvU
+ fS/kCqWpHDVfiw+CSWwWDW6g9iZe97OQoRozo+c2xJyXJ9Dur6
+ mhjOOHjibtQHw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To update an LED a register has to be read, updated and writen. If
-another LED whas been updated at the same time, this could lead into
-wrong updates.
+On Thu, 2013-08-08 at 23:02 +0800, ethan.zhao wrote: 
+> 在 2013-8-6，下午3:29，Mike Galbraith <bitbucket@online.de> 写道：
+> 
+> > +int sched_needs_cpu(int cpu)
+> > +{
+> > +	return  cpu_rq(cpu)->avg_idle < sysctl_sched_migration_cost;
+> > +}
+> > +
+> > #else /* CONFIG_NO_HZ_COMMON */
+> > 
+> > static inline bool got_nohz_idle_kick(void)
+> > --- a/kernel/time/tick-sched.c
+> > +++ b/kernel/time/tick-sched.c
+> > @@ -548,7 +548,7 @@ static ktime_t tick_nohz_stop_sched_tick
+> > 		time_delta = timekeeping_max_deferment();
+> > 	} while (read_seqretry(&jiffies_lock, seq));
+> > 
+> > -	if (rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
+> > +	if (sched_needs_cpu(cpu) || rcu_needs_cpu(cpu, &rcu_delta_jiffies) ||
+> > 	    arch_needs_cpu(cpu) || irq_work_needs_cpu()) {
+> > 		next_jiffies = last_jiffies + 1;
+> > 		delta_jiffies = 1;
+> 
+> If the performace regression was caused by too much expensive clock device reprogramming and too frequent entering /exiting of C-states…   this patch should work.
+> except the following result is almost always false under 3.11-rc3 code.
+> 
+> > return  cpu_rq(cpu)->avg_idle < sysctl_sched_migration_cost;
 
-This patch addes a common mutex to all the leds of the same chip to
-protect the ledout register.
+On my E5620 box, avg_idle works fine.  Patchlet doesn't save as much as
+it used to, thanks to Peter's patch now killing the worst of the pain,
+but it does still does save cycles.  I have too much regression left to
+say exactly what it can now save max, doesn't matter much either.
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/leds/leds-pca9633.c |   63 ++++++++++++++++++++++++++++---------------
- 1 file changed, 41 insertions(+), 22 deletions(-)
+The pertinent numbers:
 
-diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
-index 02766fb..9bf33d8 100644
---- a/drivers/leds/leds-pca9633.c
-+++ b/drivers/leds/leds-pca9633.c
-@@ -65,9 +65,17 @@ static const struct i2c_device_id pca9633_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, pca9633_id);
- 
--struct pca9633_led {
--	struct i2c_client *client;
-+struct pca9633_led;
-+
-+struct pca9633 {
- 	struct pca9633_chipdef *chipdef;
-+	struct mutex mutex;
-+	struct i2c_client *client;
-+	struct pca9633_led *leds;
-+};
-+
-+struct pca9633_led {
-+	struct pca9633 *chip;
- 	struct work_struct work;
- 	enum led_brightness brightness;
- 	struct led_classdev led_cdev;
-@@ -79,29 +87,32 @@ static void pca9633_led_work(struct work_struct *work)
- {
- 	struct pca9633_led *pca9633 = container_of(work,
- 		struct pca9633_led, work);
--	u8 ledout_addr = pca9633->chipdef->ledout_base + (pca9633->led_num / 4);
-+	u8 ledout_addr = pca9633->chip->chipdef->ledout_base
-+		+ (pca9633->led_num / 4);
- 	u8 ledout;
- 	int shift = 2 * (pca9633->led_num % 4);
- 	u8 mask = 0x3 << shift;
- 
--	ledout = i2c_smbus_read_byte_data(pca9633->client, ledout_addr);
-+	mutex_lock(&pca9633->chip->mutex);
-+	ledout = i2c_smbus_read_byte_data(pca9633->chip->client, ledout_addr);
- 	switch (pca9633->brightness) {
- 	case LED_FULL:
--		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
-+		i2c_smbus_write_byte_data(pca9633->chip->client, ledout_addr,
- 			(ledout & ~mask) | (PCA9633_LED_ON << shift));
- 		break;
- 	case LED_OFF:
--		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
-+		i2c_smbus_write_byte_data(pca9633->chip->client, ledout_addr,
- 			ledout & ~mask);
- 		break;
- 	default:
--		i2c_smbus_write_byte_data(pca9633->client,
-+		i2c_smbus_write_byte_data(pca9633->chip->client,
- 			PCA9633_PWM_BASE + pca9633->led_num,
- 			pca9633->brightness);
--		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
-+		i2c_smbus_write_byte_data(pca9633->chip->client, ledout_addr,
- 			(ledout & ~mask) | (PCA9633_LED_PWM << shift));
- 		break;
- 	}
-+	mutex_unlock(&pca9633->chip->mutex);
- }
- 
- static void pca9633_led_set(struct led_classdev *led_cdev,
-@@ -123,6 +134,7 @@ static void pca9633_led_set(struct led_classdev *led_cdev,
- static int pca9633_probe(struct i2c_client *client,
- 					const struct i2c_device_id *id)
- {
-+	struct pca9633 *pca9633_chip;
- 	struct pca9633_led *pca9633;
- 	struct pca9633_platform_data *pdata;
- 	struct pca9633_chipdef *chip;
-@@ -138,17 +150,30 @@ static int pca9633_probe(struct i2c_client *client,
- 		return -EINVAL;
- 	}
- 
-+	pca9633_chip = devm_kzalloc(&client->dev, sizeof(*pca9633_chip),
-+								GFP_KERNEL);
-+	if (!pca9633_chip)
-+		return -ENOMEM;
- 	pca9633 = devm_kzalloc(&client->dev, chip->n_leds * sizeof(*pca9633),
- 								GFP_KERNEL);
- 	if (!pca9633)
- 		return -ENOMEM;
- 
--	i2c_set_clientdata(client, pca9633);
-+	i2c_set_clientdata(client, pca9633_chip);
-+
-+	mutex_init(&pca9633_chip->mutex);
-+	pca9633_chip->chipdef = chip;
-+	pca9633_chip->client = client;
-+	pca9633_chip->leds = pca9633;
-+
-+	/* Turn off LEDs by default*/
-+	i2c_smbus_write_byte_data(client, chip->ledout_base, 0x00);
-+	if (chip->n_leds > 4)
-+		i2c_smbus_write_byte_data(client, chip->ledout_base + 1, 0x00);
- 
- 	for (i = 0; i < chip->n_leds; i++) {
--		pca9633[i].client = client;
- 		pca9633[i].led_num = i;
--		pca9633[i].chipdef = chip;
-+		pca9633[i].chip = pca9633_chip;
- 
- 		/* Platform data can specify LED names and default triggers */
- 		if (pdata && i < pdata->leds.num_leds) {
-@@ -183,11 +208,6 @@ static int pca9633_probe(struct i2c_client *client,
- 	if (pdata && pdata->outdrv == PCA9633_OPEN_DRAIN)
- 		i2c_smbus_write_byte_data(client, PCA9633_MODE2, 0x01);
- 
--	/* Turn off LEDs */
--	i2c_smbus_write_byte_data(client, chip->ledout_base, 0x00);
--	if (chip->n_leds > 4)
--		i2c_smbus_write_byte_data(client, chip->ledout_base + 1, 0x00);
--
- 	return 0;
- 
- exit:
-@@ -201,14 +221,13 @@ exit:
- 
- static int pca9633_remove(struct i2c_client *client)
- {
--	struct pca9633_led *pca9633 = i2c_get_clientdata(client);
-+	struct pca9633 *pca9633 = i2c_get_clientdata(client);
- 	int i;
- 
--	for (i = 0; i < pca9633->chipdef->n_leds; i++)
--		if (pca9633[i].client != NULL) {
--			led_classdev_unregister(&pca9633[i].led_cdev);
--			cancel_work_sync(&pca9633[i].work);
--		}
-+	for (i = 0; i < pca9633->chipdef->n_leds; i++) {
-+		led_classdev_unregister(&pca9633->leds[i].led_cdev);
-+		cancel_work_sync(&pca9633->leds[i].work);
-+	}
- 
- 	return 0;
- }
--- 
-1.7.10.4
+v3.11-rc4-27-ge4ef108    496.7 KHz      .858     1.030     throttle+peterz
+v3.11-rc4-27-ge4ef108    440.7 KHz      .761     1.296     nothrottle+peterz
+
+-Mike
 
