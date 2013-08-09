@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967296Ab3HIBx2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:53:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55413 "EHLO
+	id S967305Ab3HIBxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:53:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55408 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967161Ab3HIBmQ (ORCPT
+	with ESMTP id S967149Ab3HIBmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 21:42:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salman Qazi <sqazi@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [ 16/25] perf: Use css_tryget() to avoid propping up css refcount
-Date: Thu,  8 Aug 2013 18:41:52 -0700
-Message-Id: <20130809013652.694071159@linuxfoundation.org>
+        Eric Griffith <EGriffith92@gmail.com>,
+        Kent Baxley <kent.baxley@canonical.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 15/25] drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
+Date: Thu,  8 Aug 2013 18:41:51 -0700
+Message-Id: <20130809013652.455681293@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -28,100 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salman Qazi <sqazi@google.com>
+From: Kamal Mostafa <kamal@canonical.com>
 
-commit 9c5da09d266ca9b32eb16cf940f8161d949c2fe5 upstream.
+commit e85843bec6c2ea7c10ec61238396891cc2b753a9 upstream.
 
-An rmdir pushes css's ref count to zero.  However, if the associated
-directory is open at the time, the dentry ref count is non-zero.  If
-the fd for this directory is then passed into perf_event_open, it
-does a css_get().  This bounces the ref count back up from zero.  This
-is a problem by itself.  But what makes it turn into a crash is the
-fact that we end up doing an extra dput, since we perform a dput
-when css_put sees the ref count go down to zero.
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=47941
+BugLink: https://bugs.launchpad.net/bugs/1163720
+BugLink: https://bugs.launchpad.net/bugs/1162026
 
-css_tryget() does not fall into that trap. So, we use that instead.
+Some machines suffer from non-functional backlight controls if
+BLM_PCH_PWM_ENABLE is set, so provide a quirk to avoid doing so.
+Apply this quirk to Dell XPS 13 models.
 
-Reproduction test-case for the bug:
+[ kamal: backport to 3.4 ]
 
- #include <unistd.h>
- #include <sys/types.h>
- #include <sys/stat.h>
- #include <fcntl.h>
- #include <linux/unistd.h>
- #include <linux/perf_event.h>
- #include <string.h>
- #include <errno.h>
- #include <stdio.h>
-
- #define PERF_FLAG_PID_CGROUP    (1U << 2)
-
- int perf_event_open(struct perf_event_attr *hw_event_uptr,
-                     pid_t pid, int cpu, int group_fd, unsigned long flags) {
-         return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
-                 group_fd, flags);
- }
-
- /*
-  * Directly poke at the perf_event bug, since it's proving hard to repro
-  * depending on where in the kernel tree.  what moved?
-  */
- int main(int argc, char **argv)
- {
-        int fd;
-        struct perf_event_attr attr;
-        memset(&attr, 0, sizeof(attr));
-        attr.exclude_kernel = 1;
-        attr.size = sizeof(attr);
-        mkdir("/dev/cgroup/perf_event/blah", 0777);
-        fd = open("/dev/cgroup/perf_event/blah", O_RDONLY);
-        perror("open");
-        rmdir("/dev/cgroup/perf_event/blah");
-        sleep(2);
-        perf_event_open(&attr, fd, 0, -1,  PERF_FLAG_PID_CGROUP);
-        perror("perf_event_open");
-        close(fd);
-        return 0;
- }
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
+Tested-by: Eric Griffith <EGriffith92@gmail.com>
+Tested-by: Kent Baxley <kent.baxley@canonical.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |   16 ++++++++++++++++
+ drivers/gpu/drm/i915/intel_lvds.c    |    3 ++-
+ 3 files changed, 19 insertions(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -250,9 +250,9 @@ perf_cgroup_match(struct perf_event *eve
- 	return !event->cgrp || event->cgrp == cpuctx->cgrp;
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -296,6 +296,7 @@ enum intel_pch {
+ 
+ #define QUIRK_PIPEA_FORCE (1<<0)
+ #define QUIRK_LVDS_SSC_DISABLE (1<<1)
++#define QUIRK_NO_PCH_PWM_ENABLE (1<<2)
+ 
+ struct intel_fbdev;
+ struct intel_fbc_work;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9160,6 +9160,17 @@ static void quirk_ssc_force_disable(stru
+ 	dev_priv->quirks |= QUIRK_LVDS_SSC_DISABLE;
  }
  
--static inline void perf_get_cgroup(struct perf_event *event)
-+static inline bool perf_tryget_cgroup(struct perf_event *event)
- {
--	css_get(&event->cgrp->css);
-+	return css_tryget(&event->cgrp->css);
- }
++/*
++ * Some machines (Dell XPS13) suffer broken backlight controls if
++ * BLM_PCH_PWM_ENABLE is set.
++ */
++static void quirk_no_pcm_pwm_enable(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
++	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
++}
++
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+@@ -9192,6 +9203,11 @@ struct intel_quirk intel_quirks[] = {
  
- static inline void perf_put_cgroup(struct perf_event *event)
-@@ -481,7 +481,11 @@ static inline int perf_cgroup_connect(in
- 	event->cgrp = cgrp;
+ 	/* Sony Vaio Y cannot use SSC on LVDS */
+ 	{ 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable },
++
++	/* Dell XPS13 HD Sandy Bridge */
++	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
++	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
++	{ 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
+ };
  
- 	/* must be done before we fput() the file */
--	perf_get_cgroup(event);
-+	if (!perf_tryget_cgroup(event)) {
-+		event->cgrp = NULL;
-+		ret = -ENOENT;
-+		goto out;
-+	}
+ static void intel_init_quirks(struct drm_device *dev)
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -1097,7 +1097,8 @@ bool intel_lvds_init(struct drm_device *
+ 		goto failed;
  
- 	/*
- 	 * all events in a group must monitor
+ out:
+-	if (HAS_PCH_SPLIT(dev)) {
++	if (HAS_PCH_SPLIT(dev) &&
++	    !(dev_priv->quirks & QUIRK_NO_PCH_PWM_ENABLE)) {
+ 		u32 pwm;
+ 
+ 		pipe = (I915_READ(PCH_LVDS) & LVDS_PIPEB_SELECT) ? 1 : 0;
 
 
