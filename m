@@ -1,541 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab3HIRs5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 13:48:57 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:55930 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758474Ab3HIRs4 (ORCPT
+	id S1758558Ab3HIR7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 13:59:07 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58013 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758471Ab3HIR7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 13:48:56 -0400
-Message-ID: <1376070533.26057.244.camel@bobble.lax.corp.google.com>
-Subject: [PATCH] dm: Make MIN_IOS, et al, tunable via sysctl.
-From: Frank Mayhar <fmayhar@google.com>
-To: linux-kernel@vger.kernel.org
-Date: Fri, 09 Aug 2013 10:48:53 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 9 Aug 2013 13:59:04 -0400
+Date: Fri, 9 Aug 2013 10:58:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH 5/8] rcu: eliminate deadlock for rcu read site
+Message-ID: <20130809175848.GC29406@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
+ <1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com>
+ <20130808204020.GA31127@linux.vnet.ibm.com>
+ <5204B6EF.6000905@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5204B6EF.6000905@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080917-7606-0000-0000-00000E2EB0EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device mapper and some of its modules allocate memory pools at
-various points when setting up a device.  In some cases, these pools are
-fairly large, for example the multipath module allocates a 256-entry
-pool and the dm itself allocates three of that size.  In a
-memory-constrained environment where we're creating a lot of these
-devices, the memory use can quickly become significant.  Unfortunately,
-there's currently no way to change the size of the pools other than by
-changing a constant and rebuilding the kernel.
+On Fri, Aug 09, 2013 at 05:31:27PM +0800, Lai Jiangshan wrote:
+> On 08/09/2013 04:40 AM, Paul E. McKenney wrote:
+> > On Wed, Aug 07, 2013 at 06:25:01PM +0800, Lai Jiangshan wrote:
+> >> Background)
+> >>
+> >> Although all articles declare that rcu read site is deadlock-immunity.
+> >> It is not true for rcu-preempt, it will be deadlock if rcu read site
+> >> overlaps with scheduler lock.
+> >>
+> >> ec433f0c, 10f39bb1 and 016a8d5b just partially solve it. But rcu read site
+> >> is still not deadlock-immunity. And the problem described in 016a8d5b
+> >> is still existed(rcu_read_unlock_special() calls wake_up).
+> >>
+> >> Aim)
+> >>
+> >> We want to fix the problem forever, we want to keep rcu read site
+> >> is deadlock-immunity as books say.
+> >>
+> >> How)
+> >>
+> >> The problem is solved by "if rcu_read_unlock_special() is called inside
+> >> any lock which can be (chained) nested in rcu_read_unlock_special(),
+> >> we defer rcu_read_unlock_special()".
+> >> This kind locks include rnp->lock, scheduler locks, perf ctx->lock, locks
+> >> in printk()/WARN_ON() and all locks nested in these locks or chained nested
+> >> in these locks.
+> >>
+> >> The problem is reduced to "how to distinguish all these locks(context)",
+> >> We don't distinguish all these locks, we know that all these locks
+> >> should be nested in local_irqs_disable().
+> >>
+> >> we just consider if rcu_read_unlock_special() is called in irqs-disabled
+> >> context, it may be called in these suspect locks, we should defer
+> >> rcu_read_unlock_special().
+> >>
+> >> The algorithm enlarges the probability of deferring, but the probability
+> >> is still very very low.
+> >>
+> >> Deferring does add a small overhead, but it offers us:
+> >> 	1) really deadlock-immunity for rcu read site
+> >> 	2) remove the overhead of the irq-work(250 times per second in avg.)
+> > 
+> > One problem here -- it may take quite some time for a set_need_resched()
+> > to take effect.  This is especially a problem for RCU priority boosting,
+> > but can also needlessly delay preemptible-RCU grace periods because
+> > local_irq_restore() and friends don't check the TIF_NEED_RESCHED bit.
+> 
+> The final effect of deboosting(rt_mutex_unlock()) is also accomplished
+> via set_need_resched()/set_tsk_need_resched().
+> set_need_resched() is enough for RCU priority boosting issue here.
 
-This patch fixes that by changing the hardcoded MIN_IOS (and certain
-other) #defines in dm-crypt, dm-io, dm-mpath, dm-snap and dm itself to
-sysctl-modifiable values.  This lets us change the size of these pools
-on the fly, we can reduce the size of the pools and reduce memory
-pressure.
+Eventually, yes.  But all that set_need_resched() does is set the
+TIF_NEED_RESCHED.  This is checked by the outermost preempt_enable(),
+return from interrupt, return to userspace, and things like
+cond_resched().  So it might well be quite some time until the boosted
+reader actually gets around to deboosting itself.
 
-We tested performance of dm-mpath with smaller MIN_IOS sizes for both dm
-and dm-mpath, from a value of 32 all the way down to zero.  Bearing in
-mind that the underlying devices were network-based, we saw essentially
-no performance degradation; if there was any, it was down in the noise.
-One might wonder why these sizes are the way they are; I investigated
-and they've been unchanged since at least 2006.
+> Since rcu_read_unlock_special() is deferred, it does take quite some time for
+> QS report to take effect.
 
-Signed-off-by: Frank Mayhar <fmayhar@google.com>
---- 
- drivers/md/dm-crypt.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++----
- drivers/md/dm-io.c    | 58 +++++++++++++++++++++++++++++++++++++++++++++--
- drivers/md/dm-mpath.c | 48 ++++++++++++++++++++++++++++++++++++++-
- drivers/md/dm-snap.c  | 45 +++++++++++++++++++++++++++++++++++-
- drivers/md/dm.c       | 41 ++++++++++++++++++++++++++++++---
- 5 files changed, 244 insertions(+), 11 deletions(-)
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index 6d2d41a..d68f10a 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -178,12 +178,55 @@ struct crypt_config {
- #define MIN_IOS        16
- #define MIN_POOL_PAGES 32
- 
-+static int sysctl_dm_crypt_min_ios = MIN_IOS;
-+static int sysctl_dm_crypt_min_pool_pages = MIN_POOL_PAGES;
-+
- static struct kmem_cache *_crypt_io_pool;
- 
- static void clone_init(struct dm_crypt_io *, struct bio *);
- static void kcryptd_queue_crypt(struct dm_crypt_io *io);
- static u8 *iv_of_dmreq(struct crypt_config *cc, struct dm_crypt_request *dmreq);
- 
-+static struct ctl_table_header *dm_crypt_table_header;
-+static ctl_table dm_crypt_ctl_table[] = {
-+	{
-+		.procname	= "min_ios",
-+		.data		= &sysctl_dm_crypt_min_ios,
-+		.maxlen		= sizeof(int),
-+		.mode		= S_IRUGO|S_IWUSR,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
-+		.procname	= "min_pool_pages",
-+		.data		= &sysctl_dm_crypt_min_pool_pages,
-+		.maxlen		= sizeof(int),
-+		.mode		= S_IRUGO|S_IWUSR,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
-+static ctl_table dm_crypt_dir_table[] = {
-+	{ .procname	= "crypt",
-+	  .mode		= 0555,
-+	  .child	= dm_crypt_ctl_table },
-+	{ }
-+};
-+
-+static ctl_table dm_crypt_dm_dir_table[] = {
-+	{ .procname	= "dm",
-+	  .mode		= 0555,
-+	  .child	= dm_crypt_dir_table },
-+	{ }
-+};
-+
-+static ctl_table dm_crypt_root_table[] = {
-+	{ .procname	= "dev",
-+	  .mode		= 0555,
-+	  .child	= dm_crypt_dm_dir_table },
-+	{ }
-+};
-+
- static struct crypt_cpu *this_crypt_config(struct crypt_config *cc)
- {
- 	return this_cpu_ptr(cc->cpu);
-@@ -1571,7 +1614,8 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 		goto bad;
- 
- 	ret = -ENOMEM;
--	cc->io_pool = mempool_create_slab_pool(MIN_IOS, _crypt_io_pool);
-+	cc->io_pool = mempool_create_slab_pool(sysctl_dm_crypt_min_ios,
-+					       _crypt_io_pool);
- 	if (!cc->io_pool) {
- 		ti->error = "Cannot allocate crypt io mempool";
- 		goto bad;
-@@ -1583,20 +1627,22 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 	cc->dmreq_start += crypto_ablkcipher_alignmask(any_tfm(cc)) &
- 			   ~(crypto_tfm_ctx_alignment() - 1);
- 
--	cc->req_pool = mempool_create_kmalloc_pool(MIN_IOS, cc->dmreq_start +
-+	cc->req_pool = mempool_create_kmalloc_pool(sysctl_dm_crypt_min_ios,
-+			cc->dmreq_start +
- 			sizeof(struct dm_crypt_request) + cc->iv_size);
- 	if (!cc->req_pool) {
- 		ti->error = "Cannot allocate crypt request mempool";
- 		goto bad;
- 	}
- 
--	cc->page_pool = mempool_create_page_pool(MIN_POOL_PAGES, 0);
-+	cc->page_pool = mempool_create_page_pool(sysctl_dm_crypt_min_pool_pages,
-+						 0);
- 	if (!cc->page_pool) {
- 		ti->error = "Cannot allocate page mempool";
- 		goto bad;
- 	}
- 
--	cc->bs = bioset_create(MIN_IOS, 0);
-+	cc->bs = bioset_create(sysctl_dm_crypt_min_ios, 0);
- 	if (!cc->bs) {
- 		ti->error = "Cannot allocate crypt bioset";
- 		goto bad;
-@@ -1851,11 +1897,20 @@ static int __init dm_crypt_init(void)
- 		kmem_cache_destroy(_crypt_io_pool);
- 	}
- 
-+	dm_crypt_table_header = register_sysctl_table(dm_crypt_root_table);
-+	if (!dm_crypt_table_header) {
-+		DMERR("failed to register sysctl");
-+		dm_unregister_target(&crypt_target);
-+		kmem_cache_destroy(_crypt_io_pool);
-+		return -ENOMEM;
-+	}
-+
- 	return r;
- }
- 
- static void __exit dm_crypt_exit(void)
- {
-+	unregister_sysctl_table(dm_crypt_table_header);
- 	dm_unregister_target(&crypt_target);
- 	kmem_cache_destroy(_crypt_io_pool);
- }
-diff --git a/drivers/md/dm-io.c b/drivers/md/dm-io.c
-index ea49834..8c45c60 100644
---- a/drivers/md/dm-io.c
-+++ b/drivers/md/dm-io.c
-@@ -22,6 +22,9 @@
- #define MIN_IOS		16
- #define MIN_BIOS	16
- 
-+static int sysctl_dm_io_min_ios = MIN_IOS;
-+static int sysctl_dm_io_min_bios = MIN_BIOS;
-+
- struct dm_io_client {
- 	mempool_t *pool;
- 	struct bio_set *bios;
-@@ -44,6 +47,46 @@ struct io {
- 
- static struct kmem_cache *_dm_io_cache;
- 
-+static struct ctl_table_header *dm_io_table_header;
-+static ctl_table dm_io_ctl_table[] = {
-+	{
-+		.procname	= "min_ios",
-+		.data		= &sysctl_dm_io_min_ios,
-+		.maxlen		= sizeof(int),
-+		.mode		= S_IRUGO|S_IWUSR,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
-+		.procname	= "min_bios",
-+		.data		= &sysctl_dm_io_min_bios,
-+		.maxlen		= sizeof(int),
-+		.mode		= S_IRUGO|S_IWUSR,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
-+static ctl_table dm_io_dir_table[] = {
-+	{ .procname	= "io",
-+	  .mode		= 0555,
-+	  .child	= dm_io_ctl_table },
-+	{ }
-+};
-+
-+static ctl_table dm_io_dm_dir_table[] = {
-+	{ .procname	= "dm",
-+	  .mode		= 0555,
-+	  .child	= dm_io_dir_table },
-+	{ }
-+};
-+
-+static ctl_table dm_io_root_table[] = {
-+	{ .procname	= "dev",
-+	  .mode		= 0555,
-+	  .child	= dm_io_dm_dir_table },
-+	{ }
-+};
-+
- /*
-  * Create a client with mempool and bioset.
-  */
-@@ -55,11 +98,12 @@ struct dm_io_client *dm_io_client_create(void)
- 	if (!client)
- 		return ERR_PTR(-ENOMEM);
- 
--	client->pool = mempool_create_slab_pool(MIN_IOS, _dm_io_cache);
-+	client->pool = mempool_create_slab_pool(sysctl_dm_io_min_ios,
-+						_dm_io_cache);
- 	if (!client->pool)
- 		goto bad;
- 
--	client->bios = bioset_create(MIN_BIOS, 0);
-+	client->bios = bioset_create(sysctl_dm_io_min_bios, 0);
- 	if (!client->bios)
- 		goto bad;
- 
-@@ -515,11 +559,21 @@ int __init dm_io_init(void)
- 	if (!_dm_io_cache)
- 		return -ENOMEM;
- 
-+	dm_io_table_header = register_sysctl_table(dm_io_root_table);
-+	if (!dm_io_table_header) {
-+		DMERR("failed to register sysctl");
-+		kmem_cache_destroy(_dm_io_cache);
-+		_dm_io_cache = NULL;
-+		return -ENOMEM;
-+	}
-+
-+
- 	return 0;
- }
- 
- void dm_io_exit(void)
- {
-+	unregister_sysctl_table(dm_io_table_header);
- 	kmem_cache_destroy(_dm_io_cache);
- 	_dm_io_cache = NULL;
- }
-diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
-index 5adede1..099af1b 100644
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -118,6 +118,8 @@ typedef int (*action_fn) (struct pgpath *pgpath);
- 
- #define MIN_IOS 256	/* Mempool size */
- 
-+static int sysctl_dm_mpath_min_ios = MIN_IOS;
-+
- static struct kmem_cache *_mpio_cache;
- 
- static struct workqueue_struct *kmultipathd, *kmpath_handlerd;
-@@ -125,6 +127,38 @@ static void process_queued_ios(struct work_struct *work);
- static void trigger_event(struct work_struct *work);
- static void activate_path(struct work_struct *work);
- 
-+static struct ctl_table_header *dm_mpath_table_header;
-+static ctl_table dm_mpath_ctl_table[] = {
-+	{
-+		.procname	= "min_ios",
-+		.data		= &sysctl_dm_mpath_min_ios,
-+		.maxlen		= sizeof(int),
-+		.mode		= S_IRUGO|S_IWUSR,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
-+static ctl_table dm_mpath_dir_table[] = {
-+	{ .procname	= "mpath",
-+	  .mode		= 0555,
-+	  .child	= dm_mpath_ctl_table },
-+	{ }
-+};
-+
-+static ctl_table dm_mpath_dm_dir_table[] = {
-+	{ .procname	= "dm",
-+	  .mode		= 0555,
-+	  .child	= dm_mpath_dir_table },
-+	{ }
-+};
-+
-+static ctl_table dm_mpath_root_table[] = {
-+	{ .procname	= "dev",
-+	  .mode		= 0555,
-+	  .child	= dm_mpath_dm_dir_table },
-+	{ }
-+};
- 
- /*-----------------------------------------------
-  * Allocation routines
-@@ -202,7 +236,8 @@ static struct multipath *alloc_multipath(struct dm_target *ti)
- 		INIT_WORK(&m->trigger_event, trigger_event);
- 		init_waitqueue_head(&m->pg_init_wait);
- 		mutex_init(&m->work_mutex);
--		m->mpio_pool = mempool_create_slab_pool(MIN_IOS, _mpio_cache);
-+		m->mpio_pool = mempool_create_slab_pool(sysctl_dm_mpath_min_ios,
-+							_mpio_cache);
- 		if (!m->mpio_pool) {
- 			kfree(m);
- 			return NULL;
-@@ -1745,6 +1780,15 @@ static int __init dm_multipath_init(void)
- 		kmem_cache_destroy(_mpio_cache);
- 		return -ENOMEM;
- 	}
-+	dm_mpath_table_header = register_sysctl_table(dm_mpath_root_table);
-+	if (!dm_mpath_table_header) {
-+		DMERR("failed to register sysctl");
-+		destroy_workqueue(kmpath_handlerd);
-+		destroy_workqueue(kmultipathd);
-+		dm_unregister_target(&multipath_target);
-+		kmem_cache_destroy(_mpio_cache);
-+		return -ENOMEM;
-+	}
- 
- 	DMINFO("version %u.%u.%u loaded",
- 	       multipath_target.version[0], multipath_target.version[1],
-@@ -1755,6 +1799,8 @@ static int __init dm_multipath_init(void)
- 
- static void __exit dm_multipath_exit(void)
- {
-+	unregister_sysctl_table(dm_mpath_table_header);
-+
- 	destroy_workqueue(kmpath_handlerd);
- 	destroy_workqueue(kmultipathd);
- 
-diff --git a/drivers/md/dm-snap.c b/drivers/md/dm-snap.c
-index c434e5a..723b3c2 100644
---- a/drivers/md/dm-snap.c
-+++ b/drivers/md/dm-snap.c
-@@ -33,11 +33,45 @@ static const char dm_snapshot_merge_target_name[] = "snapshot-merge";
-  * The size of the mempool used to track chunks in use.
-  */
- #define MIN_IOS 256
-+static int sysctl_dm_snap_min_ios = MIN_IOS;
- 
- #define DM_TRACKED_CHUNK_HASH_SIZE	16
- #define DM_TRACKED_CHUNK_HASH(x)	((unsigned long)(x) & \
- 					 (DM_TRACKED_CHUNK_HASH_SIZE - 1))
- 
-+static struct ctl_table_header *dm_snap_table_header;
-+static ctl_table dm_snap_ctl_table[] = {
-+	{
-+		.procname	= "min_ios",
-+		.data		= &sysctl_dm_snap_min_ios,
-+		.maxlen		= sizeof(int),
-+		.mode		= S_IRUGO|S_IWUSR,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
-+static ctl_table dm_snap_dir_table[] = {
-+	{ .procname	= "snap",
-+	  .mode		= 0555,
-+	  .child	= dm_snap_ctl_table },
-+	{ }
-+};
-+
-+static ctl_table dm_snap_dm_dir_table[] = {
-+	{ .procname	= "dm",
-+	  .mode		= 0555,
-+	  .child	= dm_snap_dir_table },
-+	{ }
-+};
-+
-+static ctl_table dm_snap_root_table[] = {
-+	{ .procname	= "dev",
-+	  .mode		= 0555,
-+	  .child	= dm_snap_dm_dir_table },
-+	{ }
-+};
-+
- struct dm_exception_table {
- 	uint32_t hash_mask;
- 	unsigned hash_shift;
-@@ -1118,7 +1152,8 @@ static int snapshot_ctr(struct dm_target *ti, unsigned int argc, char **argv)
- 		goto bad_kcopyd;
- 	}
- 
--	s->pending_pool = mempool_create_slab_pool(MIN_IOS, pending_cache);
-+	s->pending_pool = mempool_create_slab_pool(sysctl_dm_snap_min_ios,
-+											   pending_cache);
- 	if (!s->pending_pool) {
- 		ti->error = "Could not allocate mempool for pending exceptions";
- 		r = -ENOMEM;
-@@ -2268,8 +2303,14 @@ static int __init dm_snapshot_init(void)
- 		goto bad_pending_cache;
- 	}
- 
-+	dm_snap_table_header = register_sysctl_table(dm_snap_root_table);
-+	if (!dm_snap_table_header)
-+		goto bad_sysctl_table;
-+
- 	return 0;
- 
-+bad_sysctl_table:
-+	kmem_cache_destroy(pending_cache);
- bad_pending_cache:
- 	kmem_cache_destroy(exception_cache);
- bad_exception_cache:
-@@ -2288,6 +2329,8 @@ bad_register_snapshot_target:
- 
- static void __exit dm_snapshot_exit(void)
- {
-+	unregister_sysctl_table(dm_snap_table_header);
-+
- 	dm_unregister_target(&snapshot_target);
- 	dm_unregister_target(&origin_target);
- 	dm_unregister_target(&merge_target);
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 9e39d2b..fdff32f 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -19,6 +19,7 @@
- #include <linux/idr.h>
- #include <linux/hdreg.h>
- #include <linux/delay.h>
-+#include <linux/sysctl.h>
- 
- #include <trace/events/block.h>
- 
-@@ -209,9 +210,36 @@ struct dm_md_mempools {
- };
- 
- #define MIN_IOS 256
-+static int sysctl_dm_min_ios = MIN_IOS;
- static struct kmem_cache *_io_cache;
- static struct kmem_cache *_rq_tio_cache;
- 
-+static struct ctl_table_header *dm_table_header;
-+static ctl_table dm_ctl_table[] = {
-+	{
-+		.procname	= "min_ios",
-+		.data		= &sysctl_dm_min_ios,
-+		.maxlen		= sizeof(int),
-+		.mode		= S_IRUGO|S_IWUSR,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
-+static ctl_table dm_dir_table[] = {
-+	{ .procname	= "dm",
-+	  .mode		= 0555,
-+	  .child	= dm_ctl_table },
-+	{ }
-+};
-+
-+static ctl_table dm_root_table[] = {
-+	{ .procname	= "dev",
-+	  .mode		= 0555,
-+	  .child	= dm_dir_table },
-+	{ }
-+};
-+
- static int __init local_init(void)
- {
- 	int r = -ENOMEM;
-@@ -229,16 +257,22 @@ static int __init local_init(void)
- 	if (r)
- 		goto out_free_rq_tio_cache;
- 
-+	dm_table_header = register_sysctl_table(dm_root_table);
-+	if (!dm_table_header)
-+		goto out_uevent_exit;
-+
- 	_major = major;
- 	r = register_blkdev(_major, _name);
- 	if (r < 0)
--		goto out_uevent_exit;
-+		goto out_unregister_sysctl_table;
- 
- 	if (!_major)
- 		_major = r;
- 
- 	return 0;
- 
-+out_unregister_sysctl_table:
-+	unregister_sysctl_table(dm_table_header);
- out_uevent_exit:
- 	dm_uevent_exit();
- out_free_rq_tio_cache:
-@@ -251,6 +285,7 @@ out_free_io_cache:
- 
- static void local_exit(void)
- {
-+	unregister_sysctl_table(dm_table_header);
- 	kmem_cache_destroy(_rq_tio_cache);
- 	kmem_cache_destroy(_io_cache);
- 	unregister_blkdev(_major, _name);
-@@ -2806,14 +2841,14 @@ struct dm_md_mempools *dm_alloc_md_mempools(unsigned type, unsigned integrity, u
- 		front_pad = roundup(per_bio_data_size, __alignof__(struct dm_target_io)) + offsetof(struct dm_target_io, clone);
- 	} else if (type == DM_TYPE_REQUEST_BASED) {
- 		cachep = _rq_tio_cache;
--		pool_size = MIN_IOS;
-+		pool_size = sysctl_dm_min_ios;
- 		front_pad = offsetof(struct dm_rq_clone_bio_info, clone);
- 		/* per_bio_data_size is not used. See __bind_mempools(). */
- 		WARN_ON(per_bio_data_size != 0);
- 	} else
- 		goto out;
- 
--	pools->io_pool = mempool_create_slab_pool(MIN_IOS, cachep);
-+	pools->io_pool = mempool_create_slab_pool(sysctl_dm_min_ios, cachep);
- 	if (!pools->io_pool)
- 		goto out;
- 
+Agreed.
 
--- 
-Frank Mayhar
-310-460-4042
+> > OK, alternatives...
+> > 
+> > o	Keep the current rule saying that if the scheduler is going
+> > 	to exit an RCU read-side critical section while holding
+> > 	one of its spinlocks, preemption has to have been disabled
+> 
+> Since rtmutex'lock->wait_lock is not irqs-disabled nor bh-disabled.
+
+Yep, because this rule prevents the call to rt_mutex_unlock() from
+happening whenever one of the scheduler's irq-disable locks is held.
+
+> This kind of spinlocks include scheduler locks, rtmutex'lock->wait_lock,
+> all locks can be acquired in irq/SOFTIRQ.
+> 
+> So this rule is not only applied for scheduler locks, it should also
+> be applied for almost all spinlocks in the kernel.
+
+No, only those locks acquired by the scheduler in the wakeup path.
+Or am I missing something here?
+
+> I was hard to accept that rcu read site is not deadlock-immunity.
+
+So did I, see http://lwn.net/Articles/453002/.  RCU was a victim of its
+own success.  ;-)
+
+And it would be really cool to restore full deadlock immunity to
+rcu_read_unlock(), no two ways about it!  Hmmm...  Any way that a
+self-IPI could be made safe for all architectures?
+
+							Thanx, Paul
+
+> Thanks,
+> Lai
+> 
+> > 	throughout the full duration of that critical section.
+> > 	Well, we can certainly do this, but it would be nice to get
+> > 	rid of this rule.
+> > 
+> > o	Use per-CPU variables, possibly injecting delay.  This has ugly
+> > 	disadvantages as noted above.
+> > 
+> > o	irq_work_queue() can wait a jiffy (or on some architectures,
+> > 	quite a bit longer) before actually doing anything.
+> > 
+> > o	raise_softirq() is more immediate and is an easy change, but
+> > 	adds a softirq vector -- which people are really trying to
+> > 	get rid of.  Also, wakeup_softirqd() calls things that acquire
+> > 	the scheduler locks, which is exactly what we were trying to
+> > 	avoid doing.
+> > 
+> > o	invoke_rcu_core() can invoke raise_softirq() as above.
+> > 
+> > o	IPI to self.  From what I can see, not all architectures
+> > 	support this.  Easy to fake if you have at least two CPUs,
+> > 	but not so good from an OS jitter viewpoint...
+> > 
+> > o	Add a check to local_irq_disable() and friends.  I would guess
+> > 	that this suggestion would not make architecture maintainers
+> > 	happy.
+> > 
+> > Other thoughts?
+> > 
+> > 							Thanx, Paul
+> > 
+> >> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> >> ---
+> >>  include/linux/rcupdate.h |    2 +-
+> >>  kernel/rcupdate.c        |    2 +-
+> >>  kernel/rcutree_plugin.h  |   47 +++++++++++++++++++++++++++++++++++++++++----
+> >>  3 files changed, 44 insertions(+), 7 deletions(-)
+> >>
+> >> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> >> index 4b14bdc..00b4220 100644
+> >> --- a/include/linux/rcupdate.h
+> >> +++ b/include/linux/rcupdate.h
+> >> @@ -180,7 +180,7 @@ extern void synchronize_sched(void);
+> >>
+> >>  extern void __rcu_read_lock(void);
+> >>  extern void __rcu_read_unlock(void);
+> >> -extern void rcu_read_unlock_special(struct task_struct *t);
+> >> +extern void rcu_read_unlock_special(struct task_struct *t, bool unlock);
+> >>  void synchronize_rcu(void);
+> >>
+> >>  /*
+> >> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+> >> index cce6ba8..33b89a3 100644
+> >> --- a/kernel/rcupdate.c
+> >> +++ b/kernel/rcupdate.c
+> >> @@ -90,7 +90,7 @@ void __rcu_read_unlock(void)
+> >>  #endif /* #ifdef CONFIG_PROVE_RCU_DELAY */
+> >>  		barrier();  /* assign before ->rcu_read_unlock_special load */
+> >>  		if (unlikely(ACCESS_ONCE(t->rcu_read_unlock_special)))
+> >> -			rcu_read_unlock_special(t);
+> >> +			rcu_read_unlock_special(t, true);
+> >>  		barrier();  /* ->rcu_read_unlock_special load before assign */
+> >>  		t->rcu_read_lock_nesting = 0;
+> >>  	}
+> >> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> >> index fc8b36f..997b424 100644
+> >> --- a/kernel/rcutree_plugin.h
+> >> +++ b/kernel/rcutree_plugin.h
+> >> @@ -242,15 +242,16 @@ static void rcu_preempt_note_context_switch(int cpu)
+> >>  				       ? rnp->gpnum
+> >>  				       : rnp->gpnum + 1);
+> >>  		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> >> -	} else if (t->rcu_read_lock_nesting < 0 &&
+> >> -		   !WARN_ON_ONCE(t->rcu_read_lock_nesting != INT_MIN) &&
+> >> -		   t->rcu_read_unlock_special) {
+> >> +	} else if (t->rcu_read_lock_nesting == 0 ||
+> >> +		   (t->rcu_read_lock_nesting < 0 &&
+> >> +		   !WARN_ON_ONCE(t->rcu_read_lock_nesting != INT_MIN))) {
+> >>
+> >>  		/*
+> >>  		 * Complete exit from RCU read-side critical section on
+> >>  		 * behalf of preempted instance of __rcu_read_unlock().
+> >>  		 */
+> >> -		rcu_read_unlock_special(t);
+> >> +		if (t->rcu_read_unlock_special)
+> >> +			rcu_read_unlock_special(t, false);
+> >>  	}
+> >>
+> >>  	/*
+> >> @@ -333,7 +334,7 @@ static struct list_head *rcu_next_node_entry(struct task_struct *t,
+> >>   * notify RCU core processing or task having blocked during the RCU
+> >>   * read-side critical section.
+> >>   */
+> >> -void rcu_read_unlock_special(struct task_struct *t)
+> >> +void rcu_read_unlock_special(struct task_struct *t, bool unlock)
+> >>  {
+> >>  	int empty;
+> >>  	int empty_exp;
+> >> @@ -364,6 +365,42 @@ void rcu_read_unlock_special(struct task_struct *t)
+> >>
+> >>  	/* Clean up if blocked during RCU read-side critical section. */
+> >>  	if (special & RCU_READ_UNLOCK_BLOCKED) {
+> >> +		/*
+> >> +		 * If rcu read lock overlaps with scheduler lock,
+> >> +		 * rcu_read_unlock_special() may lead to deadlock:
+> >> +		 *
+> >> +		 * rcu_read_lock();
+> >> +		 * preempt_schedule[_irq]() (when preemption)
+> >> +		 * scheduler lock; (or some other locks can be (chained) nested
+> >> +		 *                  in rcu_read_unlock_special()/rnp->lock)
+> >> +		 * access and check rcu data
+> >> +		 * rcu_read_unlock();
+> >> +		 *   rcu_read_unlock_special();
+> >> +		 *     wake_up();                 DEAD LOCK
+> >> +		 *
+> >> +		 * To avoid all these kinds of deadlock, we should quit
+> >> +		 * rcu_read_unlock_special() here and defer it to
+> >> +		 * rcu_preempt_note_context_switch() or next outmost
+> >> +		 * rcu_read_unlock() if we consider this case may happen.
+> >> +		 *
+> >> +		 * Although we can't know whether current _special()
+> >> +		 * is nested in scheduler lock or not. But we know that
+> >> +		 * irqs are always disabled in this case. so we just quit
+> >> +		 * and defer it to rcu_preempt_note_context_switch()
+> >> +		 * when irqs are disabled.
+> >> +		 *
+> >> +		 * It means we always defer _special() when it is
+> >> +		 * nested in irqs disabled context, but
+> >> +		 *	(special & RCU_READ_UNLOCK_BLOCKED) &&
+> >> +		 *	irqs_disabled_flags(flags)
+> >> +		 * is still unlikely to be true.
+> >> +		 */
+> >> +		if (unlikely(unlock && irqs_disabled_flags(flags))) {
+> >> +			set_need_resched();
+> >> +			local_irq_restore(flags);
+> >> +			return;
+> >> +		}
+> >> +
+> >>  		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_BLOCKED;
+> >>
+> >>  		/*
+> >> -- 
+> >> 1.7.4.4
+> >>
+> > 
+> > 
+> 
 
