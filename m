@@ -1,254 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967876Ab3HIN6X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 09:58:23 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:38820 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab3HIN6V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 09:58:21 -0400
+	id S967891Ab3HIN7U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 09:59:20 -0400
+Received: from orbit.nwl.cc ([176.31.251.142]:41767 "EHLO mail.nwl.cc"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752568Ab3HIN7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 09:59:18 -0400
+Date: Fri, 9 Aug 2013 15:58:49 +0200
+From: Phil Sutter <phil@nwl.cc>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, johannes@sipsolutions.net, sedat.dilek@gmail.com,
+        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        hannes@stressinduktion.org, linux-wireless@vger.kernel.org,
+        linville@tuxdriver.com
+Subject: Re: linux-next: Tree for Aug 7
+Message-ID: <20130809135849.GA8870@orbit.nwl.cc>
+Mail-Followup-To: David Miller <davem@davemloft.net>,
+	eric.dumazet@gmail.com, johannes@sipsolutions.net,
+	sedat.dilek@gmail.com, sfr@canb.auug.org.au,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	netdev@vger.kernel.org, hannes@stressinduktion.org,
+	linux-wireless@vger.kernel.org, linville@tuxdriver.com
+References: <20130807.104713.1615549684239408926.davem@davemloft.net>
+ <20130807183758.GB16263@orbit.nwl.cc>
+ <20130807.162748.779496444843938176.davem@davemloft.net>
+ <20130807.163621.84433966934449459.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <5204F5D9.2070703@intel.com>
-References: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
-	<CABPqkBSia0kzALAeFKVZ--zC13e=L5UZExP=oTTBuKQxXUAqkA@mail.gmail.com>
-	<5204F5D9.2070703@intel.com>
-Date: Fri, 9 Aug 2013 15:58:20 +0200
-Message-ID: <CABPqkBRp8L=3vM0CjDLOXt0EKHKzSuDbjLQm8pWJC+vVqgbGjw@mail.gmail.com>
-Subject: Re: [PATCH V10 00/13] perf tools: some fixes and tweaks
-From: Stephane Eranian <eranian@google.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130807.163621.84433966934449459.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 9, 2013 at 3:59 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
-> On 09/08/13 16:41, Stephane Eranian wrote:
->> Adrian,
->>
->> Is there a git tree where I could pull those patches from?
->
-> I plonked it down here for you:
->
->         http://git.infradead.org/users/ahunter/linux-perf.git
->
-fatal: http://git.infradead.org/users/ahunter/linux-perf.git/info/refs
-not found: did you run git update-server-info on the server?
+On Wed, Aug 07, 2013 at 04:36:21PM -0700, David Miller wrote:
+> From: David Miller <davem@davemloft.net>
+> Date: Wed, 07 Aug 2013 16:27:48 -0700 (PDT)
+> 
+> > Look, I'm going to fix this myself, because I'm pretty tired of
+> > waiting for the obvious fix.
+> 
+> Someone please test this:
+> 
+> diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
+> index c623861..afc02a6 100644
+> --- a/include/linux/etherdevice.h
+> +++ b/include/linux/etherdevice.h
+> @@ -29,6 +29,7 @@
+>  
+>  #ifdef __KERNEL__
+>  extern __be16		eth_type_trans(struct sk_buff *skb, struct net_device *dev);
+> +extern __be16		__eth_type_trans(struct sk_buff *skb, struct net_device *dev);
+>  extern const struct header_ops eth_header_ops;
+>  
+>  extern int eth_header(struct sk_buff *skb, struct net_device *dev,
+> diff --git a/net/ethernet/eth.c b/net/ethernet/eth.c
+> index be1f64d..35dc1be 100644
+> --- a/net/ethernet/eth.c
+> +++ b/net/ethernet/eth.c
+> @@ -146,6 +146,45 @@ int eth_rebuild_header(struct sk_buff *skb)
+>  EXPORT_SYMBOL(eth_rebuild_header);
+>  
+>  /**
+> + * __eth_type_trans - only determine the packet's protocol ID.
+> + * @skb: packet
+> + * @dev: device
+> + */
+> +__be16 __eth_type_trans(struct sk_buff *skb, struct net_device *dev)
+> +{
+> +	struct ethhdr *eth = (struct ethhdr *) skb->data;
+> +
+> +	/*
+> +	 * Some variants of DSA tagging don't have an ethertype field
+> +	 * at all, so we check here whether one of those tagging
+> +	 * variants has been configured on the receiving interface,
+> +	 * and if so, set skb->protocol without looking at the packet.
+> +	 */
+> +	if (netdev_uses_dsa_tags(dev))
+> +		return htons(ETH_P_DSA);
+> +	if (netdev_uses_trailer_tags(dev))
+> +		return htons(ETH_P_TRAILER);
+> +
+> +	if (ntohs(eth->h_proto) >= ETH_P_802_3_MIN)
+> +		return eth->h_proto;
+> +
+> +	/*
+> +	 *      This is a magic hack to spot IPX packets. Older Novell breaks
+> +	 *      the protocol design and runs IPX over 802.3 without an 802.2 LLC
+> +	 *      layer. We look for FFFF which isn't a used 802.2 SSAP/DSAP. This
+> +	 *      won't work for fault tolerant netware but does for the rest.
+> +	 */
+> +	if (skb->len >= 2 && *(unsigned short *)(skb->data) == 0xFFFF)
+> +		return htons(ETH_P_802_3);
+> +
+> +	/*
+> +	 *      Real 802.2 LLC
+> +	 */
+> +	return htons(ETH_P_802_2);
+> +}
+> +EXPORT_SYMBOL(__eth_type_trans);
+> +
+> +/**
+>   * eth_type_trans - determine the packet's protocol ID.
+>   * @skb: received socket data
+>   * @dev: receiving network device
+> @@ -184,33 +223,7 @@ __be16 eth_type_trans(struct sk_buff *skb, struct net_device *dev)
+>  			skb->pkt_type = PACKET_OTHERHOST;
+>  	}
+>  
+> -	/*
+> -	 * Some variants of DSA tagging don't have an ethertype field
+> -	 * at all, so we check here whether one of those tagging
+> -	 * variants has been configured on the receiving interface,
+> -	 * and if so, set skb->protocol without looking at the packet.
+> -	 */
+> -	if (netdev_uses_dsa_tags(dev))
+> -		return htons(ETH_P_DSA);
+> -	if (netdev_uses_trailer_tags(dev))
+> -		return htons(ETH_P_TRAILER);
+> -
+> -	if (ntohs(eth->h_proto) >= ETH_P_802_3_MIN)
+> -		return eth->h_proto;
+> -
+> -	/*
+> -	 *      This is a magic hack to spot IPX packets. Older Novell breaks
+> -	 *      the protocol design and runs IPX over 802.3 without an 802.2 LLC
+> -	 *      layer. We look for FFFF which isn't a used 802.2 SSAP/DSAP. This
+> -	 *      won't work for fault tolerant netware but does for the rest.
+> -	 */
+> -	if (skb->len >= 2 && *(unsigned short *)(skb->data) == 0xFFFF)
+> -		return htons(ETH_P_802_3);
+> -
+> -	/*
+> -	 *      Real 802.2 LLC
+> -	 */
+> -	return htons(ETH_P_802_2);
+> +	return __eth_type_trans(skb, dev);
+>  }
+>  EXPORT_SYMBOL(eth_type_trans);
+>  
+> diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+> index 0c0f6c9..ec8e1c3 100644
+> --- a/net/packet/af_packet.c
+> +++ b/net/packet/af_packet.c
+> @@ -2003,7 +2003,7 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
+>  			return err;
+>  
+>  		if (dev->type == ARPHRD_ETHER)
+> -			skb->protocol = eth_type_trans(skb, dev);
+> +			skb->protocol = __eth_type_trans(skb, dev);
+>  
+>  		data += dev->hard_header_len;
+>  		to_write -= dev->hard_header_len;
+> @@ -2332,13 +2332,13 @@ static int packet_snd(struct socket *sock,
+>  	sock_tx_timestamp(sk, &skb_shinfo(skb)->tx_flags);
+>  
+>  	if (dev->type == ARPHRD_ETHER) {
+> -		skb->protocol = eth_type_trans(skb, dev);
+> +		skb->protocol = __eth_type_trans(skb, dev);
+>  		if (skb->protocol == htons(ETH_P_8021Q))
+>  			reserve += VLAN_HLEN;
+>  	} else {
+>  		skb->protocol = proto;
+> -		skb->dev = dev;
+>  	}
+> +	skb->dev = dev;
+>  
+>  	if (!gso_type && (len > dev->mtu + reserve + extra_len)) {
+>  		err = -EMSGSIZE;
 
->> That would avoid me pulling them down from my gmail
->> inbox one by one.
->>
->> I am interested in the PERF_SAMPLE_IDENTIFIER support.
->> And I want to test it.
->>
->> Thanks.
->>
->>
->> On Fri, Aug 9, 2013 at 12:51 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
->>> Hi
->>>
->>> Here are some fixes and tweaks to perf tools (version 10).
->>>
->>> Changes in V10:
->>>         Re-based on:
->>>                 perf/core branch of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
->>>                 commit 207353be1574027c151609a31167ac5919a056c8: perf tools: Remove filter parameter of thread__find_addr_map()
->>>
->>>         perf tools: add debug prints
->>>                 Changed to use macros
->>>         perf tools: add pid to struct thread
->>>                 Added David's Ack
->>>         perf tools: change machine__findnew_thread() to set thread pid
->>>                 Added David's Ack
->>>         perf tools: remove references to struct ip_event
->>>                 Also remove from hists_link.c
->>>         perf tools: move struct ip_event
->>>                 Dropped since it is covered by "perf tools: remove references to struct ip_event"
->>>         perf tools: add a sample parsing test
->>>                 Fix missing sample comparison for PERF_SAMPLE_READ
->>>
->>> Changes in V9:
->>>         perf: Update perf_event_type documentation
->>>                 Dropped since its been applied
->>>         perf tools: tidy up sample parsing overflow checking
->>>                 Changed to use a single overflow function
->>>                 Updated for PERF_SAMPLE_READ
->>>         perf: make events stream always parsable
->>>                 Added more about sample parsing to the commit message
->>>         perf tools: add support for PERF_SAMPLE_IDENTFIER
->>>                 When selecting PERF_SAMPLE_IDENTFIER, ensure PERF_SAMPLE_ID
->>>                 is deselected
->>>         perf tools: expand perf_event__synthesize_sample()
->>>                 Updated for PERF_SAMPLE_READ
->>>         perf tools: add a function to calculate sample event size
->>>                 Updated for PERF_SAMPLE_READ
->>>         perf tools: add a sample parsing test
->>>                 Updated for PERF_SAMPLE_READ
->>>
->>> Changes in V8:
->>>         perf tools: add debug prints
->>>                 Fixed Python link errors
->>>         perf tools: move perf_evlist__config() to a new source file
->>>                 New Patch to avoid Python link errors
->>>         perf tools: add support for PERF_SAMPLE_IDENTFIER
->>>                 Adjustments due to patch above
->>>
->>> Changes in V7:
->>>         perf: Update perf_event_type documentation
->>>                 Proposed new patch from Peter Zijlstra
->>>         perf: make events stream always parsable
->>>                 Adjustments due to patch above
->>>         perf tools: tidy up sample parsing overflow checking
->>>                 Change to a single overflow function
->>>                 Amend comment
->>>         perf tools: add a function to calculate sample event size
->>>                 New patch
->>>         perf tools: add a sample parsing test
->>>                 Amended to use sample event size calculation
->>>
->>> Changes in V6:
->>>         Some checkpatch fixes
->>>
->>>         perf: make events stream always parsable
->>>                 Add sample format comments
->>>
->>> Changes in V5:
->>>         Re-based to Arnaldo's tree and dropped already applied patches:
->>>                 perf tools: remove unused parameter
->>>                 perf tools: fix missing tool parameter
->>>                 perf tools: fix missing 'finished_round'
->>>                 perf tools: fix parse_events_terms() segfault on error path
->>>                 perf tools: fix new_term() missing free on error path
->>>                 perf tools: add const specifier to perf_pmu__find name parameter
->>>                 perf tools: tidy duplicated munmap code
->>>                 perf tools: validate perf event header size
->>>
->>>         perf tools: add debug prints
->>>                 Changed to perf_event_attr__fprintf()
->>>         perf tools: add pid to struct thread
->>>                 Always set the pid, even if a pid is already set
->>>         perf tools: change machine__findnew_thread() to set thread pid
->>>                 Replaces: perf tools: change "machine" functions to set thread pid
->>>         perf tools: add support for PERF_SAMPLE_IDENTFIER
->>>                 Only use PERF_SAMPLE_IDENTFIER if sample types are different
->>>         perf tools: expand perf_event__synthesize_sample()
->>>                 New patch in preparation of a sample parsing test
->>>         perf tools: add a sample parsing test
->>>                 New patch
->>>
->>> Changes in V4:
->>>         I added kernel support for matching sample types via
->>>         PERF_SAMPLE_IDENTIFIER.  perf tools support for that required
->>>         first fixing some other things.
->>>
->>>         perf tools: fix parse_events_terms() freeing local variable on error path
->>>                 Dropped - covered by David Ahern
->>>         perf tools: struct thread has a tid not a pid
->>>                 Added ack by David Ahern
->>>         perf tools: add pid to struct thread
->>>                 Remove unused function
->>>         perf tools: fix missing increment in sample parsing
->>>                 New patch
->>>         perf tools: tidy up sample parsing overflow checking
->>>                 New patch
->>>         perf tools: remove unnecessary callchain validation
->>>                 New patch
->>>         perf tools: remove references to struct ip_event
->>>                 New patch
->>>         perf tools: move struct ip_event
->>>                 New patch
->>>         perf: make events stream always parsable
->>>                 New patch
->>>         perf tools: add support for PERF_SAMPLE_IDENTFIER
->>>                 New patch
->>>
->>> Changes in V3:
->>>         perf tools: add pid to struct thread
->>>                 Split into 2 patches
->>>         perf tools: fix ppid in thread__fork()
->>>                 Dropped for now
->>>
->>> Changes in V2:
->>>         perf tools: fix missing tool parameter
->>>                 Fixed one extra occurrence
->>>         perf tools: fix parse_events_terms() freeing local variable on error path
->>>                 Made "freeing" code into a new function
->>>         perf tools: validate perf event header size
->>>                 Corrected byte-swapping
->>>         perf tools: allow non-matching sample types
->>>                 Added comments
->>>                 Fixed id_pos calculation
->>>                 id_pos/is_pos updated whenever sample_type changes
->>>                 Removed perf_evlist__sample_type()
->>>                 Added __perf_evlist__combined_sample_type()
->>>                 Added perf_evlist__combined_sample_type()
->>>                 Added perf_evlist__make_sample_types_compatible()
->>>         Added ack's to patches acked by Jiri Olsa
->>>
->>>
->>> Adrian Hunter (13):
->>>       perf tools: add debug prints
->>>       perf tools: allow non-matching sample types
->>>       perf tools: add pid to struct thread
->>>       perf tools: change machine__findnew_thread() to set thread pid
->>>       perf tools: tidy up sample parsing overflow checking
->>>       perf tools: remove unnecessary callchain validation
->>>       perf tools: remove references to struct ip_event
->>>       perf: make events stream always parsable
->>>       perf tools: move perf_evlist__config() to a new source file
->>>       perf tools: add support for PERF_SAMPLE_IDENTFIER
->>>       perf tools: expand perf_event__synthesize_sample()
->>>       perf tools: add a function to calculate sample event size
->>>       perf tools: add a sample parsing test
->>>
->>>  include/uapi/linux/perf_event.h   |  27 ++-
->>>  kernel/events/core.c              |  11 +-
->>>  tools/perf/Makefile               |   2 +
->>>  tools/perf/builtin-inject.c       |   8 +-
->>>  tools/perf/builtin-kmem.c         |   3 +-
->>>  tools/perf/builtin-kvm.c          |   2 +-
->>>  tools/perf/builtin-lock.c         |   3 +-
->>>  tools/perf/builtin-mem.c          |   2 +-
->>>  tools/perf/builtin-report.c       |   2 +-
->>>  tools/perf/builtin-sched.c        |  20 +-
->>>  tools/perf/builtin-script.c       |   3 +-
->>>  tools/perf/builtin-top.c          |  11 +-
->>>  tools/perf/builtin-trace.c        |  12 +-
->>>  tools/perf/tests/builtin-test.c   |   4 +
->>>  tools/perf/tests/code-reading.c   |   4 +-
->>>  tools/perf/tests/hists_link.c     |  23 +-
->>>  tools/perf/tests/mmap-basic.c     |   2 +-
->>>  tools/perf/tests/sample-parsing.c | 313 +++++++++++++++++++++++++
->>>  tools/perf/tests/tests.h          |   1 +
->>>  tools/perf/util/build-id.c        |  11 +-
->>>  tools/perf/util/callchain.c       |   8 -
->>>  tools/perf/util/callchain.h       |   5 -
->>>  tools/perf/util/event.c           |   5 +-
->>>  tools/perf/util/event.h           |  33 ++-
->>>  tools/perf/util/evlist.c          | 146 ++++++++++--
->>>  tools/perf/util/evlist.h          |  10 +-
->>>  tools/perf/util/evsel.c           | 471 ++++++++++++++++++++++++++++++++++----
->>>  tools/perf/util/evsel.h           |  13 +-
->>>  tools/perf/util/machine.c         |  37 ++-
->>>  tools/perf/util/machine.h         |   3 +-
->>>  tools/perf/util/python.c          |  20 ++
->>>  tools/perf/util/record.c          | 111 +++++++++
->>>  tools/perf/util/session.c         |  32 +--
->>>  tools/perf/util/thread.c          |   3 +-
->>>  tools/perf/util/thread.h          |   3 +-
->>>  35 files changed, 1174 insertions(+), 190 deletions(-)
->>>  create mode 100644 tools/perf/tests/sample-parsing.c
->>>  create mode 100644 tools/perf/util/record.c
->>>
->>>
->>> Regards
->>> Adrian
->>
->>
->
+The problem with this patch is __eth_type_trans() assuming the MAC
+header at skb->data which might be correct in the most cases, but not
+when called from eth_type_trans() as the later sets skb->data to after
+the ethernet header (which was the problem from the beginning).
+
+Best wishes, Phil
