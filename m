@@ -1,145 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030646Ab3HIOVn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 10:21:43 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:54194 "EHLO e9.ny.us.ibm.com"
+	id S1030653Ab3HIOWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 10:22:05 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40718 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030342Ab3HIOTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 10:19:06 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: <mingo@redhat.com>, <hpa@zytor.com>, <x86@kernel.org>, <jeremy@goop.org>,
-        <konrad.wilk@oracle.com>, <gleb@redhat.com>, <pbonzini@redhat.com>
-Cc: <gregkh@suse.de>, <peterz@infradead.org>, <tglx@linutronix.de>,
-        <agraf@suse.de>, <riel@redhat.com>, <avi.kivity@gmail.com>,
-        <habanero@linux.vnet.ibm.com>, <chegu_vinod@hp.com>,
-        <ouyang@cs.pitt.edu>, <drjones@redhat.com>, <attilio.rao@citrix.com>,
-        linux-doc@vger.kernel.org, <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
-        <andi@firstfloor.org>, <xen-devel@lists.xensource.com>,
-        <virtualization@lists.linux-foundation.org>,
-        <stefano.stabellini@eu.citrix.com>, <mtosatti@redhat.com>,
-        <srivatsa.vaddagiri@gmail.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: [PATCH V13 11/14] xen/pvticketlock: Allow interrupts to be enabled while blocking
-Date: Fri,  9 Aug 2013 19:51:59 +0530
-Message-Id: <1376058122-8248-12-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1376058122-8248-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-References: <y>
- <1376058122-8248-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080914-7182-0000-0000-000008089CC1
+	id S1030311Ab3HIOWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 10:22:03 -0400
+Date: Fri, 9 Aug 2013 17:21:43 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <george.cherian@ti.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+Subject: Re: [PATCH 5/5] usb/musb dma: add cppi41 dma driver
+Message-ID: <20130809142143.GN12041@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375471450-31154-1-git-send-email-bigeasy@linutronix.de>
+ <1375471450-31154-6-git-send-email-bigeasy@linutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IoFIGPN1N3g1Ryqz"
+Content-Disposition: inline
+In-Reply-To: <1375471450-31154-6-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy@goop.org>
+--IoFIGPN1N3g1Ryqz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If interrupts were enabled when taking the spinlock, we can leave them
-enabled while blocking to get the lock.
+On Fri, Aug 02, 2013 at 09:24:10PM +0200, Sebastian Andrzej Siewior wrote:
+> This driver is currently used by musb' cppi41 couter part. I may merge
+> both dma engine user of musb at some point but not just yet.
+>=20
+> The driver seems to work in RX/TX mode in host mode, tested on mass
+> storage. I increaed the size of the TX / RX transfers and waited for the
+> core code to cancel a transfers and it seems to recover.
+>=20
+> v2..3:
+> - use mall transfers on RX side and check data toggle.
+> - use rndis mode on tx side so we haveon interrupt for 4096 transfers.
+> - remove custom "transferred" hack and use dmaengine_tx_status() to
+>   compute the total amount of data that has been transferred.
+> - cancel transfers and reclaim descriptors
+>=20
+> v1..v2:
+> - RX path added
+> - dma mode 0 & 1 is working
+> - device tree nodes re-created.
+>=20
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-If we can enable interrupts while waiting for the lock to become
-available, and we take an interrupt before entering the poll,
-and the handler takes a spinlock which ends up going into
-the slow state (invalidating the per-cpu "lock" and "want" values),
-then when the interrupt handler returns the event channel will
-remain pending so the poll will return immediately, causing it to
-return out to the main spinlock loop.
+Vinod, do you mind if I take this through my tree ? It's tightly related
+with the rest of the series.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/xen/spinlock.c | 46 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 40 insertions(+), 6 deletions(-)
+--=20
+balbi
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 546112e..0438b93 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -142,7 +142,20 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	 * partially setup state.
- 	 */
- 	local_irq_save(flags);
--
-+	/*
-+	 * We don't really care if we're overwriting some other
-+	 * (lock,want) pair, as that would mean that we're currently
-+	 * in an interrupt context, and the outer context had
-+	 * interrupts enabled.  That has already kicked the VCPU out
-+	 * of xen_poll_irq(), so it will just return spuriously and
-+	 * retry with newly setup (lock,want).
-+	 *
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
- 	w->want = want;
- 	smp_wmb();
- 	w->lock = lock;
-@@ -157,24 +170,43 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	/* Only check lock once pending cleared */
- 	barrier();
- 
--	/* Mark entry to slowpath before doing the pickup test to make
--	   sure we don't deadlock with an unlocker. */
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
- 	__ticket_enter_slowpath(lock);
- 
--	/* check again make sure it didn't become free while
--	   we weren't looking  */
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking
-+	 */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
- 		add_stats(TAKEN_SLOW_PICKUP, 1);
- 		goto out;
- 	}
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
-+
- 	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
- 	xen_poll_irq(irq);
- 	add_stats(TAKEN_SLOW_SPURIOUS, !xen_test_irq_pending(irq));
-+
-+	local_irq_save(flags);
-+
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- out:
- 	cpumask_clear_cpu(cpu, &waiting_cpus);
- 	w->lock = NULL;
-+
- 	local_irq_restore(flags);
-+
- 	spin_time_accum_blocked(start);
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
-@@ -188,7 +220,9 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	for_each_cpu(cpu, &waiting_cpus) {
- 		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
- 
--		if (w->lock == lock && w->want == next) {
-+		/* Make sure we read lock before want */
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == next) {
- 			add_stats(RELEASED_SLOW_KICKED, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
- 			break;
--- 
-1.7.11.7
+--IoFIGPN1N3g1Ryqz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSBPr2AAoJEIaOsuA1yqRErDEP/1P1n4kp8MUiK2wKZEfZ0pd1
+aVgvd4obBYIGZwmL7ssgeWEvQALRuc+lm21vreCDoAwHd3GlfdAMWIZHgvoztRRO
+Ws3n/7E3/aNnRwu0jq9EwOs2A2gBXUQj5018frL/s2kq4Y5qUMcLSPhQx0vWpWKI
+nhP+FJYIsi+9hNH1M4xqlpy1kT0I+s4/VfFCKcnk00M3DZFosG9zUI426W4ZZVq8
+dmyxMdM60iSQc4edSAh3KK1y+pZgurOC1qUlwzODert3mGRkHeIIcc5J3/15c3HG
++CZnl3H2/8etK5lhxcLrZmmPJ93U/6AnkvjuGURlhK34VQdYRx4NlxtJeMKzrOEM
+R5adZBBaRhDYdigUxA3ResIvgIchYoKx1Xvcs3SCFk+2W3QUdiKoIu4HiFE83ZgX
+z/EdY/7XRjFo5vh1if6GxXDMcIaphnQTfNSmw56pd4RKa2sg4iQlyJEdBDpFBe/0
+uR68TS9ddh4K0yQFjmy1lruSbwwaVh8V9WDjSzZPNCW0rxvovlajkcBRavD+illC
+yb96g+frZbKypRIpgyxjJ1YVahLg3iAReUE+EiFrB0oZN5rRy335BojCN1pFnD6B
+wosaUYS8jkV7kvOeDh149CW24JrQT167UeXVNo3hGCLCvtoDvexFEXabrRLmbOQF
+q1lMmpz6445YGR9E/ggw
+=cnbN
+-----END PGP SIGNATURE-----
+
+--IoFIGPN1N3g1Ryqz--
