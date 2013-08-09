@@ -1,123 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031327Ab3HIWOK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 18:14:10 -0400
-Received: from 70-36-212-23.dsl.static.sonic.net ([70.36.212.23]:55341 "EHLO
-	mail.linuxtoys.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031204Ab3HIWOJ (ORCPT
+	id S1031339Ab3HIWSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 18:18:09 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:14351 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031204Ab3HIWSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 18:14:09 -0400
-Message-ID: <520569B2.4000704@linuxtoys.org>
-Date: Fri, 09 Aug 2013 15:14:10 -0700
-From: Bob Smith <bsmith@linuxtoys.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons
- a /sys-like interface
-References: <20130803223828.GA14611@kroah.com> <51FECDA6.5070001@linuxtoys.org> <20130804231958.GA25418@kroah.com> <52003958.7080103@linuxtoys.org> <20130806094604.GE27889@kroah.com> <520299AB.1020607@linuxtoys.org> <20130807192714.GC2708@kroah.com> <5202A284.7010106@linuxtoys.org> <20130807195427.GB4121@kroah.com> <5202B674.7060005@linuxtoys.org> <20130807213325.GB5373@kroah.com>
-In-Reply-To: <20130807213325.GB5373@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 9 Aug 2013 18:18:08 -0400
+Message-ID: <1376086616.10300.302.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI, cpu hotplug: move try_offline_node() after
+ acpi_unmap_lsapic()
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>
+Date: Fri, 09 Aug 2013 16:16:56 -0600
+In-Reply-To: <52049A2E.8080101@cn.fujitsu.com>
+References: <5200CBBF.1090904@jp.fujitsu.com>
+	 <1375808178.10300.181.camel@misato.fc.hp.com>
+	 <52049A2E.8080101@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman wrote:
-  (snip)
- > You are mixing protocols and bindings and system calls up it seems.> They are not the same at all.
+On Fri, 2013-08-09 at 15:28 +0800, Tang Chen wrote:
+> On 08/07/2013 12:56 AM, Toshi Kani wrote:
+> > On Tue, 2013-08-06 at 19:11 +0900, Yasuaki Ishimatsu wrote:
+> >> try_offline_node() checks that all cpus related with removed node have been
+> >> removed by using cpu_present_bits. If all cpus related with removed node have
+> >> been removed, try_offline_node() clears the node information.
+> >>
+> >> But try_offline_node() called from acpi_processor_remove() never clears
+> >> the node information. For disabling cpu_present_bits, acpi_unmap_lsapic()
+> >> need be called. But acpi_unmap_lsapic() is called after try_offline_node()
+> >> runs. So when try_offline_node() runs, the cpu's cpu_present_bits is always
+> >> set.
+> >>
+> >> This patch moves try_offline_node() after acpi_unmap_lsapic().
+> >>
+> >> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+> >
+> > The change looks good to me.
+> >
+> > Acked-by: Toshi Kani<toshi.kani@hp.com>
+> >
+> > BTW, do you know why try_offline_node() has to use stop_machine()?
+> 
+> try_offline_node() is used to check if the node could be hot-removed
+> after each memory or cpu hot-remove operation.
+> 
+> In memory hot-remove path, we have lock_memory_hotplug() to series all
+> the memory hot-remove options.
+> 
+> But when doing cpu hot-remove,
+> 
+> acpi_processor_remove()
+>   |->try_offline_node()
+> 
+> There is no lock to protect it. I think, when we are going to hot-remove
+> a node, others should not do any memory or cpu hotplug operation. In memory
+> hotplug path, we have lock_memory_hotplug(). But in cpu hotplug path, I
+> didn't find any lock. So we used stop_machine() to call check_cpu_on_node().
+> If we find any cpu still present, we return and do not remove the node.
 
-Yes, I may be using the term binding wrong.  As I understand it
-- We should use a _syscall_ to open a unix socket on the daemon, then
-- define a _protocol_ to describe the data flowing over the socket,
-- a C _binding_ to present a C API and hide the protocol for C programmers,
-- a C++ binding and API for C++ programmers
-- a Java binding
-- a PHP binding
-- a Perl binding
-- a Python binding
-- a node.js binding
-- a Scratch binding for Raspberry Pi users
-- and some kind of shell binding for Bash programmers
+CPU/Memory hotplug operations and sysfs eject are serialized with
+acpi_os_hotplug_execute().  CPU online/offline is protected by
+cpu_hotplug_[begin|done]() and [get|put]_online_cpus().  But, yes,
+online/offline and hotplug operations are not serialized.  I tried to
+serialize them before, but that framework was not well received.
 
- >
- > (snip)
- > Again, /sys and /proc is talking to the kernel, not userspace to
- > userspace, I still fail to understand how you will do that to create a
- > "userspace" driver.
+Anyway, it looks to me that cpu_up()->mem_online_node() path can race
+with try_offline_node().  And I do not think stop_machine() protects
+this case, either.  try_offline_node() stops the execution of
+num_online_node() during stop_machine(), but then lets it continues to
+run after that.  I think they need to be protected by a lock.
 
- From a kernel developer's point of view the term "userspace driver"
-may seem like an oxymoron.  By definition, all devices on the system
-have to be controlled by the kernel.  All else is just userspace.
+I will look further to see if I can come up with some solution.
 
-As an _opinion_ only, I think maybe userspace device drivers do exist.
-It refers to  hardware that the kernel is not, and should not, be aware
-of.  This hardware is not seen because it is at the end of some kind of
-communications channel like USB-serial or Ethernet. A developer might
-like to view that hardware as part of the overall system even if Linux
-and the CPU do not have direct access to it.  A userspace driver looks
-something like this
-
-	=(ProxyDevNode)====(daemon)===(CommChannel)===(hardware)
-
-As an engineer, I can see that "userspace driver" might not make sense.
-As a marketing guy, I'm super-duper pleased to tell my customers  "Yes,
-we support Linux.  After all, we have Userspace Device Drivers!" :)
-
-
- >
- > (snip)
- > How can you control a robot with this code?
- > What do you want to do in order to control your robot?
- > What are your needs in accessing the hardware?
- > What hardware are you wanting to control?
-
-In my message I said I was building a robot.  While true, this gives the
-erroneous impression that it is just me for just one robot.  In fact, I
-build and sell FPGA based robot controllers.  It is my _customers_ who
-build and program the robots.
-
-The descriptions below may be representative of others wanting to have
-userspace device drivers even though the descriptions are for my specific
-case.
-
-My (hardware) has a Xilinx FPGA with connectors that goes out to eight
-peripheral cards.  There are about thirty different peripheral cards
-available  The FPGA has to be programmed for a specific peripheral mix,
-but it is pretty easy for a customer to request a new FPGA image for a
-new mix of cards. Inside the FPGA the peripherals are controlled by
-8-bit registers on an internal address bus.
-
-My (CommChannel) is an FTDI USB-serial interface.  The protocol over the
-link consists of reads and writes to the 8-bit registers in the FPGA.
-Polling is not needed since the FPGA can automatically generate a read
-response packet when it needs to.
-
-My (daemon) is passed which serial port to use.  It establishes a link
-to the FPGA and then asks it for a list of its peripherals.  Using this
-list it loads a shared object library for each different peripheral.
-The init in the library creates the device nodes needed by the driver
-(userspace driver, that is).  When all the device nodes have been set
-up the daemon drops root permissions.  The daemon does not need root
-permissions if the device nodes are set up in advance.
-     Once everything is set up the system becomes completely event
-driven.  Sensor reading are passed from the FPGA through the daemon
-and out to the device nodes, and configuration changes are passed
-from the device node out to the FPGA.
-
-
- >
- > And why can't you just access that hardware through the normal
- > kernel apis we have today?
-
-Because the kernel doesn't even see the hardware I'm controlling.
-
- >
- > greg k-h
-
-Greg, sorry this message was so long, and thanks again for your patience.
-
-Bob Smith
-
+Thanks,
+-Toshi
 
