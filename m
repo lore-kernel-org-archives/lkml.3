@@ -1,76 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030725Ab3HISvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 14:51:23 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:62719 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030610Ab3HISvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 14:51:22 -0400
-MIME-Version: 1.0
-X-Originating-IP: [217.132.161.31]
-In-Reply-To: <5203FF48.7000903@caviumnetworks.com>
-References: <1375986342-22999-1-git-send-email-ddaney.cavm@gmail.com>
-	<000001405f6459b8-32fb5ffe-837b-41be-bec4-c9c05fd4f114-000000@email.amazonses.com>
-	<5203FF48.7000903@caviumnetworks.com>
-Date: Fri, 9 Aug 2013 21:51:20 +0300
-Message-ID: <CAOtvUMcR2Hx2jMy6Y0QQv5h7dM2a5fAC_M7BpgnaLa0VUieEHg@mail.gmail.com>
-Subject: Re: [PATCH] smp.c: Quit unconditionally enabling irqs in on_each_cpu_mask().
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Christoph Lameter <cl@gentwo.org>, David Daney <ddaney.cavm@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Daney <david.daney@cavium.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1030733Ab3HISvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 14:51:51 -0400
+Received: from nbd.name ([46.4.11.11]:33055 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030353Ab3HISvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 14:51:49 -0400
+From: John Crispin <blogic@openwrt.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: John Crispin <blogic@openwrt.org>, linux-kernel@vger.kernel.org,
+        Gabor Juhos <juhosg@openwrt.org>
+Subject: [PATCH] reset: Fix compile when reset RESET_CONTROLLER is not selected
+Date: Fri,  9 Aug 2013 20:44:37 +0200
+Message-Id: <1376073877-28988-1-git-send-email-blogic@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 8, 2013 at 11:27 PM, David Daney <ddaney@caviumnetworks.com> wrote:
->
-> On 08/08/2013 12:25 PM, Christoph Lameter wrote:
->>
->> On Thu, 8 Aug 2013, David Daney wrote:
->>
->>> I don't know of any bugs currently caused by this unconditional
->>> local_irq_enable(), but I want to use this function in MIPS/OCTEON
->>> early boot (when we have early_boot_irqs_disabled).  This also makes
->>> this function have similar semantics to on_each_cpu() which is good in
->>> itself.
->>
->>
->> smp_call_function_many() wants interrupts enabled.
->
->
-> That's what the comments say, but it isn't actually true.
->
-> The usage introduced by the patch is no different than the existing usage in on_each_cpu() 30 line up in the file.
->
+Drivers need to protect their reset api calls with #ifdef to avoid compile
+errors. This patch adds dummy wrappers in the same way that linux/of.h does
+it. This results in the nasty ifdefs no longer being needed.
 
-Regardless of the question of how smp_call_function_many() should be
-called, the IRQ disable/enable pair is actually there to make sure the
-provided function runs on the current CPU at the same conditions as it
-would get called via the IPI.
+Cc: linux-kernel@vger.kernel.org
+Cc: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Gabor Juhos <juhosg@openwrt.org>
+---
+ include/linux/reset-controller.h |   16 ++++++++++++++
+ include/linux/reset.h            |   43 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+)
 
-I would at least consider putting a test there to make sure IRQs
-really are disabled when entering the function, otherwise the bugs
-stemming from incorrect use can be tricky to catch.
+diff --git a/include/linux/reset-controller.h b/include/linux/reset-controller.h
+index 2f61311..068f073 100644
+--- a/include/linux/reset-controller.h
++++ b/include/linux/reset-controller.h
+@@ -45,7 +45,23 @@ struct reset_controller_dev {
+ 	unsigned int nr_resets;
+ };
+ 
++#if defined(CONFIG_RESET_CONTROLLER)
++
+ int reset_controller_register(struct reset_controller_dev *rcdev);
+ void reset_controller_unregister(struct reset_controller_dev *rcdev);
+ 
++#else
++
++static inline int reset_controller_register(struct reset_controller_dev *rcdev)
++{
++	return -ENOSYS;
++}
++
++void reset_controller_unregister(struct reset_controller_dev *rcdev)
++{
++
++}
++
++#endif
++
+ #endif
+diff --git a/include/linux/reset.h b/include/linux/reset.h
+index 6082247..1b36c9e 100644
+--- a/include/linux/reset.h
++++ b/include/linux/reset.h
+@@ -1,9 +1,13 @@
+ #ifndef _LINUX_RESET_H_
+ #define _LINUX_RESET_H_
+ 
++#include <linux/err.h>
++
+ struct device;
+ struct reset_control;
+ 
++#if defined(CONFIG_RESET_CONTROLLER)
++
+ int reset_control_reset(struct reset_control *rstc);
+ int reset_control_assert(struct reset_control *rstc);
+ int reset_control_deassert(struct reset_control *rstc);
+@@ -14,4 +18,43 @@ struct reset_control *devm_reset_control_get(struct device *dev, const char *id)
+ 
+ int device_reset(struct device *dev);
+ 
++#else /* CONFIG_RESET_CONTROLLER */
++
++static inline int reset_control_reset(struct reset_control *rstc)
++{
++	return -ENOSYS;
++}
++
++static inline int reset_control_assert(struct reset_control *rstc)
++{
++	return -ENOSYS;
++}
++
++static inline int reset_control_deassert(struct reset_control *rstc)
++{
++	return -ENOSYS;
++}
++
++static inline struct reset_control *reset_control_get(struct device *dev, const char *id)
++{
++	return ERR_PTR(-ENOSYS);
++}
++
++static inline void reset_control_put(struct reset_control *rstc)
++{
++
++}
++
++static inline struct reset_control *devm_reset_control_get(struct device *dev, const char *id)
++{
++	return ERR_PTR(-ENOSYS);
++}
++
++static inline int device_reset(struct device *dev)
++{
++	return -ENOSYS;
++}
++
++#endif
++
+ #endif
+-- 
+1.7.10.4
 
-Just my 0.00002 BTC
-Gilad
-
-
-
---
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
