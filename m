@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758263Ab3HIO0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 10:26:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62317 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab3HIO0g (ORCPT
+	id S1030596Ab3HIOfl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 10:35:41 -0400
+Received: from dkim2.fusionio.com ([66.114.96.54]:45128 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030208Ab3HIOfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 10:26:36 -0400
-Date: Fri, 9 Aug 2013 16:26:34 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Koul, Vinod" <vinod.koul@intel.com>
-cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
-Subject: my outstanding patches for 3.12
-Message-ID: <Pine.LNX.4.64.1308091531040.937@axis700.grange>
+	Fri, 9 Aug 2013 10:35:39 -0400
+X-ASG-Debug-ID: 1376058938-0421b5022123ee00001-xx1T2L
+X-Barracuda-Envelope-From: JBacik@fusionio.com
+Date: Fri, 9 Aug 2013 10:35:37 -0400
+From: Josef Bacik <jbacik@fusionio.com>
+To: Andreas Schwab <schwab@linux-m68k.org>
+CC: Josef Bacik <jbacik@fusionio.com>, Thorsten Glaser <tg@mirbsd.de>,
+        Joe Perches <joe@perches.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Debian GNU/Linux m68k <debian-68k@lists.debian.org>,
+        <linux-btrfs@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: btrfs zero divide
+Message-ID: <20130809143537.GA861@localhost.localdomain>
+X-ASG-Orig-Subj: Re: btrfs zero divide
+References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
+ <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
+ <20130730171329.GF24583@localhost.localdomain>
+ <Pine.BSM.4.64L.1307301741360.20305@herc.mirbsd.org>
+ <20130730204001.GG24583@localhost.localdomain>
+ <87eha33v9f.fsf@igel.home>
+ <87a9kr3v2p.fsf@igel.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:kgJwvSTURuoOcz2PH9LUlnBm5Hhl7fgb7amrDbxppim
- XTaePU1Oikc49qN1/y6A/tIY5IG2+doxjC2Is2fVxn8l4Q44Jo
- viPiMJaS87EvZNTPpAzpc7rydXlww5u58OBFyEK9tEQa099m1d
- hp8DUGamtpYWyWWrhsYl2BakNdq3ucut0E9MNtDVMFscLPLUBx
- sM71xAqMSaWoQ0jEDhyQaOi08gWhX6Z1xKdzIwri5159G0V/O/
- 8RfX5YGDpBw8PN2jp+0UiKuQwOwDDhp25VzT70CUNmJ6IQEgFY
- RKzi6cwhZmItYzhPJtQ476II7RtHhtvIDtVxGcb78vOBknAcgj
- cFmQuTjxppQjTnt1qcPP98xZh+XdTfCGDY6h2WwOhSv+hN5Mh6
- OH/Oi5CG2boiw==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <87a9kr3v2p.fsf@igel.home>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1376058938
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.138082
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod
+On Fri, Aug 09, 2013 at 02:30:38PM +0200, Andreas Schwab wrote:
+> Andreas Schwab <schwab@linux-m68k.org> writes:
+> 
+> > Josef Bacik <jbacik@fusionio.com> writes:
+> >
+> >> So stripe_len shouldn't be 0, if it is you have bigger problems :).
+> >
+> > The bigger problem is that stripe_nr is u64, this is completely bogus.
+> > The first operand of do_div must be u32.  This goes through the whole
+> > file.
+> 
+> Of course, what I meant was that the *second* operand must be u32, but
+> that doesn't change my point.
+> 
 
-There are still a number of DMA patches from me for 3.12, that still 
-aren't in next. I think, the easiest way to get them all is to look for 
-instructions in patch 0/0 from this series:
+Yeah we can change this.  Thanks,
 
-http://thread.gmane.org/gmane.linux.ports.sh.devel/26161
-
-Otherwise, unless I'm missing anything, here's the list of single patches 
-with their respective patchwork IDs - it includes two more patches, not 
-mentiones at the above link:
-
-DMA: shdma: fix CHCLR register address calculation
-pw ID: 2813531
-
-DMA: shdma: switch to managed resource allocation
-pw ID: 2813591
-
-DMA: shdma: switch all __iomem pointers to void
-pw ID: 2813611
-
-DMA: shdma: support the new CHCLR register layout
-pw ID: 2825593
-
-DMA: shdma: make a pointer const
-pw ID: 2837949
-
-DMA: sudmac: fix compiler warning
-pw ID: 2837890
-
-DMA: shdma: move two macros to a header
-pw ID: 2831934
-
-DMA: shdma: switch DT mode to use configuration data from a match table
-pw ID: 2837974
-
-DMA: shdma: remove private and unused defines from a global header
-pw ID: 2837962
-
-DMA: shdma: add a header with common for ARM SoCs defines
-pw ID: 2837964
-
-DMA: shdma: add r8a73a4 DMAC data to the device ID table
-pw ID: 2837967
-
-As I mentioned in a separate mail, I'm mostly offline for the next two 
-weeks, hopefully, there won't be problems with these patches.
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Josef
