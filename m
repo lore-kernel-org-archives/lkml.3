@@ -1,112 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967471Ab3HILkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 07:40:11 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43403 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934276Ab3HILkI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 07:40:08 -0400
-Date: Fri, 9 Aug 2013 12:39:40 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20130809113940.GY6427@sirena.org.uk>
-References: <20130808132201.2610aef3@armhf>
- <5204A716.6070507@gmail.com>
- <20130809091953.GO6427@sirena.org.uk>
- <5204B7A6.9050907@gmail.com>
- <20130809094340.GO23006@n2100.arm.linux.org.uk>
- <5204CC04.4000401@gmail.com>
+	id S934329Ab3HILlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 07:41:47 -0400
+Received: from ni.piap.pl ([195.187.100.4]:50818 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934248Ab3HILlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 07:41:46 -0400
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, James Bottomley <JBottomley@Parallels.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <m3fvujgrcr.fsf@t19.piap.pl>
+	<20130809093506.GN23006@n2100.arm.linux.org.uk>
+	<m3bo57gnks.fsf@t19.piap.pl>
+	<20130809104852.GQ23006@n2100.arm.linux.org.uk>
+Date: Fri, 09 Aug 2013 13:38:21 +0200
+In-Reply-To: <20130809104852.GQ23006@n2100.arm.linux.org.uk> (Russell King's
+	message of "Fri, 9 Aug 2013 11:48:52 +0100")
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ce6hu2nuSYv2TQrx"
-Content-Disposition: inline
-In-Reply-To: <5204CC04.4000401@gmail.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 1/1] ASoc: kirkwood: add DT support to the mvebu audio
- subsystem
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Message-ID: <m338qjgklu.fsf@t19.piap.pl>
+Content-Type: text/plain
+Subject: Re: DMA masks
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20130809 #10903734, check: 20130809 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
 
---Ce6hu2nuSYv2TQrx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> No.  If dma_mask is NULL, then dma_set_mask() will return -EIO no matter
+> what.  If dma_mask is non-NULL, dma_set_mask() will succeed if the mask
+> is supported by the hardware.  For example, on x86:
 
-On Fri, Aug 09, 2013 at 01:01:24PM +0200, Sebastian Hesselbarth wrote:
+> and this is the same pattern we implement on ARM.  So, a valid dma_mask
+> pointer pointing at a variable holding zero can have a supported mask
+> set.
 
-> And that is *the only thing* that keeps bugging me in Mark's replies -
-> he *insists* on having that virtual audio nodes. I have nothing against
-> it, except it should be *required* for every DT we have. DRM doesn't
-> _need_ it, media doesn't _need_ it, but audio is so very special that it
-> _requires_ you to have it described in DT?
+Right. So is it a work around systems unable to provide DMA to devices,
+whose drivers would try to use the DMA (not aware of the system
+limitations)?
 
-> I understand that it may be required on some boards, especially if you
-> create different sound-cards out of the IP available. Just like the
-> DRM discussion we had - have a virtual node if there is no other sane
-> way to describe it, but there is no strict requirement.
+Do you know, by chance, of any particular case using this NULL pointer
+trick to prevent (I suppose) a driver from doing DMA?
 
-The problem here is that the extra effort comes from the board, not from
-the individual components - any component would have to optionally
-support having a card binding hanging off it (or the properties for a
-simple link) so it's more consistent just to say we link everything from
-a board node all the time.  By the time you start adding all the things
-like jacks and connected pins I'd expect you'd find you'd want to have
-at least a sub node to organise everything.
+> Have you looked at my massive dma-masks patch series earlier this week?
+> Obviously you haven't...
 
-Even things like buses aren't that clear - an I2S link can be a
-fairly simple point to point link but it can also be a multi-master bus
-or share some signals with other links.  Things like DRM generally have
-interconnects which are much more regular and less open to interesting
-board design decisions, though even for media the last time I looked at
-the bindings the individual links were getting DT nodes which is another
-way to try to deal with things.
+Right again, no time for basically anything here :-( Will look.
 
-Let me once more renew my request that you go and read the previous
-discussions on this stuff, we've been through this loop repeatedly.
+> The separate coherent and streaming masks are only required for a very
+> small subset of devices (rather systems - non-ARM I add).  For the
+> general case, especially on ARM where the above pattern seems to be
+> very prevalent, this does not apply; the two masks are always the same.
+> Many people took the above shortcut, and while not strictly correct, it
+> is a work-around for the shortcoming in the core device code.
 
-> That is what I am doing on top of the audio-controller node and except
-> that there is no helper to determine the names, yet. If ASoC would
-> provide a snd_soc_simple_card_register_from_dt(...,device_node *), I
-> wouldn't even have to parse the properties myself.
+That's my impression, too. BTW I personally have a device (PCI card)
+which have different masks (so it's also the case with devices). Old
+story though.
 
-So extend Morimoto-san's work on the simple card for this - that's what
-it's there for, it's doing exactly this job for non-DT systems but it
-just didn't get DT support added yet.  All the trivial cards should end
-up using this.
+> Greg has agreed to having stream_dma_mask in the struct device, but
+> even so I think removing the direct initialization from drivers is a good
+> idea.
 
---Ce6hu2nuSYv2TQrx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Definitely. I'll take a look, Thanks.
+-- 
+Krzysztof Halasa
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSBNT5AAoJELSic+t+oim9MOQQAI7AD+z8t+CRIVckyn/1+eR/
-VYx+gdeoWkV0FJYL/UwvndD1fCmSbtS73vK4x0fJG+mrDoeoWZ4nVl0JGEjZDRqc
-OTHMGX8z1DhEGwD7BgMeEMezs61MCoq1W/OW0X5McVfJ/aOig/iL8KQ7CnYW04jq
-6yqYqmqbv1EjwTwkUE+HkS7atpIDf/5u0xVj9tGWZLuBr72x5O9oTxQQMPmn2Kce
-mQGnNCaHu/DzqJ1ajvnWkPt2L0fC1TWTwPNkVy4KRDh1AAikAr8Ai/EN814fQp4x
-AQ+xAR8c110FJ1OzJPyjTypGFPgETiugoaDG96fdp91b3BDzo/XbLTz7l0FD4iLv
-PUAffB3QgjsnCDY5m8uTtMUI/nX5bXH9qIMJ6MVVODc2IcnLn43Iv/+ZYx+xHeqf
-W/lbcv6UnhBCGEn7eD8biV9mUpVp7V/BlQNUSaQqaaovKpwV/II+ji58SMHNP703
-HdT5kYFKpmRYSE2MG3cfJjp8v1sBfY1oWgQNfyqdcIEvhnuz8mxdE9BqE4tNsD06
-PHhsGZeAiTnXoBSEdgTzjQKOlW5WKUjaljaG/eyQaD0ZaL/RY3qZ4O3yiWtWWDJ0
-TxUnQIda06WSB68p+CgkfBd0uxTx7i9w91Kp1j93zS5ysemTtpIDRj12P8GbXa+8
-TxxcVPxLnchh1oRCiam1
-=P+up
------END PGP SIGNATURE-----
-
---Ce6hu2nuSYv2TQrx--
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
