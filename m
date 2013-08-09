@@ -1,120 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966642Ab3HIKhj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:37:39 -0400
-Received: from ni.piap.pl ([195.187.100.4]:49089 "EHLO ni.piap.pl"
+	id S967073Ab3HIKoO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:44:14 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52406 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753754Ab3HIKhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:37:37 -0400
-From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, James Bottomley <JBottomley@Parallels.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <m3fvujgrcr.fsf@t19.piap.pl>
-	<20130809093506.GN23006@n2100.arm.linux.org.uk>
-Date: Fri, 09 Aug 2013 12:34:11 +0200
-In-Reply-To: <20130809093506.GN23006@n2100.arm.linux.org.uk> (Russell King's
-	message of "Fri, 9 Aug 2013 10:35:06 +0100")
+	id S965852Ab3HIKoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:44:12 -0400
+Message-ID: <5204C7F7.8050503@ti.com>
+Date: Fri, 9 Aug 2013 13:44:07 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Message-ID: <m3bo57gnks.fsf@t19.piap.pl>
-Content-Type: text/plain
-Subject: Re: DMA masks
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
-	 bases: 20130809 #10903734, check: 20130809 clean
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.11
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="PQsmIe6CABxkHtWGvEervURDW0PDALFX1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
+--PQsmIe6CABxkHtWGvEervURDW0PDALFX1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
->> struct device {
->>         ...
->> 
->>         u64             *dma_mask;      /* dma mask (if dma'able device) */
->> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
->
-> "If dma-able device" gives a clue.  It is now the case that the DMA API
-> refuses DMA (via dma_supported) if the DMA mask pointer is NULL.
+Hi Linus,
 
-But precisely the same effect can be obtained by setting the (actual)
-dma_mask to 0 (most preferably, using DMA API's dma_set_mask()).
-This is what coherent_dma_mask does.
+Here are hopefully the last fbdev fixes for 3.11.
 
-Actually, when the (pointer) dma_mask is NULL, the behaviour isn't
-exactly simple. I guess this all works because devices without DMA
-capability don't try to use DMA.
+ Tomi
 
-There is also that old saying that both the DMA masks should default to
-0xFFFFFFFF (it does on some archs).
+The following changes since commit 7808e3291e1e101e9ad6e8263119c4a2abae05=
+ef:
 
-Perhaps I'm wrong, but wouldn't the conversion to simple u64 remove
-a lot of unneeded code, make all the archs/platforms behave more
-consistently, and generally make the world a bit better?
+  video: sh7760fb: fix to pass correct device identity to free_irq() (201=
+3-07-29 11:25:03 +0300)
 
-arch/unicore32/include/asm/dma-mapping.h:
-static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-{
-        if (dev && dev->dma_mask)
-                return addr + size - 1 <= *dev->dma_mask;
+are available in the git repository at:
 
-        return 1;
-	^^^^^^^^^
-}
+  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
+v-fixes-3.11-rc5
 
-arch/microblaze/include/asm/dma-mapping.h:
-static inline unsigned long device_to_mask(struct device *dev)
-{
-        if (dev->dma_mask && *dev->dma_mask)
-                return *dev->dma_mask;
-        /* Assume devices without mask can take 32 bit addresses */
-        return 0xfffffffful;
-}
+for you to fetch changes up to 70a0f6032985f156bd7e957cfec99c3dd3d592a2:
 
-arch/hexagon/kernel/dma.c:
-static int check_addr(const char *name, struct device *hwdev,
-                      dma_addr_t bus, size_t size)
-{
-        if (hwdev && hwdev->dma_mask && !dma_capable(hwdev, bus, size)) {
-                if (*hwdev->dma_mask >= DMA_BIT_MASK(32))
-                        printk(KERN_ERR
-                                "%s: overflow %Lx+%zu of device mask %Lx\n",
-                                name, (long long)bus, size,
-                                (long long)*hwdev->dma_mask);
-                return 0;
-        }
-        return 1;
-}
+  ARM: OMAP: dss-common: fix Panda's DVI DDC channel (2013-08-02 15:52:38=
+ +0300)
 
-arch/powerpc/include/asm/dma-mapping.h:
-static inline unsigned long device_to_mask(struct device *dev)
-{
-        if (dev->dma_mask && *dev->dma_mask)
-                return *dev->dma_mask;
-        /* Assume devices without mask can take 32 bit addresses */
-        return 0xfffffffful;
-}
+----------------------------------------------------------------
+fbdev fixes:
 
-etc.
+- omapdss: compilation fix and DVI fix for PandaBoard
+- mxsfb: fix colors when using 18bit LCD bus
+
+----------------------------------------------------------------
+Hector Palacios (1):
+      video: mxsfb: fix color settings for 18bit data bus and 32bpp
+
+Tomi Valkeinen (2):
+      OMAPDSS: analog-tv-connector: compile fix
+      ARM: OMAP: dss-common: fix Panda's DVI DDC channel
+
+ arch/arm/mach-omap2/dss-common.c                   |  2 +-
+ drivers/video/mxsfb.c                              | 26 ----------------=
+------
+ .../video/omap2/displays-new/connector-analog-tv.c | 18 +++++++++++++--
+ 3 files changed, 17 insertions(+), 29 deletions(-)
 
 
-Things like this:
-	pdev1->dev.dma_mask = &pdev1->dev.coherent_dma_mask;
-	pdev1->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-(which are all over the place) make me wonder what happens when some
-code requires and tries to set different masks for normal and coherent
-DMA.
+--PQsmIe6CABxkHtWGvEervURDW0PDALFX1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> However, placing the storage for the dma_mask pointer into struct device
-> is something which I've recently discussed with Greg, and is something
-> he'd like to see happen, so I'll be adding that to my DMA masks patch
-> series in the very near future.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Does this mean the dma_mask would remain a pointer, but it would point
-(usually) to a variable in struct device?
--- 
-Krzysztof Halasa
+iQIcBAEBAgAGBQJSBMf4AAoJEPo9qoy8lh71BgcQAK0zYyJjPEOFYsVjO8dqjbsy
+DxLWoQC6+IoeDDZ1NmP4JFj2tzF5YTW/z1DaihOc8nLyHeiWSqsi2lyiVPAMVto2
+mRC0zyjvFxle9J5xqHtVPLUj3mQiTTngEBegn5rALSYcJsDJ/J1dpF0ISuKwPXqm
+z0BFBnuk5T5gnn/R4ilexsT77PvhuI2W2MedEN8KHcg/KQf5D3KdhWDDrUkdAFdF
+nDzncbx7t9bToBiE5ZiN1i9TuMK4fUkzxEONoLJDYwyEYbj+mYgDS7VKumL2GPrG
+W5OXMRFKejcLPp6J5ajSkTWXqac2kCabtLJv7+34A18R0AqwFg+f2BDDZ504/ah1
+3+LzctvQf9kJ28j/tDkl33hec2l1gtrvoaM0Hd0hxU5iq4xpcQttXQHyXQVWUz6C
+ltPugXhEkz2wSg+dTDrrufD8KQgtobdD6Dt+ncrqmkvEfH0qAaZhLZE1GecSyFfg
+JoJGvoiIJJzznUKW02Sw68GLOeC1syBsmFXolQ3yRyGgu3pgf03WenilmJCvT6FN
+32Uhp4hNz4m45UIrf5LE4n6HmVcpSSlSOwGt/h2Uz95wCzqRnn19XEJUVlrQvFEL
+bVho704J2IVZcREDSZhnNdS0GlWv0+Zww4b/GpUhxfpCWrkABnt/3nb6DsFYFehm
+U1vtuCHsspznWvNSIPy/
+=wxWe
+-----END PGP SIGNATURE-----
 
-Research Institute for Automation and Measurements PIAP
-Al. Jerozolimskie 202, 02-486 Warsaw, Poland
+--PQsmIe6CABxkHtWGvEervURDW0PDALFX1--
