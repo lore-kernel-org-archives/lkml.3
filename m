@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968144Ab3HIQfz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:35:55 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54516 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968090Ab3HIQfy (ORCPT
+	id S1030324Ab3HIQiw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:38:52 -0400
+Received: from mail-ve0-f201.google.com ([209.85.128.201]:42363 "EHLO
+	mail-ve0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968090Ab3HIQiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:35:54 -0400
-Message-ID: <52051A66.1010001@wwwdotorg.org>
-Date: Fri, 09 Aug 2013 10:35:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Wei Ni <wni@nvidia.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] Documentation: dt: hwmon: add OF document for
- lm90
-References: <1375944991-29182-1-git-send-email-wni@nvidia.com> <1375944991-29182-4-git-send-email-wni@nvidia.com> <5203D757.8000208@wwwdotorg.org> <520487C7.5080901@nvidia.com>
-In-Reply-To: <520487C7.5080901@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Aug 2013 12:38:51 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 4/4] mmc: dw_mmc: Set timeout to max upon resume
+Date: Fri,  9 Aug 2013 09:33:20 -0700
+Message-Id: <1376066000-5495-5-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1376066000-5495-1-git-send-email-dianders@chromium.org>
+References: <1375825071-20922-1-git-send-email-dianders@chromium.org>
+ <1376066000-5495-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 12:10 AM, Wei Ni wrote:
-> On 08/09/2013 01:37 AM, Stephen Warren wrote:
->> On 08/08/2013 12:56 AM, Wei Ni wrote:
->>> Add OF document for lm90 in Documentation/devicetree/.
->>
->>> diff --git a/Documentation/devicetree/bindings/hwmon/lm90.txt b/Documentation/devicetree/bindings/hwmon/lm90.txt
+The TMOUT register is initted to 0xffffffff at probe time but isn't
+initted after suspend/resume.  Add an init of this value.
 
->>> +- interrupts: lm90 can support interrupt mode, you can set interrupt here.
->>
->> You might want to mention that a single entry ("specifier") is expected
->> in the list.
-> 
-> Sorry, I didn't get your point, could you explain more?
+No problems were observed without this (it will also get initted in
+__dw_mci_start_request if there is data to send), but it makes the
+register dump before and after suspend clean.
 
-In general, a device may have more than one interrupt output. Hence in
-general, the interrupts property is a list of 1 or more interrupt
-specifiers. In this case, that list should be a single entry. The
-binding should state this. how about:
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+---
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+Changes in v2: None
 
-----------
-Optional properties:
-interrupts: Contains a single interrupt specifier which describes the
-LM90 XXXX output. See interrupt-controller/interrupts.txt for the format.
-----------
+ drivers/mmc/host/dw_mmc.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-(where you'd replace XXXX with the pin/signal name from the datasheet).
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 3d1ee2d..bc9f22c 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -2505,6 +2505,9 @@ int dw_mci_resume(struct dw_mci *host)
+ 	/* Restore the old value at FIFOTH register */
+ 	mci_writel(host, FIFOTH, host->fifoth_val);
+ 
++	/* Put in max timeout */
++	mci_writel(host, TMOUT, 0xFFFFFFFF);
++
+ 	mci_writel(host, RINTSTS, 0xFFFFFFFF);
+ 	mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
+ 		   SDMMC_INT_TXDR | SDMMC_INT_RXDR |
+-- 
+1.8.3
+
