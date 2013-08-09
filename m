@@ -1,129 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030464Ab3HIHRk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 03:17:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:39606 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967344Ab3HIHRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 03:17:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,844,1367996400"; 
-   d="scan'208";a="343923311"
-Message-ID: <1376032991.2219.122.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v6 00/10] mtd: add datasheet's ECC information to
- nand_chip{}
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Huang Shijie <b32955@freescale.com>, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        vikram186@gmail.com
-Date: Fri, 09 Aug 2013 10:23:11 +0300
-In-Reply-To: <52048565.1030707@gmail.com>
-References: <1368760654-28754-1-git-send-email-b32955@freescale.com>
-	  <CAN8TOE-QvScbPUEPyrs-fYVQZmPu1h-wWX2hjz46KYtaWRckBw@mail.gmail.com>
-	  <520357DF.3030403@freescale.com>
-	  <20130808230630.GA14434@norris.computersforpeace.net>
-	 <1376020723.2219.105.camel@sauron.fi.intel.com>
-	 <52048565.1030707@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1030476Ab3HIHXb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 03:23:31 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:7944 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030430Ab3HIHX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 03:23:29 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 09 Aug 2013 00:21:43 -0700
+Message-ID: <520498F3.8030101@nvidia.com>
+Date: Fri, 9 Aug 2013 15:23:31 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com> <1375944991-29182-2-git-send-email-wni@nvidia.com> <20130808110136.GA6427@sirena.org.uk>
+In-Reply-To: <20130808110136.GA6427@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-08 at 23:00 -0700, Brian Norris wrote:
-> On 08/08/2013 08:58 PM, Artem Bityutskiy wrote:
-> > On Thu, 2013-08-08 at 16:06 -0700, Brian Norris wrote:
-> >> On Thu, Aug 08, 2013 at 04:33:35PM +0800, Huang Shijie wrote:
-> >>> Hi Artem & Brian:
-> >>>> Hi Huang and others,
-> >>>>
-> >>>> On Thu, May 16, 2013 at 8:17 PM, Huang Shijie<b32955@freescale.com>  wrote:
-> >>>>> 1.) Why add the ECC information to the nand_chip{} ?
-> >> ...
-> >>>> Reviewed-by: Brian Norris<computersforpeace@gmail.com>
-> >>>> Tested-by: Brian Norris<computersforpeace@gmail.com>
-> >>>>
-> >>>> Thanks for the work Huang.
-> >>>>
-> >>> Could you please merge this patch set?
-> >>
-> >> Thanks for the reminder. I haven't sorted through all the piles of
-> >> backed up stuff yet!
-> >>
-> >> I made a few minor changes (for checkpatch.pl, regarding
-> >> __attribute__((packed)), and to make the style a little more
-> >> easily-read) and tested the generic stuff on my platform. I've pushed
-> >> the series to l2-mtd.git. Thanks for the patience!
-> >
-> > I guess you can try aiaiai, I run it for all the patches I take to
-> > l2-mtd.git. It uses also coccinelle/smatch/sparse and other tools to
-> > verify the patches, not only checkpatch. And this git tree contains
-> > scripts and various defconfigs for various MTD drivers - the scripts run
-> > aiaiai.
+On 08/08/2013 07:01 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
 > 
-> Thanks, I actually already used it on his series :)
+> On Thu, Aug 08, 2013 at 02:56:29PM +0800, Wei Ni wrote:
 > 
-> > For example, to check Huang's patches, I run something like:
-> >
-> > aiaiai-concat-mboxes ~/tmp/huang*.mbox | ./verify ../l2-mtd/ gpmi-nand
-> >
-> > where "huang*.mbox" is Huang's patch set.
+>> +	mutex_lock(&data->update_lock);
+>> +
+>> +	if (is_enable)
+>> +		ret = regulator_enable(data->lm90_reg);
+>> +	else
+>> +		ret = regulator_disable(data->lm90_reg);
+>> +
+>> +	if (ret < 0)
+>> +		dev_err(&client->dev,
+>> +			"Error in %s rail vdd, error %d\n",
+>> +			(is_enable) ? "enabling" : "disabling", ret);
+>> +	else
+>> +		dev_info(&client->dev, "success in %s rail vdd\n",
+>> +			 (is_enable) ? "enabling" : "disabling");
+>> +
+>> +	mutex_unlock(&data->update_lock);
 > 
-> What's the use of 'aiai-concat-mboxes' over a simple 'cat'?
-
-Good question, I do not remember. There was some problem with plain cat.
-May be related to the fact that with plain cat you end up with an extra
-newline, but right now I do not see how this can be a problem.
-
-Weird, why I wrote this script?
-
-We used Aiaiai for automatic testing of all patches in a mailing list,
-and at that times I decided that I need that script, but don't remember
-now.
-
-Sorry :-)
-
->  Just 
-> inserting the extra blank line, I guess? But if I have a concatenated 
-> mailbox, this is better:
+> Two things here.  One is that it's not clear what this lokc is
+> protecting since the only thing in the locked region is the regulator
+> operation and that is thread safe.  The other thing is that I'm not
+> seeing anthing that ensures that enables and disables are matched -
+> regulators are reference counted so two enables need two disables.
 > 
-> ./verify ../l2-mtd/ gpmi-name < ~/tmp/huang.mbox
+>> +	data->lm90_reg = regulator_get(&client->dev, "vdd");
+>> +	if (IS_ERR_OR_NULL(data->lm90_reg)) {
 > 
-> > There are few minor issues in aiaiai, which I can fix if you hit them
-> > and complain. Also, I did not invest much time in making the user
-> > interface and experience very nice. But this can also be improved.
+> NULL is a valid regulator, use IS_ERR().
 > 
-> One issue (possibly related to the above question?) was that aiaia 
-> complained (via checkpatch.pl) about no sign-offs when I processed using 
-> the input redirection method on a multi-message mbox. 
-
-Yes, aiaiai runs checkpatch.pl for individual patches, and then to a
-concatenated patch, and the latter does not have a signed-off-by. Fixing
-is about adding --no-signoff to the right place.
-
-Other issue is that in ARM targets there are some AS strings which are
-not properly filtered out. I the simplest fix is about filtering those
-out completely in aiaiai-diff-log. More complex fix would need to match
-those lines. The problem is that the warnings are in tmp files, and the
-file-names are different, thus they are shown in the diff.
-
-> I can take a 
-> closer look next time, but it's not a big deal, since I can verify this 
-> pretty easily.
+>> +		if (PTR_ERR(data->lm90_reg) == -ENODEV)
+>> +			dev_info(&client->dev,
+>> +				 "No regulator found for vdd. Assuming vdd is always powered.");
+>> +		else
+>> +			dev_warn(&client->dev,
+>> +				 "Error [%ld] in getting the regulator handle for vdd.\n",
+>> +				 PTR_ERR(data->lm90_reg));
 > 
-> Thanks again for the help and for the nice tools.
+> You shouldn't just be ignoring errors here, though there are deployment
+> difficulties with making sure a stub regulator is provided.  These
+> should be getting easier after the next merge window, the stubs will be
+> being tweaked slightly to have an "assume it's there" option even when
 
-NP, thank you for helping too.
+Oh, really, could you show me the patch, I wish to take a look :)
 
-I am a bit worried that at some point we may screw each other's work by
-pushing things out at the same time. We should be very careful with
---force.
+Wei.
 
--- 
-Best Regards,
-Artem Bityutskiy
+> regulators are used.  Especially in cases with device tree you should be
+> paying attention to -EPROBE_DEFER, that will accurately reflect if a
+> regulator is present but not loaded yet.
+> 
+> That said if you *are* going to do this you should request the
+> regulator using devm_regulator_get_optional(), this is intended to
+> support things that don't need regulators (though that's not the case
+> here).
+> 
+> * Unknown Key
+> * 0x7EA229BD
+> 
 
