@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030829Ab3HIT3Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:29:16 -0400
-Received: from hydra.rus.uni-stuttgart.de ([129.69.1.55]:49473 "EHLO
-	hydra.rus.uni-stuttgart.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030224Ab3HIT3P (ORCPT
+	id S1758388Ab3HITdc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:33:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36789 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753994Ab3HITda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:29:15 -0400
-Message-ID: <52054306.20500@rus.uni-stuttgart.de>
-Date: Fri, 09 Aug 2013 21:29:10 +0200
-From: Thomas Richter <richter@rus.uni-stuttgart.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Fri, 9 Aug 2013 15:33:30 -0400
+Date: Fri, 9 Aug 2013 12:33:29 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 000/102] 3.10.6-stable review
+Message-ID: <20130809193329.GA5792@kroah.com>
+References: <20130809015010.208118575@linuxfoundation.org>
+ <20130809192030.GD4079@1wt.eu>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: linux@brodo.de, linux-kernel@vger.kernel.org
-Subject: Re: [HANG] Trouble with NEC-based USB adapter in PCMCIA slot on E7110
-References: <Pine.LNX.4.44L0.1308091345060.1405-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1308091345060.1405-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130809192030.GD4079@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.08.2013 19:46, Alan Stern wrote:
-> On Fri, 9 Aug 2013, Thomas Richter wrote:
->
->> Hi Alan, hi Dominik,
->>
->> maybe you want me to help out a bit - I'm having trouble getting a
->> Delock PCMCIA to USB-2 adapter to work under linux, with strange
->> behavior in some situations. The trouble is that while I can *read* via
->> fast (usb 2.0) transfers from the port, an ehci-triggered write just
->> locks up (it does not Oops, though) and I'm pretty much stuck narrowing
->> down the problem.
->
-> The best way to start will be to enable CONFIG_USB_DEBUG in your kernel
-> and post the dmesg log.  Also post a usbmon trace showing what happens
-> when you try to write something.
+On Fri, Aug 09, 2013 at 09:20:30PM +0200, Willy Tarreau wrote:
+> Hi Greg,
+> 
+> On Thu, Aug 08, 2013 at 06:56:36PM -0700, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.10.6 release.
+> > There are 102 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> 
+> Just checked on my OpenBlocks AX3 (dual-core ARMv7 in thumbs mode),
+> everything seems OK, I did not even notice any performance regression
+> compared to 3.10.5 on syscall intensive workloads with the recent
+> changes. I'm sure that I'm using the kuser helpers page since the
+> system doesn't boot without. Also I did observe minor changes in
+> /proc/self/maps, but I don't think they should have any impact, so
+> all in all it's OK :
 
-Will try and report back, thanks. I've bisected it down in the meantime 
-to a change from 2.6.31.6 to 2.6.32.6. Interestingly, this is very much 
-the same time when the udev userland changed. It works with 2.6.31.6 old 
-udev, but not with 2.6.36.2, new udev.
+Wonderful, thanks so much for testing the arm stuff, I wasn't sure I got
+it all correct in the backport.
 
-Probably the handover from full speed to USB 2.0 got broken?
+One of these days I'll get a system here that I can test arm changes
+on...
 
-Note that this laptop has now both uhci (legacy) and ohci (as by the 
-pcmcia card, as companion of the ehci) chips, which probably adds to the 
-problem.
+thanks,
 
-Greetings,
-	Thomas
+greg k-h
