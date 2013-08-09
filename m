@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967170Ab3HIBmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55239 "EHLO
+	id S967293Ab3HIBxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:53:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55419 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967033Ab3HIBll (ORCPT
+	with ESMTP id S967168Ab3HIBmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:41 -0400
+	Thu, 8 Aug 2013 21:42:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [ 02/22] serial/mxs-auart: increase time to wait for transmitter to become idle
-Date: Thu,  8 Aug 2013 18:41:18 -0700
-Message-Id: <20130809013949.744454634@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 17/25] arcnet: cleanup sizeof parameter
+Date: Thu,  8 Aug 2013 18:41:53 -0700
+Message-Id: <20130809013652.921936149@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
-References: <20130809013949.226228694@linuxfoundation.org>
+In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
+References: <20130809013649.057678051@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 079a036f4283e2b0e5c26080b8c5112bc0cc1831 upstream.
+[ Upstream commit 087d273caf4f7d3f2159256f255f1f432bc84a5b ]
 
-Without this patch the driver waits ~1 ms for the UART to become idle. At
-115200n8 this time is (theoretically) enough to transfer 11.5 characters
-(= 115200 bits/s / (10 Bits/char) * 1ms). As the mxs-auart has a fifo size
-of 16 characters the clock is gated too early. The problem is worse for
-lower baud rates.
+This patch doesn't change the compiled code because ARC_HDR_SIZE is 4
+and sizeof(int) is 4, but the intent was to use the header size and not
+the sizeof the header size.
 
-This only happens to really shut down the transmitter in the middle of a
-transfer if /dev/ttyAPPx isn't opened in userspace (e.g. by a getty) but
-was at least once (because the bootloader doesn't disable the transmitter).
-
-So increase the timeout to 20 ms which should be enough for 9600n8, too.
-Moreover skip gating the clock if the timeout is elapsed.
-
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/tty/serial/mxs-auart.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ drivers/net/arcnet/arcnet.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -543,7 +543,7 @@ auart_console_write(struct console *co,
- 	struct mxs_auart_port *s;
- 	struct uart_port *port;
- 	unsigned int old_ctrl0, old_ctrl2;
--	unsigned int to = 1000;
-+	unsigned int to = 20000;
+--- a/drivers/net/arcnet/arcnet.c
++++ b/drivers/net/arcnet/arcnet.c
+@@ -1007,7 +1007,7 @@ static void arcnet_rx(struct net_device
  
- 	if (co->index >	MXS_AUART_PORTS || co->index < 0)
- 		return;
-@@ -564,18 +564,23 @@ auart_console_write(struct console *co,
+ 	soft = &pkt.soft.rfc1201;
  
- 	uart_console_write(port, str, count, mxs_auart_console_putchar);
- 
--	/*
--	 * Finally, wait for transmitter to become empty
--	 * and restore the TCR
--	 */
-+	/* Finally, wait for transmitter to become empty ... */
- 	while (readl(port->membase + AUART_STAT) & AUART_STAT_BUSY) {
-+		udelay(1);
- 		if (!to--)
- 			break;
--		udelay(1);
- 	}
- 
--	writel(old_ctrl0, port->membase + AUART_CTRL0);
--	writel(old_ctrl2, port->membase + AUART_CTRL2);
-+	/*
-+	 * ... and restore the TCR if we waited long enough for the transmitter
-+	 * to be idle. This might keep the transmitter enabled although it is
-+	 * unused, but that is better than to disable it while it is still
-+	 * transmitting.
-+	 */
-+	if (!(readl(port->membase + AUART_STAT) & AUART_STAT_BUSY)) {
-+		writel(old_ctrl0, port->membase + AUART_CTRL0);
-+		writel(old_ctrl2, port->membase + AUART_CTRL2);
-+	}
- 
- 	clk_disable(s->clk);
- }
+-	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, sizeof(ARC_HDR_SIZE));
++	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, ARC_HDR_SIZE);
+ 	if (pkt.hard.offset[0]) {
+ 		ofs = pkt.hard.offset[0];
+ 		length = 256 - ofs;
 
 
