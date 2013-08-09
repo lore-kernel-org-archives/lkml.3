@@ -1,80 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031640Ab3HIXeQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 19:34:16 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49651 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031474Ab3HIXeO (ORCPT
+	id S1031662Ab3HIXfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 19:35:16 -0400
+Received: from 70-36-212-23.dsl.static.sonic.net ([70.36.212.23]:32833 "EHLO
+	mail.linuxtoys.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031637Ab3HIXfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 19:34:14 -0400
+	Fri, 9 Aug 2013 19:35:14 -0400
+Message-ID: <52057CB4.2020603@linuxtoys.org>
+Date: Fri, 09 Aug 2013 16:35:16 -0700
+From: Bob Smith <bsmith@linuxtoys.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
 MIME-Version: 1.0
-In-Reply-To: <5204B93A.6030409@cn.fujitsu.com>
-References: <1375954883-30225-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1375954883-30225-3-git-send-email-tangchen@cn.fujitsu.com>
-	<CAE9FiQXUS9+heHagD45WAyO22NiGDMo3j2JumzvscypVhnjn9A@mail.gmail.com>
-	<5204B93A.6030409@cn.fujitsu.com>
-Date: Fri, 9 Aug 2013 16:34:13 -0700
-X-Google-Sender-Auth: Wz_8luU764qbVSPq6yQzTeb53Y8
-Message-ID: <CAE9FiQWSjkrFHBr3UrTYSpaCa8ThVrtPPVcaCyJrD0sGHcei3w@mail.gmail.com>
-Subject: Re: [PATCH part4 2/4] x86, acpica, acpi: Try to find if SRAT is
- overrided earlier.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons
+ a /sys-like interface
+References: <20130804231958.GA25418@kroah.com> <52003958.7080103@linuxtoys.org> <20130806094604.GE27889@kroah.com> <520299AB.1020607@linuxtoys.org> <20130807192714.GC2708@kroah.com> <5202A284.7010106@linuxtoys.org> <20130807195427.GB4121@kroah.com> <5202B674.7060005@linuxtoys.org> <20130807213325.GB5373@kroah.com> <520569B2.4000704@linuxtoys.org> <20130809230150.GA23418@kroah.com>
+In-Reply-To: <20130809230150.GA23418@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 9, 2013 at 2:41 AM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
-> On 08/09/2013 12:29 AM, Yinghai Lu wrote:
-> ......
+Greg Kroah-Hartman wrote:
+> Good protocols exist, look at protobufs from Google if you want to
+> define your own.  Never create your own protocol these days, it doesn't
+> make sense, be it a text one or something else.
+
+OK.  I was using the term in the broader sense in which _meaning_ is
+assigned to the data in the protocol, not just the data marshaling.
+
 >
+>> - a C _binding_ to present a C API and hide the protocol for C programmers,
+>> - a C++ binding and API for C++ programmers
+>> - a Java binding
+>> - a PHP binding
+>> - a Perl binding
+>> - a Python binding
+>> - a node.js binding
+>> - a Scratch binding for Raspberry Pi users
+>> - and some kind of shell binding for Bash programmers
+> All of those languages already support Linux syscalls, no need to create
+> anything else.
+Yes, we can publish the protocol and let the application writer
+deal with it.  Bindings are nice only if you want to give a simple
+API to the developer or want to hide the details of the protocol.
+
+>
+>>  From a kernel developer's point of view the term "userspace driver"
+>> may seem like an oxymoron.  By definition, all devices on the system
+>> have to be controlled by the kernel.  All else is just userspace.
+>
+> Not true at all, I know all about userspace drivers, look at the UIO
+> code in the Linux kernel.  It was created explicitly for this exact
+> thing, and to prevent the myrads of broken implementations from being
+> created again and again and again.  Just use it if you wish to talk to
+> your hardware directly, lots of people do so.
+Well, not this exact thing.  UIO is great if your hardware hangs
+on a bus directly connected to the CPU.  It does nothing to help
+the case of hardware connected over some communications link.
+
+>
+>> As an _opinion_ only, I think maybe userspace device drivers do exist.
+>> It refers to  hardware that the kernel is not, and should not, be aware
+>> of.  This hardware is not seen because it is at the end of some kind of
+>> communications channel like USB-serial or Ethernet. A developer might
+>> like to view that hardware as part of the overall system even if Linux
+>> and the CPU do not have direct access to it.  A userspace driver looks
+>> something like this
 >>
->> Please check if you can reuse first half of my patchset, so find and copy
->> override table earlier. the copied acpi tables could be near kernel code
->> range.
->>
+>> 	=(ProxyDevNode)====(daemon)===(CommChannel)===(hardware)
 >
-> I don't think we need to do the finding step at that early time, in
-> head64.c stage.
->
-> Before pagetables are setup, we can use early_ioremap() to map the
-> memory we want to access. We don't need to use phys addr. We can do
-> it in setup_arch(), which has nothing to do with 32bit or 64bit.
+> Not really, you are just using an IPC to talk to a "real" device driver.
 
-if override the acpi tables early, you don't need to check firmware srat and
-then override srat.
-just check last one will be used by kernel.
-
-So you don't need to dig initrd to find srat anymore.
+Yes, each of the "=" above has data passing through a real driver.
 
 >
+> FPGAs are interesting things, people are creating "real" drivers for
+> them (see the linux-kernel archives for a few examples.)  Other people
+> just use the UIO layer instead, which works quite well for them.  I
+> suggest you do the same thing.
+
+UIO can not see hardware at the end of a USB-serial link.
+
 >
->> Move finding in head64.c stage could help xen/dom0 a bit.
->> as Konrad is working on patchset with acpi override in xen hypervisor.
->> We can avoid override acpi table two times. Esp xen like to change
->> DMAR to XMAR.
+> Again, you are creating a new form of userspace/userspace IPC, without a
+> good reason for why one of the existing IPC implementations will not
+> work for you (no, being able to use "echo" is not a good reason, you can
+> do that with local sockets just fine).
 >
->
-> Would you please give some more info about this, and explain why finding
-> override tables in head64.c stage is helpful for xen ?
+> I suggest you take a look at the book, The Linux Programming Interface,
+> by Michael Kerrisk, specifically chapter 43, which goes into great
+> detail about all of the existing IPC mechanisms that Linux already
+> provides.  I'm sure one of them should be able to fit your needs.
 
-xen usually can change acpi tables and pass to dom0 kernel. like change DMAR
-to hide it to dom0 kernel.
+Greg Kroah-Hartman wrote:
+> Otherwise, to accept this code, I need to see a way that normal users
+> can use it (i.e. no root or mknod), and that it can handle namespaces
+> and the security interface that the kernel has to support.  To do so
+> otherwise would be unfair to users who expect such a thing.
 
-also distribution could have same kernel to support bare metal and dom0.
+OK, this makes sense.
 
-so if we find the override kernel early in head64.c, dom0 path will not copy
-actually as no one try to find that for them.
+thanks
+Bob Smith
 
-Yinghai
+
+
+
