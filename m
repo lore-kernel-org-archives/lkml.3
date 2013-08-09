@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967513Ab3HIBnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:43:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55352 "EHLO
+	id S967501Ab3HIBnG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:43:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55349 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967129Ab3HIBmG (ORCPT
+	with ESMTP id S967128Ab3HIBmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:06 -0400
+	Thu, 8 Aug 2013 21:42:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
-Subject: [ 03/25] serial/mxs-auart: increase time to wait for transmitter to become idle
-Date: Thu,  8 Aug 2013 18:41:39 -0700
-Message-Id: <20130809013649.849649994@linuxfoundation.org>
+Subject: [ 02/25] serial/mxs-auart: fix race condition in interrupt handler
+Date: Thu,  8 Aug 2013 18:41:38 -0700
+Message-Id: <20130809013649.621481089@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -32,69 +32,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-commit 079a036f4283e2b0e5c26080b8c5112bc0cc1831 upstream.
+commit d970d7fe65adff5efe75b4a73c4ffc9be57089f7 upstream.
 
-Without this patch the driver waits ~1 ms for the UART to become idle. At
-115200n8 this time is (theoretically) enough to transfer 11.5 characters
-(= 115200 bits/s / (10 Bits/char) * 1ms). As the mxs-auart has a fifo size
-of 16 characters the clock is gated too early. The problem is worse for
-lower baud rates.
+The handler needs to ack the pending events before actually handling them.
+Otherwise a new event might come in after it it considered non-pending or
+handled and is acked then without being handled. So this event is only
+noticed when the next interrupt happens.
 
-This only happens to really shut down the transmitter in the middle of a
-transfer if /dev/ttyAPPx isn't opened in userspace (e.g. by a getty) but
-was at least once (because the bootloader doesn't disable the transmitter).
-
-So increase the timeout to 20 ms which should be enough for 9600n8, too.
-Moreover skip gating the clock if the timeout is elapsed.
+Without this patch an i.MX28 based machine running an rt-patched kernel
+regularly hangs during boot.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/mxs-auart.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ drivers/tty/serial/mxs-auart.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
 --- a/drivers/tty/serial/mxs-auart.c
 +++ b/drivers/tty/serial/mxs-auart.c
-@@ -544,7 +544,7 @@ auart_console_write(struct console *co,
- 	struct mxs_auart_port *s;
- 	struct uart_port *port;
- 	unsigned int old_ctrl0, old_ctrl2;
--	unsigned int to = 1000;
-+	unsigned int to = 20000;
+@@ -375,11 +375,18 @@ static void mxs_auart_settermios(struct
  
- 	if (co->index >	MXS_AUART_PORTS || co->index < 0)
- 		return;
-@@ -565,18 +565,23 @@ auart_console_write(struct console *co,
+ static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
+ {
+-	u32 istatus, istat;
++	u32 istat;
+ 	struct mxs_auart_port *s = context;
+ 	u32 stat = readl(s->port.membase + AUART_STAT);
  
- 	uart_console_write(port, str, count, mxs_auart_console_putchar);
+-	istatus = istat = readl(s->port.membase + AUART_INTR);
++	istat = readl(s->port.membase + AUART_INTR);
++
++	/* ack irq */
++	writel(istat & (AUART_INTR_RTIS
++		| AUART_INTR_TXIS
++		| AUART_INTR_RXIS
++		| AUART_INTR_CTSMIS),
++			s->port.membase + AUART_INTR_CLR);
  
--	/*
--	 * Finally, wait for transmitter to become empty
--	 * and restore the TCR
--	 */
-+	/* Finally, wait for transmitter to become empty ... */
- 	while (readl(port->membase + AUART_STAT) & AUART_STAT_BUSY) {
-+		udelay(1);
- 		if (!to--)
- 			break;
--		udelay(1);
+ 	if (istat & AUART_INTR_CTSMIS) {
+ 		uart_handle_cts_change(&s->port, stat & AUART_STAT_CTS);
+@@ -398,12 +405,6 @@ static irqreturn_t mxs_auart_irq_handle(
+ 		istat &= ~AUART_INTR_TXIS;
  	}
  
--	writel(old_ctrl0, port->membase + AUART_CTRL0);
--	writel(old_ctrl2, port->membase + AUART_CTRL2);
-+	/*
-+	 * ... and restore the TCR if we waited long enough for the transmitter
-+	 * to be idle. This might keep the transmitter enabled although it is
-+	 * unused, but that is better than to disable it while it is still
-+	 * transmitting.
-+	 */
-+	if (!(readl(port->membase + AUART_STAT) & AUART_STAT_BUSY)) {
-+		writel(old_ctrl0, port->membase + AUART_CTRL0);
-+		writel(old_ctrl2, port->membase + AUART_CTRL2);
-+	}
- 
- 	clk_disable(s->clk);
+-	writel(istatus & (AUART_INTR_RTIS
+-		| AUART_INTR_TXIS
+-		| AUART_INTR_RXIS
+-		| AUART_INTR_CTSMIS),
+-			s->port.membase + AUART_INTR_CLR);
+-
+ 	return IRQ_HANDLED;
  }
+ 
 
 
