@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031718Ab3HIXqz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 19:46:55 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58934 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031620Ab3HIXqx (ORCPT
+	id S1031714Ab3HIXwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 19:52:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38122 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031620Ab3HIXwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 19:46:53 -0400
-Date: Sat, 10 Aug 2013 09:46:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Aug 9
-Message-Id: <20130810094642.c06a8f469f8601895c0f569f@canb.auug.org.au>
-In-Reply-To: <52051E90.3090507@infradead.org>
-References: <20130809161540.f65dd6412ac59d49a32881c8@canb.auug.org.au>
-	<52051E90.3090507@infradead.org>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__10_Aug_2013_09_46_42_+1000_wYSKdlaE5uQyExiX"
+	Fri, 9 Aug 2013 19:52:46 -0400
+Date: Fri, 9 Aug 2013 16:52:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for 3.11-rc5
+Message-ID: <20130809235245.GA19452@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__10_Aug_2013_09_46_42_+1000_wYSKdlaE5uQyExiX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
 
-Hi Randy,
+  Linux 3.11-rc4 (2013-08-04 13:46:46 -0700)
 
-On Fri, 09 Aug 2013 09:53:36 -0700 Randy Dunlap
-<rdunlap@infradead.org> wrote:
->
-> and if you are not using git but are using tarballs instead,
-> where is the patch file?
+are available in the git repository at:
 
-Yeah, sorry I did not notice the error from kup.  It should be there now.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.11-rc5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+for you to fetch changes up to 444ce9d44d00969479aa1d2675f305a779369194:
 
---Signature=_Sat__10_Aug_2013_09_46_42_+1000_wYSKdlaE5uQyExiX
-Content-Type: application/pgp-signature
+  MAINTAINERS: Add separate section for USB NETWORKING DRIVERS (2013-08-05 13:42:46 +0800)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+----------------------------------------------------------------
+USB fixes for 3.11-rc5
 
-iQIcBAEBCAAGBQJSBX9nAAoJEECxmPOUX5FE+yUP/jr4PR+2sCGv5sT95u0fgfYm
-eQj/X4GAw1jE0ONxZO/8eixxBsbZ22z5b0US2t0dVMBbi9eufPn0sK9mrLGkXXfa
-ZVf8aBoXjdfyFR82vkxwPkw+yJ4bNTbx/lTyLuq03yAGqag7KKjwwanSC60wCIL6
-XqMVrmwNc4U0PSSMQqVXQNEKw6oYtXWAOyFW93vbHjRxC+BbZaAFRMfyG/xjp7E2
-Fp2NIiAxedHdEccw7r3JIFLdTDMlDMO68x8WnUTSBtXJ6sKRS0bmgPEe7+OVbgEk
-MzpcPRCYWhLX7Muo/mfdVE92LCcyN/yQ07P+G3VYo/nFZxn71lWk1kabSXgsPiRy
-Ogaitf73eH+bgoDxm1HVTZ42HQL3nQjqyeZ54c5PR9gmhNDbkvoBILsEe9Zl4xkD
-JWjzOkV0PcsaixIVK0H8a2qlhA0cBcTZyAj8yqQpOsNWGcY8e0INwDr1JMbUgDyD
-Yr2pr1xeuDen+6ytaPk/6P/Jus6N+5BrmoYV0N5B0xYvuX7lIImh/7++5kKBa/dS
-vtL9kvZquGss2YO7mUwCBjwn8Lxp6YkgPdo6Hu/4QC9YzZoTKwys7pM12oF2q/Ll
-zrjC2CXqTnHge+pf719h1ZaraFQgnS34DmoU6Pw6X56ZG03P5b2djC55NCCt4DLd
-8+3OfEAwTSbo4TyfCNf7
-=6u5R
------END PGP SIGNATURE-----
+Here are 3 small USB fixes for 3.11-rc5.
 
---Signature=_Sat__10_Aug_2013_09_46_42_+1000_wYSKdlaE5uQyExiX--
+One is a fix that the ChromeOS developers ran into on some Intel
+hardware, one is a build fix, and the last is a MAINTAINERS update to
+help people figure out where to send USB network driver patches.
+
+All of these have been in linux-next for a while.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Greg Kroah-Hartman (1):
+      Merge tag 'for-usb-linus-2013-07-31' of git://git.kernel.org/.../sarah/xhci into usb-linus
+
+James Hogan (1):
+      usb: xhci: add missing dma-mapping.h includes
+
+Joe Perches (1):
+      MAINTAINERS: Add separate section for USB NETWORKING DRIVERS
+
+Julius Werner (1):
+      usb: core: don't try to reset_device() a port that got just disconnected
+
+ MAINTAINERS                 | 5 +++++
+ drivers/usb/core/hub.c      | 5 +++--
+ drivers/usb/host/xhci-mem.c | 1 +
+ drivers/usb/host/xhci.c     | 1 +
+ 4 files changed, 10 insertions(+), 2 deletions(-)
