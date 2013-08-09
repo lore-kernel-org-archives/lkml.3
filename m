@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031280Ab3HIVyv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 17:54:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37526 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031243Ab3HIVyu (ORCPT
+	id S1031295Ab3HIVzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 17:55:32 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:62710 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031243Ab3HIVza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 17:54:50 -0400
-Date: Fri, 9 Aug 2013 14:54:49 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bob Smith <bsmith@linuxtoys.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons a
- /sys-like interface
-Message-ID: <20130809215449.GB21756@kroah.com>
-References: <20130804231958.GA25418@kroah.com>
- <52003958.7080103@linuxtoys.org>
- <20130806094604.GE27889@kroah.com>
- <520299AB.1020607@linuxtoys.org>
- <20130807192714.GC2708@kroah.com>
- <5202A284.7010106@linuxtoys.org>
- <20130807195427.GB4121@kroah.com>
- <5202BC11.6040605@linuxtoys.org>
- <20130807214010.GA5902@kroah.com>
- <5202C1EE.40607@linuxtoys.org>
+	Fri, 9 Aug 2013 17:55:30 -0400
+Date: Fri, 9 Aug 2013 14:50:50 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] power: power: replace strict_strtol() with kstrtol()
+Message-ID: <20130809215050.GF12638@lizard.sbx05730.santaca.wayport.net>
+References: <000d01ce844e$767b4a30$6371de90$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5202C1EE.40607@linuxtoys.org>
+In-Reply-To: <000d01ce844e$767b4a30$6371de90$@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 02:53:50PM -0700, Bob Smith wrote:
-> Greg Kroah-Hartman wrote:
-> >>The proxy device nodes are application specific and need to be
-> >>created as needed by applications.
-> >
-> >But applications do not have the permissions in a system to create
-> >device nodes.  Nor should they need that permission.
+On Fri, Jul 19, 2013 at 04:06:16PM +0900, Jingoo Han wrote:
+> The usage of strict_strtol() is not preferred, because
+> strict_strtol() is obsolete. Thus, kstrtol() should be
+> used.
 > 
-> Agreed.  But you need root permissions to install an application
-> and part of that installation can be setting up systemd files
-> that allocate resources at boot.
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
 
-Do you have examples of those systemd files?  Last I looked, they didn't
-have mknod permissions anymore, which is a good thing.
+Applied, thanks.
 
-> Also, some applications start as root just so they can do this kind of
-> allocation.  The app can (and should) drop root privileges when it
-> can.
-
-You shouldn't require root for a new feature, that seems strange.
-
-Also, namespaces aren't addressed at all, but that's a totally different
-issue...
-
-> >>Allocation of minor numbers is an issue but that is an issue that
-> >>is separate from the proxy module itself.
-> >How is it separate, it seems tied directly to it as something that must
-> >be handled properly.
-> It can, but does not need to be handled in the kernel. It could
-> be handled in user space.
+>  drivers/power/power_supply_sysfs.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> >
-> >>> Also, no, setting the permissions like this is not ok for a real system,
-> >>> what is going to be in charge of setting the permissions on these random
-> >>> device nodes?
-> >> Again, compare proxy to a named pipe.  It is up the application
-> >> writer to decide who gets read and write access to its proxy
-> >> nodes.
-> >
-> > Ok, but to do so, you have to have root permissions to start with, which
-> > is generally not going to happen on sane systems.  Only allowing root
-> > access to this seems like a huge limitation.
-> 
-> As noted above, yes, root has to set it up and set the permissions,
-> but this is hardly unusual, is it?
-
-Yes it is, modern userspace does not create any device nodes anymore,
-please let's not regress on that point.
-
-thanks,
-
-greg k-h
+> diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+> index 29178f7..44420d1 100644
+> --- a/drivers/power/power_supply_sysfs.c
+> +++ b/drivers/power/power_supply_sysfs.c
+> @@ -118,7 +118,7 @@ static ssize_t power_supply_store_property(struct device *dev,
+>  	long long_val;
+>  
+>  	/* TODO: support other types than int */
+> -	ret = strict_strtol(buf, 10, &long_val);
+> +	ret = kstrtol(buf, 10, &long_val);
+>  	if (ret < 0)
+>  		return ret;
+>  
+> -- 
+> 1.7.10.4
