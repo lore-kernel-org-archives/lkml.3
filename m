@@ -1,202 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967441Ab3HICYg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:24:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967182Ab3HIB6W (ORCPT
+	id S967410Ab3HICYn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:24:43 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26229 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967356Ab3HICYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:22 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 003/102] ARM: move vector stubs
-Date: Thu,  8 Aug 2013 18:56:39 -0700
-Message-Id: <20130809015011.082008745@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
-References: <20130809015010.208118575@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 8 Aug 2013 22:24:38 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-a4-520452e4031b
+Date: Fri, 09 Aug 2013 11:24:36 +0900
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, Rob Herring <robherring2@gmail.com>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Hyunwoong Kim <khw0178.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Keyyoung Park <keyyoung.park@samsung.com>,
+        Subash Patel <supash.ramaswamy@linaro.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Rahul Sharma <rahul.sharma@samsung.com>
+Subject: Re: [PATCH v8 06/12] ARM: dts: Add description of System MMU of Exynos
+ SoCs
+Message-id: <20130809112436.8e44545cd503ca5a2b55a8cd@samsung.com>
+In-reply-to: <20130808214343.GA19383@mudshark.cambridge.arm.com>
+References: <003c01ce89f3$3abc4bc0$b034e340$@samsung.com>
+ <003801ce8eb7$d7647f10$862d7d30$@samsung.com>
+ <CAL_Jsq+_5GekzXpjWrtKZi2jWuxHSJxkPmVC4zmakfjAYai=eA@mail.gmail.com>
+ <5354557.DijgoUKjW2@flatron>
+ <20130808214343.GA19383@mudshark.cambridge.arm.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t8zY90nQSxBBl2H9Szu3D3HavHqyA8m
+	iwX7rS06Z29gt9h8cB2LRe+Cq2wWjfcmsFl8PHWc3WLT42usFpd3zWGzmHF+H5PFhRUb2S2m
+	LDrMavH92zc2i5N/ehktWq73Mlms2vWH0eLlxxMsDkIeTw7OY/JYM28No8fshossHjtn3WX3
+	uHNtD5vH+U1rmD02L6n3mHxjOaNH35ZVjB6fN8l5XDl6himAO4rLJiU1J7MstUjfLoEr4/Xf
+	FSwFR3gqJvRuZm1gPMXZxcjJISFgItH06h8LhC0mceHeerYuRi4OIYFljBJnts5hhyl69uI3
+	I0RiEaPEtoltLBDOJCaJ+Ru2gLWzCKhKnFq5jBHEZhPQklg99ziYLQIUvzztCFg3s0A7m8TN
+	hX+YQBLCAmESKx7+YgOxeQUcJeZ+ewRmcwo4SFy6f5wZYkMrk8T79auYIO6wkLjQ1MEO0SAo
+	8WPyPbDNzEDbNm9rYoWw5SU2r3kL1iwhcIJD4trJyVDnCUh8m3wIyOYASshKbDrADDFTUuLg
+	ihssExjFZiEZOwvJ2FlIxi5gZF7FKJpakFxQnJReZKpXnJhbXJqXrpecn7uJEZIiJu5gvH/A
+	+hBjMtDKicxSosn5wBSTVxJvaGxmZGFqYmpsZG5pRpqwkjiveot1oJBAemJJanZqakFqUXxR
+	aU5q8SFGJg5OqQbGSXlTCx5Ez61KnvAl5bRo66a84pAXMiWh1oklzRNrKrjFWQK+zZ+/cVfP
+	s/mXfm1OiDFYk+wSttRSL22aRMnJKNZ1Pf4XdjasP5jbfmSVzzmdymvBbLZc17t+/WQ8ovLU
+	JCwh9ku12f5i+c38btZ/9zAZ8YhZyuycmeJ7/JLYpFiriBaz0I1KLMUZiYZazEXFiQAdA4Cq
+	JwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIKsWRmVeSWpSXmKPExsVy+t9jAd0nQSxBBtO2aVjcuXuO1eLVkR9M
+	Fgv2W1t0zt7AbrH54DoWi94FV9ksGu9NYLP4eOo4u8Wmx9dYLS7vmsNmMeP8PiaLCys2sltM
+	WXSY1eL7t29sFif/9DJatFzvZbJYtesPo8XLjydYHIQ8nhycx+SxZt4aRo/ZDRdZPHbOusvu
+	cefaHjaP85vWMHtsXlLvMfnGckaPvi2rGD0+b5LzuHL0DFMAd1QDo01GamJKapFCal5yfkpm
+	XrqtkndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0GtKCmWJOaVAoYDE4mIlfTtME0JD
+	3HQtYBojdH1DguB6jAzQQMI6xozXf1ewFBzhqZjQu5m1gfEUZxcjJ4eEgInEsxe/GSFsMYkL
+	99azdTFycQgJLGKU2DaxjQXCmcQkMX/DFhaQKhYBVYlTK5eBdbAJaEmsnnsczBYBil+edoQR
+	pIFZoJ1N4ubCP0wgCWGBMIkVD3+xgdi8Ao4Sc789ArM5BRwkLt0/zgyxoZVJ4v36VUwQd1hI
+	XGjqYIdoEJT4Mfke2GZmoG2btzWxQtjyEpvXvGWewCgwC0nZLCRls5CULWBkXsUomlqQXFCc
+	lJ5rpFecmFtcmpeul5yfu4kRnICeSe9gXNVgcYhRgINRiYdXcTtzkBBrYllxZe4hRgkOZiUR
+	3hdZQCHelMTKqtSi/Pii0pzU4kOMycDwmMgsJZqcD0yOeSXxhsYmZkaWRmYWRibm5qQJK4nz
+	Hmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAqOk7v/Rdx9K7drwSmTyvj8w+d8/pnGqJXLhe6bsP
+	uxssFA+ar37M33X4TTfrqftWOj+ive0718auuSaweprHlplKVqY3E05INRj2sTPOaa0P/LM7
+	wYNJYMGePJVnsyb/msvoZdL+9pQwq+FdDYuW91lPA6dp/fsROCHGJsS08d5l0RUFayo2K7EU
+	ZyQaajEXFScCAA95G+6EAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 08 Aug 2013 22:43:43 +0100, Will Deacon wrote:
+> On Thu, Aug 08, 2013 at 10:38:10PM +0100, Tomasz Figa wrote:
+> > On Thursday 08 of August 2013 08:09:49 Rob Herring wrote:
+> > > On Thu, Aug 1, 2013 at 8:05 AM, Cho KyongHo <pullip.cho@samsung.com> 
+> > wrote:
+> > > > Should this align with ARM System MMU bindings?
+> > > > System MMU in Exynos SoC is different from ARM System MMU.
+> > > > It does not follows the specifications of ARM System MMU.
+> > > 
+> > > I'm not saying the h/w is the same or even the same spec, but how you
+> > > describe a master to iommu connection needs to be done in the same
+> > > way. This should be done in the same way for ALL iommu's. And if what
+> > > is defined does not work for you, then we need to understand that and
+> > > fix the binding now.
+> > 
+> > +1
+> > 
+> > All IOMMUs should use a generic IOMMU Device Tree bindings (and in 
+> > general, the same should be true for all Device Tree bindings).
+> > 
+> > This means that if we already have some bindings for IOMMU, then they 
+> > should be reused if possible or extended if there is anything missing.
+> > 
+> > Of course there might be things that such generic bindings can't specify. 
+> > In this case device-specific properties can be introduced, but this is 
+> > last resort.
+> 
+> I'm also happy to discuss and/or review bindings in light of what we did for
+> the ARM SMMU.
+> 
+> Will
 
-------------------
+Rob, I now understood what you are talking about.
+Do you mean the binding description is lack of details about connection
+betwen  System MMU and its master?
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+thanks.
 
-commit 19accfd373847ac3d10623c5d20f948846299741 upstream.
-
-Move the machine vector stubs into the page above the vector page,
-which we can prevent from being visible to userspace.  Also move
-the reset stub, and place the swi vector at a location that the
-'ldr' can get to it.
-
-This hides pointers into the kernel which could give valuable
-information to attackers, and reduces the number of exploitable
-instructions at a fixed address.
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/Kconfig             |    3 +-
- arch/arm/kernel/entry-armv.S |   50 ++++++++++++++++++++-----------------------
- arch/arm/kernel/traps.c      |    4 +--
- arch/arm/mm/mmu.c            |   10 +++++++-
- 4 files changed, 37 insertions(+), 30 deletions(-)
-
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -213,7 +213,8 @@ config VECTORS_BASE
- 	default DRAM_BASE if REMAP_VECTORS_TO_RAM
- 	default 0x00000000
- 	help
--	  The base address of exception vectors.
-+	  The base address of exception vectors.  This must be two pages
-+	  in size.
- 
- config ARM_PATCH_PHYS_VIRT
- 	bool "Patch physical to virtual translations at runtime" if EMBEDDED
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -943,9 +943,9 @@ __kuser_helper_end:
- /*
-  * Vector stubs.
-  *
-- * This code is copied to 0xffff0200 so we can use branches in the
-- * vectors, rather than ldr's.  Note that this code must not
-- * exceed 0x300 bytes.
-+ * This code is copied to 0xffff1000 so we can use branches in the
-+ * vectors, rather than ldr's.  Note that this code must not exceed
-+ * a page size.
-  *
-  * Common stub entry macro:
-  *   Enter in IRQ mode, spsr = SVC/USR CPSR, lr = SVC/USR PC
-@@ -994,6 +994,15 @@ ENDPROC(vector_\name)
- 
- 	.globl	__stubs_start
- __stubs_start:
-+	@ This must be the first word
-+	.word	vector_swi
-+
-+vector_rst:
-+ ARM(	swi	SYS_ERROR0	)
-+ THUMB(	svc	#0		)
-+ THUMB(	nop			)
-+	b	vector_und
-+
- /*
-  * Interrupt dispatcher
-  */
-@@ -1088,6 +1097,16 @@ __stubs_start:
- 	.align	5
- 
- /*=============================================================================
-+ * Address exception handler
-+ *-----------------------------------------------------------------------------
-+ * These aren't too critical.
-+ * (they're not supposed to happen, and won't happen in 32-bit data mode).
-+ */
-+
-+vector_addrexcptn:
-+	b	vector_addrexcptn
-+
-+/*=============================================================================
-  * Undefined FIQs
-  *-----------------------------------------------------------------------------
-  * Enter in FIQ mode, spsr = ANY CPSR, lr = ANY PC
-@@ -1100,35 +1119,14 @@ __stubs_start:
- vector_fiq:
- 	subs	pc, lr, #4
- 
--/*=============================================================================
-- * Address exception handler
-- *-----------------------------------------------------------------------------
-- * These aren't too critical.
-- * (they're not supposed to happen, and won't happen in 32-bit data mode).
-- */
--
--vector_addrexcptn:
--	b	vector_addrexcptn
--
--/*
-- * We group all the following data together to optimise
-- * for CPUs with separate I & D caches.
-- */
--	.align	5
--
--.LCvswi:
--	.word	vector_swi
--
- 	.globl	__stubs_end
- __stubs_end:
- 
--	.equ	stubs_offset, __vectors_start + 0x200 - __stubs_start
-+	.equ	stubs_offset, __vectors_start + 0x1000 - __stubs_start
- 
- 	.globl	__vectors_start
- __vectors_start:
-- ARM(	swi	SYS_ERROR0	)
-- THUMB(	svc	#0		)
-- THUMB(	nop			)
-+	W(b)	vector_rst + stubs_offset
- 	W(b)	vector_und + stubs_offset
- 	W(ldr)	pc, .LCvswi + stubs_offset
- 	W(b)	vector_pabt + stubs_offset
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -836,7 +836,7 @@ void __init early_trap_init(void *vector
- 	 * are visible to the instruction stream.
- 	 */
- 	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
--	memcpy((void *)vectors + 0x200, __stubs_start, __stubs_end - __stubs_start);
-+	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
- 	memcpy((void *)vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
- 
- 	/*
-@@ -851,6 +851,6 @@ void __init early_trap_init(void *vector
- 	memcpy((void *)(vectors + KERN_SIGRETURN_CODE - CONFIG_VECTORS_BASE),
- 	       sigreturn_codes, sizeof(sigreturn_codes));
- 
--	flush_icache_range(vectors, vectors + PAGE_SIZE);
-+	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
- 	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
- }
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1175,7 +1175,7 @@ static void __init devicemaps_init(struc
- 	/*
- 	 * Allocate the vector page early.
- 	 */
--	vectors = early_alloc(PAGE_SIZE);
-+	vectors = early_alloc(PAGE_SIZE * 2);
- 
- 	early_trap_init(vectors);
- 
-@@ -1225,10 +1225,18 @@ static void __init devicemaps_init(struc
- 
- 	if (!vectors_high()) {
- 		map.virtual = 0;
-+		map.length = PAGE_SIZE * 2;
- 		map.type = MT_LOW_VECTORS;
- 		create_mapping(&map);
- 	}
- 
-+	/* Now create a kernel read-only mapping */
-+	map.pfn += 1;
-+	map.virtual = 0xffff0000 + PAGE_SIZE;
-+	map.length = PAGE_SIZE;
-+	map.type = MT_LOW_VECTORS;
-+	create_mapping(&map);
-+
- 	/*
- 	 * Ask the machine support to map in the statically mapped devices.
- 	 */
-
-
+KyongHo.
