@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967771Ab3HINZW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 09:25:22 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37999 "EHLO comal.ext.ti.com"
+	id S967724Ab3HIN0F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 09:26:05 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33930 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966645Ab3HINZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 09:25:19 -0400
-Date: Fri, 9 Aug 2013 16:24:59 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Pawel Moll <pawel.moll@arm.com>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>, "balbi@ti.com" <balbi@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [RFC 2/2] usb: dwc3: Add Qualcomm DWC3 glue layer driver
-Message-ID: <20130809132459.GD12041@radagast>
-Reply-To: <balbi@ti.com>
-References: <1375789991-30041-1-git-send-email-iivanov@mm-sol.com>
- <1375789991-30041-3-git-send-email-iivanov@mm-sol.com>
- <1375791698.12043.53.camel@hornet>
+	id S966645Ab3HIN0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 09:26:02 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: robert.moore@intel.com, lv.zheng@intel.com, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part2 0/4] acpi: Trivial fix and improving for memory hotplug.
+Date: Fri, 09 Aug 2013 15:36:16 +0200
+Message-ID: <1792540.pdAYjdHnnL@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <520439C9.3080601@cn.fujitsu.com>
+References: <1375938239-18769-1-git-send-email-tangchen@cn.fujitsu.com> <1851799.n4moZnvj4u@vostro.rjw.lan> <520439C9.3080601@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rqzD5py0kzyFAOWN"
-Content-Disposition: inline
-In-Reply-To: <1375791698.12043.53.camel@hornet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---rqzD5py0kzyFAOWN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Friday, August 09, 2013 08:37:29 AM Tang Chen wrote:
+> On 08/08/2013 10:09 PM, Rafael J. Wysocki wrote:
+> > On Thursday, August 08, 2013 01:03:55 PM Tang Chen wrote:
+> >> This patch-set does some trivial fix and improving in ACPI code
+> >> for memory hotplug.
+> >>
+> >> Patch 1,3,4 have been acked.
+> >>
+> >> Tang Chen (4):
+> >>    acpi: Print Hot-Pluggable Field in SRAT.
+> >>    earlycpio.c: Fix the confusing comment of find_cpio_data().
+> >>    acpi: Remove "continue" in macro INVALID_TABLE().
+> >>    acpi: Introduce acpi_verify_initrd() to check if a table is invalid.
+> >>
+> >>   arch/x86/mm/srat.c |   11 ++++--
+> >>   drivers/acpi/osl.c |   84 +++++++++++++++++++++++++++++++++++++++------------
+> >>   lib/earlycpio.c    |   27 ++++++++--------
+> >>   3 files changed, 85 insertions(+), 37 deletions(-)
+> >
+> > It looks like this part doesn't depend on the other parts, is that correct?
+> 
+> No, it doesn't. And this patch-set can be merged first.
 
-Hi,
+OK, so if nobody objects, I can take patches [1,3-4/4], but I don't think I'm
+the right maintainer to handle [2/4].
 
-On Tue, Aug 06, 2013 at 01:21:38PM +0100, Pawel Moll wrote:
-> > @@ -47,3 +64,25 @@ Example device nodes:
-> >  		vddcx-supply =3D <&supply>;
-> >  		v1p8-supply =3D <&supply>;
-> >  	};
-> > +
-> > +	usb@fd4ab000 {
-> > +		compatible =3D "qcom,dwc-usb3-msm";
-> > +		#address-cells =3D <1>;
-> > +		#size-cells =3D <1>;
-> > +		reg =3D <0xfd4ab000 0x4>;
-> > +
-> > +		clocks =3D <&usb30_master_cxc>, <&sys_noc_usb3_axi_cxc>, <&usb30_sle=
-ep_cxc>, <&usb30_mock_utmi_cxc>;
-> > +		clock-names =3D "core_clk", "iface_clk", "sleep_clk", "utmi_clk";
-> > +
-> > +		gdsc-supply =3D <&supply>;
-> > +		ranges;
-> > +
-> > +		dwc3@f9200000 {
-> > +			compatible =3D "snps,dwc3";
->=20
-> Note that the Documentation/devicetree/bindings/usb/dwc3.txt is
-> mentioning "synopsys,dwc3" (which is clearly in opposition to the
+Thanks,
+Rafael
 
-I have a patch converting to snps,dwc3.
-
---=20
-balbi
-
---rqzD5py0kzyFAOWN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSBO2rAAoJEIaOsuA1yqREjykP/03Zs/oOvj3EgagOJc8Z18L5
-OF+pZpJFrSuSfZGTPTCdRHPSLKuPMSHF1o4yBZzX3Fpx4QKL6gXGlEA1qD954wsw
-3MI2g+dvjbugFx9IalMqvx60jwwtBqUiY+75ekiamCzr6kXiyhRcOJ7+2FWKMNMb
-1bETiTaInaPtrMQfVTUIVsl+JvqoyxfDAtjkSCptR6FQdH7lW1nNolgruDvX2e4E
-oQA/nvumsCJwSkJfGgx83d+EwGp/zsUdiA6eWXkyziMfSsEjdAYyPAHlZxF2pRCY
-UPypSraAW0jsHWFuEhJtJGh7yUeVlmxnwUhFHSEQLyAQfkXLh02z0ks21gqCbIuL
-B+eTPmv3Tvyu12tCPdvfSqUIiM19LxrWjExwvlC32sqDhTSVwlvjddNd1t9MNu7Y
-5TofABmJcgrsSK1AyUz6VuQYlCsJs5YKJR3a7pSsn+7bapHWkRe3XX277tQDJ/lT
-l+laR1AVTLp79JMT0HYRp5iVJ2dchMnHkQmYP73Al2hF63k13sKP1HHd53P0f36W
-tV3aG1UeJmW7raoqlEM3cL7xk8kcsmH3p30tGOsH7Nua2FJ2dv24GCLDZIk74BxE
-H/B0V1zizQ3X3BO5oRjGZAj6QTi0UmszTPZfAkaW5Gtws/aoWXGfuBd5kulQGKVP
-kKamDfPwPIF/MsxuVUXR
-=qAyD
------END PGP SIGNATURE-----
-
---rqzD5py0kzyFAOWN--
