@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967124Ab3HIBP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:15:59 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39326 "EHLO mga03.intel.com"
+	id S967153Ab3HIBQS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:16:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25729 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967077Ab3HIBPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:15:54 -0400
+	id S967126Ab3HIBQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 21:16:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,843,1367996400"; 
-   d="scan'208";a="343816429"
+   d="scan'208";a="383579085"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: peterz@infradead.org, linux-kernel@vger.kernel.org, acme@infradead.org,
         jolsa@redhat.com, eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/4] perf, x86: Add Haswell TSX event aliases v6
-Date: Thu,  8 Aug 2013 18:15:45 -0700
-Message-Id: <1376010946-28666-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 1/4] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v4
+Date: Thu,  8 Aug 2013 18:15:43 -0700
+Message-Id: <1376010946-28666-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1376010946-28666-1-git-send-email-andi@firstfloor.org>
 References: <1376010946-28666-1-git-send-email-andi@firstfloor.org>
@@ -25,96 +25,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add TSX event aliases, and export them from the kernel to perf.
+With checkpointed counters there can be a situation where the counter
+is overflowing, aborts the transaction, is set back to a non overflowing
+checkpoint, causes interupt. The interrupt doesn't see the overflow
+because it has been checkpointed.  This is then a spurious PMI, typically with
+a ugly NMI message.  It can also lead to excessive aborts.
 
-These are used by perf stat -T and to allow
-more user friendly access to events. The events are designed to
-be fairly generic and may also apply to other architectures
-implementing HTM.  They all cover common situations that
-happens during tuning of transactional code.
+Avoid this problem by:
+- Using the full counter width for counting counters (earlier patch)
+- Forbid sampling for checkpointed counters. It's not too useful anyways,
+checkpointing is mainly for counting. The check is approximate
+(to still handle KVM), but should catch the majority of cases.
+- On a PMI always set back checkpointed counters to zero.
 
-For Haswell we have to separate the HLE and RTM events,
-as they are separate in the PMU.
-
-This adds the following events.
-
-tx-start	Count start transaction (used by perf stat -T)
-tx-commit	Count commit of transaction
-tx-abort	Count all aborts
-tx-conflict	Count aborts due to conflict with another CPU.
-tx-capacity	Count capacity aborts (transaction too large)
-
-Then matching el-* events for HLE
-
-cycles-t	Transactional cycles (used by perf stat -T)
-* also exists on POWER8
-cycles-ct	Transactional cycles commited (used by perf stat -T)
-* according to Michael Ellerman POWER8 has a cycles-transactional-committed,
-* perf stat -T handles both cases
-
-Note for useful abort profiling often precise has to be set,
-as Haswell can only report the point inside the transaction
-with precise=2.
-
-(I had another patchkit to allow exporting precise too, but Vince
-Weaver pointed out it violates the ABI, so dropped now)
-
-For some classes of aborts, like conflicts, this is not needed,
-as it makes more sense to look at the complete critical section.
-
-This gives a clean set of generalized events to examine transaction
-success and aborts. Haswell has additional events for TSX, but those are more
-specialized for very specific situations.
-
-v2: Move to new sysfs infrastructure
-v3: Use own sysfs functions now
-v4: Add tx/el-abort-return for better conflict sampling
-v5: Different white space.
-v6: Cut down events, rewrite description.
+v2: Add unlikely. Add comment
+v3: Allow large sampling periods with CP for KVM
+v4: Use event_is_checkpointed. Use EOPNOTSUPP. (Stephane Eranian)
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel.c | 39 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 9218025..ca7f02c 100644
+index a45d8d4..9218025 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2076,7 +2076,34 @@ static __init void intel_nehalem_quirk(void)
- EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,     "event=0xcd,umask=0x1,ldlat=3");
- EVENT_ATTR_STR(mem-stores,     mem_st_hsw,     "event=0xd0,umask=0x82")
+@@ -1134,6 +1134,11 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 	__x86_pmu_enable_event(hwc, ARCH_PERFMON_EVENTSEL_ENABLE);
+ }
  
-+/* Haswell special events */
-+EVENT_ATTR_STR(tx-start,        tx_start,       "event=0xc9,umask=0x1");
-+EVENT_ATTR_STR(tx-commit,       tx_commit,      "event=0xc9,umask=0x2");
-+EVENT_ATTR_STR(tx-abort,        tx_abort,	"event=0xc9,umask=0x4");
-+EVENT_ATTR_STR(tx-capacity,     tx_capacity,	"event=0x54,umask=0x2");
-+EVENT_ATTR_STR(tx-conflict,     tx_conflict,	"event=0x54,umask=0x1");
-+EVENT_ATTR_STR(el-start,        el_start,       "event=0xc8,umask=0x1");
-+EVENT_ATTR_STR(el-commit,       el_commit,      "event=0xc8,umask=0x2");
-+EVENT_ATTR_STR(el-abort,        el_abort,	"event=0xc8,umask=0x4");
-+EVENT_ATTR_STR(el-capacity,     el_capacity,    "event=0x54,umask=0x2");
-+EVENT_ATTR_STR(el-conflict,     el_conflict,    "event=0x54,umask=0x1");
-+EVENT_ATTR_STR(cycles-t,        cycles_t,       "event=0x3c,in_tx=1");
-+EVENT_ATTR_STR(cycles-ct,       cycles_ct,
-+					"event=0x3c,in_tx=1,in_tx_cp=1");
++static inline bool event_is_checkpointed(struct perf_event *event)
++{
++	return (event->hw.config & HSW_IN_TX_CHECKPOINTED) != 0;
++}
 +
- static struct attribute *hsw_events_attrs[] = {
-+	EVENT_PTR(tx_start),
-+	EVENT_PTR(tx_commit),
-+	EVENT_PTR(tx_abort),
-+	EVENT_PTR(tx_capacity),
-+	EVENT_PTR(tx_conflict),
-+	EVENT_PTR(el_start),
-+	EVENT_PTR(el_commit),
-+	EVENT_PTR(el_abort),
-+	EVENT_PTR(el_capacity),
-+	EVENT_PTR(el_conflict),
-+	EVENT_PTR(cycles_t),
-+	EVENT_PTR(cycles_ct),
- 	EVENT_PTR(mem_ld_hsw),
- 	EVENT_PTR(mem_st_hsw),
- 	NULL
+ /*
+  * Save and restart an expired event. Called by NMI contexts,
+  * so it has to be careful about preempting normal event ops:
+@@ -1141,6 +1146,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ int intel_pmu_save_and_restart(struct perf_event *event)
+ {
+ 	x86_perf_event_update(event);
++	/*
++	 * For a checkpointed counter always reset back to 0.  This
++	 * avoids a situation where the counter overflows, aborts the
++	 * transaction and is then set back to shortly before the
++	 * overflow, and overflows and aborts again.
++	 */
++	if (unlikely(event_is_checkpointed(event))) {
++		/* No race with NMIs because the counter should not be armed */
++		wrmsrl(event->hw.event_base, 0);
++		local64_set(&event->hw.prev_count, 0);
++	}
+ 	return x86_perf_event_set_period(event);
+ }
+ 
+@@ -1224,6 +1240,15 @@ again:
+ 		x86_pmu.drain_pebs(regs);
+ 	}
+ 
++	/*
++	 * To avoid spurious interrupts with perf stat always reset checkpointed
++	 * counters.
++	 *
++	 * XXX move somewhere else.
++	 */
++	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
++		status |= (1ULL << 2);
++
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
+@@ -1689,6 +1714,20 @@ static int hsw_hw_config(struct perf_event *event)
+ 	      event->attr.precise_ip > 0))
+ 		return -EOPNOTSUPP;
+ 
++	if (event_is_checkpointed(event)) {
++		/*
++		 * Sampling of checkpointed events can cause situations where
++		 * the CPU constantly aborts because of a overflow, which is
++		 * then checkpointed back and ignored. Forbid checkpointing
++		 * for sampling.
++		 *
++		 * But still allow a long sampling period, so that perf stat
++		 * from KVM works.
++		 */
++		if (event->attr.sample_period > 0 &&
++		    event->attr.sample_period < 0x7fffffff)
++			return -EOPNOTSUPP;
++	}
+ 	return 0;
+ }
+ 
 -- 
 1.8.3.1
 
