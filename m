@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967326Ab3HIBmn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55291 "EHLO
+	id S967313Ab3HIBmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55286 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967083Ab3HIBlu (ORCPT
+	with ESMTP id S967078Ab3HIBlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:50 -0400
+	Thu, 8 Aug 2013 21:41:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 13/22] x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
-Date: Thu,  8 Aug 2013 18:41:29 -0700
-Message-Id: <20130809013952.106944525@linuxfoundation.org>
+        Andreas Hollmann <hollmann@in.tum.de>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
+        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 12/22] perf: Fix event group context move
+Date: Thu,  8 Aug 2013 18:41:28 -0700
+Message-Id: <20130809013951.854896075@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
 References: <20130809013949.226228694@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,45 +34,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H.J. Lu" <hjl.tools@gmail.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit eaa5a990191d204ba0f9d35dbe5505ec2cdd1460 upstream.
+commit 0231bb5336758426b44ccd798ccd3c5419c95d58 upstream.
 
-GCC will optimize mxcsr_feature_mask_init in arch/x86/kernel/i387.c:
+When we have group with mixed events (hw/sw) we want to end up
+with group leader being in hw context. So if group leader is
+initialy sw event, we move all the events under hw context.
 
-		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
-		asm volatile("fxsave %0" : : "m" (fx_scratch));
-		mask = fx_scratch.mxcsr_mask;
-		if (mask == 0)
-			mask = 0x0000ffbf;
+The move is done for each event by removing it from its context
+and adding it back into proper one. As a part of the removal the
+event is automatically disabled, which is not what we want at
+this stage of creating groups.
 
-to
+The fix is to initialize event state after removal from sw
+context.
 
-		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
-		asm volatile("fxsave %0" : : "m" (fx_scratch));
-		mask = 0x0000ffbf;
+This fix resulted from the following discussion:
 
-since asm statement doesn’t say it will update fx_scratch.  As the
-result, the DAZ bit will be cleared.  This patch fixes it. This bug
-dates back to at least kernel 2.6.12.
+  http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Andreas Hollmann <hollmann@in.tum.de>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Vince Weaver <vince@deater.net>
+Link: http://lkml.kernel.org/r/1359714225-4231-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/i387.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/core.c |   20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -51,7 +51,7 @@ void __cpuinit mxcsr_feature_mask_init(v
- 	clts();
- 	if (cpu_has_fxsr) {
- 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
--		asm volatile("fxsave %0" : : "m" (fx_scratch));
-+		asm volatile("fxsave %0" : "+m" (fx_scratch));
- 		mask = fx_scratch.mxcsr_mask;
- 		if (mask == 0)
- 			mask = 0x0000ffbf;
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -839,6 +839,15 @@ list_add_event(struct perf_event *event,
+ }
+ 
+ /*
++ * Initialize event state based on the perf_event_attr::disabled.
++ */
++static inline void perf_event__state_init(struct perf_event *event)
++{
++	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
++					      PERF_EVENT_STATE_INACTIVE;
++}
++
++/*
+  * Called at perf_event creation and when events are attached/detached from a
+  * group.
+  */
+@@ -6241,8 +6250,7 @@ perf_event_alloc(struct perf_event_attr
+ 
+ 	event->overflow_handler	= overflow_handler;
+ 
+-	if (attr->disabled)
+-		event->state = PERF_EVENT_STATE_OFF;
++	perf_event__state_init(event);
+ 
+ 	pmu = NULL;
+ 
+@@ -6616,9 +6624,17 @@ SYSCALL_DEFINE5(perf_event_open,
+ 
+ 		mutex_lock(&gctx->mutex);
+ 		perf_remove_from_context(group_leader);
++
++		/*
++		 * Removing from the context ends up with disabled
++		 * event. What we want here is event in the initial
++		 * startup state, ready to be add into new context.
++		 */
++		perf_event__state_init(group_leader);
+ 		list_for_each_entry(sibling, &group_leader->sibling_list,
+ 				    group_entry) {
+ 			perf_remove_from_context(sibling);
++			perf_event__state_init(sibling);
+ 			put_ctx(gctx);
+ 		}
+ 		mutex_unlock(&gctx->mutex);
 
 
