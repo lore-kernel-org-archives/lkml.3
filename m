@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965124Ab3HIP6s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:58:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52598 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934068Ab3HIP6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:58:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,846,1367996400"; 
-   d="scan'208";a="384496515"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andi Kleen <ak@linux.intel.com>, airlied@linux.ie,
-        alexander.deucher@amd.com
-Subject: [PATCH] radeon: Use Linux division macro in si_calculate_leakage_for_v_and_t_formula
-Date: Fri,  9 Aug 2013 08:58:27 -0700
-Message-Id: <1376063907-7770-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.3.1
+	id S967879Ab3HIQAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:00:00 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:40836 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934068Ab3HIP76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 11:59:58 -0400
+Date: Fri, 9 Aug 2013 11:59:49 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
+        lv.zheng@intel.com, lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part2 0/4] acpi: Trivial fix and improving for memory
+ hotplug.
+Message-ID: <20130809155949.GN20515@mtj.dyndns.org>
+References: <1375938239-18769-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1851799.n4moZnvj4u@vostro.rjw.lan>
+ <520439C9.3080601@cn.fujitsu.com>
+ <1792540.pdAYjdHnnL@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1792540.pdAYjdHnnL@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Fri, Aug 09, 2013 at 03:36:16PM +0200, Rafael J. Wysocki wrote:
+> > No, it doesn't. And this patch-set can be merged first.
+> 
+> OK, so if nobody objects, I can take patches [1,3-4/4], but I don't think I'm
+> the right maintainer to handle [2/4].
 
-This fixes my 32bit build which failed with:
+Given the dependencies, we'll probably need some coordination among
+trees.  It spans across ACPI, memblock and x86.  Maybe the best way to
+do it is applying the ACPI part to your tree, pulling the rest into a
+tip branch and then put everything else there.
 
-drivers/built-in.o: In function
-`si_calculate_leakage_for_v_and_t_formula':
-/home/ak/lsrc/git/linux-2.6/drivers/gpu/drm/radeon/si_dpm.c:1770:
-undefined reference to `__divdi3'
+Thanks.
 
-Cc: airlied@linux.ie
-Cc: alexander.deucher@amd.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/gpu/drm/radeon/si_dpm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/radeon/si_dpm.c b/drivers/gpu/drm/radeon/si_dpm.c
-index 7ad22e8..4182557 100644
---- a/drivers/gpu/drm/radeon/si_dpm.c
-+++ b/drivers/gpu/drm/radeon/si_dpm.c
-@@ -1767,7 +1767,7 @@ static void si_calculate_leakage_for_v_and_t_formula(const struct ni_leakage_coe
- 	s64 temperature, t_slope, t_intercept, av, bv, t_ref;
- 	s64 tmp;
- 
--	i_leakage = drm_int2fixp(ileakage) / 100;
-+	i_leakage = div64_s64(drm_int2fixp(ileakage), 100);
- 	vddc = div64_s64(drm_int2fixp(v), 1000);
- 	temperature = div64_s64(drm_int2fixp(t), 1000);
- 
 -- 
-1.8.3.1
-
+tejun
