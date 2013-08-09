@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968042Ab3HIQMr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:12:47 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:61934 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968003Ab3HIQMp (ORCPT
+	id S934413Ab3HIQPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:15:50 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:62985 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933993Ab3HIQPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:12:45 -0400
-Message-ID: <520514FB.8060502@tilera.com>
-Date: Fri, 9 Aug 2013 12:12:43 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 9 Aug 2013 12:15:46 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 1/2] workqueue: add new schedule_on_cpu_mask() API
-References: <5202CEAA.9040204@linux.vnet.ibm.com> <201308072335.r77NZJPA022490@farm-0012.internal.tilera.com> <20130809150257.GM20515@mtj.dyndns.org>
-In-Reply-To: <20130809150257.GM20515@mtj.dyndns.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <520514EE.1060708@calxeda.com>
+References: <1375890758-30265-1-git-send-email-mark.langsdorf@calxeda.com>
+	<1375890758-30265-3-git-send-email-mark.langsdorf@calxeda.com>
+	<20130809161015.GQ20515@mtj.dyndns.org>
+	<520514EE.1060708@calxeda.com>
+Date: Fri, 9 Aug 2013 12:15:45 -0400
+X-Google-Sender-Auth: RWNElx_MXha6zyESXy3UlTkNXts
+Message-ID: <CAOS58YM_1MbngkEvoVtLpJqj3z-fpiQNyog0YK9fdSD7epYYcQ@mail.gmail.com>
+Subject: Re: [PATCH v3 3/5] devicetree: create a separate binding description
+ for sata_highbank
+From: Tejun Heo <tj@kernel.org>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/9/2013 11:02 AM, Tejun Heo wrote:
-> Hello, Chris.
->
-> On Wed, Aug 07, 2013 at 04:49:44PM -0400, Chris Metcalf wrote:
->> This primitive allows scheduling work to run on a particular set of
->> cpus described by a "struct cpumask".  This can be useful, for example,
->> if you have a per-cpu variable that requires code execution only if the
->> per-cpu variable has a certain value (for example, is a non-empty list).
-> So, this allows scheduling work items on !online CPUs.  Workqueue does
-> allow scheduling per-cpu work items on offline CPUs if the CPU has
-> ever been online, but the behavior when scheduling work items on cpu
-> which has never been online is undefined.  I think the interface at
-> least needs to verify that the the target cpus have been online,
-> trigger warning and mask off invalid CPUs otherwise.
+Hello, Mark.
 
-I could certainly make schedule_on_cpu_mask() do sanity checking, perhaps via a WARN_ON_ONCE() if offline cpus were specified, and otherwise just have it create a local struct cpumask that it and's with cpu_online_mask, suitably wrapping with get_online_cpus()/put_online_cpus().  (I'm not sure how to test if a cpu has ever been online, vs whether it's online right now.)  I don't want to unnecessarily slow down the existing schedule_on_each_cpu(), so perhaps the implementation should have a static schedule_on_cpu_mask_internal() function that is the same as my previous schedule_on_cpu_mask(), allowing schedule_on_each_cpu() to call it directly to bypass the checking.
+On Fri, Aug 9, 2013 at 12:12 PM, Mark Langsdorf
+<mark.langsdorf@calxeda.com> wrote:
+> I'll update the description when I resubmit it to give you more detail on
+> the impact.
 
-That said... I wonder if it might make sense to treat this API the same as other APIs that already take a cpu?  schedule_work_on(), schedule_delayed_work_on(), and queue_delayed_work_on() all take a cpu parameter without API comment or validity checking; queue_work_on() just says "the caller must ensure [the cpu] can't go away".  Does it make sense to just add a similar comment to schedule_on_cpu_mask() rather than make this API the first to actually do cpu validity checking?
+Yes, please give me some hints on to which branch the patches are
+targeted and whether stable should be cc'd. I can't really tell just
+looking at the patches as I have no idea how widespread the device is
+in the wild and which kernels they'd be running or how critical being
+out-of-spec is (is it gonna burn phys on the receiving end in the long
+term? or is it just noisier and the link is gonna be more susceptible
+to errors from EM interferences and so on) and how risky the fixes
+are.
 
-Let me know; I'm happy to respin it either way.
+Thanks.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+tejun
