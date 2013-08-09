@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030382Ab3HICHp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:07:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55839 "EHLO
+	id S1030406Ab3HICHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:07:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55816 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967572Ab3HIB7X (ORCPT
+	with ESMTP id S967701Ab3HIB7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:23 -0400
+	Thu, 8 Aug 2013 21:59:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
-        Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Zhouping Liu <zliu@redhat.com>
-Subject: [ 074/102] drm/i915: Preserve the DDI_A_4_LANES bit from the bios
-Date: Thu,  8 Aug 2013 18:57:50 -0700
-Message-Id: <20130809015027.666587088@linuxfoundation.org>
+        Jeremy Eder <jeder@redhat.com>, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 069/102] Revert "cpuidle: Quickly notice prediction failure for repeat mode"
+Date: Thu,  8 Aug 2013 18:57:45 -0700
+Message-Id: <20130809015026.487195983@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,70 +27,351 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stéphane Marchesin <marcheu@chromium.org>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit bcf53de4e60d9000b82f541d654529e2902a4c2c upstream.
+commit 148519120c6d1f19ad53349683aeae9f228b0b8d upstream.
 
-Otherwise the DDI_A_4_LANES bit gets lost and we can't use > 2 lanes
-on eDP. This fixes eDP on hsw with > 2 lanes.
+Revert commit 69a37bea (cpuidle: Quickly notice prediction failure for
+repeat mode), because it has been identified as the source of a
+significant performance regression in v3.8 and later as explained by
+Jeremy Eder:
 
-Also s/port_reversal/saved_port_bits/ since the current name is
-confusing.
+  We believe we've identified a particular commit to the cpuidle code
+  that seems to be impacting performance of variety of workloads.
+  The simplest way to reproduce is using netperf TCP_RR test, so
+  we're using that, on a pair of Sandy Bridge based servers.  We also
+  have data from a large database setup where performance is also
+  measurably/positively impacted, though that test data isn't easily
+  share-able.
 
-Signed-off-by: Stéphane Marchesin <marcheu@chromium.org>
-Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Zhouping Liu <zliu@redhat.com>
+  Included below are test results from 3 test kernels:
+
+  kernel       reverts
+  -----------------------------------------------------------
+  1) vanilla   upstream (no reverts)
+
+  2) perfteam2 reverts e11538d1f03914eb92af5a1a378375c05ae8520c
+
+  3) test      reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4
+                       e11538d1f03914eb92af5a1a378375c05ae8520c
+
+  In summary, netperf TCP_RR numbers improve by approximately 4%
+  after reverting 69a37beabf1f0a6705c08e879bdd5d82ff6486c4.  When
+  69a37beabf1f0a6705c08e879bdd5d82ff6486c4 is included, C0 residency
+  never seems to get above 40%.  Taking that patch out gets C0 near
+  100% quite often, and performance increases.
+
+  The below data are histograms representing the %c0 residency @
+  1-second sample rates (using turbostat), while under netperf test.
+
+  - If you look at the first 4 histograms, you can see %c0 residency
+    almost entirely in the 30,40% bin.
+  - The last pair, which reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4,
+    shows %c0 in the 80,90,100% bins.
+
+  Below each kernel name are netperf TCP_RR trans/s numbers for the
+  particular kernel that can be disclosed publicly, comparing the 3
+  test kernels.  We ran a 4th test with the vanilla kernel where
+  we've also set /dev/cpu_dma_latency=0 to show overall impact
+  boosting single-threaded TCP_RR performance over 11% above
+  baseline.
+
+  3.10-rc2 vanilla RX + c0 lock (/dev/cpu_dma_latency=0):
+  TCP_RR trans/s 54323.78
+
+  -----------------------------------------------------------
+  3.10-rc2 vanilla RX (no reverts)
+  TCP_RR trans/s 48192.47
+
+  Receiver %c0
+      0.0000 -    10.0000 [     1]: *
+     10.0000 -    20.0000 [     0]:
+     20.0000 -    30.0000 [     0]:
+     30.0000 -    40.0000 [    59]:
+  ***********************************************************
+     40.0000 -    50.0000 [     1]: *
+     50.0000 -    60.0000 [     0]:
+     60.0000 -    70.0000 [     0]:
+     70.0000 -    80.0000 [     0]:
+     80.0000 -    90.0000 [     0]:
+     90.0000 -   100.0000 [     0]:
+
+  Sender %c0
+      0.0000 -    10.0000 [     1]: *
+     10.0000 -    20.0000 [     0]:
+     20.0000 -    30.0000 [     0]:
+     30.0000 -    40.0000 [    11]: ***********
+     40.0000 -    50.0000 [    49]:
+  *************************************************
+     50.0000 -    60.0000 [     0]:
+     60.0000 -    70.0000 [     0]:
+     70.0000 -    80.0000 [     0]:
+     80.0000 -    90.0000 [     0]:
+     90.0000 -   100.0000 [     0]:
+
+  -----------------------------------------------------------
+  3.10-rc2 perfteam2 RX (reverts commit
+  e11538d1f03914eb92af5a1a378375c05ae8520c)
+  TCP_RR trans/s 49698.69
+
+  Receiver %c0
+      0.0000 -    10.0000 [     1]: *
+     10.0000 -    20.0000 [     1]: *
+     20.0000 -    30.0000 [     0]:
+     30.0000 -    40.0000 [    59]:
+  ***********************************************************
+     40.0000 -    50.0000 [     0]:
+     50.0000 -    60.0000 [     0]:
+     60.0000 -    70.0000 [     0]:
+     70.0000 -    80.0000 [     0]:
+     80.0000 -    90.0000 [     0]:
+     90.0000 -   100.0000 [     0]:
+
+  Sender %c0
+      0.0000 -    10.0000 [     1]: *
+     10.0000 -    20.0000 [     0]:
+     20.0000 -    30.0000 [     0]:
+     30.0000 -    40.0000 [     2]: **
+     40.0000 -    50.0000 [    58]:
+  **********************************************************
+     50.0000 -    60.0000 [     0]:
+     60.0000 -    70.0000 [     0]:
+     70.0000 -    80.0000 [     0]:
+     80.0000 -    90.0000 [     0]:
+     90.0000 -   100.0000 [     0]:
+
+  -----------------------------------------------------------
+  3.10-rc2 test RX (reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4
+  and e11538d1f03914eb92af5a1a378375c05ae8520c)
+  TCP_RR trans/s 47766.95
+
+  Receiver %c0
+      0.0000 -    10.0000 [     1]: *
+     10.0000 -    20.0000 [     1]: *
+     20.0000 -    30.0000 [     0]:
+     30.0000 -    40.0000 [    27]: ***************************
+     40.0000 -    50.0000 [     2]: **
+     50.0000 -    60.0000 [     0]:
+     60.0000 -    70.0000 [     2]: **
+     70.0000 -    80.0000 [     0]:
+     80.0000 -    90.0000 [     0]:
+     90.0000 -   100.0000 [    28]: ****************************
+
+  Sender:
+      0.0000 -    10.0000 [     1]: *
+     10.0000 -    20.0000 [     0]:
+     20.0000 -    30.0000 [     0]:
+     30.0000 -    40.0000 [    11]: ***********
+     40.0000 -    50.0000 [     0]:
+     50.0000 -    60.0000 [     1]: *
+     60.0000 -    70.0000 [     0]:
+     70.0000 -    80.0000 [     3]: ***
+     80.0000 -    90.0000 [     7]: *******
+     90.0000 -   100.0000 [    38]: **************************************
+
+  These results demonstrate gaining back the tendency of the CPU to
+  stay in more responsive, performant C-states (and thus yield
+  measurably better performance), by reverting commit
+  69a37beabf1f0a6705c08e879bdd5d82ff6486c4.
+
+Requested-by: Jeremy Eder <jeder@redhat.com>
+Tested-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ddi.c |   10 ++++++----
- drivers/gpu/drm/i915/intel_drv.h |    2 +-
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/cpuidle/governors/menu.c |   73 ++-------------------------------------
+ include/linux/tick.h             |    6 ---
+ kernel/time/tick-sched.c         |    9 +---
+ 3 files changed, 6 insertions(+), 82 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_ddi.c
-+++ b/drivers/gpu/drm/i915/intel_ddi.c
-@@ -684,7 +684,7 @@ static void intel_ddi_mode_set(struct dr
- 		struct intel_digital_port *intel_dig_port =
- 			enc_to_dig_port(encoder);
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -28,13 +28,6 @@
+ #define MAX_INTERESTING 50000
+ #define STDDEV_THRESH 400
  
--		intel_dp->DP = intel_dig_port->port_reversal |
-+		intel_dp->DP = intel_dig_port->saved_port_bits |
- 			       DDI_BUF_CTL_ENABLE | DDI_BUF_EMP_400MV_0DB_HSW;
- 		switch (intel_dp->lane_count) {
- 		case 1:
-@@ -1324,7 +1324,8 @@ static void intel_enable_ddi(struct inte
- 		 * enabling the port.
- 		 */
- 		I915_WRITE(DDI_BUF_CTL(port),
--			   intel_dig_port->port_reversal | DDI_BUF_CTL_ENABLE);
-+			   intel_dig_port->saved_port_bits |
-+			   DDI_BUF_CTL_ENABLE);
- 	} else if (type == INTEL_OUTPUT_EDP) {
- 		struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
+-/* 60 * 60 > STDDEV_THRESH * INTERVALS = 400 * 8 */
+-#define MAX_DEVIATION 60
+-
+-static DEFINE_PER_CPU(struct hrtimer, menu_hrtimer);
+-static DEFINE_PER_CPU(int, hrtimer_status);
+-/* menu hrtimer mode */
+-enum {MENU_HRTIMER_STOP, MENU_HRTIMER_REPEAT};
  
-@@ -1543,8 +1544,9 @@ void intel_ddi_init(struct drm_device *d
- 	intel_encoder->get_hw_state = intel_ddi_get_hw_state;
+ /*
+  * Concepts and ideas behind the menu governor
+@@ -198,42 +191,17 @@ static u64 div_round64(u64 dividend, u32
+ 	return div_u64(dividend + (divisor / 2), divisor);
+ }
  
- 	intel_dig_port->port = port;
--	intel_dig_port->port_reversal = I915_READ(DDI_BUF_CTL(port)) &
--					DDI_BUF_PORT_REVERSAL;
-+	intel_dig_port->saved_port_bits = I915_READ(DDI_BUF_CTL(port)) &
-+					  (DDI_BUF_PORT_REVERSAL |
-+					   DDI_A_4_LANES);
- 	if (hdmi_connector)
- 		intel_dig_port->hdmi.hdmi_reg = DDI_BUF_CTL(port);
- 	intel_dig_port->dp.output_reg = DDI_BUF_CTL(port);
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -426,7 +426,7 @@ struct intel_dp {
- struct intel_digital_port {
- 	struct intel_encoder base;
- 	enum port port;
--	u32 port_reversal;
-+	u32 saved_port_bits;
- 	struct intel_dp dp;
- 	struct intel_hdmi hdmi;
- };
+-/* Cancel the hrtimer if it is not triggered yet */
+-void menu_hrtimer_cancel(void)
+-{
+-	int cpu = smp_processor_id();
+-	struct hrtimer *hrtmr = &per_cpu(menu_hrtimer, cpu);
+-
+-	/* The timer is still not time out*/
+-	if (per_cpu(hrtimer_status, cpu)) {
+-		hrtimer_cancel(hrtmr);
+-		per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_STOP;
+-	}
+-}
+-EXPORT_SYMBOL_GPL(menu_hrtimer_cancel);
+-
+-/* Call back for hrtimer is triggered */
+-static enum hrtimer_restart menu_hrtimer_notify(struct hrtimer *hrtimer)
+-{
+-	int cpu = smp_processor_id();
+-
+-	per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_STOP;
+-
+-	return HRTIMER_NORESTART;
+-}
+-
+ /*
+  * Try detecting repeating patterns by keeping track of the last 8
+  * intervals, and checking if the standard deviation of that set
+  * of points is below a threshold. If it is... then use the
+  * average of these 8 points as the estimated value.
+  */
+-static u32 get_typical_interval(struct menu_device *data)
++static void get_typical_interval(struct menu_device *data)
+ {
+ 	int i = 0, divisor = 0;
+ 	uint64_t max = 0, avg = 0, stddev = 0;
+ 	int64_t thresh = LLONG_MAX; /* Discard outliers above this value. */
+-	unsigned int ret = 0;
+ 
+ again:
+ 
+@@ -274,16 +242,13 @@ again:
+ 	if (((avg > stddev * 6) && (divisor * 4 >= INTERVALS * 3))
+ 							|| stddev <= 20) {
+ 		data->predicted_us = avg;
+-		ret = 1;
+-		return ret;
++		return;
+ 
+ 	} else if ((divisor * 4) > INTERVALS * 3) {
+ 		/* Exclude the max interval */
+ 		thresh = max - 1;
+ 		goto again;
+ 	}
+-
+-	return ret;
+ }
+ 
+ /**
+@@ -298,9 +263,6 @@ static int menu_select(struct cpuidle_dr
+ 	int i;
+ 	int multiplier;
+ 	struct timespec t;
+-	int repeat = 0, low_predicted = 0;
+-	int cpu = smp_processor_id();
+-	struct hrtimer *hrtmr = &per_cpu(menu_hrtimer, cpu);
+ 
+ 	if (data->needs_update) {
+ 		menu_update(drv, dev);
+@@ -335,7 +297,7 @@ static int menu_select(struct cpuidle_dr
+ 	data->predicted_us = div_round64(data->expected_us * data->correction_factor[data->bucket],
+ 					 RESOLUTION * DECAY);
+ 
+-	repeat = get_typical_interval(data);
++	get_typical_interval(data);
+ 
+ 	/*
+ 	 * We want to default to C1 (hlt), not to busy polling
+@@ -356,10 +318,8 @@ static int menu_select(struct cpuidle_dr
+ 
+ 		if (s->disabled || su->disable)
+ 			continue;
+-		if (s->target_residency > data->predicted_us) {
+-			low_predicted = 1;
++		if (s->target_residency > data->predicted_us)
+ 			continue;
+-		}
+ 		if (s->exit_latency > latency_req)
+ 			continue;
+ 		if (s->exit_latency * multiplier > data->predicted_us)
+@@ -369,28 +329,6 @@ static int menu_select(struct cpuidle_dr
+ 		data->exit_us = s->exit_latency;
+ 	}
+ 
+-	/* not deepest C-state chosen for low predicted residency */
+-	if (low_predicted) {
+-		unsigned int timer_us = 0;
+-
+-		/*
+-		 * Set a timer to detect whether this sleep is much
+-		 * longer than repeat mode predicted.  If the timer
+-		 * triggers, the code will evaluate whether to put
+-		 * the CPU into a deeper C-state.
+-		 * The timer is cancelled on CPU wakeup.
+-		 */
+-		timer_us = 2 * (data->predicted_us + MAX_DEVIATION);
+-
+-		if (repeat && (4 * timer_us < data->expected_us)) {
+-			RCU_NONIDLE(hrtimer_start(hrtmr,
+-				ns_to_ktime(1000 * timer_us),
+-				HRTIMER_MODE_REL_PINNED));
+-			/* In repeat case, menu hrtimer is started */
+-			per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_REPEAT;
+-		}
+-	}
+-
+ 	return data->last_state_idx;
+ }
+ 
+@@ -481,9 +419,6 @@ static int menu_enable_device(struct cpu
+ 				struct cpuidle_device *dev)
+ {
+ 	struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
+-	struct hrtimer *t = &per_cpu(menu_hrtimer, dev->cpu);
+-	hrtimer_init(t, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	t->function = menu_hrtimer_notify;
+ 
+ 	memset(data, 0, sizeof(struct menu_device));
+ 
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -174,10 +174,4 @@ static inline void tick_nohz_task_switch
+ #endif
+ 
+ 
+-# ifdef CONFIG_CPU_IDLE_GOV_MENU
+-extern void menu_hrtimer_cancel(void);
+-# else
+-static inline void menu_hrtimer_cancel(void) {}
+-# endif /* CONFIG_CPU_IDLE_GOV_MENU */
+-
+ #endif
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -832,13 +832,10 @@ void tick_nohz_irq_exit(void)
+ {
+ 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+ 
+-	if (ts->inidle) {
+-		/* Cancel the timer because CPU already waken up from the C-states*/
+-		menu_hrtimer_cancel();
++	if (ts->inidle)
+ 		__tick_nohz_idle_enter(ts);
+-	} else {
++	else
+ 		tick_nohz_full_stop_tick(ts);
+-	}
+ }
+ 
+ /**
+@@ -936,8 +933,6 @@ void tick_nohz_idle_exit(void)
+ 
+ 	ts->inidle = 0;
+ 
+-	/* Cancel the timer because CPU already waken up from the C-states*/
+-	menu_hrtimer_cancel();
+ 	if (ts->idle_active || ts->tick_stopped)
+ 		now = ktime_get();
+ 
 
 
