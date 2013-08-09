@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967305Ab3HIBxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:53:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55408 "EHLO
+	id S967308Ab3HIByE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:54:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55405 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967149Ab3HIBmQ (ORCPT
+	with ESMTP id S967146Ab3HIBmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 21:42:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Griffith <EGriffith92@gmail.com>,
-        Kent Baxley <kent.baxley@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 15/25] drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
-Date: Thu,  8 Aug 2013 18:41:51 -0700
-Message-Id: <20130809013652.455681293@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 14/25] x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
+Date: Thu,  8 Aug 2013 18:41:50 -0700
+Message-Id: <20130809013652.257990969@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,85 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamal Mostafa <kamal@canonical.com>
+From: "H.J. Lu" <hjl.tools@gmail.com>
 
-commit e85843bec6c2ea7c10ec61238396891cc2b753a9 upstream.
+commit eaa5a990191d204ba0f9d35dbe5505ec2cdd1460 upstream.
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=47941
-BugLink: https://bugs.launchpad.net/bugs/1163720
-BugLink: https://bugs.launchpad.net/bugs/1162026
+GCC will optimize mxcsr_feature_mask_init in arch/x86/kernel/i387.c:
 
-Some machines suffer from non-functional backlight controls if
-BLM_PCH_PWM_ENABLE is set, so provide a quirk to avoid doing so.
-Apply this quirk to Dell XPS 13 models.
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = fx_scratch.mxcsr_mask;
+		if (mask == 0)
+			mask = 0x0000ffbf;
 
-[ kamal: backport to 3.4 ]
+to
 
-Tested-by: Eric Griffith <EGriffith92@gmail.com>
-Tested-by: Kent Baxley <kent.baxley@canonical.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = 0x0000ffbf;
+
+since asm statement doesn’t say it will update fx_scratch.  As the
+result, the DAZ bit will be cleared.  This patch fixes it. This bug
+dates back to at least kernel 2.6.12.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_drv.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |   16 ++++++++++++++++
- drivers/gpu/drm/i915/intel_lvds.c    |    3 ++-
- 3 files changed, 19 insertions(+), 1 deletion(-)
+ arch/x86/kernel/i387.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -296,6 +296,7 @@ enum intel_pch {
- 
- #define QUIRK_PIPEA_FORCE (1<<0)
- #define QUIRK_LVDS_SSC_DISABLE (1<<1)
-+#define QUIRK_NO_PCH_PWM_ENABLE (1<<2)
- 
- struct intel_fbdev;
- struct intel_fbc_work;
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9160,6 +9160,17 @@ static void quirk_ssc_force_disable(stru
- 	dev_priv->quirks |= QUIRK_LVDS_SSC_DISABLE;
- }
- 
-+/*
-+ * Some machines (Dell XPS13) suffer broken backlight controls if
-+ * BLM_PCH_PWM_ENABLE is set.
-+ */
-+static void quirk_no_pcm_pwm_enable(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
-+	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
-+}
-+
- struct intel_quirk {
- 	int device;
- 	int subsystem_vendor;
-@@ -9192,6 +9203,11 @@ struct intel_quirk intel_quirks[] = {
- 
- 	/* Sony Vaio Y cannot use SSC on LVDS */
- 	{ 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable },
-+
-+	/* Dell XPS13 HD Sandy Bridge */
-+	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
-+	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
-+	{ 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
- };
- 
- static void intel_init_quirks(struct drm_device *dev)
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -1097,7 +1097,8 @@ bool intel_lvds_init(struct drm_device *
- 		goto failed;
- 
- out:
--	if (HAS_PCH_SPLIT(dev)) {
-+	if (HAS_PCH_SPLIT(dev) &&
-+	    !(dev_priv->quirks & QUIRK_NO_PCH_PWM_ENABLE)) {
- 		u32 pwm;
- 
- 		pipe = (I915_READ(PCH_LVDS) & LVDS_PIPEB_SELECT) ? 1 : 0;
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -132,7 +132,7 @@ static void __cpuinit mxcsr_feature_mask
+ 	clts();
+ 	if (cpu_has_fxsr) {
+ 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+-		asm volatile("fxsave %0" : : "m" (fx_scratch));
++		asm volatile("fxsave %0" : "+m" (fx_scratch));
+ 		mask = fx_scratch.mxcsr_mask;
+ 		if (mask == 0)
+ 			mask = 0x0000ffbf;
 
 
