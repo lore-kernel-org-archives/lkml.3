@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031563Ab3HIXEb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 19:04:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29511 "EHLO mga11.intel.com"
+	id S1031577Ab3HIXEc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 19:04:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10655 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031547Ab3HIXE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 19:04:28 -0400
+	id S1031549Ab3HIXE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 19:04:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,849,1367996400"; 
-   d="scan'208";a="384045638"
+   d="scan'208";a="384045633"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, mingo@kernel.org, torvalds@linux-foundation.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 06/13] x86: Add 32bit versions of SAVE_ALL/RESTORE_ALL to calling.h
-Date: Fri,  9 Aug 2013 16:04:13 -0700
-Message-Id: <1376089460-5459-7-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 04/13] Move might_sleep and friends from kernel.h to sched.h
+Date: Fri,  9 Aug 2013 16:04:11 -0700
+Message-Id: <1376089460-5459-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
 References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
@@ -25,86 +25,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add 32bit versions of SAVE/RESTORE_ALL to calling.h. Needed for
-the following patches. These are much simplified over both 64bit
-and the 32bit entry* version, just saving and restoring all registers
-without anything fancy.
+These are really related to scheduling, so they should be in sched.h
+Users usually will need to schedule anyways.
 
-These are different from the entry_32.S versions in not changing
-the segment registers or cld. So only suitable for in kernel use, not when
-transitioning from or to user space. The resulting stack frame is not
-a standard pt_regs frame. The main use case is calling C code from
-assembler when all the registers need to be preserved.
+The advantage of having them there is that we can access some of the
+scheduler inlines to make their fast path more efficient. This will come
+in a followon patch.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/calling.h | 49 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
+ include/linux/kernel.h | 35 -----------------------------------
+ include/linux/sched.h  | 38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 35 deletions(-)
 
-diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-index 0fa6750..3365cea 100644
---- a/arch/x86/include/asm/calling.h
-+++ b/arch/x86/include/asm/calling.h
-@@ -48,6 +48,8 @@ For 32-bit we have the following conventions - kernel is built with
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 482ad2d..badcc13 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -141,35 +141,6 @@ struct completion;
+ struct pt_regs;
+ struct user;
  
- #include <asm/dwarf2.h>
+-#ifdef CONFIG_PREEMPT_VOLUNTARY
+-extern int _cond_resched(void);
+-# define might_resched() _cond_resched()
+-#else
+-# define might_resched() do { } while (0)
+-#endif
+-
+-#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+-  void __might_sleep(const char *file, int line, int preempt_offset);
+-/**
+- * might_sleep - annotation for functions that can sleep
+- *
+- * this macro will print a stack trace if it is executed in an atomic
+- * context (spinlock, irq-handler, ...).
+- *
+- * This is a useful debugging help to be able to catch problems early and not
+- * be bitten later when the calling function happens to sleep when it is not
+- * supposed to.
+- */
+-# define might_sleep() \
+-	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
+-#else
+-  static inline void __might_sleep(const char *file, int line,
+-				   int preempt_offset) { }
+-# define might_sleep() do { might_resched(); } while (0)
+-#endif
+-
+-#define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
+-
+ /*
+  * abs() handles unsigned and signed longs, ints, shorts and chars.  For all
+  * input types abs() returns a signed long.
+@@ -193,12 +164,6 @@ extern int _cond_resched(void);
+ 		(__x < 0) ? -__x : __x;		\
+ 	})
  
-+#ifdef CONFIG_X86_64
+-#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+-void might_fault(void);
+-#else
+-static inline void might_fault(void) { }
+-#endif
+-
+ extern struct atomic_notifier_head panic_notifier_list;
+ extern long (*panic_blink)(int state);
+ __printf(1, 2)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d722490..773f21d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2433,6 +2433,35 @@ extern int __cond_resched_softirq(void);
+ 	__cond_resched_softirq();					\
+ })
+ 
++#ifdef CONFIG_PREEMPT_VOLUNTARY
++extern int _cond_resched(void);
++# define might_resched() _cond_resched()
++#else
++# define might_resched() do { } while (0)
++#endif
++
++#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
++ void __might_sleep(const char *file, int line, int preempt_offset);
++/**
++ * might_sleep - annotation for functions that can sleep
++ *
++ * this macro will print a stack trace if it is executed in an atomic
++ * context (spinlock, irq-handler, ...).
++ *
++ * This is a useful debugging help to be able to catch problems early and not
++ * be bitten later when the calling function happens to sleep when it is not
++ * supposed to.
++ */
++# define might_sleep() \
++	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
++#else
++  static inline void __might_sleep(const char *file, int line,
++				   int preempt_offset) { }
++# define might_sleep() do { might_resched(); } while (0)
++#endif
++
++#define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
++
+ static inline void cond_resched_rcu(void)
+ {
+ #if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
+@@ -2442,6 +2471,15 @@ static inline void cond_resched_rcu(void)
+ #endif
+ }
+ 
++#ifdef CONFIG_PROVE_LOCKING
++void might_fault(void);
++#else
++static inline void might_fault(void)
++{
++	might_sleep();
++}
++#endif
 +
  /*
-  * 64-bit system call stack frame layout defines and helpers,
-  * for assembly code:
-@@ -192,3 +194,50 @@ For 32-bit we have the following conventions - kernel is built with
- 	.macro icebp
- 	.byte 0xf1
- 	.endm
-+
-+#else
-+
-+/*
-+ * For 32bit only simplified versions of SAVE_ALL/RESTORE_ALL. These
-+ * are different from the entry_32.S versions in not changing the segment
-+ * registers. So only suitable for in kernel use, not when transitioning
-+ * from or to user space. The resulting stack frame is not a standard
-+ * pt_regs frame. The main use case is calling C code from assembler
-+ * when all the registers need to be preserved.
-+ */
-+
-+	.macro SAVE_ALL
-+	pushl_cfi %eax
-+	CFI_REL_OFFSET eax, 0
-+	pushl_cfi %ebp
-+	CFI_REL_OFFSET ebp, 0
-+	pushl_cfi %edi
-+	CFI_REL_OFFSET edi, 0
-+	pushl_cfi %esi
-+	CFI_REL_OFFSET esi, 0
-+	pushl_cfi %edx
-+	CFI_REL_OFFSET edx, 0
-+	pushl_cfi %ecx
-+	CFI_REL_OFFSET ecx, 0
-+	pushl_cfi %ebx
-+	CFI_REL_OFFSET ebx, 0
-+	.endm
-+
-+	.macro RESTORE_ALL
-+	popl_cfi %ebx
-+	CFI_RESTORE ebx
-+	popl_cfi %ecx
-+	CFI_RESTORE ecx
-+	popl_cfi %edx
-+	CFI_RESTORE edx
-+	popl_cfi %esi
-+	CFI_RESTORE esi
-+	popl_cfi %edi
-+	CFI_RESTORE edi
-+	popl_cfi %ebp
-+	CFI_RESTORE ebp
-+	popl_cfi %eax
-+	CFI_RESTORE eax
-+	.endm
-+
-+#endif
+  * Does a critical section need to be broken due to another
+  * task waiting?: (technically does not depend on CONFIG_PREEMPT,
 -- 
 1.8.3.1
 
