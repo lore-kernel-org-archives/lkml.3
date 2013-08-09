@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966194Ab3HIJaj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 05:30:39 -0400
+	id S965818Ab3HIJ1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 05:27:11 -0400
 Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59885 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965829Ab3HIJ1N (ORCPT
+	with ESMTP id S965514Ab3HIJ1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 05:27:13 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-a6-5204b5ed06f9
+	Fri, 9 Aug 2013 05:27:08 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-8f-5204b5e9cca9
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -21,193 +21,112 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v2 09/20] mm, hugetlb: protect region tracking via newly introduced resv_map lock
-Date: Fri,  9 Aug 2013 18:26:27 +0900
-Message-Id: <1376040398-11212-10-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v2 00/20] mm, hugetlb: remove a hugetlb_instantiation_mutex
+Date: Fri,  9 Aug 2013 18:26:18 +0900
+Message-Id: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race condition if we map a same file on different processes.
-Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
-When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
-grab a mmap_sem. This doesn't prevent other process to modify region
-structure, so it can be modified by two processes concurrently.
+Without a hugetlb_instantiation_mutex, if parallel fault occur, we can
+fail to allocate a hugepage, because many threads dequeue a hugepage
+to handle a fault of same address. This makes reserved pool shortage
+just for a little while and this cause faulting thread to get a SIGBUS
+signal, although there are enough hugepages.
 
-To solve this, I introduce a lock to resv_map and make region manipulation
-function grab a lock before they do actual work. This makes region
-tracking safe.
+To solve this problem, we already have a nice solution, that is,
+a hugetlb_instantiation_mutex. This blocks other threads to dive into
+a fault handler. This solve the problem clearly, but it introduce
+performance degradation, because it serialize all fault handling.
+    
+Now, I try to remove a hugetlb_instantiation_mutex to get rid of
+performance problem reported by Davidlohr Bueso [1].
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+This patchset consist of 4 parts roughly.
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 2677c07..e29e28f 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -26,6 +26,7 @@ struct hugepage_subpool {
- 
- struct resv_map {
- 	struct kref refs;
-+	spinlock_t lock;
- 	struct list_head regions;
- };
- extern struct resv_map *resv_map_alloc(void);
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index d9cabf6..73034dd 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -134,15 +134,8 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
-  * Region tracking -- allows tracking of reservations and instantiated pages
-  *                    across the pages in a mapping.
-  *
-- * The region data structures are protected by a combination of the mmap_sem
-- * and the hugetlb_instantiation_mutex.  To access or modify a region the caller
-- * must either hold the mmap_sem for write, or the mmap_sem for read and
-- * the hugetlb_instantiation_mutex:
-- *
-- *	down_write(&mm->mmap_sem);
-- * or
-- *	down_read(&mm->mmap_sem);
-- *	mutex_lock(&hugetlb_instantiation_mutex);
-+ * The region data structures are embedded into a resv_map and
-+ * protected by a resv_map's lock
-  */
- struct file_region {
- 	struct list_head link;
-@@ -155,6 +148,7 @@ static long region_add(struct resv_map *resv, long f, long t)
- 	struct list_head *head = &resv->regions;
- 	struct file_region *rg, *nrg, *trg;
- 
-+	spin_lock(&resv->lock);
- 	/* Locate the region we are either in or before. */
- 	list_for_each_entry(rg, head, link)
- 		if (f <= rg->to)
-@@ -184,15 +178,18 @@ static long region_add(struct resv_map *resv, long f, long t)
- 	}
- 	nrg->from = f;
- 	nrg->to = t;
-+	spin_unlock(&resv->lock);
- 	return 0;
- }
- 
- static long region_chg(struct resv_map *resv, long f, long t)
- {
- 	struct list_head *head = &resv->regions;
--	struct file_region *rg, *nrg;
-+	struct file_region *rg, *nrg = NULL;
- 	long chg = 0;
- 
-+retry:
-+	spin_lock(&resv->lock);
- 	/* Locate the region we are before or in. */
- 	list_for_each_entry(rg, head, link)
- 		if (f <= rg->to)
-@@ -202,15 +199,27 @@ static long region_chg(struct resv_map *resv, long f, long t)
- 	 * Subtle, allocate a new region at the position but make it zero
- 	 * size such that we can guarantee to record the reservation. */
- 	if (&rg->link == head || t < rg->from) {
--		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
--		if (!nrg)
--			return -ENOMEM;
-+		if (!nrg) {
-+			nrg = kmalloc(sizeof(*nrg), GFP_NOWAIT);
-+			if (!nrg) {
-+				spin_unlock(&resv->lock);
-+				nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-+				if (!nrg) {
-+					chg = -ENOMEM;
-+					goto out;
-+				}
-+				goto retry;
-+			}
-+		}
-+
- 		nrg->from = f;
- 		nrg->to   = f;
- 		INIT_LIST_HEAD(&nrg->link);
- 		list_add(&nrg->link, rg->link.prev);
-+		nrg = NULL;
- 
--		return t - f;
-+		chg = t - f;
-+		goto out_locked;
- 	}
- 
- 	/* Round our left edge to the current segment if it encloses us. */
-@@ -223,7 +232,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
- 		if (&rg->link == head)
- 			break;
- 		if (rg->from > t)
--			return chg;
-+			goto out_locked;
- 
- 		/* We overlap with this area, if it extends further than
- 		 * us then we must extend ourselves.  Account for its
-@@ -234,6 +243,11 @@ static long region_chg(struct resv_map *resv, long f, long t)
- 		}
- 		chg -= rg->to - rg->from;
- 	}
-+
-+out_locked:
-+	spin_unlock(&resv->lock);
-+out:
-+	kfree(nrg);
- 	return chg;
- }
- 
-@@ -243,12 +257,13 @@ static long region_truncate(struct resv_map *resv, long end)
- 	struct file_region *rg, *trg;
- 	long chg = 0;
- 
-+	spin_lock(&resv->lock);
- 	/* Locate the region we are either in or before. */
- 	list_for_each_entry(rg, head, link)
- 		if (end <= rg->to)
- 			break;
- 	if (&rg->link == head)
--		return 0;
-+		goto out;
- 
- 	/* If we are in the middle of a region then adjust it. */
- 	if (end > rg->from) {
-@@ -265,6 +280,9 @@ static long region_truncate(struct resv_map *resv, long end)
- 		list_del(&rg->link);
- 		kfree(rg);
- 	}
-+
-+out:
-+	spin_unlock(&resv->lock);
- 	return chg;
- }
- 
-@@ -274,6 +292,7 @@ static long region_count(struct resv_map *resv, long f, long t)
- 	struct file_region *rg;
- 	long chg = 0;
- 
-+	spin_lock(&resv->lock);
- 	/* Locate each segment we overlap with, and count that overlap. */
- 	list_for_each_entry(rg, head, link) {
- 		long seg_from;
-@@ -289,6 +308,7 @@ static long region_count(struct resv_map *resv, long f, long t)
- 
- 		chg += seg_to - seg_from;
- 	}
-+	spin_unlock(&resv->lock);
- 
- 	return chg;
- }
-@@ -386,6 +406,7 @@ struct resv_map *resv_map_alloc(void)
- 		return NULL;
- 
- 	kref_init(&resv_map->refs);
-+	spin_lock_init(&resv_map->lock);
- 	INIT_LIST_HEAD(&resv_map->regions);
- 
- 	return resv_map;
+Part 1. (1-6) Random fix and clean-up. Enhancing error handling.
+	
+	These can be merged into mainline separately.
+
+Part 2. (7-9) Protect region tracking via it's own spinlock, instead of
+	the hugetlb_instantiation_mutex.
+	
+	Breaking dependency on the hugetlb_instantiation_mutex for
+	tracking a region is also needed by other approaches like as
+	'table mutexes', so these can be merged into mainline separately.
+
+Part 3. (10-13) Clean-up.
+	
+	IMO, these make code really simple, so these are worth to go into
+	mainline separately, regardless success of my approach.
+
+Part 4. (14-20) Remove a hugetlb_instantiation_mutex.
+	
+	Almost patches are just for clean-up to error handling path.
+	In patch 19, retry approach is implemented that if faulted thread
+	failed to allocate a hugepage, it continue to run a fault handler
+	until there is no concurrent thread having a hugepage. This causes
+	threads who want to get a last hugepage to be serialized, so
+	threads don't get a SIGBUS if enough hugepage exist.
+	In patch 20, remove a hugetlb_instantiation_mutex.
+
+These patches are based on my previous patchset [2] which is now on mmotm.
+In my compile testing, [2] and this patchset can be applied to
+v3.11-rc4 cleanly, but, I do running test of this patchset on top of v3.10 :)
+
+With applying these, I passed a libhugetlbfs test suite clearly which
+have allocation-instantiation race test cases.
+
+If there is a something I should consider, please let me know!
+Thanks.
+
+* Changes in v2
+- Re-order patches to clear it's relationship
+- sleepable object allocation(kmalloc) without holding a spinlock
+	(Pointed by Hillf)
+- Remove vma_has_reserves, instead of vma_needs_reservation.
+	(Suggest by Aneesh and Naoya)
+- Change a way of returning a hugepage back to reserved pool
+	(Suggedt by Naoya)
+
+
+[1] http://lwn.net/Articles/558863/ 
+	"[PATCH] mm/hugetlb: per-vma instantiation mutexes"
+[2] https://lkml.org/lkml/2013/7/22/96
+	"[PATCH v2 00/10] mm, hugetlb: clean-up and possible bug fix"
+
+Joonsoo Kim (20):
+  mm, hugetlb: protect reserved pages when soft offlining a hugepage
+  mm, hugetlb: change variable name reservations to resv
+  mm, hugetlb: fix subpool accounting handling
+  mm, hugetlb: remove useless check about mapping type
+  mm, hugetlb: grab a page_table_lock after page_cache_release
+  mm, hugetlb: return a reserved page to a reserved pool if failed
+  mm, hugetlb: unify region structure handling
+  mm, hugetlb: region manipulation functions take resv_map rather
+    list_head
+  mm, hugetlb: protect region tracking via newly introduced resv_map
+    lock
+  mm, hugetlb: remove resv_map_put()
+  mm, hugetlb: make vma_resv_map() works for all mapping type
+  mm, hugetlb: remove vma_has_reserves()
+  mm, hugetlb: mm, hugetlb: unify chg and avoid_reserve to use_reserve
+  mm, hugetlb: call vma_needs_reservation before entering
+    alloc_huge_page()
+  mm, hugetlb: remove a check for return value of alloc_huge_page()
+  mm, hugetlb: move down outside_reserve check
+  mm, hugetlb: move up anon_vma_prepare()
+  mm, hugetlb: clean-up error handling in hugetlb_cow()
+  mm, hugetlb: retry if failed to allocate and there is concurrent user
+  mm, hugetlb: remove a hugetlb_instantiation_mutex
+
+ fs/hugetlbfs/inode.c    |   16 +-
+ include/linux/hugetlb.h |   11 ++
+ mm/hugetlb.c            |  419 +++++++++++++++++++++++++----------------------
+ 3 files changed, 250 insertions(+), 196 deletions(-)
+
 -- 
 1.7.9.5
 
