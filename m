@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968290Ab3HISmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 14:42:14 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48956 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967943Ab3HISmM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 14:42:12 -0400
-Subject: Re: [PATCH] usb: dwc3: core: clarify usb-phy array binding
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
-Date: Fri, 9 Aug 2013 13:42:15 -0500
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	id S968301Ab3HISon (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 14:44:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23840 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967943Ab3HISom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 14:44:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,847,1367996400"; 
+   d="scan'208";a="383951165"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
-References: <1376062832-23288-1-git-send-email-galak@codeaurora.org> <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-X-Mailer: Apple Mail (2.1283)
+Subject: RE: [PATCH 3/5] x86, AMD: cleanup: merge common code in early
+ microcode loading
+Thread-Topic: [PATCH 3/5] x86, AMD: cleanup: merge common code in early
+ microcode loading
+Thread-Index: AQHOiHJi+cm++MPa80WiAzcLiv5LH5mKbKhAgAANp+CAAKZzgIAAgIQAgACNcoCAAR/DcA==
+Date: Fri, 9 Aug 2013 18:44:41 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205A53C03C@ORSMSX106.amr.corp.intel.com>
+References: <20130723230026.394a5ee1@googlemail.com>
+ <20130724133254.GE30777@pd.tnic>
+ <3E5A0FA7E9CA944F9D5414FEC6C712205A53B73A@ORSMSX106.amr.corp.intel.com>
+ <78b1bca9-80bb-4e60-af3a-738424babfd0@email.android.com>
+ <20130808100238.GA27974@pd.tnic> <20130808182853.GD27974@pd.tnic>
+In-Reply-To: <20130808182853.GD27974@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r79Iimci012043
 
+> From: Borislav Petkov [mailto:bp@alien8.de]
+> Sent: Thursday, August 08, 2013 11:29 AM
 
-On Aug 9, 2013, at 11:28 AM, Mark Rutland wrote:
-
-> On Fri, Aug 09, 2013 at 04:40:32PM +0100, Kumar Gala wrote:
->> The binding spec wasn't clear that the order of the phandles in the
->> usb-phy array has meaning.  Clarify this point in the binding that
->> it should be <USB2-HS-PHY, USB3-SS-PHY>.
->> 
->> Signed-off-by: Kumar Gala <galak@codeaurora.org>
->> ---
->> Documentation/devicetree/bindings/usb/dwc3.txt | 4 +++-
->> 1 file changed, 3 insertions(+), 1 deletion(-)
->> 
->> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
->> index 7a95c65..8a9770b 100644
->> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
->> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
->> @@ -6,7 +6,9 @@ Required properties:
->>  - compatible: must be "synopsys,dwc3"
->>  - reg : Address and length of the register set for the device
->>  - interrupts: Interrupts used by the dwc3 controller.
->> - - usb-phy : array of phandle for the PHY device
->> + - usb-phy : array of phandle for the PHY device.  The first element
->> +   in the array is expected to be a handle to the USB2/HS PHY and
->> +   the second element is expected to be a handle to the USB3/SS PHY
+> On Thu, Aug 08, 2013 at 12:02:38PM +0200, Borislav Petkov wrote:
+> > On Wed, Aug 07, 2013 at 07:22:39PM -0700, H. Peter Anvin wrote:
+> > > How much does this matter?
+> >
+> > I know what you're asking :-)
+> >
+> > And no, it doesn't really matter as we fail in the patch version
+> check
+> > so maybe only a comment will suffice here so that people don't get
+> > confused.
 > 
-> Just to check - it's not valid to have a USB3 phy without a USB2 phy?
+> IOW, something like that:
+> 
+> ---
+> From: Borislav Petkov <bp@suse.de>
+> Date: Thu, 8 Aug 2013 20:26:24 +0200
+> Subject: [PATCH] x86, microcode: Clarify loading on the AP
+> 
+> Hold it down why we're calling the AP microcode loading routine on the
+> BSP too, for future reference.
+> 
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  arch/x86/kernel/cpu/common.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/common.c
+> b/arch/x86/kernel/cpu/common.c
+> index 25eb2747b063..58d37a27d317 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -1226,8 +1226,12 @@ void cpu_init(void)
+>  	int i;
+> 
+>  	/*
+> -	 * Load microcode on this cpu if a valid microcode is available.
+> -	 * This is early microcode loading procedure.
+> +	 * Load microcode on this cpu if a valid microcode is available.
+> This
+> +	 * is early microcode loading procedure. We execute this on the
+> BSP too
+> +	 * but since a microcode has been potentially already applied on
+> the
+> +	 * BSP, we will return prematurely here. It is easier to simply
+> call it
+> +	 * again than filtering all the possible cases when we're not
+> running
+> +	 * on the BSP.
+>  	 */
+>  	load_ucode_ap();
 
-Don't know, hopefully Felipe will chime in on that.
+Load_ucode_ap() running on BSP during boot time wastes short time on scanning ucode blob. But the time should be very short. 
 
-- k
+Reviewed-by: Fenghua Yu <fenghua.yu@intel.com>
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
