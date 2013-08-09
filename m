@@ -1,77 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964953Ab3HIP0E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:26:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934350Ab3HIP0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:26:02 -0400
-Date: Fri, 9 Aug 2013 17:19:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>
-Cc: Long Gao <gaolong@kylinos.com.cn>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/1] dlm: kill the unnecessary and wrong
-	device_close()->recalc_sigpending()
-Message-ID: <20130809151913.GB4619@redhat.com>
-References: <tencent_26310211398C21034BD3B2F9@qq.com> <CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com> <20130808191749.GA12062@redhat.com> <20130809151852.GA4619@redhat.com>
+	id S965085Ab3HIP01 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:26:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:17543 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964779Ab3HIP0Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 11:26:25 -0400
+Date: Fri, 9 Aug 2013 11:26:01 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        dcrisan@flexiant.com, alex@alex.org.uk, ian.campbell@citrix.com
+Subject: Re: [PATCH v4 2/2] xen/m2p: use GNTTABOP_unmap_and_replace to
+ reinstate the original mapping
+Message-ID: <20130809152601.GB5637@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1308041531220.4893@kaball.uk.xensource.com>
+ <1375627181-14948-2-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130809151852.GA4619@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1375627181-14948-2-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-device_close()->recalc_sigpending() is not needed, sigprocmask()
-takes care of TIF_SIGPENDING correctly.
+On Sun, Aug 04, 2013 at 03:39:41PM +0100, Stefano Stabellini wrote:
+> GNTTABOP_unmap_grant_ref unmaps a grant and replaces it with a 0
+> mapping instead of reinstating the original mapping.
+> Doing so separately would be racy.
+> 
+> To unmap a grant and reinstate the original mapping atomically we use
+> GNTTABOP_unmap_and_replace.
+> GNTTABOP_unmap_and_replace doesn't work with GNTMAP_contains_pte, so
+> don't use it for kmaps.  GNTTABOP_unmap_and_replace zeroes the mapping
+> passed in new_addr so we have to reinstate it, however that is a
+> per-cpu mapping only used for balloon scratch pages, so we can be sure that
+> it's not going to be accessed while the mapping is not valid.
 
-And without ->siglock it is racy and wrong, it can wrongly clear
-TIF_SIGPENDING and miss a signal.
+This looks to be depend on a new structure, which is not in Linux kernel?
+Are you missing a dependency patch?
 
-But even with this patch device_close() is still buggy:
-
-	1. sigprocmask() should not be used, we have set_task_blocked(),
-	   but this is minor.
-
-	2. We should never block SIGKILL or SIGSTOP, and this is what
-	   the code tries to do.
-
-	3. This can't protect against SIGKILL or SIGSTOP anyway. Another
-	   thread can do signal_wake_up(), say, do_signal_stop() or
-	   complete_signal() or debugger.
-
-	4. sigprocmask(SIG_BLOCK, allsigs) doesn't necessarily clears
-	   TIF_SIGPENDING, say, freezing() or ->jobctl.
-
-	5. device_write() looks equally wrong by the same reason.
-
-Looks like, this tries to protect some wait_event_interruptible() logic
-from signals, it should be turned into uninterruptible wait. Or we need
-to implement something like signals_stop/start for such a use-case.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/dlm/user.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/fs/dlm/user.c b/fs/dlm/user.c
-index 911649a..8121491 100644
---- a/fs/dlm/user.c
-+++ b/fs/dlm/user.c
-@@ -686,7 +686,6 @@ static int device_close(struct inode *inode, struct file *file)
- 	   device_remove_lockspace() */
- 
- 	sigprocmask(SIG_SETMASK, &tmpsig, NULL);
--	recalc_sigpending();
- 
- 	return 0;
- }
--- 
-1.5.5.1
-
-
+Shouldn't we use some logic to figure out which hypercall to use if the
+hypervisor does not support it?
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+> CC: alex@alex.org.uk
+> CC: dcrisan@flexiant.com
+> ---
+>  arch/x86/xen/p2m.c   |   22 +++++++++++++++-------
+>  drivers/xen/gntdev.c |   11 ++---------
+>  2 files changed, 17 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index 95fb2aa..0d4ec35 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -161,6 +161,7 @@
+>  #include <asm/xen/page.h>
+>  #include <asm/xen/hypercall.h>
+>  #include <asm/xen/hypervisor.h>
+> +#include <xen/balloon.h>
+>  #include <xen/grant_table.h>
+>  
+>  #include "multicalls.h"
+> @@ -967,7 +968,10 @@ int m2p_remove_override(struct page *page,
+>  	if (kmap_op != NULL) {
+>  		if (!PageHighMem(page)) {
+>  			struct multicall_space mcs;
+> -			struct gnttab_unmap_grant_ref *unmap_op;
+> +			struct gnttab_unmap_and_replace *unmap_op;
+> +			struct page *scratch_page = get_balloon_scratch_page();
+> +			unsigned long scratch_page_address = (unsigned long)
+> +				__va(page_to_pfn(scratch_page) << PAGE_SHIFT);
+>  
+>  			/*
+>  			 * It might be that we queued all the m2p grant table
+> @@ -990,21 +994,25 @@ int m2p_remove_override(struct page *page,
+>  			}
+>  
+>  			mcs = xen_mc_entry(
+> -					sizeof(struct gnttab_unmap_grant_ref));
+> +					sizeof(struct gnttab_unmap_and_replace));
+>  			unmap_op = mcs.args;
+>  			unmap_op->host_addr = kmap_op->host_addr;
+> +			unmap_op->new_addr = scratch_page_address;
+>  			unmap_op->handle = kmap_op->handle;
+> -			unmap_op->dev_bus_addr = 0;
+>  
+>  			MULTI_grant_table_op(mcs.mc,
+> -					GNTTABOP_unmap_grant_ref, unmap_op, 1);
+> +					GNTTABOP_unmap_and_replace, unmap_op, 1);
+>  
+>  			xen_mc_issue(PARAVIRT_LAZY_MMU);
+>  
+> -			set_pte_at(&init_mm, address, ptep,
+> -					pfn_pte(pfn, PAGE_KERNEL));
+> -			__flush_tlb_single(address);
+> +			mcs = __xen_mc_entry(0);
+> +			MULTI_update_va_mapping(mcs.mc, scratch_page_address,
+> +					pfn_pte(page_to_pfn(get_balloon_scratch_page()),
+> +					PAGE_KERNEL_RO), 0);
+> +			xen_mc_issue(PARAVIRT_LAZY_MMU);
+> +
+>  			kmap_op->host_addr = 0;
+> +			put_balloon_scratch_page();
+>  		}
+>  	}
+>  
+> diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+> index 3c8803f..51f4c95 100644
+> --- a/drivers/xen/gntdev.c
+> +++ b/drivers/xen/gntdev.c
+> @@ -270,19 +270,12 @@ static int map_grant_pages(struct grant_map *map)
+>  		 * with find_grant_ptes.
+>  		 */
+>  		for (i = 0; i < map->count; i++) {
+> -			unsigned level;
+>  			unsigned long address = (unsigned long)
+>  				pfn_to_kaddr(page_to_pfn(map->pages[i]));
+> -			pte_t *ptep;
+> -			u64 pte_maddr = 0;
+>  			BUG_ON(PageHighMem(map->pages[i]));
+>  
+> -			ptep = lookup_address(address, &level);
+> -			pte_maddr = arbitrary_virt_to_machine(ptep).maddr;
+> -			gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
+> -				map->flags |
+> -				GNTMAP_host_map |
+> -				GNTMAP_contains_pte,
+> +			gnttab_set_map_op(&map->kmap_ops[i], address,
+> +				map->flags | GNTMAP_host_map,
+>  				map->grants[i].ref,
+>  				map->grants[i].domid);
+>  		}
+> -- 
+> 1.7.2.5
+> 
