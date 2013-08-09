@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030958Ab3HITvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:51:41 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:62760 "EHLO
+	id S1030997Ab3HITv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:51:56 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:62763 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030877Ab3HITvj (ORCPT
+	with ESMTP id S1030908Ab3HITvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:51:39 -0400
-Message-ID: <201308091951.r79JpcmF030990@farm-0021.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 9 Aug 2013 15:41:09 -0400
-Subject: [PATCH] tile: fix panic with large IRQ number
-To: <linux-kernel@vger.kernel.org>
+	Fri, 9 Aug 2013 15:51:52 -0400
+Message-ID: <201308091951.r79JppCI030998@farm-0021.internal.tilera.com>
+From: Tony Lu <zlu@tilera.com>
+Date: Fri, 9 Aug 2013 15:45:24 -0400
+Subject: [PATCH] tile: support ASLR fully
+To: <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "available_irqs" value needs to actually reflect the IRQs
-available, not just start as an all-ones mask, since we only
-have 32 IRQs available even on a 64-bit platform.
+With this change, tile Linux now supports address-space layout
+randomization for shared objects, stack, heap and vdso.
 
+Signed-off-by: Tony Lu <zlu@tilera.com>
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/kernel/irq.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/tile/include/asm/elf.h |  4 ++++
+ arch/tile/mm/mmap.c         | 20 ++++++++++++++++++--
+ 2 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/arch/tile/kernel/irq.c b/arch/tile/kernel/irq.c
-index c90de6c..0e6c521 100644
---- a/arch/tile/kernel/irq.c
-+++ b/arch/tile/kernel/irq.c
-@@ -55,7 +55,8 @@ static DEFINE_PER_CPU(int, irq_depth);
+diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
+index 31d854f..e1da88e 100644
+--- a/arch/tile/include/asm/elf.h
++++ b/arch/tile/include/asm/elf.h
+@@ -137,6 +137,10 @@ do { \
+ 	NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE); \
+ } while (0)
  
- /* State for allocating IRQs on Gx. */
- #if CHIP_HAS_IPI()
--static unsigned long available_irqs = ~(1UL << IRQ_RESCHEDULE);
-+static unsigned long available_irqs = ((1UL << NR_IRQS) - 1) &
-+				      (~(1UL << IRQ_RESCHEDULE));
- static DEFINE_SPINLOCK(available_irqs_lock);
++struct mm_struct;
++extern unsigned long arch_randomize_brk(struct mm_struct *mm);
++#define arch_randomize_brk arch_randomize_brk
++
+ #ifdef CONFIG_COMPAT
+ 
+ #define COMPAT_ELF_PLATFORM "tilegx-m32"
+diff --git a/arch/tile/mm/mmap.c b/arch/tile/mm/mmap.c
+index d67d91e..b3686ce 100644
+--- a/arch/tile/mm/mmap.c
++++ b/arch/tile/mm/mmap.c
+@@ -58,16 +58,32 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ #else
+ 	int is_32bit = 0;
  #endif
++	unsigned long random_factor = 0UL;
++
++	if (current->flags & PF_RANDOMIZE) {
++		random_factor = get_random_int();
++		random_factor = random_factor << PAGE_SHIFT;
++		if (is_32bit)
++			random_factor &= 0xfffffful;
++		else
++			random_factor &= 0xffffffful;
++	}
  
+ 	/*
+ 	 * Use standard layout if the expected stack growth is unlimited
+ 	 * or we are running native 64 bits.
+ 	 */
+-	if (!is_32bit || rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
+-		mm->mmap_base = TASK_UNMAPPED_BASE;
++	if (rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
++		mm->mmap_base = TASK_UNMAPPED_BASE + random_factor;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base(mm);
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+ 	}
+ }
++
++unsigned long arch_randomize_brk(struct mm_struct *mm)
++{
++	unsigned long range_end = mm->brk + 0x02000000;
++	return randomize_range(mm->brk, range_end, 0) ? : mm->brk;
++}
 -- 
 1.8.3.1
 
