@@ -1,402 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967697Ab3HIKqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:46:46 -0400
-Received: from mga03.intel.com ([143.182.124.21]:22271 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967576Ab3HIKqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:46:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,845,1367996400"; 
-   d="scan'208";a="279834514"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V10 13/13] perf tools: add a sample parsing test
-Date: Fri,  9 Aug 2013 13:51:59 +0300
-Message-Id: <1376045519-13832-14-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
-References: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S967738Ab3HIKqv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:46:51 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:55224 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967440Ab3HIKqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:46:47 -0400
+Message-ID: <5204C54A.9020105@st.com>
+Date: Fri, 09 Aug 2013 11:32:42 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <51F77D93.4030505@linaro.org> <51F97842.6050200@linaro.org> <068436c6-ff98-428f-8875-bb1c6f86466b@TX2EHSMHS008.ehs.local> <51F97CE3.9030306@linaro.org> <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local> <51FA9AE8.1060004@linaro.org> <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local> <51FA9F54.3060704@linaro.org> <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local>
+In-Reply-To: <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a test that checks that sample parsing is correctly
-implemented.
+On 08/08/13 18:11, Sören Brinkmann wrote:
+> Hi Daniel,
+> 
+> On Thu, Aug 01, 2013 at 07:48:04PM +0200, Daniel Lezcano wrote:
+>> On 08/01/2013 07:43 PM, Sören Brinkmann wrote:
+>>> On Thu, Aug 01, 2013 at 07:29:12PM +0200, Daniel Lezcano wrote:
+>>>> On 08/01/2013 01:38 AM, Sören Brinkmann wrote:
+>>>>> On Thu, Aug 01, 2013 at 01:01:27AM +0200, Daniel Lezcano wrote:
+>>>>>> On 08/01/2013 12:18 AM, Sören Brinkmann wrote:
+>>>>>>> On Wed, Jul 31, 2013 at 11:08:51PM +0200, Daniel Lezcano wrote:
+>>>>>>>> On 07/31/2013 10:58 PM, Sören Brinkmann wrote:
+>>>>>>>>> On Wed, Jul 31, 2013 at 10:49:06PM +0200, Daniel Lezcano wrote:
+>>>>>>>>>> On 07/31/2013 12:34 AM, Sören Brinkmann wrote:
+>>>>>>>>>>> On Tue, Jul 30, 2013 at 10:47:15AM +0200, Daniel Lezcano wrote:
+>>>>>>>>>>>> On 07/30/2013 02:03 AM, Sören Brinkmann wrote:
+>>>>>>>>>>>>> Hi Daniel,
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> On Mon, Jul 29, 2013 at 02:51:49PM +0200, Daniel Lezcano wrote:
+>>>>>>>>>>>>> (snip)
+>>>>>>>>>>>>>>
+>>>>>>>>>>>>>> the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
+>>>>>>>>>>>>>> timer will be stopped when entering to the idle state. In this case, the
+>>>>>>>>>>>>>> cpuidle framework will call clockevents_notify(ENTER) and switches to a
+>>>>>>>>>>>>>> broadcast timer and will call clockevents_notify(EXIT) when exiting the
+>>>>>>>>>>>>>> idle state, switching the local timer back in use.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> I've been thinking about this, trying to understand how this makes my
+>>>>>>>>>>>>> boot attempts on Zynq hang. IIUC, the wrongly provided TIMER_STOP flag
+>>>>>>>>>>>>> would make the timer core switch to a broadcast device even though it
+>>>>>>>>>>>>> wouldn't be necessary. But shouldn't it still work? It sounds like we do
+>>>>>>>>>>>>> something useless, but nothing wrong in a sense that it should result in
+>>>>>>>>>>>>> breakage. I guess I'm missing something obvious. This timer system will
+>>>>>>>>>>>>> always remain a mystery to me.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> Actually this more or less leads to the question: What is this
+>>>>>>>>>>>>> 'broadcast timer'. I guess that is some clockevent device which is
+>>>>>>>>>>>>> common to all cores? (that would be the cadence_ttc for Zynq). Is the
+>>>>>>>>>>>>> hang pointing to some issue with that driver?
+>>>>>>>>>>>>
+>>>>>>>>>>>> If you look at the /proc/timer_list, which timer is used for broadcasting ?
+>>>>>>>>>>>
+>>>>>>>>>>> So, the correct run results (full output attached).
+>>>>>>>>>>>
+>>>>>>>>>>> The vanilla kernel uses the twd timers as local timers and the TTC as
+>>>>>>>>>>> broadcast device:
+>>>>>>>>>>> 	Tick Device: mode:     1                                                         
+>>>>>>>>>>> 	Broadcast device  
+>>>>>>>>>>> 	Clock Event Device: ttc_clockevent
+>>>>>>>>>>>
+>>>>>>>>>>> When I remove the offending CPUIDLE flag and add the DT fragment to
+>>>>>>>>>>> enable the global timer, the twd timers are still used as local timers
+>>>>>>>>>>> and the broadcast device is the global timer:
+>>>>>>>>>>> 	Tick Device: mode:     1                                                         
+>>>>>>>>>>> 	Broadcast device                                                                 
+>>>>>>>>>>> 	Clock Event Device: arm_global_timer
+>>>>>>>>>>>
+>>>>>>>>>>> Again, since boot hangs in the actually broken case, I don't see way to
+>>>>>>>>>>> obtain this information for that case.
+>>>>>>>>>>
+>>>>>>>>>> Can't you use the maxcpus=1 option to ensure the system to boot up ?
+>>>>>>>>>
+>>>>>>>>> Right, that works. I forgot about that option after you mentioned, that
+>>>>>>>>> it is most likely not that useful.
+>>>>>>>>>
+>>>>>>>>> Anyway, this are those sysfs files with an unmodified cpuidle driver and
+>>>>>>>>> the gt enabled and having maxcpus=1 set.
+>>>>>>>>>
+>>>>>>>>> /proc/timer_list:
+>>>>>>>>> 	Tick Device: mode:     1
+>>>>>>>>> 	Broadcast device
+>>>>>>>>> 	Clock Event Device: arm_global_timer
+>>>>>>>>> 	 max_delta_ns:   12884902005
+>>>>>>>>> 	 min_delta_ns:   1000
+>>>>>>>>> 	 mult:           715827876
+>>>>>>>>> 	 shift:          31
+>>>>>>>>> 	 mode:           3
+>>>>>>>>
+>>>>>>>> Here the mode is 3 (CLOCK_EVT_MODE_ONESHOT)
+>>>>>>>>
+>>>>>>>> The previous timer_list output you gave me when removing the offending
+>>>>>>>> cpuidle flag, it was 1 (CLOCK_EVT_MODE_SHUTDOWN).
+>>>>>>>>
+>>>>>>>> Is it possible you try to get this output again right after onlining the
+>>>>>>>> cpu1 in order to check if the broadcast device switches to SHUTDOWN ?
+>>>>>>>
+>>>>>>> How do I do that? I tried to online CPU1 after booting with maxcpus=1
+>>>>>>> and that didn't end well:
+>>>>>>> 	# echo 1 > online && cat /proc/timer_list 
+>>>>>>
+>>>>>> Hmm, I was hoping to have a small delay before the kernel hangs but
+>>>>>> apparently this is not the case... :(
+>>>>>>
+>>>>>> I suspect the global timer is shutdown at one moment but I don't
+>>>>>> understand why and when.
+>>>>>>
+>>>>>> Can you add a stack trace in the "clockevents_shutdown" function with
+>>>>>> the clockevent device name ? Perhaps, we may see at boot time an
+>>>>>> interesting trace when it hangs.
+>>>>>
+>>>>> I did this change:
+>>>>> 	diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+>>>>> 	index 38959c8..3ab11c1 100644
+>>>>> 	--- a/kernel/time/clockevents.c
+>>>>> 	+++ b/kernel/time/clockevents.c
+>>>>> 	@@ -92,6 +92,8 @@ void clockevents_set_mode(struct clock_event_device *dev,
+>>>>> 	  */
+>>>>> 	 void clockevents_shutdown(struct clock_event_device *dev)
+>>>>> 	 {
+>>>>> 	+       pr_info("ce->name:%s\n", dev->name);
+>>>>> 	+       dump_stack();
+>>>>> 	        clockevents_set_mode(dev, CLOCK_EVT_MODE_SHUTDOWN);
+>>>>> 	        dev->next_event.tv64 = KTIME_MAX;
+>>>>> 	 }
+>>>>>
+>>>>> It is hit a few times during boot, so I attach a full boot log. I really
+>>>>> don't know what to look for, but I hope you can spot something in it. I
+>>>>> really appreciate you taking the time.
+>>>>
+>>>> Thanks for the traces.
+>>>
+>>> Sure.
+>>>
+>>>>
+>>>> If you try without the ttc_clockevent configured in the kernel (but with
+>>>> twd and gt), does it boot ?
+>>>
+>>> Absence of the TTC doesn't seem to make any difference. It hangs at the
+>>> same location.
+>>
+>> Ok, IMO there is a problem with the broadcast device registration (may
+>> be vs twd).
+> 
+> I have an idea, but no real evidence to prove it:
+> Some of the registers in the arm_global_timer are banked per CPU. I.e.
+> some code must be executed on the CPU the timer is associated with
+> (struct clock_event_device.cpumask) to have the intended effect
+> As far as I can tell, there is no guarantee, that the set_mode()
+> and program_next_event() calls execute on the correct CPU.
+> If this was correct, shutting down the timer for the CPU entering
+> idle might actually shut down the timer for the running CPU, if
+> set_mode() executes on the CPU which is _not_ about to enter idle.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/Makefile               |   1 +
- tools/perf/tests/builtin-test.c   |   4 +
- tools/perf/tests/sample-parsing.c | 313 ++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h          |   1 +
- 4 files changed, 319 insertions(+)
- create mode 100644 tools/perf/tests/sample-parsing.c
+Hi Sören,
+Am able to reproduce similar issue on StiH415 SOC by enabling both
+global_timer and twd and using cpuidle driver like zynq.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 868358c..a069578 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -439,6 +439,7 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
- ifneq ($(OUTPUT),)
-   CFLAGS += -I$(OUTPUT)
- endif
-+LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
- 
- ifdef NO_LIBELF
- EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index f5af192..8ad9415 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -104,6 +104,10 @@ static struct test {
- 		.func = test__code_reading,
- 	},
- 	{
-+		.desc = "Test sample parsing",
-+		.func = test__sample_parsing,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
-new file mode 100644
-index 0000000..c662927
---- /dev/null
-+++ b/tools/perf/tests/sample-parsing.c
-@@ -0,0 +1,313 @@
-+#include <stdbool.h>
-+#include <inttypes.h>
-+
-+#include "util.h"
-+#include "event.h"
-+#include "evsel.h"
-+
-+#include "tests.h"
-+
-+#define COMP(m) do {					\
-+	if (s1->m != s2->m) {				\
-+		pr_debug("Samples differ at '"#m"'\n");	\
-+		return false;				\
-+	}						\
-+} while (0)
-+
-+#define MCOMP(m) do {					\
-+	if (memcmp(&s1->m, &s2->m, sizeof(s1->m))) {	\
-+		pr_debug("Samples differ at '"#m"'\n");	\
-+		return false;				\
-+	}						\
-+} while (0)
-+
-+static bool samples_same(const struct perf_sample *s1,
-+			 const struct perf_sample *s2, u64 type, u64 regs_user,
-+			 u64 read_format)
-+{
-+	size_t i;
-+
-+	if (type & PERF_SAMPLE_IDENTIFIER)
-+		COMP(id);
-+
-+	if (type & PERF_SAMPLE_IP)
-+		COMP(ip);
-+
-+	if (type & PERF_SAMPLE_TID) {
-+		COMP(pid);
-+		COMP(tid);
-+	}
-+
-+	if (type & PERF_SAMPLE_TIME)
-+		COMP(time);
-+
-+	if (type & PERF_SAMPLE_ADDR)
-+		COMP(addr);
-+
-+	if (type & PERF_SAMPLE_ID)
-+		COMP(id);
-+
-+	if (type & PERF_SAMPLE_STREAM_ID)
-+		COMP(stream_id);
-+
-+	if (type & PERF_SAMPLE_CPU)
-+		COMP(cpu);
-+
-+	if (type & PERF_SAMPLE_PERIOD)
-+		COMP(period);
-+
-+	if (type & PERF_SAMPLE_READ) {
-+		if (read_format & PERF_FORMAT_GROUP)
-+			COMP(read.group.nr);
-+		else
-+			COMP(read.one.value);
-+		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
-+			COMP(read.time_enabled);
-+		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
-+			COMP(read.time_running);
-+		/* PERF_FORMAT_ID is forced for PERF_SAMPLE_READ */
-+		if (read_format & PERF_FORMAT_GROUP) {
-+			for (i = 0; i < s1->read.group.nr; i++)
-+				MCOMP(read.group.values[i]);
-+		} else {
-+			COMP(read.one.id);
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_CALLCHAIN) {
-+		COMP(callchain->nr);
-+		for (i = 0; i < s1->callchain->nr; i++)
-+			COMP(callchain->ips[i]);
-+	}
-+
-+	if (type & PERF_SAMPLE_RAW) {
-+		COMP(raw_size);
-+		if (memcmp(s1->raw_data, s2->raw_data, s1->raw_size)) {
-+			pr_debug("Samples differ at 'raw_data'\n");
-+			return false;
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_BRANCH_STACK) {
-+		COMP(branch_stack->nr);
-+		for (i = 0; i < s1->branch_stack->nr; i++)
-+			MCOMP(branch_stack->entries[i]);
-+	}
-+
-+	if (type & PERF_SAMPLE_REGS_USER) {
-+		size_t sz = hweight_long(regs_user) * sizeof(u64);
-+
-+		if ((sz && (!s1->user_regs.regs || !s2->user_regs.regs)) ||
-+		    memcmp(s1->user_regs.regs, s2->user_regs.regs, sz)) {
-+			pr_debug("Samples differ at 'user_regs'\n");
-+			return false;
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_STACK_USER) {
-+		COMP(user_stack.size);
-+		if (memcmp(s1->user_stack.data, s1->user_stack.data,
-+			   s1->user_stack.size)) {
-+			pr_debug("Samples differ at 'user_stack'\n");
-+			return false;
-+		}
-+	}
-+
-+	if (type & PERF_SAMPLE_WEIGHT)
-+		COMP(weight);
-+
-+	if (type & PERF_SAMPLE_DATA_SRC)
-+		COMP(data_src);
-+
-+	return true;
-+}
-+
-+static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
-+{
-+	struct perf_evsel evsel = {
-+		.needs_swap = false,
-+		.attr = {
-+			.sample_type = sample_type,
-+			.sample_regs_user = sample_regs_user,
-+			.read_format = read_format,
-+		},
-+	};
-+	union perf_event *event;
-+	union {
-+		struct ip_callchain callchain;
-+		u64 data[64];
-+	} callchain = {
-+		/* 3 ips */
-+		.data = {3, 201, 202, 203},
-+	};
-+	union {
-+		struct branch_stack branch_stack;
-+		u64 data[64];
-+	} branch_stack = {
-+		/* 1 branch_entry */
-+		.data = {1, 211, 212, 213},
-+	};
-+	u64 user_regs[64];
-+	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
-+	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
-+	struct perf_sample sample = {
-+		.ip		= 101,
-+		.pid		= 102,
-+		.tid		= 103,
-+		.time		= 104,
-+		.addr		= 105,
-+		.id		= 106,
-+		.stream_id	= 107,
-+		.period		= 108,
-+		.weight		= 109,
-+		.cpu		= 110,
-+		.raw_size	= sizeof(raw_data),
-+		.data_src	= 111,
-+		.raw_data	= (void *)raw_data,
-+		.callchain	= &callchain.callchain,
-+		.branch_stack	= &branch_stack.branch_stack,
-+		.user_regs	= {
-+			.regs	= user_regs,
-+		},
-+		.user_stack	= {
-+			.size	= sizeof(data),
-+			.data	= (void *)data,
-+		},
-+		.read		= {
-+			.time_enabled = 0x030a59d664fca7deULL,
-+			.time_running = 0x011b6ae553eb98edULL,
-+		},
-+	};
-+	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
-+	struct perf_sample sample_out;
-+	size_t i, sz, bufsz;
-+	int err, ret = -1;
-+
-+	for (i = 0; i < sizeof(user_regs); i++)
-+		*(i + (u8 *)user_regs) = i & 0xfe;
-+
-+	if (read_format & PERF_FORMAT_GROUP) {
-+		sample.read.group.nr     = 4;
-+		sample.read.group.values = values;
-+	} else {
-+		sample.read.one.value = 0x08789faeb786aa87ULL;
-+		sample.read.one.id    = 99;
-+	}
-+
-+	sz = perf_event__sample_event_size(&sample, sample_type,
-+					   sample_regs_user, read_format);
-+	bufsz = sz + 4096; /* Add a bit for overrun checking */
-+	event = malloc(bufsz);
-+	if (!event) {
-+		pr_debug("malloc failed\n");
-+		return -1;
-+	}
-+
-+	memset(event, 0xff, bufsz);
-+	event->header.type = PERF_RECORD_SAMPLE;
-+	event->header.misc = 0;
-+	event->header.size = sz;
-+
-+	err = perf_event__synthesize_sample(event, sample_type,
-+					    sample_regs_user, read_format,
-+					    &sample, false);
-+	if (err) {
-+		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
-+			 "perf_event__synthesize_sample", sample_type, err);
-+		goto out_free;
-+	}
-+
-+	/* The data does not contain 0xff so we use that to check the size */
-+	for (i = bufsz; i > 0; i--) {
-+		if (*(i - 1 + (u8 *)event) != 0xff)
-+			break;
-+	}
-+	if (i != sz) {
-+		pr_debug("Event size mismatch: actual %zu vs expected %zu\n",
-+			 i, sz);
-+		goto out_free;
-+	}
-+
-+	evsel.sample_size = __perf_evsel__sample_size(sample_type);
-+
-+	err = perf_evsel__parse_sample(&evsel, event, &sample_out);
-+	if (err) {
-+		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
-+			 "perf_evsel__parse_sample", sample_type, err);
-+		goto out_free;
-+	}
-+
-+	if (!samples_same(&sample, &sample_out, sample_type,
-+			  sample_regs_user, read_format)) {
-+		pr_debug("parsing failed for sample_type %#"PRIx64"\n",
-+			 sample_type);
-+		goto out_free;
-+	}
-+
-+	ret = 0;
-+out_free:
-+	free(event);
-+	if (ret && read_format)
-+		pr_debug("read_format %#"PRIx64"\n", read_format);
-+	return ret;
-+}
-+
-+/**
-+ * test__sample_parsing - test sample parsing.
-+ *
-+ * This function implements a test that synthesizes a sample event, parses it
-+ * and then checks that the parsed sample matches the original sample.  The test
-+ * checks sample format bits separately and together.  If the test passes %0 is
-+ * returned, otherwise %-1 is returned.
-+ */
-+int test__sample_parsing(void)
-+{
-+	const u64 rf[] = {4, 5, 6, 7, 12, 13, 14, 15};
-+	u64 sample_type;
-+	u64 sample_regs_user;
-+	size_t i;
-+	int err;
-+
-+	/*
-+	 * Fail the test if it has not been updated when new sample format bits
-+	 * were added.
-+	 */
-+	if (PERF_SAMPLE_MAX > PERF_SAMPLE_IDENTIFIER << 1) {
-+		pr_debug("sample format has changed - test needs updating\n");
-+		return -1;
-+	}
-+
-+	/* Test each sample format bit separately */
-+	for (sample_type = 1; sample_type != PERF_SAMPLE_MAX;
-+	     sample_type <<= 1) {
-+		/* Test read_format variations */
-+		if (sample_type == PERF_SAMPLE_READ) {
-+			for (i = 0; i < ARRAY_SIZE(rf); i++) {
-+				err = do_test(sample_type, 0, rf[i]);
-+				if (err)
-+					return err;
-+			}
-+			continue;
-+		}
-+
-+		if (sample_type == PERF_SAMPLE_REGS_USER)
-+			sample_regs_user = 0x3fff;
-+		else
-+			sample_regs_user = 0;
-+
-+		err = do_test(sample_type, sample_regs_user, 0);
-+		if (err)
-+			return err;
-+	}
-+
-+	/* Test all sample format bits together */
-+	sample_type = PERF_SAMPLE_MAX - 1;
-+	sample_regs_user = 0x3fff;
-+	for (i = 0; i < ARRAY_SIZE(rf); i++) {
-+		err = do_test(sample_type, sample_regs_user, rf[i]);
-+		if (err)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index c748f53..83d5b71 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -37,5 +37,6 @@ int test__task_exit(void);
- int test__sw_clock_freq(void);
- int test__perf_time_to_tsc(void);
- int test__code_reading(void);
-+int test__sample_parsing(void);
- 
- #endif /* TESTS_H */
--- 
-1.7.11.7
+When CPU0 goes to idle, I noticed that the global timer used for
+boardcast is actually scheduled on wrong cpu.
+My traces for printk like this
+	printk("DEBUG: %s on CPU:%d CPUMASK:%s\n", __FUNCTION__,
+smp_processor_id(), scpumask);
+
+shows:
+
+DEBUG: gt_clockevent_set_mode on CPU:1 CPUMASK: 0
+DEBUG: gt_clockevent_set_next_event on CPU:1 CPUMASK:0
+
+Which indicates that setting the mode and next_event for a clkevent with
+cpumask 0 is scheduled on cpu1, this will generate an global timer
+interrupt on cpu1 rather than cpu0.
+
+This might be the reason for cpu0 not coming out of the cpu_idle_loop.
+
+Thanks,
+srini
+> 
+> I tried to prove this by adding some really ugly smp_call_any() wrappers
+> in kernel/time/clockevents.c for the calls to set_mode() and
+> program_net_event() but that ends in all kinds of dead locks.
+> 
+> 	Sören
+> 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
