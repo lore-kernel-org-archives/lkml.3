@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967073Ab3HIKoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:44:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52406 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965852Ab3HIKoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:44:12 -0400
-Message-ID: <5204C7F7.8050503@ti.com>
-Date: Fri, 9 Aug 2013 13:44:07 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S967048Ab3HIKpq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:45:46 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48887 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab3HIKpp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:45:45 -0400
+Date: Fri, 9 Aug 2013 11:45:22 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130809104522.GU6427@sirena.org.uk>
+References: <1376033367.29104.2.camel@phoenix>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] fbdev fixes for 3.11
-X-Enigmail-Version: 1.5.2
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="PQsmIe6CABxkHtWGvEervURDW0PDALFX1"
+	protocol="application/pgp-signature"; boundary="3T4dLCyS4EPlIT+v"
+Content-Disposition: inline
+In-Reply-To: <1376033367.29104.2.camel@phoenix>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Move
+ list_voltage_{linear,linear_range,table} to helpers.c
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---PQsmIe6CABxkHtWGvEervURDW0PDALFX1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+--3T4dLCyS4EPlIT+v
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Here are hopefully the last fbdev fixes for 3.11.
+On Fri, Aug 09, 2013 at 03:29:27PM +0800, Axel Lin wrote:
+> Move regulator_list_voltage_{linear,linear_range,table} helper functions to
+> helpers.c.
 
- Tomi
+Applied, thanks.
 
-The following changes since commit 7808e3291e1e101e9ad6e8263119c4a2abae05=
-ef:
-
-  video: sh7760fb: fix to pass correct device identity to free_irq() (201=
-3-07-29 11:25:03 +0300)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
-v-fixes-3.11-rc5
-
-for you to fetch changes up to 70a0f6032985f156bd7e957cfec99c3dd3d592a2:
-
-  ARM: OMAP: dss-common: fix Panda's DVI DDC channel (2013-08-02 15:52:38=
- +0300)
-
-----------------------------------------------------------------
-fbdev fixes:
-
-- omapdss: compilation fix and DVI fix for PandaBoard
-- mxsfb: fix colors when using 18bit LCD bus
-
-----------------------------------------------------------------
-Hector Palacios (1):
-      video: mxsfb: fix color settings for 18bit data bus and 32bpp
-
-Tomi Valkeinen (2):
-      OMAPDSS: analog-tv-connector: compile fix
-      ARM: OMAP: dss-common: fix Panda's DVI DDC channel
-
- arch/arm/mach-omap2/dss-common.c                   |  2 +-
- drivers/video/mxsfb.c                              | 26 ----------------=
-------
- .../video/omap2/displays-new/connector-analog-tv.c | 18 +++++++++++++--
- 3 files changed, 17 insertions(+), 29 deletions(-)
-
-
---PQsmIe6CABxkHtWGvEervURDW0PDALFX1
+--3T4dLCyS4EPlIT+v
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSBMf4AAoJEPo9qoy8lh71BgcQAK0zYyJjPEOFYsVjO8dqjbsy
-DxLWoQC6+IoeDDZ1NmP4JFj2tzF5YTW/z1DaihOc8nLyHeiWSqsi2lyiVPAMVto2
-mRC0zyjvFxle9J5xqHtVPLUj3mQiTTngEBegn5rALSYcJsDJ/J1dpF0ISuKwPXqm
-z0BFBnuk5T5gnn/R4ilexsT77PvhuI2W2MedEN8KHcg/KQf5D3KdhWDDrUkdAFdF
-nDzncbx7t9bToBiE5ZiN1i9TuMK4fUkzxEONoLJDYwyEYbj+mYgDS7VKumL2GPrG
-W5OXMRFKejcLPp6J5ajSkTWXqac2kCabtLJv7+34A18R0AqwFg+f2BDDZ504/ah1
-3+LzctvQf9kJ28j/tDkl33hec2l1gtrvoaM0Hd0hxU5iq4xpcQttXQHyXQVWUz6C
-ltPugXhEkz2wSg+dTDrrufD8KQgtobdD6Dt+ncrqmkvEfH0qAaZhLZE1GecSyFfg
-JoJGvoiIJJzznUKW02Sw68GLOeC1syBsmFXolQ3yRyGgu3pgf03WenilmJCvT6FN
-32Uhp4hNz4m45UIrf5LE4n6HmVcpSSlSOwGt/h2Uz95wCzqRnn19XEJUVlrQvFEL
-bVho704J2IVZcREDSZhnNdS0GlWv0+Zww4b/GpUhxfpCWrkABnt/3nb6DsFYFehm
-U1vtuCHsspznWvNSIPy/
-=wxWe
+iQIcBAEBAgAGBQJSBMg+AAoJELSic+t+oim96NAQAJoyhI1jxgNMlRm4BFTTgJte
+JLX0UbX8C4BBX3iO9vZOwXN264gz9ZWo6mFOcJTVsVyNxJyWBsAEiXw9G89+Wclo
+H9BGE1pFwSU+8zn7ifAFoFLRLwUUdd42Wl5J6kCws5jLrICh9LQ+inIPhU15K5WY
+/fOh5MpWD6rHiW9wIyFgx6bk2qChu5Wcluzi/Ee/c6CjuN59FBsSX1kKbQ5BmrEd
+D1suMNSpsAGqGPpBcTmRuFgLHLP3HLdbVqkNJYYNgtT5Uv7S5cE8vFwyty5FmFLS
+dZ7xSCYHxIWJrFvZx4ktiVkFjk5e9IEr/pwwwm+fST+SjKxP2RXVTRiiS++OIzUD
+IBLdjh8z3Y0gjk599ix9d+fYA1ro4W0ok6bm4qABVObMyJC40L6c/oUPQPZNG1PE
+KQ2JWem/IafQJ+HXBFPxwjzzydMfo2sBt0ALQdVpASCAch6DyFfEICrJhj+T3Pym
+x8ii+n7IHG/JqRQ+0vnFYuZfrCf48jf476UJe9A76r5PYccrIOAOEoDLM7MM0UPr
+8bt4qpEsG5z8Ic2qdjOjHEYelaoCHoIG4LOlAatvkkrDdWLhTrsUU/8FewL/j5Tr
+QJ76qvfN787QcG5lIzh96o4fwnUhOSpCwqh6UnJm4xg7JKG4v/G3FwkRISt/3JwQ
+tCo9AfMoBATrBQnzHj45
+=aVOR
 -----END PGP SIGNATURE-----
 
---PQsmIe6CABxkHtWGvEervURDW0PDALFX1--
+--3T4dLCyS4EPlIT+v--
