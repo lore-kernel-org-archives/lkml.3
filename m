@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964870Ab3HIPMV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:12:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41674 "EHLO mx1.redhat.com"
+	id S964911Ab3HIPOh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:14:37 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:56407 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933972Ab3HIPMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:12:19 -0400
-Date: Fri, 9 Aug 2013 17:07:45 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-Message-ID: <20130809150744.GB25306@dhcp-26-207.brq.redhat.com>
-References: <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
- <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
- <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
- <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
- <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
- <20130726020928.GL29296@kernel.dk>
- <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
- <20130729114653.GB20951@mtj.dyndns.org>
- <20130809082335.GA25306@dhcp-26-207.brq.redhat.com>
- <5204FBA6.6040001@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5204FBA6.6040001@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934350Ab3HIPOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 11:14:34 -0400
+Message-ID: <1376061400.6143.1.camel@debian>
+Subject: Re: [RFC PATCH v2 3/3] usb: dwc3: Add Qualcomm DWC3 glue layer
+ driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
+        gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Fri, 09 Aug 2013 11:16:40 -0400
+In-Reply-To: <20130809133213.GJ12041@radagast>
+References: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com>
+	 <1376042027-9798-4-git-send-email-iivanov@mm-sol.com>
+	 <20130809133213.GJ12041@radagast>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 08:24:38AM -0600, Jens Axboe wrote:
-> On 08/09/2013 02:23 AM, Alexander Gordeev wrote:
-> > +	ap->qc_tags = blk_mq_init_tags(ATA_MAX_QUEUE, 1, NUMA_NO_NODE);
-> > +	if (!ap->qc_tags) {
-> > +		kfree(ap);
-> > +		return NULL;
-> > +	}
+
+Hi, 
+
+On Fri, 2013-08-09 at 16:32 +0300, Felipe Balbi wrote:
+> On Fri, Aug 09, 2013 at 12:53:47PM +0300, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > DWC3 glue layer is hardware layer around Synopsys DesignWare
+> > USB3 core. Its purpose is to supply Synopsys IP with required
+> > clocks, voltages and interface it with the rest of the SoC.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 > 
-> This should be blk_mq_init_tags(ATA_MAX_QUEUE - 1, 1, ...) since the
-> total depth is normal_tags + reserved_tags.
+> same comments from previous version.
+> 
 
-Aha.. If blk_mq_init_tags() should be like this then?
+Sorry, I have somehow missed Your email.
+I will address them shortly.
 
-diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-index dcbc2a4..b131a48 100644
---- a/block/blk-mq-tag.c
-+++ b/block/blk-mq-tag.c
-@@ -468,10 +468,9 @@ struct blk_mq_tags *blk_mq_init_tags(unsigned int nr_tags,
- 	 * Rest of the tags start at the queue list
- 	 */
- 	tags->nr_free = 0;
--	while (nr_tags - tags->nr_reserved) {
-+	while (nr_tags--) {
- 		tags->freelist[tags->nr_free] = tags->nr_free +
- 							tags->nr_reserved;
--		nr_tags--;
- 		tags->nr_free++;
- 	}
+Regard,
+Ivan
 
-> -- 
-> Jens Axboe
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
