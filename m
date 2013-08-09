@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030980Ab3HIUB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 16:01:59 -0400
-Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:46397 "EHLO
-	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030931Ab3HIUB5 (ORCPT
+	id S1031004Ab3HIUIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 16:08:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37059 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030920Ab3HIUIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 16:01:57 -0400
-X-Greylist: delayed 5908 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Aug 2013 16:01:57 EDT
-From: Philippe De Swert <philippe.deswert@jollamobile.com>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Philippe De Swert <philippe.deswert@jollamobile.com>
-Subject: [PATCH] mmc: sdhci-pci : Remove logically dead code
-Date: Fri,  9 Aug 2013 23:01:46 +0300
-Message-Id: <1376078506-10391-1-git-send-email-philippe.deswert@jollamobile.com>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 9 Aug 2013 16:08:39 -0400
+Date: Fri, 9 Aug 2013 13:08:38 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 000/102] 3.10.6-stable review
+Message-ID: <20130809200838.GA7335@kroah.com>
+References: <20130809015010.208118575@linuxfoundation.org>
+ <20130809192030.GD4079@1wt.eu>
+ <20130809193329.GA5792@kroah.com>
+ <20130809200056.GF4079@1wt.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130809200056.GF4079@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The amount of slots is calculated as follows:
-slots = PCI_SLOT_INFO_SLOTS(slots) + 1;
+On Fri, Aug 09, 2013 at 10:00:56PM +0200, Willy Tarreau wrote:
+> On Fri, Aug 09, 2013 at 12:33:29PM -0700, Greg Kroah-Hartman wrote:
+> > On Fri, Aug 09, 2013 at 09:20:30PM +0200, Willy Tarreau wrote:
+> > > Hi Greg,
+> > > 
+> > > On Thu, Aug 08, 2013 at 06:56:36PM -0700, Greg Kroah-Hartman wrote:
+> > > > This is the start of the stable review cycle for the 3.10.6 release.
+> > > > There are 102 patches in this series, all will be posted as a response
+> > > > to this one.  If anyone has any issues with these being applied, please
+> > > > let me know.
+> > > 
+> > > Just checked on my OpenBlocks AX3 (dual-core ARMv7 in thumbs mode),
+> > > everything seems OK, I did not even notice any performance regression
+> > > compared to 3.10.5 on syscall intensive workloads with the recent
+> > > changes. I'm sure that I'm using the kuser helpers page since the
+> > > system doesn't boot without. Also I did observe minor changes in
+> > > /proc/self/maps, but I don't think they should have any impact, so
+> > > all in all it's OK :
+> > 
+> > Wonderful, thanks so much for testing the arm stuff, I wasn't sure I got
+> > it all correct in the backport.
+> 
+> Note that I have not tested in ARM mode nor on older archs. But I don't
+> think it should change anything from what I've seen in the diffs.
+> 
+> > One of these days I'll get a system here that I can test arm changes
+> > on...
+> 
+> Just get a Beaglebone Black, it's $45 and Cortex A8 (armv7). Well buy
+> two, since you'll use the first one for hacking GPIOs to everything :-)
+> 
+>    http://beagleboard.org/Products/BeagleBone%20Black
 
-Which means that just after it slots cannot be 0.
+I have a pre-production version of this, but I don't think that
+everything it needs to work is currently upstream :(
 
-Found with coverity: CID#744269
+> If you want to do cool stuff, the AX3 is by far the best thing I've seen
+> to date, really, but it's too expensive for a non-profit developer in my
+> opinion :
+> 
+>    https://openblocks.plathome.com/form/obs_verification/input.html
 
-Signed-off-by: Philippe De Swert <philippe.deswert@jollamobile.com>
----
- drivers/mmc/host/sdhci-pci.c | 3 ---
- 1 file changed, 3 deletions(-)
+Does it work with a "clean" upstream kernel.org release?
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index d7d6bc8..9c76558 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -1470,9 +1470,6 @@ static int sdhci_pci_probe(struct pci_dev *pdev,
- 
- 	slots = PCI_SLOT_INFO_SLOTS(slots) + 1;
- 	dev_dbg(&pdev->dev, "found %d slot(s)\n", slots);
--	if (slots == 0)
--		return -ENODEV;
--
- 	BUG_ON(slots > MAX_SLOTS);
- 
- 	ret = pci_read_config_byte(pdev, PCI_SLOT_INFO, &first_bar);
--- 
-1.8.1.2
+thanks,
 
+greg k-h
