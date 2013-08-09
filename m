@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030388Ab3HICIw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:08:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55812 "EHLO
+	id S967695Ab3HIB7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:59:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55772 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967461Ab3HIB7S (ORCPT
+	with ESMTP id S967461Ab3HIB7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:18 -0400
+	Thu, 8 Aug 2013 21:59:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [ 068/102] cpufreq: Fix cpufreq driver module refcount balance after suspend/resume
-Date: Thu,  8 Aug 2013 18:57:44 -0700
-Message-Id: <20130809015026.242310229@linuxfoundation.org>
+        =?UTF-8?q?Tomasz=20Mo=C5=84?= <desowin@gmail.com>,
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 057/102] mwifiex: Add missing endian conversion.
+Date: Thu,  8 Aug 2013 18:57:33 -0700
+Message-Id: <20130809015023.531116421@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -30,81 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Tomasz Moń <desowin@gmail.com>
 
-commit 2a99859932281ed6c2ecdd988855f8f6838f6743 upstream.
+commit 83e612f632c3897be29ef02e0472f6d63e258378 upstream.
 
-Since cpufreq_cpu_put() called by __cpufreq_remove_dev() drops the
-driver module refcount, __cpufreq_remove_dev() causes that refcount
-to become negative for the cpufreq driver after a suspend/resume
-cycle.
+Both type and pkt_len variables are in host endian and these should be in
+Little Endian in the payload.
 
-This is not the only bad thing that happens there, however, because
-kobject_put() should only be called for the policy kobject at this
-point if the CPU is not the last one for that policy.
-
-Namely, if the given CPU is the last one for that policy, the
-policy kobject's refcount should be 1 at this point, as set by
-cpufreq_add_dev_interface(), and only needs to be dropped once for
-the kobject to go away.  This actually happens under the cpu == 1
-check, so it need not be done before by cpufreq_cpu_put().
-
-On the other hand, if the given CPU is not the last one for that
-policy, this means that cpufreq_add_policy_cpu() has been called
-at least once for that policy and cpufreq_cpu_get() has been
-called for it too.  To balance that cpufreq_cpu_get(), we need to
-call cpufreq_cpu_put() in that case.
-
-Thus, to fix the described problem and keep the reference
-counters balanced in both cases, move the cpufreq_cpu_get() call
-in __cpufreq_remove_dev() to the code path executed only for
-CPUs that share the policy with other CPUs.
-
-Reported-and-tested-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Tomasz Moń <desowin@gmail.com>
+Acked-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/net/wireless/mwifiex/sdio.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1075,14 +1075,11 @@ static int __cpufreq_remove_dev(struct d
- 				__func__, cpu_dev->id, cpu);
- 	}
+--- a/drivers/net/wireless/mwifiex/sdio.c
++++ b/drivers/net/wireless/mwifiex/sdio.c
+@@ -1441,8 +1441,8 @@ static int mwifiex_sdio_host_to_card(str
+ 	/* Allocate buffer and copy payload */
+ 	blk_size = MWIFIEX_SDIO_BLOCK_SIZE;
+ 	buf_block_len = (pkt_len + blk_size - 1) / blk_size;
+-	*(u16 *) &payload[0] = (u16) pkt_len;
+-	*(u16 *) &payload[2] = type;
++	*(__le16 *)&payload[0] = cpu_to_le16((u16)pkt_len);
++	*(__le16 *)&payload[2] = cpu_to_le16(type);
  
--	if ((cpus == 1) && (cpufreq_driver->target))
--		__cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
--
--	pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
--	cpufreq_cpu_put(data);
--
- 	/* If cpu is last user of policy, free policy */
- 	if (cpus == 1) {
-+		if (cpufreq_driver->target)
-+			__cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
-+
- 		lock_policy_rwsem_read(cpu);
- 		kobj = &data->kobj;
- 		cmp = &data->kobj_unregister;
-@@ -1103,9 +1100,13 @@ static int __cpufreq_remove_dev(struct d
- 		free_cpumask_var(data->related_cpus);
- 		free_cpumask_var(data->cpus);
- 		kfree(data);
--	} else if (cpufreq_driver->target) {
--		__cpufreq_governor(data, CPUFREQ_GOV_START);
--		__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
-+	} else {
-+		pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-+		cpufreq_cpu_put(data);
-+		if (cpufreq_driver->target) {
-+			__cpufreq_governor(data, CPUFREQ_GOV_START);
-+			__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
-+		}
- 	}
- 
- 	per_cpu(cpufreq_policy_cpu, cpu) = -1;
+ 	/*
+ 	 * This is SDIO specific header
 
 
