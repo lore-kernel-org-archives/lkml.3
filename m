@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967352Ab3HIBmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55301 "EHLO
+	id S967339Ab3HIBmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55296 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967087Ab3HIBlw (ORCPT
+	with ESMTP id S967086Ab3HIBlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:52 -0400
+	Thu, 8 Aug 2013 21:41:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/22] arcnet: cleanup sizeof parameter
-Date: Thu,  8 Aug 2013 18:41:31 -0700
-Message-Id: <20130809013952.524003236@linuxfoundation.org>
+        Salman Qazi <sqazi@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 14/22] perf: Use css_tryget() to avoid propping up css refcount
+Date: Thu,  8 Aug 2013 18:41:30 -0700
+Message-Id: <20130809013952.311848418@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
 References: <20130809013949.226228694@linuxfoundation.org>
@@ -27,31 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Salman Qazi <sqazi@google.com>
 
-[ Upstream commit 087d273caf4f7d3f2159256f255f1f432bc84a5b ]
+commit 9c5da09d266ca9b32eb16cf940f8161d949c2fe5 upstream.
 
-This patch doesn't change the compiled code because ARC_HDR_SIZE is 4
-and sizeof(int) is 4, but the intent was to use the header size and not
-the sizeof the header size.
+An rmdir pushes css's ref count to zero.  However, if the associated
+directory is open at the time, the dentry ref count is non-zero.  If
+the fd for this directory is then passed into perf_event_open, it
+does a css_get().  This bounces the ref count back up from zero.  This
+is a problem by itself.  But what makes it turn into a crash is the
+fact that we end up doing an extra dput, since we perform a dput
+when css_put sees the ref count go down to zero.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+css_tryget() does not fall into that trap. So, we use that instead.
+
+Reproduction test-case for the bug:
+
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+ #include <linux/unistd.h>
+ #include <linux/perf_event.h>
+ #include <string.h>
+ #include <errno.h>
+ #include <stdio.h>
+
+ #define PERF_FLAG_PID_CGROUP    (1U << 2)
+
+ int perf_event_open(struct perf_event_attr *hw_event_uptr,
+                     pid_t pid, int cpu, int group_fd, unsigned long flags) {
+         return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
+                 group_fd, flags);
+ }
+
+ /*
+  * Directly poke at the perf_event bug, since it's proving hard to repro
+  * depending on where in the kernel tree.  what moved?
+  */
+ int main(int argc, char **argv)
+ {
+        int fd;
+        struct perf_event_attr attr;
+        memset(&attr, 0, sizeof(attr));
+        attr.exclude_kernel = 1;
+        attr.size = sizeof(attr);
+        mkdir("/dev/cgroup/perf_event/blah", 0777);
+        fd = open("/dev/cgroup/perf_event/blah", O_RDONLY);
+        perror("open");
+        rmdir("/dev/cgroup/perf_event/blah");
+        sleep(2);
+        perf_event_open(&attr, fd, 0, -1,  PERF_FLAG_PID_CGROUP);
+        perror("perf_event_open");
+        close(fd);
+        return 0;
+ }
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Tejun Heo <tj@kernel.org>
+Link: http://lkml.kernel.org/r/20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/arcnet/arcnet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/arcnet/arcnet.c
-+++ b/drivers/net/arcnet/arcnet.c
-@@ -1007,7 +1007,7 @@ static void arcnet_rx(struct net_device
+---
+ kernel/events/core.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -223,9 +223,9 @@ perf_cgroup_match(struct perf_event *eve
+ 	return !event->cgrp || event->cgrp == cpuctx->cgrp;
+ }
  
- 	soft = &pkt.soft.rfc1201;
+-static inline void perf_get_cgroup(struct perf_event *event)
++static inline bool perf_tryget_cgroup(struct perf_event *event)
+ {
+-	css_get(&event->cgrp->css);
++	return css_tryget(&event->cgrp->css);
+ }
  
--	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, sizeof(ARC_HDR_SIZE));
-+	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, ARC_HDR_SIZE);
- 	if (pkt.hard.offset[0]) {
- 		ofs = pkt.hard.offset[0];
- 		length = 256 - ofs;
+ static inline void perf_put_cgroup(struct perf_event *event)
+@@ -415,7 +415,11 @@ static inline int perf_cgroup_connect(in
+ 	event->cgrp = cgrp;
+ 
+ 	/* must be done before we fput() the file */
+-	perf_get_cgroup(event);
++	if (!perf_tryget_cgroup(event)) {
++		event->cgrp = NULL;
++		ret = -ENOENT;
++		goto out;
++	}
+ 
+ 	/*
+ 	 * all events in a group must monitor
 
 
