@@ -1,56 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031310Ab3HIWIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 18:08:09 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49315 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031243Ab3HIWIH (ORCPT
+	id S1031314Ab3HIWJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 18:09:46 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:63016 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031243Ab3HIWJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 18:08:07 -0400
-Message-ID: <52056842.8060109@wwwdotorg.org>
-Date: Fri, 09 Aug 2013 16:08:02 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 9 Aug 2013 18:09:45 -0400
+Date: Fri, 9 Aug 2013 15:04:52 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
+Message-ID: <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
+References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: linaro-kernel@lists.linaro.org, Stephen Warren <swarren@nvidia.com>,
-        linux-pm@vger.kernel.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org, rjw@sisk.pl,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 35/35] cpufreq: tegra: use cpufreq_table_validate_and_show()
-References: <cover.1375964117.git.viresh.kumar@linaro.org> <568f3dbd414b050bb2319d960fb5044a5aed8ee3.1375964117.git.viresh.kumar@linaro.org> <5203BCDD.40809@wwwdotorg.org> <CAKohpomr8kwDitAFD7FKvHo3zNWz8qT5bkd3yOVEnC_k16o=Dw@mail.gmail.com> <CAKohpo=Gy7D2LYmdFU1p+eL-nMoPE18YXWvE2M8t-fb-a5HBgg@mail.gmail.com> <5205167F.1070906@wwwdotorg.org> <CAKohponQDAqHiRD7Aw5Wk6fEE-d8H=Svg0oBRyb9SKGdqYxGhw@mail.gmail.com>
-In-Reply-To: <CAKohponQDAqHiRD7Aw5Wk6fEE-d8H=Svg0oBRyb9SKGdqYxGhw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 11:09 AM, Viresh Kumar wrote:
-> On 9 August 2013 21:49, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 08/08/2013 10:04 PM, Viresh Kumar wrote:
->>> On 8 August 2013 21:37, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>>> Its useless and the correct routine isn't called at all :) .. I will add that
->>>> additional patch and send it to you and will get this change out of this
->>>> commit.
->>>
->>> The two commits look like this now attached too in case you want
->>> to test:
->>
->> I'd be happy to test, but those changes cause build failures on top of
->> next-20130809. Which other patches do I need to apply first?
-> 
-> None.. You applied all three attached patches? I have given it a try
-> on my side now and it worked without any issues..
-> 
-> Just pushed out a branch for you as well:
-> 
-> https://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/tegra-test
+On Tue, Jul 30, 2013 at 05:19:27PM +0900, Jingoo Han wrote:
+> Use the wrapper function for retrieving the platform data instead of
+> accessing dev->platform_data directly.
 
-Well, I don't see any issues running this, although the cpufreq sysfs
-files seem to have disappeared on Tegra, even without your changes, so
-I'm not sure how to really verify cpufreq.
+Um.. what is the benefit or rationale of this patch?
 
-Did the sysfs files go away, or do I need to investigate why/when the
-disappeared?
+Thanks,
+
+Anton
