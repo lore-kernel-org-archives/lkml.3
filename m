@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967782Ab3HICQz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:16:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55690 "EHLO
+	id S967631Ab3HICR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:17:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55680 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967528Ab3HIB6v (ORCPT
+	with ESMTP id S967519Ab3HIB6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:51 -0400
+	Thu, 8 Aug 2013 21:58:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 036/102] ath9k_htc: reboot firmware if it was loaded
-Date: Thu,  8 Aug 2013 18:57:12 -0700
-Message-Id: <20130809015018.345975043@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [ 025/102] dma: pl330: Fix cyclic transfers
+Date: Thu,  8 Aug 2013 18:57:01 -0700
+Message-Id: <20130809015015.801019286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,42 +27,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleksij Rempel <linux@rempel-privat.de>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 4928bd2ef8ece262f4f314630219999a91eaa440 upstream.
+commit fc51446021f42aca8906e701fc2292965aafcb15 upstream.
 
-Currently ath9k_htc will reboot firmware only if interface was
-ever started. Which lead to the problem in case where interface
-was never started but module need to be reloaded.
+Allocate a descriptor for each period of a cyclic transfer, not just the first.
+Also since the callback needs to be called for each finished period make sure to
+initialize the callback and callback_param fields of each descriptor in a cyclic
+transfer.
 
-This patch will partially fix bug "ath9k_htc: Target is unresponsive"
-https://github.com/qca/open-ath9k-htc-firmware/issues/1
-
-Reproduction case:
-- plug adapter
-- make sure nothing will touch it. Stop Networkmanager or blacklist mac address of this adapter.
-- rmmod ath9k_htc; sleep 1; modprobe ath9k_htc
-
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/hif_usb.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/dma/pl330.c |   93 +++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 67 insertions(+), 26 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -1289,7 +1289,9 @@ static void ath9k_hif_usb_disconnect(str
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2527,6 +2527,10 @@ static dma_cookie_t pl330_tx_submit(stru
+ 	/* Assign cookies to all nodes */
+ 	while (!list_empty(&last->node)) {
+ 		desc = list_entry(last->node.next, struct dma_pl330_desc, node);
++		if (pch->cyclic) {
++			desc->txd.callback = last->txd.callback;
++			desc->txd.callback_param = last->txd.callback_param;
++		}
  
- 	usb_set_intfdata(interface, NULL);
+ 		dma_cookie_assign(&desc->txd);
  
--	if (!unplugged && (hif_dev->flags & HIF_USB_START))
-+	/* If firmware was loaded we should drop it
-+	 * go back to first stage bootloader. */
-+	if (!unplugged && (hif_dev->flags & HIF_USB_READY))
- 		ath9k_hif_usb_reboot(udev);
+@@ -2710,45 +2714,82 @@ static struct dma_async_tx_descriptor *p
+ 		size_t period_len, enum dma_transfer_direction direction,
+ 		unsigned long flags, void *context)
+ {
+-	struct dma_pl330_desc *desc;
++	struct dma_pl330_desc *desc = NULL, *first = NULL;
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
++	struct dma_pl330_dmac *pdmac = pch->dmac;
++	unsigned int i;
+ 	dma_addr_t dst;
+ 	dma_addr_t src;
  
- 	kfree(hif_dev);
+-	desc = pl330_get_desc(pch);
+-	if (!desc) {
+-		dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
+-			__func__, __LINE__);
++	if (len % period_len != 0)
+ 		return NULL;
+-	}
+ 
+-	switch (direction) {
+-	case DMA_MEM_TO_DEV:
+-		desc->rqcfg.src_inc = 1;
+-		desc->rqcfg.dst_inc = 0;
+-		desc->req.rqtype = MEMTODEV;
+-		src = dma_addr;
+-		dst = pch->fifo_addr;
+-		break;
+-	case DMA_DEV_TO_MEM:
+-		desc->rqcfg.src_inc = 0;
+-		desc->rqcfg.dst_inc = 1;
+-		desc->req.rqtype = DEVTOMEM;
+-		src = pch->fifo_addr;
+-		dst = dma_addr;
+-		break;
+-	default:
++	if (!is_slave_direction(direction)) {
+ 		dev_err(pch->dmac->pif.dev, "%s:%d Invalid dma direction\n",
+ 		__func__, __LINE__);
+ 		return NULL;
+ 	}
+ 
+-	desc->rqcfg.brst_size = pch->burst_sz;
+-	desc->rqcfg.brst_len = 1;
++	for (i = 0; i < len / period_len; i++) {
++		desc = pl330_get_desc(pch);
++		if (!desc) {
++			dev_err(pch->dmac->pif.dev, "%s:%d Unable to fetch desc\n",
++				__func__, __LINE__);
+ 
+-	pch->cyclic = true;
++			if (!first)
++				return NULL;
++
++			spin_lock_irqsave(&pdmac->pool_lock, flags);
++
++			while (!list_empty(&first->node)) {
++				desc = list_entry(first->node.next,
++						struct dma_pl330_desc, node);
++				list_move_tail(&desc->node, &pdmac->desc_pool);
++			}
++
++			list_move_tail(&first->node, &pdmac->desc_pool);
++
++			spin_unlock_irqrestore(&pdmac->pool_lock, flags);
++
++			return NULL;
++		}
++
++		switch (direction) {
++		case DMA_MEM_TO_DEV:
++			desc->rqcfg.src_inc = 1;
++			desc->rqcfg.dst_inc = 0;
++			desc->req.rqtype = MEMTODEV;
++			src = dma_addr;
++			dst = pch->fifo_addr;
++			break;
++		case DMA_DEV_TO_MEM:
++			desc->rqcfg.src_inc = 0;
++			desc->rqcfg.dst_inc = 1;
++			desc->req.rqtype = DEVTOMEM;
++			src = pch->fifo_addr;
++			dst = dma_addr;
++			break;
++		default:
++			break;
++		}
+ 
+-	fill_px(&desc->px, dst, src, period_len);
++		desc->rqcfg.brst_size = pch->burst_sz;
++		desc->rqcfg.brst_len = 1;
++		fill_px(&desc->px, dst, src, period_len);
++
++		if (!first)
++			first = desc;
++		else
++			list_add_tail(&desc->node, &first->node);
++
++		dma_addr += period_len;
++	}
++
++	if (!desc)
++		return NULL;
++
++	pch->cyclic = true;
++	desc->txd.flags = flags;
+ 
+ 	return &desc->txd;
+ }
 
 
