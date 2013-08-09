@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967431Ab3HICYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:24:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55580 "EHLO
+	id S967441Ab3HICYg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:24:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966961Ab3HIB6X (ORCPT
+	with ESMTP id S967182Ab3HIB6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:23 -0400
+	Thu, 8 Aug 2013 21:58:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Nicolas Pitre <nico@linaro.org>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 004/102] ARM: use linker magic for vectors and vector stubs
-Date: Thu,  8 Aug 2013 18:56:40 -0700
-Message-Id: <20130809015011.317019459@linuxfoundation.org>
+Subject: [ 003/102] ARM: move vector stubs
+Date: Thu,  8 Aug 2013 18:56:39 -0700
+Message-Id: <20130809015011.082008745@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -29,92 +29,174 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit b9b32bf70f2fb710b07c94e13afbc729afe221da upstream.
+commit 19accfd373847ac3d10623c5d20f948846299741 upstream.
 
-Use linker magic to create the vectors and vector stubs: we can tell the
-linker to place them at an appropriate VMA, but keep the LMA within the
-kernel.  This gets rid of some unnecessary symbol manipulation, and
-have the linker calculate the relocations appropriately.
+Move the machine vector stubs into the page above the vector page,
+which we can prevent from being visible to userspace.  Also move
+the reset stub, and place the swi vector at a location that the
+'ldr' can get to it.
+
+This hides pointers into the kernel which could give valuable
+information to attackers, and reduces the number of exploitable
+instructions at a fixed address.
 
 Acked-by: Nicolas Pitre <nico@linaro.org>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/entry-armv.S  |   28 ++++++++++------------------
- arch/arm/kernel/vmlinux.lds.S |   17 +++++++++++++++++
- 2 files changed, 27 insertions(+), 18 deletions(-)
+ arch/arm/Kconfig             |    3 +-
+ arch/arm/kernel/entry-armv.S |   50 ++++++++++++++++++++-----------------------
+ arch/arm/kernel/traps.c      |    4 +--
+ arch/arm/mm/mmu.c            |   10 +++++++-
+ 4 files changed, 37 insertions(+), 30 deletions(-)
 
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -213,7 +213,8 @@ config VECTORS_BASE
+ 	default DRAM_BASE if REMAP_VECTORS_TO_RAM
+ 	default 0x00000000
+ 	help
+-	  The base address of exception vectors.
++	  The base address of exception vectors.  This must be two pages
++	  in size.
+ 
+ config ARM_PATCH_PHYS_VIRT
+ 	bool "Patch physical to virtual translations at runtime" if EMBEDDED
 --- a/arch/arm/kernel/entry-armv.S
 +++ b/arch/arm/kernel/entry-armv.S
-@@ -992,7 +992,7 @@ ENDPROC(vector_\name)
- 1:
- 	.endm
+@@ -943,9 +943,9 @@ __kuser_helper_end:
+ /*
+  * Vector stubs.
+  *
+- * This code is copied to 0xffff0200 so we can use branches in the
+- * vectors, rather than ldr's.  Note that this code must not
+- * exceed 0x300 bytes.
++ * This code is copied to 0xffff1000 so we can use branches in the
++ * vectors, rather than ldr's.  Note that this code must not exceed
++ * a page size.
+  *
+  * Common stub entry macro:
+  *   Enter in IRQ mode, spsr = SVC/USR CPSR, lr = SVC/USR PC
+@@ -994,6 +994,15 @@ ENDPROC(vector_\name)
  
--	.globl	__stubs_start
-+	.section .stubs, "ax", %progbits
+ 	.globl	__stubs_start
  __stubs_start:
- 	@ This must be the first word
- 	.word	vector_swi
-@@ -1119,24 +1119,16 @@ vector_addrexcptn:
++	@ This must be the first word
++	.word	vector_swi
++
++vector_rst:
++ ARM(	swi	SYS_ERROR0	)
++ THUMB(	svc	#0		)
++ THUMB(	nop			)
++	b	vector_und
++
+ /*
+  * Interrupt dispatcher
+  */
+@@ -1088,6 +1097,16 @@ __stubs_start:
+ 	.align	5
+ 
+ /*=============================================================================
++ * Address exception handler
++ *-----------------------------------------------------------------------------
++ * These aren't too critical.
++ * (they're not supposed to happen, and won't happen in 32-bit data mode).
++ */
++
++vector_addrexcptn:
++	b	vector_addrexcptn
++
++/*=============================================================================
+  * Undefined FIQs
+  *-----------------------------------------------------------------------------
+  * Enter in FIQ mode, spsr = ANY CPSR, lr = ANY PC
+@@ -1100,35 +1119,14 @@ __stubs_start:
  vector_fiq:
  	subs	pc, lr, #4
  
--	.globl	__stubs_end
--__stubs_end:
+-/*=============================================================================
+- * Address exception handler
+- *-----------------------------------------------------------------------------
+- * These aren't too critical.
+- * (they're not supposed to happen, and won't happen in 32-bit data mode).
+- */
 -
--	.equ	stubs_offset, __vectors_start + 0x1000 - __stubs_start
+-vector_addrexcptn:
+-	b	vector_addrexcptn
 -
--	.globl	__vectors_start
-+	.section .vectors, "ax", %progbits
+-/*
+- * We group all the following data together to optimise
+- * for CPUs with separate I & D caches.
+- */
+-	.align	5
+-
+-.LCvswi:
+-	.word	vector_swi
+-
+ 	.globl	__stubs_end
+ __stubs_end:
+ 
+-	.equ	stubs_offset, __vectors_start + 0x200 - __stubs_start
++	.equ	stubs_offset, __vectors_start + 0x1000 - __stubs_start
+ 
+ 	.globl	__vectors_start
  __vectors_start:
--	W(b)	vector_rst + stubs_offset
--	W(b)	vector_und + stubs_offset
--	W(ldr)	pc, .LCvswi + stubs_offset
--	W(b)	vector_pabt + stubs_offset
--	W(b)	vector_dabt + stubs_offset
--	W(b)	vector_addrexcptn + stubs_offset
--	W(b)	vector_irq + stubs_offset
--	W(b)	vector_fiq + stubs_offset
--
--	.globl	__vectors_end
--__vectors_end:
-+	W(b)	vector_rst
-+	W(b)	vector_und
-+	W(ldr)	pc, __vectors_start + 0x1000
-+	W(b)	vector_pabt
-+	W(b)	vector_dabt
-+	W(b)	vector_addrexcptn
-+	W(b)	vector_irq
-+	W(b)	vector_fiq
+- ARM(	swi	SYS_ERROR0	)
+- THUMB(	svc	#0		)
+- THUMB(	nop			)
++	W(b)	vector_rst + stubs_offset
+ 	W(b)	vector_und + stubs_offset
+ 	W(ldr)	pc, .LCvswi + stubs_offset
+ 	W(b)	vector_pabt + stubs_offset
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -836,7 +836,7 @@ void __init early_trap_init(void *vector
+ 	 * are visible to the instruction stream.
+ 	 */
+ 	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
+-	memcpy((void *)vectors + 0x200, __stubs_start, __stubs_end - __stubs_start);
++	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
+ 	memcpy((void *)vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
  
- 	.data
+ 	/*
+@@ -851,6 +851,6 @@ void __init early_trap_init(void *vector
+ 	memcpy((void *)(vectors + KERN_SIGRETURN_CODE - CONFIG_VECTORS_BASE),
+ 	       sigreturn_codes, sizeof(sigreturn_codes));
  
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -152,6 +152,23 @@ SECTIONS
- 	. = ALIGN(PAGE_SIZE);
- 	__init_begin = .;
- #endif
-+	/*
-+	 * The vectors and stubs are relocatable code, and the
-+	 * only thing that matters is their relative offsets
-+	 */
-+	__vectors_start = .;
-+	.vectors 0 : AT(__vectors_start) {
-+		*(.vectors)
-+	}
-+	. = __vectors_start + SIZEOF(.vectors);
-+	__vectors_end = .;
+-	flush_icache_range(vectors, vectors + PAGE_SIZE);
++	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
+ 	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
+ }
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -1175,7 +1175,7 @@ static void __init devicemaps_init(struc
+ 	/*
+ 	 * Allocate the vector page early.
+ 	 */
+-	vectors = early_alloc(PAGE_SIZE);
++	vectors = early_alloc(PAGE_SIZE * 2);
+ 
+ 	early_trap_init(vectors);
+ 
+@@ -1225,10 +1225,18 @@ static void __init devicemaps_init(struc
+ 
+ 	if (!vectors_high()) {
+ 		map.virtual = 0;
++		map.length = PAGE_SIZE * 2;
+ 		map.type = MT_LOW_VECTORS;
+ 		create_mapping(&map);
+ 	}
+ 
++	/* Now create a kernel read-only mapping */
++	map.pfn += 1;
++	map.virtual = 0xffff0000 + PAGE_SIZE;
++	map.length = PAGE_SIZE;
++	map.type = MT_LOW_VECTORS;
++	create_mapping(&map);
 +
-+	__stubs_start = .;
-+	.stubs 0x1000 : AT(__stubs_start) {
-+		*(.stubs)
-+	}
-+	. = __stubs_start + SIZEOF(.stubs);
-+	__stubs_end = .;
- 
- 	INIT_TEXT_SECTION(8)
- 	.exit.text : {
+ 	/*
+ 	 * Ask the machine support to map in the statically mapped devices.
+ 	 */
 
 
