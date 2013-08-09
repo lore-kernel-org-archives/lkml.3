@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967460Ab3HIBm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55339 "EHLO
+	id S967448Ab3HIBm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967125Ab3HIBmB (ORCPT
+	with ESMTP id S967121Ab3HIBmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:01 -0400
+	Thu, 8 Aug 2013 21:42:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Tesar <mtesar@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/22] sysctl net: Keep tcp_syn_retries inside the boundary
-Date: Thu,  8 Aug 2013 18:41:32 -0700
-Message-Id: <20130809013952.801055094@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 22/22] net_sched: info leak in atm_tc_dump_class()
+Date: Thu,  8 Aug 2013 18:41:38 -0700
+Message-Id: <20130809013954.063343461@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
 References: <20130809013949.226228694@linuxfoundation.org>
@@ -27,41 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Tesar <mtesar@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 651e92716aaae60fc41b9652f54cb6803896e0da ]
+[ Upstream commit 8cb3b9c3642c0263d48f31d525bcee7170eedc20 ]
 
-Limit the min/max value passed to the
-/proc/sys/net/ipv4/tcp_syn_retries.
+The "pvc" struct has a hole after pvc.sap_family which is not cleared.
 
-Signed-off-by: Michal Tesar <mtesar@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Jiri Pirko <jiri@resnulli.us>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/sysctl_net_ipv4.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/sched/sch_atm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -32,6 +32,8 @@ static int tcp_adv_win_scale_min = -31;
- static int tcp_adv_win_scale_max = 31;
- static int ip_ttl_min = 1;
- static int ip_ttl_max = 255;
-+static int tcp_syn_retries_min = 1;
-+static int tcp_syn_retries_max = MAX_TCP_SYNCNT;
- static int ip_ping_group_range_min[] = { 0, 0 };
- static int ip_ping_group_range_max[] = { GID_T_MAX, GID_T_MAX };
+--- a/net/sched/sch_atm.c
++++ b/net/sched/sch_atm.c
+@@ -605,6 +605,7 @@ static int atm_tc_dump_class(struct Qdis
+ 		struct sockaddr_atmpvc pvc;
+ 		int state;
  
-@@ -231,7 +233,9 @@ static struct ctl_table ipv4_table[] = {
- 		.data		= &sysctl_tcp_syn_retries,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &tcp_syn_retries_min,
-+		.extra2		= &tcp_syn_retries_max
- 	},
- 	{
- 		.procname	= "tcp_synack_retries",
++		memset(&pvc, 0, sizeof(pvc));
+ 		pvc.sap_family = AF_ATMPVC;
+ 		pvc.sap_addr.itf = flow->vcc->dev ? flow->vcc->dev->number : -1;
+ 		pvc.sap_addr.vpi = flow->vcc->vpi;
 
 
