@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967786Ab3HICSV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:18:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55656 "EHLO
+	id S967788Ab3HICSk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:18:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55653 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967492Ab3HIB6p (ORCPT
+	with ESMTP id S967483Ab3HIB6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:45 -0400
+	Thu, 8 Aug 2013 21:58:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 029/102] USB: mos7840: fix pointer casts
-Date: Thu,  8 Aug 2013 18:57:05 -0700
-Message-Id: <20130809015016.684644718@linuxfoundation.org>
+Subject: [ 028/102] USB: mos7840: fix race in led handling
+Date: Thu,  8 Aug 2013 18:57:04 -0700
+Message-Id: <20130809015016.461001337@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -28,49 +28,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 683a0e4d7971c3186dc4d429027debfe309129aa upstream.
+commit 05cf0dec5ccc696a7636c84b265b477173498156 upstream.
 
-Silence compiler warnings on 64-bit systems introduced by commit
-05cf0dec ("USB: mos7840: fix race in led handling") which uses the
-usb-serial data pointer to temporarily store the device type during
-probe but failed to add the required casts.
+Fix race in LED handling introduced by commit 0eafe4de ("USB: serial:
+mos7840: add support for MCS7810 devices") which reused the port control
+urb for manipulating the LED without making sure that the urb is not
+already in use. This could lead to the control urb being manipulated
+while in flight.
 
-[gregkh - change uintptr_t to unsigned long]
+Fix by adding a dedicated LED urb and ctrlrequest along with a LED-busy
+flag to handle concurrency.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/mos7840.c |   59 ++++++++++++++++++++++++++-----------------
+ 1 file changed, 37 insertions(+), 22 deletions(-)
 
 --- a/drivers/usb/serial/mos7840.c
 +++ b/drivers/usb/serial/mos7840.c
-@@ -2236,14 +2236,14 @@ static int mos7840_probe(struct usb_seri
+@@ -185,6 +185,7 @@
  
- 	kfree(buf);
- out:
--	usb_set_serial_data(serial, (void *)device_type);
-+	usb_set_serial_data(serial, (void *)(unsigned long)device_type);
+ enum mos7840_flag {
+ 	MOS7840_FLAG_CTRL_BUSY,
++	MOS7840_FLAG_LED_BUSY,
+ };
  
- 	return 0;
+ static const struct usb_device_id id_table[] = {
+@@ -240,9 +241,10 @@ struct moschip_port {
+ 
+ 	/* For device(s) with LED indicator */
+ 	bool has_led;
+-	bool led_flag;
+ 	struct timer_list led_timer1;	/* Timer for LED on */
+ 	struct timer_list led_timer2;	/* Timer for LED off */
++	struct urb *led_urb;
++	struct usb_ctrlrequest *led_dr;
+ 
+ 	unsigned long flags;
+ };
+@@ -542,7 +544,7 @@ static void mos7840_set_led_async(struct
+ 				__u16 reg)
+ {
+ 	struct usb_device *dev = mcs->port->serial->dev;
+-	struct usb_ctrlrequest *dr = mcs->dr;
++	struct usb_ctrlrequest *dr = mcs->led_dr;
+ 
+ 	dr->bRequestType = MCS_WR_RTYPE;
+ 	dr->bRequest = MCS_WRREQ;
+@@ -550,10 +552,10 @@ static void mos7840_set_led_async(struct
+ 	dr->wIndex = cpu_to_le16(reg);
+ 	dr->wLength = cpu_to_le16(0);
+ 
+-	usb_fill_control_urb(mcs->control_urb, dev, usb_sndctrlpipe(dev, 0),
++	usb_fill_control_urb(mcs->led_urb, dev, usb_sndctrlpipe(dev, 0),
+ 		(unsigned char *)dr, NULL, 0, mos7840_set_led_callback, NULL);
+ 
+-	usb_submit_urb(mcs->control_urb, GFP_ATOMIC);
++	usb_submit_urb(mcs->led_urb, GFP_ATOMIC);
  }
  
- static int mos7840_calc_num_ports(struct usb_serial *serial)
+ static void mos7840_set_led_sync(struct usb_serial_port *port, __u16 reg,
+@@ -579,7 +581,19 @@ static void mos7840_led_flag_off(unsigne
  {
--	int device_type = (int)usb_get_serial_data(serial);
-+	int device_type = (unsigned long)usb_get_serial_data(serial);
- 	int mos7840_num_ports;
+ 	struct moschip_port *mcs = (struct moschip_port *) arg;
  
- 	mos7840_num_ports = (device_type >> 4) & 0x000F;
-@@ -2254,7 +2254,7 @@ static int mos7840_calc_num_ports(struct
- static int mos7840_port_probe(struct usb_serial_port *port)
- {
- 	struct usb_serial *serial = port->serial;
--	int device_type = (int)usb_get_serial_data(serial);
-+	int device_type = (unsigned long)usb_get_serial_data(serial);
- 	struct moschip_port *mos7840_port;
- 	int status;
- 	int pnum;
+-	mcs->led_flag = false;
++	clear_bit_unlock(MOS7840_FLAG_LED_BUSY, &mcs->flags);
++}
++
++static void mos7840_led_activity(struct usb_serial_port *port)
++{
++	struct moschip_port *mos7840_port = usb_get_serial_port_data(port);
++
++	if (test_and_set_bit_lock(MOS7840_FLAG_LED_BUSY, &mos7840_port->flags))
++		return;
++
++	mos7840_set_led_async(mos7840_port, 0x0301, MODEM_CONTROL_REGISTER);
++	mod_timer(&mos7840_port->led_timer1,
++				jiffies + msecs_to_jiffies(LED_ON_MS));
+ }
+ 
+ /*****************************************************************************
+@@ -779,14 +793,8 @@ static void mos7840_bulk_in_callback(str
+ 		return;
+ 	}
+ 
+-	/* Turn on LED */
+-	if (mos7840_port->has_led && !mos7840_port->led_flag) {
+-		mos7840_port->led_flag = true;
+-		mos7840_set_led_async(mos7840_port, 0x0301,
+-					MODEM_CONTROL_REGISTER);
+-		mod_timer(&mos7840_port->led_timer1,
+-				jiffies + msecs_to_jiffies(LED_ON_MS));
+-	}
++	if (mos7840_port->has_led)
++		mos7840_led_activity(port);
+ 
+ 	mos7840_port->read_urb_busy = true;
+ 	retval = usb_submit_urb(mos7840_port->read_urb, GFP_ATOMIC);
+@@ -1467,13 +1475,8 @@ static int mos7840_write(struct tty_stru
+ 	data1 = urb->transfer_buffer;
+ 	dev_dbg(&port->dev, "bulkout endpoint is %d\n", port->bulk_out_endpointAddress);
+ 
+-	/* Turn on LED */
+-	if (mos7840_port->has_led && !mos7840_port->led_flag) {
+-		mos7840_port->led_flag = true;
+-		mos7840_set_led_sync(port, MODEM_CONTROL_REGISTER, 0x0301);
+-		mod_timer(&mos7840_port->led_timer1,
+-				jiffies + msecs_to_jiffies(LED_ON_MS));
+-	}
++	if (mos7840_port->has_led)
++		mos7840_led_activity(port);
+ 
+ 	/* send it down the pipe */
+ 	status = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -2429,6 +2432,14 @@ static int mos7840_port_probe(struct usb
+ 	if (device_type == MOSCHIP_DEVICE_ID_7810) {
+ 		mos7840_port->has_led = true;
+ 
++		mos7840_port->led_urb = usb_alloc_urb(0, GFP_KERNEL);
++		mos7840_port->led_dr = kmalloc(sizeof(*mos7840_port->led_dr),
++								GFP_KERNEL);
++		if (!mos7840_port->led_urb || !mos7840_port->led_dr) {
++			status = -ENOMEM;
++			goto error;
++		}
++
+ 		init_timer(&mos7840_port->led_timer1);
+ 		mos7840_port->led_timer1.function = mos7840_led_off;
+ 		mos7840_port->led_timer1.expires =
+@@ -2441,8 +2452,6 @@ static int mos7840_port_probe(struct usb
+ 			jiffies + msecs_to_jiffies(LED_OFF_MS);
+ 		mos7840_port->led_timer2.data = (unsigned long)mos7840_port;
+ 
+-		mos7840_port->led_flag = false;
+-
+ 		/* Turn off LED */
+ 		mos7840_set_led_sync(port, MODEM_CONTROL_REGISTER, 0x0300);
+ 	}
+@@ -2464,6 +2473,8 @@ out:
+ 	}
+ 	return 0;
+ error:
++	kfree(mos7840_port->led_dr);
++	usb_free_urb(mos7840_port->led_urb);
+ 	kfree(mos7840_port->dr);
+ 	kfree(mos7840_port->ctrl_buf);
+ 	usb_free_urb(mos7840_port->control_urb);
+@@ -2484,6 +2495,10 @@ static int mos7840_port_remove(struct us
+ 
+ 		del_timer_sync(&mos7840_port->led_timer1);
+ 		del_timer_sync(&mos7840_port->led_timer2);
++
++		usb_kill_urb(mos7840_port->led_urb);
++		usb_free_urb(mos7840_port->led_urb);
++		kfree(mos7840_port->led_dr);
+ 	}
+ 	usb_kill_urb(mos7840_port->control_urb);
+ 	usb_free_urb(mos7840_port->control_urb);
 
 
