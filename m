@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967990Ab3HIPjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:39:40 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:9202 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965056Ab3HIPji (ORCPT
+	id S967969Ab3HIPkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:40:37 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36840 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965056Ab3HIPkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:39:38 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 09 Aug 2013 08:37:50 -0700
-Message-ID: <52051083.4070403@nvidia.com>
-Date: Fri, 9 Aug 2013 21:23:39 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "Mark.Rutland@arm.com" <Mark.Rutland@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "broonie@kernel.org" <broonie@kernel.org>
-Subject: Re: [PATCH] drivers/rtc/rtc-palmas.c: rename charging dt property
- name
-References: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com> <105188C0-FD22-488B-B9D2-1E3C801616B6@codeaurora.org>
-In-Reply-To: <105188C0-FD22-488B-B9D2-1E3C801616B6@codeaurora.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Aug 2013 11:40:35 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: balbi@ti.com, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: devicetree@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: dwc3: core: clarify usb-phy array binding
+Date: Fri,  9 Aug 2013 10:40:32 -0500
+Message-Id: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 August 2013 09:07 PM, Kumar Gala wrote:
-> On Aug 9, 2013, at 10:47 AM, Laxman Dewangan wrote:
->
->> Renaming the charging property names to have more meaningful:
->>
->> Renaming property "ti,back-battery-charge-enable" to "ti,backup-battery-chargeable"
->> to tells OS that attahced battery is chargeable and OS can do charging.
->>
->> Renaming property "ti,back-battery-charge-low-current" to
->> "ti,backup-battery-charge-high-current" for safe configuration as maximum charging current
->> of battery depends on battery type and overcurrent charging can damage the battery. So
->> enable the high current charging only if this property is available.
->>
->> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
->> ---
->> The patch V4 version of the change
->> [PATCH V4] drivers/rtc/rtc-palmas.c: support for backup battery charging
->> is already applied but still the discussion is going on the property name.
->>
->> To correct the property name, I am sending this patch on top of above patch
->> as per discussion on above patch.
->>
->> .../devicetree/bindings/rtc/rtc-palmas.txt         |   21 +++++++++++--------
->> drivers/rtc/rtc-palmas.c                           |   14 ++++++------
->> 2 files changed, 19 insertions(+), 16 deletions(-)
-> Are you not concerned about any dts with the old property names being around such that the code should support the old name as well?
->
+The binding spec wasn't clear that the order of the phandles in the
+usb-phy array has meaning.  Clarify this point in the binding that
+it should be <USB2-HS-PHY, USB3-SS-PHY>.
 
-I introduced these properties on above patch and it applied yesterday 
-only. Hence no one is using now. So no issue here.
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+ Documentation/devicetree/bindings/usb/dwc3.txt | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Documentation/devicetree/bindings/usb/dwc3.txt
+index 7a95c65..8a9770b 100644
+--- a/Documentation/devicetree/bindings/usb/dwc3.txt
++++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+@@ -6,7 +6,9 @@ Required properties:
+  - compatible: must be "synopsys,dwc3"
+  - reg : Address and length of the register set for the device
+  - interrupts: Interrupts used by the dwc3 controller.
+- - usb-phy : array of phandle for the PHY device
++ - usb-phy : array of phandle for the PHY device.  The first element
++   in the array is expected to be a handle to the USB2/HS PHY and
++   the second element is expected to be a handle to the USB3/SS PHY
+ 
+ Optional properties:
+  - tx-fifo-resize: determines if the FIFO *has* to be reallocated.
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
