@@ -1,93 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255Ab3HINKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 09:10:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48189 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757990Ab3HINKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 09:10:45 -0400
-Date: Fri, 9 Aug 2013 15:04:57 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Long Gao <gaolong@kylinos.com.cn>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Patch for lost wakeups
-Message-ID: <20130809130457.GA27493@redhat.com>
-References: <tencent_26310211398C21034BD3B2F9@qq.com> <CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com> <20130808191749.GA12062@redhat.com> <CA+55aFw+vEp6+q+QUZm5rf+sKR9z76HWzEqWjoiLtataym5uwA@mail.gmail.com>
+	id S1758265Ab3HINMN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 09:12:13 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:10784 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752154Ab3HINMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 09:12:12 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-7.tower-39.messagelabs.com!1376053929!14905285!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Fri, 09 Aug 2013 15:12:09 +0200
+Date: Fri, 9 Aug 2013 15:13:12 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Tim Bird <tim.bird@am.sony.com>, Michal Marek <mmarek@suse.cz>
+CC: Sam Ravnborg <sam@ravnborg.org>, <linux-kernel@vger.kernel.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: [RESEND PATCH] kconfig: Make diffconfig work with Python 3
+Message-ID: <20130809131305.GA8898@jtlinux>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw+vEp6+q+QUZm5rf+sKR9z76HWzEqWjoiLtataym5uwA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
+X-OriginalArrivalTime: 09 Aug 2013 13:12:09.0297 (UTC) FILETIME=[0DB82C10:01CE9502]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08, Linus Torvalds wrote:
->
-> On Thu, Aug 8, 2013 at 12:17 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> >> and as far as I can tell we have proper barriers for those (the
-> >> scheduler gets the rq lock
-> >
-> > Yes, but... ttwu() takse another lock, ->pi_lock to test ->state.
->
-> The lock is different, but for task_state, the main thing we need to
-> worry abotu is memory ordering, not locks.
+Adjust diffconfig to run cleanly on Python 3 (Tested with 3.3.2) and
+Python 2 (2.7.5)
 
-Yes sure. However, afaics in this particular case the locking does
-matter.
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+---
+ scripts/diffconfig |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-Because:
+diff --git a/scripts/diffconfig b/scripts/diffconfig
+index b91f3e3..dd0e75b 100755
+--- a/scripts/diffconfig
++++ b/scripts/diffconfig
+@@ -10,7 +10,7 @@
+ import sys, os
 
->    The case of signals is special, in that the "wakeup criteria" is
-> inside the scheduler itself, but conceptually the rule is the same.
+ def usage():
+-    print """Usage: diffconfig [-h] [-m] [<config1> <config2>]
++    print ("""Usage: diffconfig [-h] [-m] [<config1> <config2>]
 
-yes, and because the waiter lacks mb().
+ Diffconfig is a simple utility for comparing two .config files.
+ Using standard diff to compare .config files often includes extraneous and
+@@ -33,7 +33,7 @@ Example usage:
+  EXT2_FS  y -> n
+  LOG_BUF_SHIFT  14 -> 16
+  PRINTK_TIME  n -> y
+-"""
++""")
+     sys.exit(0)
 
-IOW. The code like
+ # returns a dictionary of name/value pairs for config items in the file
+@@ -54,23 +54,23 @@ def print_config(op, config, value, new_value):
+     if merge_style:
+         if new_value:
+             if new_value=="n":
+-                print "# CONFIG_%s is not set" % config
++                print("# CONFIG_%s is not set" % config)
+             else:
+-                print "CONFIG_%s=%s" % (config, new_value)
++                print("CONFIG_%s=%s" % (config, new_value))
+     else:
+         if op=="-":
+-            print "-%s %s" % (config, value)
++            print("-%s %s" % (config, value))
+         elif op=="+":
+-            print "+%s %s" % (config, new_value)
++            print("+%s %s" % (config, new_value))
+         else:
+-            print " %s %s -> %s" % (config, value, new_value)
++            print(" %s %s -> %s" % (config, value, new_value))
 
-	__set_current_state(STATE);
-	if (!CONDITION)
-		schedule();
+ def main():
+     global merge_style
 
-is obviously racy, it doesn't have mb().
+     # parse command line args
+     if ("-h" in sys.argv or "--help" in sys.argv):
+-	usage()
++        usage()
 
-But the code like
+     merge_style = 0
+     if "-m" in sys.argv:
+@@ -79,13 +79,13 @@ def main():
 
-	__set_current_state(TASK_INTERRUPTIBLE);
-	schedule();
+     argc = len(sys.argv)
+     if not (argc==1 or argc == 3):
+-        print "Error: incorrect number of arguments or unrecognized option"
++        print("Error: incorrect number of arguments or unrecognized option")
+         usage()
 
-was always considered as correct, it relies on try_to_wake_up/schedule
-interaction. But after try_to_wake_up() was changed to use task->pi_lock
-this becomes racy in theory. Afaics.
+     if argc == 1:
+         # if no filenames given, assume .config and .config.old
+         build_dir=""
+-        if os.environ.has_key("KBUILD_OUTPUT"):
++        if 'KBUILD_OUTPUT' in os.environ:
+             build_dir = os.environ["KBUILD_OUTPUT"]+"/"
 
-This __set_current_state(TASK_INTERRUPTIBLE) can leak into the critical
-section protected by rq->lock, it can be reordered with the CONDITION
-check, and in this case CONDITION == signal_pending().
+         configa_filename = build_dir + ".config.old"
+@@ -94,8 +94,8 @@ def main():
+         configa_filename = sys.argv[1]
+         configb_filename = sys.argv[2]
 
-No?
+-    a = readconfig(file(configa_filename))
+-    b = readconfig(file(configb_filename))
++    a = readconfig(open(configa_filename))
++    b = readconfig(open(configb_filename))
 
-> > we don't
-> > have mb() on the other side and schedule() can miss SIGPENDING?
->
-> But we do have the mb, at least on x86. The "set_tsk_thread_flag()" is
-> a memory barrier there.
+     # print items in a but not b (accumulate, sort and print)
+     old = []
+@@ -121,7 +121,7 @@ def main():
 
-Sorry for confusion, I meant "other side", see above.
-
-> But that's why I suggested adding a
-> smp_mb__after_clear_bit() to after setting the bit,
-
-Agreed. Or, once again, we can change try_to_wake_up() to do mb()
-rather then wmb().
-
-And compared to the theoretical race above this looks more likely
-to me (although still unlikely).
-
-But probably we should start with another debugging patch, I'll send
-it in a minute.
-
-Oleg.
+     # now print items in b but not in a
+     # (items from b that were in a were removed above)
+-    new = b.keys()
++    new = list(b.keys())
+     new.sort()
+     for config in new:
+         print_config("+", config, None, b[config])
+--
+1.7.9.5
 
