@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967420Ab3HIBmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55319 "EHLO
+	id S967406Ab3HIBmx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55326 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967118Ab3HIBl5 (ORCPT
+	with ESMTP id S967120Ab3HIBl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:57 -0400
+	Thu, 8 Aug 2013 21:41:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
+        Mathias Krause <minipli@googlemail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 19/22] usbnet: do not pretend to support SG/TSO
-Date: Thu,  8 Aug 2013 18:41:35 -0700
-Message-Id: <20130809013953.465282498@linuxfoundation.org>
+Subject: [ 21/22] af_key: more info leaks in pfkey messages
+Date: Thu,  8 Aug 2013 18:41:37 -0700
+Message-Id: <20130809013953.833985235@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
 References: <20130809013949.226228694@linuxfoundation.org>
@@ -27,70 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 20f0170377264e8449b6987041f0bcc4d746d3ed ]
+[ Upstream commit ff862a4668dd6dba962b1d2d8bd344afa6375683 ]
 
-usbnet doesn't support yet SG, so drivers should not advertise SG or TSO
-capabilities, as they allow TCP stack to build large TSO packets that
-need to be linearized and might use order-5 pages.
+This is inspired by a5cc68f3d6 "af_key: fix info leaks in notify
+messages".  There are some struct members which don't get initialized
+and could disclose small amounts of private information.
 
-This adds an extra copy overhead and possible allocation failures.
-
-Current code ignore skb_linearize() return code so crashes are even
-possible.
-
-Best is to not pretend SG/TSO is supported, and add this again when/if
-usbnet really supports SG for devices who could get a performance gain.
-
-Based on a prior patch from Freddy Xin <freddy@asix.com.tw>
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Acked-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/smsc75xx.c |   12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ net/key/af_key.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/usb/smsc75xx.c
-+++ b/drivers/net/usb/smsc75xx.c
-@@ -43,7 +43,6 @@
- #define EEPROM_MAC_OFFSET		(0x01)
- #define DEFAULT_TX_CSUM_ENABLE		(true)
- #define DEFAULT_RX_CSUM_ENABLE		(true)
--#define DEFAULT_TSO_ENABLE		(true)
- #define SMSC75XX_INTERNAL_PHY_ID	(1)
- #define SMSC75XX_TX_OVERHEAD		(8)
- #define MAX_RX_FIFO_SIZE		(20 * 1024)
-@@ -1034,17 +1033,14 @@ static int smsc75xx_bind(struct usbnet *
+--- a/net/key/af_key.c
++++ b/net/key/af_key.c
+@@ -2073,6 +2073,7 @@ static int pfkey_xfrm_policy2msg(struct
+ 			pol->sadb_x_policy_type = IPSEC_POLICY_NONE;
+ 	}
+ 	pol->sadb_x_policy_dir = dir+1;
++	pol->sadb_x_policy_reserved = 0;
+ 	pol->sadb_x_policy_id = xp->index;
+ 	pol->sadb_x_policy_priority = xp->priority;
  
- 	INIT_WORK(&pdata->set_multicast, smsc75xx_deferred_multicast_write);
+@@ -3108,7 +3109,9 @@ static int pfkey_send_acquire(struct xfr
+ 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
+ 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
+ 	pol->sadb_x_policy_dir = dir+1;
++	pol->sadb_x_policy_reserved = 0;
+ 	pol->sadb_x_policy_id = xp->index;
++	pol->sadb_x_policy_priority = xp->priority;
  
--	if (DEFAULT_TX_CSUM_ENABLE) {
-+	if (DEFAULT_TX_CSUM_ENABLE)
- 		dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
--		if (DEFAULT_TSO_ENABLE)
--			dev->net->features |= NETIF_F_SG |
--				NETIF_F_TSO | NETIF_F_TSO6;
--	}
-+
- 	if (DEFAULT_RX_CSUM_ENABLE)
- 		dev->net->features |= NETIF_F_RXCSUM;
+ 	/* Set sadb_comb's. */
+ 	if (x->id.proto == IPPROTO_AH)
+@@ -3496,6 +3499,7 @@ static int pfkey_send_migrate(const stru
+ 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
+ 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
+ 	pol->sadb_x_policy_dir = dir + 1;
++	pol->sadb_x_policy_reserved = 0;
+ 	pol->sadb_x_policy_id = 0;
+ 	pol->sadb_x_policy_priority = 0;
  
- 	dev->net->hw_features = NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
--		NETIF_F_SG | NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_RXCSUM;
-+				NETIF_F_RXCSUM;
- 
- 	/* Init all registers */
- 	ret = smsc75xx_reset(dev);
-@@ -1169,8 +1165,6 @@ static struct sk_buff *smsc75xx_tx_fixup
- {
- 	u32 tx_cmd_a, tx_cmd_b;
- 
--	skb_linearize(skb);
--
- 	if (skb_headroom(skb) < SMSC75XX_TX_OVERHEAD) {
- 		struct sk_buff *skb2 =
- 			skb_copy_expand(skb, SMSC75XX_TX_OVERHEAD, 0, flags);
 
 
