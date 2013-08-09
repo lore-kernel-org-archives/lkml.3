@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934340Ab3HIPDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:03:05 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:59280 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934064Ab3HIPDC (ORCPT
+	id S934344Ab3HIPDz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:03:55 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:58044 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934064Ab3HIPDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:03:02 -0400
-Date: Fri, 9 Aug 2013 11:02:57 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 1/2] workqueue: add new schedule_on_cpu_mask() API
-Message-ID: <20130809150257.GM20515@mtj.dyndns.org>
-References: <5202CEAA.9040204@linux.vnet.ibm.com>
- <201308072335.r77NZJPA022490@farm-0012.internal.tilera.com>
+	Fri, 9 Aug 2013 11:03:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201308072335.r77NZJPA022490@farm-0012.internal.tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1375912738-25114-2-git-send-email-jengelh@inai.de>
+References: <1375912738-25114-1-git-send-email-jengelh@inai.de> <1375912738-25114-2-git-send-email-jengelh@inai.de>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Fri, 9 Aug 2013 12:03:33 -0300
+Message-ID: <CAKi4VA+-NnohHc5cMirN=B5uizLQBDnaZ5Aiq24AFe=puFDNJg@mail.gmail.com>
+Subject: Re: [PATCH] depmod: add missing "else" clause
+To: Jan Engelhardt <jengelh@inai.de>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-modules <linux-modules@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Chris.
+Hi Jan,
 
-On Wed, Aug 07, 2013 at 04:49:44PM -0400, Chris Metcalf wrote:
-> This primitive allows scheduling work to run on a particular set of
-> cpus described by a "struct cpumask".  This can be useful, for example,
-> if you have a per-cpu variable that requires code execution only if the
-> per-cpu variable has a certain value (for example, is a non-empty list).
 
-So, this allows scheduling work items on !online CPUs.  Workqueue does
-allow scheduling per-cpu work items on offline CPUs if the CPU has
-ever been online, but the behavior when scheduling work items on cpu
-which has never been online is undefined.  I think the interface at
-least needs to verify that the the target cpus have been online,
-trigger warning and mask off invalid CPUs otherwise.
+On Wed, Aug 7, 2013 at 6:58 PM, Jan Engelhardt <jengelh@inai.de> wrote:
+>
+> It occurred to an openSUSE user that our mkinitrd would throw a
+> warning when used with kmod:
+>
+> libkmod: conf_files_list: unsupported file mode /dev/null: 0x21b6
+>
+> Grepping for the error message revealed that there might be a missing
+> "else" keyword here, since it is unusual to put an "if" directly after
+> closing brace.
+> ---
+>  libkmod/libkmod-config.c | 2 +-
+>  tools/depmod.c           | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/libkmod/libkmod-config.c b/libkmod/libkmod-config.c
+> index 201c349..cb4cf61 100644
+> --- a/libkmod/libkmod-config.c
+> +++ b/libkmod/libkmod-config.c
+> @@ -833,7 +833,7 @@ static int conf_files_list(struct kmod_ctx *ctx, struct kmod_list **list,
+>         if (S_ISREG(st.st_mode)) {
+>                 conf_files_insert_sorted(ctx, list, path, NULL);
+>                 return 0;
+> -       } if (!S_ISDIR(st.st_mode)) {
+> +       } else if (!S_ISDIR(st.st_mode)) {
+>                 ERR(ctx, "unsupported file mode %s: %#x\n",
+>                                                         path, st.st_mode);
+>                 return -EINVAL;
+> diff --git a/tools/depmod.c b/tools/depmod.c
+> index 4a02631..985cf3a 100644
+> --- a/tools/depmod.c
+> +++ b/tools/depmod.c
+> @@ -848,7 +848,7 @@ static int cfg_files_list(struct cfg_file ***p_files, size_t *p_n_files,
+>         if (S_ISREG(st.st_mode)) {
+>                 cfg_files_insert_sorted(p_files, p_n_files, path, NULL);
+>                 return 0;
+> -       } if (!S_ISDIR(st.st_mode)) {
+> +       } else if (!S_ISDIR(st.st_mode)) {
+>                 ERR("unsupported file mode %s: %#x\n", path, st.st_mode);
+>                 return -EINVAL;
+>         }
+> --
 
-Thanks.
+Applied, thanks.
 
--- 
-tejun
+Please make sure to CC linux-modules@vger.kernel.org
+
+
+Lucas De Marchi
