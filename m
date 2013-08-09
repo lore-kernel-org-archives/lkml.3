@@ -1,175 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967261Ab3HIBuV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:50:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55460 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967055Ab3HIBmY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S967106Ab3HIBmY (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 8 Aug 2013 21:42:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55250 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967055Ab3HIBlo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 21:41:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Francois Romieu <romieu@fr.zoreil.com>
-Subject: [ 25/25] 8139cp: Add dma_mapping_error checking
-Date: Thu,  8 Aug 2013 18:42:01 -0700
-Message-Id: <20130809013654.597159116@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 05/22] mac80211: fix duplicate retransmission detection
+Date: Thu,  8 Aug 2013 18:41:21 -0700
+Message-Id: <20130809013950.375346151@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
-References: <20130809013649.057678051@linuxfoundation.org>
+In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
+References: <20130809013949.226228694@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-[ Upstream commit cf3c4c03060b688cbc389ebc5065ebcce5653e96 ]
+commit 6b0f32745dcfba01d7be33acd1b40306c7a914c6 upstream.
 
-Self explanitory dma_mapping_error addition to the 8139 driver, based on this:
-https://bugzilla.redhat.com/show_bug.cgi?id=947250
+The duplicate retransmission detection code in mac80211
+erroneously attempts to do the check for every frame,
+even frames that don't have a sequence control field or
+that don't use it (QoS-Null frames.)
 
-It showed several backtraces arising for dma_map_* usage without checking the
-return code on the mapping.  Add the check and abort the rx/tx operation if its
-failed.  Untested as I have no hardware and the reporter has wandered off, but
-seems pretty straightforward.
+This is problematic because it causes the code to access
+data beyond the end of the SKB and depending on the data
+there will drop packets erroneously.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Correct the code to not do duplicate detection for such
+frames.
+
+I found this error while testing AP powersave, it lead
+to retransmitted PS-Poll frames being dropped entirely
+as the data beyond the end of the SKB was always zero.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/realtek/8139cp.c |   48 +++++++++++++++++++++++++++++++---
- 1 file changed, 45 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -478,7 +478,7 @@ rx_status_loop:
+---
+ net/mac80211/rx.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -810,8 +810,14 @@ ieee80211_rx_h_check(struct ieee80211_rx
+ 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)rx->skb->data;
+ 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(rx->skb);
  
- 	while (1) {
- 		u32 status, len;
--		dma_addr_t mapping;
-+		dma_addr_t mapping, new_mapping;
- 		struct sk_buff *skb, *new_skb;
- 		struct cp_desc *desc;
- 		const unsigned buflen = cp->rx_buf_sz;
-@@ -520,6 +520,13 @@ rx_status_loop:
- 			goto rx_next;
- 		}
- 
-+		new_mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
-+					 PCI_DMA_FROMDEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, new_mapping)) {
-+			dev->stats.rx_dropped++;
-+			goto rx_next;
-+		}
-+
- 		dma_unmap_single(&cp->pdev->dev, mapping,
- 				 buflen, PCI_DMA_FROMDEVICE);
- 
-@@ -531,12 +538,11 @@ rx_status_loop:
- 
- 		skb_put(skb, len);
- 
--		mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
--					 PCI_DMA_FROMDEVICE);
- 		cp->rx_skb[rx_tail] = new_skb;
- 
- 		cp_rx_skb(cp, skb, desc);
- 		rx++;
-+		mapping = new_mapping;
- 
- rx_next:
- 		cp->rx_ring[rx_tail].opts2 = 0;
-@@ -704,6 +710,22 @@ static inline u32 cp_tx_vlan_tag(struct
- 		TxVlanTag | swab16(vlan_tx_tag_get(skb)) : 0x00;
- }
- 
-+static void unwind_tx_frag_mapping(struct cp_private *cp, struct sk_buff *skb,
-+				   int first, int entry_last)
-+{
-+	int frag, index;
-+	struct cp_desc *txd;
-+	skb_frag_t *this_frag;
-+	for (frag = 0; frag+first < entry_last; frag++) {
-+		index = first+frag;
-+		cp->tx_skb[index] = NULL;
-+		txd = &cp->tx_ring[index];
-+		this_frag = &skb_shinfo(skb)->frags[frag];
-+		dma_unmap_single(&cp->pdev->dev, le64_to_cpu(txd->addr),
-+				 skb_frag_size(this_frag), PCI_DMA_TODEVICE);
-+	}
-+}
-+
- static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 					struct net_device *dev)
- {
-@@ -737,6 +759,9 @@ static netdev_tx_t cp_start_xmit (struct
- 
- 		len = skb->len;
- 		mapping = dma_map_single(&cp->pdev->dev, skb->data, len, PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, mapping))
-+			goto out_dma_error;
-+
- 		txd->opts2 = opts2;
- 		txd->addr = cpu_to_le64(mapping);
- 		wmb();
-@@ -774,6 +799,9 @@ static netdev_tx_t cp_start_xmit (struct
- 		first_len = skb_headlen(skb);
- 		first_mapping = dma_map_single(&cp->pdev->dev, skb->data,
- 					       first_len, PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, first_mapping))
-+			goto out_dma_error;
-+
- 		cp->tx_skb[entry] = skb;
- 		entry = NEXT_TX(entry);
- 
-@@ -787,6 +815,11 @@ static netdev_tx_t cp_start_xmit (struct
- 			mapping = dma_map_single(&cp->pdev->dev,
- 						 skb_frag_address(this_frag),
- 						 len, PCI_DMA_TODEVICE);
-+			if (dma_mapping_error(&cp->pdev->dev, mapping)) {
-+				unwind_tx_frag_mapping(cp, skb, first_entry, entry);
-+				goto out_dma_error;
-+			}
-+
- 			eor = (entry == (CP_TX_RING_SIZE - 1)) ? RingEnd : 0;
- 
- 			ctrl = eor | len | DescOwn;
-@@ -845,11 +878,16 @@ static netdev_tx_t cp_start_xmit (struct
- 	if (TX_BUFFS_AVAIL(cp) <= (MAX_SKB_FRAGS + 1))
- 		netif_stop_queue(dev);
- 
-+out_unlock:
- 	spin_unlock_irqrestore(&cp->lock, intr_flags);
- 
- 	cpw8(TxPoll, NormalTxPoll);
- 
- 	return NETDEV_TX_OK;
-+out_dma_error:
-+	kfree_skb(skb);
-+	cp->dev->stats.tx_dropped++;
-+	goto out_unlock;
- }
- 
- /* Set or clear the multicast filter for this adaptor.
-@@ -1020,6 +1058,10 @@ static int cp_refill_rx(struct cp_privat
- 
- 		mapping = dma_map_single(&cp->pdev->dev, skb->data,
- 					 cp->rx_buf_sz, PCI_DMA_FROMDEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, mapping)) {
-+			kfree_skb(skb);
-+			goto err_out;
-+		}
- 		cp->rx_skb[i] = skb;
- 
- 		cp->rx_ring[i].opts2 = 0;
+-	/* Drop duplicate 802.11 retransmissions (IEEE 802.11 Chap. 9.2.9) */
+-	if (rx->sta && !is_multicast_ether_addr(hdr->addr1)) {
++	/*
++	 * Drop duplicate 802.11 retransmissions
++	 * (IEEE 802.11-2012: 9.3.2.10 "Duplicate detection and recovery")
++	 */
++	if (rx->skb->len >= 24 && rx->sta &&
++	    !ieee80211_is_ctl(hdr->frame_control) &&
++	    !ieee80211_is_qos_nullfunc(hdr->frame_control) &&
++	    !is_multicast_ether_addr(hdr->addr1)) {
+ 		if (unlikely(ieee80211_has_retry(hdr->frame_control) &&
+ 			     rx->sta->last_seq_ctrl[rx->queue] ==
+ 			     hdr->seq_ctrl)) {
 
 
