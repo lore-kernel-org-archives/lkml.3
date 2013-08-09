@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968191Ab3HIQrf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:47:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968137Ab3HIQrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:47:32 -0400
-Date: Fri, 9 Aug 2013 18:46:32 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-Message-ID: <20130809164632.GC25306@dhcp-26-207.brq.redhat.com>
-References: <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
- <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
- <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
- <20130726020928.GL29296@kernel.dk>
- <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
- <20130729114653.GB20951@mtj.dyndns.org>
- <20130809082335.GA25306@dhcp-26-207.brq.redhat.com>
- <5204FBA6.6040001@kernel.dk>
- <20130809150744.GB25306@dhcp-26-207.brq.redhat.com>
- <52051033.8050605@kernel.dk>
+	id S968206Ab3HIQse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:48:34 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:42831 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968185Ab3HIQsa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 12:48:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52051033.8050605@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOMZO5DZ=aJsOvTyrKL=57_jGMGQX8k3mDamgXqnF-9Ou2fpAg@mail.gmail.com>
+References: <1375825071-20922-1-git-send-email-dianders@chromium.org>
+	<1376066000-5495-1-git-send-email-dianders@chromium.org>
+	<1376066000-5495-3-git-send-email-dianders@chromium.org>
+	<CAOMZO5DZ=aJsOvTyrKL=57_jGMGQX8k3mDamgXqnF-9Ou2fpAg@mail.gmail.com>
+Date: Fri, 9 Aug 2013 09:48:29 -0700
+X-Google-Sender-Auth: CCzIhafVGH0RfNhacxfqJEFyg3I
+Message-ID: <CAD=FV=WxCpqX+23i_Q4_swKWqieNdcZ_sa0bxrcpUnr4vA+pGA@mail.gmail.com>
+Subject: Re: [PATCH v5 2/4] mmc: dw_mmc: Add exynos resume_noirq callback to
+ clear WAKEUP_INT
+From: Doug Anderson <dianders@chromium.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Chris Ball <cjb@laptop.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 09:52:19AM -0600, Jens Axboe wrote:
-> On 08/09/2013 09:07 AM, Alexander Gordeev wrote:
-> > diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
-> > index dcbc2a4..b131a48 100644
-> > --- a/block/blk-mq-tag.c
-> > +++ b/block/blk-mq-tag.c
-> > @@ -468,10 +468,9 @@ struct blk_mq_tags *blk_mq_init_tags(unsigned int nr_tags,
-> >  	 * Rest of the tags start at the queue list
-> >  	 */
-> >  	tags->nr_free = 0;
-> > -	while (nr_tags - tags->nr_reserved) {
-> > +	while (nr_tags--) {
-> >  		tags->freelist[tags->nr_free] = tags->nr_free +
-> >  							tags->nr_reserved;
-> > -		nr_tags--;
-> >  		tags->nr_free++;
-> >  	}
-> 
-> I misremembered, just checked the code. I think I used to have it like I
-> described, but changed it since I thought it would be more logical to
-> pass in full depth, and then what part of that is reserved. Looking at
-> the current code, your patch looks correct as-is.
+Fabio,
 
-Ok, then a whole series "[PATCH 0/3] blk-mq: Avoid effects of a weird queue
-depth" (I posted earlier in a separate thread) should make sense. Besides
-the hunk above it limits the per-cpu cache size and sanity-checks total vs
-reserved length. I can resubmit if you want.
+Thanks for your review.
 
-> 
-> -- 
-> Jens Axboe
-> 
+On Fri, Aug 9, 2013 at 9:41 AM, Fabio Estevam <festevam@gmail.com> wrote:
+> On Fri, Aug 9, 2013 at 1:33 PM, Doug Anderson <dianders@chromium.org> wrote:
+>
+>> +#else
+>> +#define dw_mci_exynos_suspend          NULL
+>> +#define dw_mci_exynos_resume           NULL
+>> +#define dw_mci_exynos_resume_noirq     NULL
+>> +#endif /* CONFIG_PM_SLEEP */
+>
+> You could avoid this else block if you use 'static SIMPLE_DEV_PM_OPS' below.
+>
+>> +
+>>  static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
+>>  {
+>>         /*
+>> @@ -187,13 +234,20 @@ static int dw_mci_exynos_probe(struct platform_device *pdev)
+>>         return dw_mci_pltfm_register(pdev, drv_data);
+>>  }
+>>
+>> +const struct dev_pm_ops dw_mci_exynos_pmops = {
+>> +       SET_SYSTEM_SLEEP_PM_OPS(dw_mci_exynos_suspend, dw_mci_exynos_resume)
+>> +       .resume_noirq = dw_mci_exynos_resume_noirq,
+>> +       .thaw_noirq = dw_mci_exynos_resume_noirq,
+>> +       .restore_noirq = dw_mci_exynos_resume_noirq,
+>> +};
+>
+> static SIMPLE_DEV_PM_OPS(dw_mci_exynos_pmops, dw_mci_exynos_suspend,
+>  dw_mci_exynos_resume ) ;
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+The big problem is that SIMPLE_DEV_PM_OPS() doesn't take a "_noirq"
+parameters.  Do you know of one that does?
+
+-Doug
