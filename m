@@ -1,53 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967931Ab3HIPdP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:33:15 -0400
-Received: from mout.gmx.net ([212.227.15.15]:53784 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965059Ab3HIPdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:33:11 -0400
-Date: Fri, 9 Aug 2013 17:33:06 +0200
-From: Michael Brunner <mibru@gmx.de>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Kevin Strasser <strassek@engr.orst.edu>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chris Healy <chealy@imsco-us.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org
-Subject: [PATCH] gpio: Fix platform driver name in Kontron PLD GPIO driver
-Message-ID: <20130809173306.1ba24b59@mail.gmx.de>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:DPyqE9hb8/eEQnqTjH7KZgN3u8SgsyIyCXGQEWCrwJ6TDdOYO1K
- BPML4mar6K2kpZpdX/GriGLHia4xMvRc3tATSIVnxtEcTbfe+AQI4357UdUMR+i5QLd3ETe
- /dMfmFNeeBWCICEkADsCoP9YhjIPWr3ziDG7bLHRjarh7TcZeK+KZMfZblTgNLYOsMwluZj
- h+mVUq6Zr8qhkdfBB3iXw==
+	id S967958Ab3HIPdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:33:35 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:2652 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965056Ab3HIPdM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 11:33:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 09 Aug 2013 08:33:12 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <akpm@linux-foundation.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <gg@slimlogic.co.uk>, <kishon@ti.com>, <swarren@nvidia.com>,
+        <pawel.moll@arm.com>, <Mark.Rutland@arm.com>,
+        <ian.campbell@citrix.com>, <broonie@kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] drivers/rtc/rtc-palmas.c: rename charging dt property name
+Date: Fri, 9 Aug 2013 21:17:10 +0530
+Message-ID: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the driver name to be consistent with the name that
-is registered as cell name in the MFD driver. Otherwise the driver won't
-load.
+Renaming the charging property names to have more meaningful:
 
-Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
+Renaming property "ti,back-battery-charge-enable" to "ti,backup-battery-chargeable"
+to tells OS that attahced battery is chargeable and OS can do charging.
+
+Renaming property "ti,back-battery-charge-low-current" to
+"ti,backup-battery-charge-high-current" for safe configuration as maximum charging current
+of battery depends on battery type and overcurrent charging can damage the battery. So
+enable the high current charging only if this property is available.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/gpio/gpio-kempld.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The patch V4 version of the change
+[PATCH V4] drivers/rtc/rtc-palmas.c: support for backup battery charging
+is already applied but still the discussion is going on the property name.
 
-diff --git a/drivers/gpio/gpio-kempld.c b/drivers/gpio/gpio-kempld.c
-index 1bdc3a2..d3ed563 100644
---- a/drivers/gpio/gpio-kempld.c
-+++ b/drivers/gpio/gpio-kempld.c
-@@ -210,7 +210,7 @@ static int kempld_gpio_remove(struct
-platform_device *pdev) 
- static struct platform_driver kempld_gpio_driver = {
-        .driver = {
--               .name = "gpio-kempld",
-+               .name = "kempld-gpio",
-                .owner = THIS_MODULE,
-        },
-        .probe          = kempld_gpio_probe,
+To correct the property name, I am sending this patch on top of above patch
+as per discussion on above patch.
+
+ .../devicetree/bindings/rtc/rtc-palmas.txt         |   21 +++++++++++--------
+ drivers/rtc/rtc-palmas.c                           |   14 ++++++------
+ 2 files changed, 19 insertions(+), 16 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
+index 41bb445..8ef7660 100644
+--- a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
++++ b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
+@@ -7,13 +7,16 @@ Required properties:
+ - interrupts: Interrupt number of RTC submodule on device.
+ 
+ Optional properties:
+-- ti,back-battery-charge-enable: The Palmas series device like TPS65913 or
+-	TPS80036 supports the battery backup for powering the RTC when main
+-	battery is removed or in very low power state. This flag will enable
+-	the backup battery charging.
+-- ti,back-battery-charge-low-current: Configure lower charging current. Device
+-	supports the charging current as < 100mA or >100mA. Low current will
+-	set as <100mA.
++- ti,backup-battery-chargeable: The Palmas series device like TPS65913 or
++	TPS80036 supports the backup battery for powering the RTC when main
++	battery is removed or in very low power state. The backup battery
++	can be chargeable or non-chargeable. This flag will tells whether
++	battery is chargeable or not. If charging battery then driver can
++	enable the charging.
++- ti,backup-battery-charge-high-current: Enable high current charging in
++	backup battery. Device supports the < 100mA and > 100mA charging.
++	The high current will be > 100mA. Absence of this property will
++	charge battery to lower current i.e. < 100mA.
+ 
+ Example:
+ 	palmas: tps65913@58 {
+@@ -22,8 +25,8 @@ Example:
+ 			compatible = "ti,palmas-rtc";
+ 			interrupt-parent = <&palmas>;
+ 			interrupts = <8 0>;
+-			ti,back-battery-charge-enable;
+-			ti,back-battery-charge-low-current;
++			ti,backup-battery-chargeable;
++			ti,backup-battery-charge-high-current;
+ 		};
+ 		...
+ 	};
+diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
+index adb6e71..fffb7d3 100644
+--- a/drivers/rtc/rtc-palmas.c
++++ b/drivers/rtc/rtc-palmas.c
+@@ -239,13 +239,13 @@ static int palmas_rtc_probe(struct platform_device *pdev)
+ 	struct palmas_rtc *palmas_rtc = NULL;
+ 	int ret;
+ 	bool enable_bb_charging = false;
+-	bool low_bb_charging;
++	bool high_bb_charging;
+ 
+ 	if (pdev->dev.of_node) {
+ 		enable_bb_charging = of_property_read_bool(pdev->dev.of_node,
+-					"ti,back-battery-charge-enable");
+-		low_bb_charging = of_property_read_bool(pdev->dev.of_node,
+-					"ti,back-battery-charge-low-current");
++					"ti,backup-battery-chargeable");
++		high_bb_charging = of_property_read_bool(pdev->dev.of_node,
++					"ti,backup-battery-charge-high-current");
+ 	}
+ 
+ 	palmas_rtc = devm_kzalloc(&pdev->dev, sizeof(struct palmas_rtc),
+@@ -264,10 +264,10 @@ static int palmas_rtc_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, palmas_rtc);
+ 
+ 	if (enable_bb_charging) {
+-		unsigned reg = 0;
++		unsigned reg = PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
+ 
+-		if (low_bb_charging)
+-			reg |= PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
++		if (high_bb_charging)
++			reg = 0;
+ 
+ 		ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
+ 			PALMAS_BACKUP_BATTERY_CTRL,
+-- 
+1.7.1.1
+
