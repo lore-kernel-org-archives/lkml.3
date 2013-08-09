@@ -1,167 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967942Ab3HIPgu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:36:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934350Ab3HIPgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:36:47 -0400
-Date: Fri, 9 Aug 2013 17:31:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@redhat.com>
-Cc: Long Gao <gaolong@kylinos.com.cn>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: block_all_signals() must die (Was: Patch for lost wakeups)
-Message-ID: <20130809153100.GA4968@redhat.com>
-References: <tencent_26310211398C21034BD3B2F9@qq.com> <CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com>
-MIME-Version: 1.0
+	id S967973Ab3HIPhN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:37:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36484 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934372Ab3HIPhK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 11:37:10 -0400
+Subject: Re: [PATCH] drivers/rtc/rtc-palmas.c: rename charging dt property name
+Mime-Version: 1.0 (Apple Message framework v1283)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com>
+Date: Fri, 9 Aug 2013 10:37:12 -0500
+Cc: <akpm@linux-foundation.org>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <rob@landley.net>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <gg@slimlogic.co.uk>, <kishon@ti.com>, <swarren@nvidia.com>,
+        <pawel.moll@arm.com>, <Mark.Rutland@arm.com>,
+        <ian.campbell@citrix.com>, <broonie@kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <105188C0-FD22-488B-B9D2-1E3C801616B6@codeaurora.org>
+References: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And sorry for off-topic email, but I can't resist.
 
-Can't we finally kill block_all_signals() and ->notifier ? This
-is very, very wrong and doesn't work anyway.
+On Aug 9, 2013, at 10:47 AM, Laxman Dewangan wrote:
 
-I tried to ask many, many times. Starting from 2007 at least.
-And every time the discussion "hangs". I am quoting the last
-email I sent below.
+> Renaming the charging property names to have more meaningful:
+> 
+> Renaming property "ti,back-battery-charge-enable" to "ti,backup-battery-chargeable"
+> to tells OS that attahced battery is chargeable and OS can do charging.
+> 
+> Renaming property "ti,back-battery-charge-low-current" to
+> "ti,backup-battery-charge-high-current" for safe configuration as maximum charging current
+> of battery depends on battery type and overcurrent charging can damage the battery. So
+> enable the high current charging only if this property is available.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+> The patch V4 version of the change
+> [PATCH V4] drivers/rtc/rtc-palmas.c: support for backup battery charging
+> is already applied but still the discussion is going on the property name.
+> 
+> To correct the property name, I am sending this patch on top of above patch
+> as per discussion on above patch.
+> 
+> .../devicetree/bindings/rtc/rtc-palmas.txt         |   21 +++++++++++--------
+> drivers/rtc/rtc-palmas.c                           |   14 ++++++------
+> 2 files changed, 19 insertions(+), 16 deletions(-)
 
-Dave, your reply was:
+Are you not concerned about any dts with the old property names being around such that the code should support the old name as well?
 
-	 I'm on
-	 holidays for another week or so, maybe once I get back I'll find some
-	 time to figure out how it works vs what happens, but really I suspect
-	 we can kill this with fire.
+- k
 
-So perhaps I should simply send the patch with your ack? ;)
+> 
+> diff --git a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
+> index 41bb445..8ef7660 100644
+> --- a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
+> +++ b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
+> @@ -7,13 +7,16 @@ Required properties:
+> - interrupts: Interrupt number of RTC submodule on device.
+> 
+> Optional properties:
+> -- ti,back-battery-charge-enable: The Palmas series device like TPS65913 or
+> -	TPS80036 supports the battery backup for powering the RTC when main
+> -	battery is removed or in very low power state. This flag will enable
+> -	the backup battery charging.
+> -- ti,back-battery-charge-low-current: Configure lower charging current. Device
+> -	supports the charging current as < 100mA or >100mA. Low current will
+> -	set as <100mA.
+> +- ti,backup-battery-chargeable: The Palmas series device like TPS65913 or
+> +	TPS80036 supports the backup battery for powering the RTC when main
+> +	battery is removed or in very low power state. The backup battery
+> +	can be chargeable or non-chargeable. This flag will tells whether
+> +	battery is chargeable or not. If charging battery then driver can
+> +	enable the charging.
+> +- ti,backup-battery-charge-high-current: Enable high current charging in
+> +	backup battery. Device supports the < 100mA and > 100mA charging.
+> +	The high current will be > 100mA. Absence of this property will
+> +	charge battery to lower current i.e. < 100mA.
+> 
+> Example:
+> 	palmas: tps65913@58 {
+> @@ -22,8 +25,8 @@ Example:
+> 			compatible = "ti,palmas-rtc";
+> 			interrupt-parent = <&palmas>;
+> 			interrupts = <8 0>;
+> -			ti,back-battery-charge-enable;
+> -			ti,back-battery-charge-low-current;
+> +			ti,backup-battery-chargeable;
+> +			ti,backup-battery-charge-high-current;
+> 		};
+> 		...
+> 	};
+> diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
+> index adb6e71..fffb7d3 100644
+> --- a/drivers/rtc/rtc-palmas.c
+> +++ b/drivers/rtc/rtc-palmas.c
+> @@ -239,13 +239,13 @@ static int palmas_rtc_probe(struct platform_device *pdev)
+> 	struct palmas_rtc *palmas_rtc = NULL;
+> 	int ret;
+> 	bool enable_bb_charging = false;
+> -	bool low_bb_charging;
+> +	bool high_bb_charging;
+> 
+> 	if (pdev->dev.of_node) {
+> 		enable_bb_charging = of_property_read_bool(pdev->dev.of_node,
+> -					"ti,back-battery-charge-enable");
+> -		low_bb_charging = of_property_read_bool(pdev->dev.of_node,
+> -					"ti,back-battery-charge-low-current");
+> +					"ti,backup-battery-chargeable");
+> +		high_bb_charging = of_property_read_bool(pdev->dev.of_node,
+> +					"ti,backup-battery-charge-high-current");
+> 	}
+> 
+> 	palmas_rtc = devm_kzalloc(&pdev->dev, sizeof(struct palmas_rtc),
+> @@ -264,10 +264,10 @@ static int palmas_rtc_probe(struct platform_device *pdev)
+> 	platform_set_drvdata(pdev, palmas_rtc);
+> 
+> 	if (enable_bb_charging) {
+> -		unsigned reg = 0;
+> +		unsigned reg = PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
+> 
+> -		if (low_bb_charging)
+> -			reg |= PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
+> +		if (high_bb_charging)
+> +			reg = 0;
+> 
+> 		ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
+> 			PALMAS_BACKUP_BATTERY_CTRL,
+> -- 
+> 1.7.1.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Oleg.
-
-
->From oleg@redhat.com Tue Jul 12 20:15:36 2011
-Date: Tue, 12 Jul 2011 20:15:36 +0200
-
-Hello.
-
-I tried many times to ask about the supposed behaviour of
-block_all_signals() in drm, but it seems nobody can answer.
-
-So I am going to send the patch which simply removes
-block_all_signals() and friends. There are numeruous problems
-with this interace, I can't even enumerate them. But I think
-that it is enough to mention that block_all_signals() simply
-can not work. AT ALL. I am wondering, was it ever tested and
-how.
-
-So. ioctl()->drm_lock() "blocks" the stop signals. Probably to
-ensure the task can't be stopped until it does DRM_IOCTL_UNLOCK.
-And what does this mean? Yes, the task won't stop if it receives,
-say, SIGTSTP. But! Instead it will loop forever in kernel mode
-until it receives another unblocked/non-ignored signal which
-should be numerically less than SIGSTOP.
-
-Why do we need this? Once again. block_all_signals(SIGTSTP)
-only means that the caller will burn cpu instead of sleeping
-in TASK_STOPPED after ^Z. What is the point?
-
-And once again, there are other problems. For example, even if
-block_all_signals() actually blocked SIGSTOP/etc, this can not
-help if the caller is multithreaded.
-
-I strongly believe block_all_signals() should die. Given that
-it doesn't work, could somebody please explain me what will
-be broken?
-
-
-
-Just in case... Please look at the debugging patch below. With
-this patch,
-
-	$ perl -le 'syscall 157,666 and die $!; sleep 1, print while ++$_'
-	1
-	2
-	3
-	^Z
-
-Hang. So it does react to ^Z anyway, just it is looping in the
-endless loop in the kernel. It can only look as if ^Z is ignored,
-because obviously bash doesn't see it stopped.
-
-
-
-Now lets look at drm_notifier(). If it returns 0 it does:
-
-	/* Otherwise, set flag to force call to
-	   drmUnlock */
-
-drmUnlock? grep shows nothing...
-
-	do {
-		old = s->lock->lock;
-		new = old | _DRM_LOCK_CONT;
-		prev = cmpxchg(&s->lock->lock, old, new);
-	} while (prev != old);
-	return 0;
-
-OK. So, if block_all_signals() makes any sense, it seems that this
-is only because we add _DRM_LOCK_CONT.
-
-Who checks _DRM_LOCK_CONT? _DRM_LOCK_IS_CONT(), but it has no users.
-Hmm. Looks like via_release_futex() is the only user, but it doesn't
-look as "force call to drmUnlock" and it is CONFIG_DRM_VIA only.
-
-
-I am totally confused. But block_all_signals() should die anyway.
-
-We can probably implement something like 'i-am-going-to-stop' or
-even 'can-i-stop' per-thread notifiers, although this all looks
-like the user-space problem to me (yes, I know absolutely nothing
-about drm/etc).
-
-If nothing else. We can change drm_lock/drm_unlock to literally
-block/unblock SIGSTOP/etc (or perhaps we only should worry about
-the signals from tty?). This is the awful hack and this can't work
-with the multithreaded tasks too, but still it is better than what
-we have now.
-
-Oleg.
-
---- a/kernel/sys.c~	2011-06-16 20:12:18.000000000 +0200
-+++ b/kernel/sys.c	2011-07-12 16:24:50.000000000 +0200
-@@ -1614,6 +1614,11 @@ SYSCALL_DEFINE1(umask, int, mask)
- 	return mask;
- }
- 
-+static int notifier(void *arg)
-+{
-+	return 0;
-+}
-+
- SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 		unsigned long, arg4, unsigned long, arg5)
- {
-@@ -1627,6 +1632,13 @@ SYSCALL_DEFINE5(prctl, int, option, unsi
- 
- 	error = 0;
- 	switch (option) {
-+		case 666: {
-+			sigset_t *pmask = kmalloc(sizeof(*pmask), GFP_KERNEL);
-+			siginitset(pmask, sigmask(SIGTSTP));
-+			block_all_signals(notifier, NULL, pmask);
-+			break;
-+		}
-+
- 		case PR_SET_PDEATHSIG:
- 			if (!valid_signal(arg2)) {
- 				error = -EINVAL;
-
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
