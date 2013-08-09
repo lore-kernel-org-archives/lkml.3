@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030560Ab3HIOTi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 10:19:38 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48889 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967894Ab3HIOTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 10:19:35 -0400
+	id S1030634Ab3HIOUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 10:20:00 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:46269 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030511Ab3HIOT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 10:19:56 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: <mingo@redhat.com>, <hpa@zytor.com>, <x86@kernel.org>, <jeremy@goop.org>,
         <konrad.wilk@oracle.com>, <gleb@redhat.com>, <pbonzini@redhat.com>
@@ -19,56 +20,317 @@ Cc: <gregkh@suse.de>, <peterz@infradead.org>, <tglx@linutronix.de>,
         <virtualization@lists.linux-foundation.org>,
         <stefano.stabellini@eu.citrix.com>, <mtosatti@redhat.com>,
         <srivatsa.vaddagiri@gmail.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
         Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: [PATCH V13 12/14] kvm uapi: Add KICK_CPU and PV_UNHALT definition to uapi
-Date: Fri,  9 Aug 2013 19:52:00 +0530
-Message-Id: <1376058122-8248-13-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+Subject: [PATCH V13 10/14] x86/ticketlock: Add slowpath logic
+Date: Fri,  9 Aug 2013 19:51:58 +0530
+Message-Id: <1376058122-8248-11-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376058122-8248-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
 References: <y>
  <1376058122-8248-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080914-5806-0000-0000-0000225D8455
+x-cbid: 13080914-5518-0000-0000-0000110E40E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this is needed by both guest and host.
+From: Jeremy Fitzhardinge <jeremy@goop.org>
 
-Originally-from: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Maintain a flag in the LSB of the ticket lock tail which indicates
+whether anyone is in the lock slowpath and may need kicking when
+the current holder unlocks.  The flags are set when the first locker
+enters the slowpath, and cleared when unlocking to an empty queue (ie,
+no contention).
+
+In the specific implementation of lock_spinning(), make sure to set
+the slowpath flags on the lock just before blocking.  We must do
+this before the last-chance pickup test to prevent a deadlock
+with the unlocker:
+
+Unlocker			Locker
+				test for lock pickup
+					-> fail
+unlock
+test slowpath
+	-> false
+				set slowpath flags
+				block
+
+Whereas this works in any ordering:
+
+Unlocker			Locker
+				set slowpath flags
+				test for lock pickup
+					-> fail
+				block
+unlock
+test slowpath
+	-> true, kick
+
+If the unlocker finds that the lock has the slowpath flag set but it is
+actually uncontended (ie, head == tail, so nobody is waiting), then it
+clears the slowpath flag.
+
+The unlock code uses a locked add to update the head counter.  This also
+acts as a full memory barrier so that its safe to subsequently
+read back the slowflag state, knowing that the updated lock is visible
+to the other CPUs.  If it were an unlocked add, then the flag read may
+just be forwarded from the store buffer before it was visible to the other
+CPUs, which could result in a deadlock.
+
+Unfortunately this means we need to do a locked instruction when
+unlocking with PV ticketlocks.  However, if PV ticketlocks are not
+enabled, then the old non-locked "add" is the only unlocking code.
+
+Note: this code relies on gcc making sure that unlikely() code is out of
+line of the fastpath, which only happens when OPTIMIZE_SIZE=n.  If it
+doesn't the generated code isn't too bad, but its definitely suboptimal.
+
+Thanks to Srivatsa Vaddagiri for providing a bugfix to the original
+version of this change, which has been folded in.
+Thanks to Stephan Diestelhorst for commenting on some code which relied
+on an inaccurate reading of the x86 memory ordering rules.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Acked-by: Gleb Natapov <gleb@redhat.com>
 Acked-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/uapi/asm/kvm_para.h | 1 +
- include/uapi/linux/kvm_para.h        | 1 +
- 2 files changed, 2 insertions(+)
+ arch/x86/include/asm/paravirt.h       |  2 +-
+ arch/x86/include/asm/spinlock.h       | 86 +++++++++++++++++++++++++----------
+ arch/x86/include/asm/spinlock_types.h |  2 +
+ arch/x86/kernel/paravirt-spinlocks.c  |  3 ++
+ arch/x86/xen/spinlock.c               |  6 +++
+ 5 files changed, 74 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/include/uapi/asm/kvm_para.h b/arch/x86/include/uapi/asm/kvm_para.h
-index 06fdbd9..94dc8ca 100644
---- a/arch/x86/include/uapi/asm/kvm_para.h
-+++ b/arch/x86/include/uapi/asm/kvm_para.h
-@@ -23,6 +23,7 @@
- #define KVM_FEATURE_ASYNC_PF		4
- #define KVM_FEATURE_STEAL_TIME		5
- #define KVM_FEATURE_PV_EOI		6
-+#define KVM_FEATURE_PV_UNHALT		7
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index 7131e12c..401f350 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -718,7 +718,7 @@ static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock,
+ 	PVOP_VCALLEE2(pv_lock_ops.lock_spinning, lock, ticket);
+ }
  
- /* The last 8 bits are used to indicate how to interpret the flags field
-  * in pvclock structure. If no bits are set, all flags are ignored.
-diff --git a/include/uapi/linux/kvm_para.h b/include/uapi/linux/kvm_para.h
-index cea2c5c..2841f86 100644
---- a/include/uapi/linux/kvm_para.h
-+++ b/include/uapi/linux/kvm_para.h
-@@ -19,6 +19,7 @@
- #define KVM_HC_MMU_OP			2
- #define KVM_HC_FEATURES			3
- #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
-+#define KVM_HC_KICK_CPU			5
+-static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock,
++static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
+ 							__ticket_t ticket)
+ {
+ 	PVOP_VCALL2(pv_lock_ops.unlock_kick, lock, ticket);
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 04a5cd5..d68883d 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -1,11 +1,14 @@
+ #ifndef _ASM_X86_SPINLOCK_H
+ #define _ASM_X86_SPINLOCK_H
  
++#include <linux/jump_label.h>
+ #include <linux/atomic.h>
+ #include <asm/page.h>
+ #include <asm/processor.h>
+ #include <linux/compiler.h>
+ #include <asm/paravirt.h>
++#include <asm/bitops.h>
++
  /*
-  * hypercalls use architecture specific
+  * Your basic SMP spinlocks, allowing only a single CPU anywhere
+  *
+@@ -37,32 +40,28 @@
+ /* How long a lock should spin before we consider blocking */
+ #define SPIN_THRESHOLD	(1 << 15)
+ 
+-#ifndef CONFIG_PARAVIRT_SPINLOCKS
++extern struct static_key paravirt_ticketlocks_enabled;
++static __always_inline bool static_key_false(struct static_key *key);
+ 
+-static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock,
+-							__ticket_t ticket)
++#ifdef CONFIG_PARAVIRT_SPINLOCKS
++
++static inline void __ticket_enter_slowpath(arch_spinlock_t *lock)
+ {
++	set_bit(0, (volatile unsigned long *)&lock->tickets.tail);
+ }
+ 
+-static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock,
+-							 __ticket_t ticket)
++#else  /* !CONFIG_PARAVIRT_SPINLOCKS */
++static __always_inline void __ticket_lock_spinning(arch_spinlock_t *lock,
++							__ticket_t ticket)
+ {
+ }
+-
+-#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
+-
+-
+-/*
+- * If a spinlock has someone waiting on it, then kick the appropriate
+- * waiting cpu.
+- */
+-static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
+-							__ticket_t next)
++static inline void __ticket_unlock_kick(arch_spinlock_t *lock,
++							__ticket_t ticket)
+ {
+-	if (unlikely(lock->tickets.tail != next))
+-		____ticket_unlock_kick(lock, next);
+ }
+ 
++#endif /* CONFIG_PARAVIRT_SPINLOCKS */
++
+ /*
+  * Ticket locks are conceptually two parts, one indicating the current head of
+  * the queue, and the other indicating the current tail. The lock is acquired
+@@ -76,20 +75,22 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
+  * in the high part, because a wide xadd increment of the low part would carry
+  * up and contaminate the high part.
+  */
+-static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
++static __always_inline void arch_spin_lock(arch_spinlock_t *lock)
+ {
+ 	register struct __raw_tickets inc = { .tail = TICKET_LOCK_INC };
+ 
+ 	inc = xadd(&lock->tickets, inc);
++	if (likely(inc.head == inc.tail))
++		goto out;
+ 
++	inc.tail &= ~TICKET_SLOWPATH_FLAG;
+ 	for (;;) {
+ 		unsigned count = SPIN_THRESHOLD;
+ 
+ 		do {
+-			if (inc.head == inc.tail)
++			if (ACCESS_ONCE(lock->tickets.head) == inc.tail)
+ 				goto out;
+ 			cpu_relax();
+-			inc.head = ACCESS_ONCE(lock->tickets.head);
+ 		} while (--count);
+ 		__ticket_lock_spinning(lock, inc.tail);
+ 	}
+@@ -101,7 +102,7 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ 	arch_spinlock_t old, new;
+ 
+ 	old.tickets = ACCESS_ONCE(lock->tickets);
+-	if (old.tickets.head != old.tickets.tail)
++	if (old.tickets.head != (old.tickets.tail & ~TICKET_SLOWPATH_FLAG))
+ 		return 0;
+ 
+ 	new.head_tail = old.head_tail + (TICKET_LOCK_INC << TICKET_SHIFT);
+@@ -110,12 +111,49 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
+ }
+ 
++static inline void __ticket_unlock_slowpath(arch_spinlock_t *lock,
++					    arch_spinlock_t old)
++{
++	arch_spinlock_t new;
++
++	BUILD_BUG_ON(((__ticket_t)NR_CPUS) != NR_CPUS);
++
++	/* Perform the unlock on the "before" copy */
++	old.tickets.head += TICKET_LOCK_INC;
++
++	/* Clear the slowpath flag */
++	new.head_tail = old.head_tail & ~(TICKET_SLOWPATH_FLAG << TICKET_SHIFT);
++
++	/*
++	 * If the lock is uncontended, clear the flag - use cmpxchg in
++	 * case it changes behind our back though.
++	 */
++	if (new.tickets.head != new.tickets.tail ||
++	    cmpxchg(&lock->head_tail, old.head_tail,
++					new.head_tail) != old.head_tail) {
++		/*
++		 * Lock still has someone queued for it, so wake up an
++		 * appropriate waiter.
++		 */
++		__ticket_unlock_kick(lock, old.tickets.head);
++	}
++}
++
+ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
+ {
+-	__ticket_t next = lock->tickets.head + TICKET_LOCK_INC;
++	if (TICKET_SLOWPATH_FLAG &&
++	    static_key_false(&paravirt_ticketlocks_enabled)) {
++		arch_spinlock_t prev;
++
++		prev = *lock;
++		add_smp(&lock->tickets.head, TICKET_LOCK_INC);
++
++		/* add_smp() is a full mb() */
+ 
+-	__add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX);
+-	__ticket_unlock_kick(lock, next);
++		if (unlikely(lock->tickets.tail & TICKET_SLOWPATH_FLAG))
++			__ticket_unlock_slowpath(lock, prev);
++	} else
++		__add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX);
+ }
+ 
+ static inline int arch_spin_is_locked(arch_spinlock_t *lock)
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index e96fcbd..4f1bea1 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -5,8 +5,10 @@
+ 
+ #ifdef CONFIG_PARAVIRT_SPINLOCKS
+ #define __TICKET_LOCK_INC	2
++#define TICKET_SLOWPATH_FLAG	((__ticket_t)1)
+ #else
+ #define __TICKET_LOCK_INC	1
++#define TICKET_SLOWPATH_FLAG	((__ticket_t)0)
+ #endif
+ 
+ #if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
+diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
+index 4251c1d..bbb6c73 100644
+--- a/arch/x86/kernel/paravirt-spinlocks.c
++++ b/arch/x86/kernel/paravirt-spinlocks.c
+@@ -4,6 +4,7 @@
+  */
+ #include <linux/spinlock.h>
+ #include <linux/module.h>
++#include <linux/jump_label.h>
+ 
+ #include <asm/paravirt.h>
+ 
+@@ -15,3 +16,5 @@ struct pv_lock_ops pv_lock_ops = {
+ };
+ EXPORT_SYMBOL(pv_lock_ops);
+ 
++struct static_key paravirt_ticketlocks_enabled = STATIC_KEY_INIT_FALSE;
++EXPORT_SYMBOL(paravirt_ticketlocks_enabled);
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index 6c8792b..546112e 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -157,6 +157,10 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+ 	/* Only check lock once pending cleared */
+ 	barrier();
+ 
++	/* Mark entry to slowpath before doing the pickup test to make
++	   sure we don't deadlock with an unlocker. */
++	__ticket_enter_slowpath(lock);
++
+ 	/* check again make sure it didn't become free while
+ 	   we weren't looking  */
+ 	if (ACCESS_ONCE(lock->tickets.head) == want) {
+@@ -261,6 +265,8 @@ void __init xen_init_spinlocks(void)
+ 		return;
+ 	}
+ 
++	static_key_slow_inc(&paravirt_ticketlocks_enabled);
++
+ 	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
+ 	pv_lock_ops.unlock_kick = xen_unlock_kick;
+ }
 -- 
 1.7.11.7
 
