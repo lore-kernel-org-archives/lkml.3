@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967504Ab3HIB6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:58:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55647 "EHLO
+	id S967549Ab3HIB6x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:58:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55660 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967479Ab3HIB6m (ORCPT
+	with ESMTP id S967503Ab3HIB6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:42 -0400
+	Thu, 8 Aug 2013 21:58:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 026/102] USB: mos7840: fix race in register handling
-Date: Thu,  8 Aug 2013 18:57:02 -0700
-Message-Id: <20130809015015.977967888@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: [ 030/102] iwlwifi: mvm: fix L2P BA ressources leak
+Date: Thu,  8 Aug 2013 18:57:06 -0700
+Message-Id: <20130809015016.966028400@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -26,84 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit d8a083cc746664916d9d36ed9e4d08a29525f245 upstream.
+commit 93a426673fbfeae7fa6b27008828e2ac4c08dbee upstream.
 
-Fix race in mos7840_get_reg which unconditionally manipulated the
-control urb (which may already be in use) by adding a control-urb busy
-flag.
+We didn't release the Rx AMPDU ressources properly.
+This bug led to firmware assert after 16 BA sessions.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes@sipsolutions.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/sta.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -183,6 +183,10 @@
- #define LED_ON_MS	500
- #define LED_OFF_MS	500
- 
-+enum mos7840_flag {
-+	MOS7840_FLAG_CTRL_BUSY,
-+};
-+
- static int device_type;
- 
- static const struct usb_device_id id_table[] = {
-@@ -241,6 +245,8 @@ struct moschip_port {
- 	bool led_flag;
- 	struct timer_list led_timer1;	/* Timer for LED on */
- 	struct timer_list led_timer2;	/* Timer for LED off */
-+
-+	unsigned long flags;
- };
- 
- /*
-@@ -467,10 +473,10 @@ static void mos7840_control_callback(str
- 	case -ESHUTDOWN:
- 		/* this urb is terminated, clean up */
- 		dev_dbg(dev, "%s - urb shutting down with status: %d\n", __func__, status);
--		return;
-+		goto out;
- 	default:
- 		dev_dbg(dev, "%s - nonzero urb status received: %d\n", __func__, status);
--		return;
-+		goto out;
- 	}
- 
- 	dev_dbg(dev, "%s urb buffer size is %d\n", __func__, urb->actual_length);
-@@ -483,6 +489,8 @@ static void mos7840_control_callback(str
- 		mos7840_handle_new_msr(mos7840_port, regval);
- 	else if (mos7840_port->MsrLsr == 1)
- 		mos7840_handle_new_lsr(mos7840_port, regval);
-+out:
-+	clear_bit_unlock(MOS7840_FLAG_CTRL_BUSY, &mos7840_port->flags);
- }
- 
- static int mos7840_get_reg(struct moschip_port *mcs, __u16 Wval, __u16 reg,
-@@ -493,6 +501,9 @@ static int mos7840_get_reg(struct moschi
- 	unsigned char *buffer = mcs->ctrl_buf;
- 	int ret;
- 
-+	if (test_and_set_bit_lock(MOS7840_FLAG_CTRL_BUSY, &mcs->flags))
-+		return -EBUSY;
-+
- 	dr->bRequestType = MCS_RD_RTYPE;
- 	dr->bRequest = MCS_RDREQ;
- 	dr->wValue = cpu_to_le16(Wval);	/* 0 */
-@@ -504,6 +515,9 @@ static int mos7840_get_reg(struct moschi
- 			     mos7840_control_callback, mcs);
- 	mcs->control_urb->transfer_buffer_length = 2;
- 	ret = usb_submit_urb(mcs->control_urb, GFP_ATOMIC);
-+	if (ret)
-+		clear_bit_unlock(MOS7840_FLAG_CTRL_BUSY, &mcs->flags);
-+
- 	return ret;
- }
+--- a/drivers/net/wireless/iwlwifi/mvm/sta.c
++++ b/drivers/net/wireless/iwlwifi/mvm/sta.c
+@@ -621,8 +621,12 @@ int iwl_mvm_sta_rx_agg(struct iwl_mvm *m
+ 	cmd.mac_id_n_color = cpu_to_le32(mvm_sta->mac_id_n_color);
+ 	cmd.sta_id = mvm_sta->sta_id;
+ 	cmd.add_modify = STA_MODE_MODIFY;
+-	cmd.add_immediate_ba_tid = (u8) tid;
+-	cmd.add_immediate_ba_ssn = cpu_to_le16(ssn);
++	if (start) {
++		cmd.add_immediate_ba_tid = (u8) tid;
++		cmd.add_immediate_ba_ssn = cpu_to_le16(ssn);
++	} else {
++		cmd.remove_immediate_ba_tid = (u8) tid;
++	}
+ 	cmd.modify_mask = start ? STA_MODIFY_ADD_BA_TID :
+ 				  STA_MODIFY_REMOVE_BA_TID;
  
 
 
