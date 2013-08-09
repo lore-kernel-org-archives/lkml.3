@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968034Ab3HIQVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:21:07 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:58921 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934227Ab3HIQVF (ORCPT
+	id S968047Ab3HIQWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:22:43 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:56660 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934397Ab3HIQWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:21:05 -0400
-Date: Fri, 9 Aug 2013 18:20:59 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 6/7] nohz_full: Add full-system-idle state
- machine
-Message-ID: <20130809162057.GC13339@somewhere>
-References: <20130726231848.GA12967@linux.vnet.ibm.com>
- <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1374880764-14248-6-git-send-email-paulmck@linux.vnet.ibm.com>
+	Fri, 9 Aug 2013 12:22:42 -0400
+Message-ID: <5205170E.9030605@ahsoftware.de>
+Date: Fri, 09 Aug 2013 18:21:34 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374880764-14248-6-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew de los Reyes <adlr@chromium.org>
+Subject: Re: [rtc-linux] Re: [PATCH 2/2 RESEND] rtc: rtc-hid-sensor-time:
+ enable HID input processing early
+References: <1375382342-25454-1-git-send-email-holler@ahsoftware.de> <1375382342-25454-2-git-send-email-holler@ahsoftware.de> <20130808151106.7ccaedd4ea3d4e5faa6aa220@linux-foundation.org> <5204BA2E.8000100@ahsoftware.de> <alpine.LNX.2.00.1308091310490.13089@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1308091310490.13089@pobox.suse.cz>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 04:19:23PM -0700, Paul E. McKenney wrote:
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 3edae39..ff84bed 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -28,7 +28,7 @@
->  #include <linux/gfp.h>
->  #include <linux/oom.h>
->  #include <linux/smpboot.h>
-> -#include <linux/tick.h>
-> +#include "time/tick-internal.h"
->  
->  #define RCU_KTHREAD_PRIO 1
->  
-> @@ -2395,12 +2395,12 @@ static void rcu_kick_nohz_cpu(int cpu)
->   * most active flavor of RCU.
->   */
->  #ifdef CONFIG_PREEMPT_RCU
-> -static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_preempt_state;
-> +static struct rcu_state *rcu_sysidle_state = &rcu_preempt_state;
->  #else /* #ifdef CONFIG_PREEMPT_RCU */
-> -static struct rcu_state __maybe_unused *rcu_sysidle_state = &rcu_sched_state;
-> +static struct rcu_state *rcu_sysidle_state = &rcu_sched_state;
->  #endif /* #else #ifdef CONFIG_PREEMPT_RCU */
+Am 09.08.2013 13:12, schrieb Jiri Kosina:
+> On Fri, 9 Aug 2013, Alexander Holler wrote:
+>
+>
+>> =================================
+>> [ INFO: inconsistent lock state ]
+>> 3.10.5-dockstar-00038-g03242d1-dirty #408 Not tainted
+>> ---------------------------------
+>> inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+>> swapper/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
+>>   (&(&sd->dyn_callback_lock)->rlock){?.+...}, at: [<c02af9f8>]
+>> sensor_hub_raw_event+0x10c/0x204
+>> {HARDIRQ-ON-W} state was registered at:
+>
+> I think you need the patch below. Please let me know if it fixes it.
 
-Ah you fixed it here. Ok :)
+Thanks a lot. That actually fixed the bug I never have seen before and 
+the patch might be a candidate for the stable series (even if almost no 
+one would see the problem because there don't seem to be many 
+hid-sensor-hub users and the bug seems only to be visible with some 
+debug options enabled).
 
->  
-> -static int __maybe_unused full_sysidle_state; /* Current system-idle state. */
-> +static int full_sysidle_state;		/* Current system-idle state. */
->  #define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
->  #define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
->  #define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
-[...]
-> +/*
-> + * Check to see if the system is fully idle, other than the timekeeping CPU.
-> + * The caller must have disabled interrupts.
-> + */
-> +bool rcu_sys_is_idle(void)
-> +{
-> +	static struct rcu_sysidle_head rsh;
-> +	int rss = ACCESS_ONCE(full_sysidle_state);
-> +
-> +	if (WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu))
-> +		return false;
-> +
-> +	/* Handle small-system case by doing a full scan of CPUs. */
-> +	if (nr_cpu_ids <= RCU_SYSIDLE_SMALL) {
+Btw, I've lied and that bug happened with the enforced error path as 
+well as during normal operation. It seems I have enabled some debug 
+option in the kernel, I never had enabled before.
 
-I don't understand how the nr_cpu_ids > RCU_SYSIDLE_SMALL is handled. There don't
-seem to be other calls of rcu_sysidle_check_cpu() than for small systems.
+Unfortunaly that doesn't answer Andrew Mortons questions.
+
+I've now also verified if hid-sensor-hub receives an event with 
+sensor_hub_raw_event() in the error-path (hid_device_io_stop() called 
+and probe() failed), and this still *does* happen. That event (input 
+report) doesn't come through hid-sensor-hub to my driver, but I think 
+this is because of my call to sensor_hub_remove_callback() which is in 
+the error path too.
+So I actually wonder why the input report still is reported from the 
+hid-subsystem to hid-sensor-hub, even after I've called 
+hid_device_io_stop() and probe() failed.
+Maybe everything is still ok and I just got confused with the somehow 
+complicate interactions between the usb- and hid-subsystem, 
+hid-sensor-hub (which uses MFD) and rtc-hid-sensor-time.
+
+I will also have a look if I find the seem to be missing down(), maybe 
+that will offer some explanations to what goes on. Unfortunately I still 
+don't know the complete path of events, I've stopped reading the source 
+after you've told me about the patch from Andrew de los Reyes, beeing 
+happy to have found a nice and proper solution (instead of the delayed 
+rtc-device registering I did before). ;)
+
+Regards,
+
+Alexander Holler
