@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967339Ab3HIBmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55296 "EHLO
+	id S967326Ab3HIBmn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55291 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967086Ab3HIBlv (ORCPT
+	with ESMTP id S967083Ab3HIBlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:51 -0400
+	Thu, 8 Aug 2013 21:41:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Salman Qazi <sqazi@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [ 14/22] perf: Use css_tryget() to avoid propping up css refcount
-Date: Thu,  8 Aug 2013 18:41:30 -0700
-Message-Id: <20130809013952.311848418@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 13/22] x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
+Date: Thu,  8 Aug 2013 18:41:29 -0700
+Message-Id: <20130809013952.106944525@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
 References: <20130809013949.226228694@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,100 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salman Qazi <sqazi@google.com>
+From: "H.J. Lu" <hjl.tools@gmail.com>
 
-commit 9c5da09d266ca9b32eb16cf940f8161d949c2fe5 upstream.
+commit eaa5a990191d204ba0f9d35dbe5505ec2cdd1460 upstream.
 
-An rmdir pushes css's ref count to zero.  However, if the associated
-directory is open at the time, the dentry ref count is non-zero.  If
-the fd for this directory is then passed into perf_event_open, it
-does a css_get().  This bounces the ref count back up from zero.  This
-is a problem by itself.  But what makes it turn into a crash is the
-fact that we end up doing an extra dput, since we perform a dput
-when css_put sees the ref count go down to zero.
+GCC will optimize mxcsr_feature_mask_init in arch/x86/kernel/i387.c:
 
-css_tryget() does not fall into that trap. So, we use that instead.
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = fx_scratch.mxcsr_mask;
+		if (mask == 0)
+			mask = 0x0000ffbf;
 
-Reproduction test-case for the bug:
+to
 
- #include <unistd.h>
- #include <sys/types.h>
- #include <sys/stat.h>
- #include <fcntl.h>
- #include <linux/unistd.h>
- #include <linux/perf_event.h>
- #include <string.h>
- #include <errno.h>
- #include <stdio.h>
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = 0x0000ffbf;
 
- #define PERF_FLAG_PID_CGROUP    (1U << 2)
+since asm statement doesn’t say it will update fx_scratch.  As the
+result, the DAZ bit will be cleared.  This patch fixes it. This bug
+dates back to at least kernel 2.6.12.
 
- int perf_event_open(struct perf_event_attr *hw_event_uptr,
-                     pid_t pid, int cpu, int group_fd, unsigned long flags) {
-         return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
-                 group_fd, flags);
- }
-
- /*
-  * Directly poke at the perf_event bug, since it's proving hard to repro
-  * depending on where in the kernel tree.  what moved?
-  */
- int main(int argc, char **argv)
- {
-        int fd;
-        struct perf_event_attr attr;
-        memset(&attr, 0, sizeof(attr));
-        attr.exclude_kernel = 1;
-        attr.size = sizeof(attr);
-        mkdir("/dev/cgroup/perf_event/blah", 0777);
-        fd = open("/dev/cgroup/perf_event/blah", O_RDONLY);
-        perror("open");
-        rmdir("/dev/cgroup/perf_event/blah");
-        sleep(2);
-        perf_event_open(&attr, fd, 0, -1,  PERF_FLAG_PID_CGROUP);
-        perror("perf_event_open");
-        close(fd);
-        return 0;
- }
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ arch/x86/kernel/i387.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -223,9 +223,9 @@ perf_cgroup_match(struct perf_event *eve
- 	return !event->cgrp || event->cgrp == cpuctx->cgrp;
- }
- 
--static inline void perf_get_cgroup(struct perf_event *event)
-+static inline bool perf_tryget_cgroup(struct perf_event *event)
- {
--	css_get(&event->cgrp->css);
-+	return css_tryget(&event->cgrp->css);
- }
- 
- static inline void perf_put_cgroup(struct perf_event *event)
-@@ -415,7 +415,11 @@ static inline int perf_cgroup_connect(in
- 	event->cgrp = cgrp;
- 
- 	/* must be done before we fput() the file */
--	perf_get_cgroup(event);
-+	if (!perf_tryget_cgroup(event)) {
-+		event->cgrp = NULL;
-+		ret = -ENOENT;
-+		goto out;
-+	}
- 
- 	/*
- 	 * all events in a group must monitor
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -51,7 +51,7 @@ void __cpuinit mxcsr_feature_mask_init(v
+ 	clts();
+ 	if (cpu_has_fxsr) {
+ 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+-		asm volatile("fxsave %0" : : "m" (fx_scratch));
++		asm volatile("fxsave %0" : "+m" (fx_scratch));
+ 		mask = fx_scratch.mxcsr_mask;
+ 		if (mask == 0)
+ 			mask = 0x0000ffbf;
 
 
