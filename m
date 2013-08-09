@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967911Ab3HIPeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:34:06 -0400
-Received: from mailout08.t-online.de ([194.25.134.20]:48089 "EHLO
-	mailout08.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965066Ab3HIPeE (ORCPT
+	id S967939Ab3HIPeZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:34:25 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:32298 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964987Ab3HIPeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:34:04 -0400
-Date: Fri, 9 Aug 2013 17:33:43 +0200
-From: "Michael Brunner" <BrunnerMichael@t-online.de>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Kevin Strasser <strassek@engr.orst.edu>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Michael Brunner <Michael.Brunner@kontron.com>,
-        Chris Healy <chealy@imsco-us.com>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] mfd: Add support for COMe-bHL6 and COMe-cTH6 to Kontron PLD
- driver
-Message-ID: <20130809173343.7843a13a@charybdis>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Fri, 9 Aug 2013 11:34:23 -0400
+Message-ID: <1376062391.10300.245.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] mm/hotplug: Verify hotplug memory range
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, dave@sr71.net,
+        isimatu.yasuaki@jp.fujitsu.com, vasilis.liaskovitis@profitbricks.com
+Date: Fri, 09 Aug 2013 09:33:11 -0600
+In-Reply-To: <5204838E.1060602@cn.fujitsu.com>
+References: <1375980460-28311-1-git-send-email-toshi.kani@hp.com>
+	 <5204838E.1060602@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-ID: XR33FqZQZhW50k2xN5nJLc-rU+VPWRt2J1s4xJbuYxRk7W3-RAHRC0P0V9QD4zpgEX
-X-TOI-MSGID: f70833c5-51f0-4dbb-9054-7922c1a050d8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds DMI system IDs for the new Kontron modules COMe-bHL6 and
-COMe-cTH6 to the Kontron PLD driver.
+On Fri, 2013-08-09 at 13:52 +0800, Tang Chen wrote:
+> On 08/09/2013 12:47 AM, Toshi Kani wrote:
+> > add_memory() and remove_memory() can only handle a memory range aligned
+> > with section.  There are problems when an unaligned range is added and
+> > then deleted as follows:
+> >
+> >   - add_memory() with an unaligned range succeeds, but __add_pages()
+> >     called from add_memory() adds a whole section of pages even though
+> >     a given memory range is less than the section size.
+> >   - remove_memory() to the added unaligned range hits BUG_ON() in
+> >     __remove_pages().
+> >
+> > This patch changes add_memory() and remove_memory() to check if a given
+> > memory range is aligned with section at the beginning.  As the result,
+> > add_memory() fails with -EINVAL when a given range is unaligned, and
+> > does not add such memory range.  This prevents remove_memory() to be
+> > called with an unaligned range as well.  Note that remove_memory() has
+> > to use BUG_ON() since this function cannot fail.
+> >
+> > Signed-off-by: Toshi Kani<toshi.kani@hp.com>
+> > ---
+> >   mm/memory_hotplug.c |   22 ++++++++++++++++++++++
+> >   1 file changed, 22 insertions(+)
+> >
+> > diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> > index ca1dd3a..ac182de 100644
+> > --- a/mm/memory_hotplug.c
+> > +++ b/mm/memory_hotplug.c
+> > @@ -1069,6 +1069,22 @@ out:
+> >   	return ret;
+> >   }
+> >
+> > +static int check_hotplug_memory_range(u64 start, u64 size)
+> > +{
+> > +	u64 start_pfn = start>>  PAGE_SHIFT;
+> > +	u64 nr_pages = size>>  PAGE_SHIFT;
+> > +
+> > +	/* Memory range must be aligned with section */
+> > +	if ((start_pfn&  ~PAGE_SECTION_MASK) ||
+> > +	    (nr_pages % PAGES_PER_SECTION) || (!nr_pages)) {
+> > +		pr_err("Unsupported hotplug range: start 0x%llx, size 0x%llx\n",
+> > +				start, size);
+> 
+> I think the message here should tell users that only support range aligned
+> to section. Others seems OK to me.
 
-Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
----
- drivers/mfd/kempld-core.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+OK, I will change the message to something like this:
 
-diff --git a/drivers/mfd/kempld-core.c b/drivers/mfd/kempld-core.c
-index 686a456..ee28e76 100644
---- a/drivers/mfd/kempld-core.c
-+++ b/drivers/mfd/kempld-core.c
-@@ -413,6 +413,15 @@ static struct platform_driver kempld_driver = {
- 
- static struct dmi_system_id __initdata kempld_dmi_table[] = {
- 	{
-+		.ident = "BHL6",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
-+			DMI_MATCH(DMI_BOARD_NAME, "COMe-bHL6"),
-+		},
-+		.driver_data = (void *)&kempld_platform_data_generic,
-+		.callback = kempld_create_platform_device,
-+	},
-+	{
- 		.ident = "CCR2",
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
-@@ -596,6 +605,15 @@ static struct dmi_system_id __initdata kempld_dmi_table[] = {
- 		.driver_data = (void *)&kempld_platform_data_generic,
- 		.callback = kempld_create_platform_device,
- 	},
-+	{
-+		.ident = "UTH6",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
-+			DMI_MATCH(DMI_BOARD_NAME, "COMe-cTH6"),
-+		},
-+		.driver_data = (void *)&kempld_platform_data_generic,
-+		.callback = kempld_create_platform_device,
-+	},
- 	{}
- };
- MODULE_DEVICE_TABLE(dmi, kempld_dmi_table);
+  pr_err("Section-unaligned hotplug range: start 0x%llx, size 0x%llx\n",
+                                start, size);
+
+> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+
+Thanks!
+-Toshi
+
+
+
+
