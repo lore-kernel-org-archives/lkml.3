@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030374Ab3HICHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:07:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55846 "EHLO
+	id S1030382Ab3HICHp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:07:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55839 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967597Ab3HIB7Y (ORCPT
+	with ESMTP id S967572Ab3HIB7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:24 -0400
+	Thu, 8 Aug 2013 21:59:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeremy Eder <jeder@redhat.com>, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 067/102] Revert "cpuidle: Quickly notice prediction failure in general case"
-Date: Thu,  8 Aug 2013 18:57:43 -0700
-Message-Id: <20130809015025.996644747@linuxfoundation.org>
+        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Zhouping Liu <zliu@redhat.com>
+Subject: [ 074/102] drm/i915: Preserve the DDI_A_4_LANES bit from the bios
+Date: Thu,  8 Aug 2013 18:57:50 -0700
+Message-Id: <20130809015027.666587088@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,103 +31,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Stéphane Marchesin <marcheu@chromium.org>
 
-commit 228b30234f258a193317874854eee1ca7807186e upstream.
+commit bcf53de4e60d9000b82f541d654529e2902a4c2c upstream.
 
-Revert commit e11538d1 (cpuidle: Quickly notice prediction failure in
-general case), since it depends on commit 69a37be (cpuidle: Quickly
-notice prediction failure for repeat mode) that has been identified
-as the source of a significant performance regression in v3.8 and
-later.
+Otherwise the DDI_A_4_LANES bit gets lost and we can't use > 2 lanes
+on eDP. This fixes eDP on hsw with > 2 lanes.
 
-Requested-by: Jeremy Eder <jeder@redhat.com>
-Tested-by: Len Brown <len.brown@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Also s/port_reversal/saved_port_bits/ since the current name is
+confusing.
+
+Signed-off-by: Stéphane Marchesin <marcheu@chromium.org>
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Zhouping Liu <zliu@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpuidle/governors/menu.c |   35 +----------------------------------
- 1 file changed, 1 insertion(+), 34 deletions(-)
+ drivers/gpu/drm/i915/intel_ddi.c |   10 ++++++----
+ drivers/gpu/drm/i915/intel_drv.h |    2 +-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -34,7 +34,7 @@
- static DEFINE_PER_CPU(struct hrtimer, menu_hrtimer);
- static DEFINE_PER_CPU(int, hrtimer_status);
- /* menu hrtimer mode */
--enum {MENU_HRTIMER_STOP, MENU_HRTIMER_REPEAT, MENU_HRTIMER_GENERAL};
-+enum {MENU_HRTIMER_STOP, MENU_HRTIMER_REPEAT};
+--- a/drivers/gpu/drm/i915/intel_ddi.c
++++ b/drivers/gpu/drm/i915/intel_ddi.c
+@@ -684,7 +684,7 @@ static void intel_ddi_mode_set(struct dr
+ 		struct intel_digital_port *intel_dig_port =
+ 			enc_to_dig_port(encoder);
  
- /*
-  * Concepts and ideas behind the menu governor
-@@ -116,13 +116,6 @@ enum {MENU_HRTIMER_STOP, MENU_HRTIMER_RE
-  *
-  */
- 
--/*
-- * The C-state residency is so long that is is worthwhile to exit
-- * from the shallow C-state and re-enter into a deeper C-state.
-- */
--static unsigned int perfect_cstate_ms __read_mostly = 30;
--module_param(perfect_cstate_ms, uint, 0000);
--
- struct menu_device {
- 	int		last_state_idx;
- 	int             needs_update;
-@@ -223,16 +216,6 @@ EXPORT_SYMBOL_GPL(menu_hrtimer_cancel);
- static enum hrtimer_restart menu_hrtimer_notify(struct hrtimer *hrtimer)
- {
- 	int cpu = smp_processor_id();
--	struct menu_device *data = &per_cpu(menu_devices, cpu);
--
--	/* In general case, the expected residency is much larger than
--	 *  deepest C-state target residency, but prediction logic still
--	 *  predicts a small predicted residency, so the prediction
--	 *  history is totally broken if the timer is triggered.
--	 *  So reset the correction factor.
--	 */
--	if (per_cpu(hrtimer_status, cpu) == MENU_HRTIMER_GENERAL)
--		data->correction_factor[data->bucket] = RESOLUTION * DECAY;
- 
- 	per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_STOP;
- 
-@@ -389,7 +372,6 @@ static int menu_select(struct cpuidle_dr
- 	/* not deepest C-state chosen for low predicted residency */
- 	if (low_predicted) {
- 		unsigned int timer_us = 0;
--		unsigned int perfect_us = 0;
- 
- 		/*
- 		 * Set a timer to detect whether this sleep is much
-@@ -400,28 +382,13 @@ static int menu_select(struct cpuidle_dr
+-		intel_dp->DP = intel_dig_port->port_reversal |
++		intel_dp->DP = intel_dig_port->saved_port_bits |
+ 			       DDI_BUF_CTL_ENABLE | DDI_BUF_EMP_400MV_0DB_HSW;
+ 		switch (intel_dp->lane_count) {
+ 		case 1:
+@@ -1324,7 +1324,8 @@ static void intel_enable_ddi(struct inte
+ 		 * enabling the port.
  		 */
- 		timer_us = 2 * (data->predicted_us + MAX_DEVIATION);
+ 		I915_WRITE(DDI_BUF_CTL(port),
+-			   intel_dig_port->port_reversal | DDI_BUF_CTL_ENABLE);
++			   intel_dig_port->saved_port_bits |
++			   DDI_BUF_CTL_ENABLE);
+ 	} else if (type == INTEL_OUTPUT_EDP) {
+ 		struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
  
--		perfect_us = perfect_cstate_ms * 1000;
--
- 		if (repeat && (4 * timer_us < data->expected_us)) {
- 			RCU_NONIDLE(hrtimer_start(hrtmr,
- 				ns_to_ktime(1000 * timer_us),
- 				HRTIMER_MODE_REL_PINNED));
- 			/* In repeat case, menu hrtimer is started */
- 			per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_REPEAT;
--		} else if (perfect_us < data->expected_us) {
--			/*
--			 * The next timer is long. This could be because
--			 * we did not make a useful prediction.
--			 * In that case, it makes sense to re-enter
--			 * into a deeper C-state after some time.
--			 */
--			RCU_NONIDLE(hrtimer_start(hrtmr,
--				ns_to_ktime(1000 * timer_us),
--				HRTIMER_MODE_REL_PINNED));
--			/* In general case, menu hrtimer is started */
--			per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_GENERAL;
- 		}
--
- 	}
+@@ -1543,8 +1544,9 @@ void intel_ddi_init(struct drm_device *d
+ 	intel_encoder->get_hw_state = intel_ddi_get_hw_state;
  
- 	return data->last_state_idx;
+ 	intel_dig_port->port = port;
+-	intel_dig_port->port_reversal = I915_READ(DDI_BUF_CTL(port)) &
+-					DDI_BUF_PORT_REVERSAL;
++	intel_dig_port->saved_port_bits = I915_READ(DDI_BUF_CTL(port)) &
++					  (DDI_BUF_PORT_REVERSAL |
++					   DDI_A_4_LANES);
+ 	if (hdmi_connector)
+ 		intel_dig_port->hdmi.hdmi_reg = DDI_BUF_CTL(port);
+ 	intel_dig_port->dp.output_reg = DDI_BUF_CTL(port);
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -426,7 +426,7 @@ struct intel_dp {
+ struct intel_digital_port {
+ 	struct intel_encoder base;
+ 	enum port port;
+-	u32 port_reversal;
++	u32 saved_port_bits;
+ 	struct intel_dp dp;
+ 	struct intel_hdmi hdmi;
+ };
 
 
