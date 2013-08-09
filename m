@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967590Ab3HIKqg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:46:36 -0400
+	id S967697Ab3HIKqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:46:46 -0400
 Received: from mga03.intel.com ([143.182.124.21]:22271 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967291Ab3HIKqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:46:32 -0400
+	id S967576Ab3HIKqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:46:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,845,1367996400"; 
-   d="scan'208";a="279834470"
+   d="scan'208";a="279834514"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V10 10/13] perf tools: add support for PERF_SAMPLE_IDENTFIER
-Date: Fri,  9 Aug 2013 13:51:56 +0300
-Message-Id: <1376045519-13832-11-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V10 13/13] perf tools: add a sample parsing test
+Date: Fri,  9 Aug 2013 13:51:59 +0300
+Message-Id: <1376045519-13832-14-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
 References: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
@@ -28,359 +28,375 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable parsing of samples with sample format bit
-PERF_SAMPLE_IDENTFIER.  In addition, if the kernel supports
-it, prefer it to selecting PERF_SAMPLE_ID thereby avoiding
-the need to force compatible sample types.
+Add a test that checks that sample parsing is correctly
+implemented.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/tests/mmap-basic.c |  2 +-
- tools/perf/util/event.h       |  9 +++--
- tools/perf/util/evlist.c      |  5 ++-
- tools/perf/util/evlist.h      |  2 +
- tools/perf/util/evsel.c       | 45 +++++++++++++++++----
- tools/perf/util/evsel.h       |  3 +-
- tools/perf/util/record.c      | 94 ++++++++++++++++++++++++++++++++++++++++---
- 7 files changed, 141 insertions(+), 19 deletions(-)
+ tools/perf/Makefile               |   1 +
+ tools/perf/tests/builtin-test.c   |   4 +
+ tools/perf/tests/sample-parsing.c | 313 ++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h          |   1 +
+ 4 files changed, 319 insertions(+)
+ create mode 100644 tools/perf/tests/sample-parsing.c
 
-diff --git a/tools/perf/tests/mmap-basic.c b/tools/perf/tests/mmap-basic.c
-index 5b1b5ab..c4185b9 100644
---- a/tools/perf/tests/mmap-basic.c
-+++ b/tools/perf/tests/mmap-basic.c
-@@ -72,7 +72,7 @@ int test__basic_mmap(void)
- 		}
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 868358c..a069578 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -439,6 +439,7 @@ PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
+ ifneq ($(OUTPUT),)
+   CFLAGS += -I$(OUTPUT)
+ endif
++LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
  
- 		evsels[i]->attr.wakeup_events = 1;
--		perf_evsel__set_sample_id(evsels[i]);
-+		perf_evsel__set_sample_id(evsels[i], false);
- 
- 		perf_evlist__add(evlist, evsels[i]);
- 
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index de4bfe0..b0921fe 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -53,7 +53,8 @@ struct read_event {
- 	(PERF_SAMPLE_IP | PERF_SAMPLE_TID |		\
- 	 PERF_SAMPLE_TIME | PERF_SAMPLE_ADDR |		\
- 	PERF_SAMPLE_ID | PERF_SAMPLE_STREAM_ID |	\
--	 PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD)
-+	 PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD |		\
-+	 PERF_SAMPLE_IDENTIFIER)
- 
- /*
-  * Events have compatible sample types if the following bits all have the same
-@@ -61,13 +62,15 @@ struct read_event {
-  * events the order is: PERF_SAMPLE_IP, PERF_SAMPLE_TID, PERF_SAMPLE_TIME,
-  * PERF_SAMPLE_ADDR, PERF_SAMPLE_ID.  For non-sample events the sample members
-  * are accessed in reverse order.  The order is: PERF_SAMPLE_ID,
-- * PERF_SAMPLE_STREAM_ID, PERF_SAMPLE_CPU.
-+ * PERF_SAMPLE_STREAM_ID, PERF_SAMPLE_CPU.  PERF_SAMPLE_IDENTIFIER is added for
-+ * completeness but it should not be used with PERF_SAMPLE_ID.  Sample types
-+ * that include PERF_SAMPLE_IDENTIFIER are always compatible.
-  */
- #define PERF_COMPAT_MASK				\
- 	(PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |	\
- 	 PERF_SAMPLE_TIME | PERF_SAMPLE_ADDR      |	\
- 	 PERF_SAMPLE_ID   | PERF_SAMPLE_STREAM_ID |	\
--	 PERF_SAMPLE_CPU)
-+	 PERF_SAMPLE_CPU  | PERF_SAMPLE_IDENTIFIER)
- 
- struct sample_event {
- 	struct perf_event_header        header;
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index e734926..bf8155c 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -56,7 +56,7 @@ struct perf_evlist *perf_evlist__new(void)
-  * Events with compatible sample types all have the same id_pos
-  * and is_pos.  For convenience, put a copy on evlist.
-  */
--static void perf_evlist__set_id_pos(struct perf_evlist *evlist)
-+void perf_evlist__set_id_pos(struct perf_evlist *evlist)
- {
- 	struct perf_evsel *first = perf_evlist__first(evlist);
- 
-@@ -848,6 +848,9 @@ u16 perf_evlist__id_hdr_size(struct perf_evlist *evlist)
- 
- 	if (sample_type & PERF_SAMPLE_CPU)
- 		size += sizeof(data->cpu) * 2;
+ ifdef NO_LIBELF
+ EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
+diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
+index f5af192..8ad9415 100644
+--- a/tools/perf/tests/builtin-test.c
++++ b/tools/perf/tests/builtin-test.c
+@@ -104,6 +104,10 @@ static struct test {
+ 		.func = test__code_reading,
+ 	},
+ 	{
++		.desc = "Test sample parsing",
++		.func = test__sample_parsing,
++	},
++	{
+ 		.func = NULL,
+ 	},
+ };
+diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
+new file mode 100644
+index 0000000..c662927
+--- /dev/null
++++ b/tools/perf/tests/sample-parsing.c
+@@ -0,0 +1,313 @@
++#include <stdbool.h>
++#include <inttypes.h>
 +
-+	if (sample_type & PERF_SAMPLE_IDENTIFIER)
-+		size += sizeof(data->id);
- out:
- 	return size;
- }
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 1019758..3eb2c13 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -89,7 +89,9 @@ union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
- int perf_evlist__open(struct perf_evlist *evlist);
- void perf_evlist__close(struct perf_evlist *evlist);
- 
-+void perf_evlist__set_id_pos(struct perf_evlist *evlist);
- void perf_evlist__make_sample_types_compatible(struct perf_evlist *evlist);
-+bool perf_can_sample_identifier(void);
- void perf_evlist__config(struct perf_evlist *evlist,
- 			 struct perf_record_opts *opts);
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index e1010a3..aa7fd5f 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -50,13 +50,17 @@ int __perf_evsel__sample_size(u64 sample_type)
-  * __perf_evsel__calc_id_pos - calculate id_pos.
-  * @sample_type: sample type
-  *
-- * This function returns the position of the event id (PERF_SAMPLE_ID) in a
-- * sample event i.e. in the array of struct sample_event.
-+ * This function returns the position of the event id (PERF_SAMPLE_ID or
-+ * PERF_SAMPLE_IDENTIFIER) in a sample event i.e. in the array of struct
-+ * sample_event.
-  */
- static int __perf_evsel__calc_id_pos(u64 sample_type)
- {
- 	int idx = 0;
- 
-+	if (sample_type & PERF_SAMPLE_IDENTIFIER)
-+		return 0;
++#include "util.h"
++#include "event.h"
++#include "evsel.h"
 +
- 	if (!(sample_type & PERF_SAMPLE_ID))
- 		return -1;
- 
-@@ -80,13 +84,16 @@ static int __perf_evsel__calc_id_pos(u64 sample_type)
-  * @sample_type: sample type
-  *
-  * This function returns the position (counting backwards) of the event id
-- * (PERF_SAMPLE_ID) in a non-sample event i.e. if sample_id_all is used there is
-- * an id sample appended to non-sample events.
-+ * (PERF_SAMPLE_ID or PERF_SAMPLE_IDENTIFIER) in a non-sample event i.e. if
-+ * sample_id_all is used there is an id sample appended to non-sample events.
-  */
- static int __perf_evsel__calc_is_pos(u64 sample_type)
- {
- 	int idx = 1;
- 
-+	if (sample_type & PERF_SAMPLE_IDENTIFIER)
-+		return 1;
++#include "tests.h"
 +
- 	if (!(sample_type & PERF_SAMPLE_ID))
- 		return -1;
- 
-@@ -135,9 +142,15 @@ void __perf_evsel__reset_sample_bit(struct perf_evsel *evsel,
- 	}
- }
- 
--void perf_evsel__set_sample_id(struct perf_evsel *evsel)
-+void perf_evsel__set_sample_id(struct perf_evsel *evsel,
-+			       bool can_sample_identifier)
- {
--	perf_evsel__set_sample_bit(evsel, ID);
-+	if (can_sample_identifier) {
-+		perf_evsel__reset_sample_bit(evsel, ID);
-+		perf_evsel__set_sample_bit(evsel, IDENTIFIER);
-+	} else {
-+		perf_evsel__set_sample_bit(evsel, ID);
-+	}
- 	evsel->attr.read_format |= PERF_FORMAT_ID;
- }
- 
-@@ -570,7 +583,7 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 		 * We need ID even in case of single event, because
- 		 * PERF_SAMPLE_READ process ID specific data.
- 		 */
--		perf_evsel__set_sample_id(evsel);
-+		perf_evsel__set_sample_id(evsel, false);
- 
- 		/*
- 		 * Apply group format only if we belong to group
-@@ -1125,6 +1138,11 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
- 	array += ((event->header.size -
- 		   sizeof(event->header)) / sizeof(u64)) - 1;
- 
-+	if (type & PERF_SAMPLE_IDENTIFIER) {
-+		sample->id = *array;
-+		array--;
-+	}
++#define COMP(m) do {					\
++	if (s1->m != s2->m) {				\
++		pr_debug("Samples differ at '"#m"'\n");	\
++		return false;				\
++	}						\
++} while (0)
 +
- 	if (type & PERF_SAMPLE_CPU) {
- 		u.val64 = *array;
- 		if (swapped) {
-@@ -1221,6 +1239,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 	if (evsel->sample_size + sizeof(event->header) > event->header.size)
- 		return -EFAULT;
- 
-+	data->id = -1ULL;
-+	if (type & PERF_SAMPLE_IDENTIFIER) {
-+		data->id = *array;
-+		array++;
-+	}
++#define MCOMP(m) do {					\
++	if (memcmp(&s1->m, &s2->m, sizeof(s1->m))) {	\
++		pr_debug("Samples differ at '"#m"'\n");	\
++		return false;				\
++	}						\
++} while (0)
 +
- 	if (type & PERF_SAMPLE_IP) {
- 		data->ip = *array;
- 		array++;
-@@ -1251,7 +1275,6 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
- 		array++;
- 	}
- 
--	data->id = -1ULL;
- 	if (type & PERF_SAMPLE_ID) {
- 		data->id = *array;
- 		array++;
-@@ -1433,6 +1456,11 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 
- 	array = event->sample.array;
- 
-+	if (type & PERF_SAMPLE_IDENTIFIER) {
-+		*array = sample->id;
-+		array++;
-+	}
-+
- 	if (type & PERF_SAMPLE_IP) {
- 		*array = sample->ip;
- 		array++;
-@@ -1621,6 +1649,7 @@ static int sample_type__fprintf(FILE *fp, bool *first, u64 value)
- 		bit_name(READ), bit_name(CALLCHAIN), bit_name(ID), bit_name(CPU),
- 		bit_name(PERIOD), bit_name(STREAM_ID), bit_name(RAW),
- 		bit_name(BRANCH_STACK), bit_name(REGS_USER), bit_name(STACK_USER),
-+		bit_name(IDENTIFIER),
- 		{ .name = NULL, }
- 	};
- #undef bit_name
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 3056f4f..97e7a35 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -152,7 +152,8 @@ void __perf_evsel__reset_sample_bit(struct perf_evsel *evsel,
- #define perf_evsel__reset_sample_bit(evsel, bit) \
- 	__perf_evsel__reset_sample_bit(evsel, PERF_SAMPLE_##bit)
- 
--void perf_evsel__set_sample_id(struct perf_evsel *evsel);
-+void perf_evsel__set_sample_id(struct perf_evsel *evsel,
-+			       bool use_sample_identifier);
- 
- int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
- 			   const char *filter);
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index 67291e4..6e01bf2 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -1,11 +1,83 @@
- #include "evlist.h"
- #include "evsel.h"
- #include "cpumap.h"
-+#include "parse-events.h"
-+
-+typedef void (*setup_probe_fn_t)(struct perf_evsel *evsel);
-+
-+static int perf_do_probe_api(setup_probe_fn_t fn, int cpu, const char *str)
++static bool samples_same(const struct perf_sample *s1,
++			 const struct perf_sample *s2, u64 type, u64 regs_user,
++			 u64 read_format)
 +{
-+	struct perf_evlist *evlist;
-+	struct perf_evsel *evsel;
-+	int err = -EAGAIN, fd;
++	size_t i;
 +
-+	evlist = perf_evlist__new();
-+	if (!evlist)
-+		return -ENOMEM;
++	if (type & PERF_SAMPLE_IDENTIFIER)
++		COMP(id);
 +
-+	if (parse_events(evlist, str))
-+		goto out_delete;
++	if (type & PERF_SAMPLE_IP)
++		COMP(ip);
 +
-+	evsel = perf_evlist__first(evlist);
-+
-+	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
-+	if (fd < 0)
-+		goto out_delete;
-+	close(fd);
-+
-+	fn(evsel);
-+
-+	fd = sys_perf_event_open(&evsel->attr, -1, cpu, -1, 0);
-+	if (fd < 0) {
-+		if (errno == EINVAL)
-+			err = -EINVAL;
-+		goto out_delete;
++	if (type & PERF_SAMPLE_TID) {
++		COMP(pid);
++		COMP(tid);
 +	}
-+	close(fd);
-+	err = 0;
 +
-+out_delete:
-+	perf_evlist__delete(evlist);
-+	return err;
-+}
++	if (type & PERF_SAMPLE_TIME)
++		COMP(time);
 +
-+static bool perf_probe_api(setup_probe_fn_t fn)
-+{
-+	const char *try[] = {"cycles:u", "instructions:u", "cpu-clock", NULL};
-+	struct cpu_map *cpus;
-+	int cpu, ret, i = 0;
++	if (type & PERF_SAMPLE_ADDR)
++		COMP(addr);
 +
-+	cpus = cpu_map__new(NULL);
-+	if (!cpus)
-+		return false;
-+	cpu = cpus->map[0];
-+	cpu_map__delete(cpus);
++	if (type & PERF_SAMPLE_ID)
++		COMP(id);
 +
-+	do {
-+		ret = perf_do_probe_api(fn, cpu, try[i++]);
-+		if (!ret)
-+			return true;
-+	} while (ret == -EAGAIN && try[i]);
++	if (type & PERF_SAMPLE_STREAM_ID)
++		COMP(stream_id);
 +
-+	return false;
-+}
++	if (type & PERF_SAMPLE_CPU)
++		COMP(cpu);
 +
-+static void perf_probe_sample_identifier(struct perf_evsel *evsel)
-+{
-+	evsel->attr.sample_type |= PERF_SAMPLE_IDENTIFIER;
-+}
++	if (type & PERF_SAMPLE_PERIOD)
++		COMP(period);
 +
-+bool perf_can_sample_identifier(void)
-+{
-+	return perf_probe_api(perf_probe_sample_identifier);
-+}
- 
- void perf_evlist__config(struct perf_evlist *evlist,
--			 struct perf_record_opts *opts)
-+			struct perf_record_opts *opts)
- {
- 	struct perf_evsel *evsel;
-+	bool use_sample_identifier = false;
-+
- 	/*
- 	 * Set the evsel leader links before we configure attributes,
- 	 * since some might depend on this info.
-@@ -16,12 +88,24 @@ void perf_evlist__config(struct perf_evlist *evlist,
- 	if (evlist->cpus->map[0] < 0)
- 		opts->no_inherit = true;
- 
--	list_for_each_entry(evsel, &evlist->entries, node) {
-+	list_for_each_entry(evsel, &evlist->entries, node)
- 		perf_evsel__config(evsel, opts);
- 
--		if (evlist->nr_entries > 1)
--			perf_evsel__set_sample_id(evsel);
-+	if (evlist->nr_entries > 1) {
-+		struct perf_evsel *first = perf_evlist__first(evlist);
-+
-+		list_for_each_entry(evsel, &evlist->entries, node) {
-+			if (evsel->attr.sample_type == first->attr.sample_type)
-+				continue;
-+			use_sample_identifier = perf_can_sample_identifier();
-+			break;
++	if (type & PERF_SAMPLE_READ) {
++		if (read_format & PERF_FORMAT_GROUP)
++			COMP(read.group.nr);
++		else
++			COMP(read.one.value);
++		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
++			COMP(read.time_enabled);
++		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
++			COMP(read.time_running);
++		/* PERF_FORMAT_ID is forced for PERF_SAMPLE_READ */
++		if (read_format & PERF_FORMAT_GROUP) {
++			for (i = 0; i < s1->read.group.nr; i++)
++				MCOMP(read.group.values[i]);
++		} else {
++			COMP(read.one.id);
 +		}
-+		list_for_each_entry(evsel, &evlist->entries, node)
-+			perf_evsel__set_sample_id(evsel, use_sample_identifier);
- 	}
++	}
++
++	if (type & PERF_SAMPLE_CALLCHAIN) {
++		COMP(callchain->nr);
++		for (i = 0; i < s1->callchain->nr; i++)
++			COMP(callchain->ips[i]);
++	}
++
++	if (type & PERF_SAMPLE_RAW) {
++		COMP(raw_size);
++		if (memcmp(s1->raw_data, s2->raw_data, s1->raw_size)) {
++			pr_debug("Samples differ at 'raw_data'\n");
++			return false;
++		}
++	}
++
++	if (type & PERF_SAMPLE_BRANCH_STACK) {
++		COMP(branch_stack->nr);
++		for (i = 0; i < s1->branch_stack->nr; i++)
++			MCOMP(branch_stack->entries[i]);
++	}
++
++	if (type & PERF_SAMPLE_REGS_USER) {
++		size_t sz = hweight_long(regs_user) * sizeof(u64);
++
++		if ((sz && (!s1->user_regs.regs || !s2->user_regs.regs)) ||
++		    memcmp(s1->user_regs.regs, s2->user_regs.regs, sz)) {
++			pr_debug("Samples differ at 'user_regs'\n");
++			return false;
++		}
++	}
++
++	if (type & PERF_SAMPLE_STACK_USER) {
++		COMP(user_stack.size);
++		if (memcmp(s1->user_stack.data, s1->user_stack.data,
++			   s1->user_stack.size)) {
++			pr_debug("Samples differ at 'user_stack'\n");
++			return false;
++		}
++	}
++
++	if (type & PERF_SAMPLE_WEIGHT)
++		COMP(weight);
++
++	if (type & PERF_SAMPLE_DATA_SRC)
++		COMP(data_src);
++
++	return true;
++}
++
++static int do_test(u64 sample_type, u64 sample_regs_user, u64 read_format)
++{
++	struct perf_evsel evsel = {
++		.needs_swap = false,
++		.attr = {
++			.sample_type = sample_type,
++			.sample_regs_user = sample_regs_user,
++			.read_format = read_format,
++		},
++	};
++	union perf_event *event;
++	union {
++		struct ip_callchain callchain;
++		u64 data[64];
++	} callchain = {
++		/* 3 ips */
++		.data = {3, 201, 202, 203},
++	};
++	union {
++		struct branch_stack branch_stack;
++		u64 data[64];
++	} branch_stack = {
++		/* 1 branch_entry */
++		.data = {1, 211, 212, 213},
++	};
++	u64 user_regs[64];
++	const u64 raw_data[] = {0x123456780a0b0c0dULL, 0x1102030405060708ULL};
++	const u64 data[] = {0x2211443366558877ULL, 0, 0xaabbccddeeff4321ULL};
++	struct perf_sample sample = {
++		.ip		= 101,
++		.pid		= 102,
++		.tid		= 103,
++		.time		= 104,
++		.addr		= 105,
++		.id		= 106,
++		.stream_id	= 107,
++		.period		= 108,
++		.weight		= 109,
++		.cpu		= 110,
++		.raw_size	= sizeof(raw_data),
++		.data_src	= 111,
++		.raw_data	= (void *)raw_data,
++		.callchain	= &callchain.callchain,
++		.branch_stack	= &branch_stack.branch_stack,
++		.user_regs	= {
++			.regs	= user_regs,
++		},
++		.user_stack	= {
++			.size	= sizeof(data),
++			.data	= (void *)data,
++		},
++		.read		= {
++			.time_enabled = 0x030a59d664fca7deULL,
++			.time_running = 0x011b6ae553eb98edULL,
++		},
++	};
++	struct sample_read_value values[] = {{1, 5}, {9, 3}, {2, 7}, {6, 4},};
++	struct perf_sample sample_out;
++	size_t i, sz, bufsz;
++	int err, ret = -1;
++
++	for (i = 0; i < sizeof(user_regs); i++)
++		*(i + (u8 *)user_regs) = i & 0xfe;
++
++	if (read_format & PERF_FORMAT_GROUP) {
++		sample.read.group.nr     = 4;
++		sample.read.group.values = values;
++	} else {
++		sample.read.one.value = 0x08789faeb786aa87ULL;
++		sample.read.one.id    = 99;
++	}
++
++	sz = perf_event__sample_event_size(&sample, sample_type,
++					   sample_regs_user, read_format);
++	bufsz = sz + 4096; /* Add a bit for overrun checking */
++	event = malloc(bufsz);
++	if (!event) {
++		pr_debug("malloc failed\n");
++		return -1;
++	}
++
++	memset(event, 0xff, bufsz);
++	event->header.type = PERF_RECORD_SAMPLE;
++	event->header.misc = 0;
++	event->header.size = sz;
++
++	err = perf_event__synthesize_sample(event, sample_type,
++					    sample_regs_user, read_format,
++					    &sample, false);
++	if (err) {
++		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
++			 "perf_event__synthesize_sample", sample_type, err);
++		goto out_free;
++	}
++
++	/* The data does not contain 0xff so we use that to check the size */
++	for (i = bufsz; i > 0; i--) {
++		if (*(i - 1 + (u8 *)event) != 0xff)
++			break;
++	}
++	if (i != sz) {
++		pr_debug("Event size mismatch: actual %zu vs expected %zu\n",
++			 i, sz);
++		goto out_free;
++	}
++
++	evsel.sample_size = __perf_evsel__sample_size(sample_type);
++
++	err = perf_evsel__parse_sample(&evsel, event, &sample_out);
++	if (err) {
++		pr_debug("%s failed for sample_type %#"PRIx64", error %d\n",
++			 "perf_evsel__parse_sample", sample_type, err);
++		goto out_free;
++	}
++
++	if (!samples_same(&sample, &sample_out, sample_type,
++			  sample_regs_user, read_format)) {
++		pr_debug("parsing failed for sample_type %#"PRIx64"\n",
++			 sample_type);
++		goto out_free;
++	}
++
++	ret = 0;
++out_free:
++	free(event);
++	if (ret && read_format)
++		pr_debug("read_format %#"PRIx64"\n", read_format);
++	return ret;
++}
++
++/**
++ * test__sample_parsing - test sample parsing.
++ *
++ * This function implements a test that synthesizes a sample event, parses it
++ * and then checks that the parsed sample matches the original sample.  The test
++ * checks sample format bits separately and together.  If the test passes %0 is
++ * returned, otherwise %-1 is returned.
++ */
++int test__sample_parsing(void)
++{
++	const u64 rf[] = {4, 5, 6, 7, 12, 13, 14, 15};
++	u64 sample_type;
++	u64 sample_regs_user;
++	size_t i;
++	int err;
++
++	/*
++	 * Fail the test if it has not been updated when new sample format bits
++	 * were added.
++	 */
++	if (PERF_SAMPLE_MAX > PERF_SAMPLE_IDENTIFIER << 1) {
++		pr_debug("sample format has changed - test needs updating\n");
++		return -1;
++	}
++
++	/* Test each sample format bit separately */
++	for (sample_type = 1; sample_type != PERF_SAMPLE_MAX;
++	     sample_type <<= 1) {
++		/* Test read_format variations */
++		if (sample_type == PERF_SAMPLE_READ) {
++			for (i = 0; i < ARRAY_SIZE(rf); i++) {
++				err = do_test(sample_type, 0, rf[i]);
++				if (err)
++					return err;
++			}
++			continue;
++		}
++
++		if (sample_type == PERF_SAMPLE_REGS_USER)
++			sample_regs_user = 0x3fff;
++		else
++			sample_regs_user = 0;
++
++		err = do_test(sample_type, sample_regs_user, 0);
++		if (err)
++			return err;
++	}
++
++	/* Test all sample format bits together */
++	sample_type = PERF_SAMPLE_MAX - 1;
++	sample_regs_user = 0x3fff;
++	for (i = 0; i < ARRAY_SIZE(rf); i++) {
++		err = do_test(sample_type, sample_regs_user, rf[i]);
++		if (err)
++			return err;
++	}
++
++	return 0;
++}
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index c748f53..83d5b71 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -37,5 +37,6 @@ int test__task_exit(void);
+ int test__sw_clock_freq(void);
+ int test__perf_time_to_tsc(void);
+ int test__code_reading(void);
++int test__sample_parsing(void);
  
--	perf_evlist__make_sample_types_compatible(evlist);
-+	if (use_sample_identifier)
-+		perf_evlist__set_id_pos(evlist);
-+	else
-+		perf_evlist__make_sample_types_compatible(evlist);
- }
+ #endif /* TESTS_H */
 -- 
 1.7.11.7
 
