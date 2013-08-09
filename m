@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967501Ab3HIBnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:43:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55349 "EHLO
+	id S967487Ab3HIBnD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:43:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55345 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967128Ab3HIBmF (ORCPT
+	with ESMTP id S967127Ab3HIBmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:05 -0400
+	Thu, 8 Aug 2013 21:42:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [ 02/25] serial/mxs-auart: fix race condition in interrupt handler
-Date: Thu,  8 Aug 2013 18:41:38 -0700
-Message-Id: <20130809013649.621481089@linuxfoundation.org>
+        Haynes <hgeorge@codeaurora.org>, Vinod Koul <vinod.koul@intel.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 01/25] ALSA: compress: fix the return value for SNDRV_COMPRESS_VERSION
+Date: Thu,  8 Aug 2013 18:41:37 -0700
+Message-Id: <20130809013649.348474206@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,60 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+From: Vinod Koul <vinod.koul@intel.com>
 
-commit d970d7fe65adff5efe75b4a73c4ffc9be57089f7 upstream.
+commit a8d30608eaed6cc759b8e2e8a8bbbb42591f797f upstream.
 
-The handler needs to ack the pending events before actually handling them.
-Otherwise a new event might come in after it it considered non-pending or
-handled and is acked then without being handled. So this event is only
-noticed when the next interrupt happens.
+the return value of SNDRV_COMPRESS_VERSION always return default -ENOTTY as the
+return value was never updated for this call
+assign return value from put_user()
 
-Without this patch an i.MX28 based machine running an rt-patched kernel
-regularly hangs during boot.
-
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Reported-by: Haynes <hgeorge@codeaurora.org>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/mxs-auart.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ sound/core/compress_offload.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -375,11 +375,18 @@ static void mxs_auart_settermios(struct
- 
- static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
- {
--	u32 istatus, istat;
-+	u32 istat;
- 	struct mxs_auart_port *s = context;
- 	u32 stat = readl(s->port.membase + AUART_STAT);
- 
--	istatus = istat = readl(s->port.membase + AUART_INTR);
-+	istat = readl(s->port.membase + AUART_INTR);
-+
-+	/* ack irq */
-+	writel(istat & (AUART_INTR_RTIS
-+		| AUART_INTR_TXIS
-+		| AUART_INTR_RXIS
-+		| AUART_INTR_CTSMIS),
-+			s->port.membase + AUART_INTR_CLR);
- 
- 	if (istat & AUART_INTR_CTSMIS) {
- 		uart_handle_cts_change(&s->port, stat & AUART_STAT_CTS);
-@@ -398,12 +405,6 @@ static irqreturn_t mxs_auart_irq_handle(
- 		istat &= ~AUART_INTR_TXIS;
- 	}
- 
--	writel(istatus & (AUART_INTR_RTIS
--		| AUART_INTR_TXIS
--		| AUART_INTR_RXIS
--		| AUART_INTR_CTSMIS),
--			s->port.membase + AUART_INTR_CLR);
--
- 	return IRQ_HANDLED;
- }
- 
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -582,7 +582,7 @@ static long snd_compr_ioctl(struct file
+ 	mutex_lock(&stream->device->lock);
+ 	switch (_IOC_NR(cmd)) {
+ 	case _IOC_NR(SNDRV_COMPRESS_IOCTL_VERSION):
+-		put_user(SNDRV_COMPRESS_VERSION,
++		retval = put_user(SNDRV_COMPRESS_VERSION,
+ 				(int __user *)arg) ? -EFAULT : 0;
+ 		break;
+ 	case _IOC_NR(SNDRV_COMPRESS_GET_CAPS):
 
 
