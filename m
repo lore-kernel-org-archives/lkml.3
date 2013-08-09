@@ -1,40 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934428Ab3HIQTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:19:17 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40239 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934227Ab3HIQTP (ORCPT
+	id S968018Ab3HIQTX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:19:23 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:31328
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934227Ab3HIQTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:19:15 -0400
-Message-ID: <5205167F.1070906@wwwdotorg.org>
-Date: Fri, 09 Aug 2013 10:19:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 9 Aug 2013 12:19:19 -0400
+X-IronPort-AV: E=Sophos;i="4.89,846,1367964000"; 
+   d="scan'208";a="23618352"
+Date: Fri, 9 Aug 2013 18:18:58 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+cc: Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr
+Subject: Re: [PATCH/RFC] coccinelle: replace 0/1 with false/true in functions
+ returning bool
+In-Reply-To: <1376064946-20232-1-git-send-email-linux@rasmusvillemoes.dk>
+Message-ID: <alpine.DEB.2.02.1308091817010.2295@hadrien>
+References: <1376064946-20232-1-git-send-email-linux@rasmusvillemoes.dk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: linaro-kernel@lists.linaro.org, Stephen Warren <swarren@nvidia.com>,
-        linux-pm@vger.kernel.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org, rjw@sisk.pl,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 35/35] cpufreq: tegra: use cpufreq_table_validate_and_show()
-References: <cover.1375964117.git.viresh.kumar@linaro.org> <568f3dbd414b050bb2319d960fb5044a5aed8ee3.1375964117.git.viresh.kumar@linaro.org> <5203BCDD.40809@wwwdotorg.org> <CAKohpomr8kwDitAFD7FKvHo3zNWz8qT5bkd3yOVEnC_k16o=Dw@mail.gmail.com> <CAKohpo=Gy7D2LYmdFU1p+eL-nMoPE18YXWvE2M8t-fb-a5HBgg@mail.gmail.com>
-In-Reply-To: <CAKohpo=Gy7D2LYmdFU1p+eL-nMoPE18YXWvE2M8t-fb-a5HBgg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 10:04 PM, Viresh Kumar wrote:
-> On 8 August 2013 21:37, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> Its useless and the correct routine isn't called at all :) .. I will add that
->> additional patch and send it to you and will get this change out of this
->> commit.
-> 
-> The two commits look like this now attached too in case you want
-> to test:
 
-I'd be happy to test, but those changes cause build failures on top of
-next-20130809. Which other patches do I need to apply first?
+
+On Fri, 9 Aug 2013, Rasmus Villemoes wrote:
+
+> This semantic patch replaces "return {0,1};" with "return
+> {false,true};" in functions returning bool. There doesn't seem to be
+> any false positives, but some whitespace mangling is happening, for
+> example:
+
+When you change the argument to return, you don't have to recopy the whole
+thing.
+
+return
+- 0
++ false
+  ;
+
+In general, if it is not too inconvenient, it is better not to recopy
+code.  That way you are sure that the spaces and newlines will not be
+touched.  In this case, it looks like a bug in the pretty printer, but it
+it easy to avoid it.
+
+julia
+
+> diff -u -p a/block/blk-throttle.c b/block/blk-throttle.c
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -734,9 +734,7 @@ static inline void throtl_extend_slice(s
+>  static bool throtl_slice_used(struct throtl_grp *tg, bool rw)
+>  {
+>  	if (time_in_range(jiffies, tg->slice_start[rw], tg->slice_end[rw]))
+> -		return 0;
+> -
+> -	return 1;
+> +		return false;return true;
+>  }
+>
+> Is there a way to prevent this, or is this the kind of thing which
+> must be handled in post-processing?
+>
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> ---
+>  scripts/coccinelle/misc/boolreturn.cocci |   51 ++++++++++++++++++++++++++++++
+>  1 file changed, 51 insertions(+)
+>  create mode 100644 scripts/coccinelle/misc/boolreturn.cocci
+>
+> diff --git a/scripts/coccinelle/misc/boolreturn.cocci b/scripts/coccinelle/misc/boolreturn.cocci
+> new file mode 100644
+> index 0000000..e6ece0d
+> --- /dev/null
+> +++ b/scripts/coccinelle/misc/boolreturn.cocci
+> @@ -0,0 +1,51 @@
+> +/// Return statements in functions returning bool should use
+> +/// true/false instead of 1/0.
+> +//
+> +
+> +virtual patch
+> +virtual report
+> +
+> +
+> +@r1 depends on patch@
+> +identifier fn;
+> +typedef bool;
+> +symbol false;
+> +symbol true;
+> +@@
+> +
+> +bool fn ( ... )
+> +{
+> +...
+> +(
+> +-	return 0;
+> ++	return false;
+> +|
+> +-	return 1;
+> ++	return true;
+> +)
+> +...
+> +}
+> +
+> +@r2 depends on !patch@
+> +identifier fn;
+> +position p;
+> +@@
+> +
+> +bool fn ( ... )
+> +{
+> +	...
+> +(
+> +*	return 0@p ;
+> +|
+> +*	return 1@p ;
+> +)
+> +	...
+> +}
+> +
+> +
+> +@script:python depends on report@
+> +p << r2.p;
+> +fn << r2.fn;
+> +@@
+> +
+> +coccilib.report.print_report(p[0], "WARNING: return of 0/1 in function '%s' with return type bool" % fn)
+> --
+> 1.7.9.5
+>
+>
