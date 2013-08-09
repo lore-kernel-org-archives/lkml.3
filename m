@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934312Ab3HIIpU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 04:45:20 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:51783 "EHLO
+	id S965438Ab3HIIsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 04:48:21 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:48724 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab3HIIpO (ORCPT
+	with ESMTP id S934235Ab3HIIpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 04:45:14 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-a5-5204ac18baa8
+	Fri, 9 Aug 2013 04:45:19 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-ad-5204ac187ade
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
@@ -17,145 +17,98 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCHSET 00/13] tracing/uprobes: Add support for more fetch methods (v3)
-Date: Fri,  9 Aug 2013 17:44:56 +0900
-Message-Id: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 05/13] tracing/kprobes: Staticize stack and memory fetch functions
+Date: Fri,  9 Aug 2013 17:45:01 +0900
+Message-Id: <1376037909-17797-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
+References: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-This patchset implements memory (address), stack[N], deference,
-bitfield and retval (it needs uretprobe tho) fetch methods for
-uprobes.  It's based on the previous work [1] done by Hyeoncheol Lee.
-
-Now kprobes and uprobes have their own fetch_type_tables and, in turn,
-memory and stack access methods.  Other fetch methods are shared.
-
-For the dereference method, I added a new argument to fetch functions.
-It's because for uprobes it needs to know whether the given address is
-a file offset or a virtual address in an user process.  For instance,
-in case of fetching from a memory directly (like @offset) it should
-convert the address (offset) to a virtual address of the process, but
-if it's a dereferencing, the given address already has the virtual
-address.
-
-To determine this in a fetch function, I passed a pointer to
-trace_uprobe for direct fetch, and passed NULL for dereference.
-
-Changes in v3)
- * add acks from Masami
- * rearrange patches to fixes can be applied earlier
- * rename to XXX_trace_kprobe consistently
- * move hot path functions into trace_probe.h
- * move symbol fetch method into trace_kprobe.c
-
-
-[1] https://lkml.org/lkml/2012/11/14/84
-
-A simple example:
-
-  # cat foo.c
-  int glob = -1;
-  char str[] = "hello uprobe.";
-
-  struct foo {
-    unsigned int unused: 2;
-    unsigned int foo: 20;
-    unsigned int bar: 10;
-  } foo = {
-    .foo = 5,
-  };
-
-  int main(int argc, char *argv[])
-  {
-    long local = 0x1234;
-
-    return 127;
-  }
-
-  # gcc -o foo -g foo.c
-
-  # objdump -d foo | grep -A9 -F '<main>'
-  00000000004004b0 <main>:
-    4004b0:	55                   	push   %rbp
-    4004b1:	48 89 e5             	mov    %rsp,%rbp
-    4004b4:	89 7d ec             	mov    %edi,-0x14(%rbp)
-    4004b7:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
-    4004bb:	48 c7 45 f8 34 12 00 	movq   $0x1234,-0x8(%rbp)
-    4004c2:	00 
-    4004c3:	b8 7f 00 00 00       	mov    $0x7f,%eax
-    4004c8:	5d                   	pop    %rbp
-    4004c9:	c3                   	retq   
-
-  # nm foo | grep -e glob$ -e str -e foo
-  00000000006008bc D foo
-  00000000006008a8 D glob
-  00000000006008ac D str
-
-  # perf probe -x /home/namhyung/tmp/foo -a 'foo=main+0x13 glob=@0x8a8:s32 \
-  > str=@0x8ac:string bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp)'
-  Added new event:
-    probe_foo:foo      (on 0x4c3 with glob=@0x8a8:s32 str=@0x8ac:string 
-                                 bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp))
-
-  You can now use it in all perf tools, such as:
-
-          perf record -e probe_foo:foo -aR sleep 1
-
-  # perf record -e probe_foo:foo ./foo
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.001 MB perf.data (~33 samples) ]
-
-  # perf script | grep -v ^#
-               foo  2008 [002  2199.867154: probe_foo:foo (4004c3)
-                   glob=-1 str="hello uprobe." bit=5 argc=1 local=1234
-
-
-This patchset is based on the current for-next branch of the Steven
-Rostedt's linux-trace tree.  I also put this on my 'uprobe/fetch-v3'
-branch in my tree:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-
-
-Any comments are welcome, thanks.
-Namhyung
-
+Those fetch functions need to be implemented differently for kprobes
+and uprobes.  Since the deref fetch functions don't call those
+directly anymore, we can make them static and implement them
+separately.
 
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ kernel/trace/trace_kprobe.c | 8 ++++----
+ kernel/trace/trace_probe.h  | 8 --------
+ 2 files changed, 4 insertions(+), 12 deletions(-)
 
-
-Hyeoncheol Lee (2):
-  tracing/kprobes: Move fetch functions to trace_kprobe.c
-  tracing/kprobes: Add fetch{,_size} member into deref fetch method
-
-Namhyung Kim (11):
-  tracing/uprobes: Fix a comment for uprobe registration syntax
-  tracing/probes: Fix basic print type functions
-  tracing/kprobes: Staticize stack and memory fetch functions
-  tracing/kprobes: Factor out struct trace_probe
-  tracing/uprobes: Convert to struct trace_probe
-  tracing/kprobes: Move common functions to trace_probe.h
-  tracing/kprobes: Integrate duplicate set_print_fmt()
-  tracing/uprobes: Fetch args before reserving a ring buffer
-  tracing/kprobes: Add priv argument to fetch functions
-  tracing/uprobes: Add more fetch functions
-  tracing/uprobes: Add support for full argument access methods
-
- kernel/trace/trace_kprobe.c | 642 ++++++++++++++++++++++++--------------------
- kernel/trace/trace_probe.c  | 451 +++++++++++--------------------
- kernel/trace/trace_probe.h  | 202 +++++++++++++-
- kernel/trace/trace_uprobe.c | 429 ++++++++++++++++++++---------
- 4 files changed, 1001 insertions(+), 723 deletions(-)
-
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index d17622a1c098..d2af84b2d346 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -753,7 +753,7 @@ static const struct file_operations kprobe_profile_ops = {
+  * kprobes-specific fetch functions
+  */
+ #define DEFINE_FETCH_stack(type)					\
+-__kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,	\
++static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
+ 					  void *offset, void *dest)	\
+ {									\
+ 	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
+@@ -765,7 +765,7 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+ #define fetch_stack_string_size	NULL
+ 
+ #define DEFINE_FETCH_memory(type)					\
+-__kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,	\
++static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
+ 					  void *addr, void *dest)	\
+ {									\
+ 	type retval;							\
+@@ -779,7 +779,7 @@ DEFINE_BASIC_FETCH_FUNCS(memory)
+  * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
+  * length and relative data location.
+  */
+-__kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
++static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+ 					       void *addr, void *dest)
+ {
+ 	long ret;
+@@ -816,7 +816,7 @@ __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+ }
+ 
+ /* Return the length of string -- including null terminal byte */
+-__kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
++static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+ 						    void *addr, void *dest)
+ {
+ 	mm_segment_t old_fs;
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index 8c62746e5419..9ac7bdf607cc 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -177,18 +177,10 @@ DECLARE_BASIC_FETCH_FUNCS(reg);
+ #define fetch_reg_string		NULL
+ #define fetch_reg_string_size		NULL
+ 
+-DECLARE_BASIC_FETCH_FUNCS(stack);
+-#define fetch_stack_string		NULL
+-#define fetch_stack_string_size		NULL
+-
+ DECLARE_BASIC_FETCH_FUNCS(retval);
+ #define fetch_retval_string		NULL
+ #define fetch_retval_string_size	NULL
+ 
+-DECLARE_BASIC_FETCH_FUNCS(memory);
+-DECLARE_FETCH_FUNC(memory, string);
+-DECLARE_FETCH_FUNC(memory, string_size);
+-
+ DECLARE_BASIC_FETCH_FUNCS(symbol);
+ DECLARE_FETCH_FUNC(symbol, string);
+ DECLARE_FETCH_FUNC(symbol, string_size);
 -- 
 1.7.11.7
 
