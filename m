@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967582Ab3HIB65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:58:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55705 "EHLO
+	id S967764Ab3HICOu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:14:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55720 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967503Ab3HIB6y (ORCPT
+	with ESMTP id S967503Ab3HIB66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:54 -0400
+	Thu, 8 Aug 2013 21:58:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 040/102] mac80211: fix duplicate retransmission detection
-Date: Thu,  8 Aug 2013 18:57:16 -0700
-Message-Id: <20130809015019.228287060@linuxfoundation.org>
+        Thomas Fjellstrom <thomas@fjellstrom.ca>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 044/102] ath: wil6210: Fix build error
+Date: Thu,  8 Aug 2013 18:57:20 -0700
+Message-Id: <20130809015020.242015405@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -26,51 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 6b0f32745dcfba01d7be33acd1b40306c7a914c6 upstream.
+commit 5d21608a592a9afcac8d82c6478a564e911ce70b upstream.
 
-The duplicate retransmission detection code in mac80211
-erroneously attempts to do the check for every frame,
-even frames that don't have a sequence control field or
-that don't use it (QoS-Null frames.)
+Building driver wil6210 in 3.10 and 3.11 kernels yields the following errors:
 
-This is problematic because it causes the code to access
-data beyond the end of the SKB and depending on the data
-there will drop packets erroneously.
+  CC [M]  drivers/net/wireless/ath/wil6210/debugfs.o
+drivers/net/wireless/ath/wil6210/debugfs.c: In function 'wil_print_ring':
+drivers/net/wireless/ath/wil6210/debugfs.c:163:11: error: pointer targets in passing argument 5 of 'hex_dump_to_buffer' differ in signedness [-Werror=pointer-sign]
+           false);
+           ^
+In file included from include/linux/kernel.h:13:0,
+                 from include/linux/cache.h:4,
+                 from include/linux/time.h:4,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from drivers/net/wireless/ath/wil6210/debugfs.c:17:
+include/linux/printk.h:361:13: note: expected 'char *' but argument is of type 'unsigned char *'
+ extern void hex_dump_to_buffer(const void *buf, size_t len,
+             ^
+drivers/net/wireless/ath/wil6210/debugfs.c: In function 'wil_txdesc_debugfs_show':
+drivers/net/wireless/ath/wil6210/debugfs.c:429:10: error: pointer targets in passing argument 5 of 'hex_dump_to_buffer' differ in signedness [-Werror=pointer-sign]
+          sizeof(printbuf), false);
+          ^
+In file included from include/linux/kernel.h:13:0,
+                 from include/linux/cache.h:4,
+                 from include/linux/time.h:4,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from drivers/net/wireless/ath/wil6210/debugfs.c:17:
+include/linux/printk.h:361:13: note: expected 'char *' but argument is of type 'unsigned char *'
+ extern void hex_dump_to_buffer(const void *buf, size_t len,
+             ^
+cc1: all warnings being treated as errors
+make[5]: *** [drivers/net/wireless/ath/wil6210/debugfs.o] Error 1
+make[4]: *** [drivers/net/wireless/ath/wil6210] Error 2
+make[3]: *** [drivers/net/wireless/ath] Error 2
+make[2]: *** [drivers/net/wireless] Error 2
+make[1]: *** [drivers/net] Error 2
+make: *** [drivers] Error 2
 
-Correct the code to not do duplicate detection for such
-frames.
+These errors are fixed by changing the type of the buffer from "unsigned char *" to "char *".
 
-I found this error while testing AP powersave, it lead
-to retransmitted PS-Poll frames being dropped entirely
-as the data beyond the end of the SKB was always zero.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Tested-by: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Signed-off-by: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rx.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/wil6210/debugfs.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -932,8 +932,14 @@ ieee80211_rx_h_check(struct ieee80211_rx
- 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)rx->skb->data;
- 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(rx->skb);
+--- a/drivers/net/wireless/ath/wil6210/debugfs.c
++++ b/drivers/net/wireless/ath/wil6210/debugfs.c
+@@ -145,7 +145,7 @@ static void wil_print_ring(struct seq_fi
+ 				   le16_to_cpu(hdr.type), hdr.flags);
+ 			if (len <= MAX_MBOXITEM_SIZE) {
+ 				int n = 0;
+-				unsigned char printbuf[16 * 3 + 2];
++				char printbuf[16 * 3 + 2];
+ 				unsigned char databuf[MAX_MBOXITEM_SIZE];
+ 				void __iomem *src = wmi_buffer(wil, d.addr) +
+ 					sizeof(struct wil6210_mbox_hdr);
+@@ -416,7 +416,7 @@ static int wil_txdesc_debugfs_show(struc
+ 		seq_printf(s, "  SKB = %p\n", skb);
  
--	/* Drop duplicate 802.11 retransmissions (IEEE 802.11 Chap. 9.2.9) */
--	if (rx->sta && !is_multicast_ether_addr(hdr->addr1)) {
-+	/*
-+	 * Drop duplicate 802.11 retransmissions
-+	 * (IEEE 802.11-2012: 9.3.2.10 "Duplicate detection and recovery")
-+	 */
-+	if (rx->skb->len >= 24 && rx->sta &&
-+	    !ieee80211_is_ctl(hdr->frame_control) &&
-+	    !ieee80211_is_qos_nullfunc(hdr->frame_control) &&
-+	    !is_multicast_ether_addr(hdr->addr1)) {
- 		if (unlikely(ieee80211_has_retry(hdr->frame_control) &&
- 			     rx->sta->last_seq_ctrl[rx->seqno_idx] ==
- 			     hdr->seq_ctrl)) {
+ 		if (skb) {
+-			unsigned char printbuf[16 * 3 + 2];
++			char printbuf[16 * 3 + 2];
+ 			int i = 0;
+ 			int len = skb_headlen(skb);
+ 			void *p = skb->data;
 
 
