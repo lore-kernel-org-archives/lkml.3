@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967565Ab3HIBnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:43:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55370 "EHLO
+	id S967552Ab3HIBnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:43:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55362 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967134Ab3HIBmK (ORCPT
+	with ESMTP id S967132Ab3HIBmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:10 -0400
+	Thu, 8 Aug 2013 21:42:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bo Shi <cnshibo@gmail.com>, Oleksij Rempel <linux@rempel-privat.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 04/25] ath9k_htc: do some initial hardware configuration
-Date: Thu,  8 Aug 2013 18:41:40 -0700
-Message-Id: <20130809013650.104983140@linuxfoundation.org>
+        Jacob Keller <jacob.e.keller@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
+        Jack Morgan <jack.morgan@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 07/25] ixgbe: Fix Tx Hang issue with lldpad on 82598EB
+Date: Thu,  8 Aug 2013 18:41:43 -0700
+Message-Id: <20130809013650.728682558@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -27,38 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleksij Rempel <linux@rempel-privat.de>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-commit dc2a87f519a4d8cb376ab54f22b6b98a943b51ce upstream.
+commit 1eb9ac14c34a948bf1538bfb9034e8ab29099a64 upstream.
 
-Currently we configure harwdare and clock, only after
-interface start. In this case, if we reload module or
-reboot PC without configuring adapter, firmware will freeze.
-There is no software way to reset adpter.
+This patch fixes an issue with the 82598EB device, where lldpad is causing Tx
+Hangs on the card as soon as it attempts to configure DCB for the device. The
+adapter will continually Tx hang and reset in a loop.
 
-This patch add initial configuration and set it in
-disabled state, to avoid this freeze. Behaviour of this patch
-should be similar to: ifconfig wlan0 up; ifconfig wlan0 down.
-
-Bug: https://github.com/qca/open-ath9k-htc-firmware/issues/1
-Tested-by: Bo Shi <cnshibo@gmail.com>
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Tested-by: Jack Morgan <jack.morgan@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -821,6 +821,7 @@ static int ath9k_init_device(struct ath9
- 	if (error != 0)
- 		goto err_rx;
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
+@@ -108,9 +108,8 @@ s32 ixgbe_dcb_config_tx_desc_arbiter_825
  
-+	ath9k_hw_disable(priv->ah);
- #ifdef CONFIG_MAC80211_LEDS
- 	/* must be initialized before ieee80211_register_hw */
- 	priv->led_cdev.default_trigger = ieee80211_create_tpt_led_trigger(priv->hw,
+ 	/* Enable arbiter */
+ 	reg &= ~IXGBE_DPMCS_ARBDIS;
+-	/* Enable DFP and Recycle mode */
+-	reg |= (IXGBE_DPMCS_TDPAC | IXGBE_DPMCS_TRM);
+ 	reg |= IXGBE_DPMCS_TSOEF;
++
+ 	/* Configure Max TSO packet size 34KB including payload and headers */
+ 	reg |= (0x4 << IXGBE_DPMCS_MTSOS_SHIFT);
+ 
 
 
