@@ -1,299 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758372Ab3HIRgJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 13:36:09 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46971 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab3HIRgH (ORCPT
+	id S1758393Ab3HIRhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 13:37:06 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:52802 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758364Ab3HIRhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 13:36:07 -0400
+	Fri, 9 Aug 2013 13:37:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <s5h38qj2cqj.wl%tiwai@suse.de>
-References: <1375430365-13232-2-git-send-email-eu@felipetonello.com>
-	<1376029315-3217-1-git-send-email-eu@felipetonello.com>
-	<s5h38qj2cqj.wl%tiwai@suse.de>
-Date: Fri, 9 Aug 2013 10:36:04 -0700
-Message-ID: <CAGrhNMxj++uJ5HnhhcfOOxhu9u77WMBRP+H5ar5wATi=kHJYKg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] ALSA: Added jack detection KControl support
-From: Felipe Tonello <eu@felipetonello.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, Jaroslav Kysela <perex@perex.cz>,
-        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <20130809075523.GA14574@quack.suse.cz>
+References: <cover.1375729665.git.luto@amacapital.net> <20130807134058.GC12843@quack.suse.cz>
+ <520286A4.1020101@intel.com> <CALCETrXAz1fc7y07LhmxNh6zA_KZB4yv57NY2MrhUwKdkypB9w@mail.gmail.com>
+ <20130808101807.GB4325@quack.suse.cz> <CALCETrX1GXr58ujqAVT5_DtOx+8GEiyb9svK-SGH9d+7SXiNqQ@mail.gmail.com>
+ <20130808185340.GA13926@quack.suse.cz> <CALCETrVXTXzXAmUsmmWxwr6vK+Vux7_pUzWPYyHjxEbn3ObABg@mail.gmail.com>
+ <5204229F.8000507@intel.com> <20130809075523.GA14574@quack.suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 9 Aug 2013 10:36:41 -0700
+Message-ID: <CALCETrU6j=X0KcuiNQxcsBiwD-o+PcDVbA2usV+fr+8M-1zm9Q@mail.gmail.com>
+Subject: Re: [RFC 0/3] Add madvise(..., MADV_WILLWRITE)
+To: Jan Kara <jack@suse.cz>
+Cc: Dave Hansen <dave.hansen@intel.com>, linux-mm@kvack.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Takashi,
-
-On Fri, Aug 9, 2013 at 6:52 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Thu,  8 Aug 2013 23:21:55 -0700,
-> Felipe F. Tonello wrote:
+On Fri, Aug 9, 2013 at 12:55 AM, Jan Kara <jack@suse.cz> wrote:
+> On Thu 08-08-13 15:58:39, Dave Hansen wrote:
+>> I was coincidentally tracking down what I thought was a scalability
+>> problem (turned out to be full disks :).  I noticed, though, that ext4
+>> is about 20% slower than ext2/3 at doing write page faults (x-axis is
+>> number of tasks):
 >>
->> From: "Felipe F. Tonello" <eu@felipetonello.com>
+>> http://www.sr71.net/~dave/intel/page-fault-exts/cmp.html?1=ext3&2=ext4&hide=linear,threads,threads_idle,processes_idle&rollPeriod=5
 >>
->> This patch adds jack support for ALSA KControl.
+>> The test case is:
 >>
->> This support is necessary since the new kcontrol is used by user-space
->> daemons, such as PulseAudio(>=2.0), to do jack detection.)
->>
->> Also, HDA's CONFIG_SND_HDA_INPUT_JACK is disabled because it causes to use standard
->> snd_jack_new() to create jacks. This can cause conflict since this codec creates
->> jack controls directly.
->>
->> It makes sure that all codecs using ALSA jack API are updated to use the new
->> API.
->
-> Well, while this is a good move forward, this patch is a bit too
-> intrusive as a single patch.  It breaks way too many.  "Break then
-> fix" is no good attitude, especially when it's just something for
-> future.
+>>       https://github.com/antonblanchard/will-it-scale/blob/master/tests/page_fault3.c
+>   The reason is that ext2/ext3 do almost nothing in their write fault
+> handler - they are about as fast as it can get. ext4 OTOH needs to reserve
+> blocks for delayed allocation, setup buffers under a page etc. This is
+> necessary if you want to make sure that if data are written via mmap, they
+> also have space available on disk to be written to (ext2 / ext3 do not care
+> and will just drop the data on the floor if you happen to hit ENOSPC during
+> writeback).
 
-I agree with you, but unfortunately I had to do that due the
-non-standard way that jacks are been handled in the kernel and
-reported to user-space.
-
-I believe this is a classic case where we need a well defined kernel
-API to user-space. I'm not necessarily saying about internal kernel
-API/ABI, but the one which is exported to user-space. And to be
-honest, it's kind common to see internal API's been changed.
-
-And that's the reason jack detection only work, out of the box, with
-Intel's HD-audio. Which I think it's pretty bad in the stage we are.
-More and more embedded running PulseAudio and other core user-space
-daemons.
-
-[...]
-
->> diff --git a/include/sound/control.h b/include/sound/control.h
->> index 5358892..ffeb6b6 100644
->> --- a/include/sound/control.h
->> +++ b/include/sound/control.h
->> @@ -242,6 +242,6 @@ void snd_ctl_sync_vmaster(struct snd_kcontrol *kctl, bool hook_only);
->>  struct snd_kcontrol *
->>  snd_kctl_jack_new(const char *name, int idx, void *private_data);
->>  void snd_kctl_jack_report(struct snd_card *card,
->> -                       struct snd_kcontrol *kctl, bool status);
->> +                          struct snd_kcontrol *kctl, bool status);
->
-> Please don't include space or coding-fix changes.
-
-True. I changed back to bool instead of checking out the source file :P
+Out of curiosity, why does ext4 need to set up buffers?  That is, as
+long as the fs can guarantee that there is reserved space to write out
+the page, why isn't it sufficient to just mark the page dirty and let
+the writeback code set up the buffers?
 
 >
->
->>
->>  #endif       /* __SOUND_CONTROL_H */
->> diff --git a/include/sound/jack.h b/include/sound/jack.h
->> index 5891657..0d36f20 100644
->> --- a/include/sound/jack.h
->> +++ b/include/sound/jack.h
->> @@ -26,6 +26,7 @@
->>  #include <sound/core.h>
->>
->>  struct input_dev;
->> +struct snd_kcontrol;
->>
->>  /**
->>   * Jack types which can be reported.  These values are used as a
->> @@ -58,11 +59,12 @@ enum snd_jack_types {
->>
->>  struct snd_jack {
->>       struct input_dev *input_dev;
->> +     struct snd_kcontrol *kctl[SND_JACK_SWITCH_TYPES]; /* control for each key */
->>       int registered;
->>       int type;
->>       const char *id;
->>       char name[100];
->> -     unsigned int key[6];   /* Keep in sync with definitions above */
->> +     unsigned int key[SND_JACK_SWITCH_TYPES];   /* Keep in sync with definitions above */
->>       void *private_data;
->>       void (*private_free)(struct snd_jack *);
->>  };
->> @@ -70,7 +72,7 @@ struct snd_jack {
->>  #ifdef CONFIG_SND_JACK
->>
->>  int snd_jack_new(struct snd_card *card, const char *id, int type,
->> -              struct snd_jack **jack);
->> +                 int idx, struct snd_jack **jack);
->
-> The biggest point here is that the patch changes the API function,
-> from both API and behavioral POV.  That's why you need to modify so
-> many patches in a single patch.
->
-> Try to create a new function doing this and keep the old API and
-> behavior as is.  Then adapt / replace with the new API gradually.
-> And in the last step, you can obsolete the former API.
->
-> Or, at least keep snd_sock_jack_new() as is without additional index
-> but just use idx=0.  Then a half of the whole patch can be reduced.
->
-> Above all, the multiple indices don't work anyway with the snd_jack
-> stuff in the current form.  The index was introduced only for kjack,
-> and for HD-audio, snd_jack is provided just for a compatibility
-> reason, thus it doesn't matter much even if the multiple indices don't
-> work with it.
->
-> That being said, before going further, we need to consider how to
-> handle the input jack stuff with multiple indices.
->
->
+> I'm not saying ext4 write fault path cannot possibly be optimized (noone
+> seriously looked into that AFAIK so there may well be some low hanging
+> fruit) but it will always be slower than ext2/3. A more meaningful
+> comparison would be with filesystems like XFS which make similar guarantees
+> regarding data safety.
 
-[...]
+FWIW, back when I actually tested this stuff, I had awful performance
+on XFS, btrfs, and ext4.  But I'm really only interested in the
+whether IO (or waiting for contended locks) happens on faults or not
+-- a handful of microseconds while the fs allocates something from a
+slab doesn't really bother me.
 
->> diff --git a/sound/core/ctljack.c b/sound/core/ctljack.c
->> index e4b38fb..441158d 100644
->> --- a/sound/core/ctljack.c
->> +++ b/sound/core/ctljack.c
->> @@ -14,7 +14,7 @@
->>  #include <sound/core.h>
->>  #include <sound/control.h>
->>
->> -#define jack_detect_kctl_info        snd_ctl_boolean_mono_info
->> +#define      jack_detect_kctl_info   snd_ctl_boolean_mono_info
->>
->>  static int jack_detect_kctl_get(struct snd_kcontrol *kcontrol,
->>                               struct snd_ctl_elem_value *ucontrol)
->> @@ -38,6 +38,7 @@ snd_kctl_jack_new(const char *name, int idx, void *private_data)
->>       kctl = snd_ctl_new1(&jack_detect_kctl, private_data);
->>       if (!kctl)
->>               return NULL;
->> +
->>       snprintf(kctl->id.name, sizeof(kctl->id.name), "%s Jack", name);
->>       kctl->id.index = idx;
->>       kctl->private_value = 0;
->
-> No unnecessary space changes please.
 
-Ok.
-
->
->
->> diff --git a/sound/core/jack.c b/sound/core/jack.c
->> index b35fe73..128154b 100644
->> --- a/sound/core/jack.c
->> +++ b/sound/core/jack.c
-
-[...]
-
->>
->> +const char * jack_get_name_by_key(const char *name, int key)
->> +{
->> +     char *jack_name;
->> +     size_t jack_name_size;
->> +     const char *key_name;
->> +
->> +     switch(key) {
->> +     case SW_HEADPHONE_INSERT: key_name = "Headphone"; break;
->> +     case SW_MICROPHONE_INSERT: key_name = "Mic"; break;
->> +     case SW_LINEOUT_INSERT: key_name = "Line Out"; break;
->> +     case SW_JACK_PHYSICAL_INSERT: key_name = "Mechanical"; break;
->> +     case SW_VIDEOOUT_INSERT: key_name = "Video Out"; break;
->> +     case SW_LINEIN_INSERT: key_name = "Line In"; break;
->> +     default: key_name = "Unknown";
->> +     }
->> +
->> +     /* Avoid duplicate name in KControl */
->> +     if (strcmp(name, key_name) != 0) {
->
-> Better to check via strstr() or such.
-> The name can be like "Front Headphone".
-
-Ok.
-
->
->> +             /* allocate necessary memory space only */
->> +             jack_name_size = strlen(name) + strlen(key_name) + 4;
->> +             jack_name = kmalloc(jack_name_size, GFP_KERNEL);
->
-> This leads to a memory leak.  Make this function to put a string on
-> the given buffer instead of returning a string pointer.
->
->> +
->> +             snprintf(jack_name, jack_name_size, "%s (%s)", name, key_name);
->> +     } else {
->> +             jack_name = (char *)name;
->> +     }
->> +
->> +     return jack_name;
->> +}
->> +
->>  static int snd_jack_dev_register(struct snd_device *device)
->>  {
->>       struct snd_jack *jack = device->device_data;
->>       struct snd_card *card = device->card;
->>       int err, i;
->>
->> -     snprintf(jack->name, sizeof(jack->name), "%s %s",
->> +     snprintf(jack->name, sizeof(jack->name), "%s %s Jack",
->>                card->shortname, jack->id);
->
-> This breaks the compatibility with the existing code.
-> You must not change the name of the existing input jack element.
-> Some drivers create "Headphone" and some do "Headphone Jack", yes.
-> It's bad, but too late to change.
-
-Why? Can't we just fix those names in those codecs? As You see in my
-second patch, only few of them are using weird names.
-I know that this will potentially break user-space, but the trade off
-is not to standardize the Jack API. What do you think?
-
-[...]
-
->> @@ -232,10 +305,15 @@ void snd_jack_report(struct snd_jack *jack, int status)
->>
->>       for (i = 0; i < ARRAY_SIZE(jack_switch_types); i++) {
->>               int testbit = 1 << i;
->> -             if (jack->type & testbit)
->> +             if (jack->type & testbit) {
->>                       input_report_switch(jack->input_dev,
->>                                           jack_switch_types[i],
->>                                           status & testbit);
->> +
->> +                     /* Update ALSA KControl interface */
->> +                     snd_kctl_jack_report((struct snd_card *)jack->kctl[i]->private_data,
->> +                                          jack->kctl[i], status & testbit);
->
-> Better to do a NULL check.
-> In this patch, snd_ctl_add() error isn't handled as a fatal error,
-> thus jack->kctl[i] can be NULL.
-
-True.
-
->
->
->> +             }
->>       }
->>
->>       input_sync(jack->input_dev);
->> diff --git a/sound/pci/hda/Kconfig b/sound/pci/hda/Kconfig
->> index 59c5e9c..561abc7 100644
->> --- a/sound/pci/hda/Kconfig
->> +++ b/sound/pci/hda/Kconfig
->> @@ -65,14 +65,6 @@ config SND_HDA_INPUT_BEEP_MODE
->>         Set 1 to always enable the digital beep interface for HD-audio by
->>         default.
->>
->> -config SND_HDA_INPUT_JACK
->> -     bool "Support jack plugging notification via input layer"
->> -     depends on INPUT=y || INPUT=SND
->> -     select SND_JACK
->> -     help
->> -       Say Y here to enable the jack plugging notification via
->> -       input layer.
->> -
->
-> I understand why you remove this Kconfig.  But by this action, you
-> introduced an obvious regression, i.e. the input jack control is no
-> longer created for HD-audio.
-
-I did this just to see what some HD-audio developers whould say.
-Because what I would like to see is HD-audio codec also using snd_jack
-and not export those kct jack functions anymore.
-
-BTW, who uses these input events anyway? Woudn't be better just to
-have standard way (ALSA KControl) to report it?
-
-Thanks for the comments,
-
-Felipe Tonello
+--Andy
