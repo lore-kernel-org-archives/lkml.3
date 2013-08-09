@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030544Ab3HISVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 14:21:10 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:40159 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758611Ab3HISVI (ORCPT
+	id S968077Ab3HISZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 14:25:44 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40958 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965075Ab3HISZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 14:21:08 -0400
+	Fri, 9 Aug 2013 14:25:42 -0400
+Date: Fri, 9 Aug 2013 19:25:16 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/1] ASoc: kirkwood: add DT support to the mvebu
+	audio subsystem
+Message-ID: <20130809182516.GT23006@n2100.arm.linux.org.uk>
+References: <20130808132201.2610aef3@armhf> <5204A716.6070507@gmail.com> <20130809091953.GO6427@sirena.org.uk> <5204B7A6.9050907@gmail.com> <20130809094340.GO23006@n2100.arm.linux.org.uk> <5204CC04.4000401@gmail.com> <20130809113940.GY6427@sirena.org.uk> <20130809130932.GS23006@n2100.arm.linux.org.uk> <20130809180058.GM6427@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20130809130457.GA27493@redhat.com>
-References: <tencent_26310211398C21034BD3B2F9@qq.com>
-	<CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com>
-	<20130808191749.GA12062@redhat.com>
-	<CA+55aFw+vEp6+q+QUZm5rf+sKR9z76HWzEqWjoiLtataym5uwA@mail.gmail.com>
-	<20130809130457.GA27493@redhat.com>
-Date: Fri, 9 Aug 2013 11:21:07 -0700
-X-Google-Sender-Auth: NS5iedwLpnGVldfjXFAKyQBAf8g
-Message-ID: <CA+55aFxh+4yK3AkPQWGq+hGhBgvDdWuPSfzko2aO76y7ej=Veg@mail.gmail.com>
-Subject: Re: Patch for lost wakeups
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Cc: Long Gao <gaolong@kylinos.com.cn>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130809180058.GM6427@sirena.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 9, 2013 at 6:04 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
->>    The case of signals is special, in that the "wakeup criteria" is
->> inside the scheduler itself, but conceptually the rule is the same.
->
-> yes, and because the waiter lacks mb().
+On Fri, Aug 09, 2013 at 07:00:58PM +0100, Mark Brown wrote:
+> On Fri, Aug 09, 2013 at 02:09:32PM +0100, Russell King - ARM Linux wrote:
+> > On Fri, Aug 09, 2013 at 12:39:40PM +0100, Mark Brown wrote:
+> 
+> > > So extend Morimoto-san's work on the simple card for this - that's what
+> > > it's there for, it's doing exactly this job for non-DT systems but it
+> > > just didn't get DT support added yet.  All the trivial cards should end
+> > > up using this.
+> 
+> > It's quite rediculous to request that the simple card stuff is expanded at
+> > this time, when you're also telling us that we must use DPCM for Kirkwood,
+> 
+> That's the place to put the sort of shared infrastructure for trivial
+> cards that Sebastian said he wanted to see - if you guys are saying that
+> the machines should all be able to use a trivial binding with shared
+> code that's where that code should be.
 
-Hmm. Ok. So say we have a sleeper that does
-__set_task_state(TASK_INTERRUPTIBLE) (so without the memory barrier
-semantics of set_task_state()), so we have one thread doing
+Sigh, you completely miss the point.
 
-   prev->state = TASK_INTERRUPTIBLE
-   raw_spin_lock_irq(&rq->lock);
-   if (signal_pending_state(prev->state, prev))
-     prev->state = TASK_RUNNING;
+What all three of us are ultimately after is a DT description for the
+kirkwood stuff which covers all its use cases.  The use case which all
+three of us have in common is the Cubox, which is the one which needs
+the spdif stuff to work.
 
-and since it's a spin-lock, things can in theory percolate *into* the
-critical region, but not out of it. So as far as other CPU's are
-concerned, that thread might actually do the "test pending signals"
-before it even sets the state to TASK_INTERRUPTIBLE. And yes, that can
-race against new signals coming in.
+Now, what you've said to date is:
 
-So it does look like a race. I get the feeling that we should put a
-smp_wmb() into the top of __schedule(), before the spinlock - that's
-basically free on any sane architecture (yeah, yeah, a bad memory
-ordering implementaiton can make even smp_wmb() expensive, but
-whatever - I can't find it in myself to care about badly implemented
-microarchitectures when the common case gets it right).
+1. you want kirkwood to use DPCM.
+2. you want kirkwood using people to use the simple card stuff with the
+   kirkwood driver you want to use DPCM.
 
-That said, at least MIPS does not make spin-locks be that kind of
-"semi-transparent" locks, so this race cannot hit MIPS. And I'm pretty
-sure loongson has the same memory ordering as mips (ie "sync" will do
-a memory barrier).
+To make it work with DPCM, we first need to know what DPCM requires,
+which means we either have to have the knowledge of DPCM and/or have a
+working implementation.  We don't have either of those yet.
 
-So this might be a real race for architectures that actually do
-aggressive memory re-ordering _and_ actually implements spinlocks with
-the aggressive acquire semantics. I think ia64 does. The ppc memory
-ordering is confused enough that *maybe* it does, but I doubt it. On
-most other architectures I think spinlocks end up being full memory
-barriers.
+So, I again state plainly that what you're asking is for people to come
+up with a DT description for a DPCM implementation when we haven't yet
+got a working DPCM implementation, even without DT.
 
-I guess that instead of a "smp_wmb()", we could do another
-"smp_mb__before_spinlock()" thing, like we already allow for other
-architectures to do a weaker form of mb in case the spinlock is
-already a full mb. That would allow avoiding extra synchronization. Do
-a
+It is this which I assert is a completely rediculous request at this
+moment in time for the reasons stated in my previous email and repeated
+in this email.
 
-   #ifndef smp_mb__before_spinlock
-     #define smp_mb__before_spinlock() smp_wmb()
-   #endif
-
-in <linux/spinlock.h> to not force everybody to implement it. Because
-a wmb+acquire should be close enough to a full mb that nobody cares
-(ok, so reads could move into the critical region from outside, but by
-the time anybody has called "schedule()", I can't see it mattering, so
-"close enough").
-
-                  Linus
