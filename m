@@ -1,149 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967973Ab3HIPhN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:37:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36484 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934372Ab3HIPhK convert rfc822-to-8bit (ORCPT
+	id S967955Ab3HIPhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:37:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34543 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934350Ab3HIPhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Aug 2013 11:37:10 -0400
-Subject: Re: [PATCH] drivers/rtc/rtc-palmas.c: rename charging dt property name
-Mime-Version: 1.0 (Apple Message framework v1283)
+Date: Fri, 9 Aug 2013 11:36:22 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Ian.Campbell@citrix.com,
+        will.deacon@arm.com, linux@arm.linux.org.uk
+Subject: Re: [PATCH v3 04/10] arm: introduce a global dma_ops pointer
+Message-ID: <20130809153622.GE5637@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com>
+ <1375720256-8014-4-git-send-email-stefano.stabellini@eu.citrix.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com>
-Date: Fri, 9 Aug 2013 10:37:12 -0500
-Cc: <akpm@linux-foundation.org>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <rob@landley.net>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
-        <gg@slimlogic.co.uk>, <kishon@ti.com>, <swarren@nvidia.com>,
-        <pawel.moll@arm.com>, <Mark.Rutland@arm.com>,
-        <ian.campbell@citrix.com>, <broonie@kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <105188C0-FD22-488B-B9D2-1E3C801616B6@codeaurora.org>
-References: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-X-Mailer: Apple Mail (2.1283)
+Content-Disposition: inline
+In-Reply-To: <1375720256-8014-4-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 05, 2013 at 05:30:50PM +0100, Stefano Stabellini wrote:
+> Initially set dma_ops to arm_dma_ops.
 
-On Aug 9, 2013, at 10:47 AM, Laxman Dewangan wrote:
-
-> Renaming the charging property names to have more meaningful:
+Looks OK to me.
 > 
-> Renaming property "ti,back-battery-charge-enable" to "ti,backup-battery-chargeable"
-> to tells OS that attahced battery is chargeable and OS can do charging.
 > 
-> Renaming property "ti,back-battery-charge-low-current" to
-> "ti,backup-battery-charge-high-current" for safe configuration as maximum charging current
-> of battery depends on battery type and overcurrent charging can damage the battery. So
-> enable the high current charging only if this property is available.
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: will.deacon@arm.com
+> CC: linux@arm.linux.org.uk
 > 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> 
+> Changes in v3:
+> -  keep using arm_dma_ops in dmabounce.
 > ---
-> The patch V4 version of the change
-> [PATCH V4] drivers/rtc/rtc-palmas.c: support for backup battery charging
-> is already applied but still the discussion is going on the property name.
+>  arch/arm/include/asm/dma-mapping.h |    3 ++-
+>  arch/arm/mm/dma-mapping.c          |    3 +++
+>  2 files changed, 5 insertions(+), 1 deletions(-)
 > 
-> To correct the property name, I am sending this patch on top of above patch
-> as per discussion on above patch.
-> 
-> .../devicetree/bindings/rtc/rtc-palmas.txt         |   21 +++++++++++--------
-> drivers/rtc/rtc-palmas.c                           |   14 ++++++------
-> 2 files changed, 19 insertions(+), 16 deletions(-)
-
-Are you not concerned about any dts with the old property names being around such that the code should support the old name as well?
-
-- k
-
-> 
-> diff --git a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-> index 41bb445..8ef7660 100644
-> --- a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-> +++ b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-> @@ -7,13 +7,16 @@ Required properties:
-> - interrupts: Interrupt number of RTC submodule on device.
-> 
-> Optional properties:
-> -- ti,back-battery-charge-enable: The Palmas series device like TPS65913 or
-> -	TPS80036 supports the battery backup for powering the RTC when main
-> -	battery is removed or in very low power state. This flag will enable
-> -	the backup battery charging.
-> -- ti,back-battery-charge-low-current: Configure lower charging current. Device
-> -	supports the charging current as < 100mA or >100mA. Low current will
-> -	set as <100mA.
-> +- ti,backup-battery-chargeable: The Palmas series device like TPS65913 or
-> +	TPS80036 supports the backup battery for powering the RTC when main
-> +	battery is removed or in very low power state. The backup battery
-> +	can be chargeable or non-chargeable. This flag will tells whether
-> +	battery is chargeable or not. If charging battery then driver can
-> +	enable the charging.
-> +- ti,backup-battery-charge-high-current: Enable high current charging in
-> +	backup battery. Device supports the < 100mA and > 100mA charging.
-> +	The high current will be > 100mA. Absence of this property will
-> +	charge battery to lower current i.e. < 100mA.
-> 
-> Example:
-> 	palmas: tps65913@58 {
-> @@ -22,8 +25,8 @@ Example:
-> 			compatible = "ti,palmas-rtc";
-> 			interrupt-parent = <&palmas>;
-> 			interrupts = <8 0>;
-> -			ti,back-battery-charge-enable;
-> -			ti,back-battery-charge-low-current;
-> +			ti,backup-battery-chargeable;
-> +			ti,backup-battery-charge-high-current;
-> 		};
-> 		...
-> 	};
-> diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
-> index adb6e71..fffb7d3 100644
-> --- a/drivers/rtc/rtc-palmas.c
-> +++ b/drivers/rtc/rtc-palmas.c
-> @@ -239,13 +239,13 @@ static int palmas_rtc_probe(struct platform_device *pdev)
-> 	struct palmas_rtc *palmas_rtc = NULL;
-> 	int ret;
-> 	bool enable_bb_charging = false;
-> -	bool low_bb_charging;
-> +	bool high_bb_charging;
-> 
-> 	if (pdev->dev.of_node) {
-> 		enable_bb_charging = of_property_read_bool(pdev->dev.of_node,
-> -					"ti,back-battery-charge-enable");
-> -		low_bb_charging = of_property_read_bool(pdev->dev.of_node,
-> -					"ti,back-battery-charge-low-current");
-> +					"ti,backup-battery-chargeable");
-> +		high_bb_charging = of_property_read_bool(pdev->dev.of_node,
-> +					"ti,backup-battery-charge-high-current");
-> 	}
-> 
-> 	palmas_rtc = devm_kzalloc(&pdev->dev, sizeof(struct palmas_rtc),
-> @@ -264,10 +264,10 @@ static int palmas_rtc_probe(struct platform_device *pdev)
-> 	platform_set_drvdata(pdev, palmas_rtc);
-> 
-> 	if (enable_bb_charging) {
-> -		unsigned reg = 0;
-> +		unsigned reg = PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
-> 
-> -		if (low_bb_charging)
-> -			reg |= PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
-> +		if (high_bb_charging)
-> +			reg = 0;
-> 
-> 		ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
-> 			PALMAS_BACKUP_BATTERY_CTRL,
+> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> index 5b8eef9..5c130bc 100644
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@ -12,6 +12,7 @@
+>  #include <asm/memory.h>
+>  
+>  #define DMA_ERROR_CODE	(~0)
+> +extern struct dma_map_ops *dma_ops;
+>  extern struct dma_map_ops arm_dma_ops;
+>  extern struct dma_map_ops arm_coherent_dma_ops;
+>  
+> @@ -19,7 +20,7 @@ static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+>  {
+>  	if (dev && dev->archdata.dma_ops)
+>  		return dev->archdata.dma_ops;
+> -	return &arm_dma_ops;
+> +	return dma_ops;
+>  }
+>  
+>  static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
+> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+> index 7f9b179..870b12c 100644
+> --- a/arch/arm/mm/dma-mapping.c
+> +++ b/arch/arm/mm/dma-mapping.c
+> @@ -141,6 +141,9 @@ struct dma_map_ops arm_dma_ops = {
+>  };
+>  EXPORT_SYMBOL(arm_dma_ops);
+>  
+> +struct dma_map_ops *dma_ops = &arm_dma_ops;
+> +EXPORT_SYMBOL(dma_ops);
+> +
+>  static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
+>  	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs);
+>  static void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_addr,
 > -- 
-> 1.7.1.1
+> 1.7.2.5
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
