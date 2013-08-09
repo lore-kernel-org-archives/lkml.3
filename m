@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030785Ab3HITMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:12:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36659 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030485Ab3HITMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:12:31 -0400
-Date: Fri, 9 Aug 2013 12:12:30 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johan Hedberg <johan.hedberg@intel.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Jaganath Kanakkassery <jaganath.k@samsung.com>,
-        Chan-Yeol Park <chanyeol.park@samsung.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: Re: [ 045/102] Bluetooth: Fix invalid length check in
- l2cap_information_rsp()
-Message-ID: <20130809191230.GE10130@kroah.com>
-References: <20130809015010.208118575@linuxfoundation.org>
- <20130809015020.460694273@linuxfoundation.org>
- <20130809075458.GA8758@x220.p-661hnu-f1>
+	id S1030796Ab3HITNv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:13:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030485Ab3HITNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 15:13:49 -0400
+Date: Fri, 9 Aug 2013 21:15:42 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Mike Christie <mchristie@fusionio.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130809191542.GD25306@dhcp-26-207.brq.redhat.com>
+References: <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+ <51E83E32.9050306@cs.wisc.edu>
+ <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
+ <20130719003034.GG28005@kernel.dk>
+ <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+ <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+ <1374248000.2266.20.camel@dabdike>
+ <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+ <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+ <51EAA33C.9010405@fusionio.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130809075458.GA8758@x220.p-661hnu-f1>
+In-Reply-To: <51EAA33C.9010405@fusionio.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 10:54:58AM +0300, Johan Hedberg wrote:
-> Hi Greg,
-> 
-> On Thu, Aug 08, 2013, Greg Kroah-Hartman wrote:
-> > 3.10-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Jaganath Kanakkassery <jaganath.k@samsung.com>
-> > 
-> > commit da9910ac4a816b4340944c78d94c02a35527db46 upstream.
-> > 
-> > The length check is invalid since the length varies with type of
-> > info response.
-> > 
-> > This was introduced by the commit cb3b3152b2f5939d67005cff841a1ca748b19888
-> > 
-> > Because of this, l2cap info rsp is not handled and command reject is sent.
-> > 
-> > > ACL data: handle 11 flags 0x02 dlen 16
-> >         L2CAP(s): Info rsp: type 2 result 0
-> >           Extended feature mask 0x00b8
-> >             Enhanced Retransmission mode
-> >             Streaming mode
-> >             FCS Option
-> >             Fixed Channels
-> > < ACL data: handle 11 flags 0x00 dlen 10
-> >         L2CAP(s): Command rej: reason 0
-> >           Command not understood
-> > 
-> > Signed-off-by: Jaganath Kanakkassery <jaganath.k@samsung.com>
-> > Signed-off-by: Chan-Yeol Park <chanyeol.park@samsung.com>
-> > Acked-by: Johan Hedberg <johan.hedberg@intel.com>
-> > Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > ---
-> >  net/bluetooth/l2cap_core.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > --- a/net/bluetooth/l2cap_core.c
-> > +++ b/net/bluetooth/l2cap_core.c
-> > @@ -4240,7 +4240,7 @@ static inline int l2cap_disconnect_rsp(s
-> >  	u16 dcid, scid;
-> >  	struct l2cap_chan *chan;
-> >  
-> > -	if (cmd_len != sizeof(*rsp))
-> > +	if (cmd_len < sizeof(*rsp))
-> >  		return -EPROTO;
-> >  
-> >  	scid = __le16_to_cpu(rsp->scid);
-> 
-> This patch is already in 3.10 so there should be no need to try to
-> backport it (not to mention that this backport itself is incorrect in
-> that it modifies l2cap_disconnect_rsp whereas the original patch
-> modifies l2cap_information_rsp).
-> 
-> For whatever reason this commit seems to exist twice in Linus' tree: once
-> before the v3.10 tag with id 3f6fa3d489e127ca5a5b298eabac3ff5dbe0e112 and
-> once after the v3.10 tag with id da9910ac4a816b4340944c78d94c02a35527db46
-> (which is the upstream commit id referenced by your commit message).
+On Sat, Jul 20, 2013 at 09:48:28AM -0500, Mike Christie wrote:
+> What about the attached only compile tested patch. The patch has the mq
+> block code work like the non mq code for bio cleanups.
 
-Thanks, this came into Linus's tree twice, I missed that.  I've now
-dropped this from the 3.10-stable queue.
+Not sure if it is related to the patch or not, but it never returns from
+wait_for_completion_io(&wait) in blkdev_issue_flush():
 
-greg k-h
+# ps axl | awk '$10 ~ /D\+/'
+4     0   938   879  20   0 111216   656 blkdev D+   pts/1      0:00 fdisk/dev/sda
+#
+# cat /proc/938/stack
+[<ffffffff812a8a5c>] blkdev_issue_flush+0xfc/0x160
+[<ffffffff811ac606>] blkdev_fsync+0x96/0xc0
+[<ffffffff811a2f4d>] do_fsync+0x5d/0x90
+[<ffffffff811a3330>] SyS_fsync+0x10/0x20
+[<ffffffff81611582>] system_call_fastpath+0x16/0x1b
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+Any ideas?
+
+Thanks!
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
