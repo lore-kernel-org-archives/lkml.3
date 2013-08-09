@@ -1,94 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab3HIR2B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 13:28:01 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44492 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672Ab3HIR17 (ORCPT
+	id S1758372Ab3HIRgJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 13:36:09 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46971 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab3HIRgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 13:27:59 -0400
-Date: Fri, 9 Aug 2013 10:27:57 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: srinivas.kandagatla@st.com, S??ren Brinkmann <soren.brinkmann@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-Message-ID: <20130809172757.GD14845@codeaurora.org>
-References: <51F97CE3.9030306@linaro.org>
- <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local>
- <51F99747.4060901@linaro.org>
- <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local>
- <51FA9AE8.1060004@linaro.org>
- <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local>
- <51FA9F54.3060704@linaro.org>
- <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local>
- <5204C54A.9020105@st.com>
- <5204FA5D.3060908@linaro.org>
+	Fri, 9 Aug 2013 13:36:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5204FA5D.3060908@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <s5h38qj2cqj.wl%tiwai@suse.de>
+References: <1375430365-13232-2-git-send-email-eu@felipetonello.com>
+	<1376029315-3217-1-git-send-email-eu@felipetonello.com>
+	<s5h38qj2cqj.wl%tiwai@suse.de>
+Date: Fri, 9 Aug 2013 10:36:04 -0700
+Message-ID: <CAGrhNMxj++uJ5HnhhcfOOxhu9u77WMBRP+H5ar5wATi=kHJYKg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] ALSA: Added jack detection KControl support
+From: Felipe Tonello <eu@felipetonello.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org, Jaroslav Kysela <perex@perex.cz>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09, Daniel Lezcano wrote:
-> 
-> yes, but at least the broadcast mechanism should send an IPI to cpu0 to
-> wake it up, no ? As Stephen stated this kind of configuration should has
-> never been tested before so the tick broadcast code is not handling this
-> case properly IMHO.
-> 
+Hi Takashi,
 
-If you have a per-cpu tick device that isn't suffering from
-FEAT_C3_STOP why wouldn't you use that for the tick versus a
-per-cpu tick device that has FEAT_C3_STOP? It sounds like there
-is a bug in the preference logic or you should boost the rating
-of the arm global timer above the twd. Does this patch help? It
-should make the arm global timer the tick device and whatever the
-cadence timer you have into the broadcast device.
+On Fri, Aug 9, 2013 at 6:52 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Thu,  8 Aug 2013 23:21:55 -0700,
+> Felipe F. Tonello wrote:
+>>
+>> From: "Felipe F. Tonello" <eu@felipetonello.com>
+>>
+>> This patch adds jack support for ALSA KControl.
+>>
+>> This support is necessary since the new kcontrol is used by user-space
+>> daemons, such as PulseAudio(>=2.0), to do jack detection.)
+>>
+>> Also, HDA's CONFIG_SND_HDA_INPUT_JACK is disabled because it causes to use standard
+>> snd_jack_new() to create jacks. This can cause conflict since this codec creates
+>> jack controls directly.
+>>
+>> It makes sure that all codecs using ALSA jack API are updated to use the new
+>> API.
+>
+> Well, while this is a good move forward, this patch is a bit too
+> intrusive as a single patch.  It breaks way too many.  "Break then
+> fix" is no good attitude, especially when it's just something for
+> future.
 
----8<----
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 218bcb5..d3539e5 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -77,6 +77,9 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
- 	    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
- 		return false;
- 
-+	if (cpumask_equal(newdev->cpumask, cpumask_of(smp_processor_id())))
-+		return false;
-+
- 	return !curdev || newdev->rating > curdev->rating;
- }
- 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 64522ec..1628b9f 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -245,6 +245,15 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
- 	}
- 
- 	/*
-+	 * Prefer tick devices that don't suffer from FEAT_C3_STOP
-+	 * regardless of their rating
-+	 */
-+	if (curdev && cpumask_equal(curdev->cpumask, newdev->cpumask) &&
-+	    !(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
-+	    (curdev->features & CLOCK_EVT_FEAT_C3STOP))
-+		return true;
-+
-+	/*
- 	 * Use the higher rated one, but prefer a CPU local device with a lower
- 	 * rating than a non-CPU local device
- 	 */
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+I agree with you, but unfortunately I had to do that due the
+non-standard way that jacks are been handled in the kernel and
+reported to user-space.
+
+I believe this is a classic case where we need a well defined kernel
+API to user-space. I'm not necessarily saying about internal kernel
+API/ABI, but the one which is exported to user-space. And to be
+honest, it's kind common to see internal API's been changed.
+
+And that's the reason jack detection only work, out of the box, with
+Intel's HD-audio. Which I think it's pretty bad in the stage we are.
+More and more embedded running PulseAudio and other core user-space
+daemons.
+
+[...]
+
+>> diff --git a/include/sound/control.h b/include/sound/control.h
+>> index 5358892..ffeb6b6 100644
+>> --- a/include/sound/control.h
+>> +++ b/include/sound/control.h
+>> @@ -242,6 +242,6 @@ void snd_ctl_sync_vmaster(struct snd_kcontrol *kctl, bool hook_only);
+>>  struct snd_kcontrol *
+>>  snd_kctl_jack_new(const char *name, int idx, void *private_data);
+>>  void snd_kctl_jack_report(struct snd_card *card,
+>> -                       struct snd_kcontrol *kctl, bool status);
+>> +                          struct snd_kcontrol *kctl, bool status);
+>
+> Please don't include space or coding-fix changes.
+
+True. I changed back to bool instead of checking out the source file :P
+
+>
+>
+>>
+>>  #endif       /* __SOUND_CONTROL_H */
+>> diff --git a/include/sound/jack.h b/include/sound/jack.h
+>> index 5891657..0d36f20 100644
+>> --- a/include/sound/jack.h
+>> +++ b/include/sound/jack.h
+>> @@ -26,6 +26,7 @@
+>>  #include <sound/core.h>
+>>
+>>  struct input_dev;
+>> +struct snd_kcontrol;
+>>
+>>  /**
+>>   * Jack types which can be reported.  These values are used as a
+>> @@ -58,11 +59,12 @@ enum snd_jack_types {
+>>
+>>  struct snd_jack {
+>>       struct input_dev *input_dev;
+>> +     struct snd_kcontrol *kctl[SND_JACK_SWITCH_TYPES]; /* control for each key */
+>>       int registered;
+>>       int type;
+>>       const char *id;
+>>       char name[100];
+>> -     unsigned int key[6];   /* Keep in sync with definitions above */
+>> +     unsigned int key[SND_JACK_SWITCH_TYPES];   /* Keep in sync with definitions above */
+>>       void *private_data;
+>>       void (*private_free)(struct snd_jack *);
+>>  };
+>> @@ -70,7 +72,7 @@ struct snd_jack {
+>>  #ifdef CONFIG_SND_JACK
+>>
+>>  int snd_jack_new(struct snd_card *card, const char *id, int type,
+>> -              struct snd_jack **jack);
+>> +                 int idx, struct snd_jack **jack);
+>
+> The biggest point here is that the patch changes the API function,
+> from both API and behavioral POV.  That's why you need to modify so
+> many patches in a single patch.
+>
+> Try to create a new function doing this and keep the old API and
+> behavior as is.  Then adapt / replace with the new API gradually.
+> And in the last step, you can obsolete the former API.
+>
+> Or, at least keep snd_sock_jack_new() as is without additional index
+> but just use idx=0.  Then a half of the whole patch can be reduced.
+>
+> Above all, the multiple indices don't work anyway with the snd_jack
+> stuff in the current form.  The index was introduced only for kjack,
+> and for HD-audio, snd_jack is provided just for a compatibility
+> reason, thus it doesn't matter much even if the multiple indices don't
+> work with it.
+>
+> That being said, before going further, we need to consider how to
+> handle the input jack stuff with multiple indices.
+>
+>
+
+[...]
+
+>> diff --git a/sound/core/ctljack.c b/sound/core/ctljack.c
+>> index e4b38fb..441158d 100644
+>> --- a/sound/core/ctljack.c
+>> +++ b/sound/core/ctljack.c
+>> @@ -14,7 +14,7 @@
+>>  #include <sound/core.h>
+>>  #include <sound/control.h>
+>>
+>> -#define jack_detect_kctl_info        snd_ctl_boolean_mono_info
+>> +#define      jack_detect_kctl_info   snd_ctl_boolean_mono_info
+>>
+>>  static int jack_detect_kctl_get(struct snd_kcontrol *kcontrol,
+>>                               struct snd_ctl_elem_value *ucontrol)
+>> @@ -38,6 +38,7 @@ snd_kctl_jack_new(const char *name, int idx, void *private_data)
+>>       kctl = snd_ctl_new1(&jack_detect_kctl, private_data);
+>>       if (!kctl)
+>>               return NULL;
+>> +
+>>       snprintf(kctl->id.name, sizeof(kctl->id.name), "%s Jack", name);
+>>       kctl->id.index = idx;
+>>       kctl->private_value = 0;
+>
+> No unnecessary space changes please.
+
+Ok.
+
+>
+>
+>> diff --git a/sound/core/jack.c b/sound/core/jack.c
+>> index b35fe73..128154b 100644
+>> --- a/sound/core/jack.c
+>> +++ b/sound/core/jack.c
+
+[...]
+
+>>
+>> +const char * jack_get_name_by_key(const char *name, int key)
+>> +{
+>> +     char *jack_name;
+>> +     size_t jack_name_size;
+>> +     const char *key_name;
+>> +
+>> +     switch(key) {
+>> +     case SW_HEADPHONE_INSERT: key_name = "Headphone"; break;
+>> +     case SW_MICROPHONE_INSERT: key_name = "Mic"; break;
+>> +     case SW_LINEOUT_INSERT: key_name = "Line Out"; break;
+>> +     case SW_JACK_PHYSICAL_INSERT: key_name = "Mechanical"; break;
+>> +     case SW_VIDEOOUT_INSERT: key_name = "Video Out"; break;
+>> +     case SW_LINEIN_INSERT: key_name = "Line In"; break;
+>> +     default: key_name = "Unknown";
+>> +     }
+>> +
+>> +     /* Avoid duplicate name in KControl */
+>> +     if (strcmp(name, key_name) != 0) {
+>
+> Better to check via strstr() or such.
+> The name can be like "Front Headphone".
+
+Ok.
+
+>
+>> +             /* allocate necessary memory space only */
+>> +             jack_name_size = strlen(name) + strlen(key_name) + 4;
+>> +             jack_name = kmalloc(jack_name_size, GFP_KERNEL);
+>
+> This leads to a memory leak.  Make this function to put a string on
+> the given buffer instead of returning a string pointer.
+>
+>> +
+>> +             snprintf(jack_name, jack_name_size, "%s (%s)", name, key_name);
+>> +     } else {
+>> +             jack_name = (char *)name;
+>> +     }
+>> +
+>> +     return jack_name;
+>> +}
+>> +
+>>  static int snd_jack_dev_register(struct snd_device *device)
+>>  {
+>>       struct snd_jack *jack = device->device_data;
+>>       struct snd_card *card = device->card;
+>>       int err, i;
+>>
+>> -     snprintf(jack->name, sizeof(jack->name), "%s %s",
+>> +     snprintf(jack->name, sizeof(jack->name), "%s %s Jack",
+>>                card->shortname, jack->id);
+>
+> This breaks the compatibility with the existing code.
+> You must not change the name of the existing input jack element.
+> Some drivers create "Headphone" and some do "Headphone Jack", yes.
+> It's bad, but too late to change.
+
+Why? Can't we just fix those names in those codecs? As You see in my
+second patch, only few of them are using weird names.
+I know that this will potentially break user-space, but the trade off
+is not to standardize the Jack API. What do you think?
+
+[...]
+
+>> @@ -232,10 +305,15 @@ void snd_jack_report(struct snd_jack *jack, int status)
+>>
+>>       for (i = 0; i < ARRAY_SIZE(jack_switch_types); i++) {
+>>               int testbit = 1 << i;
+>> -             if (jack->type & testbit)
+>> +             if (jack->type & testbit) {
+>>                       input_report_switch(jack->input_dev,
+>>                                           jack_switch_types[i],
+>>                                           status & testbit);
+>> +
+>> +                     /* Update ALSA KControl interface */
+>> +                     snd_kctl_jack_report((struct snd_card *)jack->kctl[i]->private_data,
+>> +                                          jack->kctl[i], status & testbit);
+>
+> Better to do a NULL check.
+> In this patch, snd_ctl_add() error isn't handled as a fatal error,
+> thus jack->kctl[i] can be NULL.
+
+True.
+
+>
+>
+>> +             }
+>>       }
+>>
+>>       input_sync(jack->input_dev);
+>> diff --git a/sound/pci/hda/Kconfig b/sound/pci/hda/Kconfig
+>> index 59c5e9c..561abc7 100644
+>> --- a/sound/pci/hda/Kconfig
+>> +++ b/sound/pci/hda/Kconfig
+>> @@ -65,14 +65,6 @@ config SND_HDA_INPUT_BEEP_MODE
+>>         Set 1 to always enable the digital beep interface for HD-audio by
+>>         default.
+>>
+>> -config SND_HDA_INPUT_JACK
+>> -     bool "Support jack plugging notification via input layer"
+>> -     depends on INPUT=y || INPUT=SND
+>> -     select SND_JACK
+>> -     help
+>> -       Say Y here to enable the jack plugging notification via
+>> -       input layer.
+>> -
+>
+> I understand why you remove this Kconfig.  But by this action, you
+> introduced an obvious regression, i.e. the input jack control is no
+> longer created for HD-audio.
+
+I did this just to see what some HD-audio developers whould say.
+Because what I would like to see is HD-audio codec also using snd_jack
+and not export those kct jack functions anymore.
+
+BTW, who uses these input events anyway? Woudn't be better just to
+have standard way (ALSA KControl) to report it?
+
+Thanks for the comments,
+
+Felipe Tonello
