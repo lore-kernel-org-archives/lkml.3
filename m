@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab3HIEeH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 00:34:07 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57580 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab3HIEeF (ORCPT
+	id S933322Ab3HIEo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 00:44:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56972 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932154Ab3HIEo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 00:34:05 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <52047143.5070602@roeck-us.net>
-Date: Thu, 08 Aug 2013 21:34:11 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 9 Aug 2013 00:44:57 -0400
+Date: Thu, 8 Aug 2013 21:46:20 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [ 008/102] ARM: make vectors page inaccessible from userspace
+Message-ID: <20130809044620.GA10681@kroah.com>
+References: <20130809015010.208118575@linuxfoundation.org>
+ <20130809015012.154316979@linuxfoundation.org>
+ <201308090629.21809.s.L-H@gmx.de>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/25] 3.4.57-stable review
-References: <20130809013649.057678051@linuxfoundation.org>
-In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201308090629.21809.s.L-H@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2013 06:41 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.57 release.
-> There are 25 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sun Aug 11 01:33:13 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.57-rc1.gz
-> and the diffstat can be found below.
->
-Cross build results:
-	Total builds: 62 Total build errors: 10
+On Fri, Aug 09, 2013 at 06:29:17AM +0200, Stefan Lippers-Hollmann wrote:
+> On Friday 09 August 2013, Greg Kroah-Hartman wrote:
+> > 3.10-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Russell King <rmk+kernel@arm.linux.org.uk>
+> > 
+> > commit a5463cd3435475386cbbe7b06e01292ac169d36f upstream.
+> > 
+> > If kuser helpers are not provided by the kernel, disable user access to
+> > the vectors page.  With the kuser helpers gone, there is no reason for
+> > this page to be visible to userspace.
+> > 
+> > Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> 
+> If I read Russell King's response in 
+> 
+> 	http://www.spinics.net/lists/stable/msg16792.html
+> 	Message-ID: <20130804105241.GG23006@n2100.arm.linux.org.uk>
+> 
+> correctly, this patch might not be wanted for -stable; this only 
+> affects queue-3.10 at the moment.
 
-Details:
-	http://server.roeck-us.net:8010/builders/stable-queue-3.4/builds/21/steps/shell/logs/stdio/text
+Yes, I know there's a build warning/error here, but it only affects no
+mmu systems, right?  I'll pick up the fix that hits Linus's tree for
+this when it gets there.
 
-Same results as with previous release; reported differences are due to different build targets.
+thanks,
 
-If anyone is interested in per-build logs, please let me know.
-
-Thanks,
-Guenter
-
+greg k-h
