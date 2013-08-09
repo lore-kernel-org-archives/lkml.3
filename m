@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967617Ab3HIKsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:48:04 -0400
+	id S967333Ab3HIKqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:46:19 -0400
 Received: from mga03.intel.com ([143.182.124.21]:22271 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967404Ab3HIKqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:46:25 -0400
+	id S966978Ab3HIKqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:46:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,845,1367996400"; 
-   d="scan'208";a="279834437"
+   d="scan'208";a="279834382"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V10 08/13] perf: make events stream always parsable
-Date: Fri,  9 Aug 2013 13:51:54 +0300
-Message-Id: <1376045519-13832-9-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V10 05/13] perf tools: tidy up sample parsing overflow checking
+Date: Fri,  9 Aug 2013 13:51:51 +0300
+Message-Id: <1376045519-13832-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
 References: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
@@ -28,134 +28,238 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The event stream is not always parsable because the format of a sample
-is dependent on the sample_type of the selected event.  When there
-is more than one selected event and the sample_types are not the
-same then parsing becomes problematic.  A sample can be matched to its
-selected event using the ID that is allocated when the event is opened.
-Unfortunately, to get the ID from the sample means first parsing it.
-
-This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
-the ID at a fixed position so that the ID can be retrieved without
-parsing the sample.  For sample events, that is the first position
-immediately after the header.  For non-sample events, that is the last
-position.
-
-In this respect parsing samples requires that the sample_type and ID
-values are recorded.  For example, perf tools records struct perf_event_attr
-and the IDs within the perf.data file.  Those must be read first
-before it is possible to parse samples found later in the perf.data file.
+The size of data retrieved from a sample event must be
+validated to ensure it does not go past the end of the
+event.  That was being done sporadically and without
+considering integer overflows.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- include/uapi/linux/perf_event.h | 27 ++++++++++++++++++++-------
- kernel/events/core.c            | 11 ++++++++++-
- 2 files changed, 30 insertions(+), 8 deletions(-)
+ tools/perf/util/evsel.c | 112 ++++++++++++++++++++++++++++++------------------
+ 1 file changed, 71 insertions(+), 41 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 62c25a2..42cb7b6 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -134,8 +134,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
- 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
-+	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
- 
--	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 17,		/* non-ABI */
- };
- 
- /*
-@@ -492,12 +493,12 @@ enum perf_event_type {
- 	/*
- 	 * If perf_event_attr.sample_id_all is set then all event types will
- 	 * have the sample_type selected fields related to where/when
--	 * (identity) an event took place (TID, TIME, ID, CPU, STREAM_ID)
--	 * described in PERF_RECORD_SAMPLE below, it will be stashed just after
--	 * the perf_event_header and the fields already present for the existing
--	 * fields, i.e. at the end of the payload. That way a newer perf.data
--	 * file will be supported by older perf tools, with these new optional
--	 * fields being ignored.
-+	 * (identity) an event took place (TID, TIME, ID, STREAM_ID, CPU,
-+	 * IDENTIFIER) described in PERF_RECORD_SAMPLE below, it will be stashed
-+	 * just after the perf_event_header and the fields already present for
-+	 * the existing fields, i.e. at the end of the payload. That way a newer
-+	 * perf.data file will be supported by older perf tools, with these new
-+	 * optional fields being ignored.
- 	 *
- 	 * struct sample_id {
- 	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
-@@ -505,7 +506,12 @@ enum perf_event_type {
- 	 * 	{ u64			id;       } && PERF_SAMPLE_ID
- 	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
- 	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
-+	 *	{ u64			id;	  } && PERF_SAMPLE_IDENTIFIER
- 	 * } && perf_event_attr::sample_id_all
-+	 *
-+	 * Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.  The
-+	 * advantage of PERF_SAMPLE_IDENTIFIER is that its position is fixed
-+	 * relative to header.size.
- 	 */
- 
- 	/*
-@@ -594,6 +600,13 @@ enum perf_event_type {
- 	 * struct {
- 	 *	struct perf_event_header	header;
- 	 *
-+	 *	#
-+	 *	# Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.
-+	 *	# The advantage of PERF_SAMPLE_IDENTIFIER is that its position
-+	 *	# is fixed relative to header.
-+	 *	#
-+	 *
-+	 *	{ u64			id;	  } && PERF_SAMPLE_IDENTIFIER
- 	 *	{ u64			ip;	  } && PERF_SAMPLE_IP
- 	 *	{ u32			pid, tid; } && PERF_SAMPLE_TID
- 	 *	{ u64			time;     } && PERF_SAMPLE_TIME
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index e82e700..776e17d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1213,6 +1213,9 @@ static void perf_event__id_header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_TIME)
- 		size += sizeof(data->time);
- 
-+	if (sample_type & PERF_SAMPLE_IDENTIFIER)
-+		size += sizeof(data->id);
-+
- 	if (sample_type & PERF_SAMPLE_ID)
- 		size += sizeof(data->id);
- 
-@@ -4284,7 +4287,7 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
- 	if (sample_type & PERF_SAMPLE_TIME)
- 		data->time = perf_clock();
- 
--	if (sample_type & PERF_SAMPLE_ID)
-+	if (sample_type & (PERF_SAMPLE_ID | PERF_SAMPLE_IDENTIFIER))
- 		data->id = primary_event_id(event);
- 
- 	if (sample_type & PERF_SAMPLE_STREAM_ID)
-@@ -4323,6 +4326,9 @@ static void __perf_event__output_id_sample(struct perf_output_handle *handle,
- 
- 	if (sample_type & PERF_SAMPLE_CPU)
- 		perf_output_put(handle, data->cpu_entry);
-+
-+	if (sample_type & PERF_SAMPLE_IDENTIFIER)
-+		perf_output_put(handle, data->id);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 285ed30..b028e02 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1168,24 +1168,30 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
+ 	return 0;
  }
  
- void perf_event__output_id_sample(struct perf_event *event,
-@@ -4436,6 +4442,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+-static bool sample_overlap(const union perf_event *event,
+-			   const void *offset, u64 size)
++static inline bool overflow(const void *endp, u16 max_size, const void *offset,
++			    u64 size)
+ {
+-	const void *base = event;
++	return size > max_size || offset + size > endp;
++}
  
- 	perf_output_put(handle, *header);
+-	if (offset + size > base + event->header.size)
+-		return true;
++#define OVERFLOW_CHECK(offset, size, max_size)				\
++	do {								\
++		if (overflow(endp, (max_size), (offset), (size)))	\
++			return -EFAULT;					\
++	} while (0)
  
-+	if (sample_type & PERF_SAMPLE_IDENTIFIER)
-+		perf_output_put(handle, data->id);
+-	return false;
+-}
++#define OVERFLOW_CHECK_u64(offset) \
++	OVERFLOW_CHECK(offset, sizeof(u64), sizeof(u64))
+ 
+ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			     struct perf_sample *data)
+ {
+ 	u64 type = evsel->attr.sample_type;
+-	u64 regs_user = evsel->attr.sample_regs_user;
+ 	bool swapped = evsel->needs_swap;
+ 	const u64 *array;
++	u16 max_size = event->header.size;
++	const void *endp = (void *)event + max_size;
++	u64 sz;
+ 
+ 	/*
+ 	 * used for cross-endian analysis. See git commit 65014ab3
+@@ -1207,6 +1213,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	array = event->sample.array;
+ 
++	/*
++	 * The evsel's sample_size is based on PERF_SAMPLE_MASK which includes
++	 * up to PERF_SAMPLE_PERIOD.  After that overflow() must be used to
++	 * check the format does not go past the end of the event.
++	 */
+ 	if (evsel->sample_size + sizeof(event->header) > event->header.size)
+ 		return -EFAULT;
+ 
+@@ -1272,6 +1283,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 	if (type & PERF_SAMPLE_READ) {
+ 		u64 read_format = evsel->attr.read_format;
+ 
++		OVERFLOW_CHECK_u64(array);
+ 		if (read_format & PERF_FORMAT_GROUP)
+ 			data->read.group.nr = *array;
+ 		else
+@@ -1280,41 +1292,51 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		array++;
+ 
+ 		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
++			OVERFLOW_CHECK_u64(array);
+ 			data->read.time_enabled = *array;
+ 			array++;
+ 		}
+ 
+ 		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
++			OVERFLOW_CHECK_u64(array);
+ 			data->read.time_running = *array;
+ 			array++;
+ 		}
+ 
+ 		/* PERF_FORMAT_ID is forced for PERF_SAMPLE_READ */
+ 		if (read_format & PERF_FORMAT_GROUP) {
+-			data->read.group.values = (struct sample_read_value *) array;
+-			array = (void *) array + data->read.group.nr *
+-				sizeof(struct sample_read_value);
++			const u64 max_group_nr = UINT64_MAX /
++					sizeof(struct sample_read_value);
 +
- 	if (sample_type & PERF_SAMPLE_IP)
- 		perf_output_put(handle, data->ip);
++			if (data->read.group.nr > max_group_nr)
++				return -EFAULT;
++			sz = data->read.group.nr *
++			     sizeof(struct sample_read_value);
++			OVERFLOW_CHECK(array, sz, max_size);
++			data->read.group.values =
++					(struct sample_read_value *)array;
++			array = (void *)array + sz;
+ 		} else {
++			OVERFLOW_CHECK_u64(array);
+ 			data->read.one.id = *array;
+ 			array++;
+ 		}
+ 	}
  
+ 	if (type & PERF_SAMPLE_CALLCHAIN) {
+-		if (sample_overlap(event, array, sizeof(data->callchain->nr)))
+-			return -EFAULT;
+-
+-		data->callchain = (struct ip_callchain *)array;
++		const u64 max_callchain_nr = UINT64_MAX / sizeof(u64);
+ 
+-		if (sample_overlap(event, array, data->callchain->nr))
++		OVERFLOW_CHECK_u64(array);
++		data->callchain = (struct ip_callchain *)array++;
++		if (data->callchain->nr > max_callchain_nr)
+ 			return -EFAULT;
+-
+-		array += 1 + data->callchain->nr;
++		sz = data->callchain->nr * sizeof(u64);
++		OVERFLOW_CHECK(array, sz, max_size);
++		array = (void *)array + sz;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_RAW) {
+-		const u64 *pdata;
+-
++		OVERFLOW_CHECK_u64(array);
+ 		u.val64 = *array;
+ 		if (WARN_ONCE(swapped,
+ 			      "Endianness of raw data not corrected!\n")) {
+@@ -1323,65 +1345,73 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			u.val32[0] = bswap_32(u.val32[0]);
+ 			u.val32[1] = bswap_32(u.val32[1]);
+ 		}
+-
+-		if (sample_overlap(event, array, sizeof(u32)))
+-			return -EFAULT;
+-
+ 		data->raw_size = u.val32[0];
+-		pdata = (void *) array + sizeof(u32);
+-
+-		if (sample_overlap(event, pdata, data->raw_size))
+-			return -EFAULT;
++		array = (void *)array + sizeof(u32);
+ 
+-		data->raw_data = (void *) pdata;
+-
+-		array = (void *)array + data->raw_size + sizeof(u32);
++		OVERFLOW_CHECK(array, data->raw_size, max_size);
++		data->raw_data = (void *)array;
++		array = (void *)array + data->raw_size;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_BRANCH_STACK) {
+-		u64 sz;
++		const u64 max_branch_nr = UINT64_MAX /
++					  sizeof(struct branch_entry);
+ 
+-		data->branch_stack = (struct branch_stack *)array;
+-		array++; /* nr */
++		OVERFLOW_CHECK_u64(array);
++		data->branch_stack = (struct branch_stack *)array++;
+ 
++		if (data->branch_stack->nr > max_branch_nr)
++			return -EFAULT;
+ 		sz = data->branch_stack->nr * sizeof(struct branch_entry);
+-		sz /= sizeof(u64);
+-		array += sz;
++		OVERFLOW_CHECK(array, sz, max_size);
++		array = (void *)array + sz;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_REGS_USER) {
++		u64 avail;
++
+ 		/* First u64 tells us if we have any regs in sample. */
+-		u64 avail = *array++;
++		OVERFLOW_CHECK_u64(array);
++		avail = *array++;
+ 
+ 		if (avail) {
++			u64 regs_user = evsel->attr.sample_regs_user;
++
++			sz = hweight_long(regs_user) * sizeof(u64);
++			OVERFLOW_CHECK(array, sz, max_size);
+ 			data->user_regs.regs = (u64 *)array;
+-			array += hweight_long(regs_user);
++			array = (void *)array + sz;
+ 		}
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_STACK_USER) {
+-		u64 size = *array++;
++		OVERFLOW_CHECK_u64(array);
++		sz = *array++;
+ 
+ 		data->user_stack.offset = ((char *)(array - 1)
+ 					  - (char *) event);
+ 
+-		if (!size) {
++		if (!sz) {
+ 			data->user_stack.size = 0;
+ 		} else {
++			OVERFLOW_CHECK(array, sz, max_size);
+ 			data->user_stack.data = (char *)array;
+-			array += size / sizeof(*array);
++			array = (void *)array + sz;
++			OVERFLOW_CHECK_u64(array);
+ 			data->user_stack.size = *array++;
+ 		}
+ 	}
+ 
+ 	data->weight = 0;
+ 	if (type & PERF_SAMPLE_WEIGHT) {
++		OVERFLOW_CHECK_u64(array);
+ 		data->weight = *array;
+ 		array++;
+ 	}
+ 
+ 	data->data_src = PERF_MEM_DATA_SRC_NONE;
+ 	if (type & PERF_SAMPLE_DATA_SRC) {
++		OVERFLOW_CHECK_u64(array);
+ 		data->data_src = *array;
+ 		array++;
+ 	}
 -- 
 1.7.11.7
 
