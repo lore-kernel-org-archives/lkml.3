@@ -1,81 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031215Ab3HIV1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 17:27:47 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:34543 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031121Ab3HIV1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 17:27:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Myron Stowe <myron.stowe@gmail.com>
-Cc: thomas.petazzoni@free-electrons.com, jgunthorpe@obsidianresearch.com,
-        thierry.reding@avionic-design.de, swarren@wwwdotorg.org,
-        linux@arm.linux.org.uk, rob.herring@calxeda.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-pci <linux-pci@vger.kernel.org>,
-        iommu@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, mika.westerberg@linux.intel.com,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Don Dutile <ddutile@redhat.com>, liuj97@gmail.com,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: Re: Linux Plumbers ACPI/PM, PCI Microconference
-Date: Fri, 09 Aug 2013 23:37:56 +0200
-Message-ID: <19119445.uFrsn6yGJd@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAL-B5D1-CPNcOzjHx4ej5SenawvDqwC4Hef5oDkoxCb9Dz5dUw@mail.gmail.com>
-References: <CAL-B5D1-CPNcOzjHx4ej5SenawvDqwC4Hef5oDkoxCb9Dz5dUw@mail.gmail.com>
+	id S1031229Ab3HIV2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 17:28:10 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57977 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031121Ab3HIV2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 17:28:09 -0400
+Date: Fri, 9 Aug 2013 14:28:05 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: rpurdie@rpsys.net, FlorianSchandinat@gmx.de, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, rafael.j.wysocki@intel.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: Re: [PATCH v2] backlight: Convert from Legacy pm ops to dev_pm_ops
+Message-ID: <20130809212805.GA4987@codeaurora.org>
+References: <2236505237-3336-1-git-send-email-shuah.kh@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <2236505237-3336-1-git-send-email-shuah.kh@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 09, 2013 12:12:24 PM Myron Stowe wrote:
-> Time is passing quickly and there are still a few topic areas that we
-> would like discussed during the microconference but still do not have
-> any proposals/knowledgable speakers for.
-> 
-> For the following people I'm specifically picking on: Are you going to
-> plumbers, would you be willing to cover the following areas?  If you
-> are not going, do you know someone who is and could cover?
-> 
-> Yinghai: host bridge hot-plug - what has been accomplished to date and
-> what still remains to be done?
-> 
-> Mika: Thunderbolt activities?
+On Wed, Nov 14, 2040 at 04:27:17AM -0700, Shuah Khan wrote:
+> ...
 
-That falls under my hotplug topic (that's been submitted already).
+The clock on your computer might be running just a wee bit ahead.
 
-> Jiang Liu, Gu Zheng: Would you be willing to cover your recent efforts
-> with PCI device (hot-plug) reference counting?
-> 
-> Russel, Rob, Stephen, Thomas, Jason, Thierry: ARM - especially any
-> PCI(e) ideosynchronicies along with ARM's IOMMU arch and how that
-> relates to PCI.
-> 
-> Alex Williamson: you want/need to cover any of the following - PCI
-> secondary bus resets; pci_is_pcie() - Not just for PCIe capabilities;
-> I/O port pci-sysfs resource files (fix or remove)?
-> 
-> Of course anyone else is free to propose something or sign up for
-> covering one of the proposed topics listed at
-> http://wiki.linuxplumbersconf.org/2013:pci_subsystem
-> 
-> 
-> The instructions for submitting proposals should be at:
-> 
-> http://www.linuxplumbersconf.org/2013/submitting-topic/
-> 
-> The Microconference link is at:
-> 
-> http://wiki.linuxplumbersconf.org/2013:pci_subsystem
+Either that, or we're getting patches from the future.
 
-Yes, everyone, if you are going to attend the LPC and have a topic for
-discussion during the ACPI/PM+PCI uconf, please submit a proposal.
+David
 
-We should be able to accommodate 7-8 30-minutes slots.
-
-Thanks,
-Rafael
-
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
