@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967545Ab3HICU5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:20:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55607 "EHLO
+	id S967804Ab3HICVP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:21:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55598 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967425Ab3HIB6g (ORCPT
+	with ESMTP id S967408Ab3HIB6f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:36 -0400
+	Thu, 8 Aug 2013 21:58:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 019/102] hwmon: (max6697) fix MAX6581 ideality
-Date: Thu,  8 Aug 2013 18:56:55 -0700
-Message-Id: <20130809015014.546123640@linuxfoundation.org>
+        Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
+        Helge Deller <deller@gmx.de>
+Subject: [ 018/102] parisc: Fix interrupt routing for C8000 serial ports
+Date: Thu,  8 Aug 2013 18:56:54 -0700
+Message-Id: <20130809015014.351120021@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,37 +27,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+From: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
 
-commit 5c52add19733eb36d8619713312f5604efef3502 upstream.
+commit dd5e6d6a3db09b16b7c222943977865eead88cc3 upstream.
 
-Without this patch, the values for ideality (register 0x4b) and ideality
-selection mask (register 0x4c) are inverted.
+We can't use dev->mod_index for selecting the interrupt routing entry,
+because it's not an index into interrupt routing table. It will be even
+wrong on a machine with 2 CPUs (4 cores). But all needed information is
+contained in the PAT entries for the serial ports. mod[0] contains the
+iosapic address and mod_info has some indications for the interrupt
+input (at least it looks like it). This patch implements the searching
+for the right iosapic and uses this interrupt input information.
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Thomas Bogendoerfer <tsbogend@alpha.franken.de>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/max6697.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/parisc/include/asm/parisc-device.h |    3 ++
+ arch/parisc/kernel/inventory.c          |    1 
+ drivers/parisc/iosapic.c                |   38 ++++++++++++++++++++++----------
+ drivers/tty/serial/8250/8250_gsc.c      |    3 --
+ 4 files changed, 32 insertions(+), 13 deletions(-)
 
---- a/drivers/hwmon/max6697.c
-+++ b/drivers/hwmon/max6697.c
-@@ -605,12 +605,12 @@ static int max6697_init_chip(struct i2c_
- 		if (ret < 0)
- 			return ret;
- 		ret = i2c_smbus_write_byte_data(client, MAX6581_REG_IDEALITY,
--						pdata->ideality_mask >> 1);
-+						pdata->ideality_value);
- 		if (ret < 0)
- 			return ret;
- 		ret = i2c_smbus_write_byte_data(client,
- 						MAX6581_REG_IDEALITY_SELECT,
--						pdata->ideality_value);
-+						pdata->ideality_mask >> 1);
- 		if (ret < 0)
- 			return ret;
+--- a/arch/parisc/include/asm/parisc-device.h
++++ b/arch/parisc/include/asm/parisc-device.h
+@@ -23,6 +23,7 @@ struct parisc_device {
+ 	/* generic info returned from pdc_pat_cell_module() */
+ 	unsigned long	mod_info;	/* PAT specific - Misc Module info */
+ 	unsigned long	pmod_loc;	/* physical Module location */
++	unsigned long	mod0;
+ #endif
+ 	u64		dma_mask;	/* DMA mask for I/O */
+ 	struct device 	dev;
+@@ -61,4 +62,6 @@ parisc_get_drvdata(struct parisc_device
+ 
+ extern struct bus_type parisc_bus_type;
+ 
++int iosapic_serial_irq(struct parisc_device *dev);
++
+ #endif /*_ASM_PARISC_PARISC_DEVICE_H_*/
+--- a/arch/parisc/kernel/inventory.c
++++ b/arch/parisc/kernel/inventory.c
+@@ -211,6 +211,7 @@ pat_query_module(ulong pcell_loc, ulong
+ 	/* REVISIT: who is the consumer of this? not sure yet... */
+ 	dev->mod_info = pa_pdc_cell->mod_info;	/* pass to PAT_GET_ENTITY() */
+ 	dev->pmod_loc = pa_pdc_cell->mod_location;
++	dev->mod0 = pa_pdc_cell->mod[0];
+ 
+ 	register_parisc_device(dev);	/* advertise device */
+ 
+--- a/drivers/parisc/iosapic.c
++++ b/drivers/parisc/iosapic.c
+@@ -811,18 +811,28 @@ int iosapic_fixup_irq(void *isi_obj, str
+ 	return pcidev->irq;
+ }
+ 
+-static struct iosapic_info *first_isi = NULL;
++static struct iosapic_info *iosapic_list;
+ 
+ #ifdef CONFIG_64BIT
+-int iosapic_serial_irq(int num)
++int iosapic_serial_irq(struct parisc_device *dev)
+ {
+-	struct iosapic_info *isi = first_isi;
+-	struct irt_entry *irte = NULL;  /* only used if PAT PDC */
++	struct iosapic_info *isi;
++	struct irt_entry *irte;
+ 	struct vector_info *vi;
+-	int isi_line;	/* line used by device */
++	int cnt;
++	int intin;
++
++	intin = (dev->mod_info >> 24) & 15;
+ 
+ 	/* lookup IRT entry for isi/slot/pin set */
+-	irte = &irt_cell[num];
++	for (cnt = 0; cnt < irt_num_entry; cnt++) {
++		irte = &irt_cell[cnt];
++		if (COMPARE_IRTE_ADDR(irte, dev->mod0) &&
++		    irte->dest_iosapic_intin == intin)
++			break;
++	}
++	if (cnt >= irt_num_entry)
++		return 0; /* no irq found, force polling */
+ 
+ 	DBG_IRT("iosapic_serial_irq(): irte %p %x %x %x %x %x %x %x %x\n",
+ 		irte,
+@@ -834,11 +844,17 @@ int iosapic_serial_irq(int num)
+ 		irte->src_seg_id,
+ 		irte->dest_iosapic_intin,
+ 		(u32) irte->dest_iosapic_addr);
+-	isi_line = irte->dest_iosapic_intin;
++
++	/* search for iosapic */
++	for (isi = iosapic_list; isi; isi = isi->isi_next)
++		if (isi->isi_hpa == dev->mod0)
++			break;
++	if (!isi)
++		return 0; /* no iosapic found, force polling */
+ 
+ 	/* get vector info for this input line */
+-	vi = isi->isi_vector + isi_line;
+-	DBG_IRT("iosapic_serial_irq:  line %d vi 0x%p\n", isi_line, vi);
++	vi = isi->isi_vector + intin;
++	DBG_IRT("iosapic_serial_irq:  line %d vi 0x%p\n", iosapic_intin, vi);
+ 
+ 	/* If this IRQ line has already been setup, skip it */
+ 	if (vi->irte)
+@@ -941,8 +957,8 @@ void *iosapic_register(unsigned long hpa
+ 		vip->irqline = (unsigned char) cnt;
+ 		vip->iosapic = isi;
  	}
+-	if (!first_isi)
+-		first_isi = isi;
++	isi->isi_next = iosapic_list;
++	iosapic_list = isi;
+ 	return isi;
+ }
+ 
+--- a/drivers/tty/serial/8250/8250_gsc.c
++++ b/drivers/tty/serial/8250/8250_gsc.c
+@@ -31,9 +31,8 @@ static int __init serial_init_chip(struc
+ 	int err;
+ 
+ #ifdef CONFIG_64BIT
+-	extern int iosapic_serial_irq(int cellnum);
+ 	if (!dev->irq && (dev->id.sversion == 0xad))
+-		dev->irq = iosapic_serial_irq(dev->mod_index-1);
++		dev->irq = iosapic_serial_irq(dev);
+ #endif
+ 
+ 	if (!dev->irq) {
 
 
