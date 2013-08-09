@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967807Ab3HICS7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:18:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55644 "EHLO
+	id S967794Ab3HICS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:18:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55650 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967468Ab3HIB6m (ORCPT
+	with ESMTP id S967372Ab3HIB6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:42 -0400
+	Thu, 8 Aug 2013 21:58:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
-Subject: [ 017/102] parisc: Fix cache routines to ignore vmas with an invalid pfn
-Date: Thu,  8 Aug 2013 18:56:53 -0700
-Message-Id: <20130809015014.112373499@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 027/102] USB: mos7840: fix device-type detection
+Date: Thu,  8 Aug 2013 18:57:03 -0700
+Message-Id: <20130809015016.243034262@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -26,216 +26,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 50861f5a02dbf939c27d35a26c472885e2844188 upstream.
+commit 40c24f2893ba0ba7df485871f6aac0c197ceef5b upstream.
 
-The parisc architecture does not have a pte special bit. As a result,
-special mappings are handled with the VM_PFNMAP and VM_MIXEDMAP flags.
-VM_MIXEDMAP mappings may or may not have a "struct page" backing. When
-pfn_valid() is false, there is no "struct page" backing. Otherwise, they
-are treated as normal pages.
+Fix race in device-type detection introduced by commit 0eafe4de ("USB:
+serial: mos7840: add support for MCS7810 devices") which used a static
+variable to hold the device type.
 
-The FireGL driver uses the VM_MIXEDMAP without a backing "struct page".
-This treatment caused a panic due to a TLB data miss in
-update_mmu_cache. This appeared to be in the code generated for
-page_address(). We were in fact using a very circular bit of code to
-determine the physical address of the PFN in various cache routines.
-This wasn't valid when there was no "struct page" backing.  The needed
-address can in fact be determined simply from the PFN itself without
-using the "struct page".
+Move type detection to probe and use serial data to store the device
+type.
 
-The attached patch updates update_mmu_cache(), flush_cache_mm(),
-flush_cache_range() and flush_cache_page() to check pfn_valid() and to
-directly compute the PFN physical and virtual addresses.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/cache.c |  133 +++++++++++++++++++++++----------------------
- 1 file changed, 70 insertions(+), 63 deletions(-)
+ drivers/usb/serial/mos7840.c |   75 ++++++++++++++++++++-----------------------
+ 1 file changed, 35 insertions(+), 40 deletions(-)
 
---- a/arch/parisc/kernel/cache.c
-+++ b/arch/parisc/kernel/cache.c
-@@ -71,18 +71,27 @@ flush_cache_all_local(void)
- }
- EXPORT_SYMBOL(flush_cache_all_local);
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -187,8 +187,6 @@ enum mos7840_flag {
+ 	MOS7840_FLAG_CTRL_BUSY,
+ };
  
-+/* Virtual address of pfn.  */
-+#define pfn_va(pfn)	__va(PFN_PHYS(pfn))
-+
- void
- update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *ptep)
- {
--	struct page *page = pte_page(*ptep);
-+	unsigned long pfn = pte_pfn(*ptep);
-+	struct page *page;
- 
--	if (pfn_valid(page_to_pfn(page)) && page_mapping(page) &&
--	    test_bit(PG_dcache_dirty, &page->flags)) {
-+	/* We don't have pte special.  As a result, we can be called with
-+	   an invalid pfn and we don't need to flush the kernel dcache page.
-+	   This occurs with FireGL card in C8000.  */
-+	if (!pfn_valid(pfn))
-+		return;
- 
--		flush_kernel_dcache_page(page);
-+	page = pfn_to_page(pfn);
-+	if (page_mapping(page) && test_bit(PG_dcache_dirty, &page->flags)) {
-+		flush_kernel_dcache_page_addr(pfn_va(pfn));
- 		clear_bit(PG_dcache_dirty, &page->flags);
- 	} else if (parisc_requires_coherency())
--		flush_kernel_dcache_page(page);
-+		flush_kernel_dcache_page_addr(pfn_va(pfn));
- }
- 
- void
-@@ -495,44 +504,42 @@ static inline pte_t *get_ptep(pgd_t *pgd
- 
- void flush_cache_mm(struct mm_struct *mm)
- {
-+	struct vm_area_struct *vma;
-+	pgd_t *pgd;
-+
- 	/* Flushing the whole cache on each cpu takes forever on
- 	   rp3440, etc.  So, avoid it if the mm isn't too big.  */
--	if (mm_total_size(mm) < parisc_cache_flush_threshold) {
--		struct vm_area_struct *vma;
+-static int device_type;
 -
--		if (mm->context == mfsp(3)) {
--			for (vma = mm->mmap; vma; vma = vma->vm_next) {
--				flush_user_dcache_range_asm(vma->vm_start,
--					vma->vm_end);
--				if (vma->vm_flags & VM_EXEC)
--					flush_user_icache_range_asm(
--					  vma->vm_start, vma->vm_end);
--			}
--		} else {
--			pgd_t *pgd = mm->pgd;
+ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
+@@ -839,18 +837,6 @@ static void mos7840_bulk_out_data_callba
+ /************************************************************************/
+ /*       D R I V E R  T T Y  I N T E R F A C E  F U N C T I O N S       */
+ /************************************************************************/
+-#ifdef MCSSerialProbe
+-static int mos7840_serial_probe(struct usb_serial *serial,
+-				const struct usb_device_id *id)
+-{
 -
--			for (vma = mm->mmap; vma; vma = vma->vm_next) {
--				unsigned long addr;
-+	if (mm_total_size(mm) >= parisc_cache_flush_threshold) {
-+		flush_cache_all();
-+		return;
-+	}
- 
--				for (addr = vma->vm_start; addr < vma->vm_end;
--				     addr += PAGE_SIZE) {
--					pte_t *ptep = get_ptep(pgd, addr);
--					if (ptep != NULL) {
--						pte_t pte = *ptep;
--						__flush_cache_page(vma, addr,
--						  page_to_phys(pte_page(pte)));
--					}
--				}
--			}
-+	if (mm->context == mfsp(3)) {
-+		for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+			flush_user_dcache_range_asm(vma->vm_start, vma->vm_end);
-+			if ((vma->vm_flags & VM_EXEC) == 0)
-+				continue;
-+			flush_user_icache_range_asm(vma->vm_start, vma->vm_end);
- 		}
- 		return;
- 	}
- 
--#ifdef CONFIG_SMP
--	flush_cache_all();
--#else
--	flush_cache_all_local();
+-	/*need to implement the mode_reg reading and updating\
+-	   structures usb_serial_ device_type\
+-	   (i.e num_ports, num_bulkin,bulkout etc) */
+-	/* Also we can update the changes  attach */
+-	return 1;
+-}
 -#endif
-+	pgd = mm->pgd;
-+	for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+		unsigned long addr;
-+
-+		for (addr = vma->vm_start; addr < vma->vm_end;
-+		     addr += PAGE_SIZE) {
-+			unsigned long pfn;
-+			pte_t *ptep = get_ptep(pgd, addr);
-+			if (!ptep)
-+				continue;
-+			pfn = pte_pfn(*ptep);
-+			if (!pfn_valid(pfn))
-+				continue;
-+			__flush_cache_page(vma, addr, PFN_PHYS(pfn));
-+		}
-+	}
+ 
+ /*****************************************************************************
+  * mos7840_open
+@@ -2216,38 +2202,48 @@ static int mos7810_check(struct usb_seri
+ 	return 0;
  }
  
- void
-@@ -556,33 +563,32 @@ flush_user_icache_range(unsigned long st
- void flush_cache_range(struct vm_area_struct *vma,
- 		unsigned long start, unsigned long end)
+-static int mos7840_calc_num_ports(struct usb_serial *serial)
++static int mos7840_probe(struct usb_serial *serial,
++				const struct usb_device_id *id)
  {
--	BUG_ON(!vma->vm_mm->context);
-+	unsigned long addr;
-+	pgd_t *pgd;
+-	__u16 data = 0x00;
++	u16 product = serial->dev->descriptor.idProduct;
+ 	u8 *buf;
+-	int mos7840_num_ports;
++	int device_type;
++
++	if (product == MOSCHIP_DEVICE_ID_7810 ||
++		product == MOSCHIP_DEVICE_ID_7820) {
++		device_type = product;
++		goto out;
++	}
  
--	if ((end - start) < parisc_cache_flush_threshold) {
--		if (vma->vm_mm->context == mfsp(3)) {
--			flush_user_dcache_range_asm(start, end);
--			if (vma->vm_flags & VM_EXEC)
--				flush_user_icache_range_asm(start, end);
--		} else {
--			unsigned long addr;
--			pgd_t *pgd = vma->vm_mm->pgd;
-+	BUG_ON(!vma->vm_mm->context);
+ 	buf = kzalloc(VENDOR_READ_LENGTH, GFP_KERNEL);
+-	if (buf) {
+-		usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++	if (!buf)
++		return -ENOMEM;
++
++	usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 			MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, buf,
+ 			VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
+-		data = *buf;
+-		kfree(buf);
+-	}
  
--			for (addr = start & PAGE_MASK; addr < end;
--			     addr += PAGE_SIZE) {
--				pte_t *ptep = get_ptep(pgd, addr);
--				if (ptep != NULL) {
--					pte_t pte = *ptep;
--					flush_cache_page(vma,
--					   addr, pte_pfn(pte));
--				}
--			}
--		}
+-	if (serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7810 ||
+-		serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7820) {
+-		device_type = serial->dev->descriptor.idProduct;
 -	} else {
--#ifdef CONFIG_SMP
-+	if ((end - start) >= parisc_cache_flush_threshold) {
- 		flush_cache_all();
--#else
--		flush_cache_all_local();
--#endif
-+		return;
-+	}
+-		/* For a MCS7840 device GPIO0 must be set to 1 */
+-		if ((data & 0x01) == 1)
+-			device_type = MOSCHIP_DEVICE_ID_7840;
+-		else if (mos7810_check(serial))
+-			device_type = MOSCHIP_DEVICE_ID_7810;
+-		else
+-			device_type = MOSCHIP_DEVICE_ID_7820;
+-	}
++	/* For a MCS7840 device GPIO0 must be set to 1 */
++	if (buf[0] & 0x01)
++		device_type = MOSCHIP_DEVICE_ID_7840;
++	else if (mos7810_check(serial))
++		device_type = MOSCHIP_DEVICE_ID_7810;
++	else
++		device_type = MOSCHIP_DEVICE_ID_7820;
 +
-+	if (vma->vm_mm->context == mfsp(3)) {
-+		flush_user_dcache_range_asm(start, end);
-+		if (vma->vm_flags & VM_EXEC)
-+			flush_user_icache_range_asm(start, end);
-+		return;
-+	}
++	kfree(buf);
++out:
++	usb_set_serial_data(serial, (void *)device_type);
 +
-+	pgd = vma->vm_mm->pgd;
-+	for (addr = start & PAGE_MASK; addr < end; addr += PAGE_SIZE) {
-+		unsigned long pfn;
-+		pte_t *ptep = get_ptep(pgd, addr);
-+		if (!ptep)
-+			continue;
-+		pfn = pte_pfn(*ptep);
-+		if (pfn_valid(pfn))
-+			__flush_cache_page(vma, addr, PFN_PHYS(pfn));
- 	}
- }
++	return 0;
++}
++
++static int mos7840_calc_num_ports(struct usb_serial *serial)
++{
++	int device_type = (int)usb_get_serial_data(serial);
++	int mos7840_num_ports;
  
-@@ -591,9 +597,10 @@ flush_cache_page(struct vm_area_struct *
+ 	mos7840_num_ports = (device_type >> 4) & 0x000F;
+-	serial->num_bulk_in = mos7840_num_ports;
+-	serial->num_bulk_out = mos7840_num_ports;
+-	serial->num_ports = mos7840_num_ports;
+ 
+ 	return mos7840_num_ports;
+ }
+@@ -2255,6 +2251,7 @@ static int mos7840_calc_num_ports(struct
+ static int mos7840_port_probe(struct usb_serial_port *port)
  {
- 	BUG_ON(!vma->vm_mm->context);
- 
--	flush_tlb_page(vma, vmaddr);
--	__flush_cache_page(vma, vmaddr, page_to_phys(pfn_to_page(pfn)));
--
-+	if (pfn_valid(pfn)) {
-+		flush_tlb_page(vma, vmaddr);
-+		__flush_cache_page(vma, vmaddr, PFN_PHYS(pfn));
-+	}
- }
- 
- #ifdef CONFIG_PARISC_TMPALIAS
+ 	struct usb_serial *serial = port->serial;
++	int device_type = (int)usb_get_serial_data(serial);
+ 	struct moschip_port *mos7840_port;
+ 	int status;
+ 	int pnum;
+@@ -2513,9 +2510,7 @@ static struct usb_serial_driver moschip7
+ 	.throttle = mos7840_throttle,
+ 	.unthrottle = mos7840_unthrottle,
+ 	.calc_num_ports = mos7840_calc_num_ports,
+-#ifdef MCSSerialProbe
+-	.probe = mos7840_serial_probe,
+-#endif
++	.probe = mos7840_probe,
+ 	.ioctl = mos7840_ioctl,
+ 	.set_termios = mos7840_set_termios,
+ 	.break_ctl = mos7840_break,
 
 
