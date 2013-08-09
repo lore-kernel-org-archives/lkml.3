@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031345Ab3HIWUb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 18:20:31 -0400
-Received: from 70-36-212-23.dsl.static.sonic.net ([70.36.212.23]:45387 "EHLO
-	mail.linuxtoys.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031204Ab3HIWUa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 18:20:30 -0400
-Message-ID: <52056B30.3020003@linuxtoys.org>
-Date: Fri, 09 Aug 2013 15:20:32 -0700
-From: Bob Smith <bsmith@linuxtoys.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
+	id S1031351Ab3HIWVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 18:21:24 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40151 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031204Ab3HIWVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 18:21:23 -0400
+Date: Fri, 9 Aug 2013 15:21:04 -0700
+From: Kees Cook <kees@outflux.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Chinner <dchinner@redhat.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the ext4 tree
+Message-ID: <20130809222104.GY2280@outflux.net>
+References: <20130807151903.6281b33735f4e3f79231bf5e@canb.auug.org.au>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons
- a /sys-like interface
-References: <20130804231958.GA25418@kroah.com> <52003958.7080103@linuxtoys.org> <20130806094604.GE27889@kroah.com> <520299AB.1020607@linuxtoys.org> <20130807192714.GC2708@kroah.com> <5202A284.7010106@linuxtoys.org> <20130807195427.GB4121@kroah.com> <5202B674.7060005@linuxtoys.org> <20130807213325.GB5373@kroah.com> <52040C3A.9090708@linuxtoys.org> <20130809215231.GA21756@kroah.com>
-In-Reply-To: <20130809215231.GA21756@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130807151903.6281b33735f4e3f79231bf5e@canb.auug.org.au>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman wrote:
-> On Thu, Aug 08, 2013 at 02:23:06PM -0700, Bob Smith wrote:
->> Greg
->>      I'll reply again to this message but for now let me try
->> another explanation that does not mention sysfs, procfs, or
->> device drivers.   This is probably how I should have started.
->
-> I fail to understand how you will use this code to write a "userspace
-> device driver" at all.
+Hi,
 
+On Wed, Aug 07, 2013 at 03:19:03PM +1000, Stephen Rothwell wrote:
+> Hi Andrew,
+> 
+> Today's linux-next merge of the akpm tree got a conflict in
+> fs/ext4/extents_status.c between commit 49c6efc7b80e ("ext4: add new
+> ioctl EXT4_IOC_PRECACHE_EXTENTS") from the ext4 tree and commit
+> "fs-convert-fs-shrinkers-to-new-scan-count-api-fix" from the akpm tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc fs/ext4/extents_status.c
+> index 28e2627,0361206..0000000
+> --- a/fs/ext4/extents_status.c
+> +++ b/fs/ext4/extents_status.c
+> @@@ -947,13 -909,23 +947,15 @@@ static int __ext4_es_shrink(struct ext4
+>   	struct ext4_inode_info *ei;
+>   	struct list_head *cur, *tmp;
+>   	LIST_HEAD(skiped);
+> - 	int ret, nr_shrunk = 0;
+> + 	unsigned long nr_shrunk = 0;
+>  +	int retried = 0, skip_precached = 1, nr_skipped = 0;
+>   
+>   	spin_lock(&sbi->s_es_lru_lock);
+>   
+>  -	/*
+>  -	 * If the inode that is at the head of LRU list is newer than
+>  -	 * last_sorted time, that means that we need to sort this list.
+>  -	 */
+>  -	ei = list_first_entry(&sbi->s_es_lru, struct ext4_inode_info, i_es_lru);
+>  -	if (sbi->s_es_last_sorted < ei->i_touch_when) {
+>  -		list_sort(NULL, &sbi->s_es_lru, ext4_inode_touch_time_cmp);
+>  -		sbi->s_es_last_sorted = jiffies;
+>  -	}
+>  -
+>  +retry:
 
-I just sent a message that cover userspace drivers.
-Basically, if you think userspace driver can exist, then
-you probably need something like this proxy driver.
+It seems like fs-convert-fs-shrinkers-to-new-scan-count-api-fix is carrying
+this needless chunk above:
 
-thanks
-Bob Smith
+>   	list_for_each_safe(cur, tmp, &sbi->s_es_lru) {
+> + 		int ret;
+> + 
+>   		/*
+>   		 * If we have already reclaimed all extents from extent
+>   		 * status tree, just stop the loop immediately.
 
+Which is masking the "ret" at the start, leading to warnings at build-time:
 
+fs/ext4/extents_status.c: In function ‘__ext4_es_shrink’:
+fs/ext4/extents_status.c:950:6: warning: unused variable ‘ret’ [-Wunused-variable]
+
+-Kees
+
+-- 
+Kees Cook                                            @outflux.net
