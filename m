@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030421Ab3HICUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:20:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55625 "EHLO
+	id S967545Ab3HICU5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:20:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55607 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967437Ab3HIB6h (ORCPT
+	with ESMTP id S967425Ab3HIB6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:37 -0400
+	Thu, 8 Aug 2013 21:58:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 020/102] ALSA: hda - Fix missing fixup for Mac Mini with STAC9221
-Date: Thu,  8 Aug 2013 18:56:56 -0700
-Message-Id: <20130809015014.752984127@linuxfoundation.org>
+        Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 019/102] hwmon: (max6697) fix MAX6581 ideality
+Date: Thu,  8 Aug 2013 18:56:55 -0700
+Message-Id: <20130809015014.546123640@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -26,49 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 
-commit 697aebab78a88c6b164cfb74d19b86817d2ccd82 upstream.
+commit 5c52add19733eb36d8619713312f5604efef3502 upstream.
 
-A fixup for Apple Mac Mini was lost during the adaption to the generic
-parser because the fallback for the generic ID 8384:7680 was dropped,
-and it resulted in the silence output (and maybe other problems).
+Without this patch, the values for ideality (register 0x4b) and ideality
+selection mask (register 0x4c) are inverted.
 
-Unfortunately, just adding the missing subsystem ID wasn't enough, in
-this case.  The subsystem ID of this machine is 0000:0100 (what Apple
-thought...?), and since snd_hda_pick_fixup() doesn't take the vendor
-id zero into account, the driver ignored this entry.  Now it's fixed
-to regard the vendor id zero as a valid value.
-
-Reported-and-tested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_auto_parser.c |    2 +-
- sound/pci/hda/patch_sigmatel.c  |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ drivers/hwmon/max6697.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_auto_parser.c
-+++ b/sound/pci/hda/hda_auto_parser.c
-@@ -860,7 +860,7 @@ void snd_hda_pick_fixup(struct hda_codec
- 		}
+--- a/drivers/hwmon/max6697.c
++++ b/drivers/hwmon/max6697.c
+@@ -605,12 +605,12 @@ static int max6697_init_chip(struct i2c_
+ 		if (ret < 0)
+ 			return ret;
+ 		ret = i2c_smbus_write_byte_data(client, MAX6581_REG_IDEALITY,
+-						pdata->ideality_mask >> 1);
++						pdata->ideality_value);
+ 		if (ret < 0)
+ 			return ret;
+ 		ret = i2c_smbus_write_byte_data(client,
+ 						MAX6581_REG_IDEALITY_SELECT,
+-						pdata->ideality_value);
++						pdata->ideality_mask >> 1);
+ 		if (ret < 0)
+ 			return ret;
  	}
- 	if (id < 0 && quirk) {
--		for (q = quirk; q->subvendor; q++) {
-+		for (q = quirk; q->subvendor || q->subdevice; q++) {
- 			unsigned int vendorid =
- 				q->subdevice | (q->subvendor << 16);
- 			unsigned int mask = 0xffff0000 | q->subdevice_mask;
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -2815,6 +2815,7 @@ static const struct hda_pintbl ecs202_pi
- 
- /* codec SSIDs for Intel Mac sharing the same PCI SSID 8384:7680 */
- static const struct snd_pci_quirk stac922x_intel_mac_fixup_tbl[] = {
-+	SND_PCI_QUIRK(0x0000, 0x0100, "Mac Mini", STAC_INTEL_MAC_V3),
- 	SND_PCI_QUIRK(0x106b, 0x0800, "Mac", STAC_INTEL_MAC_V1),
- 	SND_PCI_QUIRK(0x106b, 0x0600, "Mac", STAC_INTEL_MAC_V2),
- 	SND_PCI_QUIRK(0x106b, 0x0700, "Mac", STAC_INTEL_MAC_V2),
 
 
