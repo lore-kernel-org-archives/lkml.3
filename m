@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968077Ab3HISZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 14:25:44 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40958 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965075Ab3HISZm (ORCPT
+	id S1030620Ab3HIS0T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 14:26:19 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:56609 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967991Ab3HIS0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 14:25:42 -0400
-Date: Fri, 9 Aug 2013 19:25:16 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/1] ASoc: kirkwood: add DT support to the mvebu
-	audio subsystem
-Message-ID: <20130809182516.GT23006@n2100.arm.linux.org.uk>
-References: <20130808132201.2610aef3@armhf> <5204A716.6070507@gmail.com> <20130809091953.GO6427@sirena.org.uk> <5204B7A6.9050907@gmail.com> <20130809094340.GO23006@n2100.arm.linux.org.uk> <5204CC04.4000401@gmail.com> <20130809113940.GY6427@sirena.org.uk> <20130809130932.GS23006@n2100.arm.linux.org.uk> <20130809180058.GM6427@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130809180058.GM6427@sirena.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 9 Aug 2013 14:26:17 -0400
+From: Kumar Gaurav <kumargauravgupta3@gmail.com>
+To: davem@davemloft.net, jiri@resnulli.us, gregkh@linuxfoundation.org,
+        yongjun_wei@trendmicro.com.cn, konszert@marvell.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Kumar Gaurav <kumargauravgupta3@gmail.com>
+Subject: [PATCH 17/17] net:ethernet:lantiq_etop.c: Removed deprecated IRQF_DISABLED
+Date: Fri,  9 Aug 2013 23:55:59 +0530
+Message-Id: <1376072759-11814-1-git-send-email-kumargauravgupta3@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 07:00:58PM +0100, Mark Brown wrote:
-> On Fri, Aug 09, 2013 at 02:09:32PM +0100, Russell King - ARM Linux wrote:
-> > On Fri, Aug 09, 2013 at 12:39:40PM +0100, Mark Brown wrote:
-> 
-> > > So extend Morimoto-san's work on the simple card for this - that's what
-> > > it's there for, it's doing exactly this job for non-DT systems but it
-> > > just didn't get DT support added yet.  All the trivial cards should end
-> > > up using this.
-> 
-> > It's quite rediculous to request that the simple card stuff is expanded at
-> > this time, when you're also telling us that we must use DPCM for Kirkwood,
-> 
-> That's the place to put the sort of shared infrastructure for trivial
-> cards that Sebastian said he wanted to see - if you guys are saying that
-> the machines should all be able to use a trivial binding with shared
-> code that's where that code should be.
+Removed IRQF_DISABLED as it is deprecated and fixed a coding style issue
+of more than 80 chars on single line by sliting the line in two.
 
-Sigh, you completely miss the point.
+Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
+---
+ drivers/net/ethernet/lantiq_etop.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-What all three of us are ultimately after is a DT description for the
-kirkwood stuff which covers all its use cases.  The use case which all
-three of us have in common is the Cubox, which is the one which needs
-the spdif stuff to work.
-
-Now, what you've said to date is:
-
-1. you want kirkwood to use DPCM.
-2. you want kirkwood using people to use the simple card stuff with the
-   kirkwood driver you want to use DPCM.
-
-To make it work with DPCM, we first need to know what DPCM requires,
-which means we either have to have the knowledge of DPCM and/or have a
-working implementation.  We don't have either of those yet.
-
-So, I again state plainly that what you're asking is for people to come
-up with a DT description for a DPCM implementation when we haven't yet
-got a working DPCM implementation, even without DT.
-
-It is this which I assert is a completely rediculous request at this
-moment in time for the reasons stated in my previous email and repeated
-in this email.
+diff --git a/drivers/net/ethernet/lantiq_etop.c b/drivers/net/ethernet/lantiq_etop.c
+index bfdb0686..04c3a82 100644
+--- a/drivers/net/ethernet/lantiq_etop.c
++++ b/drivers/net/ethernet/lantiq_etop.c
+@@ -282,7 +282,7 @@ ltq_etop_hw_init(struct net_device *dev)
+ 
+ 		if (IS_TX(i)) {
+ 			ltq_dma_alloc_tx(&ch->dma);
+-			request_irq(irq, ltq_etop_dma_irq, IRQF_DISABLED,
++			request_irq(irq, ltq_etop_dma_irq, 0,
+ 				"etop_tx", priv);
+ 		} else if (IS_RX(i)) {
+ 			ltq_dma_alloc_rx(&ch->dma);
+@@ -291,7 +291,7 @@ ltq_etop_hw_init(struct net_device *dev)
+ 				if (ltq_etop_alloc_skb(ch))
+ 					return -ENOMEM;
+ 			ch->dma.desc = 0;
+-			request_irq(irq, ltq_etop_dma_irq, IRQF_DISABLED,
++			request_irq(irq, ltq_etop_dma_irq, 0,
+ 				"etop_rx", priv);
+ 		}
+ 		ch->dma.irq = irq;
+@@ -653,7 +653,9 @@ ltq_etop_init(struct net_device *dev)
+ 	if (err)
+ 		goto err_netdev;
+ 
+-	/* Set addr_assign_type here, ltq_etop_set_mac_address would reset it. */
++	/* Set addr_assign_type here,
++	 *ltq_etop_set_mac_address would reset it.
++	 */
+ 	if (random_mac)
+ 		dev->addr_assign_type = NET_ADDR_RANDOM;
+ 
+-- 
+1.7.9.5
 
