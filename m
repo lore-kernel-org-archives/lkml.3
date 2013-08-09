@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968047Ab3HIQWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:22:43 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:56660 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934397Ab3HIQWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:22:42 -0400
-Message-ID: <5205170E.9030605@ahsoftware.de>
-Date: Fri, 09 Aug 2013 18:21:34 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S968052Ab3HIQXk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:23:40 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:35190
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934397Ab3HIQXj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 12:23:39 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h17326ah1de096h8275bh8275dh1de097hz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1155h)
+X-WSS-ID: 0MR9UUB-02-6U0-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Andi Kleen <ak@linux.intel.com>, "airlied@linux.ie" <airlied@linux.ie>
+Subject: RE: [PATCH] radeon: Use Linux division macro in
+ si_calculate_leakage_for_v_and_t_formula
+Thread-Topic: [PATCH] radeon: Use Linux division macro in
+ si_calculate_leakage_for_v_and_t_formula
+Thread-Index: AQHOlRlUcb3Agc3om0+FYGno+7EDR5mNDy3Q
+Date: Fri, 9 Aug 2013 16:22:59 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02E538681@sausexdag04.amd.com>
+References: <1376063907-7770-1-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1376063907-7770-1-git-send-email-andi@firstfloor.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.177.96.15]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew de los Reyes <adlr@chromium.org>
-Subject: Re: [rtc-linux] Re: [PATCH 2/2 RESEND] rtc: rtc-hid-sensor-time:
- enable HID input processing early
-References: <1375382342-25454-1-git-send-email-holler@ahsoftware.de> <1375382342-25454-2-git-send-email-holler@ahsoftware.de> <20130808151106.7ccaedd4ea3d4e5faa6aa220@linux-foundation.org> <5204BA2E.8000100@ahsoftware.de> <alpine.LNX.2.00.1308091310490.13089@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1308091310490.13089@pobox.suse.cz>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 09.08.2013 13:12, schrieb Jiri Kosina:
-> On Fri, 9 Aug 2013, Alexander Holler wrote:
->
->
->> =================================
->> [ INFO: inconsistent lock state ]
->> 3.10.5-dockstar-00038-g03242d1-dirty #408 Not tainted
->> ---------------------------------
->> inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
->> swapper/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
->>   (&(&sd->dyn_callback_lock)->rlock){?.+...}, at: [<c02af9f8>]
->> sensor_hub_raw_event+0x10c/0x204
->> {HARDIRQ-ON-W} state was registered at:
->
-> I think you need the patch below. Please let me know if it fixes it.
+Fix is already merged:
+http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=adfb8e51332153016857194b85309150ac560286
 
-Thanks a lot. That actually fixed the bug I never have seen before and 
-the patch might be a candidate for the stable series (even if almost no 
-one would see the problem because there don't seem to be many 
-hid-sensor-hub users and the bug seems only to be visible with some 
-debug options enabled).
 
-Btw, I've lied and that bug happened with the enforced error path as 
-well as during normal operation. It seems I have enabled some debug 
-option in the kernel, I never had enabled before.
+> -----Original Message-----
+> From: Andi Kleen [mailto:andi@firstfloor.org]
+> Sent: Friday, August 09, 2013 11:58 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: Andi Kleen; airlied@linux.ie; Deucher, Alexander
+> Subject: [PATCH] radeon: Use Linux division macro in
+> si_calculate_leakage_for_v_and_t_formula
+> 
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> This fixes my 32bit build which failed with:
+> 
+> drivers/built-in.o: In function
+> `si_calculate_leakage_for_v_and_t_formula':
+> /home/ak/lsrc/git/linux-2.6/drivers/gpu/drm/radeon/si_dpm.c:1770:
+> undefined reference to `__divdi3'
+> 
+> Cc: airlied@linux.ie
+> Cc: alexander.deucher@amd.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  drivers/gpu/drm/radeon/si_dpm.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/radeon/si_dpm.c
+> b/drivers/gpu/drm/radeon/si_dpm.c
+> index 7ad22e8..4182557 100644
+> --- a/drivers/gpu/drm/radeon/si_dpm.c
+> +++ b/drivers/gpu/drm/radeon/si_dpm.c
+> @@ -1767,7 +1767,7 @@ static void
+> si_calculate_leakage_for_v_and_t_formula(const struct ni_leakage_coe
+>  	s64 temperature, t_slope, t_intercept, av, bv, t_ref;
+>  	s64 tmp;
+> 
+> -	i_leakage = drm_int2fixp(ileakage) / 100;
+> +	i_leakage = div64_s64(drm_int2fixp(ileakage), 100);
+>  	vddc = div64_s64(drm_int2fixp(v), 1000);
+>  	temperature = div64_s64(drm_int2fixp(t), 1000);
+> 
+> --
+> 1.8.3.1
+> 
 
-Unfortunaly that doesn't answer Andrew Mortons questions.
 
-I've now also verified if hid-sensor-hub receives an event with 
-sensor_hub_raw_event() in the error-path (hid_device_io_stop() called 
-and probe() failed), and this still *does* happen. That event (input 
-report) doesn't come through hid-sensor-hub to my driver, but I think 
-this is because of my call to sensor_hub_remove_callback() which is in 
-the error path too.
-So I actually wonder why the input report still is reported from the 
-hid-subsystem to hid-sensor-hub, even after I've called 
-hid_device_io_stop() and probe() failed.
-Maybe everything is still ok and I just got confused with the somehow 
-complicate interactions between the usb- and hid-subsystem, 
-hid-sensor-hub (which uses MFD) and rtc-hid-sensor-time.
-
-I will also have a look if I find the seem to be missing down(), maybe 
-that will offer some explanations to what goes on. Unfortunately I still 
-don't know the complete path of events, I've stopped reading the source 
-after you've told me about the patch from Andrew de los Reyes, beeing 
-happy to have found a nice and proper solution (instead of the delayed 
-rtc-device registering I did before). ;)
-
-Regards,
-
-Alexander Holler
