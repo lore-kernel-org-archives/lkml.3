@@ -1,278 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966407Ab3HIJrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 05:47:17 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:38886 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965287Ab3HIJrN (ORCPT
+	id S966209Ab3HIJxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 05:53:55 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:53972 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965382Ab3HIJxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 05:47:13 -0400
-X-AuditID: cbfec7f4-b7f5f6d000000ff6-73-5204ba9fea76
-From: Rafal Krypa <r.krypa@samsung.com>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCH] Smack: parse multiple rules per write to load2,
- up to PAGE_SIZE-1 bytes
-Date: Fri, 09 Aug 2013 11:47:07 +0200
-Message-id: <1376041627-20016-1-git-send-email-r.krypa@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJJMWRmVeSWpSXmKPExsVy+t/xK7rzd7EEGTRs17K4t+0Xm8XlXXPY
-	LD70PGKzeDtpBbPFr9tTWB1YPfq2rGL0OLp/EZvH501yAcxRXDYpqTmZZalF+nYJXBmXN2oV
-	NJlW3H3fzdjAeFmji5GTQ0LAROLMtv+sELaYxIV769m6GLk4hASWMkoseHaKEcLpY5L4trCJ
-	BaSKTUBdYun8XjYQW0RAR2LfnufsIDazQI7E7XlLwWqEBaIkNiy5BBZnEVCV2P97NdgGXgFn
-	ia6m2ewQ2xQlup9NYJvAyL2AkWEVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRoj3v+xgXHzM
-	6hCjAAejEg/viS3MQUKsiWXFlbmHGCU4mJVEeLdPYAkS4k1JrKxKLcqPLyrNSS0+xMjEwSnV
-	wJi9frdAoWvre7ltk3cc0VrIXHp2jk/wIp+TLBs2yDyp08o4OWWKd2llxt41ixgF3fNfZPxe
-	ra808feXZw6bJ9ysL5A6rJH3N3bbhQN1DTWsrLwCtndO39hfom4t0s45wX2TznbjU+GF3xo3
-	ZHk1OKqf3GXYEbE0ZKrCi68cqp/fmmyNTVp4UlSJpTgj0VCLuag4EQBTJ8PF3AEAAA==
+	Fri, 9 Aug 2013 05:53:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <1375856245-10717-3-git-send-email-zheng.z.yan@intel.com>
+References: <1375856245-10717-1-git-send-email-zheng.z.yan@intel.com>
+	<1375856245-10717-3-git-send-email-zheng.z.yan@intel.com>
+Date: Fri, 9 Aug 2013 11:53:53 +0200
+Message-ID: <CABPqkBRsKQLDjH_mynbeOQyX+_QEbuiPKF_Jv5tebqmYL090ig@mail.gmail.com>
+Subject: Re: [PATCH 3/3] perf, uncore: enable ev_sel_ext bit for PCU.
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smack interface for loading rules has always parsed only single rule from
-data written to it. This requires user program to call one write() per
-each rule it wants to load.
-This change makes it possible to write multiple rules, separated by new
-line character. Smack will load at most PAGE_SIZE-1 characters and properly
-return number of processed bytes. In case when user buffer is larger, it
-will be additionally truncated. All characters after last \n will not get
-parsed to avoid partial rule near input buffer boundary.
+On Wed, Aug 7, 2013 at 8:17 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>
+> PCU uncore event control register has a undocumented ev_sel_ext bit.
+> The bit is needed by Andi's pmu-tools.
+>
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 
-Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
----
- security/smack/smackfs.c |  167 +++++++++++++++++++++++-----------------------
- 1 file changed, 82 insertions(+), 85 deletions(-)
 
-diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-index a07e93f..80f4b4a 100644
---- a/security/smack/smackfs.c
-+++ b/security/smack/smackfs.c
-@@ -368,56 +368,43 @@ static int smk_parse_rule(const char *data, struct smack_parsed_rule *rule,
-  * @data: string to be parsed, null terminated
-  * @rule: Will be filled with Smack parsed rule
-  * @import: if non-zero, import labels
-- * @change: if non-zero, data is from /smack/change-rule
-+ * @tokens: numer of substrings expected in data
-  *
-- * Returns 0 on success, -1 on failure
-+ * Returns number of processed bytes on success, -1 on failure.
-  */
--static int smk_parse_long_rule(const char *data, struct smack_parsed_rule *rule,
--				int import, int change)
-+static ssize_t smk_parse_long_rule(char *data, struct smack_parsed_rule *rule,
-+				int import, int tokens)
- {
--	char *subject;
--	char *object;
--	char *access1;
--	char *access2;
--	int datalen;
--	int rc = -1;
-+	ssize_t cnt = 0;
-+	char *tok[4];
-+	int i;
- 
--	/* This is inefficient */
--	datalen = strlen(data);
-+	/*
-+	 * Parsing the rule in-place, filling all white-spaces with '\0'
-+	 */
-+	for (i = 0; i < tokens; ++i) {
-+		while (isspace(data[cnt]))
-+			data[cnt++] = '\0';
- 
--	/* Our first element can be 64 + \0 with no spaces */
--	subject = kzalloc(datalen + 1, GFP_KERNEL);
--	if (subject == NULL)
--		return -1;
--	object = kzalloc(datalen, GFP_KERNEL);
--	if (object == NULL)
--		goto free_out_s;
--	access1 = kzalloc(datalen, GFP_KERNEL);
--	if (access1 == NULL)
--		goto free_out_o;
--	access2 = kzalloc(datalen, GFP_KERNEL);
--	if (access2 == NULL)
--		goto free_out_a;
--
--	if (change) {
--		if (sscanf(data, "%s %s %s %s",
--			subject, object, access1, access2) == 4)
--			rc = smk_fill_rule(subject, object, access1, access2,
--				rule, import, 0);
--	} else {
--		if (sscanf(data, "%s %s %s", subject, object, access1) == 3)
--			rc = smk_fill_rule(subject, object, access1, NULL,
--				rule, import, 0);
-+		if (data[cnt] == '\0')
-+			/* Unexpected end of data */
-+			return -1;
-+
-+		tok[i] = data + cnt;
-+
-+		while (data[cnt] && !isspace(data[cnt]))
-+			++cnt;
- 	}
-+	while (isspace(data[cnt]))
-+		data[cnt++] = '\0';
- 
--	kfree(access2);
--free_out_a:
--	kfree(access1);
--free_out_o:
--	kfree(object);
--free_out_s:
--	kfree(subject);
--	return rc;
-+	while (i < 4)
-+		tok[i++] = NULL;
-+
-+	if (smk_fill_rule(tok[0], tok[1], tok[2], tok[3], rule, import, 0))
-+		return -1;
-+
-+	return cnt;
- }
- 
- #define SMK_FIXED24_FMT	0	/* Fixed 24byte label format */
-@@ -449,9 +436,10 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
- {
- 	struct smack_parsed_rule rule;
- 	char *data;
--	int datalen;
--	int rc = -EINVAL;
--	int load = 0;
-+	int rc;
-+	int trunc = 0;
-+	int tokens;
-+	ssize_t cnt = 0;
- 
- 	/*
- 	 * No partial writes.
-@@ -466,11 +454,14 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
- 		 */
- 		if (count != SMK_OLOADLEN && count != SMK_LOADLEN)
- 			return -EINVAL;
--		datalen = SMK_LOADLEN;
--	} else
--		datalen = count + 1;
-+	} else {
-+		if (count >= PAGE_SIZE) {
-+			count = PAGE_SIZE - 1;
-+			trunc = 1;
-+		}
-+	}
- 
--	data = kzalloc(datalen, GFP_KERNEL);
-+	data = kmalloc(count + 1, GFP_KERNEL);
- 	if (data == NULL)
- 		return -ENOMEM;
- 
-@@ -479,36 +470,49 @@ static ssize_t smk_write_rules_list(struct file *file, const char __user *buf,
- 		goto out;
- 	}
- 
--	if (format == SMK_LONG_FMT) {
--		/*
--		 * Be sure the data string is terminated.
--		 */
--		data[count] = '\0';
--		if (smk_parse_long_rule(data, &rule, 1, 0))
--			goto out;
--	} else if (format == SMK_CHANGE_FMT) {
--		data[count] = '\0';
--		if (smk_parse_long_rule(data, &rule, 1, 1))
--			goto out;
--	} else {
--		/*
--		 * More on the minor hack for backward compatibility
--		 */
--		if (count == (SMK_OLOADLEN))
--			data[SMK_OLOADLEN] = '-';
--		if (smk_parse_rule(data, &rule, 1))
-+	/*
-+	 * In case of parsing only part of user buf,
-+	 * avoid having partial rule at the data buffer
-+	 */
-+	if (trunc) {
-+		while (count > 0 && (data[count - 1] != '\n'))
-+			--count;
-+		if (count == 0) {
-+			rc = -EINVAL;
- 			goto out;
-+		}
- 	}
- 
--	if (rule_list == NULL) {
--		load = 1;
--		rule_list = &rule.smk_subject->smk_rules;
--		rule_lock = &rule.smk_subject->smk_rules_lock;
-+	data[count] = '\0';
-+	tokens = (format == SMK_CHANGE_FMT ? 4 : 3);
-+	while (cnt < count) {
-+		if (format == SMK_FIXED24_FMT) {
-+			rc = smk_parse_rule(data, &rule, 1);
-+			if (rc != 0) {
-+				rc = -EINVAL;
-+				goto out;
-+			}
-+			cnt = count;
-+		} else {
-+			rc = smk_parse_long_rule(data + cnt, &rule, 1, tokens);
-+			if (rc <= 0) {
-+				rc = -EINVAL;
-+				goto out;
-+			}
-+			cnt += rc;
-+		}
-+
-+		if (rule_list == NULL)
-+			rc = smk_set_access(&rule, &rule.smk_subject->smk_rules,
-+				&rule.smk_subject->smk_rules_lock, 1);
-+		else
-+			rc = smk_set_access(&rule, rule_list, rule_lock, 0);
-+
-+		if (rc)
-+			goto out;
- 	}
- 
--	rc = smk_set_access(&rule, rule_list, rule_lock, load);
--	if (rc == 0)
--		rc = count;
-+	rc = cnt;
- out:
- 	kfree(data);
- 	return rc;
-@@ -1829,7 +1833,6 @@ static ssize_t smk_user_access(struct file *file, const char __user *buf,
- {
- 	struct smack_parsed_rule rule;
- 	char *data;
--	char *cod;
- 	int res;
- 
- 	data = simple_transaction_get(file, buf, count);
-@@ -1842,18 +1845,12 @@ static ssize_t smk_user_access(struct file *file, const char __user *buf,
- 		res = smk_parse_rule(data, &rule, 0);
- 	} else {
- 		/*
--		 * Copy the data to make sure the string is terminated.
-+		 * simple_transaction_get() returns null-terminated data
- 		 */
--		cod = kzalloc(count + 1, GFP_KERNEL);
--		if (cod == NULL)
--			return -ENOMEM;
--		memcpy(cod, data, count);
--		cod[count] = '\0';
--		res = smk_parse_long_rule(cod, &rule, 0, 0);
--		kfree(cod);
-+		res = smk_parse_long_rule(data, &rule, 0, 3);
- 	}
- 
--	if (res)
-+	if (res < 0)
- 		return -EINVAL;
- 
- 	res = smk_access(rule.smk_subject, rule.smk_object,
--- 
-1.7.10.4
+Works for me. Is also needed by libpfm4 uncore PCU events.
+Now results make more sense. Please apply.
 
+Reviewed-by: Stephane Eranian <eranian@google.com>
+
+
+>
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+>  arch/x86/kernel/cpu/perf_event_intel_uncore.h | 1 +
+>  2 files changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> index 6b8b9c9..e9696d8 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -301,7 +301,7 @@ static struct attribute *snbep_uncore_cbox_formats_attr[] = {
+>  };
+>
+>  static struct attribute *snbep_uncore_pcu_formats_attr[] = {
+> -       &format_attr_event.attr,
+> +       &format_attr_event_ext.attr,
+>         &format_attr_occ_sel.attr,
+>         &format_attr_edge.attr,
+>         &format_attr_inv.attr,
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> index 628500e..a80ab71 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+> @@ -117,6 +117,7 @@
+>                                 (SNBEP_PMON_CTL_EV_SEL_MASK | \
+>                                  SNBEP_PCU_MSR_PMON_CTL_OCC_SEL_MASK | \
+>                                  SNBEP_PMON_CTL_EDGE_DET | \
+> +                                SNBEP_PMON_CTL_EV_SEL_EXT | \
+>                                  SNBEP_PMON_CTL_INVERT | \
+>                                  SNBEP_PCU_MSR_PMON_CTL_TRESH_MASK | \
+>                                  SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT | \
+> --
+> 1.8.1.4
+>
