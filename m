@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967704Ab3HICJN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:09:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55808 "EHLO
+	id S1030385Ab3HICJi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:09:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55805 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967694Ab3HIB7R (ORCPT
+	with ESMTP id S967685Ab3HIB7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:17 -0400
+	Thu, 8 Aug 2013 21:59:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Avinash Patil <patila@marvell.com>, Stone Piao <piaoyun@marvell.com>,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 059/102] mwifiex: fix wrong data rates in P2P client
-Date: Thu,  8 Aug 2013 18:57:35 -0700
-Message-Id: <20130809015024.052899738@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 066/102] ACPI / battery: Fix parsing _BIX return value
+Date: Thu,  8 Aug 2013 18:57:42 -0700
+Message-Id: <20130809015025.729003734@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -28,34 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avinash Patil <patila@marvell.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 237b2ac8ac89a6b0120decdd05c7bf4637deb98a upstream.
+commit 016d5baad04269e8559332df05f89bd95b52d6ad upstream.
 
-This patch fixes an issue wherein adhoc rates were being copied
-into association request from P2P client.
+The _BIX method returns extended battery info as a package.
+According the ACPI spec (ACPI 5, Section 10.2.2.2), the first member
+of that package should be "Revision".  However, the current ACPI
+battery driver treats the first member as "Power Unit" which should
+be the second member.  This causes the result of _BIX return data
+parsing to be incorrect.
 
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Stone Piao <piaoyun@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fix this by adding a new member called 'revision' to struct
+acpi_battery and adding the offsetof() information on it to
+extended_info_offsets[] as the first row.
+
+[rjw: Changelog]
+Reported-and-tested-by: Jan Hoffmann <jan.christian.hoffmann@gmail.com>
+References: http://bugzilla.kernel.org/show_bug.cgi?id=60519
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/cfp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/battery.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/mwifiex/cfp.c
-+++ b/drivers/net/wireless/mwifiex/cfp.c
-@@ -415,7 +415,8 @@ u32 mwifiex_get_supported_rates(struct m
- 	u32 k = 0;
- 	struct mwifiex_adapter *adapter = priv->adapter;
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -117,6 +117,7 @@ struct acpi_battery {
+ 	struct acpi_device *device;
+ 	struct notifier_block pm_nb;
+ 	unsigned long update_time;
++	int revision;
+ 	int rate_now;
+ 	int capacity_now;
+ 	int voltage_now;
+@@ -359,6 +360,7 @@ static struct acpi_offsets info_offsets[
+ };
  
--	if (priv->bss_mode == NL80211_IFTYPE_STATION) {
-+	if (priv->bss_mode == NL80211_IFTYPE_STATION ||
-+	    priv->bss_mode == NL80211_IFTYPE_P2P_CLIENT) {
- 		switch (adapter->config_bands) {
- 		case BAND_B:
- 			dev_dbg(adapter->dev, "info: infra band=%d "
+ static struct acpi_offsets extended_info_offsets[] = {
++	{offsetof(struct acpi_battery, revision), 0},
+ 	{offsetof(struct acpi_battery, power_unit), 0},
+ 	{offsetof(struct acpi_battery, design_capacity), 0},
+ 	{offsetof(struct acpi_battery, full_charge_capacity), 0},
 
 
