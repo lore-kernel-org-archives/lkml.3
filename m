@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967604Ab3HIBnU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:43:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55376 "EHLO
+	id S967592Ab3HIBnS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:43:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55380 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967135Ab3HIBmL (ORCPT
+	with ESMTP id S967136Ab3HIBmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:11 -0400
+	Thu, 8 Aug 2013 21:42:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Tomasz=20Mo=C5=84?= <desowin@gmail.com>,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 09/25] mwifiex: Add missing endian conversion.
-Date: Thu,  8 Aug 2013 18:41:45 -0700
-Message-Id: <20130809013651.214472153@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 10/25] ACPI / battery: Fix parsing _BIX return value
+Date: Thu,  8 Aug 2013 18:41:46 -0700
+Message-Id: <20130809013651.422084236@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,34 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Moń <desowin@gmail.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 83e612f632c3897be29ef02e0472f6d63e258378 upstream.
+commit 016d5baad04269e8559332df05f89bd95b52d6ad upstream.
 
-Both type and pkt_len variables are in host endian and these should be in
-Little Endian in the payload.
+The _BIX method returns extended battery info as a package.
+According the ACPI spec (ACPI 5, Section 10.2.2.2), the first member
+of that package should be "Revision".  However, the current ACPI
+battery driver treats the first member as "Power Unit" which should
+be the second member.  This causes the result of _BIX return data
+parsing to be incorrect.
 
-Signed-off-by: Tomasz Moń <desowin@gmail.com>
-Acked-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fix this by adding a new member called 'revision' to struct
+acpi_battery and adding the offsetof() information on it to
+extended_info_offsets[] as the first row.
+
+[rjw: Changelog]
+Reported-and-tested-by: Jan Hoffmann <jan.christian.hoffmann@gmail.com>
+References: http://bugzilla.kernel.org/show_bug.cgi?id=60519
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/sdio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/battery.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -1449,8 +1449,8 @@ static int mwifiex_sdio_host_to_card(str
- 	/* Allocate buffer and copy payload */
- 	blk_size = MWIFIEX_SDIO_BLOCK_SIZE;
- 	buf_block_len = (pkt_len + blk_size - 1) / blk_size;
--	*(u16 *) &payload[0] = (u16) pkt_len;
--	*(u16 *) &payload[2] = type;
-+	*(__le16 *)&payload[0] = cpu_to_le16((u16)pkt_len);
-+	*(__le16 *)&payload[2] = cpu_to_le16(type);
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -117,6 +117,7 @@ struct acpi_battery {
+ 	struct acpi_device *device;
+ 	struct notifier_block pm_nb;
+ 	unsigned long update_time;
++	int revision;
+ 	int rate_now;
+ 	int capacity_now;
+ 	int voltage_now;
+@@ -350,6 +351,7 @@ static struct acpi_offsets info_offsets[
+ };
  
- 	/*
- 	 * This is SDIO specific header
+ static struct acpi_offsets extended_info_offsets[] = {
++	{offsetof(struct acpi_battery, revision), 0},
+ 	{offsetof(struct acpi_battery, power_unit), 0},
+ 	{offsetof(struct acpi_battery, design_capacity), 0},
+ 	{offsetof(struct acpi_battery, full_charge_capacity), 0},
 
 
