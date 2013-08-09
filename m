@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967451Ab3HIB6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:58:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55598 "EHLO
+	id S967427Ab3HIB6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:58:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55591 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967372Ab3HIB63 (ORCPT
+	with ESMTP id S967347Ab3HIB61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:29 -0400
+	Thu, 8 Aug 2013 21:58:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 012/102] ARM: 7784/1: mm: ensure SMP alternates assemble to exactly 4 bytes with Thumb-2
-Date: Thu,  8 Aug 2013 18:56:48 -0700
-Message-Id: <20130809015013.107731780@linuxfoundation.org>
+Subject: [ 008/102] ARM: make vectors page inaccessible from userspace
+Date: Thu,  8 Aug 2013 18:56:44 -0700
+Message-Id: <20130809015012.154316979@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,74 +26,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit bf3f0f332f76a85ff3a0b393aaded5a8533769c0 upstream.
+commit a5463cd3435475386cbbe7b06e01292ac169d36f upstream.
 
-Commit ae8a8b9553bd ("ARM: 7691/1: mm: kill unused TLB_CAN_READ_FROM_L1_CACHE
-and use ALT_SMP instead") added early function returns for page table
-cache flushing operations on ARMv7 SMP CPUs.
+If kuser helpers are not provided by the kernel, disable user access to
+the vectors page.  With the kuser helpers gone, there is no reason for
+this page to be visible to userspace.
 
-Unfortunately, when targetting Thumb-2, these `mov pc, lr' sequences
-assemble to 2 bytes which can lead to corruption of the instruction
-stream after code patching.
-
-This patch fixes the alternates to use wide (32-bit) instructions for
-Thumb-2, therefore ensuring that the patching code works correctly.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/proc-v7-2level.S |    2 +-
- arch/arm/mm/proc-v7-3level.S |    2 +-
- arch/arm/mm/proc-v7.S        |   11 ++++++-----
- 3 files changed, 8 insertions(+), 7 deletions(-)
+ arch/arm/include/asm/page.h |    2 ++
+ arch/arm/kernel/process.c   |    7 ++++++-
+ arch/arm/mm/mmu.c           |    4 ++++
+ 3 files changed, 12 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mm/proc-v7-2level.S
-+++ b/arch/arm/mm/proc-v7-2level.S
-@@ -110,7 +110,7 @@ ENTRY(cpu_v7_set_pte_ext)
-  ARM(	str	r3, [r0, #2048]! )
-  THUMB(	add	r0, r0, #2048 )
-  THUMB(	str	r3, [r0] )
--	ALT_SMP(mov	pc,lr)
-+	ALT_SMP(W(nop))
- 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
- #endif
- 	mov	pc, lr
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -73,7 +73,7 @@ ENTRY(cpu_v7_set_pte_ext)
- 	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
- 	orreq	r2, #L_PTE_RDONLY
- 1:	strd	r2, r3, [r0]
--	ALT_SMP(mov	pc, lr)
-+	ALT_SMP(W(nop))
- 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
- #endif
- 	mov	pc, lr
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -75,13 +75,14 @@ ENTRY(cpu_v7_do_idle)
- ENDPROC(cpu_v7_do_idle)
+--- a/arch/arm/include/asm/page.h
++++ b/arch/arm/include/asm/page.h
+@@ -142,7 +142,9 @@ extern void __cpu_copy_user_highpage(str
+ #define clear_page(page)	memset((void *)(page), 0, PAGE_SIZE)
+ extern void copy_page(void *to, const void *from);
  
- ENTRY(cpu_v7_dcache_clean_area)
--	ALT_SMP(mov	pc, lr)			@ MP extensions imply L1 PTW
--	ALT_UP(W(nop))
--	dcache_line_size r2, r3
--1:	mcr	p15, 0, r0, c7, c10, 1		@ clean D entry
-+	ALT_SMP(W(nop))			@ MP extensions imply L1 PTW
-+	ALT_UP_B(1f)
-+	mov	pc, lr
-+1:	dcache_line_size r2, r3
-+2:	mcr	p15, 0, r0, c7, c10, 1		@ clean D entry
- 	add	r0, r0, r2
- 	subs	r1, r1, r2
--	bhi	1b
-+	bhi	2b
- 	dsb
- 	mov	pc, lr
- ENDPROC(cpu_v7_dcache_clean_area)
++#ifdef CONFIG_KUSER_HELPERS
+ #define __HAVE_ARCH_GATE_AREA 1
++#endif
+ 
+ #ifdef CONFIG_ARM_LPAE
+ #include <asm/pgtable-3level-types.h>
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -433,6 +433,7 @@ unsigned long arch_randomize_brk(struct
+ }
+ 
+ #ifdef CONFIG_MMU
++#ifdef CONFIG_KUSER_HELPERS
+ /*
+  * The vectors page is always readable from user space for the
+  * atomic helpers. Insert it into the gate_vma so that it is visible
+@@ -465,10 +466,14 @@ int in_gate_area_no_mm(unsigned long add
+ {
+ 	return in_gate_area(NULL, addr);
+ }
++#define is_gate_vma(vma)	((vma) = &gate_vma)
++#else
++#define is_gate_vma(vma)	0
++#endif
+ 
+ const char *arch_vma_name(struct vm_area_struct *vma)
+ {
+-	return (vma == &gate_vma) ? "[vectors]" :
++	return is_gate_vma(vma) ? "[vectors]" :
+ 		(vma->vm_mm && vma->vm_start == vma->vm_mm->context.sigpage) ?
+ 		 "[sigpage]" : NULL;
+ }
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -1220,7 +1220,11 @@ static void __init devicemaps_init(struc
+ 	map.pfn = __phys_to_pfn(virt_to_phys(vectors));
+ 	map.virtual = 0xffff0000;
+ 	map.length = PAGE_SIZE;
++#ifdef CONFIG_KUSER_HELPERS
+ 	map.type = MT_HIGH_VECTORS;
++#else
++	map.type = MT_LOW_VECTORS;
++#endif
+ 	create_mapping(&map);
+ 
+ 	if (!vectors_high()) {
 
 
