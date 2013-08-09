@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968025Ab3HIQDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:03:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:55450 "EHLO mga03.intel.com"
+	id S968029Ab3HIQEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:04:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39773 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934068Ab3HIQDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:03:51 -0400
+	id S934345Ab3HIQDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 12:03:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,846,1367996400"; 
-   d="scan'208";a="344097470"
+   d="scan'208";a="384498931"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, linux-kbuild@vger.kernel.org,
         david.daney@cavium.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/3] kbuild: Use single pass kallsyms
-Date: Fri,  9 Aug 2013 09:03:19 -0700
-Message-Id: <1376064199-8296-4-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 2/3] Kbuild, kallsyms: Support padding in kallsyms tables
+Date: Fri,  9 Aug 2013 09:03:18 -0700
+Message-Id: <1376064199-8296-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1376064199-8296-1-git-send-email-andi@firstfloor.org>
 References: <1376064199-8296-1-git-send-email-andi@firstfloor.org>
@@ -25,289 +25,149 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-kallsyms currenly links the kernel upto three times
-(in addition to another one for modpost checks)
+Add support for padding the variable length tables in kallsyms.
+This adds a new --pad=XXX option to kallsyms to specify the table lengths,
+and another option --pad-file=X to write the table lengths to a file.
+Then when a table is shorter than the padding add the necessary padding
+at the end.
 
-Linking can be a quite slow operation, especially when
-the kernel has a lot of debug information (lots of IO),
-or Link Time Optimization is used.
-
-Final linking is also a non parallelizable bottlneck, so it's
-always good to do it less.
-
-Use a different kallsyms method to avoid this:
-- generate a initial kallsyms table from the top level
-object files
-- This table is usually a super set of the final table,
-but without final addresses and some extra symbols
-(e.g. discard and local symbols)
-- Use this table to link the vmlinux
-- Then generate a new kallsyms table with padding so
-that all symbols stay at the same offsets. This works
-because the new table is smaller or the same than the
-original one.
-We let the first kallsyms generate a padding file and
-then use it on the next link.
-- Then finally patch in the new table into the vmlinux
-
-The size difference between the two tables is typically
-small, so the additional padding is not a problem
-(a few hundred bytes in my kernels)
-
-Right now we still do two links. One to generate
-the kernel, and another one to generate the vmlinux.o
-for modpost.
-
-On my slowish laptop this cuts down the final serialized phase
-of a moderate size kernel build (just relinking vmlinux) by 1/3,
-from ~30s to 20s
-
-Tested on x86, tests on other architectures would be appreciated.
+This allows to replace an existing symbol table later with a different
+one that may differ slightly.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- scripts/Makefile        |  2 +-
- scripts/elf_file_offset |  7 ++++
- scripts/link-vmlinux.sh | 86 ++++++++++++++++++-------------------------------
- scripts/patchfile.c     | 81 ++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 120 insertions(+), 56 deletions(-)
- create mode 100755 scripts/elf_file_offset
- create mode 100644 scripts/patchfile.c
+ scripts/kallsyms.c | 65 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 61 insertions(+), 4 deletions(-)
 
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 01e7adb..9c84464 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -10,7 +10,7 @@
+diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
+index 38c8ede..6940f00 100644
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -41,6 +41,13 @@ struct text_range {
+ 	unsigned long long start, end;
+ };
  
- HOST_EXTRACFLAGS += -I$(srctree)/tools/include
- 
--hostprogs-$(CONFIG_KALLSYMS)     += kallsyms
-+hostprogs-$(CONFIG_KALLSYMS)     += kallsyms patchfile
- hostprogs-$(CONFIG_LOGO)         += pnmtologo
- hostprogs-$(CONFIG_VT)           += conmakehash
- hostprogs-$(CONFIG_IKCONFIG)     += bin2c
-diff --git a/scripts/elf_file_offset b/scripts/elf_file_offset
-new file mode 100755
-index 0000000..1e31863
---- /dev/null
-+++ b/scripts/elf_file_offset
-@@ -0,0 +1,7 @@
-+#!/bin/bash
-+# find the file offset of a symbol in a ELF file
++enum pads {
++	PAD_OFF,
++	PAD_NAMES,
++	PAD_MARKERS,
++	NUM_PAD
++};
 +
-+ADDR=$(nm $1 | awk "/$2/ { print \$1 }")
-+objdump -s -F --start-address=0x$ADDR $1  |
-+awk '/Starting at file offset/ { sub(/)/, ""); print $9 ; exit(0); }'
-+
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 0149949..c02ee0a 100644
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -1,4 +1,4 @@
--#!/bin/sh
-+#!/bin/bash
- #
- # link vmlinux
- #
-@@ -82,10 +82,13 @@ kallsyms()
- 		kallsymopt="${kallsymopt} --all-symbols"
- 	fi
+ static unsigned long long _text;
+ static struct text_range text_ranges[] = {
+ 	{ "_stext",     "_etext"     },
+@@ -65,7 +72,7 @@ unsigned char best_table_len[256];
  
-+	kallsymopt="$kallsymopt $3"
-+
- 	local aflags="${KBUILD_AFLAGS} ${KBUILD_AFLAGS_KERNEL}               \
- 		      ${NOSTDINC_FLAGS} ${LINUXINCLUDE} ${KBUILD_CPPFLAGS}"
- 
- 	${NM} -n ${1} | \
-+		awk 'NF == 3 { print}' |
- 		scripts/kallsyms ${kallsymopt} | \
- 		${CC} ${aflags} -c -o ${2} -x assembler-with-cpp -
+ static void usage(void)
+ {
+-	fprintf(stderr, "Usage: kallsyms [--all-symbols] [--symbol-prefix=<prefix char>] < in.map > out.S\n");
++	fprintf(stderr, "Usage: kallsyms [--all-symbols] [--symbol-prefix=<prefix char>] [--pad=A,B,C] [--padfile=name] < in.map > out.S\n");
+ 	exit(1);
  }
-@@ -162,51 +165,36 @@ ${MAKE} -f "${srctree}/scripts/Makefile.build" obj=init
  
- kallsymso=""
- kallsyms_vmlinux=""
--if [ -n "${CONFIG_KALLSYMS}" ]; then
--
--	# kallsyms support
--	# Generate section listing all symbols and add it into vmlinux
--	# It's a three step process:
--	# 1)  Link .tmp_vmlinux1 so it has all symbols and sections,
--	#     but __kallsyms is empty.
--	#     Running kallsyms on that gives us .tmp_kallsyms1.o with
--	#     the right size
--	# 2)  Link .tmp_vmlinux2 so it now has a __kallsyms section of
--	#     the right size, but due to the added section, some
--	#     addresses have shifted.
--	#     From here, we generate a correct .tmp_kallsyms2.o
--	# 2a) We may use an extra pass as this has been necessary to
--	#     woraround some alignment related bugs.
--	#     KALLSYMS_EXTRA_PASS=1 is used to trigger this.
--	# 3)  The correct ${kallsymso} is linked into the final vmlinux.
--	#
--	# a)  Verify that the System.map from vmlinux matches the map from
--	#     ${kallsymso}.
--
--	kallsymso=.tmp_kallsyms2.o
--	kallsyms_vmlinux=.tmp_vmlinux2
--
--	# step 1
--	vmlinux_link "" .tmp_vmlinux1
--	kallsyms .tmp_vmlinux1 .tmp_kallsyms1.o
--
--	# step 2
--	vmlinux_link .tmp_kallsyms1.o .tmp_vmlinux2
--	kallsyms .tmp_vmlinux2 .tmp_kallsyms2.o
--
--	# step 2a
--	if [ -n "${KALLSYMS_EXTRA_PASS}" ]; then
--		kallsymso=.tmp_kallsyms3.o
--		kallsyms_vmlinux=.tmp_vmlinux3
--
--		vmlinux_link .tmp_kallsyms2.o .tmp_vmlinux3
--
--		kallsyms .tmp_vmlinux3 .tmp_kallsyms3.o
--	fi
-+
-+if [ -n "${CONFIG_KALLSYMS}" ] ; then
-+	# Generate kallsyms from the top level object files
-+	# this is slightly off, and has wrong addresses,
-+	# but gives us the conservative max length of the kallsyms
-+	# table to link in something with the size.
-+	info KALLSYMS1 .tmp_kallsyms1.o
-+	kallsyms "${KBUILD_VMLINUX_INIT} ${KBUILD_VMLINUX_MAIN}" \
-+		 .tmp_kallsyms1.o \
-+		 "--pad-file=.kallsyms_pad"
-+	kallsymsso=.tmp_kallsyms1.o
- fi
+@@ -285,7 +292,14 @@ static int expand_symbol(unsigned char *data, int len, char *result)
+ 	return total;
+ }
  
- info LD vmlinux
--vmlinux_link "${kallsymso}" vmlinux
-+vmlinux_link "${kallsymsso}" vmlinux
-+if [ -n "${CONFIG_KALLSYMS}" ] ; then
-+	# Now regenerate the kallsyms table and patch it into the
-+	# previously linked file. We tell kallsyms to pad it
-+	# to the previous length, so that no symbol changes.
-+	info KALLSYMS2 .tmp_kallsyms2.o
-+	kallsyms vmlinux .tmp_kallsyms2.o $(<.kallsyms_pad)
-+
-+	info OBJCOPY .tmp_kallsyms2.bin
-+	${OBJCOPY} -O binary .tmp_kallsyms2.o .tmp_kallsyms2.bin
-+
-+	info PATCHFILE vmlinux
-+	scripts/patchfile vmlinux \
-+		$(./source/scripts/elf_file_offset vmlinux kallsyms_offset) \
-+		.tmp_kallsyms2.bin
-+fi
- 
- if [ -n "${CONFIG_BUILDTIME_EXTABLE_SORT}" ]; then
- 	info SORTEX vmlinux
-@@ -216,17 +204,5 @@ fi
- info SYSMAP System.map
- mksysmap vmlinux System.map
- 
--# step a (see comment above)
--if [ -n "${CONFIG_KALLSYMS}" ]; then
--	mksysmap ${kallsyms_vmlinux} .tmp_System.map
--
--	if ! cmp -s System.map .tmp_System.map; then
--		echo >&2 Inconsistent kallsyms data
--		echo >&2 Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
--		cleanup
--		exit 1
--	fi
--fi
--
- # We made a new kernel - delete old version file
- rm -f .old_version
-diff --git a/scripts/patchfile.c b/scripts/patchfile.c
-new file mode 100644
-index 0000000..1a3414d
---- /dev/null
-+++ b/scripts/patchfile.c
-@@ -0,0 +1,81 @@
-+/* Patch file at specific offset
-+ * patchfile file-to-patch offset patch-file [len-of-patch]
-+ */
-+#define _GNU_SOURCE 1
-+#include <sys/mman.h>
-+#include <unistd.h>
-+#include <sys/fcntl.h>
-+#include <sys/stat.h>
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <stdlib.h>
-+
-+#define ROUNDUP(x, y) (((x) + (y) - 1) & ~((y) - 1))
-+
-+static void *mmapfile(char *file, size_t *size)
+-static void write_src(void)
++static void bad_padding(char *msg, int diff)
 +{
-+	int pagesize = sysconf(_SC_PAGESIZE);
-+	int fd = open(file, O_RDONLY);
-+	void *res = NULL;
-+	struct stat st;
-+
-+	*size = 0;
-+	if (fd < 0)
-+		return NULL;
-+	if (fstat(fd, &st) >= 0) {
-+		*size = st.st_size;
-+		res = mmap(NULL, ROUNDUP(st.st_size, pagesize),
-+				PROT_READ, MAP_SHARED,
-+				fd, 0);
-+		if (res == (void *)-1)
-+			res = NULL;
-+	}
-+	close(fd);
-+	return res;
++	fprintf(stderr, "kallsyms: %s padding too short: %d missing\n",
++			msg, diff);
++	exit(EXIT_FAILURE);
 +}
 +
-+static void usage(void)
-+{
-+	fprintf(stderr, "Usage: patchfile file-to-patch offset file-to-patch-in\n");
-+	exit(1);
-+}
++static void write_src(int *pad, int *opad)
+ {
+ 	unsigned int i, k, off;
+ 	unsigned int best_idx[256];
+@@ -317,6 +331,13 @@ static void write_src(void)
+ 	for (i = 0; i < table_cnt; i++) {
+ 		printf("\tPTR\t%#llx\n", table[i].addr - _text);
+ 	}
++	if (pad) {
++		if (i > pad[PAD_OFF])
++			bad_padding("address pointers", i - pad[PAD_OFF]);
++		for (; i < pad[PAD_OFF]; i++)
++			printf("\tPTR\t0\n");
++	} else
++		opad[PAD_OFF] = table_cnt;
+ 	printf("\n");
+ 
+ 	output_label("kallsyms_num_syms");
+@@ -345,11 +366,25 @@ static void write_src(void)
+ 
+ 		off += table[i].len + 1;
+ 	}
++	if (pad) {
++		if (off > pad[PAD_NAMES])
++			bad_padding("name table", off - pad[PAD_NAMES]);
++		if (off < pad[PAD_NAMES])
++			printf("\t.fill %d,1,0\n", pad[PAD_NAMES] - off);
++	} else
++		opad[PAD_NAMES] = off;
+ 	printf("\n");
+ 
+ 	output_label("kallsyms_markers");
+ 	for (i = 0; i < ((table_cnt + 255) >> 8); i++)
+ 		printf("\tPTR\t%d\n", markers[i]);
++	if (pad) {
++		if (i > pad[PAD_MARKERS])
++			bad_padding("markers", i - pad[PAD_MARKERS]);
++		for (; i < pad[PAD_MARKERS]; i++)
++			printf("\tPTR\t0\n");
++	} else
++		opad[PAD_MARKERS] = i;
+ 	printf("\n");
+ 
+ 	free(markers);
+@@ -629,6 +664,10 @@ static void sort_symbols(void)
+ 
+ int main(int argc, char **argv)
+ {
++	int inpad[NUM_PAD], opad[NUM_PAD];
++	int *inpadp = NULL;
++	FILE *opadf = NULL;
 +
-+static size_t get_num(char *s)
-+{
-+	char *endp;
-+	size_t v = strtoul(s, &endp, 0);
-+	if (s == endp)
-+		usage();
-+	return v;
-+}
-+
-+int main(int ac, char **av)
-+{
-+	char *patch;
-+	size_t patchsize;
-+	int infd;
-+	size_t offset;
-+
-+	if (ac != 5 && ac != 4)
-+		usage();
-+	offset = get_num(av[2]);
-+	patch = mmapfile(av[3], &patchsize);
-+	if (av[4]) {
-+		size_t newsize = get_num(av[4]);
-+		if (newsize > patchsize)
-+			fprintf(stderr, "kallsyms: warning, size larger than patch\n");
-+		if (newsize < patchsize)
-+			patchsize = newsize;
+ 	if (argc >= 2) {
+ 		int i;
+ 		for (i = 1; i < argc; i++) {
+@@ -640,6 +679,21 @@ int main(int argc, char **argv)
+ 				if ((*p == '"' && *(p+2) == '"') || (*p == '\'' && *(p+2) == '\''))
+ 					p++;
+ 				symbol_prefix_char = *p;
++			} else if (strncmp(argv[i], "--pad=", 6) == 0) {
++				inpadp = inpad;
++				if (sscanf(argv[i] + 6, "%d,%d,%d",
++					   inpad + 0,
++					   inpad + 1,
++					   inpad + 2) != NUM_PAD) {
++					fprintf(stderr, "Bad pad list\n");
++					exit(EXIT_FAILURE);
++				}
++			} else if (strncmp(argv[i], "--pad-file=", 11) == 0) {
++				opadf = fopen(argv[i] + 11, "w");
++				if (!opadf) {
++					fprintf(stderr, "Cannot open %s", argv[i]+11);
++					exit(EXIT_FAILURE);
++				}
+ 			} else
+ 				usage();
+ 		}
+@@ -649,7 +703,10 @@ int main(int argc, char **argv)
+ 	read_map(stdin);
+ 	sort_symbols();
+ 	optimize_token_table();
+-	write_src();
+-
++	write_src(inpadp, opad);
++	if (opadf) {
++		fprintf(opadf, "--pad=%d,%d,%d\n", opad[0], opad[1], opad[2]);
++		fclose(opadf);
 +	}
-+	infd = open(av[1], O_RDWR);
-+	if (infd < 0) {
-+		fprintf(stderr, "Cannot open %s\n", av[1]);
-+		exit(1);
-+	}
-+	if (pwrite(infd, patch, patchsize, offset) != patchsize) {
-+		fprintf(stderr, "Cannot write patch to %s\n", av[1]);
-+		exit(1);
-+	}
-+	close(infd);
-+	return 0;
-+}
+ 	return 0;
+ }
 -- 
 1.8.3.1
 
