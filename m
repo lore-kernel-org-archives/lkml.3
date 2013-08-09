@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031698Ab3HIXqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 19:46:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38117 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031620Ab3HIXqb (ORCPT
+	id S1031718Ab3HIXqz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 19:46:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58934 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031620Ab3HIXqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 19:46:31 -0400
-Date: Fri, 9 Aug 2013 16:46:29 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bob Smith <bsmith@linuxtoys.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons a
- /sys-like interface
-Message-ID: <20130809234629.GA16866@kroah.com>
-References: <20130806094604.GE27889@kroah.com>
- <520299AB.1020607@linuxtoys.org>
- <20130807192714.GC2708@kroah.com>
- <5202A284.7010106@linuxtoys.org>
- <20130807195427.GB4121@kroah.com>
- <5202B674.7060005@linuxtoys.org>
- <20130807213325.GB5373@kroah.com>
- <520569B2.4000704@linuxtoys.org>
- <20130809230150.GA23418@kroah.com>
- <52057CB4.2020603@linuxtoys.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52057CB4.2020603@linuxtoys.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Aug 2013 19:46:53 -0400
+Date: Sat, 10 Aug 2013 09:46:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Aug 9
+Message-Id: <20130810094642.c06a8f469f8601895c0f569f@canb.auug.org.au>
+In-Reply-To: <52051E90.3090507@infradead.org>
+References: <20130809161540.f65dd6412ac59d49a32881c8@canb.auug.org.au>
+	<52051E90.3090507@infradead.org>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__10_Aug_2013_09_46_42_+1000_wYSKdlaE5uQyExiX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 04:35:16PM -0700, Bob Smith wrote:
-> Greg Kroah-Hartman wrote:
-> >Good protocols exist, look at protobufs from Google if you want to
-> >define your own.  Never create your own protocol these days, it doesn't
-> >make sense, be it a text one or something else.
-> 
-> OK.  I was using the term in the broader sense in which _meaning_ is
-> assigned to the data in the protocol, not just the data marshaling.
+--Signature=_Sat__10_Aug_2013_09_46_42_+1000_wYSKdlaE5uQyExiX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Again, protobufs are a great way to define the meaning of the protocol
-in a manner that is descriptive, fast, versioned, discoverable, and best
-of all for you, with bindings for all languages :)
+Hi Randy,
 
-> >Not true at all, I know all about userspace drivers, look at the UIO
-> >code in the Linux kernel.  It was created explicitly for this exact
-> >thing, and to prevent the myrads of broken implementations from being
-> >created again and again and again.  Just use it if you wish to talk to
-> >your hardware directly, lots of people do so.
-> Well, not this exact thing.  UIO is great if your hardware hangs
-> on a bus directly connected to the CPU.  It does nothing to help
-> the case of hardware connected over some communications link.
+On Fri, 09 Aug 2013 09:53:36 -0700 Randy Dunlap
+<rdunlap@infradead.org> wrote:
+>
+> and if you are not using git but are using tarballs instead,
+> where is the patch file?
 
-Like PCI?  :)
+Yeah, sorry I did not notice the error from kup.  It should be there now.
 
-Actually, I'm not kidding about that, I have a PCI bus here that is
-across a flexible cable that can dynamically be plugged and unplugged
-from a machine at any point in time using a communications link.  It's
-called Thunderbolt today, but has been called ExpressBus, and lots of
-other names in the past.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> >>As an _opinion_ only, I think maybe userspace device drivers do exist.
-> >>It refers to  hardware that the kernel is not, and should not, be aware
-> >>of.  This hardware is not seen because it is at the end of some kind of
-> >>communications channel like USB-serial or Ethernet. A developer might
-> >>like to view that hardware as part of the overall system even if Linux
-> >>and the CPU do not have direct access to it.  A userspace driver looks
-> >>something like this
-> >>
-> >>	=(ProxyDevNode)====(daemon)===(CommChannel)===(hardware)
-> >
-> >Not really, you are just using an IPC to talk to a "real" device driver.
-> 
-> Yes, each of the "=" above has data passing through a real driver.
+--Signature=_Sat__10_Aug_2013_09_46_42_+1000_wYSKdlaE5uQyExiX
+Content-Type: application/pgp-signature
 
-No it doesn't.  A "real" driver talks to hardware.  You only have that
-for the last "===".
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-> >FPGAs are interesting things, people are creating "real" drivers for
-> >them (see the linux-kernel archives for a few examples.)  Other people
-> >just use the UIO layer instead, which works quite well for them.  I
-> >suggest you do the same thing.
-> 
-> UIO can not see hardware at the end of a USB-serial link.
+iQIcBAEBCAAGBQJSBX9nAAoJEECxmPOUX5FE+yUP/jr4PR+2sCGv5sT95u0fgfYm
+eQj/X4GAw1jE0ONxZO/8eixxBsbZ22z5b0US2t0dVMBbi9eufPn0sK9mrLGkXXfa
+ZVf8aBoXjdfyFR82vkxwPkw+yJ4bNTbx/lTyLuq03yAGqag7KKjwwanSC60wCIL6
+XqMVrmwNc4U0PSSMQqVXQNEKw6oYtXWAOyFW93vbHjRxC+BbZaAFRMfyG/xjp7E2
+Fp2NIiAxedHdEccw7r3JIFLdTDMlDMO68x8WnUTSBtXJ6sKRS0bmgPEe7+OVbgEk
+MzpcPRCYWhLX7Muo/mfdVE92LCcyN/yQ07P+G3VYo/nFZxn71lWk1kabSXgsPiRy
+Ogaitf73eH+bgoDxm1HVTZ42HQL3nQjqyeZ54c5PR9gmhNDbkvoBILsEe9Zl4xkD
+JWjzOkV0PcsaixIVK0H8a2qlhA0cBcTZyAj8yqQpOsNWGcY8e0INwDr1JMbUgDyD
+Yr2pr1xeuDen+6ytaPk/6P/Jus6N+5BrmoYV0N5B0xYvuX7lIImh/7++5kKBa/dS
+vtL9kvZquGss2YO7mUwCBjwn8Lxp6YkgPdo6Hu/4QC9YzZoTKwys7pM12oF2q/Ll
+zrjC2CXqTnHge+pf719h1ZaraFQgnS34DmoU6Pw6X56ZG03P5b2djC55NCCt4DLd
+8+3OfEAwTSbo4TyfCNf7
+=6u5R
+-----END PGP SIGNATURE-----
 
-Nor should it ever be used for something like that.  There is a protocol
-for this device that the kernel exposes, use it :)
-
-thanks,
-
-greg k-h
+--Signature=_Sat__10_Aug_2013_09_46_42_+1000_wYSKdlaE5uQyExiX--
