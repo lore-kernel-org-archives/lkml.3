@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030258Ab3HIONE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 10:13:04 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:62103 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758061Ab3HIONC (ORCPT
+	id S967917Ab3HIOOP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 10:14:15 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:53474 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967879Ab3HIOON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 10:13:02 -0400
+	Fri, 9 Aug 2013 10:14:13 -0400
+Message-ID: <5204FAB0.7030606@linux.vnet.ibm.com>
+Date: Fri, 09 Aug 2013 19:50:32 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1376057413.12443.91.camel@t520.redhat.com>
-References: <1375847113-24884-1-git-send-email-roy.franz@linaro.org>
-	<1375847113-24884-13-git-send-email-roy.franz@linaro.org>
-	<1376057413.12443.91.camel@t520.redhat.com>
-Date: Fri, 9 Aug 2013 07:13:01 -0700
-Message-ID: <CAFECyb9=zJQ-Fhyc+QojtcCtK_ue+fvn=VoOc6_Sq8D6v0uALA@mail.gmail.com>
-Subject: Re: [PATCH 12/17] Add proper definitions for some EFI function pointers.
-From: Roy Franz <roy.franz@linaro.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        matt.fleming@intel.com,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Dave Martin <dave.martin@arm.com>
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH  V12 0/14] Paravirtualized ticket spinlocks
+References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com> <52044013.3010202@zytor.com>
+In-Reply-To: <52044013.3010202@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13080914-1396-0000-0000-000003625661
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Mark - I'll get that in the next version of the patches.
+On 08/09/2013 06:34 AM, H. Peter Anvin wrote:
+> The kbuild test bot is reporting some pretty serious errors for this
+> patchset.  I think these are serious enough that the patchset will need
+> to be respun.
+>
 
-On Fri, Aug 9, 2013 at 7:10 AM, Mark Salter <msalter@redhat.com> wrote:
-> On Tue, 2013-08-06 at 20:45 -0700, Roy Franz wrote:
->> The x86/AMD64 EFI stubs must us a call wrapper to convert between
->> the Linux and EFI ABIs, so void pointers are sufficient.  For ARM,
->> the ABIs are compatible, so we can directly invoke the function
->> pointers.  The functions that are used by the ARM stub are updated
->> to match the EFI definitions.
->>
->> Signed-off-by: Roy Franz <roy.franz@linaro.org>
->> ---
->>  include/linux/efi.h |   42 +++++++++++++++++++++++++-----------------
->>  1 file changed, 25 insertions(+), 17 deletions(-)
->>
->> diff --git a/include/linux/efi.h b/include/linux/efi.h
->> index 51f5641..96bb866 100644
->> --- a/include/linux/efi.h
->> +++ b/include/linux/efi.h
->> @@ -39,6 +39,8 @@
->>  typedef unsigned long efi_status_t;
->>  typedef u8 efi_bool_t;
->>  typedef u16 efi_char16_t;            /* UNICODE character */
->> +typedef u64 efi_physical_addr_t;
->> +typedef void *efi_handle_t;
->>
->>
->>  typedef struct {
->> @@ -96,6 +98,7 @@ typedef     struct {
->>  #define EFI_MEMORY_DESCRIPTOR_VERSION        1
->>
->>  #define EFI_PAGE_SHIFT               12
->> +#define EFI_PAGE_SIZE                (1UL << EFI_PAGE_SHIFT)
->>
->>  typedef struct {
->>       u32 type;
->> @@ -157,11 +160,12 @@ typedef struct {
->>       efi_table_hdr_t hdr;
->>       void *raise_tpl;
->>       void *restore_tpl;
->> -     void *allocate_pages;
->> -     void *free_pages;
->> -     void *get_memory_map;
->> -     void *allocate_pool;
->> -     void *free_pool;
->> +     int (*allocate_pages)(int, int, unsigned long, efi_physical_addr_t *);
->> +     int (*free_pages)(efi_physical_addr_t, unsigned long);
->
-> All of the actual function pointers that were added should return an
-> efi_status_t instead of int. On arm64, I was seeing an unrecognizable
-> error status because the truncation from 64 to 32 bits.
->
-> --Mark
->
->
+Sent V13, there were 3 patches in total that changed due to dependency.
+
+
