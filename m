@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967427Ab3HIB6g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:58:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55591 "EHLO
+	id S967504Ab3HIB6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:58:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55647 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967347Ab3HIB61 (ORCPT
+	with ESMTP id S967479Ab3HIB6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:27 -0400
+	Thu, 8 Aug 2013 21:58:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 008/102] ARM: make vectors page inaccessible from userspace
-Date: Thu,  8 Aug 2013 18:56:44 -0700
-Message-Id: <20130809015012.154316979@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 026/102] USB: mos7840: fix race in register handling
+Date: Thu,  8 Aug 2013 18:57:02 -0700
+Message-Id: <20130809015015.977967888@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -26,74 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit a5463cd3435475386cbbe7b06e01292ac169d36f upstream.
+commit d8a083cc746664916d9d36ed9e4d08a29525f245 upstream.
 
-If kuser helpers are not provided by the kernel, disable user access to
-the vectors page.  With the kuser helpers gone, there is no reason for
-this page to be visible to userspace.
+Fix race in mos7840_get_reg which unconditionally manipulated the
+control urb (which may already be in use) by adding a control-urb busy
+flag.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/page.h |    2 ++
- arch/arm/kernel/process.c   |    7 ++++++-
- arch/arm/mm/mmu.c           |    4 ++++
- 3 files changed, 12 insertions(+), 1 deletion(-)
+ drivers/usb/serial/mos7840.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/page.h
-+++ b/arch/arm/include/asm/page.h
-@@ -142,7 +142,9 @@ extern void __cpu_copy_user_highpage(str
- #define clear_page(page)	memset((void *)(page), 0, PAGE_SIZE)
- extern void copy_page(void *to, const void *from);
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -183,6 +183,10 @@
+ #define LED_ON_MS	500
+ #define LED_OFF_MS	500
  
-+#ifdef CONFIG_KUSER_HELPERS
- #define __HAVE_ARCH_GATE_AREA 1
-+#endif
++enum mos7840_flag {
++	MOS7840_FLAG_CTRL_BUSY,
++};
++
+ static int device_type;
  
- #ifdef CONFIG_ARM_LPAE
- #include <asm/pgtable-3level-types.h>
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -433,6 +433,7 @@ unsigned long arch_randomize_brk(struct
- }
+ static const struct usb_device_id id_table[] = {
+@@ -241,6 +245,8 @@ struct moschip_port {
+ 	bool led_flag;
+ 	struct timer_list led_timer1;	/* Timer for LED on */
+ 	struct timer_list led_timer2;	/* Timer for LED off */
++
++	unsigned long flags;
+ };
  
- #ifdef CONFIG_MMU
-+#ifdef CONFIG_KUSER_HELPERS
  /*
-  * The vectors page is always readable from user space for the
-  * atomic helpers. Insert it into the gate_vma so that it is visible
-@@ -465,10 +466,14 @@ int in_gate_area_no_mm(unsigned long add
- {
- 	return in_gate_area(NULL, addr);
- }
-+#define is_gate_vma(vma)	((vma) = &gate_vma)
-+#else
-+#define is_gate_vma(vma)	0
-+#endif
+@@ -467,10 +473,10 @@ static void mos7840_control_callback(str
+ 	case -ESHUTDOWN:
+ 		/* this urb is terminated, clean up */
+ 		dev_dbg(dev, "%s - urb shutting down with status: %d\n", __func__, status);
+-		return;
++		goto out;
+ 	default:
+ 		dev_dbg(dev, "%s - nonzero urb status received: %d\n", __func__, status);
+-		return;
++		goto out;
+ 	}
  
- const char *arch_vma_name(struct vm_area_struct *vma)
- {
--	return (vma == &gate_vma) ? "[vectors]" :
-+	return is_gate_vma(vma) ? "[vectors]" :
- 		(vma->vm_mm && vma->vm_start == vma->vm_mm->context.sigpage) ?
- 		 "[sigpage]" : NULL;
+ 	dev_dbg(dev, "%s urb buffer size is %d\n", __func__, urb->actual_length);
+@@ -483,6 +489,8 @@ static void mos7840_control_callback(str
+ 		mos7840_handle_new_msr(mos7840_port, regval);
+ 	else if (mos7840_port->MsrLsr == 1)
+ 		mos7840_handle_new_lsr(mos7840_port, regval);
++out:
++	clear_bit_unlock(MOS7840_FLAG_CTRL_BUSY, &mos7840_port->flags);
  }
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -1220,7 +1220,11 @@ static void __init devicemaps_init(struc
- 	map.pfn = __phys_to_pfn(virt_to_phys(vectors));
- 	map.virtual = 0xffff0000;
- 	map.length = PAGE_SIZE;
-+#ifdef CONFIG_KUSER_HELPERS
- 	map.type = MT_HIGH_VECTORS;
-+#else
-+	map.type = MT_LOW_VECTORS;
-+#endif
- 	create_mapping(&map);
  
- 	if (!vectors_high()) {
+ static int mos7840_get_reg(struct moschip_port *mcs, __u16 Wval, __u16 reg,
+@@ -493,6 +501,9 @@ static int mos7840_get_reg(struct moschi
+ 	unsigned char *buffer = mcs->ctrl_buf;
+ 	int ret;
+ 
++	if (test_and_set_bit_lock(MOS7840_FLAG_CTRL_BUSY, &mcs->flags))
++		return -EBUSY;
++
+ 	dr->bRequestType = MCS_RD_RTYPE;
+ 	dr->bRequest = MCS_RDREQ;
+ 	dr->wValue = cpu_to_le16(Wval);	/* 0 */
+@@ -504,6 +515,9 @@ static int mos7840_get_reg(struct moschi
+ 			     mos7840_control_callback, mcs);
+ 	mcs->control_urb->transfer_buffer_length = 2;
+ 	ret = usb_submit_urb(mcs->control_urb, GFP_ATOMIC);
++	if (ret)
++		clear_bit_unlock(MOS7840_FLAG_CTRL_BUSY, &mcs->flags);
++
+ 	return ret;
+ }
+ 
 
 
