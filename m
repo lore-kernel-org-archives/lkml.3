@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967977Ab3HIPj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:39:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49055 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965056Ab3HIPj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:39:26 -0400
-Message-ID: <52050D03.4030805@zytor.com>
-Date: Fri, 09 Aug 2013 08:38:43 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S967990Ab3HIPjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:39:40 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:9202 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965056Ab3HIPji (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 11:39:38 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 09 Aug 2013 08:37:50 -0700
+Message-ID: <52051083.4070403@nvidia.com>
+Date: Fri, 9 Aug 2013 21:23:39 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: RFC: default CONFIG_EFI_STUB=y
-References: <52050985.9070107@zytor.com> <1376062345.2087.16.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1376062345.2087.16.camel@dabdike.int.hansenpartnership.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-15
+To: Kumar Gala <galak@codeaurora.org>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "Mark.Rutland@arm.com" <Mark.Rutland@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "broonie@kernel.org" <broonie@kernel.org>
+Subject: Re: [PATCH] drivers/rtc/rtc-palmas.c: rename charging dt property
+ name
+References: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com> <105188C0-FD22-488B-B9D2-1E3C801616B6@codeaurora.org>
+In-Reply-To: <105188C0-FD22-488B-B9D2-1E3C801616B6@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 08:32 AM, James Bottomley wrote:
-> On Fri, 2013-08-09 at 08:23 -0700, H. Peter Anvin wrote:
->> I would like to change the defaults for CONFIG_EFI and CONFIG_EFI_STUB
->> to y.  There is little reason to omit this since EFI now is a
->> significant percentage of all systems.
-> 
-> You didn't actually attach the patch, but I presume this is for 64 bit
-> compiles on x86 only?  We still have significant problems getting 64 bit
-> EFI to interact with 32 bit kernels, so I don't believe we should enable
-> CONFIG_EFI globally for all of x86.
-> 
+On Friday 09 August 2013 09:07 PM, Kumar Gala wrote:
+> On Aug 9, 2013, at 10:47 AM, Laxman Dewangan wrote:
+>
+>> Renaming the charging property names to have more meaningful:
+>>
+>> Renaming property "ti,back-battery-charge-enable" to "ti,backup-battery-chargeable"
+>> to tells OS that attahced battery is chargeable and OS can do charging.
+>>
+>> Renaming property "ti,back-battery-charge-low-current" to
+>> "ti,backup-battery-charge-high-current" for safe configuration as maximum charging current
+>> of battery depends on battery type and overcurrent charging can damage the battery. So
+>> enable the high current charging only if this property is available.
+>>
+>> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+>> ---
+>> The patch V4 version of the change
+>> [PATCH V4] drivers/rtc/rtc-palmas.c: support for backup battery charging
+>> is already applied but still the discussion is going on the property name.
+>>
+>> To correct the property name, I am sending this patch on top of above patch
+>> as per discussion on above patch.
+>>
+>> .../devicetree/bindings/rtc/rtc-palmas.txt         |   21 +++++++++++--------
+>> drivers/rtc/rtc-palmas.c                           |   14 ++++++------
+>> 2 files changed, 19 insertions(+), 16 deletions(-)
+> Are you not concerned about any dts with the old property names being around such that the code should support the old name as well?
+>
 
-Well, it doesn't *solve* the problem with cross-mode, but it should work
-as-is for EFI32->32-bit kernel and EFI64->64-bit kernel.  For the
-cross-mode kernels they will simply not do anything.
-
-Either way, nothing bad should come from it.  The worst thing that will
-happen is that the kernel says "I don't have any EFI that I recognize."
-
-Cross-mode support will always require a secondary bootloader (since as
-far as I know there is no concept of "fat binaries" for EFI), but Matt
-Fleming is working on genuine cross-mode support for both the boot stub
-and (eventually) run time support.
-
-	-hpa
+I introduced these properties on above patch and it applied yesterday 
+only. Hence no one is using now. So no issue here.
 
