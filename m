@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966902Ab3HIBQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:16:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:50853 "EHLO mga14.intel.com"
+	id S967006Ab3HIBe0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:34:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14608 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967072Ab3HIBPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:15:53 -0400
+	id S966912Ab3HIBeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 21:34:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,843,1367996400"; 
-   d="scan'208";a="378363789"
+   d="scan'208";a="343822780"
 From: Andi Kleen <andi@firstfloor.org>
-To: mingo@kernel.org
-Cc: peterz@infradead.org, linux-kernel@vger.kernel.org, acme@infradead.org,
-        jolsa@redhat.com, eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/4] perf, x86: Report TSX transaction abort cost as weight
-Date: Thu,  8 Aug 2013 18:15:44 -0700
-Message-Id: <1376010946-28666-3-git-send-email-andi@firstfloor.org>
+To: hpa@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] x86, asmlinkage: Fix warning in xen asmlinkage change
+Date: Thu,  8 Aug 2013 18:34:21 -0700
+Message-Id: <1376012061-15371-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1376010946-28666-1-git-send-email-andi@firstfloor.org>
-References: <1376010946-28666-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Use the existing weight reporting facility to report the transaction
-abort cost, that is the number of cycles wasted in aborts.
-Haswell reports this in the PEBS record.
-
-This was in fact the original user for weight.
-
-This is a very useful sort key to concentrate on the most
-costly aborts and a good metric for TSX tuning.
+Use __visible for some functions without arguments.
+This avoids having to add regparm(0) to function pointers.
+Since they have no arguments it does not make any difference.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/xen/xen-ops.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 3065c57..8959cc7 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -838,6 +838,12 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 		x86_pmu.intel_cap.pebs_format >= 1)
- 		data.addr = pebs->dla;
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index d380213..95f8c61 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -105,7 +105,7 @@ static inline void __init xen_init_apic(void)
+ /* Declare an asm function, along with symbols needed to make it
+    inlineable */
+ #define DECL_ASM(ret, name, ...)		\
+-	asmlinkage ret name(__VA_ARGS__);	\
++	__visible ret name(__VA_ARGS__);	\
+ 	extern char name##_end[] __visible;	\
+ 	extern char name##_reloc[] __visible
  
-+	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
-+	    !fll &&
-+	    (x86_pmu.intel_cap.pebs_format >= 2) &&
-+	    pebs_hsw->tsx_tuning)
-+		data.weight = pebs_hsw->tsx_tuning & 0xffffffff;
-+
- 	if (has_branch_stack(event))
- 		data.br_stack = &cpuc->lbr_stack;
+@@ -115,11 +115,11 @@ DECL_ASM(unsigned long, xen_save_fl_direct, void);
+ DECL_ASM(void, xen_restore_fl_direct, unsigned long);
+ 
+ /* These are not functions, and cannot be called normally */
+-asmlinkage void xen_iret(void);
+-asmlinkage void xen_sysexit(void);
+-asmlinkage void xen_sysret32(void);
+-asmlinkage void xen_sysret64(void);
+-asmlinkage void xen_adjust_exception_frame(void);
++__visible void xen_iret(void);
++__visible void xen_sysexit(void);
++__visible void xen_sysret32(void);
++__visible void xen_sysret64(void);
++__visible void xen_adjust_exception_frame(void);
+ 
+ extern int xen_panic_handler_init(void);
  
 -- 
 1.8.3.1
