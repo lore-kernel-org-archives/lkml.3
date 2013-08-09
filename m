@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031232Ab3HIVdh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 17:33:37 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:60756 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031121Ab3HIVdf convert rfc822-to-8bit (ORCPT
+	id S1031238Ab3HIVfT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 17:35:19 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:44636 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031121Ab3HIVfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 17:33:35 -0400
-X-AuditID: cbfec37d-b7f036d000004805-25-5205602ef18c
-From: Shuah Khan <shuah.kh@samsung.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "tomi.valkeinen@ti.com" <tomi.valkeinen@ti.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v2] backlight: Convert from Legacy pm ops to dev_pm_ops
-Thread-topic: [PATCH v2] backlight: Convert from Legacy pm ops to dev_pm_ops
-Thread-index: AQHOXntXl5mYvXa3VkiuDxQ5IdwjbQ==
-Date: Fri, 09 Aug 2013 21:33:32 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E617624BE@sisaex02sj>
-References: <2236505237-3336-1-git-send-email-shuah.kh@samsung.com>
- <20130809212805.GA4987@codeaurora.org>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t9hP129BNYgg/nLeS0eL//HZtE58xqj
-	xYm+D6wWl3fNYbNY9/AFk8XjFW/ZLXbvespq8fWng8X6+bfYHDg9Lvf1MnnsnHWX3ePDxziP
-	xXteMnm8unCHxWPP/B+sHsdvbGfy+LxJLoAjissmJTUnsyy1SN8ugStj5rqXjAUfWStOvt/I
-	0sD4mKWLkZNDQsBEYuH7qUwQtpjEhXvr2boYuTiEBJYxSjw4+Y0VwullknjXf5ARwpnPKLGu
-	fRY7SAubgLrE59c7wGwRIPvu01fsIEXMAjeZJRZOewGWEBbwlug4s4YJoshH4ujvVawQtp7E
-	xYVbGEFsFgFVieVzZoDZvAL2EnvanoLVCwnkSKzubgarZwS67/spiDnMAuISza03oX4QkFiy
-	5zwzhC0q8fLxP6B6DiBbUWL7aiuIci2J9TuPQ7VqSzx5d4EVYpWgxI/J91gmMIrNQjJ1FpKW
-	WUhaZiFpWcDIsopRrLQ4uaA4KT21wkSvODG3uDQvXS85P3cTIySCa3cw3v9qc4hRgINRiYd3
-	wi+WICHWxLLiytxDjBIczEoivN2RrEFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGFdymz185spz
-	15A54NKFbdPZjuS9vGdz9Y5C5ee/q2Pu8ghUWCbNjxS/NydRdw2P0b3bBnv0Vjw3ccw4sH5T
-	4EtXxQ/rp+75e6N95sagf/9zn3dFKclmXPAJeb1lS3PqJya+y78SqqxyH5owCKZZNbKXzajQ
-	FOyV+Jb7sfM565a//3NPpOf1LFBiKc5INNRiLipOBACGgJRdvgIAAA==
+	Fri, 9 Aug 2013 17:35:17 -0400
+MIME-Version: 1.0
+From: Ning Qu <quning@google.com>
+Date: Fri, 9 Aug 2013 14:34:35 -0700
+X-Google-Sender-Auth: rEKF6QPR-xzHz_eEOow8LlOd1ow
+Message-ID: <CACQD4-6_AmsDu6q_ChaiTCZNZ6zghJdWzZTmD1JQhLCkfMeeNA@mail.gmail.com>
+Subject: [PATCH] thp: Fix deadlock situation in vma_adjust with huge page in
+ page cache.
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-fsdevel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Jan Kara <jack@suse.cz>, Dave Hansen <dave@sr71.net>,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Ning Qu <quning@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 03:28 PM, David Brown wrote:
-> On Wed, Nov 14, 2040 at 04:27:17AM -0700, Shuah Khan wrote:
->> ...
->
-> The clock on your computer might be running just a wee bit ahead.
->
-> Either that, or we're getting patches from the future.
->
-> David
->
+In vma_adjust, the current code grabs i_mmap_mutex before calling
+vma_adjust_trans_huge. This used to be fine until huge page in page
+cache comes in. The problem is the underlying function
+split_file_huge_page will also grab the i_mmap_mutex before splitting
+the huge page in page cache. Obviously this is causing deadlock
+situation.
 
-David,
+This fix is to move the vma_adjust_trans_huge before grab the lock for
+file, the same as what the function is currently doing for anonymous
+memory. Tested, everything works fine so far.
 
-I know what happened. I was testing suspend to disk with pm_trace 
-enabled and forgot to set the correct time after the running the test. 
-Generated the patch without realizing the time is incorrect. Would like 
-me to re-generate it.
+Signed-off-by: Ning Qu <quning@google.com>
+---
+ mm/mmap.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
--- Shuah
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 519ce78..accf1b3 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -750,6 +750,8 @@ again: remove_next = 1 + (end > next->vm_end);
+  }
+  }
 
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
++ vma_adjust_trans_huge(vma, start, end, adjust_next);
++
+  if (file) {
+  mapping = file->f_mapping;
+  if (!(vma->vm_flags & VM_NONLINEAR)) {
+@@ -773,8 +775,6 @@ again: remove_next = 1 + (end > next->vm_end);
+  }
+  }
+
+- vma_adjust_trans_huge(vma, start, end, adjust_next);
+-
+  anon_vma = vma->anon_vma;
+  if (!anon_vma && adjust_next)
+  anon_vma = next->anon_vma;
+-- 
+1.8.3
