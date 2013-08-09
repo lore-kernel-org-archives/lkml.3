@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967641Ab3HIB7I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:59:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55739 "EHLO
+	id S1030426Ab3HICMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:12:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55768 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967461Ab3HIB7B (ORCPT
+	with ESMTP id S967640Ab3HIB7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:01 -0400
+	Thu, 8 Aug 2013 21:59:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <sujith@msujith.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 048/102] Bluetooth: ath3k: Add support for ID 0x13d3/0x3402
-Date: Thu,  8 Aug 2013 18:57:24 -0700
-Message-Id: <20130809015021.359990685@linuxfoundation.org>
+        Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 056/102] rt2x00: fix stop queue
+Date: Thu,  8 Aug 2013 18:57:32 -0700
+Message-Id: <20130809015023.304451868@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,57 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <sujith@msujith.org>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit 5b77a1f3d7b7360dc2b7c6d2188d39b9f8432907 upstream.
+commit e2288b66fe7ff0288382b2af671b4da558b44472 upstream.
 
-T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=13d3 ProdID=3402 Rev= 0.02
-S:  Manufacturer=Atheros Communications
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=Alaska Day 2006
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+Since we clear QUEUE_STARTED in rt2x00queue_stop_queue(), following
+call to rt2x00queue_pause_queue() reduce to noop, i.e we do not
+stop queue in mac80211.
 
-Bug: https://bugzilla.kernel.org/show_bug.cgi?id=59701
+To fix that introduce rt2x00queue_pause_queue_nocheck() function,
+which will stop queue in mac80211 directly.
 
-Signed-off-by: Sujith Manoharan <sujith@msujith.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Note that rt2x00_start_queue() explicitly set QUEUE_PAUSED bit.
+
+Note also that reordering operations i.e. first call to
+rt2x00queue_pause_queue() and then clear QUEUE_STARTED bit, will race
+with rt2x00queue_unpause_queue(), so calling ieee80211_stop_queue()
+directly is the only available solution to fix the problem without
+major rework.
+
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ drivers/net/wireless/rt2x00/rt2x00queue.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -92,6 +92,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x0489, 0xe056) },
- 	{ USB_DEVICE(0x0489, 0xe04d) },
- 	{ USB_DEVICE(0x04c5, 0x1330) },
-+	{ USB_DEVICE(0x13d3, 0x3402) },
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -936,13 +936,8 @@ void rt2x00queue_index_inc(struct queue_
+ 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
+ }
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -130,6 +131,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+-void rt2x00queue_pause_queue(struct data_queue *queue)
++void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
+ {
+-	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
+-	    !test_bit(QUEUE_STARTED, &queue->flags) ||
+-	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
+-		return;
+-
+ 	switch (queue->qid) {
+ 	case QID_AC_VO:
+ 	case QID_AC_VI:
+@@ -958,6 +953,15 @@ void rt2x00queue_pause_queue(struct data
+ 		break;
+ 	}
+ }
++void rt2x00queue_pause_queue(struct data_queue *queue)
++{
++	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
++	    !test_bit(QUEUE_STARTED, &queue->flags) ||
++	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
++		return;
++
++	rt2x00queue_pause_queue_nocheck(queue);
++}
+ EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
  
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -152,6 +152,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ void rt2x00queue_unpause_queue(struct data_queue *queue)
+@@ -1019,7 +1023,7 @@ void rt2x00queue_stop_queue(struct data_
+ 		return;
+ 	}
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+-	rt2x00queue_pause_queue(queue);
++	rt2x00queue_pause_queue_nocheck(queue);
+ 
+ 	queue->rt2x00dev->ops->lib->stop_queue(queue);
+ 
 
 
