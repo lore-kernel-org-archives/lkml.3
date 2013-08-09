@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967075Ab3HIBGE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:06:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42680 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966940Ab3HIBGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:06:02 -0400
-Message-ID: <52044013.3010202@zytor.com>
-Date: Thu, 08 Aug 2013 18:04:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S967085Ab3HIBJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:09:25 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:44542 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966975Ab3HIBJX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 21:09:23 -0400
+Message-ID: <52044101.4070805@huawei.com>
+Date: Fri, 9 Aug 2013 09:08:17 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
-        konrad.wilk@oracle.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH  V12 0/14] Paravirtualized ticket spinlocks
-References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
-In-Reply-To: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        <gaoyang.zyh@taobao.com>, LKML <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: stable: a59f4e079d19464eebb9b06513a1d4f55fdae5ba needs backport
+ ?
+References: <51FB7DF5.8030600@huawei.com> <20130802111455.GA29304@gmail.com> <520319CF.5000603@huawei.com> <20130809000008.GD12615@kroah.com>
+In-Reply-To: <20130809000008.GD12615@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kbuild test bot is reporting some pretty serious errors for this
-patchset.  I think these are serious enough that the patchset will need
-to be respun.
+On 2013/8/9 8:00, Greg Kroah-Hartman wrote:
+> On Thu, Aug 08, 2013 at 12:08:47PM +0800, Li Zefan wrote:
+>> Hi Greg,
+>>
+>> Could you queue this commit for 3.0 and 3.4? It has been acked by Ingo.
+> 
+> I've already done so, please look at the stable-queue.
+> 
 
-	-hpa
+Oh, I see it now. I was cced with other patches but not this one, so
+I thought it was overlooked.
 
