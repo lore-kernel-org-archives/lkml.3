@@ -1,98 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967208Ab3HIFy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 01:54:28 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49779 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966964Ab3HIFy0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 01:54:26 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <520483F7.9010408@jp.fujitsu.com>
-Date: Fri, 9 Aug 2013 14:53:59 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-CC: <rafael.j.wysocki@intel.com>, <toshi.kani@hp.com>,
-        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI, cpu hotplug: move try_offline_node() after acpi_unmap_lsapic()
-References: <5200CBBF.1090904@jp.fujitsu.com> <52045747.2060207@cn.fujitsu.com>
-In-Reply-To: <52045747.2060207@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+	id S967227Ab3HIF5K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 01:57:10 -0400
+Received: from f416.i.mail.ru ([185.5.136.87]:52938 "EHLO f416.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966964Ab3HIF5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 01:57:08 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?R3VlbnRlciBSb2Vjaw==?= <linux@roeck-us.net>
+Cc: =?UTF-8?B?TWFyayBCcm93bg==?= <broonie@kernel.org>,
+        =?UTF-8?B?V2VpIE5p?= <wni@nvidia.com>, swarren@wwwdotorg.org,
+        linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        khali@linux-fr.org, MLongnecker@nvidia.com,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: =?UTF-8?B?UHJvcG9zYWw6IEkyQyBkZXZpY2UgcG93ZXIgKFdhczogaHdtb246IChsbTkw?=
+ =?UTF-8?B?KSBBZGQgcG93ZXIgY29udHJvbCk=?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [217.119.30.118]
+Date: Fri, 09 Aug 2013 09:57:00 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1376027820.695103970@f416.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+In-Reply-To: <52040DE2.50201@roeck-us.net>
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
+ <20130808211825.GN6427@sirena.org.uk>
+ <52040DE2.50201@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r795vF3d007938
 
-(2013/08/09 11:43), Gu Zheng wrote:
-> Hi Ishimatsu-san,
-> On 08/06/2013 06:11 PM, Yasuaki Ishimatsu wrote:
-> 
->> try_offline_node() checks that all cpus related with removed node have been
->> removed by using cpu_present_bits. If all cpus related with removed node have
->> been removed, try_offline_node() clears the node information.
->>
->> But try_offline_node() called from acpi_processor_remove() never clears
->> the node information. For disabling cpu_present_bits, acpi_unmap_lsapic()
->> need be called. But acpi_unmap_lsapic() is called after try_offline_node()
->> runs. So when try_offline_node() runs, the cpu's cpu_present_bits is always
->> set.
->>
->> This patch moves try_offline_node() after acpi_unmap_lsapic().
-> 
-> It works well.
-> 
->>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> 
-> Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Hi all.
 
-Thank you for testing.
+Instead of adding the support of regulators in each device, let's think about
+whether it is possible to create a global regulator for any device on the I2C bus.
 
-Thanks,
-Yasuaki Ishimatsu
+I see it like this:
+We add an extra field in the i2c_board_info structure "power_name" and handle
+it in the i2c_device_{probe/remove} functions.
 
-> 
-> Thanks,
-> Gu
-> 
->> ---
->>   drivers/acpi/acpi_processor.c |    3 ++-
->>   1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
->> index fd6c51c..5a74a9c 100644
->> --- a/drivers/acpi/acpi_processor.c
->> +++ b/drivers/acpi/acpi_processor.c
->> @@ -451,7 +451,6 @@ static void acpi_processor_remove(struct acpi_device *device)
->>   	/* Clean up. */
->>   	per_cpu(processor_device_array, pr->id) = NULL;
->>   	per_cpu(processors, pr->id) = NULL;
->> -	try_offline_node(cpu_to_node(pr->id));
->>
->>   	/* Remove the CPU. */
->>   	get_online_cpus();
->> @@ -459,6 +458,8 @@ static void acpi_processor_remove(struct acpi_device *device)
->>   	acpi_unmap_lsapic(pr->id);
->>   	put_online_cpus();
->>
->> +	try_offline_node(cpu_to_node(pr->id));
->> +
->>    out:
->>   	free_cpumask_var(pr->throttling.shared_cpu_map);
->>   	kfree(pr);
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
-> 
+The question remains how to maintain such regulator in the PM functions,
+but we can discuss it.
 
+Changes like this, will remove existing regulators from drivers and allows to
+use power regulator for any I2C device.
+If such idea is good, such changes could be made to other devices (SPI, w1, etc.).
+Thanks.
 
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
