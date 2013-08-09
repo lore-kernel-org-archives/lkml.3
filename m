@@ -1,131 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967958Ab3HIPdf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:33:35 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:2652 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965056Ab3HIPdM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:33:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 09 Aug 2013 08:33:12 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <akpm@linux-foundation.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
-        <gg@slimlogic.co.uk>, <kishon@ti.com>, <swarren@nvidia.com>,
-        <pawel.moll@arm.com>, <Mark.Rutland@arm.com>,
-        <ian.campbell@citrix.com>, <broonie@kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] drivers/rtc/rtc-palmas.c: rename charging dt property name
-Date: Fri, 9 Aug 2013 21:17:10 +0530
-Message-ID: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S967945Ab3HIPde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:33:34 -0400
+Received: from mout.gmx.net ([212.227.17.21]:50994 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965059Ab3HIPda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 11:33:30 -0400
+Date: Fri, 9 Aug 2013 17:33:26 +0200
+From: Michael Brunner <mibru@gmx.de>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Kevin Strasser <strassek@engr.orst.edu>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Chris Healy <chealy@imsco-us.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org
+Subject: [PATCH] gpio: Fix bit masking in Kontron PLD GPIO driver
+Message-ID: <20130809173326.75aed3b6@mail.gmx.de>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:aOdLqfp7dmzyhcbgyg7GBPEtEQRZGAOWpUmRsfDNk87qhj+w33D
+ 6O1LlmZt9AFxJ8xzzAYqoZOjQRxIoF3WaIYf8dXQU8VsU/abvvV1K9n/XQ3ntWSp4UF7l8r
+ gQbwRbzR3iQbXwrMNKS3Sfai64If7rrWQlpCDgVYaldmwe4sj5DNYyAFQqRcpMas+qlwIab
+ 0IdY2Z0oeJSFuwHOkxsig==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Renaming the charging property names to have more meaningful:
+This patch fixes the bit masking within the GPIO driver. The masking is
+basically done twice which causes the wrong GPIOs to be addressed.
 
-Renaming property "ti,back-battery-charge-enable" to "ti,backup-battery-chargeable"
-to tells OS that attahced battery is chargeable and OS can do charging.
-
-Renaming property "ti,back-battery-charge-low-current" to
-"ti,backup-battery-charge-high-current" for safe configuration as maximum charging current
-of battery depends on battery type and overcurrent charging can damage the battery. So
-enable the high current charging only if this property is available.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
 ---
-The patch V4 version of the change
-[PATCH V4] drivers/rtc/rtc-palmas.c: support for backup battery charging
-is already applied but still the discussion is going on the property name.
+ drivers/gpio/gpio-kempld.c |   24 +++++++++---------------
+ 1 file changed, 9 insertions(+), 15 deletions(-)
 
-To correct the property name, I am sending this patch on top of above patch
-as per discussion on above patch.
-
- .../devicetree/bindings/rtc/rtc-palmas.txt         |   21 +++++++++++--------
- drivers/rtc/rtc-palmas.c                           |   14 ++++++------
- 2 files changed, 19 insertions(+), 16 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-index 41bb445..8ef7660 100644
---- a/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-+++ b/Documentation/devicetree/bindings/rtc/rtc-palmas.txt
-@@ -7,13 +7,16 @@ Required properties:
- - interrupts: Interrupt number of RTC submodule on device.
+diff --git a/drivers/gpio/gpio-kempld.c b/drivers/gpio/gpio-kempld.c
+index d3ed563..6118b66 100644
+--- a/drivers/gpio/gpio-kempld.c
++++ b/drivers/gpio/gpio-kempld.c
+@@ -46,9 +46,9 @@ static void kempld_gpio_bitop(struct kempld_device_data *pld,
  
- Optional properties:
--- ti,back-battery-charge-enable: The Palmas series device like TPS65913 or
--	TPS80036 supports the battery backup for powering the RTC when main
--	battery is removed or in very low power state. This flag will enable
--	the backup battery charging.
--- ti,back-battery-charge-low-current: Configure lower charging current. Device
--	supports the charging current as < 100mA or >100mA. Low current will
--	set as <100mA.
-+- ti,backup-battery-chargeable: The Palmas series device like TPS65913 or
-+	TPS80036 supports the backup battery for powering the RTC when main
-+	battery is removed or in very low power state. The backup battery
-+	can be chargeable or non-chargeable. This flag will tells whether
-+	battery is chargeable or not. If charging battery then driver can
-+	enable the charging.
-+- ti,backup-battery-charge-high-current: Enable high current charging in
-+	backup battery. Device supports the < 100mA and > 100mA charging.
-+	The high current will be > 100mA. Absence of this property will
-+	charge battery to lower current i.e. < 100mA.
+        status = kempld_read8(pld, reg);
+        if (val)
+-               status |= (1 << bit);
++               status |= KEMPLD_GPIO_MASK(bit);
+        else
+-               status &= ~(1 << bit);
++               status &= ~KEMPLD_GPIO_MASK(bit);
+        kempld_write8(pld, reg, status);
+ }
  
- Example:
- 	palmas: tps65913@58 {
-@@ -22,8 +25,8 @@ Example:
- 			compatible = "ti,palmas-rtc";
- 			interrupt-parent = <&palmas>;
- 			interrupts = <8 0>;
--			ti,back-battery-charge-enable;
--			ti,back-battery-charge-low-current;
-+			ti,backup-battery-chargeable;
-+			ti,backup-battery-charge-high-current;
- 		};
- 		...
- 	};
-diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
-index adb6e71..fffb7d3 100644
---- a/drivers/rtc/rtc-palmas.c
-+++ b/drivers/rtc/rtc-palmas.c
-@@ -239,13 +239,13 @@ static int palmas_rtc_probe(struct platform_device *pdev)
- 	struct palmas_rtc *palmas_rtc = NULL;
- 	int ret;
- 	bool enable_bb_charging = false;
--	bool low_bb_charging;
-+	bool high_bb_charging;
+@@ -60,7 +60,7 @@ static int kempld_gpio_get_bit(struct kempld_device_data *pld, u8 reg, u8 bit)
+        status = kempld_read8(pld, reg);
+        kempld_release_mutex(pld);
  
- 	if (pdev->dev.of_node) {
- 		enable_bb_charging = of_property_read_bool(pdev->dev.of_node,
--					"ti,back-battery-charge-enable");
--		low_bb_charging = of_property_read_bool(pdev->dev.of_node,
--					"ti,back-battery-charge-low-current");
-+					"ti,backup-battery-chargeable");
-+		high_bb_charging = of_property_read_bool(pdev->dev.of_node,
-+					"ti,backup-battery-charge-high-current");
- 	}
+-       return !!(status & (1 << bit));
++       return !!(status & KEMPLD_GPIO_MASK(bit));
+ }
  
- 	palmas_rtc = devm_kzalloc(&pdev->dev, sizeof(struct palmas_rtc),
-@@ -264,10 +264,10 @@ static int palmas_rtc_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, palmas_rtc);
+ static int kempld_gpio_get(struct gpio_chip *chip, unsigned offset)
+@@ -69,8 +69,7 @@ static int kempld_gpio_get(struct gpio_chip *chip, unsigned offset)
+                = container_of(chip, struct kempld_gpio_data, chip);
+        struct kempld_device_data *pld = gpio->pld;
  
- 	if (enable_bb_charging) {
--		unsigned reg = 0;
-+		unsigned reg = PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
+-       return kempld_gpio_get_bit(pld, KEMPLD_GPIO_LVL_NUM(offset),
+-                                  KEMPLD_GPIO_MASK(offset));
++       return kempld_gpio_get_bit(pld, KEMPLD_GPIO_LVL_NUM(offset), offset);
+ }
  
--		if (low_bb_charging)
--			reg |= PALMAS_BACKUP_BATTERY_CTRL_BBS_BBC_LOW_ICHRG;
-+		if (high_bb_charging)
-+			reg = 0;
+ static void kempld_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+@@ -80,8 +79,7 @@ static void kempld_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+        struct kempld_device_data *pld = gpio->pld;
  
- 		ret = palmas_update_bits(palmas, PALMAS_PMU_CONTROL_BASE,
- 			PALMAS_BACKUP_BATTERY_CTRL,
--- 
-1.7.1.1
-
+        kempld_get_mutex(pld);
+-       kempld_gpio_bitop(pld, KEMPLD_GPIO_LVL_NUM(offset),
+-                         KEMPLD_GPIO_MASK(offset), value);
++       kempld_gpio_bitop(pld, KEMPLD_GPIO_LVL_NUM(offset), offset, value);
+        kempld_release_mutex(pld);
+ }
+ 
+@@ -92,8 +90,7 @@ static int kempld_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+        struct kempld_device_data *pld = gpio->pld;
+ 
+        kempld_get_mutex(pld);
+-       kempld_gpio_bitop(pld, KEMPLD_GPIO_DIR_NUM(offset),
+-                         KEMPLD_GPIO_MASK(offset), 0);
++       kempld_gpio_bitop(pld, KEMPLD_GPIO_DIR_NUM(offset), offset, 0);
+        kempld_release_mutex(pld);
+ 
+        return 0;
+@@ -107,10 +104,8 @@ static int kempld_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
+        struct kempld_device_data *pld = gpio->pld;
+ 
+        kempld_get_mutex(pld);
+-       kempld_gpio_bitop(pld, KEMPLD_GPIO_LVL_NUM(offset),
+-                         KEMPLD_GPIO_MASK(offset), value);
+-       kempld_gpio_bitop(pld, KEMPLD_GPIO_DIR_NUM(offset),
+-                         KEMPLD_GPIO_MASK(offset), 1);
++       kempld_gpio_bitop(pld, KEMPLD_GPIO_LVL_NUM(offset), offset, value);
++       kempld_gpio_bitop(pld, KEMPLD_GPIO_DIR_NUM(offset), offset, 1);
+        kempld_release_mutex(pld);
+ 
+        return 0;
+@@ -122,8 +117,7 @@ static int kempld_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
+                = container_of(chip, struct kempld_gpio_data, chip);
+        struct kempld_device_data *pld = gpio->pld;
+ 
+-       return kempld_gpio_get_bit(pld, KEMPLD_GPIO_DIR_NUM(offset),
+-                                  KEMPLD_GPIO_MASK(offset));
++       return kempld_gpio_get_bit(pld, KEMPLD_GPIO_DIR_NUM(offset), offset);
+ }
+ 
+ static int kempld_gpio_pincount(struct kempld_device_data *pld)
