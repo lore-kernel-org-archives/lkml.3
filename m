@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030783Ab3HITKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:10:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36651 "EHLO
+	id S1030773Ab3HITLd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:11:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36657 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030717Ab3HITKD (ORCPT
+	with ESMTP id S1030485Ab3HITLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:10:03 -0400
-Date: Fri, 9 Aug 2013 12:10:02 -0700
+	Fri, 9 Aug 2013 15:11:31 -0400
+Date: Fri, 9 Aug 2013 12:11:30 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
 Subject: Re: [ 000/102] 3.10.6-stable review
-Message-ID: <20130809191002.GC10130@kroah.com>
+Message-ID: <20130809191130.GD10130@kroah.com>
 References: <20130809015010.208118575@linuxfoundation.org>
- <B8EFE96D1287C24090BAD9D858E15E61761C23@sisaex02sj>
+ <520492F3.1050806@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E61761C23@sisaex02sj>
+In-Reply-To: <520492F3.1050806@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 02:42:24PM +0000, Shuah Khan wrote:
-> On 08/09/2013 07:54 AM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.10.6 release.
-> > There are 102 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
+On Thu, Aug 08, 2013 at 11:57:55PM -0700, Guenter Roeck wrote:
+> On 08/08/2013 06:56 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.10.6 release.
+> >There are 102 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
 > >
-> > Responses should be made by Sun Aug 11 01:46:31 UTC 2013.
-> > Anything received after that time might be too late.
+> >Responses should be made by Sun Aug 11 01:46:31 UTC 2013.
+> >Anything received after that time might be too late.
 > >
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.6-rc1.gz
-> > and the diffstat can be found below.
-> >
-> > thanks,
-> >
-> > greg k-h
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.6-rc1.gz
+> >and the diffstat can be found below.
 > >
 > 
-> I don't see the new stable release patches on
+> Cross build results:
+> 	Total builds: 69 Total build errors: 2
 > 
-> www.kernel.org/pub/linux/kernel/v3.0/stable-review/
+> Details:
+> 	http://server.roeck-us.net:8010/builders/stable-queue-3.10/builds/47/steps/shell/logs/stdio/text
 > 
-> Others were able to download last night as I can see from the test 
-> responses. Something must have happened. Tried accessing with ftp client 
-> as well.
+> Same results as before, except that I dropped a couple of builds and added some others.
 
-No, the patches never made it there, I think people were testing based
-on the git tree.
+Thanks for testing.
 
-kernel.org is now fixed, and the patches should be there within a few
-minutes.
+> The failing builds are arm:allmodconfig and mips:allmodconfig.
+> For both, the errors don't exist in mainline and should be trivial to fix in case anyone is interested.
+> 
+> arm:
+> 	FATAL: modpost: GPL-incompatible module bcm2835-rng.ko uses GPL-only symbol 'platform_driver_unregister'
+> 
+> [This one has been fixed upstream with commit 22e8099f4f6621b8d165e238cdef2a1cf655e159. Might be worthwhile
+>  adding it to -stable]
+
+Yes, I've now queued it up, thanks.
+
+> mips:
+> 	drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of function 'pci_iomap'
+> 	drivers/net/ethernet/3com/3c59x.c:1044:3: error: implicit declaration of function 'pci_iounmap'
+> 
+> [no idea why this works upstream]
+
+Odd.  If someone cares about MIPS I hope I'll get a fix for it :)
 
 thanks,
 
