@@ -1,69 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934292Ab3HIKFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:05:09 -0400
-Received: from smtp-out-009.synserver.de ([212.40.185.9]:1177 "EHLO
-	smtp-out-008.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934235Ab3HIKFI (ORCPT
+	id S1754917Ab3HIKHT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:07:19 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:54335 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab3HIKHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:05:08 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 13192
-Message-ID: <5204BF06.3060806@metafoo.de>
-Date: Fri, 09 Aug 2013 12:05:58 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Fri, 9 Aug 2013 06:07:17 -0400
+Message-ID: <5204BF4D.4000707@hitachi.com>
+Date: Fri, 09 Aug 2013 19:07:09 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Mark Brown <broonie@kernel.org>, Jean-Francois Moine <moinejf@free.fr>,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [alsa-devel] [PATCH v4 1/1] ASoc: kirkwood: add DT support to
- the mvebu audio subsystem
-References: <20130808132201.2610aef3@armhf> <5204A716.6070507@gmail.com> <20130809091953.GO6427@sirena.org.uk> <5204B7A6.9050907@gmail.com>
-In-Reply-To: <5204B7A6.9050907@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 11/13] tracing/kprobes: Add priv argument to fetch functions
+References: <1376037909-17797-1-git-send-email-namhyung@kernel.org> <1376037909-17797-12-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1376037909-17797-12-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 11:34 AM, Sebastian Hesselbarth wrote:
-> On 08/09/13 11:19, Mark Brown wrote:
->> On Fri, Aug 09, 2013 at 10:23:50AM +0200, Sebastian Hesselbarth wrote:
->>> On 08/08/2013 01:22 PM, Jean-Francois Moine wrote:
->>
->>>> +i2s1: audio-controller@b4000 {
->>>> +    compatible = "mrvl,mvebu-audio";
->>>> +    reg = <0xb4000 0x2210>;
->>>> +    interrupts = <21>, <22>;
->>>> +    clocks = <&gate_clk 13>;
->>>> +    clock-names = "internal";
->>>> +};
->>
->>> Also we will need some phandle reference to the audio codec here. As
->>> this property is ongoing work in ASoC core, I suggest we wait for it
->>> and propose a binding afterwards.
->>
->> No, as discussed this should be in the binding for the audio subsystem
->> not in the binding for an individual component in that subsystem.
->>
+(2013/08/09 17:45), Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> Mark,
+> This argument is for passing private data structure to each fetch
+> function and will be used by uprobes.
+
+OK, I just concern about overhead, but yeah, these fetch functions
+are not optimized yet. that's another story. :)
+I'd rather increase flexibility in this series.
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you!
+
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/trace/trace_kprobe.c | 32 ++++++++++++++++++--------------
+>  kernel/trace/trace_probe.c  | 24 ++++++++++++------------
+>  kernel/trace/trace_probe.h  | 19 ++++++++++---------
+>  kernel/trace/trace_uprobe.c |  8 ++++----
+>  4 files changed, 44 insertions(+), 39 deletions(-)
 > 
-> I do understand there may be SoCs requiring sophisticated extra audio
-> nodes, but Marvell SoCs don't. I prefer having a single node for the
-> i2s controller *and* exploit the audio subsystem properties from that.
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index e3f798e41820..01bf5c879144 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -740,7 +740,7 @@ static const struct file_operations kprobe_profile_ops = {
+>   */
+>  #define DEFINE_FETCH_stack(type)					\
+>  static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
+> -					  void *offset, void *dest)	\
+> +				  void *offset, void *dest, void *priv) \
+>  {									\
+>  	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
+>  				(unsigned int)((unsigned long)offset));	\
+> @@ -752,7 +752,7 @@ DEFINE_BASIC_FETCH_FUNCS(stack)
+>  
+>  #define DEFINE_FETCH_memory(type)					\
+>  static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
+> -					  void *addr, void *dest)	\
+> +				    void *addr, void *dest, void *priv) \
+>  {									\
+>  	type retval;							\
+>  	if (probe_kernel_address(addr, retval))				\
+> @@ -766,7 +766,7 @@ DEFINE_BASIC_FETCH_FUNCS(memory)
+>   * length and relative data location.
+>   */
+>  static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+> -					       void *addr, void *dest)
+> +					void *addr, void *dest, void *priv)
+>  {
+>  	long ret;
+>  	int maxlen = get_rloc_len(*(u32 *)dest);
+> @@ -803,7 +803,7 @@ static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+>  
+>  /* Return the length of string -- including null terminal byte */
+>  static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+> -						    void *addr, void *dest)
+> +					   void *addr, void *dest, void *priv)
+>  {
+>  	mm_segment_t old_fs;
+>  	int ret, len = 0;
+> @@ -874,11 +874,11 @@ struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
+>  
+>  #define DEFINE_FETCH_symbol(type)					\
+>  __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
+> -					  void *data, void *dest)	\
+> +				    void *data, void *dest, void *priv)	\
+>  {									\
+>  	struct symbol_cache *sc = data;					\
+>  	if (sc->addr)							\
+> -		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
+> +		fetch_memory_##type(regs, (void *)sc->addr, dest, priv);\
+>  	else								\
+>  		*(type *)dest = 0;					\
+>  }
+> @@ -924,7 +924,7 @@ __kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs,
+>  	local_save_flags(irq_flags);
+>  	pc = preempt_count();
+>  
+> -	dsize = __get_data_size(&tp->p, regs);
+> +	dsize = __get_data_size(&tp->p, regs, NULL);
+>  	size = sizeof(*entry) + tp->p.size + dsize;
+>  
+>  	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
+> @@ -935,7 +935,8 @@ __kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs,
+>  
+>  	entry = ring_buffer_event_data(event);
+>  	entry->ip = (unsigned long)tp->rp.kp.addr;
+> -	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
+> +	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize,
+> +			 NULL);
+>  
+>  	if (!filter_current_check_discard(buffer, call, entry, event))
+>  		trace_buffer_unlock_commit_regs(buffer, event,
+> @@ -972,7 +973,7 @@ __kretprobe_trace_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
+>  	local_save_flags(irq_flags);
+>  	pc = preempt_count();
+>  
+> -	dsize = __get_data_size(&tp->p, regs);
+> +	dsize = __get_data_size(&tp->p, regs, NULL);
+>  	size = sizeof(*entry) + tp->p.size + dsize;
+>  
+>  	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
+> @@ -984,7 +985,8 @@ __kretprobe_trace_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
+>  	entry = ring_buffer_event_data(event);
+>  	entry->func = (unsigned long)tp->rp.kp.addr;
+>  	entry->ret_ip = (unsigned long)ri->ret_addr;
+> -	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
+> +	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize,
+> +			 NULL);
+>  
+>  	if (!filter_current_check_discard(buffer, call, entry, event))
+>  		trace_buffer_unlock_commit_regs(buffer, event,
+> @@ -1144,7 +1146,7 @@ kprobe_perf_func(struct trace_kprobe *tp, struct pt_regs *regs)
+>  	if (hlist_empty(head))
+>  		return;
+>  
+> -	dsize = __get_data_size(&tp->p, regs);
+> +	dsize = __get_data_size(&tp->p, regs, NULL);
+>  	__size = sizeof(*entry) + tp->p.size + dsize;
+>  	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+>  	size -= sizeof(u32);
+> @@ -1155,7 +1157,8 @@ kprobe_perf_func(struct trace_kprobe *tp, struct pt_regs *regs)
+>  
+>  	entry->ip = (unsigned long)tp->rp.kp.addr;
+>  	memset(&entry[1], 0, dsize);
+> -	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
+> +	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize,
+> +			 NULL);
+>  	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
+>  }
+>  
+> @@ -1174,7 +1177,7 @@ kretprobe_perf_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
+>  	if (hlist_empty(head))
+>  		return;
+>  
+> -	dsize = __get_data_size(&tp->p, regs);
+> +	dsize = __get_data_size(&tp->p, regs, NULL);
+>  	__size = sizeof(*entry) + tp->p.size + dsize;
+>  	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+>  	size -= sizeof(u32);
+> @@ -1185,7 +1188,8 @@ kretprobe_perf_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
+>  
+>  	entry->func = (unsigned long)tp->rp.kp.addr;
+>  	entry->ret_ip = (unsigned long)ri->ret_addr;
+> -	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
+> +	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize,
+> +			 NULL);
+>  	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
+>  }
+>  #endif	/* CONFIG_PERF_EVENTS */
+> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+> index 1ab83d4c7775..eaee44d5d9d1 100644
+> --- a/kernel/trace/trace_probe.c
+> +++ b/kernel/trace/trace_probe.c
+> @@ -78,7 +78,7 @@ const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
+>  /* Data fetch function templates */
+>  #define DEFINE_FETCH_reg(type)						\
+>  __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,		\
+> -					void *offset, void *dest)	\
+> +				  void *offset, void *dest, void *priv)	\
+>  {									\
+>  	*(type *)dest = (type)regs_get_register(regs,			\
+>  				(unsigned int)((unsigned long)offset));	\
+> @@ -87,7 +87,7 @@ DEFINE_BASIC_FETCH_FUNCS(reg)
+>  
+>  #define DEFINE_FETCH_retval(type)					\
+>  __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,	\
+> -					  void *dummy, void *dest)	\
+> +				   void *dummy, void *dest, void *priv)	\
+>  {									\
+>  	*(type *)dest = (type)regs_return_value(regs);			\
+>  }
+> @@ -103,14 +103,14 @@ struct deref_fetch_param {
+>  
+>  #define DEFINE_FETCH_deref(type)					\
+>  __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
+> -					    void *data, void *dest)	\
+> +				    void *data, void *dest, void *priv)	\
+>  {									\
+>  	struct deref_fetch_param *dprm = data;				\
+>  	unsigned long addr;						\
+> -	call_fetch(&dprm->orig, regs, &addr);				\
+> +	call_fetch(&dprm->orig, regs, &addr, priv);			\
+>  	if (addr) {							\
+>  		addr += dprm->offset;					\
+> -		dprm->fetch(regs, (void *)addr, dest);			\
+> +		dprm->fetch(regs, (void *)addr, dest, priv);		\
+>  	} else								\
+>  		*(type *)dest = 0;					\
+>  }
+> @@ -118,15 +118,15 @@ DEFINE_BASIC_FETCH_FUNCS(deref)
+>  DEFINE_FETCH_deref(string)
+>  
+>  __kprobes void FETCH_FUNC_NAME(deref, string_size)(struct pt_regs *regs,
+> -						   void *data, void *dest)
+> +					void *data, void *dest, void *priv)
+>  {
+>  	struct deref_fetch_param *dprm = data;
+>  	unsigned long addr;
+>  
+> -	call_fetch(&dprm->orig, regs, &addr);
+> +	call_fetch(&dprm->orig, regs, &addr, priv);
+>  	if (addr && dprm->fetch_size) {
+>  		addr += dprm->offset;
+> -		dprm->fetch_size(regs, (void *)addr, dest);
+> +		dprm->fetch_size(regs, (void *)addr, dest, priv);
+>  	} else
+>  		*(string_size *)dest = 0;
+>  }
+> @@ -156,12 +156,12 @@ struct bitfield_fetch_param {
+>  };
+>  
+>  #define DEFINE_FETCH_bitfield(type)					\
+> -__kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,\
+> -					    void *data, void *dest)	\
+> +__kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,	\
+> +				    void *data, void *dest, void *priv)	\
+>  {									\
+>  	struct bitfield_fetch_param *bprm = data;			\
+>  	type buf = 0;							\
+> -	call_fetch(&bprm->orig, regs, &buf);				\
+> +	call_fetch(&bprm->orig, regs, &buf, priv);			\
+>  	if (buf) {							\
+>  		buf <<= bprm->hi_shift;					\
+>  		buf >>= bprm->low_shift;				\
+> @@ -249,7 +249,7 @@ fail:
+>  
+>  /* Special function : only accept unsigned long */
+>  static __kprobes void fetch_stack_address(struct pt_regs *regs,
+> -					void *dummy, void *dest)
+> +					  void *dummy, void *dest, void *priv)
+>  {
+>  	*(unsigned long *)dest = kernel_stack_pointer(regs);
+>  }
+> diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+> index 325989f24dbf..fc7edf3749ef 100644
+> --- a/kernel/trace/trace_probe.h
+> +++ b/kernel/trace/trace_probe.h
+> @@ -98,7 +98,7 @@ typedef u32 string;
+>  typedef u32 string_size;
+>  
+>  /* Data fetch function type */
+> -typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
+> +typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *, void *);
+>  /* Printing function type */
+>  typedef int (*print_type_func_t)(struct trace_seq *, const char *, void *, void *);
+>  
+> @@ -182,7 +182,8 @@ static inline bool trace_probe_is_registered(struct trace_probe *tp)
+>  #define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
+>  
+>  #define DECLARE_FETCH_FUNC(method, type)				\
+> -extern void FETCH_FUNC_NAME(method, type)(struct pt_regs *, void *, void *)
+> +extern void FETCH_FUNC_NAME(method, type)(struct pt_regs *, void *,	\
+> +					  void *, void *)
+>  
+>  #define DECLARE_BASIC_FETCH_FUNCS(method) 	\
+>  DECLARE_FETCH_FUNC(method, u8);	  		\
+> @@ -264,9 +265,9 @@ ASSIGN_FETCH_FUNC(bitfield, ftype),			\
+>  extern const struct fetch_type kprobes_fetch_type_table[];
+>  
+>  static inline __kprobes void call_fetch(struct fetch_param *fprm,
+> -				 struct pt_regs *regs, void *dest)
+> +				 struct pt_regs *regs, void *dest, void *priv)
+>  {
+> -	return fprm->fn(regs, fprm->data, dest);
+> +	return fprm->fn(regs, fprm->data, dest, priv);
+>  }
+>  
+>  struct symbol_cache;
+> @@ -305,14 +306,14 @@ extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
+>  
+>  /* Sum up total data length for dynamic arraies (strings) */
+>  static inline __kprobes int
+> -__get_data_size(struct trace_probe *tp, struct pt_regs *regs)
+> +__get_data_size(struct trace_probe *tp, struct pt_regs *regs, void *priv)
+>  {
+>  	int i, ret = 0;
+>  	u32 len;
+>  
+>  	for (i = 0; i < tp->nr_args; i++)
+>  		if (unlikely(tp->args[i].fetch_size.fn)) {
+> -			call_fetch(&tp->args[i].fetch_size, regs, &len);
+> +			call_fetch(&tp->args[i].fetch_size, regs, &len, priv);
+>  			ret += len;
+>  		}
+>  
+> @@ -322,7 +323,7 @@ __get_data_size(struct trace_probe *tp, struct pt_regs *regs)
+>  /* Store the value of each argument */
+>  static inline __kprobes void
+>  store_trace_args(int ent_size, struct trace_probe *tp, struct pt_regs *regs,
+> -		 u8 *data, int maxlen)
+> +		 u8 *data, int maxlen, void *priv)
+>  {
+>  	int i;
+>  	u32 end = tp->size;
+> @@ -337,7 +338,7 @@ store_trace_args(int ent_size, struct trace_probe *tp, struct pt_regs *regs,
+>  			dl = (u32 *)(data + tp->args[i].offset);
+>  			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
+>  			/* Then try to fetch string or dynamic array data */
+> -			call_fetch(&tp->args[i].fetch, regs, dl);
+> +			call_fetch(&tp->args[i].fetch, regs, dl, priv);
+>  			/* Reduce maximum length */
+>  			end += get_rloc_len(*dl);
+>  			maxlen -= get_rloc_len(*dl);
+> @@ -347,7 +348,7 @@ store_trace_args(int ent_size, struct trace_probe *tp, struct pt_regs *regs,
+>  		} else
+>  			/* Just fetching data normally */
+>  			call_fetch(&tp->args[i].fetch, regs,
+> -				   data + tp->args[i].offset);
+> +				   data + tp->args[i].offset, priv);
+>  	}
+>  }
+>  
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 2888b95b063f..2c1c648e75bb 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -520,7 +520,7 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+>  	int size, dsize, esize;
+>  	struct ftrace_event_call *call = &tu->p.call;
+>  
+> -	dsize = __get_data_size(&tu->p, regs);
+> +	dsize = __get_data_size(&tu->p, regs, NULL);
+>  	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+>  
+>  	/*
+> @@ -532,7 +532,7 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+>  	if (tmp == NULL)
+>  		return;
+>  
+> -	store_trace_args(esize, &tu->p, regs, tmp, dsize);
+> +	store_trace_args(esize, &tu->p, regs, tmp, dsize, NULL);
+>  
+>  	size = esize + tu->p.size + dsize;
+>  	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+> @@ -775,7 +775,7 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+>  	int size, dsize, esize;
+>  	int rctx;
+>  
+> -	dsize = __get_data_size(&tu->p, regs);
+> +	dsize = __get_data_size(&tu->p, regs, NULL);
+>  	esize = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+>  
+>  	/*
+> @@ -787,7 +787,7 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+>  	if (tmp == NULL)
+>  		return;
+>  
+> -	store_trace_args(esize, &tu->p, regs, tmp, dsize);
+> +	store_trace_args(esize, &tu->p, regs, tmp, dsize, NULL);
+>  
+>  	size = esize + tu->p.size + dsize;
+>  	size = ALIGN(size + sizeof(u32), sizeof(u64)) - sizeof(u32);
+> 
 
-It's not about SoCs, it's about the board. The audio fabric on a board can
-easily get complex enough to require its own driver. Speakers, mics, jacks
-and jack detection, external amplifiers, bluetooth, baseband, multiple
-CODECs. That's what the audio node describes.
 
-- Lars
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
