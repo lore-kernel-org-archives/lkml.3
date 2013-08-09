@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967984Ab3HIPlm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 11:41:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36929 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965056Ab3HIPlk convert rfc822-to-8bit (ORCPT
+	id S967993Ab3HIPnQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:43:16 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:59896 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967927Ab3HIPnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:41:40 -0400
-Subject: Re: [PATCH] drivers/rtc/rtc-palmas.c: rename charging dt property name
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com>
-Date: Fri, 9 Aug 2013 10:41:42 -0500
-Cc: <akpm@linux-foundation.org>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <rob@landley.net>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
-        <gg@slimlogic.co.uk>, <kishon@ti.com>, <swarren@nvidia.com>,
-        <pawel.moll@arm.com>, <Mark.Rutland@arm.com>,
-        <ian.campbell@citrix.com>, <broonie@kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <429B5799-B625-47E9-A1A5-527FD0D28B3B@codeaurora.org>
-References: <1376063230-22578-1-git-send-email-ldewangan@nvidia.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-X-Mailer: Apple Mail (2.1283)
+	Fri, 9 Aug 2013 11:43:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <001a01ce9505$59c28b20$0d47a160$%jun@samsung.com>
+References: <1373470926-19314-1-git-send-email-dianders@chromium.org>
+	<1375825071-20922-1-git-send-email-dianders@chromium.org>
+	<1375825071-20922-4-git-send-email-dianders@chromium.org>
+	<001a01ce9505$59c28b20$0d47a160$%jun@samsung.com>
+Date: Fri, 9 Aug 2013 08:43:13 -0700
+X-Google-Sender-Auth: qJWe4i-o3WSnFRpCo-stk0X8GYM
+Message-ID: <CAD=FV=VO=50uMXfwY5iNa+xiamRiHTSpTMXs+EdMeUTawkeyqw@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] mmc: dw_mmc: Always setup the bus after suspend/resume
+From: Doug Anderson <dianders@chromium.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Seungwon,
 
-On Aug 9, 2013, at 10:47 AM, Laxman Dewangan wrote:
+On Fri, Aug 9, 2013 at 6:35 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> On Wed, August 07, 2013, Doug Anderson wrote:
+>> After suspend/resume all of the dw_mmc registers are reset to
+>> defaults.  We restore most of them, but specifically don't setup the
+>> clock registers after resume unless we've got a powered card.  Things
+>> still work because the core will eventually call set_ios() and we'll
+>> set things up.
+>
+> Hmm, I didn't get the need of this call during resume.
+> I think set_ios is only valid where core layer calls.
+> Besides, important things is ios's parameters.
+> If suspend has finished successfully, last call of set_ios() is from mmc_power_off().
+> On seeing fields of 'mmc->ios' stored last, these values aren't proper in resume phase.
+> Please check mmc_power_off() function.
+> In case MMC_PM_KEEP_POWER it could be kept.
 
-> Renaming the charging property names to have more meaningful:
-> 
-> Renaming property "ti,back-battery-charge-enable" to "ti,backup-battery-chargeable"
-> to tells OS that attahced battery is chargeable and OS can do charging.
-> 
-> Renaming property "ti,back-battery-charge-low-current" to
-> "ti,backup-battery-charge-high-current" for safe configuration as maximum charging current
-> of battery depends on battery type and overcurrent charging can damage the battery. So
-> enable the high current charging only if this property is available.
-> 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-> The patch V4 version of the change
-> [PATCH V4] drivers/rtc/rtc-palmas.c: support for backup battery charging
-> is already applied but still the discussion is going on the property name.
-> 
-> To correct the property name, I am sending this patch on top of above patch
-> as per discussion on above patch.
-> 
-> .../devicetree/bindings/rtc/rtc-palmas.txt         |   21 +++++++++++--------
-> drivers/rtc/rtc-palmas.c                           |   14 ++++++------
-> 2 files changed, 19 insertions(+), 16 deletions(-)
+Most of my reasoning has to do with the fact that the state of the
+system after suspend/resume should not be significantly different than
+the state of the system before suspend/resume.  If the state of the
+system is different in the two cases it points out potential problems
+or inefficiencies.
 
-Acked-by: Kumar Gala <galak@codeaurora.org>
+To make this more concrete:
 
-- k
+1. Boot up a system with no card in the SD Card slot.
+2. Note down the value of registers like CLKDIV, CLKENA, etc.
+3. Suspend / resume (S2R)
+4. Check the values of CLKDIV, CLKENA, etc.
 
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+You will notice that they are different.  This is a bad sign and can
+be a source of bugs (though I don't know of any).  ...or it could mean
+that power draw is different (could be better, could be worse) after a
+suspend/resume cycle.
 
+
+Said another way, if the value of CLKDIV, CLKENA, etc is not important
+when a card is not inserted, why do they get initialized at boot time?
+
+
+In general, I think that the mmc core code makes the assumption that
+it's up to the driver to make sure that its state is preserved across
+S2R.  For dw_mmc the driver doesn't do the "brute force" that some
+drivers do of just saving and restoring all registers using a copy
+loop.  Instead, the dw_mmc driver runs code that tries to set the
+state back to something reasonable.  Without my patch the dw_mmc
+driver doesn't run any code that restores these registers.
+dw_mci_set_ios() will do so.
+
+Another option would be to forcibly save/restore registers in suspend/resume.
+
+-Doug
