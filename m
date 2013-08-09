@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030347Ab3HICEy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:04:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55883 "EHLO
+	id S1030247Ab3HICFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:05:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55877 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030199Ab3HIB7b (ORCPT
+	with ESMTP id S967713Ab3HIB7a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:31 -0400
+	Thu, 8 Aug 2013 21:59:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 084/102] userns: unshare_userns(&cred) should not populate cred on failure
-Date: Thu,  8 Aug 2013 18:58:00 -0700
-Message-Id: <20130809015030.058683606@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [ 075/102] fanotify: info leak in copy_event_to_user()
+Date: Thu,  8 Aug 2013 18:57:51 -0700
+Message-Id: <20130809015027.920227529@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,55 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 6160968cee8b90a5dd95318d716e31d7775c4ef3 upstream.
+commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f upstream.
 
-unshare_userns(new_cred) does *new_cred = prepare_creds() before
-create_user_ns() which can fail. However, the caller expects that
-it doesn't need to take care of new_cred if unshare_userns() fails.
+The ->reserved field isn't cleared so we leak one byte of stack
+information to userspace.
 
-We could change the single caller, sys_unshare(), but I think it
-would be more clean to avoid the side effects on failure, so with
-this patch unshare_userns() does put_cred() itself and initializes
-*new_cred only if create_user_ns() succeeeds.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/user_namespace.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ fs/notify/fanotify/fanotify_user.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -105,16 +105,21 @@ int create_user_ns(struct cred *new)
- int unshare_userns(unsigned long unshare_flags, struct cred **new_cred)
- {
- 	struct cred *cred;
-+	int err = -ENOMEM;
- 
- 	if (!(unshare_flags & CLONE_NEWUSER))
- 		return 0;
- 
- 	cred = prepare_creds();
--	if (!cred)
--		return -ENOMEM;
-+	if (cred) {
-+		err = create_user_ns(cred);
-+		if (err)
-+			put_cred(cred);
-+		else
-+			*new_cred = cred;
-+	}
- 
--	*new_cred = cred;
--	return create_user_ns(cred);
-+	return err;
- }
- 
- void free_user_ns(struct user_namespace *ns)
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -122,6 +122,7 @@ static int fill_event_metadata(struct fs
+ 	metadata->event_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->vers = FANOTIFY_METADATA_VERSION;
++	metadata->reserved = 0;
+ 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
+ 	metadata->pid = pid_vnr(event->tgid);
+ 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
 
 
