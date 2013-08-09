@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967543Ab3HIGYX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 02:24:23 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:39383 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967319Ab3HIGYU (ORCPT
+	id S967622Ab3HIGY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 02:24:27 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:53312 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967319Ab3HIGYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 02:24:20 -0400
+	Fri, 9 Aug 2013 02:24:25 -0400
+Date: Fri, 9 Aug 2013 02:24:05 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Dan Aloni <alonid@postram.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] netconsole: avoid a crash with multiple sysfs writers
+Message-ID: <20130809062405.GA8031@neilslaptop.think-freely.org>
+References: <1375866164-21933-1-git-send-email-alonid@postram.com>
+ <20130808055032.GA3898@neilslaptop.think-freely.org>
+ <CAOE7D0tj3suE8bnpd4ijL1zVLr83OB28KdRR7OOLkEnDOCM4_A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <62bf3fa5c57dd9155443dedb9116c18e2ac0689e.1374451989.git.joe@perches.com>
-References: <cover.1374451988.git.joe@perches.com> <62bf3fa5c57dd9155443dedb9116c18e2ac0689e.1374451989.git.joe@perches.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Fri, 9 Aug 2013 14:23:59 +0800
-Message-ID: <CAGsJ_4yMB7V1gC9AebUV2z8ZzeWB-AeYpEWWF6AUBSCVff8_9w@mail.gmail.com>
-Subject: Re: [PATCH 13/18] MAINTAINERS: Update sirf patterns
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOE7D0tj3suE8bnpd4ijL1zVLr83OB28KdRR7OOLkEnDOCM4_A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/22 Joe Perches <joe@perches.com>:
-> commit 3370dc916c ("pinctrl:sirf:re-arch and add support for
-> new SiRFatlas6 SoC") moved the files, update the patterns.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> cc: Barry Song <21cnbao@gmail.com>
-> cc: Linus Walleij <linus.walleij@linaro.org>
+On Thu, Aug 08, 2013 at 09:14:31AM +0300, Dan Aloni wrote:
+> On Thu, Aug 8, 2013 at 8:50 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> >
+> > On Wed, Aug 07, 2013 at 12:02:44PM +0300, Dan Aloni wrote:
+> [..]
+> >
+> > > When my 'ifup eth' script was fired multiple times and ran concurrent o> @@ -682,7 +689,11 @@ restart:
+> > >                                * we might sleep in __netpoll_cleanup()
+> > >                                */
+> > >                               spin_unlock_irqrestore(&target_list_lock, flags);
+> > > +
+> > > +                             mutex_lock(&nt->mutex);
+> > >                               __netpoll_cleanup(&nt->np);
+> > > +                             mutex_unlock(&nt->mutex);
+> > > +
+> > NAK, you can't hold a mutex while calling __netpoll_cleanup.  __netpoll_cleanup
+> > may sleep and its illegal to hold a mutex while doing so.
+> > Neil
+> >
+> 
+> To my understanding, it mostly depends on locking order, and having
+> sleeplocks in the outer order and spinlocks in the inner order is
+> valid as long the locking order is not reversed.
+> 
+> Also, drivers/net/team/team.c - another netpoll user, already does the
+> same thing I intended in this patch - it locks the outer team->lock
+> mutex in team_uninit() while calling team_port_del() and then
+> team_port_disable_netpoll() calls __netpoll_cleanup().
+> 
+Sorry, you're right, I was under the impression that you were already in atomic
+context, but as long as you don't have preempt disabled when you try to take the
+mutex in any path, you should be ok.
 
-Acked-by: Barry Song <Baohua.Song@csr.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
 
-> ---
->  MAINTAINERS | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 7622b04..6b24f82 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -813,7 +813,7 @@ F:  arch/arm/mach-prima2/
->  F:     drivers/dma/sirf-dma.c
->  F:     drivers/i2c/busses/i2c-sirf.c
->  F:     drivers/mmc/host/sdhci-sirf.c
-> -F:     drivers/pinctrl/pinctrl-sirf.c
-> +F:     drivers/pinctrl/sirf/
->  F:     drivers/spi/spi-sirf.c
->
->  ARM/EBSA110 MACHINE SUPPORT
-> --
-> 1.8.1.2.459.gbcd45b4.dirty
->
