@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967469Ab3HICWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:22:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55598 "EHLO
+	id S967594Ab3HICWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:22:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55607 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967382Ab3HIB6c (ORCPT
+	with ESMTP id S967375Ab3HIB6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:32 -0400
+	Thu, 8 Aug 2013 21:58:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 015/102] powerpc: VPHN topology change updates all siblings
-Date: Thu,  8 Aug 2013 18:56:51 -0700
-Message-Id: <20130809015013.716233678@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Ashish Sangwan <ashishsangwan2@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 014/102] ARM: 7791/1: a.out: remove partial a.out support
+Date: Thu,  8 Aug 2013 18:56:50 -0700
+Message-Id: <20130809015013.514972396@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -28,155 +28,177 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Jennings <rcj@linux.vnet.ibm.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 3be7db6ab45b21345386d1a466da133b19cde5e4 upstream.
+commit acfdd4b1f7590d02e9bae3b73bdbbc4a31b05d38 upstream.
 
-When an associativity level change is found for one thread, the
-siblings threads need to be updated as well.  This is done today
-for PRRN in stage_topology_update() but is missing for VPHN in
-update_cpu_associativity_changes_mask().  This patch will correctly
-update all thread siblings during a topology change.
+a.out support on ARM requires that argc, argv and envp are passed in
+r0-r2 respectively, which requires hacking load_aout_binary to
+prevent argc being clobbered by the return code. Whilst mainline kernels
+do set the registers up in start_thread, the aout loader has never
+carried the hack in mainline.
 
-Without this patch a topology update can result in a CPU in
-init_sched_groups_power() getting stuck indefinitely in a loop.
+Initialising the registers in this way actually goes against the libc
+expectations for ELF binaries, where argc, argv and envp are passed on
+the stack, with r0 being used to hold a pointer to an exit function for
+cleaning up after the dynamic linker if required. If the pointer is
+NULL, then it is ignored. When execing an ELF binary, Linux currently
+zeroes r0, then sets it to argc and then finally clobbers it with the
+return value of the execve syscall, so we actually end up with:
 
-This loop is built in build_sched_groups(). As a result of the thread
-moving to a node separate from its siblings the struct sched_group will
-have its next pointer set to point to itself rather than the sched_group
-struct of the next thread.  This happens because we have a domain without
-the SD_OVERLAP flag, which is correct, and a topology that doesn't conform
-with reality (threads on the same core assigned to different numa nodes).
-When this list is traversed by init_sched_groups_power() it will reach
-the thread's sched_group structure and loop indefinitely; the cpu will
-be stuck at this point.
+	r0 = 0
+	stack[0] = argc
+	r1 = stack[1] = argv
+	r2 = stack[2] = envp
 
-The bug was exposed when VPHN was enabled in commit b7abef0 (v3.9).
+libc treats r1 and r2 as undefined. The clobbering of r0 by sys_execve
+works for user-spawned threads, but when executing an ELF binary from a
+kernel thread (via call_usermodehelper), the execve is performed on the
+ret_from_fork path, which restores r0 from the saved pt_regs, resulting
+in argc being presented to the C library. This has horrible consequences
+when the application exits, since we have an exit function registered
+using argc, resulting in a jump to hyperspace.
 
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This patch solves the problem by removing the partial a.out support from
+arch/arm/ altogether.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Cc: Ashish Sangwan <ashishsangwan2@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/smp.h |    4 ++
- arch/powerpc/mm/numa.c         |   59 ++++++++++++++++++++++++++++++-----------
- 2 files changed, 48 insertions(+), 15 deletions(-)
+ arch/arm/Kconfig                  |    1 
+ arch/arm/include/asm/a.out-core.h |   45 --------------------------------------
+ arch/arm/include/asm/processor.h  |    4 ---
+ arch/arm/include/uapi/asm/Kbuild  |    1 
+ arch/arm/include/uapi/asm/a.out.h |   34 ----------------------------
+ 5 files changed, 85 deletions(-)
 
---- a/arch/powerpc/include/asm/smp.h
-+++ b/arch/powerpc/include/asm/smp.h
-@@ -145,6 +145,10 @@ extern void __cpu_die(unsigned int cpu);
- #define smp_setup_cpu_maps()
- static inline void inhibit_secondary_onlining(void) {}
- static inline void uninhibit_secondary_onlining(void) {}
-+static inline const struct cpumask *cpu_sibling_mask(int cpu)
-+{
-+	return cpumask_of(cpu);
-+}
- 
- #endif /* CONFIG_SMP */
- 
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -27,6 +27,7 @@
- #include <linux/seq_file.h>
- #include <linux/uaccess.h>
- #include <linux/slab.h>
-+#include <asm/cputhreads.h>
- #include <asm/sparsemem.h>
- #include <asm/prom.h>
- #include <asm/smp.h>
-@@ -1319,7 +1320,8 @@ static int update_cpu_associativity_chan
- 			}
- 		}
- 		if (changed) {
--			cpumask_set_cpu(cpu, changes);
-+			cpumask_or(changes, changes, cpu_sibling_mask(cpu));
-+			cpu = cpu_last_thread_sibling(cpu);
- 		}
- 	}
- 
-@@ -1427,7 +1429,7 @@ static int update_cpu_topology(void *dat
- 	if (!data)
- 		return -EINVAL;
- 
--	cpu = get_cpu();
-+	cpu = smp_processor_id();
- 
- 	for (update = data; update; update = update->next) {
- 		if (cpu != update->cpu)
-@@ -1447,12 +1449,12 @@ static int update_cpu_topology(void *dat
-  */
- int arch_update_cpu_topology(void)
- {
--	unsigned int cpu, changed = 0;
-+	unsigned int cpu, sibling, changed = 0;
- 	struct topology_update_data *updates, *ud;
- 	unsigned int associativity[VPHN_ASSOC_BUFSIZE] = {0};
- 	cpumask_t updated_cpus;
- 	struct device *dev;
--	int weight, i = 0;
-+	int weight, new_nid, i = 0;
- 
- 	weight = cpumask_weight(&cpu_associativity_changes_mask);
- 	if (!weight)
-@@ -1465,19 +1467,46 @@ int arch_update_cpu_topology(void)
- 	cpumask_clear(&updated_cpus);
- 
- 	for_each_cpu(cpu, &cpu_associativity_changes_mask) {
--		ud = &updates[i++];
--		ud->cpu = cpu;
--		vphn_get_associativity(cpu, associativity);
--		ud->new_nid = associativity_to_nid(associativity);
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -19,7 +19,6 @@ config ARM
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
+ 	select HARDIRQS_SW_RESEND
+-	select HAVE_AOUT
+ 	select HAVE_ARCH_JUMP_LABEL if !XIP_KERNEL
+ 	select HAVE_ARCH_KGDB
+ 	select HAVE_ARCH_SECCOMP_FILTER
+--- a/arch/arm/include/asm/a.out-core.h
++++ /dev/null
+@@ -1,45 +0,0 @@
+-/* a.out coredump register dumper
+- *
+- * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
+- * Written by David Howells (dhowells@redhat.com)
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
+- * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
+- */
 -
--		if (ud->new_nid < 0 || !node_online(ud->new_nid))
--			ud->new_nid = first_online_node;
-+		/*
-+		 * If siblings aren't flagged for changes, updates list
-+		 * will be too short. Skip on this update and set for next
-+		 * update.
-+		 */
-+		if (!cpumask_subset(cpu_sibling_mask(cpu),
-+					&cpu_associativity_changes_mask)) {
-+			pr_info("Sibling bits not set for associativity "
-+					"change, cpu%d\n", cpu);
-+			cpumask_or(&cpu_associativity_changes_mask,
-+					&cpu_associativity_changes_mask,
-+					cpu_sibling_mask(cpu));
-+			cpu = cpu_last_thread_sibling(cpu);
-+			continue;
-+		}
+-#ifndef _ASM_A_OUT_CORE_H
+-#define _ASM_A_OUT_CORE_H
+-
+-#ifdef __KERNEL__
+-
+-#include <linux/user.h>
+-#include <linux/elfcore.h>
+-
+-/*
+- * fill in the user structure for an a.out core dump
+- */
+-static inline void aout_dump_thread(struct pt_regs *regs, struct user *dump)
+-{
+-	struct task_struct *tsk = current;
+-
+-	dump->magic = CMAGIC;
+-	dump->start_code = tsk->mm->start_code;
+-	dump->start_stack = regs->ARM_sp & ~(PAGE_SIZE - 1);
+-
+-	dump->u_tsize = (tsk->mm->end_code - tsk->mm->start_code) >> PAGE_SHIFT;
+-	dump->u_dsize = (tsk->mm->brk - tsk->mm->start_data + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	dump->u_ssize = 0;
+-
+-	memset(dump->u_debugreg, 0, sizeof(dump->u_debugreg));
+-
+-	if (dump->start_stack < 0x04000000)
+-		dump->u_ssize = (0x04000000 - dump->start_stack) >> PAGE_SHIFT;
+-
+-	dump->regs = *regs;
+-	dump->u_fpvalid = dump_fpu (regs, &dump->u_fp);
+-}
+-
+-#endif /* __KERNEL__ */
+-#endif /* _ASM_A_OUT_CORE_H */
+--- a/arch/arm/include/asm/processor.h
++++ b/arch/arm/include/asm/processor.h
+@@ -54,7 +54,6 @@ struct thread_struct {
  
--		ud->old_nid = numa_cpu_lookup_table[cpu];
--		cpumask_set_cpu(cpu, &updated_cpus);
-+		/* Use associativity from first thread for all siblings */
-+		vphn_get_associativity(cpu, associativity);
-+		new_nid = associativity_to_nid(associativity);
-+		if (new_nid < 0 || !node_online(new_nid))
-+			new_nid = first_online_node;
-+
-+		if (new_nid == numa_cpu_lookup_table[cpu]) {
-+			cpumask_andnot(&cpu_associativity_changes_mask,
-+					&cpu_associativity_changes_mask,
-+					cpu_sibling_mask(cpu));
-+			cpu = cpu_last_thread_sibling(cpu);
-+			continue;
-+		}
+ #define start_thread(regs,pc,sp)					\
+ ({									\
+-	unsigned long *stack = (unsigned long *)sp;			\
+ 	memset(regs->uregs, 0, sizeof(regs->uregs));			\
+ 	if (current->personality & ADDR_LIMIT_32BIT)			\
+ 		regs->ARM_cpsr = USR_MODE;				\
+@@ -65,9 +64,6 @@ struct thread_struct {
+ 	regs->ARM_cpsr |= PSR_ENDSTATE;					\
+ 	regs->ARM_pc = pc & ~1;		/* pc */			\
+ 	regs->ARM_sp = sp;		/* sp */			\
+-	regs->ARM_r2 = stack[2];	/* r2 (envp) */			\
+-	regs->ARM_r1 = stack[1];	/* r1 (argv) */			\
+-	regs->ARM_r0 = stack[0];	/* r0 (argc) */			\
+ 	nommu_start_thread(regs);					\
+ })
  
--		if (i < weight)
--			ud->next = &updates[i];
-+		for_each_cpu(sibling, cpu_sibling_mask(cpu)) {
-+			ud = &updates[i++];
-+			ud->cpu = sibling;
-+			ud->new_nid = new_nid;
-+			ud->old_nid = numa_cpu_lookup_table[sibling];
-+			cpumask_set_cpu(sibling, &updated_cpus);
-+			if (i < weight)
-+				ud->next = &updates[i];
-+		}
-+		cpu = cpu_last_thread_sibling(cpu);
- 	}
+--- a/arch/arm/include/uapi/asm/Kbuild
++++ b/arch/arm/include/uapi/asm/Kbuild
+@@ -1,7 +1,6 @@
+ # UAPI Header export list
+ include include/uapi/asm-generic/Kbuild.asm
  
- 	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
+-header-y += a.out.h
+ header-y += byteorder.h
+ header-y += fcntl.h
+ header-y += hwcap.h
+--- a/arch/arm/include/uapi/asm/a.out.h
++++ /dev/null
+@@ -1,34 +0,0 @@
+-#ifndef __ARM_A_OUT_H__
+-#define __ARM_A_OUT_H__
+-
+-#include <linux/personality.h>
+-#include <linux/types.h>
+-
+-struct exec
+-{
+-  __u32 a_info;		/* Use macros N_MAGIC, etc for access */
+-  __u32 a_text;		/* length of text, in bytes */
+-  __u32 a_data;		/* length of data, in bytes */
+-  __u32 a_bss;		/* length of uninitialized data area for file, in bytes */
+-  __u32 a_syms;		/* length of symbol table data in file, in bytes */
+-  __u32 a_entry;	/* start address */
+-  __u32 a_trsize;	/* length of relocation info for text, in bytes */
+-  __u32 a_drsize;	/* length of relocation info for data, in bytes */
+-};
+-
+-/*
+- * This is always the same
+- */
+-#define N_TXTADDR(a)	(0x00008000)
+-
+-#define N_TRSIZE(a)	((a).a_trsize)
+-#define N_DRSIZE(a)	((a).a_drsize)
+-#define N_SYMSIZE(a)	((a).a_syms)
+-
+-#define M_ARM 103
+-
+-#ifndef LIBRARY_START_TEXT
+-#define LIBRARY_START_TEXT	(0x00c00000)
+-#endif
+-
+-#endif /* __A_OUT_GNU_H__ */
 
 
