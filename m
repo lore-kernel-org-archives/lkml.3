@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030406Ab3HICHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:07:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55816 "EHLO
+	id S1030392Ab3HICHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:07:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55820 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967701Ab3HIB7T (ORCPT
+	with ESMTP id S967708Ab3HIB7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 21:59:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeremy Eder <jeder@redhat.com>, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 069/102] Revert "cpuidle: Quickly notice prediction failure for repeat mode"
-Date: Thu,  8 Aug 2013 18:57:45 -0700
-Message-Id: <20130809015026.487195983@linuxfoundation.org>
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [ 070/102] PCI: pciehp: Fix null pointer deref when hot-removing SR-IOV device
+Date: Thu,  8 Aug 2013 18:57:46 -0700
+Message-Id: <20130809015026.729024516@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,351 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 148519120c6d1f19ad53349683aeae9f228b0b8d upstream.
+commit 29ed1f29b68a8395d5679b3c4e38352b617b3236 upstream.
 
-Revert commit 69a37bea (cpuidle: Quickly notice prediction failure for
-repeat mode), because it has been identified as the source of a
-significant performance regression in v3.8 and later as explained by
-Jeremy Eder:
+Hot-removing a device with SR-IOV enabled causes a null pointer dereference
+in v3.9 and v3.10.
 
-  We believe we've identified a particular commit to the cpuidle code
-  that seems to be impacting performance of variety of workloads.
-  The simplest way to reproduce is using netperf TCP_RR test, so
-  we're using that, on a pair of Sandy Bridge based servers.  We also
-  have data from a large database setup where performance is also
-  measurably/positively impacted, though that test data isn't easily
-  share-able.
+This is a regression caused by ba518e3c17 ("PCI: pciehp: Iterate over all
+devices in slot, not functions 0-7").  When we iterate over the
+bus->devices list, we first remove the PF, which also removes all the VFs
+from the list.  Then the list iterator blows up because more than just the
+current entry was removed from the list.
 
-  Included below are test results from 3 test kernels:
+ac205b7bb7 ("PCI: make sriov work with hotplug remove") works around a
+similar problem in pci_stop_bus_devices() by iterating over the list in
+reverse, so the VFs are stopped and removed from the list first, before the
+PF.
 
-  kernel       reverts
-  -----------------------------------------------------------
-  1) vanilla   upstream (no reverts)
+This patch changes pciehp_unconfigure_device() to iterate over the list in
+reverse, too.
 
-  2) perfteam2 reverts e11538d1f03914eb92af5a1a378375c05ae8520c
-
-  3) test      reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4
-                       e11538d1f03914eb92af5a1a378375c05ae8520c
-
-  In summary, netperf TCP_RR numbers improve by approximately 4%
-  after reverting 69a37beabf1f0a6705c08e879bdd5d82ff6486c4.  When
-  69a37beabf1f0a6705c08e879bdd5d82ff6486c4 is included, C0 residency
-  never seems to get above 40%.  Taking that patch out gets C0 near
-  100% quite often, and performance increases.
-
-  The below data are histograms representing the %c0 residency @
-  1-second sample rates (using turbostat), while under netperf test.
-
-  - If you look at the first 4 histograms, you can see %c0 residency
-    almost entirely in the 30,40% bin.
-  - The last pair, which reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4,
-    shows %c0 in the 80,90,100% bins.
-
-  Below each kernel name are netperf TCP_RR trans/s numbers for the
-  particular kernel that can be disclosed publicly, comparing the 3
-  test kernels.  We ran a 4th test with the vanilla kernel where
-  we've also set /dev/cpu_dma_latency=0 to show overall impact
-  boosting single-threaded TCP_RR performance over 11% above
-  baseline.
-
-  3.10-rc2 vanilla RX + c0 lock (/dev/cpu_dma_latency=0):
-  TCP_RR trans/s 54323.78
-
-  -----------------------------------------------------------
-  3.10-rc2 vanilla RX (no reverts)
-  TCP_RR trans/s 48192.47
-
-  Receiver %c0
-      0.0000 -    10.0000 [     1]: *
-     10.0000 -    20.0000 [     0]:
-     20.0000 -    30.0000 [     0]:
-     30.0000 -    40.0000 [    59]:
-  ***********************************************************
-     40.0000 -    50.0000 [     1]: *
-     50.0000 -    60.0000 [     0]:
-     60.0000 -    70.0000 [     0]:
-     70.0000 -    80.0000 [     0]:
-     80.0000 -    90.0000 [     0]:
-     90.0000 -   100.0000 [     0]:
-
-  Sender %c0
-      0.0000 -    10.0000 [     1]: *
-     10.0000 -    20.0000 [     0]:
-     20.0000 -    30.0000 [     0]:
-     30.0000 -    40.0000 [    11]: ***********
-     40.0000 -    50.0000 [    49]:
-  *************************************************
-     50.0000 -    60.0000 [     0]:
-     60.0000 -    70.0000 [     0]:
-     70.0000 -    80.0000 [     0]:
-     80.0000 -    90.0000 [     0]:
-     90.0000 -   100.0000 [     0]:
-
-  -----------------------------------------------------------
-  3.10-rc2 perfteam2 RX (reverts commit
-  e11538d1f03914eb92af5a1a378375c05ae8520c)
-  TCP_RR trans/s 49698.69
-
-  Receiver %c0
-      0.0000 -    10.0000 [     1]: *
-     10.0000 -    20.0000 [     1]: *
-     20.0000 -    30.0000 [     0]:
-     30.0000 -    40.0000 [    59]:
-  ***********************************************************
-     40.0000 -    50.0000 [     0]:
-     50.0000 -    60.0000 [     0]:
-     60.0000 -    70.0000 [     0]:
-     70.0000 -    80.0000 [     0]:
-     80.0000 -    90.0000 [     0]:
-     90.0000 -   100.0000 [     0]:
-
-  Sender %c0
-      0.0000 -    10.0000 [     1]: *
-     10.0000 -    20.0000 [     0]:
-     20.0000 -    30.0000 [     0]:
-     30.0000 -    40.0000 [     2]: **
-     40.0000 -    50.0000 [    58]:
-  **********************************************************
-     50.0000 -    60.0000 [     0]:
-     60.0000 -    70.0000 [     0]:
-     70.0000 -    80.0000 [     0]:
-     80.0000 -    90.0000 [     0]:
-     90.0000 -   100.0000 [     0]:
-
-  -----------------------------------------------------------
-  3.10-rc2 test RX (reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4
-  and e11538d1f03914eb92af5a1a378375c05ae8520c)
-  TCP_RR trans/s 47766.95
-
-  Receiver %c0
-      0.0000 -    10.0000 [     1]: *
-     10.0000 -    20.0000 [     1]: *
-     20.0000 -    30.0000 [     0]:
-     30.0000 -    40.0000 [    27]: ***************************
-     40.0000 -    50.0000 [     2]: **
-     50.0000 -    60.0000 [     0]:
-     60.0000 -    70.0000 [     2]: **
-     70.0000 -    80.0000 [     0]:
-     80.0000 -    90.0000 [     0]:
-     90.0000 -   100.0000 [    28]: ****************************
-
-  Sender:
-      0.0000 -    10.0000 [     1]: *
-     10.0000 -    20.0000 [     0]:
-     20.0000 -    30.0000 [     0]:
-     30.0000 -    40.0000 [    11]: ***********
-     40.0000 -    50.0000 [     0]:
-     50.0000 -    60.0000 [     1]: *
-     60.0000 -    70.0000 [     0]:
-     70.0000 -    80.0000 [     3]: ***
-     80.0000 -    90.0000 [     7]: *******
-     90.0000 -   100.0000 [    38]: **************************************
-
-  These results demonstrate gaining back the tendency of the CPU to
-  stay in more responsive, performant C-states (and thus yield
-  measurably better performance), by reverting commit
-  69a37beabf1f0a6705c08e879bdd5d82ff6486c4.
-
-Requested-by: Jeremy Eder <jeder@redhat.com>
-Tested-by: Len Brown <len.brown@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[bhelgaas: bugzilla, changelog]
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=60604
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpuidle/governors/menu.c |   73 ++-------------------------------------
- include/linux/tick.h             |    6 ---
- kernel/time/tick-sched.c         |    9 +---
- 3 files changed, 6 insertions(+), 82 deletions(-)
+ drivers/pci/hotplug/pciehp_pci.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -28,13 +28,6 @@
- #define MAX_INTERESTING 50000
- #define STDDEV_THRESH 400
+--- a/drivers/pci/hotplug/pciehp_pci.c
++++ b/drivers/pci/hotplug/pciehp_pci.c
+@@ -92,7 +92,14 @@ int pciehp_unconfigure_device(struct slo
+ 	if (ret)
+ 		presence = 0;
  
--/* 60 * 60 > STDDEV_THRESH * INTERVALS = 400 * 8 */
--#define MAX_DEVIATION 60
--
--static DEFINE_PER_CPU(struct hrtimer, menu_hrtimer);
--static DEFINE_PER_CPU(int, hrtimer_status);
--/* menu hrtimer mode */
--enum {MENU_HRTIMER_STOP, MENU_HRTIMER_REPEAT};
- 
- /*
-  * Concepts and ideas behind the menu governor
-@@ -198,42 +191,17 @@ static u64 div_round64(u64 dividend, u32
- 	return div_u64(dividend + (divisor / 2), divisor);
- }
- 
--/* Cancel the hrtimer if it is not triggered yet */
--void menu_hrtimer_cancel(void)
--{
--	int cpu = smp_processor_id();
--	struct hrtimer *hrtmr = &per_cpu(menu_hrtimer, cpu);
--
--	/* The timer is still not time out*/
--	if (per_cpu(hrtimer_status, cpu)) {
--		hrtimer_cancel(hrtmr);
--		per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_STOP;
--	}
--}
--EXPORT_SYMBOL_GPL(menu_hrtimer_cancel);
--
--/* Call back for hrtimer is triggered */
--static enum hrtimer_restart menu_hrtimer_notify(struct hrtimer *hrtimer)
--{
--	int cpu = smp_processor_id();
--
--	per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_STOP;
--
--	return HRTIMER_NORESTART;
--}
--
- /*
-  * Try detecting repeating patterns by keeping track of the last 8
-  * intervals, and checking if the standard deviation of that set
-  * of points is below a threshold. If it is... then use the
-  * average of these 8 points as the estimated value.
-  */
--static u32 get_typical_interval(struct menu_device *data)
-+static void get_typical_interval(struct menu_device *data)
- {
- 	int i = 0, divisor = 0;
- 	uint64_t max = 0, avg = 0, stddev = 0;
- 	int64_t thresh = LLONG_MAX; /* Discard outliers above this value. */
--	unsigned int ret = 0;
- 
- again:
- 
-@@ -274,16 +242,13 @@ again:
- 	if (((avg > stddev * 6) && (divisor * 4 >= INTERVALS * 3))
- 							|| stddev <= 20) {
- 		data->predicted_us = avg;
--		ret = 1;
--		return ret;
-+		return;
- 
- 	} else if ((divisor * 4) > INTERVALS * 3) {
- 		/* Exclude the max interval */
- 		thresh = max - 1;
- 		goto again;
- 	}
--
--	return ret;
- }
- 
- /**
-@@ -298,9 +263,6 @@ static int menu_select(struct cpuidle_dr
- 	int i;
- 	int multiplier;
- 	struct timespec t;
--	int repeat = 0, low_predicted = 0;
--	int cpu = smp_processor_id();
--	struct hrtimer *hrtmr = &per_cpu(menu_hrtimer, cpu);
- 
- 	if (data->needs_update) {
- 		menu_update(drv, dev);
-@@ -335,7 +297,7 @@ static int menu_select(struct cpuidle_dr
- 	data->predicted_us = div_round64(data->expected_us * data->correction_factor[data->bucket],
- 					 RESOLUTION * DECAY);
- 
--	repeat = get_typical_interval(data);
-+	get_typical_interval(data);
- 
- 	/*
- 	 * We want to default to C1 (hlt), not to busy polling
-@@ -356,10 +318,8 @@ static int menu_select(struct cpuidle_dr
- 
- 		if (s->disabled || su->disable)
- 			continue;
--		if (s->target_residency > data->predicted_us) {
--			low_predicted = 1;
-+		if (s->target_residency > data->predicted_us)
- 			continue;
--		}
- 		if (s->exit_latency > latency_req)
- 			continue;
- 		if (s->exit_latency * multiplier > data->predicted_us)
-@@ -369,28 +329,6 @@ static int menu_select(struct cpuidle_dr
- 		data->exit_us = s->exit_latency;
- 	}
- 
--	/* not deepest C-state chosen for low predicted residency */
--	if (low_predicted) {
--		unsigned int timer_us = 0;
--
--		/*
--		 * Set a timer to detect whether this sleep is much
--		 * longer than repeat mode predicted.  If the timer
--		 * triggers, the code will evaluate whether to put
--		 * the CPU into a deeper C-state.
--		 * The timer is cancelled on CPU wakeup.
--		 */
--		timer_us = 2 * (data->predicted_us + MAX_DEVIATION);
--
--		if (repeat && (4 * timer_us < data->expected_us)) {
--			RCU_NONIDLE(hrtimer_start(hrtmr,
--				ns_to_ktime(1000 * timer_us),
--				HRTIMER_MODE_REL_PINNED));
--			/* In repeat case, menu hrtimer is started */
--			per_cpu(hrtimer_status, cpu) = MENU_HRTIMER_REPEAT;
--		}
--	}
--
- 	return data->last_state_idx;
- }
- 
-@@ -481,9 +419,6 @@ static int menu_enable_device(struct cpu
- 				struct cpuidle_device *dev)
- {
- 	struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
--	struct hrtimer *t = &per_cpu(menu_hrtimer, dev->cpu);
--	hrtimer_init(t, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	t->function = menu_hrtimer_notify;
- 
- 	memset(data, 0, sizeof(struct menu_device));
- 
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -174,10 +174,4 @@ static inline void tick_nohz_task_switch
- #endif
- 
- 
--# ifdef CONFIG_CPU_IDLE_GOV_MENU
--extern void menu_hrtimer_cancel(void);
--# else
--static inline void menu_hrtimer_cancel(void) {}
--# endif /* CONFIG_CPU_IDLE_GOV_MENU */
--
- #endif
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -832,13 +832,10 @@ void tick_nohz_irq_exit(void)
- {
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
- 
--	if (ts->inidle) {
--		/* Cancel the timer because CPU already waken up from the C-states*/
--		menu_hrtimer_cancel();
-+	if (ts->inidle)
- 		__tick_nohz_idle_enter(ts);
--	} else {
-+	else
- 		tick_nohz_full_stop_tick(ts);
--	}
- }
- 
- /**
-@@ -936,8 +933,6 @@ void tick_nohz_idle_exit(void)
- 
- 	ts->inidle = 0;
- 
--	/* Cancel the timer because CPU already waken up from the C-states*/
--	menu_hrtimer_cancel();
- 	if (ts->idle_active || ts->tick_stopped)
- 		now = ktime_get();
- 
+-	list_for_each_entry_safe(dev, temp, &parent->devices, bus_list) {
++	/*
++	 * Stopping an SR-IOV PF device removes all the associated VFs,
++	 * which will update the bus->devices list and confuse the
++	 * iterator.  Therefore, iterate in reverse so we remove the VFs
++	 * first, then the PF.  We do the same in pci_stop_bus_device().
++	 */
++	list_for_each_entry_safe_reverse(dev, temp, &parent->devices,
++					 bus_list) {
+ 		pci_dev_get(dev);
+ 		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && presence) {
+ 			pci_read_config_byte(dev, PCI_BRIDGE_CONTROL, &bctl);
 
 
