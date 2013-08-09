@@ -1,472 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965616Ab3HIJi6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 05:38:58 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:45628 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965287Ab3HIJi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 05:38:57 -0400
-Message-ID: <5204B8AB.5010309@hitachi.com>
-Date: Fri, 09 Aug 2013 18:38:51 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S965767Ab3HIJmq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 05:42:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26098 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S965376Ab3HIJmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 05:42:43 -0400
+X-IronPort-AV: E=Sophos;i="4.89,844,1367942400"; 
+   d="scan'208";a="8163013"
+Message-ID: <5204B93A.6030409@cn.fujitsu.com>
+Date: Fri, 09 Aug 2013 17:41:14 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 07/13] tracing/uprobes: Convert to struct trace_probe
-References: <1376037909-17797-1-git-send-email-namhyung@kernel.org> <1376037909-17797-8-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1376037909-17797-8-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Jiang Liu <jiang.liu@huawei.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH part4 2/4] x86, acpica, acpi: Try to find if SRAT is overrided
+ earlier.
+References: <1375954883-30225-1-git-send-email-tangchen@cn.fujitsu.com> <1375954883-30225-3-git-send-email-tangchen@cn.fujitsu.com> <CAE9FiQXUS9+heHagD45WAyO22NiGDMo3j2JumzvscypVhnjn9A@mail.gmail.com>
+In-Reply-To: <CAE9FiQXUS9+heHagD45WAyO22NiGDMo3j2JumzvscypVhnjn9A@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 17:41:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 17:41:16,
+	Serialize complete at 2013/08/09 17:41:16
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/09 17:45), Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Convert struct trace_uprobe to make use of the common trace_probe
-> structure.
-> 
+On 08/09/2013 12:29 AM, Yinghai Lu wrote:
+......
+>
+> Please check if you can reuse first half of my patchset, so find and copy
+> override table earlier. the copied acpi tables could be near kernel code range.
+>
 
-Looks good for me.
+I don't think we need to do the finding step at that early time, in
+head64.c stage.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Before pagetables are setup, we can use early_ioremap() to map the
+memory we want to access. We don't need to use phys addr. We can do
+it in setup_arch(), which has nothing to do with 32bit or 64bit.
 
-Thanks!
+> Move finding in head64.c stage could help xen/dom0 a bit.
+> as Konrad is working on patchset with acpi override in xen hypervisor.
+> We can avoid override acpi table two times. Esp xen like to change
+> DMAR to XMAR.
 
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  kernel/trace/trace_uprobe.c | 151 ++++++++++++++++++++++----------------------
->  1 file changed, 75 insertions(+), 76 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index b15e3aeb1ea7..6bf04a763d23 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -51,22 +51,17 @@ struct trace_uprobe_filter {
->   */
->  struct trace_uprobe {
->  	struct list_head		list;
-> -	struct ftrace_event_class	class;
-> -	struct ftrace_event_call	call;
->  	struct trace_uprobe_filter	filter;
->  	struct uprobe_consumer		consumer;
->  	struct inode			*inode;
->  	char				*filename;
->  	unsigned long			offset;
->  	unsigned long			nhit;
-> -	unsigned int			flags;	/* For TP_FLAG_* */
-> -	ssize_t				size;	/* trace entry size */
-> -	unsigned int			nr_args;
-> -	struct probe_arg		args[];
-> +	struct trace_probe		p;
->  };
->  
-> -#define SIZEOF_TRACE_UPROBE(n)			\
-> -	(offsetof(struct trace_uprobe, args) +	\
-> +#define SIZEOF_TRACE_UPROBE(n)				\
-> +	(offsetof(struct trace_uprobe, p.args) +	\
->  	(sizeof(struct probe_arg) * (n)))
->  
->  static int register_uprobe_event(struct trace_uprobe *tu);
-> @@ -114,13 +109,13 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
->  	if (!tu)
->  		return ERR_PTR(-ENOMEM);
->  
-> -	tu->call.class = &tu->class;
-> -	tu->call.name = kstrdup(event, GFP_KERNEL);
-> -	if (!tu->call.name)
-> +	tu->p.call.class = &tu->p.class;
-> +	tu->p.call.name = kstrdup(event, GFP_KERNEL);
-> +	if (!tu->p.call.name)
->  		goto error;
->  
-> -	tu->class.system = kstrdup(group, GFP_KERNEL);
-> -	if (!tu->class.system)
-> +	tu->p.class.system = kstrdup(group, GFP_KERNEL);
-> +	if (!tu->p.class.system)
->  		goto error;
->  
->  	INIT_LIST_HEAD(&tu->list);
-> @@ -131,7 +126,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
->  	return tu;
->  
->  error:
-> -	kfree(tu->call.name);
-> +	kfree(tu->p.call.name);
->  	kfree(tu);
->  
->  	return ERR_PTR(-ENOMEM);
-> @@ -141,12 +136,12 @@ static void free_trace_uprobe(struct trace_uprobe *tu)
->  {
->  	int i;
->  
-> -	for (i = 0; i < tu->nr_args; i++)
-> -		traceprobe_free_probe_arg(&tu->args[i]);
-> +	for (i = 0; i < tu->p.nr_args; i++)
-> +		traceprobe_free_probe_arg(&tu->p.args[i]);
->  
->  	iput(tu->inode);
-> -	kfree(tu->call.class->system);
-> -	kfree(tu->call.name);
-> +	kfree(tu->p.call.class->system);
-> +	kfree(tu->p.call.name);
->  	kfree(tu->filename);
->  	kfree(tu);
->  }
-> @@ -156,8 +151,8 @@ static struct trace_uprobe *find_probe_event(const char *event, const char *grou
->  	struct trace_uprobe *tu;
->  
->  	list_for_each_entry(tu, &uprobe_list, list)
-> -		if (strcmp(tu->call.name, event) == 0 &&
-> -		    strcmp(tu->call.class->system, group) == 0)
-> +		if (strcmp(tu->p.call.name, event) == 0 &&
-> +		    strcmp(tu->p.call.class->system, group) == 0)
->  			return tu;
->  
->  	return NULL;
-> @@ -180,7 +175,7 @@ static int register_trace_uprobe(struct trace_uprobe *tu)
->  	mutex_lock(&uprobe_lock);
->  
->  	/* register as an event */
-> -	old_tp = find_probe_event(tu->call.name, tu->call.class->system);
-> +	old_tp = find_probe_event(tu->p.call.name, tu->p.call.class->system);
->  	if (old_tp)
->  		/* delete old event */
->  		unregister_trace_uprobe(old_tp);
-> @@ -348,34 +343,36 @@ static int create_trace_uprobe(int argc, char **argv)
->  	/* parse arguments */
->  	ret = 0;
->  	for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
-> +		struct probe_arg *parg = &tu->p.args[i];
-> +
->  		/* Increment count for freeing args in error case */
-> -		tu->nr_args++;
-> +		tu->p.nr_args++;
->  
->  		/* Parse argument name */
->  		arg = strchr(argv[i], '=');
->  		if (arg) {
->  			*arg++ = '\0';
-> -			tu->args[i].name = kstrdup(argv[i], GFP_KERNEL);
-> +			parg->name = kstrdup(argv[i], GFP_KERNEL);
->  		} else {
->  			arg = argv[i];
->  			/* If argument name is omitted, set "argN" */
->  			snprintf(buf, MAX_EVENT_NAME_LEN, "arg%d", i + 1);
-> -			tu->args[i].name = kstrdup(buf, GFP_KERNEL);
-> +			parg->name = kstrdup(buf, GFP_KERNEL);
->  		}
->  
-> -		if (!tu->args[i].name) {
-> +		if (!parg->name) {
->  			pr_info("Failed to allocate argument[%d] name.\n", i);
->  			ret = -ENOMEM;
->  			goto error;
->  		}
->  
-> -		if (!is_good_name(tu->args[i].name)) {
-> -			pr_info("Invalid argument[%d] name: %s\n", i, tu->args[i].name);
-> +		if (!is_good_name(parg->name)) {
-> +			pr_info("Invalid argument[%d] name: %s\n", i, parg->name);
->  			ret = -EINVAL;
->  			goto error;
->  		}
->  
-> -		if (traceprobe_conflict_field_name(tu->args[i].name, tu->args, i)) {
-> +		if (traceprobe_conflict_field_name(parg->name, tu->p.args, i)) {
->  			pr_info("Argument[%d] name '%s' conflicts with "
->  				"another field.\n", i, argv[i]);
->  			ret = -EINVAL;
-> @@ -383,7 +380,8 @@ static int create_trace_uprobe(int argc, char **argv)
->  		}
->  
->  		/* Parse fetch argument */
-> -		ret = traceprobe_parse_probe_arg(arg, &tu->size, &tu->args[i], false, false);
-> +		ret = traceprobe_parse_probe_arg(arg, &tu->p.size, parg,
-> +						 false, false);
->  		if (ret) {
->  			pr_info("Parse error at argument[%d]. (%d)\n", i, ret);
->  			goto error;
-> @@ -443,11 +441,11 @@ static int probes_seq_show(struct seq_file *m, void *v)
->  	char c = is_ret_probe(tu) ? 'r' : 'p';
->  	int i;
->  
-> -	seq_printf(m, "%c:%s/%s", c, tu->call.class->system, tu->call.name);
-> +	seq_printf(m, "%c:%s/%s", c, tu->p.call.class->system, tu->p.call.name);
->  	seq_printf(m, " %s:0x%p", tu->filename, (void *)tu->offset);
->  
-> -	for (i = 0; i < tu->nr_args; i++)
-> -		seq_printf(m, " %s=%s", tu->args[i].name, tu->args[i].comm);
-> +	for (i = 0; i < tu->p.nr_args; i++)
-> +		seq_printf(m, " %s=%s", tu->p.args[i].name, tu->p.args[i].comm);
->  
->  	seq_printf(m, "\n");
->  	return 0;
-> @@ -488,7 +486,7 @@ static int probes_profile_seq_show(struct seq_file *m, void *v)
->  {
->  	struct trace_uprobe *tu = v;
->  
-> -	seq_printf(m, "  %s %-44s %15lu\n", tu->filename, tu->call.name, tu->nhit);
-> +	seq_printf(m, "  %s %-44s %15lu\n", tu->filename, tu->p.call.name, tu->nhit);
->  	return 0;
->  }
->  
-> @@ -520,11 +518,11 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
->  	struct ring_buffer *buffer;
->  	void *data;
->  	int size, i;
-> -	struct ftrace_event_call *call = &tu->call;
-> +	struct ftrace_event_call *call = &tu->p.call;
->  
->  	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
->  	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
-> -						  size + tu->size, 0, 0);
-> +						  size + tu->p.size, 0, 0);
->  	if (!event)
->  		return;
->  
-> @@ -538,8 +536,10 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
->  		data = DATAOF_TRACE_ENTRY(entry, false);
->  	}
->  
-> -	for (i = 0; i < tu->nr_args; i++)
-> -		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
-> +	for (i = 0; i < tu->p.nr_args; i++) {
-> +		call_fetch(&tu->p.args[i].fetch, regs,
-> +			   data + tu->p.args[i].offset);
-> +	}
->  
->  	if (!filter_current_check_discard(buffer, call, entry, event))
->  		trace_buffer_unlock_commit(buffer, event, 0, 0);
-> @@ -570,23 +570,24 @@ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *e
->  	int i;
->  
->  	entry = (struct uprobe_trace_entry_head *)iter->ent;
-> -	tu = container_of(event, struct trace_uprobe, call.event);
-> +	tu = container_of(event, struct trace_uprobe, p.call.event);
->  
->  	if (is_ret_probe(tu)) {
-> -		if (!trace_seq_printf(s, "%s: (0x%lx <- 0x%lx)", tu->call.name,
-> +		if (!trace_seq_printf(s, "%s: (0x%lx <- 0x%lx)", tu->p.call.name,
->  					entry->vaddr[1], entry->vaddr[0]))
->  			goto partial;
->  		data = DATAOF_TRACE_ENTRY(entry, true);
->  	} else {
-> -		if (!trace_seq_printf(s, "%s: (0x%lx)", tu->call.name,
-> +		if (!trace_seq_printf(s, "%s: (0x%lx)", tu->p.call.name,
->  					entry->vaddr[0]))
->  			goto partial;
->  		data = DATAOF_TRACE_ENTRY(entry, false);
->  	}
->  
-> -	for (i = 0; i < tu->nr_args; i++) {
-> -		if (!tu->args[i].type->print(s, tu->args[i].name,
-> -					     data + tu->args[i].offset, entry))
-> +	for (i = 0; i < tu->p.nr_args; i++) {
-> +		struct probe_arg *parg = &tu->p.args[i];
-> +
-> +		if (!parg->type->print(s, parg->name, data + parg->offset, entry))
->  			goto partial;
->  	}
->  
-> @@ -597,11 +598,6 @@ partial:
->  	return TRACE_TYPE_PARTIAL_LINE;
->  }
->  
-> -static inline bool is_trace_uprobe_enabled(struct trace_uprobe *tu)
-> -{
-> -	return tu->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE);
-> -}
-> -
->  typedef bool (*filter_func_t)(struct uprobe_consumer *self,
->  				enum uprobe_filter_ctx ctx,
->  				struct mm_struct *mm);
-> @@ -611,29 +607,29 @@ probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
->  {
->  	int ret = 0;
->  
-> -	if (is_trace_uprobe_enabled(tu))
-> +	if (trace_probe_is_enabled(&tu->p))
->  		return -EINTR;
->  
->  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
->  
-> -	tu->flags |= flag;
-> +	tu->p.flags |= flag;
->  	tu->consumer.filter = filter;
->  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
->  	if (ret)
-> -		tu->flags &= ~flag;
-> +		tu->p.flags &= ~flag;
->  
->  	return ret;
->  }
->  
->  static void probe_event_disable(struct trace_uprobe *tu, int flag)
->  {
-> -	if (!is_trace_uprobe_enabled(tu))
-> +	if (!trace_probe_is_enabled(&tu->p))
->  		return;
->  
->  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
->  
->  	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
-> -	tu->flags &= ~flag;
-> +	tu->p.flags &= ~flag;
->  }
->  
->  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
-> @@ -651,12 +647,12 @@ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
->  		size = SIZEOF_TRACE_ENTRY(false);
->  	}
->  	/* Set argument names as fields */
-> -	for (i = 0; i < tu->nr_args; i++) {
-> -		ret = trace_define_field(event_call, tu->args[i].type->fmttype,
-> -					 tu->args[i].name,
-> -					 size + tu->args[i].offset,
-> -					 tu->args[i].type->size,
-> -					 tu->args[i].type->is_signed,
-> +	for (i = 0; i < tu->p.nr_args; i++) {
-> +		struct probe_arg *parg = &tu->p.args[i];
-> +
-> +		ret = trace_define_field(event_call, parg->type->fmttype,
-> +					 parg->name, size + parg->offset,
-> +					 parg->type->size, parg->type->is_signed,
->  					 FILTER_OTHER);
->  
->  		if (ret)
-> @@ -684,16 +680,16 @@ static int __set_print_fmt(struct trace_uprobe *tu, char *buf, int len)
->  
->  	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
->  
-> -	for (i = 0; i < tu->nr_args; i++) {
-> +	for (i = 0; i < tu->p.nr_args; i++) {
->  		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
-> -				tu->args[i].name, tu->args[i].type->fmt);
-> +				tu->p.args[i].name, tu->p.args[i].type->fmt);
->  	}
->  
->  	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
->  
-> -	for (i = 0; i < tu->nr_args; i++) {
-> +	for (i = 0; i < tu->p.nr_args; i++) {
->  		pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
-> -				tu->args[i].name);
-> +				tu->p.args[i].name);
->  	}
->  
->  	return pos;	/* return the length of print_fmt */
-> @@ -713,7 +709,7 @@ static int set_print_fmt(struct trace_uprobe *tu)
->  
->  	/* Second: actually write the @print_fmt */
->  	__set_print_fmt(tu, print_fmt, len + 1);
-> -	tu->call.print_fmt = print_fmt;
-> +	tu->p.call.print_fmt = print_fmt;
->  
->  	return 0;
->  }
-> @@ -810,14 +806,14 @@ static bool uprobe_perf_filter(struct uprobe_consumer *uc,
->  static void uprobe_perf_print(struct trace_uprobe *tu,
->  				unsigned long func, struct pt_regs *regs)
->  {
-> -	struct ftrace_event_call *call = &tu->call;
-> +	struct ftrace_event_call *call = &tu->p.call;
->  	struct uprobe_trace_entry_head *entry;
->  	struct hlist_head *head;
->  	void *data;
->  	int size, rctx, i;
->  
->  	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
-> -	size = ALIGN(size + tu->size + sizeof(u32), sizeof(u64)) - sizeof(u32);
-> +	size = ALIGN(size + tu->p.size + sizeof(u32), sizeof(u64)) - sizeof(u32);
->  
->  	preempt_disable();
->  	head = this_cpu_ptr(call->perf_events);
-> @@ -837,8 +833,11 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
->  		data = DATAOF_TRACE_ENTRY(entry, false);
->  	}
->  
-> -	for (i = 0; i < tu->nr_args; i++)
-> -		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
-> +	for (i = 0; i < tu->p.nr_args; i++) {
-> +		struct probe_arg *parg = &tu->p.args[i];
-> +
-> +		call_fetch(&parg->fetch, regs, data + parg->offset);
-> +	}
->  
->  	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
->   out:
-> @@ -905,11 +904,11 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
->  	tu = container_of(con, struct trace_uprobe, consumer);
->  	tu->nhit++;
->  
-> -	if (tu->flags & TP_FLAG_TRACE)
-> +	if (tu->p.flags & TP_FLAG_TRACE)
->  		ret |= uprobe_trace_func(tu, regs);
->  
->  #ifdef CONFIG_PERF_EVENTS
-> -	if (tu->flags & TP_FLAG_PROFILE)
-> +	if (tu->p.flags & TP_FLAG_PROFILE)
->  		ret |= uprobe_perf_func(tu, regs);
->  #endif
->  	return ret;
-> @@ -922,11 +921,11 @@ static int uretprobe_dispatcher(struct uprobe_consumer *con,
->  
->  	tu = container_of(con, struct trace_uprobe, consumer);
->  
-> -	if (tu->flags & TP_FLAG_TRACE)
-> +	if (tu->p.flags & TP_FLAG_TRACE)
->  		uretprobe_trace_func(tu, func, regs);
->  
->  #ifdef CONFIG_PERF_EVENTS
-> -	if (tu->flags & TP_FLAG_PROFILE)
-> +	if (tu->p.flags & TP_FLAG_PROFILE)
->  		uretprobe_perf_func(tu, func, regs);
->  #endif
->  	return 0;
-> @@ -938,7 +937,7 @@ static struct trace_event_functions uprobe_funcs = {
->  
->  static int register_uprobe_event(struct trace_uprobe *tu)
->  {
-> -	struct ftrace_event_call *call = &tu->call;
-> +	struct ftrace_event_call *call = &tu->p.call;
->  	int ret;
->  
->  	/* Initialize ftrace_event_call */
-> @@ -971,9 +970,9 @@ static int register_uprobe_event(struct trace_uprobe *tu)
->  static void unregister_uprobe_event(struct trace_uprobe *tu)
->  {
->  	/* tu->event is unregistered in trace_remove_event_call() */
-> -	trace_remove_event_call(&tu->call);
-> -	kfree(tu->call.print_fmt);
-> -	tu->call.print_fmt = NULL;
-> +	trace_remove_event_call(&tu->p.call);
-> +	kfree(tu->p.call.print_fmt);
-> +	tu->p.call.print_fmt = NULL;
->  }
->  
->  /* Make a trace interface for controling probe points */
-> 
+Would you please give some more info about this, and explain why finding
+override tables in head64.c stage is helpful for xen ?
 
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Thanks.
 
