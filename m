@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966949Ab3HIKaf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:30:35 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:15163 "EHLO SMTP.CITRIX.COM"
+	id S967014Ab3HIKbA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:31:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15419 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966467Ab3HIKae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:30:34 -0400
-X-IronPort-AV: E=Sophos;i="4.89,845,1367971200"; 
-   d="scan'208";a="42837718"
-Message-ID: <5204C4C6.4060605@citrix.com>
-Date: Fri, 9 Aug 2013 11:30:30 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S966685Ab3HIKa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:30:59 -0400
+Date: Fri, 9 Aug 2013 12:30:36 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Jeremy Eder <jeder@redhat.com>
+Subject: Re: [PATCHSET 00/17] perf tools: Introduce new 'ftrace' command (v4)
+Message-ID: <20130809103036.GD1045@krava.brq.redhat.com>
+References: <1375175954-798-1-git-send-email-namhyung@kernel.org>
+ <20130809102515.GB1045@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andres Lagar-Cavilla <andres@lagarcavilla.org>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH] Xen: Fix retry calls into PRIVCMD_MMAPBATCH*.
-References: <1375367170-13151-1-git-send-email-andreslc@gridcentric.ca>
-In-Reply-To: <1375367170-13151-1-git-send-email-andreslc@gridcentric.ca>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130809102515.GB1045@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/13 15:26, Andres Lagar-Cavilla wrote:
-> From: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+On Fri, Aug 09, 2013 at 12:25:15PM +0200, Jiri Olsa wrote:
+> On Tue, Jul 30, 2013 at 06:18:57PM +0900, Namhyung Kim wrote:
+> > This patchset implements a front-end tool for kernel's ftrace.  It
+> > uses function_graph tracer by default and normal function tracer is
+> > also supported.  (Of course you need to enable those tracers in your
+> > kernel first.)
+> > 
+> > v4 changes:
+> >  * use pid instead of tid for -p option (David)
+> >  * not to poll() for reading ftrace pipes (Jiri)
+> >  * rename to create_perf_header() (Jiri)
+> >  * canonicalize directory name (Jiri)
+> >  * show more info when -D option was given (Jiri)
+> >  * update documentation (Jiri)
+> >  * and few more bug fixes
+> > 
+> > I pushed it out to 'perf/ftrace-v4' branch on my tree at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
 > 
-> When a foreign mapper attempts to map guest frames that are paged out,
-> the mapper receives an ENOENT response and will have to try again
-> while a helper process pages the target frame back in.
+> also, this one works now:
 > 
-> Gating checks on PRIVCMD_MMAPBATCH* ioctl args were preventing retries
-> of mapping calls.
+> ./perf --no-pager ftrace live -t function -p `pgrep yes`
 > 
-> V2: Fixed autotranslated physmap mode breakage introduced by V1.
-> 
-> Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
-> ---
->  drivers/xen/privcmd.c |   41 +++++++++++++++++++++++++++++++++++------
->  1 files changed, 35 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-> index f8e5dd7..6ebdf98 100644
-> --- a/drivers/xen/privcmd.c
-> +++ b/drivers/xen/privcmd.c
-> @@ -43,9 +43,12 @@ MODULE_LICENSE("GPL");
->  
->  #define PRIV_VMA_LOCKED ((void *)1)
->  
-> -#ifndef HAVE_ARCH_PRIVCMD_MMAP
->  static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
-> -#endif
-> +
-> +static int privcmd_enforce_singleshot_mapping_granular(
-> +               struct vm_area_struct *vma,
-> +               unsigned long addr,
-> +               unsigned long nr_pages);
->  
->  static long privcmd_ioctl_hypercall(void __user *udata)
->  {
-> @@ -422,14 +425,15 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
->  	vma = find_vma(mm, m.addr);
->  	if (!vma ||
->  	    vma->vm_ops != &privcmd_vm_ops ||
-> -	    (m.addr != vma->vm_start) ||
-> -	    ((m.addr + (nr_pages << PAGE_SHIFT)) != vma->vm_end) ||
-> -	    !privcmd_enforce_singleshot_mapping(vma)) {
-> +	    (m.addr < vma->vm_start) ||
-> +	    ((m.addr + (nr_pages << PAGE_SHIFT)) > vma->vm_end) ||
-> +	    !privcmd_enforce_singleshot_mapping_granular(vma, m.addr, nr_pages)) {
->  		up_write(&mm->mmap_sem);
->  		ret = -EINVAL;
->  		goto out;
+> but if I kill 'yes' perf live commands hangs,
+> I'd expect it'd stop
 
-This change to the range checks allows the user to partially populate
-the VMA on the first call which will result in too few pages being
-allocated in the auto_translated_physmap case.
+on the other hand it looks like it's common behaviour
+for standard record/stat... ;-)
 
-Can you do the following behaviour instead?
-
-On the first call, require the user to try to populate fully the VMA.
-
-On subsequent calls, allow the user to specify a subset of pages
-(sub-range) provided all the pages in the subset are not populated.
-
-David
+jirka
