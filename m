@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030773Ab3HITLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:11:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36657 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030485Ab3HITLb (ORCPT
+	id S1030791Ab3HITLn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:11:43 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:28636 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030485Ab3HITLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:11:31 -0400
-Date: Fri, 9 Aug 2013 12:11:30 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 000/102] 3.10.6-stable review
-Message-ID: <20130809191130.GD10130@kroah.com>
-References: <20130809015010.208118575@linuxfoundation.org>
- <520492F3.1050806@roeck-us.net>
-MIME-Version: 1.0
+	Fri, 9 Aug 2013 15:11:41 -0400
+Date: Fri, 9 Aug 2013 14:11:40 -0500
+From: scameron@beardog.cce.hp.com
+To: linux-kernel@vger.kernel.org
+Cc: axboe@kernel.dk, tj@kernel.org, scameron@beardog.cce.hp.com
+Subject: Re: Question about REQ_FLUSH and bios with data
+Message-ID: <20130809191140.GM9905@beardog.cce.hp.com>
+References: <20130809190934.GL9905@beardog.cce.hp.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <520492F3.1050806@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130809190934.GL9905@beardog.cce.hp.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 11:57:55PM -0700, Guenter Roeck wrote:
-> On 08/08/2013 06:56 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.10.6 release.
-> >There are 102 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Sun Aug 11 01:46:31 UTC 2013.
-> >Anything received after that time might be too late.
-> >
-> >The whole patch series can be found in one patch at:
-> >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.6-rc1.gz
-> >and the diffstat can be found below.
-> >
+
+On Fri, Aug 09, 2013 at 02:09:34PM -0500, scameron@beardog.cce.hp.com wrote:
 > 
-> Cross build results:
-> 	Total builds: 69 Total build errors: 2
+> So, I'm working on a block driver using the make_request_fn
+> interface, and have to handle a bio that comes in with
+> (bi_rw & REQ_FLUSH) set AND data to transfer. 
 > 
-> Details:
-> 	http://server.roeck-us.net:8010/builders/stable-queue-3.10/builds/47/steps/shell/logs/stdio/text
+> According to Documentation/block/writeback_cache_control.txt:
 > 
-> Same results as before, except that I dropped a couple of builds and added some others.
-
-Thanks for testing.
-
-> The failing builds are arm:allmodconfig and mips:allmodconfig.
-> For both, the errors don't exist in mainline and should be trivial to fix in case anyone is interested.
+> 	The REQ_FLUSH flag can be OR ed into the r/w flags of a
+> 	bio submitted from the filesystem and will make sure the
+> 	volatile cache of the storage device has been flushed
+> 	before the actual I/O operation is started. 
 > 
-> arm:
-> 	FATAL: modpost: GPL-incompatible module bcm2835-rng.ko uses GPL-only symbol 'platform_driver_unregister'
+> So I've written code that handles that case, along with the
+> various error cases I might encounter, I think, which leads
+> to my question:
 > 
-> [This one has been fixed upstream with commit 22e8099f4f6621b8d165e238cdef2a1cf655e159. Might be worthwhile
->  adding it to -stable]
-
-Yes, I've now queued it up, thanks.
-
-> mips:
-> 	drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of function 'pci_iomap'
-> 	drivers/net/ethernet/3com/3c59x.c:1044:3: error: implicit declaration of function 'pci_iounmap'
+> How do I get such a bio with a data transfer AND the REQ_FLUSH bit
+> set to come into the driver?   Just wondering how to test this case.
 > 
-> [no idea why this works upstream]
+> Thanks,
+> 
+> (I cc'ed Tejun Heo just because his name is in block/blk-flush.c)
+> 
+> -- steve
 
-Odd.  If someone cares about MIPS I hope I'll get a fix for it :)
+Oops, you'd think I'd know Jens's email address by now.
 
-thanks,
+-- steve
 
-greg k-h
