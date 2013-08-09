@@ -1,53 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967171Ab3HIFvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 01:51:05 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:61871 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966964Ab3HIFvE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 01:51:04 -0400
-X-AuditID: 9c93017e-b7b2aae000000ed6-93-52048345e564
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Jeremy Eder <jeder@redhat.com>
-Subject: Re: [PATCH 01/17] perf util: Save pid-cmdline mapping into tracing header
-References: <1375175954-798-1-git-send-email-namhyung@kernel.org>
-	<1375175954-798-2-git-send-email-namhyung@kernel.org>
-	<20130730132839.GA2607@ghostprotocols.net> <51F85FAA.2090400@lge.com>
-	<20130731140746.GA3614@ghostprotocols.net>
-	<87r4e81u8w.fsf@sejong.aot.lge.com> <52024F38.4080808@gmail.com>
-Date: Fri, 09 Aug 2013 14:51:00 +0900
-In-Reply-To: <52024F38.4080808@gmail.com> (David Ahern's message of "Wed, 07
-	Aug 2013 09:44:24 -0400")
-Message-ID: <878v0bxvi3.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S967178Ab3HIFxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 01:53:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:45255 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S966964Ab3HIFxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 01:53:39 -0400
+X-IronPort-AV: E=Sophos;i="4.89,844,1367942400"; 
+   d="scan'208";a="8160804"
+Message-ID: <5204838E.1060602@cn.fujitsu.com>
+Date: Fri, 09 Aug 2013 13:52:14 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Toshi Kani <toshi.kani@hp.com>
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, dave@sr71.net,
+        isimatu.yasuaki@jp.fujitsu.com, vasilis.liaskovitis@profitbricks.com
+Subject: Re: [PATCH] mm/hotplug: Verify hotplug memory range
+References: <1375980460-28311-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1375980460-28311-1-git-send-email-toshi.kani@hp.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 13:52:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 13:52:11,
+	Serialize complete at 2013/08/09 13:52:11
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-On Wed, 07 Aug 2013 09:44:24 -0400, David Ahern wrote:
-> On 8/5/13 3:17 AM, Namhyung Kim wrote:
->>> I don't think this is a problem, its in line with Ingo's suggestion of a
->>> new perf ioctl to ask the kernel to generate PERF_RECORD_MMAP events for
->>> existing threads.
->>
->> Hmm.. could you please give me a link of the thread?
+On 08/09/2013 12:47 AM, Toshi Kani wrote:
+> add_memory() and remove_memory() can only handle a memory range aligned
+> with section.  There are problems when an unaligned range is added and
+> then deleted as follows:
 >
-> I believe this is the thread being referred to:
-> https://lkml.org/lkml/2013/6/25/180
+>   - add_memory() with an unaligned range succeeds, but __add_pages()
+>     called from add_memory() adds a whole section of pages even though
+>     a given memory range is less than the section size.
+>   - remove_memory() to the added unaligned range hits BUG_ON() in
+>     __remove_pages().
+>
+> This patch changes add_memory() and remove_memory() to check if a given
+> memory range is aligned with section at the beginning.  As the result,
+> add_memory() fails with -EINVAL when a given range is unaligned, and
+> does not add such memory range.  This prevents remove_memory() to be
+> called with an unaligned range as well.  Note that remove_memory() has
+> to use BUG_ON() since this function cannot fail.
+>
+> Signed-off-by: Toshi Kani<toshi.kani@hp.com>
+> ---
+>   mm/memory_hotplug.c |   22 ++++++++++++++++++++++
+>   1 file changed, 22 insertions(+)
+>
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index ca1dd3a..ac182de 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -1069,6 +1069,22 @@ out:
+>   	return ret;
+>   }
+>
+> +static int check_hotplug_memory_range(u64 start, u64 size)
+> +{
+> +	u64 start_pfn = start>>  PAGE_SHIFT;
+> +	u64 nr_pages = size>>  PAGE_SHIFT;
+> +
+> +	/* Memory range must be aligned with section */
+> +	if ((start_pfn&  ~PAGE_SECTION_MASK) ||
+> +	    (nr_pages % PAGES_PER_SECTION) || (!nr_pages)) {
+> +		pr_err("Unsupported hotplug range: start 0x%llx, size 0x%llx\n",
+> +				start, size);
 
-Thank you!
-Namhyung
+I think the message here should tell users that only support range aligned
+to section. Others seems OK to me.
+
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+
+Thanks.
+
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>   /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
+>   int __ref add_memory(int nid, u64 start, u64 size)
+>   {
+> @@ -1078,6 +1094,10 @@ int __ref add_memory(int nid, u64 start, u64 size)
+>   	struct resource *res;
+>   	int ret;
+>
+> +	ret = check_hotplug_memory_range(start, size);
+> +	if (ret)
+> +		return ret;
+> +
+>   	lock_memory_hotplug();
+>
+>   	res = register_memory_resource(start, size);
+> @@ -1786,6 +1806,8 @@ void __ref remove_memory(int nid, u64 start, u64 size)
+>   {
+>   	int ret;
+>
+> +	BUG_ON(check_hotplug_memory_range(start, size));
+> +
+>   	lock_memory_hotplug();
+>
+>   	/*
+>
