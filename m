@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967712Ab3HIDTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 23:19:21 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:62650 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967580Ab3HIDTT (ORCPT
+	id S1030277Ab3HIDT3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 23:19:29 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:56108 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967580Ab3HIDT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 23:19:19 -0400
+	Thu, 8 Aug 2013 23:19:26 -0400
+Message-ID: <52045FB3.9060001@gmail.com>
+Date: Fri, 09 Aug 2013 08:49:15 +0530
+From: Kumar Gaurav <kumargauravgupta3@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <5203E874.7070907@wwwdotorg.org>
-References: <cover.1375886595.git.viresh.kumar@linaro.org>
-	<8d192a13cb7e088943da40689d62bc6353bd8604.1375886595.git.viresh.kumar@linaro.org>
-	<52028620.6000608@wwwdotorg.org>
-	<CAKohpokVgcMfmKmjkxc9Dr3z6mBKad23uUdB4ydN_xzGHdfedQ@mail.gmail.com>
-	<52028859.20008@wwwdotorg.org>
-	<CAKohpokK7F7tYJnisVjF=NCRb9zUjQNzrFdXs+QsPSb4oqyytA@mail.gmail.com>
-	<52029713.5070808@wwwdotorg.org>
-	<CAKohpoky9-E2XoxAQy_oQ3sMxvAv5ZfBdDQPd6zUxcSwyKmzXg@mail.gmail.com>
-	<5203E874.7070907@wwwdotorg.org>
-Date: Fri, 9 Aug 2013 08:49:18 +0530
-Message-ID: <CAKohpomaCVLdJoMDhTcRkELvkE6UrtFjN4W7STf=MgYR8sxj4Q@mail.gmail.com>
-Subject: Re: [PATCH 1/6] clk: Tegra: Add CPU0 clock driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: mturquette@linaro.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Nishanth Menon <nm@ti.com>
-Cc: swarren@nvidia.com, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kumar Gaurav <kumargauravgupta3@gmail.com>
+CC: hskinnemoen@gmail.com, egtvedt@samfundet.no, tglx@linutronix.de,
+        srivatsa.bhat@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH]arch:avr32:kernel:time.c: Removed IRQF_DISABLED
+References: <1376018243-8565-1-git-send-email-kumargauravgupta3@gmail.com>
+In-Reply-To: <1376018243-8565-1-git-send-email-kumargauravgupta3@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 August 2013 00:20, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> I don't think so. I think it's reasonable to have a per-SoC cpufreq
-> driver whose primary content is the parameterization data and/or custom
-> hooks for a unified core cpufreq driver. The duplicate parts of each
-> cpufreq driver can be moved into the core cpufreq driver, but the
-> non-duplicate parts remain. That's how many other subsystems work (MMC,
-> USB, ASoC spring to mind).
+Please ignore the below patch. I'll be resending this with 0 instead of 
+IRQF_TRIGGER_NONE
+On Friday 09 August 2013 08:47 AM, Kumar Gaurav wrote:
+> Removed IRQF_DISABLED as it's no-op and should be removed
+>
+> Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
+> ---
+>   arch/avr32/kernel/time.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/avr32/kernel/time.c b/arch/avr32/kernel/time.c
+> index 869a1c6..0566c81 100644
+> --- a/arch/avr32/kernel/time.c
+> +++ b/arch/avr32/kernel/time.c
+> @@ -59,7 +59,7 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+>   static struct irqaction timer_irqaction = {
+>   	.handler	= timer_interrupt,
+>   	/* Oprofile uses the same irq as the timer, so allow it to be shared */
+> -	.flags		= IRQF_TIMER | IRQF_DISABLED | IRQF_SHARED,
+> +	.flags		= IRQF_TIMER | IRQF_TRIGGER_NONE | IRQF_SHARED,
+>   	.name		= "avr32_comparator",
+>   };
+>   
 
-Guys in the --to list:
-
-Please shout before its too late...
-
-I can understand why Stephen is asking not to implement a virtual clock
-driver for cpu as there is no clock corresponding to that.. We are just playing
-with existing clocks there..
-
-But I thought these clock APIs can be considered as hooks that we were
-looking for and so shouldn't be a problem..
-
-But yes, different people see things differently..
-
-So, if I take Stephen's suggestions then I need to implement hooks into
-cpufreq-cpu0 driver for taking freq-table/ setting clk rates, etc...
-
-Let me know if anybody has a issue with that before we actually implement
-that..
-
---
-viresh
