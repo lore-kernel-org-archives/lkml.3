@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030720Ab3HISuq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 14:50:46 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:25015 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030670Ab3HISuo (ORCPT
+	id S1030725Ab3HISvX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 14:51:23 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:62719 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030610Ab3HISvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 14:50:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+tMjzLbnDcE2WBnrrzD2r7X0OncrZKL44=
-Date: Fri, 9 Aug 2013 14:50:36 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci <linux-pci@vger.kernel.org>
-Subject: Re: linux-next: Tree for Aug 8 (not CONFIG_PCI_MSI conflict)
-Message-ID: <20130809185036.GG25111@titan.lakedaemon.net>
-References: <20130808170822.82bf33d3cf5100f5e2646815@canb.auug.org.au>
- <5203F978.2050504@infradead.org>
- <20130809145939.GE25111@titan.lakedaemon.net>
- <52051BC2.2060004@infradead.org>
+	Fri, 9 Aug 2013 14:51:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52051BC2.2060004@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [217.132.161.31]
+In-Reply-To: <5203FF48.7000903@caviumnetworks.com>
+References: <1375986342-22999-1-git-send-email-ddaney.cavm@gmail.com>
+	<000001405f6459b8-32fb5ffe-837b-41be-bec4-c9c05fd4f114-000000@email.amazonses.com>
+	<5203FF48.7000903@caviumnetworks.com>
+Date: Fri, 9 Aug 2013 21:51:20 +0300
+Message-ID: <CAOtvUMcR2Hx2jMy6Y0QQv5h7dM2a5fAC_M7BpgnaLa0VUieEHg@mail.gmail.com>
+Subject: Re: [PATCH] smp.c: Quit unconditionally enabling irqs in on_each_cpu_mask().
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Christoph Lameter <cl@gentwo.org>, David Daney <ddaney.cavm@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Daney <david.daney@cavium.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy,
+On Thu, Aug 8, 2013 at 11:27 PM, David Daney <ddaney@caviumnetworks.com> wrote:
+>
+> On 08/08/2013 12:25 PM, Christoph Lameter wrote:
+>>
+>> On Thu, 8 Aug 2013, David Daney wrote:
+>>
+>>> I don't know of any bugs currently caused by this unconditional
+>>> local_irq_enable(), but I want to use this function in MIPS/OCTEON
+>>> early boot (when we have early_boot_irqs_disabled).  This also makes
+>>> this function have similar semantics to on_each_cpu() which is good in
+>>> itself.
+>>
+>>
+>> smp_call_function_many() wants interrupts enabled.
+>
+>
+> That's what the comments say, but it isn't actually true.
+>
+> The usage introduced by the patch is no different than the existing usage in on_each_cpu() 30 line up in the file.
+>
 
-On Fri, Aug 09, 2013 at 09:41:38AM -0700, Randy Dunlap wrote:
-> On 08/09/13 07:59, Jason Cooper wrote:
-> > Randy,
-> > 
-> > On Thu, Aug 08, 2013 at 01:03:04PM -0700, Randy Dunlap wrote:
-> >> On 08/08/13 00:08, Stephen Rothwell wrote:
-> >>> Hi all,
-> >>>
-> >>> Changes since 20130807:
-> >>>
-> >>
-> >> on i386 and x86_64:
-> >> when CONFIG_PCI_MSI is not enabled:
-> >>
-> >> There are many of these errors:
-> >> include/linux/msi.h:65:6: error: expected identifier or '(' before 'void'
-> >> include/linux/msi.h:65:6: error: expected ')' before numeric constant
-> >>
-> >> because arch/x86/include/asm/pci.h defines:
-> >> #define default_teardown_msi_irqs	NULL
-> > 
-> > Do you have an example config you used?
-> 
-> Sure, attached. (or I have 14 of them)
+Regardless of the question of how smp_call_function_many() should be
+called, the IRQ disable/enable pair is actually there to make sure the
+provided function runs on the current CPU at the same conditions as it
+would get called via the IPI.
 
-Thanks, I was able to reproduce the error.  I'm not real familiar with
-this area of the code, but the relief is it doesn't appear to be caused
-by the mvebu changes (well, relief for us ;-) ).
+I would at least consider putting a test there to make sure IRQs
+really are disabled when entering the function, otherwise the bugs
+stemming from incorrect use can be tricky to catch.
 
-At any rate, give this a spin and see if it works for you
+Just my 0.00002 BTC
+Gilad
 
-If it's acceptable, I'll do an official patch for Bjorn.
 
-thx,
 
-Jason.
+--
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
 
----------->8----------
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index d9e9e6c..6169414 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -138,8 +138,8 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq);
- #else
- #define native_setup_msi_irqs		NULL
- #define native_teardown_msi_irq		NULL
--#define default_teardown_msi_irqs	NULL
--#define default_restore_msi_irqs	NULL
-+void __weak default_teardown_msi_irqs(struct pci_dev *dev) { }
-+void __weak default_restore_msi_irqs(struct pci_dev *dev, int irq) { }
- #endif
- 
- #define PCI_DMA_BUS_IS_PHYS (dma_ops->is_phys)
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
