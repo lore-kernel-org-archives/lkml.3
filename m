@@ -1,132 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967054Ab3HIFXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 01:23:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755186Ab3HIFW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 01:22:29 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH 4/9] migrate: add hugepage migration code to move_pages()
-Date: Fri,  9 Aug 2013 01:21:37 -0400
-Message-Id: <1376025702-14818-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S934321Ab3HIFcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 01:32:11 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:56328 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933169Ab3HIFcI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 01:32:08 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Stephen Boyd <sboyd@codeaurora.org>, Tomasz Figa <tomasz.figa@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20130725164542.GF29694@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>,
+        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org
+References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
+ <1374713022-6049-5-git-send-email-sboyd@codeaurora.org>
+ <4582949.WCP5JfKYES@flatron> <20130725164542.GF29694@codeaurora.org>
+Message-ID: <20130809053203.5348.40567@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH v1 04/14] clk: Add set_rate_and_parent() op
+Date: Thu, 08 Aug 2013 22:32:03 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends move_pages() to handle vma with VM_HUGETLB set.
-We will be able to migrate hugepage with move_pages(2) after
-applying the enablement patch which comes later in this series.
+Quoting Stephen Boyd (2013-07-25 09:45:42)
+> On 07/25, Tomasz Figa wrote:
+> > On Wednesday 24 of July 2013 17:43:32 Stephen Boyd wrote:
+> > > Some of Qualcomm's clocks can change their parent and rate at the
+> > > same time with a single register write. Add support for this
+> > > hardware to the common clock framework by adding a new
+> > > set_rate_and_parent() op. When the clock framework determines
+> > > that both the parent and the rate are going to change during
+> > > clk_set_rate() it will call the .set_rate_and_parent() op if
+> > > available and fall back to calling .set_parent() followed by
+> > > .set_rate() otherwise.
+> > 
+> > This is strange. Does you hardware support switching parent and rate 
+> > separately or you always need to set both and so all the fuss here?
+> 
+> It supports setting the parent or setting the rate, or setting
+> both at the same time.
 
-We avoid getting refcount on tail pages of hugepage, because unlike thp,
-hugepage is not split and we need not care about races with splitting.
+I think that setting parent and rate at the same time is a common enough
+case to merit handling it in the clock core. Probably this design will
+become more common in time.
 
-And migration of larger (1GB for x86_64) hugepage are not enabled.
+Regards,
+Mike
 
-ChangeLog v4:
- - use get_page instead of get_page_foll
- - add comment in follow_page_mask
-
-ChangeLog v3:
- - revert introducing migrate_movable_pages
- - follow_page_mask(FOLL_GET) returns NULL for tail pages
- - use isolate_huge_page
-
-ChangeLog v2:
- - updated description and renamed patch title
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- mm/memory.c  | 17 +++++++++++++++--
- mm/migrate.c | 13 +++++++++++--
- 2 files changed, 26 insertions(+), 4 deletions(-)
-
-diff --git v3.11-rc3.orig/mm/memory.c v3.11-rc3/mm/memory.c
-index 1ce2e2a..7ec1252 100644
---- v3.11-rc3.orig/mm/memory.c
-+++ v3.11-rc3/mm/memory.c
-@@ -1496,7 +1496,8 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
- 	if (pud_none(*pud))
- 		goto no_page_table;
- 	if (pud_huge(*pud) && vma->vm_flags & VM_HUGETLB) {
--		BUG_ON(flags & FOLL_GET);
-+		if (flags & FOLL_GET)
-+			goto out;
- 		page = follow_huge_pud(mm, address, pud, flags & FOLL_WRITE);
- 		goto out;
- 	}
-@@ -1507,8 +1508,20 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
- 	if (pmd_none(*pmd))
- 		goto no_page_table;
- 	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
--		BUG_ON(flags & FOLL_GET);
- 		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
-+		if (flags & FOLL_GET) {
-+			/*
-+			 * Refcount on tail pages are not well-defined and
-+			 * shouldn't be taken. The caller should handle a NULL
-+			 * return when trying to follow tail pages.
-+			 */
-+			if (PageHead(page))
-+				get_page(page);
-+			else {
-+				page = NULL;
-+				goto out;
-+			}
-+		}
- 		goto out;
- 	}
- 	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
-diff --git v3.11-rc3.orig/mm/migrate.c v3.11-rc3/mm/migrate.c
-index 3ec47d3..d313737 100644
---- v3.11-rc3.orig/mm/migrate.c
-+++ v3.11-rc3/mm/migrate.c
-@@ -1092,7 +1092,11 @@ static struct page *new_page_node(struct page *p, unsigned long private,
- 
- 	*result = &pm->status;
- 
--	return alloc_pages_exact_node(pm->node,
-+	if (PageHuge(p))
-+		return alloc_huge_page_node(page_hstate(compound_head(p)),
-+					pm->node);
-+	else
-+		return alloc_pages_exact_node(pm->node,
- 				GFP_HIGHUSER_MOVABLE | GFP_THISNODE, 0);
- }
- 
-@@ -1152,6 +1156,11 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
- 				!migrate_all)
- 			goto put_and_set;
- 
-+		if (PageHuge(page)) {
-+			isolate_huge_page(page, &pagelist);
-+			goto put_and_set;
-+		}
-+
- 		err = isolate_lru_page(page);
- 		if (!err) {
- 			list_add_tail(&page->lru, &pagelist);
-@@ -1174,7 +1183,7 @@ static int do_move_page_to_node_array(struct mm_struct *mm,
- 		err = migrate_pages(&pagelist, new_page_node,
- 				(unsigned long)pm, MIGRATE_SYNC, MR_SYSCALL);
- 		if (err)
--			putback_lru_pages(&pagelist);
-+			putback_movable_pages(&pagelist);
- 	}
- 
- 	up_read(&mm->mmap_sem);
--- 
-1.8.3.1
-
+> 
+> > 
+> > If the latter is the case, then maybe you can simply keep parent index and 
+> > rate cached inside driver data of your clock driver and use them on any 
+> > .set_rate() or .set_parent() calls?
+> 
+> This will not work. In fact, doing that would cause us to
+> overclock hardware for a short time between switching the parent
+> and the rate.
+> 
+> -- 
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
