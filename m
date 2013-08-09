@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967269Ab3HIK5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:57:14 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:39849 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966745Ab3HIK5M (ORCPT
+	id S967315Ab3HIK6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:58:16 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28537 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966851Ab3HIK6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:57:12 -0400
-Date: Fri, 9 Aug 2013 11:56:44 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Wei Ni <wni@nvidia.com>
-Cc: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <20130809105644.GW6427@sirena.org.uk>
-References: <1375944991-29182-1-git-send-email-wni@nvidia.com>
- <1375944991-29182-2-git-send-email-wni@nvidia.com>
- <20130808110136.GA6427@sirena.org.uk>
- <520498F3.8030101@nvidia.com>
+	Fri, 9 Aug 2013 06:58:14 -0400
+Date: Fri, 9 Aug 2013 13:57:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Won Kang <wkang77@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org, joe@perches.co,
+        gregkh@linuxfoundation.org, Won Kang <wonkang@gctsemi.com>,
+        sachin.kamat@linaro.org
+Subject: Re: [PATCH] staging: gdm7240: a TTY rewrite according to the latest
+ TTY APIs
+Message-ID: <20130809105754.GJ5502@mwanda>
+References: <1376036357-7216-1-git-send-email-wonkang@gctsemi.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hjiPcpt6rcFNGbLy"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <520498F3.8030101@nvidia.com>
-X-Cookie: Many pages make a thick book.
+In-Reply-To: <1376036357-7216-1-git-send-email-wonkang@gctsemi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/3] hwmon: (lm90) Add power control
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Whenever I see "rewrite" in the subject, my first reaction is to
+start typing, "Please break this big patch up into a series of small
+patches".  In this case, I guess it's hard to do that so you're ok.
+I do wish you had put the variable renaming into a separate patch
+though.
 
---hjiPcpt6rcFNGbLy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Fri, Aug 09, 2013 at 05:19:17PM +0900, Won Kang wrote:
+> Removed the old style reference countings and termios.
 
-On Fri, Aug 09, 2013 at 03:23:31PM +0800, Wei Ni wrote:
-> On 08/08/2013 07:01 PM, Mark Brown wrote:
+I guess this is clear but if you wanted to say some more comments
+about this in the change log that would be nice as well.
 
-> > You shouldn't just be ignoring errors here, though there are deployment
-> > difficulties with making sure a stub regulator is provided.  These
-> > should be getting easier after the next merge window, the stubs will be
-> > being tweaked slightly to have an "assume it's there" option even when
+> Renamed variables to meaninful ones.
+> 
+> Signed-off-by: Won Kang <wonkang@gctsemi.com>
 
-> Oh, really, could you show me the patch, I wish to take a look :)
+This signed-off-by doesn't match the email address where the patch
+was sent.
 
-No patch quite yet - the basic idea is that for plain regulator_get()
-you'll only ever get -EPROBE_DEFER as an error, not -ENODEV.  If the
-regulator is missing in the DT we assume it's there and provide a dummy
-if the DT doesn't hook it up.  If the consumer genuinely wants to see if
-a supply might not be wired up it should use regulator_get_optional()
-which is in -next at the minute.
+> +static void gdm_port_destruct(struct tty_port *port)
+> +{
+> +	struct gdm *gdm = container_of(port, struct gdm, port);
+> +
+> +	mutex_lock(&gdm_table_lock);
+> +	gdm_table[gdm->index][gdm->minor] = NULL;
+> +	mutex_unlock(&gdm_table_lock);
+> +
+> +	kfree(gdm);
 
---hjiPcpt6rcFNGbLy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We only take the lock when we are getting the "gdm" pointer from the
+gdm_table.  We release the lock as soon as we have our pointer but
+we still are using it after we have released the lock.  In other
+words:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+	mutex_lock(&gdm_table_lock);
+	gdm = gdm_table[index][minor];
+	mutex_unlock(&gdm_table_lock);
 
-iQIcBAEBAgAGBQJSBMrpAAoJELSic+t+oim92agP/j5azvH/+9+pcUjPegcAHB1d
-XX79RjQpQnEbtskZxH8tOM10KgWcQqCEzMu+D4L+jCGH592DA398AJl4miVmOAHt
-f3BmcJrmIYH+1HUN6dQGzT2yCZqvJqHuvn3qoTff1j+Lfoo2Izr91befX66UoLG2
-5+zZkK2iCo8RjOl5koMfNTH5yPt4RNff9iZNCnG1YFTO0U6Z9Kel3orLRBlAvBW1
-dffaatc3qKyy8ZZ3O/dpd/nIu5UXo2rASoEaar5atL0mK6iQQ7VqhAnI8HsHphbV
-WzmB3K+AoRxGblewawUVz/GZeHEUpxcgxOeFIXnbsOhs/fZrct0NIKre7LEhmUmm
-6UJOK7TriFNtKTK3dF6hM68SAUJbiENpQo35vYaOZoiARcE06PIRg69v0wQj83zg
-POMZOidZgp9fzI1FisYnTWB+dCFQnSlCJWLQMqrOqFoUjUTUGcSp7vRR8tMUhtL7
-50f2dHPnhNKAEWHRRjCAr8c6wnYh4V2H/dFA5k72xHgbKxIMSgScZSTzaAMbsgJ1
-77o0cT69HMh3H8scRKrfKhBXCn4UzNKZJwR3uoQHzqQIa4FLXrNAooL62PoTgxgq
-U+WjToAlslBAFjQ/QQs83y3bpo27rYfXXEDFgEkv2LHzh6W2ANa5agsXvT5WVtSe
-vypsdOjWv8lEByE1RrQ5
-=lQYp
------END PGP SIGNATURE-----
+	if (!GDM_TTY_READY(gdm)) {  <-- we have released the lock
+	                                but we are still using the
+					pointer.
 
---hjiPcpt6rcFNGbLy--
+So this could be a use after free bug here.  I haven't followed
+through to actaully see how this is called, this sort of locking is
+a common bug.
+
+> +		gdm = kmalloc(sizeof(struct gdm), GFP_KERNEL);
+> +		if (!gdm)
+> +			return -ENOMEM;
+>  
+> -int register_lte_tty_device(struct tty_dev *tty_dev, struct device *dev)
+> -{
+> -	struct tty_str *tty_str;
+> -	int i, j;
+> +		mutex_lock(&gdm_table_lock);
+>  
+> -	for (i = 0; i < TTY_MAX_COUNT; i++) {
+>  		for (j = 0; j < GDM_TTY_MINOR; j++) {
+> -			if (!g_tty_str[i][j])
+> +			if (!gdm_table[i][j])
+>  				break;
+>  		}
+>  
+>  		if (j == GDM_TTY_MINOR) {
+> -			tty_dev->minor[i] = j;
+> -			return -1;
+> +			tty_dev->minor[i] = GDM_TTY_MINOR;
+> +			mutex_unlock(&gdm_table_lock);
+> +			return -EINVAL;
+
+Static checkers will complain that we need to kfree(gdm) here.  It's
+unlikely that this affects real life, but it's good to be pedantic.
+
+regards,
+dan carpenter
+
