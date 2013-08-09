@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967285Ab3HIBmh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55272 "EHLO
+	id S967272Ab3HIBme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55277 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967072Ab3HIBlr (ORCPT
+	with ESMTP id S967076Ab3HIBls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:47 -0400
+	Thu, 8 Aug 2013 21:41:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [ 10/22] fanotify: info leak in copy_event_to_user()
-Date: Thu,  8 Aug 2013 18:41:26 -0700
-Message-Id: <20130809013951.453408312@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 11/22] MAINTAINERS: fix up stable_kernel_rules.txt location
+Date: Thu,  8 Aug 2013 18:41:27 -0700
+Message-Id: <20130809013951.628124855@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
 References: <20130809013949.226228694@linuxfoundation.org>
@@ -30,34 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+There was a mismerge of 7b175c46720f8e6b92801bb634c93d1016f80c62 for the
+3.0 kernel, so this fixes it up.
 
-commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f upstream.
+Also mark the stable stuff "Supported", as it is.
 
-The ->reserved field isn't cleared so we leak one byte of stack
-information to userspace.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/fanotify/fanotify_user.c |    1 +
- 1 file changed, 1 insertion(+)
+ MAINTAINERS |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -118,6 +118,7 @@ static int fill_event_metadata(struct fs
- 	metadata->event_len = FAN_EVENT_METADATA_LEN;
- 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
- 	metadata->vers = FANOTIFY_METADATA_VERSION;
-+	metadata->reserved = 0;
- 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
- 	metadata->pid = pid_vnr(event->tgid);
- 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5725,7 +5725,6 @@ P:	Vincent Sanders <vince@simtec.co.uk>
+ M:	Simtec Linux Team <linux@simtec.co.uk>
+ W:	http://www.simtec.co.uk/products/EB110ATX/
+ S:	Supported
+-F:	Documentation/stable_kernel_rules.txt
+ 
+ SIMTEC EB2410ITX (BAST)
+ P:	Ben Dooks
+@@ -6041,7 +6040,8 @@ F:	arch/alpha/kernel/srm_env.c
+ STABLE BRANCH
+ M:	Greg Kroah-Hartman <greg@kroah.com>
+ L:	stable@vger.kernel.org
+-S:	Maintained
++S:	Supported
++F:	Documentation/stable_kernel_rules.txt
+ 
+ STAGING SUBSYSTEM
+ M:	Greg Kroah-Hartman <gregkh@suse.de>
 
 
