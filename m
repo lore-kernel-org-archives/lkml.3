@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967191Ab3HIBmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55246 "EHLO
+	id S967289Ab3HIBwB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:52:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967052Ab3HIBln (ORCPT
+	with ESMTP id S967184Ab3HIBmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:43 -0400
+	Thu, 8 Aug 2013 21:42:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Kazior <michal.kazior@tieto.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 04/22] nl80211: fix mgmt tx status and testmode reporting for netns
-Date: Thu,  8 Aug 2013 18:41:20 -0700
-Message-Id: <20130809013950.207346642@linuxfoundation.org>
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 20/25] ipv6: take rtnl_lock and mark mrt6 table as freed on namespace cleanup
+Date: Thu,  8 Aug 2013 18:41:56 -0700
+Message-Id: <20130809013653.593027526@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
-References: <20130809013949.226228694@linuxfoundation.org>
+In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
+References: <20130809013649.057678051@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Michal Kazior <michal.kazior@tieto.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit a0ec570f4f69c4cb700d743a915096c2c8f56a99 upstream.
+[ Upstream commit 905a6f96a1b18e490a75f810d733ced93c39b0e5 ]
 
-These two events were sent to the default network
-namespace.
+Otherwise we end up dereferencing the already freed net->ipv6.mrt pointer
+which leads to a panic (from Srivatsa S. Bhat):
 
-This caused AP mode in a non-default netns to not
-work correctly. Mgmt tx status was multicasted to
-a different (default) netns instead of the one the
-AP was in.
+BUG: unable to handle kernel paging request at ffff882018552020
+IP: [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
+PGD 290a067 PUD 207ffe0067 PMD 207ff1d067 PTE 8000002018552060
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+Modules linked in: ebtable_nat ebtables nfs fscache nf_conntrack_ipv4 nf_defrag_ipv4 ipt_REJECT xt_CHECKSUM iptable_mangle iptable_filter ip_tables nfsd lockd nfs_acl exportfs auth_rpcgss autofs4 sunrpc 8021q garp bridge stp llc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
++ip6_tables ipv6 vfat fat vhost_net macvtap macvlan vhost tun kvm_intel kvm uinput iTCO_wdt iTCO_vendor_support cdc_ether usbnet mii microcode i2c_i801 i2c_core lpc_ich mfd_core shpchp ioatdma dca mlx4_core be2net wmi acpi_cpufreq mperf ext4 jbd2 mbcache dm_mirror dm_region_hash dm_log dm_mod
+CPU: 0 PID: 7 Comm: kworker/u33:0 Not tainted 3.11.0-rc1-ea45e-a #4
+Hardware name: IBM  -[8737R2A]-/00Y2738, BIOS -[B2E120RUS-1.20]- 11/30/2012
+Workqueue: netns cleanup_net
+task: ffff8810393641c0 ti: ffff881039366000 task.ti: ffff881039366000
+RIP: 0010:[<ffffffffa0366b02>]  [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
+RSP: 0018:ffff881039367bd8  EFLAGS: 00010286
+RAX: ffff881039367fd8 RBX: ffff882018552000 RCX: dead000000200200
+RDX: 0000000000000000 RSI: ffff881039367b68 RDI: ffff881039367b68
+RBP: ffff881039367bf8 R08: ffff881039367b68 R09: 2222222222222222
+R10: 2222222222222222 R11: 2222222222222222 R12: ffff882015a7a040
+R13: ffff882014eb89c0 R14: ffff8820289e2800 R15: 0000000000000000
+FS:  0000000000000000(0000) GS:ffff88103fc00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffff882018552020 CR3: 0000000001c0b000 CR4: 00000000000407f0
+Stack:
+ ffff881039367c18 ffff882014eb89c0 ffff882015e28c00 0000000000000000
+ ffff881039367c18 ffffffffa034d9d1 ffff8820289e2800 ffff882014eb89c0
+ ffff881039367c58 ffffffff815bdecb ffffffff815bddf2 ffff882014eb89c0
+Call Trace:
+ [<ffffffffa034d9d1>] rawv6_close+0x21/0x40 [ipv6]
+ [<ffffffff815bdecb>] inet_release+0xfb/0x220
+ [<ffffffff815bddf2>] ? inet_release+0x22/0x220
+ [<ffffffffa032686f>] inet6_release+0x3f/0x50 [ipv6]
+ [<ffffffff8151c1d9>] sock_release+0x29/0xa0
+ [<ffffffff81525520>] sk_release_kernel+0x30/0x70
+ [<ffffffffa034f14b>] icmpv6_sk_exit+0x3b/0x80 [ipv6]
+ [<ffffffff8152fff9>] ops_exit_list+0x39/0x60
+ [<ffffffff815306fb>] cleanup_net+0xfb/0x1a0
+ [<ffffffff81075e3a>] process_one_work+0x1da/0x610
+ [<ffffffff81075dc9>] ? process_one_work+0x169/0x610
+ [<ffffffff81076390>] worker_thread+0x120/0x3a0
+ [<ffffffff81076270>] ? process_one_work+0x610/0x610
+ [<ffffffff8107da2e>] kthread+0xee/0x100
+ [<ffffffff8107d940>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff8162a99c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8107d940>] ? __init_kthread_worker+0x70/0x70
+Code: 20 48 89 5d e8 4c 89 65 f0 4c 89 6d f8 66 66 66 66 90 4c 8b 67 30 49 89 fd e8 db 3c 1e e1 49 8b 9c 24 90 08 00 00 48 85 db 74 06 <4c> 39 6b 20 74 20 bb f3 ff ff ff e8 8e 3c 1e e1 89 d8 4c 8b 65
+RIP  [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
+ RSP <ffff881039367bd8>
+CR2: ffff882018552020
 
-Signed-off-by: Michal Kazior <michal.kazior@tieto.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/wireless/nl80211.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/ipv6/ip6mr.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -4454,12 +4454,14 @@ EXPORT_SYMBOL(cfg80211_testmode_alloc_ev
- 
- void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -256,10 +256,12 @@ static void __net_exit ip6mr_rules_exit(
  {
-+	struct cfg80211_registered_device *rdev = ((void **)skb->cb)[0];
- 	void *hdr = ((void **)skb->cb)[1];
- 	struct nlattr *data = ((void **)skb->cb)[2];
+ 	struct mr6_table *mrt, *next;
  
- 	nla_nest_end(skb, data);
- 	genlmsg_end(skb, hdr);
--	genlmsg_multicast(skb, 0, nl80211_testmode_mcgrp.id, gfp);
-+	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
-+				nl80211_testmode_mcgrp.id, gfp);
- }
- EXPORT_SYMBOL(cfg80211_testmode_event);
- #endif
-@@ -6745,7 +6747,8 @@ void nl80211_send_mgmt_tx_status(struct
- 		return;
++	rtnl_lock();
+ 	list_for_each_entry_safe(mrt, next, &net->ipv6.mr6_tables, list) {
+ 		list_del(&mrt->list);
+ 		ip6mr_free_table(mrt);
  	}
++	rtnl_unlock();
+ 	fib_rules_unregister(net->ipv6.mr6_rules_ops);
+ }
+ #else
+@@ -286,7 +288,10 @@ static int __net_init ip6mr_rules_init(s
  
--	genlmsg_multicast(msg, 0, nl80211_mlme_mcgrp.id, gfp);
-+	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
-+				nl80211_mlme_mcgrp.id, gfp);
- 	return;
+ static void __net_exit ip6mr_rules_exit(struct net *net)
+ {
++	rtnl_lock();
+ 	ip6mr_free_table(net->ipv6.mrt6);
++	net->ipv6.mrt6 = NULL;
++	rtnl_unlock();
+ }
+ #endif
  
-  nla_put_failure:
 
 
