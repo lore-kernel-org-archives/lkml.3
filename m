@@ -1,123 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967313Ab3HIBmk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55286 "EHLO
+	id S967299Ab3HIBmi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55236 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967078Ab3HIBlt (ORCPT
+	with ESMTP id S966952Ab3HIBll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:49 -0400
+	Thu, 8 Aug 2013 21:41:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Hollmann <hollmann@in.tum.de>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
-        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [ 12/22] perf: Fix event group context move
-Date: Thu,  8 Aug 2013 18:41:28 -0700
-Message-Id: <20130809013951.854896075@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/22] 3.0.90-stable review
+Date: Thu,  8 Aug 2013 18:41:16 -0700
+Message-Id: <20130809013949.226228694@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
-References: <20130809013949.226228694@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.0.90 release.
+There are 22 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sun Aug 11 01:37:07 UTC 2013.
+Anything received after that time might be too late.
 
-From: Jiri Olsa <jolsa@redhat.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.90-rc1.gz
+and the diffstat can be found below.
 
-commit 0231bb5336758426b44ccd798ccd3c5419c95d58 upstream.
+thanks,
 
-When we have group with mixed events (hw/sw) we want to end up
-with group leader being in hw context. So if group leader is
-initialy sw event, we move all the events under hw context.
+greg k-h
 
-The move is done for each event by removing it from its context
-and adding it back into proper one. As a part of the removal the
-event is automatically disabled, which is not what we want at
-this stage of creating groups.
+-------------
+Pseudo-Shortlog of commits:
 
-The fix is to initialize event state after removal from sw
-context.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.90-rc1
 
-This fix resulted from the following discussion:
+Dan Carpenter <dan.carpenter@oracle.com>
+    net_sched: info leak in atm_tc_dump_class()
 
-  http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
+Dan Carpenter <dan.carpenter@oracle.com>
+    af_key: more info leaks in pfkey messages
 
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vince@deater.net>
-Link: http://lkml.kernel.org/r/1359714225-4231-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+David S. Miller <davem@davemloft.net>
+    net_sched: Fix stack info leak in cbq_dump_wrr().
 
----
- kernel/events/core.c |   20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+Eric Dumazet <edumazet@google.com>
+    usbnet: do not pretend to support SG/TSO
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -839,6 +839,15 @@ list_add_event(struct perf_event *event,
- }
- 
- /*
-+ * Initialize event state based on the perf_event_attr::disabled.
-+ */
-+static inline void perf_event__state_init(struct perf_event *event)
-+{
-+	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
-+					      PERF_EVENT_STATE_INACTIVE;
-+}
-+
-+/*
-  * Called at perf_event creation and when events are attached/detached from a
-  * group.
-  */
-@@ -6241,8 +6250,7 @@ perf_event_alloc(struct perf_event_attr
- 
- 	event->overflow_handler	= overflow_handler;
- 
--	if (attr->disabled)
--		event->state = PERF_EVENT_STATE_OFF;
-+	perf_event__state_init(event);
- 
- 	pmu = NULL;
- 
-@@ -6616,9 +6624,17 @@ SYSCALL_DEFINE5(perf_event_open,
- 
- 		mutex_lock(&gctx->mutex);
- 		perf_remove_from_context(group_leader);
-+
-+		/*
-+		 * Removing from the context ends up with disabled
-+		 * event. What we want here is event in the initial
-+		 * startup state, ready to be add into new context.
-+		 */
-+		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
- 			perf_remove_from_context(sibling);
-+			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
- 		mutex_unlock(&gctx->mutex);
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    ipv6: take rtnl_lock and mark mrt6 table as freed on namespace cleanup
+
+Neil Horman <nhorman@tuxdriver.com>
+    sctp: fully initialize sctp_outq in sctp_outq_init
+
+Michal Tesar <mtesar@redhat.com>
+    sysctl net: Keep tcp_syn_retries inside the boundary
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    arcnet: cleanup sizeof parameter
+
+Salman Qazi <sqazi@google.com>
+    perf: Use css_tryget() to avoid propping up css refcount
+
+H.J. Lu <hjl.tools@gmail.com>
+    x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
+
+Jiri Olsa <jolsa@redhat.com>
+    perf: Fix event group context move
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    MAINTAINERS: fix up stable_kernel_rules.txt location
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    fanotify: info leak in copy_event_to_user()
+
+Zhu Yanhai <gaoyang.zyh@taobao.com>
+    sched: Fix the broken sched_rr_get_interval()
+
+Lan Tianyu <tianyu.lan@intel.com>
+    ACPI / battery: Fix parsing _BIX return value
+
+Tomasz Moń <desowin@gmail.com>
+    mwifiex: Add missing endian conversion.
+
+Stanislaw Gruszka <stf_xl@wp.pl>
+    rt2x00: fix stop queue
+
+Johannes Berg <johannes.berg@intel.com>
+    mac80211: fix duplicate retransmission detection
+
+Michal Kazior <michal.kazior@tieto.com>
+    nl80211: fix mgmt tx status and testmode reporting for netns
+
+Oleksij Rempel <linux@rempel-privat.de>
+    ath9k_htc: do some initial hardware configuration
+
+Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+    serial/mxs-auart: increase time to wait for transmitter to become idle
+
+Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+    serial/mxs-auart: fix race condition in interrupt handler
+
+
+-------------
+
+Diffstat:
+
+ MAINTAINERS                                   |  4 +--
+ Makefile                                      |  4 +--
+ arch/x86/kernel/i387.c                        |  2 +-
+ drivers/acpi/battery.c                        |  2 ++
+ drivers/net/arcnet/arcnet.c                   |  2 +-
+ drivers/net/usb/smsc75xx.c                    | 12 +++------
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c |  1 +
+ drivers/net/wireless/mwifiex/sdio.c           |  4 +--
+ drivers/net/wireless/rt2x00/rt2x00queue.c     | 18 ++++++++-----
+ drivers/tty/serial/mxs-auart.c                | 38 ++++++++++++++++-----------
+ fs/notify/fanotify/fanotify_user.c            |  1 +
+ kernel/events/core.c                          | 30 +++++++++++++++++----
+ kernel/sched_fair.c                           |  2 +-
+ net/ipv4/sysctl_net_ipv4.c                    |  6 ++++-
+ net/ipv6/ip6mr.c                              |  5 ++++
+ net/key/af_key.c                              |  4 +++
+ net/mac80211/rx.c                             | 10 +++++--
+ net/sched/sch_atm.c                           |  1 +
+ net/sched/sch_cbq.c                           |  1 +
+ net/sctp/outqueue.c                           |  8 ++----
+ net/wireless/nl80211.c                        |  7 +++--
+ 21 files changed, 105 insertions(+), 57 deletions(-)
 
 
