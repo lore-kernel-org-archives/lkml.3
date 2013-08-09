@@ -1,55 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964772Ab3HIO7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 10:59:47 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:31144 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933972Ab3HIO7p (ORCPT
+	id S934315Ab3HIPCI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:02:08 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51309 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933939Ab3HIPCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 10:59:45 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18sLnNCVaBLh4LpLXACkwHEn8iY4g4OElk=
-Date: Fri, 9 Aug 2013 10:59:39 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci <linux-pci@vger.kernel.org>
-Subject: Re: linux-next: Tree for Aug 8 (not CONFIG_PCI_MSI conflict)
-Message-ID: <20130809145939.GE25111@titan.lakedaemon.net>
-References: <20130808170822.82bf33d3cf5100f5e2646815@canb.auug.org.au>
- <5203F978.2050504@infradead.org>
+	Fri, 9 Aug 2013 11:02:06 -0400
+Message-ID: <52050474.8040608@parallels.com>
+Date: Fri, 9 Aug 2013 19:02:12 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5203F978.2050504@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: <riel@redhat.com>, Kirill Korotaev <dev@parallels.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Brian Foster <bfoster@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>, <linux-mm@kvack.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, <fengguang.wu@intel.com>,
+        <devel@openvz.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 10/16] fuse: Implement writepages callback
+References: <20130629172211.20175.70154.stgit@maximpc.sw.ru> <20130629174525.20175.18987.stgit@maximpc.sw.ru> <20130719165037.GA18358@tucsk.piliscsaba.szeredi.hu> <51FBD2DF.50506@parallels.com> <CAJfpegtr4+vv_ZzuM7EE7MkHPqNi4brQamg4ZOWb2Me+iG87JQ@mail.gmail.com>
+In-Reply-To: <CAJfpegtr4+vv_ZzuM7EE7MkHPqNi4brQamg4ZOWb2Me+iG87JQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy,
+Hi Miklos,
 
-On Thu, Aug 08, 2013 at 01:03:04PM -0700, Randy Dunlap wrote:
-> On 08/08/13 00:08, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Changes since 20130807:
-> > 
-> 
-> on i386 and x86_64:
-> when CONFIG_PCI_MSI is not enabled:
-> 
-> There are many of these errors:
-> include/linux/msi.h:65:6: error: expected identifier or '(' before 'void'
-> include/linux/msi.h:65:6: error: expected ')' before numeric constant
-> 
-> because arch/x86/include/asm/pci.h defines:
-> #define default_teardown_msi_irqs	NULL
+08/06/2013 08:25 PM, Miklos Szeredi пишет:
+> On Fri, Aug 2, 2013 at 5:40 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
+>> 07/19/2013 08:50 PM, Miklos Szeredi пишет:
+>>
+>>> On Sat, Jun 29, 2013 at 09:45:29PM +0400, Maxim Patlasov wrote:
+>>>> From: Pavel Emelyanov <xemul@openvz.org>
+>>>>
+>>>> The .writepages one is required to make each writeback request carry more
+>>>> than
+>>>> one page on it. The patch enables optimized behaviour unconditionally,
+>>>> i.e. mmap-ed writes will benefit from the patch even if
+>>>> fc->writeback_cache=0.
+>>> I rewrote this a bit, so we won't have to do the thing in two passes,
+>>> which
+>>> makes it simpler and more robust.  Waiting for page writeback here is
+>>> wrong
+>>> anyway, see comment above fuse_page_mkwrite().  BTW we had a race there
+>>> because
+>>> fuse_page_mkwrite() didn't take the page lock.  I've also fixed that up
+>>> and
+>>> pushed a series containing these patches up to implementing ->writepages()
+>>> to
+>>>
+>>>     git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git
+>>> writepages
+>>>
+>>> Passed some trivial testing but more is needed.
+>>
+>> Thanks a lot for efforts. The approach you implemented looks promising, but
+>> it introduces the following assumption: a page cannot become dirty before we
+>> have a chance to wait on fuse writeback holding the page locked. This is
+>> already true for mmap-ed writes (due to your fixes) and it seems doable for
+>> cached writes as well (like we do in fuse_perform_write). But the assumption
+>> seems to be broken in case of direct read from local fs (e.g. ext4) to a
+>> memory region mmap-ed to a file on fuse fs. See how dio_bio_submit() marks
+>> pages dirty by bio_set_pages_dirty(). I can't see any solution for this
+>> use-case. Do you?
+> Hmm.  Direct IO on an mmaped file will do get_user_pages() which will
+> do the necessary page fault magic and ->page_mkwrite() will be called.
+> At least AFAICS.
 
-Do you have an example config you used?
+Yes, I agree.
 
-thx,
+>
+> The page cannot become dirty through a memory mapping without first
+> switching the pte from read-only to read-write first.  Page accounting
+> logic relies on this too.  The other way the page can become dirty is
+> through write(2) on the fs.  But we do get notified about that too.
 
-Jason.
+Yes, that's correct, but I don't understand why you disregard two other 
+cases of marking page dirty (both related to direct AIO read from a file 
+to a memory region mmap-ed to a fuse file):
+
+1. dio_bio_submit() -->
+       bio_set_pages_dirty() -->
+         set_page_dirty_lock()
+
+2. dio_bio_complete() -->
+       bio_check_pages_dirty() -->
+          bio_dirty_fn() -->
+             bio_set_pages_dirty() -->
+                set_page_dirty_lock()
+
+As soon as a page became dirty through a memory mapping (exactly as you 
+explained), nothing would prevent it to be written-back. And fuse will 
+call end_page_writeback almost immediately after copying the real page 
+to a temporary one. Then dio_bio_submit may re-dirty page speculatively 
+w/o notifying fuse. And again, since then nothing would prevent it to be 
+written-back once more. Hence we can end up in more then one temporary 
+page in fuse write-back. And similar concern for dio_bio_complete() 
+re-dirty.
+
+This make me think that we do need fuse_page_is_writeback() in 
+fuse_writepages_fill(). But it shouldn't be harmful because it will 
+no-op practically always due to waiting for fuse writeback in 
+->page_mkwrite() and in course of handling write(2).
+
+Thanks,
+Maxim
