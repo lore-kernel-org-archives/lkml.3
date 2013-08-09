@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967266Ab3HIBvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:51:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55449 "EHLO
+	id S967276Ab3HIBvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:51:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55445 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967202Ab3HIBmW (ORCPT
+	with ESMTP id S967194Ab3HIBmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:22 -0400
+	Thu, 8 Aug 2013 21:42:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/25] af_key: more info leaks in pfkey messages
-Date: Thu,  8 Aug 2013 18:41:59 -0700
-Message-Id: <20130809013654.192037883@linuxfoundation.org>
+Subject: [ 22/25] net_sched: Fix stack info leak in cbq_dump_wrr().
+Date: Thu,  8 Aug 2013 18:41:58 -0700
+Message-Id: <20130809013654.010053049@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -29,50 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit ff862a4668dd6dba962b1d2d8bd344afa6375683 ]
+[ Upstream commit a0db856a95a29efb1c23db55c02d9f0ff4f0db48 ]
 
-This is inspired by a5cc68f3d6 "af_key: fix info leaks in notify
-messages".  There are some struct members which don't get initialized
-and could disclose small amounts of private information.
+Make sure the reserved fields, and padding (if any), are
+fully initialized.
 
-Acked-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+Based upon a patch by Dan Carpenter and feedback from
+Joe Perches.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/key/af_key.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/sched/sch_cbq.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -2073,6 +2073,7 @@ static int pfkey_xfrm_policy2msg(struct
- 			pol->sadb_x_policy_type = IPSEC_POLICY_NONE;
- 	}
- 	pol->sadb_x_policy_dir = dir+1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = xp->index;
- 	pol->sadb_x_policy_priority = xp->priority;
+--- a/net/sched/sch_cbq.c
++++ b/net/sched/sch_cbq.c
+@@ -1467,6 +1467,7 @@ static int cbq_dump_wrr(struct sk_buff *
+ 	unsigned char *b = skb_tail_pointer(skb);
+ 	struct tc_cbq_wrropt opt;
  
-@@ -3108,7 +3109,9 @@ static int pfkey_send_acquire(struct xfr
- 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
- 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
- 	pol->sadb_x_policy_dir = dir+1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = xp->index;
-+	pol->sadb_x_policy_priority = xp->priority;
- 
- 	/* Set sadb_comb's. */
- 	if (x->id.proto == IPPROTO_AH)
-@@ -3496,6 +3499,7 @@ static int pfkey_send_migrate(const stru
- 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
- 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
- 	pol->sadb_x_policy_dir = dir + 1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = 0;
- 	pol->sadb_x_policy_priority = 0;
- 
++	memset(&opt, 0, sizeof(opt));
+ 	opt.flags = 0;
+ 	opt.allot = cl->allot;
+ 	opt.priority = cl->priority + 1;
 
 
