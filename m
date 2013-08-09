@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967579Ab3HIBnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:43:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55367 "EHLO
+	id S967565Ab3HIBnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:43:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55370 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967133Ab3HIBmJ (ORCPT
+	with ESMTP id S967134Ab3HIBmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:09 -0400
+	Thu, 8 Aug 2013 21:42:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <stf_xl@wp.pl>,
+        Bo Shi <cnshibo@gmail.com>, Oleksij Rempel <linux@rempel-privat.de>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 08/25] rt2x00: fix stop queue
-Date: Thu,  8 Aug 2013 18:41:44 -0700
-Message-Id: <20130809013650.993980988@linuxfoundation.org>
+Subject: [ 04/25] ath9k_htc: do some initial hardware configuration
+Date: Thu,  8 Aug 2013 18:41:40 -0700
+Message-Id: <20130809013650.104983140@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -27,74 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit e2288b66fe7ff0288382b2af671b4da558b44472 upstream.
+commit dc2a87f519a4d8cb376ab54f22b6b98a943b51ce upstream.
 
-Since we clear QUEUE_STARTED in rt2x00queue_stop_queue(), following
-call to rt2x00queue_pause_queue() reduce to noop, i.e we do not
-stop queue in mac80211.
+Currently we configure harwdare and clock, only after
+interface start. In this case, if we reload module or
+reboot PC without configuring adapter, firmware will freeze.
+There is no software way to reset adpter.
 
-To fix that introduce rt2x00queue_pause_queue_nocheck() function,
-which will stop queue in mac80211 directly.
+This patch add initial configuration and set it in
+disabled state, to avoid this freeze. Behaviour of this patch
+should be similar to: ifconfig wlan0 up; ifconfig wlan0 down.
 
-Note that rt2x00_start_queue() explicitly set QUEUE_PAUSED bit.
-
-Note also that reordering operations i.e. first call to
-rt2x00queue_pause_queue() and then clear QUEUE_STARTED bit, will race
-with rt2x00queue_unpause_queue(), so calling ieee80211_stop_queue()
-directly is the only available solution to fix the problem without
-major rework.
-
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Bug: https://github.com/qca/open-ath9k-htc-firmware/issues/1
+Tested-by: Bo Shi <cnshibo@gmail.com>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00queue.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -856,13 +856,8 @@ void rt2x00queue_index_inc(struct queue_
- 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
- }
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+@@ -821,6 +821,7 @@ static int ath9k_init_device(struct ath9
+ 	if (error != 0)
+ 		goto err_rx;
  
--void rt2x00queue_pause_queue(struct data_queue *queue)
-+void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
- {
--	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
--	    !test_bit(QUEUE_STARTED, &queue->flags) ||
--	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
--		return;
--
- 	switch (queue->qid) {
- 	case QID_AC_VO:
- 	case QID_AC_VI:
-@@ -878,6 +873,15 @@ void rt2x00queue_pause_queue(struct data
- 		break;
- 	}
- }
-+void rt2x00queue_pause_queue(struct data_queue *queue)
-+{
-+	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
-+	    !test_bit(QUEUE_STARTED, &queue->flags) ||
-+	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
-+		return;
-+
-+	rt2x00queue_pause_queue_nocheck(queue);
-+}
- EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
- 
- void rt2x00queue_unpause_queue(struct data_queue *queue)
-@@ -939,7 +943,7 @@ void rt2x00queue_stop_queue(struct data_
- 		return;
- 	}
- 
--	rt2x00queue_pause_queue(queue);
-+	rt2x00queue_pause_queue_nocheck(queue);
- 
- 	queue->rt2x00dev->ops->lib->stop_queue(queue);
- 
++	ath9k_hw_disable(priv->ah);
+ #ifdef CONFIG_MAC80211_LEDS
+ 	/* must be initialized before ieee80211_register_hw */
+ 	priv->led_cdev.default_trigger = ieee80211_create_tpt_led_trigger(priv->hw,
 
 
