@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030552Ab3HIQjA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:39:00 -0400
-Received: from mail-vb0-f74.google.com ([209.85.212.74]:56891 "EHLO
-	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030353Ab3HIQi5 (ORCPT
+	id S968153Ab3HIQjU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:39:20 -0400
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:63683 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968111Ab3HIQjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:38:57 -0400
+	Fri, 9 Aug 2013 12:39:17 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: Chris Ball <cjb@laptop.org>
 Cc: Jaehoon Chung <jh80.chung@samsung.com>,
@@ -16,13 +16,11 @@ Cc: Jaehoon Chung <jh80.chung@samsung.com>,
         Alim Akhtar <alim.akhtar@samsung.com>,
         Abhilash Kesavan <a.kesavan@samsung.com>,
         Tomasz Figa <tomasz.figa@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Doug Anderson <dianders@chromium.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 2/4] mmc: dw_mmc: Add exynos resume_noirq callback to clear WAKEUP_INT
-Date: Fri,  9 Aug 2013 09:33:18 -0700
-Message-Id: <1376066000-5495-3-git-send-email-dianders@chromium.org>
+        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 1/4] mmc: dw_mmc: Invalidate cache of current_speed after suspend/resume
+Date: Fri,  9 Aug 2013 09:33:17 -0700
+Message-Id: <1376066000-5495-2-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.8.3
 In-Reply-To: <1376066000-5495-1-git-send-email-dianders@chromium.org>
 References: <1375825071-20922-1-git-send-email-dianders@chromium.org>
@@ -31,116 +29,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the WAKEUP_INT is asserted at wakeup and not cleared, we'll end up
-looping around forever.  This has been seen to happen on exynos5420
-silicon despite the fact that we haven't enabled any wakeup events due
-to a silicon errata.  It is safe to do on all exynos variants.
+The dw_mmc driver keeps a cache of the current slot->clock in order to
+avoid doing a whole lot of work every time set_ios() is called.
+However, after suspend/resume the register values are bogus so we need
+to ensure that the cached value is invalidated.
+
+Specifically I saw problems with the SD Card slot, which doesn't have
+MMC_KEEP_POWER.  Problems showed up when no card was inserted across
+suspend/resume.  In other words:
+
+1. At boot time, slot is all setup and configured to 400kHz.
+2. Suspend
+3. Resume; clock registers are reset (by suspend/resume) and not
+   restored since dw_mmc still thinks slot is configured for 400kHz
+   due to host->current_speed cache.
+4. Insert card.
+5. No code sees any need to change the clock for detecting the card,
+   since everyone thinks it's at 400kHz.  ...but it's not.
+
+Invalidating the current_speed also means that we don't need to call:
+  dw_mci_setup_bus(slot, true);
+...to force an update of the clock in the case when the slot was left
+powered.
+
+Before this patch, many scenarios worked fine across suspend/resume
+since the core mmc code ends up adjusting the clock quite a bit
+during/suspend resume (and this ended up invalidating the cache for
+us).
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 ---
 Changes in v5:
-- Cleaned up dw_mci_exynos_resume_noirq() comment as per Seungwon.
-- Don't memcpy dev_pm_ops structure, define a new one.
+- Remove force_clkinit as per Jaehoon
+- Update commit message to (hopefully) be clearer
 
-Changes in v4:
-- Take Seungwon's suggestion and don't add any dw_mmc-pltfm code.
-
-Changes in v3:
-- Add freeze/thaw and poweroff/restore noirq entries.
-
+Changes in v4: None
+Changes in v3: None
 Changes in v2:
-- Use suspend_noirq as per James Hogan.
+- Fix typo (some -> come)
+- Use ~0 instead of 0xFFFFFFFF; add comment about value
 
- drivers/mmc/host/dw_mmc-exynos.c | 56 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 55 insertions(+), 1 deletion(-)
+ drivers/mmc/host/dw_mmc.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
-index 866edef..7d88583 100644
---- a/drivers/mmc/host/dw_mmc-exynos.c
-+++ b/drivers/mmc/host/dw_mmc-exynos.c
-@@ -30,6 +30,7 @@
- #define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
- 					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
- 					SDMMC_CLKSEL_CCLK_DIVIDER(z))
-+#define SDMMC_CLKSEL_WAKEUP_INT		BIT(11)
- 
- #define EXYNOS4210_FIXED_CIU_CLK_DIV	2
- #define EXYNOS4412_FIXED_CIU_CLK_DIV	4
-@@ -100,6 +101,52 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
- 	return 0;
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index ee5f167..e614b03 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -629,13 +629,13 @@ static void mci_send_cmd(struct dw_mci_slot *slot, u32 cmd, u32 arg)
+ 		cmd, arg, cmd_status);
  }
  
-+#ifdef CONFIG_PM_SLEEP
-+/*
-+ * TODO: we should probably disable the clock to the card in the suspend path.
-+ */
-+static int dw_mci_exynos_suspend(struct device *dev)
-+{
-+	struct dw_mci *host = dev_get_drvdata(dev);
-+
-+	return dw_mci_suspend(host);
-+}
-+
-+static int dw_mci_exynos_resume(struct device *dev)
-+{
-+	struct dw_mci *host = dev_get_drvdata(dev);
-+
-+	return dw_mci_resume(host);
-+}
-+
-+/**
-+ * dw_mci_exynos_resume_noirq - Exynos-specific resume code
-+ *
-+ * On exynos5420 there is a silicon errata that will sometimes leave the
-+ * WAKEUP_INT bit in the CLKSEL register asserted.  This bit is 1 to indicate
-+ * that it fired and we can clear it by writing a 1 back.  Clear it to prevent
-+ * interrupts from going off constantly.
-+ *
-+ * We run this code on all exynos variants because it doesn't hurt.
-+ */
-+
-+static int dw_mci_exynos_resume_noirq(struct device *dev)
-+{
-+	struct dw_mci *host = dev_get_drvdata(dev);
-+	u32 clksel;
-+
-+	clksel = mci_readl(host, CLKSEL);
-+	if (clksel & SDMMC_CLKSEL_WAKEUP_INT)
-+		mci_writel(host, CLKSEL, clksel);
-+
-+	return 0;
-+}
-+#else
-+#define dw_mci_exynos_suspend		NULL
-+#define dw_mci_exynos_resume		NULL
-+#define dw_mci_exynos_resume_noirq	NULL
-+#endif /* CONFIG_PM_SLEEP */
-+
- static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
+-static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
++static void dw_mci_setup_bus(struct dw_mci_slot *slot)
  {
- 	/*
-@@ -187,13 +234,20 @@ static int dw_mci_exynos_probe(struct platform_device *pdev)
- 	return dw_mci_pltfm_register(pdev, drv_data);
- }
+ 	struct dw_mci *host = slot->host;
+ 	u32 div;
+ 	u32 clk_en_a;
  
-+const struct dev_pm_ops dw_mci_exynos_pmops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(dw_mci_exynos_suspend, dw_mci_exynos_resume)
-+	.resume_noirq = dw_mci_exynos_resume_noirq,
-+	.thaw_noirq = dw_mci_exynos_resume_noirq,
-+	.restore_noirq = dw_mci_exynos_resume_noirq,
-+};
+-	if (slot->clock != host->current_speed || force_clkinit) {
++	if (slot->clock != host->current_speed) {
+ 		div = host->bus_hz / slot->clock;
+ 		if (host->bus_hz % slot->clock && host->bus_hz > slot->clock)
+ 			/*
+@@ -819,7 +819,7 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 		drv_data->set_ios(slot->host, ios);
+ 
+ 	/* Slot specific timing and width adjustment */
+-	dw_mci_setup_bus(slot, false);
++	dw_mci_setup_bus(slot);
+ 
+ 	switch (ios->power_mode) {
+ 	case MMC_POWER_UP:
+@@ -2511,13 +2511,19 @@ int dw_mci_resume(struct dw_mci *host)
+ 		   DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
+ 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
+ 
++	/*
++	 * Invalidate the 'current_speed' value since CLKDIV has come up in
++	 * default state and our cache is incorrect; set to something we know
++	 * slot->clock won't be.
++	 */
++	host->current_speed = ~0;
 +
- static struct platform_driver dw_mci_exynos_pltfm_driver = {
- 	.probe		= dw_mci_exynos_probe,
- 	.remove		= __exit_p(dw_mci_pltfm_remove),
- 	.driver		= {
- 		.name		= "dwmmc_exynos",
- 		.of_match_table	= dw_mci_exynos_match,
--		.pm		= &dw_mci_pltfm_pmops,
-+		.pm		= &dw_mci_exynos_pmops,
- 	},
- };
+ 	for (i = 0; i < host->num_slots; i++) {
+ 		struct dw_mci_slot *slot = host->slot[i];
+ 		if (!slot)
+ 			continue;
+ 		if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER) {
+ 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+-			dw_mci_setup_bus(slot, true);
+ 		}
  
+ 		ret = mmc_resume_host(host->slot[i]->mmc);
 -- 
 1.8.3
 
