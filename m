@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967221Ab3HIBm0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55252 "EHLO
+	id S967249Ab3HIBt7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:49:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967059Ab3HIBlp (ORCPT
+	with ESMTP id S967208Ab3HIBmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:45 -0400
+	Thu, 8 Aug 2013 21:42:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <stf_xl@wp.pl>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 06/22] rt2x00: fix stop queue
-Date: Thu,  8 Aug 2013 18:41:22 -0700
-Message-Id: <20130809013950.570295968@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 21/25] usbnet: do not pretend to support SG/TSO
+Date: Thu,  8 Aug 2013 18:41:57 -0700
+Message-Id: <20130809013653.783591924@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
-References: <20130809013949.226228694@linuxfoundation.org>
+In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
+References: <20130809013649.057678051@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stanislaw Gruszka <stf_xl@wp.pl>
+From: Eric Dumazet <edumazet@google.com>
 
-commit e2288b66fe7ff0288382b2af671b4da558b44472 upstream.
+[ Upstream commit 20f0170377264e8449b6987041f0bcc4d746d3ed ]
 
-Since we clear QUEUE_STARTED in rt2x00queue_stop_queue(), following
-call to rt2x00queue_pause_queue() reduce to noop, i.e we do not
-stop queue in mac80211.
+usbnet doesn't support yet SG, so drivers should not advertise SG or TSO
+capabilities, as they allow TCP stack to build large TSO packets that
+need to be linearized and might use order-5 pages.
 
-To fix that introduce rt2x00queue_pause_queue_nocheck() function,
-which will stop queue in mac80211 directly.
+This adds an extra copy overhead and possible allocation failures.
 
-Note that rt2x00_start_queue() explicitly set QUEUE_PAUSED bit.
+Current code ignore skb_linearize() return code so crashes are even
+possible.
 
-Note also that reordering operations i.e. first call to
-rt2x00queue_pause_queue() and then clear QUEUE_STARTED bit, will race
-with rt2x00queue_unpause_queue(), so calling ieee80211_stop_queue()
-directly is the only available solution to fix the problem without
-major rework.
+Best is to not pretend SG/TSO is supported, and add this again when/if
+usbnet really supports SG for devices who could get a performance gain.
 
-Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Based on a prior patch from Freddy Xin <freddy@asix.com.tw>
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/rt2x00/rt2x00queue.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/net/usb/smsc75xx.c |   12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -848,13 +848,8 @@ void rt2x00queue_index_inc(struct queue_
- 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
- }
+--- a/drivers/net/usb/smsc75xx.c
++++ b/drivers/net/usb/smsc75xx.c
+@@ -43,7 +43,6 @@
+ #define EEPROM_MAC_OFFSET		(0x01)
+ #define DEFAULT_TX_CSUM_ENABLE		(true)
+ #define DEFAULT_RX_CSUM_ENABLE		(true)
+-#define DEFAULT_TSO_ENABLE		(true)
+ #define SMSC75XX_INTERNAL_PHY_ID	(1)
+ #define SMSC75XX_TX_OVERHEAD		(8)
+ #define MAX_RX_FIFO_SIZE		(20 * 1024)
+@@ -1049,17 +1048,14 @@ static int smsc75xx_bind(struct usbnet *
  
--void rt2x00queue_pause_queue(struct data_queue *queue)
-+void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
- {
--	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
--	    !test_bit(QUEUE_STARTED, &queue->flags) ||
--	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
--		return;
--
- 	switch (queue->qid) {
- 	case QID_AC_VO:
- 	case QID_AC_VI:
-@@ -870,6 +865,15 @@ void rt2x00queue_pause_queue(struct data
- 		break;
- 	}
- }
-+void rt2x00queue_pause_queue(struct data_queue *queue)
-+{
-+	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
-+	    !test_bit(QUEUE_STARTED, &queue->flags) ||
-+	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
-+		return;
+ 	INIT_WORK(&pdata->set_multicast, smsc75xx_deferred_multicast_write);
+ 
+-	if (DEFAULT_TX_CSUM_ENABLE) {
++	if (DEFAULT_TX_CSUM_ENABLE)
+ 		dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
+-		if (DEFAULT_TSO_ENABLE)
+-			dev->net->features |= NETIF_F_SG |
+-				NETIF_F_TSO | NETIF_F_TSO6;
+-	}
 +
-+	rt2x00queue_pause_queue_nocheck(queue);
-+}
- EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
+ 	if (DEFAULT_RX_CSUM_ENABLE)
+ 		dev->net->features |= NETIF_F_RXCSUM;
  
- void rt2x00queue_unpause_queue(struct data_queue *queue)
-@@ -931,7 +935,7 @@ void rt2x00queue_stop_queue(struct data_
- 		return;
- 	}
+ 	dev->net->hw_features = NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+-		NETIF_F_SG | NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_RXCSUM;
++				NETIF_F_RXCSUM;
  
--	rt2x00queue_pause_queue(queue);
-+	rt2x00queue_pause_queue_nocheck(queue);
+ 	/* Init all registers */
+ 	ret = smsc75xx_reset(dev);
+@@ -1184,8 +1180,6 @@ static struct sk_buff *smsc75xx_tx_fixup
+ {
+ 	u32 tx_cmd_a, tx_cmd_b;
  
- 	queue->rt2x00dev->ops->lib->stop_queue(queue);
- 
+-	skb_linearize(skb);
+-
+ 	if (skb_headroom(skb) < SMSC75XX_TX_OVERHEAD) {
+ 		struct sk_buff *skb2 =
+ 			skb_copy_expand(skb, SMSC75XX_TX_OVERHEAD, 0, flags);
 
 
