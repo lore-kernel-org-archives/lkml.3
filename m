@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030360Ab3HICFn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:05:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55864 "EHLO
+	id S967759Ab3HICF6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:05:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55858 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967740Ab3HIB72 (ORCPT
+	with ESMTP id S967734Ab3HIB71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:28 -0400
+	Thu, 8 Aug 2013 21:59:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pierre Assal <pierre.assal@verint.com>,
-        "cancan,feng" <cancan.feng@intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 080/102] drm/i915: make SDVO TV-out work for multifunction devices
-Date: Thu,  8 Aug 2013 18:57:56 -0700
-Message-Id: <20130809015029.083058664@linuxfoundation.org>
+        Wang Shilong <wangsl-fnst@cn.fujitsu.com>,
+        Liu Bo <bo.li.liu@oracle.com>, Josef Bacik <jbacik@fusionio.com>,
+        BJ Quinn <bj@placs.net>
+Subject: [ 079/102] Btrfs: fix crash regarding to ulist_add_merge
+Date: Thu,  8 Aug 2013 18:57:55 -0700
+Message-Id: <20130809015028.841897698@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -29,56 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Liu Bo <bo.li.liu@oracle.com>
 
-commit 09ede5414f0215461c933032630bf9c3a61a8ba3 upstream.
+commit 35f0399db6658f465b00893bdd13b992a0acfef0 upstream.
 
-We need to track this correctly. While at it shovel the boolean
-to track whether the sdvo is in tv mode or not into pipe_config.
+Several users reported this crash of NULL pointer or general protection,
+the story is that we add a rbtree for speedup ulist iteration, and we
+use krealloc() to address ulist growth, and krealloc() use memcpy to copy
+old data to new memory area, so it's OK for an array as it doesn't use
+pointers while it's not OK for a rbtree as it uses pointers.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=36997
-Tested-by: Pierre Assal <pierre.assal@verint.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=63609
-Tested-by: cancan,feng <cancan.feng@intel.com>
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+So krealloc() will mess up our rbtree and it ends up with crash.
+
+Reviewed-by: Wang Shilong <wangsl-fnst@cn.fujitsu.com>
+Signed-off-by: Liu Bo <bo.li.liu@oracle.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Cc: BJ Quinn <bj@placs.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/gpu/drm/i915/intel_display.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ fs/btrfs/ulist.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4333,7 +4333,8 @@ static void vlv_update_pll(struct intel_
+--- a/fs/btrfs/ulist.c
++++ b/fs/btrfs/ulist.c
+@@ -205,6 +205,10 @@ int ulist_add_merge(struct ulist *ulist,
+ 		u64 new_alloced = ulist->nodes_alloced + 128;
+ 		struct ulist_node *new_nodes;
+ 		void *old = NULL;
++		int i;
++
++		for (i = 0; i < ulist->nnodes; i++)
++			rb_erase(&ulist->nodes[i].rb_node, &ulist->root);
  
- static void i9xx_update_pll(struct intel_crtc *crtc,
- 			    intel_clock_t *reduced_clock,
--			    int num_connectors)
-+			    int num_connectors,
-+			    bool needs_tv_clock)
- {
- 	struct drm_device *dev = crtc->base.dev;
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -4391,7 +4392,7 @@ static void i9xx_update_pll(struct intel
- 	if (INTEL_INFO(dev)->gen >= 4)
- 		dpll |= (6 << PLL_LOAD_PULSE_PHASE_SHIFT);
+ 		/*
+ 		 * if nodes_alloced == ULIST_SIZE no memory has been allocated
+@@ -224,6 +228,17 @@ int ulist_add_merge(struct ulist *ulist,
  
--	if (is_sdvo && intel_pipe_has_type(&crtc->base, INTEL_OUTPUT_TVOUT))
-+	if (is_sdvo && needs_tv_clock)
- 		dpll |= PLL_REF_INPUT_TVCLKINBC;
- 	else if (intel_pipe_has_type(&crtc->base, INTEL_OUTPUT_TVOUT))
- 		/* XXX: just matching BIOS for now */
-@@ -4716,7 +4717,8 @@ static int i9xx_crtc_mode_set(struct drm
- 	else
- 		i9xx_update_pll(intel_crtc,
- 				has_reduced_clock ? &reduced_clock : NULL,
--				num_connectors);
-+				num_connectors,
-+				is_sdvo && is_tv);
- 
- 	/* Set up the display plane register */
- 	dspcntr = DISPPLANE_GAMMA_ENABLE;
+ 		ulist->nodes = new_nodes;
+ 		ulist->nodes_alloced = new_alloced;
++
++		/*
++		 * krealloc actually uses memcpy, which does not copy rb_node
++		 * pointers, so we have to do it ourselves.  Otherwise we may
++		 * be bitten by crashes.
++		 */
++		for (i = 0; i < ulist->nnodes; i++) {
++			ret = ulist_rbtree_insert(ulist, &ulist->nodes[i]);
++			if (ret < 0)
++				return ret;
++		}
+ 	}
+ 	ulist->nodes[ulist->nnodes].val = val;
+ 	ulist->nodes[ulist->nnodes].aux = aux;
 
 
