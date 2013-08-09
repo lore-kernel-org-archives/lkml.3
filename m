@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030997Ab3HITv4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:51:56 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:62763 "EHLO
+	id S1030972Ab3HITvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:51:43 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:62762 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030908Ab3HITvw (ORCPT
+	with ESMTP id S1030877Ab3HITvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:51:52 -0400
-Message-ID: <201308091951.r79JppCI030998@farm-0021.internal.tilera.com>
-From: Tony Lu <zlu@tilera.com>
-Date: Fri, 9 Aug 2013 15:45:24 -0400
-Subject: [PATCH] tile: support ASLR fully
-To: <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>
+	Fri, 9 Aug 2013 15:51:42 -0400
+Message-ID: <201308091951.r79JpfBH030991@farm-0021.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 9 Aug 2013 15:42:56 -0400
+Subject: [PATCH] tile: correct r1 value during syscall tracing
+To: <linux-kernel@vger.kernel.org>, Simon Marchi <simon.marchi@polymtl.ca>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this change, tile Linux now supports address-space layout
-randomization for shared objects, stack, heap and vdso.
+The r1 value is set based on the r0 value as we return to user space.
+So tracing tools won't automatically see the right value.  Fix this by
+generating the correct r1 value in do_syscall_trace_exit() rather
+than trying to tamper with the hot path in syscall return.
 
-Signed-off-by: Tony Lu <zlu@tilera.com>
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/include/asm/elf.h |  4 ++++
- arch/tile/mm/mmap.c         | 20 ++++++++++++++++++--
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ arch/tile/kernel/ptrace.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
-index 31d854f..e1da88e 100644
---- a/arch/tile/include/asm/elf.h
-+++ b/arch/tile/include/asm/elf.h
-@@ -137,6 +137,10 @@ do { \
- 	NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE); \
- } while (0)
+diff --git a/arch/tile/kernel/ptrace.c b/arch/tile/kernel/ptrace.c
+index bac1874..de98c6d 100644
+--- a/arch/tile/kernel/ptrace.c
++++ b/arch/tile/kernel/ptrace.c
+@@ -265,6 +265,21 @@ int do_syscall_trace_enter(struct pt_regs *regs)
  
-+struct mm_struct;
-+extern unsigned long arch_randomize_brk(struct mm_struct *mm);
-+#define arch_randomize_brk arch_randomize_brk
+ void do_syscall_trace_exit(struct pt_regs *regs)
+ {
++	long errno;
 +
- #ifdef CONFIG_COMPAT
++	/*
++	 * The standard tile calling convention returns the value (or negative
++	 * errno) in r0, and zero (or positive errno) in r1.
++	 * It saves a couple of cycles on the hot path to do this work in
++	 * registers only as we return, rather than updating the in-memory
++	 * struct ptregs.
++	 */
++	errno = (long) regs->regs[0];
++	if (errno < 0 && errno > -4096)
++		regs->regs[1] = -errno;
++	else
++		regs->regs[1] = 0;
++
+ 	if (test_thread_flag(TIF_SYSCALL_TRACE))
+ 		tracehook_report_syscall_exit(regs, 0);
  
- #define COMPAT_ELF_PLATFORM "tilegx-m32"
-diff --git a/arch/tile/mm/mmap.c b/arch/tile/mm/mmap.c
-index d67d91e..b3686ce 100644
---- a/arch/tile/mm/mmap.c
-+++ b/arch/tile/mm/mmap.c
-@@ -58,16 +58,32 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
- #else
- 	int is_32bit = 0;
- #endif
-+	unsigned long random_factor = 0UL;
-+
-+	if (current->flags & PF_RANDOMIZE) {
-+		random_factor = get_random_int();
-+		random_factor = random_factor << PAGE_SHIFT;
-+		if (is_32bit)
-+			random_factor &= 0xfffffful;
-+		else
-+			random_factor &= 0xffffffful;
-+	}
- 
- 	/*
- 	 * Use standard layout if the expected stack growth is unlimited
- 	 * or we are running native 64 bits.
- 	 */
--	if (!is_32bit || rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
--		mm->mmap_base = TASK_UNMAPPED_BASE;
-+	if (rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
-+		mm->mmap_base = TASK_UNMAPPED_BASE + random_factor;
- 		mm->get_unmapped_area = arch_get_unmapped_area;
- 	} else {
- 		mm->mmap_base = mmap_base(mm);
- 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
- 	}
- }
-+
-+unsigned long arch_randomize_brk(struct mm_struct *mm)
-+{
-+	unsigned long range_end = mm->brk + 0x02000000;
-+	return randomize_range(mm->brk, range_end, 0) ? : mm->brk;
-+}
 -- 
 1.8.3.1
 
