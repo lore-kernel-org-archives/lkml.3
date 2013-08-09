@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967724Ab3HIN0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 09:26:05 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:33930 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966645Ab3HIN0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 09:26:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: robert.moore@intel.com, lv.zheng@intel.com, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part2 0/4] acpi: Trivial fix and improving for memory hotplug.
-Date: Fri, 09 Aug 2013 15:36:16 +0200
-Message-ID: <1792540.pdAYjdHnnL@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <520439C9.3080601@cn.fujitsu.com>
-References: <1375938239-18769-1-git-send-email-tangchen@cn.fujitsu.com> <1851799.n4moZnvj4u@vostro.rjw.lan> <520439C9.3080601@cn.fujitsu.com>
+	id S967722Ab3HIN2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 09:28:12 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:57141 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966041Ab3HIN2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 09:28:11 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130809153730.83d3a5ba419def5424bcbb0e@samsung.com>
+References: <002b01ce941b$160a88a0$421f99e0$@samsung.com>
+	<5396565.vjlSOm37Vf@flatron>
+	<20130809153730.83d3a5ba419def5424bcbb0e@samsung.com>
+Date: Fri, 9 Aug 2013 08:28:09 -0500
+Message-ID: <CAL_JsqKM_YP0Cj3Uo7TeCVcKcbzzsuK3yxTSn6pG8qGFOnZAiA@mail.gmail.com>
+Subject: Re: [PATCH v9 07/16] iommu/exynos: support for device tree
+From: Rob Herring <robherring2@gmail.com>
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Subash Patel <supash.ramaswamy@linaro.org>,
+        Grant Grundler <grundler@chromium.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        kvmarm@lists.cs.columbia.edu, Sachin Kamat <sachin.kamat@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 09, 2013 08:37:29 AM Tang Chen wrote:
-> On 08/08/2013 10:09 PM, Rafael J. Wysocki wrote:
-> > On Thursday, August 08, 2013 01:03:55 PM Tang Chen wrote:
-> >> This patch-set does some trivial fix and improving in ACPI code
-> >> for memory hotplug.
-> >>
-> >> Patch 1,3,4 have been acked.
-> >>
-> >> Tang Chen (4):
-> >>    acpi: Print Hot-Pluggable Field in SRAT.
-> >>    earlycpio.c: Fix the confusing comment of find_cpio_data().
-> >>    acpi: Remove "continue" in macro INVALID_TABLE().
-> >>    acpi: Introduce acpi_verify_initrd() to check if a table is invalid.
-> >>
-> >>   arch/x86/mm/srat.c |   11 ++++--
-> >>   drivers/acpi/osl.c |   84 +++++++++++++++++++++++++++++++++++++++------------
-> >>   lib/earlycpio.c    |   27 ++++++++--------
-> >>   3 files changed, 85 insertions(+), 37 deletions(-)
-> >
-> > It looks like this part doesn't depend on the other parts, is that correct?
-> 
-> No, it doesn't. And this patch-set can be merged first.
+On Fri, Aug 9, 2013 at 1:37 AM, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> On Fri, 09 Aug 2013 00:41:25 +0200, Tomasz Figa wrote:
+>> Hi KyongHo,
+>>
+>> On Thursday 08 of August 2013 18:38:49 Cho KyongHo wrote:
+>> > This commit adds device tree support for System MMU.
+>> > This also include the following changes and enhancements:
+>> >
+>> > * use managed device helper functions.
+>> > Simplyfies System MMU device driver.
+>> >
+>> > * use only a single clock descriptor.
+>> > System MMU device descriptor is seperate if it is imposible to make
+>> > a single clock descriptor to make a device descriptor for a group of
+>> > System MMUs.
+>> >
+>> > * removed dbgname member from sysmmu_drvdata structure.
+>> > debugging kernel message for a System MMU is distinguisheable with the
+>> > name of device descroptors.
+>>
+>> Please put all these three changes in separate patches. This patch is hard
+>> to review with all the changes mixed together...
 
-OK, so if nobody objects, I can take patches [1,3-4/4], but I don't think I'm
-the right maintainer to handle [2/4].
+Agreed.
 
-Thanks,
-Rafael
+>>
+>
+> Ok.
+>
+>> In addition, I believe this is the patch that should be adding device tree
+>> binding documentation, not the 6/16 one, as this is where actually support
+>> for this binding gets added to the kernel.
+>
+> Oh, I didn't know that devicetree binding description and implementation need
+> to be in the same patch.
+> I will do as you advised.
 
+Actually, I prefer the binding docs be separate patches. The reason
+being so we can get closer to having them in a separate repository.
+Also, then the binding can be acked separately from the kernel
+implementation using the binding.
+
+Rob
