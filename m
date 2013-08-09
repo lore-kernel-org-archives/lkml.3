@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967317Ab3HIByZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:54:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55401 "EHLO
+	id S967331Ab3HIBya (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:54:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55389 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967142Ab3HIBmO (ORCPT
+	with ESMTP id S967140Ab3HIBmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:14 -0400
+	Thu, 8 Aug 2013 21:42:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Hollmann <hollmann@in.tum.de>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
-        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
-Subject: [ 13/25] perf: Fix event group context move
-Date: Thu,  8 Aug 2013 18:41:49 -0700
-Message-Id: <20130809013652.033930762@linuxfoundation.org>
+        Zhu Yanhai <gaoyang.zyh@taobao.com>,
+        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 11/25] sched: Fix the broken sched_rr_get_interval()
+Date: Thu,  8 Aug 2013 18:41:47 -0700
+Message-Id: <20130809013651.623921789@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -34,90 +32,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Zhu Yanhai <gaoyang.zyh@taobao.com>
 
-commit 0231bb5336758426b44ccd798ccd3c5419c95d58 upstream.
+commit a59f4e079d19464eebb9b06513a1d4f55fdae5ba upstream.
 
-When we have group with mixed events (hw/sw) we want to end up
-with group leader being in hw context. So if group leader is
-initialy sw event, we move all the events under hw context.
+The caller of sched_sliced() should pass se.cfs_rq and se as the
+arguments, however in sched_rr_get_interval() we gave it
+rq.cfs_rq and se, which made the following computation obviously
+wrong.
 
-The move is done for each event by removing it from its context
-and adding it back into proper one. As a part of the removal the
-event is automatically disabled, which is not what we want at
-this stage of creating groups.
+The change was introduced by commit:
 
-The fix is to initialize event state after removal from sw
-context.
+  77034937dc45 sched: fix crash in sys_sched_rr_get_interval()
 
-This fix resulted from the following discussion:
+... 5 years ago, while it had been the correct 'cfs_rq_of' before
+the commit. The change seems to be irrelevant to the commit
+msg, which was to return a 0 timeslice for tasks that are on an
+idle runqueue. So I believe that was just a plain typo.
 
-  http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
-
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vince@deater.net>
-Link: http://lkml.kernel.org/r/1359714225-4231-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Turner <pjt@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1357621012-15039-1-git-send-email-gaoyang.zyh@taobao.com
+[ Since this is an ABI and an old bug, we'll test this via a
+  slow upstream route, to hopefully discover any app breakage. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -911,6 +911,15 @@ list_add_event(struct perf_event *event,
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5511,7 +5511,7 @@ static unsigned int get_rr_interval_fair
+ 	 * idle runqueue:
+ 	 */
+ 	if (rq->cfs.load.weight)
+-		rr_interval = NS_TO_JIFFIES(sched_slice(&rq->cfs, se));
++		rr_interval = NS_TO_JIFFIES(sched_slice(cfs_rq_of(se), se));
+ 
+ 	return rr_interval;
  }
- 
- /*
-+ * Initialize event state based on the perf_event_attr::disabled.
-+ */
-+static inline void perf_event__state_init(struct perf_event *event)
-+{
-+	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
-+					      PERF_EVENT_STATE_INACTIVE;
-+}
-+
-+/*
-  * Called at perf_event creation and when events are attached/detached from a
-  * group.
-  */
-@@ -6058,8 +6067,7 @@ perf_event_alloc(struct perf_event_attr
- 	event->overflow_handler	= overflow_handler;
- 	event->overflow_handler_context = context;
- 
--	if (attr->disabled)
--		event->state = PERF_EVENT_STATE_OFF;
-+	perf_event__state_init(event);
- 
- 	pmu = NULL;
- 
-@@ -6481,9 +6489,17 @@ SYSCALL_DEFINE5(perf_event_open,
- 
- 		mutex_lock(&gctx->mutex);
- 		perf_remove_from_context(group_leader);
-+
-+		/*
-+		 * Removing from the context ends up with disabled
-+		 * event. What we want here is event in the initial
-+		 * startup state, ready to be add into new context.
-+		 */
-+		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
- 			perf_remove_from_context(sibling);
-+			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
- 		mutex_unlock(&gctx->mutex);
 
 
