@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967567Ab3HICV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:21:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55605 "EHLO
+	id S967469Ab3HICWS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:22:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55598 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967387Ab3HIB6d (ORCPT
+	with ESMTP id S967382Ab3HIB6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:33 -0400
+	Thu, 8 Aug 2013 21:58:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Ivanov <gnidorah@p0n4ik.tk>, Helge Deller <deller@gmx.de>
-Subject: [ 016/102] parisc: agp/parisc-agp: allow binding of user memory to the AGP GART
-Date: Thu,  8 Aug 2013 18:56:52 -0700
-Message-Id: <20130809015013.921926166@linuxfoundation.org>
+        Jan Stancek <jstancek@redhat.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 015/102] powerpc: VPHN topology change updates all siblings
+Date: Thu,  8 Aug 2013 18:56:51 -0700
+Message-Id: <20130809015013.716233678@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,54 +28,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Ivanov <gnidorah@p0n4ik.tk>
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
 
-commit 06f0cce43a32bd2357cea1d8733bba48693d556b upstream.
+commit 3be7db6ab45b21345386d1a466da133b19cde5e4 upstream.
 
-Allow binding of user memory to the AGP GART on systems with HP
-Quicksilver AGP bus. This resolves 'bind memory failed' error seen in
-dmesg:
+When an associativity level change is found for one thread, the
+siblings threads need to be updated as well.  This is done today
+for PRRN in stage_topology_update() but is missing for VPHN in
+update_cpu_associativity_changes_mask().  This patch will correctly
+update all thread siblings during a topology change.
 
- [29.365973] [TTM] AGP Bind memory failed.
- …
- [29.367030] [drm] Forcing AGP to PCI mode
+Without this patch a topology update can result in a CPU in
+init_sched_groups_power() getting stuck indefinitely in a loop.
 
-The system doesn't more fail to bind the memory, and hence not falling
-back to the PCI mode (if other failures aren't detected).
+This loop is built in build_sched_groups(). As a result of the thread
+moving to a node separate from its siblings the struct sched_group will
+have its next pointer set to point to itself rather than the sched_group
+struct of the next thread.  This happens because we have a domain without
+the SD_OVERLAP flag, which is correct, and a topology that doesn't conform
+with reality (threads on the same core assigned to different numa nodes).
+When this list is traversed by init_sched_groups_power() it will reach
+the thread's sched_group structure and loop indefinitely; the cpu will
+be stuck at this point.
 
-This is just a simple write down from the following patches:
-agp/amd-k7: Allow binding user memory to the AGP GART
-agp/hp-agp: Allow binding user memory to the AGP GART
+The bug was exposed when VPHN was enabled in commit b7abef0 (v3.9).
 
-Signed-off-by: Alex Ivanov <gnidorah@p0n4ik.tk>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Robert Jennings <rcj@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/agp/parisc-agp.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/smp.h |    4 ++
+ arch/powerpc/mm/numa.c         |   59 ++++++++++++++++++++++++++++++-----------
+ 2 files changed, 48 insertions(+), 15 deletions(-)
 
---- a/drivers/char/agp/parisc-agp.c
-+++ b/drivers/char/agp/parisc-agp.c
-@@ -129,7 +129,8 @@ parisc_agp_insert_memory(struct agp_memo
- 	off_t j, io_pg_start;
- 	int io_pg_count;
+--- a/arch/powerpc/include/asm/smp.h
++++ b/arch/powerpc/include/asm/smp.h
+@@ -145,6 +145,10 @@ extern void __cpu_die(unsigned int cpu);
+ #define smp_setup_cpu_maps()
+ static inline void inhibit_secondary_onlining(void) {}
+ static inline void uninhibit_secondary_onlining(void) {}
++static inline const struct cpumask *cpu_sibling_mask(int cpu)
++{
++	return cpumask_of(cpu);
++}
  
--	if (type != 0 || mem->type != 0) {
-+	if (type != mem->type ||
-+		agp_bridge->driver->agp_type_to_mask_type(agp_bridge, type)) {
- 		return -EINVAL;
+ #endif /* CONFIG_SMP */
+ 
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -27,6 +27,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/uaccess.h>
+ #include <linux/slab.h>
++#include <asm/cputhreads.h>
+ #include <asm/sparsemem.h>
+ #include <asm/prom.h>
+ #include <asm/smp.h>
+@@ -1319,7 +1320,8 @@ static int update_cpu_associativity_chan
+ 			}
+ 		}
+ 		if (changed) {
+-			cpumask_set_cpu(cpu, changes);
++			cpumask_or(changes, changes, cpu_sibling_mask(cpu));
++			cpu = cpu_last_thread_sibling(cpu);
+ 		}
  	}
  
-@@ -175,7 +176,8 @@ parisc_agp_remove_memory(struct agp_memo
- 	struct _parisc_agp_info *info = &parisc_agp_info;
- 	int i, io_pg_start, io_pg_count;
- 
--	if (type != 0 || mem->type != 0) {
-+	if (type != mem->type ||
-+		agp_bridge->driver->agp_type_to_mask_type(agp_bridge, type)) {
+@@ -1427,7 +1429,7 @@ static int update_cpu_topology(void *dat
+ 	if (!data)
  		return -EINVAL;
+ 
+-	cpu = get_cpu();
++	cpu = smp_processor_id();
+ 
+ 	for (update = data; update; update = update->next) {
+ 		if (cpu != update->cpu)
+@@ -1447,12 +1449,12 @@ static int update_cpu_topology(void *dat
+  */
+ int arch_update_cpu_topology(void)
+ {
+-	unsigned int cpu, changed = 0;
++	unsigned int cpu, sibling, changed = 0;
+ 	struct topology_update_data *updates, *ud;
+ 	unsigned int associativity[VPHN_ASSOC_BUFSIZE] = {0};
+ 	cpumask_t updated_cpus;
+ 	struct device *dev;
+-	int weight, i = 0;
++	int weight, new_nid, i = 0;
+ 
+ 	weight = cpumask_weight(&cpu_associativity_changes_mask);
+ 	if (!weight)
+@@ -1465,19 +1467,46 @@ int arch_update_cpu_topology(void)
+ 	cpumask_clear(&updated_cpus);
+ 
+ 	for_each_cpu(cpu, &cpu_associativity_changes_mask) {
+-		ud = &updates[i++];
+-		ud->cpu = cpu;
+-		vphn_get_associativity(cpu, associativity);
+-		ud->new_nid = associativity_to_nid(associativity);
+-
+-		if (ud->new_nid < 0 || !node_online(ud->new_nid))
+-			ud->new_nid = first_online_node;
++		/*
++		 * If siblings aren't flagged for changes, updates list
++		 * will be too short. Skip on this update and set for next
++		 * update.
++		 */
++		if (!cpumask_subset(cpu_sibling_mask(cpu),
++					&cpu_associativity_changes_mask)) {
++			pr_info("Sibling bits not set for associativity "
++					"change, cpu%d\n", cpu);
++			cpumask_or(&cpu_associativity_changes_mask,
++					&cpu_associativity_changes_mask,
++					cpu_sibling_mask(cpu));
++			cpu = cpu_last_thread_sibling(cpu);
++			continue;
++		}
+ 
+-		ud->old_nid = numa_cpu_lookup_table[cpu];
+-		cpumask_set_cpu(cpu, &updated_cpus);
++		/* Use associativity from first thread for all siblings */
++		vphn_get_associativity(cpu, associativity);
++		new_nid = associativity_to_nid(associativity);
++		if (new_nid < 0 || !node_online(new_nid))
++			new_nid = first_online_node;
++
++		if (new_nid == numa_cpu_lookup_table[cpu]) {
++			cpumask_andnot(&cpu_associativity_changes_mask,
++					&cpu_associativity_changes_mask,
++					cpu_sibling_mask(cpu));
++			cpu = cpu_last_thread_sibling(cpu);
++			continue;
++		}
+ 
+-		if (i < weight)
+-			ud->next = &updates[i];
++		for_each_cpu(sibling, cpu_sibling_mask(cpu)) {
++			ud = &updates[i++];
++			ud->cpu = sibling;
++			ud->new_nid = new_nid;
++			ud->old_nid = numa_cpu_lookup_table[sibling];
++			cpumask_set_cpu(sibling, &updated_cpus);
++			if (i < weight)
++				ud->next = &updates[i];
++		}
++		cpu = cpu_last_thread_sibling(cpu);
  	}
  
+ 	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
 
 
