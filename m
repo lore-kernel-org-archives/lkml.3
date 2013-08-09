@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967634Ab3HIKql (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:46:41 -0400
+	id S967717Ab3HIKr0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:47:26 -0400
 Received: from mga03.intel.com ([143.182.124.21]:22271 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967576Ab3HIKqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:46:36 -0400
+	id S967291Ab3HIKqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:46:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,845,1367996400"; 
-   d="scan'208";a="279834483"
+   d="scan'208";a="279834497"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V10 11/13] perf tools: expand perf_event__synthesize_sample()
-Date: Fri,  9 Aug 2013 13:51:57 +0300
-Message-Id: <1376045519-13832-12-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V10 12/13] perf tools: add a function to calculate sample event size
+Date: Fri,  9 Aug 2013 13:51:58 +0300
+Message-Id: <1376045519-13832-13-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
 References: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
@@ -28,159 +28,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expand perf_event__synthesize_sample() to handle all
-sample format bits.
+Add perf_event__sample_event_size() which can be used when
+synthesizing sample events to determine how big the resulting
+event will be, and therefore how much memory to allocate.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-inject.c |  4 +-
- tools/perf/util/event.h     |  1 +
- tools/perf/util/evsel.c     | 94 ++++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 97 insertions(+), 2 deletions(-)
+ tools/perf/util/event.h |  2 ++
+ tools/perf/util/evsel.c | 92 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 94 insertions(+)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index ffacd46..9b336fd 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -301,7 +301,9 @@ found:
- 	sample_sw.period = sample->period;
- 	sample_sw.time	 = sample->time;
- 	perf_event__synthesize_sample(event_sw, evsel->attr.sample_type,
--				      &sample_sw, false);
-+				      evsel->attr.sample_regs_user,
-+				      evsel->attr.read_format, &sample_sw,
-+				      false);
- 	build_id__mark_dso_hit(tool, event_sw, &sample_sw, evsel, machine);
- 	return perf_event__repipe(tool, event_sw, &sample_sw, machine);
- }
 diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index b0921fe..c5f87e1 100644
+index c5f87e1..7d41716 100644
 --- a/tools/perf/util/event.h
 +++ b/tools/perf/util/event.h
-@@ -245,6 +245,7 @@ int perf_event__preprocess_sample(const union perf_event *self,
+@@ -244,6 +244,8 @@ int perf_event__preprocess_sample(const union perf_event *self,
+ 
  const char *perf_event__name(unsigned int id);
  
++size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
++				     u64 sample_regs_user, u64 read_format);
  int perf_event__synthesize_sample(union perf_event *event, u64 type,
-+				  u64 sample_regs_user, u64 read_format,
+ 				  u64 sample_regs_user, u64 read_format,
  				  const struct perf_sample *sample,
- 				  bool swapped);
- 
 diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index aa7fd5f..798ac62 100644
+index 798ac62..491372f 100644
 --- a/tools/perf/util/evsel.c
 +++ b/tools/perf/util/evsel.c
-@@ -1443,11 +1443,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+@@ -1442,6 +1442,98 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 	return 0;
  }
  
- int perf_event__synthesize_sample(union perf_event *event, u64 type,
-+				  u64 sample_regs_user, u64 read_format,
- 				  const struct perf_sample *sample,
- 				  bool swapped)
- {
- 	u64 *array;
--
-+	size_t sz;
- 	/*
- 	 * used for cross-endian analysis. See git commit 65014ab3
- 	 * for why this goofiness is needed.
-@@ -1520,6 +1521,97 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
- 		array++;
- 	}
- 
++size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
++				     u64 sample_regs_user, u64 read_format)
++{
++	size_t sz, result = sizeof(struct sample_event);
++
++	if (type & PERF_SAMPLE_IDENTIFIER)
++		result += sizeof(u64);
++
++	if (type & PERF_SAMPLE_IP)
++		result += sizeof(u64);
++
++	if (type & PERF_SAMPLE_TID)
++		result += sizeof(u64);
++
++	if (type & PERF_SAMPLE_TIME)
++		result += sizeof(u64);
++
++	if (type & PERF_SAMPLE_ADDR)
++		result += sizeof(u64);
++
++	if (type & PERF_SAMPLE_ID)
++		result += sizeof(u64);
++
++	if (type & PERF_SAMPLE_STREAM_ID)
++		result += sizeof(u64);
++
++	if (type & PERF_SAMPLE_CPU)
++		result += sizeof(u64);
++
++	if (type & PERF_SAMPLE_PERIOD)
++		result += sizeof(u64);
++
 +	if (type & PERF_SAMPLE_READ) {
-+		if (read_format & PERF_FORMAT_GROUP)
-+			*array = sample->read.group.nr;
-+		else
-+			*array = sample->read.one.value;
-+		array++;
-+
-+		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED) {
-+			*array = sample->read.time_enabled;
-+			array++;
-+		}
-+
-+		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING) {
-+			*array = sample->read.time_running;
-+			array++;
-+		}
-+
++		result += sizeof(u64);
++		if (read_format & PERF_FORMAT_TOTAL_TIME_ENABLED)
++			result += sizeof(u64);
++		if (read_format & PERF_FORMAT_TOTAL_TIME_RUNNING)
++			result += sizeof(u64);
 +		/* PERF_FORMAT_ID is forced for PERF_SAMPLE_READ */
 +		if (read_format & PERF_FORMAT_GROUP) {
 +			sz = sample->read.group.nr *
 +			     sizeof(struct sample_read_value);
-+			memcpy(array, sample->read.group.values, sz);
-+			array = (void *)array + sz;
++			result += sz;
 +		} else {
-+			*array = sample->read.one.id;
-+			array++;
++			result += sizeof(u64);
 +		}
 +	}
 +
 +	if (type & PERF_SAMPLE_CALLCHAIN) {
 +		sz = (sample->callchain->nr + 1) * sizeof(u64);
-+		memcpy(array, sample->callchain, sz);
-+		array = (void *)array + sz;
++		result += sz;
 +	}
 +
 +	if (type & PERF_SAMPLE_RAW) {
-+		u.val32[0] = sample->raw_size;
-+		if (WARN_ONCE(swapped,
-+			      "Endianness of raw data not corrected!\n")) {
-+			/*
-+			 * Inverse of what is done in perf_evsel__parse_sample
-+			 */
-+			u.val32[0] = bswap_32(u.val32[0]);
-+			u.val32[1] = bswap_32(u.val32[1]);
-+			u.val64 = bswap_64(u.val64);
-+		}
-+		*array = u.val64;
-+		array = (void *)array + sizeof(u32);
-+
-+		memcpy(array, sample->raw_data, sample->raw_size);
-+		array = (void *)array + sample->raw_size;
++		result += sizeof(u32);
++		result += sample->raw_size;
 +	}
 +
 +	if (type & PERF_SAMPLE_BRANCH_STACK) {
 +		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
 +		sz += sizeof(u64);
-+		memcpy(array, sample->branch_stack, sz);
-+		array = (void *)array + sz;
++		result += sz;
 +	}
 +
 +	if (type & PERF_SAMPLE_REGS_USER) {
 +		if (sample->user_regs.regs && sample_regs_user) {
-+			*array++ = sample_regs_user;
++			result += sizeof(u64);
 +			sz = hweight_long(sample_regs_user) * sizeof(u64);
-+			memcpy(array, sample->user_regs.regs, sz);
-+			array = (void *)array + sz;
++			result += sz;
 +		} else {
-+			*array++ = 0;
++			result += sizeof(u64);
 +		}
 +	}
 +
 +	if (type & PERF_SAMPLE_STACK_USER) {
 +		sz = sample->user_stack.size;
-+		*array++ = sz;
++		result += sizeof(u64);
 +		if (sz) {
-+			memcpy(array, sample->user_stack.data, sz);
-+			array = (void *)array + sz;
-+			*array++ = sz;
++			result += sz;
++			result += sizeof(u64);
 +		}
 +	}
 +
-+	if (type & PERF_SAMPLE_WEIGHT) {
-+		*array = sample->weight;
-+		array++;
-+	}
++	if (type & PERF_SAMPLE_WEIGHT)
++		result += sizeof(u64);
 +
-+	if (type & PERF_SAMPLE_DATA_SRC) {
-+		*array = sample->data_src;
-+		array++;
-+	}
++	if (type & PERF_SAMPLE_DATA_SRC)
++		result += sizeof(u64);
 +
- 	return 0;
- }
- 
++	return result;
++}
++
+ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+ 				  u64 sample_regs_user, u64 read_format,
+ 				  const struct perf_sample *sample,
 -- 
 1.7.11.7
 
