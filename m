@@ -1,157 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967473Ab3HIBnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:43:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55341 "EHLO
+	id S967460Ab3HIBm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55339 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967126Ab3HIBmD (ORCPT
+	with ESMTP id S967125Ab3HIBmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:03 -0400
+	Thu, 8 Aug 2013 21:42:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/25] 3.4.57-stable review
-Date: Thu,  8 Aug 2013 18:41:36 -0700
-Message-Id: <20130809013649.057678051@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michal Tesar <mtesar@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 16/22] sysctl net: Keep tcp_syn_retries inside the boundary
+Date: Thu,  8 Aug 2013 18:41:32 -0700
+Message-Id: <20130809013952.801055094@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
+References: <20130809013949.226228694@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.57 release.
-There are 25 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Aug 11 01:33:13 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.57-rc1.gz
-and the diffstat can be found below.
+From: Michal Tesar <mtesar@redhat.com>
 
-thanks,
+[ Upstream commit 651e92716aaae60fc41b9652f54cb6803896e0da ]
 
-greg k-h
+Limit the min/max value passed to the
+/proc/sys/net/ipv4/tcp_syn_retries.
 
--------------
-Pseudo-Shortlog of commits:
+Signed-off-by: Michal Tesar <mtesar@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/sysctl_net_ipv4.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.57-rc1
-
-Neil Horman <nhorman@tuxdriver.com>
-    8139cp: Add dma_mapping_error checking
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    net_sched: info leak in atm_tc_dump_class()
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    af_key: more info leaks in pfkey messages
-
-David S. Miller <davem@davemloft.net>
-    net_sched: Fix stack info leak in cbq_dump_wrr().
-
-Eric Dumazet <edumazet@google.com>
-    usbnet: do not pretend to support SG/TSO
-
-Hannes Frederic Sowa <hannes@stressinduktion.org>
-    ipv6: take rtnl_lock and mark mrt6 table as freed on namespace cleanup
-
-Neil Horman <nhorman@tuxdriver.com>
-    sctp: fully initialize sctp_outq in sctp_outq_init
-
-Michal Tesar <mtesar@redhat.com>
-    sysctl net: Keep tcp_syn_retries inside the boundary
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    arcnet: cleanup sizeof parameter
-
-Salman Qazi <sqazi@google.com>
-    perf: Use css_tryget() to avoid propping up css refcount
-
-Kamal Mostafa <kamal@canonical.com>
-    drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
-
-H.J. Lu <hjl.tools@gmail.com>
-    x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
-
-Jiri Olsa <jolsa@redhat.com>
-    perf: Fix event group context move
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    fanotify: info leak in copy_event_to_user()
-
-Zhu Yanhai <gaoyang.zyh@taobao.com>
-    sched: Fix the broken sched_rr_get_interval()
-
-Lan Tianyu <tianyu.lan@intel.com>
-    ACPI / battery: Fix parsing _BIX return value
-
-Tomasz Moń <desowin@gmail.com>
-    mwifiex: Add missing endian conversion.
-
-Stanislaw Gruszka <stf_xl@wp.pl>
-    rt2x00: fix stop queue
-
-Jacob Keller <jacob.e.keller@intel.com>
-    ixgbe: Fix Tx Hang issue with lldpad on 82598EB
-
-Johannes Berg <johannes.berg@intel.com>
-    mac80211: fix duplicate retransmission detection
-
-Michal Kazior <michal.kazior@tieto.com>
-    nl80211: fix mgmt tx status and testmode reporting for netns
-
-Oleksij Rempel <linux@rempel-privat.de>
-    ath9k_htc: do some initial hardware configuration
-
-Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-    serial/mxs-auart: increase time to wait for transmitter to become idle
-
-Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-    serial/mxs-auart: fix race condition in interrupt handler
-
-Vinod Koul <vinod.koul@intel.com>
-    ALSA: compress: fix the return value for SNDRV_COMPRESS_VERSION
-
-
--------------
-
-Diffstat:
-
- Makefile                                           |  4 +-
- arch/x86/kernel/i387.c                             |  2 +-
- drivers/acpi/battery.c                             |  2 +
- drivers/gpu/drm/i915/i915_drv.h                    |  1 +
- drivers/gpu/drm/i915/intel_display.c               | 16 ++++++++
- drivers/gpu/drm/i915/intel_lvds.c                  |  3 +-
- drivers/net/arcnet/arcnet.c                        |  2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c |  3 +-
- drivers/net/ethernet/realtek/8139cp.c              | 48 ++++++++++++++++++++--
- drivers/net/usb/smsc75xx.c                         | 12 ++----
- drivers/net/wireless/ath/ath9k/htc_drv_init.c      |  1 +
- drivers/net/wireless/mwifiex/sdio.c                |  4 +-
- drivers/net/wireless/rt2x00/rt2x00queue.c          | 18 ++++----
- drivers/tty/serial/mxs-auart.c                     | 38 +++++++++--------
- fs/notify/fanotify/fanotify_user.c                 |  1 +
- kernel/events/core.c                               | 30 +++++++++++---
- kernel/sched/fair.c                                |  2 +-
- net/ipv4/sysctl_net_ipv4.c                         |  6 ++-
- net/ipv6/ip6mr.c                                   |  5 +++
- net/key/af_key.c                                   |  4 ++
- net/mac80211/rx.c                                  | 10 ++++-
- net/sched/sch_atm.c                                |  1 +
- net/sched/sch_cbq.c                                |  1 +
- net/sctp/outqueue.c                                |  8 +---
- net/wireless/nl80211.c                             |  7 +++-
- sound/core/compress_offload.c                      |  2 +-
- 26 files changed, 169 insertions(+), 62 deletions(-)
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -32,6 +32,8 @@ static int tcp_adv_win_scale_min = -31;
+ static int tcp_adv_win_scale_max = 31;
+ static int ip_ttl_min = 1;
+ static int ip_ttl_max = 255;
++static int tcp_syn_retries_min = 1;
++static int tcp_syn_retries_max = MAX_TCP_SYNCNT;
+ static int ip_ping_group_range_min[] = { 0, 0 };
+ static int ip_ping_group_range_max[] = { GID_T_MAX, GID_T_MAX };
+ 
+@@ -231,7 +233,9 @@ static struct ctl_table ipv4_table[] = {
+ 		.data		= &sysctl_tcp_syn_retries,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &tcp_syn_retries_min,
++		.extra2		= &tcp_syn_retries_max
+ 	},
+ 	{
+ 		.procname	= "tcp_synack_retries",
 
 
