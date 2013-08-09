@@ -1,88 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031802Ab3HIX3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 19:29:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38021 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031670Ab3HIX3i (ORCPT
+	id S1031721Ab3HIXaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 19:30:19 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:54861 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031651Ab3HIX0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 19:29:38 -0400
-Date: Fri, 9 Aug 2013 16:29:36 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 000/102] 3.10.6-stable review
-Message-ID: <20130809232936.GB24328@kroah.com>
-References: <20130809015010.208118575@linuxfoundation.org>
- <520492F3.1050806@roeck-us.net>
- <20130809191130.GD10130@kroah.com>
- <52057986.2040008@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52057986.2040008@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Aug 2013 19:26:32 -0400
+From: Roy Franz <roy.franz@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
+        linux@arm.linux.org.uk
+Cc: leif.lindholm@linaro.org, dave.martin@arm.com, msalter@redhat.com,
+        Roy Franz <roy.franz@linaro.org>
+Subject: [PATCH 03/16] Rename memory allocation/free functions
+Date: Fri,  9 Aug 2013 16:26:04 -0700
+Message-Id: <1376090777-20090-4-git-send-email-roy.franz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
+References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 04:21:42PM -0700, Guenter Roeck wrote:
-> On 08/09/2013 12:11 PM, Greg Kroah-Hartman wrote:
-> >On Thu, Aug 08, 2013 at 11:57:55PM -0700, Guenter Roeck wrote:
-> >>On 08/08/2013 06:56 PM, Greg Kroah-Hartman wrote:
-> >>>This is the start of the stable review cycle for the 3.10.6 release.
-> >>>There are 102 patches in this series, all will be posted as a response
-> >>>to this one.  If anyone has any issues with these being applied, please
-> >>>let me know.
-> >>>
-> >>>Responses should be made by Sun Aug 11 01:46:31 UTC 2013.
-> >>>Anything received after that time might be too late.
-> >>>
-> >>>The whole patch series can be found in one patch at:
-> >>>	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.6-rc1.gz
-> >>>and the diffstat can be found below.
-> >>>
-> >>
-> >>Cross build results:
-> >>	Total builds: 69 Total build errors: 2
-> >>
-> >>Details:
-> >>	http://server.roeck-us.net:8010/builders/stable-queue-3.10/builds/47/steps/shell/logs/stdio/text
-> >>
-> >>Same results as before, except that I dropped a couple of builds and added some others.
-> >
-> >Thanks for testing.
-> >
-> >>The failing builds are arm:allmodconfig and mips:allmodconfig.
-> >>For both, the errors don't exist in mainline and should be trivial to fix in case anyone is interested.
-> >>
-> >>arm:
-> >>	FATAL: modpost: GPL-incompatible module bcm2835-rng.ko uses GPL-only symbol 'platform_driver_unregister'
-> >>
-> >>[This one has been fixed upstream with commit 22e8099f4f6621b8d165e238cdef2a1cf655e159. Might be worthwhile
-> >>  adding it to -stable]
-> >
-> >Yes, I've now queued it up, thanks.
-> >
-> 
-> The arm:allmodconfig build still fails, unfortunately. Now it finds different problems.
-> 
-> Turns out you also need
-> 	b497ceb964a80ebada3b9b3cea4261409039e25a ([SCSI] nsp32: use mdelay instead of large udelay constants)
-> 	930d800bded771b26d9944c47810829130ff7c8c (mtd: omap2: allow bulding as a module)
-> 
-> This time I cherry-picked the commits and did a test build to make sure that it passes.
-> 
-> To fix the MIPS build problem, you'll need
-> 	78857614104a26cdada4c53eea104752042bf5a1 (MIPS: Expose missing pci_io{map,unmap} declarations)
-> 
-> I cherry-picked this commit on top of the 3.10 queue and did a test build to make sure that it works.
-> 
-> With those three patches, arm:allmodconfig and mips:allmodconfig build successfully for 3.10.
-> It would be great if you can add them to the -stable queue for 3.10.
+Rename them to be more similar, as low_free() could be used to free
+memory allocated by both high_alloc() and low_alloc().
+high_alloc() -> efi_high_alloc()
+low_alloc()  -> efi_low_alloc()
+low_free()   -> efi_free()
 
-Thanks for finding these.  I'll queue them up for the next 3.10 release
-after this one.
+Signed-off-by: Roy Franz <roy.franz@linaro.org>
+---
+ arch/x86/boot/compressed/eboot.c       |   19 ++++++++++---------
+ drivers/firmware/efi/efi-stub-helper.c |   14 +++++++-------
+ 2 files changed, 17 insertions(+), 16 deletions(-)
 
-greg k-h
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 65b6a34..2a4430a 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -457,7 +457,8 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ 		return NULL;
+ 	}
+ 
+-	status = low_alloc(sys_table, 0x4000, 1, (unsigned long *)&boot_params);
++	status = efi_low_alloc(sys_table, 0x4000, 1,
++			       (unsigned long *)&boot_params);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table, "Failed to alloc lowmem for boot params\n");
+ 		return NULL;
+@@ -503,7 +504,7 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ 
+ 			options_size++;	/* NUL termination */
+ 
+-			status = low_alloc(sys_table, options_size, 1,
++			status = efi_low_alloc(sys_table, options_size, 1,
+ 					   &cmdline);
+ 			if (status != EFI_SUCCESS) {
+ 				efi_printk(sys_table, "Failed to alloc mem for cmdline\n");
+@@ -537,9 +538,9 @@ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ 	return boot_params;
+ fail2:
+ 	if (options_size)
+-		low_free(sys_table, options_size, hdr->cmd_line_ptr);
++		efi_free(sys_table, options_size, hdr->cmd_line_ptr);
+ fail:
+-	low_free(sys_table, 0x4000, (unsigned long)boot_params);
++	efi_free(sys_table, 0x4000, (unsigned long)boot_params);
+ 	return NULL;
+ }
+ 
+@@ -562,7 +563,7 @@ static efi_status_t exit_boot(struct boot_params *boot_params,
+ again:
+ 	size += sizeof(*mem_map) * 2;
+ 	_size = size;
+-	status = low_alloc(sys_table, size, 1, (unsigned long *)&mem_map);
++	status = efi_low_alloc(sys_table, size, 1, (unsigned long *)&mem_map);
+ 	if (status != EFI_SUCCESS)
+ 		return status;
+ 
+@@ -570,7 +571,7 @@ get_map:
+ 	status = efi_call_phys5(sys_table->boottime->get_memory_map, &size,
+ 				mem_map, &key, &desc_size, &desc_version);
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+-		low_free(sys_table, _size, (unsigned long)mem_map);
++		efi_free(sys_table, _size, (unsigned long)mem_map);
+ 		goto again;
+ 	}
+ 
+@@ -672,7 +673,7 @@ get_map:
+ 	return EFI_SUCCESS;
+ 
+ free_mem_map:
+-	low_free(sys_table, _size, (unsigned long)mem_map);
++	efi_free(sys_table, _size, (unsigned long)mem_map);
+ 	return status;
+ }
+ 
+@@ -695,7 +696,7 @@ static efi_status_t relocate_kernel(struct setup_header *hdr)
+ 				EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+ 				nr_pages, &start);
+ 	if (status != EFI_SUCCESS) {
+-		status = low_alloc(sys_table, hdr->init_size,
++		status = efi_low_alloc(sys_table, hdr->init_size,
+ 				   hdr->kernel_alignment, &start);
+ 		if (status != EFI_SUCCESS)
+ 			efi_printk(sys_table, "Failed to alloc mem for kernel\n");
+@@ -743,7 +744,7 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
+ 	}
+ 
+ 	gdt->size = 0x800;
+-	status = low_alloc(sys_table, gdt->size, 8,
++	status = efi_low_alloc(sys_table, gdt->size, 8,
+ 			   (unsigned long *)&gdt->address);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table, "Failed to alloc mem for gdt\n");
+diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
+index bd6c1a2..0218d535 100644
+--- a/drivers/firmware/efi/efi-stub-helper.c
++++ b/drivers/firmware/efi/efi-stub-helper.c
+@@ -86,7 +86,7 @@ fail:
+ /*
+  * Allocate at the highest possible address that is not above 'max'.
+  */
+-static efi_status_t high_alloc(efi_system_table_t *sys_table_arg,
++static efi_status_t efi_high_alloc(efi_system_table_t *sys_table_arg,
+ 			       unsigned long size, unsigned long align,
+ 			       unsigned long *addr, unsigned long max)
+ {
+@@ -165,8 +165,8 @@ fail:
+ /*
+  * Allocate at the lowest possible address.
+  */
+-static efi_status_t low_alloc(efi_system_table_t *sys_table_arg,
+-		unsigned long size, unsigned long align,
++static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
++			      unsigned long size, unsigned long align,
+ 			      unsigned long *addr)
+ {
+ 	unsigned long map_size, desc_size;
+@@ -226,7 +226,7 @@ fail:
+ 	return status;
+ }
+ 
+-static void low_free(efi_system_table_t *sys_table_arg, unsigned long size,
++static void efi_free(efi_system_table_t *sys_table_arg, unsigned long size,
+ 		     unsigned long addr)
+ {
+ 	unsigned long nr_pages;
+@@ -407,8 +407,8 @@ grow:
+ 		 * addresses in memory, so allocate enough memory for
+ 		 * all the initrd's.
+ 		 */
+-		status = high_alloc(sys_table_arg, initrd_total, 0x1000,
+-				   &initrd_addr, hdr->initrd_addr_max);
++		status = efi_high_alloc(sys_table_arg, initrd_total, 0x1000,
++				    &initrd_addr, hdr->initrd_addr_max);
+ 		if (status != EFI_SUCCESS) {
+ 			efi_printk(sys_table_arg, "Failed to alloc highmem for initrds\n");
+ 			goto close_handles;
+@@ -456,7 +456,7 @@ grow:
+ 	return status;
+ 
+ free_initrd_total:
+-	low_free(sys_table_arg, initrd_total, initrd_addr);
++	efi_free(sys_table_arg, initrd_total, initrd_addr);
+ 
+ close_handles:
+ 	for (k = j; k < i; k++)
+-- 
+1.7.10.4
+
