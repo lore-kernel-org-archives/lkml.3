@@ -1,66 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967048Ab3HIKpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:45:46 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48887 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab3HIKpp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:45:45 -0400
-Date: Fri, 9 Aug 2013 11:45:22 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20130809104522.GU6427@sirena.org.uk>
-References: <1376033367.29104.2.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3T4dLCyS4EPlIT+v"
-Content-Disposition: inline
-In-Reply-To: <1376033367.29104.2.camel@phoenix>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: core: Move
- list_voltage_{linear,linear_range,table} to helpers.c
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1755153Ab3HIKp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:45:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:22271 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967080Ab3HIKp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:45:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,845,1367996400"; 
+   d="scan'208";a="279834312"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V10 00/13] perf tools: some fixes and tweaks
+Date: Fri,  9 Aug 2013 13:51:46 +0300
+Message-Id: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
---3T4dLCyS4EPlIT+v
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Here are some fixes and tweaks to perf tools (version 10).
 
-On Fri, Aug 09, 2013 at 03:29:27PM +0800, Axel Lin wrote:
-> Move regulator_list_voltage_{linear,linear_range,table} helper functions to
-> helpers.c.
+Changes in V10:
+	Re-based on:
+		perf/core branch of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
+		commit 207353be1574027c151609a31167ac5919a056c8: perf tools: Remove filter parameter of thread__find_addr_map()
 
-Applied, thanks.
+	perf tools: add debug prints
+		Changed to use macros
+	perf tools: add pid to struct thread
+		Added David's Ack
+	perf tools: change machine__findnew_thread() to set thread pid
+		Added David's Ack
+	perf tools: remove references to struct ip_event
+		Also remove from hists_link.c
+	perf tools: move struct ip_event
+		Dropped since it is covered by "perf tools: remove references to struct ip_event"
+	perf tools: add a sample parsing test
+		Fix missing sample comparison for PERF_SAMPLE_READ
 
---3T4dLCyS4EPlIT+v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Changes in V9:
+	perf: Update perf_event_type documentation
+		Dropped since its been applied
+	perf tools: tidy up sample parsing overflow checking
+		Changed to use a single overflow function
+		Updated for PERF_SAMPLE_READ
+	perf: make events stream always parsable
+		Added more about sample parsing to the commit message
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		When selecting PERF_SAMPLE_IDENTFIER, ensure PERF_SAMPLE_ID
+		is deselected
+	perf tools: expand perf_event__synthesize_sample()
+		Updated for PERF_SAMPLE_READ
+	perf tools: add a function to calculate sample event size
+		Updated for PERF_SAMPLE_READ
+	perf tools: add a sample parsing test
+		Updated for PERF_SAMPLE_READ
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Changes in V8:
+	perf tools: add debug prints
+		Fixed Python link errors
+	perf tools: move perf_evlist__config() to a new source file
+		New Patch to avoid Python link errors
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		Adjustments due to patch above
 
-iQIcBAEBAgAGBQJSBMg+AAoJELSic+t+oim96NAQAJoyhI1jxgNMlRm4BFTTgJte
-JLX0UbX8C4BBX3iO9vZOwXN264gz9ZWo6mFOcJTVsVyNxJyWBsAEiXw9G89+Wclo
-H9BGE1pFwSU+8zn7ifAFoFLRLwUUdd42Wl5J6kCws5jLrICh9LQ+inIPhU15K5WY
-/fOh5MpWD6rHiW9wIyFgx6bk2qChu5Wcluzi/Ee/c6CjuN59FBsSX1kKbQ5BmrEd
-D1suMNSpsAGqGPpBcTmRuFgLHLP3HLdbVqkNJYYNgtT5Uv7S5cE8vFwyty5FmFLS
-dZ7xSCYHxIWJrFvZx4ktiVkFjk5e9IEr/pwwwm+fST+SjKxP2RXVTRiiS++OIzUD
-IBLdjh8z3Y0gjk599ix9d+fYA1ro4W0ok6bm4qABVObMyJC40L6c/oUPQPZNG1PE
-KQ2JWem/IafQJ+HXBFPxwjzzydMfo2sBt0ALQdVpASCAch6DyFfEICrJhj+T3Pym
-x8ii+n7IHG/JqRQ+0vnFYuZfrCf48jf476UJe9A76r5PYccrIOAOEoDLM7MM0UPr
-8bt4qpEsG5z8Ic2qdjOjHEYelaoCHoIG4LOlAatvkkrDdWLhTrsUU/8FewL/j5Tr
-QJ76qvfN787QcG5lIzh96o4fwnUhOSpCwqh6UnJm4xg7JKG4v/G3FwkRISt/3JwQ
-tCo9AfMoBATrBQnzHj45
-=aVOR
------END PGP SIGNATURE-----
+Changes in V7:
+	perf: Update perf_event_type documentation
+		Proposed new patch from Peter Zijlstra
+	perf: make events stream always parsable
+		Adjustments due to patch above
+	perf tools: tidy up sample parsing overflow checking
+		Change to a single overflow function
+		Amend comment
+	perf tools: add a function to calculate sample event size
+		New patch
+	perf tools: add a sample parsing test
+		Amended to use sample event size calculation
 
---3T4dLCyS4EPlIT+v--
+Changes in V6:
+	Some checkpatch fixes
+
+	perf: make events stream always parsable
+		Add sample format comments
+
+Changes in V5:
+	Re-based to Arnaldo's tree and dropped already applied patches:
+		perf tools: remove unused parameter
+		perf tools: fix missing tool parameter
+		perf tools: fix missing 'finished_round'
+		perf tools: fix parse_events_terms() segfault on error path
+		perf tools: fix new_term() missing free on error path
+		perf tools: add const specifier to perf_pmu__find name parameter
+		perf tools: tidy duplicated munmap code
+		perf tools: validate perf event header size
+
+	perf tools: add debug prints
+		Changed to perf_event_attr__fprintf()
+	perf tools: add pid to struct thread
+		Always set the pid, even if a pid is already set
+	perf tools: change machine__findnew_thread() to set thread pid
+		Replaces: perf tools: change "machine" functions to set thread pid
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		Only use PERF_SAMPLE_IDENTFIER if sample types are different
+	perf tools: expand perf_event__synthesize_sample()
+		New patch in preparation of a sample parsing test
+	perf tools: add a sample parsing test
+		New patch
+
+Changes in V4:
+	I added kernel support for matching sample types via
+	PERF_SAMPLE_IDENTIFIER.  perf tools support for that required
+	first fixing some other things.
+
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Dropped - covered by David Ahern
+	perf tools: struct thread has a tid not a pid
+		Added ack by David Ahern
+	perf tools: add pid to struct thread
+		Remove unused function
+	perf tools: fix missing increment in sample parsing
+		New patch
+	perf tools: tidy up sample parsing overflow checking
+		New patch
+	perf tools: remove unnecessary callchain validation
+		New patch
+	perf tools: remove references to struct ip_event
+		New patch
+	perf tools: move struct ip_event
+		New patch
+	perf: make events stream always parsable
+		New patch
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		New patch
+
+Changes in V3:
+	perf tools: add pid to struct thread
+		Split into 2 patches
+	perf tools: fix ppid in thread__fork()
+		Dropped for now
+
+Changes in V2:
+	perf tools: fix missing tool parameter
+		Fixed one extra occurrence
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Made "freeing" code into a new function
+	perf tools: validate perf event header size
+		Corrected byte-swapping
+	perf tools: allow non-matching sample types
+		Added comments
+		Fixed id_pos calculation
+		id_pos/is_pos updated whenever sample_type changes
+		Removed perf_evlist__sample_type()
+		Added __perf_evlist__combined_sample_type()
+		Added perf_evlist__combined_sample_type()
+		Added perf_evlist__make_sample_types_compatible()
+	Added ack's to patches acked by Jiri Olsa
+
+
+Adrian Hunter (13):
+      perf tools: add debug prints
+      perf tools: allow non-matching sample types
+      perf tools: add pid to struct thread
+      perf tools: change machine__findnew_thread() to set thread pid
+      perf tools: tidy up sample parsing overflow checking
+      perf tools: remove unnecessary callchain validation
+      perf tools: remove references to struct ip_event
+      perf: make events stream always parsable
+      perf tools: move perf_evlist__config() to a new source file
+      perf tools: add support for PERF_SAMPLE_IDENTFIER
+      perf tools: expand perf_event__synthesize_sample()
+      perf tools: add a function to calculate sample event size
+      perf tools: add a sample parsing test
+
+ include/uapi/linux/perf_event.h   |  27 ++-
+ kernel/events/core.c              |  11 +-
+ tools/perf/Makefile               |   2 +
+ tools/perf/builtin-inject.c       |   8 +-
+ tools/perf/builtin-kmem.c         |   3 +-
+ tools/perf/builtin-kvm.c          |   2 +-
+ tools/perf/builtin-lock.c         |   3 +-
+ tools/perf/builtin-mem.c          |   2 +-
+ tools/perf/builtin-report.c       |   2 +-
+ tools/perf/builtin-sched.c        |  20 +-
+ tools/perf/builtin-script.c       |   3 +-
+ tools/perf/builtin-top.c          |  11 +-
+ tools/perf/builtin-trace.c        |  12 +-
+ tools/perf/tests/builtin-test.c   |   4 +
+ tools/perf/tests/code-reading.c   |   4 +-
+ tools/perf/tests/hists_link.c     |  23 +-
+ tools/perf/tests/mmap-basic.c     |   2 +-
+ tools/perf/tests/sample-parsing.c | 313 +++++++++++++++++++++++++
+ tools/perf/tests/tests.h          |   1 +
+ tools/perf/util/build-id.c        |  11 +-
+ tools/perf/util/callchain.c       |   8 -
+ tools/perf/util/callchain.h       |   5 -
+ tools/perf/util/event.c           |   5 +-
+ tools/perf/util/event.h           |  33 ++-
+ tools/perf/util/evlist.c          | 146 ++++++++++--
+ tools/perf/util/evlist.h          |  10 +-
+ tools/perf/util/evsel.c           | 471 ++++++++++++++++++++++++++++++++++----
+ tools/perf/util/evsel.h           |  13 +-
+ tools/perf/util/machine.c         |  37 ++-
+ tools/perf/util/machine.h         |   3 +-
+ tools/perf/util/python.c          |  20 ++
+ tools/perf/util/record.c          | 111 +++++++++
+ tools/perf/util/session.c         |  32 +--
+ tools/perf/util/thread.c          |   3 +-
+ tools/perf/util/thread.h          |   3 +-
+ 35 files changed, 1174 insertions(+), 190 deletions(-)
+ create mode 100644 tools/perf/tests/sample-parsing.c
+ create mode 100644 tools/perf/util/record.c
+
+
+Regards
+Adrian
