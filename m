@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030247Ab3HICFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:05:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55877 "EHLO
+	id S1030360Ab3HICFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:05:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55864 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967713Ab3HIB7a (ORCPT
+	with ESMTP id S967740Ab3HIB72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:30 -0400
+	Thu, 8 Aug 2013 21:59:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [ 075/102] fanotify: info leak in copy_event_to_user()
-Date: Thu,  8 Aug 2013 18:57:51 -0700
-Message-Id: <20130809015027.920227529@linuxfoundation.org>
+        Pierre Assal <pierre.assal@verint.com>,
+        "cancan,feng" <cancan.feng@intel.com>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 080/102] drm/i915: make SDVO TV-out work for multifunction devices
+Date: Thu,  8 Aug 2013 18:57:56 -0700
+Message-Id: <20130809015029.083058664@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -30,34 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f upstream.
+commit 09ede5414f0215461c933032630bf9c3a61a8ba3 upstream.
 
-The ->reserved field isn't cleared so we leak one byte of stack
-information to userspace.
+We need to track this correctly. While at it shovel the boolean
+to track whether the sdvo is in tv mode or not into pipe_config.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=36997
+Tested-by: Pierre Assal <pierre.assal@verint.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=63609
+Tested-by: cancan,feng <cancan.feng@intel.com>
+Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- fs/notify/fanotify/fanotify_user.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -122,6 +122,7 @@ static int fill_event_metadata(struct fs
- 	metadata->event_len = FAN_EVENT_METADATA_LEN;
- 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
- 	metadata->vers = FANOTIFY_METADATA_VERSION;
-+	metadata->reserved = 0;
- 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
- 	metadata->pid = pid_vnr(event->tgid);
- 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
+---
+ drivers/gpu/drm/i915/intel_display.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -4333,7 +4333,8 @@ static void vlv_update_pll(struct intel_
+ 
+ static void i9xx_update_pll(struct intel_crtc *crtc,
+ 			    intel_clock_t *reduced_clock,
+-			    int num_connectors)
++			    int num_connectors,
++			    bool needs_tv_clock)
+ {
+ 	struct drm_device *dev = crtc->base.dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -4391,7 +4392,7 @@ static void i9xx_update_pll(struct intel
+ 	if (INTEL_INFO(dev)->gen >= 4)
+ 		dpll |= (6 << PLL_LOAD_PULSE_PHASE_SHIFT);
+ 
+-	if (is_sdvo && intel_pipe_has_type(&crtc->base, INTEL_OUTPUT_TVOUT))
++	if (is_sdvo && needs_tv_clock)
+ 		dpll |= PLL_REF_INPUT_TVCLKINBC;
+ 	else if (intel_pipe_has_type(&crtc->base, INTEL_OUTPUT_TVOUT))
+ 		/* XXX: just matching BIOS for now */
+@@ -4716,7 +4717,8 @@ static int i9xx_crtc_mode_set(struct drm
+ 	else
+ 		i9xx_update_pll(intel_crtc,
+ 				has_reduced_clock ? &reduced_clock : NULL,
+-				num_connectors);
++				num_connectors,
++				is_sdvo && is_tv);
+ 
+ 	/* Set up the display plane register */
+ 	dspcntr = DISPPLANE_GAMMA_ENABLE;
 
 
