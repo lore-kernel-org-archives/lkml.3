@@ -1,81 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967043Ab3HIBFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:05:33 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:61892 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758253Ab3HIBFc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:05:32 -0400
-Date: Thu, 8 Aug 2013 18:05:30 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Ed Cashin <ecashin@coraid.com>
-Cc: "axboe@kernel.dk" <axboe@kernel.dk>, "neilb@suse.de" <neilb@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>
-Subject: Re: [PATCH 04/22] block: Abstract out bvec iterator
-Message-ID: <20130809010530.GG15409@kmo-pixel>
-References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
- <1375912471-5106-5-git-send-email-kmo@daterainc.com>
- <2D8F228B-65AE-4046-A910-6B354AF0058E@coraid.com>
- <20130809000943.GC15409@kmo-pixel>
- <F14F555B-1B1C-4E73-8AF8-DE57D77C610D@coraid.com>
+	id S967075Ab3HIBGE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:06:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42680 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966940Ab3HIBGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 21:06:02 -0400
+Message-ID: <52044013.3010202@zytor.com>
+Date: Thu, 08 Aug 2013 18:04:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F14F555B-1B1C-4E73-8AF8-DE57D77C610D@coraid.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH  V12 0/14] Paravirtualized ticket spinlocks
+References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
+In-Reply-To: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 08:59:11PM -0400, Ed Cashin wrote:
-> On Aug 8, 2013, at 8:09 PM, Kent Overstreet wrote:
-> 
-> > On Wed, Aug 07, 2013 at 10:04:36PM -0400, Ed Cashin wrote:
-> >> On Aug 7, 2013, at 5:54 PM, Kent Overstreet wrote:
-> >> 
-> >>> Immutable biovecs are going to require an explicit iterator. To
-> >>> implement immutable bvecs, a later patch is going to add a bi_bvec_done
-> >>> member to this struct; for now, this patch effectively just renames
-> >>> things.
-> >> 
-> >> Hi, Kent Overstreet.  Thanks for Cc'ing me and for the promising work.
-> >> 
-> >> Were you able to do sanity tests with aoe this time around?  Last time, basic I/O was not working with the immutable biovec patches applied.
-> >> 
-> >> Here is my 28 June email about my experiences with git://evilpiepirate.org/~kent/linux-bcache.git at that time.  It also includes information about creating an easy software-only aoe test environment.
-> >> 
-> >>  http://thread.gmane.org/gmane.linux.kernel/1505222/focus=1517924
-> > 
-> > Hey, thanks for testing it - sorry, I think I remember seeing that email
-> > last time and got sidetracked before I got around to setting up some
-> > tests.
-> 
-> No worries.
-> 
-> > I think I've got it working now, it's running the same stress tests I
-> > use for bcache. Here's a fixed patch, I broke the aoe changes out into
-> > their own patch since they were more involved than most of the others:
-> 
-> I had added your git tree as a remote and checked out the for-jens branch.  This patch conflicts with some of the changes in that patch, so I could use a pointer as to which base this new patch applies to.
-> 
-> If it's already in some branch in linux-bcache, I can just use it there, and that's even more convenient.
+The kbuild test bot is reporting some pretty serious errors for this
+patchset.  I think these are serious enough that the patchset will need
+to be respun.
 
-It's in the for-jens branch now.
+	-hpa
 
-> 
-> > (I am seeing a bug where it's getting stuck after running stress tests
-> > for awhile, but I can reproduce that without the aoe changes too...)
-> 
-> Just so I know what to look for, what does that behavior look like?  I/O stops going and procs get stuck in disk sleep, maybe?
-
-Yeah, pretty much.
-
-My test script isn't really doing anything interesting, just using
-dbench and bonnie to generate random-ish mixed load. It's running in a
-vm where the block devices are files in a tmpfs on the host, though.
-
-Here's the test script - http://evilpiepirate.org/~kent/rc
