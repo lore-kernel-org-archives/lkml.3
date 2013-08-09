@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758298Ab3HIBAj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:00:39 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:36069 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758263Ab3HIBAg (ORCPT
+	id S1758285Ab3HIBAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:00:37 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:9866 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758250Ab3HIBAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 21:00:36 -0400
-Date: Thu, 8 Aug 2013 21:00:32 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Michal Hocko <mhocko@suse.cz>, hannes@cmpxchg.org, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.12] cgroup: make cgroup_event specific to
- memcg
-Message-ID: <20130809010032.GA14792@mtj.dyndns.org>
-References: <20130805162958.GF19631@mtj.dyndns.org>
- <20130805191641.GA24003@dhcp22.suse.cz>
- <20130805194431.GD23751@mtj.dyndns.org>
- <20130806155804.GC31138@dhcp22.suse.cz>
- <20130806161509.GB10779@mtj.dyndns.org>
- <20130807121836.GF8184@dhcp22.suse.cz>
- <20130807124321.GA27006@htj.dyndns.org>
- <20130807132613.GH8184@dhcp22.suse.cz>
- <20130807133645.GE27006@htj.dyndns.org>
- <5203081C.8050403@huawei.com>
+X-Spam-Score: -100.8
+Message-ID: <52043EF4.6070809@asianux.com>
+Date: Fri, 09 Aug 2013 08:59:32 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5203081C.8050403@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        Kees Cook <keescook@chromium.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        holt@sgi.com, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] kernel/sys.c: return the current gid when error occurs
+References: <5200AD26.8070701@asianux.com> <5200AD67.1030109@asianux.com> <52015ADB.30408@mit.edu> <20130807162147.GA31460@redhat.com> <52039F11.4010806@gmail.com>
+In-Reply-To: <52039F11.4010806@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+On 08/08/2013 09:37 PM, Michael Kerrisk (man-pages) wrote:
+> On 08/07/13 18:21, Oleg Nesterov wrote:
+>> On 08/06, Andy Lutomirski wrote:
+>>>
+>>> I assume that what the man page means is that the return value is
+>>> whatever fsgid was prior to the call.  On error, fsgid isn't changed, so
+>>> the return value is still "current".
+>>
+>> Probably... Still
+>>
+>> 	On success, the previous value of fsuid is returned.
+>> 	On error, the current value of fsuid is returned.
+>>
+>> looks confusing. sys_setfsuid() always returns the old value.
+>>
+>>> (FWIW, this behavior is awful and is probably the cause of a security
+>>> bug or three, since success and failure are indistinguishable.
+>>
+>> At least this all looks strange.
+>>
+>> I dunno if we can change this old behaviour. I won't be surprized
+>> if someone already uses setfsuid(-1) as getfsuid().
+>>
+>> And perhaps the man page should be changed. Add Michael.
+> 
+> Thanks, Oleg. I've applied the following patch to setfsuid.2
+> (and a similar patch to setfsgid.2).
+> 
+> Cheers,
+> 
+> Michael
+> 
+> --- a/man2/setfsuid.2
+> +++ b/man2/setfsuid.2
+> @@ -67,12 +67,8 @@ matches either the real user ID, effective user ID, saved set-user-ID, or
+>  the current value of
+>  .IR fsuid .
+>  .SH RETURN VALUE
+> -On success, the previous value of
+> -.I fsuid
+> -is returned.
+> -On error, the current value of
+> -.I fsuid
+> -is returned.
+> +On both success and failure,
+> +this call returns the previous filesystem user ID of the caller.
+>  .SH VERSIONS
+>  This system call is present in Linux since version 1.2.
+>  .\" This system call is present since Linux 1.1.44
+> @@ -102,7 +98,16 @@ The glibc
+>  .BR setfsuid ()
+>  wrapper function transparently deals with the variation across kernel versions.
+>  .SH BUGS
+> -No error messages of any kind are returned to the caller.
+> +No error indications of any kind are returned to the caller,
+> +and the fact that both successful and unsuccessful calls return
+> +the same value makes it impossible to directly determine
+> +whether the call succeeded or failed.
+> +Instead, the caller must resort to looking at the return value
+> +from a further call such as
+> +.IR setfsuid(\-1)
+> +(which will always fail), in order to determine if a preceding call to
+> +.BR setfsuid ()
+> +changed the filesystem user ID.
+>  At the very
+>  least,
+>  .B EPERM
+> 
 
-On Thu, Aug 08, 2013 at 10:53:16AM +0800, Li Zefan wrote:
-> I would like to see this happen. I have a feeling that we're deprecating
-> features a bit aggressively without providing alternatives.
+Is it suitable to mention this API is obsoleted and unneeded in man page
+?  ;-)
 
-I'd rework it prolly next week but this has to go one way or another.
-There's no way we're implementing userland interface this complex in
-cgroup proper.  It is a gross layering violation.  We don't implement
-userland visible interface this complex in low level subsystems.  It's
-wrong both in principle and leads to all sorts of problems in practice
-like ending up worrying about userland abuses in memcg event source
-implementation, which is utterly bonkers if you ask me.
 
 Thanks.
-
 -- 
-tejun
+Chen Gang
