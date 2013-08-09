@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967268Ab3HIBwt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:52:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55424 "EHLO
+	id S967296Ab3HIBx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:53:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55413 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967033Ab3HIBmS (ORCPT
+	with ESMTP id S967161Ab3HIBmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:18 -0400
+	Thu, 8 Aug 2013 21:42:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Tesar <mtesar@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 18/25] sysctl net: Keep tcp_syn_retries inside the boundary
-Date: Thu,  8 Aug 2013 18:41:54 -0700
-Message-Id: <20130809013653.115339122@linuxfoundation.org>
+        Salman Qazi <sqazi@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 16/25] perf: Use css_tryget() to avoid propping up css refcount
+Date: Thu,  8 Aug 2013 18:41:52 -0700
+Message-Id: <20130809013652.694071159@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -27,41 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Tesar <mtesar@redhat.com>
+From: Salman Qazi <sqazi@google.com>
 
-[ Upstream commit 651e92716aaae60fc41b9652f54cb6803896e0da ]
+commit 9c5da09d266ca9b32eb16cf940f8161d949c2fe5 upstream.
 
-Limit the min/max value passed to the
-/proc/sys/net/ipv4/tcp_syn_retries.
+An rmdir pushes css's ref count to zero.  However, if the associated
+directory is open at the time, the dentry ref count is non-zero.  If
+the fd for this directory is then passed into perf_event_open, it
+does a css_get().  This bounces the ref count back up from zero.  This
+is a problem by itself.  But what makes it turn into a crash is the
+fact that we end up doing an extra dput, since we perform a dput
+when css_put sees the ref count go down to zero.
 
-Signed-off-by: Michal Tesar <mtesar@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+css_tryget() does not fall into that trap. So, we use that instead.
+
+Reproduction test-case for the bug:
+
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+ #include <linux/unistd.h>
+ #include <linux/perf_event.h>
+ #include <string.h>
+ #include <errno.h>
+ #include <stdio.h>
+
+ #define PERF_FLAG_PID_CGROUP    (1U << 2)
+
+ int perf_event_open(struct perf_event_attr *hw_event_uptr,
+                     pid_t pid, int cpu, int group_fd, unsigned long flags) {
+         return syscall(__NR_perf_event_open,hw_event_uptr, pid, cpu,
+                 group_fd, flags);
+ }
+
+ /*
+  * Directly poke at the perf_event bug, since it's proving hard to repro
+  * depending on where in the kernel tree.  what moved?
+  */
+ int main(int argc, char **argv)
+ {
+        int fd;
+        struct perf_event_attr attr;
+        memset(&attr, 0, sizeof(attr));
+        attr.exclude_kernel = 1;
+        attr.size = sizeof(attr);
+        mkdir("/dev/cgroup/perf_event/blah", 0777);
+        fd = open("/dev/cgroup/perf_event/blah", O_RDONLY);
+        perror("open");
+        rmdir("/dev/cgroup/perf_event/blah");
+        sleep(2);
+        perf_event_open(&attr, fd, 0, -1,  PERF_FLAG_PID_CGROUP);
+        perror("perf_event_open");
+        close(fd);
+        return 0;
+ }
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Tejun Heo <tj@kernel.org>
+Link: http://lkml.kernel.org/r/20120614223108.1025.2503.stgit@dungbeetle.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/sysctl_net_ipv4.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -34,6 +34,8 @@ static int tcp_adv_win_scale_min = -31;
- static int tcp_adv_win_scale_max = 31;
- static int ip_ttl_min = 1;
- static int ip_ttl_max = 255;
-+static int tcp_syn_retries_min = 1;
-+static int tcp_syn_retries_max = MAX_TCP_SYNCNT;
- static int ip_ping_group_range_min[] = { 0, 0 };
- static int ip_ping_group_range_max[] = { GID_T_MAX, GID_T_MAX };
+---
+ kernel/events/core.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -250,9 +250,9 @@ perf_cgroup_match(struct perf_event *eve
+ 	return !event->cgrp || event->cgrp == cpuctx->cgrp;
+ }
  
-@@ -276,7 +278,9 @@ static struct ctl_table ipv4_table[] = {
- 		.data		= &sysctl_tcp_syn_retries,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &tcp_syn_retries_min,
-+		.extra2		= &tcp_syn_retries_max
- 	},
- 	{
- 		.procname	= "tcp_synack_retries",
+-static inline void perf_get_cgroup(struct perf_event *event)
++static inline bool perf_tryget_cgroup(struct perf_event *event)
+ {
+-	css_get(&event->cgrp->css);
++	return css_tryget(&event->cgrp->css);
+ }
+ 
+ static inline void perf_put_cgroup(struct perf_event *event)
+@@ -481,7 +481,11 @@ static inline int perf_cgroup_connect(in
+ 	event->cgrp = cgrp;
+ 
+ 	/* must be done before we fput() the file */
+-	perf_get_cgroup(event);
++	if (!perf_tryget_cgroup(event)) {
++		event->cgrp = NULL;
++		ret = -ENOENT;
++		goto out;
++	}
+ 
+ 	/*
+ 	 * all events in a group must monitor
 
 
