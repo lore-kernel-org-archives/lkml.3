@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967592Ab3HIBnS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:43:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55380 "EHLO
+	id S967579Ab3HIBnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:43:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55367 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967136Ab3HIBmM (ORCPT
+	with ESMTP id S967133Ab3HIBmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:12 -0400
+	Thu, 8 Aug 2013 21:42:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 10/25] ACPI / battery: Fix parsing _BIX return value
-Date: Thu,  8 Aug 2013 18:41:46 -0700
-Message-Id: <20130809013651.422084236@linuxfoundation.org>
+        Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 08/25] rt2x00: fix stop queue
+Date: Thu,  8 Aug 2013 18:41:44 -0700
+Message-Id: <20130809013650.993980988@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -27,49 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit 016d5baad04269e8559332df05f89bd95b52d6ad upstream.
+commit e2288b66fe7ff0288382b2af671b4da558b44472 upstream.
 
-The _BIX method returns extended battery info as a package.
-According the ACPI spec (ACPI 5, Section 10.2.2.2), the first member
-of that package should be "Revision".  However, the current ACPI
-battery driver treats the first member as "Power Unit" which should
-be the second member.  This causes the result of _BIX return data
-parsing to be incorrect.
+Since we clear QUEUE_STARTED in rt2x00queue_stop_queue(), following
+call to rt2x00queue_pause_queue() reduce to noop, i.e we do not
+stop queue in mac80211.
 
-Fix this by adding a new member called 'revision' to struct
-acpi_battery and adding the offsetof() information on it to
-extended_info_offsets[] as the first row.
+To fix that introduce rt2x00queue_pause_queue_nocheck() function,
+which will stop queue in mac80211 directly.
 
-[rjw: Changelog]
-Reported-and-tested-by: Jan Hoffmann <jan.christian.hoffmann@gmail.com>
-References: http://bugzilla.kernel.org/show_bug.cgi?id=60519
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Note that rt2x00_start_queue() explicitly set QUEUE_PAUSED bit.
+
+Note also that reordering operations i.e. first call to
+rt2x00queue_pause_queue() and then clear QUEUE_STARTED bit, will race
+with rt2x00queue_unpause_queue(), so calling ieee80211_stop_queue()
+directly is the only available solution to fix the problem without
+major rework.
+
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/battery.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/rt2x00/rt2x00queue.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -117,6 +117,7 @@ struct acpi_battery {
- 	struct acpi_device *device;
- 	struct notifier_block pm_nb;
- 	unsigned long update_time;
-+	int revision;
- 	int rate_now;
- 	int capacity_now;
- 	int voltage_now;
-@@ -350,6 +351,7 @@ static struct acpi_offsets info_offsets[
- };
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -856,13 +856,8 @@ void rt2x00queue_index_inc(struct queue_
+ 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
+ }
  
- static struct acpi_offsets extended_info_offsets[] = {
-+	{offsetof(struct acpi_battery, revision), 0},
- 	{offsetof(struct acpi_battery, power_unit), 0},
- 	{offsetof(struct acpi_battery, design_capacity), 0},
- 	{offsetof(struct acpi_battery, full_charge_capacity), 0},
+-void rt2x00queue_pause_queue(struct data_queue *queue)
++void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
+ {
+-	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
+-	    !test_bit(QUEUE_STARTED, &queue->flags) ||
+-	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
+-		return;
+-
+ 	switch (queue->qid) {
+ 	case QID_AC_VO:
+ 	case QID_AC_VI:
+@@ -878,6 +873,15 @@ void rt2x00queue_pause_queue(struct data
+ 		break;
+ 	}
+ }
++void rt2x00queue_pause_queue(struct data_queue *queue)
++{
++	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
++	    !test_bit(QUEUE_STARTED, &queue->flags) ||
++	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
++		return;
++
++	rt2x00queue_pause_queue_nocheck(queue);
++}
+ EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
+ 
+ void rt2x00queue_unpause_queue(struct data_queue *queue)
+@@ -939,7 +943,7 @@ void rt2x00queue_stop_queue(struct data_
+ 		return;
+ 	}
+ 
+-	rt2x00queue_pause_queue(queue);
++	rt2x00queue_pause_queue_nocheck(queue);
+ 
+ 	queue->rt2x00dev->ops->lib->stop_queue(queue);
+ 
 
 
