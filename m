@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967008Ab3HIAiA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 20:38:00 -0400
-Received: from cns1-135.icoremail.net ([120.31.129.135]:42420 "HELO
-	cns1-7.icoremail.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with SMTP id S1758211Ab3HIAh7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 20:37:59 -0400
-Date: Fri, 9 Aug 2013 08:28:01 +0800
-From: "Hvxqzq" <sales1@chinamiaoji.com>
-Reply-To: swt@swtindustry.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: A4 paper and A3 paper
-Message-ID: <201308090828015469514@chinamiaoji.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S967001Ab3HIAi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 20:38:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20461 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758211Ab3HIAi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Aug 2013 20:38:56 -0400
+X-IronPort-AV: E=Sophos;i="4.89,842,1367942400"; 
+   d="scan'208";a="8158196"
+Message-ID: <520439C9.3080601@cn.fujitsu.com>
+Date: Fri, 09 Aug 2013 08:37:29 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-CM-TRANSID: SwGowHDr_5gvNwRS0Q+JAA--.1565S4
-X-Coremail-Antispam: 1UD129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
-	VFW2AGmfu7bjvjm3AaLaJ3UjIYCTnIWjp_UUUFS7k042IEc7kJM7k042IE4IxYO2xFxVAq
-	jxCEw4Av424lb7IF0VCFIxCj07C26xAqzxv262kKe7AKxwAYjxAI6xCI4x8I1I0E4c8EcI
-	0Ec7CjxVAaw2AFwI1lb7IF0VCFIxCj07C26xCIbckI1I0E14v7M7k0a2IF6F4UM7kC6x80
-	4xWl14x267AKxVWUJVW8JwAFc2x0x2IEx4CE42xK8VAvwI8IcIk0rVWrJVCq3wAFIxvE14
-	AKwVWUJVWUGwA2ocxC64kIII0Yj41l84x0c7CEw4AK67xGY2AK021l84ACjcxK6xIIjxv2
-	0xvE14v26r4j6ryUM28EF7xvwVC0I7IYx2IY6xkF7I0E14v26r4j6F4UM28EF7xvwVC2z2
-	80aVAFwI0_Cr1j6rxdM28EF7xvwVC2z280aVCY1x0267AKxVWxJr0_GcWln4vEF7Iv6F18
-	KVAqrcv_GVWUtr1rJF1le2I262IYc4CY6c8Ij28IcVAaY2xG8wAqjxCE34x0Y48IcwAqx4
-	xG64xvF2IEw4CE5I8CrVC2j2WlYx0E2Ix0cI8IcVAFwI0_Jw0_WrylYx0Ex4A2jsIE14v2
-	6r4UJVWxJr1lOx8S6xCaFVCjc4AY6r1j6r4UM4x0Y48IcxkI7VAKI48JM4xvF2IEb7IF0F
-	y264kE64k0F24lFcxC0VAYjxAxZF0Ex2IqxwCY02Avz4vE14v_twCF04k20xvY0x0EwIxG
-	rwCF54CYxVAaw2AFwI0_Wryj6r4UJr1l4c8EcI0Ec7CjxVAaw2AFwI0_Wryj6r4UJr1l4I
-	8I3I0E4IkC6x0Yz7v_Jr0_Gr1l4IxYO2xFxVAFwI0_Wryj6r4UJr1l4IxY624lx2IqxVAq
-	x4xG67AKxVWUJVWUGwC20s026x8GjcxK67AKxVWUGVWUWwC2zVAF1VAY17CE14v26r1j6r
-	15MIIYrxkI7VAKI48JMIIF0xvE2Ix0cI8IcVAFwI0_JFI_Gr1lIxAIcVC0I7IYx2IY6xkF
-	7I0E14v26r1j6r4UMIIF0xvE42xK8VAvwI8IcIk0rVW3JVWrJr1lIxAIcVC2z280aVAFwI
-	0_Gr1j6F4UJwCI42IY6I8E87Iv6xkF7I0E14v26r4UJVWxJr1l6VACY4xI67k04243AbIY
-	CTnIWIevJa73UjIFyTuYvjxU9sa9UUUUU
-X-Originating-IP: [110.228.94.166]
-X-CM-SenderInfo: 5vdov2ur6fxx5qdpxtxrmlhudrp/
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: robert.moore@intel.com, lv.zheng@intel.com, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part2 0/4] acpi: Trivial fix and improving for memory
+ hotplug.
+References: <1375938239-18769-1-git-send-email-tangchen@cn.fujitsu.com> <1851799.n4moZnvj4u@vostro.rjw.lan>
+In-Reply-To: <1851799.n4moZnvj4u@vostro.rjw.lan>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 08:37:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 08:37:28,
+	Serialize complete at 2013/08/09 08:37:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r790cIWW005716
 
-Dear Purchasing manager:
-Nice time to you
+On 08/08/2013 10:09 PM, Rafael J. Wysocki wrote:
+> On Thursday, August 08, 2013 01:03:55 PM Tang Chen wrote:
+>> This patch-set does some trivial fix and improving in ACPI code
+>> for memory hotplug.
+>>
+>> Patch 1,3,4 have been acked.
+>>
+>> Tang Chen (4):
+>>    acpi: Print Hot-Pluggable Field in SRAT.
+>>    earlycpio.c: Fix the confusing comment of find_cpio_data().
+>>    acpi: Remove "continue" in macro INVALID_TABLE().
+>>    acpi: Introduce acpi_verify_initrd() to check if a table is invalid.
+>>
+>>   arch/x86/mm/srat.c |   11 ++++--
+>>   drivers/acpi/osl.c |   84 +++++++++++++++++++++++++++++++++++++++------------
+>>   lib/earlycpio.c    |   27 ++++++++--------
+>>   3 files changed, 85 insertions(+), 37 deletions(-)
+>
+> It looks like this part doesn't depend on the other parts, is that correct?
 
-It is my big pleasure to hear you need A4 paper
-If you still need that pls tell me
+No, it doesn't. And this patch-set can be merged first.
 
-Then i can send you our best price
-Best wishes
-Ida
+Thanks.
 
-Ida Chen
-
-SALES MANAGER
-
-East Siweite industry Co., Ltd
-www.dfswtpaper.com
-
-SKYPE: siweite
-
-Email:swt@swtindustry.comˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
