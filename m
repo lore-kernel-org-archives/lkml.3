@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967773Ab3HICPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:15:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55715 "EHLO
+	id S967689Ab3HICPc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:15:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967574Ab3HIB65 (ORCPT
+	with ESMTP id S967569Ab3HIB64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:57 -0400
+	Thu, 8 Aug 2013 21:58:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Jack Morgan <jack.morgan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 043/102] ixgbe: Fix Tx Hang issue with lldpad on 82598EB
-Date: Thu,  8 Aug 2013 18:57:19 -0700
-Message-Id: <20130809015019.936960653@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 034/102] iwlwifi: mvm: fix flushing not started aggregation sessions
+Date: Thu,  8 Aug 2013 18:57:10 -0700
+Message-Id: <20130809015017.807948129@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -30,37 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Keller <jacob.e.keller@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 1eb9ac14c34a948bf1538bfb9034e8ab29099a64 upstream.
+commit b6658ff80c43bcf84be0bbe371c88af1452e7776 upstream.
 
-This patch fixes an issue with the 82598EB device, where lldpad is causing Tx
-Hangs on the card as soon as it attempts to configure DCB for the device. The
-adapter will continually Tx hang and reset in a loop.
+When a not fully started aggregation session is destroyed
+and flushed, we get a warning, e.g.
 
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Tested-by: Jack Morgan <jack.morgan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  WARNING: at drivers/net/wireless/iwlwifi/pcie/tx.c:1142 iwl_trans_pcie_txq_disable+0x11c/0x160
+  queue 16 not used
+  Modules linked in: [...]
+  Pid: 5135, comm: hostapd Tainted: G        W  O 3.5.0 #10
+  Call Trace:
+  wlan0: driver sets block=0 for sta 00:03:7f:10:44:d3
+   [<ffffffff81036492>] warn_slowpath_common+0x72/0xa0
+   [<ffffffff81036577>] warn_slowpath_fmt+0x47/0x50
+   [<ffffffffa0368d6c>] iwl_trans_pcie_txq_disable+0x11c/0x160 [iwlwifi]
+   [<ffffffffa03a2099>] iwl_mvm_sta_tx_agg_flush+0xe9/0x150 [iwlmvm]
+   [<ffffffffa0396c43>] iwl_mvm_mac_ampdu_action+0xf3/0x1e0 [iwlmvm]
+   [<ffffffffa0293ad3>] ___ieee80211_stop_tx_ba_session+0x193/0x920 [mac80211]
+   [<ffffffffa0294ed8>] __ieee80211_stop_tx_ba_session+0x48/0x70 [mac80211]
+   [<ffffffffa029159f>] ieee80211_sta_tear_down_BA_sessions+0x4f/0x80 [mac80211]
+   [<ffffffffa028a686>] __sta_info_destroy+0x66/0x370 [mac80211]
+   [<ffffffffa028abb4>] sta_info_destroy_addr_bss+0x44/0x70 [mac80211]
+   [<ffffffffa02a3e26>] ieee80211_del_station+0x26/0x50 [mac80211]
+   [<ffffffffa01e6395>] nl80211_del_station+0x85/0x200 [cfg80211]
+
+when a station deauthenticated from us without fully setting
+up the aggregation session.
+
+Fix this by checking the aggregation state before removing
+the hardware queue.
+
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/sta.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
-@@ -108,9 +108,8 @@ s32 ixgbe_dcb_config_tx_desc_arbiter_825
+--- a/drivers/net/wireless/iwlwifi/mvm/sta.c
++++ b/drivers/net/wireless/iwlwifi/mvm/sta.c
+@@ -898,6 +898,7 @@ int iwl_mvm_sta_tx_agg_flush(struct iwl_
+ 	struct iwl_mvm_sta *mvmsta = (void *)sta->drv_priv;
+ 	struct iwl_mvm_tid_data *tid_data = &mvmsta->tid_data[tid];
+ 	u16 txq_id;
++	enum iwl_mvm_agg_state old_state;
  
- 	/* Enable arbiter */
- 	reg &= ~IXGBE_DPMCS_ARBDIS;
--	/* Enable DFP and Recycle mode */
--	reg |= (IXGBE_DPMCS_TDPAC | IXGBE_DPMCS_TRM);
- 	reg |= IXGBE_DPMCS_TSOEF;
+ 	/*
+ 	 * First set the agg state to OFF to avoid calling
+@@ -907,13 +908,17 @@ int iwl_mvm_sta_tx_agg_flush(struct iwl_
+ 	txq_id = tid_data->txq_id;
+ 	IWL_DEBUG_TX_QUEUES(mvm, "Flush AGG: sta %d tid %d q %d state %d\n",
+ 			    mvmsta->sta_id, tid, txq_id, tid_data->state);
++	old_state = tid_data->state;
+ 	tid_data->state = IWL_AGG_OFF;
+ 	spin_unlock_bh(&mvmsta->lock);
+ 
+-	if (iwl_mvm_flush_tx_path(mvm, BIT(txq_id), true))
+-		IWL_ERR(mvm, "Couldn't flush the AGG queue\n");
++	if (old_state >= IWL_AGG_ON) {
++		if (iwl_mvm_flush_tx_path(mvm, BIT(txq_id), true))
++			IWL_ERR(mvm, "Couldn't flush the AGG queue\n");
 +
- 	/* Configure Max TSO packet size 34KB including payload and headers */
- 	reg |= (0x4 << IXGBE_DPMCS_MTSOS_SHIFT);
++		iwl_trans_txq_disable(mvm->trans, tid_data->txq_id);
++	}
+ 
+-	iwl_trans_txq_disable(mvm->trans, tid_data->txq_id);
+ 	mvm->queue_to_mac80211[tid_data->txq_id] =
+ 				IWL_INVALID_MAC80211_QUEUE;
  
 
 
