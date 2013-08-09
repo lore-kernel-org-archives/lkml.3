@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965298Ab3HIIpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 04:45:39 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:48724 "EHLO
+	id S965526Ab3HIIpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 04:45:53 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:51783 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965100Ab3HIIpb (ORCPT
+	with ESMTP id S964818Ab3HIIpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 04:45:31 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-bc-5204ac18a54b
+	Fri, 9 Aug 2013 04:45:22 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-b5-5204ac18a301
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
@@ -17,9 +17,9 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 13/13] tracing/uprobes: Add support for full argument access methods
-Date: Fri,  9 Aug 2013 17:45:09 +0900
-Message-Id: <1376037909-17797-14-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 08/13] tracing/kprobes: Move common functions to trace_probe.h
+Date: Fri,  9 Aug 2013 17:45:04 +0900
+Message-Id: <1376037909-17797-9-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
 References: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
@@ -30,10 +30,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Enable to fetch other types of argument for the uprobes.  IOW, we can
-access stack, memory, deref, bitfield and retval from uprobes now.
+The __get_data_size() and store_trace_args() will be used by uprobes
+too.  Move them to a common location.
 
-Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
@@ -41,96 +40,125 @@ Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_probe.c | 34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+ kernel/trace/trace_kprobe.c | 48 ---------------------------------------------
+ kernel/trace/trace_probe.h  | 48 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 48 deletions(-)
 
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 70cd3bfde5a6..b68ceb7cad6e 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -253,7 +253,7 @@ fail:
- }
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index d3f60d29c765..ede99332b255 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -904,54 +904,6 @@ const struct fetch_type kprobes_fetch_type_table[] = {
+ 	ASSIGN_FETCH_TYPE(s64, u64, 1),
+ };
  
- /* Special function : only accept unsigned long */
--static __kprobes void fetch_stack_address(struct pt_regs *regs,
-+static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
- 					  void *dummy, void *dest, void *priv)
- {
- 	*(unsigned long *)dest = kernel_stack_pointer(regs);
-@@ -303,7 +303,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
- #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
- 
- static int parse_probe_vars(char *arg, const struct fetch_type *t,
--			    struct fetch_param *f, bool is_return)
-+			    struct fetch_param *f, bool is_return,
-+			    bool is_kprobe)
- {
- 	int ret = 0;
- 	unsigned long param;
-@@ -315,13 +316,18 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
- 			ret = -EINVAL;
- 	} else if (strncmp(arg, "stack", 5) == 0) {
- 		if (arg[5] == '\0') {
--			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
--				f->fn = fetch_stack_address;
--			else
--				ret = -EINVAL;
-+			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR))
-+				return -EINVAL;
-+
-+			if (is_kprobe)
-+				f->fn = fetch_kernel_stack_address;
-+			else {
-+				f->fn = t->fetch[FETCH_MTD_stack];
-+				f->data = (void *)0;
-+			}
- 		} else if (isdigit(arg[5])) {
- 			ret = kstrtoul(arg + 5, 10, &param);
--			if (ret || param > PARAM_MAX_STACK)
-+			if (ret || (is_kprobe && param > PARAM_MAX_STACK))
- 				ret = -EINVAL;
- 			else {
- 				f->fn = t->fetch[FETCH_MTD_stack];
-@@ -345,17 +351,13 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 	int ret;
- 	const struct fetch_type *ttbl;
- 
--	ttbl = kprobes_fetch_type_table;
-+	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
- 
- 	ret = 0;
- 
--	/* Until uprobe_events supports only reg arguments */
--	if (!is_kprobe && arg[0] != '%')
--		return -EINVAL;
+-/* Sum up total data length for dynamic arraies (strings) */
+-static __kprobes int __get_data_size(struct trace_probe *tp,
+-				     struct pt_regs *regs)
+-{
+-	int i, ret = 0;
+-	u32 len;
 -
- 	switch (arg[0]) {
- 	case '$':
--		ret = parse_probe_vars(arg + 1, t, f, is_return);
-+		ret = parse_probe_vars(arg + 1, t, f, is_return, is_kprobe);
- 		break;
+-	for (i = 0; i < tp->nr_args; i++)
+-		if (unlikely(tp->args[i].fetch_size.fn)) {
+-			call_fetch(&tp->args[i].fetch_size, regs, &len);
+-			ret += len;
+-		}
+-
+-	return ret;
+-}
+-
+-/* Store the value of each argument */
+-static __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
+-				       struct pt_regs *regs,
+-				       u8 *data, int maxlen)
+-{
+-	int i;
+-	u32 end = tp->size;
+-	u32 *dl;	/* Data (relative) location */
+-
+-	for (i = 0; i < tp->nr_args; i++) {
+-		if (unlikely(tp->args[i].fetch_size.fn)) {
+-			/*
+-			 * First, we set the relative location and
+-			 * maximum data length to *dl
+-			 */
+-			dl = (u32 *)(data + tp->args[i].offset);
+-			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
+-			/* Then try to fetch string or dynamic array data */
+-			call_fetch(&tp->args[i].fetch, regs, dl);
+-			/* Reduce maximum length */
+-			end += get_rloc_len(*dl);
+-			maxlen -= get_rloc_len(*dl);
+-			/* Trick here, convert data_rloc to data_loc */
+-			*dl = convert_rloc_to_loc(*dl,
+-				 ent_size + tp->args[i].offset);
+-		} else
+-			/* Just fetching data normally */
+-			call_fetch(&tp->args[i].fetch, regs,
+-				   data + tp->args[i].offset);
+-	}
+-}
+-
+ /* Kprobe handler */
+ static __kprobes void
+ __kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs,
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index 63e5da4e3073..189a40baea98 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -302,3 +302,51 @@ extern ssize_t traceprobe_probes_write(struct file *file,
+ 		int (*createfn)(int, char**));
  
- 	case '%':	/* named register */
-@@ -376,6 +378,10 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
- 			f->fn = t->fetch[FETCH_MTD_memory];
- 			f->data = (void *)param;
- 		} else {
-+			/* uprobes don't support symbols */
-+			if (!is_kprobe)
-+				return -EINVAL;
+ extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
 +
- 			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
- 			if (ret)
- 				break;
-@@ -482,7 +488,7 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
- 	int ret;
- 	const struct fetch_type *ttbl;
- 
--	ttbl = kprobes_fetch_type_table;
-+	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
- 
- 	if (strlen(arg) > MAX_ARGSTR_LEN) {
- 		pr_info("Argument is too long.: %s\n",  arg);
++/* Sum up total data length for dynamic arraies (strings) */
++static inline __kprobes int
++__get_data_size(struct trace_probe *tp, struct pt_regs *regs)
++{
++	int i, ret = 0;
++	u32 len;
++
++	for (i = 0; i < tp->nr_args; i++)
++		if (unlikely(tp->args[i].fetch_size.fn)) {
++			call_fetch(&tp->args[i].fetch_size, regs, &len);
++			ret += len;
++		}
++
++	return ret;
++}
++
++/* Store the value of each argument */
++static inline __kprobes void
++store_trace_args(int ent_size, struct trace_probe *tp, struct pt_regs *regs,
++		 u8 *data, int maxlen)
++{
++	int i;
++	u32 end = tp->size;
++	u32 *dl;	/* Data (relative) location */
++
++	for (i = 0; i < tp->nr_args; i++) {
++		if (unlikely(tp->args[i].fetch_size.fn)) {
++			/*
++			 * First, we set the relative location and
++			 * maximum data length to *dl
++			 */
++			dl = (u32 *)(data + tp->args[i].offset);
++			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
++			/* Then try to fetch string or dynamic array data */
++			call_fetch(&tp->args[i].fetch, regs, dl);
++			/* Reduce maximum length */
++			end += get_rloc_len(*dl);
++			maxlen -= get_rloc_len(*dl);
++			/* Trick here, convert data_rloc to data_loc */
++			*dl = convert_rloc_to_loc(*dl,
++				 ent_size + tp->args[i].offset);
++		} else
++			/* Just fetching data normally */
++			call_fetch(&tp->args[i].fetch, regs,
++				   data + tp->args[i].offset);
++	}
++}
 -- 
 1.7.11.7
 
