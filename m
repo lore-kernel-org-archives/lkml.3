@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030323Ab3HICAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:00:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55972 "EHLO
+	id S1030328Ab3HICBG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:01:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030290Ab3HIB7r (ORCPT
+	with ESMTP id S1030278Ab3HIB7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:47 -0400
+	Thu, 8 Aug 2013 21:59:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
         Or Gerlitz <ogerlitz@mellanox.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 100/102] net/mlx4_core: VFs must ignore the enable_64b_cqe_eqe module param
-Date: Thu,  8 Aug 2013 18:58:16 -0700
-Message-Id: <20130809015033.861055543@linuxfoundation.org>
+Subject: [ 099/102] net/mlx4_core: Dont give VFs MAC addresses which are derived from the PF MAC
+Date: Thu,  8 Aug 2013 18:58:15 -0700
+Message-Id: <20130809015033.591749525@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -28,34 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+From: Or Gerlitz <ogerlitz@mellanox.com>
 
-[ Upstream commit b30513202c6c14120f70b2e9aa1e97d47bbc2313 ]
+[ Upstream commit 0508ad646836007e6e6b62331eee7356844eac3d ]
 
-Slaves get the 64B CQE/EQE state from QUERY_HCA, not from the module parameter.
+If the user has not assigned a MAC address to a VM, then don't give it MAC which
+is based on the PF one. The current derivation scheme is wrong and leads to VM
+MAC collisions when the number of cards/hypervisors becomes big enough.
 
-If the parameter is set to zero, the slave outputs an incorrect/irrelevant
-warning message that 64B CQEs/EQEs are supported but not enabled (even if the
-hypervisor has enabled 64B CQEs/EQEs).
+Instead, just give it zeros and let them figure out what to do with that.
 
-Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
 Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/mellanox/mlx4/fw.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/main.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/main.c
-@@ -371,7 +371,7 @@ static int mlx4_dev_cap(struct mlx4_dev
+--- a/drivers/net/ethernet/mellanox/mlx4/fw.c
++++ b/drivers/net/ethernet/mellanox/mlx4/fw.c
+@@ -840,16 +840,7 @@ int mlx4_QUERY_PORT_wrapper(struct mlx4_
+ 			   MLX4_CMD_NATIVE);
  
- 	dev->caps.sqp_demux = (mlx4_is_master(dev)) ? MLX4_MAX_NUM_SLAVES : 0;
+ 	if (!err && dev->caps.function != slave) {
+-		/* if config MAC in DB use it */
+-		if (priv->mfunc.master.vf_oper[slave].vport[vhcr->in_modifier].state.mac)
+-			def_mac = priv->mfunc.master.vf_oper[slave].vport[vhcr->in_modifier].state.mac;
+-		else {
+-			/* set slave default_mac address */
+-			MLX4_GET(def_mac, outbox->buf, QUERY_PORT_MAC_OFFSET);
+-			def_mac += slave << 8;
+-			priv->mfunc.master.vf_admin[slave].vport[vhcr->in_modifier].mac = def_mac;
+-		}
+-
++		def_mac = priv->mfunc.master.vf_oper[slave].vport[vhcr->in_modifier].state.mac;
+ 		MLX4_PUT(outbox->buf, def_mac, QUERY_PORT_MAC_OFFSET);
  
--	if (!enable_64b_cqe_eqe) {
-+	if (!enable_64b_cqe_eqe && !mlx4_is_slave(dev)) {
- 		if (dev_cap->flags &
- 		    (MLX4_DEV_CAP_FLAG_64B_CQE | MLX4_DEV_CAP_FLAG_64B_EQE)) {
- 			mlx4_warn(dev, "64B EQEs/CQEs supported by the device but not enabled\n");
+ 		/* get port type - currently only eth is enabled */
 
 
