@@ -1,116 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030694Ab3HISr5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 14:47:57 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:59057 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030353Ab3HISrz (ORCPT
+	id S1030666Ab3HISss (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 14:48:48 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:35056 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030474Ab3HISsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 14:47:55 -0400
-Message-ID: <201308091847.r79IlstZ015094@farm-0021.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-In-Reply-To: <20130809174009.GV20515@mtj.dyndns.org>
-Date: Fri, 9 Aug 2013 13:52:22 -0400
-Subject: [PATCH v6 2/2] mm: make lru_add_drain_all() selective
-To: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
+	Fri, 9 Aug 2013 14:48:47 -0400
+Date: Fri, 9 Aug 2013 11:44:10 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH] MAINTAINERS: drivers/power: add entry for SmartReflex
+ AVS drivers
+Message-ID: <20130809184410.GA979@lizard.mcd26095.sjc.wayport.net>
+References: <1375720177-20063-1-git-send-email-khilman@linaro.org>
+ <20130806015147.GA16668@teo>
+ <87mwoufk4l.fsf@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <87mwoufk4l.fsf@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes lru_add_drain_all() only selectively interrupt
-the cpus that have per-cpu free pages that can be drained.
+On Tue, Aug 06, 2013 at 04:57:14PM -0700, Kevin Hilman wrote:
+> Subject: [PATCH] MAINTAINERS: drivers/power: add entry for SmartReflex AVS
+>  drivers
+> 
+> The SmartReflex AVS driver evolved out of the OMAP kernel and now
+> lives under drivers/power/avs.
+> 
+> I've historically been maintainer of this but Nishanth Menon is doing
+> most of the heavy lifting now.  Add us both as co-maintainers.
+> 
+> Cc: Anton Vorontsov <anton@enomsg.org>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: Nishanth Menon <nm@ti.com>
+> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+> ---
+>  MAINTAINERS | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index defc053..93e9ba0 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6450,6 +6450,14 @@ S:	Maintained
+>  F:	include/linux/power_supply.h
+>  F:	drivers/power/
+>  
+> +SMARTREFLEX DRIVERS FOR ADAPTIVE VOLTAGE SCALING (AVS)
+> +M:	Kevin Hilman <khilman@kernel.org>
+> +M:	Nishanth Menon <nm@ti.com>
+> +S:	Maintained
+> +F:	drivers/power/avs/smartreflex.c
+> +F:	include/linux/power/smartreflex.h
+> +L:	linux-pm@vger.kernel.org
+> +
 
-This is important in nohz mode where calling mlockall(), for
-example, otherwise will interrupt every core unnecessarily.
+The file should be alphabetically sorted... I fixed it up and applied the
+patch.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
-v6: add Tejun's Acked-by, and add missing get/put_cpu_online to
-lru_add_drain_all().
+Thanks!
 
-v5: provide validity checking on the cpumask for schedule_on_cpu_mask.
-By providing an all-or-nothing EINVAL check, we impose the requirement
-that the calling code actually know clearly what it's trying to do.
-(Note: no change to the mm/swap.c commit)
+Anton
 
-v4: don't lose possible -ENOMEM in schedule_on_each_cpu()
-(Note: no change to the mm/swap.c commit)
-
-v3: split commit into two, one for workqueue and one for mm, though both
-should probably be taken through -mm.
-
- mm/swap.c | 39 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 38 insertions(+), 1 deletion(-)
-
-diff --git a/mm/swap.c b/mm/swap.c
-index 4a1d0d2..f42561a 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -405,6 +405,11 @@ static void activate_page_drain(int cpu)
- 		pagevec_lru_move_fn(pvec, __activate_page, NULL);
- }
- 
-+static bool need_activate_page_drain(int cpu)
-+{
-+	return pagevec_count(&per_cpu(activate_page_pvecs, cpu)) != 0;
-+}
-+
- void activate_page(struct page *page)
- {
- 	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
-@@ -422,6 +427,11 @@ static inline void activate_page_drain(int cpu)
- {
- }
- 
-+static bool need_activate_page_drain(int cpu)
-+{
-+	return false;
-+}
-+
- void activate_page(struct page *page)
- {
- 	struct zone *zone = page_zone(page);
-@@ -683,7 +693,34 @@ static void lru_add_drain_per_cpu(struct work_struct *dummy)
-  */
- int lru_add_drain_all(void)
- {
--	return schedule_on_each_cpu(lru_add_drain_per_cpu);
-+	cpumask_var_t mask;
-+	int cpu, rc;
-+
-+	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-+		return -ENOMEM;
-+	cpumask_clear(mask);
-+	get_online_cpus();
-+
-+	/*
-+	 * Figure out which cpus need flushing.  It's OK if we race
-+	 * with changes to the per-cpu lru pvecs, since it's no worse
-+	 * than if we flushed all cpus, since a cpu could still end
-+	 * up putting pages back on its pvec before we returned.
-+	 * And this avoids interrupting other cpus unnecessarily.
-+	 */
-+	for_each_online_cpu(cpu) {
-+		if (pagevec_count(&per_cpu(lru_add_pvec, cpu)) ||
-+		    pagevec_count(&per_cpu(lru_rotate_pvecs, cpu)) ||
-+		    pagevec_count(&per_cpu(lru_deactivate_pvecs, cpu)) ||
-+		    need_activate_page_drain(cpu))
-+			cpumask_set_cpu(cpu, mask);
-+	}
-+
-+	rc = schedule_on_cpu_mask(lru_add_drain_per_cpu, mask);
-+
-+	put_online_cpus();
-+	free_cpumask_var(mask);
-+	return rc;
- }
- 
- /*
--- 
-1.8.3.1
-
+>  PNP SUPPORT
+>  M:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>  M:	Bjorn Helgaas <bhelgaas@google.com>
+> -- 
+> 1.8.3
+> 
