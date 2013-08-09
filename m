@@ -1,87 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967107Ab3HIKeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:34:04 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:60009 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966854Ab3HIKeC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:34:02 -0400
+	id S966642Ab3HIKhj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:37:39 -0400
+Received: from ni.piap.pl ([195.187.100.4]:49089 "EHLO ni.piap.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753754Ab3HIKhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:37:37 -0400
+From: khalasa@piap.pl (Krzysztof =?utf-8?Q?Ha=C5=82asa?=)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, James Bottomley <JBottomley@Parallels.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <m3fvujgrcr.fsf@t19.piap.pl>
+	<20130809093506.GN23006@n2100.arm.linux.org.uk>
+Date: Fri, 09 Aug 2013 12:34:11 +0200
+In-Reply-To: <20130809093506.GN23006@n2100.arm.linux.org.uk> (Russell King's
+	message of "Fri, 9 Aug 2013 10:35:06 +0100")
 MIME-Version: 1.0
-In-Reply-To: <1376040290.5808.3.camel@mattotaupa>
-References: <alpine.DEB.2.00.1308090550580.3322@skynet.skynet.ie>
-	<1376040290.5808.3.camel@mattotaupa>
-Date: Fri, 9 Aug 2013 20:33:42 +1000
-Message-ID: <CAPM=9tzTVnWKzDWwHmeB4o0jmo7+_is7C0CNqWgpMrWUU-wXng@mail.gmail.com>
-Subject: Re: drm fixes for 3.11: Tag more patches for stable? (was: [git pull]
- drm fixes)
-From: Dave Airlie <airlied@gmail.com>
-To: Paul Menzel <paulepanter@users.sourceforge.net>
-Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>,
-        Alex Deucher <alexdeucher@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Message-ID: <m3bo57gnks.fsf@t19.piap.pl>
+Content-Type: text/plain
+Subject: Re: DMA masks
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20130809 #10903734, check: 20130809 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 9, 2013 at 7:25 PM, Paul Menzel
-<paulepanter@users.sourceforge.net> wrote:
-> Dear Dave,
->
->
-> Am Freitag, den 09.08.2013, 05:53 +0100 schrieb Dave Airlie:
->
-> […]
->
->> The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
->>
->>   Linux 3.11-rc4 (2013-08-04 13:46:46 -0700)
->>
->> are available in the git repository at:
->>
->>   git://people.freedesktop.org/~airlied/linux drm-fixes
->>
->> for you to fetch changes up to e42f5814212079aecd5826dba10588a896ac0862:
->>
->>   Merge tag 'drm-intel-fixes-2013-08-08' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes (2013-08-09 09:09:37 +1000)
->>
->> ----------------------------------------------------------------
->>
->> Aaron Lu (1):
->>       drm/i915: avoid brightness overflow when doing scale
->>
->> Alex Deucher (11):
->>       drm/radeon: properly handle pm on gpu reset
->>       drm/radeon: select audio dto based on encoder id for DCE3
->>       drm/radeon/dpm: adjust thermal protection requirements
->>       drm/radeon/dpm: fix spread spectrum setup (v2)
->>       drm/radeon/dpm: adjust power state properly for UVD on SI
->>       drm/radeon/dpm: disable sclk ss on rv6xx
->>       drm/radeon: fix audio dto calculation on DCE3+ (v3)
->>       drm/radeon: always program the MC on startup
->>       drm/radeon/cik: use a mutex to properly lock srbm instanced registers
->>       drm/radeon/dpm: require rlc for dpm
->>       drm/radeon: make missing smc ucode non-fatal
->>
->> Christian König (5):
->>       drm/radeon: fix halting UVD
->>       drm/radeon: only save UVD bo when we have open handles
->>       drm/radeon: stop sending invalid UVD destroy msg
->>       drm/radeon: add more UVD CS checking
->>       drm/radeon: remove unnecessary unpin
->
-> as UVD is also in 3.10 should more of these be tagged
-> `stable@vger.kernel.org` too? I only checked
->
->         drm/radeon: add more UVD CS checking
->
-> and it did not have that tag.
+Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
 
-I think if they are required they might be best done via separate
-backports, not sure how much the code has changed but dpm moved a lot
-of stuff around.
+>> struct device {
+>>         ...
+>> 
+>>         u64             *dma_mask;      /* dma mask (if dma'able device) */
+>> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>
+> "If dma-able device" gives a clue.  It is now the case that the DMA API
+> refuses DMA (via dma_supported) if the DMA mask pointer is NULL.
 
-Dave.
+But precisely the same effect can be obtained by setting the (actual)
+dma_mask to 0 (most preferably, using DMA API's dma_set_mask()).
+This is what coherent_dma_mask does.
+
+Actually, when the (pointer) dma_mask is NULL, the behaviour isn't
+exactly simple. I guess this all works because devices without DMA
+capability don't try to use DMA.
+
+There is also that old saying that both the DMA masks should default to
+0xFFFFFFFF (it does on some archs).
+
+Perhaps I'm wrong, but wouldn't the conversion to simple u64 remove
+a lot of unneeded code, make all the archs/platforms behave more
+consistently, and generally make the world a bit better?
+
+arch/unicore32/include/asm/dma-mapping.h:
+static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
+{
+        if (dev && dev->dma_mask)
+                return addr + size - 1 <= *dev->dma_mask;
+
+        return 1;
+	^^^^^^^^^
+}
+
+arch/microblaze/include/asm/dma-mapping.h:
+static inline unsigned long device_to_mask(struct device *dev)
+{
+        if (dev->dma_mask && *dev->dma_mask)
+                return *dev->dma_mask;
+        /* Assume devices without mask can take 32 bit addresses */
+        return 0xfffffffful;
+}
+
+arch/hexagon/kernel/dma.c:
+static int check_addr(const char *name, struct device *hwdev,
+                      dma_addr_t bus, size_t size)
+{
+        if (hwdev && hwdev->dma_mask && !dma_capable(hwdev, bus, size)) {
+                if (*hwdev->dma_mask >= DMA_BIT_MASK(32))
+                        printk(KERN_ERR
+                                "%s: overflow %Lx+%zu of device mask %Lx\n",
+                                name, (long long)bus, size,
+                                (long long)*hwdev->dma_mask);
+                return 0;
+        }
+        return 1;
+}
+
+arch/powerpc/include/asm/dma-mapping.h:
+static inline unsigned long device_to_mask(struct device *dev)
+{
+        if (dev->dma_mask && *dev->dma_mask)
+                return *dev->dma_mask;
+        /* Assume devices without mask can take 32 bit addresses */
+        return 0xfffffffful;
+}
+
+etc.
+
+
+Things like this:
+	pdev1->dev.dma_mask = &pdev1->dev.coherent_dma_mask;
+	pdev1->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+(which are all over the place) make me wonder what happens when some
+code requires and tries to set different masks for normal and coherent
+DMA.
+
+> However, placing the storage for the dma_mask pointer into struct device
+> is something which I've recently discussed with Greg, and is something
+> he'd like to see happen, so I'll be adding that to my DMA masks patch
+> series in the very near future.
+
+Does this mean the dma_mask would remain a pointer, but it would point
+(usually) to a variable in struct device?
+-- 
+Krzysztof Halasa
+
+Research Institute for Automation and Measurements PIAP
+Al. Jerozolimskie 202, 02-486 Warsaw, Poland
