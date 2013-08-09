@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967906Ab3HIPcu (ORCPT <rfc822;w@1wt.eu>);
+	id S967914Ab3HIPdE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 11:33:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965247Ab3HIPcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Aug 2013 11:32:50 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:51762 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964963Ab3HIPct convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 11:32:49 -0400
-Subject: Re: [PATCH 3/5] omap: Properly handle resources for omap_devices
-Mime-Version: 1.0 (Apple Message framework v1085)
+Date: Fri, 9 Aug 2013 11:32:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kexec: Disable at runtime if the kernel enforces module
+ signing
+Message-ID: <20130809153225.GH12688@redhat.com>
+References: <1376033797-24970-1-git-send-email-matthew.garrett@nebula.com>
+ <20130809110200.GA9631@redhat.com>
+ <1376060830.2021.12.camel@x230>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <87mwoqao95.fsf@kernel.org>
-Date: Fri, 9 Aug 2013 18:32:30 +0300
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        =?iso-8859-1?Q?Beno=EEt_Cousson?= <benoit.cousson@gmail.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Koen Kooi <koen@circuitco.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B929744A-C23A-41F6-A9AC-C18571A1F39B@antoniou-consulting.com>
-References: <1375775624-12250-1-git-send-email-panto@antoniou-consulting.com> <1375775624-12250-4-git-send-email-panto@antoniou-consulting.com> <87a9kt2vd8.fsf@linaro.org> <A4346403-362E-4E74-9C5E-07509CBC0BF4@antoniou-consulting.com> <87mwoqao95.fsf@kernel.org>
-To: Kevin Hilman <khilman@linaro.org>
-X-Mailer: Apple Mail (2.1085)
+Content-Disposition: inline
+In-Reply-To: <1376060830.2021.12.camel@x230>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-On Aug 9, 2013, at 6:16 PM, Kevin Hilman wrote:
-
-> Pantelis Antoniou <panto@antoniou-consulting.com> writes:
+On Fri, Aug 09, 2013 at 03:07:13PM +0000, Matthew Garrett wrote:
+> On Fri, 2013-08-09 at 07:02 -0400, Vivek Goyal wrote:
+> > On Fri, Aug 09, 2013 at 03:36:37AM -0400, Matthew Garrett wrote:
+> > > kexec permits the loading and execution of arbitrary code in ring 0, which
+> > > is something that module signing enforcement is meant to prevent. It makes
+> > > sense to disable kexec in this situation.
+> > > 
+> > 
+> > But in the process we wipe out running kernel's context and boot into a new
+> > kernel. So how different it is than root booting a new kernel through BIOS
+> > which does not enforce module signing.
 > 
->> Hi Kevin,
->> 
->> On Aug 7, 2013, at 9:45 PM, Kevin Hilman wrote:
->> 
->>> [fixing address for Benoit]
->>> 
->>> Pantelis Antoniou <panto@antoniou-consulting.com> writes:
->>> 
->>>> omap_device relies on the platform notifier callbacks managing resources
->>>> behind the scenes. The resources were not properly linked causing crashes
->>>> when removing the device.
->>>> 
->>>> Rework the resource modification code so that linking is performed properly,
->>>> and make sure that no resources that have no parent (which can happen for DMA
->>>> & IRQ resources) are ever left for cleanup by the core resource layer.
->>>> 
->>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->>> 
->>> This one failed my "took more than 15 minutes to understand" test.  The
->>> changelog is rather vague (especially about what "properly" means), and
->>> the combination of moving code and changing it makes the patch rather
->>> clunky to read, so I remain a bit confused about what the actual problem
->>> is.  Please elaborate.
->>> 
->>> Also, could you share a crash dump as well as details about how to
->>> reproduce this problem?
->>> 
->>> Thanks,
->>> 
->>> Kevin
->> 
->> It's the full patchset that fixes the problem:
->> 
->> Let me illustrate:
->> 
->> The kernel I use is located at:
->> 
->> git@github.com:pantoniou/linux-beagle-track-mainline.git
->> branch: merge-20130806 (there are topic branches for other stuff too)
+> What wipes the current kernel's context? KEXEC_JUMP is explicitly
+> designed to allow you to hop back and forth, but even without it you
+> should be able to reconstruct the original context. And there's no need
+> to boot a new kernel, either. All the attacker needs is the physical
+> address of the sig_enforce boolean, and then they launch a simple kexec
+> payload that simply flips that back and returns to the original kernel -
+> it's not like kexec limits you to booting Linux.
 > 
-> Sorry, I don't have the time to go through a bunch of out of tree
-> branches to figure this out.  Can you create a simpler test case to
-> reproduce this?  e.g. Does this happen when building the serial driver
-> as a module and then removing it?  If not, why not?
-
-What 'bunch of out of tree branches'? There is a single merge branch against
-current mainline. And no you don't trigger this by removing a module.
-
-platform_driver_unregister() != platform_device_register().
-
-I'll try to figure out something simpler, but it's pretty damn obvious that
-something is not right there. Do you think fixing problems in that part
-of platform device removal was something I did because I didn't have other
-things to do?
-
-It is broken and I'm trying to get it fixed. Are you?
-
+> > Also it would be nice if we introduce new features, then we make other
+> > features work with those new features instead of disabling existing
+> > features and leave it to other people to make them work.
 > 
-> Kevin
+> Sure, it'd be nice if security features got introduced with
+> consideration to other kernel features that allow them to be
+> circumvented, but this approach seems better than making them
+> incompatible at the Kconfig level.
 
--- Pantelis
+So how would one go about making kexec work when module signature
+enforcement is on?
 
+I guess same solution which is required to make it work with secureboot.
+Sign /sbin/kexec and let /sbin/kexec very signature of kernel. IOW, any
+code which runs at priviliged level should be signature verified with
+keys in system_keyring.
+
+Thanks
+Vivek
