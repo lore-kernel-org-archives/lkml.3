@@ -1,59 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967487Ab3HIBnD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:43:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55345 "EHLO
+	id S967473Ab3HIBnB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:43:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55341 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967127Ab3HIBmE (ORCPT
+	with ESMTP id S967126Ab3HIBmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:04 -0400
+	Thu, 8 Aug 2013 21:42:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Haynes <hgeorge@codeaurora.org>, Vinod Koul <vinod.koul@intel.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 01/25] ALSA: compress: fix the return value for SNDRV_COMPRESS_VERSION
-Date: Thu,  8 Aug 2013 18:41:37 -0700
-Message-Id: <20130809013649.348474206@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/25] 3.4.57-stable review
+Date: Thu,  8 Aug 2013 18:41:36 -0700
+Message-Id: <20130809013649.057678051@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
-References: <20130809013649.057678051@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.57 release.
+There are 25 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sun Aug 11 01:33:13 UTC 2013.
+Anything received after that time might be too late.
 
-From: Vinod Koul <vinod.koul@intel.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.57-rc1.gz
+and the diffstat can be found below.
 
-commit a8d30608eaed6cc759b8e2e8a8bbbb42591f797f upstream.
+thanks,
 
-the return value of SNDRV_COMPRESS_VERSION always return default -ENOTTY as the
-return value was never updated for this call
-assign return value from put_user()
+greg k-h
 
-Reported-by: Haynes <hgeorge@codeaurora.org>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-------------
+Pseudo-Shortlog of commits:
 
----
- sound/core/compress_offload.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.57-rc1
 
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -582,7 +582,7 @@ static long snd_compr_ioctl(struct file
- 	mutex_lock(&stream->device->lock);
- 	switch (_IOC_NR(cmd)) {
- 	case _IOC_NR(SNDRV_COMPRESS_IOCTL_VERSION):
--		put_user(SNDRV_COMPRESS_VERSION,
-+		retval = put_user(SNDRV_COMPRESS_VERSION,
- 				(int __user *)arg) ? -EFAULT : 0;
- 		break;
- 	case _IOC_NR(SNDRV_COMPRESS_GET_CAPS):
+Neil Horman <nhorman@tuxdriver.com>
+    8139cp: Add dma_mapping_error checking
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    net_sched: info leak in atm_tc_dump_class()
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    af_key: more info leaks in pfkey messages
+
+David S. Miller <davem@davemloft.net>
+    net_sched: Fix stack info leak in cbq_dump_wrr().
+
+Eric Dumazet <edumazet@google.com>
+    usbnet: do not pretend to support SG/TSO
+
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    ipv6: take rtnl_lock and mark mrt6 table as freed on namespace cleanup
+
+Neil Horman <nhorman@tuxdriver.com>
+    sctp: fully initialize sctp_outq in sctp_outq_init
+
+Michal Tesar <mtesar@redhat.com>
+    sysctl net: Keep tcp_syn_retries inside the boundary
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    arcnet: cleanup sizeof parameter
+
+Salman Qazi <sqazi@google.com>
+    perf: Use css_tryget() to avoid propping up css refcount
+
+Kamal Mostafa <kamal@canonical.com>
+    drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
+
+H.J. Lu <hjl.tools@gmail.com>
+    x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
+
+Jiri Olsa <jolsa@redhat.com>
+    perf: Fix event group context move
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    fanotify: info leak in copy_event_to_user()
+
+Zhu Yanhai <gaoyang.zyh@taobao.com>
+    sched: Fix the broken sched_rr_get_interval()
+
+Lan Tianyu <tianyu.lan@intel.com>
+    ACPI / battery: Fix parsing _BIX return value
+
+Tomasz Moń <desowin@gmail.com>
+    mwifiex: Add missing endian conversion.
+
+Stanislaw Gruszka <stf_xl@wp.pl>
+    rt2x00: fix stop queue
+
+Jacob Keller <jacob.e.keller@intel.com>
+    ixgbe: Fix Tx Hang issue with lldpad on 82598EB
+
+Johannes Berg <johannes.berg@intel.com>
+    mac80211: fix duplicate retransmission detection
+
+Michal Kazior <michal.kazior@tieto.com>
+    nl80211: fix mgmt tx status and testmode reporting for netns
+
+Oleksij Rempel <linux@rempel-privat.de>
+    ath9k_htc: do some initial hardware configuration
+
+Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+    serial/mxs-auart: increase time to wait for transmitter to become idle
+
+Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+    serial/mxs-auart: fix race condition in interrupt handler
+
+Vinod Koul <vinod.koul@intel.com>
+    ALSA: compress: fix the return value for SNDRV_COMPRESS_VERSION
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                           |  4 +-
+ arch/x86/kernel/i387.c                             |  2 +-
+ drivers/acpi/battery.c                             |  2 +
+ drivers/gpu/drm/i915/i915_drv.h                    |  1 +
+ drivers/gpu/drm/i915/intel_display.c               | 16 ++++++++
+ drivers/gpu/drm/i915/intel_lvds.c                  |  3 +-
+ drivers/net/arcnet/arcnet.c                        |  2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c |  3 +-
+ drivers/net/ethernet/realtek/8139cp.c              | 48 ++++++++++++++++++++--
+ drivers/net/usb/smsc75xx.c                         | 12 ++----
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c      |  1 +
+ drivers/net/wireless/mwifiex/sdio.c                |  4 +-
+ drivers/net/wireless/rt2x00/rt2x00queue.c          | 18 ++++----
+ drivers/tty/serial/mxs-auart.c                     | 38 +++++++++--------
+ fs/notify/fanotify/fanotify_user.c                 |  1 +
+ kernel/events/core.c                               | 30 +++++++++++---
+ kernel/sched/fair.c                                |  2 +-
+ net/ipv4/sysctl_net_ipv4.c                         |  6 ++-
+ net/ipv6/ip6mr.c                                   |  5 +++
+ net/key/af_key.c                                   |  4 ++
+ net/mac80211/rx.c                                  | 10 ++++-
+ net/sched/sch_atm.c                                |  1 +
+ net/sched/sch_cbq.c                                |  1 +
+ net/sctp/outqueue.c                                |  8 +---
+ net/wireless/nl80211.c                             |  7 +++-
+ sound/core/compress_offload.c                      |  2 +-
+ 26 files changed, 169 insertions(+), 62 deletions(-)
 
 
