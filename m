@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967241Ab3HIBm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55258 "EHLO
+	id S967221Ab3HIBm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55252 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967067Ab3HIBlq (ORCPT
+	with ESMTP id S967059Ab3HIBlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:46 -0400
+	Thu, 8 Aug 2013 21:41:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Tomasz=20Mo=C5=84?= <desowin@gmail.com>,
-        Bing Zhao <bzhao@marvell.com>,
+        Stanislaw Gruszka <stf_xl@wp.pl>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 07/22] mwifiex: Add missing endian conversion.
-Date: Thu,  8 Aug 2013 18:41:23 -0700
-Message-Id: <20130809013950.801972708@linuxfoundation.org>
+Subject: [ 06/22] rt2x00: fix stop queue
+Date: Thu,  8 Aug 2013 18:41:22 -0700
+Message-Id: <20130809013950.570295968@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
 References: <20130809013949.226228694@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,34 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomasz Moń <desowin@gmail.com>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit 83e612f632c3897be29ef02e0472f6d63e258378 upstream.
+commit e2288b66fe7ff0288382b2af671b4da558b44472 upstream.
 
-Both type and pkt_len variables are in host endian and these should be in
-Little Endian in the payload.
+Since we clear QUEUE_STARTED in rt2x00queue_stop_queue(), following
+call to rt2x00queue_pause_queue() reduce to noop, i.e we do not
+stop queue in mac80211.
 
-Signed-off-by: Tomasz Moń <desowin@gmail.com>
-Acked-by: Bing Zhao <bzhao@marvell.com>
+To fix that introduce rt2x00queue_pause_queue_nocheck() function,
+which will stop queue in mac80211 directly.
+
+Note that rt2x00_start_queue() explicitly set QUEUE_PAUSED bit.
+
+Note also that reordering operations i.e. first call to
+rt2x00queue_pause_queue() and then clear QUEUE_STARTED bit, will race
+with rt2x00queue_unpause_queue(), so calling ieee80211_stop_queue()
+directly is the only available solution to fix the problem without
+major rework.
+
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/sdio.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00queue.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -1387,8 +1387,8 @@ static int mwifiex_sdio_host_to_card(str
- 	/* Allocate buffer and copy payload */
- 	blk_size = MWIFIEX_SDIO_BLOCK_SIZE;
- 	buf_block_len = (pkt_len + blk_size - 1) / blk_size;
--	*(u16 *) &payload[0] = (u16) pkt_len;
--	*(u16 *) &payload[2] = type;
-+	*(__le16 *)&payload[0] = cpu_to_le16((u16)pkt_len);
-+	*(__le16 *)&payload[2] = cpu_to_le16(type);
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -848,13 +848,8 @@ void rt2x00queue_index_inc(struct queue_
+ 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
+ }
  
- 	/*
- 	 * This is SDIO specific header
+-void rt2x00queue_pause_queue(struct data_queue *queue)
++void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
+ {
+-	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
+-	    !test_bit(QUEUE_STARTED, &queue->flags) ||
+-	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
+-		return;
+-
+ 	switch (queue->qid) {
+ 	case QID_AC_VO:
+ 	case QID_AC_VI:
+@@ -870,6 +865,15 @@ void rt2x00queue_pause_queue(struct data
+ 		break;
+ 	}
+ }
++void rt2x00queue_pause_queue(struct data_queue *queue)
++{
++	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
++	    !test_bit(QUEUE_STARTED, &queue->flags) ||
++	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
++		return;
++
++	rt2x00queue_pause_queue_nocheck(queue);
++}
+ EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
+ 
+ void rt2x00queue_unpause_queue(struct data_queue *queue)
+@@ -931,7 +935,7 @@ void rt2x00queue_stop_queue(struct data_
+ 		return;
+ 	}
+ 
+-	rt2x00queue_pause_queue(queue);
++	rt2x00queue_pause_queue_nocheck(queue);
+ 
+ 	queue->rt2x00dev->ops->lib->stop_queue(queue);
+ 
 
 
