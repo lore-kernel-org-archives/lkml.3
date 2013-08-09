@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967379Ab3HIBmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55310 "EHLO
+	id S967366Ab3HIBms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55305 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967116Ab3HIBl4 (ORCPT
+	with ESMTP id S967088Ab3HIBlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:56 -0400
+	Thu, 8 Aug 2013 21:41:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "West, Steve (NSN - US/Fort Worth)" <steve.west@nsn.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [ 17/22] sctp: fully initialize sctp_outq in sctp_outq_init
-Date: Thu,  8 Aug 2013 18:41:33 -0700
-Message-Id: <20130809013953.009006186@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 08/22] ACPI / battery: Fix parsing _BIX return value
+Date: Thu,  8 Aug 2013 18:41:24 -0700
+Message-Id: <20130809013950.976512365@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
 References: <20130809013949.226228694@linuxfoundation.org>
@@ -29,58 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-[ Upstream commit c5c7774d7eb4397891edca9ebdf750ba90977a69 ]
+commit 016d5baad04269e8559332df05f89bd95b52d6ad upstream.
 
-In commit 2f94aabd9f6c925d77aecb3ff020f1cc12ed8f86
-(refactor sctp_outq_teardown to insure proper re-initalization)
-we modified sctp_outq_teardown to use sctp_outq_init to fully re-initalize the
-outq structure.  Steve West recently asked me why I removed the q->error = 0
-initalization from sctp_outq_teardown.  I did so because I was operating under
-the impression that sctp_outq_init would properly initalize that value for us,
-but it doesn't.  sctp_outq_init operates under the assumption that the outq
-struct is all 0's (as it is when called from sctp_association_init), but using
-it in __sctp_outq_teardown violates that assumption. We should do a memset in
-sctp_outq_init to ensure that the entire structure is in a known state there
-instead.
+The _BIX method returns extended battery info as a package.
+According the ACPI spec (ACPI 5, Section 10.2.2.2), the first member
+of that package should be "Revision".  However, the current ACPI
+battery driver treats the first member as "Power Unit" which should
+be the second member.  This causes the result of _BIX return data
+parsing to be incorrect.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: "West, Steve (NSN - US/Fort Worth)" <steve.west@nsn.com>
-CC: Vlad Yasevich <vyasevich@gmail.com>
-CC: netdev@vger.kernel.org
-CC: davem@davemloft.net
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix this by adding a new member called 'revision' to struct
+acpi_battery and adding the offsetof() information on it to
+extended_info_offsets[] as the first row.
+
+[rjw: Changelog]
+Reported-and-tested-by: Jan Hoffmann <jan.christian.hoffmann@gmail.com>
+References: http://bugzilla.kernel.org/show_bug.cgi?id=60519
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/outqueue.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -205,6 +205,8 @@ static inline int sctp_cacc_skip(struct
-  */
- void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
- {
-+	memset(q, 0, sizeof(struct sctp_outq));
-+
- 	q->asoc = asoc;
- 	INIT_LIST_HEAD(&q->out_chunk_list);
- 	INIT_LIST_HEAD(&q->control_chunk_list);
-@@ -212,13 +214,7 @@ void sctp_outq_init(struct sctp_associat
- 	INIT_LIST_HEAD(&q->sacked);
- 	INIT_LIST_HEAD(&q->abandoned);
+---
+ drivers/acpi/battery.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -118,6 +118,7 @@ struct acpi_battery {
+ 	struct acpi_device *device;
+ 	struct notifier_block pm_nb;
+ 	unsigned long update_time;
++	int revision;
+ 	int rate_now;
+ 	int capacity_now;
+ 	int voltage_now;
+@@ -350,6 +351,7 @@ static struct acpi_offsets info_offsets[
+ };
  
--	q->fast_rtx = 0;
--	q->outstanding_bytes = 0;
- 	q->empty = 1;
--	q->cork  = 0;
--
--	q->malloced = 0;
--	q->out_qlen = 0;
- }
- 
- /* Free the outqueue structure and any related pending chunks.
+ static struct acpi_offsets extended_info_offsets[] = {
++	{offsetof(struct acpi_battery, revision), 0},
+ 	{offsetof(struct acpi_battery, power_unit), 0},
+ 	{offsetof(struct acpi_battery, design_capacity), 0},
+ 	{offsetof(struct acpi_battery, full_charge_capacity), 0},
 
 
