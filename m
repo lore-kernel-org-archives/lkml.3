@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967178Ab3HIFxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 01:53:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:45255 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S966964Ab3HIFxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 01:53:39 -0400
-X-IronPort-AV: E=Sophos;i="4.89,844,1367942400"; 
-   d="scan'208";a="8160804"
-Message-ID: <5204838E.1060602@cn.fujitsu.com>
-Date: Fri, 09 Aug 2013 13:52:14 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, dave@sr71.net,
-        isimatu.yasuaki@jp.fujitsu.com, vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH] mm/hotplug: Verify hotplug memory range
-References: <1375980460-28311-1-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1375980460-28311-1-git-send-email-toshi.kani@hp.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/09 13:52:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/09 13:52:11,
-	Serialize complete at 2013/08/09 13:52:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S967223Ab3HIFxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 01:53:55 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:50780 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966964Ab3HIFxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 01:53:53 -0400
+X-AuditID: cbfee68e-b7f276d000002279-31-520483ee07a7
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Herbert Xu'" <herbert@gondor.hengli.com.au>
+Subject: [PATCH] hwrng: pixocel - Staticize 'rng_dev'
+Date: Fri, 09 Aug 2013 14:53:50 +0900
+Message-id: <000201ce94c4$d2591f40$770b5dc0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6UxMto0Y6xyNf0T7mG7zcsiQ5iVg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zQ913zSxBBlPfG1l0v5KxmLF5PpPF
+	5YWXWC0u75rDZrFgWx+jA6vHtgOqHnu6/7N79G1ZxejR93IDo8fnTXIBrFFcNimpOZllqUX6
+	dglcGefmnGAv6GWruH1xMmMD42TWLkZODgkBE4ntD3awQNhiEhfurWfrYuTiEBJYxihx5NI1
+	RpiiH7MOMkEkpjNKbOy+DVX1i1Fi08smsHY2ATWJL18Os4PYIgJ6En3rG8G6hQVMJZbO/80M
+	YrMIqErcab0IZvMKWEocmXufEcIWlPgx+R7YHGYBLYn1O48zQdjyEpvXvGWGuEJBYsfZ14ww
+	87euf8QKUSMise/FO6hL17FLXFrsArFLQOLb5ENAMzmA4rISmw5AjZGUOLjiBssERtFZSDbP
+	QrJ5FpLNs5BsWMDIsopRNLUguaA4Kb3ISK84Mbe4NC9dLzk/dxMjJL76djDePGB9iDEZaP1E
+	ZinR5HxgfOaVxBsamxlZmJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJ
+	g1OqgdEqo+3KjcssWaueiWQUx/3/uJs3blt1lTqffAX3g2t2ar+vPizN+T1dJ+7DV1F7Vuul
+	N6Mqt0RrTPNwDEy/fCzg6e//s68ocS6L2DZhheSWyqkTF9flXfeSV105R58hY5P+Zee3agsd
+	WI5ET4l6ER4eMuVhtfTS6/ybritzLPZyi/hy2PdT/1wlluKMREMt5qLiRAAQN1o6xQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jQd13zSxBBqv/6Fl0v5KxmLF5PpPF
+	5YWXWC0u75rDZrFgWx+jA6vHtgOqHnu6/7N79G1ZxejR93IDo8fnTXIBrFENjDYZqYkpqUUK
+	qXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QLuVFMoSc0qBQgGJxcVK
+	+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBnn5pxgL+hlq7h9cTJjA+Nk1i5GTg4JAROJH7MO
+	MkHYYhIX7q1n62Lk4hASmM4osbH7NpTzi1Fi08smFpAqNgE1iS9fDrOD2CICehJ96xsZQWxh
+	AVOJpfN/M4PYLAKqEndaL4LZvAKWEkfm3meEsAUlfky+BzaHWUBLYv3O40wQtrzE5jVvmSGu
+	UJDYcfY1I8z8resfsULUiEjse/GOcQIj/ywko2YhGTULyahZSFoWMLKsYhRNLUguKE5KzzXS
+	K07MLS7NS9dLzs/dxAiO32fSOxhXNVgcYhTgYFTi4VXczhwkxJpYVlyZe4hRgoNZSYT3RRZQ
+	iDclsbIqtSg/vqg0J7X4EGMy0KcTmaVEk/OBqSWvJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaB
+	QgLpiSWp2ampBalFMFuYODilGhjzlSaf199UvDBfqll2obrUV4n+T6pNwkk9MoFzcz4f75uf
+	s7OzKntfQcMazx8Xf09bYbn00Mzd6+qMv2+Mk5L3nTcv61623pv6I7Wxxwyjg7SWOspdq4k5
+	stHl5Yyr7Y9UVhZGKn4/l/FD5YRV54zC4Mc3bSfMv1vxT8eNLWHT/XZe39zvrbeUWIozEg21
+	mIuKEwG4TIdAIwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 12:47 AM, Toshi Kani wrote:
-> add_memory() and remove_memory() can only handle a memory range aligned
-> with section.  There are problems when an unaligned range is added and
-> then deleted as follows:
->
->   - add_memory() with an unaligned range succeeds, but __add_pages()
->     called from add_memory() adds a whole section of pages even though
->     a given memory range is less than the section size.
->   - remove_memory() to the added unaligned range hits BUG_ON() in
->     __remove_pages().
->
-> This patch changes add_memory() and remove_memory() to check if a given
-> memory range is aligned with section at the beginning.  As the result,
-> add_memory() fails with -EINVAL when a given range is unaligned, and
-> does not add such memory range.  This prevents remove_memory() to be
-> called with an unaligned range as well.  Note that remove_memory() has
-> to use BUG_ON() since this function cannot fail.
->
-> Signed-off-by: Toshi Kani<toshi.kani@hp.com>
-> ---
->   mm/memory_hotplug.c |   22 ++++++++++++++++++++++
->   1 file changed, 22 insertions(+)
->
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index ca1dd3a..ac182de 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1069,6 +1069,22 @@ out:
->   	return ret;
->   }
->
-> +static int check_hotplug_memory_range(u64 start, u64 size)
-> +{
-> +	u64 start_pfn = start>>  PAGE_SHIFT;
-> +	u64 nr_pages = size>>  PAGE_SHIFT;
-> +
-> +	/* Memory range must be aligned with section */
-> +	if ((start_pfn&  ~PAGE_SECTION_MASK) ||
-> +	    (nr_pages % PAGES_PER_SECTION) || (!nr_pages)) {
-> +		pr_err("Unsupported hotplug range: start 0x%llx, size 0x%llx\n",
-> +				start, size);
+'rng_dev' is used only in this file.
+Fix the following sparse warning:
 
-I think the message here should tell users that only support range aligned
-to section. Others seems OK to me.
+drivers/char/hw_random/picoxcell-rng.c:36:15: warning: symbol 'rng_dev' was not declared. Should it be static?
 
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/char/hw_random/picoxcell-rng.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.
+diff --git a/drivers/char/hw_random/picoxcell-rng.c b/drivers/char/hw_random/picoxcell-rng.c
+index 973b951..3d4c229 100644
+--- a/drivers/char/hw_random/picoxcell-rng.c
++++ b/drivers/char/hw_random/picoxcell-rng.c
+@@ -33,7 +33,7 @@
+ 
+ static void __iomem *rng_base;
+ static struct clk *rng_clk;
+-struct device *rng_dev;
++static struct device *rng_dev;
+ 
+ static inline u32 picoxcell_trng_read_csr(void)
+ {
+-- 
+1.7.10.4
 
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->   /* we are OK calling __meminit stuff here - we have CONFIG_MEMORY_HOTPLUG */
->   int __ref add_memory(int nid, u64 start, u64 size)
->   {
-> @@ -1078,6 +1094,10 @@ int __ref add_memory(int nid, u64 start, u64 size)
->   	struct resource *res;
->   	int ret;
->
-> +	ret = check_hotplug_memory_range(start, size);
-> +	if (ret)
-> +		return ret;
-> +
->   	lock_memory_hotplug();
->
->   	res = register_memory_resource(start, size);
-> @@ -1786,6 +1806,8 @@ void __ref remove_memory(int nid, u64 start, u64 size)
->   {
->   	int ret;
->
-> +	BUG_ON(check_hotplug_memory_range(start, size));
-> +
->   	lock_memory_hotplug();
->
->   	/*
->
+
