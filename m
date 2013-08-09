@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967797Ab3HICTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:19:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55636 "EHLO
+	id S1030421Ab3HICUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:20:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55625 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967453Ab3HIB6k (ORCPT
+	with ESMTP id S967437Ab3HIB6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:40 -0400
+	Thu, 8 Aug 2013 21:58:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Vineet Gupta <vgupta@synopsys.com>
-Subject: [ 023/102] serial: arc_uart: Fix module alias
-Date: Thu,  8 Aug 2013 18:56:59 -0700
-Message-Id: <20130809015015.343919928@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 020/102] ALSA: hda - Fix missing fixup for Mac Mini with STAC9221
+Date: Thu,  8 Aug 2013 18:56:56 -0700
+Message-Id: <20130809015014.752984127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -26,30 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit d5a12ea7a9e58d9e5c19d25cb668aadb396423ec upstream.
+commit 697aebab78a88c6b164cfb74d19b86817d2ccd82 upstream.
 
-Platform drivers use "platform:" prefix in module alias.
-Also use DRIVER_NAME in MODULE_ALIAS to make module autoloading work.
+A fixup for Apple Mac Mini was lost during the adaption to the generic
+parser because the fallback for the generic ID 8384:7680 was dropped,
+and it resulted in the silence output (and maybe other problems).
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Vineet Gupta <vgupta@synopsys.com>
+Unfortunately, just adding the missing subsystem ID wasn't enough, in
+this case.  The subsystem ID of this machine is 0000:0100 (what Apple
+thought...?), and since snd_hda_pick_fixup() doesn't take the vendor
+id zero into account, the driver ignored this entry.  Now it's fixed
+to regard the vendor id zero as a valid value.
+
+Reported-and-tested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/arc_uart.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_auto_parser.c |    2 +-
+ sound/pci/hda/patch_sigmatel.c  |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/arc_uart.c
-+++ b/drivers/tty/serial/arc_uart.c
-@@ -773,6 +773,6 @@ module_init(arc_serial_init);
- module_exit(arc_serial_exit);
+--- a/sound/pci/hda/hda_auto_parser.c
++++ b/sound/pci/hda/hda_auto_parser.c
+@@ -860,7 +860,7 @@ void snd_hda_pick_fixup(struct hda_codec
+ 		}
+ 	}
+ 	if (id < 0 && quirk) {
+-		for (q = quirk; q->subvendor; q++) {
++		for (q = quirk; q->subvendor || q->subdevice; q++) {
+ 			unsigned int vendorid =
+ 				q->subdevice | (q->subvendor << 16);
+ 			unsigned int mask = 0xffff0000 | q->subdevice_mask;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -2815,6 +2815,7 @@ static const struct hda_pintbl ecs202_pi
  
- MODULE_LICENSE("GPL");
--MODULE_ALIAS("plat-arcfpga/uart");
-+MODULE_ALIAS("platform:" DRIVER_NAME);
- MODULE_AUTHOR("Vineet Gupta");
- MODULE_DESCRIPTION("ARC(Synopsys) On-Chip(fpga) serial driver");
+ /* codec SSIDs for Intel Mac sharing the same PCI SSID 8384:7680 */
+ static const struct snd_pci_quirk stac922x_intel_mac_fixup_tbl[] = {
++	SND_PCI_QUIRK(0x0000, 0x0100, "Mac Mini", STAC_INTEL_MAC_V3),
+ 	SND_PCI_QUIRK(0x106b, 0x0800, "Mac", STAC_INTEL_MAC_V1),
+ 	SND_PCI_QUIRK(0x106b, 0x0600, "Mac", STAC_INTEL_MAC_V2),
+ 	SND_PCI_QUIRK(0x106b, 0x0700, "Mac", STAC_INTEL_MAC_V2),
 
 
