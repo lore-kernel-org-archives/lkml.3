@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030385Ab3HICJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:09:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55805 "EHLO
+	id S967720Ab3HICJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:09:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55803 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967685Ab3HIB7Q (ORCPT
+	with ESMTP id S967679Ab3HIB7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:16 -0400
+	Thu, 8 Aug 2013 21:59:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 066/102] ACPI / battery: Fix parsing _BIX return value
-Date: Thu,  8 Aug 2013 18:57:42 -0700
-Message-Id: <20130809015025.729003734@linuxfoundation.org>
+        Jiang Liu <jiang.liu@huawei.com>, Minchan Kim <minchan@kernel.org>
+Subject: [ 065/102] zram: protect sysfs handler from invalid memory access
+Date: Thu,  8 Aug 2013 18:57:41 -0700
+Message-Id: <20130809015025.463998309@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,49 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Jiang Liu <liuj97@gmail.com>
 
-commit 016d5baad04269e8559332df05f89bd95b52d6ad upstream.
+commit 5863e10b441e7ea4b492f930f1be180a97d026f3 upstream.
 
-The _BIX method returns extended battery info as a package.
-According the ACPI spec (ACPI 5, Section 10.2.2.2), the first member
-of that package should be "Revision".  However, the current ACPI
-battery driver treats the first member as "Power Unit" which should
-be the second member.  This causes the result of _BIX return data
-parsing to be incorrect.
+Use zram->init_lock to protect access to zram->meta, otherwise it
+may cause invalid memory access if zram->meta has been freed by
+zram_reset_device().
 
-Fix this by adding a new member called 'revision' to struct
-acpi_battery and adding the offsetof() information on it to
-extended_info_offsets[] as the first row.
+This issue may be triggered by:
+Thread 1:
+while true; do cat mem_used_total; done
+Thread 2:
+while true; do echo 8M > disksize; echo 1 > reset; done
 
-[rjw: Changelog]
-Reported-and-tested-by: Jan Hoffmann <jan.christian.hoffmann@gmail.com>
-References: http://bugzilla.kernel.org/show_bug.cgi?id=60519
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/battery.c |    2 ++
+ drivers/staging/zram/zram_sysfs.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -117,6 +117,7 @@ struct acpi_battery {
- 	struct acpi_device *device;
- 	struct notifier_block pm_nb;
- 	unsigned long update_time;
-+	int revision;
- 	int rate_now;
- 	int capacity_now;
- 	int voltage_now;
-@@ -359,6 +360,7 @@ static struct acpi_offsets info_offsets[
- };
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -188,8 +188,10 @@ static ssize_t mem_used_total_show(struc
+ 	struct zram *zram = dev_to_zram(dev);
+ 	struct zram_meta *meta = zram->meta;
  
- static struct acpi_offsets extended_info_offsets[] = {
-+	{offsetof(struct acpi_battery, revision), 0},
- 	{offsetof(struct acpi_battery, power_unit), 0},
- 	{offsetof(struct acpi_battery, design_capacity), 0},
- 	{offsetof(struct acpi_battery, full_charge_capacity), 0},
++	down_read(&zram->init_lock);
+ 	if (zram->init_done)
+ 		val = zs_get_total_size_bytes(meta->mem_pool);
++	up_read(&zram->init_lock);
+ 
+ 	return sprintf(buf, "%llu\n", val);
+ }
 
 
