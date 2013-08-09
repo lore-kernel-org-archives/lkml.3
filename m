@@ -1,34 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031314Ab3HIWJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 18:09:46 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:63016 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031243Ab3HIWJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 18:09:45 -0400
-Date: Fri, 9 Aug 2013 15:04:52 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
-Message-ID: <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
-References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1031321Ab3HIWNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 18:13:04 -0400
+Received: from swan.laptop.org ([18.85.2.166]:37792 "EHLO swan.laptop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031204Ab3HIWND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 18:13:03 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, pgf@laptop.org, dilinger@queued.net,
+        yinghai@kernel.org
+Subject: [PATCH RESEND] x86: don't clear olpc_ofw_header when sentinel is detected
+Message-Id: <20130809221420.618E6FAB03@dev.laptop.org>
+Date: Fri,  9 Aug 2013 18:14:20 -0400 (EDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 05:19:27PM +0900, Jingoo Han wrote:
-> Use the wrapper function for retrieving the platform data instead of
-> accessing dev->platform_data directly.
+OpenFirmware wasn't quite following the protocol described in boot.txt
+and the kernel has detected this through use of the sentinel value
+in boot_params. OFW does zero out almost all of the stuff that it should
+do, but not the sentinel.
 
-Um.. what is the benefit or rationale of this patch?
+This causes the kernel to clear olpc_ofw_header, which breaks x86 OLPC
+support.
 
-Thanks,
+OpenFirmware has now been fixed. However, it would be nice if we could
+maintain Linux compatibility with old firmware versions. To do that, we just
+have to avoid zeroing out olpc_ofw_header. 
 
-Anton
+OFW does not write to any other parts of the header that are being zapped
+by the sentinel-detection code, and all users of olpc_ofw_header are
+somewhat protected through checking for the OLPC_OFW_SIG magic value
+before using it. So this should not cause any problems for anyone.
+
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/include/asm/bootparam_utils.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Resending after 4 weeks, and updated commit message to mention that
+OFW is now fixed for future versions.
+
+diff --git a/arch/x86/include/asm/bootparam_utils.h b/arch/x86/include/asm/bootparam_utils.h
+index 653668d..4a8cb8d 100644
+--- a/arch/x86/include/asm/bootparam_utils.h
++++ b/arch/x86/include/asm/bootparam_utils.h
+@@ -35,9 +35,9 @@ static void sanitize_boot_params(struct boot_params *boot_params)
+ 	 */
+ 	if (boot_params->sentinel) {
+ 		/* fields in boot_params are left uninitialized, clear them */
+-		memset(&boot_params->olpc_ofw_header, 0,
++		memset(&boot_params->ext_ramdisk_image, 0,
+ 		       (char *)&boot_params->efi_info -
+-			(char *)&boot_params->olpc_ofw_header);
++			(char *)&boot_params->ext_ramdisk_image);
+ 		memset(&boot_params->kbd_status, 0,
+ 		       (char *)&boot_params->hdr -
+ 		       (char *)&boot_params->kbd_status);
+-- 
+1.8.1.4
+
