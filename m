@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030321Ab3HIB7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:59:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55968 "EHLO
+	id S1030323Ab3HICAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:00:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55972 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030217Ab3HIB7q (ORCPT
+	with ESMTP id S1030290Ab3HIB7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:46 -0400
+	Thu, 8 Aug 2013 21:59:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: [ 102/102] iwlwifi: dvm: dont send BT_CONFIG on devices w/o Bluetooth
-Date: Thu,  8 Aug 2013 18:58:18 -0700
-Message-Id: <20130809015034.304075191@linuxfoundation.org>
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 100/102] net/mlx4_core: VFs must ignore the enable_64b_cqe_eqe module param
+Date: Thu,  8 Aug 2013 18:58:16 -0700
+Message-Id: <20130809015033.861055543@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,37 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Jack Morgenstein <jackm@dev.mellanox.co.il>
 
-commit 707aee401d2467baa785a697f40a6e2d9ee79ad5 upstream.
+[ Upstream commit b30513202c6c14120f70b2e9aa1e97d47bbc2313 ]
 
-The BT_CONFIG command that is sent to the device during
-startup will enable BT coex unless the module parameter
-turns it off, but on devices without Bluetooth this may
-cause problems, as reported in Redhat BZ 885407.
+Slaves get the 64B CQE/EQE state from QUERY_HCA, not from the module parameter.
 
-Fix this by sending the BT_CONFIG command only when the
-device has Bluetooth.
+If the parameter is set to zero, the slave outputs an incorrect/irrelevant
+warning message that 64B CQEs/EQEs are supported but not enabled (even if the
+hypervisor has enabled 64B CQEs/EQEs).
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- drivers/net/wireless/iwlwifi/dvm/main.c |    2 +-
+ drivers/net/ethernet/mellanox/mlx4/main.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/main.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/main.c
-@@ -758,7 +758,7 @@ int iwl_alive_start(struct iwl_priv *pri
- 					 BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
- 		if (ret)
- 			return ret;
--	} else {
-+	} else if (priv->cfg->bt_params) {
- 		/*
- 		 * default is 2-wire BT coexexistence support
- 		 */
+--- a/drivers/net/ethernet/mellanox/mlx4/main.c
++++ b/drivers/net/ethernet/mellanox/mlx4/main.c
+@@ -371,7 +371,7 @@ static int mlx4_dev_cap(struct mlx4_dev
+ 
+ 	dev->caps.sqp_demux = (mlx4_is_master(dev)) ? MLX4_MAX_NUM_SLAVES : 0;
+ 
+-	if (!enable_64b_cqe_eqe) {
++	if (!enable_64b_cqe_eqe && !mlx4_is_slave(dev)) {
+ 		if (dev_cap->flags &
+ 		    (MLX4_DEV_CAP_FLAG_64B_CQE | MLX4_DEV_CAP_FLAG_64B_EQE)) {
+ 			mlx4_warn(dev, "64B EQEs/CQEs supported by the device but not enabled\n");
 
 
