@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967830Ab3HICWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:22:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55596 "EHLO
+	id S967813Ab3HICWu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:22:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967342Ab3HIB63 (ORCPT
+	with ESMTP id S967373Ab3HIB6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:29 -0400
+	Thu, 8 Aug 2013 21:58:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 011/102] powerpc/windfarm: Fix noisy slots-fan on Xserve (rm31)
-Date: Thu,  8 Aug 2013 18:56:47 -0700
-Message-Id: <20130809015012.908990776@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 013/102] ARM: 7790/1: Fix deferred mm switch on VIVT processors
+Date: Thu,  8 Aug 2013 18:56:49 -0700
+Message-Id: <20130809015013.322063397@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,52 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit fe956a1d4081ce1a959f87df397a15e252201f10 upstream.
+commit bdae73cd374e28db544fdd9b77de689a36e3c129 upstream.
 
-slots-fan on G5 Xserve is always running at full speed with windfarm_rm31
-driver, resulting in a very high acoustic noise level. It seems the fan
-parameters are incorrect, and have been copied from the Drive Bay fan
-(RPM, not present on rm31) of the legacy therm_pm72 driver. This patch
-changes the parameters to match the Slots fan (PWM) of therm_pm72. With
-the patch, slots-fan speed drops from 99% to 19% during normal use,
-and slots-temp settle to ~42'C.
+As of commit b9d4d42ad9 (ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on
+pre-ARMv6 CPUs), the mm switching on VIVT processors is done in the
+finish_arch_post_lock_switch() function to avoid whole cache flushing
+with interrupts disabled. The need for deferred mm switch is stored as a
+thread flag (TIF_SWITCH_MM). However, with preemption enabled, we can
+have another thread switch before finish_arch_post_lock_switch(). If the
+new thread has the same mm as the previous 'next' thread, the scheduler
+will not call switch_mm() and the TIF_SWITCH_MM flag won't be set for
+the new thread.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This patch moves the switch pending flag to the mm_context_t structure
+since this is specific to the mm rather than thread.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/macintosh/windfarm_rm31.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ arch/arm/include/asm/mmu.h         |    2 ++
+ arch/arm/include/asm/mmu_context.h |   20 ++++++++++++++++----
+ arch/arm/include/asm/thread_info.h |    1 -
+ 3 files changed, 18 insertions(+), 5 deletions(-)
 
---- a/drivers/macintosh/windfarm_rm31.c
-+++ b/drivers/macintosh/windfarm_rm31.c
-@@ -439,15 +439,15 @@ static void backside_setup_pid(void)
+--- a/arch/arm/include/asm/mmu.h
++++ b/arch/arm/include/asm/mmu.h
+@@ -6,6 +6,8 @@
+ typedef struct {
+ #ifdef CONFIG_CPU_HAS_ASID
+ 	atomic64_t	id;
++#else
++	int		switch_pending;
+ #endif
+ 	unsigned int	vmalloc_seq;
+ 	unsigned long	sigpage;
+--- a/arch/arm/include/asm/mmu_context.h
++++ b/arch/arm/include/asm/mmu_context.h
+@@ -55,7 +55,7 @@ static inline void check_and_switch_cont
+ 		 * on non-ASID CPUs, the old mm will remain valid until the
+ 		 * finish_arch_post_lock_switch() call.
+ 		 */
+-		set_ti_thread_flag(task_thread_info(tsk), TIF_SWITCH_MM);
++		mm->context.switch_pending = 1;
+ 	else
+ 		cpu_switch_mm(mm->pgd, mm);
+ }
+@@ -64,9 +64,21 @@ static inline void check_and_switch_cont
+ 	finish_arch_post_lock_switch
+ static inline void finish_arch_post_lock_switch(void)
+ {
+-	if (test_and_clear_thread_flag(TIF_SWITCH_MM)) {
+-		struct mm_struct *mm = current->mm;
+-		cpu_switch_mm(mm->pgd, mm);
++	struct mm_struct *mm = current->mm;
++
++	if (mm && mm->context.switch_pending) {
++		/*
++		 * Preemption must be disabled during cpu_switch_mm() as we
++		 * have some stateful cache flush implementations. Check
++		 * switch_pending again in case we were preempted and the
++		 * switch to this mm was already done.
++		 */
++		preempt_disable();
++		if (mm->context.switch_pending) {
++			mm->context.switch_pending = 0;
++			cpu_switch_mm(mm->pgd, mm);
++		}
++		preempt_enable_no_resched();
+ 	}
+ }
  
- /* Slots fan */
- static const struct wf_pid_param slots_param = {
--	.interval	= 5,
--	.history_len	= 2,
--	.gd		= 30 << 20,
--	.gp		= 5 << 20,
--	.gr		= 0,
--	.itarget	= 40 << 16,
--	.additive	= 1,
--	.min		= 300,
--	.max		= 4000,
-+	.interval	= 1,
-+	.history_len	= 20,
-+	.gd		= 0,
-+	.gp		= 0,
-+	.gr		= 0x00100000,
-+	.itarget	= 3200000,
-+	.additive	= 0,
-+	.min		= 20,
-+	.max		= 100,
- };
+--- a/arch/arm/include/asm/thread_info.h
++++ b/arch/arm/include/asm/thread_info.h
+@@ -156,7 +156,6 @@ extern int vfp_restore_user_hwstate(stru
+ #define TIF_USING_IWMMXT	17
+ #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+ #define TIF_RESTORE_SIGMASK	20
+-#define TIF_SWITCH_MM		22	/* deferred switch_mm */
  
- static void slots_fan_tick(void)
+ #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
+ #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
 
 
