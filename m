@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967249Ab3HIBt7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:49:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55464 "EHLO
+	id S967261Ab3HIBuV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:50:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55460 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967208Ab3HIBmZ (ORCPT
+	with ESMTP id S967055Ab3HIBmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:25 -0400
+	Thu, 8 Aug 2013 21:42:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 21/25] usbnet: do not pretend to support SG/TSO
-Date: Thu,  8 Aug 2013 18:41:57 -0700
-Message-Id: <20130809013653.783591924@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Francois Romieu <romieu@fr.zoreil.com>
+Subject: [ 25/25] 8139cp: Add dma_mapping_error checking
+Date: Thu,  8 Aug 2013 18:42:01 -0700
+Message-Id: <20130809013654.597159116@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -27,70 +28,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 20f0170377264e8449b6987041f0bcc4d746d3ed ]
+[ Upstream commit cf3c4c03060b688cbc389ebc5065ebcce5653e96 ]
 
-usbnet doesn't support yet SG, so drivers should not advertise SG or TSO
-capabilities, as they allow TCP stack to build large TSO packets that
-need to be linearized and might use order-5 pages.
+Self explanitory dma_mapping_error addition to the 8139 driver, based on this:
+https://bugzilla.redhat.com/show_bug.cgi?id=947250
 
-This adds an extra copy overhead and possible allocation failures.
+It showed several backtraces arising for dma_map_* usage without checking the
+return code on the mapping.  Add the check and abort the rx/tx operation if its
+failed.  Untested as I have no hardware and the reporter has wandered off, but
+seems pretty straightforward.
 
-Current code ignore skb_linearize() return code so crashes are even
-possible.
-
-Best is to not pretend SG/TSO is supported, and add this again when/if
-usbnet really supports SG for devices who could get a performance gain.
-
-Based on a prior patch from Freddy Xin <freddy@asix.com.tw>
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Francois Romieu <romieu@fr.zoreil.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/smsc75xx.c |   12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ drivers/net/ethernet/realtek/8139cp.c |   48 +++++++++++++++++++++++++++++++---
+ 1 file changed, 45 insertions(+), 3 deletions(-)
 
---- a/drivers/net/usb/smsc75xx.c
-+++ b/drivers/net/usb/smsc75xx.c
-@@ -43,7 +43,6 @@
- #define EEPROM_MAC_OFFSET		(0x01)
- #define DEFAULT_TX_CSUM_ENABLE		(true)
- #define DEFAULT_RX_CSUM_ENABLE		(true)
--#define DEFAULT_TSO_ENABLE		(true)
- #define SMSC75XX_INTERNAL_PHY_ID	(1)
- #define SMSC75XX_TX_OVERHEAD		(8)
- #define MAX_RX_FIFO_SIZE		(20 * 1024)
-@@ -1049,17 +1048,14 @@ static int smsc75xx_bind(struct usbnet *
+--- a/drivers/net/ethernet/realtek/8139cp.c
++++ b/drivers/net/ethernet/realtek/8139cp.c
+@@ -478,7 +478,7 @@ rx_status_loop:
  
- 	INIT_WORK(&pdata->set_multicast, smsc75xx_deferred_multicast_write);
+ 	while (1) {
+ 		u32 status, len;
+-		dma_addr_t mapping;
++		dma_addr_t mapping, new_mapping;
+ 		struct sk_buff *skb, *new_skb;
+ 		struct cp_desc *desc;
+ 		const unsigned buflen = cp->rx_buf_sz;
+@@ -520,6 +520,13 @@ rx_status_loop:
+ 			goto rx_next;
+ 		}
  
--	if (DEFAULT_TX_CSUM_ENABLE) {
-+	if (DEFAULT_TX_CSUM_ENABLE)
- 		dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
--		if (DEFAULT_TSO_ENABLE)
--			dev->net->features |= NETIF_F_SG |
--				NETIF_F_TSO | NETIF_F_TSO6;
--	}
++		new_mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
++					 PCI_DMA_FROMDEVICE);
++		if (dma_mapping_error(&cp->pdev->dev, new_mapping)) {
++			dev->stats.rx_dropped++;
++			goto rx_next;
++		}
 +
- 	if (DEFAULT_RX_CSUM_ENABLE)
- 		dev->net->features |= NETIF_F_RXCSUM;
+ 		dma_unmap_single(&cp->pdev->dev, mapping,
+ 				 buflen, PCI_DMA_FROMDEVICE);
  
- 	dev->net->hw_features = NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
--		NETIF_F_SG | NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_RXCSUM;
-+				NETIF_F_RXCSUM;
+@@ -531,12 +538,11 @@ rx_status_loop:
  
- 	/* Init all registers */
- 	ret = smsc75xx_reset(dev);
-@@ -1184,8 +1180,6 @@ static struct sk_buff *smsc75xx_tx_fixup
+ 		skb_put(skb, len);
+ 
+-		mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
+-					 PCI_DMA_FROMDEVICE);
+ 		cp->rx_skb[rx_tail] = new_skb;
+ 
+ 		cp_rx_skb(cp, skb, desc);
+ 		rx++;
++		mapping = new_mapping;
+ 
+ rx_next:
+ 		cp->rx_ring[rx_tail].opts2 = 0;
+@@ -704,6 +710,22 @@ static inline u32 cp_tx_vlan_tag(struct
+ 		TxVlanTag | swab16(vlan_tx_tag_get(skb)) : 0x00;
+ }
+ 
++static void unwind_tx_frag_mapping(struct cp_private *cp, struct sk_buff *skb,
++				   int first, int entry_last)
++{
++	int frag, index;
++	struct cp_desc *txd;
++	skb_frag_t *this_frag;
++	for (frag = 0; frag+first < entry_last; frag++) {
++		index = first+frag;
++		cp->tx_skb[index] = NULL;
++		txd = &cp->tx_ring[index];
++		this_frag = &skb_shinfo(skb)->frags[frag];
++		dma_unmap_single(&cp->pdev->dev, le64_to_cpu(txd->addr),
++				 skb_frag_size(this_frag), PCI_DMA_TODEVICE);
++	}
++}
++
+ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
+ 					struct net_device *dev)
  {
- 	u32 tx_cmd_a, tx_cmd_b;
+@@ -737,6 +759,9 @@ static netdev_tx_t cp_start_xmit (struct
  
--	skb_linearize(skb);
--
- 	if (skb_headroom(skb) < SMSC75XX_TX_OVERHEAD) {
- 		struct sk_buff *skb2 =
- 			skb_copy_expand(skb, SMSC75XX_TX_OVERHEAD, 0, flags);
+ 		len = skb->len;
+ 		mapping = dma_map_single(&cp->pdev->dev, skb->data, len, PCI_DMA_TODEVICE);
++		if (dma_mapping_error(&cp->pdev->dev, mapping))
++			goto out_dma_error;
++
+ 		txd->opts2 = opts2;
+ 		txd->addr = cpu_to_le64(mapping);
+ 		wmb();
+@@ -774,6 +799,9 @@ static netdev_tx_t cp_start_xmit (struct
+ 		first_len = skb_headlen(skb);
+ 		first_mapping = dma_map_single(&cp->pdev->dev, skb->data,
+ 					       first_len, PCI_DMA_TODEVICE);
++		if (dma_mapping_error(&cp->pdev->dev, first_mapping))
++			goto out_dma_error;
++
+ 		cp->tx_skb[entry] = skb;
+ 		entry = NEXT_TX(entry);
+ 
+@@ -787,6 +815,11 @@ static netdev_tx_t cp_start_xmit (struct
+ 			mapping = dma_map_single(&cp->pdev->dev,
+ 						 skb_frag_address(this_frag),
+ 						 len, PCI_DMA_TODEVICE);
++			if (dma_mapping_error(&cp->pdev->dev, mapping)) {
++				unwind_tx_frag_mapping(cp, skb, first_entry, entry);
++				goto out_dma_error;
++			}
++
+ 			eor = (entry == (CP_TX_RING_SIZE - 1)) ? RingEnd : 0;
+ 
+ 			ctrl = eor | len | DescOwn;
+@@ -845,11 +878,16 @@ static netdev_tx_t cp_start_xmit (struct
+ 	if (TX_BUFFS_AVAIL(cp) <= (MAX_SKB_FRAGS + 1))
+ 		netif_stop_queue(dev);
+ 
++out_unlock:
+ 	spin_unlock_irqrestore(&cp->lock, intr_flags);
+ 
+ 	cpw8(TxPoll, NormalTxPoll);
+ 
+ 	return NETDEV_TX_OK;
++out_dma_error:
++	kfree_skb(skb);
++	cp->dev->stats.tx_dropped++;
++	goto out_unlock;
+ }
+ 
+ /* Set or clear the multicast filter for this adaptor.
+@@ -1020,6 +1058,10 @@ static int cp_refill_rx(struct cp_privat
+ 
+ 		mapping = dma_map_single(&cp->pdev->dev, skb->data,
+ 					 cp->rx_buf_sz, PCI_DMA_FROMDEVICE);
++		if (dma_mapping_error(&cp->pdev->dev, mapping)) {
++			kfree_skb(skb);
++			goto err_out;
++		}
+ 		cp->rx_skb[i] = skb;
+ 
+ 		cp->rx_ring[i].opts2 = 0;
 
 
