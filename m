@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967276Ab3HIBvb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:51:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55445 "EHLO
+	id S967281Ab3HIBvp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:51:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55442 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967194Ab3HIBmV (ORCPT
+	with ESMTP id S967192Ab3HIBmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 21:42:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/25] net_sched: Fix stack info leak in cbq_dump_wrr().
-Date: Thu,  8 Aug 2013 18:41:58 -0700
-Message-Id: <20130809013654.010053049@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [ 12/25] fanotify: info leak in copy_event_to_user()
+Date: Thu,  8 Aug 2013 18:41:48 -0700
+Message-Id: <20130809013651.845900045@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -26,31 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit a0db856a95a29efb1c23db55c02d9f0ff4f0db48 ]
+commit de1e0c40aceb9d5bff09c3a3b97b2f1b178af53f upstream.
 
-Make sure the reserved fields, and padding (if any), are
-fully initialized.
+The ->reserved field isn't cleared so we leak one byte of stack
+information to userspace.
 
-Based upon a patch by Dan Carpenter and feedback from
-Joe Perches.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- net/sched/sch_cbq.c |    1 +
+ fs/notify/fanotify/fanotify_user.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/net/sched/sch_cbq.c
-+++ b/net/sched/sch_cbq.c
-@@ -1467,6 +1467,7 @@ static int cbq_dump_wrr(struct sk_buff *
- 	unsigned char *b = skb_tail_pointer(skb);
- 	struct tc_cbq_wrropt opt;
- 
-+	memset(&opt, 0, sizeof(opt));
- 	opt.flags = 0;
- 	opt.allot = cl->allot;
- 	opt.priority = cl->priority + 1;
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -120,6 +120,7 @@ static int fill_event_metadata(struct fs
+ 	metadata->event_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->vers = FANOTIFY_METADATA_VERSION;
++	metadata->reserved = 0;
+ 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
+ 	metadata->pid = pid_vnr(event->tgid);
+ 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
 
 
