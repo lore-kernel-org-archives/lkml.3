@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968159Ab3HIQjw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:39:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60318 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968090Ab3HIQjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:39:51 -0400
-Date: Fri, 9 Aug 2013 17:39:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: "Felipe F. Tonello" <eu@felipetonello.com>, alsa-devel@alsa-project.org,
-        Jaroslav Kysela <perex@perex.cz>, linux-kernel@vger.kernel.org
-Message-ID: <20130809163947.GK6427@sirena.org.uk>
-References: <1375430365-13232-2-git-send-email-eu@felipetonello.com>
- <1376029315-3217-1-git-send-email-eu@felipetonello.com>
- <s5h38qj2cqj.wl%tiwai@suse.de>
+	id S968164Ab3HIQkb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:40:31 -0400
+Received: from mx1.netapp.com ([216.240.18.38]:27492 "EHLO mx1.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S968090Ab3HIQk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 12:40:29 -0400
+X-IronPort-AV: E=Sophos;i="4.89,846,1367996400"; 
+   d="scan'208";a="272476659"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>
+Subject: [GIT PULL] Please pull NFS client bug fixes
+Thread-Topic: [GIT PULL] Please pull NFS client bug fixes
+Thread-Index: AQHOlR8nStyyDnfcqk2aYfXUb6aWRA==
+Date: Fri, 9 Aug 2013 16:40:27 +0000
+Message-ID: <1376066427.7093.1.camel@leira.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <1FBD0595CBB4E44A9882F77929B79755@hq.netapp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uCT+dex/jsWOzqWN"
-Content-Disposition: inline
-In-Reply-To: <s5h38qj2cqj.wl%tiwai@suse.de>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/2] ALSA: Added jack detection KControl support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r79Gebdc011404
 
+Hi Linus,
 
---uCT+dex/jsWOzqWN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
 
-On Fri, Aug 09, 2013 at 03:52:04PM +0200, Takashi Iwai wrote:
+  Linux 3.11-rc4 (2013-08-04 13:46:46 -0700)
 
-> Above all, the multiple indices don't work anyway with the snd_jack
-> stuff in the current form.  The index was introduced only for kjack,
-> and for HD-audio, snd_jack is provided just for a compatibility
-> reason, thus it doesn't matter much even if the multiple indices don't
-> work with it.=20
+are available in the git repository at:
 
-> That being said, before going further, we need to consider how to
-> handle the input jack stuff with multiple indices.
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.11-4
 
-What's the big problem with indexes and input (hopefully also extcon...)
-reporting?
+for you to fetch changes up to b72888cb0ba63b2dfc6c8d3cd78a7fea584bebc6:
 
-> > -	snprintf(jack->name, sizeof(jack->name), "%s %s",
-> > +	snprintf(jack->name, sizeof(jack->name), "%s %s Jack",
-> >  		 card->shortname, jack->id);
+  NFSv4: Fix up nfs4_proc_lookup_mountpoint (2013-08-07 20:47:26 -0400)
 
-> This breaks the compatibility with the existing code.
-> You must not change the name of the existing input jack element.
-> Some drivers create "Headphone" and some do "Headphone Jack", yes.
-> It's bad, but too late to change.
+----------------------------------------------------------------
+NFS client bugfixes for 3.11
 
-We can probably do something cheap like just check if there's a "Jack"
-already in the name?
+- Stable patch for lockd to fix Oopses due to inappropriate calls to
+  utsname()->nodename
+- Stable patches for sunrpc to fix Oopses on shutdown when using
+  AF_LOCAL sockets with rpcbind
+- Fix memory leak and error checking issues in nfs4_proc_lookup_mountpoint
+- Fix a regression with the sync mount option failing to work for nfs4 mounts
+- Fix a writeback performance issue when doing cache invalidation
+- Remove an incorrect call to nfs_setsecurity in nfs_fhget
 
---uCT+dex/jsWOzqWN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+----------------------------------------------------------------
+Scott Mayhew (1):
+      NFSv4: Fix the sync mount option for nfs4 mounts
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Trond Myklebust (6):
+      LOCKD: Don't call utsname()->nodename from nlmclnt_setlockargs
+      SUNRPC: Don't auto-disconnect from the local rpcbind socket
+      SUNRPC: If the rpcbind channel is disconnected, fail the call to unregister
+      NFS: Fix writeback performance issue on cache invalidation
+      NFS: Remove unnecessary call to nfs_setsecurity in nfs_fhget()
+      NFSv4: Fix up nfs4_proc_lookup_mountpoint
 
-iQIcBAEBAgAGBQJSBRtQAAoJELSic+t+oim92csP/1/rAohIUaj4FQEE21UNF+0Z
-ybPhiFETggXUWadf/szk2eOSzDywEZzoO4xSIgJ2cLw9sW/vHA5G894Rj8LoOdpq
-DEAFV2Rz34yR6IUDRuTyCH7P2PMOQV/RJHelNGSztQmNbof+Ig1AR3jDf9MRH12C
-m9OrAmUIXOn2k7z252uYAA03V4Tr5V7X5W9r+QKpENqga3vZjAzaWjEezTm9awGW
-1rk+SszkxketSpfqYXN6IIn0Rp5yK5uCWo966m3p24SjWIj08rr4IEcslJ2n3CFl
-yyWqVqDYr7D5/wqeS3/vgCGUrgbN3ps5Yx6cmPzHYP2DTB6SPZHxMEWDhbbdfFh9
-ZpIsiMmtSx3F/CLX4vxa6apITW52/rdlpTVqCdhIhAeGX9XFpPnDvCqT4oOPHa6f
-PJDT0rga8aXqF7t/OrjX9Sa0IZDlUy/thRe6Evsgyz//hCMnTr3p9fYaatJxsOgi
-AS3eJb/QK4EJOOR66+s1yTwx7j85KxDzVgS7cQEETvQyqlaa6T0tYiK+/a+kXNtK
-pSjp35zAm3JXFsryh1GQ3e8WJtOUMNywA4DggvBD8J1P6ZfBsGdLxLR4nJwPjaP7
-NeZVayKwZHdmFWiOHbK1I/U36wSvcnoe0I9cm4MsiZTG4vZPXL+3Bz6O/LqtjSUj
-9D72qtot2ywUHqi7hUjI
-=HvW9
------END PGP SIGNATURE-----
+ fs/lockd/clntlock.c          | 13 ++++++++----
+ fs/lockd/clntproc.c          |  5 +++--
+ fs/nfs/inode.c               | 11 +++++++---
+ fs/nfs/nfs4proc.c            |  8 +++-----
+ fs/nfs/super.c               |  4 ++++
+ include/linux/sunrpc/sched.h |  1 +
+ net/sunrpc/clnt.c            |  4 ++++
+ net/sunrpc/netns.h           |  1 +
+ net/sunrpc/rpcb_clnt.c       | 48 ++++++++++++++++++++++++++++++++------------
+ 9 files changed, 68 insertions(+), 27 deletions(-)
 
---uCT+dex/jsWOzqWN--
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
