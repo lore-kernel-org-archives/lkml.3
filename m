@@ -1,121 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030835Ab3HITZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:25:21 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:53529 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030765Ab3HITZT (ORCPT
+	id S1030829Ab3HIT3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:29:16 -0400
+Received: from hydra.rus.uni-stuttgart.de ([129.69.1.55]:49473 "EHLO
+	hydra.rus.uni-stuttgart.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030224Ab3HIT3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:25:19 -0400
-Date: Fri, 9 Aug 2013 12:25:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Michael Brunner <mibru@gmx.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Strasser <strassek@engr.orst.edu>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chris Healy <chealy@imsco-us.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org
-Subject: Re: [PATCH] gpio: Fix bit masking in Kontron PLD GPIO driver
-Message-ID: <20130809192516.GB10417@roeck-us.net>
-References: <20130809173326.75aed3b6@mail.gmx.de>
+	Fri, 9 Aug 2013 15:29:15 -0400
+Message-ID: <52054306.20500@rus.uni-stuttgart.de>
+Date: Fri, 09 Aug 2013 21:29:10 +0200
+From: Thomas Richter <richter@rus.uni-stuttgart.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130809173326.75aed3b6@mail.gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: linux@brodo.de, linux-kernel@vger.kernel.org
+Subject: Re: [HANG] Trouble with NEC-based USB adapter in PCMCIA slot on E7110
+References: <Pine.LNX.4.44L0.1308091345060.1405-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1308091345060.1405-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 05:33:26PM +0200, Michael Brunner wrote:
-> This patch fixes the bit masking within the GPIO driver. The masking is
-> basically done twice which causes the wrong GPIOs to be addressed.
-> 
-> Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
+On 09.08.2013 19:46, Alan Stern wrote:
+> On Fri, 9 Aug 2013, Thomas Richter wrote:
+>
+>> Hi Alan, hi Dominik,
+>>
+>> maybe you want me to help out a bit - I'm having trouble getting a
+>> Delock PCMCIA to USB-2 adapter to work under linux, with strange
+>> behavior in some situations. The trouble is that while I can *read* via
+>> fast (usb 2.0) transfers from the port, an ehci-triggered write just
+>> locks up (it does not Oops, though) and I'm pretty much stuck narrowing
+>> down the problem.
+>
+> The best way to start will be to enable CONFIG_USB_DEBUG in your kernel
+> and post the dmesg log.  Also post a usbmon trace showing what happens
+> when you try to write something.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Will try and report back, thanks. I've bisected it down in the meantime 
+to a change from 2.6.31.6 to 2.6.32.6. Interestingly, this is very much 
+the same time when the udev userland changed. It works with 2.6.31.6 old 
+udev, but not with 2.6.36.2, new udev.
 
-> ---
->  drivers/gpio/gpio-kempld.c |   24 +++++++++---------------
->  1 file changed, 9 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-kempld.c b/drivers/gpio/gpio-kempld.c
-> index d3ed563..6118b66 100644
-> --- a/drivers/gpio/gpio-kempld.c
-> +++ b/drivers/gpio/gpio-kempld.c
-> @@ -46,9 +46,9 @@ static void kempld_gpio_bitop(struct kempld_device_data *pld,
->  
->         status = kempld_read8(pld, reg);
->         if (val)
-> -               status |= (1 << bit);
-> +               status |= KEMPLD_GPIO_MASK(bit);
->         else
-> -               status &= ~(1 << bit);
-> +               status &= ~KEMPLD_GPIO_MASK(bit);
->         kempld_write8(pld, reg, status);
->  }
->  
-> @@ -60,7 +60,7 @@ static int kempld_gpio_get_bit(struct kempld_device_data *pld, u8 reg, u8 bit)
->         status = kempld_read8(pld, reg);
->         kempld_release_mutex(pld);
->  
-> -       return !!(status & (1 << bit));
-> +       return !!(status & KEMPLD_GPIO_MASK(bit));
->  }
->  
->  static int kempld_gpio_get(struct gpio_chip *chip, unsigned offset)
-> @@ -69,8 +69,7 @@ static int kempld_gpio_get(struct gpio_chip *chip, unsigned offset)
->                 = container_of(chip, struct kempld_gpio_data, chip);
->         struct kempld_device_data *pld = gpio->pld;
->  
-> -       return kempld_gpio_get_bit(pld, KEMPLD_GPIO_LVL_NUM(offset),
-> -                                  KEMPLD_GPIO_MASK(offset));
-> +       return kempld_gpio_get_bit(pld, KEMPLD_GPIO_LVL_NUM(offset), offset);
->  }
->  
->  static void kempld_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-> @@ -80,8 +79,7 @@ static void kempld_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
->         struct kempld_device_data *pld = gpio->pld;
->  
->         kempld_get_mutex(pld);
-> -       kempld_gpio_bitop(pld, KEMPLD_GPIO_LVL_NUM(offset),
-> -                         KEMPLD_GPIO_MASK(offset), value);
-> +       kempld_gpio_bitop(pld, KEMPLD_GPIO_LVL_NUM(offset), offset, value);
->         kempld_release_mutex(pld);
->  }
->  
-> @@ -92,8 +90,7 @@ static int kempld_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
->         struct kempld_device_data *pld = gpio->pld;
->  
->         kempld_get_mutex(pld);
-> -       kempld_gpio_bitop(pld, KEMPLD_GPIO_DIR_NUM(offset),
-> -                         KEMPLD_GPIO_MASK(offset), 0);
-> +       kempld_gpio_bitop(pld, KEMPLD_GPIO_DIR_NUM(offset), offset, 0);
->         kempld_release_mutex(pld);
->  
->         return 0;
-> @@ -107,10 +104,8 @@ static int kempld_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
->         struct kempld_device_data *pld = gpio->pld;
->  
->         kempld_get_mutex(pld);
-> -       kempld_gpio_bitop(pld, KEMPLD_GPIO_LVL_NUM(offset),
-> -                         KEMPLD_GPIO_MASK(offset), value);
-> -       kempld_gpio_bitop(pld, KEMPLD_GPIO_DIR_NUM(offset),
-> -                         KEMPLD_GPIO_MASK(offset), 1);
-> +       kempld_gpio_bitop(pld, KEMPLD_GPIO_LVL_NUM(offset), offset, value);
-> +       kempld_gpio_bitop(pld, KEMPLD_GPIO_DIR_NUM(offset), offset, 1);
->         kempld_release_mutex(pld);
->  
->         return 0;
-> @@ -122,8 +117,7 @@ static int kempld_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
->                 = container_of(chip, struct kempld_gpio_data, chip);
->         struct kempld_device_data *pld = gpio->pld;
->  
-> -       return kempld_gpio_get_bit(pld, KEMPLD_GPIO_DIR_NUM(offset),
-> -                                  KEMPLD_GPIO_MASK(offset));
-> +       return kempld_gpio_get_bit(pld, KEMPLD_GPIO_DIR_NUM(offset), offset);
->  }
->  
->  static int kempld_gpio_pincount(struct kempld_device_data *pld)
-> 
+Probably the handover from full speed to USB 2.0 got broken?
+
+Note that this laptop has now both uhci (legacy) and ohci (as by the 
+pcmcia card, as companion of the ehci) chips, which probably adds to the 
+problem.
+
+Greetings,
+	Thomas
