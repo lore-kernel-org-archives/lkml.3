@@ -1,501 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030581Ab3HIISI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 04:18:08 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:44201 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967685Ab3HIISC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 04:18:02 -0400
-From: Won Kang <wkang77@gmail.com>
-To: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, joe@perches.co, sachin.kamat@linaro.org,
-        Won Kang <wonkang@gctsemi.com>
-Subject: [PATCH] staging: gdm7240: a TTY rewrite according to the latest TTY APIs
-Date: Fri,  9 Aug 2013 17:19:17 +0900
-Message-Id: <1376036357-7216-1-git-send-email-wonkang@gctsemi.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1030584Ab3HIIWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 04:22:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967769Ab3HIIWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 04:22:15 -0400
+Date: Fri, 9 Aug 2013 10:23:35 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130809082335.GA25306@dhcp-26-207.brq.redhat.com>
+References: <1374248000.2266.20.camel@dabdike>
+ <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+ <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+ <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
+ <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
+ <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
+ <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
+ <20130726020928.GL29296@kernel.dk>
+ <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
+ <20130729114653.GB20951@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130729114653.GB20951@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed the old style reference countings and termios.
-Renamed variables to meaninful ones.
+On Mon, Jul 29, 2013 at 07:46:53AM -0400, Tejun Heo wrote:
+> One thing which would probably be worthwhile tho is getting rid of the
+> bitmap based qc tag allocator in libata.  That one is just borderline
+> stupid to keep around on any setup which is supposed to be scalable.
 
-Signed-off-by: Won Kang <wonkang@gctsemi.com>
----
- drivers/staging/gdm724x/gdm_tty.c |  294 ++++++++++++++++++-------------------
- drivers/staging/gdm724x/gdm_tty.h |    5 +-
- 2 files changed, 142 insertions(+), 157 deletions(-)
+Hi Tejun,
 
-diff --git a/drivers/staging/gdm724x/gdm_tty.c b/drivers/staging/gdm724x/gdm_tty.c
-index 912022b..5bcf882 100644
---- a/drivers/staging/gdm724x/gdm_tty.c
-+++ b/drivers/staging/gdm724x/gdm_tty.c
-@@ -45,141 +45,138 @@
- #define gdm_tty_send_control(n, r, v, d, l) (\
- 	n->tty_dev->send_control(n->tty_dev->priv_dev, r, v, d, l))
+How about this approach?
+
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index f218427..5c2a236 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -72,6 +72,8 @@
+ #include "libata.h"
+ #include "libata-transport.h"
  
--#define acm_set_comm_feature(n, v)	\
--	gdm_tty_send_control(n, 0x02, v, NULL, 0)
-+#define GDM_TTY_READY(gdm) (gdm && gdm->tty_dev && gdm->port.count)
++#include "../../block/blk-mq-tag.h"
++
+ /* debounce timing parameters in msecs { interval, duration, timeout } */
+ const unsigned long sata_deb_timing_normal[]		= {   5,  100, 2000 };
+ const unsigned long sata_deb_timing_hotplug[]		= {  25,  500, 2000 };
+@@ -1569,18 +1571,8 @@ unsigned ata_exec_internal_sg(struct ata_device *dev,
  
--#define GDM_TTY_READY(tty_str) (tty_str && tty_str->tty_dev && tty_str->port.count)
+ 	/* initialize internal qc */
+ 
+-	/* XXX: Tag 0 is used for drivers with legacy EH as some
+-	 * drivers choke if any other tag is given.  This breaks
+-	 * ata_tag_internal() test for those drivers.  Don't use new
+-	 * EH stuff without converting to it.
+-	 */
+-	if (ap->ops->error_handler)
+-		tag = ATA_TAG_INTERNAL;
+-	else
+-		tag = 0;
 -
--struct tty_driver *g_tty_drv[TTY_MAX_COUNT] = {NULL, };
--struct tty_str *g_tty_str[TTY_MAX_COUNT][GDM_TTY_MINOR] = {{NULL, }, };
-+struct tty_driver *gdm_driver[TTY_MAX_COUNT];
-+struct gdm *gdm_table[TTY_MAX_COUNT][GDM_TTY_MINOR];
-+static DEFINE_MUTEX(gdm_table_lock);
+-	if (test_and_set_bit(tag, &ap->qc_allocated))
+-		BUG();
++	tag = blk_mq_get_tag(ap->qc_tags, GFP_ATOMIC, true);
++	BUG_ON(!ata_tag_internal(tag));
+ 	qc = __ata_qc_from_tag(ap, tag);
  
- static char *DRIVER_STRING[TTY_MAX_COUNT] = {"GCTATC", "GCTDM"};
- static char *DEVICE_STRING[TTY_MAX_COUNT] = {"GCT-ATC", "GCT-DM"};
- 
--static DEFINE_MUTEX(open_mutex);
-+static void gdm_port_destruct(struct tty_port *port)
-+{
-+	struct gdm *gdm = container_of(port, struct gdm, port);
-+
-+	mutex_lock(&gdm_table_lock);
-+	gdm_table[gdm->index][gdm->minor] = NULL;
-+	mutex_unlock(&gdm_table_lock);
-+
-+	kfree(gdm);
-+}
- 
--static struct tty_port_operations gdm_tty_port_ops = {
-+static struct tty_port_operations gdm_port_ops = {
-+	.destruct = gdm_port_destruct,
- };
- 
--static int gdm_tty_open(struct tty_struct *tty, struct file *filp)
-+static int gdm_tty_install(struct tty_driver *driver, struct tty_struct *tty)
+ 	qc->tag = tag;
+@@ -4733,21 +4725,17 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
+ static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
  {
--	struct tty_str *tty_str = NULL;
-+	struct gdm *gdm = NULL;
-+	int ret;
- 	int i;
--	int ret = 0;
--
--	mutex_lock(&open_mutex);
-+	int j;
+ 	struct ata_queued_cmd *qc = NULL;
+-	unsigned int i;
++	unsigned int tag;
  
-+	j = GDM_TTY_MINOR;
- 	for (i = 0; i < TTY_MAX_COUNT; i++) {
- 		if (!strcmp(tty->driver->driver_name, DRIVER_STRING[i])) {
--			tty_str = g_tty_str[i][tty->index];
-+			j = tty->index;
- 			break;
- 		}
- 	}
+ 	/* no command while frozen */
+ 	if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
+ 		return NULL;
  
--	if (!tty_str) {
--		pr_info("no tty device\n");
--		mutex_unlock(&open_mutex);
-+	if (j == GDM_TTY_MINOR)
- 		return -ENODEV;
--	}
- 
--	set_bit(TTY_NO_WRITE_SPLIT, &tty->flags);
-+	mutex_lock(&gdm_table_lock);
-+	gdm = gdm_table[i][j];
-+	mutex_unlock(&gdm_table_lock);
-+	if (gdm == NULL)
-+		return -ENODEV;
- 
--	tty->driver_data = tty_str;
--	tty_port_tty_set(&tty_str->port, tty);
--	tty_str->port.count++;
--	set_bit(ASYNCB_INITIALIZED, &tty_str->port.flags);
--	ret = tty_port_block_til_ready(&tty_str->port, tty, filp);
-+	tty_port_get(&gdm->port);
- 
--	mutex_unlock(&open_mutex);
-+	ret = tty_standard_install(driver, tty);
-+	if (ret) {
-+		tty_port_put(&gdm->port);
-+		return ret;
-+	}
- 
--	return ret;
-+	tty->driver_data = gdm;
-+
-+	return 0;
- }
- 
--static void gdm_tty_close(struct tty_struct *tty, struct file *filp)
-+static int gdm_tty_open(struct tty_struct *tty, struct file *filp)
- {
--	struct tty_str *tty_str = tty->driver_data;
--	int i;
--
--	if (!tty_str) {
--		pr_info("tty device already closed\n");
--		return;
--	}
--
--	if (tty_str->port.count != 0) {
--		tty_port_close_start(&tty_str->port, tty, filp);
--		tty_port_close_end(&tty_str->port, tty);
-+	struct gdm *gdm = tty->driver_data;
-+	return tty_port_open(&gdm->port, tty, filp);
-+}
- 
--		if (tty_str->port.count == 0)
--			tty_port_tty_set(&tty_str->port, NULL);
--			tty_str->port.tty = NULL;
--	}
-+static void gdm_tty_cleanup(struct tty_struct *tty)
-+{
-+	struct gdm *gdm = tty->driver_data;
-+	tty_port_put(&gdm->port);
-+}
- 
--	if (!tty_str->tty_dev) {
--		for (i = 0; i < TTY_MAX_COUNT; i++) {
--			if (!strcmp(tty->driver->driver_name, DRIVER_STRING[i]))
--				break;
+-	/* the last tag is reserved for internal command. */
+-	for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
+-		if (!test_and_set_bit(i, &ap->qc_allocated)) {
+-			qc = __ata_qc_from_tag(ap, i);
+-			break;
 -		}
-+static void gdm_tty_hangup(struct tty_struct *tty)
++	tag = blk_mq_get_tag(ap->qc_tags, GFP_ATOMIC, false);
++	qc = __ata_qc_from_tag(ap, tag);
+ 
+ 	if (qc)
+-		qc->tag = i;
++		qc->tag = tag;
+ 
+ 	return qc;
+ }
+@@ -4799,7 +4787,7 @@ void ata_qc_free(struct ata_queued_cmd *qc)
+ 	tag = qc->tag;
+ 	if (likely(ata_tag_valid(tag))) {
+ 		qc->tag = ATA_TAG_POISON;
+-		clear_bit(tag, &ap->qc_allocated);
++		blk_mq_put_tag(ap->qc_tags, tag);
+ 	}
+ }
+ 
+@@ -5639,6 +5627,12 @@ struct ata_port *ata_port_alloc(struct ata_host *host)
+ 	if (!ap)
+ 		return NULL;
+ 
++	ap->qc_tags = blk_mq_init_tags(ATA_MAX_QUEUE, 1, NUMA_NO_NODE);
++	if (!ap->qc_tags) {
++		kfree(ap);
++		return NULL;
++	}
++
+ 	ap->pflags |= ATA_PFLAG_INITIALIZING | ATA_PFLAG_FROZEN;
+ 	ap->lock = &host->lock;
+ 	ap->print_id = -1;
+@@ -5677,6 +5671,14 @@ struct ata_port *ata_port_alloc(struct ata_host *host)
+ 	return ap;
+ }
+ 
++static void ata_port_free(struct ata_port *ap)
 +{
-+	struct gdm *gdm = tty->driver_data;
-+	tty_port_hangup(&gdm->port);
++	kfree(ap->pmp_link);
++	kfree(ap->slave_link);
++	blk_mq_free_tags(ap->qc_tags);
++	kfree(ap);
 +}
- 
--		if (i < TTY_MAX_COUNT) {
--			tty_unregister_device(g_tty_drv[i], tty->index);
--			tty_port_tty_set(&tty_str->port, NULL);
--			kfree(tty_str);
--			g_tty_str[i][tty->index] = NULL;
--		}
--	}
-+static void gdm_tty_close(struct tty_struct *tty, struct file *filp)
-+{
-+	struct gdm *gdm = tty->driver_data;
-+	tty_port_close(&gdm->port, tty, filp);
- }
- 
- static int gdm_tty_recv_complete(void *data, int len, int index, int minor, int complete)
- {
--	struct tty_str *tty_str = g_tty_str[index][minor];
--	struct tty_port *tty_port;
-+	struct gdm *gdm;
- 
--	if (!GDM_TTY_READY(tty_str)) {
-+	mutex_lock(&gdm_table_lock);
-+	gdm = gdm_table[index][minor];
-+	mutex_unlock(&gdm_table_lock);
 +
-+	if (!GDM_TTY_READY(gdm)) {
- 		if (complete == RECV_PACKET_PROCESS_COMPLETE)
--			gdm_tty_recv(tty_str, gdm_tty_recv_complete);
-+			gdm_tty_recv(gdm, gdm_tty_recv_complete);
- 		return TO_HOST_PORT_CLOSE;
+ static void ata_host_release(struct device *gendev, void *res)
+ {
+ 	struct ata_host *host = dev_get_drvdata(gendev);
+@@ -5691,9 +5693,7 @@ static void ata_host_release(struct device *gendev, void *res)
+ 		if (ap->scsi_host)
+ 			scsi_host_put(ap->scsi_host);
+ 
+-		kfree(ap->pmp_link);
+-		kfree(ap->slave_link);
+-		kfree(ap);
++		ata_port_free(ap);
+ 		host->ports[i] = NULL;
  	}
  
--	if (!data || !len)
--		goto complete_routine;
--
--	tty_port = &tty_str->port;
--
--	if (tty_buffer_request_room(tty_port, len) == len) {
--		tty_insert_flip_string(tty_port, data, len);
--		tty_flip_buffer_push(tty_port);
--	} else {
--		return TO_HOST_BUFFER_REQUEST_FAIL;
-+	if (data && len) {
-+		if (tty_buffer_request_room(&gdm->port, len) == len) {
-+			tty_insert_flip_string(&gdm->port, data, len);
-+			tty_flip_buffer_push(&gdm->port);
-+		} else {
-+			return TO_HOST_BUFFER_REQUEST_FAIL;
-+		}
- 	}
+diff --git a/include/linux/libata.h b/include/linux/libata.h
+index eae7a05..4ff9494 100644
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -126,7 +126,7 @@ enum {
+ 	ATA_DEF_QUEUE		= 1,
+ 	/* tag ATA_MAX_QUEUE - 1 is reserved for internal commands */
+ 	ATA_MAX_QUEUE		= 32,
+-	ATA_TAG_INTERNAL	= ATA_MAX_QUEUE - 1,
++	ATA_TAG_INTERNAL	= 0,
+ 	ATA_SHORT_PAUSE		= 16,
  
--complete_routine:
- 	if (complete == RECV_PACKET_PROCESS_COMPLETE)
--		gdm_tty_recv(tty_str, gdm_tty_recv_complete);
-+		gdm_tty_recv(gdm, gdm_tty_recv_complete);
+ 	ATAPI_MAX_DRAIN		= 16 << 10,
+@@ -766,7 +766,7 @@ struct ata_port {
+ 	unsigned int		cbl;	/* cable type; ATA_CBL_xxx */
  
- 	return 0;
- }
+ 	struct ata_queued_cmd	qcmd[ATA_MAX_QUEUE];
+-	unsigned long		qc_allocated;
++	struct blk_mq_tags	*qc_tags;
+ 	unsigned int		qc_active;
+ 	int			nr_active_links; /* #links with active qcs */
  
- static void gdm_tty_send_complete(void *arg)
- {
--	struct tty_str *tty_str = (struct tty_str *)arg;
--	struct tty_struct *tty;
-+	struct gdm *gdm = (struct gdm *)arg;
- 
--	if (!GDM_TTY_READY(tty_str))
-+	if (!GDM_TTY_READY(gdm))
- 		return;
- 
--	tty = tty_port_tty_get(&tty_str->port);
--	tty_wakeup(tty);
--	tty_kref_put(tty);
-+	tty_port_tty_wakeup(&gdm->port);
- }
- 
- static int gdm_tty_write(struct tty_struct *tty, const unsigned char *buf, int len)
- {
--	struct tty_str *tty_str = tty->driver_data;
-+	struct gdm *gdm = tty->driver_data;
- 	int remain = len;
- 	int sent_len = 0;
- 	int sending_len = 0;
- 
--	if (!GDM_TTY_READY(tty_str))
-+	if (!GDM_TTY_READY(gdm))
- 		return -ENODEV;
- 
- 	if (!len)
-@@ -187,12 +184,12 @@ static int gdm_tty_write(struct tty_struct *tty, const unsigned char *buf, int l
- 
- 	while (1) {
- 		sending_len = remain > MUX_TX_MAX_SIZE ? MUX_TX_MAX_SIZE : remain;
--		gdm_tty_send(tty_str,
-+		gdm_tty_send(gdm,
- 			     (void *)(buf+sent_len),
- 			     sending_len,
--			     tty_str->tty_drv_index,
-+			     gdm->index,
- 			     gdm_tty_send_complete,
--			     tty_str
-+			     gdm
- 			    );
- 		sent_len += sending_len;
- 		remain -= sending_len;
-@@ -205,131 +202,113 @@ static int gdm_tty_write(struct tty_struct *tty, const unsigned char *buf, int l
- 
- static int gdm_tty_write_room(struct tty_struct *tty)
- {
--	struct tty_str *tty_str = tty->driver_data;
-+	struct gdm *gdm = tty->driver_data;
- 
--	if (!GDM_TTY_READY(tty_str))
-+	if (!GDM_TTY_READY(gdm))
- 		return -ENODEV;
- 
- 	return WRITE_SIZE;
- }
- 
--static int gdm_tty_tiocmget(struct tty_struct *tty)
--{
--	struct tty_str *tty_str = tty->driver_data;
--
--	if (!GDM_TTY_READY(tty_str))
--		return -ENODEV;
--
--	return (0 & ACM_CTRL_DTR ? TIOCM_DTR : 0) |
--	       (0 & ACM_CTRL_RTS ? TIOCM_RTS : 0) |
--	       (0 & ACM_CTRL_DSR ? TIOCM_DSR : 0) |
--	       (0 & ACM_CTRL_RI  ? TIOCM_RI  : 0) |
--	       (0 & ACM_CTRL_DCD ? TIOCM_CD  : 0) |
--	       TIOCM_CTS;
--}
--
--static int gdm_tty_tiocmset(struct tty_struct *tty, unsigned int set, unsigned int clear)
-+int register_lte_tty_device(struct tty_dev *tty_dev, struct device *device)
- {
--	struct tty_str *tty_str = tty->driver_data;
-+	struct gdm *gdm;
-+	int i;
-+	int j;
- 
--	if (!GDM_TTY_READY(tty_str))
--		return -ENODEV;
-+	for (i = 0; i < TTY_MAX_COUNT; i++) {
- 
--	return 1;
--}
-+		gdm = kmalloc(sizeof(struct gdm), GFP_KERNEL);
-+		if (!gdm)
-+			return -ENOMEM;
- 
--int register_lte_tty_device(struct tty_dev *tty_dev, struct device *dev)
--{
--	struct tty_str *tty_str;
--	int i, j;
-+		mutex_lock(&gdm_table_lock);
- 
--	for (i = 0; i < TTY_MAX_COUNT; i++) {
- 		for (j = 0; j < GDM_TTY_MINOR; j++) {
--			if (!g_tty_str[i][j])
-+			if (!gdm_table[i][j])
- 				break;
- 		}
- 
- 		if (j == GDM_TTY_MINOR) {
--			tty_dev->minor[i] = j;
--			return -1;
-+			tty_dev->minor[i] = GDM_TTY_MINOR;
-+			mutex_unlock(&gdm_table_lock);
-+			return -EINVAL;
- 		}
- 
--		tty_str = kmalloc(sizeof(struct tty_str), GFP_KERNEL);
--		if (!tty_str)
--			return -ENOMEM;
-+		gdm_table[i][j] = gdm;
- 
--		g_tty_str[i][j] = tty_str;
-+		mutex_unlock(&gdm_table_lock);
- 
--		tty_str->tty_dev = tty_dev;
--		tty_str->tty_drv_index = i;
- 		tty_dev->minor[i] = j;
--		tty_port_init(&tty_str->port);
--		tty_str->port.ops = &gdm_tty_port_ops;
- 
--		if (strcmp(DEVICE_STRING[i], "GCT-ATC") != 0)
--			dev = NULL;
--		tty_register_device(g_tty_drv[i], j, dev);
--	}
-+		tty_port_init(&gdm->port);
-+		gdm->port.ops = &gdm_port_ops;
-+		gdm->index = i;
-+		gdm->minor = j;
-+		gdm->tty_dev = tty_dev;
- 
--	acm_set_comm_feature(tty_str, 1);
-+		tty_port_register_device(&gdm->port, gdm_driver[i], j, device);
-+	}
- 
- 	for (i = 0; i < MAX_ISSUE_NUM; i++)
--		gdm_tty_recv(tty_str, gdm_tty_recv_complete);
-+		gdm_tty_recv(gdm, gdm_tty_recv_complete);
- 
- 	return 0;
- }
- 
- void unregister_lte_tty_device(struct tty_dev *tty_dev)
- {
--	struct tty_str *tty_str;
-+	struct gdm *gdm;
-+	struct tty_struct *tty;
- 	int i;
-+	int j;
- 
- 	for (i = 0; i < TTY_MAX_COUNT; i++) {
--		if (tty_dev->minor[i] >= GDM_TTY_MINOR)
--			continue;
- 
--		tty_str = g_tty_str[i][tty_dev->minor[i]];
--		if (!tty_str)
-+		j = tty_dev->minor[i];
-+
-+		if (j >= GDM_TTY_MINOR)
- 			continue;
- 
--		tty_str->tty_dev = NULL;
-+		mutex_lock(&gdm_table_lock);
-+		gdm = gdm_table[i][j];
-+		mutex_unlock(&gdm_table_lock);
- 
--		if (!tty_str->port.count) {
--			tty_unregister_device(g_tty_drv[i], tty_dev->minor[i]);
--			tty_port_tty_set(&tty_str->port, NULL);
--			kfree(tty_str);
--			g_tty_str[i][tty_dev->minor[i]] = NULL;
-+		if (!gdm)
-+			continue;
-+
-+		tty = tty_port_tty_get(&gdm->port);
-+		if (tty) {
-+			tty_vhangup(tty);
-+			tty_kref_put(tty);
- 		}
--	}
--}
- 
--static void gdm_tty_set_termios(struct tty_struct *tty, struct ktermios *termios_old)
--{
--	return;
-+		tty_unregister_device(gdm_driver[i], j);
-+		tty_port_put(&gdm->port);
-+
-+	}
- }
- 
- static const struct tty_operations gdm_tty_ops = {
--	.open = gdm_tty_open,
--	.close = gdm_tty_close,
--	.write = gdm_tty_write,
--	.write_room = gdm_tty_write_room,
--	.tiocmget = gdm_tty_tiocmget,
--	.tiocmset = gdm_tty_tiocmset,
--	.set_termios = gdm_tty_set_termios,
-+	.install =	gdm_tty_install,
-+	.open =		gdm_tty_open,
-+	.close =	gdm_tty_close,
-+	.cleanup =	gdm_tty_cleanup,
-+	.hangup =	gdm_tty_hangup,
-+	.write =	gdm_tty_write,
-+	.write_room =	gdm_tty_write_room,
- };
- 
- int register_lte_tty_driver(void)
- {
--	struct tty_driver *tty_driver = NULL;
-+	struct tty_driver *tty_driver;
- 	int i;
- 	int ret;
- 
- 	for (i = 0; i < TTY_MAX_COUNT; i++) {
- 		tty_driver = alloc_tty_driver(GDM_TTY_MINOR);
--		if (!tty_driver) {
--			pr_err("alloc_tty_driver fail\n");
-+		if (!tty_driver)
- 			return -ENOMEM;
--		}
- 
- 		tty_driver->owner = THIS_MODULE;
- 		tty_driver->driver_name = DRIVER_STRING[i];
-@@ -344,8 +323,12 @@ int register_lte_tty_driver(void)
- 		tty_set_operations(tty_driver, &gdm_tty_ops);
- 
- 		ret = tty_register_driver(tty_driver);
-+		if (ret) {
-+			put_tty_driver(tty_driver);
-+			return ret;
-+		}
- 
--		g_tty_drv[i] = tty_driver;
-+		gdm_driver[i] = tty_driver;
- 	}
- 
- 	return ret;
-@@ -357,10 +340,11 @@ void unregister_lte_tty_driver(void)
- 	int i;
- 
- 	for (i = 0; i < TTY_MAX_COUNT; i++) {
--		tty_driver = g_tty_drv[i];
-+		tty_driver = gdm_driver[i];
- 		if (tty_driver) {
- 			tty_unregister_driver(tty_driver);
- 			put_tty_driver(tty_driver);
- 		}
- 	}
- }
-+
-diff --git a/drivers/staging/gdm724x/gdm_tty.h b/drivers/staging/gdm724x/gdm_tty.h
-index a75be1d..64db5e6 100644
---- a/drivers/staging/gdm724x/gdm_tty.h
-+++ b/drivers/staging/gdm724x/gdm_tty.h
-@@ -44,10 +44,11 @@ struct tty_dev {
- 	u8 minor[2];
- };
- 
--struct tty_str {
-+struct gdm {
- 	struct tty_dev *tty_dev;
--	int tty_drv_index;
- 	struct tty_port port;
-+	unsigned int index;
-+	unsigned int minor;
- };
- 
- int register_lte_tty_driver(void);
+
+> Thanks.
+> 
+> -- 
+> tejun
+
 -- 
-1.7.10.4
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
