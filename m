@@ -1,264 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966824Ab3HIKXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:23:31 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:40725 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966223Ab3HIKWf (ORCPT
+	id S966823Ab3HIKYB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:24:01 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:49845 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966414Ab3HIKX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:22:35 -0400
-X-AuditID: cbfec7f4-b7f5f6d000000ff6-0d-5204c2e97d6a
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [RFC PATCH v2 1/4] zbud: use page ref counter for zbud pages
-Date: Fri, 09 Aug 2013 12:22:17 +0200
-Message-id: <1376043740-10576-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1376043740-10576-1-git-send-email-k.kozlowski@samsung.com>
-References: <1376043740-10576-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprALMWRmVeSWpSXmKPExsVy+t/xa7ovD7EEGbxqELCYs34Nm8XGGetZ
-	LT69fMBo8fqFocXZpjfsFpd3zWGzuLfmP6vF2iN32S0mv3vGaHFo3yp2i3ntL1kduD0W73nJ
-	5LHp0yR2jxMzfrN4PDi0mcWjb8sqRo/Np6s9Pm+SC2CP4rJJSc3JLEst0rdL4Mpo3xNbsMy4
-	YkrXCuYGxrUaXYycHBICJhLbGrYyQ9hiEhfurWfrYuTiEBJYyigxf/1ydpCEkEAfk8SyNb4g
-	NpuAscTm5UvYQGwRgT5GiUmXLUAamAX2MUnsPvmVCSQhLOAqMeX6M7AiFgFViTfL34HZvALu
-	Eq1f3gIN5QDapiAxZ5INSJhTwEPi7psDzBC73CXe7ZvHOIGRdwEjwypG0dTS5ILipPRcQ73i
-	xNzi0rx0veT83E2MkFD8soNx8TGrQ4wCHIxKPLwntjAHCbEmlhVX5h5ilOBgVhLh3T6BJUiI
-	NyWxsiq1KD++qDQntfgQIxMHp1QD4wq+b1cDHnDJz1pnd+7m2/Bp9/2LRJrteJpvzdrVsKW5
-	PGaRuqXysZ1uPmuldU03af6fFP3e35Azm/GLaNrFQGM3dreVOyzsLxiz7jOvYHr4asMOOd8E
-	qdPWr9JzVaJe9oq9DE/MWFGre2ZWntpXy0eeCdbLphpvLBJ/XXqke8axXecumYkvV2Ipzkg0
-	1GIuKk4EAF0fRkYjAgAA
+	Fri, 9 Aug 2013 06:23:59 -0400
+Message-ID: <5204C337.8040905@hitachi.com>
+Date: Fri, 09 Aug 2013 19:23:51 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 13/13] tracing/uprobes: Add support for full argument
+ access methods
+References: <1376037909-17797-1-git-send-email-namhyung@kernel.org> <1376037909-17797-14-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1376037909-17797-14-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use page reference counter for zbud pages. The ref counter replaces
-zbud_header.under_reclaim flag and ensures that zbud page won't be freed
-when zbud_free() is called during reclaim. It allows implementation of
-additional reclaim paths.
+(2013/08/09 17:45), Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Enable to fetch other types of argument for the uprobes.  IOW, we can
+> access stack, memory, deref, bitfield and retval from uprobes now.
 
-The page count is incremented when:
- - a handle is created and passed to zswap (in zbud_alloc()),
- - user-supplied eviction callback is called (in zbud_reclaim_page()).
+Could you also add more detail descriptions about what syntax
+uprobe-event will accept now and what is not?
+And also, you should update Documentation/trace/uprobetracer.txt
+according to your effort too. :)
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Reviewed-by: Bob Liu <bob.liu@oracle.com>
----
- mm/zbud.c |   96 ++++++++++++++++++++++++++++++++++---------------------------
- 1 file changed, 53 insertions(+), 43 deletions(-)
+Thank you,
 
-diff --git a/mm/zbud.c b/mm/zbud.c
-index ad1e781..52f6ba1 100644
---- a/mm/zbud.c
-+++ b/mm/zbud.c
-@@ -109,7 +109,6 @@ struct zbud_header {
- 	struct list_head lru;
- 	unsigned int first_chunks;
- 	unsigned int last_chunks;
--	bool under_reclaim;
- };
- 
- /*****************
-@@ -138,16 +137,9 @@ static struct zbud_header *init_zbud_page(struct page *page)
- 	zhdr->last_chunks = 0;
- 	INIT_LIST_HEAD(&zhdr->buddy);
- 	INIT_LIST_HEAD(&zhdr->lru);
--	zhdr->under_reclaim = 0;
- 	return zhdr;
- }
- 
--/* Resets the struct page fields and frees the page */
--static void free_zbud_page(struct zbud_header *zhdr)
--{
--	__free_page(virt_to_page(zhdr));
--}
--
- /*
-  * Encodes the handle of a particular buddy within a zbud page
-  * Pool lock should be held as this function accesses first|last_chunks
-@@ -188,6 +180,34 @@ static int num_free_chunks(struct zbud_header *zhdr)
- 	return NCHUNKS - zhdr->first_chunks - zhdr->last_chunks - 1;
- }
- 
-+/*
-+ * Increases ref count for zbud page.
-+ */
-+static void get_zbud_page(struct zbud_header *zhdr)
-+{
-+	get_page(virt_to_page(zhdr));
-+}
-+
-+/*
-+ * Decreases ref count for zbud page and frees the page if it reaches 0
-+ * (no external references, e.g. handles).
-+ *
-+ * Must be called under pool->lock.
-+ *
-+ * Returns 1 if page was freed and 0 otherwise.
-+ */
-+static int put_zbud_page(struct zbud_pool *pool, struct zbud_header *zhdr)
-+{
-+	struct page *page = virt_to_page(zhdr);
-+	if (put_page_testzero(page)) {
-+		free_hot_cold_page(page, 0);
-+		pool->pages_nr--;
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+
- /*****************
-  * API Functions
- *****************/
-@@ -250,7 +270,7 @@ void zbud_destroy_pool(struct zbud_pool *pool)
- int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
- 			unsigned long *handle)
- {
--	int chunks, i, freechunks;
-+	int chunks, i;
- 	struct zbud_header *zhdr = NULL;
- 	enum buddy bud;
- 	struct page *page;
-@@ -273,6 +293,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
- 				bud = FIRST;
- 			else
- 				bud = LAST;
-+			get_zbud_page(zhdr);
- 			goto found;
- 		}
- 	}
-@@ -284,6 +305,10 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
- 		return -ENOMEM;
- 	spin_lock(&pool->lock);
- 	pool->pages_nr++;
-+	/*
-+	 * We will be using zhdr instead of page, so
-+	 * don't increase the page count.
-+	 */
- 	zhdr = init_zbud_page(page);
- 	bud = FIRST;
- 
-@@ -295,7 +320,7 @@ found:
- 
- 	if (zhdr->first_chunks == 0 || zhdr->last_chunks == 0) {
- 		/* Add to unbuddied list */
--		freechunks = num_free_chunks(zhdr);
-+		int freechunks = num_free_chunks(zhdr);
- 		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
- 	} else {
- 		/* Add to buddied list */
-@@ -326,7 +351,6 @@ found:
- void zbud_free(struct zbud_pool *pool, unsigned long handle)
- {
- 	struct zbud_header *zhdr;
--	int freechunks;
- 
- 	spin_lock(&pool->lock);
- 	zhdr = handle_to_zbud_header(handle);
-@@ -337,26 +361,18 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
- 	else
- 		zhdr->first_chunks = 0;
- 
--	if (zhdr->under_reclaim) {
--		/* zbud page is under reclaim, reclaim will free */
--		spin_unlock(&pool->lock);
--		return;
--	}
--
- 	/* Remove from existing buddy list */
- 	list_del(&zhdr->buddy);
- 
- 	if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
--		/* zbud page is empty, free */
- 		list_del(&zhdr->lru);
--		free_zbud_page(zhdr);
--		pool->pages_nr--;
- 	} else {
- 		/* Add to unbuddied list */
--		freechunks = num_free_chunks(zhdr);
-+		int freechunks = num_free_chunks(zhdr);
- 		list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
- 	}
- 
-+	put_zbud_page(pool, zhdr);
- 	spin_unlock(&pool->lock);
- }
- 
-@@ -400,7 +416,7 @@ void zbud_free(struct zbud_pool *pool, unsigned long handle)
-  */
- int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
- {
--	int i, ret, freechunks;
-+	int i, ret;
- 	struct zbud_header *zhdr;
- 	unsigned long first_handle = 0, last_handle = 0;
- 
-@@ -411,11 +427,23 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
- 		return -EINVAL;
- 	}
- 	for (i = 0; i < retries; i++) {
-+		if (list_empty(&pool->lru)) {
-+			/*
-+			 * LRU was emptied during evict calls in previous
-+			 * iteration but put_zbud_page() returned 0 meaning
-+			 * that someone still holds the page. This may
-+			 * happen when some other mm mechanism increased
-+			 * the page count.
-+			 * In such case we succedded with reclaim.
-+			 */
-+			return 0;
-+		}
- 		zhdr = list_tail_entry(&pool->lru, struct zbud_header, lru);
-+		/* Move this last element to beginning of LRU */
- 		list_del(&zhdr->lru);
--		list_del(&zhdr->buddy);
-+		list_add(&zhdr->lru, &pool->lru);
- 		/* Protect zbud page against free */
--		zhdr->under_reclaim = true;
-+		get_zbud_page(zhdr);
- 		/*
- 		 * We need encode the handles before unlocking, since we can
- 		 * race with free that will set (first|last)_chunks to 0
-@@ -441,28 +469,10 @@ int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries)
- 		}
- next:
- 		spin_lock(&pool->lock);
--		zhdr->under_reclaim = false;
--		if (zhdr->first_chunks == 0 && zhdr->last_chunks == 0) {
--			/*
--			 * Both buddies are now free, free the zbud page and
--			 * return success.
--			 */
--			free_zbud_page(zhdr);
--			pool->pages_nr--;
-+		if (put_zbud_page(pool, zhdr)) {
- 			spin_unlock(&pool->lock);
- 			return 0;
--		} else if (zhdr->first_chunks == 0 ||
--				zhdr->last_chunks == 0) {
--			/* add to unbuddied list */
--			freechunks = num_free_chunks(zhdr);
--			list_add(&zhdr->buddy, &pool->unbuddied[freechunks]);
--		} else {
--			/* add to buddied list */
--			list_add(&zhdr->buddy, &pool->buddied);
- 		}
--
--		/* add to beginning of LRU */
--		list_add(&zhdr->lru, &pool->lru);
- 	}
- 	spin_unlock(&pool->lock);
- 	return -EAGAIN;
+> Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/trace/trace_probe.c | 34 ++++++++++++++++++++--------------
+>  1 file changed, 20 insertions(+), 14 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+> index 70cd3bfde5a6..b68ceb7cad6e 100644
+> --- a/kernel/trace/trace_probe.c
+> +++ b/kernel/trace/trace_probe.c
+> @@ -253,7 +253,7 @@ fail:
+>  }
+>  
+>  /* Special function : only accept unsigned long */
+> -static __kprobes void fetch_stack_address(struct pt_regs *regs,
+> +static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
+>  					  void *dummy, void *dest, void *priv)
+>  {
+>  	*(unsigned long *)dest = kernel_stack_pointer(regs);
+> @@ -303,7 +303,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
+>  #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
+>  
+>  static int parse_probe_vars(char *arg, const struct fetch_type *t,
+> -			    struct fetch_param *f, bool is_return)
+> +			    struct fetch_param *f, bool is_return,
+> +			    bool is_kprobe)
+>  {
+>  	int ret = 0;
+>  	unsigned long param;
+> @@ -315,13 +316,18 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
+>  			ret = -EINVAL;
+>  	} else if (strncmp(arg, "stack", 5) == 0) {
+>  		if (arg[5] == '\0') {
+> -			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
+> -				f->fn = fetch_stack_address;
+> -			else
+> -				ret = -EINVAL;
+> +			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR))
+> +				return -EINVAL;
+> +
+> +			if (is_kprobe)
+> +				f->fn = fetch_kernel_stack_address;
+> +			else {
+> +				f->fn = t->fetch[FETCH_MTD_stack];
+> +				f->data = (void *)0;
+> +			}
+>  		} else if (isdigit(arg[5])) {
+>  			ret = kstrtoul(arg + 5, 10, &param);
+> -			if (ret || param > PARAM_MAX_STACK)
+> +			if (ret || (is_kprobe && param > PARAM_MAX_STACK))
+>  				ret = -EINVAL;
+>  			else {
+>  				f->fn = t->fetch[FETCH_MTD_stack];
+> @@ -345,17 +351,13 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+>  	int ret;
+>  	const struct fetch_type *ttbl;
+>  
+> -	ttbl = kprobes_fetch_type_table;
+> +	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
+>  
+>  	ret = 0;
+>  
+> -	/* Until uprobe_events supports only reg arguments */
+> -	if (!is_kprobe && arg[0] != '%')
+> -		return -EINVAL;
+> -
+>  	switch (arg[0]) {
+>  	case '$':
+> -		ret = parse_probe_vars(arg + 1, t, f, is_return);
+> +		ret = parse_probe_vars(arg + 1, t, f, is_return, is_kprobe);
+>  		break;
+>  
+>  	case '%':	/* named register */
+> @@ -376,6 +378,10 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+>  			f->fn = t->fetch[FETCH_MTD_memory];
+>  			f->data = (void *)param;
+>  		} else {
+> +			/* uprobes don't support symbols */
+> +			if (!is_kprobe)
+> +				return -EINVAL;
+> +
+>  			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
+>  			if (ret)
+>  				break;
+> @@ -482,7 +488,7 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
+>  	int ret;
+>  	const struct fetch_type *ttbl;
+>  
+> -	ttbl = kprobes_fetch_type_table;
+> +	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
+>  
+>  	if (strlen(arg) > MAX_ARGSTR_LEN) {
+>  		pr_info("Argument is too long.: %s\n",  arg);
+> 
+
+
 -- 
-1.7.9.5
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
