@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966610Ab3HIKSt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:18:49 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43634 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966223Ab3HIKSr (ORCPT
+	id S966653Ab3HIKWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:22:36 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:40725 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965879Ab3HIKWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:18:47 -0400
-Date: Fri, 9 Aug 2013 11:18:42 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Message-ID: <20130809101842.GR6427@sirena.org.uk>
-References: <20130808132201.2610aef3@armhf>
- <5204A716.6070507@gmail.com>
- <20130809091953.GO6427@sirena.org.uk>
- <5204B7A6.9050907@gmail.com>
- <5204BF06.3060806@metafoo.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Kjn60822oUuI93ff"
-Content-Disposition: inline
-In-Reply-To: <5204BF06.3060806@metafoo.de>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH v4 1/1] ASoc: kirkwood: add DT support to
- the mvebu audio subsystem
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 9 Aug 2013 06:22:34 -0400
+X-AuditID: cbfec7f4-b7f5f6d000000ff6-08-5204c2e8e1f6
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RFC PATCH v2 0/4] mm: reclaim zbud pages on migration and compaction
+Date: Fri, 09 Aug 2013 12:22:16 +0200
+Message-id: <1376043740-10576-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEJMWRmVeSWpSXmKPExsVy+t/xa7ovDrEEGUzv1LGYs34Nm8XGGetZ
+	LT69fMBo8fqFocXZpjfsFpd3zWGzuLfmP6vF2iN32S0mv3vGaHFo3yp2By6PxXteMnls+jSJ
+	3ePEjN8sHg8ObWbx6NuyitFj8+lqj8+b5ALYo7hsUlJzMstSi/TtErgyOvvb2Qv2ClUs3P+S
+	pYFxLV8XIyeHhICJRMfTfkYIW0ziwr31bCC2kMBSRom72wW6GLmA7D4mia2fZoEl2ASMJTYv
+	XwJmiwj0MUpMumwBUsQs0MMk8f7NZLBJwgJ+En23W4Fsdg4WAVWJF7wgUV4Bd4meRfeAohxA
+	uxQk5kyymcDIvYCRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSDh92cG4+JjVIUYBDkYl
+	Ht4TW5iDhFgTy4orcw8xSnAwK4nwbp/AEiTEm5JYWZValB9fVJqTWnyIkYmDU6qB0d6v1CXs
+	Ilf8m8+HNF/6LPbN26NddXj7zcwtjzns7lvZ3n7FwHN7wXNm8ac3bhp0Hjp8JWSDxbdPBfe3
+	btjMkO/RvH3258iFcRO5zxZ9mimiOfva53PzHM5Yb7n67L5FZKRCNbvf73lra/afmL6eY9dT
+	6c7K/8/ebZlrfCBxRWZP7P0m0W2KDpVKLMUZiYZazEXFiQAIGyVfBQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---Kjn60822oUuI93ff
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Currently zbud pages are not movable and they cannot be allocated from CMA
+region. These patches try to address the problem by:
+1. Adding a new form of reclaim of zbud pages.
+2. Reclaiming zbud pages during migration and compaction.
+3. Allocating zbud pages with __GFP_RECLAIMABLE flag.
 
-On Fri, Aug 09, 2013 at 12:05:58PM +0200, Lars-Peter Clausen wrote:
-> On 08/09/2013 11:34 AM, Sebastian Hesselbarth wrote:
+This reclaim process is different than zbud_reclaim_page(). It acts more
+like swapoff() by trying to unuse pages stored in zbud page and bring
+them back to memory. The standard zbud_reclaim_page() on the other hand
+tries to write them back.
 
-> > I do understand there may be SoCs requiring sophisticated extra audio
-> > nodes, but Marvell SoCs don't. I prefer having a single node for the
-> > i2s controller *and* exploit the audio subsystem properties from that.
+One of patches introduces PageZbud() function which identifies zbud pages
+my page->_mapcount. Dave Hansen proposed aliasing PG_zbud=PG_slab but in
+such case patch would be more intrusive.
 
-> It's not about SoCs, it's about the board. The audio fabric on a board can
-> easily get complex enough to require its own driver. Speakers, mics, jacks
-> and jack detection, external amplifiers, bluetooth, baseband, multiple
-> CODECs. That's what the audio node describes.
+Any ideas for a better solution are welcome.
 
-Exactly - as I said earlier on this week the issue is that in many cases
-there is enough going on in audio system design to make the PCB an
-interesting bit of hardware that's worth describing in the device tree.
+TODO-s:
+1. Migrate zbud pages directly instead of reclaiming.
 
-To repeat what I said before *please* go back and check the list
-archives, we've been through this several times.
+Changes since v1:
+1. Rebased against v3.11-rc4-103-g6c2580c.
+2. Remove rebalance_lists() to fix reinserting zbud page after zbud_free.
+   This function was added because similar code was present in
+   zbud_free/zbud_alloc/zbud_reclaim_page but it turns out that there
+   is no benefit in generalizing this code.
+   (suggested by Seth Jennings)
+3. Remove BUG_ON checks for first/last chunks during free and reclaim.
+   (suggested by Seth Jennings)
+4. Use page->_mapcount==-127 instead of new PG_zbud flag.
+   (suggested by Dave Hansen)
+5. Fix invalid dereference of pointer to compact_control in page_alloc.c.
+6. Fix lost return value in try_to_unuse() in swapfile.c (this fixes
+   hang when swapoff was interrupted e.g. by CTRL+C).
 
---Kjn60822oUuI93ff
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Best regards,
+Krzysztof Kozlowski
 
-iQIcBAEBAgAGBQJSBMH/AAoJELSic+t+oim9I4YP/3nTSMMtwspEqNLHc0KhkFVP
-cx12Dc15XVjPHIXSC1XOd1Vf1AwODXqzIqSGRpRGeR/KfZKrpmuYQpCNGe10gx4X
-5Jb5zh+bt6rxa9l0viSYQfKPJ8k0QF1gw7HG25s1rusXM7fRoGVDA8ZVaJ9ZaG+I
-b3GMLbNK8Fa1kucpmT29F38wegwQQs4Fd/HNBm8L8Kr/yaJPr70zlKLegcU3U9vd
-adfLjXJLOkJ+TTLXTmXxujuUpe/Yqs21fPFRIFRPDsXkKEulC1eVWSGo6y/4GrTE
-uZafui2KOh9EFm49Pjd0s36JV0Vfm9IhMhmOvxNNOgbAOtqzVBZJFCJTVQ8C3+Ji
-egJsJ8GFCdEYKeEHErmLxZJ/xViLnkcqKAB1oCWj5brWNxpePTZeP1s8D4RiGKtO
-i9KuEYcswtfzkHgXBbuXs+8Qko0CsJNKksZIpG0HP6E+KxtW4OVtRbu7SJ5O0tyf
-Ru5nU50HGBM7o7Wd3tVCFXZwitKQ5CX7NAiucAkN5SeGWRwo3FV9u+xqEDITfmdX
-HAut9JqPfXGBJt939kSxRC7/h6uGZI/3MbQ8LJyoRbaqVH2PH1tNiv4eFJjESBH8
-lvKPCWQ65P0h8DDTyLAXekwIB6pRYEjgxRKSIOg06tvy7CJf2XG+JP0cSL3QDNLm
-PYRUVLgFTP1YHpGD1Ct3
-=gUzZ
------END PGP SIGNATURE-----
 
---Kjn60822oUuI93ff--
+Krzysztof Kozlowski (4):
+  zbud: use page ref counter for zbud pages
+  mm: split code for unusing swap entries from try_to_unuse
+  mm: use mapcount for identifying zbud pages
+  mm: reclaim zbud pages on migration and compaction
+
+ include/linux/mm.h       |   23 +++
+ include/linux/swapfile.h |    2 +
+ include/linux/zbud.h     |   11 +-
+ mm/compaction.c          |   20 ++-
+ mm/internal.h            |    1 +
+ mm/page_alloc.c          |    6 +
+ mm/swapfile.c            |  356 ++++++++++++++++++++++++----------------------
+ mm/zbud.c                |  247 +++++++++++++++++++++++---------
+ mm/zswap.c               |   57 +++++++-
+ 9 files changed, 476 insertions(+), 247 deletions(-)
+
+-- 
+1.7.9.5
+
