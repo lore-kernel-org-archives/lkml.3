@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967650Ab3HICQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:16:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55693 "EHLO
+	id S967793Ab3HICQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:16:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967383Ab3HIB6w (ORCPT
+	with ESMTP id S967521Ab3HIB6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:52 -0400
+	Thu, 8 Aug 2013 21:58:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Kazior <michal.kazior@tieto.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 037/102] nl80211: fix mgmt tx status and testmode reporting for netns
-Date: Thu,  8 Aug 2013 18:57:13 -0700
-Message-Id: <20130809015018.555082182@linuxfoundation.org>
+        Bo Shi <cnshibo@gmail.com>, Oleksij Rempel <linux@rempel-privat.de>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 035/102] ath9k_htc: do some initial hardware configuration
+Date: Thu,  8 Aug 2013 18:57:11 -0700
+Message-Id: <20130809015018.124314102@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,53 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Kazior <michal.kazior@tieto.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit a0ec570f4f69c4cb700d743a915096c2c8f56a99 upstream.
+commit dc2a87f519a4d8cb376ab54f22b6b98a943b51ce upstream.
 
-These two events were sent to the default network
-namespace.
+Currently we configure harwdare and clock, only after
+interface start. In this case, if we reload module or
+reboot PC without configuring adapter, firmware will freeze.
+There is no software way to reset adpter.
 
-This caused AP mode in a non-default netns to not
-work correctly. Mgmt tx status was multicasted to
-a different (default) netns instead of the one the
-AP was in.
+This patch add initial configuration and set it in
+disabled state, to avoid this freeze. Behaviour of this patch
+should be similar to: ifconfig wlan0 up; ifconfig wlan0 down.
 
-Signed-off-by: Michal Kazior <michal.kazior@tieto.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Bug: https://github.com/qca/open-ath9k-htc-firmware/issues/1
+Tested-by: Bo Shi <cnshibo@gmail.com>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/nl80211.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -6588,12 +6588,14 @@ EXPORT_SYMBOL(cfg80211_testmode_alloc_ev
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+@@ -846,6 +846,7 @@ static int ath9k_init_device(struct ath9
+ 	if (error != 0)
+ 		goto err_rx;
  
- void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
- {
-+	struct cfg80211_registered_device *rdev = ((void **)skb->cb)[0];
- 	void *hdr = ((void **)skb->cb)[1];
- 	struct nlattr *data = ((void **)skb->cb)[2];
- 
- 	nla_nest_end(skb, data);
- 	genlmsg_end(skb, hdr);
--	genlmsg_multicast(skb, 0, nl80211_testmode_mcgrp.id, gfp);
-+	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
-+				nl80211_testmode_mcgrp.id, gfp);
- }
- EXPORT_SYMBOL(cfg80211_testmode_event);
- #endif
-@@ -10028,7 +10030,8 @@ void cfg80211_mgmt_tx_status(struct wire
- 
- 	genlmsg_end(msg, hdr);
- 
--	genlmsg_multicast(msg, 0, nl80211_mlme_mcgrp.id, gfp);
-+	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
-+				nl80211_mlme_mcgrp.id, gfp);
- 	return;
- 
-  nla_put_failure:
++	ath9k_hw_disable(priv->ah);
+ #ifdef CONFIG_MAC80211_LEDS
+ 	/* must be initialized before ieee80211_register_hw */
+ 	priv->led_cdev.default_trigger = ieee80211_create_tpt_led_trigger(priv->hw,
 
 
