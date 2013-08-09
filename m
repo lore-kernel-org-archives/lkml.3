@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965324Ab3HIIsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 04:48:19 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:51164 "EHLO
+	id S965479Ab3HIItP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 04:49:15 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:42189 "EHLO
 	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934257Ab3HIIpT (ORCPT
+	with ESMTP id S1754894Ab3HIIpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 04:45:19 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-b0-5204ac188e9d
+	Fri, 9 Aug 2013 04:45:14 -0400
+X-AuditID: 9c93017d-b7cdfae0000026c0-ab-5204ac18b834
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
@@ -17,9 +17,9 @@ Cc: Namhyung Kim <namhyung.kim@lge.com>, Hyeoncheol Lee <cheol.lee@lge.com>,
         Oleg Nesterov <oleg@redhat.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 06/13] tracing/kprobes: Factor out struct trace_probe
-Date: Fri,  9 Aug 2013 17:45:02 +0900
-Message-Id: <1376037909-17797-7-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 03/13] tracing/kprobes: Move fetch functions to trace_kprobe.c
+Date: Fri,  9 Aug 2013 17:44:59 +0900
+Message-Id: <1376037909-17797-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
 References: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
@@ -28,1083 +28,810 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Hyeoncheol Lee <cheol.lee@lge.com>
 
-There are functions that can be shared to both of kprobes and uprobes.
-Separate common data structure to struct trace_probe and use it from
-the shared functions.
+Move kprobes-specific fetch functions to the trace_kprobe.c file.
+Also define kprobes_fetch_type_table in the .c file.  This table is
+shared with uprobes for now, but the uprobes will get its own table
+in the later patch.
 
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+This is a preparation for supporting more fetch functions to uprobes
+and no functional changes are intended.
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Hyeoncheol Lee <cheol.lee@lge.com>
+[namhyung@kernel.org: Split original patch into pieces as requested]
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/trace/trace_kprobe.c | 396 +++++++++++++++++++++-----------------------
- kernel/trace/trace_probe.h  |  20 +++
- 2 files changed, 213 insertions(+), 203 deletions(-)
+ kernel/trace/trace_kprobe.c | 169 +++++++++++++++++++++++++
+ kernel/trace/trace_probe.c  | 299 +++++---------------------------------------
+ kernel/trace/trace_probe.h  | 132 +++++++++++++++++++
+ 3 files changed, 335 insertions(+), 265 deletions(-)
 
 diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index d2af84b2d346..d3f60d29c765 100644
+index 3811487e7a7a..d17622a1c098 100644
 --- a/kernel/trace/trace_kprobe.c
 +++ b/kernel/trace/trace_kprobe.c
-@@ -27,18 +27,12 @@
- /**
-  * Kprobe event core functions
-  */
--struct trace_probe {
-+struct trace_kprobe {
- 	struct list_head	list;
- 	struct kretprobe	rp;	/* Use rp.kp for kprobe use */
- 	unsigned long 		nhit;
--	unsigned int		flags;	/* For TP_FLAG_* */
- 	const char		*symbol;	/* symbol name */
--	struct ftrace_event_class	class;
--	struct ftrace_event_call	call;
--	struct list_head	files;
--	ssize_t			size;		/* trace entry size */
--	unsigned int		nr_args;
--	struct probe_arg	args[];
-+	struct trace_probe	p;
+@@ -749,6 +749,175 @@ static const struct file_operations kprobe_profile_ops = {
+ 	.release        = seq_release,
  };
  
- struct event_file_link {
-@@ -46,56 +40,46 @@ struct event_file_link {
- 	struct list_head		list;
++/*
++ * kprobes-specific fetch functions
++ */
++#define DEFINE_FETCH_stack(type)					\
++__kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,	\
++					  void *offset, void *dest)	\
++{									\
++	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
++				(unsigned int)((unsigned long)offset));	\
++}
++DEFINE_BASIC_FETCH_FUNCS(stack)
++/* No string on the stack entry */
++#define fetch_stack_string	NULL
++#define fetch_stack_string_size	NULL
++
++#define DEFINE_FETCH_memory(type)					\
++__kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,	\
++					  void *addr, void *dest)	\
++{									\
++	type retval;							\
++	if (probe_kernel_address(addr, retval))				\
++		*(type *)dest = 0;					\
++	else								\
++		*(type *)dest = retval;					\
++}
++DEFINE_BASIC_FETCH_FUNCS(memory)
++/*
++ * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
++ * length and relative data location.
++ */
++__kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
++					       void *addr, void *dest)
++{
++	long ret;
++	int maxlen = get_rloc_len(*(u32 *)dest);
++	u8 *dst = get_rloc_data(dest);
++	u8 *src = addr;
++	mm_segment_t old_fs = get_fs();
++
++	if (!maxlen)
++		return;
++
++	/*
++	 * Try to get string again, since the string can be changed while
++	 * probing.
++	 */
++	set_fs(KERNEL_DS);
++	pagefault_disable();
++
++	do
++		ret = __copy_from_user_inatomic(dst++, src++, 1);
++	while (dst[-1] && ret == 0 && src - (u8 *)addr < maxlen);
++
++	dst[-1] = '\0';
++	pagefault_enable();
++	set_fs(old_fs);
++
++	if (ret < 0) {	/* Failed to fetch string */
++		((u8 *)get_rloc_data(dest))[0] = '\0';
++		*(u32 *)dest = make_data_rloc(0, get_rloc_offs(*(u32 *)dest));
++	} else {
++		*(u32 *)dest = make_data_rloc(src - (u8 *)addr,
++					      get_rloc_offs(*(u32 *)dest));
++	}
++}
++
++/* Return the length of string -- including null terminal byte */
++__kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
++						    void *addr, void *dest)
++{
++	mm_segment_t old_fs;
++	int ret, len = 0;
++	u8 c;
++
++	old_fs = get_fs();
++	set_fs(KERNEL_DS);
++	pagefault_disable();
++
++	do {
++		ret = __copy_from_user_inatomic(&c, (u8 *)addr + len, 1);
++		len++;
++	} while (c && ret == 0 && len < MAX_STRING_SIZE);
++
++	pagefault_enable();
++	set_fs(old_fs);
++
++	if (ret < 0)	/* Failed to check the length */
++		*(u32 *)dest = 0;
++	else
++		*(u32 *)dest = len;
++}
++
++/* Memory fetching by symbol */
++struct symbol_cache {
++	char		*symbol;
++	long		offset;
++	unsigned long	addr;
++};
++
++unsigned long update_symbol_cache(struct symbol_cache *sc)
++{
++	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
++
++	if (sc->addr)
++		sc->addr += sc->offset;
++
++	return sc->addr;
++}
++
++void free_symbol_cache(struct symbol_cache *sc)
++{
++	kfree(sc->symbol);
++	kfree(sc);
++}
++
++struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
++{
++	struct symbol_cache *sc;
++
++	if (!sym || strlen(sym) == 0)
++		return NULL;
++
++	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
++	if (!sc)
++		return NULL;
++
++	sc->symbol = kstrdup(sym, GFP_KERNEL);
++	if (!sc->symbol) {
++		kfree(sc);
++		return NULL;
++	}
++	sc->offset = offset;
++	update_symbol_cache(sc);
++
++	return sc;
++}
++
++#define DEFINE_FETCH_symbol(type)					\
++__kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,	\
++					  void *data, void *dest)	\
++{									\
++	struct symbol_cache *sc = data;					\
++	if (sc->addr)							\
++		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
++	else								\
++		*(type *)dest = 0;					\
++}
++DEFINE_BASIC_FETCH_FUNCS(symbol)
++DEFINE_FETCH_symbol(string)
++DEFINE_FETCH_symbol(string_size)
++
++/* Fetch type information table */
++const struct fetch_type kprobes_fetch_type_table[] = {
++	/* Special types */
++	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
++					sizeof(u32), 1, "__data_loc char[]"),
++	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
++					string_size, sizeof(u32), 0, "u32"),
++	/* Basic types */
++	ASSIGN_FETCH_TYPE(u8,  u8,  0),
++	ASSIGN_FETCH_TYPE(u16, u16, 0),
++	ASSIGN_FETCH_TYPE(u32, u32, 0),
++	ASSIGN_FETCH_TYPE(u64, u64, 0),
++	ASSIGN_FETCH_TYPE(s8,  u8,  1),
++	ASSIGN_FETCH_TYPE(s16, u16, 1),
++	ASSIGN_FETCH_TYPE(s32, u32, 1),
++	ASSIGN_FETCH_TYPE(s64, u64, 1),
++};
++
+ /* Sum up total data length for dynamic arraies (strings) */
+ static __kprobes int __get_data_size(struct trace_probe *tp,
+ 				     struct pt_regs *regs)
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index b571e4de0769..41f654d24cd9 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -35,19 +35,15 @@ const char *reserved_field_names[] = {
+ 	FIELD_STRING_FUNC,
  };
  
--#define SIZEOF_TRACE_PROBE(n)			\
--	(offsetof(struct trace_probe, args) +	\
-+#define SIZEOF_TRACE_PROBE(n)				\
-+	(offsetof(struct trace_kprobe, p.args) +	\
- 	(sizeof(struct probe_arg) * (n)))
+-/* Printing function type */
+-#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
+-#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
+-
+ /* Printing  in basic type function template */
+ #define DEFINE_BASIC_PRINT_TYPE_FUNC(type, fmt, cast)			\
+-static __kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,	\
++__kprobes int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *s,		\
+ 						const char *name,	\
+-						void *data, void *ent)\
++						void *data, void *ent)	\
+ {									\
+ 	return trace_seq_printf(s, " %s=" fmt, name, (cast)*(type *)data);\
+ }									\
+-static const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
++const char PRINT_TYPE_FMT_NAME(type)[] = fmt;
  
+ DEFINE_BASIC_PRINT_TYPE_FUNC(u8 , "%x", unsigned char)
+ DEFINE_BASIC_PRINT_TYPE_FUNC(u16, "%x", unsigned short)
+@@ -63,25 +59,10 @@ DEFINE_BASIC_PRINT_TYPE_FUNC(u64, "%lx", unsigned long)
+ DEFINE_BASIC_PRINT_TYPE_FUNC(s64, "%ld", long)
+ #endif
  
--static __kprobes bool trace_probe_is_return(struct trace_probe *tp)
-+static __kprobes bool trace_kprobe_is_return(struct trace_kprobe *tk)
- {
--	return tp->rp.handler != NULL;
-+	return tk->rp.handler != NULL;
- }
- 
--static __kprobes const char *trace_probe_symbol(struct trace_probe *tp)
-+static __kprobes const char *trace_kprobe_symbol(struct trace_kprobe *tk)
- {
--	return tp->symbol ? tp->symbol : "unknown";
-+	return tk->symbol ? tk->symbol : "unknown";
- }
- 
--static __kprobes unsigned long trace_probe_offset(struct trace_probe *tp)
-+static __kprobes unsigned long trace_kprobe_offset(struct trace_kprobe *tk)
- {
--	return tp->rp.kp.offset;
-+	return tk->rp.kp.offset;
- }
- 
--static __kprobes bool trace_probe_is_enabled(struct trace_probe *tp)
-+static __kprobes bool trace_kprobe_has_gone(struct trace_kprobe *tk)
- {
--	return !!(tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE));
-+	return !!(kprobe_gone(&tk->rp.kp));
- }
- 
--static __kprobes bool trace_probe_is_registered(struct trace_probe *tp)
+-static inline void *get_rloc_data(u32 *dl)
 -{
--	return !!(tp->flags & TP_FLAG_REGISTERED);
+-	return (u8 *)dl + get_rloc_offs(*dl);
 -}
 -
--static __kprobes bool trace_probe_has_gone(struct trace_probe *tp)
+-/* For data_loc conversion */
+-static inline void *get_loc_data(u32 *dl, void *ent)
 -{
--	return !!(kprobe_gone(&tp->rp.kp));
+-	return (u8 *)ent + get_rloc_offs(*dl);
 -}
 -
--static __kprobes bool trace_probe_within_module(struct trace_probe *tp,
--						struct module *mod)
-+static __kprobes bool trace_kprobe_within_module(struct trace_kprobe *tk,
-+						 struct module *mod)
+-/* For defining macros, define string/string_size types */
+-typedef u32 string;
+-typedef u32 string_size;
+-
+ /* Print type function for string type */
+-static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
+-						  const char *name,
+-						  void *data, void *ent)
++__kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
++					   const char *name,
++					   void *data, void *ent)
  {
- 	int len = strlen(mod->name);
--	const char *name = trace_probe_symbol(tp);
-+	const char *name = trace_kprobe_symbol(tk);
- 	return strncmp(mod->name, name, len) == 0 && name[len] == ':';
+ 	int len = *(u32 *)data >> 16;
+ 
+@@ -92,199 +73,25 @@ static __kprobes int PRINT_TYPE_FUNC_NAME(string)(struct trace_seq *s,
+ 					(const char *)get_loc_data(data, ent));
  }
  
--static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
-+static __kprobes bool trace_kprobe_is_on_module(struct trace_kprobe *tk)
- {
--	return !!strchr(trace_probe_symbol(tp), ':');
-+	return !!strchr(trace_kprobe_symbol(tk), ':');
+-static const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
+-
+-#define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
+-/*
+- * Define macro for basic types - we don't need to define s* types, because
+- * we have to care only about bitwidth at recording time.
+- */
+-#define DEFINE_BASIC_FETCH_FUNCS(method) \
+-DEFINE_FETCH_##method(u8)		\
+-DEFINE_FETCH_##method(u16)		\
+-DEFINE_FETCH_##method(u32)		\
+-DEFINE_FETCH_##method(u64)
+-
+-#define CHECK_FETCH_FUNCS(method, fn)			\
+-	(((FETCH_FUNC_NAME(method, u8) == fn) ||	\
+-	  (FETCH_FUNC_NAME(method, u16) == fn) ||	\
+-	  (FETCH_FUNC_NAME(method, u32) == fn) ||	\
+-	  (FETCH_FUNC_NAME(method, u64) == fn) ||	\
+-	  (FETCH_FUNC_NAME(method, string) == fn) ||	\
+-	  (FETCH_FUNC_NAME(method, string_size) == fn)) \
+-	 && (fn != NULL))
++const char PRINT_TYPE_FMT_NAME(string)[] = "\\\"%s\\\"";
+ 
+ /* Data fetch function templates */
+ #define DEFINE_FETCH_reg(type)						\
+-static __kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,	\
++__kprobes void FETCH_FUNC_NAME(reg, type)(struct pt_regs *regs,		\
+ 					void *offset, void *dest)	\
+ {									\
+ 	*(type *)dest = (type)regs_get_register(regs,			\
+ 				(unsigned int)((unsigned long)offset));	\
+ }
+ DEFINE_BASIC_FETCH_FUNCS(reg)
+-/* No string on the register */
+-#define fetch_reg_string	NULL
+-#define fetch_reg_string_size	NULL
+-
+-#define DEFINE_FETCH_stack(type)					\
+-static __kprobes void FETCH_FUNC_NAME(stack, type)(struct pt_regs *regs,\
+-					  void *offset, void *dest)	\
+-{									\
+-	*(type *)dest = (type)regs_get_kernel_stack_nth(regs,		\
+-				(unsigned int)((unsigned long)offset));	\
+-}
+-DEFINE_BASIC_FETCH_FUNCS(stack)
+-/* No string on the stack entry */
+-#define fetch_stack_string	NULL
+-#define fetch_stack_string_size	NULL
+ 
+ #define DEFINE_FETCH_retval(type)					\
+-static __kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,\
++__kprobes void FETCH_FUNC_NAME(retval, type)(struct pt_regs *regs,	\
+ 					  void *dummy, void *dest)	\
+ {									\
+ 	*(type *)dest = (type)regs_return_value(regs);			\
+ }
+ DEFINE_BASIC_FETCH_FUNCS(retval)
+-/* No string on the retval */
+-#define fetch_retval_string		NULL
+-#define fetch_retval_string_size	NULL
+-
+-#define DEFINE_FETCH_memory(type)					\
+-static __kprobes void FETCH_FUNC_NAME(memory, type)(struct pt_regs *regs,\
+-					  void *addr, void *dest)	\
+-{									\
+-	type retval;							\
+-	if (probe_kernel_address(addr, retval))				\
+-		*(type *)dest = 0;					\
+-	else								\
+-		*(type *)dest = retval;					\
+-}
+-DEFINE_BASIC_FETCH_FUNCS(memory)
+-/*
+- * Fetch a null-terminated string. Caller MUST set *(u32 *)dest with max
+- * length and relative data location.
+- */
+-static __kprobes void FETCH_FUNC_NAME(memory, string)(struct pt_regs *regs,
+-						      void *addr, void *dest)
+-{
+-	long ret;
+-	int maxlen = get_rloc_len(*(u32 *)dest);
+-	u8 *dst = get_rloc_data(dest);
+-	u8 *src = addr;
+-	mm_segment_t old_fs = get_fs();
+-
+-	if (!maxlen)
+-		return;
+-
+-	/*
+-	 * Try to get string again, since the string can be changed while
+-	 * probing.
+-	 */
+-	set_fs(KERNEL_DS);
+-	pagefault_disable();
+-
+-	do
+-		ret = __copy_from_user_inatomic(dst++, src++, 1);
+-	while (dst[-1] && ret == 0 && src - (u8 *)addr < maxlen);
+-
+-	dst[-1] = '\0';
+-	pagefault_enable();
+-	set_fs(old_fs);
+-
+-	if (ret < 0) {	/* Failed to fetch string */
+-		((u8 *)get_rloc_data(dest))[0] = '\0';
+-		*(u32 *)dest = make_data_rloc(0, get_rloc_offs(*(u32 *)dest));
+-	} else {
+-		*(u32 *)dest = make_data_rloc(src - (u8 *)addr,
+-					      get_rloc_offs(*(u32 *)dest));
+-	}
+-}
+-
+-/* Return the length of string -- including null terminal byte */
+-static __kprobes void FETCH_FUNC_NAME(memory, string_size)(struct pt_regs *regs,
+-							void *addr, void *dest)
+-{
+-	mm_segment_t old_fs;
+-	int ret, len = 0;
+-	u8 c;
+-
+-	old_fs = get_fs();
+-	set_fs(KERNEL_DS);
+-	pagefault_disable();
+-
+-	do {
+-		ret = __copy_from_user_inatomic(&c, (u8 *)addr + len, 1);
+-		len++;
+-	} while (c && ret == 0 && len < MAX_STRING_SIZE);
+-
+-	pagefault_enable();
+-	set_fs(old_fs);
+-
+-	if (ret < 0)	/* Failed to check the length */
+-		*(u32 *)dest = 0;
+-	else
+-		*(u32 *)dest = len;
+-}
+-
+-/* Memory fetching by symbol */
+-struct symbol_cache {
+-	char		*symbol;
+-	long		offset;
+-	unsigned long	addr;
+-};
+-
+-static unsigned long update_symbol_cache(struct symbol_cache *sc)
+-{
+-	sc->addr = (unsigned long)kallsyms_lookup_name(sc->symbol);
+-
+-	if (sc->addr)
+-		sc->addr += sc->offset;
+-
+-	return sc->addr;
+-}
+-
+-static void free_symbol_cache(struct symbol_cache *sc)
+-{
+-	kfree(sc->symbol);
+-	kfree(sc);
+-}
+-
+-static struct symbol_cache *alloc_symbol_cache(const char *sym, long offset)
+-{
+-	struct symbol_cache *sc;
+-
+-	if (!sym || strlen(sym) == 0)
+-		return NULL;
+-
+-	sc = kzalloc(sizeof(struct symbol_cache), GFP_KERNEL);
+-	if (!sc)
+-		return NULL;
+-
+-	sc->symbol = kstrdup(sym, GFP_KERNEL);
+-	if (!sc->symbol) {
+-		kfree(sc);
+-		return NULL;
+-	}
+-	sc->offset = offset;
+-	update_symbol_cache(sc);
+-
+-	return sc;
+-}
+-
+-#define DEFINE_FETCH_symbol(type)					\
+-static __kprobes void FETCH_FUNC_NAME(symbol, type)(struct pt_regs *regs,\
+-					  void *data, void *dest)	\
+-{									\
+-	struct symbol_cache *sc = data;					\
+-	if (sc->addr)							\
+-		fetch_memory_##type(regs, (void *)sc->addr, dest);	\
+-	else								\
+-		*(type *)dest = 0;					\
+-}
+-DEFINE_BASIC_FETCH_FUNCS(symbol)
+-DEFINE_FETCH_symbol(string)
+-DEFINE_FETCH_symbol(string_size)
+ 
+ /* Dereference memory access function */
+ struct deref_fetch_param {
+@@ -293,7 +100,7 @@ struct deref_fetch_param {
+ };
+ 
+ #define DEFINE_FETCH_deref(type)					\
+-static __kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,\
++__kprobes void FETCH_FUNC_NAME(deref, type)(struct pt_regs *regs,	\
+ 					    void *data, void *dest)	\
+ {									\
+ 	struct deref_fetch_param *dprm = data;				\
+@@ -334,7 +141,7 @@ struct bitfield_fetch_param {
+ };
+ 
+ #define DEFINE_FETCH_bitfield(type)					\
+-static __kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,\
++__kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,\
+ 					    void *data, void *dest)	\
+ {									\
+ 	struct bitfield_fetch_param *bprm = data;			\
+@@ -348,8 +155,6 @@ static __kprobes void FETCH_FUNC_NAME(bitfield, type)(struct pt_regs *regs,\
  }
  
--static int register_probe_event(struct trace_probe *tp);
--static void unregister_probe_event(struct trace_probe *tp);
-+static int register_kprobe_event(struct trace_kprobe *tk);
-+static void unregister_kprobe_event(struct trace_kprobe *tk);
+ DEFINE_BASIC_FETCH_FUNCS(bitfield)
+-#define fetch_bitfield_string		NULL
+-#define fetch_bitfield_string_size	NULL
  
- static DEFINE_MUTEX(probe_lock);
- static LIST_HEAD(probe_list);
-@@ -107,14 +91,14 @@ static int kretprobe_dispatcher(struct kretprobe_instance *ri,
- /*
-  * Allocate new trace_probe and initialize it (including kprobes).
-  */
--static struct trace_probe *alloc_trace_probe(const char *group,
-+static struct trace_kprobe *alloc_trace_kprobe(const char *group,
- 					     const char *event,
- 					     void *addr,
- 					     const char *symbol,
- 					     unsigned long offs,
- 					     int nargs, bool is_return)
- {
--	struct trace_probe *tp;
-+	struct trace_kprobe *tp;
- 	int ret = -ENOMEM;
+ static __kprobes void
+ update_bitfield_fetch_param(struct bitfield_fetch_param *data)
+@@ -385,52 +190,8 @@ free_bitfield_fetch_param(struct bitfield_fetch_param *data)
+ #define DEFAULT_FETCH_TYPE _DEFAULT_FETCH_TYPE(BITS_PER_LONG)
+ #define DEFAULT_FETCH_TYPE_STR __stringify(DEFAULT_FETCH_TYPE)
  
- 	tp = kzalloc(SIZEOF_TRACE_PROBE(nargs), GFP_KERNEL);
-@@ -140,9 +124,9 @@ static struct trace_probe *alloc_trace_probe(const char *group,
- 		goto error;
- 	}
- 
--	tp->call.class = &tp->class;
--	tp->call.name = kstrdup(event, GFP_KERNEL);
--	if (!tp->call.name)
-+	tp->p.call.class = &tp->p.class;
-+	tp->p.call.name = kstrdup(event, GFP_KERNEL);
-+	if (!tp->p.call.name)
- 		goto error;
- 
- 	if (!group || !is_good_name(group)) {
-@@ -150,41 +134,41 @@ static struct trace_probe *alloc_trace_probe(const char *group,
- 		goto error;
- 	}
- 
--	tp->class.system = kstrdup(group, GFP_KERNEL);
--	if (!tp->class.system)
-+	tp->p.class.system = kstrdup(group, GFP_KERNEL);
-+	if (!tp->p.class.system)
- 		goto error;
- 
- 	INIT_LIST_HEAD(&tp->list);
--	INIT_LIST_HEAD(&tp->files);
-+	INIT_LIST_HEAD(&tp->p.files);
- 	return tp;
- error:
--	kfree(tp->call.name);
-+	kfree(tp->p.call.name);
- 	kfree(tp->symbol);
- 	kfree(tp);
- 	return ERR_PTR(ret);
- }
- 
--static void free_trace_probe(struct trace_probe *tp)
-+static void free_trace_kprobe(struct trace_kprobe *tp)
+-#define ASSIGN_FETCH_FUNC(method, type)	\
+-	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
+-
+-#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
+-	{.name = _name,				\
+-	 .size = _size,					\
+-	 .is_signed = sign,				\
+-	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
+-	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
+-	 .fmttype = _fmttype,				\
+-	 .fetch = {					\
+-ASSIGN_FETCH_FUNC(reg, ftype),				\
+-ASSIGN_FETCH_FUNC(stack, ftype),			\
+-ASSIGN_FETCH_FUNC(retval, ftype),			\
+-ASSIGN_FETCH_FUNC(memory, ftype),			\
+-ASSIGN_FETCH_FUNC(symbol, ftype),			\
+-ASSIGN_FETCH_FUNC(deref, ftype),			\
+-ASSIGN_FETCH_FUNC(bitfield, ftype),			\
+-	  }						\
+-	}
+-
+-#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
+-	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
+-
+-#define FETCH_TYPE_STRING	0
+-#define FETCH_TYPE_STRSIZE	1
+-
+-/* Fetch type information table */
+-static const struct fetch_type fetch_type_table[] = {
+-	/* Special types */
+-	[FETCH_TYPE_STRING] = __ASSIGN_FETCH_TYPE("string", string, string,
+-					sizeof(u32), 1, "__data_loc char[]"),
+-	[FETCH_TYPE_STRSIZE] = __ASSIGN_FETCH_TYPE("string_size", u32,
+-					string_size, sizeof(u32), 0, "u32"),
+-	/* Basic types */
+-	ASSIGN_FETCH_TYPE(u8,  u8,  0),
+-	ASSIGN_FETCH_TYPE(u16, u16, 0),
+-	ASSIGN_FETCH_TYPE(u32, u32, 0),
+-	ASSIGN_FETCH_TYPE(u64, u64, 0),
+-	ASSIGN_FETCH_TYPE(s8,  u8,  1),
+-	ASSIGN_FETCH_TYPE(s16, u16, 1),
+-	ASSIGN_FETCH_TYPE(s32, u32, 1),
+-	ASSIGN_FETCH_TYPE(s64, u64, 1),
+-};
+-
+-static const struct fetch_type *find_fetch_type(const char *type)
++static const struct fetch_type *find_fetch_type(const char *type,
++						const struct fetch_type *ttbl)
  {
  	int i;
  
--	for (i = 0; i < tp->nr_args; i++)
--		traceprobe_free_probe_arg(&tp->args[i]);
-+	for (i = 0; i < tp->p.nr_args; i++)
-+		traceprobe_free_probe_arg(&tp->p.args[i]);
+@@ -451,21 +212,21 @@ static const struct fetch_type *find_fetch_type(const char *type)
  
--	kfree(tp->call.class->system);
--	kfree(tp->call.name);
-+	kfree(tp->p.call.class->system);
-+	kfree(tp->p.call.name);
- 	kfree(tp->symbol);
- 	kfree(tp);
- }
+ 		switch (bs) {
+ 		case 8:
+-			return find_fetch_type("u8");
++			return find_fetch_type("u8", ttbl);
+ 		case 16:
+-			return find_fetch_type("u16");
++			return find_fetch_type("u16", ttbl);
+ 		case 32:
+-			return find_fetch_type("u32");
++			return find_fetch_type("u32", ttbl);
+ 		case 64:
+-			return find_fetch_type("u64");
++			return find_fetch_type("u64", ttbl);
+ 		default:
+ 			goto fail;
+ 		}
+ 	}
  
--static struct trace_probe *find_trace_probe(const char *event,
--					    const char *group)
-+static struct trace_kprobe *find_trace_kprobe(const char *event,
-+					      const char *group)
- {
--	struct trace_probe *tp;
-+	struct trace_kprobe *tp;
+-	for (i = 0; i < ARRAY_SIZE(fetch_type_table); i++)
+-		if (strcmp(type, fetch_type_table[i].name) == 0)
+-			return &fetch_type_table[i];
++	for (i = 0; i < NR_FETCH_TYPES; i++)
++		if (strcmp(type, ttbl[i].name) == 0)
++			return &ttbl[i];
  
- 	list_for_each_entry(tp, &probe_list, list)
--		if (strcmp(tp->call.name, event) == 0 &&
--		    strcmp(tp->call.class->system, group) == 0)
-+		if (strcmp(tp->p.call.name, event) == 0 &&
-+		    strcmp(tp->p.call.class->system, group) == 0)
- 			return tp;
+ fail:
  	return NULL;
- }
-@@ -194,7 +178,7 @@ static struct trace_probe *find_trace_probe(const char *event,
-  * if the file is NULL, enable "perf" handler, or enable "trace" handler.
-  */
- static int
--enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
-+enable_trace_kprobe(struct trace_kprobe *tp, struct ftrace_event_file *file)
- {
- 	int ret = 0;
- 
-@@ -208,14 +192,14 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 		}
- 
- 		link->file = file;
--		list_add_tail_rcu(&link->list, &tp->files);
-+		list_add_tail_rcu(&link->list, &tp->p.files);
- 
--		tp->flags |= TP_FLAG_TRACE;
-+		tp->p.flags |= TP_FLAG_TRACE;
- 	} else
--		tp->flags |= TP_FLAG_PROFILE;
-+		tp->p.flags |= TP_FLAG_PROFILE;
- 
--	if (trace_probe_is_registered(tp) && !trace_probe_has_gone(tp)) {
--		if (trace_probe_is_return(tp))
-+	if (trace_probe_is_registered(&tp->p) && !trace_kprobe_has_gone(tp)) {
-+		if (trace_kprobe_is_return(tp))
- 			ret = enable_kretprobe(&tp->rp);
- 		else
- 			ret = enable_kprobe(&tp->rp.kp);
-@@ -241,14 +225,14 @@ find_event_file_link(struct trace_probe *tp, struct ftrace_event_file *file)
-  * if the file is NULL, disable "perf" handler, or disable "trace" handler.
-  */
- static int
--disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
-+disable_trace_kprobe(struct trace_kprobe *tp, struct ftrace_event_file *file)
- {
- 	struct event_file_link *link = NULL;
- 	int wait = 0;
- 	int ret = 0;
- 
- 	if (file) {
--		link = find_event_file_link(tp, file);
-+		link = find_event_file_link(&tp->p, file);
- 		if (!link) {
- 			ret = -EINVAL;
- 			goto out;
-@@ -256,15 +240,15 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 
- 		list_del_rcu(&link->list);
- 		wait = 1;
--		if (!list_empty(&tp->files))
-+		if (!list_empty(&tp->p.files))
- 			goto out;
- 
--		tp->flags &= ~TP_FLAG_TRACE;
-+		tp->p.flags &= ~TP_FLAG_TRACE;
- 	} else
--		tp->flags &= ~TP_FLAG_PROFILE;
-+		tp->p.flags &= ~TP_FLAG_PROFILE;
- 
--	if (!trace_probe_is_enabled(tp) && trace_probe_is_registered(tp)) {
--		if (trace_probe_is_return(tp))
-+	if (!trace_probe_is_enabled(&tp->p) && trace_probe_is_registered(&tp->p)) {
-+		if (trace_kprobe_is_return(tp))
- 			disable_kretprobe(&tp->rp);
- 		else
- 			disable_kprobe(&tp->rp.kp);
-@@ -288,33 +272,33 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+@@ -479,16 +240,17 @@ static __kprobes void fetch_stack_address(struct pt_regs *regs,
  }
  
- /* Internal register function - just handle k*probes and flags */
--static int __register_trace_probe(struct trace_probe *tp)
-+static int __register_trace_kprobe(struct trace_kprobe *tp)
+ static fetch_func_t get_fetch_size_function(const struct fetch_type *type,
+-					fetch_func_t orig_fn)
++					    fetch_func_t orig_fn,
++					    const struct fetch_type *ttbl)
  {
- 	int i, ret;
+ 	int i;
  
--	if (trace_probe_is_registered(tp))
-+	if (trace_probe_is_registered(&tp->p))
- 		return -EINVAL;
+-	if (type != &fetch_type_table[FETCH_TYPE_STRING])
++	if (type != &ttbl[FETCH_TYPE_STRING])
+ 		return NULL;	/* Only string type needs size function */
  
--	for (i = 0; i < tp->nr_args; i++)
--		traceprobe_update_arg(&tp->args[i]);
-+	for (i = 0; i < tp->p.nr_args; i++)
-+		traceprobe_update_arg(&tp->p.args[i]);
+ 	for (i = 0; i < FETCH_MTD_END; i++)
+ 		if (type->fetch[i] == orig_fn)
+-			return fetch_type_table[FETCH_TYPE_STRSIZE].fetch[i];
++			return ttbl[FETCH_TYPE_STRSIZE].fetch[i];
  
- 	/* Set/clear disabled flag according to tp->flag */
--	if (trace_probe_is_enabled(tp))
-+	if (trace_probe_is_enabled(&tp->p))
- 		tp->rp.kp.flags &= ~KPROBE_FLAG_DISABLED;
- 	else
- 		tp->rp.kp.flags |= KPROBE_FLAG_DISABLED;
+ 	WARN_ON(1);	/* This should not happen */
  
--	if (trace_probe_is_return(tp))
-+	if (trace_kprobe_is_return(tp))
- 		ret = register_kretprobe(&tp->rp);
- 	else
- 		ret = register_kprobe(&tp->rp.kp);
- 
- 	if (ret == 0)
--		tp->flags |= TP_FLAG_REGISTERED;
-+		tp->p.flags |= TP_FLAG_REGISTERED;
- 	else {
- 		pr_warning("Could not insert probe at %s+%lu: %d\n",
--			   trace_probe_symbol(tp), trace_probe_offset(tp), ret);
--		if (ret == -ENOENT && trace_probe_is_on_module(tp)) {
-+			   trace_kprobe_symbol(tp), trace_kprobe_offset(tp), ret);
-+		if (ret == -ENOENT && trace_kprobe_is_on_module(tp)) {
- 			pr_warning("This probe might be able to register after"
- 				   "target module is loaded. Continue.\n");
- 			ret = 0;
-@@ -330,14 +314,14 @@ static int __register_trace_probe(struct trace_probe *tp)
- }
- 
- /* Internal unregister function - just handle k*probes and flags */
--static void __unregister_trace_probe(struct trace_probe *tp)
-+static void __unregister_trace_kprobe(struct trace_kprobe *tp)
- {
--	if (trace_probe_is_registered(tp)) {
--		if (trace_probe_is_return(tp))
-+	if (trace_probe_is_registered(&tp->p)) {
-+		if (trace_kprobe_is_return(tp))
- 			unregister_kretprobe(&tp->rp);
- 		else
- 			unregister_kprobe(&tp->rp.kp);
--		tp->flags &= ~TP_FLAG_REGISTERED;
-+		tp->p.flags &= ~TP_FLAG_REGISTERED;
- 		/* Cleanup kprobe for reuse */
- 		if (tp->rp.kp.symbol_name)
- 			tp->rp.kp.addr = NULL;
-@@ -345,47 +329,47 @@ static void __unregister_trace_probe(struct trace_probe *tp)
- }
- 
- /* Unregister a trace_probe and probe_event: call with locking probe_lock */
--static int unregister_trace_probe(struct trace_probe *tp)
-+static int unregister_trace_kprobe(struct trace_kprobe *tp)
- {
- 	/* Enabled event can not be unregistered */
--	if (trace_probe_is_enabled(tp))
-+	if (trace_probe_is_enabled(&tp->p))
- 		return -EBUSY;
- 
--	__unregister_trace_probe(tp);
-+	__unregister_trace_kprobe(tp);
- 	list_del(&tp->list);
--	unregister_probe_event(tp);
-+	unregister_kprobe_event(tp);
- 
- 	return 0;
- }
- 
- /* Register a trace_probe and probe_event */
--static int register_trace_probe(struct trace_probe *tp)
-+static int register_trace_kprobe(struct trace_kprobe *tp)
- {
--	struct trace_probe *old_tp;
-+	struct trace_kprobe *old_tp;
+@@ -561,6 +323,9 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 	long offset;
+ 	char *tmp;
  	int ret;
++	const struct fetch_type *ttbl;
++
++	ttbl = kprobes_fetch_type_table;
  
- 	mutex_lock(&probe_lock);
- 
- 	/* Delete old (same name) event if exist */
--	old_tp = find_trace_probe(tp->call.name, tp->call.class->system);
-+	old_tp = find_trace_kprobe(tp->p.call.name, tp->p.call.class->system);
- 	if (old_tp) {
--		ret = unregister_trace_probe(old_tp);
-+		ret = unregister_trace_kprobe(old_tp);
- 		if (ret < 0)
- 			goto end;
--		free_trace_probe(old_tp);
-+		free_trace_kprobe(old_tp);
- 	}
- 
- 	/* Register new event */
--	ret = register_probe_event(tp);
-+	ret = register_kprobe_event(tp);
- 	if (ret) {
- 		pr_warning("Failed to register probe event(%d)\n", ret);
- 		goto end;
- 	}
- 
- 	/* Register k*probe */
--	ret = __register_trace_probe(tp);
-+	ret = __register_trace_kprobe(tp);
- 	if (ret < 0)
--		unregister_probe_event(tp);
-+		unregister_kprobe_event(tp);
- 	else
- 		list_add_tail(&tp->list, &probe_list);
- 
-@@ -395,11 +379,11 @@ end:
- }
- 
- /* Module notifier call back, checking event on the module */
--static int trace_probe_module_callback(struct notifier_block *nb,
-+static int trace_kprobe_module_callback(struct notifier_block *nb,
- 				       unsigned long val, void *data)
- {
- 	struct module *mod = data;
--	struct trace_probe *tp;
-+	struct trace_kprobe *tp;
- 	int ret;
- 
- 	if (val != MODULE_STATE_COMING)
-@@ -408,14 +392,14 @@ static int trace_probe_module_callback(struct notifier_block *nb,
- 	/* Update probes on coming module */
- 	mutex_lock(&probe_lock);
- 	list_for_each_entry(tp, &probe_list, list) {
--		if (trace_probe_within_module(tp, mod)) {
-+		if (trace_kprobe_within_module(tp, mod)) {
- 			/* Don't need to check busy - this should have gone. */
--			__unregister_trace_probe(tp);
--			ret = __register_trace_probe(tp);
-+			__unregister_trace_kprobe(tp);
-+			ret = __register_trace_kprobe(tp);
- 			if (ret)
- 				pr_warning("Failed to re-register probe %s on"
- 					   "%s: %d\n",
--					   tp->call.name, mod->name, ret);
-+					   tp->p.call.name, mod->name, ret);
- 		}
- 	}
- 	mutex_unlock(&probe_lock);
-@@ -423,12 +407,12 @@ static int trace_probe_module_callback(struct notifier_block *nb,
- 	return NOTIFY_DONE;
- }
- 
--static struct notifier_block trace_probe_module_nb = {
--	.notifier_call = trace_probe_module_callback,
-+static struct notifier_block trace_kprobe_module_nb = {
-+	.notifier_call = trace_kprobe_module_callback,
- 	.priority = 1	/* Invoked after kprobe module callback */
- };
- 
--static int create_trace_probe(int argc, char **argv)
-+static int create_trace_kprobe(int argc, char **argv)
- {
- 	/*
- 	 * Argument syntax:
-@@ -448,7 +432,7 @@ static int create_trace_probe(int argc, char **argv)
- 	 * Type of args:
- 	 *  FETCHARG:TYPE : use TYPE instead of unsigned long.
- 	 */
--	struct trace_probe *tp;
-+	struct trace_kprobe *tp;
- 	int i, ret = 0;
- 	bool is_return = false, is_delete = false;
- 	char *symbol = NULL, *event = NULL, *group = NULL;
-@@ -495,16 +479,16 @@ static int create_trace_probe(int argc, char **argv)
- 			return -EINVAL;
- 		}
- 		mutex_lock(&probe_lock);
--		tp = find_trace_probe(event, group);
-+		tp = find_trace_kprobe(event, group);
- 		if (!tp) {
- 			mutex_unlock(&probe_lock);
- 			pr_info("Event %s/%s doesn't exist.\n", group, event);
- 			return -ENOENT;
- 		}
- 		/* delete an event */
--		ret = unregister_trace_probe(tp);
-+		ret = unregister_trace_kprobe(tp);
- 		if (ret == 0)
--			free_trace_probe(tp);
-+			free_trace_kprobe(tp);
- 		mutex_unlock(&probe_lock);
- 		return ret;
- 	}
-@@ -551,7 +535,7 @@ static int create_trace_probe(int argc, char **argv)
- 				 is_return ? 'r' : 'p', addr);
- 		event = buf;
- 	}
--	tp = alloc_trace_probe(group, event, addr, symbol, offset, argc,
-+	tp = alloc_trace_kprobe(group, event, addr, symbol, offset, argc,
- 			       is_return);
- 	if (IS_ERR(tp)) {
- 		pr_info("Failed to allocate trace_probe.(%d)\n",
-@@ -562,36 +546,38 @@ static int create_trace_probe(int argc, char **argv)
- 	/* parse arguments */
  	ret = 0;
- 	for (i = 0; i < argc && i < MAX_TRACE_ARGS; i++) {
-+		struct probe_arg *parg = &tp->p.args[i];
-+
- 		/* Increment count for freeing args in error case */
--		tp->nr_args++;
-+		tp->p.nr_args++;
  
- 		/* Parse argument name */
- 		arg = strchr(argv[i], '=');
- 		if (arg) {
- 			*arg++ = '\0';
--			tp->args[i].name = kstrdup(argv[i], GFP_KERNEL);
-+			parg->name = kstrdup(argv[i], GFP_KERNEL);
- 		} else {
- 			arg = argv[i];
- 			/* If argument name is omitted, set "argN" */
- 			snprintf(buf, MAX_EVENT_NAME_LEN, "arg%d", i + 1);
--			tp->args[i].name = kstrdup(buf, GFP_KERNEL);
-+			parg->name = kstrdup(buf, GFP_KERNEL);
- 		}
+@@ -621,7 +386,7 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
+ 			struct deref_fetch_param	*dprm;
+ 			const struct fetch_type		*t2;
  
--		if (!tp->args[i].name) {
-+		if (!parg->name) {
- 			pr_info("Failed to allocate argument[%d] name.\n", i);
- 			ret = -ENOMEM;
- 			goto error;
- 		}
+-			t2 = find_fetch_type(NULL);
++			t2 = find_fetch_type(NULL, ttbl);
+ 			*tmp = '\0';
+ 			dprm = kzalloc(sizeof(struct deref_fetch_param), GFP_KERNEL);
  
--		if (!is_good_name(tp->args[i].name)) {
-+		if (!is_good_name(parg->name)) {
- 			pr_info("Invalid argument[%d] name: %s\n",
--				i, tp->args[i].name);
-+				i, parg->name);
- 			ret = -EINVAL;
- 			goto error;
- 		}
- 
--		if (traceprobe_conflict_field_name(tp->args[i].name,
--							tp->args, i)) {
-+		if (traceprobe_conflict_field_name(parg->name,
-+							tp->p.args, i)) {
- 			pr_info("Argument[%d] name '%s' conflicts with "
- 				"another field.\n", i, argv[i]);
- 			ret = -EINVAL;
-@@ -599,7 +585,7 @@ static int create_trace_probe(int argc, char **argv)
- 		}
- 
- 		/* Parse fetch argument */
--		ret = traceprobe_parse_probe_arg(arg, &tp->size, &tp->args[i],
-+		ret = traceprobe_parse_probe_arg(arg, &tp->p.size, parg,
- 						is_return, true);
- 		if (ret) {
- 			pr_info("Parse error at argument[%d]. (%d)\n", i, ret);
-@@ -607,33 +593,33 @@ static int create_trace_probe(int argc, char **argv)
- 		}
- 	}
- 
--	ret = register_trace_probe(tp);
-+	ret = register_trace_kprobe(tp);
- 	if (ret)
- 		goto error;
- 	return 0;
- 
- error:
--	free_trace_probe(tp);
-+	free_trace_kprobe(tp);
- 	return ret;
- }
- 
--static int release_all_trace_probes(void)
-+static int release_all_trace_kprobes(void)
+@@ -692,6 +457,9 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
  {
--	struct trace_probe *tp;
-+	struct trace_kprobe *tp;
- 	int ret = 0;
- 
- 	mutex_lock(&probe_lock);
- 	/* Ensure no probe is in use. */
- 	list_for_each_entry(tp, &probe_list, list)
--		if (trace_probe_is_enabled(tp)) {
-+		if (trace_probe_is_enabled(&tp->p)) {
- 			ret = -EBUSY;
- 			goto end;
- 		}
- 	/* TODO: Use batch unregistration */
- 	while (!list_empty(&probe_list)) {
--		tp = list_entry(probe_list.next, struct trace_probe, list);
--		unregister_trace_probe(tp);
--		free_trace_probe(tp);
-+		tp = list_entry(probe_list.next, struct trace_kprobe, list);
-+		unregister_trace_kprobe(tp);
-+		free_trace_kprobe(tp);
- 	}
- 
- end:
-@@ -661,22 +647,22 @@ static void probes_seq_stop(struct seq_file *m, void *v)
- 
- static int probes_seq_show(struct seq_file *m, void *v)
- {
--	struct trace_probe *tp = v;
-+	struct trace_kprobe *tp = v;
- 	int i;
- 
--	seq_printf(m, "%c", trace_probe_is_return(tp) ? 'r' : 'p');
--	seq_printf(m, ":%s/%s", tp->call.class->system, tp->call.name);
-+	seq_printf(m, "%c", trace_kprobe_is_return(tp) ? 'r' : 'p');
-+	seq_printf(m, ":%s/%s", tp->p.call.class->system, tp->p.call.name);
- 
- 	if (!tp->symbol)
- 		seq_printf(m, " 0x%p", tp->rp.kp.addr);
- 	else if (tp->rp.kp.offset)
--		seq_printf(m, " %s+%u", trace_probe_symbol(tp),
-+		seq_printf(m, " %s+%u", trace_kprobe_symbol(tp),
- 			   tp->rp.kp.offset);
- 	else
--		seq_printf(m, " %s", trace_probe_symbol(tp));
-+		seq_printf(m, " %s", trace_kprobe_symbol(tp));
- 
--	for (i = 0; i < tp->nr_args; i++)
--		seq_printf(m, " %s=%s", tp->args[i].name, tp->args[i].comm);
-+	for (i = 0; i < tp->p.nr_args; i++)
-+		seq_printf(m, " %s=%s", tp->p.args[i].name, tp->p.args[i].comm);
- 	seq_printf(m, "\n");
- 
- 	return 0;
-@@ -694,7 +680,7 @@ static int probes_open(struct inode *inode, struct file *file)
+ 	const char *t;
  	int ret;
- 
- 	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC)) {
--		ret = release_all_trace_probes();
-+		ret = release_all_trace_kprobes();
- 		if (ret < 0)
- 			return ret;
- 	}
-@@ -706,7 +692,7 @@ static ssize_t probes_write(struct file *file, const char __user *buffer,
- 			    size_t count, loff_t *ppos)
- {
- 	return traceprobe_probes_write(file, buffer, count, ppos,
--			create_trace_probe);
-+			create_trace_kprobe);
- }
- 
- static const struct file_operations kprobe_events_ops = {
-@@ -721,9 +707,9 @@ static const struct file_operations kprobe_events_ops = {
- /* Probes profiling interfaces */
- static int probes_profile_seq_show(struct seq_file *m, void *v)
- {
--	struct trace_probe *tp = v;
-+	struct trace_kprobe *tp = v;
- 
--	seq_printf(m, "  %-44s %15lu %15lu\n", tp->call.name, tp->nhit,
-+	seq_printf(m, "  %-44s %15lu %15lu\n", tp->p.call.name, tp->nhit,
- 		   tp->rp.kp.nmissed);
- 
- 	return 0;
-@@ -968,7 +954,7 @@ static __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
- 
- /* Kprobe handler */
- static __kprobes void
--__kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
-+__kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs,
- 		    struct ftrace_event_file *ftrace_file)
- {
- 	struct kprobe_trace_entry_head *entry;
-@@ -976,7 +962,7 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
- 	struct ring_buffer *buffer;
- 	int size, dsize, pc;
- 	unsigned long irq_flags;
--	struct ftrace_event_call *call = &tp->call;
-+	struct ftrace_event_call *call = &tp->p.call;
- 
- 	WARN_ON(call != ftrace_file->event_call);
- 
-@@ -986,8 +972,8 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
- 
--	dsize = __get_data_size(tp, regs);
--	size = sizeof(*entry) + tp->size + dsize;
-+	dsize = __get_data_size(&tp->p, regs);
-+	size = sizeof(*entry) + tp->p.size + dsize;
- 
- 	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
- 						call->event.type,
-@@ -997,7 +983,7 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
- 
- 	entry = ring_buffer_event_data(event);
- 	entry->ip = (unsigned long)tp->rp.kp.addr;
--	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-+	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
- 		trace_buffer_unlock_commit_regs(buffer, event,
-@@ -1005,17 +991,17 @@ __kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs,
- }
- 
- static __kprobes void
--kprobe_trace_func(struct trace_probe *tp, struct pt_regs *regs)
-+kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs)
- {
- 	struct event_file_link *link;
- 
--	list_for_each_entry_rcu(link, &tp->files, list)
-+	list_for_each_entry_rcu(link, &tp->p.files, list)
- 		__kprobe_trace_func(tp, regs, link->file);
- }
- 
- /* Kretprobe handler */
- static __kprobes void
--__kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
-+__kretprobe_trace_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
- 		       struct pt_regs *regs,
- 		       struct ftrace_event_file *ftrace_file)
- {
-@@ -1024,7 +1010,7 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- 	struct ring_buffer *buffer;
- 	int size, pc, dsize;
- 	unsigned long irq_flags;
--	struct ftrace_event_call *call = &tp->call;
-+	struct ftrace_event_call *call = &tp->p.call;
- 
- 	WARN_ON(call != ftrace_file->event_call);
- 
-@@ -1034,8 +1020,8 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- 	local_save_flags(irq_flags);
- 	pc = preempt_count();
- 
--	dsize = __get_data_size(tp, regs);
--	size = sizeof(*entry) + tp->size + dsize;
-+	dsize = __get_data_size(&tp->p, regs);
-+	size = sizeof(*entry) + tp->p.size + dsize;
- 
- 	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
- 						call->event.type,
-@@ -1046,7 +1032,7 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- 	entry = ring_buffer_event_data(event);
- 	entry->func = (unsigned long)tp->rp.kp.addr;
- 	entry->ret_ip = (unsigned long)ri->ret_addr;
--	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-+	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
- 		trace_buffer_unlock_commit_regs(buffer, event,
-@@ -1054,12 +1040,12 @@ __kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- }
- 
- static __kprobes void
--kretprobe_trace_func(struct trace_probe *tp, struct kretprobe_instance *ri,
-+kretprobe_trace_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
- 		     struct pt_regs *regs)
- {
- 	struct event_file_link *link;
- 
--	list_for_each_entry_rcu(link, &tp->files, list)
-+	list_for_each_entry_rcu(link, &tp->p.files, list)
- 		__kretprobe_trace_func(tp, ri, regs, link->file);
- }
- 
-@@ -1147,16 +1133,18 @@ static int kprobe_event_define_fields(struct ftrace_event_call *event_call)
- {
- 	int ret, i;
- 	struct kprobe_trace_entry_head field;
--	struct trace_probe *tp = (struct trace_probe *)event_call->data;
-+	struct trace_kprobe *tp = (struct trace_kprobe *)event_call->data;
- 
- 	DEFINE_FIELD(unsigned long, ip, FIELD_STRING_IP, 0);
- 	/* Set argument names as fields */
--	for (i = 0; i < tp->nr_args; i++) {
--		ret = trace_define_field(event_call, tp->args[i].type->fmttype,
--					 tp->args[i].name,
--					 sizeof(field) + tp->args[i].offset,
--					 tp->args[i].type->size,
--					 tp->args[i].type->is_signed,
-+	for (i = 0; i < tp->p.nr_args; i++) {
-+		struct probe_arg *parg = &tp->p.args[i];
++	const struct fetch_type *ttbl;
 +
-+		ret = trace_define_field(event_call, parg->type->fmttype,
-+					 parg->name,
-+					 sizeof(field) + parg->offset,
-+					 parg->type->size,
-+					 parg->type->is_signed,
- 					 FILTER_OTHER);
- 		if (ret)
- 			return ret;
-@@ -1168,17 +1156,19 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
- {
- 	int ret, i;
- 	struct kretprobe_trace_entry_head field;
--	struct trace_probe *tp = (struct trace_probe *)event_call->data;
-+	struct trace_kprobe *tp = (struct trace_kprobe *)event_call->data;
++	ttbl = kprobes_fetch_type_table;
  
- 	DEFINE_FIELD(unsigned long, func, FIELD_STRING_FUNC, 0);
- 	DEFINE_FIELD(unsigned long, ret_ip, FIELD_STRING_RETIP, 0);
- 	/* Set argument names as fields */
--	for (i = 0; i < tp->nr_args; i++) {
--		ret = trace_define_field(event_call, tp->args[i].type->fmttype,
--					 tp->args[i].name,
--					 sizeof(field) + tp->args[i].offset,
--					 tp->args[i].type->size,
--					 tp->args[i].type->is_signed,
-+	for (i = 0; i < tp->p.nr_args; i++) {
-+		struct probe_arg *parg = &tp->p.args[i];
-+
-+		ret = trace_define_field(event_call, parg->type->fmttype,
-+					 parg->name,
-+					 sizeof(field) + parg->offset,
-+					 parg->type->size,
-+					 parg->type->is_signed,
- 					 FILTER_OTHER);
- 		if (ret)
- 			return ret;
-@@ -1186,14 +1176,14 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	return 0;
- }
- 
--static int __set_print_fmt(struct trace_probe *tp, char *buf, int len)
-+static int __set_print_fmt(struct trace_kprobe *tp, char *buf, int len)
- {
- 	int i;
- 	int pos = 0;
- 
- 	const char *fmt, *arg;
- 
--	if (!trace_probe_is_return(tp)) {
-+	if (!trace_kprobe_is_return(tp)) {
- 		fmt = "(%lx)";
- 		arg = "REC->" FIELD_STRING_IP;
- 	} else {
-@@ -1206,21 +1196,21 @@ static int __set_print_fmt(struct trace_probe *tp, char *buf, int len)
- 
- 	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
- 
--	for (i = 0; i < tp->nr_args; i++) {
-+	for (i = 0; i < tp->p.nr_args; i++) {
- 		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
--				tp->args[i].name, tp->args[i].type->fmt);
-+				tp->p.args[i].name, tp->p.args[i].type->fmt);
+ 	if (strlen(arg) > MAX_ARGSTR_LEN) {
+ 		pr_info("Argument is too long.: %s\n",  arg);
+@@ -707,7 +475,7 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
+ 		arg[t - parg->comm] = '\0';
+ 		t++;
  	}
- 
- 	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
- 
--	for (i = 0; i < tp->nr_args; i++) {
--		if (strcmp(tp->args[i].type->name, "string") == 0)
-+	for (i = 0; i < tp->p.nr_args; i++) {
-+		if (strcmp(tp->p.args[i].type->name, "string") == 0)
- 			pos += snprintf(buf + pos, LEN_OR_ZERO,
- 					", __get_str(%s)",
--					tp->args[i].name);
-+					tp->p.args[i].name);
- 		else
- 			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
--					tp->args[i].name);
-+					tp->p.args[i].name);
- 	}
- 
- #undef LEN_OR_ZERO
-@@ -1229,7 +1219,7 @@ static int __set_print_fmt(struct trace_probe *tp, char *buf, int len)
- 	return pos;
- }
- 
--static int set_print_fmt(struct trace_probe *tp)
-+static int set_print_fmt(struct trace_kprobe *tp)
- {
- 	int len;
- 	char *print_fmt;
-@@ -1242,7 +1232,7 @@ static int set_print_fmt(struct trace_probe *tp)
- 
- 	/* Second: actually write the @print_fmt */
- 	__set_print_fmt(tp, print_fmt, len + 1);
--	tp->call.print_fmt = print_fmt;
-+	tp->p.call.print_fmt = print_fmt;
- 
- 	return 0;
- }
-@@ -1251,9 +1241,9 @@ static int set_print_fmt(struct trace_probe *tp)
- 
- /* Kprobe profile handler */
- static __kprobes void
--kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
-+kprobe_perf_func(struct trace_kprobe *tp, struct pt_regs *regs)
- {
--	struct ftrace_event_call *call = &tp->call;
-+	struct ftrace_event_call *call = &tp->p.call;
- 	struct kprobe_trace_entry_head *entry;
- 	struct hlist_head *head;
- 	int size, __size, dsize;
-@@ -1263,8 +1253,8 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
- 	if (hlist_empty(head))
- 		return;
- 
--	dsize = __get_data_size(tp, regs);
--	__size = sizeof(*entry) + tp->size + dsize;
-+	dsize = __get_data_size(&tp->p, regs);
-+	__size = sizeof(*entry) + tp->p.size + dsize;
- 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
- 	size -= sizeof(u32);
- 
-@@ -1274,16 +1264,16 @@ kprobe_perf_func(struct trace_probe *tp, struct pt_regs *regs)
- 
- 	entry->ip = (unsigned long)tp->rp.kp.addr;
- 	memset(&entry[1], 0, dsize);
--	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-+	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
- }
- 
- /* Kretprobe profile handler */
- static __kprobes void
--kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
-+kretprobe_perf_func(struct trace_kprobe *tp, struct kretprobe_instance *ri,
- 		    struct pt_regs *regs)
- {
--	struct ftrace_event_call *call = &tp->call;
-+	struct ftrace_event_call *call = &tp->p.call;
- 	struct kretprobe_trace_entry_head *entry;
- 	struct hlist_head *head;
- 	int size, __size, dsize;
-@@ -1293,8 +1283,8 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- 	if (hlist_empty(head))
- 		return;
- 
--	dsize = __get_data_size(tp, regs);
--	__size = sizeof(*entry) + tp->size + dsize;
-+	dsize = __get_data_size(&tp->p, regs);
-+	__size = sizeof(*entry) + tp->p.size + dsize;
- 	size = ALIGN(__size + sizeof(u32), sizeof(u64));
- 	size -= sizeof(u32);
- 
-@@ -1304,7 +1294,7 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
- 
- 	entry->func = (unsigned long)tp->rp.kp.addr;
- 	entry->ret_ip = (unsigned long)ri->ret_addr;
--	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
-+	store_trace_args(sizeof(*entry), &tp->p, regs, (u8 *)&entry[1], dsize);
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
- }
- #endif	/* CONFIG_PERF_EVENTS */
-@@ -1319,20 +1309,20 @@ static __kprobes
- int kprobe_register(struct ftrace_event_call *event,
- 		    enum trace_reg type, void *data)
- {
--	struct trace_probe *tp = (struct trace_probe *)event->data;
-+	struct trace_kprobe *tp = (struct trace_kprobe *)event->data;
- 	struct ftrace_event_file *file = data;
- 
- 	switch (type) {
- 	case TRACE_REG_REGISTER:
--		return enable_trace_probe(tp, file);
-+		return enable_trace_kprobe(tp, file);
- 	case TRACE_REG_UNREGISTER:
--		return disable_trace_probe(tp, file);
-+		return disable_trace_kprobe(tp, file);
- 
- #ifdef CONFIG_PERF_EVENTS
- 	case TRACE_REG_PERF_REGISTER:
--		return enable_trace_probe(tp, NULL);
-+		return enable_trace_kprobe(tp, NULL);
- 	case TRACE_REG_PERF_UNREGISTER:
--		return disable_trace_probe(tp, NULL);
-+		return disable_trace_kprobe(tp, NULL);
- 	case TRACE_REG_PERF_OPEN:
- 	case TRACE_REG_PERF_CLOSE:
- 	case TRACE_REG_PERF_ADD:
-@@ -1346,14 +1336,14 @@ int kprobe_register(struct ftrace_event_call *event,
- static __kprobes
- int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
- {
--	struct trace_probe *tp = container_of(kp, struct trace_probe, rp.kp);
-+	struct trace_kprobe *tp = container_of(kp, struct trace_kprobe, rp.kp);
- 
- 	tp->nhit++;
- 
--	if (tp->flags & TP_FLAG_TRACE)
-+	if (tp->p.flags & TP_FLAG_TRACE)
- 		kprobe_trace_func(tp, regs);
- #ifdef CONFIG_PERF_EVENTS
--	if (tp->flags & TP_FLAG_PROFILE)
-+	if (tp->p.flags & TP_FLAG_PROFILE)
- 		kprobe_perf_func(tp, regs);
- #endif
- 	return 0;	/* We don't tweek kernel, so just return 0 */
-@@ -1362,14 +1352,14 @@ int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
- static __kprobes
- int kretprobe_dispatcher(struct kretprobe_instance *ri, struct pt_regs *regs)
- {
--	struct trace_probe *tp = container_of(ri->rp, struct trace_probe, rp);
-+	struct trace_kprobe *tp = container_of(ri->rp, struct trace_kprobe, rp);
- 
- 	tp->nhit++;
- 
--	if (tp->flags & TP_FLAG_TRACE)
-+	if (tp->p.flags & TP_FLAG_TRACE)
- 		kretprobe_trace_func(tp, ri, regs);
- #ifdef CONFIG_PERF_EVENTS
--	if (tp->flags & TP_FLAG_PROFILE)
-+	if (tp->p.flags & TP_FLAG_PROFILE)
- 		kretprobe_perf_func(tp, ri, regs);
- #endif
- 	return 0;	/* We don't tweek kernel, so just return 0 */
-@@ -1383,14 +1373,14 @@ static struct trace_event_functions kprobe_funcs = {
- 	.trace		= print_kprobe_event
- };
- 
--static int register_probe_event(struct trace_probe *tp)
-+static int register_kprobe_event(struct trace_kprobe *tp)
- {
--	struct ftrace_event_call *call = &tp->call;
-+	struct ftrace_event_call *call = &tp->p.call;
- 	int ret;
- 
- 	/* Initialize ftrace_event_call */
- 	INIT_LIST_HEAD(&call->class->fields);
--	if (trace_probe_is_return(tp)) {
-+	if (trace_kprobe_is_return(tp)) {
- 		call->event.funcs = &kretprobe_funcs;
- 		call->class->define_fields = kretprobe_event_define_fields;
- 	} else {
-@@ -1416,11 +1406,11 @@ static int register_probe_event(struct trace_probe *tp)
- 	return ret;
- }
- 
--static void unregister_probe_event(struct trace_probe *tp)
-+static void unregister_kprobe_event(struct trace_kprobe *tp)
- {
- 	/* tp->event is unregistered in trace_remove_event_call() */
--	trace_remove_event_call(&tp->call);
--	kfree(tp->call.print_fmt);
-+	trace_remove_event_call(&tp->p.call);
-+	kfree(tp->p.call.print_fmt);
- }
- 
- /* Make a debugfs interface for controlling probe points */
-@@ -1429,7 +1419,7 @@ static __init int init_kprobe_trace(void)
- 	struct dentry *d_tracer;
- 	struct dentry *entry;
- 
--	if (register_module_notifier(&trace_probe_module_nb))
-+	if (register_module_notifier(&trace_kprobe_module_nb))
+-	parg->type = find_fetch_type(t);
++	parg->type = find_fetch_type(t, ttbl);
+ 	if (!parg->type) {
+ 		pr_info("Unsupported type: %s\n", t);
  		return -EINVAL;
+@@ -721,7 +489,8 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
  
- 	d_tracer = tracing_init_dentry();
-@@ -1469,12 +1459,12 @@ static __used int kprobe_trace_selftest_target(int a1, int a2, int a3,
- }
+ 	if (ret >= 0) {
+ 		parg->fetch_size.fn = get_fetch_size_function(parg->type,
+-							      parg->fetch.fn);
++							      parg->fetch.fn,
++							      ttbl);
+ 		parg->fetch_size.data = parg->fetch.data;
+ 	}
  
- static struct ftrace_event_file *
--find_trace_probe_file(struct trace_probe *tp, struct trace_array *tr)
-+find_trace_probe_file(struct trace_kprobe *tp, struct trace_array *tr)
- {
- 	struct ftrace_event_file *file;
- 
- 	list_for_each_entry(file, &tr->events, list)
--		if (file->event_call == &tp->call)
-+		if (file->event_call == &tp->p.call)
- 			return file;
- 
- 	return NULL;
-@@ -1488,7 +1478,7 @@ static __init int kprobe_trace_self_tests_init(void)
- {
- 	int ret, warn = 0;
- 	int (*target)(int, int, int, int, int, int);
--	struct trace_probe *tp;
-+	struct trace_kprobe *tp;
- 	struct ftrace_event_file *file;
- 
- 	target = kprobe_trace_selftest_target;
 diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 9ac7bdf607cc..63e5da4e3073 100644
+index 5c7e09d10d74..8c62746e5419 100644
 --- a/kernel/trace/trace_probe.h
 +++ b/kernel/trace/trace_probe.h
-@@ -159,6 +159,26 @@ struct probe_arg {
+@@ -81,11 +81,46 @@
+  */
+ #define convert_rloc_to_loc(dl, offs)	((u32)(dl) + (offs))
+ 
++static inline void *get_rloc_data(u32 *dl)
++{
++	return (u8 *)dl + get_rloc_offs(*dl);
++}
++
++/* For data_loc conversion */
++static inline void *get_loc_data(u32 *dl, void *ent)
++{
++	return (u8 *)ent + get_rloc_offs(*dl);
++}
++
++
++/* For defining macros, define string/string_size types */
++typedef u32 string;
++typedef u32 string_size;
++
+ /* Data fetch function type */
+ typedef	void (*fetch_func_t)(struct pt_regs *, void *, void *);
+ /* Printing function type */
+ typedef int (*print_type_func_t)(struct trace_seq *, const char *, void *, void *);
+ 
++/* Printing function type */
++#define PRINT_TYPE_FUNC_NAME(type)	print_type_##type
++#define PRINT_TYPE_FMT_NAME(type)	print_type_format_##type
++
++#define DECLARE_PRINT_TYPE_FUNC(type)					\
++extern int PRINT_TYPE_FUNC_NAME(type)(struct trace_seq *, const char *, \
++				     void *, void *);			\
++extern const char PRINT_TYPE_FMT_NAME(type)[]
++
++DECLARE_PRINT_TYPE_FUNC(u8);
++DECLARE_PRINT_TYPE_FUNC(u16);
++DECLARE_PRINT_TYPE_FUNC(u32);
++DECLARE_PRINT_TYPE_FUNC(u64);
++DECLARE_PRINT_TYPE_FUNC(s8);
++DECLARE_PRINT_TYPE_FUNC(s16);
++DECLARE_PRINT_TYPE_FUNC(s32);
++DECLARE_PRINT_TYPE_FUNC(s64);
++DECLARE_PRINT_TYPE_FUNC(string);
++
+ /* Fetch types */
+ enum {
+ 	FETCH_MTD_reg = 0,
+@@ -124,12 +159,109 @@ struct probe_arg {
  	const struct fetch_type	*type;	/* Type of this argument */
  };
  
-+struct trace_probe {
-+	unsigned int			flags;	/* For TP_FLAG_* */
-+	struct ftrace_event_class	class;
-+	struct ftrace_event_call	call;
-+	struct list_head 		files;
-+	ssize_t				size;	/* trace entry size */
-+	unsigned int			nr_args;
-+	struct probe_arg		args[];
-+};
++#define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
 +
-+static inline bool trace_probe_is_enabled(struct trace_probe *tp)
-+{
-+	return !!(tp->flags & (TP_FLAG_TRACE | TP_FLAG_PROFILE));
-+}
++#define DECLARE_FETCH_FUNC(method, type)				\
++extern void FETCH_FUNC_NAME(method, type)(struct pt_regs *, void *, void *)
 +
-+static inline bool trace_probe_is_registered(struct trace_probe *tp)
-+{
-+	return !!(tp->flags & TP_FLAG_REGISTERED);
-+}
++#define DECLARE_BASIC_FETCH_FUNCS(method) 	\
++DECLARE_FETCH_FUNC(method, u8);	  		\
++DECLARE_FETCH_FUNC(method, u16);		\
++DECLARE_FETCH_FUNC(method, u32);		\
++DECLARE_FETCH_FUNC(method, u64)
 +
- #define FETCH_FUNC_NAME(method, type)	fetch_##method##_##type
++/*
++ * Declare common fetch functions for both of kprobes and uprobes
++ */
++DECLARE_BASIC_FETCH_FUNCS(reg);
++#define fetch_reg_string		NULL
++#define fetch_reg_string_size		NULL
++
++DECLARE_BASIC_FETCH_FUNCS(stack);
++#define fetch_stack_string		NULL
++#define fetch_stack_string_size		NULL
++
++DECLARE_BASIC_FETCH_FUNCS(retval);
++#define fetch_retval_string		NULL
++#define fetch_retval_string_size	NULL
++
++DECLARE_BASIC_FETCH_FUNCS(memory);
++DECLARE_FETCH_FUNC(memory, string);
++DECLARE_FETCH_FUNC(memory, string_size);
++
++DECLARE_BASIC_FETCH_FUNCS(symbol);
++DECLARE_FETCH_FUNC(symbol, string);
++DECLARE_FETCH_FUNC(symbol, string_size);
++
++DECLARE_BASIC_FETCH_FUNCS(deref);
++DECLARE_FETCH_FUNC(deref, string);
++DECLARE_FETCH_FUNC(deref, string_size);
++
++DECLARE_BASIC_FETCH_FUNCS(bitfield);
++#define fetch_bitfield_string		NULL
++#define fetch_bitfield_string_size	NULL
++
++/*
++ * Define macro for basic types - we don't need to define s* types, because
++ * we have to care only about bitwidth at recording time.
++ */
++#define DEFINE_BASIC_FETCH_FUNCS(method) \
++DEFINE_FETCH_##method(u8)		\
++DEFINE_FETCH_##method(u16)		\
++DEFINE_FETCH_##method(u32)		\
++DEFINE_FETCH_##method(u64)
++
++#define CHECK_FETCH_FUNCS(method, fn)			\
++	(((FETCH_FUNC_NAME(method, u8) == fn) ||	\
++	  (FETCH_FUNC_NAME(method, u16) == fn) ||	\
++	  (FETCH_FUNC_NAME(method, u32) == fn) ||	\
++	  (FETCH_FUNC_NAME(method, u64) == fn) ||	\
++	  (FETCH_FUNC_NAME(method, string) == fn) ||	\
++	  (FETCH_FUNC_NAME(method, string_size) == fn)) \
++	 && (fn != NULL))
++
++#define ASSIGN_FETCH_FUNC(method, type)	\
++	[FETCH_MTD_##method] = FETCH_FUNC_NAME(method, type)
++
++#define __ASSIGN_FETCH_TYPE(_name, ptype, ftype, _size, sign, _fmttype)	\
++	{.name = _name,				\
++	 .size = _size,					\
++	 .is_signed = sign,				\
++	 .print = PRINT_TYPE_FUNC_NAME(ptype),		\
++	 .fmt = PRINT_TYPE_FMT_NAME(ptype),		\
++	 .fmttype = _fmttype,				\
++	 .fetch = {					\
++ASSIGN_FETCH_FUNC(reg, ftype),				\
++ASSIGN_FETCH_FUNC(stack, ftype),			\
++ASSIGN_FETCH_FUNC(retval, ftype),			\
++ASSIGN_FETCH_FUNC(memory, ftype),			\
++ASSIGN_FETCH_FUNC(symbol, ftype),			\
++ASSIGN_FETCH_FUNC(deref, ftype),			\
++ASSIGN_FETCH_FUNC(bitfield, ftype),			\
++	  }						\
++	}
++
++#define ASSIGN_FETCH_TYPE(ptype, ftype, sign)			\
++	__ASSIGN_FETCH_TYPE(#ptype, ptype, ftype, sizeof(ftype), sign, #ptype)
++
++#define FETCH_TYPE_STRING	0
++#define FETCH_TYPE_STRSIZE	1
++
++#define NR_FETCH_TYPES		10
++
++extern const struct fetch_type kprobes_fetch_type_table[];
++
+ static inline __kprobes void call_fetch(struct fetch_param *fprm,
+ 				 struct pt_regs *regs, void *dest)
+ {
+ 	return fprm->fn(regs, fprm->data, dest);
+ }
  
- #define DECLARE_FETCH_FUNC(method, type)				\
++struct symbol_cache;
++unsigned long update_symbol_cache(struct symbol_cache *sc);
++void free_symbol_cache(struct symbol_cache *sc);
++struct symbol_cache *alloc_symbol_cache(const char *sym, long offset);
++
+ /* Check the name is good for event/group/fields */
+ static inline int is_good_name(const char *name)
+ {
 -- 
 1.7.11.7
 
