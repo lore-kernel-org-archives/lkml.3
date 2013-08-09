@@ -1,238 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966929Ab3HIADz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 20:03:55 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:53111 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966789Ab3HIADx convert rfc822-to-8bit (ORCPT
+	id S966972Ab3HIAJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 20:09:47 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:54028 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966955Ab3HIAJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 20:03:53 -0400
+	Thu, 8 Aug 2013 20:09:45 -0400
+Date: Thu, 8 Aug 2013 17:09:43 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Ed Cashin <ecashin@coraid.com>
+Cc: axboe@kernel.dk, neilb@suse.de, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, dm-devel@redhat.com,
+        linux-raid@vger.kernel.org
+Subject: Re: [PATCH 04/22] block: Abstract out bvec iterator
+Message-ID: <20130809000943.GC15409@kmo-pixel>
+References: <1375912471-5106-1-git-send-email-kmo@daterainc.com>
+ <1375912471-5106-5-git-send-email-kmo@daterainc.com>
+ <2D8F228B-65AE-4046-A910-6B354AF0058E@coraid.com>
 MIME-Version: 1.0
-In-Reply-To: <FC9702EC51E4CA40A875703BEBD6CEF80183DA88@SHSMSX101.ccr.corp.intel.com>
-References: <1337003229-9158-1-git-send-email-jiang.liu@huawei.com>
-	<1337003229-9158-4-git-send-email-jiang.liu@huawei.com>
-	<CANVTcTan9N=Bvf=-vDwOQhS13y+JtWfqApF75yuksQuFBBVDZw@mail.gmail.com>
-	<FC9702EC51E4CA40A875703BEBD6CEF80183DA88@SHSMSX101.ccr.corp.intel.com>
-Date: Thu, 8 Aug 2013 17:03:51 -0700
-Message-ID: <CAPoiz9wm=K0jLhYQzRbuOe5gP376W6ovoU6pxCqe1Fqmv8W28Q@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 3/7] dmaengine: enhance dmaengine to support DMA
- device hotplug
-From: Jon Mason <jdmason@kudzu.us>
-To: "Wang, Rui Y" <rui.y.wang@intel.com>
-Cc: "liuj97@gmail.com" <liuj97@gmail.com>,
-        "Sosnowski, Maciej" <maciej.sosnowski@intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "chenkeping@huawei.com" <chenkeping@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Guo, Chaohong" <chaohong.guo@intel.com>, Dan Williams <djbw@fb.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2D8F228B-65AE-4046-A910-6B354AF0058E@coraid.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 8, 2013 at 3:59 AM, Wang, Rui Y <rui.y.wang@intel.com> wrote:
-> (resend adding cc list)
+On Wed, Aug 07, 2013 at 10:04:36PM -0400, Ed Cashin wrote:
+> On Aug 7, 2013, at 5:54 PM, Kent Overstreet wrote:
+> 
+> > Immutable biovecs are going to require an explicit iterator. To
+> > implement immutable bvecs, a later patch is going to add a bi_bvec_done
+> > member to this struct; for now, this patch effectively just renames
+> > things.
+> 
+> Hi, Kent Overstreet.  Thanks for Cc'ing me and for the promising work.
+> 
+> Were you able to do sanity tests with aoe this time around?  Last time, basic I/O was not working with the immutable biovec patches applied.
+> 
+> Here is my 28 June email about my experiences with git://evilpiepirate.org/~kent/linux-bcache.git at that time.  It also includes information about creating an easy software-only aoe test environment.
+> 
+>   http://thread.gmane.org/gmane.linux.kernel/1505222/focus=1517924
 
-The e-mail you are responding to is over a year old, but doesn't
-appear to have been accepted.  I suppose late is better than never...
+Hey, thanks for testing it - sorry, I think I remember seeing that email
+last time and got sidetracked before I got around to setting up some
+tests.
 
-Adding Dan Williams new e-mail address and Dave Jiang.
+I think I've got it working now, it's running the same stress tests I
+use for bcache. Here's a fixed patch, I broke the aoe changes out into
+their own patch since they were more involved than most of the others:
 
-Thanks,
-Jon
+(I am seeing a bug where it's getting stuck after running stress tests
+for awhile, but I can reproduce that without the aoe changes too...)
 
->
-> Hi Jiang,
-> See my comments inline.
->
->> -----Original Message-----
->> From: Jiang Liu <liuj97@gmail.com>
->> Date: Mon, 14 May 2012 21:47:05 +0800
->> Subject: [RFC PATCH v2 3/7] dmaengine: enhance dmaengine to support DMA
->> device hotplug
->> To: Dan Williams <dan.j.williams@intel.com>, Maciej Sosnowski
->> <maciej.sosnowski@intel.com>, Vinod Koul <vinod.koul@intel.com>
->> Cc: Jiang Liu <liuj97@gmail.com>, Keping Chen <chenkeping@huawei.com>,
->> linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
->>
->> From: Jiang Liu <liuj97@gmail.com>
->>
->> From: Jiang Liu <liuj97@gmail.com>
->>
->> To support DMA device hotplug, dmaengine must correctly manage reference
->> count for DMA channels. On the other hand, DMA hot path is performance
->> critical, reference count management code should avoid polluting global shared
->> cachelines, otherwise it may cause heavy performance penalty.
->>
->> This patch introduces a lightweight DMA channel reference count management
->> mechanism by using percpu counter. When DMA device hotplug is disabled,
->> there's no performance penalty. When hotplug is enabled, a
->> dma_find_channel()/dma_put_channel() pair adds two local memory accesses
->> to the hot path.
->>
->> Signed-off-by: Jiang Liu <liuj97@gmail.com>
->> ---
->>  drivers/dma/dmaengine.c   |  112
->> +++++++++++++++++++++++++++++++++++++++++----
->>  include/linux/dmaengine.h |   29 +++++++++++-
->>  2 files changed, 129 insertions(+), 12 deletions(-)
->>
->> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c index
->> d3b1c48..eca45c0 100644
->> --- a/drivers/dma/dmaengine.c
->> +++ b/drivers/dma/dmaengine.c
->> @@ -61,12 +61,20 @@
->>  #include <linux/rculist.h>
->>  #include <linux/idr.h>
->>  #include <linux/slab.h>
->> +#include <linux/sched.h>
->>
->>  static DEFINE_MUTEX(dma_list_mutex);
->>  static DEFINE_IDR(dma_idr);
->>  static LIST_HEAD(dma_device_list);
->>  static long dmaengine_client_count;
->>
->> +#ifdef       CONFIG_DMA_ENGINE_HOTPLUG
->> +static atomic_t dmaengine_dirty;
->> +static struct static_key dmaengine_quiesce = STATIC_KEY_INIT_FALSE;
->> +static DECLARE_WAIT_QUEUE_HEAD(dmaengine_wait_queue);
->> +DEFINE_PER_CPU(long, dmaengine_chan_ref_count);
->> +#endif       /* CONFIG_DMA_ENGINE_HOTPLUG */
->> +
->>  /* --- sysfs implementation --- */
->>
->>  /**
->> @@ -305,10 +313,40 @@ arch_initcall(dma_channel_table_init);
->>   */
->>  struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type)
->> {
->> -     return this_cpu_read(channel_table[tx_type]->chan);
->> +     struct dma_chan *chan = this_cpu_read(channel_table[tx_type]->chan);
->> +
->> +#ifdef       CONFIG_DMA_ENGINE_HOTPLUG
->> +     this_cpu_inc(dmaengine_chan_ref_count);
->> +     if (static_key_false(&dmaengine_quiesce))
->> +             chan = NULL;
->> +#endif
->> +
->> +     return chan;
->>  }
->>  EXPORT_SYMBOL(dma_find_channel);
->>
->> +#ifdef       CONFIG_DMA_ENGINE_HOTPLUG
->> +struct dma_chan *dma_get_channel(struct dma_chan *chan) {
->> +     if (static_key_false(&dmaengine_quiesce))
->> +             atomic_inc(&dmaengine_dirty);
->> +     this_cpu_inc(dmaengine_chan_ref_count);
->> +
->> +     return chan;
->> +}
->> +EXPORT_SYMBOL(dma_get_channel);
->> +#endif
->> +
->> +/**
->> + * dma_has_capability - check whether any channel supports tx_type
->> + * @tx_type: transaction type
->> + */
->> +bool dma_has_capability(enum dma_transaction_type tx_type) {
->> +     return !!this_cpu_read(channel_table[tx_type]->chan);
->> +}
->> +EXPORT_SYMBOL(dma_has_capability);
->> +
->>  /*
->>   * net_dma_find_channel - find a channel for net_dma
->>   * net_dma has alignment requirements
->> @@ -316,10 +354,15 @@ EXPORT_SYMBOL(dma_find_channel);  struct
->> dma_chan *net_dma_find_channel(void)  {
->>       struct dma_chan *chan = dma_find_channel(DMA_MEMCPY);
->> -     if (chan && !is_dma_copy_aligned(chan->device, 1, 1, 1))
->> -             return NULL;
->>
->> -     return chan;
->> +     if (chan && is_dma_copy_aligned(chan->device, 1, 1, 1))
->> +             return chan;
->> +
->> +#ifdef       CONFIG_DMA_ENGINE_HOTPLUG
->> +     this_cpu_dec(dmaengine_chan_ref_count);
->> +#endif
->> +
->> +     return NULL;
->>  }
->>  EXPORT_SYMBOL(net_dma_find_channel);
->>
->> @@ -393,6 +436,37 @@ static struct dma_chan *nth_chan(enum
->> dma_transaction_type cap, int n)
->>       return ret;
->>  }
->>
->> +static void dma_channel_quiesce(void)
->> +{
->> +#ifdef       CONFIG_DMA_ENGINE_HOTPLUG
->> +     int cpu;
->> +     long ref_count;
->> +     int quiesce_count = 0;
->> +
->> +     static_key_slow_inc(&dmaengine_quiesce);
->> +
->> +     do {
->> +             atomic_set(&dmaengine_dirty, 0);
->> +             schedule_timeout(1);
->> +
->> +             if (atomic_read(&dmaengine_dirty)) {
->> +                     quiesce_count = 0;
->> +                     continue;
->> +             }
->> +
->> +             ref_count = 0;
->> +             for_each_possible_cpu(cpu)
->> +                     ref_count += per_cpu(dmaengine_chan_ref_count, cpu);
->> +             if (ref_count == 0)
->> +                     quiesce_count++;
->> +             else
->> +                     quiesce_count = 0;
->> +     } while (quiesce_count < 10);
->> +
->> +     static_key_slow_dec(&dmaengine_quiesce);
->> +#endif
->> +}
->> +
->
-> The purpose of dma_channel_quiesce() is unclear to me. It waits until dmaengine_chan_ref_count is 0, but how do you prevent someone from using dma after it returns?
->
-> <snip>
->
->> @@ -767,14 +848,22 @@ void dma_async_device_unregister(struct
->> dma_device *device)
->>
->>       mutex_lock(&dma_list_mutex);
->>       list_del_rcu(&device->global_node);
->> -     dma_channel_rebalance();
->> +     dma_channel_rebalance(true);
->>       mutex_unlock(&dma_list_mutex);
->>
->>       /* Check whether it's called from module exit function. */
->>       if (try_module_get(device->dev->driver->owner)) {
->> +#ifndef      CONFIG_DMA_ENGINE_HOTPLUG
->>               dev_warn(device->dev,
->>                       "%s isn't called from module exit function.\n",
->>                       __func__);
->> +#else
->> +             list_for_each_entry(chan, &device->channels, device_node) {
->> +                     /* TODO: notify clients to release channels*/
->> +                     wait_event(dmaengine_wait_queue,
->> +                                chan->client_count == 0);
->> +             }
->
-> How do you notify clients to release the channels? Is there an updated version which handles this? There're resources (e.g. timers) that must be free'd, which can only happen when someone calls dma_chan_put() until client_count reaches 0 and device_free_chan_resources() gets called.
->
-> Rui Wang
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>From 351ff4cdbbc670321b87ad38b5d5edbbb2dd2cf1 Mon Sep 17 00:00:00 2001
+From: Kent Overstreet <kmo@daterainc.com>
+Date: Thu, 8 Aug 2013 16:48:33 -0700
+Subject: [PATCH] aoe: Convert to immutable biovecs
+
+Now that we've got a mechanism for immutable biovecs -
+bi_iter.bi_bvec_done - we need to convert drivers to use primitives that
+respect it instead of using the bvec array directly.
+
+The aoe code no longer has to manually iterate over partial bvecs, so
+some struct members go away - other struct members are effectively
+renamed:
+
+buf->resid	-> buf->iter.bi_size
+buf->sector	-> buf->iter.bi_sector
+
+f->bcnt		-> f->iter.bi_size
+f->lba		-> f->iter.bi_sector
+
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: "Ed L. Cashin" <ecashin@coraid.com>
+
+diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+index 025c41d..c5e1e9b 100644
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -100,11 +100,8 @@ enum {
+ 
+ struct buf {
+ 	ulong nframesout;
+-	ulong resid;
+-	ulong bv_resid;
+-	sector_t sector;
+ 	struct bio *bio;
+-	struct bio_vec *bv;
++	struct bvec_iter iter;
+ 	struct request *rq;
+ };
+ 
+@@ -120,13 +117,10 @@ struct frame {
+ 	ulong waited;
+ 	ulong waited_total;
+ 	struct aoetgt *t;		/* parent target I belong to */
+-	sector_t lba;
+ 	struct sk_buff *skb;		/* command skb freed on module exit */
+ 	struct sk_buff *r_skb;		/* response skb for async processing */
+ 	struct buf *buf;
+-	struct bio_vec *bv;
+-	ulong bcnt;
+-	ulong bv_off;
++	struct bvec_iter iter;
+ 	char flags;
+ };
+ 
+diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
+index f17260b..cacd48e 100644
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -196,8 +196,7 @@ aoe_freetframe(struct frame *f)
+ 
+ 	t = f->t;
+ 	f->buf = NULL;
+-	f->lba = 0;
+-	f->bv = NULL;
++	memset(&f->iter, 0, sizeof(f->iter));
+ 	f->r_skb = NULL;
+ 	f->flags = 0;
+ 	list_add(&f->head, &t->ffree);
+@@ -295,21 +294,14 @@ newframe(struct aoedev *d)
+ }
+ 
+ static void
+-skb_fillup(struct sk_buff *skb, struct bio_vec *bv, ulong off, ulong cnt)
++skb_fillup(struct sk_buff *skb, struct bio *bio, struct bvec_iter iter)
+ {
+ 	int frag = 0;
+-	ulong fcnt;
+-loop:
+-	fcnt = bv->bv_len - (off - bv->bv_offset);
+-	if (fcnt > cnt)
+-		fcnt = cnt;
+-	skb_fill_page_desc(skb, frag++, bv->bv_page, off, fcnt);
+-	cnt -= fcnt;
+-	if (cnt <= 0)
+-		return;
+-	bv++;
+-	off = bv->bv_offset;
+-	goto loop;
++	struct bio_vec bv;
++
++	__bio_for_each_segment(bv, bio, iter, iter)
++		skb_fill_page_desc(skb, frag++, bv.bv_page,
++				   bv.bv_offset, bv.bv_len);
+ }
+ 
+ static void
+@@ -346,12 +338,10 @@ ata_rw_frameinit(struct frame *f)
+ 	t->nout++;
+ 	f->waited = 0;
+ 	f->waited_total = 0;
+-	if (f->buf)
+-		f->lba = f->buf->sector;
+ 
+ 	/* set up ata header */
+-	ah->scnt = f->bcnt >> 9;
+-	put_lba(ah, f->lba);
++	ah->scnt = f->iter.bi_size >> 9;
++	put_lba(ah, f->iter.bi_sector);
+ 	if (t->d->flags & DEVFL_EXT) {
+ 		ah->aflags |= AOEAFL_EXT;
+ 	} else {
+@@ -360,11 +350,11 @@ ata_rw_frameinit(struct frame *f)
+ 		ah->lba3 |= 0xe0;	/* LBA bit + obsolete 0xa0 */
+ 	}
+ 	if (f->buf && bio_data_dir(f->buf->bio) == WRITE) {
+-		skb_fillup(skb, f->bv, f->bv_off, f->bcnt);
++		skb_fillup(skb, f->buf->bio, f->iter);
+ 		ah->aflags |= AOEAFL_WRITE;
+-		skb->len += f->bcnt;
+-		skb->data_len = f->bcnt;
+-		skb->truesize += f->bcnt;
++		skb->len += f->iter.bi_size;
++		skb->data_len = f->iter.bi_size;
++		skb->truesize += f->iter.bi_size;
+ 		t->wpkts++;
+ 	} else {
+ 		t->rpkts++;
+@@ -383,7 +373,6 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	struct aoetgt *t;
+ 	struct sk_buff *skb;
+ 	struct sk_buff_head queue;
+-	ulong bcnt, fbcnt;
+ 
+ 	buf = nextbuf(d);
+ 	if (buf == NULL)
+@@ -392,39 +381,22 @@ aoecmd_ata_rw(struct aoedev *d)
+ 	if (f == NULL)
+ 		return 0;
+ 	t = *d->tgt;
+-	bcnt = d->maxbcnt;
+-	if (bcnt == 0)
+-		bcnt = DEFAULTBCNT;
+-	if (bcnt > buf->resid)
+-		bcnt = buf->resid;
+-	fbcnt = bcnt;
+-	f->bv = buf->bv;
+-	f->bv_off = f->bv->bv_offset + (f->bv->bv_len - buf->bv_resid);
+-	do {
+-		if (fbcnt < buf->bv_resid) {
+-			buf->bv_resid -= fbcnt;
+-			buf->resid -= fbcnt;
+-			break;
+-		}
+-		fbcnt -= buf->bv_resid;
+-		buf->resid -= buf->bv_resid;
+-		if (buf->resid == 0) {
+-			d->ip.buf = NULL;
+-			break;
+-		}
+-		buf->bv++;
+-		buf->bv_resid = buf->bv->bv_len;
+-		WARN_ON(buf->bv_resid == 0);
+-	} while (fbcnt);
+ 
+ 	/* initialize the headers & frame */
+ 	f->buf = buf;
+-	f->bcnt = bcnt;
+-	ata_rw_frameinit(f);
++	f->iter = buf->iter;
++	f->iter.bi_size = min_t(unsigned long,
++				d->maxbcnt ?: DEFAULTBCNT,
++				f->iter.bi_size);
++	bio_advance_iter(buf->bio, &buf->iter, f->iter.bi_size);
++
++	if (!buf->iter.bi_size)
++		d->ip.buf = NULL;
+ 
+ 	/* mark all tracking fields and load out */
+ 	buf->nframesout += 1;
+-	buf->sector += bcnt >> 9;
++
++	ata_rw_frameinit(f);
+ 
+ 	skb = skb_clone(f->skb, GFP_ATOMIC);
+ 	if (skb) {
+@@ -617,10 +589,7 @@ reassign_frame(struct frame *f)
+ 	skb = nf->skb;
+ 	nf->skb = f->skb;
+ 	nf->buf = f->buf;
+-	nf->bcnt = f->bcnt;
+-	nf->lba = f->lba;
+-	nf->bv = f->bv;
+-	nf->bv_off = f->bv_off;
++	nf->iter = f->iter;
+ 	nf->waited = 0;
+ 	nf->waited_total = f->waited_total;
+ 	nf->sent = f->sent;
+@@ -652,19 +621,19 @@ probe(struct aoetgt *t)
+ 	}
+ 	f->flags |= FFL_PROBE;
+ 	ifrotate(t);
+-	f->bcnt = t->d->maxbcnt ? t->d->maxbcnt : DEFAULTBCNT;
++	f->iter.bi_size = t->d->maxbcnt ? t->d->maxbcnt : DEFAULTBCNT;
+ 	ata_rw_frameinit(f);
+ 	skb = f->skb;
+-	for (frag = 0, n = f->bcnt; n > 0; ++frag, n -= m) {
++	for (frag = 0, n = f->iter.bi_size; n > 0; ++frag, n -= m) {
+ 		if (n < PAGE_SIZE)
+ 			m = n;
+ 		else
+ 			m = PAGE_SIZE;
+ 		skb_fill_page_desc(skb, frag, empty_page, 0, m);
+ 	}
+-	skb->len += f->bcnt;
+-	skb->data_len = f->bcnt;
+-	skb->truesize += f->bcnt;
++	skb->len += f->iter.bi_size;
++	skb->data_len = f->iter.bi_size;
++	skb->truesize += f->iter.bi_size;
+ 
+ 	skb = skb_clone(f->skb, GFP_ATOMIC);
+ 	if (skb) {
+@@ -936,12 +905,8 @@ bufinit(struct buf *buf, struct request *rq, struct bio *bio)
+ 	memset(buf, 0, sizeof(*buf));
+ 	buf->rq = rq;
+ 	buf->bio = bio;
+-	buf->resid = bio->bi_iter.bi_size;
+-	buf->sector = bio->bi_iter.bi_sector;
++	buf->iter = bio->bi_iter;
+ 	bio_pageinc(bio);
+-	buf->bv = __bio_iovec(bio);
+-	buf->bv_resid = buf->bv->bv_len;
+-	WARN_ON(buf->bv_resid == 0);
+ }
+ 
+ static struct buf *
+@@ -1126,24 +1091,19 @@ gettgt(struct aoedev *d, char *addr)
+ }
+ 
+ static void
+-bvcpy(struct bio_vec *bv, ulong off, struct sk_buff *skb, long cnt)
++bvcpy(struct sk_buff *skb, struct bio *bio, struct bvec_iter iter, long cnt)
+ {
+-	ulong fcnt;
+-	char *p;
+ 	int soff = 0;
+-loop:
+-	fcnt = bv->bv_len - (off - bv->bv_offset);
+-	if (fcnt > cnt)
+-		fcnt = cnt;
+-	p = page_address(bv->bv_page) + off;
+-	skb_copy_bits(skb, soff, p, fcnt);
+-	soff += fcnt;
+-	cnt -= fcnt;
+-	if (cnt <= 0)
+-		return;
+-	bv++;
+-	off = bv->bv_offset;
+-	goto loop;
++	struct bio_vec bv;
++
++	BUG_ON(cnt > iter.bi_size);
++	iter.bi_size = cnt;
++
++	__bio_for_each_segment(bv, bio, iter, iter) {
++		char *p = page_address(bv.bv_page) + bv.bv_offset;
++		skb_copy_bits(skb, soff, p, bv.bv_len);
++		soff += bv.bv_len;
++	}
+ }
+ 
+ void
+@@ -1236,7 +1196,7 @@ noskb:		if (buf)
+ 			clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
+ 			break;
+ 		}
+-		bvcpy(f->bv, f->bv_off, skb, n);
++		bvcpy(skb, f->buf->bio, f->iter, n);
+ 	case ATA_CMD_PIO_WRITE:
+ 	case ATA_CMD_PIO_WRITE_EXT:
+ 		spin_lock_irq(&d->lock);
+@@ -1279,7 +1239,7 @@ out:
+ 
+ 	aoe_freetframe(f);
+ 
+-	if (buf && --buf->nframesout == 0 && buf->resid == 0)
++	if (buf && --buf->nframesout == 0 && buf->iter.bi_size == 0)
+ 		aoe_end_buf(d, buf);
+ 
+ 	spin_unlock_irq(&d->lock);
+@@ -1734,7 +1694,7 @@ aoe_failbuf(struct aoedev *d, struct buf *buf)
+ {
+ 	if (buf == NULL)
+ 		return;
+-	buf->resid = 0;
++	buf->iter.bi_size = 0;
+ 	clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
+ 	if (buf->nframesout == 0)
+ 		aoe_end_buf(d, buf);
