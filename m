@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968301Ab3HISon (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 14:44:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23840 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967943Ab3HISom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 14:44:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,847,1367996400"; 
-   d="scan'208";a="383951165"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>
-CC: Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/5] x86, AMD: cleanup: merge common code in early
- microcode loading
-Thread-Topic: [PATCH 3/5] x86, AMD: cleanup: merge common code in early
- microcode loading
-Thread-Index: AQHOiHJi+cm++MPa80WiAzcLiv5LH5mKbKhAgAANp+CAAKZzgIAAgIQAgACNcoCAAR/DcA==
-Date: Fri, 9 Aug 2013 18:44:41 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205A53C03C@ORSMSX106.amr.corp.intel.com>
-References: <20130723230026.394a5ee1@googlemail.com>
- <20130724133254.GE30777@pd.tnic>
- <3E5A0FA7E9CA944F9D5414FEC6C712205A53B73A@ORSMSX106.amr.corp.intel.com>
- <78b1bca9-80bb-4e60-af3a-738424babfd0@email.android.com>
- <20130808100238.GA27974@pd.tnic> <20130808182853.GD27974@pd.tnic>
-In-Reply-To: <20130808182853.GD27974@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S968311Ab3HISpP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 14:45:15 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49093 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968272Ab3HISpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 14:45:13 -0400
+Message-ID: <520538B7.8050306@codeaurora.org>
+Date: Fri, 09 Aug 2013 11:45:11 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>, srinivas.kandagatla@st.com,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local> <51FA9AE8.1060004@linaro.org> <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local> <51FA9F54.3060704@linaro.org> <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local> <5204C54A.9020105@st.com> <5204FA5D.3060908@linaro.org> <20130809172757.GD14845@codeaurora.org> <3a4049f6-aad6-4730-86e3-210afbc3836b@DB9EHSMHS028.ehs.local>
+In-Reply-To: <3a4049f6-aad6-4730-86e3-210afbc3836b@DB9EHSMHS028.ehs.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r79Iimci012043
 
-> From: Borislav Petkov [mailto:bp@alien8.de]
-> Sent: Thursday, August 08, 2013 11:29 AM
+On 08/09/13 10:48, SÃ¶ren Brinkmann wrote:
+> On Fri, Aug 09, 2013 at 10:27:57AM -0700, Stephen Boyd wrote:
+>> On 08/09, Daniel Lezcano wrote:
+>>> yes, but at least the broadcast mechanism should send an IPI to cpu0 to
+>>> wake it up, no ? As Stephen stated this kind of configuration should has
+>>> never been tested before so the tick broadcast code is not handling this
+>>> case properly IMHO.
+>>>
+>> If you have a per-cpu tick device that isn't suffering from
+>> FEAT_C3_STOP why wouldn't you use that for the tick versus a
+>> per-cpu tick device that has FEAT_C3_STOP? It sounds like there
+>> is a bug in the preference logic or you should boost the rating
+>> of the arm global timer above the twd. Does this patch help? It
+>> should make the arm global timer the tick device and whatever the
+>> cadence timer you have into the broadcast device.
+> I'm not sure I'm getting this right. But neither the cadence_ttc nor the
+> arm_global_timer have the FEAT_C3_STOP flag set. So, shouldn't they be
+> treated equally even with your change?
 
-> On Thu, Aug 08, 2013 at 12:02:38PM +0200, Borislav Petkov wrote:
-> > On Wed, Aug 07, 2013 at 07:22:39PM -0700, H. Peter Anvin wrote:
-> > > How much does this matter?
-> >
-> > I know what you're asking :-)
-> >
-> > And no, it doesn't really matter as we fail in the patch version
-> check
-> > so maybe only a comment will suffice here so that people don't get
-> > confused.
-> 
-> IOW, something like that:
-> 
-> ---
-> From: Borislav Petkov <bp@suse.de>
-> Date: Thu, 8 Aug 2013 20:26:24 +0200
-> Subject: [PATCH] x86, microcode: Clarify loading on the AP
-> 
-> Hold it down why we're calling the AP microcode loading routine on the
-> BSP too, for future reference.
-> 
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  arch/x86/kernel/cpu/common.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/common.c
-> b/arch/x86/kernel/cpu/common.c
-> index 25eb2747b063..58d37a27d317 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -1226,8 +1226,12 @@ void cpu_init(void)
->  	int i;
-> 
->  	/*
-> -	 * Load microcode on this cpu if a valid microcode is available.
-> -	 * This is early microcode loading procedure.
-> +	 * Load microcode on this cpu if a valid microcode is available.
-> This
-> +	 * is early microcode loading procedure. We execute this on the
-> BSP too
-> +	 * but since a microcode has been potentially already applied on
-> the
-> +	 * BSP, we will return prematurely here. It is easier to simply
-> call it
-> +	 * again than filtering all the possible cases when we're not
-> running
-> +	 * on the BSP.
->  	 */
->  	load_ucode_ap();
+The cadence_ttc is a global clockevent, i.e. the irq can interrupt any
+CPU, and it has a rating of 200. The arm global timer is a per-cpu
+clockevent with a rating of 300. The TWD is a per-cpu clockevent with a
+rating of 350. Because the arm global timer is rated higher than the
+cadence_ttc but less than the TWD the arm global timer will fill in the
+broadcast spot and the TWD will fill in the tick position. We really
+want the arm global timer to fill in the tick position and the
+cadence_ttc to fill in the broadcast spot (although the cadence_ttc
+should never be needed because the arm global timer doesn't need help in
+deep idle states).
 
-Load_ucode_ap() running on BSP during boot time wastes short time on scanning ucode blob. But the time should be very short. 
+Unless I got lost in all the combinations of tests you've done so far?
 
-Reviewed-by: Fenghua Yu <fenghua.yu@intel.com>
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
