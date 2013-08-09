@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967793Ab3HICQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:16:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55683 "EHLO
+	id S967782Ab3HICQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:16:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55690 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967521Ab3HIB6u (ORCPT
+	with ESMTP id S967528Ab3HIB6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:50 -0400
+	Thu, 8 Aug 2013 21:58:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bo Shi <cnshibo@gmail.com>, Oleksij Rempel <linux@rempel-privat.de>,
+        Oleksij Rempel <linux@rempel-privat.de>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 035/102] ath9k_htc: do some initial hardware configuration
-Date: Thu,  8 Aug 2013 18:57:11 -0700
-Message-Id: <20130809015018.124314102@linuxfoundation.org>
+Subject: [ 036/102] ath9k_htc: reboot firmware if it was loaded
+Date: Thu,  8 Aug 2013 18:57:12 -0700
+Message-Id: <20130809015018.345975043@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -29,36 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit dc2a87f519a4d8cb376ab54f22b6b98a943b51ce upstream.
+commit 4928bd2ef8ece262f4f314630219999a91eaa440 upstream.
 
-Currently we configure harwdare and clock, only after
-interface start. In this case, if we reload module or
-reboot PC without configuring adapter, firmware will freeze.
-There is no software way to reset adpter.
+Currently ath9k_htc will reboot firmware only if interface was
+ever started. Which lead to the problem in case where interface
+was never started but module need to be reloaded.
 
-This patch add initial configuration and set it in
-disabled state, to avoid this freeze. Behaviour of this patch
-should be similar to: ifconfig wlan0 up; ifconfig wlan0 down.
+This patch will partially fix bug "ath9k_htc: Target is unresponsive"
+https://github.com/qca/open-ath9k-htc-firmware/issues/1
 
-Bug: https://github.com/qca/open-ath9k-htc-firmware/issues/1
-Tested-by: Bo Shi <cnshibo@gmail.com>
+Reproduction case:
+- plug adapter
+- make sure nothing will touch it. Stop Networkmanager or blacklist mac address of this adapter.
+- rmmod ath9k_htc; sleep 1; modprobe ath9k_htc
+
 Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath9k/hif_usb.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -846,6 +846,7 @@ static int ath9k_init_device(struct ath9
- 	if (error != 0)
- 		goto err_rx;
+--- a/drivers/net/wireless/ath/ath9k/hif_usb.c
++++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
+@@ -1289,7 +1289,9 @@ static void ath9k_hif_usb_disconnect(str
  
-+	ath9k_hw_disable(priv->ah);
- #ifdef CONFIG_MAC80211_LEDS
- 	/* must be initialized before ieee80211_register_hw */
- 	priv->led_cdev.default_trigger = ieee80211_create_tpt_led_trigger(priv->hw,
+ 	usb_set_intfdata(interface, NULL);
+ 
+-	if (!unplugged && (hif_dev->flags & HIF_USB_START))
++	/* If firmware was loaded we should drop it
++	 * go back to first stage bootloader. */
++	if (!unplugged && (hif_dev->flags & HIF_USB_READY))
+ 		ath9k_hif_usb_reboot(udev);
+ 
+ 	kfree(hif_dev);
 
 
