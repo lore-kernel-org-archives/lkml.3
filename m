@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967778Ab3HICQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:16:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55699 "EHLO
+	id S967531Ab3HIB6v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:58:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55673 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967543Ab3HIB6x (ORCPT
+	with ESMTP id S967383Ab3HIB6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:53 -0400
+	Thu, 8 Aug 2013 21:58:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Mazur <krzysiek@podlesie.net>,
-        Felix Fietkau <nbd@openwrt.org>,
+        David Spinadel <david.spinadel@intel.com>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [ 038/102] mac80211/minstrel: fix NULL pointer dereference issue
-Date: Thu,  8 Aug 2013 18:57:14 -0700
-Message-Id: <20130809015018.780006959@linuxfoundation.org>
+Subject: [ 031/102] iwlwifi: mvm: fix bug in scan ssid
+Date: Thu,  8 Aug 2013 18:57:07 -0700
+Message-Id: <20130809015017.162205198@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -28,40 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: David Spinadel <david.spinadel@intel.com>
 
-commit 5c9fc93bc9bc417418fc1b6366833ae6a07b804d upstream.
+commit fe04e83706037802c502ea41c0d1799ec35fc0d7 upstream.
 
-When priv_sta == NULL, mi->prev_sample is dereferenced too early. Move
-the assignment further down, after the rate_control_send_low call.
+Increment index in each iteration. Without this increment we are
+overriding the added SSIDs and we will send only the last SSId
+and (n_ssids - 1) broadcast probes.
 
-Reported-by: Krzysztof Mazur <krzysiek@podlesie.net>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: David Spinadel <david.spinadel@intel.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rc80211_minstrel.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/mvm/scan.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/rc80211_minstrel.c
-+++ b/net/mac80211/rc80211_minstrel.c
-@@ -290,7 +290,7 @@ minstrel_get_rate(void *priv, struct iee
- 	struct minstrel_rate *msr, *mr;
- 	unsigned int ndx;
- 	bool mrr_capable;
--	bool prev_sample = mi->prev_sample;
-+	bool prev_sample;
- 	int delta;
- 	int sampling_ratio;
+--- a/drivers/net/wireless/iwlwifi/mvm/scan.c
++++ b/drivers/net/wireless/iwlwifi/mvm/scan.c
+@@ -137,8 +137,8 @@ static void iwl_mvm_scan_fill_ssids(stru
+ {
+ 	int fw_idx, req_idx;
  
-@@ -314,6 +314,7 @@ minstrel_get_rate(void *priv, struct iee
- 			(mi->sample_count + mi->sample_deferred / 2);
- 
- 	/* delta < 0: no sampling required */
-+	prev_sample = mi->prev_sample;
- 	mi->prev_sample = false;
- 	if (delta < 0 || (!mrr_capable && prev_sample))
- 		return;
+-	fw_idx = 0;
+-	for (req_idx = req->n_ssids - 1; req_idx > 0; req_idx--) {
++	for (req_idx = req->n_ssids - 1, fw_idx = 0; req_idx > 0;
++	     req_idx--, fw_idx++) {
+ 		cmd->direct_scan[fw_idx].id = WLAN_EID_SSID;
+ 		cmd->direct_scan[fw_idx].len = req->ssids[req_idx].ssid_len;
+ 		memcpy(cmd->direct_scan[fw_idx].ssid,
 
 
