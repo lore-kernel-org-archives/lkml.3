@@ -1,75 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966209Ab3HIJxz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 05:53:55 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:53972 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965382Ab3HIJxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 05:53:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <1375856245-10717-3-git-send-email-zheng.z.yan@intel.com>
-References: <1375856245-10717-1-git-send-email-zheng.z.yan@intel.com>
-	<1375856245-10717-3-git-send-email-zheng.z.yan@intel.com>
-Date: Fri, 9 Aug 2013 11:53:53 +0200
-Message-ID: <CABPqkBRsKQLDjH_mynbeOQyX+_QEbuiPKF_Jv5tebqmYL090ig@mail.gmail.com>
-Subject: Re: [PATCH 3/3] perf, uncore: enable ev_sel_ext bit for PCU.
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S966641Ab3HIJzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 05:55:18 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:60877 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965837Ab3HIJzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 05:55:13 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
+        gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: [RFC PATCH v2 3/3] usb: dwc3: Add Qualcomm DWC3 glue layer driver
+Date: Fri,  9 Aug 2013 12:53:47 +0300
+Message-Id: <1376042027-9798-4-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com>
+References: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 7, 2013 at 8:17 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
->
-> PCU uncore event control register has a undocumented ev_sel_ext bit.
-> The bit is needed by Andi's pmu-tools.
->
-> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
+DWC3 glue layer is hardware layer around Synopsys DesignWare
+USB3 core. Its purpose is to supply Synopsys IP with required
+clocks, voltages and interface it with the rest of the SoC.
 
-Works for me. Is also needed by libpfm4 uncore PCU events.
-Now results make more sense. Please apply.
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/usb/dwc3/Kconfig    |    8 ++
+ drivers/usb/dwc3/Makefile   |    1 +
+ drivers/usb/dwc3/dwc3-msm.c |  174 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 183 insertions(+)
+ create mode 100644 drivers/usb/dwc3/dwc3-msm.c
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
+diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+index 3e225d5..e2032c4 100644
+--- a/drivers/usb/dwc3/Kconfig
++++ b/drivers/usb/dwc3/Kconfig
+@@ -70,6 +70,14 @@ config USB_DWC3_PCI
+ 	  One such PCIe-based platform is Synopsys' PCIe HAPS model of
+ 	  this IP.
+ 
++config USB_DWC3_MSM
++	tristate "Qualcomm MSM/APQ Platforms"
++	default USB_DWC3
++	select USB_MSM_DWC3_PHYS
++	help
++	  Recent Qualcomm SoCs ship with one DesignWare Core USB3 IP inside,
++	  say 'Y' or 'M' if you have one such device.
++
+ comment "Debugging features"
+ 
+ config USB_DWC3_DEBUG
+diff --git a/drivers/usb/dwc3/Makefile b/drivers/usb/dwc3/Makefile
+index dd17601..5226681 100644
+--- a/drivers/usb/dwc3/Makefile
++++ b/drivers/usb/dwc3/Makefile
+@@ -32,3 +32,4 @@ endif
+ obj-$(CONFIG_USB_DWC3_OMAP)		+= dwc3-omap.o
+ obj-$(CONFIG_USB_DWC3_EXYNOS)		+= dwc3-exynos.o
+ obj-$(CONFIG_USB_DWC3_PCI)		+= dwc3-pci.o
++obj-$(CONFIG_USB_DWC3_MSM)		+= dwc3-msm.o
+diff --git a/drivers/usb/dwc3/dwc3-msm.c b/drivers/usb/dwc3/dwc3-msm.c
+new file mode 100644
+index 0000000..f442249
+--- /dev/null
++++ b/drivers/usb/dwc3/dwc3-msm.c
+@@ -0,0 +1,174 @@
++/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/consumer.h>
++#include <linux/usb/phy.h>
++
++struct dwc3_msm {
++	struct device		*dev;
++	void __iomem		*base;
++
++	struct clk		*core_clk;
++	struct clk		*iface_clk;
++	struct clk		*sleep_clk;
++	struct clk		*utmi_clk;
++
++	struct regulator	*gdsc;
++};
++
++static int dwc3_msm_probe(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct dwc3_msm *mdwc;
++	struct resource *res;
++	void __iomem *tcsr;
++	int ret = 0;
++
++	dev_info(&pdev->dev, "MSM DWC3\n");
++
++	mdwc = devm_kzalloc(&pdev->dev, sizeof(*mdwc), GFP_KERNEL);
++	if (!mdwc) {
++		dev_err(&pdev->dev, "not enough memory\n");
++		return -ENOMEM;
++	}
++
++	platform_set_drvdata(pdev, mdwc);
++	mdwc->dev = &pdev->dev;
++
++	mdwc->gdsc = devm_regulator_get(mdwc->dev, "gdsc");
++
++	mdwc->core_clk = devm_clk_get(&pdev->dev, "core_clk");
++	if (IS_ERR(mdwc->core_clk)) {
++		dev_err(&pdev->dev, "failed to get core_clk\n");
++		return PTR_ERR(mdwc->core_clk);
++	}
++
++	mdwc->iface_clk = devm_clk_get(&pdev->dev, "iface_clk");
++	if (IS_ERR(mdwc->iface_clk)) {
++		dev_err(&pdev->dev, "failed to get iface_clk\n");
++		return PTR_ERR(mdwc->iface_clk);
++	}
++
++	mdwc->sleep_clk = devm_clk_get(&pdev->dev, "sleep_clk");
++	if (IS_ERR(mdwc->sleep_clk)) {
++		dev_err(&pdev->dev, "failed to get sleep_clk\n");
++		return  PTR_ERR(mdwc->sleep_clk);
++	}
++
++	mdwc->utmi_clk = devm_clk_get(&pdev->dev, "utmi_clk");
++	if (IS_ERR(mdwc->utmi_clk)) {
++		dev_err(&pdev->dev, "failed to get utmi_clk\n");
++		return  PTR_ERR(mdwc->utmi_clk);
++	}
++
++	if (!IS_ERR(mdwc->gdsc)) {
++		ret = regulator_enable(mdwc->gdsc);
++		if (ret)
++			dev_err(mdwc->dev, "unable to enable usb3 gdsc\n");
++	}
++
++	/*
++	 * DWC3 Core requires its CORE CLK (aka master / bus clk) to
++	 * run at 125Mhz in SSUSB mode and >60MHZ for HSUSB mode.
++	 */
++	clk_set_rate(mdwc->core_clk, 125000000);
++	clk_prepare_enable(mdwc->core_clk);
++	clk_prepare_enable(mdwc->iface_clk);
++	clk_prepare_enable(mdwc->sleep_clk);
++	clk_prepare_enable(mdwc->utmi_clk);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	tcsr = devm_ioremap_resource(&pdev->dev, res);
++	if (!tcsr) {
++		dev_dbg(&pdev->dev, "tcsr ioremap failed\n");
++	} else {
++		/* TODO: This has to be revised */
++
++		/* Enable USB3 on the primary USB port. */
++		writel_relaxed(0x1, tcsr);
++		/*
++		 * Ensure that TCSR write is completed before
++		 * USB registers initialization.
++		 */
++		mb();
++	}
++
++	ret = of_platform_populate(node, NULL, NULL, &pdev->dev);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to add create dwc3 core\n");
++		goto dis_clks;
++	}
++
++	return 0;
++
++dis_clks:
++	clk_disable_unprepare(mdwc->utmi_clk);
++	clk_disable_unprepare(mdwc->sleep_clk);
++	clk_disable_unprepare(mdwc->iface_clk);
++	clk_disable_unprepare(mdwc->core_clk);
++	if (!IS_ERR(mdwc->gdsc)) {
++		ret = regulator_disable(mdwc->gdsc);
++		if (ret)
++			dev_err(mdwc->dev, "cannot disable usb3 gdsc\n");
++	}
++
++	return ret;
++}
++
++static int dwc3_msm_remove(struct platform_device *pdev)
++{
++	struct dwc3_msm	*mdwc = platform_get_drvdata(pdev);
++	int ret;
++
++	clk_disable_unprepare(mdwc->utmi_clk);
++	clk_disable_unprepare(mdwc->sleep_clk);
++	clk_disable_unprepare(mdwc->iface_clk);
++	clk_disable_unprepare(mdwc->core_clk);
++
++	if (!IS_ERR(mdwc->gdsc)) {
++		ret = regulator_disable(mdwc->gdsc);
++		if (ret)
++			dev_err(mdwc->dev, "cannot disable usb3 gdsc\n");
++	}
++
++	return 0;
++}
++
++static const struct of_device_id of_dwc3_matach[] = {
++	{
++		.compatible = "qcom,dwc3",
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, of_dwc3_matach);
++
++static struct platform_driver dwc3_msm_driver = {
++	.probe		= dwc3_msm_probe,
++	.remove		= dwc3_msm_remove,
++	.driver		= {
++		.name	= "msm-dwc3",
++		.owner	= THIS_MODULE,
++		.of_match_table	= of_dwc3_matach,
++	},
++};
++
++module_platform_driver(dwc3_msm_driver);
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("DesignWare USB3 MSM Glue Layer");
+-- 
+1.7.9.5
 
-
->
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
->  arch/x86/kernel/cpu/perf_event_intel_uncore.h | 1 +
->  2 files changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> index 6b8b9c9..e9696d8 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -301,7 +301,7 @@ static struct attribute *snbep_uncore_cbox_formats_attr[] = {
->  };
->
->  static struct attribute *snbep_uncore_pcu_formats_attr[] = {
-> -       &format_attr_event.attr,
-> +       &format_attr_event_ext.attr,
->         &format_attr_occ_sel.attr,
->         &format_attr_edge.attr,
->         &format_attr_inv.attr,
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-> index 628500e..a80ab71 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-> @@ -117,6 +117,7 @@
->                                 (SNBEP_PMON_CTL_EV_SEL_MASK | \
->                                  SNBEP_PCU_MSR_PMON_CTL_OCC_SEL_MASK | \
->                                  SNBEP_PMON_CTL_EDGE_DET | \
-> +                                SNBEP_PMON_CTL_EV_SEL_EXT | \
->                                  SNBEP_PMON_CTL_INVERT | \
->                                  SNBEP_PCU_MSR_PMON_CTL_TRESH_MASK | \
->                                  SNBEP_PCU_MSR_PMON_CTL_OCC_INVERT | \
-> --
-> 1.8.1.4
->
