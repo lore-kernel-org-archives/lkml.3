@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031159Ab3HIVAE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 17:00:04 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:26150 "EHLO
+	id S1031190Ab3HIVAO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 17:00:14 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:26154 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031117Ab3HIVAA (ORCPT
+	with ESMTP id S1031162Ab3HIVAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 17:00:00 -0400
-Message-ID: <201308092100.r79L00P9011261@lab-41.internal.tilera.com>
+	Fri, 9 Aug 2013 17:00:08 -0400
+Message-ID: <201308092100.r79L07iF011272@lab-41.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 9 Aug 2013 16:09:41 -0400
-Subject: [PATCH] tile: do less L1 I-cache eviction
+Date: Fri, 9 Aug 2013 16:50:36 -0400
+Subject: [PATCH] tile: group .hottext* sections properly in vmlinux.lds
 To: <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -18,36 +18,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had been doing an automatic full eviction of the L1 I$
-everywhere whenever we did a kernel-space TLB flush.  It turns
-out this isn't necessary, since all the callers already handle
-doing a flush if necessary.
+With this change such sections are grouped with regular text
+in the vmlinux image; this change puts them at the front,
+which is where the standard Linux includes .text.hot*.
+This change should fix a recently-observed bug where a bunch of
+symbols were being omitted from the /proc/kallsyms output
+because they fell between _etext and _sinittext.
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/kernel/tlb.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/tile/kernel/vmlinux.lds.S | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/tile/kernel/tlb.c b/arch/tile/kernel/tlb.c
-index 3fd54d5..f23b535 100644
---- a/arch/tile/kernel/tlb.c
-+++ b/arch/tile/kernel/tlb.c
-@@ -91,8 +91,14 @@ void flush_tlb_all(void)
- 	}
- }
- 
-+/*
-+ * Callers need to flush the L1I themselves if necessary, e.g. for
-+ * kernel module unload.  Otherwise we assume callers are not using
-+ * executable pgprot_t's.  Using EVICT_L1I means that dataplane cpus
-+ * will get an unnecessary interrupt otherwise.
-+ */
- void flush_tlb_kernel_range(unsigned long start, unsigned long end)
- {
--	flush_remote(0, HV_FLUSH_EVICT_L1I, cpu_online_mask,
-+	flush_remote(0, 0, NULL,
- 		     start, end - start, PAGE_SIZE, cpu_online_mask, NULL, 0);
- }
+diff --git a/arch/tile/kernel/vmlinux.lds.S b/arch/tile/kernel/vmlinux.lds.S
+index aab9955..c7ae53d 100644
+--- a/arch/tile/kernel/vmlinux.lds.S
++++ b/arch/tile/kernel/vmlinux.lds.S
+@@ -46,6 +46,8 @@ SECTIONS
+     KPROBES_TEXT
+     IRQENTRY_TEXT
+     __fix_text_end = .;   /* tile-cpack won't rearrange before this */
++    ALIGN_FUNCTION();
++    *(.hottext*)
+     TEXT_TEXT
+     *(.text.*)
+     *(.coldtext*)
 -- 
 1.8.3.1
 
