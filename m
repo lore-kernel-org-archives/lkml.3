@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967406Ab3HIBmx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55326 "EHLO
+	id S967393Ab3HIBmw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55314 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967120Ab3HIBl7 (ORCPT
+	with ESMTP id S967117Ab3HIBl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:59 -0400
+	Thu, 8 Aug 2013 21:41:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 21/22] af_key: more info leaks in pfkey messages
-Date: Thu,  8 Aug 2013 18:41:37 -0700
-Message-Id: <20130809013953.833985235@linuxfoundation.org>
+Subject: [ 18/22] ipv6: take rtnl_lock and mark mrt6 table as freed on namespace cleanup
+Date: Thu,  8 Aug 2013 18:41:34 -0700
+Message-Id: <20130809013953.201207019@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
 References: <20130809013949.226228694@linuxfoundation.org>
@@ -29,50 +28,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit ff862a4668dd6dba962b1d2d8bd344afa6375683 ]
+[ Upstream commit 905a6f96a1b18e490a75f810d733ced93c39b0e5 ]
 
-This is inspired by a5cc68f3d6 "af_key: fix info leaks in notify
-messages".  There are some struct members which don't get initialized
-and could disclose small amounts of private information.
+Otherwise we end up dereferencing the already freed net->ipv6.mrt pointer
+which leads to a panic (from Srivatsa S. Bhat):
 
-Acked-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+BUG: unable to handle kernel paging request at ffff882018552020
+IP: [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
+PGD 290a067 PUD 207ffe0067 PMD 207ff1d067 PTE 8000002018552060
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+Modules linked in: ebtable_nat ebtables nfs fscache nf_conntrack_ipv4 nf_defrag_ipv4 ipt_REJECT xt_CHECKSUM iptable_mangle iptable_filter ip_tables nfsd lockd nfs_acl exportfs auth_rpcgss autofs4 sunrpc 8021q garp bridge stp llc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
++ip6_tables ipv6 vfat fat vhost_net macvtap macvlan vhost tun kvm_intel kvm uinput iTCO_wdt iTCO_vendor_support cdc_ether usbnet mii microcode i2c_i801 i2c_core lpc_ich mfd_core shpchp ioatdma dca mlx4_core be2net wmi acpi_cpufreq mperf ext4 jbd2 mbcache dm_mirror dm_region_hash dm_log dm_mod
+CPU: 0 PID: 7 Comm: kworker/u33:0 Not tainted 3.11.0-rc1-ea45e-a #4
+Hardware name: IBM  -[8737R2A]-/00Y2738, BIOS -[B2E120RUS-1.20]- 11/30/2012
+Workqueue: netns cleanup_net
+task: ffff8810393641c0 ti: ffff881039366000 task.ti: ffff881039366000
+RIP: 0010:[<ffffffffa0366b02>]  [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
+RSP: 0018:ffff881039367bd8  EFLAGS: 00010286
+RAX: ffff881039367fd8 RBX: ffff882018552000 RCX: dead000000200200
+RDX: 0000000000000000 RSI: ffff881039367b68 RDI: ffff881039367b68
+RBP: ffff881039367bf8 R08: ffff881039367b68 R09: 2222222222222222
+R10: 2222222222222222 R11: 2222222222222222 R12: ffff882015a7a040
+R13: ffff882014eb89c0 R14: ffff8820289e2800 R15: 0000000000000000
+FS:  0000000000000000(0000) GS:ffff88103fc00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: ffff882018552020 CR3: 0000000001c0b000 CR4: 00000000000407f0
+Stack:
+ ffff881039367c18 ffff882014eb89c0 ffff882015e28c00 0000000000000000
+ ffff881039367c18 ffffffffa034d9d1 ffff8820289e2800 ffff882014eb89c0
+ ffff881039367c58 ffffffff815bdecb ffffffff815bddf2 ffff882014eb89c0
+Call Trace:
+ [<ffffffffa034d9d1>] rawv6_close+0x21/0x40 [ipv6]
+ [<ffffffff815bdecb>] inet_release+0xfb/0x220
+ [<ffffffff815bddf2>] ? inet_release+0x22/0x220
+ [<ffffffffa032686f>] inet6_release+0x3f/0x50 [ipv6]
+ [<ffffffff8151c1d9>] sock_release+0x29/0xa0
+ [<ffffffff81525520>] sk_release_kernel+0x30/0x70
+ [<ffffffffa034f14b>] icmpv6_sk_exit+0x3b/0x80 [ipv6]
+ [<ffffffff8152fff9>] ops_exit_list+0x39/0x60
+ [<ffffffff815306fb>] cleanup_net+0xfb/0x1a0
+ [<ffffffff81075e3a>] process_one_work+0x1da/0x610
+ [<ffffffff81075dc9>] ? process_one_work+0x169/0x610
+ [<ffffffff81076390>] worker_thread+0x120/0x3a0
+ [<ffffffff81076270>] ? process_one_work+0x610/0x610
+ [<ffffffff8107da2e>] kthread+0xee/0x100
+ [<ffffffff8107d940>] ? __init_kthread_worker+0x70/0x70
+ [<ffffffff8162a99c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8107d940>] ? __init_kthread_worker+0x70/0x70
+Code: 20 48 89 5d e8 4c 89 65 f0 4c 89 6d f8 66 66 66 66 90 4c 8b 67 30 49 89 fd e8 db 3c 1e e1 49 8b 9c 24 90 08 00 00 48 85 db 74 06 <4c> 39 6b 20 74 20 bb f3 ff ff ff e8 8e 3c 1e e1 89 d8 4c 8b 65
+RIP  [<ffffffffa0366b02>] ip6mr_sk_done+0x32/0xb0 [ipv6]
+ RSP <ffff881039367bd8>
+CR2: ffff882018552020
+
+Reported-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/key/af_key.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv6/ip6mr.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -2073,6 +2073,7 @@ static int pfkey_xfrm_policy2msg(struct
- 			pol->sadb_x_policy_type = IPSEC_POLICY_NONE;
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -256,10 +256,12 @@ static void __net_exit ip6mr_rules_exit(
+ {
+ 	struct mr6_table *mrt, *next;
+ 
++	rtnl_lock();
+ 	list_for_each_entry_safe(mrt, next, &net->ipv6.mr6_tables, list) {
+ 		list_del(&mrt->list);
+ 		ip6mr_free_table(mrt);
  	}
- 	pol->sadb_x_policy_dir = dir+1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = xp->index;
- 	pol->sadb_x_policy_priority = xp->priority;
++	rtnl_unlock();
+ 	fib_rules_unregister(net->ipv6.mr6_rules_ops);
+ }
+ #else
+@@ -286,7 +288,10 @@ static int __net_init ip6mr_rules_init(s
  
-@@ -3108,7 +3109,9 @@ static int pfkey_send_acquire(struct xfr
- 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
- 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
- 	pol->sadb_x_policy_dir = dir+1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = xp->index;
-+	pol->sadb_x_policy_priority = xp->priority;
- 
- 	/* Set sadb_comb's. */
- 	if (x->id.proto == IPPROTO_AH)
-@@ -3496,6 +3499,7 @@ static int pfkey_send_migrate(const stru
- 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
- 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
- 	pol->sadb_x_policy_dir = dir + 1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = 0;
- 	pol->sadb_x_policy_priority = 0;
+ static void __net_exit ip6mr_rules_exit(struct net *net)
+ {
++	rtnl_lock();
+ 	ip6mr_free_table(net->ipv6.mrt6);
++	net->ipv6.mrt6 = NULL;
++	rtnl_unlock();
+ }
+ #endif
  
 
 
