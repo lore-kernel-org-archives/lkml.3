@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967477Ab3HIB6m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:58:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55633 "EHLO
+	id S967807Ab3HICS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:18:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55644 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967372Ab3HIB6j (ORCPT
+	with ESMTP id S967468Ab3HIB6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:39 -0400
+	Thu, 8 Aug 2013 21:58:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [ 022/102] serial/mxs-auart: fix race condition in interrupt handler
-Date: Thu,  8 Aug 2013 18:56:58 -0700
-Message-Id: <20130809015015.175626439@linuxfoundation.org>
+        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
+Subject: [ 017/102] parisc: Fix cache routines to ignore vmas with an invalid pfn
+Date: Thu,  8 Aug 2013 18:56:53 -0700
+Message-Id: <20130809015014.112373499@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,60 +26,216 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+From: John David Anglin <dave.anglin@bell.net>
 
-commit d970d7fe65adff5efe75b4a73c4ffc9be57089f7 upstream.
+commit 50861f5a02dbf939c27d35a26c472885e2844188 upstream.
 
-The handler needs to ack the pending events before actually handling them.
-Otherwise a new event might come in after it it considered non-pending or
-handled and is acked then without being handled. So this event is only
-noticed when the next interrupt happens.
+The parisc architecture does not have a pte special bit. As a result,
+special mappings are handled with the VM_PFNMAP and VM_MIXEDMAP flags.
+VM_MIXEDMAP mappings may or may not have a "struct page" backing. When
+pfn_valid() is false, there is no "struct page" backing. Otherwise, they
+are treated as normal pages.
 
-Without this patch an i.MX28 based machine running an rt-patched kernel
-regularly hangs during boot.
+The FireGL driver uses the VM_MIXEDMAP without a backing "struct page".
+This treatment caused a panic due to a TLB data miss in
+update_mmu_cache. This appeared to be in the code generated for
+page_address(). We were in fact using a very circular bit of code to
+determine the physical address of the PFN in various cache routines.
+This wasn't valid when there was no "struct page" backing.  The needed
+address can in fact be determined simply from the PFN itself without
+using the "struct page".
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+The attached patch updates update_mmu_cache(), flush_cache_mm(),
+flush_cache_range() and flush_cache_page() to check pfn_valid() and to
+directly compute the PFN physical and virtual addresses.
+
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/mxs-auart.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ arch/parisc/kernel/cache.c |  133 +++++++++++++++++++++++----------------------
+ 1 file changed, 70 insertions(+), 63 deletions(-)
 
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -678,11 +678,18 @@ static void mxs_auart_settermios(struct
+--- a/arch/parisc/kernel/cache.c
++++ b/arch/parisc/kernel/cache.c
+@@ -71,18 +71,27 @@ flush_cache_all_local(void)
+ }
+ EXPORT_SYMBOL(flush_cache_all_local);
  
- static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
- {
--	u32 istatus, istat;
-+	u32 istat;
- 	struct mxs_auart_port *s = context;
- 	u32 stat = readl(s->port.membase + AUART_STAT);
- 
--	istatus = istat = readl(s->port.membase + AUART_INTR);
-+	istat = readl(s->port.membase + AUART_INTR);
++/* Virtual address of pfn.  */
++#define pfn_va(pfn)	__va(PFN_PHYS(pfn))
 +
-+	/* ack irq */
-+	writel(istat & (AUART_INTR_RTIS
-+		| AUART_INTR_TXIS
-+		| AUART_INTR_RXIS
-+		| AUART_INTR_CTSMIS),
-+			s->port.membase + AUART_INTR_CLR);
+ void
+ update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *ptep)
+ {
+-	struct page *page = pte_page(*ptep);
++	unsigned long pfn = pte_pfn(*ptep);
++	struct page *page;
  
- 	if (istat & AUART_INTR_CTSMIS) {
- 		uart_handle_cts_change(&s->port, stat & AUART_STAT_CTS);
-@@ -702,12 +709,6 @@ static irqreturn_t mxs_auart_irq_handle(
- 		istat &= ~AUART_INTR_TXIS;
- 	}
+-	if (pfn_valid(page_to_pfn(page)) && page_mapping(page) &&
+-	    test_bit(PG_dcache_dirty, &page->flags)) {
++	/* We don't have pte special.  As a result, we can be called with
++	   an invalid pfn and we don't need to flush the kernel dcache page.
++	   This occurs with FireGL card in C8000.  */
++	if (!pfn_valid(pfn))
++		return;
  
--	writel(istatus & (AUART_INTR_RTIS
--		| AUART_INTR_TXIS
--		| AUART_INTR_RXIS
--		| AUART_INTR_CTSMIS),
--			s->port.membase + AUART_INTR_CLR);
--
- 	return IRQ_HANDLED;
+-		flush_kernel_dcache_page(page);
++	page = pfn_to_page(pfn);
++	if (page_mapping(page) && test_bit(PG_dcache_dirty, &page->flags)) {
++		flush_kernel_dcache_page_addr(pfn_va(pfn));
+ 		clear_bit(PG_dcache_dirty, &page->flags);
+ 	} else if (parisc_requires_coherency())
+-		flush_kernel_dcache_page(page);
++		flush_kernel_dcache_page_addr(pfn_va(pfn));
  }
  
+ void
+@@ -495,44 +504,42 @@ static inline pte_t *get_ptep(pgd_t *pgd
+ 
+ void flush_cache_mm(struct mm_struct *mm)
+ {
++	struct vm_area_struct *vma;
++	pgd_t *pgd;
++
+ 	/* Flushing the whole cache on each cpu takes forever on
+ 	   rp3440, etc.  So, avoid it if the mm isn't too big.  */
+-	if (mm_total_size(mm) < parisc_cache_flush_threshold) {
+-		struct vm_area_struct *vma;
+-
+-		if (mm->context == mfsp(3)) {
+-			for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-				flush_user_dcache_range_asm(vma->vm_start,
+-					vma->vm_end);
+-				if (vma->vm_flags & VM_EXEC)
+-					flush_user_icache_range_asm(
+-					  vma->vm_start, vma->vm_end);
+-			}
+-		} else {
+-			pgd_t *pgd = mm->pgd;
+-
+-			for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-				unsigned long addr;
++	if (mm_total_size(mm) >= parisc_cache_flush_threshold) {
++		flush_cache_all();
++		return;
++	}
+ 
+-				for (addr = vma->vm_start; addr < vma->vm_end;
+-				     addr += PAGE_SIZE) {
+-					pte_t *ptep = get_ptep(pgd, addr);
+-					if (ptep != NULL) {
+-						pte_t pte = *ptep;
+-						__flush_cache_page(vma, addr,
+-						  page_to_phys(pte_page(pte)));
+-					}
+-				}
+-			}
++	if (mm->context == mfsp(3)) {
++		for (vma = mm->mmap; vma; vma = vma->vm_next) {
++			flush_user_dcache_range_asm(vma->vm_start, vma->vm_end);
++			if ((vma->vm_flags & VM_EXEC) == 0)
++				continue;
++			flush_user_icache_range_asm(vma->vm_start, vma->vm_end);
+ 		}
+ 		return;
+ 	}
+ 
+-#ifdef CONFIG_SMP
+-	flush_cache_all();
+-#else
+-	flush_cache_all_local();
+-#endif
++	pgd = mm->pgd;
++	for (vma = mm->mmap; vma; vma = vma->vm_next) {
++		unsigned long addr;
++
++		for (addr = vma->vm_start; addr < vma->vm_end;
++		     addr += PAGE_SIZE) {
++			unsigned long pfn;
++			pte_t *ptep = get_ptep(pgd, addr);
++			if (!ptep)
++				continue;
++			pfn = pte_pfn(*ptep);
++			if (!pfn_valid(pfn))
++				continue;
++			__flush_cache_page(vma, addr, PFN_PHYS(pfn));
++		}
++	}
+ }
+ 
+ void
+@@ -556,33 +563,32 @@ flush_user_icache_range(unsigned long st
+ void flush_cache_range(struct vm_area_struct *vma,
+ 		unsigned long start, unsigned long end)
+ {
+-	BUG_ON(!vma->vm_mm->context);
++	unsigned long addr;
++	pgd_t *pgd;
+ 
+-	if ((end - start) < parisc_cache_flush_threshold) {
+-		if (vma->vm_mm->context == mfsp(3)) {
+-			flush_user_dcache_range_asm(start, end);
+-			if (vma->vm_flags & VM_EXEC)
+-				flush_user_icache_range_asm(start, end);
+-		} else {
+-			unsigned long addr;
+-			pgd_t *pgd = vma->vm_mm->pgd;
++	BUG_ON(!vma->vm_mm->context);
+ 
+-			for (addr = start & PAGE_MASK; addr < end;
+-			     addr += PAGE_SIZE) {
+-				pte_t *ptep = get_ptep(pgd, addr);
+-				if (ptep != NULL) {
+-					pte_t pte = *ptep;
+-					flush_cache_page(vma,
+-					   addr, pte_pfn(pte));
+-				}
+-			}
+-		}
+-	} else {
+-#ifdef CONFIG_SMP
++	if ((end - start) >= parisc_cache_flush_threshold) {
+ 		flush_cache_all();
+-#else
+-		flush_cache_all_local();
+-#endif
++		return;
++	}
++
++	if (vma->vm_mm->context == mfsp(3)) {
++		flush_user_dcache_range_asm(start, end);
++		if (vma->vm_flags & VM_EXEC)
++			flush_user_icache_range_asm(start, end);
++		return;
++	}
++
++	pgd = vma->vm_mm->pgd;
++	for (addr = start & PAGE_MASK; addr < end; addr += PAGE_SIZE) {
++		unsigned long pfn;
++		pte_t *ptep = get_ptep(pgd, addr);
++		if (!ptep)
++			continue;
++		pfn = pte_pfn(*ptep);
++		if (pfn_valid(pfn))
++			__flush_cache_page(vma, addr, PFN_PHYS(pfn));
+ 	}
+ }
+ 
+@@ -591,9 +597,10 @@ flush_cache_page(struct vm_area_struct *
+ {
+ 	BUG_ON(!vma->vm_mm->context);
+ 
+-	flush_tlb_page(vma, vmaddr);
+-	__flush_cache_page(vma, vmaddr, page_to_phys(pfn_to_page(pfn)));
+-
++	if (pfn_valid(pfn)) {
++		flush_tlb_page(vma, vmaddr);
++		__flush_cache_page(vma, vmaddr, PFN_PHYS(pfn));
++	}
+ }
+ 
+ #ifdef CONFIG_PARISC_TMPALIAS
 
 
