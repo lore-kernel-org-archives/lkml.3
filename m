@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968164Ab3HIQkb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:40:31 -0400
-Received: from mx1.netapp.com ([216.240.18.38]:27492 "EHLO mx1.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968090Ab3HIQk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:40:29 -0400
-X-IronPort-AV: E=Sophos;i="4.89,846,1367996400"; 
-   d="scan'208";a="272476659"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>
-Subject: [GIT PULL] Please pull NFS client bug fixes
-Thread-Topic: [GIT PULL] Please pull NFS client bug fixes
-Thread-Index: AQHOlR8nStyyDnfcqk2aYfXUb6aWRA==
-Date: Fri, 9 Aug 2013 16:40:27 +0000
-Message-ID: <1376066427.7093.1.camel@leira.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <1FBD0595CBB4E44A9882F77929B79755@hq.netapp.com>
+	id S1030411Ab3HIQlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:41:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60354 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968090Ab3HIQlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 12:41:04 -0400
+Date: Fri, 9 Aug 2013 17:41:00 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Steve Twiss <stwiss.opensource@diasemi.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130809164100.GL6427@sirena.org.uk>
+References: <1376065558.7023.1.camel@phoenix>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8OUNzGYp5aJwqtH6"
+Content-Disposition: inline
+In-Reply-To: <1376065558.7023.1.camel@phoenix>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: da9210: Remove redundant MODULE_ALIAS
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r79Gebdc011404
 
-Hi Linus,
 
-The following changes since commit c095ba7224d8edc71dcef0d655911399a8bd4a3f:
+--8OUNzGYp5aJwqtH6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-  Linux 3.11-rc4 (2013-08-04 13:46:46 -0700)
+On Sat, Aug 10, 2013 at 12:25:58AM +0800, Axel Lin wrote:
 
-are available in the git repository at:
+> -MODULE_AUTHOR("S Twiss <stwiss.opensource@diasemi.com>");
+> +MODULE_AUTHOR("Steve Twiss <stwiss.opensource@diasemi.com>");
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.11-4
+It's perfectly reasonable for someone to want to be referred to by their
+initial, or their full spelled out name, or a nickname, or...
 
-for you to fetch changes up to b72888cb0ba63b2dfc6c8d3cd78a7fea584bebc6:
+--8OUNzGYp5aJwqtH6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  NFSv4: Fix up nfs4_proc_lookup_mountpoint (2013-08-07 20:47:26 -0400)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-----------------------------------------------------------------
-NFS client bugfixes for 3.11
+iQIcBAEBAgAGBQJSBRuYAAoJELSic+t+oim9dvYP/1ih0QWymYalFpSXD/GTaGVt
+isNZibehvEnZJ3rSMsSz19CAuYZqD8jo4+9FZrxAd1VDRfj+hnyeGKV1aM/BLc52
+vaq/fl0nU+mVMUDKqR5EtxnlgipxphUFRokBU8QgGe3RfvUSFwvAjj/DMKVIa0GO
+brOXnXD5FUHjWwmi+BA2Xx4Jg4EqagfvlR8ywA4/bExj5yefzrUEQqqMtZkq13T7
+5OfHDQs+Ki0/q83EDWrnRuFWOKpLJDrrJy2DJVIbB3hMh86hz9oA09dFu1iNQacU
+41cN+CP8oM29scnH73d5AdwZcVuTyjlb+u887bgTVRgjSDDOdDdupBGMHmC8woBh
+VD/0CHCvg+MkmryLbvNJkBaIex33a+f/DKW5nat6amn6fqwmP/CvAkAr6AyQLhpm
+12XzxVy8AoKuowp2ubk21c4gTygOnnS3i6jQEdydv79L9ot+wPJkiH66k26xpsyX
+LXPdKUFgfXbME6LoSR0CYcxx4hTo7tmRe9CILB3EV1+vsvcMxDqeqTBbFRqRANDk
+5W2PXZDzbK5VVlq8HicguPZRw7EWd/QGK2rrsLM+vmli8X64DznRion5oy+zxxVa
+DUDH0efUs574KLyJkRjGaUXB077nME4LBuUxbEpwJxYMnozQd7jo2kVQzU6A0PdM
+7kgftjrwFqi+oFudNjPj
+=sglm
+-----END PGP SIGNATURE-----
 
-- Stable patch for lockd to fix Oopses due to inappropriate calls to
-  utsname()->nodename
-- Stable patches for sunrpc to fix Oopses on shutdown when using
-  AF_LOCAL sockets with rpcbind
-- Fix memory leak and error checking issues in nfs4_proc_lookup_mountpoint
-- Fix a regression with the sync mount option failing to work for nfs4 mounts
-- Fix a writeback performance issue when doing cache invalidation
-- Remove an incorrect call to nfs_setsecurity in nfs_fhget
-
-----------------------------------------------------------------
-Scott Mayhew (1):
-      NFSv4: Fix the sync mount option for nfs4 mounts
-
-Trond Myklebust (6):
-      LOCKD: Don't call utsname()->nodename from nlmclnt_setlockargs
-      SUNRPC: Don't auto-disconnect from the local rpcbind socket
-      SUNRPC: If the rpcbind channel is disconnected, fail the call to unregister
-      NFS: Fix writeback performance issue on cache invalidation
-      NFS: Remove unnecessary call to nfs_setsecurity in nfs_fhget()
-      NFSv4: Fix up nfs4_proc_lookup_mountpoint
-
- fs/lockd/clntlock.c          | 13 ++++++++----
- fs/lockd/clntproc.c          |  5 +++--
- fs/nfs/inode.c               | 11 +++++++---
- fs/nfs/nfs4proc.c            |  8 +++-----
- fs/nfs/super.c               |  4 ++++
- include/linux/sunrpc/sched.h |  1 +
- net/sunrpc/clnt.c            |  4 ++++
- net/sunrpc/netns.h           |  1 +
- net/sunrpc/rpcb_clnt.c       | 48 ++++++++++++++++++++++++++++++++------------
- 9 files changed, 68 insertions(+), 27 deletions(-)
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--8OUNzGYp5aJwqtH6--
