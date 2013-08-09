@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967827Ab3HICXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:23:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55585 "EHLO
+	id S967494Ab3HICXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:23:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55588 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967140Ab3HIB6Z (ORCPT
+	with ESMTP id S967346Ab3HIB60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:58:25 -0400
+	Thu, 8 Aug 2013 21:58:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Pitre <nico@linaro.org>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 006/102] ARM: allow kuser helpers to be removed from the vector page
-Date: Thu,  8 Aug 2013 18:56:42 -0700
-Message-Id: <20130809015011.693047604@linuxfoundation.org>
+Subject: [ 007/102] ARM: move signal handlers into a vdso-like page
+Date: Thu,  8 Aug 2013 18:56:43 -0700
+Message-Id: <20130809015011.928108410@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -29,176 +28,235 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit f6f91b0d9fd971c630cef908dde8fe8795aefbf8 upstream.
+commit 48be69a026b2c17350a5ef18a1959a919f60be7d upstream.
 
-Provide a kernel configuration option to allow the kernel user helpers
-to be removed from the vector page, thereby preventing their use with
-ROP (return orientated programming) attacks.  This option is only
-visible for CPU architectures which natively support all the operations
-which kernel user helpers would normally provide, and must be enabled
-with caution.
+Move the signal handlers into a VDSO page rather than keeping them in
+the vectors page.  This allows us to place them randomly within this
+page, and also map the page at a random location within userspace
+further protecting these code fragments from ROP attacks.  The new
+VDSO page is also poisoned in the same way as the vector page.
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/entry-armv.S |    3 +++
- arch/arm/kernel/traps.c      |   23 ++++++++++++++---------
- arch/arm/mm/Kconfig          |   34 ++++++++++++++++++++++++++++++++++
- 3 files changed, 51 insertions(+), 9 deletions(-)
+ arch/arm/include/asm/elf.h |    4 +++
+ arch/arm/include/asm/mmu.h |    1 
+ arch/arm/kernel/process.c  |   40 +++++++++++++++++++++++++++++++++---
+ arch/arm/kernel/signal.c   |   50 +++++++++++++++++++++++++++++++++++++++------
+ arch/arm/kernel/signal.h   |   12 ----------
+ arch/arm/kernel/traps.c    |    9 --------
+ 6 files changed, 86 insertions(+), 30 deletions(-)
 
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -752,6 +752,7 @@ ENDPROC(__switch_to)
- 	.endr
- 	.endm
+--- a/arch/arm/include/asm/elf.h
++++ b/arch/arm/include/asm/elf.h
+@@ -130,4 +130,8 @@ struct mm_struct;
+ extern unsigned long arch_randomize_brk(struct mm_struct *mm);
+ #define arch_randomize_brk arch_randomize_brk
  
-+#ifdef CONFIG_KUSER_HELPERS
- 	.align	5
- 	.globl	__kuser_helper_start
- __kuser_helper_start:
-@@ -938,6 +939,8 @@ __kuser_helper_version:				@ 0xffff0ffc
- 	.globl	__kuser_helper_end
- __kuser_helper_end:
- 
-+#endif
++#define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
++struct linux_binprm;
++int arch_setup_additional_pages(struct linux_binprm *, int);
 +
-  THUMB(	.thumb	)
+ #endif
+--- a/arch/arm/include/asm/mmu.h
++++ b/arch/arm/include/asm/mmu.h
+@@ -8,6 +8,7 @@ typedef struct {
+ 	atomic64_t	id;
+ #endif
+ 	unsigned int	vmalloc_seq;
++	unsigned long	sigpage;
+ } mm_context_t;
  
+ #ifdef CONFIG_CPU_HAS_ASID
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -435,8 +435,8 @@ unsigned long arch_randomize_brk(struct
+ #ifdef CONFIG_MMU
  /*
+  * The vectors page is always readable from user space for the
+- * atomic helpers and the signal restart code. Insert it into the
+- * gate_vma so that it is visible through ptrace and /proc/<pid>/mem.
++ * atomic helpers. Insert it into the gate_vma so that it is visible
++ * through ptrace and /proc/<pid>/mem.
+  */
+ static struct vm_area_struct gate_vma = {
+ 	.vm_start	= 0xffff0000,
+@@ -468,6 +468,40 @@ int in_gate_area_no_mm(unsigned long add
+ 
+ const char *arch_vma_name(struct vm_area_struct *vma)
+ {
+-	return (vma == &gate_vma) ? "[vectors]" : NULL;
++	return (vma == &gate_vma) ? "[vectors]" :
++		(vma->vm_mm && vma->vm_start == vma->vm_mm->context.sigpage) ?
++		 "[sigpage]" : NULL;
++}
++
++extern struct page *get_signal_page(void);
++
++int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++{
++	struct mm_struct *mm = current->mm;
++	struct page *page;
++	unsigned long addr;
++	int ret;
++
++	page = get_signal_page();
++	if (!page)
++		return -ENOMEM;
++
++	down_write(&mm->mmap_sem);
++	addr = get_unmapped_area(NULL, 0, PAGE_SIZE, 0, 0);
++	if (IS_ERR_VALUE(addr)) {
++		ret = addr;
++		goto up_fail;
++	}
++
++	ret = install_special_mapping(mm, addr, PAGE_SIZE,
++		VM_READ | VM_EXEC | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC,
++		&page);
++
++	if (ret == 0)
++		mm->context.sigpage = addr;
++
++ up_fail:
++	up_write(&mm->mmap_sem);
++	return ret;
+ }
+ #endif
+--- a/arch/arm/kernel/signal.c
++++ b/arch/arm/kernel/signal.c
+@@ -8,6 +8,7 @@
+  * published by the Free Software Foundation.
+  */
+ #include <linux/errno.h>
++#include <linux/random.h>
+ #include <linux/signal.h>
+ #include <linux/personality.h>
+ #include <linux/uaccess.h>
+@@ -15,12 +16,11 @@
+ 
+ #include <asm/elf.h>
+ #include <asm/cacheflush.h>
++#include <asm/traps.h>
+ #include <asm/ucontext.h>
+ #include <asm/unistd.h>
+ #include <asm/vfp.h>
+ 
+-#include "signal.h"
+-
+ /*
+  * For ARM syscalls, we encode the syscall number into the instruction.
+  */
+@@ -40,11 +40,13 @@
+ #define SWI_THUMB_SIGRETURN	(0xdf00 << 16 | 0x2700 | (__NR_sigreturn - __NR_SYSCALL_BASE))
+ #define SWI_THUMB_RT_SIGRETURN	(0xdf00 << 16 | 0x2700 | (__NR_rt_sigreturn - __NR_SYSCALL_BASE))
+ 
+-const unsigned long sigreturn_codes[7] = {
++static const unsigned long sigreturn_codes[7] = {
+ 	MOV_R7_NR_SIGRETURN,    SWI_SYS_SIGRETURN,    SWI_THUMB_SIGRETURN,
+ 	MOV_R7_NR_RT_SIGRETURN, SWI_SYS_RT_SIGRETURN, SWI_THUMB_RT_SIGRETURN,
+ };
+ 
++static unsigned long signal_return_offset;
++
+ #ifdef CONFIG_CRUNCH
+ static int preserve_crunch_context(struct crunch_sigframe __user *frame)
+ {
+@@ -397,11 +399,14 @@ setup_return(struct pt_regs *regs, struc
+ 			return 1;
+ 
+ 		if (cpsr & MODE32_BIT) {
++			struct mm_struct *mm = current->mm;
+ 			/*
+-			 * 32-bit code can use the new high-page
+-			 * signal return code support.
++			 * 32-bit code can use the signal return page
++			 * except when the MPU has protected the vectors
++			 * page from PL0
+ 			 */
+-			retcode = KERN_SIGRETURN_CODE + (idx << 2) + thumb;
++			retcode = mm->context.sigpage + signal_return_offset +
++				  (idx << 2) + thumb;
+ 		} else {
+ 			/*
+ 			 * Ensure that the instruction cache sees
+@@ -603,3 +608,36 @@ do_work_pending(struct pt_regs *regs, un
+ 	} while (thread_flags & _TIF_WORK_MASK);
+ 	return 0;
+ }
++
++static struct page *signal_page;
++
++struct page *get_signal_page(void)
++{
++	if (!signal_page) {
++		unsigned long ptr;
++		unsigned offset;
++		void *addr;
++
++		signal_page = alloc_pages(GFP_KERNEL, 0);
++
++		if (!signal_page)
++			return NULL;
++
++		addr = page_address(signal_page);
++
++		/* Give the signal return code some randomness */
++		offset = 0x200 + (get_random_int() & 0x7fc);
++		signal_return_offset = offset;
++
++		/*
++		 * Copy signal return handlers into the vector page, and
++		 * set sigreturn to be a pointer to these.
++		 */
++		memcpy(addr + offset, sigreturn_codes, sizeof(sigreturn_codes));
++
++		ptr = (unsigned long)addr + offset;
++		flush_icache_range(ptr, ptr + sizeof(sigreturn_codes));
++	}
++
++	return signal_page;
++}
+--- a/arch/arm/kernel/signal.h
++++ /dev/null
+@@ -1,12 +0,0 @@
+-/*
+- *  linux/arch/arm/kernel/signal.h
+- *
+- *  Copyright (C) 2005-2009 Russell King.
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#define KERN_SIGRETURN_CODE	(CONFIG_VECTORS_BASE + 0x00000500)
+-
+-extern const unsigned long sigreturn_codes[7];
 --- a/arch/arm/kernel/traps.c
 +++ b/arch/arm/kernel/traps.c
-@@ -800,23 +800,32 @@ void __init trap_init(void)
- 	return;
- }
+@@ -35,8 +35,6 @@
+ #include <asm/tls.h>
+ #include <asm/system_misc.h>
  
--static void __init kuser_get_tls_init(unsigned long vectors)
-+#ifdef CONFIG_KUSER_HELPERS
-+static void __init kuser_init(void *vectors)
- {
-+	extern char __kuser_helper_start[], __kuser_helper_end[];
-+	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
-+
-+	memcpy(vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
-+
- 	/*
- 	 * vectors + 0xfe0 = __kuser_get_tls
- 	 * vectors + 0xfe8 = hardware TLS instruction at 0xffff0fe8
- 	 */
- 	if (tls_emu || has_tls_reg)
--		memcpy((void *)vectors + 0xfe0, (void *)vectors + 0xfe8, 4);
-+		memcpy(vectors + 0xfe0, vectors + 0xfe8, 4);
-+}
-+#else
-+static void __init kuser_init(void *vectors)
-+{
- }
-+#endif
+-#include "signal.h"
+-
+ static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
  
- void __init early_trap_init(void *vectors_base)
- {
- 	unsigned long vectors = (unsigned long)vectors_base;
- 	extern char __stubs_start[], __stubs_end[];
- 	extern char __vectors_start[], __vectors_end[];
--	extern char __kuser_helper_start[], __kuser_helper_end[];
--	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
- 	unsigned i;
+ void *vectors_page;
+@@ -849,13 +847,6 @@ void __init early_trap_init(void *vector
  
- 	vectors_page = vectors_base;
-@@ -837,12 +846,8 @@ void __init early_trap_init(void *vector
- 	 */
- 	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
- 	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
--	memcpy((void *)vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
+ 	kuser_init(vectors_base);
  
 -	/*
--	 * Do processor specific fixups for the kuser helpers
+-	 * Copy signal return handlers into the vector page, and
+-	 * set sigreturn to be a pointer to these.
 -	 */
--	kuser_get_tls_init(vectors);
-+	kuser_init(vectors_base);
- 
- 	/*
- 	 * Copy signal return handlers into the vector page, and
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -411,24 +411,28 @@ config CPU_32v3
- 	select CPU_USE_DOMAINS if MMU
- 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
- 	select TLS_REG_EMUL if SMP || !MMU
-+	select NEED_KUSER_HELPERS
- 
- config CPU_32v4
- 	bool
- 	select CPU_USE_DOMAINS if MMU
- 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
- 	select TLS_REG_EMUL if SMP || !MMU
-+	select NEED_KUSER_HELPERS
- 
- config CPU_32v4T
- 	bool
- 	select CPU_USE_DOMAINS if MMU
- 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
- 	select TLS_REG_EMUL if SMP || !MMU
-+	select NEED_KUSER_HELPERS
- 
- config CPU_32v5
- 	bool
- 	select CPU_USE_DOMAINS if MMU
- 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
- 	select TLS_REG_EMUL if SMP || !MMU
-+	select NEED_KUSER_HELPERS
- 
- config CPU_32v6
- 	bool
-@@ -756,6 +760,7 @@ config CPU_BPREDICT_DISABLE
- 
- config TLS_REG_EMUL
- 	bool
-+	select NEED_KUSER_HELPERS
- 	help
- 	  An SMP system using a pre-ARMv6 processor (there are apparently
- 	  a few prototypes like that in existence) and therefore access to
-@@ -763,11 +768,40 @@ config TLS_REG_EMUL
- 
- config NEEDS_SYSCALL_FOR_CMPXCHG
- 	bool
-+	select NEED_KUSER_HELPERS
- 	help
- 	  SMP on a pre-ARMv6 processor?  Well OK then.
- 	  Forget about fast user space cmpxchg support.
- 	  It is just not possible.
- 
-+config NEED_KUSER_HELPERS
-+	bool
-+
-+config KUSER_HELPERS
-+	bool "Enable kuser helpers in vector page" if !NEED_KUSER_HELPERS
-+	default y
-+	help
-+	  Warning: disabling this option may break user programs.
-+
-+	  Provide kuser helpers in the vector page.  The kernel provides
-+	  helper code to userspace in read only form at a fixed location
-+	  in the high vector page to allow userspace to be independent of
-+	  the CPU type fitted to the system.  This permits binaries to be
-+	  run on ARMv4 through to ARMv7 without modification.
-+
-+	  However, the fixed address nature of these helpers can be used
-+	  by ROP (return orientated programming) authors when creating
-+	  exploits.
-+
-+	  If all of the binaries and libraries which run on your platform
-+	  are built specifically for your platform, and make no use of
-+	  these helpers, then you can turn this option off.  However,
-+	  when such an binary or library is run, it will receive a SIGILL
-+	  signal, which will terminate the program.
-+
-+	  Say N here only if you are absolutely certain that you do not
-+	  need these helpers; otherwise, the safe option is to say Y.
-+
- config DMA_CACHE_RWFO
- 	bool "Enable read/write for ownership DMA cache maintenance"
- 	depends on CPU_V6K && SMP
+-	memcpy((void *)(vectors + KERN_SIGRETURN_CODE - CONFIG_VECTORS_BASE),
+-	       sigreturn_codes, sizeof(sigreturn_codes));
+-
+ 	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
+ 	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
+ }
 
 
