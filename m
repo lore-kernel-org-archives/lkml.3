@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030832Ab3HITfa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 15:35:30 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:55376 "EHLO
+	id S1030862Ab3HITfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 15:35:40 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:55379 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030224Ab3HITf2 (ORCPT
+	with ESMTP id S1030224Ab3HITfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 15:35:28 -0400
-Message-ID: <2c9c68a646dd67eb51d89d878966c08941efa055.1376076465.git.cmetcalf@tilera.com>
+	Fri, 9 Aug 2013 15:35:36 -0400
+Message-ID: <0ffcfe29ff57518f421b3ab86f08ea666c9649e4.1376076466.git.cmetcalf@tilera.com>
+In-Reply-To: <2c9c68a646dd67eb51d89d878966c08941efa055.1376076465.git.cmetcalf@tilera.com>
+References: <2c9c68a646dd67eb51d89d878966c08941efa055.1376076465.git.cmetcalf@tilera.com>
 From: Tony Lu <zlu@tilera.com>
-Date: Fri, 9 Aug 2013 13:26:09 -0400
-Subject: [PATCH] tile: support ftrace on tilegx
-To: <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
+Date: Fri, 9 Aug 2013 15:08:57 -0400
+Subject: [PATCH] tile: support kprobes on tilegx
+To: <linux-kernel@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds support for static ftrace, graph function support,
-and dynamic tracer support.
+This change includes support for Kprobes, Jprobes and Return Probes.
 
 Signed-off-by: Tony Lu <zlu@tilera.com>
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
@@ -29,97 +32,56 @@ Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 I assume it makes sense for this to be pushed via the tile tree;
 it's currently queued in tile-next.
 
- arch/tile/Kconfig              |   7 +-
- arch/tile/include/asm/ftrace.h |  22 +++-
- arch/tile/kernel/Makefile      |   6 +
- arch/tile/kernel/ftrace.c      | 246 +++++++++++++++++++++++++++++++++++++++++
- arch/tile/kernel/mcount_64.S   | 224 +++++++++++++++++++++++++++++++++++++
- arch/tile/kernel/vmlinux.lds.S |   1 +
- arch/tile/lib/exports.c        |   6 +
- scripts/recordmcount.pl        |   4 +
- 8 files changed, 514 insertions(+), 2 deletions(-)
- create mode 100644 arch/tile/kernel/ftrace.c
- create mode 100644 arch/tile/kernel/mcount_64.S
+ arch/tile/Kconfig                            |   2 +
+ arch/tile/include/asm/Kbuild                 |   1 -
+ arch/tile/include/asm/kdebug.h               |  28 ++
+ arch/tile/include/asm/kprobes.h              |  79 +++++
+ arch/tile/include/asm/ptrace.h               |   1 +
+ arch/tile/include/uapi/arch/opcode_tilegx.h  |   1 +
+ arch/tile/include/uapi/arch/opcode_tilepro.h |   1 +
+ arch/tile/kernel/Makefile                    |   1 +
+ arch/tile/kernel/kprobes.c                   | 476 +++++++++++++++++++++++++++
+ arch/tile/kernel/smp.c                       |  14 +-
+ arch/tile/kernel/traps.c                     |  42 +++
+ arch/tile/kernel/vmlinux.lds.S               |   1 +
+ arch/tile/mm/fault.c                         |  12 +
+ samples/kprobes/kprobe_example.c             |   9 +
+ 14 files changed, 664 insertions(+), 4 deletions(-)
+ create mode 100644 arch/tile/include/asm/kdebug.h
+ create mode 100644 arch/tile/include/asm/kprobes.h
+ create mode 100644 arch/tile/kernel/kprobes.c
 
 diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index e76180e..e1600be 100644
+index e1600be..ecff467 100644
 --- a/arch/tile/Kconfig
 +++ b/arch/tile/Kconfig
-@@ -119,7 +119,12 @@ config HVC_TILE
- 	def_bool y
- 
- config TILEGX
--	bool "Building with TILE-Gx (64-bit) compiler and toolchain"
-+	bool "Building for TILE-Gx (64-bit) processor"
-+	select HAVE_FUNCTION_TRACER
-+	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
-+	select HAVE_FUNCTION_GRAPH_TRACER
-+	select HAVE_DYNAMIC_FTRACE
-+	select HAVE_FTRACE_MCOUNT_RECORD
+@@ -125,6 +125,8 @@ config TILEGX
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_DYNAMIC_FTRACE
+ 	select HAVE_FTRACE_MCOUNT_RECORD
++	select HAVE_KPROBES
++	select HAVE_KRETPROBES
  
  config TILEPRO
  	def_bool !TILEGX
-diff --git a/arch/tile/include/asm/ftrace.h b/arch/tile/include/asm/ftrace.h
-index 461459b..13a9bb81 100644
---- a/arch/tile/include/asm/ftrace.h
-+++ b/arch/tile/include/asm/ftrace.h
-@@ -15,6 +15,26 @@
- #ifndef _ASM_TILE_FTRACE_H
- #define _ASM_TILE_FTRACE_H
- 
--/* empty */
-+#ifdef CONFIG_FUNCTION_TRACER
-+
-+#define MCOUNT_ADDR ((unsigned long)(__mcount))
-+#define MCOUNT_INSN_SIZE 8		/* sizeof mcount call */
-+
-+#ifndef __ASSEMBLY__
-+extern void __mcount(void);
-+
-+#ifdef CONFIG_DYNAMIC_FTRACE
-+static inline unsigned long ftrace_call_adjust(unsigned long addr)
-+{
-+	return addr;
-+}
-+
-+struct dyn_arch_ftrace {
-+};
-+#endif /*  CONFIG_DYNAMIC_FTRACE */
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* CONFIG_FUNCTION_TRACER */
- 
- #endif /* _ASM_TILE_FTRACE_H */
-diff --git a/arch/tile/kernel/Makefile b/arch/tile/kernel/Makefile
-index c4a957a..2e6eaa1 100644
---- a/arch/tile/kernel/Makefile
-+++ b/arch/tile/kernel/Makefile
-@@ -9,6 +9,11 @@ obj-y := backtrace.o entry.o hvglue.o irq.o messaging.o \
- 	sysfs.o time.o traps.o unaligned.o vdso.o \
- 	intvec_$(BITS).o regs_$(BITS).o tile-desc_$(BITS).o
- 
-+ifdef CONFIG_FUNCTION_TRACER
-+CFLAGS_REMOVE_ftrace.o = -pg
-+CFLAGS_REMOVE_early_printk.o = -pg
-+endif
-+
- obj-$(CONFIG_HARDWALL)		+= hardwall.o
- obj-$(CONFIG_COMPAT)		+= compat.o compat_signal.o
- obj-$(CONFIG_SMP)		+= smpboot.o smp.o tlb.o
-@@ -22,5 +27,6 @@ obj-$(CONFIG_PCI)		+= pci.o
- endif
- obj-$(CONFIG_TILE_USB)		+= usb.o
- obj-$(CONFIG_TILE_HVGLUE_TRACE)	+= hvglue_trace.o
-+obj-$(CONFIG_FUNCTION_TRACER)	+= ftrace.o mcount_64.o
- 
- obj-y				+= vdso/
-diff --git a/arch/tile/kernel/ftrace.c b/arch/tile/kernel/ftrace.c
+diff --git a/arch/tile/include/asm/Kbuild b/arch/tile/include/asm/Kbuild
+index b17b9b8..4c0b3c2 100644
+--- a/arch/tile/include/asm/Kbuild
++++ b/arch/tile/include/asm/Kbuild
+@@ -15,7 +15,6 @@ generic-y += ioctl.h
+ generic-y += ioctls.h
+ generic-y += ipcbuf.h
+ generic-y += irq_regs.h
+-generic-y += kdebug.h
+ generic-y += local.h
+ generic-y += msgbuf.h
+ generic-y += mutex.h
+diff --git a/arch/tile/include/asm/kdebug.h b/arch/tile/include/asm/kdebug.h
 new file mode 100644
-index 0000000..f1c4520
+index 0000000..5bbbfa9
 --- /dev/null
-+++ b/arch/tile/kernel/ftrace.c
-@@ -0,0 +1,246 @@
++++ b/arch/tile/include/asm/kdebug.h
+@@ -0,0 +1,28 @@
 +/*
 + * Copyright 2012 Tilera Corporation. All Rights Reserved.
 + *
@@ -132,247 +94,170 @@ index 0000000..f1c4520
 + *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
 + *   NON INFRINGEMENT.  See the GNU General Public License for
 + *   more details.
-+ *
-+ * TILE-Gx specific ftrace support
 + */
 +
-+#include <linux/ftrace.h>
-+#include <linux/uaccess.h>
++#ifndef _ASM_TILE_KDEBUG_H
++#define _ASM_TILE_KDEBUG_H
 +
-+#include <asm/cacheflush.h>
-+#include <asm/ftrace.h>
-+#include <asm/sections.h>
++#include <linux/notifier.h>
++
++enum die_val {
++	DIE_OOPS = 1,
++	DIE_BREAK,
++	DIE_SSTEPBP,
++	DIE_PAGE_FAULT,
++	DIE_COMPILED_BPT
++};
++
++#endif /* _ASM_TILE_KDEBUG_H */
+diff --git a/arch/tile/include/asm/kprobes.h b/arch/tile/include/asm/kprobes.h
+new file mode 100644
+index 0000000..d8f9a83
+--- /dev/null
++++ b/arch/tile/include/asm/kprobes.h
+@@ -0,0 +1,79 @@
++/*
++ * arch/tile/include/asm/kprobes.h
++ *
++ * Copyright 2012 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#ifndef _ASM_TILE_KPROBES_H
++#define _ASM_TILE_KPROBES_H
++
++#include <linux/types.h>
++#include <linux/ptrace.h>
++#include <linux/percpu.h>
 +
 +#include <arch/opcode.h>
 +
-+#ifdef CONFIG_DYNAMIC_FTRACE
++#define __ARCH_WANT_KPROBES_INSN_SLOT
++#define MAX_INSN_SIZE			2
 +
-+static inline tilegx_bundle_bits NOP(void)
-+{
-+	return create_UnaryOpcodeExtension_X0(FNOP_UNARY_OPCODE_X0) |
-+		create_RRROpcodeExtension_X0(UNARY_RRR_0_OPCODE_X0) |
-+		create_Opcode_X0(RRR_0_OPCODE_X0) |
-+		create_UnaryOpcodeExtension_X1(NOP_UNARY_OPCODE_X1) |
-+		create_RRROpcodeExtension_X1(UNARY_RRR_0_OPCODE_X1) |
-+		create_Opcode_X1(RRR_0_OPCODE_X1);
-+}
++#define kretprobe_blacklist_size 0
 +
-+static int machine_stopped __read_mostly;
++typedef tile_bundle_bits kprobe_opcode_t;
 +
-+int ftrace_arch_code_modify_prepare(void)
-+{
-+	machine_stopped = 1;
-+	return 0;
-+}
++#define flush_insn_slot(p)						\
++	flush_icache_range((unsigned long)p->addr,			\
++			   (unsigned long)p->addr +			\
++			   (MAX_INSN_SIZE * sizeof(kprobe_opcode_t)))
 +
-+int ftrace_arch_code_modify_post_process(void)
-+{
-+	flush_icache_range(0, CHIP_L1I_CACHE_SIZE());
-+	machine_stopped = 0;
-+	return 0;
-+}
++struct kprobe;
 +
-+/*
-+ * Put { move r10, lr; jal ftrace_caller } in a bundle, this lets dynamic
-+ * tracer just add one cycle overhead to every kernel function when disabled.
-+ */
-+static unsigned long ftrace_gen_branch(unsigned long pc, unsigned long addr,
-+				       bool link)
-+{
-+	tilegx_bundle_bits opcode_x0, opcode_x1;
-+	long pcrel_by_instr = (addr - pc) >> TILEGX_LOG2_BUNDLE_SIZE_IN_BYTES;
++/* Architecture specific copy of original instruction. */
++struct arch_specific_insn {
++	kprobe_opcode_t *insn;
++};
 +
-+	if (link) {
-+		/* opcode: jal addr */
-+		opcode_x1 =
-+			create_Opcode_X1(JUMP_OPCODE_X1) |
-+			create_JumpOpcodeExtension_X1(JAL_JUMP_OPCODE_X1) |
-+			create_JumpOff_X1(pcrel_by_instr);
-+	} else {
-+		/* opcode: j addr */
-+		opcode_x1 =
-+			create_Opcode_X1(JUMP_OPCODE_X1) |
-+			create_JumpOpcodeExtension_X1(J_JUMP_OPCODE_X1) |
-+			create_JumpOff_X1(pcrel_by_instr);
-+	}
++struct prev_kprobe {
++	struct kprobe *kp;
++	unsigned long status;
++	unsigned long saved_pc;
++};
 +
-+	if (addr == FTRACE_ADDR) {
-+		/* opcode: or r10, lr, zero */
-+		opcode_x0 =
-+			create_Dest_X0(10) |
-+			create_SrcA_X0(TREG_LR) |
-+			create_SrcB_X0(TREG_ZERO) |
-+			create_RRROpcodeExtension_X0(OR_RRR_0_OPCODE_X0) |
-+			create_Opcode_X0(RRR_0_OPCODE_X0);
-+	} else {
-+		/* opcode: fnop */
-+		opcode_x0 =
-+			create_UnaryOpcodeExtension_X0(FNOP_UNARY_OPCODE_X0) |
-+			create_RRROpcodeExtension_X0(UNARY_RRR_0_OPCODE_X0) |
-+			create_Opcode_X0(RRR_0_OPCODE_X0);
-+	}
++#define MAX_JPROBES_STACK_SIZE 128
++#define MAX_JPROBES_STACK_ADDR \
++	(((unsigned long)current_thread_info()) + THREAD_SIZE - 32 \
++		- sizeof(struct pt_regs))
 +
-+	return opcode_x1 | opcode_x0;
-+}
++#define MIN_JPROBES_STACK_SIZE(ADDR)					\
++	((((ADDR) + MAX_JPROBES_STACK_SIZE) > MAX_JPROBES_STACK_ADDR)	\
++		? MAX_JPROBES_STACK_ADDR - (ADDR)			\
++		: MAX_JPROBES_STACK_SIZE)
 +
-+static unsigned long ftrace_nop_replace(struct dyn_ftrace *rec)
-+{
-+	return NOP();
-+}
++/* per-cpu kprobe control block. */
++struct kprobe_ctlblk {
++	unsigned long kprobe_status;
++	unsigned long kprobe_saved_pc;
++	unsigned long jprobe_saved_sp;
++	struct prev_kprobe prev_kprobe;
++	struct pt_regs jprobe_saved_regs;
++	char jprobes_stack[MAX_JPROBES_STACK_SIZE];
++};
 +
-+static unsigned long ftrace_call_replace(unsigned long pc, unsigned long addr)
-+{
-+	return ftrace_gen_branch(pc, addr, true);
-+}
++extern tile_bundle_bits breakpoint2_insn;
++extern tile_bundle_bits breakpoint_insn;
 +
-+static int ftrace_modify_code(unsigned long pc, unsigned long old,
-+			      unsigned long new)
-+{
-+	unsigned long pc_wr;
++void arch_remove_kprobe(struct kprobe *);
 +
-+	/* Check if the address is in kernel text space and module space. */
-+	if (!kernel_text_address(pc))
-+		return -EINVAL;
++extern int kprobe_exceptions_notify(struct notifier_block *self,
++			     unsigned long val, void *data);
 +
-+	/* Operate on writable kernel text mapping. */
-+	pc_wr = pc - MEM_SV_START + PAGE_OFFSET;
-+
-+	if (probe_kernel_write((void *)pc_wr, &new, MCOUNT_INSN_SIZE))
-+		return -EPERM;
-+
-+	smp_wmb();
-+
-+	if (!machine_stopped && num_online_cpus() > 1)
-+		flush_icache_range(pc, pc + MCOUNT_INSN_SIZE);
-+
-+	return 0;
-+}
-+
-+int ftrace_update_ftrace_func(ftrace_func_t func)
-+{
-+	unsigned long pc, old;
-+	unsigned long new;
-+	int ret;
-+
-+	pc = (unsigned long)&ftrace_call;
-+	memcpy(&old, &ftrace_call, MCOUNT_INSN_SIZE);
-+	new = ftrace_call_replace(pc, (unsigned long)func);
-+
-+	ret = ftrace_modify_code(pc, old, new);
-+
-+	return ret;
-+}
-+
-+int ftrace_make_call(struct dyn_ftrace *rec, unsigned long addr)
-+{
-+	unsigned long new, old;
-+	unsigned long ip = rec->ip;
-+
-+	old = ftrace_nop_replace(rec);
-+	new = ftrace_call_replace(ip, addr);
-+
-+	return ftrace_modify_code(rec->ip, old, new);
-+}
-+
-+int ftrace_make_nop(struct module *mod,
-+		    struct dyn_ftrace *rec, unsigned long addr)
-+{
-+	unsigned long ip = rec->ip;
-+	unsigned long old;
-+	unsigned long new;
-+	int ret;
-+
-+	old = ftrace_call_replace(ip, addr);
-+	new = ftrace_nop_replace(rec);
-+	ret = ftrace_modify_code(ip, old, new);
-+
-+	return ret;
-+}
-+
-+int __init ftrace_dyn_arch_init(void *data)
-+{
-+	*(unsigned long *)data = 0;
-+
-+	return 0;
-+}
-+#endif /* CONFIG_DYNAMIC_FTRACE */
-+
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
-+			   unsigned long frame_pointer)
-+{
-+	unsigned long return_hooker = (unsigned long) &return_to_handler;
-+	struct ftrace_graph_ent trace;
-+	unsigned long old;
-+	int err;
-+
-+	if (unlikely(atomic_read(&current->tracing_graph_pause)))
-+		return;
-+
-+	old = *parent;
-+	*parent = return_hooker;
-+
-+	err = ftrace_push_return_trace(old, self_addr, &trace.depth,
-+				       frame_pointer);
-+	if (err == -EBUSY) {
-+		*parent = old;
-+		return;
-+	}
-+
-+	trace.func = self_addr;
-+
-+	/* Only trace if the calling function expects to */
-+	if (!ftrace_graph_entry(&trace)) {
-+		current->curr_ret_stack--;
-+		*parent = old;
-+	}
-+}
-+
-+#ifdef CONFIG_DYNAMIC_FTRACE
-+extern unsigned long ftrace_graph_call;
-+
-+static int __ftrace_modify_caller(unsigned long *callsite,
-+				  void (*func) (void), bool enable)
-+{
-+	unsigned long caller_fn = (unsigned long) func;
-+	unsigned long pc = (unsigned long) callsite;
-+	unsigned long branch = ftrace_gen_branch(pc, caller_fn, false);
-+	unsigned long nop = NOP();
-+	unsigned long old = enable ? nop : branch;
-+	unsigned long new = enable ? branch : nop;
-+
-+	return ftrace_modify_code(pc, old, new);
-+}
-+
-+static int ftrace_modify_graph_caller(bool enable)
-+{
-+	int ret;
-+
-+	ret = __ftrace_modify_caller(&ftrace_graph_call,
-+				     ftrace_graph_caller,
-+				     enable);
-+
-+	return ret;
-+}
-+
-+int ftrace_enable_ftrace_graph_caller(void)
-+{
-+	return ftrace_modify_graph_caller(true);
-+}
-+
-+int ftrace_disable_ftrace_graph_caller(void)
-+{
-+	return ftrace_modify_graph_caller(false);
-+}
-+#endif /* CONFIG_DYNAMIC_FTRACE */
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-diff --git a/arch/tile/kernel/mcount_64.S b/arch/tile/kernel/mcount_64.S
++#endif /* _ASM_TILE_KPROBES_H */
+diff --git a/arch/tile/include/asm/ptrace.h b/arch/tile/include/asm/ptrace.h
+index 73b681b..0d25c21 100644
+--- a/arch/tile/include/asm/ptrace.h
++++ b/arch/tile/include/asm/ptrace.h
+@@ -33,6 +33,7 @@ typedef unsigned long pt_reg_t;
+ 
+ #ifndef __ASSEMBLY__
+ 
++#define regs_return_value(regs) ((regs)->regs[0])
+ #define instruction_pointer(regs) ((regs)->pc)
+ #define profile_pc(regs) instruction_pointer(regs)
+ #define user_stack_pointer(regs) ((regs)->sp)
+diff --git a/arch/tile/include/uapi/arch/opcode_tilegx.h b/arch/tile/include/uapi/arch/opcode_tilegx.h
+index c14d02c..d76ff2d 100644
+--- a/arch/tile/include/uapi/arch/opcode_tilegx.h
++++ b/arch/tile/include/uapi/arch/opcode_tilegx.h
+@@ -61,6 +61,7 @@ typedef tilegx_bundle_bits tile_bundle_bits;
+ #define TILE_BUNDLE_ALIGNMENT_IN_BYTES TILEGX_BUNDLE_ALIGNMENT_IN_BYTES
+ #define TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES \
+   TILEGX_LOG2_BUNDLE_ALIGNMENT_IN_BYTES
++#define TILE_BPT_BUNDLE TILEGX_BPT_BUNDLE
+ 
+ /* 64-bit pattern for a { bpt ; nop } bundle. */
+ #define TILEGX_BPT_BUNDLE 0x286a44ae51485000ULL
+diff --git a/arch/tile/include/uapi/arch/opcode_tilepro.h b/arch/tile/include/uapi/arch/opcode_tilepro.h
+index 71b763b..4451cff 100644
+--- a/arch/tile/include/uapi/arch/opcode_tilepro.h
++++ b/arch/tile/include/uapi/arch/opcode_tilepro.h
+@@ -71,6 +71,7 @@ typedef tilepro_bundle_bits tile_bundle_bits;
+ #define TILE_BUNDLE_ALIGNMENT_IN_BYTES TILEPRO_BUNDLE_ALIGNMENT_IN_BYTES
+ #define TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES \
+   TILEPRO_LOG2_BUNDLE_ALIGNMENT_IN_BYTES
++#define TILE_BPT_BUNDLE TILEPRO_BPT_BUNDLE
+ 
+ /* 64-bit pattern for a { bpt ; nop } bundle. */
+ #define TILEPRO_BPT_BUNDLE 0x400b3cae70166000ULL
+diff --git a/arch/tile/kernel/Makefile b/arch/tile/kernel/Makefile
+index 2e6eaa1..b7c8b5e 100644
+--- a/arch/tile/kernel/Makefile
++++ b/arch/tile/kernel/Makefile
+@@ -28,5 +28,6 @@ endif
+ obj-$(CONFIG_TILE_USB)		+= usb.o
+ obj-$(CONFIG_TILE_HVGLUE_TRACE)	+= hvglue_trace.o
+ obj-$(CONFIG_FUNCTION_TRACER)	+= ftrace.o mcount_64.o
++obj-$(CONFIG_KPROBES)		+= kprobes.o
+ 
+ obj-y				+= vdso/
+diff --git a/arch/tile/kernel/kprobes.c b/arch/tile/kernel/kprobes.c
 new file mode 100644
-index 0000000..70d7bb0
+index 0000000..926ebad
 --- /dev/null
-+++ b/arch/tile/kernel/mcount_64.S
-@@ -0,0 +1,224 @@
++++ b/arch/tile/kernel/kprobes.c
+@@ -0,0 +1,476 @@
 +/*
++ * arch/tile/kernel/kprobes.c
++ * Kprobes on TILE-Gx
++ *
++ * Some portions copied from the MIPS version.
++ *
++ * Copyright (C) IBM Corporation, 2002, 2004
++ * Copyright 2006 Sony Corp.
++ * Copyright 2010 Cavium Networks
++ *
 + * Copyright 2012 Tilera Corporation. All Rights Reserved.
 + *
 + *   This program is free software; you can redistribute it and/or
@@ -384,262 +269,629 @@ index 0000000..70d7bb0
 + *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
 + *   NON INFRINGEMENT.  See the GNU General Public License for
 + *   more details.
-+ *
-+ * TILE-Gx specific __mcount support
 + */
 +
-+#include <linux/linkage.h>
-+#include <asm/ftrace.h>
++#include <linux/kprobes.h>
++#include <linux/kdebug.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++#include <asm/cacheflush.h>
 +
-+#define REGSIZE 8
++#include <arch/opcode.h>
 +
-+	.text
-+	.global __mcount
++DEFINE_PER_CPU(struct kprobe *, current_kprobe) = NULL;
++DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
 +
-+	.macro	MCOUNT_SAVE_REGS
-+	addli	sp, sp, -REGSIZE
-+	{
-+	 st     sp, lr
-+	 addli	r29, sp, - (12 * REGSIZE)
-+	}
-+	{
-+	 addli	sp, sp, - (13 * REGSIZE)
-+	 st     r29, sp
-+	}
-+	addli	r29, r29, REGSIZE
-+	{ st	r29, r0; addli	r29, r29, REGSIZE }
-+	{ st	r29, r1; addli	r29, r29, REGSIZE }
-+	{ st	r29, r2; addli	r29, r29, REGSIZE }
-+	{ st	r29, r3; addli	r29, r29, REGSIZE }
-+	{ st	r29, r4; addli	r29, r29, REGSIZE }
-+	{ st	r29, r5; addli	r29, r29, REGSIZE }
-+	{ st	r29, r6; addli	r29, r29, REGSIZE }
-+	{ st	r29, r7; addli	r29, r29, REGSIZE }
-+	{ st	r29, r8; addli	r29, r29, REGSIZE }
-+	{ st	r29, r9; addli	r29, r29, REGSIZE }
-+	{ st	r29, r10; addli	r29, r29, REGSIZE }
-+	.endm
++tile_bundle_bits breakpoint_insn = TILEGX_BPT_BUNDLE;
++tile_bundle_bits breakpoint2_insn = TILEGX_BPT_BUNDLE | DIE_SSTEPBP;
 +
-+	.macro	MCOUNT_RESTORE_REGS
-+	addli	r29, sp, (2 * REGSIZE)
-+	{ ld	r0, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r1, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r2, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r3, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r4, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r5, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r6, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r7, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r8, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r9, r29; addli	r29, r29, REGSIZE }
-+	{ ld	r10, r29; addli	lr, sp, (13 * REGSIZE) }
-+	{ ld	lr, lr;  addli	sp, sp, (14 * REGSIZE) }
-+	.endm
++int __kprobes arch_prepare_kprobe(struct kprobe *p)
++{
++	unsigned long addr = (unsigned long)p->addr;
 +
-+	.macro  RETURN_BACK
-+	{ move	r12, lr; move	lr, r10 }
-+	jrp	r12
-+	.endm
++	if (addr & (sizeof(kprobe_opcode_t) - 1))
++		return -EINVAL;
 +
-+#ifdef CONFIG_DYNAMIC_FTRACE
++	/* insn: must be on special executable page on tile. */
++	p->ainsn.insn = get_insn_slot();
++	if (!p->ainsn.insn)
++		return -ENOMEM;
 +
-+	.align	64
-+STD_ENTRY(__mcount)
-+__mcount:
-+	j	ftrace_stub
-+STD_ENDPROC(__mcount)
-+
-+	.align	64
-+STD_ENTRY(ftrace_caller)
-+	moveli	r11, hw2_last(function_trace_stop)
-+	{ shl16insli	r11, r11, hw1(function_trace_stop); move r12, lr }
-+	{ shl16insli	r11, r11, hw0(function_trace_stop); move lr, r10 }
-+	ld	r11, r11
-+	beqz	r11, 1f
-+	jrp	r12
-+
-+1:
-+	{ move	r10, lr; move	lr, r12 }
-+	MCOUNT_SAVE_REGS
-+
-+	/* arg1: self return address */
-+	/* arg2: parent's return address */
-+	{ move	r0, lr; move	r1, r10 }
-+
-+	.global	ftrace_call
-+ftrace_call:
 +	/*
-+	 * a placeholder for the call to a real tracing function, i.e.
-+	 * ftrace_trace_function()
++	 * In the kprobe->ainsn.insn[] array we store the original
++	 * instruction at index zero and a break trap instruction at
++	 * index one.
 +	 */
-+	nop
++	memcpy(&p->ainsn.insn[0], p->addr, sizeof(kprobe_opcode_t));
++	p->ainsn.insn[1] = breakpoint2_insn;
++	p->opcode = *p->addr;
 +
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
-+	.global	ftrace_graph_call
-+ftrace_graph_call:
++	return 0;
++}
++
++void __kprobes arch_arm_kprobe(struct kprobe *p)
++{
++	unsigned long addr_wr;
++
++	/* Operate on writable kernel text mapping. */
++	addr_wr = (unsigned long)p->addr - MEM_SV_START + PAGE_OFFSET;
++
++	if (probe_kernel_write((void *)addr_wr, &breakpoint_insn,
++		sizeof(breakpoint_insn)))
++		pr_err("%s: failed to enable kprobe\n", __func__);
++
++	smp_wmb();
++	flush_insn_slot(p);
++}
++
++void __kprobes arch_disarm_kprobe(struct kprobe *kp)
++{
++	unsigned long addr_wr;
++
++	/* Operate on writable kernel text mapping. */
++	addr_wr = (unsigned long)kp->addr - MEM_SV_START + PAGE_OFFSET;
++
++	if (probe_kernel_write((void *)addr_wr, &kp->opcode,
++		sizeof(kp->opcode)))
++		pr_err("%s: failed to enable kprobe\n", __func__);
++
++	smp_wmb();
++	flush_insn_slot(kp);
++}
++
++void __kprobes arch_remove_kprobe(struct kprobe *p)
++{
++	if (p->ainsn.insn) {
++		free_insn_slot(p->ainsn.insn, 0);
++		p->ainsn.insn = NULL;
++	}
++}
++
++static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
++{
++	kcb->prev_kprobe.kp = kprobe_running();
++	kcb->prev_kprobe.status = kcb->kprobe_status;
++	kcb->prev_kprobe.saved_pc = kcb->kprobe_saved_pc;
++}
++
++static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
++{
++	__get_cpu_var(current_kprobe) = kcb->prev_kprobe.kp;
++	kcb->kprobe_status = kcb->prev_kprobe.status;
++	kcb->kprobe_saved_pc = kcb->prev_kprobe.saved_pc;
++}
++
++static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
++			struct kprobe_ctlblk *kcb)
++{
++	__get_cpu_var(current_kprobe) = p;
++	kcb->kprobe_saved_pc = regs->pc;
++}
++
++static void __kprobes prepare_singlestep(struct kprobe *p, struct pt_regs *regs)
++{
++	/* Single step inline if the instruction is a break. */
++	if (p->opcode == breakpoint_insn ||
++	    p->opcode == breakpoint2_insn)
++		regs->pc = (unsigned long)p->addr;
++	else
++		regs->pc = (unsigned long)&p->ainsn.insn[0];
++}
++
++static int __kprobes kprobe_handler(struct pt_regs *regs)
++{
++	struct kprobe *p;
++	int ret = 0;
++	kprobe_opcode_t *addr;
++	struct kprobe_ctlblk *kcb;
++
++	addr = (kprobe_opcode_t *)regs->pc;
++
 +	/*
-+	 * a placeholder for the call to a real tracing function, i.e.
-+	 * ftrace_graph_caller()
++	 * We don't want to be preempted for the entire
++	 * duration of kprobe processing.
 +	 */
-+	nop
-+#endif
-+	MCOUNT_RESTORE_REGS
-+	.global	ftrace_stub
-+ftrace_stub:
-+	RETURN_BACK
-+STD_ENDPROC(ftrace_caller)
++	preempt_disable();
++	kcb = get_kprobe_ctlblk();
 +
-+#else /* ! CONFIG_DYNAMIC_FTRACE */
-+
-+	.align	64
-+STD_ENTRY(__mcount)
-+	moveli	r11, hw2_last(function_trace_stop)
-+	{ shl16insli	r11, r11, hw1(function_trace_stop); move r12, lr }
-+	{ shl16insli	r11, r11, hw0(function_trace_stop); move lr, r10 }
-+	ld	r11, r11
-+	beqz	r11, 1f
-+	jrp	r12
-+
-+1:
-+	{ move	r10, lr; move	lr, r12 }
-+	{
-+	 moveli	r11, hw2_last(ftrace_trace_function)
-+	 moveli	r13, hw2_last(ftrace_stub)
++	/* Check we're not actually recursing. */
++	if (kprobe_running()) {
++		p = get_kprobe(addr);
++		if (p) {
++			if (kcb->kprobe_status == KPROBE_HIT_SS &&
++			    p->ainsn.insn[0] == breakpoint_insn) {
++				goto no_kprobe;
++			}
++			/*
++			 * We have reentered the kprobe_handler(), since
++			 * another probe was hit while within the handler.
++			 * We here save the original kprobes variables and
++			 * just single step on the instruction of the new probe
++			 * without calling any user handlers.
++			 */
++			save_previous_kprobe(kcb);
++			set_current_kprobe(p, regs, kcb);
++			kprobes_inc_nmissed_count(p);
++			prepare_singlestep(p, regs);
++			kcb->kprobe_status = KPROBE_REENTER;
++			return 1;
++		} else {
++			if (*addr != breakpoint_insn) {
++				/*
++				 * The breakpoint instruction was removed by
++				 * another cpu right after we hit, no further
++				 * handling of this interrupt is appropriate.
++				 */
++				ret = 1;
++				goto no_kprobe;
++			}
++			p = __get_cpu_var(current_kprobe);
++			if (p->break_handler && p->break_handler(p, regs))
++				goto ss_probe;
++		}
++		goto no_kprobe;
 +	}
-+	{
-+	 shl16insli	r11, r11, hw1(ftrace_trace_function)
-+	 shl16insli	r13, r13, hw1(ftrace_stub)
++
++	p = get_kprobe(addr);
++	if (!p) {
++		if (*addr != breakpoint_insn) {
++			/*
++			 * The breakpoint instruction was removed right
++			 * after we hit it.  Another cpu has removed
++			 * either a probepoint or a debugger breakpoint
++			 * at this address.  In either case, no further
++			 * handling of this interrupt is appropriate.
++			 */
++			ret = 1;
++		}
++		/* Not one of ours: let kernel handle it. */
++		goto no_kprobe;
 +	}
-+	{
-+	 shl16insli	r11, r11, hw0(ftrace_trace_function)
-+	 shl16insli	r13, r13, hw0(ftrace_stub)
++
++	set_current_kprobe(p, regs, kcb);
++	kcb->kprobe_status = KPROBE_HIT_ACTIVE;
++
++	if (p->pre_handler && p->pre_handler(p, regs)) {
++		/* Handler has already set things up, so skip ss setup. */
++		return 1;
 +	}
 +
-+	ld	r11, r11
-+	sub	r14, r13, r11
-+	bnez	r14, static_trace
++ss_probe:
++	prepare_singlestep(p, regs);
++	kcb->kprobe_status = KPROBE_HIT_SS;
++	return 1;
 +
-+#ifdef	CONFIG_FUNCTION_GRAPH_TRACER
-+	moveli	r15, hw2_last(ftrace_graph_return)
-+	shl16insli	r15, r15, hw1(ftrace_graph_return)
-+	shl16insli	r15, r15, hw0(ftrace_graph_return)
-+	ld	r15, r15
-+	sub	r15, r15, r13
-+	bnez	r15, ftrace_graph_caller
++no_kprobe:
++	preempt_enable_no_resched();
++	return ret;
++}
 +
-+	{
-+	 moveli	r16, hw2_last(ftrace_graph_entry)
-+	 moveli	r17, hw2_last(ftrace_graph_entry_stub)
++/*
++ * Called after single-stepping.  p->addr is the address of the
++ * instruction whose first byte has been replaced by the "break 0"
++ * temporarily put back the original opcode to single-step, we
++ * single-stepped a copy of the instruction.  The address of this
++ * copy is p->ainsn.insn.
++ *
++ * This function prepares to return from the post-single-step
++ * breakpoint trap.
++ */
++static void __kprobes resume_execution(struct kprobe *p,
++				       struct pt_regs *regs,
++				       struct kprobe_ctlblk *kcb)
++{
++	unsigned long orig_pc = kcb->kprobe_saved_pc;
++	regs->pc = orig_pc + 8;
++}
++
++static inline int post_kprobe_handler(struct pt_regs *regs)
++{
++	struct kprobe *cur = kprobe_running();
++	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
++
++	if (!cur)
++		return 0;
++
++	if ((kcb->kprobe_status != KPROBE_REENTER) && cur->post_handler) {
++		kcb->kprobe_status = KPROBE_HIT_SSDONE;
++		cur->post_handler(cur, regs, 0);
 +	}
-+	{
-+	 shl16insli	r16, r16, hw1(ftrace_graph_entry)
-+	 shl16insli	r17, r17, hw1(ftrace_graph_entry_stub)
++
++	resume_execution(cur, regs, kcb);
++
++	/* Restore back the original saved kprobes variables and continue. */
++	if (kcb->kprobe_status == KPROBE_REENTER) {
++		restore_previous_kprobe(kcb);
++		goto out;
 +	}
-+	{
-+	 shl16insli	r16, r16, hw0(ftrace_graph_entry)
-+	 shl16insli	r17, r17, hw0(ftrace_graph_entry_stub)
++	reset_current_kprobe();
++out:
++	preempt_enable_no_resched();
++
++	return 1;
++}
++
++static inline int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
++{
++	struct kprobe *cur = kprobe_running();
++	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
++
++	if (cur->fault_handler && cur->fault_handler(cur, regs, trapnr))
++		return 1;
++
++	if (kcb->kprobe_status & KPROBE_HIT_SS) {
++		/*
++		 * We are here because the instruction being single
++		 * stepped caused a page fault. We reset the current
++		 * kprobe and the ip points back to the probe address
++		 * and allow the page fault handler to continue as a
++		 * normal page fault.
++		 */
++		resume_execution(cur, regs, kcb);
++		reset_current_kprobe();
++		preempt_enable_no_resched();
 +	}
-+	ld	r16, r16
-+	sub	r17, r16, r17
-+	bnez	r17, ftrace_graph_caller
++	return 0;
++}
 +
-+#endif
-+	RETURN_BACK
++/*
++ * Wrapper routine for handling exceptions.
++ */
++int __kprobes kprobe_exceptions_notify(struct notifier_block *self,
++				       unsigned long val, void *data)
++{
++	struct die_args *args = (struct die_args *)data;
++	int ret = NOTIFY_DONE;
 +
-+static_trace:
-+	MCOUNT_SAVE_REGS
++	switch (val) {
++	case DIE_BREAK:
++		if (kprobe_handler(args->regs))
++			ret = NOTIFY_STOP;
++		break;
++	case DIE_SSTEPBP:
++		if (post_kprobe_handler(args->regs))
++			ret = NOTIFY_STOP;
++		break;
++	case DIE_PAGE_FAULT:
++		/* kprobe_running() needs smp_processor_id(). */
++		preempt_disable();
 +
-+	/* arg1: self return address */
-+	/* arg2: parent's return address */
-+	{ move	r0, lr; move	r1, r10 }
++		if (kprobe_running()
++		    && kprobe_fault_handler(args->regs, args->trapnr))
++			ret = NOTIFY_STOP;
++		preempt_enable();
++		break;
++	default:
++		break;
++	}
++	return ret;
++}
 +
-+	/* call ftrace_trace_function() */
-+	jalr	r11
++int __kprobes setjmp_pre_handler(struct kprobe *p, struct pt_regs *regs)
++{
++	struct jprobe *jp = container_of(p, struct jprobe, kp);
++	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
 +
-+	MCOUNT_RESTORE_REGS
++	kcb->jprobe_saved_regs = *regs;
++	kcb->jprobe_saved_sp = regs->sp;
 +
-+	.global ftrace_stub
-+ftrace_stub:
-+	RETURN_BACK
-+STD_ENDPROC(__mcount)
++	memcpy(kcb->jprobes_stack, (void *)kcb->jprobe_saved_sp,
++	       MIN_JPROBES_STACK_SIZE(kcb->jprobe_saved_sp));
 +
-+#endif	/* ! CONFIG_DYNAMIC_FTRACE */
++	regs->pc = (unsigned long)(jp->entry);
 +
-+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++	return 1;
++}
 +
-+STD_ENTRY(ftrace_graph_caller)
-+ftrace_graph_caller:
-+#ifndef CONFIG_DYNAMIC_FTRACE
-+	MCOUNT_SAVE_REGS
-+#endif
++/* Defined in the inline asm below. */
++void jprobe_return_end(void);
 +
-+	/* arg1: Get the location of the parent's return address */
-+	addi	r0, sp, 12 * REGSIZE
-+	/* arg2: Get self return address */
-+	move	r1, lr
++void __kprobes jprobe_return(void)
++{
++	asm volatile(
++		"bpt\n\t"
++		".globl jprobe_return_end\n"
++		"jprobe_return_end:\n");
++}
 +
-+	jal prepare_ftrace_return
++int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
++{
++	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
 +
-+	MCOUNT_RESTORE_REGS
-+	RETURN_BACK
-+STD_ENDPROC(ftrace_graph_caller)
++	if (regs->pc >= (unsigned long)jprobe_return &&
++	    regs->pc <= (unsigned long)jprobe_return_end) {
++		*regs = kcb->jprobe_saved_regs;
++		memcpy((void *)kcb->jprobe_saved_sp, kcb->jprobes_stack,
++		       MIN_JPROBES_STACK_SIZE(kcb->jprobe_saved_sp));
++		preempt_enable_no_resched();
 +
-+	.global return_to_handler
-+return_to_handler:
-+	MCOUNT_SAVE_REGS
++		return 1;
++	}
++	return 0;
++}
 +
-+	jal	ftrace_return_to_handler
-+	/* restore the real parent address */
-+	move	r11, r0
++/*
++ * Function return probe trampoline:
++ * - init_kprobes() establishes a probepoint here
++ * - When the probed function returns, this probe causes the
++ *   handlers to fire
++ */
++static void __used kretprobe_trampoline_holder(void)
++{
++	asm volatile(
++		"nop\n\t"
++		".global kretprobe_trampoline\n"
++		"kretprobe_trampoline:\n\t"
++		"nop\n\t"
++		: : : "memory");
++}
 +
-+	MCOUNT_RESTORE_REGS
-+	jr	r11
++void kretprobe_trampoline(void);
 +
-+#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
++void __kprobes arch_prepare_kretprobe(struct kretprobe_instance *ri,
++				      struct pt_regs *regs)
++{
++	ri->ret_addr = (kprobe_opcode_t *) regs->lr;
++
++	/* Replace the return addr with trampoline addr */
++	regs->lr = (unsigned long)kretprobe_trampoline;
++}
++
++/*
++ * Called when the probe at kretprobe trampoline is hit.
++ */
++static int __kprobes trampoline_probe_handler(struct kprobe *p,
++						struct pt_regs *regs)
++{
++	struct kretprobe_instance *ri = NULL;
++	struct hlist_head *head, empty_rp;
++	struct hlist_node *tmp;
++	unsigned long flags, orig_ret_address = 0;
++	unsigned long trampoline_address = (unsigned long)kretprobe_trampoline;
++
++	INIT_HLIST_HEAD(&empty_rp);
++	kretprobe_hash_lock(current, &head, &flags);
++
++	/*
++	 * It is possible to have multiple instances associated with a given
++	 * task either because multiple functions in the call path have
++	 * a return probe installed on them, and/or more than one return
++	 * return probe was registered for a target function.
++	 *
++	 * We can handle this because:
++	 *     - instances are always inserted at the head of the list
++	 *     - when multiple return probes are registered for the same
++	 *       function, the first instance's ret_addr will point to the
++	 *       real return address, and all the rest will point to
++	 *       kretprobe_trampoline
++	 */
++	hlist_for_each_entry_safe(ri, tmp, head, hlist) {
++		if (ri->task != current)
++			/* another task is sharing our hash bucket */
++			continue;
++
++		if (ri->rp && ri->rp->handler)
++			ri->rp->handler(ri, regs);
++
++		orig_ret_address = (unsigned long)ri->ret_addr;
++		recycle_rp_inst(ri, &empty_rp);
++
++		if (orig_ret_address != trampoline_address) {
++			/*
++			 * This is the real return address. Any other
++			 * instances associated with this task are for
++			 * other calls deeper on the call stack
++			 */
++			break;
++		}
++	}
++
++	kretprobe_assert(ri, orig_ret_address, trampoline_address);
++	instruction_pointer(regs) = orig_ret_address;
++
++	reset_current_kprobe();
++	kretprobe_hash_unlock(current, &flags);
++	preempt_enable_no_resched();
++
++	hlist_for_each_entry_safe(ri, tmp, &empty_rp, hlist) {
++		hlist_del(&ri->hlist);
++		kfree(ri);
++	}
++	/*
++	 * By returning a non-zero value, we are telling
++	 * kprobe_handler() that we don't want the post_handler
++	 * to run (and have re-enabled preemption)
++	 */
++	return 1;
++}
++
++int __kprobes arch_trampoline_kprobe(struct kprobe *p)
++{
++	if (p->addr == (kprobe_opcode_t *)kretprobe_trampoline)
++		return 1;
++
++	return 0;
++}
++
++static struct kprobe trampoline_p = {
++	.addr = (kprobe_opcode_t *)kretprobe_trampoline,
++	.pre_handler = trampoline_probe_handler
++};
++
++int __init arch_init_kprobes(void)
++{
++	register_kprobe(&trampoline_p);
++	return 0;
++}
+diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
+index 6cc520d..0ae1c59 100644
+--- a/arch/tile/kernel/smp.c
++++ b/arch/tile/kernel/smp.c
+@@ -20,6 +20,7 @@
+ #include <linux/irq.h>
+ #include <linux/module.h>
+ #include <asm/cacheflush.h>
++#include <asm/homecache.h>
+ 
+ HV_Topology smp_topology __write_once;
+ EXPORT_SYMBOL(smp_topology);
+@@ -167,9 +168,16 @@ static void ipi_flush_icache_range(void *info)
+ void flush_icache_range(unsigned long start, unsigned long end)
+ {
+ 	struct ipi_flush flush = { start, end };
+-	preempt_disable();
+-	on_each_cpu(ipi_flush_icache_range, &flush, 1);
+-	preempt_enable();
++
++	/* If invoked with irqs disabled, we can not issue IPIs. */
++	if (irqs_disabled())
++		flush_remote(0, HV_FLUSH_EVICT_L1I, NULL, 0, 0, 0,
++			NULL, NULL, 0);
++	else {
++		preempt_disable();
++		on_each_cpu(ipi_flush_icache_range, &flush, 1);
++		preempt_enable();
++	}
+ }
+ 
+ 
+diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
+index a1bbc5de..f110785 100644
+--- a/arch/tile/kernel/traps.c
++++ b/arch/tile/kernel/traps.c
+@@ -15,6 +15,7 @@
+ #include <linux/sched.h>
+ #include <linux/kernel.h>
+ #include <linux/kprobes.h>
++#include <linux/kdebug.h>
+ #include <linux/module.h>
+ #include <linux/reboot.h>
+ #include <linux/uaccess.h>
+@@ -214,6 +215,43 @@ static const char *const int_name[] = {
+ #endif
+ };
+ 
++static int do_bpt(struct pt_regs *regs)
++{
++	unsigned long bundle, bcode, bpt;
++
++	bundle = *(unsigned long *)instruction_pointer(regs);
++
++	/*
++	 * bpt shoule be { bpt; nop }, which is 0x286a44ae51485000ULL.
++	 * we encode the unused least significant bits for other purpose.
++	 */
++	bpt = bundle & ~((1ULL << 12) - 1);
++	if (bpt != TILE_BPT_BUNDLE)
++		return 0;
++
++	bcode = bundle & ((1ULL << 12) - 1);
++	/*
++	 * notify the kprobe handlers, if instruction is likely to
++	 * pertain to them.
++	 */
++	switch (bcode) {
++	/* breakpoint_insn */
++	case 0:
++		notify_die(DIE_BREAK, "debug", regs, bundle,
++			INT_ILL, SIGTRAP);
++		break;
++	/* breakpoint2_insn */
++	case DIE_SSTEPBP:
++		notify_die(DIE_SSTEPBP, "single_step", regs, bundle,
++			INT_ILL, SIGTRAP);
++		break;
++	default:
++		return 0;
++	}
++
++	return 1;
++}
++
+ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
+ 		       unsigned long reason)
+ {
+@@ -233,6 +271,10 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
+ 	if (!user_mode(regs)) {
+ 		const char *name;
+ 		char buf[100];
++		if (fault_num == INT_ILL && do_bpt(regs)) {
++			/* breakpoint */
++			return;
++		}
+ 		if (fixup_exception(regs))  /* ILL_TRANS or UNALIGN_DATA */
+ 			return;
+ 		if (fault_num >= 0 &&
 diff --git a/arch/tile/kernel/vmlinux.lds.S b/arch/tile/kernel/vmlinux.lds.S
-index 0f0edaf..673d00a 100644
+index 673d00a..aab9955 100644
 --- a/arch/tile/kernel/vmlinux.lds.S
 +++ b/arch/tile/kernel/vmlinux.lds.S
 @@ -43,6 +43,7 @@ SECTIONS
      HEAD_TEXT
      SCHED_TEXT
      LOCK_TEXT
-+    IRQENTRY_TEXT
++    KPROBES_TEXT
+     IRQENTRY_TEXT
      __fix_text_end = .;   /* tile-cpack won't rearrange before this */
      TEXT_TEXT
-     *(.text.*)
-diff --git a/arch/tile/lib/exports.c b/arch/tile/lib/exports.c
-index 359b1bc..82733c8 100644
---- a/arch/tile/lib/exports.c
-+++ b/arch/tile/lib/exports.c
-@@ -33,6 +33,12 @@ EXPORT_SYMBOL(dump_stack);
- /* arch/tile/kernel/head.S */
- EXPORT_SYMBOL(empty_zero_page);
+diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
+index 502664a..64eec3f 100644
+--- a/arch/tile/mm/fault.c
++++ b/arch/tile/mm/fault.c
+@@ -34,6 +34,7 @@
+ #include <linux/hugetlb.h>
+ #include <linux/syscalls.h>
+ #include <linux/uaccess.h>
++#include <linux/kdebug.h>
  
-+#ifdef CONFIG_FUNCTION_TRACER
-+/* arch/tile/kernel/mcount_64.S */
-+#include <asm/ftrace.h>
-+EXPORT_SYMBOL(__mcount);
-+#endif /* CONFIG_FUNCTION_TRACER */
+ #include <asm/pgalloc.h>
+ #include <asm/sections.h>
+@@ -721,6 +722,17 @@ void do_page_fault(struct pt_regs *regs, int fault_num,
+ {
+ 	int is_page_fault;
+ 
++#ifdef CONFIG_KPROBES
++	/*
++	 * This is to notify the fault handler of the kprobes.  The
++	 * exception code is redundant as it is also carried in REGS,
++	 * but we pass it anyhow.
++	 */
++	if (notify_die(DIE_PAGE_FAULT, "page fault", regs, -1,
++		       regs->faultnum, SIGSEGV) == NOTIFY_STOP)
++		return;
++#endif
 +
- /* arch/tile/lib/, various memcpy files */
- EXPORT_SYMBOL(memcpy);
- EXPORT_SYMBOL(__copy_to_user_inatomic);
-diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-index 858966a..a674fd5 100755
---- a/scripts/recordmcount.pl
-+++ b/scripts/recordmcount.pl
-@@ -364,6 +364,10 @@ if ($arch eq "x86_64") {
- } elsif ($arch eq "blackfin") {
-     $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
-     $mcount_adjust = -4;
-+} elsif ($arch eq "tilegx") {
-+    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
-+    $type = ".quad";
-+    $alignment = 8;
- } else {
-     die "Arch $arch is not supported with CONFIG_FTRACE_MCOUNT_RECORD";
+ #ifdef __tilegx__
+ 	/*
+ 	 * We don't need early do_page_fault_ics() support, since unlike
+diff --git a/samples/kprobes/kprobe_example.c b/samples/kprobes/kprobe_example.c
+index ebf5e0c..366db1a 100644
+--- a/samples/kprobes/kprobe_example.c
++++ b/samples/kprobes/kprobe_example.c
+@@ -37,6 +37,11 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
+ 			" status = 0x%lx\n",
+ 		p->addr, regs->cp0_epc, regs->cp0_status);
+ #endif
++#ifdef CONFIG_TILEGX
++	printk(KERN_INFO "pre_handler: p->addr = 0x%p, pc = 0x%lx,"
++			" ex1 = 0x%lx\n",
++		p->addr, regs->pc, regs->ex1);
++#endif
+ 
+ 	/* A dump_stack() here will give a stack backtrace */
+ 	return 0;
+@@ -58,6 +63,10 @@ static void handler_post(struct kprobe *p, struct pt_regs *regs,
+ 	printk(KERN_INFO "post_handler: p->addr = 0x%p, status = 0x%lx\n",
+ 		p->addr, regs->cp0_status);
+ #endif
++#ifdef CONFIG_TILEGX
++	printk(KERN_INFO "post_handler: p->addr = 0x%p, ex1 = 0x%lx\n",
++		p->addr, regs->ex1);
++#endif
  }
+ 
+ /*
 -- 
 1.8.3.1
 
