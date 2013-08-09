@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967809Ab3HIHzM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 03:55:12 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:45755 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967519Ab3HIHzK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 03:55:10 -0400
-Date: Fri, 9 Aug 2013 10:54:58 +0300
-From: Johan Hedberg <johan.hedberg@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Jaganath Kanakkassery <jaganath.k@samsung.com>,
-        Chan-Yeol Park <chanyeol.park@samsung.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: Re: [ 045/102] Bluetooth: Fix invalid length check in
- l2cap_information_rsp()
-Message-ID: <20130809075458.GA8758@x220.p-661hnu-f1>
-References: <20130809015010.208118575@linuxfoundation.org>
- <20130809015020.460694273@linuxfoundation.org>
+	id S967837Ab3HIHz3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 03:55:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47899 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967818Ab3HIHz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 03:55:26 -0400
+Date: Fri, 9 Aug 2013 09:55:23 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Jan Kara <jack@suse.cz>,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] Add madvise(..., MADV_WILLWRITE)
+Message-ID: <20130809075523.GA14574@quack.suse.cz>
+References: <cover.1375729665.git.luto@amacapital.net>
+ <20130807134058.GC12843@quack.suse.cz>
+ <520286A4.1020101@intel.com>
+ <CALCETrXAz1fc7y07LhmxNh6zA_KZB4yv57NY2MrhUwKdkypB9w@mail.gmail.com>
+ <20130808101807.GB4325@quack.suse.cz>
+ <CALCETrX1GXr58ujqAVT5_DtOx+8GEiyb9svK-SGH9d+7SXiNqQ@mail.gmail.com>
+ <20130808185340.GA13926@quack.suse.cz>
+ <CALCETrVXTXzXAmUsmmWxwr6vK+Vux7_pUzWPYyHjxEbn3ObABg@mail.gmail.com>
+ <5204229F.8000507@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130809015020.460694273@linuxfoundation.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
+In-Reply-To: <5204229F.8000507@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Thu 08-08-13 15:58:39, Dave Hansen wrote:
+> I was coincidentally tracking down what I thought was a scalability
+> problem (turned out to be full disks :).  I noticed, though, that ext4
+> is about 20% slower than ext2/3 at doing write page faults (x-axis is
+> number of tasks):
+> 
+> http://www.sr71.net/~dave/intel/page-fault-exts/cmp.html?1=ext3&2=ext4&hide=linear,threads,threads_idle,processes_idle&rollPeriod=5
+> 
+> The test case is:
+> 
+> 	https://github.com/antonblanchard/will-it-scale/blob/master/tests/page_fault3.c
+  The reason is that ext2/ext3 do almost nothing in their write fault
+handler - they are about as fast as it can get. ext4 OTOH needs to reserve
+blocks for delayed allocation, setup buffers under a page etc. This is
+necessary if you want to make sure that if data are written via mmap, they
+also have space available on disk to be written to (ext2 / ext3 do not care
+and will just drop the data on the floor if you happen to hit ENOSPC during
+writeback).
 
-On Thu, Aug 08, 2013, Greg Kroah-Hartman wrote:
-> 3.10-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Jaganath Kanakkassery <jaganath.k@samsung.com>
-> 
-> commit da9910ac4a816b4340944c78d94c02a35527db46 upstream.
-> 
-> The length check is invalid since the length varies with type of
-> info response.
-> 
-> This was introduced by the commit cb3b3152b2f5939d67005cff841a1ca748b19888
-> 
-> Because of this, l2cap info rsp is not handled and command reject is sent.
-> 
-> > ACL data: handle 11 flags 0x02 dlen 16
->         L2CAP(s): Info rsp: type 2 result 0
->           Extended feature mask 0x00b8
->             Enhanced Retransmission mode
->             Streaming mode
->             FCS Option
->             Fixed Channels
-> < ACL data: handle 11 flags 0x00 dlen 10
->         L2CAP(s): Command rej: reason 0
->           Command not understood
-> 
-> Signed-off-by: Jaganath Kanakkassery <jaganath.k@samsung.com>
-> Signed-off-by: Chan-Yeol Park <chanyeol.park@samsung.com>
-> Acked-by: Johan Hedberg <johan.hedberg@intel.com>
-> Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  net/bluetooth/l2cap_core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/net/bluetooth/l2cap_core.c
-> +++ b/net/bluetooth/l2cap_core.c
-> @@ -4240,7 +4240,7 @@ static inline int l2cap_disconnect_rsp(s
->  	u16 dcid, scid;
->  	struct l2cap_chan *chan;
->  
-> -	if (cmd_len != sizeof(*rsp))
-> +	if (cmd_len < sizeof(*rsp))
->  		return -EPROTO;
->  
->  	scid = __le16_to_cpu(rsp->scid);
+I'm not saying ext4 write fault path cannot possibly be optimized (noone
+seriously looked into that AFAIK so there may well be some low hanging
+fruit) but it will always be slower than ext2/3. A more meaningful
+comparison would be with filesystems like XFS which make similar guarantees
+regarding data safety.
 
-This patch is already in 3.10 so there should be no need to try to
-backport it (not to mention that this backport itself is incorrect in
-that it modifies l2cap_disconnect_rsp whereas the original patch
-modifies l2cap_information_rsp).
-
-For whatever reason this commit seems to exist twice in Linus' tree: once
-before the v3.10 tag with id 3f6fa3d489e127ca5a5b298eabac3ff5dbe0e112 and
-once after the v3.10 tag with id da9910ac4a816b4340944c78d94c02a35527db46
-(which is the upstream commit id referenced by your commit message).
-
-Johan
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
