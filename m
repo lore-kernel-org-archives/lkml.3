@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967677Ab3HIB7O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:59:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55759 "EHLO
+	id S967711Ab3HIB7U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:59:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55799 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030196Ab3HIB7F (ORCPT
+	with ESMTP id S967517Ab3HIB7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:59:05 -0400
+	Thu, 8 Aug 2013 21:59:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 053/102] svcrpc: fix gss-proxy xdr decoding oops
-Date: Thu,  8 Aug 2013 18:57:29 -0700
-Message-Id: <20130809015022.578978396@linuxfoundation.org>
+        Jiang Liu <jiang.liu@huawei.com>
+Subject: [ 064/102] zram: avoid access beyond the zram device
+Date: Thu,  8 Aug 2013 18:57:40 -0700
+Message-Id: <20130809015025.252956480@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -26,49 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Jiang Liu <liuj97@gmail.com>
 
-commit dc43376c26cef74226174a2394f37f2a3f8a8639 upstream.
+commit 12a7ad3b810e77137d0caf97a6dd97591e075b30 upstream.
 
-Uninitialized stack data was being used as the destination for memcpy's.
+Function valid_io_request() should verify the entire request are within
+the zram device address range. Otherwise it may cause invalid memory
+access when accessing/modifying zram->meta->table[index] because the
+'index' is out of range. Then it may access non-exist memory, randomly
+modify memory belong to other subsystems, which is hard to track down.
 
-Longer term we'll just delete some of this code; all we're doing is
-skipping over xdr that we don't care about.
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/auth_gss/gss_rpc_xdr.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/staging/zram/zram_drv.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/net/sunrpc/auth_gss/gss_rpc_xdr.c
-+++ b/net/sunrpc/auth_gss/gss_rpc_xdr.c
-@@ -430,7 +430,7 @@ static int dummy_enc_nameattr_array(stru
- static int dummy_dec_nameattr_array(struct xdr_stream *xdr,
- 				    struct gssx_name_attr_array *naa)
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -420,13 +420,20 @@ out:
+  */
+ static inline int valid_io_request(struct zram *zram, struct bio *bio)
  {
--	struct gssx_name_attr dummy;
-+	struct gssx_name_attr dummy = { .attr = {.len = 0} };
- 	u32 count, i;
- 	__be32 *p;
- 
-@@ -493,12 +493,13 @@ static int gssx_enc_name(struct xdr_stre
- 	return err;
- }
- 
+-	if (unlikely(
+-		(bio->bi_sector >= (zram->disksize >> SECTOR_SHIFT)) ||
+-		(bio->bi_sector & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)) ||
+-		(bio->bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))) {
++	u64 start, end, bound;
 +
- static int gssx_dec_name(struct xdr_stream *xdr,
- 			 struct gssx_name *name)
- {
--	struct xdr_netobj dummy_netobj;
--	struct gssx_name_attr_array dummy_name_attr_array;
--	struct gssx_option_array dummy_option_array;
-+	struct xdr_netobj dummy_netobj = { .len = 0 };
-+	struct gssx_name_attr_array dummy_name_attr_array = { .count = 0 };
-+	struct gssx_option_array dummy_option_array = { .count = 0 };
- 	int err;
++	/* unaligned request */
++	if (unlikely(bio->bi_sector & (ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
++		return 0;
++	if (unlikely(bio->bi_size & (ZRAM_LOGICAL_BLOCK_SIZE - 1)))
++		return 0;
  
- 	/* name->display_name */
++	start = bio->bi_sector;
++	end = start + (bio->bi_size >> SECTOR_SHIFT);
++	bound = zram->disksize >> SECTOR_SHIFT;
++	/* out of range range */
++	if (unlikely(start >= bound || end >= bound || start > end))
+ 		return 0;
+-	}
+ 
+ 	/* I/O request is valid */
+ 	return 1;
 
 
