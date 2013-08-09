@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758242Ab3HINIh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 09:08:37 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:60238 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758080Ab3HINIe (ORCPT
+	id S1758219Ab3HINJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 09:09:58 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40911 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758074Ab3HINJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 09:08:34 -0400
-Message-ID: <5204EA04.9060109@linux.vnet.ibm.com>
-Date: Fri, 09 Aug 2013 18:39:24 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 9 Aug 2013 09:09:57 -0400
+Date: Fri, 9 Aug 2013 14:09:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/1] ASoc: kirkwood: add DT support to the mvebu
+	audio subsystem
+Message-ID: <20130809130932.GS23006@n2100.arm.linux.org.uk>
+References: <20130808132201.2610aef3@armhf> <5204A716.6070507@gmail.com> <20130809091953.GO6427@sirena.org.uk> <5204B7A6.9050907@gmail.com> <20130809094340.GO23006@n2100.arm.linux.org.uk> <5204CC04.4000401@gmail.com> <20130809113940.GY6427@sirena.org.uk>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
-        konrad.wilk@oracle.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH  V12 0/14] Paravirtualized ticket spinlocks
-References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com> <52044013.3010202@zytor.com>
-In-Reply-To: <52044013.3010202@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13080913-8256-0000-0000-000008B93757
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130809113940.GY6427@sirena.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 06:34 AM, H. Peter Anvin wrote:
-> The kbuild test bot is reporting some pretty serious errors for this
-> patchset.  I think these are serious enough that the patchset will need
-> to be respun.
->
+On Fri, Aug 09, 2013 at 12:39:40PM +0100, Mark Brown wrote:
+> So extend Morimoto-san's work on the simple card for this - that's what
+> it's there for, it's doing exactly this job for non-DT systems but it
+> just didn't get DT support added yet.  All the trivial cards should end
+> up using this.
 
-There were two problems:
-(1) we were including spinlock_types.h in 
-arch/x86/include/asm/paravirt_types.h.
+It's quite rediculous to request that the simple card stuff is expanded at
+this time, when you're also telling us that we must use DPCM for Kirkwood,
+but DPCM is not yet in a working state in mainline.  We don't yet know
+whether that's because of something the core is doing wrong or whether
+that's because something that I'm doing wrong.  The reason we don't know
+that is because the _only_ person who knows anything about this is Liam,
+and as you have said, Liam is away on vacation.
 
-This was resulting in redefinition of arch_spinlock_t for non SMP kernel
+All that we presently know is that DPCM is supposed to be "something like
+this".  However, when we do that, it doesn't work, which means we can't
+be certain what the end result is supposed to look like.  It may be that
+Liam has changed some of the design decisions with DPCM.
 
-solution was :
-conditional inclusion of spinlock_types.h like below
+We know that various things are missing - like the .pcm_playback member in
+the DAI link.  That points to Liam having additional patches to the core
+code in his tree to make DPCM work.  That could impact our scenario here,
+and how the "simple" card should be implemented.
 
-#ifdef CONFIG_SMP
-#include <asm/spinlock_types.h>
-#else
-typedef u16 __ticket_t;
-#endif
+So, what you're asking is for us to extend the design of something in a
+way that we know very little about how to make work.
 
-(we needed __ticket_t declaration for UP)
-
-(2) we had forward declaration of atomic_read in jumpl_label.
-It was causing problem for alpha, which has macro for atomic_read
-instead of static inline.
-
-Solution was to remove forward declaration and have atomic.h included.
-
-Peter,
-  the above two changes needs small changes in patch 1 and patch 9.
-I 'll be resending only those two patches.
-
-I am happy to resend the whole series if it is better and easier for
-you.
-
+To that I say: No.  Let's wait for Liam to return from vacation so that
+this can be sorted out properly with someone who knows this code.
