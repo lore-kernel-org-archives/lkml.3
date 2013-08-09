@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031065Ab3HIUep (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 16:34:45 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:32188 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030995Ab3HIUeo (ORCPT
+	id S1031054Ab3HIUhL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 16:37:11 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:61140 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030942Ab3HIUhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 16:34:44 -0400
-Date: Fri, 9 Aug 2013 15:34:41 -0500
-From: scameron@beardog.cce.hp.com
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jens.axboe@kernel.dk, tj@kernel.org,
-        scameron@beardog.cce.hp.com
-Subject: Re: Question about REQ_FLUSH and bios with data
-Message-ID: <20130809203441.GN9905@beardog.cce.hp.com>
-References: <20130809190934.GL9905@beardog.cce.hp.com> <1376079495.2718.15.camel@menhir>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 9 Aug 2013 16:37:09 -0400
+Date: Fri, 9 Aug 2013 13:32:17 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 2/4] power: make goldfish_battery depend on GOLDFISH ||
+ COMPILE_TEST
+Message-ID: <20130809203217.GA12638@lizard.sbx05730.santaca.wayport.net>
+References: <1372916353-24050-1-git-send-email-paul.gortmaker@windriver.com>
+ <1372916353-24050-3-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1376079495.2718.15.camel@menhir>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1372916353-24050-3-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 09:18:15PM +0100, Steven Whitehouse wrote:
-> Hi,
+On Thu, Jul 04, 2013 at 01:39:11AM -0400, Paul Gortmaker wrote:
+> Nearly all the other goldfish peripherals (mtd, keyboard, etc)
+> have a dependency on the main platform's GOLDFISH Kconfig item,
+> but this one got skipped.  Even with consistency as a
+> justification, there was initial resistance[1] from some people
+> to adding it however, as they wanted the extra compile coverage.
 > 
-> On Fri, 2013-08-09 at 14:09 -0500, scameron@beardog.cce.hp.com wrote:
-> > So, I'm working on a block driver using the make_request_fn
-> > interface, and have to handle a bio that comes in with
-> > (bi_rw & REQ_FLUSH) set AND data to transfer. 
-> > 
-> > According to Documentation/block/writeback_cache_control.txt:
-> > 
-> > 	The REQ_FLUSH flag can be OR ed into the r/w flags of a
-> > 	bio submitted from the filesystem and will make sure the
-> > 	volatile cache of the storage device has been flushed
-> > 	before the actual I/O operation is started. 
-> > 
-> > So I've written code that handles that case, along with the
-> > various error cases I might encounter, I think, which leads
-> > to my question:
-> > 
-> > How do I get such a bio with a data transfer AND the REQ_FLUSH bit
-> > set to come into the driver?   Just wondering how to test this case.
-> > 
-> GFS2 does this... if you look at the log flush code and the function
-> log_write_header() in particular, you'll see that it sets this on each
-> log header that gets written. You don't need a cluster to generate this
-> kind of i/o, just supply mkfs.gfs2 with -p lock_nolock and mount it as a
-> local filesystem. The combination of touch foo; sync should be enough to
-> generate a log flush writing a log header with this flag set,
+> Now, with CONFIG_COMPILE_TEST, we have the middle ground that
+> will give people the coverage who want it, and let those who
+> don't want it to skip ever seeing the option presented.
+> 
+> [1] https://lkml.org/lkml/2013/2/27/333
+> 
+> Cc: Anton Vorontsov <cbou@mail.ru>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
 
-Thanks!
+So, CONFIG_AKPM... kinda. :) It works for me. Applied, thank you!
 
-Turns out ext3 seems to do it as well (now I feel kind of dumb
-for asking -- had tried with ext2, and had tried some writes
-with a file descriptor with O_SYNC set, but I was kind of shooting
-in the dark.)
-
-And my code appears to work too.
-
--- steve
-
+Anton
