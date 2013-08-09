@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967106Ab3HIBmY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:42:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55250 "EHLO
+	id S967263Ab3HIBut (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:50:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55454 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967055Ab3HIBlo (ORCPT
+	with ESMTP id S967025Ab3HIBmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:41:44 -0400
+	Thu, 8 Aug 2013 21:42:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 05/22] mac80211: fix duplicate retransmission detection
-Date: Thu,  8 Aug 2013 18:41:21 -0700
-Message-Id: <20130809013950.375346151@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 24/25] net_sched: info leak in atm_tc_dump_class()
+Date: Thu,  8 Aug 2013 18:42:00 -0700
+Message-Id: <20130809013654.432036009@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
-References: <20130809013949.226228694@linuxfoundation.org>
+In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
+References: <20130809013649.057678051@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 6b0f32745dcfba01d7be33acd1b40306c7a914c6 upstream.
+[ Upstream commit 8cb3b9c3642c0263d48f31d525bcee7170eedc20 ]
 
-The duplicate retransmission detection code in mac80211
-erroneously attempts to do the check for every frame,
-even frames that don't have a sequence control field or
-that don't use it (QoS-Null frames.)
+The "pvc" struct has a hole after pvc.sap_family which is not cleared.
 
-This is problematic because it causes the code to access
-data beyond the end of the SKB and depending on the data
-there will drop packets erroneously.
-
-Correct the code to not do duplicate detection for such
-frames.
-
-I found this error while testing AP powersave, it lead
-to retransmitted PS-Poll frames being dropped entirely
-as the data beyond the end of the SKB was always zero.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Reviewed-by: Jiri Pirko <jiri@resnulli.us>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/mac80211/rx.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ net/sched/sch_atm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -810,8 +810,14 @@ ieee80211_rx_h_check(struct ieee80211_rx
- 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)rx->skb->data;
- 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(rx->skb);
+--- a/net/sched/sch_atm.c
++++ b/net/sched/sch_atm.c
+@@ -606,6 +606,7 @@ static int atm_tc_dump_class(struct Qdis
+ 		struct sockaddr_atmpvc pvc;
+ 		int state;
  
--	/* Drop duplicate 802.11 retransmissions (IEEE 802.11 Chap. 9.2.9) */
--	if (rx->sta && !is_multicast_ether_addr(hdr->addr1)) {
-+	/*
-+	 * Drop duplicate 802.11 retransmissions
-+	 * (IEEE 802.11-2012: 9.3.2.10 "Duplicate detection and recovery")
-+	 */
-+	if (rx->skb->len >= 24 && rx->sta &&
-+	    !ieee80211_is_ctl(hdr->frame_control) &&
-+	    !ieee80211_is_qos_nullfunc(hdr->frame_control) &&
-+	    !is_multicast_ether_addr(hdr->addr1)) {
- 		if (unlikely(ieee80211_has_retry(hdr->frame_control) &&
- 			     rx->sta->last_seq_ctrl[rx->queue] ==
- 			     hdr->seq_ctrl)) {
++		memset(&pvc, 0, sizeof(pvc));
+ 		pvc.sap_family = AF_ATMPVC;
+ 		pvc.sap_addr.itf = flow->vcc->dev ? flow->vcc->dev->number : -1;
+ 		pvc.sap_addr.vpi = flow->vcc->vpi;
 
 
