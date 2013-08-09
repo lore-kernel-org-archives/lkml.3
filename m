@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934142Ab3HIOwv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 10:52:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48630 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934028Ab3HIOwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 10:52:49 -0400
-Message-ID: <520501E1.3070301@zytor.com>
-Date: Fri, 09 Aug 2013 07:51:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Gleb Natapov <gleb@redhat.com>, mingo@redhat.com, jeremy@goop.org,
-        x86@kernel.org, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH  V12 0/14] Paravirtualized ticket spinlocks
-References: <20130806114020.20643.57235.sendpatchset@codeblue.in.ibm.com> <52016412.1020608@zytor.com> <5201B6FB.5080807@linux.vnet.ibm.com> <5201D180.9080005@zytor.com> <5201ED01.7000803@linux.vnet.ibm.com> <20130808005012.GI2810@phenom.dumpdata.com> <20130808010251.GJ15901@redhat.com> <52040A05.5080107@zytor.com> <520423E9.80507@zytor.com> <5204E57A.3000002@linux.vnet.ibm.com> <20130809130015.GA3730@phenom.dumpdata.com>
-In-Reply-To: <20130809130015.GA3730@phenom.dumpdata.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S934125Ab3HIOzm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 10:55:42 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38154 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757614Ab3HIOzl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 10:55:41 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH] xen/hvc: If we use xen_raw_printk let it also work on HVM guests.
+Date: Fri,  9 Aug 2013 10:55:33 -0400
+Message-Id: <1376060133-6382-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 06:00 AM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Aug 09, 2013 at 06:20:02PM +0530, Raghavendra K T wrote:
->> On 08/09/2013 04:34 AM, H. Peter Anvin wrote:
->>>
->>> Okay, I figured it out.
->>>
->>> One of several problems with the formatting of this patchset is that it
->>> has one- and two-digit patch numbers in the headers, which meant that my
->>> scripts tried to apply patch 10 first.
->>>
->>
->> My bad. I 'll send out in uniform digit form next time.
->>
-> 
-> If you use 'git format-patch --subject-prefix "PATCH V14" v3.11-rc4..'
-> and 'git send-email --subject "[PATCH V14] bla blah" ..'
-> that should be automatically taken care of?
-> 
+The xen_raw_printk works great for debugging purposes and for
+it print anything the Xen hypervisor has to be built with 'debug=y'.
 
-Indeed it should.
+As such there is no difference between a PV or an PVHVM guest
+using the hypercall, so lets use it.
 
-Another problem with this patchset was that the subject was duplicated
-in the body, which meant the tools didn't pick up the From: line.  I
-ended up having to manually edit them.
+Lastly if the hyper-page is not setup yet (for example during
+early HVM boot), then use the 0xe9 port if it has detected
+that it is running under an Xen hypervisor.
 
-That seems to have been fixed, too, in V13.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/tty/hvc/hvc_xen.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
-	-hpa
+diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+index 682210d..69454a0 100644
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -641,7 +641,17 @@ struct console xenboot_console = {
+ 
+ void xen_raw_console_write(const char *str)
+ {
+-	dom0_write_console(0, str, strlen(str));
++	if (!xen_domain())
++		return;
++
++	if (xen_pv_domain())
++		dom0_write_console(0, str, strlen(str));
++	else if (xen_hvm_domain() || xen_cpuid_base()) {
++		/* The hyperpage has not been setup yet. */
++		int i, len = strlen(str);
++		for (i = 0; i < len; i++)
++			 outb(str[i], 0xe9);
++	}
+ }
+ 
+ void xen_raw_printk(const char *fmt, ...)
+-- 
+1.7.7.6
 
