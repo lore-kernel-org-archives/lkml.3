@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967234Ab3HIBw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:52:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55427 "EHLO
+	id S967170Ab3HIBmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:42:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55239 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967176Ab3HIBmT (ORCPT
+	with ESMTP id S967033Ab3HIBll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Aug 2013 21:42:19 -0400
+	Thu, 8 Aug 2013 21:41:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        "West, Steve (NSN - US/Fort Worth)" <steve.west@nsn.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [ 19/25] sctp: fully initialize sctp_outq in sctp_outq_init
-Date: Thu,  8 Aug 2013 18:41:55 -0700
-Message-Id: <20130809013653.348009784@linuxfoundation.org>
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [ 02/22] serial/mxs-auart: increase time to wait for transmitter to become idle
+Date: Thu,  8 Aug 2013 18:41:18 -0700
+Message-Id: <20130809013949.744454634@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
-References: <20130809013649.057678051@linuxfoundation.org>
+In-Reply-To: <20130809013949.226228694@linuxfoundation.org>
+References: <20130809013949.226228694@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-[ Upstream commit c5c7774d7eb4397891edca9ebdf750ba90977a69 ]
+commit 079a036f4283e2b0e5c26080b8c5112bc0cc1831 upstream.
 
-In commit 2f94aabd9f6c925d77aecb3ff020f1cc12ed8f86
-(refactor sctp_outq_teardown to insure proper re-initalization)
-we modified sctp_outq_teardown to use sctp_outq_init to fully re-initalize the
-outq structure.  Steve West recently asked me why I removed the q->error = 0
-initalization from sctp_outq_teardown.  I did so because I was operating under
-the impression that sctp_outq_init would properly initalize that value for us,
-but it doesn't.  sctp_outq_init operates under the assumption that the outq
-struct is all 0's (as it is when called from sctp_association_init), but using
-it in __sctp_outq_teardown violates that assumption. We should do a memset in
-sctp_outq_init to ensure that the entire structure is in a known state there
-instead.
+Without this patch the driver waits ~1 ms for the UART to become idle. At
+115200n8 this time is (theoretically) enough to transfer 11.5 characters
+(= 115200 bits/s / (10 Bits/char) * 1ms). As the mxs-auart has a fifo size
+of 16 characters the clock is gated too early. The problem is worse for
+lower baud rates.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Reported-by: "West, Steve (NSN - US/Fort Worth)" <steve.west@nsn.com>
-CC: Vlad Yasevich <vyasevich@gmail.com>
-CC: netdev@vger.kernel.org
-CC: davem@davemloft.net
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This only happens to really shut down the transmitter in the middle of a
+transfer if /dev/ttyAPPx isn't opened in userspace (e.g. by a getty) but
+was at least once (because the bootloader doesn't disable the transmitter).
+
+So increase the timeout to 20 ms which should be enough for 9600n8, too.
+Moreover skip gating the clock if the timeout is elapsed.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/outqueue.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -205,6 +205,8 @@ static inline int sctp_cacc_skip(struct
-  */
- void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
- {
-+	memset(q, 0, sizeof(struct sctp_outq));
-+
- 	q->asoc = asoc;
- 	INIT_LIST_HEAD(&q->out_chunk_list);
- 	INIT_LIST_HEAD(&q->control_chunk_list);
-@@ -212,13 +214,7 @@ void sctp_outq_init(struct sctp_associat
- 	INIT_LIST_HEAD(&q->sacked);
- 	INIT_LIST_HEAD(&q->abandoned);
+---
+ drivers/tty/serial/mxs-auart.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
+
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -543,7 +543,7 @@ auart_console_write(struct console *co,
+ 	struct mxs_auart_port *s;
+ 	struct uart_port *port;
+ 	unsigned int old_ctrl0, old_ctrl2;
+-	unsigned int to = 1000;
++	unsigned int to = 20000;
  
--	q->fast_rtx = 0;
--	q->outstanding_bytes = 0;
- 	q->empty = 1;
--	q->cork  = 0;
--
--	q->malloced = 0;
--	q->out_qlen = 0;
+ 	if (co->index >	MXS_AUART_PORTS || co->index < 0)
+ 		return;
+@@ -564,18 +564,23 @@ auart_console_write(struct console *co,
+ 
+ 	uart_console_write(port, str, count, mxs_auart_console_putchar);
+ 
+-	/*
+-	 * Finally, wait for transmitter to become empty
+-	 * and restore the TCR
+-	 */
++	/* Finally, wait for transmitter to become empty ... */
+ 	while (readl(port->membase + AUART_STAT) & AUART_STAT_BUSY) {
++		udelay(1);
+ 		if (!to--)
+ 			break;
+-		udelay(1);
+ 	}
+ 
+-	writel(old_ctrl0, port->membase + AUART_CTRL0);
+-	writel(old_ctrl2, port->membase + AUART_CTRL2);
++	/*
++	 * ... and restore the TCR if we waited long enough for the transmitter
++	 * to be idle. This might keep the transmitter enabled although it is
++	 * unused, but that is better than to disable it while it is still
++	 * transmitting.
++	 */
++	if (!(readl(port->membase + AUART_STAT) & AUART_STAT_BUSY)) {
++		writel(old_ctrl0, port->membase + AUART_CTRL0);
++		writel(old_ctrl2, port->membase + AUART_CTRL2);
++	}
+ 
+ 	clk_disable(s->clk);
  }
- 
- /* Free the outqueue structure and any related pending chunks.
 
 
