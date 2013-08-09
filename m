@@ -1,129 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031684Ab3HIXmU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 19:42:20 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:48521 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031620Ab3HIXmS (ORCPT
+	id S1031698Ab3HIXqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 19:46:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38117 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031620Ab3HIXqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 19:42:18 -0400
-Date: Sat, 10 Aug 2013 00:42:09 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <20130809234209.GQ6427@sirena.org.uk>
-References: <20130809091953.GO6427@sirena.org.uk>
- <5204B7A6.9050907@gmail.com>
- <20130809094340.GO23006@n2100.arm.linux.org.uk>
- <5204CC04.4000401@gmail.com>
- <20130809113940.GY6427@sirena.org.uk>
- <20130809130932.GS23006@n2100.arm.linux.org.uk>
- <20130809180058.GM6427@sirena.org.uk>
- <20130809182516.GT23006@n2100.arm.linux.org.uk>
- <20130809194434.GP6427@sirena.org.uk>
- <20130809203847.GU23006@n2100.arm.linux.org.uk>
+	Fri, 9 Aug 2013 19:46:31 -0400
+Date: Fri, 9 Aug 2013 16:46:29 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bob Smith <bsmith@linuxtoys.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons a
+ /sys-like interface
+Message-ID: <20130809234629.GA16866@kroah.com>
+References: <20130806094604.GE27889@kroah.com>
+ <520299AB.1020607@linuxtoys.org>
+ <20130807192714.GC2708@kroah.com>
+ <5202A284.7010106@linuxtoys.org>
+ <20130807195427.GB4121@kroah.com>
+ <5202B674.7060005@linuxtoys.org>
+ <20130807213325.GB5373@kroah.com>
+ <520569B2.4000704@linuxtoys.org>
+ <20130809230150.GA23418@kroah.com>
+ <52057CB4.2020603@linuxtoys.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hqTXfEuqfuBCci/z"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130809203847.GU23006@n2100.arm.linux.org.uk>
-X-Cookie: Many pages make a thick book.
+In-Reply-To: <52057CB4.2020603@linuxtoys.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 1/1] ASoc: kirkwood: add DT support to the mvebu audio
- subsystem
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 09, 2013 at 04:35:16PM -0700, Bob Smith wrote:
+> Greg Kroah-Hartman wrote:
+> >Good protocols exist, look at protobufs from Google if you want to
+> >define your own.  Never create your own protocol these days, it doesn't
+> >make sense, be it a text one or something else.
+> 
+> OK.  I was using the term in the broader sense in which _meaning_ is
+> assigned to the data in the protocol, not just the data marshaling.
 
---hqTXfEuqfuBCci/z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Again, protobufs are a great way to define the meaning of the protocol
+in a manner that is descriptive, fast, versioned, discoverable, and best
+of all for you, with bindings for all languages :)
 
-On Fri, Aug 09, 2013 at 09:38:47PM +0100, Russell King - ARM Linux wrote:
-> On Fri, Aug 09, 2013 at 08:44:34PM +0100, Mark Brown wrote:
+> >Not true at all, I know all about userspace drivers, look at the UIO
+> >code in the Linux kernel.  It was created explicitly for this exact
+> >thing, and to prevent the myrads of broken implementations from being
+> >created again and again and again.  Just use it if you wish to talk to
+> >your hardware directly, lots of people do so.
+> Well, not this exact thing.  UIO is great if your hardware hangs
+> on a bus directly connected to the CPU.  It does nothing to help
+> the case of hardware connected over some communications link.
 
-> > If someone wants to it should also be possible to convert the existing
-> > platforms without S/PDIF support over to DT, providing you don't mind
-> > changing the code once the DPCM and S/PDIF support is added and a bit of
-> > thought is put into where the S/PDIF output will fit into the bindings.
+Like PCI?  :)
 
-> Okay, so you're thinking that the I2S output will be enabled in the
-> absence of DPCM?  If so, that tells me that you don't understand my
+Actually, I'm not kidding about that, I have a PCI bus here that is
+across a flexible cable that can dynamically be plugged and unplugged
+from a machine at any point in time using a communications link.  It's
+called Thunderbolt today, but has been called ExpressBus, and lots of
+other names in the past.
 
-When I say that it should be possible to convert the existing machines
-over to DT I'm talking about the machines that are supported with the
-drivers currently in mainline.  These machines presumably work just fine
-with the existing drivers which support the I2S only subset of the
-possible functionality in the hardware without using DCPM.  These are
-the the machines that could have DT added now without implementing the
-driver improvements to enable the extra hardware functionality.
+> >>As an _opinion_ only, I think maybe userspace device drivers do exist.
+> >>It refers to  hardware that the kernel is not, and should not, be aware
+> >>of.  This hardware is not seen because it is at the end of some kind of
+> >>communications channel like USB-serial or Ethernet. A developer might
+> >>like to view that hardware as part of the overall system even if Linux
+> >>and the CPU do not have direct access to it.  A userspace driver looks
+> >>something like this
+> >>
+> >>	=(ProxyDevNode)====(daemon)===(CommChannel)===(hardware)
+> >
+> >Not really, you are just using an IPC to talk to a "real" device driver.
+> 
+> Yes, each of the "=" above has data passing through a real driver.
 
-When I say that they will need changing once DPCM and S/PDIF support is
-added what I mean is that those changes to the CPU side drivers should,
-as you correctly say, require all Kirkwood machine drivers to use DPCM
-even if only due to the handling of simultaneous startup of the S/PDIF
-and I2S interfaces.
+No it doesn't.  A "real" driver talks to hardware.  You only have that
+for the last "===".
 
-The "you" in the above quote was intended to refer to people working on
-Kirkwood in general, not you personally unless you want to.
+> >FPGAs are interesting things, people are creating "real" drivers for
+> >them (see the linux-kernel archives for a few examples.)  Other people
+> >just use the UIO layer instead, which works quite well for them.  I
+> >suggest you do the same thing.
+> 
+> UIO can not see hardware at the end of a USB-serial link.
 
-> What this means is that the conventional setup where you have _one_ DAI
-> link connecting the codec DAI to the CPU DAI won't work on Kirkwood
-> anymore, because there is no way to know which of the two outputs
-> should be enabled.  I avoided that in my patches, but you've objected
-> to that saying that it must use DPCM.  That makes the whole of kirkwood
-> entirely DPCM only, whether or not you have a single codec to connect.
+Nor should it ever be used for something like that.  There is a protocol
+for this device that the kernel exposes, use it :)
 
-Right, that's where the drivers should end up.  In terms of the device
-tree I would expect that it should be the case that there are distinct
-I2S and S/PDIF interfaces visible, or at least that there's some way to
-identify which interface on the SoC is being referred to - this is the
-thought about where the S/PDIF output will fit into the bindings that I
-mentioned being required.
+thanks,
 
-So long as only I2S is used in the system (or at least any S/PDIF that
-is present is ignored at runtime) it should be possible to continue
-using the existing driver infrastructure until S/PDIF and DPCM support
-is added and then transition the existing drivers (both non-DT and any
-DT ones that get added or converted) over to that as part of the
-conversion.
-
-In other words I was talking about a possible intermediate state where
-people are working with the DT bindings but the driver support for
-systems with S/PDIF in use is not there yet.  That's not required but it
-should be possible if there's interest in progressing the DT bindings
-while the driver is as it stands.
-
---hqTXfEuqfuBCci/z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSBX5OAAoJELSic+t+oim9+tkP/2rbUVERjwqCRanBLwqpQdvV
-JV/UpXLa3+ujaMX9Y9ZgxY7rO/5aJmMGnHKgccuEjlo8VcEXhWXoMQ0c3cSxXvDs
-UdxNeFVa+6Q3J/Yd6Dp+ETgylYizuXdajrbZ6KsFKe7NtieB2BXDTWth/+mRKW1f
-zL4RrbaTuiVvKtbr3Zv5qn/d96dqrgedTIEn0XT4wNI9jJUr9br4Zq+agAON+yJf
-fPaRAifhe3CxyXLHc6a/iqCd2n25HI3/rgD55SLszChbKru6VxCv1MIZijoRJWEc
-rRyCwS3Q8vyaa+czjncxglA81jlMoAkHi8Y62ukE3x6oz0yUyKgugt0Cwj/JbniQ
-fQPpWkKHew8NCsvpnlw8iS/WIWlCYtDDL6UK2uK1NY+Xahfer4WQ4KVYsnzjI5iQ
-z2HpfSN+roYEKhoVfrnRNgcrCg4ZBxSmhxtqs3ejFGZYWnrL1zw+f4dI011uyQlK
-yFIvFnHtxKNm7hwZ3w/bLWY/9VQNLtfMF6OmN1scSAbAJi5h3C5+ocVuBkT299Vs
-q7BkVVz3FwM7p3haFboVdA+vY1dxVbVIB/xC9g2EmU8MhJ4KK8B6k5BiVPEC3YOB
-DsaiMFjMHeSNMuRY1kjTDJSsoQ0xXopMRYy188xQl0Iexcbg/iJ+Wu1Zvp/C2oEH
-+OdkSH5xJIYIJ1zoskDI
-=JVZp
------END PGP SIGNATURE-----
-
---hqTXfEuqfuBCci/z--
+greg k-h
