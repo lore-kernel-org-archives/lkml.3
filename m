@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab3HIEFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 00:05:44 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:41730 "EHLO
+	id S1753831Ab3HIEGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 00:06:38 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:41877 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab3HIEFn (ORCPT
+	with ESMTP id S1751358Ab3HIEGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 00:05:43 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-49-52046a958b94
+	Fri, 9 Aug 2013 00:06:37 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-d3-52046acc6584
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+Cc: linux-kernel@vger.kernel.org, "'Nick Piggin'" <npiggin@kernel.dk>,
         Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 2/3] block: mg_disk: Staticize mg_times_out()
-Date: Fri, 09 Aug 2013 13:05:40 +0900
-Message-id: <001901ce94b5$b6c2bc50$244834f0$@samsung.com>
+Subject: [PATCH 3/3] block: brd: Staticize 'rd_size'
+Date: Fri, 09 Aug 2013 13:06:35 +0900
+Message-id: <001a01ce94b5$d72a5430$857efc90$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
 Content-language: ko
-Thread-index: Ac6UtZ4tz9fYRmYlTv6f2zmsQoN/Hw==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zQ91pWSxBBo+tLeasX8NmsfpuP5vF
-	5YWXWC0u75rD5sDicflsqceJGb9ZPPq2rGL0+LxJLoAlissmJTUnsyy1SN8ugSvj4+oFzAVX
-	WStenT/F2MB4jaWLkYNDQsBE4vKTgi5GTiBTTOLCvfVsXYxcHEICyxglet7sYYJImEgce3WX
-	GSKxiFFi0uMdTBDOL0aJe6/PsYJUsQmoSXz5cpgdZKqIgL5EW4sGSJhZIEnix4XPLCC2sICt
-	xPWz18GGsgioSjz8vZAJpJxXwFJi4XstkDCvgKDEj8n3WCBatSQ2b2tihbDlJTavecsMcY+C
-	xI6zrxkh4iIS+168A7NFBPQkZt16BnanhMA2dokrE96wQuwSkPg2+RDUw7ISmw5AzZGUOLji
-	BssERrFZSFbPQrJ6FpLVs5CsW8DIsopRNLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJL76dzDe
-	PWB9iDEZaP1EZinR5HxgfOaVxBsamxlZmJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoU
-	X1Sak1p8iJGJg1OqgZFFWc/ix3avwKTCvmU5fAplzavnlbT96lDw2KKUNfdj5f+T4pMPv/KJ
-	Z/eoum6TbnC48bSIj3g0wwHHr4rt9/8+z/d755vHybTW7VHUqbi3l846ewb3nM4+X++yfuUu
-	4YJvNQX3D9/tTFPrbG9ZplViU61QF3vg+60sHV9zO+/AW10c8YUrlFiKMxINtZiLihMBUOL5
-	ycUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd2pWSxBBns/WlrMWb+GzWL13X42
-	i8sLL7FaXN41h82BxePy2VKPEzN+s3j0bVnF6PF5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
+Thread-index: Ac6Utb+jbAxgCKjcTTWno9nl0kH+ww==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zQ90zWSxBBi8ei1nMWb+GzeLywkus
+	Fpd3zWGzuPa/l92BxePy2VKPEzN+s3j0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxo+r+1gK
+	5rJVHGx4wNrAOJG1i5GTQ0LARGLOqRlQtpjEhXvr2boYuTiEBJYxSjx8/4UJpujHs1ZWiMQi
+	Rond83rZIZxfjBJPprYxg1SxCahJfPlyGCjBwSEioC/R1qIBEmYWSJe4uBeiRBho0KEv99hB
+	bBYBVYnX/2aALeAVsJSY/GA6C4QtKPFj8j0WiF4tic3bmlghbHmJzWveMkMcpCCx4+xrRoi4
+	iMS+F+8YIdbqSbRO9gM5TUJgHbvE2/mfWSB2CUh8m3yIBaRGQkBWYtMBqDGSEgdX3GCZwCg2
+	C8nmWUg2z0KyeRaSbQsYWVYxiqYWJBcUJ6UXGeoVJ+YWl+al6yXn525ihMRY7w7G2wesDzEm
+	A62fyCwlmpwPjNG8knhDYzMjC1MTU2Mjc0sz0oSVxHnVWqwDhQTSE0tSs1NTC1KL4otKc1KL
+	DzEycXBKNTA2rDGUXq1m5HD27IErb7ZGBMlttZfpMJttJi2TE9PjWP705SvmyCf5Uj+LzfLb
+	39ziMzuxcbnHqWBGt0Nnt1zJLM+c82RLGeNKKS3tnexiH7/d+LbsmK21ivOrfQF/37QqczqU
+	5VmkXlsmtmGGbUfedckcDkffO4kzHgZWvJkcUnRstseFR7JKLMUZiYZazEXFiQC5cWwhxwIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAd0zWSxBBhd3CFvMWb+GzeLywkus
+	Fpd3zWGzuPa/l92BxePy2VKPEzN+s3j0bVnF6PF5k1wAS1QDo01GamJKapFCal5yfkpmXrqt
 	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
-	MI0Rur4hQXA9RgZoIGEdY8bH1QuYC66yVrw6f4qxgfEaSxcjJ4eEgInEsVd3mSFsMYkL99az
-	dTFycQgJLGKUmPR4BxOE84tR4t7rc6wgVWwCahJfvhxm72Lk4BAR0Jdoa9EACTMLJEn8uPAZ
-	bKiwgK3E9bPXmUBsFgFViYe/FzKBlPMKWEosfK8FEuYVEJT4MfkeC0SrlsTmbU2sELa8xOY1
-	b6HuUZDYcfY1I0RcRGLfi3dgtoiAnsSsW8+YJzAKzEIyahaSUbOQjJqFpH0BI8sqRtHUguSC
-	4qT0XEO94sTc4tK8dL3k/NxNjOAIfia1g3Flg8UhRgEORiUeXsXtzEFCrIllxZW5hxglOJiV
-	RHhfZAGFeFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YXPJK4g2NTcyMLI3MLIxMzM1JE1YS
-	5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgTHyOZfo649qoh+PNqxn42ybrn9b/uiG8pJTTy42
-	fZqeFCvQ8vTWk4anG219A4NjL3Ir36wXFpnbdCrSdFbegudhIlsTLws57GVcMVXkufAZEQbf
-	mtvP7urkxE0xj3U5syGpQnGHksG2izsPSzsnJBsJN858NT1m6Zr7qU27r30J5HP5tmvv104l
-	luKMREMt5qLiRABK5HFZJAMAAA==
+	MI0Rur4hQXA9RgZoIGEdY8aPq/tYCuayVRxseMDawDiRtYuRk0NCwETix7NWKFtM4sK99Wxd
+	jFwcQgKLGCV2z+tlh3B+MUo8mdrGDFLFJqAm8eXLYaAEB4eIgL5EW4sGSJhZIF3i4l6IEmGg
+	oYe+3GMHsVkEVCVe/5vBBGLzClhKTH4wnQXCFpT4MfkeC0SvlsTmbU2sELa8xOY1b5khDlKQ
+	2HH2NSNEXERi34t3jBBr9SRaJ/tNYBSYhWTSLCSTZiGZNAtJ9wJGllWMoqkFyQXFSem5hnrF
+	ibnFpXnpesn5uZsYwRH8TGoH48oGi0OMAhyMSjy8ituZg4RYE8uKK3MPMUpwMCuJ8L7IAgrx
+	piRWVqUW5ccXleakFh9iTAZ6dCKzlGhyPjC55JXEGxqbmBlZGplZGJmYm5MmrCTOe6DVOlBI
+	ID2xJDU7NbUgtQhmCxMHp1QD456aib8mnd5v3v4m+8qti9ksy9QbOnhqdmw22iJnUpI8a7v3
+	+VDP8wyJF05Fhl2Z88xd6g9nz/EPu/LKTtif9N7460eLz4xlry99ebj6q4Jw7cq016+uv6hf
+	p9BgYX7GM6smbtGtrKcLcgrDuK/0bnwuke6Yd3n9onMpzYcmeDZ7PEmJEd667aISS3FGoqEW
+	c1FxIgDhZRDiJAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,29 +52,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mg_times_out() is used only in this file.
+'rd_size' is used only in this file.
 Fix the following sparse warning:
 
-drivers/block/mg_disk.c:639:6: warning: symbol 'mg_times_out' was not declared. Should it be static?
+drivers/block/brd.c:432:5: warning: symbol 'rd_size' was not declared. Should it be static?
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/block/mg_disk.c |    2 +-
+ drivers/block/brd.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/mg_disk.c b/drivers/block/mg_disk.c
-index a56cfcd..77a60be 100644
---- a/drivers/block/mg_disk.c
-+++ b/drivers/block/mg_disk.c
-@@ -636,7 +636,7 @@ ok_to_write:
- 		mg_request(host->breq);
- }
- 
--void mg_times_out(unsigned long data)
-+static void mg_times_out(unsigned long data)
- {
- 	struct mg_host *host = (struct mg_host *)data;
- 	char *name;
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 9bf4371..650530ab 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -429,7 +429,7 @@ static const struct block_device_operations brd_fops = {
+  * And now the modules code and kernel interface.
+  */
+ static int rd_nr;
+-int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
++static int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
+ static int max_part;
+ static int part_shift;
+ module_param(rd_nr, int, S_IRUGO);
 -- 
 1.7.10.4
 
