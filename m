@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030400Ab3HICLj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 22:11:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55781 "EHLO
+	id S1030419Ab3HICLy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 22:11:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55776 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967651Ab3HIB7K (ORCPT
+	with ESMTP id S967647Ab3HIB7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 21:59:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        AceLan Kao <acelan.kao@canonical.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 050/102] Bluetooth: Add support for Atheros [0cf3:e003]
-Date: Thu,  8 Aug 2013 18:57:26 -0700
-Message-Id: <20130809015021.794997730@linuxfoundation.org>
+        Avinash Patil <patila@marvell.com>, Stone Piao <piaoyun@marvell.com>,
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 058/102] mwifiex: check for bss_role instead of bss_mode for STA operations
+Date: Thu,  8 Aug 2013 18:57:34 -0700
+Message-Id: <20130809015023.764603700@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809015010.208118575@linuxfoundation.org>
 References: <20130809015010.208118575@linuxfoundation.org>
@@ -27,55 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Avinash Patil <patila@marvell.com>
 
-commit 1d5b569ef85d013a775560a90050dc630614c045 upstream.
+commit 953b3539ef9301b8ef73f4b6e2fd824b86aae65a upstream.
 
-Add support for the AR9462 chip
+This patch fixes an issue wherein association would fail on P2P
+interfaces. This happened because we are checking priv->mode
+against NL80211_IFTYPE_STATION. While this check is correct for
+infrastructure stations, it would fail P2P clients for which mode
+is NL80211_IFTYPE_P2P_CLIENT.
 
-T:  Bus=02 Lev=02 Prnt=02 Port=04 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=e003 Rev=00.02
-C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+Better check would be bss_role which has only 2 values: STA/AP.
 
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Stone Piao <piaoyun@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ drivers/net/wireless/mwifiex/cfg80211.c |    4 ++--
+ drivers/net/wireless/mwifiex/join.c     |    6 ++++--
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -94,6 +94,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x04c5, 0x1330) },
- 	{ USB_DEVICE(0x13d3, 0x3402) },
- 	{ USB_DEVICE(0x0cf3, 0x3121) },
-+	{ USB_DEVICE(0x0cf3, 0xe003) },
+--- a/drivers/net/wireless/mwifiex/cfg80211.c
++++ b/drivers/net/wireless/mwifiex/cfg80211.c
+@@ -1668,9 +1668,9 @@ mwifiex_cfg80211_connect(struct wiphy *w
+ 	struct mwifiex_private *priv = mwifiex_netdev_get_priv(dev);
+ 	int ret;
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -134,6 +135,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
+-	if (priv->bss_mode != NL80211_IFTYPE_STATION) {
++	if (GET_BSS_ROLE(priv) != MWIFIEX_BSS_ROLE_STA) {
+ 		wiphy_err(wiphy,
+-			  "%s: reject infra assoc request in non-STA mode\n",
++			  "%s: reject infra assoc request in non-STA role\n",
+ 			  dev->name);
+ 		return -EINVAL;
+ 	}
+--- a/drivers/net/wireless/mwifiex/join.c
++++ b/drivers/net/wireless/mwifiex/join.c
+@@ -1290,8 +1290,10 @@ int mwifiex_associate(struct mwifiex_pri
+ {
+ 	u8 current_bssid[ETH_ALEN];
  
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -154,6 +154,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x04c5, 0x1330), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3121), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0xe003), .driver_info = BTUSB_ATH3012 },
+-	/* Return error if the adapter or table entry is not marked as infra */
+-	if ((priv->bss_mode != NL80211_IFTYPE_STATION) ||
++	/* Return error if the adapter is not STA role or table entry
++	 * is not marked as infra.
++	 */
++	if ((GET_BSS_ROLE(priv) != MWIFIEX_BSS_ROLE_STA) ||
+ 	    (bss_desc->bss_mode != NL80211_IFTYPE_STATION))
+ 		return -1;
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 
 
