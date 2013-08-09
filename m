@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567Ab3HISAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 14:00:39 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46434 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758527Ab3HISAh (ORCPT
+	id S1758580Ab3HISAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 14:00:52 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:57858 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758547Ab3HISAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 14:00:37 -0400
-Date: Fri, 9 Aug 2013 11:00:35 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] [TRIVIAL] ARM: msm: fix compilation error in gpiomux
-Message-ID: <20130809180035.GA733@codeaurora.org>
-References: <1375857279-18082-1-git-send-email-k.kozlowski@samsung.com>
- <20130807174053.GA17551@codeaurora.org>
- <20130807210804.GB14845@codeaurora.org>
- <1375943536.30982.1.camel@AMDC1943>
- <520418F5.2030804@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <520418F5.2030804@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Aug 2013 14:00:38 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH v2] coccinelle: replace 0/1 with false/true in functions returning bool
+Date: Fri,  9 Aug 2013 17:59:53 +0000
+Message-Id: <1376071193-21146-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376064946-20232-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1376064946-20232-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 03:17:25PM -0700, Rohit Vaswani wrote:
->On 8/7/2013 11:32 PM, Krzysztof Kozlowski wrote:
->> On śro, 2013-08-07 at 14:08 -0700, Stephen Boyd wrote:
->>> On 08/07, David Brown wrote:
->>>> On Wed, Aug 07, 2013 at 08:34:39AM +0200, Krzysztof Kozlowski wrote:
->>>>> Fix compilation error in gpiomux (CONFIG_MSM_GPIOMUX=y):
->>>>> arch/arm/mach-msm/gpiomux.c:24:13: error: static declaration of
->>>>> 	???__msm_gpiomux_write??? follows non-static declaration
->>>>> arch/arm/mach-msm/gpiomux.h:85:6: note: previous declaration of
->>>>> 	???__msm_gpiomux_write??? was here
->>>>>
->>>>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
->>>> Thanks, I'll pull this in.
->>>>
->>>>   <https://patchwork.kernel.org/patch/2839921/>
->>>>
->>> I believe this is fixed by Rohit's patch that has already been
->>> taken in a pull request?
->>>
->>> https://lkml.org/lkml/2013/7/26/608
->> Yes, Rohit's patch fixes the problem so this is already in linux-msm
->> tree.
->
->David, please can you confirm which pull request has this patch ?
+This semantic patch replaces "return {0,1};" with "return
+{false,true};" in functions returning bool.
 
-It is in Linus' current tree.  Olof pulled it into the ARM tree on
-Sunday, and Linus pulled those fixes yesterday morning.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+v2: Simplified script, and eliminate whitespace mangling at the same
+time. Thanks to Julia Lawall.
 
-David
+ scripts/coccinelle/misc/boolreturn.cocci |   56 ++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
+ create mode 100644 scripts/coccinelle/misc/boolreturn.cocci
 
+diff --git a/scripts/coccinelle/misc/boolreturn.cocci b/scripts/coccinelle/misc/boolreturn.cocci
+new file mode 100644
+index 0000000..c8d494c
+--- /dev/null
++++ b/scripts/coccinelle/misc/boolreturn.cocci
+@@ -0,0 +1,56 @@
++/// Return statements in functions returning bool should use
++/// true/false instead of 1/0.
++//
++// Confidence: High
++
++virtual patch
++virtual report
++
++
++@r1 depends on patch@
++identifier fn;
++typedef bool;
++symbol false;
++symbol true;
++@@
++
++bool fn ( ... )
++{
++...
++return
++(
++- 0
+++ false
++|
++- 1
+++ true
++)
++  ;
++...
++}
++
++@r2 depends on !patch@
++identifier fn;
++position p;
++@@
++
++bool fn ( ... )
++{
++	...
++return
++(
++* 0@p
++|
++* 1@p
++)
++  ;
++	...
++}
++
++
++@script:python depends on report@
++p << r2.p;
++fn << r2.fn;
++@@
++
++coccilib.report.print_report(p[0], "WARNING: return of 0/1 in function '%s' with return type bool" % fn)
 -- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.9.5
+
