@@ -1,154 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966823Ab3HIKYB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:24:01 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:49845 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966414Ab3HIKX7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:23:59 -0400
-Message-ID: <5204C337.8040905@hitachi.com>
-Date: Fri, 09 Aug 2013 19:23:51 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S966718Ab3HIKZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:25:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49087 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S966464Ab3HIKZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 06:25:24 -0400
+X-IronPort-AV: E=Sophos;i="4.89,844,1367942400"; 
+   d="scan'208";a="8163346"
+Message-ID: <5204C2A4.5060601@cn.fujitsu.com>
+Date: Fri, 09 Aug 2013 18:21:24 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Hyeoncheol Lee <cheol.lee@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH 13/13] tracing/uprobes: Add support for full argument
- access methods
-References: <1376037909-17797-1-git-send-email-namhyung@kernel.org> <1376037909-17797-14-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1376037909-17797-14-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] f2fs: clean up the needless end 'return' of void function
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 18:23:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/09 18:23:56,
+	Serialize complete at 2013/08/09 18:23:56
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/08/09 17:45), Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Enable to fetch other types of argument for the uprobes.  IOW, we can
-> access stack, memory, deref, bitfield and retval from uprobes now.
 
-Could you also add more detail descriptions about what syntax
-uprobe-event will accept now and what is not?
-And also, you should update Documentation/trace/uprobetracer.txt
-according to your effort too. :)
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/data.c    |    1 -
+ fs/f2fs/node.c    |    1 -
+ fs/f2fs/segment.c |    4 ----
+ fs/f2fs/super.c   |    1 -
+ 4 files changed, 0 insertions(+), 7 deletions(-)
 
-Thank you,
-
-> Original-patch-by: Hyeoncheol Lee <cheol.lee@lge.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  kernel/trace/trace_probe.c | 34 ++++++++++++++++++++--------------
->  1 file changed, 20 insertions(+), 14 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-> index 70cd3bfde5a6..b68ceb7cad6e 100644
-> --- a/kernel/trace/trace_probe.c
-> +++ b/kernel/trace/trace_probe.c
-> @@ -253,7 +253,7 @@ fail:
->  }
->  
->  /* Special function : only accept unsigned long */
-> -static __kprobes void fetch_stack_address(struct pt_regs *regs,
-> +static __kprobes void fetch_kernel_stack_address(struct pt_regs *regs,
->  					  void *dummy, void *dest, void *priv)
->  {
->  	*(unsigned long *)dest = kernel_stack_pointer(regs);
-> @@ -303,7 +303,8 @@ int traceprobe_split_symbol_offset(char *symbol, unsigned long *offset)
->  #define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
->  
->  static int parse_probe_vars(char *arg, const struct fetch_type *t,
-> -			    struct fetch_param *f, bool is_return)
-> +			    struct fetch_param *f, bool is_return,
-> +			    bool is_kprobe)
->  {
->  	int ret = 0;
->  	unsigned long param;
-> @@ -315,13 +316,18 @@ static int parse_probe_vars(char *arg, const struct fetch_type *t,
->  			ret = -EINVAL;
->  	} else if (strncmp(arg, "stack", 5) == 0) {
->  		if (arg[5] == '\0') {
-> -			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR) == 0)
-> -				f->fn = fetch_stack_address;
-> -			else
-> -				ret = -EINVAL;
-> +			if (strcmp(t->name, DEFAULT_FETCH_TYPE_STR))
-> +				return -EINVAL;
-> +
-> +			if (is_kprobe)
-> +				f->fn = fetch_kernel_stack_address;
-> +			else {
-> +				f->fn = t->fetch[FETCH_MTD_stack];
-> +				f->data = (void *)0;
-> +			}
->  		} else if (isdigit(arg[5])) {
->  			ret = kstrtoul(arg + 5, 10, &param);
-> -			if (ret || param > PARAM_MAX_STACK)
-> +			if (ret || (is_kprobe && param > PARAM_MAX_STACK))
->  				ret = -EINVAL;
->  			else {
->  				f->fn = t->fetch[FETCH_MTD_stack];
-> @@ -345,17 +351,13 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->  	int ret;
->  	const struct fetch_type *ttbl;
->  
-> -	ttbl = kprobes_fetch_type_table;
-> +	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
->  
->  	ret = 0;
->  
-> -	/* Until uprobe_events supports only reg arguments */
-> -	if (!is_kprobe && arg[0] != '%')
-> -		return -EINVAL;
-> -
->  	switch (arg[0]) {
->  	case '$':
-> -		ret = parse_probe_vars(arg + 1, t, f, is_return);
-> +		ret = parse_probe_vars(arg + 1, t, f, is_return, is_kprobe);
->  		break;
->  
->  	case '%':	/* named register */
-> @@ -376,6 +378,10 @@ static int parse_probe_arg(char *arg, const struct fetch_type *t,
->  			f->fn = t->fetch[FETCH_MTD_memory];
->  			f->data = (void *)param;
->  		} else {
-> +			/* uprobes don't support symbols */
-> +			if (!is_kprobe)
-> +				return -EINVAL;
-> +
->  			ret = traceprobe_split_symbol_offset(arg + 1, &offset);
->  			if (ret)
->  				break;
-> @@ -482,7 +488,7 @@ int traceprobe_parse_probe_arg(char *arg, ssize_t *size,
->  	int ret;
->  	const struct fetch_type *ttbl;
->  
-> -	ttbl = kprobes_fetch_type_table;
-> +	ttbl = is_kprobe ? kprobes_fetch_type_table : uprobes_fetch_type_table;
->  
->  	if (strlen(arg) > MAX_ARGSTR_LEN) {
->  		pr_info("Argument is too long.: %s\n",  arg);
-> 
-
-
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index a7eb529..ea3cb29 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -176,7 +176,6 @@ void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
+ end_update:
+ 	write_unlock(&fi->ext.ext_lock);
+ 	sync_inode_page(dn);
+-	return;
+ }
+ 
+ struct page *find_data_page(struct inode *inode, pgoff_t index, bool sync)
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index f5172e2..bb8fbda 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -916,7 +916,6 @@ void ra_node_page(struct f2fs_sb_info *sbi, nid_t nid)
+ 		f2fs_put_page(apage, 0);
+ 	else if (err == LOCKED_PAGE)
+ 		f2fs_put_page(apage, 1);
+-	return;
+ }
+ 
+ struct page *get_node_page(struct f2fs_sb_info *sbi, pgoff_t nid)
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 68e344f..9c45b8e 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -117,7 +117,6 @@ static void locate_dirty_segment(struct f2fs_sb_info *sbi, unsigned int segno)
+ 	}
+ 
+ 	mutex_unlock(&dirty_i->seglist_lock);
+-	return;
+ }
+ 
+ /*
+@@ -261,7 +260,6 @@ static void __add_sum_entry(struct f2fs_sb_info *sbi, int type,
+ 	void *addr = curseg->sum_blk;
+ 	addr += curseg->next_blkoff * sizeof(struct f2fs_summary);
+ 	memcpy(addr, sum, sizeof(struct f2fs_summary));
+-	return;
+ }
+ 
+ /*
+@@ -559,7 +557,6 @@ out:
+ #ifdef CONFIG_F2FS_STAT_FS
+ 	sbi->segment_count[curseg->alloc_type]++;
+ #endif
+-	return;
+ }
+ 
+ void allocate_new_segments(struct f2fs_sb_info *sbi)
+@@ -1192,7 +1189,6 @@ void write_node_summaries(struct f2fs_sb_info *sbi, block_t start_blk)
+ {
+ 	if (is_set_ckpt_flags(F2FS_CKPT(sbi), CP_UMOUNT_FLAG))
+ 		write_normal_summaries(sbi, start_blk, CURSEG_HOT_NODE);
+-	return;
+ }
+ 
+ int lookup_journal_in_cursum(struct f2fs_summary_block *sum, int type,
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 94c0e20..9e494d4 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -318,7 +318,6 @@ static int f2fs_drop_inode(struct inode *inode)
+ static void f2fs_dirty_inode(struct inode *inode, int flags)
+ {
+ 	set_inode_flag(F2FS_I(inode), FI_DIRTY_INODE);
+-	return;
+ }
+ 
+ static void f2fs_i_callback(struct rcu_head *head)
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.7
 
