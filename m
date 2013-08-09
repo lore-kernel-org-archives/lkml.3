@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030686Ab3HIOm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 10:42:29 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:11857 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030282Ab3HIOm1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 10:42:27 -0400
-X-AuditID: cbfec37c-b7f166d000004b4e-dd-5204ffd250da
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [ 000/102] 3.10.6-stable review
-Thread-topic: [ 000/102] 3.10.6-stable review
-Thread-index: AQHOlQgAW6aTot4E+kWIZH6aFkzVTw==
-Date: Fri, 09 Aug 2013 14:42:24 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E61761C23@sisaex02sj>
-References: <20130809015010.208118575@linuxfoundation.org>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t9hX91L/1mCDO63ClvMWb+GzaJ58Xo2
-	i8u75rBZLNj4iNHiUd9bdgdWjxMzfrN47J+7ht3j8ya5AOYoLpuU1JzMstQifbsErozlh36w
-	FPzhqFh39RpLA+Ma9i5GTg4JAROJtx9eskHYYhIX7q0Hs4UEljFKtM8y72LkArJ7mSR6Zv1j
-	g3DmM0q8a2lnBaliE1CX+Px6B9gkEQFjif6zs9hBipgFZjJJ/D82gQkkISygI/HkwFyoIl2J
-	ya8vATVzANl6Eqsnx4OEWQRUJc7+msYOEuYVsJe4tMMX4ggriSMHDzGD2IxAx30/tQZsIrOA
-	uERz600WiKMFJJbsOc8MYYtKvHz8D2y6hICixPbVVhDlWhLrdx6HatWWePLuAtj1vAKCEj8m
-	32OZwCg2C8nUWUhaZiFpmYWkZQEjyypGsdLi5ILipPTUCmO94sTc4tK8dL3k/NxNjJAoq9nB
-	eO+rzSFGAQ5GJR5eix8sQUKsiWXFlbmHGCU4mJVEeH//BArxpiRWVqUW5ccXleakFh9iZOLg
-	lGpg9F+1uUTUQGDCz5qYxnZr305eRiZv4ekfw+fdMlRPqb5U/mXLIutFEyZc2OtvLWL9n/Fs
-	scgf5StRDCwuRT5hXPb178/y/zR4tPxo1VvBVXod75lkN9zQu+7P+vWlpHZetNk1/y1CO2JD
-	3zHx/vrkYHVb+Xdpkun5Zc231Jo6jx1a7T57znsfJZbijERDLeai4kQA5f1MSZACAAA=
+	id S1030709Ab3HIOmq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 10:42:46 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37214 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030282Ab3HIOmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 10:42:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,846,1367996400"; 
+   d="scan'208";a="384458981"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ning Qu <quning@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CACz4_2fv1g2dRLh72gtaCYkNC6+Pp4h=R0q-taR51tejpL1gnw@mail.gmail.com>
+References: <1375582645-29274-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1375582645-29274-21-git-send-email-kirill.shutemov@linux.intel.com>
+ <CACz4_2f2frTktfUusWGcaqZtTmQS8FSY0HqwXCas44EW7Q5Xsw@mail.gmail.com>
+ <CACz4_2de=zm2-VtE=dFTfYjrdma4QFX1S-ukQ_7J4DZ32q1JQQ@mail.gmail.com>
+ <CACz4_2fv1g2dRLh72gtaCYkNC6+Pp4h=R0q-taR51tejpL1gnw@mail.gmail.com>
+Subject: Re: [PATCH 20/23] thp: handle file pages in split_huge_page()
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130809144601.159CAE0090@blue.fi.intel.com>
+Date: Fri,  9 Aug 2013 17:46:01 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 07:54 AM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.6 release.
-> There are 102 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sun Aug 11 01:46:31 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.6-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+Ning Qu wrote:
+> I just tried, and it seems working fine now without the deadlock anymore. I
+> can run some big internal test with about 40GB files in sysv shm. Just move
+> the line before the locking happens in vma_adjust, something as below, the
+> line number is not accurate because my patch is based on another tree right
+> now.
 
-I don't see the new stable release patches on
+Looks okay to me. Could you prepare real patch (description, etc.). I'll
+add it to my patchset.
 
-www.kernel.org/pub/linux/kernel/v3.0/stable-review/
+> 
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -581,6 +581,8 @@ again:                      remove_next = 1 + (end >
+> next->vm_end);
+>                 }
+>         }
+> 
+> +       vma_adjust_trans_huge(vma, start, end, adjust_next);
+> +
+>         if (file) {
+>                 mapping = file->f_mapping;
+>                 if (!(vma->vm_flags & VM_NONLINEAR))
+> @@ -597,8 +599,6 @@ again:                      remove_next = 1 + (end >
+> next->vm_end);
+>                 }
+>         }
+> 
+> -       vma_adjust_trans_huge(vma, start, end, adjust_next);
+> -
+>         anon_vma = vma->anon_vma;
+>         if (!anon_vma && adjust_next)
+>                 anon_vma = next->anon_vma;
+> 
+> 
+> Best wishes,
+> -- 
+> Ning Qu (曲宁) | Software Engineer | quning@google.com | +1-408-418-6066
 
-Others were able to download last night as I can see from the test 
-responses. Something must have happened. Tried accessing with ftp client 
-as well.
-
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+-- 
+ Kirill A. Shutemov
