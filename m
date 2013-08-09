@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966156Ab3HIKJz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 06:09:55 -0400
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:12092 "EHLO
+	id S966514Ab3HIKKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 06:10:03 -0400
+Received: from demumfd001.nsn-inter.net ([93.183.12.32]:12113 "EHLO
 	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965601Ab3HIKJy (ORCPT
+	with ESMTP id S965601Ab3HIKKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 06:09:54 -0400
-Message-ID: <5204BFC7.4090106@nsn.com>
-Date: Fri, 09 Aug 2013 12:09:11 +0200
+	Fri, 9 Aug 2013 06:10:00 -0400
+Message-ID: <5204BFD0.5080305@nsn.com>
+Date: Fri, 09 Aug 2013 12:09:20 +0200
 From: Ionut Nicu <ioan.nicu.ext@nsn.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
 To: Mark Brown <broonie@kernel.org>
 CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] regmap: flat: use the cache_present bitmap
+Subject: [PATCH 3/3] regmap: regcache: allow read-only regs to be cached
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-purgate-type: clean
 X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
 X-purgate: clean
 X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 2167
-X-purgate-ID: 151667::1376042952-00003561-62A591EF/0-0/0-0
+X-purgate-size: 1570
+X-purgate-ID: 151667::1376042964-00003561-337A0975/0-0/0-0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As opposed to the other regmap cache implementations,
-regcache_flat didn't use the cache_present bitmap for
-figuring out whether a register was cached or not, nor
-did it mark a register as present in the cache when
-regcache_flat_write() was called.
+The regmap_writeable() check should not be done in
+regcache_write() because this prevents read-only
+registers to be cached. After a read on a read-only
+register its value will not be stored in the cache
+and the next time someone will try to read it the
+value will be read from the bus instead of the
+cache.
 
-This caused incorrect behaviour, such as returning
-value 0 for non-volatile registers without first reading
-their value from the device and storing it in the cache.
+Instead the regmap_writeable() check should be done
+in _regmap_write() to prevent callers from writing
+to read-only registers.
 
 Signed-off-by: Ionut Nicu <ioan.nicu.ext@nsn.com>
 ---
- drivers/base/regmap/regcache-flat.c |   25 ++++++++++++++++++++++---
- 1 files changed, 22 insertions(+), 3 deletions(-)
+ drivers/base/regmap/regcache.c |    3 ---
+ drivers/base/regmap/regmap.c   |    3 +++
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/regmap/regcache-flat.c b/drivers/base/regmap/regcache-flat.c
-index d9762e4..f47278e 100644
---- a/drivers/base/regmap/regcache-flat.c
-+++ b/drivers/base/regmap/regcache-flat.c
-@@ -16,9 +16,13 @@
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index 3455f83..e2abd05 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -241,9 +241,6 @@ int regcache_write(struct regmap *map,
  
- #include "internal.h"
+ 	BUG_ON(!map->cache_ops);
  
-+static int regcache_flat_write(struct regmap *map, unsigned int reg,
-+			       unsigned int value);
-+static int regcache_flat_exit(struct regmap *map);
+-	if (!regmap_writeable(map, reg))
+-		return -EIO;
+-
+ 	if (!regmap_volatile(map, reg))
+ 		return map->cache_ops->write(map, reg, value);
+ 
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index fa76b61..42b45ac 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1267,6 +1267,9 @@ int _regmap_write(struct regmap *map, unsigned int reg,
+ 	int ret;
+ 	void *context = _regmap_map_get_context(map);
+ 
++	if (!regmap_writeable(map, reg))
++		return -EIO;
 +
- static int regcache_flat_init(struct regmap *map)
- {
--	int i;
-+	int i, ret;
- 	unsigned int *cache;
- 
- 	map->cache = kzalloc(sizeof(unsigned int) * (map->max_register + 1),
-@@ -28,8 +32,15 @@ static int regcache_flat_init(struct regmap *map)
- 
- 	cache = map->cache;
- 
--	for (i = 0; i < map->num_reg_defaults; i++)
--		cache[map->reg_defaults[i].reg] = map->reg_defaults[i].def;
-+	for (i = 0; i < map->num_reg_defaults; i++) {
-+		ret = regcache_flat_write(map,
-+				map->reg_defaults[i].reg,
-+				map->reg_defaults[i].def);
-+		if (ret) {
-+			regcache_flat_exit(map);
-+			return ret;
-+		}
-+	}
- 
- 	return 0;
- }
-@@ -47,6 +58,9 @@ static int regcache_flat_read(struct regmap *map,
- {
- 	unsigned int *cache = map->cache;
- 
-+	if (!regcache_reg_present(map, reg))
-+		return -ENOENT;
-+
- 	*value = cache[reg];
- 
- 	return 0;
-@@ -56,6 +70,11 @@ static int regcache_flat_write(struct regmap *map, unsigned int reg,
- 			       unsigned int value)
- {
- 	unsigned int *cache = map->cache;
-+	int ret;
-+
-+	ret = regcache_set_reg_present(map, reg);
-+	if (ret < 0)
-+		return ret;
- 
- 	cache[reg] = value;
- 
+ 	if (!map->cache_bypass && !map->defer_caching) {
+ 		ret = regcache_write(map, reg, val);
+ 		if (ret != 0)
 -- 
 1.7.1
 
