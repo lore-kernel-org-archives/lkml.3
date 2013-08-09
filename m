@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031515Ab3HIXEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 19:04:25 -0400
+	id S1031551Ab3HIXHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 19:07:31 -0400
 Received: from mga02.intel.com ([134.134.136.20]:20518 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031441Ab3HIXEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 19:04:23 -0400
+	id S1031474Ab3HIXEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 19:04:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,849,1367996400"; 
-   d="scan'208";a="360454434"
+   d="scan'208";a="360454438"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, mingo@kernel.org, torvalds@linux-foundation.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 01/13] x86: Add 1/2/4/8 byte optimization to 64bit __copy_{from,to}_user_inatomic
-Date: Fri,  9 Aug 2013 16:04:08 -0700
-Message-Id: <1376089460-5459-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 11/13] sched: Inline the need_resched test into the caller for _cond_resched
+Date: Fri,  9 Aug 2013 16:04:18 -0700
+Message-Id: <1376089460-5459-12-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
 References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
@@ -25,93 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-The 64bit __copy_{from,to}_user_inatomic always called
-copy_from_user_generic, but skipped the special optimizations for 1/2/4/8
-byte accesses.
+_cond_resched is very common in kernel calls, e.g. it's used in every user
+access. Usually it does at least two explicit calls just to decide to do
+nothing: _cond_resched and should_resched(). Inline a need_resched()
+into the caller to avoid these calls in the common case of no reschedule
+being needed.
 
-This especially hurts the futex call, which accesses the 4 byte futex
-user value with a complicated fast string operation in a function call,
-instead of a single movl.
-
-Use __copy_{from,to}_user for _inatomic instead to get the same
-optimizations. The only problem was the might_fault() in those functions.
-So move that to new wrapper and call __copy_{f,t}_user_nocheck()
-from *_inatomic directly.
-
-32bit already did this correctly by duplicating the code.
+Previously this would have been very expensive in terms of binary size
+because there were a lot of inlined cond_resched()s in copy_*_user()
+and put/get_user().  But with the newest changes to x86 uaccess.h
+these not inlined anymore, so we can use a slightly bigger, but much
+faster fast path version.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/uaccess_64.h | 24 ++++++++++++++++++------
- 1 file changed, 18 insertions(+), 6 deletions(-)
+ include/linux/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/uaccess_64.h b/arch/x86/include/asm/uaccess_64.h
-index 4f7923d..64476bb 100644
---- a/arch/x86/include/asm/uaccess_64.h
-+++ b/arch/x86/include/asm/uaccess_64.h
-@@ -77,11 +77,10 @@ int copy_to_user(void __user *dst, const void *src, unsigned size)
- }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index bb7a08a..9e0efa9 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2435,7 +2435,7 @@ extern int __cond_resched_softirq(void);
  
- static __always_inline __must_check
--int __copy_from_user(void *dst, const void __user *src, unsigned size)
-+int __copy_from_user_nocheck(void *dst, const void __user *src, unsigned size)
- {
- 	int ret = 0;
- 
--	might_fault();
- 	if (!__builtin_constant_p(size))
- 		return copy_user_generic(dst, (__force void *)src, size);
- 	switch (size) {
-@@ -121,11 +120,17 @@ int __copy_from_user(void *dst, const void __user *src, unsigned size)
- }
- 
- static __always_inline __must_check
--int __copy_to_user(void __user *dst, const void *src, unsigned size)
-+int __copy_from_user(void *dst, const void __user *src, unsigned size)
-+{
-+	might_fault();
-+	return __copy_from_user_nocheck(dst, src, size);
-+}
-+
-+static __always_inline __must_check
-+int __copy_to_user_nocheck(void __user *dst, const void *src, unsigned size)
- {
- 	int ret = 0;
- 
--	might_fault();
- 	if (!__builtin_constant_p(size))
- 		return copy_user_generic((__force void *)dst, src, size);
- 	switch (size) {
-@@ -165,6 +170,13 @@ int __copy_to_user(void __user *dst, const void *src, unsigned size)
- }
- 
- static __always_inline __must_check
-+int __copy_to_user(void __user *dst, const void *src, unsigned size)
-+{
-+	might_fault();
-+	return __copy_to_user_nocheck(dst, src, size);
-+}
-+
-+static __always_inline __must_check
- int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
- {
- 	int ret = 0;
-@@ -220,13 +232,13 @@ int __copy_in_user(void __user *dst, const void __user *src, unsigned size)
- static __must_check __always_inline int
- __copy_from_user_inatomic(void *dst, const void __user *src, unsigned size)
- {
--	return copy_user_generic(dst, (__force const void *)src, size);
-+	return __copy_from_user_nocheck(dst, (__force const void *)src, size);
- }
- 
- static __must_check __always_inline int
- __copy_to_user_inatomic(void __user *dst, const void *src, unsigned size)
- {
--	return copy_user_generic((__force void *)dst, src, size);
-+	return __copy_to_user_nocheck((__force void *)dst, src, size);
- }
- 
- extern long __copy_user_nocache(void *dst, const void __user *src,
+ #ifdef CONFIG_PREEMPT_VOLUNTARY
+ extern int _cond_resched(void);
+-# define might_resched() _cond_resched()
++# define might_resched() (need_resched() ? _cond_resched() : 0)
+ #else
+ # define might_resched() do { } while (0)
+ #endif
 -- 
 1.8.3.1
 
