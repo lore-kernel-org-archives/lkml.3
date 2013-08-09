@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967552Ab3HIBnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Aug 2013 21:43:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55362 "EHLO
+	id S967540Ab3HIBnM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Aug 2013 21:43:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55359 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967132Ab3HIBmI (ORCPT
+	with ESMTP id S967131Ab3HIBmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Aug 2013 21:42:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Jack Morgan <jack.morgan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 07/25] ixgbe: Fix Tx Hang issue with lldpad on 82598EB
-Date: Thu,  8 Aug 2013 18:41:43 -0700
-Message-Id: <20130809013650.728682558@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 06/25] mac80211: fix duplicate retransmission detection
+Date: Thu,  8 Aug 2013 18:41:42 -0700
+Message-Id: <20130809013650.519500814@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130809013649.057678051@linuxfoundation.org>
 References: <20130809013649.057678051@linuxfoundation.org>
@@ -30,37 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Keller <jacob.e.keller@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 1eb9ac14c34a948bf1538bfb9034e8ab29099a64 upstream.
+commit 6b0f32745dcfba01d7be33acd1b40306c7a914c6 upstream.
 
-This patch fixes an issue with the 82598EB device, where lldpad is causing Tx
-Hangs on the card as soon as it attempts to configure DCB for the device. The
-adapter will continually Tx hang and reset in a loop.
+The duplicate retransmission detection code in mac80211
+erroneously attempts to do the check for every frame,
+even frames that don't have a sequence control field or
+that don't use it (QoS-Null frames.)
 
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Tested-by: Jack Morgan <jack.morgan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This is problematic because it causes the code to access
+data beyond the end of the SKB and depending on the data
+there will drop packets erroneously.
+
+Correct the code to not do duplicate detection for such
+frames.
+
+I found this error while testing AP powersave, it lead
+to retransmitted PS-Poll frames being dropped entirely
+as the data beyond the end of the SKB was always zero.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/mac80211/rx.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
-@@ -108,9 +108,8 @@ s32 ixgbe_dcb_config_tx_desc_arbiter_825
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -831,8 +831,14 @@ ieee80211_rx_h_check(struct ieee80211_rx
+ 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)rx->skb->data;
+ 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(rx->skb);
  
- 	/* Enable arbiter */
- 	reg &= ~IXGBE_DPMCS_ARBDIS;
--	/* Enable DFP and Recycle mode */
--	reg |= (IXGBE_DPMCS_TDPAC | IXGBE_DPMCS_TRM);
- 	reg |= IXGBE_DPMCS_TSOEF;
-+
- 	/* Configure Max TSO packet size 34KB including payload and headers */
- 	reg |= (0x4 << IXGBE_DPMCS_MTSOS_SHIFT);
- 
+-	/* Drop duplicate 802.11 retransmissions (IEEE 802.11 Chap. 9.2.9) */
+-	if (rx->sta && !is_multicast_ether_addr(hdr->addr1)) {
++	/*
++	 * Drop duplicate 802.11 retransmissions
++	 * (IEEE 802.11-2012: 9.3.2.10 "Duplicate detection and recovery")
++	 */
++	if (rx->skb->len >= 24 && rx->sta &&
++	    !ieee80211_is_ctl(hdr->frame_control) &&
++	    !ieee80211_is_qos_nullfunc(hdr->frame_control) &&
++	    !is_multicast_ether_addr(hdr->addr1)) {
+ 		if (unlikely(ieee80211_has_retry(hdr->frame_control) &&
+ 			     rx->sta->last_seq_ctrl[rx->seqno_idx] ==
+ 			     hdr->seq_ctrl)) {
 
 
