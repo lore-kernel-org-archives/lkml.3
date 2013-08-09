@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966755Ab3HIGHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 02:07:50 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:15215 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab3HIGHs (ORCPT
+	id S967224Ab3HIGKT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 02:10:19 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:6089 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934306Ab3HIGKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 02:07:48 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-44-520487327745
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Nick Piggin'" <npiggin@kernel.dk>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH 3/3] block: brd: Staticize 'rd_size'
-Date: Fri, 09 Aug 2013 15:07:46 +0900
-Message-id: <000301ce94c6$c4d9da10$4e8d8e30$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6UxrlqPA4kuGqjSnmvN8sFwVA1sA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zQ12jdpYgg6v/rCzmrF/DZnF54SVW
-	i8u75rBZXPvfy+7A4nH5bKnHiRm/WTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEro/HtHPaC
-	uZwV99bcZG9gPMrexcjJISFgIjF13xdmCFtM4sK99WwgtpDAMkaJp/usYGoufFzCAhFfxCgx
-	v8+wi5ELyP7FKLF52k2wBJuAmsSXL4eBhnJwiAjoS7S1aICEmQXSJS7ubQObLyxgIfHr3nwm
-	EJtFQFViU1832C5eAUuJM88msELYghI/Jt9jgejVkli/8zgThC0vsXnNW6g7FSR2nH3NCGKL
-	COhJbOp8wQ5RIyKx78U7RpDbJAQ2sUvc7+tmhVgmIPFt8iEWkNskBGQlNh2AmiMpcXDFDZYJ
-	jGKzkKyehWT1LCSrZyFZsYCRZRWjaGpBckFxUnqRiV5xYm5xaV66XnJ+7iZGSIRN2MF474D1
-	IcZkoPUTmaVEk/OBEZpXEm9obGZkYWpiamxkbmlGmrCSOK96i3WgkEB6YklqdmpqQWpRfFFp
-	TmrxIUYmDk6pBkY1s5roVq9jopU3bN/9K1JyEGbljWzYdGte5OU7O69dONfInR1672B50MVV
-	fzya6uy1Q7i1X34z3b9r/t5zpu3KD44nMAYZn1Zw+cnK/TTZ7HHV/2vuBtNeb2LPPjMxdm12
-	YCWnyHuXj0vmPnzYfVosJ8fW6qLFP/NVFiZzV4kau3Kla6+awqjEUpyRaKjFXFScCABDUpvC
-	xgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAV2jdpYgg6cvzCzmrF/DZnF54SVW
-	i8u75rBZXPvfy+7A4nH5bKnHiRm/WTz6tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91W
-	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMaPx7Rz2grmcFffW3GRvYDzK3sXIySEhYCJx4eMSFghbTOLCvfVs
-	ILaQwCJGifl9hl2MXED2L0aJzdNughWxCahJfPlyGKiZg0NEQF+irUUDJMwskC5xcW8bM4gt
-	LGAh8evefCYQm0VAVWJTXzfYTF4BS4kzzyawQtiCEj8m32OB6NWSWL/zOBOELS+xec1bZoh7
-	FCR2nH3NCGKLCOhJbOp8wQ5RIyKx78U7xgmMArOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgp
-	PddQrzgxt7g0L10vOT93EyM4gp9J7WBc2WBxiFGAg1GJh1dxO3OQEGtiWXFl7iFGCQ5mJRHe
-	F1lAId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HJpe8knhDYxMzI0sjMwsjE3Nz0oSVxHkP
-	tFoHCgmkJ5akZqemFqQWwWxh4uCUamA8WKtT+rU1yWE974IyRk1rHg0pN6arksuda7tYVT+1
-	2/QpPytWL/uXVzU1TLvuk6dNR/ylBeuvGHHJuuVvnnpWz8pVvLFxae7ZnyJftAvWvlvbwLVs
-	7qcFNy61ucmIHmV44STTorNpyi7WzXx3vSVEwudO1HrgeneWyJE4A4HqkgWfJrkqhCuxFGck
-	GmoxFxUnAgD8vDHJJAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 9 Aug 2013 02:10:18 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 08 Aug 2013 23:10:17 -0700
+Message-ID: <520487C7.5080901@nvidia.com>
+Date: Fri, 9 Aug 2013 14:10:15 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] Documentation: dt: hwmon: add OF document for
+ lm90
+References: <1375944991-29182-1-git-send-email-wni@nvidia.com> <1375944991-29182-4-git-send-email-wni@nvidia.com> <5203D757.8000208@wwwdotorg.org>
+In-Reply-To: <5203D757.8000208@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 09, 2013 1:07 PM, Jingoo Han wrote:
+On 08/09/2013 01:37 AM, Stephen Warren wrote:
+> On 08/08/2013 12:56 AM, Wei Ni wrote:
+>> Add OF document for lm90 in Documentation/devicetree/.
 > 
-> 'rd_size' is used only in this file.
-> Fix the following sparse warning:
+>> diff --git a/Documentation/devicetree/bindings/hwmon/lm90.txt b/Documentation/devicetree/bindings/hwmon/lm90.txt
 > 
-> drivers/block/brd.c:432:5: warning: symbol 'rd_size' was not declared. Should it be static?
+>> +Required node properties:
+>> +- compatible: manufacture and chip name,
+>> +              which are listed in the Documentation/hwmon/lm90
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/block/brd.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> You need to specify the exact values here. DT binding documentations
+> should be OS-agnostic, and hence can't depend on Linux-specific
+> documentation or other details.
 
-Sorry, please ignore this patch.
-It makes link error as below:
-
-arch/arm/kernel/built-in.o: In function `parse_tag_ramdisk':
-/home/jin9/mainline/linux-next_130806_sparse/arch/arm/kernel/atags_parse.c:103: undefined reference to `rd_size'
-
-Best regards,
-Jingoo Han
+Ok, I will list it.
 
 > 
-> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-> index 9bf4371..650530ab 100644
-> --- a/drivers/block/brd.c
-> +++ b/drivers/block/brd.c
-> @@ -429,7 +429,7 @@ static const struct block_device_operations brd_fops = {
->   * And now the modules code and kernel interface.
->   */
->  static int rd_nr;
-> -int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
-> +static int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
->  static int max_part;
->  static int part_shift;
->  module_param(rd_nr, int, S_IRUGO);
-> --
-> 1.7.10.4
+>> +Optional properties:
+>> +- vdd-supply: vdd regulator for the supply voltage. If this is not set,
+> 
+> s/set/present/.
 
+Oh, yes, I will change it.
+
+> 
+>> +- interrupts: lm90 can support interrupt mode, you can set interrupt here.
+> 
+> You might want to mention that a single entry ("specifier") is expected
+> in the list.
+
+Sorry, I didn't get your point, could you explain more?
+
+> 
 
