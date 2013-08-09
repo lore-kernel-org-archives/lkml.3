@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030502Ab3HIHaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 03:30:13 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:9175 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1030401Ab3HIHaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 03:30:11 -0400
-X-IronPort-AV: E=Sophos;i="4.89,844,1367942400"; 
-   d="scan'208";a="8161678"
-Message-ID: <52049A2E.8080101@cn.fujitsu.com>
-Date: Fri, 09 Aug 2013 15:28:46 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1030517Ab3HIHfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 03:35:12 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63891 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030482Ab3HIHfK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 03:35:10 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-56-52049bab26c2
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei\(Jovi\)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 03/13] tracing/kprobes: Make stack and memory fetch functions static
+References: <1375261410-11219-1-git-send-email-namhyung@kernel.org>
+	<1375261410-11219-4-git-send-email-namhyung@kernel.org>
+	<51FF6A89.9020404@hitachi.com>
+Date: Fri, 09 Aug 2013 16:35:07 +0900
+In-Reply-To: <51FF6A89.9020404@hitachi.com> (Masami Hiramatsu's message of
+	"Mon, 05 Aug 2013 18:04:09 +0900")
+Message-ID: <87y58bwc44.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>
-Subject: Re: [PATCH] ACPI, cpu hotplug: move try_offline_node() after acpi_unmap_lsapic()
-References: <5200CBBF.1090904@jp.fujitsu.com> <1375808178.10300.181.camel@misato.fc.hp.com>
-In-Reply-To: <1375808178.10300.181.camel@misato.fc.hp.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/09 15:28:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/09 15:28:43,
-	Serialize complete at 2013/08/09 15:28:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 12:56 AM, Toshi Kani wrote:
-> On Tue, 2013-08-06 at 19:11 +0900, Yasuaki Ishimatsu wrote:
->> try_offline_node() checks that all cpus related with removed node have been
->> removed by using cpu_present_bits. If all cpus related with removed node have
->> been removed, try_offline_node() clears the node information.
->>
->> But try_offline_node() called from acpi_processor_remove() never clears
->> the node information. For disabling cpu_present_bits, acpi_unmap_lsapic()
->> need be called. But acpi_unmap_lsapic() is called after try_offline_node()
->> runs. So when try_offline_node() runs, the cpu's cpu_present_bits is always
->> set.
->>
->> This patch moves try_offline_node() after acpi_unmap_lsapic().
->>
->> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+Hi Masami-san,
+
+On Mon, 05 Aug 2013 18:04:09 +0900, Masami Hiramatsu wrote:
+> (2013/07/31 18:03), Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> Those fetch functions need to be implemented differently for kprobes
+>> and uprobes.  Since the symbol and deref fetch functions don't call
+>> those directly anymore, we can make them static and implement them
+>> separately.
 >
-> The change looks good to me.
->
-> Acked-by: Toshi Kani<toshi.kani@hp.com>
->
-> BTW, do you know why try_offline_node() has to use stop_machine()?
+> Hmm, I think this should be done in 1/13, since this is partially
+> reverted it in the same series. If you concern about tweaking other
+> one's patch, you can add you singed-off-by to it. :)
 
-try_offline_node() is used to check if the node could be hot-removed
-after each memory or cpu hot-remove operation.
+The problem is that it should be marked static after converting to
+->fetch() member.  Otherwise the symbol and deref fetch method won't see
+memory fetch functions like:
 
-In memory hot-remove path, we have lock_memory_hotplug() to series all
-the memory hot-remove options.
+/home/namhyung/project/linux/kernel/trace/trace_probe.c: In function ‘fetch_deref_u8’:
+/home/namhyung/project/linux/kernel/trace/trace_probe.c:115:1: error: implicit declaration of function ‘fetch_memory_u8’ [-Werror=implicit-function-declaration]
+/home/namhyung/project/linux/kernel/trace/trace_probe.c: In function ‘fetch_deref_u16’:
+/home/namhyung/project/linux/kernel/trace/trace_probe.c:115:1: error: implicit declaration of function ‘fetch_memory_u16’ [-Werror=implicit-function-declaration]
+/home/namhyung/project/linux/kernel/trace/trace_probe.c: In function ‘fetch_deref_u32’:
+/home/namhyung/project/linux/kernel/trace/trace_probe.c:115:1: error: implicit declaration of function ‘fetch_memory_u32’ [-Werror=implicit-function-declaration]
+/home/namhyung/project/linux/kernel/trace/trace_probe.c: In function ‘fetch_deref_u64’:
+/home/namhyung/project/linux/kernel/trace/trace_probe.c:115:1: error: implicit declaration of function ‘fetch_memory_u64’ [-Werror=implicit-function-declaration]
+/home/namhyung/project/linux/kernel/trace/trace_probe.c: In function ‘fetch_deref_string’:
+/home/namhyung/project/linux/kernel/trace/trace_probe.c:116:1: error: implicit declaration of function ‘fetch_memory_string’ [-Werror=implicit-function-declaration]
+/home/namhyung/project/linux/kernel/trace/trace_probe.c: In function ‘fetch_deref_string_size’:
+/home/namhyung/project/linux/kernel/trace/trace_probe.c:117:1: error: implicit declaration of function ‘fetch_memory_string_size’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
 
-But when doing cpu hot-remove,
 
-acpi_processor_remove()
-  |->try_offline_node()
-
-There is no lock to protect it. I think, when we are going to hot-remove
-a node, others should not do any memory or cpu hotplug operation. In memory
-hotplug path, we have lock_memory_hotplug(). But in cpu hotplug path, I
-didn't find any lock. So we used stop_machine() to call check_cpu_on_node().
-If we find any cpu still present, we return and do not remove the node.
-
-Thanks.
-
+Thanks,
+Namhyung
