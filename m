@@ -1,58 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030487Ab3HIH2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 03:28:46 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:42517 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030396Ab3HIH2p (ORCPT
+	id S1030492Ab3HIH3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 03:29:35 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:34036 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030401Ab3HIH3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 03:28:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <1376032991.2219.122.camel@sauron.fi.intel.com>
-References: <1368760654-28754-1-git-send-email-b32955@freescale.com>
-	<CAN8TOE-QvScbPUEPyrs-fYVQZmPu1h-wWX2hjz46KYtaWRckBw@mail.gmail.com>
-	<520357DF.3030403@freescale.com>
-	<20130808230630.GA14434@norris.computersforpeace.net>
-	<1376020723.2219.105.camel@sauron.fi.intel.com>
-	<52048565.1030707@gmail.com>
-	<1376032991.2219.122.camel@sauron.fi.intel.com>
-Date: Fri, 9 Aug 2013 00:28:44 -0700
-Message-ID: <CAN8TOE_GzzXcsifQOiD1WbgXKJmXkJjBbUfgv88Oit95oaY18g@mail.gmail.com>
-Subject: Re: [PATCH v6 00/10] mtd: add datasheet's ECC information to nand_chip{}
-From: Brian Norris <computersforpeace@gmail.com>
-To: dedekind1@gmail.com
-Cc: Huang Shijie <b32955@freescale.com>, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        vikram186@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 9 Aug 2013 03:29:34 -0400
+Message-ID: <1376033367.29104.2.camel@phoenix>
+Subject: [PATCH] regulator: core: Move
+ list_voltage_{linear,linear_range,table} to helpers.c
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Fri, 09 Aug 2013 15:29:27 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 9, 2013 at 12:23 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Thu, 2013-08-08 at 23:00 -0700, Brian Norris wrote:
->> On 08/08/2013 08:58 PM, Artem Bityutskiy wrote:
->> > There are few minor issues in aiaiai, which I can fix if you hit them
->> > and complain. Also, I did not invest much time in making the user
->> > interface and experience very nice. But this can also be improved.
->>
->> One issue (possibly related to the above question?) was that aiaia
->> complained (via checkpatch.pl) about no sign-offs when I processed using
->> the input redirection method on a multi-message mbox.
->
-> Yes, aiaiai runs checkpatch.pl for individual patches, and then to a
-> concatenated patch, and the latter does not have a signed-off-by. Fixing
-> is about adding --no-signoff to the right place.
+Move regulator_list_voltage_{linear,linear_range,table} helper functions to
+helpers.c.
 
-I can look at that if I run into it again and have the time to fix it.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/core.c    | 86 ---------------------------------------------
+ drivers/regulator/helpers.c | 86 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 86 insertions(+), 86 deletions(-)
 
-> I am a bit worried that at some point we may screw each other's work by
-> pushing things out at the same time. We should be very careful with
-> --force.
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 78b8dea..77943ed 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2049,92 +2049,6 @@ int regulator_count_voltages(struct regulator *regulator)
+ EXPORT_SYMBOL_GPL(regulator_count_voltages);
+ 
+ /**
+- * regulator_list_voltage_linear - List voltages with simple calculation
+- *
+- * @rdev: Regulator device
+- * @selector: Selector to convert into a voltage
+- *
+- * Regulators with a simple linear mapping between voltages and
+- * selectors can set min_uV and uV_step in the regulator descriptor
+- * and then use this function as their list_voltage() operation,
+- */
+-int regulator_list_voltage_linear(struct regulator_dev *rdev,
+-				  unsigned int selector)
+-{
+-	if (selector >= rdev->desc->n_voltages)
+-		return -EINVAL;
+-	if (selector < rdev->desc->linear_min_sel)
+-		return 0;
+-
+-	selector -= rdev->desc->linear_min_sel;
+-
+-	return rdev->desc->min_uV + (rdev->desc->uV_step * selector);
+-}
+-EXPORT_SYMBOL_GPL(regulator_list_voltage_linear);
+-
+-/**
+- * regulator_list_voltage_linear_range - List voltages for linear ranges
+- *
+- * @rdev: Regulator device
+- * @selector: Selector to convert into a voltage
+- *
+- * Regulators with a series of simple linear mappings between voltages
+- * and selectors can set linear_ranges in the regulator descriptor and
+- * then use this function as their list_voltage() operation,
+- */
+-int regulator_list_voltage_linear_range(struct regulator_dev *rdev,
+-					unsigned int selector)
+-{
+-	const struct regulator_linear_range *range;
+-	int i;
+-
+-	if (!rdev->desc->n_linear_ranges) {
+-		BUG_ON(!rdev->desc->n_linear_ranges);
+-		return -EINVAL;
+-	}
+-
+-	for (i = 0; i < rdev->desc->n_linear_ranges; i++) {
+-		range = &rdev->desc->linear_ranges[i];
+-
+-		if (!(selector >= range->min_sel &&
+-		      selector <= range->max_sel))
+-			continue;
+-
+-		selector -= range->min_sel;
+-
+-		return range->min_uV + (range->uV_step * selector);
+-	}
+-
+-	return -EINVAL;
+-}
+-EXPORT_SYMBOL_GPL(regulator_list_voltage_linear_range);
+-
+-/**
+- * regulator_list_voltage_table - List voltages with table based mapping
+- *
+- * @rdev: Regulator device
+- * @selector: Selector to convert into a voltage
+- *
+- * Regulators with table based mapping between voltages and
+- * selectors can set volt_table in the regulator descriptor
+- * and then use this function as their list_voltage() operation.
+- */
+-int regulator_list_voltage_table(struct regulator_dev *rdev,
+-				 unsigned int selector)
+-{
+-	if (!rdev->desc->volt_table) {
+-		BUG_ON(!rdev->desc->volt_table);
+-		return -EINVAL;
+-	}
+-
+-	if (selector >= rdev->desc->n_voltages)
+-		return -EINVAL;
+-
+-	return rdev->desc->volt_table[selector];
+-}
+-EXPORT_SYMBOL_GPL(regulator_list_voltage_table);
+-
+-/**
+  * regulator_list_voltage - enumerate supported voltages
+  * @regulator: regulator source
+  * @selector: identify voltage to list
+diff --git a/drivers/regulator/helpers.c b/drivers/regulator/helpers.c
+index d13cf8f..6e30df1 100644
+--- a/drivers/regulator/helpers.c
++++ b/drivers/regulator/helpers.c
+@@ -320,6 +320,92 @@ int regulator_map_voltage_linear_range(struct regulator_dev *rdev,
+ EXPORT_SYMBOL_GPL(regulator_map_voltage_linear_range);
+ 
+ /**
++ * regulator_list_voltage_linear - List voltages with simple calculation
++ *
++ * @rdev: Regulator device
++ * @selector: Selector to convert into a voltage
++ *
++ * Regulators with a simple linear mapping between voltages and
++ * selectors can set min_uV and uV_step in the regulator descriptor
++ * and then use this function as their list_voltage() operation,
++ */
++int regulator_list_voltage_linear(struct regulator_dev *rdev,
++				  unsigned int selector)
++{
++	if (selector >= rdev->desc->n_voltages)
++		return -EINVAL;
++	if (selector < rdev->desc->linear_min_sel)
++		return 0;
++
++	selector -= rdev->desc->linear_min_sel;
++
++	return rdev->desc->min_uV + (rdev->desc->uV_step * selector);
++}
++EXPORT_SYMBOL_GPL(regulator_list_voltage_linear);
++
++/**
++ * regulator_list_voltage_linear_range - List voltages for linear ranges
++ *
++ * @rdev: Regulator device
++ * @selector: Selector to convert into a voltage
++ *
++ * Regulators with a series of simple linear mappings between voltages
++ * and selectors can set linear_ranges in the regulator descriptor and
++ * then use this function as their list_voltage() operation,
++ */
++int regulator_list_voltage_linear_range(struct regulator_dev *rdev,
++					unsigned int selector)
++{
++	const struct regulator_linear_range *range;
++	int i;
++
++	if (!rdev->desc->n_linear_ranges) {
++		BUG_ON(!rdev->desc->n_linear_ranges);
++		return -EINVAL;
++	}
++
++	for (i = 0; i < rdev->desc->n_linear_ranges; i++) {
++		range = &rdev->desc->linear_ranges[i];
++
++		if (!(selector >= range->min_sel &&
++		      selector <= range->max_sel))
++			continue;
++
++		selector -= range->min_sel;
++
++		return range->min_uV + (range->uV_step * selector);
++	}
++
++	return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(regulator_list_voltage_linear_range);
++
++/**
++ * regulator_list_voltage_table - List voltages with table based mapping
++ *
++ * @rdev: Regulator device
++ * @selector: Selector to convert into a voltage
++ *
++ * Regulators with table based mapping between voltages and
++ * selectors can set volt_table in the regulator descriptor
++ * and then use this function as their list_voltage() operation.
++ */
++int regulator_list_voltage_table(struct regulator_dev *rdev,
++				 unsigned int selector)
++{
++	if (!rdev->desc->volt_table) {
++		BUG_ON(!rdev->desc->volt_table);
++		return -EINVAL;
++	}
++
++	if (selector >= rdev->desc->n_voltages)
++		return -EINVAL;
++
++	return rdev->desc->volt_table[selector];
++}
++EXPORT_SYMBOL_GPL(regulator_list_voltage_table);
++
++/**
+  * regulator_set_bypass_regmap - Default set_bypass() using regmap
+  *
+  * @rdev: device to operate on.
+-- 
+1.8.1.2
 
-I think by limiting our use of rebase and exercising care with
---force, we should be fine. And if we do a 'fetch' just before, then
-the probability of a collision should be pretty low. Famous last
-words.
 
-Brian
+
