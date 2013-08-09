@@ -1,93 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031625Ab3HIXXD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 19:23:03 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:36600 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031560Ab3HIXXB (ORCPT
+	id S1031632Ab3HIX0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 19:26:25 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:64510 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031447Ab3HIX0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 19:23:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <520578D0.7020607@intel.com>
-References: <520578D0.7020607@intel.com>
-Date: Fri, 9 Aug 2013 16:23:00 -0700
-X-Google-Sender-Auth: zQdiQ1ktuzfXjk4YjIYrKe5L_30
-Message-ID: <CAE9FiQUuPmZfhsHvmsS+_O_VOWMA_OBAexGyRF3eZR1_D3EehA@mail.gmail.com>
-Subject: Re: x86: early boot crash: "alloc_low_page: ran out of memory" (bisected)
-From: Yinghai Lu <yinghai@kernel.org>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: "the arch/x86 maintainers" <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 9 Aug 2013 19:26:24 -0400
+From: Roy Franz <roy.franz@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
+        linux@arm.linux.org.uk
+Cc: leif.lindholm@linaro.org, dave.martin@arm.com, msalter@redhat.com,
+        Roy Franz <roy.franz@linaro.org>
+Subject: [PATCH V3 RFC 00/16]  EFI stub for ARM
+Date: Fri,  9 Aug 2013 16:26:01 -0700
+Message-Id: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 9, 2013 at 4:18 PM, Dave Hansen <dave.hansen@intel.com> wrote:
-> I'm getting a 100% reproducible panic early in boot:
->
->> [    0.000000] Kernel panic - not syncing: alloc_low_page: ran out of memory
->
-> I'm not sure why I didn't run in to this until now.  I think there are a
-> couple of config options that need to get set just right to trigger it,
-> but CONFIG_DEBUG_PAGEALLOC seems to be the main one.  Full config is here:
->
->         http://sr71.net/~dave/intel/foo/config-bigbox-crash-20130809.txt
->
-> I bisected it back to this commit (which I seem to remember causing some
-> other probems):
->
->> commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
->> Author: H. Peter Anvin <hpa@zytor.com>
->> Date:   Thu Jan 24 12:19:52 2013 -0800
->>
->>     x86, 64bit: Use a #PF handler to materialize early mappings on demand
->
-> I need somewhere between 500G and 600G of memory to trigger it, but it
-> can be triggered using qemu with much less _actual_ RAM than that.  From
-> looking at the dmesg diffs, I suspect that the delta in memory use
-> between using 1G and 4k ptes for the identity mapping (DEBUG_PAGEALLOC
-> forces 4k pages) is the proximate trigger.
->
-> I also suspect that alloc_low_pages() is buggy in the way it manipulates
-> min/max_pfn_mapped.  I'm quite baffled how 'max_pfn_mapped' is supposed
-> to get set up correctly.  Current code says:
->
->         max_pfn_mapped = 0; /* will get exact value next */
->
-> but I certainly don't see it getting set later on in that function, or
-> _ever_ as adding some printk()'s shows:
->
->> +[    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
->> +[    0.000000]  [mem 0x00000000-0x000fffff] page 4k
->> +[    0.000000] alloc_low_pages(1) min_pfn_mapped: 0 max_pfn_mapped: 0
->> +[    0.000000] BRK [0x02086000, 0x02086fff] PGTABLE
->> +[    0.000000] alloc_low_pages(1) min_pfn_mapped: 0 max_pfn_mapped: 0
->> +[    0.000000] BRK [0x02087000, 0x02087fff] PGTABLE
->> +[    0.000000] alloc_low_pages(1) min_pfn_mapped: 0 max_pfn_mapped: 0
->> +[    0.000000] BRK [0x02088000, 0x02088fff] PGTABLE
->> +[    0.000000] init_memory_mapping: [mem 0xf07fe00000-0xf07fffffff]
->> +[    0.000000]  [mem 0xf07fe00000-0xf07fffffff] page 4k
->> +[    0.000000] alloc_low_pages(1) min_pfn_mapped: 252182528 max_pfn_mapped: 0
->> +[    0.000000] BRK [0x02089000, 0x02089fff] PGTABLE
->> +[    0.000000] alloc_low_pages(1) min_pfn_mapped: 252182528 max_pfn_mapped: 0
->> +[    0.000000] BRK [0x0208a000, 0x0208afff] PGTABLE
->> +[    0.000000] alloc_low_pages(1) min_pfn_mapped: 252182528 max_pfn_mapped: 0
->> +[    0.000000] Kernel panic - not syncing: alloc_low_page: ran out of memory
->
-> I'll take a closer look at it next week, but figured I'd report it first.
->
-> Full dmesg:
->
->> early console in setup code
->> [    0.000000] Initializing cgroup subsys cpuset
->> [    0.000000] Initializing cgroup subsys cpu
->> [    0.000000] Linux version 3.8.0-rc5-00059-g8170e6b
 
-so how about v3.10?
+This patch series adds EFI stub support for the ARM architecture.
+Some code that was previously only used by x86/x86_64 is now shared
+and has been made more general.  The stub for ARM is implemented in
+a similar manner to x86 in that it is a shim layer between EFI and
+the normal zImage/bzImage boot process, and that an image with the
+stub configured is bootable as both a zImage and EFI application.
 
-We should have some fixes in 3.10 already.
+This patch now (new for v3) series depends on the 
+"arm: Add [U]EFI runtime services support" patches by leif.lindholm@linaro.org.
+The Kconfig option now depends on the "CONFIG_EFI" option that his series
+adds, and this option will ensure a little endian configuration.  Also, the
+EFI support is used to handle the EFI memory map the stub passes to the kernel.
+There are some minor changes to be coordinated with the EFI runtime services
+patch series, so I have put this back to RFC status.  These changes should be
+minor and relate to final device tree bindings.
 
-Thanks
+Changes since v2:
+* EFI bugfix "correct call to free_pages" that patch series
+  depends on now in mainline
+* remove "-fno-stack-protector" from decompressor Makefile.  The current code doesn't
+  trigger the stack protection, so the decompressor now compiles with it still
+  on.  Note that there has never been any stack protection in the decompressor
+  since the stack usage doesn't trigger the heuristic in GCC, so right now
+  the "-fno-stack-protector" is a noop.
+* Changed EFI command line handling to not have a fixed limit.
+* Change FDT memory allocation to retry with a larger allocation if
+  first educated guess is inadequate.
+* Correctly set 'SizeOfCode' in PE/COFF header.
+* Reviewed ".setup" section that is in x86 PE/COFF header.  This is used for x86
+  to account for code that is not in the .text section.  We don't need this
+  for ARM, as all of our code is in the .text section, or in the PE/COFF header
+  itself.
+* Moved EFI_STUB_ERROR #define to header file to share between stub C and ASM.
+* Variety of cleanups and fixes in head.S.
+* Changed update_fdt_and_exit_boot() to just update the device tree, and
+  renamed appropriately.  Memory allocations moved out of this function as
+  well, which enables the retries if the initial FDT size is too small.
+  Note that in order to do the retried allocations, the original FDT and 
+  command line memory regions are left allocated.  This is OK since the kernel
+  has the memory map and will free these allocations along with the initrd
+  and new fdt allocations.
+* Added prefix to all prints, reduced number of prints, and reviewed all
+  messages.
+* Change mixed usage of dtb/fdt to all be fdt or "device tree" in efi-stub.c
+* remove unnecessary zimage_size variable from relocate_kernel()
+* correct return types on EFI functions - should be efi_status_t, not int.
 
-Yinghai
+
+
+Changes since V1:
+* Updated head.S based on feedback from Dave Martin.  ARM/THUMB
+  switches now much cleaner.
+* Broke up changes to x86 and common code into more patches.
+  10 more patches in this series.
+
+Roy Franz (16):
+  Move common EFI stub code from x86 arch code to common location
+  Add system pointer argument to shared EFI stub related     functions
+    so they no longer use global system table     pointer as they did
+    when part of eboot.c.     This code is now shared, so using a
+    global variable     as part of the interface is not that nice.
+    Also,     by avoiding any global variables in the ARM EFI stub,    
+    this allows the code to be position independent without    
+    requiring GOT fixups.
+  Rename memory allocation/free functions
+  Add minimum address parameter to efi_low_alloc()
+  rename __get_map() to efi_get_memory_map(), add parameter     to
+    optionally return mmap key. The mmap key is required     to exit
+    EFI boot services, and allows efi_get_memory_map()     to be used
+    for getting final memory map.
+  Enforce minimum alignment of 1 page on allocations.     The
+    efi_high_alloc() and efi_low_alloc() functions     use the
+    EFI_ALLOCATE_ADDRESS option to the EFI     function
+    allocate_pages(), which requires a minimum     of page alignment,
+    and rejects all other requests.
+  Allow efi_free() to be called with size of 0, and do nothing in that
+    case.
+  Generalize handle_ramdisks() and rename to handle_cmdline_files().
+  Renames in handle_cmdline_files() to complete generalization.
+  Move EFI_READ_CHUNK_SIZE define to shared location.
+  Add proper definitions for some EFI function pointers.
+  Fix types in EFI calls to match EFI function definitions.
+  resolve warnings found on ARM compile
+  Add strstr to compressed string.c for ARM.
+  Add EFI stub for ARM
+  Add config EFI_STUB for ARM to Kconfig
+
+ arch/arm/Kconfig                       |   11 +
+ arch/arm/boot/compressed/Makefile      |   15 +-
+ arch/arm/boot/compressed/efi-header.S  |  111 +++++++
+ arch/arm/boot/compressed/efi-stub.c    |  448 ++++++++++++++++++++++++++++
+ arch/arm/boot/compressed/efi-stub.h    |    5 +
+ arch/arm/boot/compressed/head.S        |   90 +++++-
+ arch/arm/boot/compressed/string.c      |   21 ++
+ arch/x86/boot/compressed/eboot.c       |  490 ++-----------------------------
+ arch/x86/boot/compressed/eboot.h       |    9 -
+ drivers/firmware/efi/efi-stub-helper.c |  505 ++++++++++++++++++++++++++++++++
+ include/linux/efi.h                    |   51 +++-
+ 11 files changed, 1263 insertions(+), 493 deletions(-)
+ create mode 100644 arch/arm/boot/compressed/efi-header.S
+ create mode 100644 arch/arm/boot/compressed/efi-stub.c
+ create mode 100644 arch/arm/boot/compressed/efi-stub.h
+ create mode 100644 drivers/firmware/efi/efi-stub-helper.c
+
+-- 
+1.7.10.4
+
