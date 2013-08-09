@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968072Ab3HIQ0G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 12:26:06 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:41524 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934409Ab3HIQ0E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 12:26:04 -0400
-Message-ID: <1376065558.7023.1.camel@phoenix>
-Subject: [PATCH] regulator: da9210: Remove redundant MODULE_ALIAS
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Steve Twiss <stwiss.opensource@diasemi.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sat, 10 Aug 2013 00:25:58 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S968074Ab3HIQ04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 12:26:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967935Ab3HIQ0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 12:26:55 -0400
+Date: Fri, 9 Aug 2013 18:21:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a
+	ring buffer
+Message-ID: <20130809162115.GB7144@redhat.com>
+References: <1376037909-17797-1-git-send-email-namhyung@kernel.org> <1376037909-17797-11-git-send-email-namhyung@kernel.org> <5204BCE6.2070102@hitachi.com> <20130809162002.GA7144@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130809162002.GA7144@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The modalias is set by the MODULE_DEVICE_TABLE, thus remove redundant
-MODULE_ALIAS. Also Fix trivial typo for the author name.
+On 08/09, Oleg Nesterov wrote:
+>
+> Steven, Jovi, what should we do with that patch? It seems that it
+> was forgotten.
+>
+> I can take these patches into my ubprobes branch
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/da9210-regulator.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+I meant that patch from Jovi, sorry for confusion.
 
-diff --git a/drivers/regulator/da9210-regulator.c b/drivers/regulator/da9210-regulator.c
-index bf492bc..1597bf8 100644
---- a/drivers/regulator/da9210-regulator.c
-+++ b/drivers/regulator/da9210-regulator.c
-@@ -191,7 +191,6 @@ static struct i2c_driver da9210_regulator_driver = {
- 
- module_i2c_driver(da9210_regulator_driver);
- 
--MODULE_AUTHOR("S Twiss <stwiss.opensource@diasemi.com>");
-+MODULE_AUTHOR("Steve Twiss <stwiss.opensource@diasemi.com>");
- MODULE_DESCRIPTION("Regulator device driver for Dialog DA9210");
- MODULE_LICENSE("GPL v2");
--MODULE_ALIAS("i2c:da9210");
--- 
-1.8.1.2
-
-
+Oleg.
 
