@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030233Ab3HIGGw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 02:06:52 -0400
-Received: from hydra.rus.uni-stuttgart.de ([129.69.1.55]:52056 "EHLO
-	hydra.rus.uni-stuttgart.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966964Ab3HIGGr (ORCPT
+	id S966755Ab3HIGHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 02:07:50 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:15215 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab3HIGHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 02:06:47 -0400
-X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Aug 2013 02:06:47 EDT
-Message-ID: <52048567.6020704@rus.uni-stuttgart.de>
-Date: Fri, 09 Aug 2013 08:00:07 +0200
-From: Thomas Richter <richter@rus.uni-stuttgart.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: stern@rowland.harvard.edu, linux@brodo.de, linux-kernel@vger.kernel.org
-Subject: [HANG] Trouble with NEC-based USB adapter in PCMCIA slot on E7110
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Aug 2013 02:07:48 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-44-520487327745
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Nick Piggin'" <npiggin@kernel.dk>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH 3/3] block: brd: Staticize 'rd_size'
+Date: Fri, 09 Aug 2013 15:07:46 +0900
+Message-id: <000301ce94c6$c4d9da10$4e8d8e30$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6UxrlqPA4kuGqjSnmvN8sFwVA1sA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMIsWRmVeSWpSXmKPExsVy+t8zQ12jdpYgg6v/rCzmrF/DZnF54SVW
+	i8u75rBZXPvfy+7A4nH5bKnHiRm/WTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEro/HtHPaC
+	uZwV99bcZG9gPMrexcjJISFgIjF13xdmCFtM4sK99WwgtpDAMkaJp/usYGoufFzCAhFfxCgx
+	v8+wi5ELyP7FKLF52k2wBJuAmsSXL4eBhnJwiAjoS7S1aICEmQXSJS7ubQObLyxgIfHr3nwm
+	EJtFQFViU1832C5eAUuJM88msELYghI/Jt9jgejVkli/8zgThC0vsXnNW6g7FSR2nH3NCGKL
+	COhJbOp8wQ5RIyKx78U7RpDbJAQ2sUvc7+tmhVgmIPFt8iEWkNskBGQlNh2AmiMpcXDFDZYJ
+	jGKzkKyehWT1LCSrZyFZsYCRZRWjaGpBckFxUnqRiV5xYm5xaV66XnJ+7iZGSIRN2MF474D1
+	IcZkoPUTmaVEk/OBEZpXEm9obGZkYWpiamxkbmlGmrCSOK96i3WgkEB6YklqdmpqQWpRfFFp
+	TmrxIUYmDk6pBkY1s5roVq9jopU3bN/9K1JyEGbljWzYdGte5OU7O69dONfInR1672B50MVV
+	fzya6uy1Q7i1X34z3b9r/t5zpu3KD44nMAYZn1Zw+cnK/TTZ7HHV/2vuBtNeb2LPPjMxdm12
+	YCWnyHuXj0vmPnzYfVosJ8fW6qLFP/NVFiZzV4kau3Kla6+awqjEUpyRaKjFXFScCABDUpvC
+	xgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAV2jdpYgg6cvzCzmrF/DZnF54SVW
+	i8u75rBZXPvfy+7A4nH5bKnHiRm/WTz6tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91W
+	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
+	mMYIXd+QILgeIwM0kLCOMaPx7Rz2grmcFffW3GRvYDzK3sXIySEhYCJx4eMSFghbTOLCvfVs
+	ILaQwCJGifl9hl2MXED2L0aJzdNughWxCahJfPlyGKiZg0NEQF+irUUDJMwskC5xcW8bM4gt
+	LGAh8evefCYQm0VAVWJTXzfYTF4BS4kzzyawQtiCEj8m32OB6NWSWL/zOBOELS+xec1bZoh7
+	FCR2nH3NCGKLCOhJbOp8wQ5RIyKx78U7xgmMArOQjJqFZNQsJKNmIWlZwMiyilE0tSC5oDgp
+	PddQrzgxt7g0L10vOT93EyM4gp9J7WBc2WBxiFGAg1GJh1dxO3OQEGtiWXFl7iFGCQ5mJRHe
+	F1lAId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HJpe8knhDYxMzI0sjMwsjE3Nz0oSVxHkP
+	tFoHCgmkJ5akZqemFqQWwWxh4uCUamA8WKtT+rU1yWE974IyRk1rHg0pN6arksuda7tYVT+1
+	2/QpPytWL/uXVzU1TLvuk6dNR/ylBeuvGHHJuuVvnnpWz8pVvLFxae7ZnyJftAvWvlvbwLVs
+	7qcFNy61ucmIHmV44STTorNpyi7WzXx3vSVEwudO1HrgeneWyJE4A4HqkgWfJrkqhCuxFGck
+	GmoxFxUnAgD8vDHJJAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan, hi Dominik,
+On Friday, August 09, 2013 1:07 PM, Jingoo Han wrote:
+> 
+> 'rd_size' is used only in this file.
+> Fix the following sparse warning:
+> 
+> drivers/block/brd.c:432:5: warning: symbol 'rd_size' was not declared. Should it be static?
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/block/brd.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-maybe you want me to help out a bit - I'm having trouble getting a 
-Delock PCMCIA to USB-2 adapter to work under linux, with strange 
-behavior in some situations. The trouble is that while I can *read* via 
-fast (usb 2.0) transfers from the port, an ehci-triggered write just 
-locks up (it does not Oops, though) and I'm pretty much stuck narrowing 
-down the problem.
+Sorry, please ignore this patch.
+It makes link error as below:
 
-Here are some more details on the machine:
+arch/arm/kernel/built-in.o: In function `parse_tag_ramdisk':
+/home/jin9/mainline/linux-next_130806_sparse/arch/arm/kernel/atags_parse.c:103: undefined reference to `rd_size'
 
-The USB 2 adapter chip is from NEC: 03:00.1 0c03: 1033:00e0 (rev 05)
-and so is its ohci companion: 03:00.0 0c03: 1033:0035.
+Best regards,
+Jingoo Han
 
-Both of them sit on a delock PMCCIA card, which hangs on a O2 Micro 
-OZ6933/711E1 cardbus bridge:
+> 
+> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+> index 9bf4371..650530ab 100644
+> --- a/drivers/block/brd.c
+> +++ b/drivers/block/brd.c
+> @@ -429,7 +429,7 @@ static const struct block_device_operations brd_fops = {
+>   * And now the modules code and kernel interface.
+>   */
+>  static int rd_nr;
+> -int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
+> +static int rd_size = CONFIG_BLK_DEV_RAM_SIZE;
+>  static int max_part;
+>  static int part_shift;
+>  module_param(rd_nr, int, S_IRUGO);
+> --
+> 1.7.10.4
 
-02:0a.0 0607: 1217:6933 (rev 02)
-02:0a.1 0607: 1217:6933 (rev 02)
-
-The trouble is as follows: A read from a USB stick or an external 
-harddisk through the scsi subsystem issues a SCSI command 28 (read 
-block), and this works fine. A write (SCSI command 2A) locks up. The 
-machine remains usable, but the command never completes. Some time later 
-first the subsystem tries to reset the bus, does not succeed and then 
-gives up. The harddisk on the USB even worse seems to "believe" to 
-receive some data, and then thankfully erases the superblock of the ext2 
-partition on it as soon as I try to mount it r/w. Read-only mounts work 
-(no write commands involved). Happy happy joy joy!
-
-It *also* works to disable the ehci portion of the NEC chip and just go 
-through the companion. Transfer through ohci is fine (but, of course, 
-slow, and besides the point since that's exactly what I need the adapter 
-for).
-
-The problem appears on various kernels, I've tested 3.10.5 (build 
-myself), 3.2.0-4-686-pae (vanilly debian wheezy kernel), 2.6.32-5-686
-(vanilla debian squeeze kernel). Interestingly, the chip *does* work 
-under an older Knoppix (knoppix 5.0.1) with a 2.6.19.1 kernel. As far as 
-I can read the notes, the ehci and cardbus interfaces have not been 
-altered and are as they came with 2.6.19.1. I also checked I/O goes 
-through high speed and not usb 1 (unloaded ohci, loaded ehci, inserted 
-the stick - writing works!)
-
-What is also strange (but an unrelated problem) is that I cannot make 
-grub2 boot from the knoppix kernel. It just resets after having loaded 
-kernel and initrd, immediately. I neither can build 2.6.19.1 manually 
-unaltered as it depends on older userspace tools. After a bit of 
-patching, I could get it to compile with gcc-4.7, but the kernel 
-otherwise behaves as the Knoppix kernel: Just reboots after grub 2 
-loaded it.
-
-I also tried a newer knoppix with a 3.5 kernel, but this again locks up 
-on writing, so something must have changed between 2.6.19.1 and 
-2.6.32.5. Or something changed in knoppix or debian userland which I 
-cannot test for because the 2.6.19.1 does not run here from the disk.
-
-The system is an old Fujitsu E7110 with a debian wheezy userland with 
-1GB of memory and an 80GB harddisk, with a Pentium 4-M dinosaur 
-processor at 1.7Ghz featuring speedstep. Whether speedstep is enabled or 
-disabled does not matter as far as the "stuck write" is concerned, the 
-p4-clockmodulation module *is not* loaded and hence not the culprit.
-
-Greetings,
-	Thomas
-
-PS: Dear LKLM readers, please set me CC on any responses that would 
-otherwise go through the mailing list only.
 
