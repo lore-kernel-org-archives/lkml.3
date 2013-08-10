@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758417Ab3HJAO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 20:14:27 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:63270 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878Ab3HJAO0 (ORCPT
+	id S968031Ab3HJARZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 20:17:25 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:41001 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115Ab3HJARY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 20:14:26 -0400
-Message-ID: <520585DF.6010002@mit.edu>
-Date: Fri, 09 Aug 2013 17:14:23 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jason Baron <jbaron@akamai.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC][PATCH 3/2] x86/jump labels: Count and display the short
- jumps used
-References: <20130807173606.872055511@goodmis.org> <1375898048.6848.18.camel@gandalf.local.home> <CA+55aFwo4iFk4_6cSoK=NjCWjVgdPgKy0YfKpZd2zSGn_RXHYg@mail.gmail.com> <5202ABEF.10107@akamai.com> <CA+55aFyu+3fRrsGUZkH6y5yND3oV9K+jCzrJyCWqwHQreFELOw@mail.gmail.com> <5202BE17.9010408@akamai.com> <CA+55aFykSZb-XmGU0WjZDuiSUXQ6RbRhV3ZH5BUFCRifaoLUGA@mail.gmail.com>
-In-Reply-To: <CA+55aFykSZb-XmGU0WjZDuiSUXQ6RbRhV3ZH5BUFCRifaoLUGA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Aug 2013 20:17:24 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH] usb: Move definition of USB_EHCI_BIG_ENDIAN_MMIO out side of the ifs.
+Date: Fri,  9 Aug 2013 17:17:17 -0700
+Message-Id: <1376093837-24561-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 02:56 PM, Linus Torvalds wrote:
-> 
-> Both of the biased cases *might* also want things like "save register
-> state in the unlikely path so that the *likely* path doesn't have to".
-> Think things like "it's a leaf function, and the likely path doesn't
-> need any temporaries, but the unlikely path ends up doing function
-> calls and needs a stack frame". If the compiler can make likely path
-> avoid the stack frame generation and be straight-line, that would be
-> really nice.
+From: David Daney <david.daney@cavium.com>
 
-This inspired me to see what happens when you call an
-__attribute__((noreturn)) function.  The results are sad:
+When CONFIG_USB_SUPPORT is not selected we get things like:
 
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=10837
+scripts/kconfig/mconf Kconfig
+warning: (MIPS_SEAD3 && PMC_MSP && CPU_CAVIUM_OCTEON) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB)
 
-I think the explanations for why that bug is WONTFIX are bogus.  And
-unless gcc fixes that, trying to get efficient code that intentionally
-jumps and never returns seems hard (at least without sticking the
-call/jump into inline assembly).
+It is much cleaner to make the various system Kconfigs select
+USB_EHCI_BIG_ENDIAN_MMIO rather than move the system config
+information into USB's Kconfig, but the warnings are annoying.
 
---Andy
+Eliminate the warning by moving the definition of
+USB_EHCI_BIG_ENDIAN_MMIO outside of all the Kconfig if statements.
+
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ drivers/usb/Kconfig      | 3 +++
+ drivers/usb/host/Kconfig | 3 ---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
+index 73f62ca..38f97c5 100644
+--- a/drivers/usb/Kconfig
++++ b/drivers/usb/Kconfig
+@@ -9,6 +9,9 @@ config USB_ARCH_HAS_OHCI
+ config USB_ARCH_HAS_EHCI
+ 	bool
+ 
++config USB_EHCI_BIG_ENDIAN_MMIO
++	bool
++
+ config USB_ARCH_HAS_XHCI
+ 	bool
+ 
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 8e8e694..75e9f30 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -113,9 +113,6 @@ config USB_EHCI_HCD_PMC_MSP
+ 		Enables support for the onchip USB controller on the PMC_MSP7100 Family SoC's.
+ 		If unsure, say N.
+ 
+-config USB_EHCI_BIG_ENDIAN_MMIO
+-	bool
+-
+ config USB_EHCI_BIG_ENDIAN_DESC
+ 	bool
+ 
+-- 
+1.7.11.7
+
