@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966556Ab3HJQjS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 12:39:18 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:46454 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965964Ab3HJQjQ (ORCPT
+	id S1030645Ab3HJQnf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 12:43:35 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:57887 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966547Ab3HJQne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 12:39:16 -0400
-From: Kumar Gaurav <kumargauravgupta3@gmail.com>
-To: t.sailer@alumni.ethz.ch, jreuter@yaina.de, jpr@f6fbb.org
-Cc: linux-hams@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Kumar Gaurav <kumargauravgupta3@gmail.com>
-Subject: [PATCH] drivers:net:hamradio: Removing Depricated IRQF_DISABLED
-Date: Sat, 10 Aug 2013 22:08:58 +0530
-Message-Id: <1376152738-14944-1-git-send-email-kumargauravgupta3@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 10 Aug 2013 12:43:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <5206659F.9070705@zytor.com>
+References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
+	<5205C4BB.6020003@zytor.com>
+	<1376114128.5332.17.camel@marge.simpson.net>
+	<5206659F.9070705@zytor.com>
+Date: Sat, 10 Aug 2013 09:43:33 -0700
+X-Google-Sender-Auth: E49ZWK0rk5GuNk2iUriBIb8Lh3I
+Message-ID: <CA+55aFyB5E+Keupjz4trfMcNawUKVzQV8DF5aS_VsPiw3FaT_Q@mail.gmail.com>
+Subject: Re: Re-tune x86 uaccess code for PREEMPT_VOLUNTARY
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mike Galbraith <bitbucket@online.de>, Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed IRQF_DISABLED as it's deprecated and should be removed
+On Sat, Aug 10, 2013 at 9:09 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> Do you have any quantification of "munches throughput?"  It seems odd
+> that it would be worse than polling for preempt all over the kernel, but
+> perhaps the additional locking is what costs.
 
-Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
----
- drivers/net/hamradio/baycom_ser_fdx.c |    2 +-
- drivers/net/hamradio/baycom_ser_hdx.c |    2 +-
- drivers/net/hamradio/scc.c            |    2 +-
- drivers/net/hamradio/yam.c            |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+Actually, the big thing for true preemption is not so much the preempt
+count itself, but the fact that when the preempt count goes back to
+zero we have that "check if we should have been preempted" thing.
 
-diff --git a/drivers/net/hamradio/baycom_ser_fdx.c b/drivers/net/hamradio/baycom_ser_fdx.c
-index a974727..c114009 100644
---- a/drivers/net/hamradio/baycom_ser_fdx.c
-+++ b/drivers/net/hamradio/baycom_ser_fdx.c
-@@ -445,7 +445,7 @@ static int ser12_open(struct net_device *dev)
- 	outb(0, FCR(dev->base_addr));  /* disable FIFOs */
- 	outb(0x0d, MCR(dev->base_addr));
- 	outb(0, IER(dev->base_addr));
--	if (request_irq(dev->irq, ser12_interrupt, IRQF_DISABLED | IRQF_SHARED,
-+	if (request_irq(dev->irq, ser12_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED,
- 			"baycom_ser_fdx", dev)) {
- 		release_region(dev->base_addr, SER12_EXTENT);
- 		return -EBUSY;
-diff --git a/drivers/net/hamradio/baycom_ser_hdx.c b/drivers/net/hamradio/baycom_ser_hdx.c
-index e349d86..d91c1fd 100644
---- a/drivers/net/hamradio/baycom_ser_hdx.c
-+++ b/drivers/net/hamradio/baycom_ser_hdx.c
-@@ -490,7 +490,7 @@ static int ser12_open(struct net_device *dev)
- 	outb(0, FCR(dev->base_addr));  /* disable FIFOs */
- 	outb(0x0d, MCR(dev->base_addr));
- 	outb(0, IER(dev->base_addr));
--	if (request_irq(dev->irq, ser12_interrupt, IRQF_DISABLED | IRQF_SHARED,
-+	if (request_irq(dev->irq, ser12_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED,
- 			"baycom_ser12", dev)) {
- 		release_region(dev->base_addr, SER12_EXTENT);       
- 		return -EBUSY;
-diff --git a/drivers/net/hamradio/scc.c b/drivers/net/hamradio/scc.c
-index bc1d521..4bc6ee8 100644
---- a/drivers/net/hamradio/scc.c
-+++ b/drivers/net/hamradio/scc.c
-@@ -1734,7 +1734,7 @@ static int scc_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- 			if (!Ivec[hwcfg.irq].used && hwcfg.irq)
- 			{
- 				if (request_irq(hwcfg.irq, scc_isr,
--						IRQF_DISABLED, "AX.25 SCC",
-+						0, "AX.25 SCC",
- 						(void *)(long) hwcfg.irq))
- 					printk(KERN_WARNING "z8530drv: warning, cannot get IRQ %d\n", hwcfg.irq);
- 				else
-diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
-index 0721e72..f947887 100644
---- a/drivers/net/hamradio/yam.c
-+++ b/drivers/net/hamradio/yam.c
-@@ -888,7 +888,7 @@ static int yam_open(struct net_device *dev)
- 		goto out_release_base;
- 	}
- 	outb(0, IER(dev->base_addr));
--	if (request_irq(dev->irq, yam_interrupt, IRQF_DISABLED | IRQF_SHARED, dev->name, dev)) {
-+	if (request_irq(dev->irq, yam_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED, dev->name, dev)) {
- 		printk(KERN_ERR "%s: irq %d busy\n", dev->name, dev->irq);
- 		ret = -EBUSY;
- 		goto out_release_base;
--- 
-1.7.9.5
+And in particular, the conditional function call that goes along with it.
 
+The thing is, even if that is almost never taken, just the fact that
+there is a conditional function call very often makes code generation
+*much* worse. A function that is a leaf function with no stack frame
+with no preemption often turns into a non-leaf function with stack
+frames when you enable preemption, just because it had a RCU read
+region which disabled preemption.
+
+It's similar to the kind of code generation issue that Andi's patches
+are trying to work on.
+
+Andi did the "test and jump to a different section to call the
+scheduler with registers saved" as an assembly stub in one of his
+patches in this series exactly to avoid the cost of this for the
+might_sleep() case, and generated that GET_THREAD_AND_SCHEDULE asm
+macro for it. But look at that asm macro, and compare it to
+"preempt_check_resched()"..
+
+I have often wanted to have access to that kind of thing from C code.
+It's not unusual. Think lock failure paths, not Tom Jones.
+
+                Linus
