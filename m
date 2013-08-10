@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758822Ab3HJUnj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 16:43:39 -0400
-Received: from 103.subnet222-124-4.astinet.telkom.net.id ([222.124.4.103]:56766
-	"EHLO mail.pusri.co.id" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758793Ab3HJUnh (ORCPT
+	id S1758838Ab3HJUtN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 16:49:13 -0400
+Received: from 70-36-212-23.dsl.static.sonic.net ([70.36.212.23]:44303 "EHLO
+	mail.linuxtoys.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758803Ab3HJUtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 16:43:37 -0400
-X-Greylist: delayed 126027 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Aug 2013 16:43:36 EDT
-X-Mail-Scanner: Scanned by qSheff-II-2.1-r3 (http://www.enderunix.org/qsheff/)
-To: undisclosed-recipients:;
-Subject: Lieber Freund!!!
+	Sat, 10 Aug 2013 16:49:12 -0400
+Message-ID: <5206A74B.3000005@linuxtoys.org>
+Date: Sat, 10 Aug 2013 13:49:15 -0700
+From: Bob Smith <bsmith@linuxtoys.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
 MIME-Version: 1.0
-Date: Thu, 08 Aug 2013 23:24:10 +0700
-From: EWIS AWELE <herrawel@virgilio.it>
-Reply-To: bankas27@aim.com
-Message-ID: <46b6987fffe9e23fc1d4fa3457f7f4d3@localhost>
-User-Agent: RoundCube Webmail/0.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons
+ a /sys-like interface
+References: <20130804231958.GA25418@kroah.com> <52003958.7080103@linuxtoys.org> <20130806094604.GE27889@kroah.com> <520299AB.1020607@linuxtoys.org> <20130807192714.GC2708@kroah.com> <5202A284.7010106@linuxtoys.org> <20130807195427.GB4121@kroah.com> <5202B674.7060005@linuxtoys.org> <20130807213325.GB5373@kroah.com> <520569B2.4000704@linuxtoys.org> <20130809230150.GA23418@kroah.com> <52069DCA.6060706@linuxtoys.org> <CAFLxGvwp79uqxHVy7A+SYMUnCFtCbtq1K=YppBx9j+R1oVC7PA@mail.gmail.com>
+In-Reply-To: <CAFLxGvwp79uqxHVy7A+SYMUnCFtCbtq1K=YppBx9j+R1oVC7PA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+richard -rw- weinberger wrote:
+>> GOAL
+>> The goal of this patch was to make it possible to configure
+>> daemons using simple file IO.  The litmus test for this is
+>> that commands like these should be possible
+>>          cat < /var/daemons/wpa_supplicant/use_channel
+>>          echo 5 >/var/daemons/wpa_supplicant/use_channel
+>>
+>> Yes, there are many other ways to configure a daemon but
+>> none with the simplicity and grace of file IO.  For proof
+>> of this I point to procfs and sysfs.
 
+> /me read the whole thread and still does get why you can't use CUSE.
+> ...or AF_UNIX.
+Rightly or wrongly, my goal is pretty clear.  I want to be able
+to use file IO to control a daemon.  AF_UNIX doesn't help.
+CUSE/FUSE takes over main() and makes it very difficult to use
+select() and file descriptors.  So it fails too for now.
 
--- 
-Lieber Freund!!!
+> If you really have an use case which is not covered by CUSE,
+> please fix CUSE.
+Yeah, if I proceed from here then modifying the user space parts
+of FUSE might be the best way to go.
 
-Ich vermute das diese E-Mail eine Überraschung für Sie sein wird, aber es
-ist 
-wahr.Ich bin bei einer routinen Überprüfung in meiner Bank (StandardBank
-PLC von
-Süd Afrika) wo ich arbeite, auf einem Konto gestoßen, was nicht in
-anspruch
-genommen worden ist, wo derzeit USD$18.5M (Achtzehn Million, Fünf Hundert
-Tausend, US Dollar)  gutgeschrieben sind. Dieses Konto gehörte Herrn Peter
-Hartmann, der ein Kunde in unsere Bank war, der leider verstorben ist. Herr
-Hartmann war ein gebürtiger Deutscher.
+Sorry that it took so long to get to the point that my goals
+for the patch were clearly stated.  As I say, I'm an EE who
+probably need more adult supervision.  :)
 
-Damit es mir möglich ist dieses Geld $18,500,000 inanspruch
-zunehmen,benötige
-ich die zusammenarbeit eines Ausländischen Partners wie Sie,den ich als
-Verwandter und Erbe des verstorbenen Herrn Hartmann vorstellen kann,damit
-wir
-das Geld inanspruch nehmen können. Für diese Unterstützung erhalten Sie
-30% der
-Erbschaftsumme und die restlichen 70% teile ich mirmit meinen zwei
-Arbeitskollegen, die mich bei dieser Transaktion ebenfalls unterstützen.
+thanks
+Bob Smith
 
-
-Wenn Sie interessiert sind, können Sie mir bitte eine E-Mail schicken,
-damit ich
-Ihnen mehr Details zukommen lassen kann. N.B.BITTE SENDEN SIE MIR LEWIS
-AWELE
-ANTWORT ZU durch mein E-mail: ( bankas27@aim.com ) fÜR VERTRAULICHEN
-GRUND.
-Schicken Sie keine POST ZU MEINEM BÜRO-E-MAIL. ( bankas27@aim.com )
-
-
-If you understand english,please  kindly reply with english (
-bankas27@aim.com
-)
-
-Mit freundlichen Grüßen
-
-Herr LEWIS AWELE
 
