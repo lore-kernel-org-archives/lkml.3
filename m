@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967109Ab3HJQPT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 12:15:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33120 "EHLO
+	id S967799Ab3HJQPW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 12:15:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33119 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965976Ab3HJQPN (ORCPT
+	with ESMTP id S964808Ab3HJQPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 10 Aug 2013 12:15:13 -0400
-Date: Sat, 10 Aug 2013 09:13:57 -0700
+Date: Sat, 10 Aug 2013 09:14:55 -0700
 From: tip-bot for Jeremy Fitzhardinge <tipbot@zytor.com>
-Message-ID: <tip-80bd58fef495d000a02fc5b55ca76d423400e748@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, jeremy@goop.org,
-        raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
+Message-ID: <tip-96f853eaa889c7a22718d275b0df7bebdbd6780e@git.kernel.org>
+Cc: vatsa@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, konrad.wilk@oracle.com, stephan.diestelhorst@amd.com,
+        jeremy@goop.org, raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
         hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, jeremy@goop.org,
+        vatsa@linux.vnet.ibm.com, konrad.wilk@oracle.com,
+        stephan.diestelhorst@amd.com, jeremy@goop.org,
         raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
         hpa@linux.intel.com
-In-Reply-To: <1376058122-8248-6-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-References: <1376058122-8248-6-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+In-Reply-To: <1376058122-8248-11-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+References: <1376058122-8248-11-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/spinlocks] xen, pvticketlock:
-  Xen implementation for PV ticket locks
-Git-Commit-ID: 80bd58fef495d000a02fc5b55ca76d423400e748
+Subject: [tip:x86/spinlocks] x86, ticketlock: Add slowpath logic
+Git-Commit-ID: 96f853eaa889c7a22718d275b0df7bebdbd6780e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,502 +32,311 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 10 Aug 2013 09:14:05 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 10 Aug 2013 09:15:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  80bd58fef495d000a02fc5b55ca76d423400e748
-Gitweb:     http://git.kernel.org/tip/80bd58fef495d000a02fc5b55ca76d423400e748
+Commit-ID:  96f853eaa889c7a22718d275b0df7bebdbd6780e
+Gitweb:     http://git.kernel.org/tip/96f853eaa889c7a22718d275b0df7bebdbd6780e
 Author:     Jeremy Fitzhardinge <jeremy@goop.org>
-AuthorDate: Fri, 9 Aug 2013 19:51:53 +0530
+AuthorDate: Fri, 9 Aug 2013 19:51:58 +0530
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 9 Aug 2013 07:53:23 -0700
+CommitDate: Fri, 9 Aug 2013 07:54:00 -0700
 
-xen, pvticketlock: Xen implementation for PV ticket locks
+x86, ticketlock: Add slowpath logic
 
-Replace the old Xen implementation of PV spinlocks with and implementation
-of xen_lock_spinning and xen_unlock_kick.
+Maintain a flag in the LSB of the ticket lock tail which indicates
+whether anyone is in the lock slowpath and may need kicking when
+the current holder unlocks.  The flags are set when the first locker
+enters the slowpath, and cleared when unlocking to an empty queue (ie,
+no contention).
 
-xen_lock_spinning simply registers the cpu in its entry in lock_waiting,
-adds itself to the waiting_cpus set, and blocks on an event channel
-until the channel becomes pending.
+In the specific implementation of lock_spinning(), make sure to set
+the slowpath flags on the lock just before blocking.  We must do
+this before the last-chance pickup test to prevent a deadlock
+with the unlocker:
 
-xen_unlock_kick searches the cpus in waiting_cpus looking for the one
-which next wants this lock with the next ticket, if any.  If found,
-it kicks it by making its event channel pending, which wakes it up.
+Unlocker			Locker
+				test for lock pickup
+					-> fail
+unlock
+test slowpath
+	-> false
+				set slowpath flags
+				block
 
-We need to make sure interrupts are disabled while we're relying on the
-contents of the per-cpu lock_waiting values, otherwise an interrupt
-handler could come in, try to take some other lock, block, and overwrite
-our values.
+Whereas this works in any ordering:
+
+Unlocker			Locker
+				set slowpath flags
+				test for lock pickup
+					-> fail
+				block
+unlock
+test slowpath
+	-> true, kick
+
+If the unlocker finds that the lock has the slowpath flag set but it is
+actually uncontended (ie, head == tail, so nobody is waiting), then it
+clears the slowpath flag.
+
+The unlock code uses a locked add to update the head counter.  This also
+acts as a full memory barrier so that its safe to subsequently
+read back the slowflag state, knowing that the updated lock is visible
+to the other CPUs.  If it were an unlocked add, then the flag read may
+just be forwarded from the store buffer before it was visible to the other
+CPUs, which could result in a deadlock.
+
+Unfortunately this means we need to do a locked instruction when
+unlocking with PV ticketlocks.  However, if PV ticketlocks are not
+enabled, then the old non-locked "add" is the only unlocking code.
+
+Note: this code relies on gcc making sure that unlikely() code is out of
+line of the fastpath, which only happens when OPTIMIZE_SIZE=n.  If it
+doesn't the generated code isn't too bad, but its definitely suboptimal.
+
+Thanks to Srivatsa Vaddagiri for providing a bugfix to the original
+version of this change, which has been folded in.
+Thanks to Stephan Diestelhorst for commenting on some code which relied
+on an inaccurate reading of the x86 memory ordering rules.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Link: http://lkml.kernel.org/r/1376058122-8248-6-git-send-email-raghavendra.kt@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1376058122-8248-11-git-send-email-raghavendra.kt@linux.vnet.ibm.com
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
- [ Raghavendra:  use function + enum instead of macro, cmpxchg for zero status reset
-Reintroduce break since we know the exact vCPU to send IPI as suggested by Konrad.]
+Cc: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/xen/spinlock.c | 348 +++++++++++-------------------------------------
- 1 file changed, 79 insertions(+), 269 deletions(-)
+ arch/x86/include/asm/paravirt.h       |  2 +-
+ arch/x86/include/asm/spinlock.h       | 86 +++++++++++++++++++++++++----------
+ arch/x86/include/asm/spinlock_types.h |  2 +
+ arch/x86/kernel/paravirt-spinlocks.c  |  3 ++
+ arch/x86/xen/spinlock.c               |  6 +++
+ 5 files changed, 74 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index d509629..a458729 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -17,45 +17,44 @@
- #include "xen-ops.h"
- #include "debugfs.h"
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index 7131e12c..401f350 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -718,7 +718,7 @@ static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock,
+ 	PVOP_VCALLEE2(pv_lock_ops.lock_spinning, lock, ticket);
+ }
  
--#ifdef CONFIG_XEN_DEBUG_FS
--static struct xen_spinlock_stats
--{
--	u64 taken;
--	u32 taken_slow;
--	u32 taken_slow_nested;
--	u32 taken_slow_pickup;
--	u32 taken_slow_spurious;
--	u32 taken_slow_irqenable;
-+enum xen_contention_stat {
-+	TAKEN_SLOW,
-+	TAKEN_SLOW_PICKUP,
-+	TAKEN_SLOW_SPURIOUS,
-+	RELEASED_SLOW,
-+	RELEASED_SLOW_KICKED,
-+	NR_CONTENTION_STATS
-+};
- 
--	u64 released;
--	u32 released_slow;
--	u32 released_slow_kicked;
- 
-+#ifdef CONFIG_XEN_DEBUG_FS
- #define HISTO_BUCKETS	30
--	u32 histo_spin_total[HISTO_BUCKETS+1];
--	u32 histo_spin_spinning[HISTO_BUCKETS+1];
-+static struct xen_spinlock_stats
-+{
-+	u32 contention_stats[NR_CONTENTION_STATS];
- 	u32 histo_spin_blocked[HISTO_BUCKETS+1];
--
--	u64 time_total;
--	u64 time_spinning;
- 	u64 time_blocked;
- } spinlock_stats;
- 
- static u8 zero_stats;
- 
--static unsigned lock_timeout = 1 << 10;
--#define TIMEOUT lock_timeout
--
- static inline void check_zero(void)
+-static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock,
++static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
+ 							__ticket_t ticket)
  {
--	if (unlikely(zero_stats)) {
--		memset(&spinlock_stats, 0, sizeof(spinlock_stats));
--		zero_stats = 0;
-+	u8 ret;
-+	u8 old = ACCESS_ONCE(zero_stats);
-+	if (unlikely(old)) {
-+		ret = cmpxchg(&zero_stats, old, 0);
-+		/* This ensures only one fellow resets the stat */
-+		if (ret == old)
-+			memset(&spinlock_stats, 0, sizeof(spinlock_stats));
+ 	PVOP_VCALL2(pv_lock_ops.unlock_kick, lock, ticket);
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 04a5cd5..d68883d 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -1,11 +1,14 @@
+ #ifndef _ASM_X86_SPINLOCK_H
+ #define _ASM_X86_SPINLOCK_H
+ 
++#include <linux/jump_label.h>
+ #include <linux/atomic.h>
+ #include <asm/page.h>
+ #include <asm/processor.h>
+ #include <linux/compiler.h>
+ #include <asm/paravirt.h>
++#include <asm/bitops.h>
++
+ /*
+  * Your basic SMP spinlocks, allowing only a single CPU anywhere
+  *
+@@ -37,32 +40,28 @@
+ /* How long a lock should spin before we consider blocking */
+ #define SPIN_THRESHOLD	(1 << 15)
+ 
+-#ifndef CONFIG_PARAVIRT_SPINLOCKS
++extern struct static_key paravirt_ticketlocks_enabled;
++static __always_inline bool static_key_false(struct static_key *key);
+ 
+-static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock,
+-							__ticket_t ticket)
++#ifdef CONFIG_PARAVIRT_SPINLOCKS
++
++static inline void __ticket_enter_slowpath(arch_spinlock_t *lock)
+ {
++	set_bit(0, (volatile unsigned long *)&lock->tickets.tail);
+ }
+ 
+-static __always_inline void ____ticket_unlock_kick(struct arch_spinlock *lock,
+-							 __ticket_t ticket)
++#else  /* !CONFIG_PARAVIRT_SPINLOCKS */
++static __always_inline void __ticket_lock_spinning(arch_spinlock_t *lock,
++							__ticket_t ticket)
+ {
+ }
+-
+-#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
+-
+-
+-/*
+- * If a spinlock has someone waiting on it, then kick the appropriate
+- * waiting cpu.
+- */
+-static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
+-							__ticket_t next)
++static inline void __ticket_unlock_kick(arch_spinlock_t *lock,
++							__ticket_t ticket)
+ {
+-	if (unlikely(lock->tickets.tail != next))
+-		____ticket_unlock_kick(lock, next);
+ }
+ 
++#endif /* CONFIG_PARAVIRT_SPINLOCKS */
++
+ /*
+  * Ticket locks are conceptually two parts, one indicating the current head of
+  * the queue, and the other indicating the current tail. The lock is acquired
+@@ -76,20 +75,22 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
+  * in the high part, because a wide xadd increment of the low part would carry
+  * up and contaminate the high part.
+  */
+-static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
++static __always_inline void arch_spin_lock(arch_spinlock_t *lock)
+ {
+ 	register struct __raw_tickets inc = { .tail = TICKET_LOCK_INC };
+ 
+ 	inc = xadd(&lock->tickets, inc);
++	if (likely(inc.head == inc.tail))
++		goto out;
+ 
++	inc.tail &= ~TICKET_SLOWPATH_FLAG;
+ 	for (;;) {
+ 		unsigned count = SPIN_THRESHOLD;
+ 
+ 		do {
+-			if (inc.head == inc.tail)
++			if (ACCESS_ONCE(lock->tickets.head) == inc.tail)
+ 				goto out;
+ 			cpu_relax();
+-			inc.head = ACCESS_ONCE(lock->tickets.head);
+ 		} while (--count);
+ 		__ticket_lock_spinning(lock, inc.tail);
  	}
+@@ -101,7 +102,7 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ 	arch_spinlock_t old, new;
+ 
+ 	old.tickets = ACCESS_ONCE(lock->tickets);
+-	if (old.tickets.head != old.tickets.tail)
++	if (old.tickets.head != (old.tickets.tail & ~TICKET_SLOWPATH_FLAG))
+ 		return 0;
+ 
+ 	new.head_tail = old.head_tail + (TICKET_LOCK_INC << TICKET_SHIFT);
+@@ -110,12 +111,49 @@ static __always_inline int arch_spin_trylock(arch_spinlock_t *lock)
+ 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
  }
  
--#define ADD_STATS(elem, val)			\
--	do { check_zero(); spinlock_stats.elem += (val); } while(0)
-+static inline void add_stats(enum xen_contention_stat var, u32 val)
++static inline void __ticket_unlock_slowpath(arch_spinlock_t *lock,
++					    arch_spinlock_t old)
 +{
-+	check_zero();
-+	spinlock_stats.contention_stats[var] += val;
++	arch_spinlock_t new;
++
++	BUILD_BUG_ON(((__ticket_t)NR_CPUS) != NR_CPUS);
++
++	/* Perform the unlock on the "before" copy */
++	old.tickets.head += TICKET_LOCK_INC;
++
++	/* Clear the slowpath flag */
++	new.head_tail = old.head_tail & ~(TICKET_SLOWPATH_FLAG << TICKET_SHIFT);
++
++	/*
++	 * If the lock is uncontended, clear the flag - use cmpxchg in
++	 * case it changes behind our back though.
++	 */
++	if (new.tickets.head != new.tickets.tail ||
++	    cmpxchg(&lock->head_tail, old.head_tail,
++					new.head_tail) != old.head_tail) {
++		/*
++		 * Lock still has someone queued for it, so wake up an
++		 * appropriate waiter.
++		 */
++		__ticket_unlock_kick(lock, old.tickets.head);
++	}
 +}
- 
- static inline u64 spin_time_start(void)
++
+ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
  {
-@@ -74,22 +73,6 @@ static void __spin_time_accum(u64 delta, u32 *array)
- 		array[HISTO_BUCKETS]++;
+-	__ticket_t next = lock->tickets.head + TICKET_LOCK_INC;
++	if (TICKET_SLOWPATH_FLAG &&
++	    static_key_false(&paravirt_ticketlocks_enabled)) {
++		arch_spinlock_t prev;
++
++		prev = *lock;
++		add_smp(&lock->tickets.head, TICKET_LOCK_INC);
++
++		/* add_smp() is a full mb() */
+ 
+-	__add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX);
+-	__ticket_unlock_kick(lock, next);
++		if (unlikely(lock->tickets.tail & TICKET_SLOWPATH_FLAG))
++			__ticket_unlock_slowpath(lock, prev);
++	} else
++		__add(&lock->tickets.head, TICKET_LOCK_INC, UNLOCK_LOCK_PREFIX);
  }
  
--static inline void spin_time_accum_spinning(u64 start)
--{
--	u32 delta = xen_clocksource_read() - start;
--
--	__spin_time_accum(delta, spinlock_stats.histo_spin_spinning);
--	spinlock_stats.time_spinning += delta;
--}
--
--static inline void spin_time_accum_total(u64 start)
--{
--	u32 delta = xen_clocksource_read() - start;
--
--	__spin_time_accum(delta, spinlock_stats.histo_spin_total);
--	spinlock_stats.time_total += delta;
--}
--
- static inline void spin_time_accum_blocked(u64 start)
- {
- 	u32 delta = xen_clocksource_read() - start;
-@@ -99,19 +82,15 @@ static inline void spin_time_accum_blocked(u64 start)
- }
- #else  /* !CONFIG_XEN_DEBUG_FS */
- #define TIMEOUT			(1 << 10)
--#define ADD_STATS(elem, val)	do { (void)(val); } while(0)
-+static inline void add_stats(enum xen_contention_stat var, u32 val)
-+{
-+}
+ static inline int arch_spin_is_locked(arch_spinlock_t *lock)
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index e96fcbd..4f1bea1 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -5,8 +5,10 @@
  
- static inline u64 spin_time_start(void)
- {
- 	return 0;
- }
- 
--static inline void spin_time_accum_total(u64 start)
--{
--}
--static inline void spin_time_accum_spinning(u64 start)
--{
--}
- static inline void spin_time_accum_blocked(u64 start)
- {
- }
-@@ -134,230 +113,84 @@ typedef u16 xen_spinners_t;
- 	asm(LOCK_PREFIX " decw %0" : "+m" ((xl)->spinners) : : "memory");
+ #ifdef CONFIG_PARAVIRT_SPINLOCKS
+ #define __TICKET_LOCK_INC	2
++#define TICKET_SLOWPATH_FLAG	((__ticket_t)1)
+ #else
+ #define __TICKET_LOCK_INC	1
++#define TICKET_SLOWPATH_FLAG	((__ticket_t)0)
  #endif
  
--struct xen_spinlock {
--	unsigned char lock;		/* 0 -> free; 1 -> locked */
--	xen_spinners_t spinners;	/* count of waiting cpus */
-+struct xen_lock_waiting {
-+	struct arch_spinlock *lock;
-+	__ticket_t want;
+ #if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
+diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
+index 4251c1d..bbb6c73 100644
+--- a/arch/x86/kernel/paravirt-spinlocks.c
++++ b/arch/x86/kernel/paravirt-spinlocks.c
+@@ -4,6 +4,7 @@
+  */
+ #include <linux/spinlock.h>
+ #include <linux/module.h>
++#include <linux/jump_label.h>
+ 
+ #include <asm/paravirt.h>
+ 
+@@ -15,3 +16,5 @@ struct pv_lock_ops pv_lock_ops = {
  };
+ EXPORT_SYMBOL(pv_lock_ops);
  
- static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
--
--#if 0
--static int xen_spin_is_locked(struct arch_spinlock *lock)
--{
--	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
--
--	return xl->lock != 0;
--}
--
--static int xen_spin_is_contended(struct arch_spinlock *lock)
--{
--	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
--
--	/* Not strictly true; this is only the count of contended
--	   lock-takers entering the slow path. */
--	return xl->spinners != 0;
--}
--
--static int xen_spin_trylock(struct arch_spinlock *lock)
--{
--	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
--	u8 old = 1;
--
--	asm("xchgb %b0,%1"
--	    : "+q" (old), "+m" (xl->lock) : : "memory");
--
--	return old == 0;
--}
--
- static DEFINE_PER_CPU(char *, irq_name);
--static DEFINE_PER_CPU(struct xen_spinlock *, lock_spinners);
-+static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
-+static cpumask_t waiting_cpus;
++struct static_key paravirt_ticketlocks_enabled = STATIC_KEY_INIT_FALSE;
++EXPORT_SYMBOL(paravirt_ticketlocks_enabled);
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index 6c8792b..546112e 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -157,6 +157,10 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+ 	/* Only check lock once pending cleared */
+ 	barrier();
  
--/*
-- * Mark a cpu as interested in a lock.  Returns the CPU's previous
-- * lock of interest, in case we got preempted by an interrupt.
-- */
--static inline struct xen_spinlock *spinning_lock(struct xen_spinlock *xl)
-+static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- {
--	struct xen_spinlock *prev;
--
--	prev = __this_cpu_read(lock_spinners);
--	__this_cpu_write(lock_spinners, xl);
--
--	wmb();			/* set lock of interest before count */
--
--	inc_spinners(xl);
--
--	return prev;
--}
--
--/*
-- * Mark a cpu as no longer interested in a lock.  Restores previous
-- * lock of interest (NULL for none).
-- */
--static inline void unspinning_lock(struct xen_spinlock *xl, struct xen_spinlock *prev)
--{
--	dec_spinners(xl);
--	wmb();			/* decrement count before restoring lock */
--	__this_cpu_write(lock_spinners, prev);
--}
--
--static noinline int xen_spin_lock_slow(struct arch_spinlock *lock, bool irq_enable)
--{
--	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
--	struct xen_spinlock *prev;
- 	int irq = __this_cpu_read(lock_kicker_irq);
--	int ret;
-+	struct xen_lock_waiting *w = &__get_cpu_var(lock_waiting);
-+	int cpu = smp_processor_id();
- 	u64 start;
-+	unsigned long flags;
- 
- 	/* If kicker interrupts not initialized yet, just spin */
- 	if (irq == -1)
--		return 0;
-+		return;
- 
- 	start = spin_time_start();
- 
--	/* announce we're spinning */
--	prev = spinning_lock(xl);
--
--	ADD_STATS(taken_slow, 1);
--	ADD_STATS(taken_slow_nested, prev != NULL);
--
--	do {
--		unsigned long flags;
--
--		/* clear pending */
--		xen_clear_irq_pending(irq);
--
--		/* check again make sure it didn't become free while
--		   we weren't looking  */
--		ret = xen_spin_trylock(lock);
--		if (ret) {
--			ADD_STATS(taken_slow_pickup, 1);
--
--			/*
--			 * If we interrupted another spinlock while it
--			 * was blocking, make sure it doesn't block
--			 * without rechecking the lock.
--			 */
--			if (prev != NULL)
--				xen_set_irq_pending(irq);
--			goto out;
--		}
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
-+	local_irq_save(flags);
- 
--		flags = arch_local_save_flags();
--		if (irq_enable) {
--			ADD_STATS(taken_slow_irqenable, 1);
--			raw_local_irq_enable();
--		}
-+	w->want = want;
-+	smp_wmb();
-+	w->lock = lock;
- 
--		/*
--		 * Block until irq becomes pending.  If we're
--		 * interrupted at this point (after the trylock but
--		 * before entering the block), then the nested lock
--		 * handler guarantees that the irq will be left
--		 * pending if there's any chance the lock became free;
--		 * xen_poll_irq() returns immediately if the irq is
--		 * pending.
--		 */
--		xen_poll_irq(irq);
-+	/* This uses set_bit, which atomic and therefore a barrier */
-+	cpumask_set_cpu(cpu, &waiting_cpus);
-+	add_stats(TAKEN_SLOW, 1);
- 
--		raw_local_irq_restore(flags);
-+	/* clear pending */
-+	xen_clear_irq_pending(irq);
- 
--		ADD_STATS(taken_slow_spurious, !xen_test_irq_pending(irq));
--	} while (!xen_test_irq_pending(irq)); /* check for spurious wakeups */
-+	/* Only check lock once pending cleared */
-+	barrier();
- 
-+	/* check again make sure it didn't become free while
-+	   we weren't looking  */
-+	if (ACCESS_ONCE(lock->tickets.head) == want) {
-+		add_stats(TAKEN_SLOW_PICKUP, 1);
-+		goto out;
-+	}
-+	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
-+	xen_poll_irq(irq);
-+	add_stats(TAKEN_SLOW_SPURIOUS, !xen_test_irq_pending(irq));
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
--
- out:
--	unspinning_lock(xl, prev);
-+	cpumask_clear_cpu(cpu, &waiting_cpus);
-+	w->lock = NULL;
-+	local_irq_restore(flags);
- 	spin_time_accum_blocked(start);
--
--	return ret;
- }
- 
--static inline void __xen_spin_lock(struct arch_spinlock *lock, bool irq_enable)
--{
--	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
--	unsigned timeout;
--	u8 oldval;
--	u64 start_spin;
--
--	ADD_STATS(taken, 1);
--
--	start_spin = spin_time_start();
--
--	do {
--		u64 start_spin_fast = spin_time_start();
--
--		timeout = TIMEOUT;
--
--		asm("1: xchgb %1,%0\n"
--		    "   testb %1,%1\n"
--		    "   jz 3f\n"
--		    "2: rep;nop\n"
--		    "   cmpb $0,%0\n"
--		    "   je 1b\n"
--		    "   dec %2\n"
--		    "   jnz 2b\n"
--		    "3:\n"
--		    : "+m" (xl->lock), "=q" (oldval), "+r" (timeout)
--		    : "1" (1)
--		    : "memory");
--
--		spin_time_accum_spinning(start_spin_fast);
--
--	} while (unlikely(oldval != 0 &&
--			  (TIMEOUT == ~0 || !xen_spin_lock_slow(lock, irq_enable))));
--
--	spin_time_accum_total(start_spin);
--}
--
--static void xen_spin_lock(struct arch_spinlock *lock)
--{
--	__xen_spin_lock(lock, false);
--}
--
--static void xen_spin_lock_flags(struct arch_spinlock *lock, unsigned long flags)
--{
--	__xen_spin_lock(lock, !raw_irqs_disabled_flags(flags));
--}
--
--static noinline void xen_spin_unlock_slow(struct xen_spinlock *xl)
-+static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- {
- 	int cpu;
- 
--	ADD_STATS(released_slow, 1);
-+	add_stats(RELEASED_SLOW, 1);
++	/* Mark entry to slowpath before doing the pickup test to make
++	   sure we don't deadlock with an unlocker. */
++	__ticket_enter_slowpath(lock);
 +
-+	for_each_cpu(cpu, &waiting_cpus) {
-+		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
- 
--	for_each_online_cpu(cpu) {
--		/* XXX should mix up next cpu selection */
--		if (per_cpu(lock_spinners, cpu) == xl) {
--			ADD_STATS(released_slow_kicked, 1);
-+		if (w->lock == lock && w->want == next) {
-+			add_stats(RELEASED_SLOW_KICKED, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
-+			break;
- 		}
- 	}
- }
- 
--static void xen_spin_unlock(struct arch_spinlock *lock)
--{
--	struct xen_spinlock *xl = (struct xen_spinlock *)lock;
--
--	ADD_STATS(released, 1);
--
--	smp_wmb();		/* make sure no writes get moved after unlock */
--	xl->lock = 0;		/* release lock */
--
--	/*
--	 * Make sure unlock happens before checking for waiting
--	 * spinners.  We need a strong barrier to enforce the
--	 * write-read ordering to different memory locations, as the
--	 * CPU makes no implied guarantees about their ordering.
--	 */
--	mb();
--
--	if (unlikely(xl->spinners))
--		xen_spin_unlock_slow(xl);
--}
--#endif
--
- static irqreturn_t dummy_handler(int irq, void *dev_id)
- {
- 	BUG();
-@@ -420,15 +253,8 @@ void __init xen_init_spinlocks(void)
- 	if (xen_hvm_domain())
+ 	/* check again make sure it didn't become free while
+ 	   we weren't looking  */
+ 	if (ACCESS_ONCE(lock->tickets.head) == want) {
+@@ -261,6 +265,8 @@ void __init xen_init_spinlocks(void)
  		return;
+ 	}
  
--	BUILD_BUG_ON(sizeof(struct xen_spinlock) > sizeof(arch_spinlock_t));
--#if 0
--	pv_lock_ops.spin_is_locked = xen_spin_is_locked;
--	pv_lock_ops.spin_is_contended = xen_spin_is_contended;
--	pv_lock_ops.spin_lock = xen_spin_lock;
--	pv_lock_ops.spin_lock_flags = xen_spin_lock_flags;
--	pv_lock_ops.spin_trylock = xen_spin_trylock;
--	pv_lock_ops.spin_unlock = xen_spin_unlock;
--#endif
-+	pv_lock_ops.lock_spinning = xen_lock_spinning;
-+	pv_lock_ops.unlock_kick = xen_unlock_kick;
++	static_key_slow_inc(&paravirt_ticketlocks_enabled);
++
+ 	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
+ 	pv_lock_ops.unlock_kick = xen_unlock_kick;
  }
- 
- #ifdef CONFIG_XEN_DEBUG_FS
-@@ -446,37 +272,21 @@ static int __init xen_spinlock_debugfs(void)
- 
- 	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
- 
--	debugfs_create_u32("timeout", 0644, d_spin_debug, &lock_timeout);
--
--	debugfs_create_u64("taken", 0444, d_spin_debug, &spinlock_stats.taken);
- 	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
--			   &spinlock_stats.taken_slow);
--	debugfs_create_u32("taken_slow_nested", 0444, d_spin_debug,
--			   &spinlock_stats.taken_slow_nested);
-+			   &spinlock_stats.contention_stats[TAKEN_SLOW]);
- 	debugfs_create_u32("taken_slow_pickup", 0444, d_spin_debug,
--			   &spinlock_stats.taken_slow_pickup);
-+			   &spinlock_stats.contention_stats[TAKEN_SLOW_PICKUP]);
- 	debugfs_create_u32("taken_slow_spurious", 0444, d_spin_debug,
--			   &spinlock_stats.taken_slow_spurious);
--	debugfs_create_u32("taken_slow_irqenable", 0444, d_spin_debug,
--			   &spinlock_stats.taken_slow_irqenable);
-+			   &spinlock_stats.contention_stats[TAKEN_SLOW_SPURIOUS]);
- 
--	debugfs_create_u64("released", 0444, d_spin_debug, &spinlock_stats.released);
- 	debugfs_create_u32("released_slow", 0444, d_spin_debug,
--			   &spinlock_stats.released_slow);
-+			   &spinlock_stats.contention_stats[RELEASED_SLOW]);
- 	debugfs_create_u32("released_slow_kicked", 0444, d_spin_debug,
--			   &spinlock_stats.released_slow_kicked);
-+			   &spinlock_stats.contention_stats[RELEASED_SLOW_KICKED]);
- 
--	debugfs_create_u64("time_spinning", 0444, d_spin_debug,
--			   &spinlock_stats.time_spinning);
- 	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
- 			   &spinlock_stats.time_blocked);
--	debugfs_create_u64("time_total", 0444, d_spin_debug,
--			   &spinlock_stats.time_total);
- 
--	debugfs_create_u32_array("histo_total", 0444, d_spin_debug,
--				spinlock_stats.histo_spin_total, HISTO_BUCKETS + 1);
--	debugfs_create_u32_array("histo_spinning", 0444, d_spin_debug,
--				spinlock_stats.histo_spin_spinning, HISTO_BUCKETS + 1);
- 	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
- 				spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
- 
