@@ -1,96 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968512Ab3HJJcE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 05:32:04 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41017 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968491Ab3HJJcB (ORCPT
+	id S932199Ab3HJLKI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 07:10:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45207 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab3HJLKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 05:32:01 -0400
-Date: Sat, 10 Aug 2013 10:31:37 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/1] ASoc: kirkwood: add DT support to the mvebu
-	audio subsystem
-Message-ID: <20130810093137.GV23006@n2100.arm.linux.org.uk>
-References: <5204B7A6.9050907@gmail.com> <20130809094340.GO23006@n2100.arm.linux.org.uk> <5204CC04.4000401@gmail.com> <20130809113940.GY6427@sirena.org.uk> <20130809130932.GS23006@n2100.arm.linux.org.uk> <20130809180058.GM6427@sirena.org.uk> <20130809182516.GT23006@n2100.arm.linux.org.uk> <20130809194434.GP6427@sirena.org.uk> <20130809203847.GU23006@n2100.arm.linux.org.uk> <20130809234209.GQ6427@sirena.org.uk>
+	Sat, 10 Aug 2013 07:10:06 -0400
+Date: Sat, 10 Aug 2013 13:09:56 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>, olof@lixom.net, arnd@arndb.de,
+        Andrew Morton <akpm@osdl.org>
+Cc: Tony Lindgren <tony@atomide.com>, b-cousson@ti.com, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH v2] N900: add device tree
+Message-ID: <20130810110955.GA11437@amd.pavel.ucw.cz>
+References: <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
+ <20130617111031.GQ20992@atomide.com>
+ <20130701211753.GC15318@amd.pavel.ucw.cz>
+ <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
+ <20130704202145.GB10752@amd.pavel.ucw.cz>
+ <20130704203256.GB27374@blackmetal.musicnaut.iki.fi>
+ <20130713121709.GC16473@amd.pavel.ucw.cz>
+ <20130714222819.GB3296@blackmetal.musicnaut.iki.fi>
+ <20130728134409.GB5382@amd.pavel.ucw.cz>
+ <20130801234355.GA15611@amd.pavel.ucw.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130809234209.GQ6427@sirena.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130801234355.GA15611@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 10, 2013 at 12:42:09AM +0100, Mark Brown wrote:
-> On Fri, Aug 09, 2013 at 09:38:47PM +0100, Russell King - ARM Linux wrote:
-> > On Fri, Aug 09, 2013 at 08:44:34PM +0100, Mark Brown wrote:
+On Fri 2013-08-02 01:43:55, Pavel Machek wrote:
+> On Sun 2013-07-28 15:44:09, Pavel Machek wrote:
+> > On Mon 2013-07-15 01:28:19, Aaro Koskinen wrote:
+> > > Hi,
+> > > 
+> > > On Sat, Jul 13, 2013 at 02:17:09PM +0200, Pavel Machek wrote:
+> > > > 
+> > > > This adds device tree with neccessary support to boot with functional
+> > > > video (on both emulator and real N900 device).
+> > > > 
+> > > > Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> > > 
+> > > You can also add:
+> > > 
+> > > Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> > 
+> > Benoit, could you apply this? Tony said you are doing dts changes, and
+> > the patch seems to be ready.
 > 
-> > > If someone wants to it should also be possible to convert the existing
-> > > platforms without S/PDIF support over to DT, providing you don't mind
-> > > changing the code once the DPCM and S/PDIF support is added and a bit of
-> > > thought is put into where the S/PDIF output will fit into the bindings.
-> 
-> > Okay, so you're thinking that the I2S output will be enabled in the
-> > absence of DPCM?  If so, that tells me that you don't understand my
-> 
-> When I say that it should be possible to convert the existing machines
-> over to DT I'm talking about the machines that are supported with the
-> drivers currently in mainline.  These machines presumably work just fine
-> with the existing drivers which support the I2S only subset of the
-> possible functionality in the hardware without using DCPM.  These are
-> the the machines that could have DT added now without implementing the
-> driver improvements to enable the extra hardware functionality.
-> 
-> When I say that they will need changing once DPCM and S/PDIF support is
-> added what I mean is that those changes to the CPU side drivers should,
-> as you correctly say, require all Kirkwood machine drivers to use DPCM
-> even if only due to the handling of simultaneous startup of the S/PDIF
-> and I2S interfaces.
-> 
-> The "you" in the above quote was intended to refer to people working on
-> Kirkwood in general, not you personally unless you want to.
-> 
-> > What this means is that the conventional setup where you have _one_ DAI
-> > link connecting the codec DAI to the CPU DAI won't work on Kirkwood
-> > anymore, because there is no way to know which of the two outputs
-> > should be enabled.  I avoided that in my patches, but you've objected
-> > to that saying that it must use DPCM.  That makes the whole of kirkwood
-> > entirely DPCM only, whether or not you have a single codec to connect.
-> 
-> Right, that's where the drivers should end up.  In terms of the device
-> tree I would expect that it should be the case that there are distinct
-> I2S and S/PDIF interfaces visible, or at least that there's some way to
-> identify which interface on the SoC is being referred to - this is the
-> thought about where the S/PDIF output will fit into the bindings that I
-> mentioned being required.
-> 
-> So long as only I2S is used in the system (or at least any S/PDIF that
-> is present is ignored at runtime) it should be possible to continue
-> using the existing driver infrastructure until S/PDIF and DPCM support
-> is added and then transition the existing drivers (both non-DT and any
-> DT ones that get added or converted) over to that as part of the
-> conversion.
-> 
-> In other words I was talking about a possible intermediate state where
-> people are working with the DT bindings but the driver support for
-> systems with S/PDIF in use is not there yet.  That's not required but it
-> should be possible if there's interest in progressing the DT bindings
-> while the driver is as it stands.
+> Tony, Benoit was apparently abducted by aliens or something. Is there
+> chance you could take the patch?
 
-Right, so what you're proposing is to come up with a DT description for
-the existing stuff, and then have to change (or at the very least augment)
-that description later when the DPCM stuff goes in.
+Hello, is there anybody out there?
 
-What should be done is to sort out DPCM, get that working and then sort out
-the DT side of it, so that everyone gets only one transition to DT, not a
-transition to a half-baked stop-gap DT and then have to go through another
-round of DT changes.  "Because we can" is not a good enough reason not to
-get this sorted properly.
+There's nice and simple patch enabling device tree on n900, it is even
+reviewed by Aaro, and it is neither applied nor are negative comments
+coming? ...for a month...?
+
+Tony also seen the patch and comment was "Benoit takes these", so I
+assume it looks basically ok. 
+
+Benoit, you are supposed to maintain device tree for omap2. 
+
+[I wonder if this is clean-enough cause for "trivial in resubmit
+mode?]
+								Pavel
+---
+
+This adds device tree with neccessary support to boot with functional
+video (on both emulator and real N900 device).
+
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+
+---
+
+>From v1: Aaro wants just GPLv2, so I did that. I re-enabled parts that
+can be enabled on 3.10, and tested it on that kernel.
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index f0895c5..1950aed 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -141,6 +141,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+ 	omap3-devkit8000.dtb \
+ 	omap3-beagle-xm.dtb \
+ 	omap3-evm.dtb \
++	omap3-n900.dtb \
+ 	omap3-tobi.dtb \
+ 	omap3-igep0020.dtb \
+ 	omap3-igep0030.dtb \
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+new file mode 100644
+index 0000000..fb461bf
+--- /dev/null
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -0,0 +1,92 @@
++/*
++ * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
++ * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/dts-v1/;
++
++/include/ "omap34xx.dtsi"
++
++/ {
++	model = "Nokia N900";
++	compatible = "nokia,omap3-n900", "ti,omap3";
++
++	cpus {
++		cpu@0 {
++			cpu0-supply = <&vcc>;
++		};
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x10000000>; /* 256 MB */
++	};
++
++};
++
++&i2c1 {
++	clock-frequency = <2200000>;
++
++	twl: twl@48 {
++		reg = <0x48>;
++		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
++		interrupt-parent = <&intc>;
++	};
++};
++
++/include/ "twl4030.dtsi"
++
++&twl_gpio {
++	ti,pullups	= <0x0>;
++	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
++};
++
++&i2c2 {
++	clock-frequency = <400000>;
++};
++
++&i2c3 {
++	clock-frequency = <100000>;
++};
++
++&mmc1 {
++	status = "disabled";
++};
++
++&mmc2 {
++	status = "disabled";
++};
++
++&mmc3 {
++	status = "disabled";
++};
++
++&mcspi1 {
++	// For some reason, touchscreen is neccessary for screen to work at 
++	// all on real hw. It works well without it on emulator.
++	//
++	// Also... order in the device tree actually matters here.
++	tsc2005@0 {
++		compatible = "tsc2005";
++		spi-max-frequency = <6000000>;
++		reg = <0>;
++	};
++	mipid@2 {
++		compatible = "acx565akm";
++		spi-max-frequency = <6000000>;
++		reg = <2>;
++		// turbo_mode = 0,
++		// cs_per_word = 0
++	};
++};
++
++&usb_otg_hs {
++	interface-type = <0>;
++	usb-phy = <&usb2_phy>;
++	mode = <2>;
++	power = <50>;
++};
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
