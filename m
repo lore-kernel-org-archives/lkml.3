@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968494Ab3HJJSu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 05:18:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47868 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S968472Ab3HJJSr (ORCPT
+	id S968512Ab3HJJcE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 05:32:04 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41017 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968491Ab3HJJcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 05:18:47 -0400
-Date: Sat, 10 Aug 2013 11:16:19 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Jean-Francois Moine <moinejf@free.fr>
+	Sat, 10 Aug 2013 05:32:01 -0400
+Date: Sat, 10 Aug 2013 10:31:37 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jaroslav Kysela <perex@perex.cz>, Mark Brown <broonie@kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
+        Jean-Francois Moine <moinejf@free.fr>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Subject: Re: [PATCH v4 1/1] ASoc: kirkwood: add DT support to the mvebu
- audio subsystem
-Message-ID: <20130810111619.3444fda5@skate>
-In-Reply-To: <20130809110623.7bb3e7ad@armhf>
-References: <20130808132201.2610aef3@armhf>
-	<5204A716.6070507@gmail.com>
-	<20130809110623.7bb3e7ad@armhf>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	audio subsystem
+Message-ID: <20130810093137.GV23006@n2100.arm.linux.org.uk>
+References: <5204B7A6.9050907@gmail.com> <20130809094340.GO23006@n2100.arm.linux.org.uk> <5204CC04.4000401@gmail.com> <20130809113940.GY6427@sirena.org.uk> <20130809130932.GS23006@n2100.arm.linux.org.uk> <20130809180058.GM6427@sirena.org.uk> <20130809182516.GT23006@n2100.arm.linux.org.uk> <20130809194434.GP6427@sirena.org.uk> <20130809203847.GU23006@n2100.arm.linux.org.uk> <20130809234209.GQ6427@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130809234209.GQ6427@sirena.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Jean-Francois Moine,
-
-On Fri, 9 Aug 2013 11:06:23 +0200, Jean-Francois Moine wrote:
-
-> > we need at least two more compatibles for the audio controller found on
-> > Dove and Kirkwood respectively. This is how we are going to distinguish
-> > those two, e.g. Kirkwood has SPDIF in which Dove hasn't.
+On Sat, Aug 10, 2013 at 12:42:09AM +0100, Mark Brown wrote:
+> On Fri, Aug 09, 2013 at 09:38:47PM +0100, Russell King - ARM Linux wrote:
+> > On Fri, Aug 09, 2013 at 08:44:34PM +0100, Mark Brown wrote:
 > 
-> Sebastian,
+> > > If someone wants to it should also be possible to convert the existing
+> > > platforms without S/PDIF support over to DT, providing you don't mind
+> > > changing the code once the DPCM and S/PDIF support is added and a bit of
+> > > thought is put into where the S/PDIF output will fit into the bindings.
 > 
-> s/has/hasn't & s/hasn't/has
+> > Okay, so you're thinking that the I2S output will be enabled in the
+> > absence of DPCM?  If so, that tells me that you don't understand my
 > 
-> Are 2 compatibles enough, i.e. "mvebu-audio" and "mbevu-audio-spdif"?
-
-Or:
-
-	marvell,kirkwood-audio
-	marvell,dove-audio
-
-> > Also, we have used "marvell" as prefix for a long time. I know there has
-> > been discussion about the stock ticker appreviation, has there been any
-> > decision on that already?
+> When I say that it should be possible to convert the existing machines
+> over to DT I'm talking about the machines that are supported with the
+> drivers currently in mainline.  These machines presumably work just fine
+> with the existing drivers which support the I2S only subset of the
+> possible functionality in the hardware without using DCPM.  These are
+> the the machines that could have DT added now without implementing the
+> driver improvements to enable the extra hardware functionality.
 > 
-> Don't know, but, sure, there are still a lot of "mrvl".
-
-Yes, but they are being converted over to 'marvell', I've seen some
-patches posted. Also, as per
-Documentation/devicetree/bindings/vendor-prefixes.txt, 'marvell' is the
-right prefix for Marvell compatible strings.
-
-
-> > Also we will need some phandle reference to the audio codec here. As
-> > this property is ongoing work in ASoC core, I suggest we wait for it
-> > and propose a binding afterwards.
+> When I say that they will need changing once DPCM and S/PDIF support is
+> added what I mean is that those changes to the CPU side drivers should,
+> as you correctly say, require all Kirkwood machine drivers to use DPCM
+> even if only due to the handling of simultaneous startup of the S/PDIF
+> and I2S interfaces.
 > 
-> I don't think that we need any reference to the codec here. The glue is
-> done by the audio device. For example, using the (soon?) extended
-> simple audio card:
+> The "you" in the above quote was intended to refer to people working on
+> Kirkwood in general, not you personally unless you want to.
+> 
+> > What this means is that the conventional setup where you have _one_ DAI
+> > link connecting the codec DAI to the CPU DAI won't work on Kirkwood
+> > anymore, because there is no way to know which of the two outputs
+> > should be enabled.  I avoided that in my patches, but you've objected
+> > to that saying that it must use DPCM.  That makes the whole of kirkwood
+> > entirely DPCM only, whether or not you have a single codec to connect.
+> 
+> Right, that's where the drivers should end up.  In terms of the device
+> tree I would expect that it should be the case that there are distinct
+> I2S and S/PDIF interfaces visible, or at least that there's some way to
+> identify which interface on the SoC is being referred to - this is the
+> thought about where the S/PDIF output will fit into the bindings that I
+> mentioned being required.
+> 
+> So long as only I2S is used in the system (or at least any S/PDIF that
+> is present is ignored at runtime) it should be possible to continue
+> using the existing driver infrastructure until S/PDIF and DPCM support
+> is added and then transition the existing drivers (both non-DT and any
+> DT ones that get added or converted) over to that as part of the
+> conversion.
+> 
+> In other words I was talking about a possible intermediate state where
+> people are working with the DT bindings but the driver support for
+> systems with S/PDIF in use is not there yet.  That's not required but it
+> should be possible if there's interest in progressing the DT bindings
+> while the driver is as it stands.
 
-Have you looked at the Samsung DT bindings for audio:
+Right, so what you're proposing is to come up with a DT description for
+the existing stuff, and then have to change (or at the very least augment)
+that description later when the DPCM stuff goes in.
 
-        sound {
-                compatible = "samsung,smdk-wm8994";
-
-                samsung,i2s-controller = <&i2s0>;
-                samsung,audio-codec = <&wm8994>;
-        };
-
-it definitely has a codec phandle reference here.
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+What should be done is to sort out DPCM, get that working and then sort out
+the DT side of it, so that everyone gets only one transition to DT, not a
+transition to a half-baked stop-gap DT and then have to go through another
+round of DT changes.  "Because we can" is not a good enough reason not to
+get this sorted properly.
