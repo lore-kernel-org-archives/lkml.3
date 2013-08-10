@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758808Ab3HJU3h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 16:29:37 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:54012 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758785Ab3HJU3Y (ORCPT
+	id S1758813Ab3HJUiq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 16:38:46 -0400
+Received: from longford.logfs.org ([213.229.74.203]:60028 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758790Ab3HJUip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 16:29:24 -0400
+	Sat, 10 Aug 2013 16:38:45 -0400
+Date: Sat, 10 Aug 2013 15:05:44 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 10/13] x86: Move cond resched for copy_{from,to}_user
+ into low level code 64bit
+Message-ID: <20130810190544.GA13658@logfs.org>
+References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
+ <1376089460-5459-11-git-send-email-andi@firstfloor.org>
+ <CA+55aFyN2Cnt=uQOnXszwDA971o=xEwO=yFSgL-RH9vRjMsBbg@mail.gmail.com>
+ <20130810161031.GK19750@two.firstfloor.org>
+ <CA+55aFw94ow=aYF-y9kJu+2ZsA=YLob5wFe01H+ooQmP6EbJvQ@mail.gmail.com>
+ <20130810182309.GA5714@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <52069DCA.6060706@linuxtoys.org>
-References: <20130804231958.GA25418@kroah.com>
-	<52003958.7080103@linuxtoys.org>
-	<20130806094604.GE27889@kroah.com>
-	<520299AB.1020607@linuxtoys.org>
-	<20130807192714.GC2708@kroah.com>
-	<5202A284.7010106@linuxtoys.org>
-	<20130807195427.GB4121@kroah.com>
-	<5202B674.7060005@linuxtoys.org>
-	<20130807213325.GB5373@kroah.com>
-	<520569B2.4000704@linuxtoys.org>
-	<20130809230150.GA23418@kroah.com>
-	<52069DCA.6060706@linuxtoys.org>
-Date: Sat, 10 Aug 2013 22:29:23 +0200
-Message-ID: <CAFLxGvwp79uqxHVy7A+SYMUnCFtCbtq1K=YppBx9j+R1oVC7PA@mail.gmail.com>
-Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons a
- /sys-like interface
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Bob Smith <bsmith@linuxtoys.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130810182309.GA5714@pd.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 10, 2013 at 10:08 PM, Bob Smith <bsmith@linuxtoys.org> wrote:
-> Greg Kroah-Hartman wrote:
->>
->> Otherwise, to accept this code, I need to see a way that normal users
->> can use it (i.e. no root or mknod), and that it can handle namespaces
->> and the security interface that the kernel has to support.  To do so
->> otherwise would be unfair to users who expect such a thing.
->
->
-> Greg, I don't know the etiquette of the lkml but I think the
-> above means "no, go away".
->
-> OK.
-> On my way out the door I'll give a recap and say thanks
->
->
-> GOAL
-> The goal of this patch was to make it possible to configure
-> daemons using simple file IO.  The litmus test for this is
-> that commands like these should be possible
->         cat < /var/daemons/wpa_supplicant/use_channel
->         echo 5 >/var/daemons/wpa_supplicant/use_channel
->
-> Yes, there are many other ways to configure a daemon but
-> none with the simplicity and grace of file IO.  For proof
-> of this I point to procfs and sysfs.
->
-> APPROACHES
-> Modifying name pipes was rejected as being too complex.
-> Modifying FUSE was rejected for the amount of effort needed.
-> The method chosen was to create a small character device
-> to pass the data between the client and the daemon.  The
-> resulting code was small and simple but requires a device
-> node.
->
-> CONCLUSION
-> Pseudo-ttys not withstanding, the kernel does not want
-> IPC mechanisms that require root privileges or mknod.
-> For this and other reasons this patch is rejected.
->
->
-> Greg, once again thanks for your patience in helping a
-> non-kernel guy through all of this.  Thanks.
+On Sat, 10 August 2013 20:23:09 +0200, Borislav Petkov wrote:
+> 
+> Sounds like the debug aspect and the preemption point addition need
+> to be sorf-of split into two different functions/macros and each used
+> separately.
+> 
+> Something like keep the current might_sleep and have debug_sleep or
+> similar which does only __might_sleep without the resched...
 
-/me read the whole thread and still does get why you can't use CUSE.
-...or AF_UNIX.
+I would argue for using "might_sleep" for the debug variant.  Before
+reading this thread I wasn't even aware of the non-debug aspect.
+After all, might_sleep naturally reads like some assertion.
+"might_preempt" for the non-debug version?  "cond_preempt"?
 
-If you really have an use case which is not covered by CUSE,
-please fix CUSE.
+Jörn
 
-> bye
-> Bob Smith
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-Thanks,
-//richard
+--
+It is the mark of an educated mind to be able to entertain a thought
+without accepting it.
+-- Aristotle
