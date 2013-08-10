@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645Ab3HJRs2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 13:48:28 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48307 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752701Ab3HJRs0 (ORCPT
+	id S1758652Ab3HJRtD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 13:49:03 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:35980 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab3HJRtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 13:48:26 -0400
-Message-ID: <1376156903.2156.30.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [patch 1/2] [PATCH] mm: Save soft-dirty bits on swapped pages
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, luto@amacapital.net, gorcunov@openvz.org,
-        xemul@parallels.com, mpm@selenic.com, xiaoguangrong@linux.vnet.ibm.com,
-        mtosatti@redhat.com, kosaki.motohiro@gmail.com, sfr@canb.auug.org.au,
-        peterz@infradead.org, aneesh.kumar@linux.vnet.ibm.com
-Date: Sat, 10 Aug 2013 10:48:23 -0700
-In-Reply-To: <20130807132156.e97bbcc3d543cf88d5a0997d@linux-foundation.org>
-References: <20130730204154.407090410@gmail.com>
-	 <20130730204654.844299768@gmail.com>
-	 <20130807132156.e97bbcc3d543cf88d5a0997d@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 10 Aug 2013 13:49:00 -0400
+Date: Sat, 10 Aug 2013 10:48:32 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Cc: Stephane Eranian <eranian@google.com>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Subject: [PATCH 0/7]: Enable 'perf mem' command for Power
+Message-ID: <20130810174831.GA15551@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081017-3620-0000-0000-000003E3DAB8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-07 at 13:21 -0700, Andrew Morton wrote:
-> On Wed, 31 Jul 2013 00:41:55 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> 
-> > Andy Lutomirski reported that in case if a page with _PAGE_SOFT_DIRTY
-> > bit set get swapped out, the bit is getting lost and no longer
-> > available when pte read back.
-> > 
-> > To resolve this we introduce _PTE_SWP_SOFT_DIRTY bit which is
-> > saved in pte entry for the page being swapped out. When such page
-> > is to be read back from a swap cache we check for bit presence
-> > and if it's there we clear it and restore the former _PAGE_SOFT_DIRTY
-> > bit back.
-> > 
-> > One of the problem was to find a place in pte entry where we can
-> > save the _PTE_SWP_SOFT_DIRTY bit while page is in swap. The
-> > _PAGE_PSE was chosen for that, it doesn't intersect with swap
-> > entry format stored in pte.
-> 
-> So the implication is that if another architecture wants to support
-> this (and, realistically, wants to support CRIU),
+[PATCH 0/7]: Enable 'perf mem' command for Power
 
-To be clear, CRIU is usable for basic checkpoint/restore without soft
-dirty.  It's using CRIU as an engine for process migration between nodes
-that won't work efficiently without soft dirty.  What happens without
-soft dirty is that we have to freeze the source process state, transfer
-the bits and then begin execution on the target ... that means the
-process can be suspended for minutes (and means that customers notice
-and your SLAs get blown).  Using soft dirty, we can iteratively build up
-the process image on the target while the source process is still
-executing meaning the actual transfer between source and target takes
-only seconds (when the delta is small enough, we freeze the source,
-transfer the remaining changed bits and begin on the target).
+'perf mem' command enables analyzing the memory operations of an
+application. It needs the kernel to export the memory hierarcy
+level from which a load instruction was satisfied.
 
-James
+It also needs the Power kernel to make the 'mem-loads' and 'mem-stores'
+generic events available in sysfs. While there, we also export the
+other Power8 generic events in sysfs.
 
+Thanks to input from Stephane Eranian and Michael Ellerman.
+
+P.S. The patchset builds on several configurations including pmac32_defconfig.
+     But I am unable to verify the build on few other configs due to a problem
+     unrleated to this patchset. That is being discussed in a separate thread.
+     I would like some feedback on this patchset in the meanwhile.
+
+Sukadev Bhattiprolu (7):
+  powerpc/perf: Rename Power8 macros to start with PME
+  powerpc/perf: Export Power8 generic events in sysfs
+  powerpc/perf: Create mem-loads/mem-stores events for Power8
+  powerpc/perf: Create mem-loads/mem-stores events for Power7
+  powerpc/perf: Define big-endian version of perf_mem_data_src
+  powerpc/perf: Export Power8 memory hierarchy info to user space.
+  powerpc/perf: Export Power7 memory hierarchy info to user space.
+
+ arch/powerpc/include/asm/perf_event_server.h |    2 +
+ arch/powerpc/perf/core-book3s.c              |   11 +++
+ arch/powerpc/perf/power7-pmu.c               |   81 ++++++++++++++++++++
+ arch/powerpc/perf/power8-pmu.c               |  106 +++++++++++++++++++++++---
+ include/uapi/linux/perf_event.h              |   55 +++++++++++++
+ 5 files changed, 243 insertions(+), 12 deletions(-)
 
