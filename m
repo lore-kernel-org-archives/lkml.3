@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966973Ab3HJQrq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 12:47:46 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:54177 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966547Ab3HJQrp (ORCPT
+	id S1030680Ab3HJQrx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 12:47:53 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:24852
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966547Ab3HJQrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 12:47:45 -0400
+	Sat, 10 Aug 2013 12:47:51 -0400
+X-IronPort-AV: E=Sophos;i="4.89,852,1367964000"; 
+   d="scan'208";a="23674048"
+Date: Sat, 10 Aug 2013 18:47:47 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Kumar Gaurav <kumargauravgupta3@gmail.com>
+cc: t.sailer@alumni.ethz.ch, jreuter@yaina.de, jpr@f6fbb.org,
+        linux-hams@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] drivers:net:hamradio: Removing Depricated
+ IRQF_DISABLED
+In-Reply-To: <1376152738-14944-1-git-send-email-kumargauravgupta3@gmail.com>
+Message-ID: <alpine.DEB.2.02.1308101847260.2076@localhost6.localdomain6>
+References: <1376152738-14944-1-git-send-email-kumargauravgupta3@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAMyfujeC_p-2cJteayPnA82wPRvoL2ekDNB6bd38d76v7Gb+6w@mail.gmail.com>
-References: <CAMyfujfZayb8_673vkb2hdE9J_w+wPTD4aQ6TsY+aWxb9EzY8A@mail.gmail.com>
- <1376080406-4r7r3uye-mutt-n-horiguchi@ah.jp.nec.com> <CAMyfujeC_p-2cJteayPnA82wPRvoL2ekDNB6bd38d76v7Gb+6w@mail.gmail.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Sat, 10 Aug 2013 12:47:24 -0400
-Message-ID: <CAHGf_=odM+yTTLvqwEw8MztkFEf_kjxvixDqn3g4hpCed4fEzQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] pagemap: fix buffer overflow in add_page_map()
-To: yonghua zheng <younghua.zheng@gmail.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 9, 2013 at 8:49 PM, yonghua zheng <younghua.zheng@gmail.com> wrote:
-> Update the patch according to Naoya's comment, I also run
-> ./scripts/checkpatch.pl, and it passed ;D.
->
-> From 96826b0fdf9ec6d6e16c2c595f371dbb841250f7 Mon Sep 17 00:00:00 2001
-> From: Yonghua Zheng <younghua.zheng@gmail.com>
-> Date: Mon, 5 Aug 2013 12:12:24 +0800
-> Subject: [PATCH 1/1] pagemap: fix buffer overflow in add_to_pagemap()
->
-> In struc pagemapread:
->
-> struct pagemapread {
->     int pos, len;
->     pagemap_entry_t *buffer;
->     bool v2;
-> };
->
-> pos is number of PM_ENTRY_BYTES in buffer, but len is the size of buffer,
-> it is a mistake to compare pos and len in add_to_pagemap() for checking
-> buffer is full or not, and this can lead to buffer overflow and random
-> kernel panic issue.
->
-> Correct len to be total number of PM_ENTRY_BYTES in buffer.
->
-> Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
+If it is in a | with something else, I think you can just remove it.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+julia
+
+On Sat, 10 Aug 2013, Kumar Gaurav wrote:
+
+> Removed IRQF_DISABLED as it's deprecated and should be removed
+> 
+> Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
+> ---
+>  drivers/net/hamradio/baycom_ser_fdx.c |    2 +-
+>  drivers/net/hamradio/baycom_ser_hdx.c |    2 +-
+>  drivers/net/hamradio/scc.c            |    2 +-
+>  drivers/net/hamradio/yam.c            |    2 +-
+>  4 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/hamradio/baycom_ser_fdx.c b/drivers/net/hamradio/baycom_ser_fdx.c
+> index a974727..c114009 100644
+> --- a/drivers/net/hamradio/baycom_ser_fdx.c
+> +++ b/drivers/net/hamradio/baycom_ser_fdx.c
+> @@ -445,7 +445,7 @@ static int ser12_open(struct net_device *dev)
+>  	outb(0, FCR(dev->base_addr));  /* disable FIFOs */
+>  	outb(0x0d, MCR(dev->base_addr));
+>  	outb(0, IER(dev->base_addr));
+> -	if (request_irq(dev->irq, ser12_interrupt, IRQF_DISABLED | IRQF_SHARED,
+> +	if (request_irq(dev->irq, ser12_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED,
+>  			"baycom_ser_fdx", dev)) {
+>  		release_region(dev->base_addr, SER12_EXTENT);
+>  		return -EBUSY;
+> diff --git a/drivers/net/hamradio/baycom_ser_hdx.c b/drivers/net/hamradio/baycom_ser_hdx.c
+> index e349d86..d91c1fd 100644
+> --- a/drivers/net/hamradio/baycom_ser_hdx.c
+> +++ b/drivers/net/hamradio/baycom_ser_hdx.c
+> @@ -490,7 +490,7 @@ static int ser12_open(struct net_device *dev)
+>  	outb(0, FCR(dev->base_addr));  /* disable FIFOs */
+>  	outb(0x0d, MCR(dev->base_addr));
+>  	outb(0, IER(dev->base_addr));
+> -	if (request_irq(dev->irq, ser12_interrupt, IRQF_DISABLED | IRQF_SHARED,
+> +	if (request_irq(dev->irq, ser12_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED,
+>  			"baycom_ser12", dev)) {
+>  		release_region(dev->base_addr, SER12_EXTENT);       
+>  		return -EBUSY;
+> diff --git a/drivers/net/hamradio/scc.c b/drivers/net/hamradio/scc.c
+> index bc1d521..4bc6ee8 100644
+> --- a/drivers/net/hamradio/scc.c
+> +++ b/drivers/net/hamradio/scc.c
+> @@ -1734,7 +1734,7 @@ static int scc_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+>  			if (!Ivec[hwcfg.irq].used && hwcfg.irq)
+>  			{
+>  				if (request_irq(hwcfg.irq, scc_isr,
+> -						IRQF_DISABLED, "AX.25 SCC",
+> +						0, "AX.25 SCC",
+>  						(void *)(long) hwcfg.irq))
+>  					printk(KERN_WARNING "z8530drv: warning, cannot get IRQ %d\n", hwcfg.irq);
+>  				else
+> diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
+> index 0721e72..f947887 100644
+> --- a/drivers/net/hamradio/yam.c
+> +++ b/drivers/net/hamradio/yam.c
+> @@ -888,7 +888,7 @@ static int yam_open(struct net_device *dev)
+>  		goto out_release_base;
+>  	}
+>  	outb(0, IER(dev->base_addr));
+> -	if (request_irq(dev->irq, yam_interrupt, IRQF_DISABLED | IRQF_SHARED, dev->name, dev)) {
+> +	if (request_irq(dev->irq, yam_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED, dev->name, dev)) {
+>  		printk(KERN_ERR "%s: irq %d busy\n", dev->name, dev->irq);
+>  		ret = -EBUSY;
+>  		goto out_release_base;
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
