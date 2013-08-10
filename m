@@ -1,95 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968105Ab3HJA0R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 20:26:17 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:54364 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967978Ab3HJA0Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 20:26:16 -0400
+	id S968160Ab3HJAcM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 20:32:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7398 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S968043Ab3HJAcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 20:32:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,849,1367996400"; 
+   d="scan'208";a="384722261"
+Message-ID: <52058BAE.30703@linux.intel.com>
+Date: Fri, 09 Aug 2013 17:39:10 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Date: Fri, 9 Aug 2013 17:26:15 -0700
-X-Google-Sender-Auth: o--u6HSelxvuMr8NjTdf-2LiDyk
-Message-ID: <CAE9FiQWizduY9w=nOiUOcgo1Got5k8J_ouvgEnygtNXTDe5V9Q@mail.gmail.com>
-Subject: cpufreq crash in pm/linux-next 08-07-2013
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, rjw@sisk.pl,
+        arjan@linux.intel.com, len.brown@intel.com,
+        jacob.jun.pan@linux.intel.com, corbet@lwn.net, joe@perches.com,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [RFC v02 0/5] Power Capping Framework and RAPL Driver
+References: <1375891965-6921-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+In-Reply-To: <1375891965-6921-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-from your pm/linux-next
+On 08/07/2013 09:12 AM, Srinivas Pandruvada wrote:
+> Overview
+> With the evolution of technologies, which enables power monitoring and limiting,
+> more and more devices are able to constrain their power consumption under certain
+> limits. There are several use cases for such technologies:
+> - Power monitoring: Each device can report its power consumption.
+> - Power Limiting: Setting power limits on the devices allows users to guard against
+> platform reaching max system power level.
+> - Maximize performance: While staying below a power limit, it allows devices to
+> automatically adjust performance to meet demands
+> - Dynamic control and re-budgeting: If each device can be constrained to some power,
+> extra power can redistributed to other devices, which needs additional performance.
+>
+> One such example of technology is RAPL (Running Average Power Limit) mechanism
+> available in the latest Intel Processors. Intel is slowly adding many devices under
+> RAPL control. Also there are other technologies available, for power capping various
+> devices. Soon it is very likely that other vendors are also adding or considering
+> such implementation.
+>
+> Power Capping framework is an effort to have a uniform interface available to Linux
+> drivers, which will enable
+> - A uniform sysfs interface for all devices which can offer power capping
+> - A common API for drivers, which will avoid code duplication and easy
+> implementation of client drivers.
+>
+> Also submitting Intel RAPL driver using power capping framework.
+>
+>
+> Revisions:
+Thanks for everyone for review. I have received enough negative 
+comments, which will require another version.
+So please hold off your reviews till next version.
 
+> v02:
+> Sign-offs and reviewed-by tags
+> Stylistic issues suggested by Joe Perches
+> Removed "counter" from power_uw documentation as pointed by Jonathan Corbet
+> Submitting Intel RAPL driver using power capping framework
+>
+> v01:
+> Use device model only to register zones and controllers.
+>
+> v00:
+> Presented options
+>
+> Jacob Pan (2):
+>    x86/msr: add 64bit _on_cpu access functions
+>    Introduce Intel RAPL power capping driver
+>
+> Srinivas Pandruvada (3):
+>    PowerCap: Documentation
+>    PowerCap: Add class driver
+>    PowerCap: Added to drivers build
+>
+>   Documentation/ABI/testing/sysfs-class-powercap   |  165 +++
+>   Documentation/powercap/PowerCappingFramework.txt |  686 ++++++++++++
+>   arch/x86/include/asm/msr.h                       |   22 +
+>   arch/x86/lib/msr-smp.c                           |   62 +
+>   drivers/Kconfig                                  |    2 +
+>   drivers/Makefile                                 |    1 +
+>   drivers/powercap/Kconfig                         |   24 +
+>   drivers/powercap/Makefile                        |    6 +
+>   drivers/powercap/intel_rapl.c                    | 1305 ++++++++++++++++++++++
+>   drivers/powercap/powercap_sys.c                  |  995 +++++++++++++++++
+>   include/linux/powercap.h                         |  300 +++++
+>   11 files changed, 3568 insertions(+)
+>   create mode 100644 Documentation/ABI/testing/sysfs-class-powercap
+>   create mode 100644 Documentation/powercap/PowerCappingFramework.txt
+>   create mode 100644 drivers/powercap/Kconfig
+>   create mode 100644 drivers/powercap/Makefile
+>   create mode 100644 drivers/powercap/intel_rapl.c
+>   create mode 100644 drivers/powercap/powercap_sys.c
+>   create mode 100644 include/linux/powercap.h
+>
 
-[    7.918603] calling  acpi_cpufreq_init+0x0/0x1df @ 1
-[    7.923917] BUG: unable to handle kernel NULL pointer dereference
-at           (null)
-[    7.926780] IP: [<ffffffff8151b277>] __list_del_entry+0xb7/0xe0
-[    7.927799] PGD 0
-[    7.927799] Oops: 0000 [#1] SMP
-[    7.927799] Modules linked in:
-[    7.927799] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
-3.11.0-rc4-yh-00839-g7a8b387-dirty #1840
-[    7.927799] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[    7.927799] task: ffff88007ab60000 ti: ffff88007ab5c000 task.ti:
-ffff88007ab5c000
-[    7.927799] RIP: 0010:[<ffffffff8151b277>]  [<ffffffff8151b277>]
-__list_del_entry+0xb7/0xe0
-[    7.927799] RSP: 0018:ffff88007ab5dc98  EFLAGS: 00010007
-[    7.927799] RAX: 0000000000000000 RBX: ffff880115c85ab8 RCX: dead000000200200
-[    7.927799] RDX: 0000000000000000 RSI: ffffffff82b96718 RDI: ffff880115c85ab8
-[    7.927799] RBP: ffff88007ab5dc98 R08: 0000000000000001 R09: 0000000000000001
-[    7.927799] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000286
-[    7.927799] R13: 00000000fffffffb R14: ffff88007b80b548 R15: ffff880115c85a00
-[    7.927799] FS:  0000000000000000(0000) GS:ffff88007b800000(0000)
-knlGS:0000000000000000
-[    7.927799] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[    7.927799] CR2: 0000000000000000 CR3: 0000000002a14000 CR4: 00000000000006f0
-[    7.927799] Stack:
-[    7.927799]  ffff88007ab5dcb8 ffffffff8151b2b1 0000000000000000
-ffff880115c85a00
-[    7.927799]  ffff88007ab5dcd8 ffffffff81e1ef03 0000000000000000
-0000000000000000
-[    7.927799]  ffff88007ab5dd48 ffffffff81e21829 ffff88007ab5dd70
-ffff88007ab5dd70
-[    7.927799] Call Trace:
-[    7.927799]  [<ffffffff8151b2b1>] list_del+0x11/0x40
-[    7.927799]  [<ffffffff81e1ef03>] cpufreq_policy_free+0x33/0x70
-[    7.927799]  [<ffffffff81e21829>] __cpufreq_add_dev.isra.3+0x6b9/0x760
-[    7.927799]  [<ffffffff81e218e0>] cpufreq_add_dev+0x10/0x20
-[    7.927799]  [<ffffffff81762e49>] subsys_interface_register+0x99/0xf0
-[    7.927799]  [<ffffffff81e1fc52>] cpufreq_register_driver+0xb2/0x1a0
-[    7.927799]  [<ffffffff82e18ff3>] acpi_cpufreq_init+0xbd/0x1df
-[    7.927799]  [<ffffffff810ee56a>] ? ktime_get+0x6a/0xe0
-[    7.927799]  [<ffffffff82e18f36>] ? cpufreq_gov_dbs_init+0x12/0x12
-[    7.927799]  [<ffffffff81000272>] do_one_initcall+0x72/0x170
-[    7.927799]  [<ffffffff810bac00>] ? parse_args+0x150/0x350
-[    7.927799]  [<ffffffff820b9830>] ? printk+0x4d/0x4f
-[    7.927799]  [<ffffffff82dc2370>] kernel_init_freeable+0x1bf/0x251
-[    7.927799]  [<ffffffff82dc1a9c>] ? loglevel+0x31/0x31
-[    7.927799]  [<ffffffff820aef50>] ? rest_init+0xd0/0xd0
-[    7.927799]  [<ffffffff820aef5e>] kernel_init+0xe/0xf0
-[    7.927799]  [<ffffffff820dd25c>] ret_from_fork+0x7c/0xb0
-[    7.927799]  [<ffffffff820aef50>] ? rest_init+0xd0/0xd0
-[    7.927799] Code: 84 82 be 3e 00 00 00 48 c7 c7 16 ca 84 82 31 c0
-e8 7f c8 b7 ff eb 2c 0f 1f 44 00 00 48 b9 00 02 20 00 00 00 ad de 48
-39 c8 74 8c <4c> 8b 00 4c 39 c7 75 a6 4c 8b 42 08 4c 39 c7 75 bc 48 89
-42 08
-[    7.927799] RIP  [<ffffffff8151b277>] __list_del_entry+0xb7/0xe0
-[    7.927799]  RSP <ffff88007ab5dc98>
-[    7.927799] CR2: 0000000000000000
-[    7.927799] ---[ end trace 3db50d3cbca4646d ]---
-[    8.003780] Kernel panic - not syncing: Attempted to kill init!
-exitcode=0x00000009
-[    8.003780]
-
-
-looks like it caused by patches from Viresh Kumar around Aug 6.
-
-Thanks
-
-Yinghai
