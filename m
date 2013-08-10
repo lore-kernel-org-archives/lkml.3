@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030446Ab3HJQNz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 12:13:55 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52459 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965219Ab3HJQNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965235Ab3HJQNw (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 10 Aug 2013 12:13:52 -0400
-Message-ID: <1376151231.2083.32.camel@joe-AO722>
-Subject: Re: [PATCH 1/5] drivers/gpio/gpio-omap.c: convert comma to semicolon
-From: Joe Perches <joe@perches.com>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        kernel-janitors@vger.kernel.org,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-omap@vger.kernel.org,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 10 Aug 2013 09:13:51 -0700
-In-Reply-To: <1376149225-3997-2-git-send-email-Julia.Lawall@lip6.fr>
-References: <1376149225-3997-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1376149225-3997-2-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from terminus.zytor.com ([198.137.202.10]:33022 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934455Ab3HJQNt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Aug 2013 12:13:49 -0400
+Date: Sat, 10 Aug 2013 09:13:28 -0700
+From: tip-bot for Raghavendra K T <tipbot@zytor.com>
+Message-ID: <tip-8db732668a48e93d00d881517a08136e8fa71000@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
+        raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, torvalds@linux-foundation.org,
+        raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1376058122-8248-3-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+References: <1376058122-8248-3-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/spinlocks] x86, ticketlock: Don'
+ t inline _spin_unlock when using paravirt spinlocks
+Git-Commit-ID: 8db732668a48e93d00d881517a08136e8fa71000
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 10 Aug 2013 09:13:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-08-10 at 17:40 +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> Replace a comma between expression statements by a semicolon.
-[]
-> I can't tell if the assignment to ct->regs.mask is really intended to be
-> under the if.  The proposed patch preserves the current semantics, but not
-> the current indentation.
+Commit-ID:  8db732668a48e93d00d881517a08136e8fa71000
+Gitweb:     http://git.kernel.org/tip/8db732668a48e93d00d881517a08136e8fa71000
+Author:     Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+AuthorDate: Fri, 9 Aug 2013 19:51:50 +0530
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 9 Aug 2013 07:53:10 -0700
 
-I'd suspect more that the indentation is correct
-and the comma use incorrect.
+x86, ticketlock: Don't inline _spin_unlock when using paravirt spinlocks
 
-It also looks more like a copy/paste error from
-commit f8b46b583 when the code was restructured
-a bit.
+The code size expands somewhat, and its better to just call
+a function rather than inline it.
 
-Kevin?
+Thanks Jeremy for original version of ARCH_NOINLINE_SPIN_UNLOCK config patch,
+which is simplified.
 
---------------------
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1376058122-8248-3-git-send-email-raghavendra.kt@linux.vnet.ibm.com
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
--#ifdef CONFIG_ARCH_OMAP16XX
--       /* REVISIT: assuming only 16xx supports MPUIO wake events */
--       .irq_set_wake   = gpio_wake_enable,
--#endif
--};
-
---------------------
-
-+       /* REVISIT: assuming only 16xx supports MPUIO wake events */
-+       if (cpu_is_omap16xx())
-+               ct->chip.irq_set_wake = gpio_wake_enable,
-
---------------------
-
-> diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-[]
-> @@ -1029,10 +1029,10 @@ omap_mpuio_alloc_gc(struct gpio_bank *bank, unsigned int irq_start,
->  	ct->chip.irq_unmask = irq_gc_mask_clr_bit;
->  	ct->chip.irq_set_type = gpio_irq_type;
->  
-> -	if (bank->regs->wkup_en)
-> -		ct->chip.irq_set_wake = gpio_wake_enable,
-> -
-> -	ct->regs.mask = OMAP_MPUIO_GPIO_INT / bank->stride;
-> +	if (bank->regs->wkup_en) {
-> +		ct->chip.irq_set_wake = gpio_wake_enable;
-> +		ct->regs.mask = OMAP_MPUIO_GPIO_INT / bank->stride;
-> +	}
-
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b32ebf9..112e712 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -632,6 +632,7 @@ config PARAVIRT_DEBUG
+ config PARAVIRT_SPINLOCKS
+ 	bool "Paravirtualization layer for spinlocks"
+ 	depends on PARAVIRT && SMP
++	select UNINLINE_SPIN_UNLOCK
+ 	---help---
+ 	  Paravirtualized spinlocks allow a pvops backend to replace the
+ 	  spinlock implementation with something virtualization-friendly
