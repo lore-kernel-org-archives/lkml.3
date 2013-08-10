@@ -1,175 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934476Ab3HJPkc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 11:40:32 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:21362
+	id S934535Ab3HJPlZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 11:41:25 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:27297
 	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934415Ab3HJPkb (ORCPT
+	by vger.kernel.org with ESMTP id S934448Ab3HJPkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 11:40:31 -0400
+	Sat, 10 Aug 2013 11:40:33 -0400
 X-IronPort-AV: E=Sophos;i="4.89,852,1367964000"; 
-   d="scan'208";a="23671829"
+   d="scan'208";a="23671833"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org, trivial@kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 0/5] convert comma to semicolon
-Date: Sat, 10 Aug 2013 17:40:20 +0200
-Message-Id: <1376149225-3997-1-git-send-email-Julia.Lawall@lip6.fr>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: [PATCH 3/5] arch/x86/crypto/camellia_glue.c: convert comma to semicolon
+Date: Sat, 10 Aug 2013 17:40:23 +0200
+Message-Id: <1376149225-3997-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1376149225-3997-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1376149225-3997-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches result from the following semantic patches
-(http://coccinelle.lip6.fr/), which check for expression statements
-separated by , rather than by ;.  The first semantic patch is quite
-conservative in that it only finds cases where this pattern appears after
-another complete statement or at the beginning of a block, to ensure that
-the expression statements do not form eg an if branch or loop body.
-Iteration is used to treat arbitrary sequences of commas.  The second
-semantic patch treats any kind of comma, and is intended to be used on code
-to which the first one has already been applied.  This one adjusts commas
-in if branches, following preprocessor directves, etc.  The results of the
-second semantic patch often need some hand cleaning, to insert tabs, put
-braces on the right lines, etc.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-The first semantic patch (very safe):
+Replace a comma between expression statements by a semicolon.
+
+A simplified version of the semantic patch that performs this
+transformation is as follows: (http://coccinelle.lip6.fr/)
 
 // <smpl>
-@initialize:ocaml@
-
-let tbl = Hashtbl.create(100)
-
-let add_if_not_present file =
-try let _ = Hashtbl.find tbl file in ()
-with Not_found ->
-   Hashtbl.add tbl file ();
-   let it = new iteration() in
-   it#set_files [file];
-   it#register()
-
-@script:ocaml@
-@@
-Hashtbl.clear tbl
-
 @r@
-statement S1,S2;
 expression e1,e2,e;
-position p1,p2;
 type T;
 identifier i;
-iterator I;
-@@
-
-(
-if (...) S1 else S2
-|
-while (...) S1
-|
-for (...;...;...) S1
-|
-I (...) S1
-|
-T i;
-|
- e;
-)
- e1,@p1 e2@p2;
-
-@script:ocaml@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-if (List.hd p1).line = (List.hd p2).line
-then include_match false
-else add_if_not_present ((List.hd p1).file)
-
-@@
-expression e1,e2;
-position r.p1;
 @@
 
  e1
-- ,@p1
-+ ;
-  e2;
-
-@s disable braces3@
-identifier f;
-expression e1,e2;
-position p1,p2;
-@@
-
-{
- e1,@p1 e2@p2;
- ... when any
-}
-
-@script:ocaml@
-p1 << s.p1;
-p2 << s.p2;
-@@
-
-if (List.hd p1).line = (List.hd p2).line
-then include_match false
-else add_if_not_present ((List.hd p1).file)
-
-@@
-expression e1,e2;
-position s.p1;
-@@
-
- e1
-- ,@p1
-+ ;
-  e2;
+-,
++;
+ e2;
 // </smpl>
 
-The second semantic patch (less safe, results require some cleanup):
+This patch is separate from the others because the source code appears to
+be machine-generated.
 
-// <smpl>
-@initialize:ocaml@
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-let tbl = Hashtbl.create(100)
+---
+ arch/x86/crypto/camellia_glue.c |   24 +++++++-------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-let add_if_not_present file =
-try let _ = Hashtbl.find tbl file in ()
-with Not_found ->
-   Hashtbl.add tbl file ();
-   let it = new iteration() in
-   it#set_files [file];
-   it#register()
-
-@script:ocaml@
-@@
-Hashtbl.clear tbl
-
-@r@
-expression e1,e2;
-position p1,p2;
-@@
-
- e1,@p1 e2@p2;
-
-@script:ocaml@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-if (List.hd p1).line = (List.hd p2).line
-then include_match false
-else add_if_not_present ((List.hd p1).file)
-
-@@
-expression e1,e2;
-position r.p1;
-@@
-
- e1
-- ,@p1
-+ ;
-  e2;
-
-// </smpl>
+diff --git a/arch/x86/crypto/camellia_glue.c b/arch/x86/crypto/camellia_glue.c
+index 5cb86cc..ac2b28b 100644
+--- a/arch/x86/crypto/camellia_glue.c
++++ b/arch/x86/crypto/camellia_glue.c
+@@ -828,7 +828,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 
+ 	subRL[1] ^= (subRL[1] & ~subRL[9]) << 32;
+ 	/* modified for FLinv(kl2) */
+-	dw = (subRL[1] & subRL[9]) >> 32,
++	dw = (subRL[1] & subRL[9]) >> 32;
+ 		subRL[1] ^= rol32(dw, 1);
+ 
+ 	/* round 8 */
+@@ -840,7 +840,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 
+ 	subRL[1] ^= (subRL[1] & ~subRL[17]) << 32;
+ 	/* modified for FLinv(kl4) */
+-	dw = (subRL[1] & subRL[17]) >> 32,
++	dw = (subRL[1] & subRL[17]) >> 32;
+ 		subRL[1] ^= rol32(dw, 1);
+ 
+ 	/* round 14 */
+@@ -859,7 +859,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 	} else {
+ 		subRL[1] ^= (subRL[1] & ~subRL[25]) << 32;
+ 		/* modified for FLinv(kl6) */
+-		dw = (subRL[1] & subRL[25]) >> 32,
++		dw = (subRL[1] & subRL[25]) >> 32;
+ 			subRL[1] ^= rol32(dw, 1);
+ 
+ 		/* round 20 */
+@@ -882,7 +882,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 
+ 		kw4 ^= (kw4 & ~subRL[24]) << 32;
+ 		/* modified for FL(kl5) */
+-		dw = (kw4 & subRL[24]) >> 32,
++		dw = (kw4 & subRL[24]) >> 32;
+ 			kw4 ^= rol32(dw, 1);
+ 	}
+ 
+@@ -895,7 +895,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 
+ 	kw4 ^= (kw4 & ~subRL[16]) << 32;
+ 	/* modified for FL(kl3) */
+-	dw = (kw4 & subRL[16]) >> 32,
++	dw = (kw4 & subRL[16]) >> 32;
+ 		kw4 ^= rol32(dw, 1);
+ 
+ 	/* round 11 */
+@@ -907,7 +907,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 
+ 	kw4 ^= (kw4 & ~subRL[8]) << 32;
+ 	/* modified for FL(kl1) */
+-	dw = (kw4 & subRL[8]) >> 32,
++	dw = (kw4 & subRL[8]) >> 32;
+ 		kw4 ^= rol32(dw, 1);
+ 
+ 	/* round 5 */
+@@ -928,7 +928,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 	SET_SUBKEY_LR(6, subRL[5] ^ subRL[7]);			/* round 5 */
+ 
+ 	tl = (subRL[10] >> 32) ^ (subRL[10] & ~subRL[8]);
+-	dw = tl & (subRL[8] >> 32),				/* FL(kl1) */
++	dw = tl & (subRL[8] >> 32);				/* FL(kl1) */
+ 		tr = subRL[10] ^ rol32(dw, 1);
+ 	tt = (tr | ((u64)tl << 32));
+ 
+@@ -937,7 +937,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 	SET_SUBKEY_LR(9, subRL[9]);				/* FLinv(kl2) */
+ 
+ 	tl = (subRL[7] >> 32) ^ (subRL[7] & ~subRL[9]);
+-	dw = tl & (subRL[9] >> 32),				/* FLinv(kl2) */
++	dw = tl & (subRL[9] >> 32);				/* FLinv(kl2) */
+ 		tr = subRL[7] ^ rol32(dw, 1);
+ 	tt = (tr | ((u64)tl << 32));
+ 
+@@ -948,7 +948,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 	SET_SUBKEY_LR(14, subRL[13] ^ subRL[15]);		/* round 11 */
+ 
+ 	tl = (subRL[18] >> 32) ^ (subRL[18] & ~subRL[16]);
+-	dw = tl & (subRL[16] >> 32),				/* FL(kl3) */
++	dw = tl & (subRL[16] >> 32);				/* FL(kl3) */
+ 		tr = subRL[18] ^ rol32(dw, 1);
+ 	tt = (tr | ((u64)tl << 32));
+ 
+@@ -957,7 +957,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 	SET_SUBKEY_LR(17, subRL[17]);				/* FLinv(kl4) */
+ 
+ 	tl = (subRL[15] >> 32) ^ (subRL[15] & ~subRL[17]);
+-	dw = tl & (subRL[17] >> 32),				/* FLinv(kl4) */
++	dw = tl & (subRL[17] >> 32);				/* FLinv(kl4) */
+ 		tr = subRL[15] ^ rol32(dw, 1);
+ 	tt = (tr | ((u64)tl << 32));
+ 
+@@ -972,7 +972,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 		SET_SUBKEY_LR(24, subRL[24] ^ subRL[23]);	/* kw3 */
+ 	} else {
+ 		tl = (subRL[26] >> 32) ^ (subRL[26] & ~subRL[24]);
+-		dw = tl & (subRL[24] >> 32),			/* FL(kl5) */
++		dw = tl & (subRL[24] >> 32);			/* FL(kl5) */
+ 			tr = subRL[26] ^ rol32(dw, 1);
+ 		tt = (tr | ((u64)tl << 32));
+ 
+@@ -981,7 +981,7 @@ static void camellia_setup_tail(u64 *subkey, u64 *subRL, int max)
+ 		SET_SUBKEY_LR(25, subRL[25]);			/* FLinv(kl6) */
+ 
+ 		tl = (subRL[23] >> 32) ^ (subRL[23] & ~subRL[25]);
+-		dw = tl & (subRL[25] >> 32),			/* FLinv(kl6) */
++		dw = tl & (subRL[25] >> 32);			/* FLinv(kl6) */
+ 			tr = subRL[23] ^ rol32(dw, 1);
+ 		tt = (tr | ((u64)tl << 32));
+ 
 
