@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968327Ab3HJBBY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 21:01:24 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:56278 "HELO
+	id S968339Ab3HJBHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 21:07:50 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:58319 "HELO
 	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S968303Ab3HJBBX (ORCPT
+	with SMTP id S968309Ab3HJBHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 21:01:23 -0400
-Date: Fri, 9 Aug 2013 21:01:22 -0400 (EDT)
+	Fri, 9 Aug 2013 21:07:49 -0400
+Date: Fri, 9 Aug 2013 21:07:48 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@netrider.rowland.org
-To: David Daney <ddaney.cavm@gmail.com>
-cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] usb: Move definition of USB_EHCI_BIG_ENDIAN_MMIO out
- side of the ifs.
-In-Reply-To: <1376093837-24561-1-git-send-email-ddaney.cavm@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1308092059070.23882-100000@netrider.rowland.org>
+To: Thomas Richter <richter@rus.uni-stuttgart.de>
+cc: linux@brodo.de, <linux-kernel@vger.kernel.org>
+Subject: Re: [HANG] Trouble with NEC-based USB adapter in PCMCIA slot on
+ E7110
+In-Reply-To: <520577E4.4080401@rus.uni-stuttgart.de>
+Message-ID: <Pine.LNX.4.44L0.1308092103320.23882-100000@netrider.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Aug 2013, David Daney wrote:
+On Sat, 10 Aug 2013, Thomas Richter wrote:
 
-> From: David Daney <david.daney@cavium.com>
+> Hi Alan,
 > 
-> When CONFIG_USB_SUPPORT is not selected we get things like:
+> >> Will try and report back, thanks. I've bisected it down in the meantime
+> >> to a change from 2.6.31.6 to 2.6.32.6. Interestingly, this is very much
+> >> the same time when the udev userland changed. It works with 2.6.31.6 old
+> >> udev, but not with 2.6.36.2, new udev.
+> >
+> > Can't you use the new udev with the old kernel?
 > 
-> scripts/kconfig/mconf Kconfig
-> warning: (MIPS_SEAD3 && PMC_MSP && CPU_CAVIUM_OCTEON) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_SUPPORT && USB)
-> 
-> It is much cleaner to make the various system Kconfigs select
-> USB_EHCI_BIG_ENDIAN_MMIO rather than move the system config
-> information into USB's Kconfig, but the warnings are annoying.
-> 
-> Eliminate the warning by moving the definition of
-> USB_EHCI_BIG_ENDIAN_MMIO outside of all the Kconfig if statements.
+> Nope. udevd refuses to start and says that it requires at least 2.6.32, 
+> which means that apparently something changed in the kernel-userland 
+> interface in 2.6.32. Thus, my conclusion that there's probably something 
+> nasty going on in userland with udev.
 
-This is a good thing to do, but you should also move 
-USB_EHCI_BIG_ENDIAN_DESC.
+What about the old udev with the newer kernel?
 
-And while you're at it, might as well move USB_OHCI_BIG_ENDIAN_DESC, 
-USB_OHCI_BIG_ENDIAN_MMIO, and USB_OHCI_LITTLE_ENDIAN outside their "if" 
-blocks.
+> Here's what I got: "messages" - output from /var/log/messages. Note that 
+> the mount hangs exactly at the SCSI 2A command you see there, then tries 
+> to reset the device after probably 20 seconds or so.
+
+It looks like the controller is having trouble sending the large 
+packets for the write.  I have no idea why.
+
+At this point, bisection continues to look like the best approach.  
+Maybe you can confine the search to just the commits that touch files
+under drivers/usb/host; then perhaps the intermediate kernels will
+continue to work with the old udev.
 
 Alan Stern
 
