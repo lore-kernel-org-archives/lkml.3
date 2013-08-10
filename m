@@ -1,153 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933888Ab3HJN6M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 09:58:12 -0400
-Received: from 217-155-41-104.dsl.in-addr.zen.co.uk ([217.155.41.104]:52441
-	"EHLO centos1.newflow.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933743Ab3HJN6L (ORCPT
+	id S933877Ab3HJOCM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 10:02:12 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:45157 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755231Ab3HJOCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 09:58:11 -0400
-Message-ID: <520646F0.9010801@newflow.co.uk>
-Date: Sat, 10 Aug 2013 14:58:08 +0100
-From: Mark Jackson <mpfj-list@newflow.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+	Sat, 10 Aug 2013 10:02:10 -0400
 MIME-Version: 1.0
-To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: [RFC] OMAP: allow GPIO pin to enable/disable external UART driver
- chip.
+In-Reply-To: <20130809185036.GG25111@titan.lakedaemon.net>
+References: <20130808170822.82bf33d3cf5100f5e2646815@canb.auug.org.au>
+ <5203F978.2050504@infradead.org> <20130809145939.GE25111@titan.lakedaemon.net>
+ <52051BC2.2060004@infradead.org> <20130809185036.GG25111@titan.lakedaemon.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Sat, 10 Aug 2013 08:01:49 -0600
+Message-ID: <CAErSpo6S9uYTEhoS-+4EZv41pc0bu6jvcMaGX7WR9hY4o+2dsA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 8 (not CONFIG_PCI_MSI conflict)
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next list <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a UART transmitter is connected to (eg) a RS485 driver, it is
-necessary to turn the driver on/off as quickly as possible.  This is
-best achieved in the serial driver itself (rather than in userspace
-where the latency can be quite large).
+On Fri, Aug 9, 2013 at 12:50 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> Randy,
+>
+> On Fri, Aug 09, 2013 at 09:41:38AM -0700, Randy Dunlap wrote:
+>> On 08/09/13 07:59, Jason Cooper wrote:
+>> > Randy,
+>> >
+>> > On Thu, Aug 08, 2013 at 01:03:04PM -0700, Randy Dunlap wrote:
+>> >> On 08/08/13 00:08, Stephen Rothwell wrote:
+>> >>> Hi all,
+>> >>>
+>> >>> Changes since 20130807:
+>> >>>
+>> >>
+>> >> on i386 and x86_64:
+>> >> when CONFIG_PCI_MSI is not enabled:
+>> >>
+>> >> There are many of these errors:
+>> >> include/linux/msi.h:65:6: error: expected identifier or '(' before 'void'
+>> >> include/linux/msi.h:65:6: error: expected ')' before numeric constant
+>> >>
+>> >> because arch/x86/include/asm/pci.h defines:
+>> >> #define default_teardown_msi_irqs  NULL
+>> >
+>> > Do you have an example config you used?
+>>
+>> Sure, attached. (or I have 14 of them)
+>
+> Thanks, I was able to reproduce the error.  I'm not real familiar with
+> this area of the code, but the relief is it doesn't appear to be caused
+> by the mvebu changes (well, relief for us ;-) ).
+>
+> At any rate, give this a spin and see if it works for you
+>
+> If it's acceptable, I'll do an official patch for Bjorn.
+>
+> thx,
+>
+> Jason.
+>
+> ---------->8----------
+> diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+> index d9e9e6c..6169414 100644
+> --- a/arch/x86/include/asm/pci.h
+> +++ b/arch/x86/include/asm/pci.h
+> @@ -138,8 +138,8 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq);
+>  #else
+>  #define native_setup_msi_irqs          NULL
+>  #define native_teardown_msi_irq                NULL
+> -#define default_teardown_msi_irqs      NULL
+> -#define default_restore_msi_irqs       NULL
+> +void __weak default_teardown_msi_irqs(struct pci_dev *dev) { }
+> +void __weak default_restore_msi_irqs(struct pci_dev *dev, int irq) { }
 
-This patch allows the GPIO pin to be defined (via DT) that controls
-the enabling of the driver at the start of a message, and disables
-the driver when the message has been completed.
+I don't really like this solution of putting the empty implementation
+in the header file, because then a weak body is generated in the
+object of every source file that includes the header.
 
-Still to do:-
-Allow userspace to turn this feature on/off
-Do the same for the receiver (useful for 2 wire RS485)
+default_teardown_msi_irqs() and default_restore_msi_irqs() seem like
+fairly internal MSI functions, so I wonder why we need them defined at
+all when CONFIG_PCI_MSI=n.  It seems like any uses of them should be
+in code that's only compiled when CONFIG_PCI_MSI=y.  But I haven't
+reproduced the problem and investigated yet.
 
-Signed-off-by: Mark Jackson <mpfj@newflow.co.uk>
----
- drivers/tty/serial/omap-serial.c |   57 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 57 insertions(+)
-
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index b6d1728..1d3d117 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -40,9 +40,12 @@
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/gpio.h>
-+#include <linux/of_gpio.h>
- #include <linux/pinctrl/consumer.h>
- #include <linux/platform_data/serial-omap.h>
- 
-+#include <dt-bindings/gpio/gpio.h>
-+
- #define OMAP_MAX_HSUART_PORTS	6
- 
- #define UART_BUILD_REVISION(x, y)	(((x) << 8) | (y))
-@@ -156,6 +159,10 @@ struct uart_omap_port {
- 	int			DTR_inverted;
- 	int			DTR_active;
- 
-+	int			txen_gpio;
-+	int			txen_inverted;
-+	int			txen_active;
-+
- 	struct pm_qos_request	pm_qos_request;
- 	u32			latency;
- 	u32			calc_latency;
-@@ -272,8 +279,25 @@ static void serial_omap_enable_ms(struct uart_port *port)
- static void serial_omap_stop_tx(struct uart_port *port)
- {
- 	struct uart_omap_port *up = to_uart_omap_port(port);
-+	struct circ_buf *xmit = &up->port.state->xmit;
- 
- 	pm_runtime_get_sync(up->dev);
-+
-+	// if txen currently active
-+	if (up->txen_active) {
-+		// do nothing if current tx not yet completed
-+		int res = serial_in(up, UART_LSR) & UART_LSR_TEMT;
-+		if (!res)
-+			return;
-+
-+		// if there's no more data to send, turn off txen
-+		if (uart_circ_empty(xmit)) {
-+			gpio_set_value(up->txen_gpio,
-+					   up->txen_active == up->txen_inverted);
-+			up->txen_active = 0;
-+		}
-+	}
-+
- 	if (up->ier & UART_IER_THRI) {
- 		up->ier &= ~UART_IER_THRI;
- 		serial_out(up, UART_IER, up->ier);
-@@ -300,6 +324,16 @@ static void transmit_chars(struct uart_omap_port *up, unsigned int lsr)
- 	struct circ_buf *xmit = &up->port.state->xmit;
- 	int count;
- 
-+	// if txen in use
-+	if (gpio_is_valid(up->txen_gpio)) {
-+		// turn on txen ?
-+		if (!uart_circ_empty(xmit) && (!up->txen_active)) {
-+			gpio_set_value(up->txen_gpio,
-+				       up->txen_active == up->txen_inverted);
-+			up->txen_active = 1;
-+		}
-+	}
-+
- 	if (up->port.x_char) {
- 		serial_out(up, UART_TX, up->port.x_char);
- 		up->port.icount.tx++;
-@@ -1468,6 +1502,28 @@ static int serial_omap_probe(struct platform_device *pdev)
- 		goto err_port_line;
- 	}
- 
-+	// init tx enable signal
-+	up->txen_gpio = -EINVAL;
-+	up->txen_inverted = 0;
-+	up->txen_active = 0;
-+	if (pdev->dev.of_node)
-+	{
-+		enum of_gpio_flags flags;
-+		up->txen_gpio = of_get_named_gpio_flags(pdev->dev.of_node,
-+							"txen-gpio", 0, &flags);
-+		up->txen_inverted = (flags == GPIO_ACTIVE_LOW);
-+		if (gpio_is_valid(up->txen_gpio)) {
-+			ret = gpio_request(up->txen_gpio, "omap-serial");
-+			if (ret < 0)
-+				goto err_txen;
-+			ret = gpio_direction_output(up->txen_gpio,
-+						    up->txen_inverted);
-+			if (ret < 0)
-+				goto err_txen;
-+		} else
-+			up->txen_gpio = -EINVAL;
-+	}
-+
- 	up->pins = devm_pinctrl_get_select_default(&pdev->dev);
- 	if (IS_ERR(up->pins)) {
- 		dev_warn(&pdev->dev, "did not get pins for uart%i error: %li\n",
-@@ -1529,6 +1585,7 @@ err_add_port:
- 	pm_runtime_put(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
- err_ioremap:
-+err_txen:
- err_port_line:
- 	dev_err(&pdev->dev, "[UART%d]: failure [%s]: %d\n",
- 				pdev->id, __func__, ret);
--- 
-1.7.9.5
-
+>  #endif
+>
+>  #define PCI_DMA_BUS_IS_PHYS (dma_ops->is_phys)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
