@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758742Ab3HJGtH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 02:49:07 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:53403 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758729Ab3HJGtC (ORCPT
+	id S1758756Ab3HJGtO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 02:49:14 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:48490 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758745Ab3HJGtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 02:49:02 -0400
+	Sat, 10 Aug 2013 02:49:09 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 10/44] cpufreq: arm_big_little: Use generic cpufreq routines
-Date: Sat, 10 Aug 2013 12:14:06 +0530
-Message-Id: <1ee0af3a4739da8db8af8918fb6459943abc8bda.1376116345.git.viresh.kumar@linaro.org>
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: [PATCH 11/44] cpufreq: at32ap: Use generic cpufreq routines
+Date: Sat, 10 Aug 2013 12:14:07 +0530
+Message-Id: <c70729588f2f21d10fa5d53e5189890af4248a93.1376116345.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376116344.git.viresh.kumar@linaro.org>
 References: <cover.1376116344.git.viresh.kumar@linaro.org>
@@ -30,55 +31,42 @@ by cpufreq drivers then.
 
 This patch uses these generic routines for this driver.
 
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/arm_big_little.c | 18 ++----------------
- 1 file changed, 2 insertions(+), 16 deletions(-)
+ drivers/cpufreq/at32ap-cpufreq.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
-index 9acfb82..7e92586 100644
---- a/drivers/cpufreq/arm_big_little.c
-+++ b/drivers/cpufreq/arm_big_little.c
-@@ -47,14 +47,6 @@ static unsigned int bL_cpufreq_get(unsigned int cpu)
- 	return clk_get_rate(clk[cur_cluster]) / 1000;
- }
+diff --git a/drivers/cpufreq/at32ap-cpufreq.c b/drivers/cpufreq/at32ap-cpufreq.c
+index e0c38d9..b27f750 100644
+--- a/drivers/cpufreq/at32ap-cpufreq.c
++++ b/drivers/cpufreq/at32ap-cpufreq.c
+@@ -22,16 +22,6 @@
  
--/* Validate policy frequency range */
--static int bL_cpufreq_verify_policy(struct cpufreq_policy *policy)
+ static struct clk *cpuclk;
+ 
+-static int at32_verify_speed(struct cpufreq_policy *policy)
 -{
--	u32 cur_cluster = cpu_to_cluster(policy->cpu);
+-	if (policy->cpu != 0)
+-		return -EINVAL;
 -
--	return cpufreq_frequency_table_verify(policy, freq_table[cur_cluster]);
+-	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
+-			policy->cpuinfo.max_freq);
+-	return 0;
 -}
 -
- /* Set clock frequency */
- static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
- 		unsigned int target_freq, unsigned int relation)
-@@ -205,22 +197,16 @@ static int bL_cpufreq_exit(struct cpufreq_policy *policy)
- 	return 0;
- }
- 
--/* Export freq_table to sysfs */
--static struct freq_attr *bL_cpufreq_attr[] = {
--	&cpufreq_freq_attr_scaling_available_freqs,
--	NULL,
--};
--
- static struct cpufreq_driver bL_cpufreq_driver = {
- 	.name			= "arm-big-little",
- 	.flags			= CPUFREQ_STICKY,
--	.verify			= bL_cpufreq_verify_policy,
-+	.verify			= cpufreq_generic_frequency_table_verify,
- 	.target			= bL_cpufreq_set_target,
- 	.get			= bL_cpufreq_get,
- 	.init			= bL_cpufreq_init,
- 	.exit			= bL_cpufreq_exit,
- 	.have_governor_per_policy = true,
--	.attr			= bL_cpufreq_attr,
-+	.attr			= cpufreq_generic_attr,
- };
- 
- int bL_cpufreq_register(struct cpufreq_arm_bL_ops *ops)
+ static unsigned int at32_get_speed(unsigned int cpu)
+ {
+ 	/* No SMP support */
+@@ -109,7 +99,7 @@ static int __init at32_cpufreq_driver_init(struct cpufreq_policy *policy)
+ static struct cpufreq_driver at32_driver = {
+ 	.name		= "at32ap",
+ 	.init		= at32_cpufreq_driver_init,
+-	.verify		= at32_verify_speed,
++	.verify		= cpufreq_generic_frequency_table_verify,
+ 	.target		= at32_set_target,
+ 	.get		= at32_get_speed,
+ 	.flags		= CPUFREQ_STICKY,
 -- 
 1.7.12.rc2.18.g61b472e
 
