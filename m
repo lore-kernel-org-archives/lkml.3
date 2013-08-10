@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758666Ab3HJRtx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 13:49:53 -0400
-Received: from mx01-sz.bfs.de ([194.94.69.67]:9577 "EHLO mx01-sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753292Ab3HJRtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 13:49:52 -0400
-Message-ID: <52067D3A.2090505@bfs.de>
-Date: Sat, 10 Aug 2013 19:49:46 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+	id S1758694Ab3HJRt7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 13:49:59 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:36229 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371Ab3HJRt5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Aug 2013 13:49:57 -0400
+Date: Sat, 10 Aug 2013 10:49:27 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Cc: Stephane Eranian <eranian@google.com>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Subject: [PATCH 1/7] powerpc/perf: Rename Power8 macros to start with PME
+Message-ID: <20130810174926.GB15551@us.ibm.com>
+References: <20130810174831.GA15551@us.ibm.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Julia Lawall <Julia.Lawall@lip6.fr>, Jonathan Cameron <jic23@cam.ac.uk>,
-        kernel-janitors@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/arm/mach-pxa/stargate2.c: use ARRAY_AND_SIZE consistently
-References: <1376148353-9699-1-git-send-email-Julia.Lawall@lip6.fr> <1376148738.2083.17.camel@joe-AO722>
-In-Reply-To: <1376148738.2083.17.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130810174831.GA15551@us.ibm.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081017-3620-0000-0000-000003E3DAF4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[PATCH 1/7] powerpc/perf: Rename Power8 macros to start with PME
 
+We use helpers like GENERIC_EVENT_ATTR() to list the generic events in
+sysfs. To avoid name collisions, GENERIC_EVENT_ATTR() requires the perf
+event macros to start with PME.
 
-Am 10.08.2013 17:32, schrieb Joe Perches:
-> On Sat, 2013-08-10 at 17:25 +0200, Julia Lawall wrote:
->> From: Julia Lawall <Julia.Lawall@lip6.fr>
->>
->> Because ARRAY_AND_SIZE changes the apparent arity of a function, if it is
->> used for one call to a given function, it would be better, if possible, to
->> use it for all of them.
-> 
-> I think it'd be better to remove ARRAY_AND_SIZE instead.
-> 
+Cc: Paul Mckerras <paulus@samba.org>
+Cc: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+---
+ arch/powerpc/perf/power8-pmu.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-+1
+diff --git a/arch/powerpc/perf/power8-pmu.c b/arch/powerpc/perf/power8-pmu.c
+index 96a64d6..30c6b12 100644
+--- a/arch/powerpc/perf/power8-pmu.c
++++ b/arch/powerpc/perf/power8-pmu.c
+@@ -18,12 +18,12 @@
+ /*
+  * Some power8 event codes.
+  */
+-#define PM_CYC				0x0001e
+-#define PM_GCT_NOSLOT_CYC		0x100f8
+-#define PM_CMPLU_STALL			0x4000a
+-#define PM_INST_CMPL			0x00002
+-#define PM_BRU_FIN			0x10068
+-#define PM_BR_MPRED_CMPL		0x400f6
++#define PME_PM_CYC				0x0001e
++#define PME_PM_GCT_NOSLOT_CYC			0x100f8
++#define PME_PM_CMPLU_STALL			0x4000a
++#define PME_PM_INST_CMPL			0x00002
++#define PME_PM_BRU_FIN				0x10068
++#define PME_PM_BR_MPRED_CMPL			0x400f6
+ 
+ 
+ /*
+@@ -550,12 +550,12 @@ static const struct attribute_group *power8_pmu_attr_groups[] = {
+ };
+ 
+ static int power8_generic_events[] = {
+-	[PERF_COUNT_HW_CPU_CYCLES] =			PM_CYC,
+-	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =	PM_GCT_NOSLOT_CYC,
+-	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =	PM_CMPLU_STALL,
+-	[PERF_COUNT_HW_INSTRUCTIONS] =			PM_INST_CMPL,
+-	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS] =		PM_BRU_FIN,
+-	[PERF_COUNT_HW_BRANCH_MISSES] =			PM_BR_MPRED_CMPL,
++	[PERF_COUNT_HW_CPU_CYCLES] =			PME_PM_CYC,
++	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =	PME_PM_GCT_NOSLOT_CYC,
++	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =	PME_PM_CMPLU_STALL,
++	[PERF_COUNT_HW_INSTRUCTIONS] =			PME_PM_INST_CMPL,
++	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS] =		PME_PM_BRU_FIN,
++	[PERF_COUNT_HW_BRANCH_MISSES] =			PME_PM_BR_MPRED_CMPL,
+ };
+ 
+ static u64 power8_bhrb_filter_map(u64 branch_sample_type)
+-- 
+1.7.1
 
-:)
-
-re,
- wh
