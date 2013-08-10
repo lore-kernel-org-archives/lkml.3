@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934457Ab3HJPiW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 11:38:22 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:21642 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934414Ab3HJPiU (ORCPT
+	id S934462Ab3HJPjv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 11:39:51 -0400
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:52502 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934415Ab3HJPjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 11:38:20 -0400
-X-IronPort-AV: E=Sophos;i="4.89,852,1367964000"; 
-   d="scan'208";a="29005600"
-Date: Sat, 10 Aug 2013 17:38:18 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/arm/mach-pxa/stargate2.c: use ARRAY_AND_SIZE
- consistently
-In-Reply-To: <1376148738.2083.17.camel@joe-AO722>
-Message-ID: <alpine.DEB.2.02.1308101735060.2076@localhost6.localdomain6>
-References: <1376148353-9699-1-git-send-email-Julia.Lawall@lip6.fr> <1376148738.2083.17.camel@joe-AO722>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 10 Aug 2013 11:39:49 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: jarkko.lavinen@nokia.com, cjb@laptop.org
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-omap@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: [PATCH] mmc:omap change driver to use dev_pm_ops infrastructure
+Date: Sat, 10 Aug 2013 09:39:41 -0600
+Message-Id: <1376149181-2761-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Change mmc_omap platform driver to register pm ops using dev_pm_ops instead of
+legacy pm_ops infrastructure.
 
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/mmc/host/omap.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-On Sat, 10 Aug 2013, Joe Perches wrote:
+diff --git a/drivers/mmc/host/omap.c b/drivers/mmc/host/omap.c
+index b94f38e..3251df2 100644
+--- a/drivers/mmc/host/omap.c
++++ b/drivers/mmc/host/omap.c
+@@ -1514,10 +1514,11 @@ static int mmc_omap_remove(struct platform_device *pdev)
+ }
+ 
+ #ifdef CONFIG_PM
+-static int mmc_omap_suspend(struct platform_device *pdev, pm_message_t mesg)
++static int mmc_omap_suspend(struct device *dev)
+ {
+ 	int i, ret = 0;
+-	struct mmc_omap_host *host = platform_get_drvdata(pdev);
++	struct mmc_omap_host *host = platform_get_drvdata(to_platform_device(
++							  dev));
+ 
+ 	if (host == NULL || host->suspended)
+ 		return 0;
+@@ -1539,10 +1540,11 @@ static int mmc_omap_suspend(struct platform_device *pdev, pm_message_t mesg)
+ 	return 0;
+ }
+ 
+-static int mmc_omap_resume(struct platform_device *pdev)
++static int mmc_omap_resume(struct device *dev)
+ {
+ 	int i, ret = 0;
+-	struct mmc_omap_host *host = platform_get_drvdata(pdev);
++	struct mmc_omap_host *host = platform_get_drvdata(to_platform_device(
++							  dev));
+ 
+ 	if (host == NULL || !host->suspended)
+ 		return 0;
+@@ -1563,14 +1565,16 @@ static int mmc_omap_resume(struct platform_device *pdev)
+ #define mmc_omap_resume		NULL
+ #endif
+ 
++static SIMPLE_DEV_PM_OPS(mmc_omap_dev_pm_ops, mmc_omap_suspend,
++			 mmc_omap_resume);
++
+ static struct platform_driver mmc_omap_driver = {
+ 	.probe		= mmc_omap_probe,
+ 	.remove		= mmc_omap_remove,
+-	.suspend	= mmc_omap_suspend,
+-	.resume		= mmc_omap_resume,
+ 	.driver		= {
+ 		.name	= DRIVER_NAME,
+ 		.owner	= THIS_MODULE,
++		.pm	= &mmc_omap_dev_pm_ops,
+ 	},
+ };
+ 
+-- 
+1.7.10.4
 
-> On Sat, 2013-08-10 at 17:25 +0200, Julia Lawall wrote:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> > 
-> > Because ARRAY_AND_SIZE changes the apparent arity of a function, if it is
-> > used for one call to a given function, it would be better, if possible, to
-> > use it for all of them.
-> 
-> I think it'd be better to remove ARRAY_AND_SIZE instead.
-
-I can do that, if it is wanted, but there are over 200 uses, and I think 
-it is a little bit positive in that it ensures that the array is passed 
-along with its own size.
-
-julia
