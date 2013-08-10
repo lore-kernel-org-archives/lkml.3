@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758885Ab3HJWHO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 18:07:14 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:57863 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758869Ab3HJWHM convert rfc822-to-8bit (ORCPT
+	id S1758893Ab3HJWIJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 18:08:09 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:23137 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758870Ab3HJWIH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 18:07:12 -0400
-X-AuditID: cbfec37c-b7f166d000004b4e-71-5206b98ef686
+	Sat, 10 Aug 2013 18:08:07 -0400
+X-AuditID: cbfec37b-b7f306d0000047de-f9-5206b9c43598
 From: Shuah Khan <shuah.kh@samsung.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -15,14 +15,12 @@ Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
         "stable@vger.kernel.org" <stable@vger.kernel.org>,
         Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [ 000/102] 3.10.6-stable review
-Thread-topic: [ 000/102] 3.10.6-stable review
-Thread-index: AQHOlQgAW6aTot4E+kWIZH6aFkzVTw==
-Date: Sat, 10 Aug 2013 22:07:08 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E61762F0A@sisaex02sj>
-References: <20130809015010.208118575@linuxfoundation.org>
- <B8EFE96D1287C24090BAD9D858E15E61761C23@sisaex02sj>
- <20130809191002.GC10130@kroah.com>
+Subject: Re: [ 00/25] 3.4.57-stable review
+Thread-topic: [ 00/25] 3.4.57-stable review
+Thread-index: AQHOlQhDJ/zMaVCaaEm7PGM/Y4q1EA==
+Date: Sat, 10 Aug 2013 22:08:03 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E61762F2F@sisaex02sj>
+References: <20130809013649.057678051@linuxfoundation.org>
 Accept-Language: en-US
 Content-language: en-US
 X-MS-Has-Attach: 
@@ -31,43 +29,40 @@ X-Originating-IP: [105.144.21.63]
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 8BIT
 MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t9hX92+nWxBBgcfC1jMWb+GzaJ58Xo2
-	i8u75rBZLNj4iNHiUd9bdgdWjxMzfrN47J+7ht3j8ya5AOYoLpuU1JzMstQifbsEroxpG/tZ
-	C2YKVlz58Za9gXE6XxcjB4eEgInE/dteXYycQKaYxIV769m6GLk4hASWMUp8mzmTFcLpZZJ4
-	em4qC4Qzn1Hi4KwGNpAWNgF1ic+vd7CD2CICxhL9Z2exgxQxC8xkkvh/bAITSEJYQEfiyYG5
-	UEW6EpNfX2IFWS0ioCexenI8SJhFQFXi1ey1jCA2r4C9xP1nn5ghlk1llHi49CkrSIIR6L7v
-	p9aAzWQWEJdobr3JAnG3gMSSPeeZIWxRiZeP/7FCvKYosX21FUS5lsT6ncehWrUlnry7wAqx
-	S1Dix+R7LBMYxWYhmToLScssJC2zkLQsYGRZxShWWpxcUJyUnlphrFecmFtcmpeul5yfu4kR
-	Emk1OxjvfbU5xCjAwajEw9u4ji1IiDWxrLgy9xCjBAezkghveyVQiDclsbIqtSg/vqg0J7X4
-	ECMTB6dUA6Op5/6/Z3SWSxvdX+3xryTpr5hf42Teg5+elLW7PP2/fMa5wPlPXqvk3rnkEeL5
-	9eWbY2zF0cE/fH0y1r+WkI6+1P3GWGdRqoFs0n3/6SE73ri2nlcIuj8v3/XKx5aW/XMYlaoa
-	7jD/8j24cp72Qu/pr25MuSSnY6a8Vu3KV5E5cdcvR7/l4g1SYinOSDTUYi4qTgQAAhrIV5IC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t9hP90jO9mCDA6fN7SYs34Nm0Xz4vVs
+	Fpd3zWGzWLDxEaPFo7637A6sHidm/Gbx2D93DbvH501yAcxRXDYpqTmZZalF+nYJXBkb1i5g
+	K/jJX3FmVwtzA+ME3i5GTg4JAROJvy9/s0PYYhIX7q1n62Lk4hASWMYo8f74BXYIp5dJouX8
+	OzaQKiGB+YwSy84mg9hsAuoSn1/vAOsWETCW6D87C6yBWWAmk8T/YxOYQBLCAloSuzc+ZIEo
+	0pbYenAdI4StJzFx/XTmLkYODhYBVYk9311BwrwC9hJfLzWxQ+yykpjTcgqsnBHouu+n1oCN
+	ZBYQl2huvckCcbWAxJI955khbFGJl4//sYKMlBBQlNi+2gqiXEti/c7jUK3aEk/eXWCFWCUo
+	8WPyPZYJjGKzkEydhaRlFpKWWUhaFjCyrGIUKy1OLihOSk+tMNIrTswtLs1L10vOz93ECImz
+	6h2Md7/aHGIU4GBU4uG9sYEtSIg1say4MvcQowQHs5IIb3slUIg3JbGyKrUoP76oNCe1+BAj
+	EwenVANj3P7zseH33mQdm/Z2RtiuV83Tcg+eO/fpsw5jzoV9AYVXi3L8lyX+m2Z0duqdHoHC
+	m8vTT9hvrfF6udmP5+adUleevZVBoRLZKvsuqF8Sc9E6/m97o+fT7izr36oJfuYbH655vXvC
+	0oTMW61a2z3zdp9bG1jh+YB58vrrhk3a+3sbHzUeas21VWIpzkg01GIuKk4EAAmB3p6RAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 01:10 PM, Greg Kroah-Hartman wrote:
-> On Fri, Aug 09, 2013 at 02:42:24PM +0000, Shuah Khan wrote:
->> On 08/09/2013 07:54 AM, Greg Kroah-Hartman wrote:
->>> This is the start of the stable review cycle for the 3.10.6 release.
->>> There are 102 patches in this series, all will be posted as a response
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Sun Aug 11 01:46:31 UTC 2013.
->>> Anything received after that time might be too late.
->>>
->>> The whole patch series can be found in one patch at:
->>> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.6-rc1.gz
->>> and the diffstat can be found below.
->>>
->>> thanks,
->>>
->>> greg k-h
->>>
+On 08/09/2013 07:56 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.57 release.
+> There are 25 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Aug 11 01:33:13 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.57-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
 >
 
-Patches applied to 3.0.89, 3.4.56 and 3.10.5
+Patches applied cleanly to 3.0.89, 3.4.56 and 3.10.5
 
 Compiled and booted on the following systems:
 
