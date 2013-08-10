@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758838Ab3HJUtN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 16:49:13 -0400
-Received: from 70-36-212-23.dsl.static.sonic.net ([70.36.212.23]:44303 "EHLO
-	mail.linuxtoys.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758803Ab3HJUtM (ORCPT
+	id S1758852Ab3HJV2m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 17:28:42 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:45742 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830Ab3HJV2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 16:49:12 -0400
-Message-ID: <5206A74B.3000005@linuxtoys.org>
-Date: Sat, 10 Aug 2013 13:49:15 -0700
-From: Bob Smith <bsmith@linuxtoys.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0 SeaMonkey/2.16
+	Sat, 10 Aug 2013 17:28:40 -0400
 MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 001/001] CHAR DRIVERS: a simple device to give daemons
- a /sys-like interface
-References: <20130804231958.GA25418@kroah.com> <52003958.7080103@linuxtoys.org> <20130806094604.GE27889@kroah.com> <520299AB.1020607@linuxtoys.org> <20130807192714.GC2708@kroah.com> <5202A284.7010106@linuxtoys.org> <20130807195427.GB4121@kroah.com> <5202B674.7060005@linuxtoys.org> <20130807213325.GB5373@kroah.com> <520569B2.4000704@linuxtoys.org> <20130809230150.GA23418@kroah.com> <52069DCA.6060706@linuxtoys.org> <CAFLxGvwp79uqxHVy7A+SYMUnCFtCbtq1K=YppBx9j+R1oVC7PA@mail.gmail.com>
-In-Reply-To: <CAFLxGvwp79uqxHVy7A+SYMUnCFtCbtq1K=YppBx9j+R1oVC7PA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAG-2HqUT3hbFPSEqYnJvBOgS6p4dKf=nhqZtzqS-on8FFe9ipA@mail.gmail.com>
+References: <CALCETrXSnFPFVPkXHwz+FFA3=+pmz9V=cMHWwtN+jG1QJALWSQ@mail.gmail.com>
+ <325b19bb936d7ebae11edad86aac8f0931e8abd9.1375719828.git.luto@amacapital.net>
+ <5200B1BD.7030307@gmail.com> <CAG-2HqXEj06JbUOWee=NfuRXxL75uRf=55FZcXRLHroDzYUthQ@mail.gmail.com>
+ <CAG-2HqVvoQK8ggErGGinO9i8Pbu-O-X=eYFW445ce24dpt7HyA@mail.gmail.com>
+ <20130806163158.GA23093@kadzban.is-a-geek.net> <CAG-2HqU=yyxomNTg9-2+bxMKP=e5_pdVT7bhB_CHhFzB-ac_mQ@mail.gmail.com>
+ <CALCETrU-CWuefE5XUpC=xFuCXaL56Cox95nL35Bm9jMi_B+6_A@mail.gmail.com>
+ <5201FCA4.30804@gmail.com> <CAG-2HqUT3hbFPSEqYnJvBOgS6p4dKf=nhqZtzqS-on8FFe9ipA@mail.gmail.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Sat, 10 Aug 2013 23:28:18 +0200
+Message-ID: <CAPXgP11LnVqTxsKUoLTLwtP-oxcekkNxmPG2X-R+2U9S4-dAgQ@mail.gmail.com>
+Subject: Re: [PATCH] udev: fail firmware loading immediately if no search path
+ is defined
+To: Tom Gundersen <teg@jklm.no>
+Cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-hotplug@vger.kernel.org,
+        Bryan Kadzban <bryan@kadzban.is-a-geek.net>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-richard -rw- weinberger wrote:
->> GOAL
->> The goal of this patch was to make it possible to configure
->> daemons using simple file IO.  The litmus test for this is
->> that commands like these should be possible
->>          cat < /var/daemons/wpa_supplicant/use_channel
->>          echo 5 >/var/daemons/wpa_supplicant/use_channel
->>
->> Yes, there are many other ways to configure a daemon but
->> none with the simplicity and grace of file IO.  For proof
->> of this I point to procfs and sysfs.
+On Sat, Aug 10, 2013 at 11:00 PM, Tom Gundersen <teg@jklm.no> wrote:
+> It would be simple enough to add an udev rule to just print 'ignoring
+> firmware event' to the logs.
 
-> /me read the whole thread and still does get why you can't use CUSE.
-> ...or AF_UNIX.
-Rightly or wrongly, my goal is pretty clear.  I want to be able
-to use file IO to control a daemon.  AF_UNIX doesn't help.
-CUSE/FUSE takes over main() and makes it very difficult to use
-select() and file descriptors.  So it fails too for now.
+This and I guess:
+  SUBSYSTEM=="firmware", ACTION=="add", ATTR{loading}="-1"
+would also just cancel the request at the same time without any other
+code needed.
 
-> If you really have an use case which is not covered by CUSE,
-> please fix CUSE.
-Yeah, if I proceed from here then modifying the user space parts
-of FUSE might be the best way to go.
+The udev firmware support just a configure option, just like the
+kernel has them. So distributions should enable it in udev and the
+kernel if they need it.
 
-Sorry that it took so long to get to the point that my goals
-for the patch were clearly stated.  As I say, I'm an EE who
-probably need more adult supervision.  :)
+We simply cannot coordinate the defaults of systemd and the kernel
+because the rules of the kernel are different. The kernel does "keep
+defaults like stuff has been in the past" and udev does "make default
+what makes the most sense on current systems".
 
-thanks
-Bob Smith
+> We should really ignore the event though, and
+> not cancel it. Not sure if this is something we want upstream (after all,
+> there are plenty of situations where we don't warn if the recommendations in
+> the README file are not followed), or if distros and whoever wants it should
+> ship that themselves. I'll leave that for Kay to decide.
 
+The proper fix is that userspace firmware should be disabled in the
+kernel for new systems, and kept enabled only for old systems. Old
+systems need to enable a new udev version to support firmware loading.
 
+There are currently broken in-kernel mis-users of the firmware
+interface that use the firmware interface but disable uevents, they
+still pull-in the user interface of the firmware loader. If nobody
+wants to fix them, the code for the common users of the firmware
+loader should at least get rid of the userspace fallback to call out
+to userspace. At that point the udev configure option would not matter
+any more.
+
+> Lastly, note that the plan is to drop all the firmware code from udev in the
+> not too distant future, so it doesn't really maker much sense to add new
+> functionality to that at this point.
+
+Right, I think all is fine. It's something that people can control
+with the kernel and udev configuration options. It's just that the
+defaults of the kernel and udev don't match at the moment, because
+they have different policies of setting default values.
+
+Kay
