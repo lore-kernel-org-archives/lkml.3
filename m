@@ -1,126 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746Ab3HJTEp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 15:04:45 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:44678 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882Ab3HJTEo (ORCPT
+	id S1754457Ab3HJTMU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 15:12:20 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:38574 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab3HJTMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 15:04:44 -0400
+	Sat, 10 Aug 2013 15:12:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1308100801470.31571-100000@netrider.rowland.org>
-References: <52062353.9030800@rus.uni-stuttgart.de>
-	<Pine.LNX.4.44L0.1308100801470.31571-100000@netrider.rowland.org>
-Date: Sat, 10 Aug 2013 21:04:43 +0200
-Message-ID: <CAPBO7Tbi0mjPOs7migmvm9TUyezsMfxpFrGxZMPodd2hvbXY5A@mail.gmail.com>
-Subject: Re: [HANG] Trouble with NEC-based USB adapter in PCMCIA slot on E7110
-From: Josep Lladonosa <jlladono@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Thomas Richter <richter@rus.uni-stuttgart.de>, linux@brodo.de,
-        linux-kernel@vger.kernel.org
+X-Originating-IP: [93.172.174.78]
+In-Reply-To: <0A09DA0F-86B4-4961-88E2-64FA0A4D380D@codeaurora.org>
+References: <1375128719-23642-1-git-send-email-galak@codeaurora.org>
+ <E9700EA7-7154-46C5-9258-03F030DF69F6@codeaurora.org> <20130729214035.GC8868@codeaurora.org>
+ <9EB1A821-7137-4812-B58A-20F669BCA7DD@codeaurora.org> <0A09DA0F-86B4-4961-88E2-64FA0A4D380D@codeaurora.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sat, 10 Aug 2013 22:11:56 +0300
+Message-ID: <CAK=WgbZSJmMz_U56ZsppBrB64XvTHBqJM4L+uFY1kKxhMCCtMQ@mail.gmail.com>
+Subject: Re: [PATCH] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex block
+To: Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        devicetree@vger.kernel.org, Jeffrey Hugo <jhugo@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Eric Holmberg <eholmber@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 August 2013 14:04, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sat, 10 Aug 2013, Thomas Richter wrote:
++ Grant
+
+On Thu, Aug 1, 2013 at 5:10 PM, Kumar Gala <galak@codeaurora.org> wrote:
+>> On Jul 29, 2013, at 4:40 PM, Stephen Boyd wrote:
+>>> On 07/29, Kumar Gala wrote:
+>>>>> diff --git a/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt b/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt
+>>>>> new file mode 100644
+>>>>> index 0000000..ddd6889
+>>>>> --- /dev/null
+>>>>> +++ b/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt
+>>>
+>>> Maybe this should go under a new hwspinlock directory?
+>>
+>> Will look for Ohad to comment on this.
+>>
+>>>
+>>>>> @@ -0,0 +1,20 @@
+>>>>> +Qualcomm MSM Hardware Mutex Block:
+>>>>> +
+>>>>> +The hardware block provides mutexes utilized between different processors
+>>>>> +on the SoC as part of the communication protocol used by these processors.
+>>>>> +
+>>>>> +Required properties:
+>>>>> +- compatible: should be "qcom,tcsr-mutex"
+>>>>> +- reg: Should contain registers location and length of mutex registers
+>>>>> +- reg-names:
+>>>>> +  "mutex-base"  - string to identify mutex registers
+>>>>> +- qcom,num-locks: the number of locks/mutexes supported
+>>>>> +
+>>>>> +Example:
+>>>>> +
+>>>>> +  qcom,tcsr-mutex@fd484000 {
+>>>
+>>> Maybe it should be hw-mutex@fd484000?
+>>
+>> again, will look for Ohad to make some comment on this.
+>>
+>>>>> +          compatible = "qcom,tcsr-mutex";
+>>>>> +          reg = <0xfd484000 0x1000>;
+>>>>> +          reg-names = "mutex-base";
+>>>>> +          qcom,num-locks = <32>;
+>>>>> +  };
 >
->> Which modules are relevant for handling the communication with the
->> device, and where would you suggest to start looking? I assume
->> yenta_socket is one thing for the cartbus adapter, then we have ehci_hcd
->> and ehci_pci. Do I assume correctly that we can rule out the ohci_hcd
->> module since that is not involved?
->
-> That's right.
->
->>  What about other usb modules? I would
->> probably need a short recap on through which modules the user data flows
->> before the write is triggered, and which modules are involved in the
->> configuration of the NEC ehci host adapter.
->
-> Start with just the ones you have identified.  If that doesn't fix the
-> problem then we can look further.
->
+> Ohad, ping.
 
-Hello,
+I'd prefer a DT maintainer to take a look at your two open questions
+above, especially if I'm to merge a new file into the devicetree
+Documentation folder.
 
-Have you tried to wait for 5 minutes? It could also be related to it
-what happens to my kernel 3.11.0-rc4 (and rc3) and USB
+Grant, any chance you have a moment to take a look?
 
-I plug the drive. Only after 5 minutes of high-speed of USb bus, it mounts.
+Otherwise, Stephen - do we have your Ack here? I was happy to see your
+review but not sure what's the latest status.
 
-
-Aug 10 20:56:09 minijep kernel: [  234.401608] usb 1-3: USB
-disconnect, device number 3
-Aug 10 20:56:43 minijep kernel: [  268.790914] usb 3-1.2: new
-high-speed USB device number 6 using ehci-pci
-Aug 10 20:56:43 minijep kernel: [  268.886687] usb 3-1.2: New USB
-device found, idVendor=090c, idProduct=1000
-Aug 10 20:56:43 minijep kernel: [  268.886695] usb 3-1.2: New USB
-device strings: Mfr=1, Product=2, SerialNumber=3
-Aug 10 20:56:43 minijep kernel: [  268.886699] usb 3-1.2: Product: DISK Pro
-Aug 10 20:56:43 minijep kernel: [  268.886702] usb 3-1.2: Manufacturer: USB
-Aug 10 20:56:43 minijep kernel: [  268.886705] usb 3-1.2:
-SerialNumber: AA04012700008773
-Aug 10 20:56:43 minijep mtp-probe: checking bus 3, device 6:
-"/sys/devices/pci0000:00/0000:00:1a.0/usb3/3-1/3-1.2"
-Aug 10 20:56:43 minijep kernel: [  268.887447] usb-storage 3-1.2:1.0:
-USB Mass Storage device detected
-Aug 10 20:56:43 minijep kernel: [  268.887714] scsi9 : usb-storage 3-1.2:1.0
-Aug 10 20:56:43 minijep mtp-probe: bus: 3, device: 6 was not an MTP device
-Aug 10 20:56:44 minijep kernel: [  269.889527] scsi 9:0:0:0:
-Direct-Access     USB      DISK Pro         1100 PQ: 0 ANSI: 0 CCS
-Aug 10 20:56:44 minijep kernel: [  269.890025] sd 9:0:0:0: Attached
-scsi generic sg3 type 0
-Aug 10 20:56:44 minijep kernel: [  269.892356] sd 9:0:0:0: [sdc]
-3963904 512-byte logical blocks: (2.02 GB/1.88 GiB)
-Aug 10 20:56:44 minijep kernel: [  269.893461] sd 9:0:0:0: [sdc] Write
-Protect is off
-Aug 10 20:57:14 minijep kernel: [  300.109604] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 20:57:45 minijep kernel: [  331.207924] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 20:58:16 minijep kernel: [  362.210362] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 20:58:47 minijep kernel: [  393.212774] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 20:59:18 minijep kernel: [  424.279257] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 20:59:49 minijep kernel: [  455.345574] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 21:00:20 minijep kernel: [  486.347994] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 21:00:51 minijep kernel: [  517.350252] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 21:00:52 minijep kernel: [  517.494528]  sdc: sdc1
-Aug 10 21:01:22 minijep kernel: [  548.352623] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 21:01:53 minijep kernel: [  579.355037] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-Aug 10 21:02:24 minijep kernel: [  610.485609] usb 3-1.2: reset
-high-speed USB device number 6 using ehci-pci
-
-
-
-
-
-
-
-
-
-
-> Alan Stern
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
---
-Salutacions...Josep
---
+Thanks,
+Ohad.
