@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529Ab3HJMMD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 08:12:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758248Ab3HJMMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 08:12:00 -0400
-Date: Sat, 10 Aug 2013 14:11:17 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Vince Weaver <vince@deater.net>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 01/47] perf: Add PERF_EVENT_IOC_ID ioctl to return event
- ID
-Message-ID: <20130810121117.GA1056@krava.brq.redhat.com>
-References: <1375909874-22073-1-git-send-email-acme@infradead.org>
- <1375909874-22073-2-git-send-email-acme@infradead.org>
- <alpine.DEB.2.02.1308091046040.17774@pianoman.cluster.toy>
+	id S1758622Ab3HJM2h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 08:28:37 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:41658 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758537Ab3HJM2f convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Aug 2013 08:28:35 -0400
+X-ASG-Debug-ID: 1376137714-03d6a5458220f0c0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308091046040.17774@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>
+Message-ID: <20130810122832.17880.78970@localhost.localdomain>
+From: Chris Mason <chris.mason@fusionio.com>
+User-Agent: alot/0.3.4
+Subject: [GIT PULL] Btrfs
+Date: Sat, 10 Aug 2013 08:28:32 -0400
+X-ASG-Orig-Subj: [GIT PULL] Btrfs
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1376137714
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0027 1.0000 -2.0037
+X-Barracuda-Spam-Score: -2.00
+X-Barracuda-Spam-Status: No, SCORE=-2.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.138123
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 10:50:27AM -0400, Vince Weaver wrote:
-> On Wed, 7 Aug 2013, Arnaldo Carvalho de Melo wrote:
-> 
-> > From: Jiri Olsa <jolsa@redhat.com>
-> > 
-> > The only way to get the event ID is by reading the event fd,
-> > followed by parsing the ID value out of the returned data.
-> > 
-> > While this is ok for current read format used by perf tool,
-> > it is not ok when we use PERF_FORMAT_GROUP format.
-> > 
-> > With this format the data are returned for the whole group
-> > and there's no way to find out what ID belongs to our fd
-> > (if we are not group leader event).
-> 
-> I'm a little confused by this.
-> 
-> If you have an event group (with PERF_FORMAT_GROUP) and you specify
-> PERF_FORMAT_ID in read_format, then when you read you get the id
-> values for each sibling event along with their values, right?
-> 
-> This is how PAPI does things.  So I wouldn't say it's impossible to get 
-> the event IDs with PERF_FORMAT_GROUP events.
-> 
-> Though maybe you're saying it's hard to map sibling fds to id values if 
-> you don't have the list of all fds in an event group in the order they 
-> were added.  Which I guess may be true, but I'd think your analysis tool 
-> would have other problems if you didn't have that mapping.
+Hi Linus
 
-right, the idea behind is not to be dependent
-on how kernel chains events in the list
+Please pull my for-linus branch:
 
-jirka
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+
+These are assorted fixes, mostly from Josef nailing down xfstests runs.
+Zach also has a long standing fix for problems with readdir wrapping
+f_pos (or ctx->pos)
+
+These patches were spread out over different bases, so I rebased things on
+top of rc4 and retested overnight.
+
+Josef Bacik (6) commits (+82/-52):
+    Btrfs: check to see if root_list is empty before adding it to dead roots (+5/-5)
+    Btrfs: make sure the backref walker catches all refs to our extent (+14/-11)
+    Btrfs: allow splitting of hole em's when dropping extent cache (+40/-22)
+    Btrfs: release both paths before logging dir/changed extents (+2/-3)
+    Btrfs: fix backref walking when we hit a compressed extent (+15/-8)
+    Btrfs: do not offset physical if we're compressed (+6/-3)
+
+Liu Bo (2) commits (+12/-5):
+    Btrfs: fix a bug of snapshot-aware defrag to make it work on partial extents (+12/-4)
+    Btrfs: fix extent buffer leak after backref walking (+0/-1)
+
+Zach Brown (1) commits (+25/-8):
+    btrfs: don't loop on large offsets in readdir
+
+Jie Liu (1) commits (+0/-3):
+    btrfs: fix file truncation if FALLOC_FL_KEEP_SIZE is specified
+
+Total: (10) commits (+119/-68)
+
+ fs/btrfs/backref.c     | 48 ++++++++++++++++++++++----------------
+ fs/btrfs/ctree.c       |  1 -
+ fs/btrfs/extent_io.c   |  9 +++++---
+ fs/btrfs/file.c        | 62 ++++++++++++++++++++++++++++++++------------------
+ fs/btrfs/inode.c       | 52 ++++++++++++++++++++++++++++++------------
+ fs/btrfs/transaction.c |  8 +++----
+ fs/btrfs/transaction.h |  2 +-
+ fs/btrfs/tree-log.c    |  5 ++--
+ 8 files changed, 119 insertions(+), 68 deletions(-)
