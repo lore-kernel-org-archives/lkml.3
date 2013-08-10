@@ -1,201 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab3HJLKI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 07:10:08 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45207 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab3HJLKG (ORCPT
+	id S1755556Ab3HJLNI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 07:13:08 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56028 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752527Ab3HJLNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 07:10:06 -0400
-Date: Sat, 10 Aug 2013 13:09:56 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>, olof@lixom.net, arnd@arndb.de,
-        Andrew Morton <akpm@osdl.org>
-Cc: Tony Lindgren <tony@atomide.com>, b-cousson@ti.com, pali.rohar@gmail.com,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH v2] N900: add device tree
-Message-ID: <20130810110955.GA11437@amd.pavel.ucw.cz>
-References: <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
- <20130617111031.GQ20992@atomide.com>
- <20130701211753.GC15318@amd.pavel.ucw.cz>
- <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
- <20130704202145.GB10752@amd.pavel.ucw.cz>
- <20130704203256.GB27374@blackmetal.musicnaut.iki.fi>
- <20130713121709.GC16473@amd.pavel.ucw.cz>
- <20130714222819.GB3296@blackmetal.musicnaut.iki.fi>
- <20130728134409.GB5382@amd.pavel.ucw.cz>
- <20130801234355.GA15611@amd.pavel.ucw.cz>
+	Sat, 10 Aug 2013 07:13:06 -0400
+Date: Sat, 10 Aug 2013 12:12:31 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20130810111231.GR6427@sirena.org.uk>
+References: <20130809094340.GO23006@n2100.arm.linux.org.uk>
+ <5204CC04.4000401@gmail.com>
+ <20130809113940.GY6427@sirena.org.uk>
+ <20130809130932.GS23006@n2100.arm.linux.org.uk>
+ <20130809180058.GM6427@sirena.org.uk>
+ <20130809182516.GT23006@n2100.arm.linux.org.uk>
+ <20130809194434.GP6427@sirena.org.uk>
+ <20130809203847.GU23006@n2100.arm.linux.org.uk>
+ <20130809234209.GQ6427@sirena.org.uk>
+ <20130810093137.GV23006@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9BaxaTZrvsRxcpDQ"
 Content-Disposition: inline
-In-Reply-To: <20130801234355.GA15611@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130810093137.GV23006@n2100.arm.linux.org.uk>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 1/1] ASoc: kirkwood: add DT support to the mvebu audio
+ subsystem
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2013-08-02 01:43:55, Pavel Machek wrote:
-> On Sun 2013-07-28 15:44:09, Pavel Machek wrote:
-> > On Mon 2013-07-15 01:28:19, Aaro Koskinen wrote:
-> > > Hi,
-> > > 
-> > > On Sat, Jul 13, 2013 at 02:17:09PM +0200, Pavel Machek wrote:
-> > > > 
-> > > > This adds device tree with neccessary support to boot with functional
-> > > > video (on both emulator and real N900 device).
-> > > > 
-> > > > Signed-off-by: Pavel Machek <pavel@ucw.cz>
-> > > 
-> > > You can also add:
-> > > 
-> > > Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> > 
-> > Benoit, could you apply this? Tony said you are doing dts changes, and
-> > the patch seems to be ready.
-> 
-> Tony, Benoit was apparently abducted by aliens or something. Is there
-> chance you could take the patch?
 
-Hello, is there anybody out there?
+--9BaxaTZrvsRxcpDQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-There's nice and simple patch enabling device tree on n900, it is even
-reviewed by Aaro, and it is neither applied nor are negative comments
-coming? ...for a month...?
+On Sat, Aug 10, 2013 at 10:31:37AM +0100, Russell King - ARM Linux wrote:
 
-Tony also seen the patch and comment was "Benoit takes these", so I
-assume it looks basically ok. 
+> Right, so what you're proposing is to come up with a DT description for
+> the existing stuff, and then have to change (or at the very least augment)
+> that description later when the DPCM stuff goes in.
 
-Benoit, you are supposed to maintain device tree for omap2. 
+> What should be done is to sort out DPCM, get that working and then sort out
+> the DT side of it, so that everyone gets only one transition to DT, not a
+> transition to a half-baked stop-gap DT and then have to go through another
+> round of DT changes.  "Because we can" is not a good enough reason not to
+> get this sorted properly.
 
-[I wonder if this is clean-enough cause for "trivial in resubmit
-mode?]
-								Pavel
----
+Since we know what the hardware physically looks like we should be able
+to write a DT binding which can be stable for both before and after the
+DPCM transition.  The bindings would have to be truly awful to require a
+rewrite here and as with all the DMA wrapper drivers if parts of DPCM
+that don't reflect actual hardware are appearing in the DT we're doing
+something wrong.
 
-This adds device tree with neccessary support to boot with functional
-video (on both emulator and real N900 device).
+--9BaxaTZrvsRxcpDQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
----
+iQIcBAEBAgAGBQJSBiAcAAoJELSic+t+oim9WnEP/2EmtbNkMH2GxOdeF/Q6xkOd
+r3wE2UjWADwHB00CWKFh24P8jxDRGGGOmSRIeIrxSlKta6No7pwA04ld3z08ykSa
+ZbsML0QQZl9Dn94F5PNc4LQg66SUgTSIGaNAhKOI7CEcafTIxIftQDYZtQTiqsiC
+lgfCeXVqNJk4427SH7xTuQNvKrAlSrDJJnTdhM9XmdvZd3jbj377LNH3WCgRC0q9
+FGGxBdd/o8jGZJmy2+smMEgK7bcbDLbmb6JBwsHUokyOrIxsfSLnJLBOy6vabiAe
+xrHcj75we/olH50m7yVYizU3Dgq+vvAjiJOI3Msc/iQhv1EHBQ4eD3sGvSjc5vUU
+z58K4PyjHmJG9W5bFIQ6VYlTcRMlTg4fTbn8R/hhRepq7bHVAzZ000vpbNmgbWG6
+KdEx+XQ5jD3F0TihGMxo9Zon8XE8i2KiHJaqWh+Jgyrcf1LSkNSZaQtB/P21bv9X
+XQwB8lnPBPAfnpXJw2mUF/mMmd6DysupI5ilOSuook7zrOkkcQbXiVMSgcSf8qAI
+7BNjSisOvP5NVroxJ4vHvPhItzGLGcp8oBEvonpfX/rZ9SoZoaoePdPr5KK3pMuE
+PEaXPKi1N3151RZjmll9JPaVG8xOQ2GJPnLdEWEPhtP2sz/kRar2PuHgBNjCad8+
+44tuuLROHoHmiJiS9oQu
+=KqIZ
+-----END PGP SIGNATURE-----
 
->From v1: Aaro wants just GPLv2, so I did that. I re-enabled parts that
-can be enabled on 3.10, and tested it on that kernel.
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index f0895c5..1950aed 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -141,6 +141,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
- 	omap3-devkit8000.dtb \
- 	omap3-beagle-xm.dtb \
- 	omap3-evm.dtb \
-+	omap3-n900.dtb \
- 	omap3-tobi.dtb \
- 	omap3-igep0020.dtb \
- 	omap3-igep0030.dtb \
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-new file mode 100644
-index 0000000..fb461bf
---- /dev/null
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -0,0 +1,92 @@
-+/*
-+ * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
-+ * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/dts-v1/;
-+
-+/include/ "omap34xx.dtsi"
-+
-+/ {
-+	model = "Nokia N900";
-+	compatible = "nokia,omap3-n900", "ti,omap3";
-+
-+	cpus {
-+		cpu@0 {
-+			cpu0-supply = <&vcc>;
-+		};
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x80000000 0x10000000>; /* 256 MB */
-+	};
-+
-+};
-+
-+&i2c1 {
-+	clock-frequency = <2200000>;
-+
-+	twl: twl@48 {
-+		reg = <0x48>;
-+		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
-+		interrupt-parent = <&intc>;
-+	};
-+};
-+
-+/include/ "twl4030.dtsi"
-+
-+&twl_gpio {
-+	ti,pullups	= <0x0>;
-+	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
-+};
-+
-+&i2c2 {
-+	clock-frequency = <400000>;
-+};
-+
-+&i2c3 {
-+	clock-frequency = <100000>;
-+};
-+
-+&mmc1 {
-+	status = "disabled";
-+};
-+
-+&mmc2 {
-+	status = "disabled";
-+};
-+
-+&mmc3 {
-+	status = "disabled";
-+};
-+
-+&mcspi1 {
-+	// For some reason, touchscreen is neccessary for screen to work at 
-+	// all on real hw. It works well without it on emulator.
-+	//
-+	// Also... order in the device tree actually matters here.
-+	tsc2005@0 {
-+		compatible = "tsc2005";
-+		spi-max-frequency = <6000000>;
-+		reg = <0>;
-+	};
-+	mipid@2 {
-+		compatible = "acx565akm";
-+		spi-max-frequency = <6000000>;
-+		reg = <2>;
-+		// turbo_mode = 0,
-+		// cs_per_word = 0
-+	};
-+};
-+
-+&usb_otg_hs {
-+	interface-type = <0>;
-+	usb-phy = <&usb2_phy>;
-+	mode = <2>;
-+	power = <50>;
-+};
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--9BaxaTZrvsRxcpDQ--
