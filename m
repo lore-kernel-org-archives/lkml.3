@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab3HJM2h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 08:28:37 -0400
-Received: from dkim1.fusionio.com ([66.114.96.53]:41658 "EHLO
-	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758537Ab3HJM2f convert rfc822-to-8bit (ORCPT
+	id S933316Ab3HJMnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 08:43:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48155 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932634Ab3HJMnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 08:28:35 -0400
-X-ASG-Debug-ID: 1376137714-03d6a5458220f0c0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>
-Message-ID: <20130810122832.17880.78970@localhost.localdomain>
-From: Chris Mason <chris.mason@fusionio.com>
-User-Agent: alot/0.3.4
-Subject: [GIT PULL] Btrfs
-Date: Sat, 10 Aug 2013 08:28:32 -0400
-X-ASG-Orig-Subj: [GIT PULL] Btrfs
-X-Originating-IP: [10.101.1.160]
-X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
-X-Barracuda-Start-Time: 1376137714
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0027 1.0000 -2.0037
-X-Barracuda-Spam-Score: -2.00
-X-Barracuda-Spam-Status: No, SCORE=-2.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.138123
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	Sat, 10 Aug 2013 08:43:07 -0400
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Lior Amsalem <alior@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Subject: [PATCH 0/3] Introduce atomic MMIO register clear-set
+Date: Sat, 10 Aug 2013 09:42:59 -0300
+Message-Id: <1376138582-7550-1-git-send-email-ezequiel.garcia@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus
+Following a suggestion from Sebastian Hesselbarth and Russell King
+here's some work to introduce a generic thread-safe clear-set register
+access.
 
-Please pull my for-linus branch:
+The original motivation for this comes from the need to access the same
+register from a clocksource driver and a watchdog driver as we find
+in Kirkwood, Armada 370/XP SoCs.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+Since this sort of design is expected to appear in other platforms,
+instead of exporting platform-specific {mvebu,orion}_clear_set() functions
+for the thread-safe access, this patchset implements a system-wide API.
 
-These are assorted fixes, mostly from Josef nailing down xfstests runs.
-Zach also has a long standing fix for problems with readdir wrapping
-f_pos (or ctx->pos)
+Although this is placed in arm/kernel/io.c, there's nothing
+ARM-specific in the API and should probably me moved somewhere else.
 
-These patches were spread out over different bases, so I rebased things on
-top of rc4 and retested overnight.
+Suggestions on where to put it are appreciated.
 
-Josef Bacik (6) commits (+82/-52):
-    Btrfs: check to see if root_list is empty before adding it to dead roots (+5/-5)
-    Btrfs: make sure the backref walker catches all refs to our extent (+14/-11)
-    Btrfs: allow splitting of hole em's when dropping extent cache (+40/-22)
-    Btrfs: release both paths before logging dir/changed extents (+2/-3)
-    Btrfs: fix backref walking when we hit a compressed extent (+15/-8)
-    Btrfs: do not offset physical if we're compressed (+6/-3)
+Using this API it's possible -for instance- to add support for Armada 370/XP
+in the orion_wdt driver. That work is ready, and it's been hold until we
+decide a proper solution for shared-register access.
 
-Liu Bo (2) commits (+12/-5):
-    Btrfs: fix a bug of snapshot-aware defrag to make it work on partial extents (+12/-4)
-    Btrfs: fix extent buffer leak after backref walking (+0/-1)
+Based in v3.11-rc4.
 
-Zach Brown (1) commits (+25/-8):
-    btrfs: don't loop on large offsets in readdir
+Ezequiel Garcia (3):
+  ARM: Introduce atomic MMIO clear/set
+  clocksource: orion: Use atomic access for shared registers
+  watchdog: orion: Use atomic access for shared registers
 
-Jie Liu (1) commits (+0/-3):
-    btrfs: fix file truncation if FALLOC_FL_KEEP_SIZE is specified
+ arch/arm/include/asm/io.h        |  5 +++++
+ arch/arm/kernel/io.c             | 24 ++++++++++++++++++++++++
+ drivers/clocksource/time-orion.c |  9 ++-------
+ drivers/watchdog/orion_wdt.c     |  8 ++------
+ 4 files changed, 33 insertions(+), 13 deletions(-)
 
-Total: (10) commits (+119/-68)
+-- 
+1.8.1.5
 
- fs/btrfs/backref.c     | 48 ++++++++++++++++++++++----------------
- fs/btrfs/ctree.c       |  1 -
- fs/btrfs/extent_io.c   |  9 +++++---
- fs/btrfs/file.c        | 62 ++++++++++++++++++++++++++++++++------------------
- fs/btrfs/inode.c       | 52 ++++++++++++++++++++++++++++++------------
- fs/btrfs/transaction.c |  8 +++----
- fs/btrfs/transaction.h |  2 +-
- fs/btrfs/tree-log.c    |  5 ++--
- 8 files changed, 119 insertions(+), 68 deletions(-)
