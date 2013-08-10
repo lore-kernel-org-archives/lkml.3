@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968219Ab3HJQQY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 12:16:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33164 "EHLO
+	id S966667Ab3HJQPJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 12:15:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33106 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965948Ab3HJQQV (ORCPT
+	with ESMTP id S965964Ab3HJQPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 12:16:21 -0400
-Date: Sat, 10 Aug 2013 09:15:06 -0700
-From: tip-bot for Jeremy Fitzhardinge <tipbot@zytor.com>
-Message-ID: <tip-1ed7bf5f5227169b661c619636f754b98001ec30@git.kernel.org>
+	Sat, 10 Aug 2013 12:15:05 -0400
+Date: Sat, 10 Aug 2013 09:14:44 -0700
+From: tip-bot for Andrew Jones <tipbot@zytor.com>
+Message-ID: <tip-851cf6e7d6366195d4ee033cdc7787df1a649a14@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, jeremy@goop.org,
+        konrad.wilk@oracle.com, drjones@redhat.com,
         raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
         hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, jeremy@goop.org,
+        drjones@redhat.com, konrad.wilk@oracle.com,
         raghavendra.kt@linux.vnet.ibm.com, tglx@linutronix.de,
         hpa@linux.intel.com
-In-Reply-To: <1376058122-8248-12-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-References: <1376058122-8248-12-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+In-Reply-To: <1376058122-8248-10-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
+References: <1376058122-8248-10-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/spinlocks] xen, pvticketlock:
-  Allow interrupts to be enabled while blocking
-Git-Commit-ID: 1ed7bf5f5227169b661c619636f754b98001ec30
+Subject: [tip:x86/spinlocks] jump_label: Split jumplabel ratelimit
+Git-Commit-ID: 851cf6e7d6366195d4ee033cdc7787df1a649a14
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,123 +31,195 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 10 Aug 2013 09:15:13 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 10 Aug 2013 09:14:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1ed7bf5f5227169b661c619636f754b98001ec30
-Gitweb:     http://git.kernel.org/tip/1ed7bf5f5227169b661c619636f754b98001ec30
-Author:     Jeremy Fitzhardinge <jeremy@goop.org>
-AuthorDate: Fri, 9 Aug 2013 19:51:59 +0530
+Commit-ID:  851cf6e7d6366195d4ee033cdc7787df1a649a14
+Gitweb:     http://git.kernel.org/tip/851cf6e7d6366195d4ee033cdc7787df1a649a14
+Author:     Andrew Jones <drjones@redhat.com>
+AuthorDate: Fri, 9 Aug 2013 19:51:57 +0530
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 9 Aug 2013 07:54:03 -0700
+CommitDate: Fri, 9 Aug 2013 07:53:54 -0700
 
-xen, pvticketlock: Allow interrupts to be enabled while blocking
+jump_label: Split jumplabel ratelimit
 
-If interrupts were enabled when taking the spinlock, we can leave them
-enabled while blocking to get the lock.
+Commit b202952075f62603bea9bfb6ebc6b0420db11949 ("perf, core: Rate limit
+perf_sched_events jump_label patching") introduced rate limiting
+for jump label disabling. The changes were made in the jump label code
+in order to be more widely available and to keep things tidier. This is
+all fine, except now jump_label.h includes linux/workqueue.h, which
+makes it impossible to include jump_label.h from anything that
+workqueue.h needs. For example, it's now impossible to include
+jump_label.h from asm/spinlock.h, which is done in proposed
+pv-ticketlock patches. This patch splits out the rate limiting related
+changes from jump_label.h into a new file, jump_label_ratelimit.h, to
+resolve the issue.
 
-If we can enable interrupts while waiting for the lock to become
-available, and we take an interrupt before entering the poll,
-and the handler takes a spinlock which ends up going into
-the slow state (invalidating the per-cpu "lock" and "want" values),
-then when the interrupt handler returns the event channel will
-remain pending so the poll will return immediately, causing it to
-return out to the main spinlock loop.
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Link: http://lkml.kernel.org/r/1376058122-8248-12-git-send-email-raghavendra.kt@linux.vnet.ibm.com
+Signed-off-by: Andrew Jones <drjones@redhat.com>
+Link: http://lkml.kernel.org/r/1376058122-8248-10-git-send-email-raghavendra.kt@linux.vnet.ibm.com
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/xen/spinlock.c | 46 ++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 40 insertions(+), 6 deletions(-)
+ include/linux/jump_label.h           | 28 +---------------------------
+ include/linux/jump_label_ratelimit.h | 34 ++++++++++++++++++++++++++++++++++
+ include/linux/perf_event.h           |  1 +
+ kernel/jump_label.c                  |  1 +
+ 4 files changed, 37 insertions(+), 27 deletions(-)
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index 546112e..0438b93 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -142,7 +142,20 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	 * partially setup state.
- 	 */
- 	local_irq_save(flags);
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index 0976fc4..a507907 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -48,7 +48,6 @@
+ 
+ #include <linux/types.h>
+ #include <linux/compiler.h>
+-#include <linux/workqueue.h>
+ 
+ #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
+ 
+@@ -61,12 +60,6 @@ struct static_key {
+ #endif
+ };
+ 
+-struct static_key_deferred {
+-	struct static_key key;
+-	unsigned long timeout;
+-	struct delayed_work work;
+-};
 -
-+	/*
-+	 * We don't really care if we're overwriting some other
-+	 * (lock,want) pair, as that would mean that we're currently
-+	 * in an interrupt context, and the outer context had
-+	 * interrupts enabled.  That has already kicked the VCPU out
-+	 * of xen_poll_irq(), so it will just return spuriously and
-+	 * retry with newly setup (lock,want).
-+	 *
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
- 	w->want = want;
- 	smp_wmb();
- 	w->lock = lock;
-@@ -157,24 +170,43 @@ static void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	/* Only check lock once pending cleared */
- 	barrier();
+ # include <asm/jump_label.h>
+ # define HAVE_JUMP_LABEL
+ #endif	/* CC_HAVE_ASM_GOTO && CONFIG_JUMP_LABEL */
+@@ -78,6 +71,7 @@ enum jump_label_type {
  
--	/* Mark entry to slowpath before doing the pickup test to make
--	   sure we don't deadlock with an unlocker. */
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
- 	__ticket_enter_slowpath(lock);
+ struct module;
  
--	/* check again make sure it didn't become free while
--	   we weren't looking  */
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking
-+	 */
- 	if (ACCESS_ONCE(lock->tickets.head) == want) {
- 		add_stats(TAKEN_SLOW_PICKUP, 1);
- 		goto out;
- 	}
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
-+
- 	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
- 	xen_poll_irq(irq);
- 	add_stats(TAKEN_SLOW_SPURIOUS, !xen_test_irq_pending(irq));
-+
-+	local_irq_save(flags);
-+
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- out:
- 	cpumask_clear_cpu(cpu, &waiting_cpus);
- 	w->lock = NULL;
-+
- 	local_irq_restore(flags);
-+
- 	spin_time_accum_blocked(start);
++#include <linux/atomic.h>
+ #ifdef HAVE_JUMP_LABEL
+ 
+ #define JUMP_LABEL_TRUE_BRANCH 1UL
+@@ -119,10 +113,7 @@ extern void arch_jump_label_transform_static(struct jump_entry *entry,
+ extern int jump_label_text_reserved(void *start, void *end);
+ extern void static_key_slow_inc(struct static_key *key);
+ extern void static_key_slow_dec(struct static_key *key);
+-extern void static_key_slow_dec_deferred(struct static_key_deferred *key);
+ extern void jump_label_apply_nops(struct module *mod);
+-extern void
+-jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
+ 
+ #define STATIC_KEY_INIT_TRUE ((struct static_key) \
+ 	{ .enabled = ATOMIC_INIT(1), .entries = (void *)1 })
+@@ -131,8 +122,6 @@ jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
+ 
+ #else  /* !HAVE_JUMP_LABEL */
+ 
+-#include <linux/atomic.h>
+-
+ struct static_key {
+ 	atomic_t enabled;
+ };
+@@ -141,10 +130,6 @@ static __always_inline void jump_label_init(void)
+ {
  }
- PV_CALLEE_SAVE_REGS_THUNK(xen_lock_spinning);
-@@ -188,7 +220,9 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	for_each_cpu(cpu, &waiting_cpus) {
- 		const struct xen_lock_waiting *w = &per_cpu(lock_waiting, cpu);
  
--		if (w->lock == lock && w->want == next) {
-+		/* Make sure we read lock before want */
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == next) {
- 			add_stats(RELEASED_SLOW_KICKED, 1);
- 			xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
- 			break;
+-struct static_key_deferred {
+-	struct static_key  key;
+-};
+-
+ static __always_inline bool static_key_false(struct static_key *key)
+ {
+ 	if (unlikely(atomic_read(&key->enabled)) > 0)
+@@ -169,11 +154,6 @@ static inline void static_key_slow_dec(struct static_key *key)
+ 	atomic_dec(&key->enabled);
+ }
+ 
+-static inline void static_key_slow_dec_deferred(struct static_key_deferred *key)
+-{
+-	static_key_slow_dec(&key->key);
+-}
+-
+ static inline int jump_label_text_reserved(void *start, void *end)
+ {
+ 	return 0;
+@@ -187,12 +167,6 @@ static inline int jump_label_apply_nops(struct module *mod)
+ 	return 0;
+ }
+ 
+-static inline void
+-jump_label_rate_limit(struct static_key_deferred *key,
+-		unsigned long rl)
+-{
+-}
+-
+ #define STATIC_KEY_INIT_TRUE ((struct static_key) \
+ 		{ .enabled = ATOMIC_INIT(1) })
+ #define STATIC_KEY_INIT_FALSE ((struct static_key) \
+diff --git a/include/linux/jump_label_ratelimit.h b/include/linux/jump_label_ratelimit.h
+new file mode 100644
+index 0000000..1137883
+--- /dev/null
++++ b/include/linux/jump_label_ratelimit.h
+@@ -0,0 +1,34 @@
++#ifndef _LINUX_JUMP_LABEL_RATELIMIT_H
++#define _LINUX_JUMP_LABEL_RATELIMIT_H
++
++#include <linux/jump_label.h>
++#include <linux/workqueue.h>
++
++#if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
++struct static_key_deferred {
++	struct static_key key;
++	unsigned long timeout;
++	struct delayed_work work;
++};
++#endif
++
++#ifdef HAVE_JUMP_LABEL
++extern void static_key_slow_dec_deferred(struct static_key_deferred *key);
++extern void
++jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
++
++#else	/* !HAVE_JUMP_LABEL */
++struct static_key_deferred {
++	struct static_key  key;
++};
++static inline void static_key_slow_dec_deferred(struct static_key_deferred *key)
++{
++	static_key_slow_dec(&key->key);
++}
++static inline void
++jump_label_rate_limit(struct static_key_deferred *key,
++		unsigned long rl)
++{
++}
++#endif	/* HAVE_JUMP_LABEL */
++#endif	/* _LINUX_JUMP_LABEL_RATELIMIT_H */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index c43f6ea..226be8d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -48,6 +48,7 @@ struct perf_guest_info_callbacks {
+ #include <linux/cpu.h>
+ #include <linux/irq_work.h>
+ #include <linux/static_key.h>
++#include <linux/jump_label_ratelimit.h>
+ #include <linux/atomic.h>
+ #include <linux/sysfs.h>
+ #include <linux/perf_regs.h>
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 60f48fa..297a924 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -13,6 +13,7 @@
+ #include <linux/sort.h>
+ #include <linux/err.h>
+ #include <linux/static_key.h>
++#include <linux/jump_label_ratelimit.h>
+ 
+ #ifdef HAVE_JUMP_LABEL
+ 
