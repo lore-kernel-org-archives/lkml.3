@@ -1,122 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933940Ab3HJOCo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 10:02:44 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48327 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933806Ab3HJOCm (ORCPT
+	id S933955Ab3HJOGS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 10:06:18 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:48979 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755519Ab3HJOGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 10:02:42 -0400
-Date: Sat, 10 Aug 2013 11:02:38 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Lior Amsalem <alior@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 1/3] ARM: Introduce atomic MMIO clear/set
-Message-ID: <20130810140237.GB3080@localhost>
-References: <1376138582-7550-1-git-send-email-ezequiel.garcia@free-electrons.com>
- <1376138582-7550-2-git-send-email-ezequiel.garcia@free-electrons.com>
- <1376138968.556911297@f376.i.mail.ru>
+	Sat, 10 Aug 2013 10:06:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1376138968.556911297@f376.i.mail.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGdX0WHkZORL=2tkTF37iQ8OcJVWiy66mxLURewSnZO8iM2Ngw@mail.gmail.com>
+References: <1376037909-17797-1-git-send-email-namhyung@kernel.org>
+	<1376037909-17797-11-git-send-email-namhyung@kernel.org>
+	<5204BCE6.2070102@hitachi.com>
+	<20130809162002.GA7144@redhat.com>
+	<CAGdX0WEMOA286qCmtM9oBcUPZ8qZw8GKDqvk=ROtGsNa=2YgbA@mail.gmail.com>
+	<CAGdX0WHkZORL=2tkTF37iQ8OcJVWiy66mxLURewSnZO8iM2Ngw@mail.gmail.com>
+Date: Sat, 10 Aug 2013 22:06:16 +0800
+Message-ID: <CAGdX0WHjaGz7Ty_YUY8PHknt-9Ocv_GQpCSC5zXscj8Cmz4O0Q@mail.gmail.com>
+Subject: Re: [PATCH 10/13] tracing/uprobes: Fetch args before reserving a ring buffer
+From: "zhangwei(Jovi)" <jovi.zhangwei@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 10, 2013 at 04:49:28PM +0400, Alexander Shiyan wrote:
-> > Some SoC have MMIO regions that are shared across orthogonal
-> > subsystems. This commit implements a possible solution for the
-> > thread-safe access of such regions through a spinlock-protected API
-> > with clear-set semantics.
-> > 
-> > Concurrent access is protected with a single spinlock for the
-> > entire MMIO address space. While this protects shared-registers,
-> > it also serializes access to unrelated/unshared registers.
-> > 
-> > Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> > ---
-> >  arch/arm/include/asm/io.h |  5 +++++
-> >  arch/arm/kernel/io.c      | 24 ++++++++++++++++++++++++
-> >  2 files changed, 29 insertions(+)
-> > 
-> > diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-> > index d070741..c84658d 100644
-> > --- a/arch/arm/include/asm/io.h
-> > +++ b/arch/arm/include/asm/io.h
-> > @@ -36,6 +36,11 @@
-> >  #define isa_bus_to_virt phys_to_virt
-> >  
-> >  /*
-> > + * Atomic MMIO-wide IO clear/set
-> > + */
-> > +extern void atomic_io_clear_set(void __iomem *reg, u32 clear, u32 set);
-> > +
-> > +/*
-> >   * Generic IO read/write.  These perform native-endian accesses.  Note
-> >   * that some architectures will want to re-define __raw_{read,write}w.
-> >   */
-> > diff --git a/arch/arm/kernel/io.c b/arch/arm/kernel/io.c
-> > index dcd5b4d..3ab8201 100644
-> > --- a/arch/arm/kernel/io.c
-> > +++ b/arch/arm/kernel/io.c
-> > @@ -1,6 +1,30 @@
-> >  #include <linux/export.h>
-> >  #include <linux/types.h>
-> >  #include <linux/io.h>
-> > +#include <linux/spinlock.h>
-> > +
-> > +static DEFINE_SPINLOCK(__io_lock);
-> > +
-> > +/*
-> > + * Some platforms have MMIO regions that are shared across orthogonal
-> > + * subsystems. This API implements thread-safe access to such regions
-> > + * through a spinlock-protected API with clear-set semantics.
-> > + *
-> > + * Concurrent access is protected with a single spinlock for the entire MMIO
-> > + * address space. While this protects shared-registers, it also serializes
-> > + * access to unrelated/unshared registers.
-> > + *
-> > + * Using this API on frequently accessed registers in performance-critical
-> > + * paths is not recommended, as the spinlock used by this API would become
-> > + * highly contended.
-> > + */
-> > +void atomic_io_clear_set(void __iomem *reg, u32 clear, u32 set)
-> > +{
-> > +	spin_lock(&__io_lock);
-> > +	writel((readl(reg) & ~clear) | set, reg);
-> > +	spin_unlock(&__io_lock);
-> > +}
-> > +EXPORT_SYMBOL(atomic_io_clear_set);
-> 
-> So, one lock is used to all possible registers?
-> Seems a regmap-mmio can be used for such access.
-> 
+On Sat, Aug 10, 2013 at 9:41 AM, zhangwei(Jovi) <jovi.zhangwei@gmail.com> wrote:
+> On Sat, Aug 10, 2013 at 9:26 AM, zhangwei(Jovi) <jovi.zhangwei@gmail.com> wrote:
+>> On Sat, Aug 10, 2013 at 12:20 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>
+>>> Sorry, I didn't read this series yet. Not that I think this needs my
+>>> help, but I'll try to do this a later...
+>>>
+>>> On 08/09, Masami Hiramatsu wrote:
+>>> >
+>>> > I just concern using kmalloc() in the event handler.
+>>>
+>>> GFP_KERNEL should be fine for uprobe handler.
+>>>
+>>> However, iirc this conflicts with the patches from Jovi,
+>>> "Support ftrace_event_file base multibuffer" adds rcu_read_lock()
+>>> around uprobe_trace_print().
+>>
+>> (Sorry about html text rejected by kernel.org, send again with plain text.)
+>>
+>> Then we might need to call kmalloc before rcu_read_lock, also call kfree
+>> after rcu_read_unlock.
+>>
+>> And it's not needed to call kmalloc for each instances in multi-buffer
+>> case, just
+>> kmalloc once is enough.
+>>
+>> I also have same concern about use kmalloc in uprobe handler, use kmalloc
+>> in uprobe handler seems have a little overhead, why not pre-allocate one page
+>> static memory for temp buffer(perhaps trace_uprobe based)? one page size
+>> would be enough for all uprobe args storage, then we don't need to call
+>> kmalloc in that "fast path".
+>>
+> forgotten to say, that pre-allocated buffer would need to be per-cpu, to prevent
+> buffer corruption.
+>
+> It's a memory space vs. performance trade-off problem. :)
+>
+Oops, I missed the per-cpu buffer operation still need
+preempt_disable, ignore this part
+of my comments, now I agree kmalloc in uprobe handler is needed.
 
-Thanks for the hint! Quite frankly, I wasn't familiar with regmap-mmio.
-
-However, after reading some code, I fail to see how that helps in this case.
-
-Note that we need to access the *same* MMIO address from completely
-different (and unrelated) drivers, such as watchdog and clocksource.
-
-So I wonder who would "own" the regmap descriptor, and how does the other
-one gets aware of that descriptor?
-
-In addition given we can use orion_wdt (originally meant for mach-kirkwood)
-to support mvebu SoC watchdog, we need to sort this out in a completely
-multiplatform capable way.
-
-Ideas?
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+jovi.
