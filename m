@@ -1,105 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968160Ab3HJAcM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 20:32:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7398 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968043Ab3HJAcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 20:32:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,849,1367996400"; 
-   d="scan'208";a="384722261"
-Message-ID: <52058BAE.30703@linux.intel.com>
-Date: Fri, 09 Aug 2013 17:39:10 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S968253Ab3HJAtg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 20:49:36 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:41797 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968075Ab3HJAtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 20:49:35 -0400
 MIME-Version: 1.0
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, rjw@sisk.pl,
-        arjan@linux.intel.com, len.brown@intel.com,
-        jacob.jun.pan@linux.intel.com, corbet@lwn.net, joe@perches.com,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [RFC v02 0/5] Power Capping Framework and RAPL Driver
-References: <1375891965-6921-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-In-Reply-To: <1375891965-6921-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1376080406-4r7r3uye-mutt-n-horiguchi@ah.jp.nec.com>
+References: <CAMyfujfZayb8_673vkb2hdE9J_w+wPTD4aQ6TsY+aWxb9EzY8A@mail.gmail.com>
+	<1376080406-4r7r3uye-mutt-n-horiguchi@ah.jp.nec.com>
+Date: Sat, 10 Aug 2013 08:49:34 +0800
+Message-ID: <CAMyfujeC_p-2cJteayPnA82wPRvoL2ekDNB6bd38d76v7Gb+6w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] pagemap: fix buffer overflow in add_page_map()
+From: yonghua zheng <younghua.zheng@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Motohiro KOSAKI <kosaki.motohiro@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 09:12 AM, Srinivas Pandruvada wrote:
-> Overview
-> With the evolution of technologies, which enables power monitoring and limiting,
-> more and more devices are able to constrain their power consumption under certain
-> limits. There are several use cases for such technologies:
-> - Power monitoring: Each device can report its power consumption.
-> - Power Limiting: Setting power limits on the devices allows users to guard against
-> platform reaching max system power level.
-> - Maximize performance: While staying below a power limit, it allows devices to
-> automatically adjust performance to meet demands
-> - Dynamic control and re-budgeting: If each device can be constrained to some power,
-> extra power can redistributed to other devices, which needs additional performance.
->
-> One such example of technology is RAPL (Running Average Power Limit) mechanism
-> available in the latest Intel Processors. Intel is slowly adding many devices under
-> RAPL control. Also there are other technologies available, for power capping various
-> devices. Soon it is very likely that other vendors are also adding or considering
-> such implementation.
->
-> Power Capping framework is an effort to have a uniform interface available to Linux
-> drivers, which will enable
-> - A uniform sysfs interface for all devices which can offer power capping
-> - A common API for drivers, which will avoid code duplication and easy
-> implementation of client drivers.
->
-> Also submitting Intel RAPL driver using power capping framework.
->
->
-> Revisions:
-Thanks for everyone for review. I have received enough negative 
-comments, which will require another version.
-So please hold off your reviews till next version.
+Update the patch according to Naoya's comment, I also run
+./scripts/checkpatch.pl, and it passed ;D.
 
-> v02:
-> Sign-offs and reviewed-by tags
-> Stylistic issues suggested by Joe Perches
-> Removed "counter" from power_uw documentation as pointed by Jonathan Corbet
-> Submitting Intel RAPL driver using power capping framework
->
-> v01:
-> Use device model only to register zones and controllers.
->
-> v00:
-> Presented options
->
-> Jacob Pan (2):
->    x86/msr: add 64bit _on_cpu access functions
->    Introduce Intel RAPL power capping driver
->
-> Srinivas Pandruvada (3):
->    PowerCap: Documentation
->    PowerCap: Add class driver
->    PowerCap: Added to drivers build
->
->   Documentation/ABI/testing/sysfs-class-powercap   |  165 +++
->   Documentation/powercap/PowerCappingFramework.txt |  686 ++++++++++++
->   arch/x86/include/asm/msr.h                       |   22 +
->   arch/x86/lib/msr-smp.c                           |   62 +
->   drivers/Kconfig                                  |    2 +
->   drivers/Makefile                                 |    1 +
->   drivers/powercap/Kconfig                         |   24 +
->   drivers/powercap/Makefile                        |    6 +
->   drivers/powercap/intel_rapl.c                    | 1305 ++++++++++++++++++++++
->   drivers/powercap/powercap_sys.c                  |  995 +++++++++++++++++
->   include/linux/powercap.h                         |  300 +++++
->   11 files changed, 3568 insertions(+)
->   create mode 100644 Documentation/ABI/testing/sysfs-class-powercap
->   create mode 100644 Documentation/powercap/PowerCappingFramework.txt
->   create mode 100644 drivers/powercap/Kconfig
->   create mode 100644 drivers/powercap/Makefile
->   create mode 100644 drivers/powercap/intel_rapl.c
->   create mode 100644 drivers/powercap/powercap_sys.c
->   create mode 100644 include/linux/powercap.h
->
+>From 96826b0fdf9ec6d6e16c2c595f371dbb841250f7 Mon Sep 17 00:00:00 2001
+From: Yonghua Zheng <younghua.zheng@gmail.com>
+Date: Mon, 5 Aug 2013 12:12:24 +0800
+Subject: [PATCH 1/1] pagemap: fix buffer overflow in add_to_pagemap()
 
+In struc pagemapread:
+
+struct pagemapread {
+    int pos, len;
+    pagemap_entry_t *buffer;
+    bool v2;
+};
+
+pos is number of PM_ENTRY_BYTES in buffer, but len is the size of buffer,
+it is a mistake to compare pos and len in add_to_pagemap() for checking
+buffer is full or not, and this can lead to buffer overflow and random
+kernel panic issue.
+
+Correct len to be total number of PM_ENTRY_BYTES in buffer.
+
+Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index dbf61f6..cb98853 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -1116,8 +1116,8 @@ static ssize_t pagemap_read(struct file *file,
+char __user *buf,
+         goto out_task;
+
+     pm.v2 = soft_dirty_cleared;
+-    pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+-    pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
++    pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
++    pm.buffer = kmalloc(pm.len * PM_ENTRY_BYTES, GFP_TEMPORARY);
+     ret = -ENOMEM;
+     if (!pm.buffer)
+         goto out_task;
+-- 
+1.7.9.5
+
+On Sat, Aug 10, 2013 at 4:33 AM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> On Fri, Aug 09, 2013 at 01:16:41PM +0800, yonghua zheng wrote:
+>> Hi,
+>>
+>> Recently we met quite a lot of random kernel panic issues after enable
+>> CONFIG_PROC_PAGE_MONITOR in kernel, after debuggint sometime we found
+>> this has something to do with following bug in pagemap:
+>>
+>> In struc pagemapread:
+>>
+>> struct pagemapread {
+>>     int pos, len;
+>>     pagemap_entry_t *buffer;
+>>     bool v2;
+>> };
+>>
+>> pos is number of PM_ENTRY_BYTES in buffer, but len is the size of buffer,
+>> it is a mistake to compare pos and len in add_page_map() for checking
+>
+> s/add_page_map/add_to_pagemap/ ?
+>
+>> buffer is full or not, and this can lead to buffer overflow and random
+>> kernel panic issue.
+>>
+>> Correct len to be total number of PM_ENTRY_BYTES in buffer.
+>>
+>> Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
+>
+> You can find coding style violation with scripts/checkpatch.pl.
+> And I think this patch is worth going into -stable trees
+> (maybe since 2.6.34.)
+>
+> The fix itself looks fine to me.
+>
+> Thanks,
+> Naoya Horiguchi
+>
+>> ---
+>>  fs/proc/task_mmu.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+>> index dbf61f6..cb98853 100644
+>> --- a/fs/proc/task_mmu.c
+>> +++ b/fs/proc/task_mmu.c
+>> @@ -1116,8 +1116,8 @@ static ssize_t pagemap_read(struct file *file,
+>> char __user *buf,
+>>          goto out_task;
+>>
+>>      pm.v2 = soft_dirty_cleared;
+>> -    pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+>> -    pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
+>> +    pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+>> +    pm.buffer = kmalloc(pm.len * PM_ENTRY_BYTES, GFP_TEMPORARY);
+>>      ret = -ENOMEM;
+>>      if (!pm.buffer)
+>>          goto out_task;
+>>
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>>
