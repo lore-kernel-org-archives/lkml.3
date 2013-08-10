@@ -1,55 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab3HJL0R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 07:26:17 -0400
-Received: from charon.rus.uni-stuttgart.de ([129.69.1.54]:58346 "EHLO
-	charon.rus.uni-stuttgart.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753059Ab3HJL0Q (ORCPT
+	id S1757560Ab3HJL1q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 07:27:46 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:45394 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753387Ab3HJL1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 07:26:16 -0400
-Message-ID: <52062353.9030800@rus.uni-stuttgart.de>
-Date: Sat, 10 Aug 2013 13:26:11 +0200
-From: Thomas Richter <richter@rus.uni-stuttgart.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Sat, 10 Aug 2013 07:27:45 -0400
+Date: Sat, 10 Aug 2013 13:27:40 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>, olof@lixom.net, arnd@arndb.de,
+        Andrew Morton <akpm@osdl.org>
+Cc: Tony Lindgren <tony@atomide.com>, b-cousson@ti.com, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH] ARM: dts: omap3 / n900 support, Benoit please take me (was
+ Re: [PATCH v2] N900: add device tree)
+Message-ID: <20130810112740.GA12456@amd.pavel.ucw.cz>
+References: <20130617111031.GQ20992@atomide.com>
+ <20130701211753.GC15318@amd.pavel.ucw.cz>
+ <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
+ <20130704202145.GB10752@amd.pavel.ucw.cz>
+ <20130704203256.GB27374@blackmetal.musicnaut.iki.fi>
+ <20130713121709.GC16473@amd.pavel.ucw.cz>
+ <20130714222819.GB3296@blackmetal.musicnaut.iki.fi>
+ <20130728134409.GB5382@amd.pavel.ucw.cz>
+ <20130801234355.GA15611@amd.pavel.ucw.cz>
+ <20130810110955.GA11437@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: linux@brodo.de, linux-kernel@vger.kernel.org
-Subject: Re: [HANG] Trouble with NEC-based USB adapter in PCMCIA slot on E7110
-References: <Pine.LNX.4.44L0.1308092103320.23882-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1308092103320.23882-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130810110955.GA11437@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
 
-later... ok, bisected this even more. 2.6.31.14 kernel, old udev works 
-fine. Then removed /etc/rcS.d/S02udev to be sure the 2.6.32 kernel would 
-not pull the new udev. Rebuild 2.6.32.1 with *identical* kernel 
-configuration, booted up, manually started the *old* udev as in 
-2.6.31.14, and tried whether it worked.
+On Sat 2013-08-10 13:09:55, Pavel Machek wrote:
+> On Fri 2013-08-02 01:43:55, Pavel Machek wrote:
+> > On Sun 2013-07-28 15:44:09, Pavel Machek wrote:
+> > > On Mon 2013-07-15 01:28:19, Aaro Koskinen wrote:
+> > > > Hi,
+> > > > 
+> > > > On Sat, Jul 13, 2013 at 02:17:09PM +0200, Pavel Machek wrote:
+> > > > > 
+> > > > > This adds device tree with neccessary support to boot with functional
+> > > > > video (on both emulator and real N900 device).
+> > > > > 
+> > > > > Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> > > > 
+> > > > You can also add:
+> > > > 
+> > > > Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> > > 
+> > > Benoit, could you apply this? Tony said you are doing dts changes, and
+> > > the patch seems to be ready.
+> > 
+> > Tony, Benoit was apparently abducted by aliens or something. Is there
+> > chance you could take the patch?
+> 
+> Hello, is there anybody out there?
+> 
+> There's nice and simple patch enabling device tree on n900, it is even
+> reviewed by Aaro, and it is neither applied nor are negative comments
+> coming? ...for a month...?
+> 
+> Tony also seen the patch and comment was "Benoit takes these", so I
+> assume it looks basically ok. 
+> 
+> Benoit, you are supposed to maintain device tree for omap2. 
 
-Did not.
+>From archives I see Benoit is normally quite active... so I tried
+adding few more keywords to the subject line. Hopefully he's back from
+holidays and notices this...?
+ 
 
-Thus: it is neither the udev configuration, nor the udev userspace 
-program, nor the kernel configuration.
+> [I wonder if this is clean-enough cause for "trivial in resubmit
+> mode?]
+> 								Pavel
+> ---
+> 
+> This adds device tree with neccessary support to boot with functional
+> video (on both emulator and real N900 device).
+> 
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> 
+> ---
+> 
+> From v1: Aaro wants just GPLv2, so I did that. I re-enabled parts that
+> can be enabled on 3.10, and tested it on that kernel.
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index f0895c5..1950aed 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -141,6 +141,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+>  	omap3-devkit8000.dtb \
+>  	omap3-beagle-xm.dtb \
+>  	omap3-evm.dtb \
+> +	omap3-n900.dtb \
+>  	omap3-tobi.dtb \
+>  	omap3-igep0020.dtb \
+>  	omap3-igep0030.dtb \
+> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+> new file mode 100644
+> index 0000000..fb461bf
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/omap3-n900.dts
+> @@ -0,0 +1,92 @@
+> +/*
+> + * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
+> + * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +/dts-v1/;
+> +
+> +/include/ "omap34xx.dtsi"
+> +
+> +/ {
+> +	model = "Nokia N900";
+> +	compatible = "nokia,omap3-n900", "ti,omap3";
+> +
+> +	cpus {
+> +		cpu@0 {
+> +			cpu0-supply = <&vcc>;
+> +		};
+> +	};
+> +
+> +	memory {
+> +		device_type = "memory";
+> +		reg = <0x80000000 0x10000000>; /* 256 MB */
+> +	};
+> +
+> +};
+> +
+> +&i2c1 {
+> +	clock-frequency = <2200000>;
+> +
+> +	twl: twl@48 {
+> +		reg = <0x48>;
+> +		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+> +		interrupt-parent = <&intc>;
+> +	};
+> +};
+> +
+> +/include/ "twl4030.dtsi"
+> +
+> +&twl_gpio {
+> +	ti,pullups	= <0x0>;
+> +	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
+> +};
+> +
+> +&i2c2 {
+> +	clock-frequency = <400000>;
+> +};
+> +
+> +&i2c3 {
+> +	clock-frequency = <100000>;
+> +};
+> +
+> +&mmc1 {
+> +	status = "disabled";
+> +};
+> +
+> +&mmc2 {
+> +	status = "disabled";
+> +};
+> +
+> +&mmc3 {
+> +	status = "disabled";
+> +};
+> +
+> +&mcspi1 {
+> +	// For some reason, touchscreen is neccessary for screen to work at 
+> +	// all on real hw. It works well without it on emulator.
+> +	//
+> +	// Also... order in the device tree actually matters here.
+> +	tsc2005@0 {
+> +		compatible = "tsc2005";
+> +		spi-max-frequency = <6000000>;
+> +		reg = <0>;
+> +	};
+> +	mipid@2 {
+> +		compatible = "acx565akm";
+> +		spi-max-frequency = <6000000>;
+> +		reg = <2>;
+> +		// turbo_mode = 0,
+> +		// cs_per_word = 0
+> +	};
+> +};
+> +
+> +&usb_otg_hs {
+> +	interface-type = <0>;
+> +	usb-phy = <&usb2_phy>;
+> +	mode = <2>;
+> +	power = <50>;
+> +};
+> 
 
-Something must be screwed in the kernel space. Which is interesting 
-since 2.6.32.1 is actually older than 2.6.31.14 (but the older 2.6.31.6 
-works, too, and younger 2.6.32.6 doesn't work either).
-
-As said, configuration of 2.6.32.1 and 2.6.31.14 is the same.
-
-Which modules are relevant for handling the communication with the 
-device, and where would you suggest to start looking? I assume 
-yenta_socket is one thing for the cartbus adapter, then we have ehci_hcd 
-and ehci_pci. Do I assume correctly that we can rule out the ohci_hcd 
-module since that is not involved? What about other usb modules? I would 
-probably need a short recap on through which modules the user data flows 
-before the write is triggered, and which modules are involved in the 
-configuration of the NEC ehci host adapter.
-
-Thanks,
-	Thomas
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
