@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758798Ab3HJU1N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 16:27:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35121 "EHLO mail.zytor.com"
+	id S1758806Ab3HJU3Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 16:29:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43222 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758779Ab3HJU1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 16:27:12 -0400
-Message-ID: <5206A1FD.4020603@zytor.com>
-Date: Sat, 10 Aug 2013 13:26:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1758783Ab3HJU3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Aug 2013 16:29:23 -0400
+Date: Sat, 10 Aug 2013 22:29:17 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Pavel Machek <pavel@ucw.cz>, Belisko Marek <marek.belisko@gmail.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@osdl.org>,
+        Tony Lindgren <tony@atomide.com>, b-cousson@ti.com,
+        pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2] N900: add device tree
+In-Reply-To: <CAAfyv34w1e+sAuB==-+Pj2gOO1auVNQgawcNC1Z4QfeqchRh3g@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1308102226220.32627@pobox.suse.cz>
+References: <20130614212816.GA31768@atrey.karlin.mff.cuni.cz> <20130617111031.GQ20992@atomide.com> <20130701211753.GC15318@amd.pavel.ucw.cz> <20130704171939.GA27374@blackmetal.musicnaut.iki.fi> <20130704202145.GB10752@amd.pavel.ucw.cz>
+ <20130704203256.GB27374@blackmetal.musicnaut.iki.fi> <20130713121709.GC16473@amd.pavel.ucw.cz> <20130714222819.GB3296@blackmetal.musicnaut.iki.fi> <20130728134409.GB5382@amd.pavel.ucw.cz> <20130801234355.GA15611@amd.pavel.ucw.cz> <20130810110955.GA11437@amd.pavel.ucw.cz>
+ <CAAfyv34w1e+sAuB==-+Pj2gOO1auVNQgawcNC1Z4QfeqchRh3g@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Mike Galbraith <bitbucket@online.de>, Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: Re-tune x86 uaccess code for PREEMPT_VOLUNTARY
-References: <1376089460-5459-1-git-send-email-andi@firstfloor.org> <5205C4BB.6020003@zytor.com> <1376114128.5332.17.camel@marge.simpson.net> <5206659F.9070705@zytor.com> <CA+55aFyB5E+Keupjz4trfMcNawUKVzQV8DF5aS_VsPiw3FaT_Q@mail.gmail.com> <520675D3.7030703@zytor.com> <CA+55aFzhv1v9KatxQ3GUGBZf+zTb_hdx2fJZKT+m5tEcAkWsSQ@mail.gmail.com>
-In-Reply-To: <CA+55aFzhv1v9KatxQ3GUGBZf+zTb_hdx2fJZKT+m5tEcAkWsSQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2013 11:51 AM, Linus Torvalds wrote:
-> That "kernel_stack" thing is actually getting the thread_info pointer,
-> and it doesn't get cached because gcc thinks the preempt_count value
-> might alias.
+On Sat, 10 Aug 2013, Pavel Machek wrote:
 
-This is just plain braindamaged.  Somewhere on my list of things is to
-merge thread_info and task_struct and have a pointer to the unified
-structure.
+> [I wonder if this is clean-enough cause for "trivial in resubmit
+> mode?]
 
-	-hpa
+On Sat, 10 Aug 2013, Belisko Marek wrote:
 
+> Same for gta04 (omap3 based device) [1].
+> It was send upstream 2 times and second time there is no reply from 1.3.2013.
+
+Hi guys,
+
+once I am able to match signoffs in the patches to MAINTAINERS, I can take 
+those through trivial.git in "re-transmission mode" (or feeeding those 
+thgough akpm si an option as well).
+
+Please just send the patches to me in a new thread properly with all the 
+Acks/Signoffs, and mark those appropriately (i.e. maintainer that would 
+normally push this upstream desurfaced).
+
+-- 
+Jiri Kosina
+SUSE Labs
