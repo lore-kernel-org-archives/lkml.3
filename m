@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab3HJF5D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 01:57:03 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55934 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117Ab3HJF5B (ORCPT
+	id S1756188Ab3HJG2y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 02:28:54 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:37267 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363Ab3HJG2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 01:57:01 -0400
-Message-ID: <1376114128.5332.17.camel@marge.simpson.net>
-Subject: Re: Re-tune x86 uaccess code for PREEMPT_VOLUNTARY
-From: Mike Galbraith <bitbucket@online.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, mingo@kernel.org, torvalds@linux-foundation.org
-Date: Sat, 10 Aug 2013 07:55:28 +0200
-In-Reply-To: <5205C4BB.6020003@zytor.com>
-References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
-	 <5205C4BB.6020003@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Sat, 10 Aug 2013 02:28:52 -0400
+From: Ning Qu <quning@gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:uinwRAjPOuXniefbs2TcIcN6FU12gayUJf51HcaYaSI
- MTKgHiv8/ecNR0ClB1hvnrCNfSFEDeC26E4EkW5YSzVMFZyq6z
- Z0VxzT5LdNIr6HYHhb3/YioQRbUy8w8yKABZxGYqrp86n5XDdr
- MvBufjsupdlgIhvYdy9sGmSl58wZTkkMw2i+zT9wLFTyLF3POH
- S5Bpvp59TbGJTMkofprx4omSX4LOWDQhQm2ZL967D3oO2mAlq4
- HEh05DafA2VZeDmFBLwUoYWvIt40A5+dGy4b95CjDsBaIvjBHO
- aqdOh+pstERF3J0SDOO9BpgdH3yL2aHkncvSbRiaVLgMvdmLbk
- j+8usGwnxA7KVjrlXn9H0Ahgd2yrB0XEvkGh4EK3a8fWXRHjCD
- n2Jqzg9/h2apQ==
+Subject: [PATCH] thp: Fix deadlock situation in vma_adjust with huge page in page cache
+Date: Fri, 9 Aug 2013 23:28:49 -0700
+Message-Id: <93894D4C-57FA-46B5-9141-4EFADEB7009E@gmail.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-fsdevel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Jan Kara <jack@suse.cz>, Dave Hansen <dave@sr71.net>,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Ning Qu <quning@google.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-09 at 21:42 -0700, H. Peter Anvin wrote: 
-> On 08/09/2013 04:04 PM, Andi Kleen wrote:
-> > 
-> > This patch kit is an attempt to get us back to sane code, 
-> > mostly by doing proper inlining and doing sleep checks in the right
-> > place. Unfortunately I had to add one tree sweep to avoid an nasty
-> > include loop.
-> > 
-> > It costs a bit of text space, but I think it's worth it
-> > (if only to keep my blood pressure down while reading ftrace logs...)
-> > 
-> 
-> Looks nice at first glance.
-> 
-> Now, here is a bigger question: shouldn't we be deprecating/getting rid
-> of PREEMPT_VOUNTARY in favor of PREEMPT?
+In vma_adjust, the current code grabs i_mmap_mutex before calling
+vma_adjust_trans_huge. This used to be fine until huge page in page
+cache comes in. The problem is the underlying function
+split_file_huge_page will also grab the i_mmap_mutex before splitting
+the huge page in page cache. Obviously this is causing deadlock
+situation.
 
-I sure hope not, PREEMPT munches throughput.  If you need PREEMPT, seems
-to me what you _really_ need is PREEMPT_RT (the real deal), so
-eventually depreciating PREEMPT makes more sense to me.
+This fix is to move the vma_adjust_trans_huge before grab the lock for
+file, the same as what the function is currently doing for anonymous
+memory.
 
--Mike
+Tested, everything works fine so far.
+
+Signed-off-by: Ning Qu <quning@google.com>
+---
+mm/mmap.c | 4 ++--
+1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 519ce78..accf1b3 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -750,6 +750,8 @@ again:			remove_next = 1 + (end > next->vm_end);
+		}
+	}
+
++	vma_adjust_trans_huge(vma, start, end, adjust_next);
++
+	if (file) {
+		mapping = file->f_mapping;
+		if (!(vma->vm_flags & VM_NONLINEAR)) {
+@@ -773,8 +775,6 @@ again:			remove_next = 1 + (end > next->vm_end);
+		}
+	}
+
+-	vma_adjust_trans_huge(vma, start, end, adjust_next);
+-
+	anon_vma = vma->anon_vma;
+	if (!anon_vma && adjust_next)
+		anon_vma = next->anon_vma;
+-- 
+1.8.3
+
 
