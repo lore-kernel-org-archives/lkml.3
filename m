@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161030Ab3HJGwB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 02:52:01 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:60194 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031981Ab3HJGv4 (ORCPT
+	id S1161047Ab3HJGwJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 02:52:09 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:45156 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161033Ab3HJGwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 02:51:56 -0400
+	Sat, 10 Aug 2013 02:52:03 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Eric Miao <eric.y.miao@gmail.com>
-Subject: [PATCH 34/44] cpufreq: pxa: Use generic cpufreq routines
-Date: Sat, 10 Aug 2013 12:14:30 +0530
-Message-Id: <0f9db0a191b809194e0dc928ce2ff7976766dccd.1376116345.git.viresh.kumar@linaro.org>
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 35/44] cpufreq: s3cx4xx: Use generic cpufreq routines
+Date: Sat, 10 Aug 2013 12:14:31 +0530
+Message-Id: <d8c0aa4528902c35beed2283b87c533d0459d05f.1376116345.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376116344.git.viresh.kumar@linaro.org>
 References: <cover.1376116344.git.viresh.kumar@linaro.org>
@@ -31,95 +31,112 @@ by cpufreq drivers then.
 
 This patch uses these generic routines for this driver.
 
-Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/pxa2xx-cpufreq.c | 26 ++------------------------
- drivers/cpufreq/pxa3xx-cpufreq.c | 14 ++------------
- 2 files changed, 4 insertions(+), 36 deletions(-)
+ drivers/cpufreq/s3c2416-cpufreq.c | 19 ++-----------------
+ drivers/cpufreq/s3c24xx-cpufreq.c |  9 ---------
+ drivers/cpufreq/s3c64xx-cpufreq.c | 10 +---------
+ 3 files changed, 3 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/cpufreq/pxa2xx-cpufreq.c b/drivers/cpufreq/pxa2xx-cpufreq.c
-index 06af29c..5a72bf3 100644
---- a/drivers/cpufreq/pxa2xx-cpufreq.c
-+++ b/drivers/cpufreq/pxa2xx-cpufreq.c
-@@ -262,23 +262,6 @@ static u32 mdrefr_dri(unsigned int freq)
- 	return (interval - (cpu_is_pxa27x() ? 31 : 0)) / 32;
- }
- 
--/* find a valid frequency point */
--static int pxa_verify_policy(struct cpufreq_policy *policy)
--{
--	struct cpufreq_frequency_table *pxa_freqs_table;
--	pxa_freqs_t *pxa_freqs;
--	int ret;
--
--	find_freq_tables(&pxa_freqs_table, &pxa_freqs);
--	ret = cpufreq_frequency_table_verify(policy, pxa_freqs_table);
--
--	if (freq_debug)
--		pr_debug("Verified CPU policy: %dKhz min to %dKhz max\n",
--			 policy->min, policy->max);
--
--	return ret;
--}
--
- static unsigned int pxa_cpufreq_get(unsigned int cpu)
- {
- 	return get_clk_frequency_khz(0);
-@@ -465,16 +448,11 @@ static int pxa_cpufreq_init(struct cpufreq_policy *policy)
- 	return 0;
- }
- 
--static int pxa_cpufreq_exit(struct cpufreq_policy *policy)
--{
--	cpufreq_frequency_table_put_attr(policy->cpu);
--}
--
- static struct cpufreq_driver pxa_cpufreq_driver = {
--	.verify	= pxa_verify_policy,
-+	.verify	= cpufreq_generic_frequency_table_verify,
- 	.target	= pxa_set_target,
- 	.init	= pxa_cpufreq_init,
--	.exit	= pxa_cpufreq_exit,
-+	.exit	= cpufreq_generic_exit,
- 	.get	= pxa_cpufreq_get,
- 	.name	= "PXA2xx",
+diff --git a/drivers/cpufreq/s3c2416-cpufreq.c b/drivers/cpufreq/s3c2416-cpufreq.c
+index a7a4c61..8c57f10 100644
+--- a/drivers/cpufreq/s3c2416-cpufreq.c
++++ b/drivers/cpufreq/s3c2416-cpufreq.c
+@@ -87,16 +87,6 @@ static struct cpufreq_frequency_table s3c2450_freq_table[] = {
+ 	{ 0, CPUFREQ_TABLE_END },
  };
-diff --git a/drivers/cpufreq/pxa3xx-cpufreq.c b/drivers/cpufreq/pxa3xx-cpufreq.c
-index 1cc145a..2837fd6 100644
---- a/drivers/cpufreq/pxa3xx-cpufreq.c
-+++ b/drivers/cpufreq/pxa3xx-cpufreq.c
-@@ -150,11 +150,6 @@ static void __update_bus_freq(struct pxa3xx_freq_info *info)
- 		cpu_relax();
- }
  
--static int pxa3xx_cpufreq_verify(struct cpufreq_policy *policy)
+-static int s3c2416_cpufreq_verify_speed(struct cpufreq_policy *policy)
 -{
--	return cpufreq_frequency_table_verify(policy, pxa3xx_freqs_table);
+-	struct s3c2416_data *s3c_freq = &s3c2416_cpufreq;
+-
+-	if (policy->cpu != 0)
+-		return -EINVAL;
+-
+-	return cpufreq_frequency_table_verify(policy, s3c_freq->freq_table);
 -}
 -
- static unsigned int pxa3xx_cpufreq_get(unsigned int cpu)
+ static unsigned int s3c2416_cpufreq_get_speed(unsigned int cpu)
  {
- 	return pxa3xx_get_clk_frequency_khz(0);
-@@ -227,16 +222,11 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
- 	return 0;
+ 	struct s3c2416_data *s3c_freq = &s3c2416_cpufreq;
+@@ -516,19 +506,14 @@ err_hclk:
+ 	return ret;
  }
  
--static int pxa3xx_cpufreq_exit(struct cpufreq_policy *policy)
--{
--	cpufreq_frequency_table_put_attr(policy->cpu);
--}
+-static struct freq_attr *s3c2416_cpufreq_attr[] = {
+-	&cpufreq_freq_attr_scaling_available_freqs,
+-	NULL,
+-};
 -
- static struct cpufreq_driver pxa3xx_cpufreq_driver = {
--	.verify		= pxa3xx_cpufreq_verify,
+ static struct cpufreq_driver s3c2416_cpufreq_driver = {
+ 	.flags          = 0,
+-	.verify		= s3c2416_cpufreq_verify_speed,
 +	.verify		= cpufreq_generic_frequency_table_verify,
- 	.target		= pxa3xx_cpufreq_set,
- 	.init		= pxa3xx_cpufreq_init,
--	.exit		= pxa3xx_cpufreq_exit,
-+	.exit		= cpufreq_generic_exit,
- 	.get		= pxa3xx_cpufreq_get,
- 	.name		= "pxa3xx-cpufreq",
+ 	.target		= s3c2416_cpufreq_set_target,
+ 	.get		= s3c2416_cpufreq_get_speed,
+ 	.init		= s3c2416_cpufreq_driver_init,
+ 	.name		= "s3c2416",
+-	.attr		= s3c2416_cpufreq_attr,
++	.attr		= cpufreq_generic_attr,
  };
+ 
+ static int __init s3c2416_cpufreq_init(void)
+diff --git a/drivers/cpufreq/s3c24xx-cpufreq.c b/drivers/cpufreq/s3c24xx-cpufreq.c
+index 39c1d3e..93fcdde 100644
+--- a/drivers/cpufreq/s3c24xx-cpufreq.c
++++ b/drivers/cpufreq/s3c24xx-cpufreq.c
+@@ -416,14 +416,6 @@ static __init int s3c_cpufreq_initclks(void)
+ 	return 0;
+ }
+ 
+-static int s3c_cpufreq_verify(struct cpufreq_policy *policy)
+-{
+-	if (policy->cpu != 0)
+-		return -EINVAL;
+-
+-	return 0;
+-}
+-
+ #ifdef CONFIG_PM
+ static struct cpufreq_frequency_table suspend_pll;
+ static unsigned int suspend_freq;
+@@ -473,7 +465,6 @@ static int s3c_cpufreq_resume(struct cpufreq_policy *policy)
+ 
+ static struct cpufreq_driver s3c24xx_driver = {
+ 	.flags		= CPUFREQ_STICKY,
+-	.verify		= s3c_cpufreq_verify,
+ 	.target		= s3c_cpufreq_target,
+ 	.get		= s3c_cpufreq_get,
+ 	.init		= s3c_cpufreq_init,
+diff --git a/drivers/cpufreq/s3c64xx-cpufreq.c b/drivers/cpufreq/s3c64xx-cpufreq.c
+index 872f74d..99fbc49 100644
+--- a/drivers/cpufreq/s3c64xx-cpufreq.c
++++ b/drivers/cpufreq/s3c64xx-cpufreq.c
+@@ -54,14 +54,6 @@ static struct cpufreq_frequency_table s3c64xx_freq_table[] = {
+ };
+ #endif
+ 
+-static int s3c64xx_cpufreq_verify_speed(struct cpufreq_policy *policy)
+-{
+-	if (policy->cpu != 0)
+-		return -EINVAL;
+-
+-	return cpufreq_frequency_table_verify(policy, s3c64xx_freq_table);
+-}
+-
+ static unsigned int s3c64xx_cpufreq_get_speed(unsigned int cpu)
+ {
+ 	if (cpu != 0)
+@@ -264,7 +256,7 @@ static int s3c64xx_cpufreq_driver_init(struct cpufreq_policy *policy)
+ 
+ static struct cpufreq_driver s3c64xx_cpufreq_driver = {
+ 	.flags          = 0,
+-	.verify		= s3c64xx_cpufreq_verify_speed,
++	.verify		= cpufreq_generic_frequency_table_verify,
+ 	.target		= s3c64xx_cpufreq_set_target,
+ 	.get		= s3c64xx_cpufreq_get_speed,
+ 	.init		= s3c64xx_cpufreq_driver_init,
 -- 
 1.7.12.rc2.18.g61b472e
 
