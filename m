@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965987Ab3HJQ1f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 12:27:35 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:54761 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965078Ab3HJQ1e (ORCPT
+	id S966556Ab3HJQjS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 12:39:18 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:46454 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965964Ab3HJQjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 12:27:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130810161031.GK19750@two.firstfloor.org>
-References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
-	<1376089460-5459-11-git-send-email-andi@firstfloor.org>
-	<CA+55aFyN2Cnt=uQOnXszwDA971o=xEwO=yFSgL-RH9vRjMsBbg@mail.gmail.com>
-	<20130810161031.GK19750@two.firstfloor.org>
-Date: Sat, 10 Aug 2013 09:27:33 -0700
-X-Google-Sender-Auth: 1QN88a96-RNHO55-DCTKo3yDeaw
-Message-ID: <CA+55aFw94ow=aYF-y9kJu+2ZsA=YLob5wFe01H+ooQmP6EbJvQ@mail.gmail.com>
-Subject: Re: [PATCH 10/13] x86: Move cond resched for copy_{from,to}_user into
- low level code 64bit
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 10 Aug 2013 12:39:16 -0400
+From: Kumar Gaurav <kumargauravgupta3@gmail.com>
+To: t.sailer@alumni.ethz.ch, jreuter@yaina.de, jpr@f6fbb.org
+Cc: linux-hams@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Kumar Gaurav <kumargauravgupta3@gmail.com>
+Subject: [PATCH] drivers:net:hamradio: Removing Depricated IRQF_DISABLED
+Date: Sat, 10 Aug 2013 22:08:58 +0530
+Message-Id: <1376152738-14944-1-git-send-email-kumargauravgupta3@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 10, 2013 at 9:10 AM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> Hmm. I can do that, but wouldn't that make CONFIG_PREEMPT_VOLUNTARY
-> mostly equivalent to CONFIG_PREEMPT_NONE?
+Removed IRQF_DISABLED as it's deprecated and should be removed
 
-According the the Kconfig help, PREEMPT_VOLUNTARY is about the
-*explicit* preemption points. And we do have a lot of them in
-"might_sleep()".
+Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
+---
+ drivers/net/hamradio/baycom_ser_fdx.c |    2 +-
+ drivers/net/hamradio/baycom_ser_hdx.c |    2 +-
+ drivers/net/hamradio/scc.c            |    2 +-
+ drivers/net/hamradio/yam.c            |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-And personally, I think it makes a *lot* more sense to have a
-"might_sleep()" in the MM allocators than it does to have it in
-copy_from_user().
+diff --git a/drivers/net/hamradio/baycom_ser_fdx.c b/drivers/net/hamradio/baycom_ser_fdx.c
+index a974727..c114009 100644
+--- a/drivers/net/hamradio/baycom_ser_fdx.c
++++ b/drivers/net/hamradio/baycom_ser_fdx.c
+@@ -445,7 +445,7 @@ static int ser12_open(struct net_device *dev)
+ 	outb(0, FCR(dev->base_addr));  /* disable FIFOs */
+ 	outb(0x0d, MCR(dev->base_addr));
+ 	outb(0, IER(dev->base_addr));
+-	if (request_irq(dev->irq, ser12_interrupt, IRQF_DISABLED | IRQF_SHARED,
++	if (request_irq(dev->irq, ser12_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED,
+ 			"baycom_ser_fdx", dev)) {
+ 		release_region(dev->base_addr, SER12_EXTENT);
+ 		return -EBUSY;
+diff --git a/drivers/net/hamradio/baycom_ser_hdx.c b/drivers/net/hamradio/baycom_ser_hdx.c
+index e349d86..d91c1fd 100644
+--- a/drivers/net/hamradio/baycom_ser_hdx.c
++++ b/drivers/net/hamradio/baycom_ser_hdx.c
+@@ -490,7 +490,7 @@ static int ser12_open(struct net_device *dev)
+ 	outb(0, FCR(dev->base_addr));  /* disable FIFOs */
+ 	outb(0x0d, MCR(dev->base_addr));
+ 	outb(0, IER(dev->base_addr));
+-	if (request_irq(dev->irq, ser12_interrupt, IRQF_DISABLED | IRQF_SHARED,
++	if (request_irq(dev->irq, ser12_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED,
+ 			"baycom_ser12", dev)) {
+ 		release_region(dev->base_addr, SER12_EXTENT);       
+ 		return -EBUSY;
+diff --git a/drivers/net/hamradio/scc.c b/drivers/net/hamradio/scc.c
+index bc1d521..4bc6ee8 100644
+--- a/drivers/net/hamradio/scc.c
++++ b/drivers/net/hamradio/scc.c
+@@ -1734,7 +1734,7 @@ static int scc_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 			if (!Ivec[hwcfg.irq].used && hwcfg.irq)
+ 			{
+ 				if (request_irq(hwcfg.irq, scc_isr,
+-						IRQF_DISABLED, "AX.25 SCC",
++						0, "AX.25 SCC",
+ 						(void *)(long) hwcfg.irq))
+ 					printk(KERN_WARNING "z8530drv: warning, cannot get IRQ %d\n", hwcfg.irq);
+ 				else
+diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
+index 0721e72..f947887 100644
+--- a/drivers/net/hamradio/yam.c
++++ b/drivers/net/hamradio/yam.c
+@@ -888,7 +888,7 @@ static int yam_open(struct net_device *dev)
+ 		goto out_release_base;
+ 	}
+ 	outb(0, IER(dev->base_addr));
+-	if (request_irq(dev->irq, yam_interrupt, IRQF_DISABLED | IRQF_SHARED, dev->name, dev)) {
++	if (request_irq(dev->irq, yam_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED, dev->name, dev)) {
+ 		printk(KERN_ERR "%s: irq %d busy\n", dev->name, dev->irq);
+ 		ret = -EBUSY;
+ 		goto out_release_base;
+-- 
+1.7.9.5
 
-But yes, it's obviously a gray area on exactly where you'd want to put
-them. But for a "get_user()" that can literally be just a few
-instructions? Why would we make that a preemption point? Or even a
-copy of few tens of bytes?
-
-I'd *much* rather have preemption points in places that actually loop,
-and that have real work associated with them.
-
-Now, the *debug* logic is entirely different, of course. Maybe the
-problem is that we have mixed up the two so badly, and we have
-"might_sleep()" that implies more of a debug issue than a preemption
-issue, and then people add those because they want the debug coverage
-(and then you *absolutely* want it even for a single-byte user mode
-access). And then because the concept is tied together with
-preemption, we end up doing preemption even for that single-byte
-access despite the fact that it makes no sense what-so-ever.
-
-So I think your patches are fine,  but I do think we should take a
-deeper look at this.
-
-                Linus
