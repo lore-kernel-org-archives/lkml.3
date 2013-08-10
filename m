@@ -1,137 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968253Ab3HJAtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 20:49:36 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41797 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968075Ab3HJAtf (ORCPT
+	id S968297Ab3HJAus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 20:50:48 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:41113 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968075Ab3HJAuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 20:49:35 -0400
+	Fri, 9 Aug 2013 20:50:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <1376080406-4r7r3uye-mutt-n-horiguchi@ah.jp.nec.com>
-References: <CAMyfujfZayb8_673vkb2hdE9J_w+wPTD4aQ6TsY+aWxb9EzY8A@mail.gmail.com>
-	<1376080406-4r7r3uye-mutt-n-horiguchi@ah.jp.nec.com>
-Date: Sat, 10 Aug 2013 08:49:34 +0800
-Message-ID: <CAMyfujeC_p-2cJteayPnA82wPRvoL2ekDNB6bd38d76v7Gb+6w@mail.gmail.com>
-Subject: Re: [PATCH 1/1] pagemap: fix buffer overflow in add_page_map()
-From: yonghua zheng <younghua.zheng@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Motohiro KOSAKI <kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAE9FiQWizduY9w=nOiUOcgo1Got5k8J_ouvgEnygtNXTDe5V9Q@mail.gmail.com>
+References: <CAE9FiQWizduY9w=nOiUOcgo1Got5k8J_ouvgEnygtNXTDe5V9Q@mail.gmail.com>
+Date: Fri, 9 Aug 2013 17:50:45 -0700
+X-Google-Sender-Auth: IBWIz7eiuYIttk-OO5DsRS2-Smk
+Message-ID: <CAE9FiQW-UTvB-NEx9fVv1EmGZg28TE-GeJvfmb+H_GgYjrmB=Q@mail.gmail.com>
+Subject: Re: cpufreq crash in pm/linux-next 08-07-2013
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Content-Type: multipart/mixed; boundary=047d7b3a849c1488d304e38d4839
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the patch according to Naoya's comment, I also run
-./scripts/checkpatch.pl, and it passed ;D.
+--047d7b3a849c1488d304e38d4839
+Content-Type: text/plain; charset=ISO-8859-1
 
->From 96826b0fdf9ec6d6e16c2c595f371dbb841250f7 Mon Sep 17 00:00:00 2001
-From: Yonghua Zheng <younghua.zheng@gmail.com>
-Date: Mon, 5 Aug 2013 12:12:24 +0800
-Subject: [PATCH 1/1] pagemap: fix buffer overflow in add_to_pagemap()
-
-In struc pagemapread:
-
-struct pagemapread {
-    int pos, len;
-    pagemap_entry_t *buffer;
-    bool v2;
-};
-
-pos is number of PM_ENTRY_BYTES in buffer, but len is the size of buffer,
-it is a mistake to compare pos and len in add_to_pagemap() for checking
-buffer is full or not, and this can lead to buffer overflow and random
-kernel panic issue.
-
-Correct len to be total number of PM_ENTRY_BYTES in buffer.
-
-Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
-
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index dbf61f6..cb98853 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -1116,8 +1116,8 @@ static ssize_t pagemap_read(struct file *file,
-char __user *buf,
-         goto out_task;
-
-     pm.v2 = soft_dirty_cleared;
--    pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
--    pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
-+    pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
-+    pm.buffer = kmalloc(pm.len * PM_ENTRY_BYTES, GFP_TEMPORARY);
-     ret = -ENOMEM;
-     if (!pm.buffer)
-         goto out_task;
--- 
-1.7.9.5
-
-On Sat, Aug 10, 2013 at 4:33 AM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> On Fri, Aug 09, 2013 at 01:16:41PM +0800, yonghua zheng wrote:
->> Hi,
->>
->> Recently we met quite a lot of random kernel panic issues after enable
->> CONFIG_PROC_PAGE_MONITOR in kernel, after debuggint sometime we found
->> this has something to do with following bug in pagemap:
->>
->> In struc pagemapread:
->>
->> struct pagemapread {
->>     int pos, len;
->>     pagemap_entry_t *buffer;
->>     bool v2;
->> };
->>
->> pos is number of PM_ENTRY_BYTES in buffer, but len is the size of buffer,
->> it is a mistake to compare pos and len in add_page_map() for checking
+On Fri, Aug 9, 2013 at 5:26 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> from your pm/linux-next
 >
-> s/add_page_map/add_to_pagemap/ ?
 >
->> buffer is full or not, and this can lead to buffer overflow and random
->> kernel panic issue.
->>
->> Correct len to be total number of PM_ENTRY_BYTES in buffer.
->>
->> Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
+> [    7.918603] calling  acpi_cpufreq_init+0x0/0x1df @ 1
+> [    7.923917] BUG: unable to handle kernel NULL pointer dereference
+> at           (null)
+> [    7.926780] IP: [<ffffffff8151b277>] __list_del_entry+0xb7/0xe0
+> [    7.927799] PGD 0
+> [    7.927799] Oops: 0000 [#1] SMP
+> [    7.927799] Modules linked in:
+> [    7.927799] CPU: 0 PID: 1 Comm: swapper/0 Not tainted
+> 3.11.0-rc4-yh-00839-g7a8b387-dirty #1840
+> [    7.927799] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [    7.927799] task: ffff88007ab60000 ti: ffff88007ab5c000 task.ti:
+> ffff88007ab5c000
+> [    7.927799] RIP: 0010:[<ffffffff8151b277>]  [<ffffffff8151b277>]
+> __list_del_entry+0xb7/0xe0
+> [    7.927799] RSP: 0018:ffff88007ab5dc98  EFLAGS: 00010007
+> [    7.927799] RAX: 0000000000000000 RBX: ffff880115c85ab8 RCX: dead000000200200
+> [    7.927799] RDX: 0000000000000000 RSI: ffffffff82b96718 RDI: ffff880115c85ab8
+> [    7.927799] RBP: ffff88007ab5dc98 R08: 0000000000000001 R09: 0000000000000001
+> [    7.927799] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000286
+> [    7.927799] R13: 00000000fffffffb R14: ffff88007b80b548 R15: ffff880115c85a00
+> [    7.927799] FS:  0000000000000000(0000) GS:ffff88007b800000(0000)
+> knlGS:0000000000000000
+> [    7.927799] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [    7.927799] CR2: 0000000000000000 CR3: 0000000002a14000 CR4: 00000000000006f0
+> [    7.927799] Stack:
+> [    7.927799]  ffff88007ab5dcb8 ffffffff8151b2b1 0000000000000000
+> ffff880115c85a00
+> [    7.927799]  ffff88007ab5dcd8 ffffffff81e1ef03 0000000000000000
+> 0000000000000000
+> [    7.927799]  ffff88007ab5dd48 ffffffff81e21829 ffff88007ab5dd70
+> ffff88007ab5dd70
+> [    7.927799] Call Trace:
+> [    7.927799]  [<ffffffff8151b2b1>] list_del+0x11/0x40
+> [    7.927799]  [<ffffffff81e1ef03>] cpufreq_policy_free+0x33/0x70
+> [    7.927799]  [<ffffffff81e21829>] __cpufreq_add_dev.isra.3+0x6b9/0x760
+> [    7.927799]  [<ffffffff81e218e0>] cpufreq_add_dev+0x10/0x20
+> [    7.927799]  [<ffffffff81762e49>] subsys_interface_register+0x99/0xf0
+> [    7.927799]  [<ffffffff81e1fc52>] cpufreq_register_driver+0xb2/0x1a0
+> [    7.927799]  [<ffffffff82e18ff3>] acpi_cpufreq_init+0xbd/0x1df
+> [    7.927799]  [<ffffffff810ee56a>] ? ktime_get+0x6a/0xe0
+> [    7.927799]  [<ffffffff82e18f36>] ? cpufreq_gov_dbs_init+0x12/0x12
+> [    7.927799]  [<ffffffff81000272>] do_one_initcall+0x72/0x170
+> [    7.927799]  [<ffffffff810bac00>] ? parse_args+0x150/0x350
+> [    7.927799]  [<ffffffff820b9830>] ? printk+0x4d/0x4f
+> [    7.927799]  [<ffffffff82dc2370>] kernel_init_freeable+0x1bf/0x251
+> [    7.927799]  [<ffffffff82dc1a9c>] ? loglevel+0x31/0x31
+> [    7.927799]  [<ffffffff820aef50>] ? rest_init+0xd0/0xd0
+> [    7.927799]  [<ffffffff820aef5e>] kernel_init+0xe/0xf0
+> [    7.927799]  [<ffffffff820dd25c>] ret_from_fork+0x7c/0xb0
+> [    7.927799]  [<ffffffff820aef50>] ? rest_init+0xd0/0xd0
+> [    7.927799] Code: 84 82 be 3e 00 00 00 48 c7 c7 16 ca 84 82 31 c0
+> e8 7f c8 b7 ff eb 2c 0f 1f 44 00 00 48 b9 00 02 20 00 00 00 ad de 48
+> 39 c8 74 8c <4c> 8b 00 4c 39 c7 75 a6 4c 8b 42 08 4c 39 c7 75 bc 48 89
+> 42 08
+> [    7.927799] RIP  [<ffffffff8151b277>] __list_del_entry+0xb7/0xe0
+> [    7.927799]  RSP <ffff88007ab5dc98>
+> [    7.927799] CR2: 0000000000000000
+> [    7.927799] ---[ end trace 3db50d3cbca4646d ]---
+> [    8.003780] Kernel panic - not syncing: Attempted to kill init!
+> exitcode=0x00000009
+> [    8.003780]
 >
-> You can find coding style violation with scripts/checkpatch.pl.
-> And I think this patch is worth going into -stable trees
-> (maybe since 2.6.34.)
 >
-> The fix itself looks fine to me.
->
-> Thanks,
-> Naoya Horiguchi
->
->> ---
->>  fs/proc/task_mmu.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
->> index dbf61f6..cb98853 100644
->> --- a/fs/proc/task_mmu.c
->> +++ b/fs/proc/task_mmu.c
->> @@ -1116,8 +1116,8 @@ static ssize_t pagemap_read(struct file *file,
->> char __user *buf,
->>          goto out_task;
->>
->>      pm.v2 = soft_dirty_cleared;
->> -    pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
->> -    pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
->> +    pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
->> +    pm.buffer = kmalloc(pm.len * PM_ENTRY_BYTES, GFP_TEMPORARY);
->>      ret = -ENOMEM;
->>      if (!pm.buffer)
->>          goto out_task;
->>
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>
+> looks like it caused by patches from Viresh Kumar around Aug 6.
+
+attached patch fix the problem.
+
+Please fold it into offending commit.
+
+commit 91e776cc60fb0a7e58c392189dd9cced54cb1fa0
+Author: Lukasz Majewski <l.majewski@samsung.com>
+Date:   Tue Aug 6 22:53:08 2013 +0530
+
+    cpufreq: Store cpufreq policies in a list
+
+    Policies available in the cpufreq framework are now linked together.
+    They are accessible via cpufreq_policy_list defined in the cpufreq
+    core.
+
+    Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+    Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+    Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+    Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+--047d7b3a849c1488d304e38d4839
+Content-Type: application/octet-stream; 
+	name="cpufreq_fix_missing_list_init.patch"
+Content-Disposition: attachment; 
+	filename="cpufreq_fix_missing_list_init.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hk63uel10
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3B1ZnJlcS9jcHVmcmVxLmMgYi9kcml2ZXJzL2NwdWZyZXEv
+Y3B1ZnJlcS5jCmluZGV4IDA2Zjg2NzEuLjUyZjAyMzEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY3B1
+ZnJlcS9jcHVmcmVxLmMKKysrIGIvZHJpdmVycy9jcHVmcmVxL2NwdWZyZXEuYwpAQCAtOTM3LDYg
+KzkzNyw4IEBAIHN0YXRpYyBzdHJ1Y3QgY3B1ZnJlcV9wb2xpY3kgKmNwdWZyZXFfcG9saWN5X2Fs
+bG9jKHZvaWQpCiAJaWYgKCF6YWxsb2NfY3B1bWFza192YXIoJnBvbGljeS0+cmVsYXRlZF9jcHVz
+LCBHRlBfS0VSTkVMKSkKIAkJZ290byBlcnJfZnJlZV9jcHVtYXNrOwogCisJSU5JVF9MSVNUX0hF
+QUQoJnBvbGljeS0+cG9saWN5X2xpc3QpOworCiAJcmV0dXJuIHBvbGljeTsKIAogZXJyX2ZyZWVf
+Y3B1bWFzazoK
+--047d7b3a849c1488d304e38d4839--
