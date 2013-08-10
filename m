@@ -1,109 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967822Ab3HJQzp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 12:55:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39247 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966710Ab3HJQzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 12:55:44 -0400
-Date: Sat, 10 Aug 2013 18:55:39 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Tony Lu <zlu@tilera.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tile: support ASLR fully
-In-Reply-To: <201308091951.r79JppCI030998@farm-0021.internal.tilera.com>
-Message-ID: <alpine.LNX.2.00.1308101849350.32627@pobox.suse.cz>
-References: <201308091951.r79JppCI030998@farm-0021.internal.tilera.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1030826Ab3HJRCT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 13:02:19 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:63272 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030554Ab3HJRCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Aug 2013 13:02:17 -0400
+Message-ID: <5206720C.4060405@gmail.com>
+Date: Sat, 10 Aug 2013 22:32:04 +0530
+From: Kumar Gaurav <kumargauravgupta3@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Julia Lawall <julia.lawall@lip6.fr>
+CC: t.sailer@alumni.ethz.ch, jreuter@yaina.de, jpr@f6fbb.org,
+        linux-hams@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] drivers:net:hamradio: Removing Depricated IRQF_DISABLED
+References: <1376152738-14944-1-git-send-email-kumargauravgupta3@gmail.com> <alpine.DEB.2.02.1308101847260.2076@localhost6.localdomain6>
+In-Reply-To: <alpine.DEB.2.02.1308101847260.2076@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Aug 2013, Tony Lu wrote:
+On Saturday 10 August 2013 10:17 PM, Julia Lawall wrote:
+> If it is in a | with something else, I think you can just remove it.
+>
+> julia
+>
+> On Sat, 10 Aug 2013, Kumar Gaurav wrote:
+>
+>> Removed IRQF_DISABLED as it's deprecated and should be removed
+>>
+>> Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
+>> ---
+>>   drivers/net/hamradio/baycom_ser_fdx.c |    2 +-
+>>   drivers/net/hamradio/baycom_ser_hdx.c |    2 +-
+>>   drivers/net/hamradio/scc.c            |    2 +-
+>>   drivers/net/hamradio/yam.c            |    2 +-
+>>   4 files changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/net/hamradio/baycom_ser_fdx.c b/drivers/net/hamradio/baycom_ser_fdx.c
+>> index a974727..c114009 100644
+>> --- a/drivers/net/hamradio/baycom_ser_fdx.c
+>> +++ b/drivers/net/hamradio/baycom_ser_fdx.c
+>> @@ -445,7 +445,7 @@ static int ser12_open(struct net_device *dev)
+>>   	outb(0, FCR(dev->base_addr));  /* disable FIFOs */
+>>   	outb(0x0d, MCR(dev->base_addr));
+>>   	outb(0, IER(dev->base_addr));
+>> -	if (request_irq(dev->irq, ser12_interrupt, IRQF_DISABLED | IRQF_SHARED,
+>> +	if (request_irq(dev->irq, ser12_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED,
+>>   			"baycom_ser_fdx", dev)) {
+>>   		release_region(dev->base_addr, SER12_EXTENT);
+>>   		return -EBUSY;
+>> diff --git a/drivers/net/hamradio/baycom_ser_hdx.c b/drivers/net/hamradio/baycom_ser_hdx.c
+>> index e349d86..d91c1fd 100644
+>> --- a/drivers/net/hamradio/baycom_ser_hdx.c
+>> +++ b/drivers/net/hamradio/baycom_ser_hdx.c
+>> @@ -490,7 +490,7 @@ static int ser12_open(struct net_device *dev)
+>>   	outb(0, FCR(dev->base_addr));  /* disable FIFOs */
+>>   	outb(0x0d, MCR(dev->base_addr));
+>>   	outb(0, IER(dev->base_addr));
+>> -	if (request_irq(dev->irq, ser12_interrupt, IRQF_DISABLED | IRQF_SHARED,
+>> +	if (request_irq(dev->irq, ser12_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED,
+>>   			"baycom_ser12", dev)) {
+>>   		release_region(dev->base_addr, SER12_EXTENT);
+>>   		return -EBUSY;
+>> diff --git a/drivers/net/hamradio/scc.c b/drivers/net/hamradio/scc.c
+>> index bc1d521..4bc6ee8 100644
+>> --- a/drivers/net/hamradio/scc.c
+>> +++ b/drivers/net/hamradio/scc.c
+>> @@ -1734,7 +1734,7 @@ static int scc_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+>>   			if (!Ivec[hwcfg.irq].used && hwcfg.irq)
+>>   			{
+>>   				if (request_irq(hwcfg.irq, scc_isr,
+>> -						IRQF_DISABLED, "AX.25 SCC",
+>> +						0, "AX.25 SCC",
+>>   						(void *)(long) hwcfg.irq))
+>>   					printk(KERN_WARNING "z8530drv: warning, cannot get IRQ %d\n", hwcfg.irq);
+>>   				else
+>> diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
+>> index 0721e72..f947887 100644
+>> --- a/drivers/net/hamradio/yam.c
+>> +++ b/drivers/net/hamradio/yam.c
+>> @@ -888,7 +888,7 @@ static int yam_open(struct net_device *dev)
+>>   		goto out_release_base;
+>>   	}
+>>   	outb(0, IER(dev->base_addr));
+>> -	if (request_irq(dev->irq, yam_interrupt, IRQF_DISABLED | IRQF_SHARED, dev->name, dev)) {
+>> +	if (request_irq(dev->irq, yam_interrupt, IRQF_TRIGGER_NONE | IRQF_SHARED, dev->name, dev)) {
+>>   		printk(KERN_ERR "%s: irq %d busy\n", dev->name, dev->irq);
+>>   		ret = -EBUSY;
+>>   		goto out_release_base;
+>> -- 
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+Yes i was suggested for using IRQF_TRIGGER_NONE too so used this. Please 
+tell me if this makes any difference or issue?
 
-> With this change, tile Linux now supports address-space layout
-> randomization for shared objects, stack, heap and vdso.
-> 
-> Signed-off-by: Tony Lu <zlu@tilera.com>
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  arch/tile/include/asm/elf.h |  4 ++++
->  arch/tile/mm/mmap.c         | 20 ++++++++++++++++++--
->  2 files changed, 22 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
-> index 31d854f..e1da88e 100644
-> --- a/arch/tile/include/asm/elf.h
-> +++ b/arch/tile/include/asm/elf.h
-> @@ -137,6 +137,10 @@ do { \
->  	NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE); \
->  } while (0)
->  
-> +struct mm_struct;
-> +extern unsigned long arch_randomize_brk(struct mm_struct *mm);
-> +#define arch_randomize_brk arch_randomize_brk
-> +
->  #ifdef CONFIG_COMPAT
->  
->  #define COMPAT_ELF_PLATFORM "tilegx-m32"
-> diff --git a/arch/tile/mm/mmap.c b/arch/tile/mm/mmap.c
-> index d67d91e..b3686ce 100644
-> --- a/arch/tile/mm/mmap.c
-> +++ b/arch/tile/mm/mmap.c
-> @@ -58,16 +58,32 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
->  #else
->  	int is_32bit = 0;
->  #endif
-> +	unsigned long random_factor = 0UL;
-> +
-> +	if (current->flags & PF_RANDOMIZE) {
-> +		random_factor = get_random_int();
-> +		random_factor = random_factor << PAGE_SHIFT;
-> +		if (is_32bit)
-> +			random_factor &= 0xfffffful;
-> +		else
-> +			random_factor &= 0xffffffful;
-> +	}
-
-Hi Tony,
-
-to me, the used math seems not to be immediatley understandable on a first 
-sight. Instead of using full range of get_random_int() and then clamping 
-it by anding with 0xffffffUL or fffffffUL, how about just using 
-appropriate division reminder to the result of get_random_int()? (for 
-inspiration and for understanding of what I mean, please see what 
-mmap_rnd() is doing on x86).
-
->  
->  	/*
->  	 * Use standard layout if the expected stack growth is unlimited
->  	 * or we are running native 64 bits.
->  	 */
-> -	if (!is_32bit || rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
-> -		mm->mmap_base = TASK_UNMAPPED_BASE;
-> +	if (rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
-> +		mm->mmap_base = TASK_UNMAPPED_BASE + random_factor;
->  		mm->get_unmapped_area = arch_get_unmapped_area;
->  	} else {
->  		mm->mmap_base = mmap_base(mm);
->  		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
->  	}
->  }
-> +
-> +unsigned long arch_randomize_brk(struct mm_struct *mm)
-> +{
-> +	unsigned long range_end = mm->brk + 0x02000000;
-> +	return randomize_range(mm->brk, range_end, 0) ? : mm->brk;
-> +}
-
-Otherwise the patch looks good to me, so once you either add some 
-explanatory comment to the get_random_int() math, or convert it to use 
-division reminder, I'll be happy to Ack it.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+Regards
+Kumar Gaurav
