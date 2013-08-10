@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965972Ab3HJQ0D (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 12:26:03 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:64834
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964914Ab3HJQ0A (ORCPT
+	id S965987Ab3HJQ1f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 12:27:35 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:54761 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965078Ab3HJQ1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 12:26:00 -0400
-X-IronPort-AV: E=Sophos;i="4.89,852,1367964000"; 
-   d="scan'208";a="23673382"
-Date: Sat, 10 Aug 2013 18:25:54 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Joe Perches <joe@perches.com>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        kernel-janitors@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH 2/5] crypto/camellia_generic.c: convert comma to
- semicolon
-In-Reply-To: <1376151557.2083.35.camel@joe-AO722>
-Message-ID: <alpine.DEB.2.02.1308101825220.2076@localhost6.localdomain6>
-References: <1376149225-3997-1-git-send-email-Julia.Lawall@lip6.fr>  <1376149225-3997-3-git-send-email-Julia.Lawall@lip6.fr> <1376151557.2083.35.camel@joe-AO722>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 10 Aug 2013 12:27:34 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130810161031.GK19750@two.firstfloor.org>
+References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
+	<1376089460-5459-11-git-send-email-andi@firstfloor.org>
+	<CA+55aFyN2Cnt=uQOnXszwDA971o=xEwO=yFSgL-RH9vRjMsBbg@mail.gmail.com>
+	<20130810161031.GK19750@two.firstfloor.org>
+Date: Sat, 10 Aug 2013 09:27:33 -0700
+X-Google-Sender-Auth: 1QN88a96-RNHO55-DCTKo3yDeaw
+Message-ID: <CA+55aFw94ow=aYF-y9kJu+2ZsA=YLob5wFe01H+ooQmP6EbJvQ@mail.gmail.com>
+Subject: Re: [PATCH 10/13] x86: Move cond resched for copy_{from,to}_user into
+ low level code 64bit
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Aug 2013, Joe Perches wrote:
+On Sat, Aug 10, 2013 at 9:10 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> Hmm. I can do that, but wouldn't that make CONFIG_PREEMPT_VOLUNTARY
+> mostly equivalent to CONFIG_PREEMPT_NONE?
 
-> On Sat, 2013-08-10 at 17:40 +0200, Julia Lawall wrote:
-> > Replace a comma between expression statements by a semicolon.
-> []
-> > This patch is separate from the others because the code appears to be
-> > machine-generated.
-> 
-> It may have once been machine generated, but it's not now.
-> It's been modified several times by human generated patches.
-> 
-> > diff --git a/crypto/camellia_generic.c b/crypto/camellia_generic.c
-> []
-> > @@ -388,7 +388,7 @@ static void camellia_setup_tail(u32 *subkey, u32 *subL, u32 *subR, int max)
-> []
-> > -	dw = subL[1] & subL[9],
-> > +	dw = subL[1] & subL[9];
-> >  		subR[1] ^= rol32(dw, 1); /* modified for FLinv(kl2) */
-> 
-> Perhaps you can (auto?) fix the indentation
-> on the next line too?
+According the the Kconfig help, PREEMPT_VOLUNTARY is about the
+*explicit* preemption points. And we do have a lot of them in
+"might_sleep()".
 
-OK, I'll take care of it.
+And personally, I think it makes a *lot* more sense to have a
+"might_sleep()" in the MM allocators than it does to have it in
+copy_from_user().
 
-julia
+But yes, it's obviously a gray area on exactly where you'd want to put
+them. But for a "get_user()" that can literally be just a few
+instructions? Why would we make that a preemption point? Or even a
+copy of few tens of bytes?
+
+I'd *much* rather have preemption points in places that actually loop,
+and that have real work associated with them.
+
+Now, the *debug* logic is entirely different, of course. Maybe the
+problem is that we have mixed up the two so badly, and we have
+"might_sleep()" that implies more of a debug issue than a preemption
+issue, and then people add those because they want the debug coverage
+(and then you *absolutely* want it even for a single-byte user mode
+access). And then because the concept is tied together with
+preemption, we end up doing preemption even for that single-byte
+access despite the fact that it makes no sense what-so-ever.
+
+So I think your patches are fine,  but I do think we should take a
+deeper look at this.
+
+                Linus
