@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031734Ab3HJACo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Aug 2013 20:02:44 -0400
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:1945 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031651Ab3HJACn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Aug 2013 20:02:43 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zcb8kzbb2dI98dIc89bh936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h93fhd24hf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1155h)
-Message-ID: <1376092951.15633.93.camel@snotra.buserror.net>
-Subject: Re: [v2] Enhanced support for MPC8xx/8xxx watchdog
-From: Scott Wood <scottwood@freescale.com>
-To: leroy christophe <christophe.leroy@c-s.fr>
-CC: Wim Van Sebroeck <wim@iguana.be>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-watchdog@vger.kernel.org>
-Date: Fri, 9 Aug 2013 19:02:31 -0500
-In-Reply-To: <520331C1.4060406@c-s.fr>
-References: <201302280852.r1S8qMYu003742@localhost.localdomain>
-	 <20130625230431.GA29393@home.buserror.net> <520331C1.4060406@c-s.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1758417Ab3HJAO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Aug 2013 20:14:27 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:63270 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754878Ab3HJAO0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Aug 2013 20:14:26 -0400
+Message-ID: <520585DF.6010002@mit.edu>
+Date: Fri, 09 Aug 2013 17:14:23 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jason Baron <jbaron@akamai.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC][PATCH 3/2] x86/jump labels: Count and display the short
+ jumps used
+References: <20130807173606.872055511@goodmis.org> <1375898048.6848.18.camel@gandalf.local.home> <CA+55aFwo4iFk4_6cSoK=NjCWjVgdPgKy0YfKpZd2zSGn_RXHYg@mail.gmail.com> <5202ABEF.10107@akamai.com> <CA+55aFyu+3fRrsGUZkH6y5yND3oV9K+jCzrJyCWqwHQreFELOw@mail.gmail.com> <5202BE17.9010408@akamai.com> <CA+55aFykSZb-XmGU0WjZDuiSUXQ6RbRhV3ZH5BUFCRifaoLUGA@mail.gmail.com>
+In-Reply-To: <CA+55aFykSZb-XmGU0WjZDuiSUXQ6RbRhV3ZH5BUFCRifaoLUGA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-08 at 07:50 +0200, leroy christophe wrote:
-> Le 26/06/2013 01:04, Scott Wood a écrit :
-> > What happens if there's a race?  If another CPU updates wdt_last_ping in
-> > parallel, then you could see wdt_last_ping greater than the value you
-> > read for jiffies.  Since this is an unsigned comparison, it will fail to
-> > call keepalive.  You might get saved by pinging it twice as often as
-> > necessary, but you shouldn't rely on that.
-> Euh ... This watchdog is integrated inside the CPU, so there is no 
-> chance that any external CPU get access to it.
+On 08/07/2013 02:56 PM, Linus Torvalds wrote:
+> 
+> Both of the biased cases *might* also want things like "save register
+> state in the unlikely path so that the *likely* path doesn't have to".
+> Think things like "it's a leaf function, and the likely path doesn't
+> need any temporaries, but the unlikely path ends up doing function
+> calls and needs a stack frame". If the compiler can make likely path
+> avoid the stack frame generation and be straight-line, that would be
+> really nice.
 
-Hmm, it looks like mpc8641d (which is the only multi-core SoC among mpc8xx/mpc83xx/mpc86xx) does not have this watchdog, even though mpc8610 does.
+This inspired me to see what happens when you call an
+__attribute__((noreturn)) function.  The results are sad:
 
-So pretend I said "what if you get preempted?". :-)
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=10837
 
-> >> +		mpc8xxx_wdt_keepalive();
-> >> +		/* We're pinging it twice faster than needed, to be sure. */
-> >> +		mod_timer(&wdt_timer, jiffies + HZ * hw_timo_sec / 2);
-> >> +	}
-> >> +}
-> >> +
-> >> +static void mpc8xxx_wdt_sw_keepalive(void)
-> >> +{
-> >> +	wdt_last_ping = jiffies;
-> >> +	mpc8xxx_wdt_timer_ping(0);
-> >>   }
-> > This isn't new with this patch, but it looks like
-> > mpc8xxx_wdt_keepalive() can be called either from timer context, or with
-> > interrupts enabled... yet it uses a bare spin_lock() rather than an
-> > irq-safe version.  This should be fixed.
-> Ok, I'll propose another patch for that. Indeed, is the spin_lock needed 
-> at all ? If we get two writes interleaved, it will make it anyway.
+I think the explanations for why that bug is WONTFIX are bogus.  And
+unless gcc fixes that, trying to get efficient code that intentionally
+jumps and never returns seems hard (at least without sticking the
+call/jump into inline assembly).
 
-I suppose...  I don't like relying on things like that, though.
-
--Scott
-
-
-
+--Andy
