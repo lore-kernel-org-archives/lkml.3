@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652Ab3HJRtD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 13:49:03 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:35980 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab3HJRtA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 13:49:00 -0400
-Date: Sat, 10 Aug 2013 10:48:32 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Cc: Stephane Eranian <eranian@google.com>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH 0/7]: Enable 'perf mem' command for Power
-Message-ID: <20130810174831.GA15551@us.ibm.com>
+	id S1758666Ab3HJRtx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 13:49:53 -0400
+Received: from mx01-sz.bfs.de ([194.94.69.67]:9577 "EHLO mx01-sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753292Ab3HJRtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Aug 2013 13:49:52 -0400
+Message-ID: <52067D3A.2090505@bfs.de>
+Date: Sat, 10 Aug 2013 19:49:46 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081017-3620-0000-0000-000003E3DAB8
+To: Joe Perches <joe@perches.com>
+CC: Julia Lawall <Julia.Lawall@lip6.fr>, Jonathan Cameron <jic23@cam.ac.uk>,
+        kernel-janitors@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch/arm/mach-pxa/stargate2.c: use ARRAY_AND_SIZE consistently
+References: <1376148353-9699-1-git-send-email-Julia.Lawall@lip6.fr> <1376148738.2083.17.camel@joe-AO722>
+In-Reply-To: <1376148738.2083.17.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH 0/7]: Enable 'perf mem' command for Power
 
-'perf mem' command enables analyzing the memory operations of an
-application. It needs the kernel to export the memory hierarcy
-level from which a load instruction was satisfied.
 
-It also needs the Power kernel to make the 'mem-loads' and 'mem-stores'
-generic events available in sysfs. While there, we also export the
-other Power8 generic events in sysfs.
+Am 10.08.2013 17:32, schrieb Joe Perches:
+> On Sat, 2013-08-10 at 17:25 +0200, Julia Lawall wrote:
+>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> Because ARRAY_AND_SIZE changes the apparent arity of a function, if it is
+>> used for one call to a given function, it would be better, if possible, to
+>> use it for all of them.
+> 
+> I think it'd be better to remove ARRAY_AND_SIZE instead.
+> 
 
-Thanks to input from Stephane Eranian and Michael Ellerman.
++1
 
-P.S. The patchset builds on several configurations including pmac32_defconfig.
-     But I am unable to verify the build on few other configs due to a problem
-     unrleated to this patchset. That is being discussed in a separate thread.
-     I would like some feedback on this patchset in the meanwhile.
+:)
 
-Sukadev Bhattiprolu (7):
-  powerpc/perf: Rename Power8 macros to start with PME
-  powerpc/perf: Export Power8 generic events in sysfs
-  powerpc/perf: Create mem-loads/mem-stores events for Power8
-  powerpc/perf: Create mem-loads/mem-stores events for Power7
-  powerpc/perf: Define big-endian version of perf_mem_data_src
-  powerpc/perf: Export Power8 memory hierarchy info to user space.
-  powerpc/perf: Export Power7 memory hierarchy info to user space.
-
- arch/powerpc/include/asm/perf_event_server.h |    2 +
- arch/powerpc/perf/core-book3s.c              |   11 +++
- arch/powerpc/perf/power7-pmu.c               |   81 ++++++++++++++++++++
- arch/powerpc/perf/power8-pmu.c               |  106 +++++++++++++++++++++++---
- include/uapi/linux/perf_event.h              |   55 +++++++++++++
- 5 files changed, 243 insertions(+), 12 deletions(-)
-
+re,
+ wh
