@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968446Ab3HJGv1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 02:51:27 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:47689 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968429Ab3HJGvW (ORCPT
+	id S968427Ab3HJGvR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 02:51:17 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:33030 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030526Ab3HJGvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 02:51:22 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 29/44] cpufreq: pcc: Use generic cpufreq routines
-Date: Sat, 10 Aug 2013 12:14:25 +0530
-Message-Id: <707070e59966ed3982ee52b367991e0b175e0319.1376116345.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376116344.git.viresh.kumar@linaro.org>
-References: <cover.1376116344.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376116344.git.viresh.kumar@linaro.org>
-References: <cover.1376116344.git.viresh.kumar@linaro.org>
+	Sat, 10 Aug 2013 02:51:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1375865207-11794-1-git-send-email-michael@ellerman.id.au>
+References: <1375865207-11794-1-git-send-email-michael@ellerman.id.au>
+Date: Sat, 10 Aug 2013 09:51:11 +0300
+X-Google-Sender-Auth: FORjlO3OcG0cPIMo-w95AIo2Lik
+Message-ID: <CAOJsxLEs45Ab95XYfb68AhABNm9d3r6_utGrYkBSRaxJFUou7w@mail.gmail.com>
+Subject: Re: [PATCH] kvm tools: Fix build of guest init with biarch powerpc compilers
+From: Pekka Enberg <penberg@kernel.org>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: KVM General <kvm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the CPUFreq drivers do similar things in .exit() and .verify() routines
-and .attr. So its better if we have generic routines for them which can be used
-by cpufreq drivers then.
+On Wed, Aug 7, 2013 at 11:46 AM, Michael Ellerman
+<michael@ellerman.id.au> wrote:
+> On powerpc we build kvmtool as a 64bit binary. We do that by setting
+> -m64 in our CFLAGS. For most things we just call $(CC) and it passes
+> that info onto the linker.
+>
+> However there is one place where we explicitly call the linker, in the
+> build of guest/init - and in that case we need to tell the linker to
+> build 64bit.
+>
+> We have gotten away with this so far because we have been building with
+> a 64bit only toolchain. However if you build with a biarch toolchain,
+> which generally defaults to 32bit, we fail to link.
+>
+> The fix is to defined LDFLAGS appropriately and pass it to LD.
+>
+> Tested on powerpc and x86-64.
+>
+> Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
 
-This patch uses these generic routines for this driver.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/pcc-cpufreq.c | 9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
-
-diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
-index d81c4e5..90aa385 100644
---- a/drivers/cpufreq/pcc-cpufreq.c
-+++ b/drivers/cpufreq/pcc-cpufreq.c
-@@ -109,13 +109,6 @@ struct pcc_cpu {
- 
- static struct pcc_cpu __percpu *pcc_cpu_info;
- 
--static int pcc_cpufreq_verify(struct cpufreq_policy *policy)
--{
--	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
--				     policy->cpuinfo.max_freq);
--	return 0;
--}
--
- static inline void pcc_cmd(void)
- {
- 	u64 doorbell_value;
-@@ -582,7 +575,7 @@ static int pcc_cpufreq_cpu_exit(struct cpufreq_policy *policy)
- static struct cpufreq_driver pcc_cpufreq_driver = {
- 	.flags = CPUFREQ_CONST_LOOPS,
- 	.get = pcc_get_freq,
--	.verify = pcc_cpufreq_verify,
-+	.verify = cpufreq_generic_frequency_table_verify,
- 	.target = pcc_cpufreq_target,
- 	.init = pcc_cpufreq_cpu_init,
- 	.exit = pcc_cpufreq_cpu_exit,
--- 
-1.7.12.rc2.18.g61b472e
-
+Applied, thanks a lot!
