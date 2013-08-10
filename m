@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161163Ab3HJGw6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 02:52:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38068 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161146Ab3HJGwy (ORCPT
+	id S1161179Ab3HJGxG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 02:53:06 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:46080 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161146Ab3HJGxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 02:52:54 -0400
+	Sat, 10 Aug 2013 02:53:01 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 42/44] cpufreq: tegra: Use generic cpufreq routines
-Date: Sat, 10 Aug 2013 12:14:38 +0530
-Message-Id: <0fd7c21856de4c70e2610a89ba6345332eda7aba.1376116345.git.viresh.kumar@linaro.org>
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [PATCH 43/44] cpufreq: unicore2: Use generic cpufreq routines
+Date: Sat, 10 Aug 2013 12:14:39 +0530
+Message-Id: <d518dd39781933a497d44253205b0c039965c718.1376116345.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376116344.git.viresh.kumar@linaro.org>
 References: <cover.1376116344.git.viresh.kumar@linaro.org>
@@ -31,50 +31,46 @@ by cpufreq drivers then.
 
 This patch uses these generic routines for this driver.
 
-Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/tegra-cpufreq.c | 14 ++------------
- 1 file changed, 2 insertions(+), 12 deletions(-)
+ drivers/cpufreq/unicore2-cpufreq.c | 16 +---------------
+ 1 file changed, 1 insertion(+), 15 deletions(-)
 
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-index faf1ce5..affb294 100644
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ b/drivers/cpufreq/tegra-cpufreq.c
-@@ -51,11 +51,6 @@ static unsigned long target_cpu_speed[NUM_CPUS];
- static DEFINE_MUTEX(tegra_cpu_lock);
- static bool is_suspended;
+diff --git a/drivers/cpufreq/unicore2-cpufreq.c b/drivers/cpufreq/unicore2-cpufreq.c
+index 12fc904..b9f693c 100644
+--- a/drivers/cpufreq/unicore2-cpufreq.c
++++ b/drivers/cpufreq/unicore2-cpufreq.c
+@@ -21,20 +21,6 @@
  
--static int tegra_verify_speed(struct cpufreq_policy *policy)
+ static struct cpufreq_driver ucv2_driver;
+ 
+-/* make sure that only the "userspace" governor is run
+- * -- anything else wouldn't make sense on this platform, anyway.
+- */
+-int ucv2_verify_speed(struct cpufreq_policy *policy)
 -{
--	return cpufreq_frequency_table_verify(policy, freq_table);
+-	if (policy->cpu)
+-		return -EINVAL;
+-
+-	cpufreq_verify_within_limits(policy,
+-			policy->cpuinfo.min_freq, policy->cpuinfo.max_freq);
+-
+-	return 0;
 -}
 -
- static unsigned int tegra_getspeed(unsigned int cpu)
+ static unsigned int ucv2_getspeed(unsigned int cpu)
  {
- 	unsigned long rate;
-@@ -237,19 +232,14 @@ static int tegra_cpu_exit(struct cpufreq_policy *policy)
- 	return 0;
- }
+ 	struct clk *mclk = clk_get(NULL, "MAIN_CLK");
+@@ -77,7 +63,7 @@ static int __init ucv2_cpu_init(struct cpufreq_policy *policy)
  
--static struct freq_attr *tegra_cpufreq_attr[] = {
--	&cpufreq_freq_attr_scaling_available_freqs,
--	NULL,
--};
--
- static struct cpufreq_driver tegra_cpufreq_driver = {
--	.verify		= tegra_verify_speed,
+ static struct cpufreq_driver ucv2_driver = {
+ 	.flags		= CPUFREQ_STICKY,
+-	.verify		= ucv2_verify_speed,
 +	.verify		= cpufreq_generic_frequency_table_verify,
- 	.target		= tegra_target,
- 	.get		= tegra_getspeed,
- 	.init		= tegra_cpu_init,
- 	.exit		= tegra_cpu_exit,
- 	.name		= "tegra",
--	.attr		= tegra_cpufreq_attr,
-+	.attr		= cpufreq_generic_attr,
- };
- 
- static int __init tegra_cpufreq_init(void)
+ 	.target		= ucv2_target,
+ 	.get		= ucv2_getspeed,
+ 	.init		= ucv2_cpu_init,
 -- 
 1.7.12.rc2.18.g61b472e
 
