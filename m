@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031900Ab3HJGuQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 02:50:16 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:47958 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031883Ab3HJGuM (ORCPT
+	id S968396Ab3HJGuc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 02:50:32 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:60871 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933660Ab3HJGu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 02:50:12 -0400
+	Sat, 10 Aug 2013 02:50:26 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 19/44] cpufreq: exynos: Use generic cpufreq routines
-Date: Sat, 10 Aug 2013 12:14:15 +0530
-Message-Id: <d71c900c5af2378da4e4024150d9f22f4a97e9db.1376116345.git.viresh.kumar@linaro.org>
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 21/44] cpufreq: imx6q: Use generic cpufreq routines
+Date: Sat, 10 Aug 2013 12:14:17 +0530
+Message-Id: <6d7504823a31aea1e4773998f60720494fb0e6b6.1376116345.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376116344.git.viresh.kumar@linaro.org>
 References: <cover.1376116344.git.viresh.kumar@linaro.org>
@@ -31,98 +31,57 @@ by cpufreq drivers then.
 
 This patch uses these generic routines for this driver.
 
-Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/exynos-cpufreq.c     | 23 +++--------------------
- drivers/cpufreq/exynos5440-cpufreq.c | 15 ++-------------
- 2 files changed, 5 insertions(+), 33 deletions(-)
+ drivers/cpufreq/imx6q-cpufreq.c | 22 +++-------------------
+ 1 file changed, 3 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index 71c4926..7663a96 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -31,12 +31,6 @@ static unsigned int locking_frequency;
- static bool frequency_locked;
- static DEFINE_MUTEX(cpufreq_lock);
+diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
+index e6f40fa..81d1727 100644
+--- a/drivers/cpufreq/imx6q-cpufreq.c
++++ b/drivers/cpufreq/imx6q-cpufreq.c
+@@ -34,11 +34,6 @@ static struct device *cpu_dev;
+ static struct cpufreq_frequency_table *freq_table;
+ static unsigned int transition_latency;
  
--static int exynos_verify_speed(struct cpufreq_policy *policy)
+-static int imx6q_verify_speed(struct cpufreq_policy *policy)
 -{
--	return cpufreq_frequency_table_verify(policy,
--					      exynos_info->freq_table);
+-	return cpufreq_frequency_table_verify(policy, freq_table);
 -}
 -
- static unsigned int exynos_getspeed(unsigned int cpu)
+ static unsigned int imx6q_get_speed(unsigned int cpu)
  {
- 	return clk_get_rate(exynos_info->cpu_clk) / 1000;
-@@ -257,26 +251,15 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	return cpufreq_table_validate_and_show(policy, exynos_info->freq_table);
+ 	return clk_get_rate(arm_clk) / 1000;
+@@ -190,25 +185,14 @@ static int imx6q_cpufreq_init(struct cpufreq_policy *policy)
+ 	return 0;
  }
  
--static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+-static int imx6q_cpufreq_exit(struct cpufreq_policy *policy)
 -{
 -	cpufreq_frequency_table_put_attr(policy->cpu);
 -	return 0;
 -}
 -
--static struct freq_attr *exynos_cpufreq_attr[] = {
+-static struct freq_attr *imx6q_cpufreq_attr[] = {
 -	&cpufreq_freq_attr_scaling_available_freqs,
 -	NULL,
 -};
 -
- static struct cpufreq_driver exynos_driver = {
- 	.flags		= CPUFREQ_STICKY,
--	.verify		= exynos_verify_speed,
-+	.verify		= cpufreq_generic_frequency_table_verify,
- 	.target		= exynos_target,
- 	.get		= exynos_getspeed,
- 	.init		= exynos_cpufreq_cpu_init,
--	.exit		= exynos_cpufreq_cpu_exit,
-+	.exit		= cpufreq_generic_exit,
- 	.name		= "exynos_cpufreq",
--	.attr		= exynos_cpufreq_attr,
-+	.attr		= cpufreq_generic_attr,
- #ifdef CONFIG_PM
- 	.suspend	= exynos_cpufreq_suspend,
- 	.resume		= exynos_cpufreq_resume,
-diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
-index b9dfc91..f139b3b 100644
---- a/drivers/cpufreq/exynos5440-cpufreq.c
-+++ b/drivers/cpufreq/exynos5440-cpufreq.c
-@@ -209,12 +209,6 @@ static void exynos_enable_dvfs(void)
- 				dvfs_info->base + XMU_DVFS_CTRL);
- }
- 
--static int exynos_verify_speed(struct cpufreq_policy *policy)
--{
--	return cpufreq_frequency_table_verify(policy,
--					      dvfs_info->freq_table);
--}
--
- static unsigned int exynos_getspeed(unsigned int cpu)
- {
- 	return dvfs_info->cur_frequency;
-@@ -336,18 +330,13 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	return 0;
- }
- 
--static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
--{
--	cpufreq_frequency_table_put_attr(policy->cpu);
--}
--
- static struct cpufreq_driver exynos_driver = {
- 	.flags		= CPUFREQ_STICKY,
--	.verify		= exynos_verify_speed,
-+	.verify		= cpufreq_generic_frequency_table_verify,
- 	.target		= exynos_target,
- 	.get		= exynos_getspeed,
- 	.init		= exynos_cpufreq_cpu_init,
--	.exit		= exynos_cpufreq_cpu_exit,
-+	.exit		= cpufreq_generic_exit,
- 	.name		= CPUFREQ_NAME,
+ static struct cpufreq_driver imx6q_cpufreq_driver = {
+-	.verify = imx6q_verify_speed,
++	.verify = cpufreq_generic_frequency_table_verify,
+ 	.target = imx6q_set_target,
+ 	.get = imx6q_get_speed,
+ 	.init = imx6q_cpufreq_init,
+-	.exit = imx6q_cpufreq_exit,
++	.exit = cpufreq_generic_exit,
+ 	.name = "imx6q-cpufreq",
+-	.attr = imx6q_cpufreq_attr,
++	.attr = cpufreq_generic_attr,
  };
  
+ static int imx6q_cpufreq_probe(struct platform_device *pdev)
 -- 
 1.7.12.rc2.18.g61b472e
 
