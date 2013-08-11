@@ -1,176 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab3HKMEq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 08:04:46 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:49565 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753202Ab3HKMEo (ORCPT
+	id S1753588Ab3HKN1U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 09:27:20 -0400
+Received: from medousa.rus.uni-stuttgart.de ([129.69.1.57]:38103 "EHLO
+	medousa.rus.uni-stuttgart.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753459Ab3HKN1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 08:04:44 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Artem Savkov <artem.savkov@gmail.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH tty-next] n_tty: Fix termios_rwsem lockdep false positive
-Date: Sun, 11 Aug 2013 08:04:23 -0400
-Message-Id: <1376222663-5666-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
-References: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Sun, 11 Aug 2013 09:27:19 -0400
+Message-ID: <52079133.5060507@rus.uni-stuttgart.de>
+Date: Sun, 11 Aug 2013 15:27:15 +0200
+From: Thomas Richter <richter@rus.uni-stuttgart.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [HANG] Trouble with NEC-based USB adapter in PCMCIA slot on E7110
+References: <Pine.LNX.4.44L0.1308102140420.10834-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1308102140420.10834-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lockdep reports a circular lock dependency between
-atomic_read_lock and termios_rwsem [1]. However, a lock
-order deadlock is not possible since CPU1 only holds a
-read lock which cannot prevent CPU0 from also acquiring
-a read lock on the same r/w semaphore.
+On 11.08.2013 03:46, Alan Stern wrote:
+> On Sat, 10 Aug 2013, Thomas Richter wrote:
+>
+>> Sorry, need to look further. I replaced ehci-pci from 2.6.31.14, and
+>> yenta_socket as well. No changes were necessary. Also replaced ehci-hcd,
+>
+> Do you mean that you took the source code for ehci-hcd from the 2.6.31
+> kernel, copied it into the source directory for the 2.6.32 kernel, and
+> built it there?
 
-Unfortunately, lockdep cannot currently distinguish whether
-the locks are read or write for any particular lock graph,
-merely that the locks _were_ previously read and/or write.
+In the meantime, I replaced the entire usb subsystem from the 2.6.32.1 
+by that of 2.6.31.14, plus minor patches, but no avail. Still hangs. So 
+it's unlikely it's someplace in usb. I'll try next with the PCMCIA 
+subsystem... )-:
 
-Until lockdep is fixed, re-order atomic_read_lock so
-termios_rwsem can be dropped and reacquired without
-triggering lockdep.
+Greetings,
+	Thomas
 
-Reported-by: Artem Savkov <artem.savkov@gmail.com>
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-
-[1] Initial lockdep report from Artem Savkov <artem.savkov@gmail.com>
-
- ======================================================
- [ INFO: possible circular locking dependency detected ]
- 3.11.0-rc3-next-20130730+ #140 Tainted: G        W
- -------------------------------------------------------
- bash/1198 is trying to acquire lock:
-  (&tty->termios_rwsem){++++..}, at: [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
-
- but task is already holding lock:
-  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
-
- which lock already depends on the new lock.
-
- the existing dependency chain (in reverse order) is:
-
- -> #1 (&ldata->atomic_read_lock){+.+...}:
-        [<ffffffff811111cc>] validate_chain+0x73c/0x850
-        [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
-        [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
-        [<ffffffff81d34b9c>] mutex_lock_interruptible_nested+0x7c/0x540
-        [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
-        [<ffffffff816a3bb6>] tty_read+0x86/0xf0
-        [<ffffffff811f21d3>] vfs_read+0xc3/0x130
-        [<ffffffff811f2702>] SyS_read+0x62/0xa0
-        [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
-
- -> #0 (&tty->termios_rwsem){++++..}:
-        [<ffffffff8111064f>] check_prev_add+0x14f/0x590
-        [<ffffffff811111cc>] validate_chain+0x73c/0x850
-        [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
-        [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
-        [<ffffffff81d372c1>] down_read+0x51/0xa0
-        [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
-        [<ffffffff816a3bb6>] tty_read+0x86/0xf0
-        [<ffffffff811f21d3>] vfs_read+0xc3/0x130
-        [<ffffffff811f2702>] SyS_read+0x62/0xa0
-        [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
-
- other info that might help us debug this:
-
-  Possible unsafe locking scenario:
-
-        CPU0                    CPU1
-        ----                    ----
-   lock(&ldata->atomic_read_lock);
-                                lock(&tty->termios_rwsem);
-                                lock(&ldata->atomic_read_lock);
-   lock(&tty->termios_rwsem);
-
-  *** DEADLOCK ***
-
- 2 locks held by bash/1198:
-  #0:  (&tty->ldisc_sem){.+.+.+}, at: [<ffffffff816ade04>] tty_ldisc_ref_wait+0x24/0x60
-  #1:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
-
- stack backtrace:
- CPU: 1 PID: 1198 Comm: bash Tainted: G        W    3.11.0-rc3-next-20130730+ #140
- Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-  0000000000000000 ffff880019acdb28 ffffffff81d34074 0000000000000002
-  0000000000000000 ffff880019acdb78 ffffffff8110ed75 ffff880019acdb98
-  ffff880019fd0000 ffff880019acdb78 ffff880019fd0638 ffff880019fd0670
- Call Trace:
-  [<ffffffff81d34074>] dump_stack+0x59/0x7d
-  [<ffffffff8110ed75>] print_circular_bug+0x105/0x120
-  [<ffffffff8111064f>] check_prev_add+0x14f/0x590
-  [<ffffffff81d3ab5f>] ? _raw_spin_unlock_irq+0x4f/0x70
-  [<ffffffff811111cc>] validate_chain+0x73c/0x850
-  [<ffffffff8110ae0f>] ? trace_hardirqs_off_caller+0x1f/0x190
-  [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
-  [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
-  [<ffffffff816aa3bb>] ? n_tty_read+0x49b/0x660
-  [<ffffffff81d372c1>] down_read+0x51/0xa0
-  [<ffffffff816aa3bb>] ? n_tty_read+0x49b/0x660
-  [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
-  [<ffffffff810e4130>] ? try_to_wake_up+0x210/0x210
-  [<ffffffff816a3bb6>] tty_read+0x86/0xf0
-  [<ffffffff811f21d3>] vfs_read+0xc3/0x130
-  [<ffffffff811f2702>] SyS_read+0x62/0xa0
-  [<ffffffff815e24ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
----
- drivers/tty/n_tty.c | 25 +++++++++++--------------
- 1 file changed, 11 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index dd8ae0c..c9a9ddd 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -2122,6 +2122,17 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
- 	if (c < 0)
- 		return c;
- 
-+	/*
-+	 *	Internal serialization of reads.
-+	 */
-+	if (file->f_flags & O_NONBLOCK) {
-+		if (!mutex_trylock(&ldata->atomic_read_lock))
-+			return -EAGAIN;
-+	} else {
-+		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
-+			return -ERESTARTSYS;
-+	}
-+
- 	down_read(&tty->termios_rwsem);
- 
- 	minimum = time = 0;
-@@ -2141,20 +2152,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
- 		}
- 	}
- 
--	/*
--	 *	Internal serialization of reads.
--	 */
--	if (file->f_flags & O_NONBLOCK) {
--		if (!mutex_trylock(&ldata->atomic_read_lock)) {
--			up_read(&tty->termios_rwsem);
--			return -EAGAIN;
--		}
--	} else {
--		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
--			up_read(&tty->termios_rwsem);
--			return -ERESTARTSYS;
--		}
--	}
- 	packet = tty->packet;
- 
- 	add_wait_queue(&tty->read_wait, &wait);
--- 
-1.8.1.2
 
