@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab3HKPZk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 11:25:40 -0400
-Received: from mout.gmx.net ([212.227.15.18]:54247 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753840Ab3HKPZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 11:25:39 -0400
-From: Andreas Werner <wernerandy@gmx.de>
-To: linux-kernel@vger.kernel.org
-Cc: Andreas Werner <wernerandy@gmx.de>
-Subject: [PATCH] Staging: imx-drm: imx-tve.c Fixed 80 character line coding style issue
-Date: Sun, 11 Aug 2013 17:25:32 +0200
-Message-Id: <1376234732-30062-1-git-send-email-wernerandy@gmx.de>
-X-Mailer: git-send-email 1.8.3.4
-X-Provags-ID: V03:K0:KcLpe0oTPys3RhAjKeDoK0CWyhvgJLRBVaQqLvOOPlLRTU8jB/j
- g68spZFmZrO67dpS8/+IXISX0YA3chEOGOZDmatZSLTm8iMvAdsAZPwqcyGbsFlwNaFXKB6
- KcT+E8WN4kuxBOw3ytXzjKO/XoQsDCY94ctom39T9wYduKBPGd771YL1uZFQNEElmjvuJd8
- Rcl3YHMDU6etZjO8ZxB6A==
+	id S1754163Ab3HKPyp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 11:54:45 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:65318 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754098Ab3HKPym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 11:54:42 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5207B3C3.9080508@roeck-us.net>
+Date: Sun, 11 Aug 2013 08:54:43 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: SCSI bus failures with qemu-arm in kernel 3.8+
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style issue of 80 character per line.
+Hi,
 
-Signed-off-by: Andreas Werner <wernerandy@gmx.de>
----
- drivers/staging/imx-drm/imx-tve.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+trying to boot arm versatile images with qemu results in the following error
+if I try to boot with a disk image.
 
-diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
-index a56797d..82c5f12 100644
---- a/drivers/staging/imx-drm/imx-tve.c
-+++ b/drivers/staging/imx-drm/imx-tve.c
-@@ -164,7 +164,10 @@ static void tve_enable(struct imx_tve *tve)
- 		regmap_write(tve->regmap, TVE_INT_CONT_REG, 0);
- 	else
- 		regmap_write(tve->regmap, TVE_INT_CONT_REG,
--			     TVE_CD_SM_IEN | TVE_CD_LM_IEN | TVE_CD_MON_END_IEN);
-+			     TVE_CD_SM_IEN |
-+			     TVE_CD_LM_IEN |
-+			     TVE_CD_MON_END_IEN);
-+
- 	spin_unlock_irqrestore(&tve->enable_lock, flags);
- }
- 
-@@ -465,7 +468,9 @@ static int clk_tve_di_set_rate(struct clk_hw *hw, unsigned long rate,
- 	else
- 		val = TVE_DAC_FULL_RATE;
- 
--	ret = regmap_update_bits(tve->regmap, TVE_COM_CONF_REG, TVE_DAC_SAMP_RATE_MASK, val);
-+	ret = regmap_update_bits(tve->regmap, TVE_COM_CONF_REG,
-+				 TVE_DAC_SAMP_RATE_MASK, val);
-+
- 	if (ret < 0) {
- 		dev_err(tve->dev, "failed to set divider: %d\n", ret);
- 		return ret;
-@@ -609,13 +614,17 @@ static int imx_tve_probe(struct platform_device *pdev)
- 	}
- 
- 	if (tve->mode == TVE_MODE_VGA) {
--		ret = of_property_read_u32(np, "fsl,hsync-pin", &tve->hsync_pin);
-+		ret = of_property_read_u32(np, "fsl,hsync-pin",
-+					   &tve->hsync_pin);
-+
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "failed to get vsync pin\n");
- 			return ret;
- 		}
- 
--		ret |= of_property_read_u32(np, "fsl,vsync-pin", &tve->vsync_pin);
-+		ret |= of_property_read_u32(np, "fsl,vsync-pin",
-+					    &tve->vsync_pin);
-+
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "failed to get vsync pin\n");
- 			return ret;
--- 
-1.8.3.4
+      sym0: <895a> rev 0x0 at pci 0000:00:0d.0 irq 92
+      sym0: SCSI BUS has been reset.
+      scsi0 : sym-2.2.3
+      [...]
+      scsi 0:0:0:0: ABORT operation started
+      scsi 0:0:0:0: ABORT operation timed-out.
+      [...]
 
+Yocto's 3.8 kernel images work, upstream kernels 3.8 and later fail
+(I did not check if/how earlier kernels are affected).
+
+Tracking this down shows that the problem is known and has been fixed with
+commit 351d1339 (arm: add dummy swizzle for versatile with qemu) in the
+Yocto 3.8 kernel at git://git.yoctoproject.org/linux-yocto-3.8.
+
+Would it be possible to submit this patch for inclusion into affected upstream kernels ?
+
+Thanks,
+Guenter
