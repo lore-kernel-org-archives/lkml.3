@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717Ab3HKQ4G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 12:56:06 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4795 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754256Ab3HKQwD (ORCPT
+	id S1754650Ab3HKQ4D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 12:56:03 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:38019
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754300Ab3HKQwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 11 Aug 2013 12:52:03 -0400
 X-IronPort-AV: E=Sophos;i="4.89,857,1367964000"; 
-   d="scan'208";a="23717945"
+   d="scan'208";a="23717947"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Eric Miao <eric.y.miao@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
 Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/16] sound/soc/pxa/mioa701_wm9713.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
-Date: Sun, 11 Aug 2013 18:51:42 +0200
-Message-Id: <1376239917-15594-2-git-send-email-Julia.Lawall@lip6.fr>
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/16] arch/arm/mach-ux500/cpu-db8500.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
+Date: Sun, 11 Aug 2013 18:51:44 +0200
+Message-Id: <1376239917-15594-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -51,25 +47,21 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not compiled.
 
- sound/soc/pxa/mioa701_wm9713.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/mach-ux500/cpu-db8500.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/pxa/mioa701_wm9713.c b/sound/soc/pxa/mioa701_wm9713.c
-index 97b711e..20fdce6 100644
---- a/sound/soc/pxa/mioa701_wm9713.c
-+++ b/sound/soc/pxa/mioa701_wm9713.c
-@@ -133,10 +133,11 @@ static int mioa701_wm9713_init(struct snd_soc_pcm_runtime *rtd)
- 	unsigned short reg;
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 12eee81..a73bb3d 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -157,7 +157,8 @@ static void __init db8500_add_gpios(struct device *parent)
+ 		.supports_sleepmode = true,
+ 	};
  
- 	/* Add mioa701 specific widgets */
--	snd_soc_dapm_new_controls(dapm, ARRAY_AND_SIZE(mioa701_dapm_widgets));
-+	snd_soc_dapm_new_controls(dapm, mioa701_dapm_widgets,
-+				  ARRAY_SIZE(mioa701_dapm_widgets));
- 
- 	/* Set up mioa701 specific audio path audio_mapnects */
--	snd_soc_dapm_add_routes(dapm, ARRAY_AND_SIZE(audio_map));
-+	snd_soc_dapm_add_routes(dapm, audio_map, ARRAY_SIZE(audio_map));
- 
- 	/* Prepare GPIO8 for rear speaker amplifier */
- 	reg = codec->driver->read(codec, AC97_GPIO_CFG);
+-	dbx500_add_gpios(parent, ARRAY_AND_SIZE(db8500_gpio_base),
++	dbx500_add_gpios(parent, db8500_gpio_base,
++			 ARRAY_SIZE(db8500_gpio_base),
+ 			 IRQ_DB8500_GPIO0, &pdata);
+ 	dbx500_add_pinctrl(parent, "pinctrl-db8500", U8500_PRCMU_BASE);
+ }
 
