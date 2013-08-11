@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab3HKCsp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 22:48:45 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34734 "EHLO
+	id S1753135Ab3HKCzd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 22:55:33 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34748 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751956Ab3HKCsm (ORCPT
+	with ESMTP id S1752924Ab3HKCss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 22:48:42 -0400
+	Sat, 10 Aug 2013 22:48:48 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
@@ -16,99 +16,66 @@ Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Joerg Roedel <joro@8bytes.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH v4 02/28] genirq: Add irq_alloc_reserved_desc()
-Date: Sat, 10 Aug 2013 19:47:48 -0700
-Message-Id: <1376189294-32022-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 04/28] x86, irq: Change irq_remap_modify_chip_defaults() to static
+Date: Sat, 10 Aug 2013 19:47:50 -0700
+Message-Id: <1376189294-32022-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
 References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For ioapic hot-add support, it would be easy if we have continuous
-irq numbers for hot added ioapic controller.
-
-We can reserve irq range at first, and later allocate desc for those
-pre-reserved irqs when they are needed.
-
-The reasons for not allocating them during reserving:
-1. only several pins of one ioapic are used, allocate for all pins, will
-   waste memory for not used pins.
-2. allocate later when is needed could make sure irq_desc is allocated
-   on local node ram, as dev->node is set at that point.
-
--v2: update changelog by adding reasons, requested by Konrad.
--v3: according to tglx:
-       separate core code change with arch code change.
-       change function name to irq_alloc_reserved_desc.
-       kill __irq_is_reserved().
-       remove not need exports.
-     according to Sebastian:
-       spare one comments by put two functions together.
+Change irq_remap_modify_chip_defaults() to static, as we have no
+outside user.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- include/linux/irq.h  |  3 +++
- kernel/irq/irqdesc.c | 23 +++++++++++++++++++++++
- 2 files changed, 26 insertions(+)
+ arch/x86/include/asm/irq_remapping.h | 6 ------
+ drivers/iommu/irq_remapping.c        | 2 +-
+ 2 files changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 8c46cb2..b998ea7 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -592,10 +592,13 @@ static inline u32 irq_get_trigger_type(unsigned int irq)
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index d806b22..606f42e 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -56,8 +56,6 @@ extern bool setup_remapped_irq(int irq,
+ 			       struct irq_cfg *cfg,
+ 			       struct irq_chip *chip);
  
- int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 		struct module *owner);
-+int __irq_alloc_reserved_desc(int at, int node, struct module *owner);
+-void irq_remap_modify_chip_defaults(struct irq_chip *chip);
+-
+ #else  /* CONFIG_IRQ_REMAP */
  
- /* use macros to avoid needing export.h for THIS_MODULE */
- #define irq_alloc_descs(irq, from, cnt, node)	\
- 	__irq_alloc_descs(irq, from, cnt, node, THIS_MODULE)
-+#define irq_alloc_reserved_desc_at(at, node)	\
-+	__irq_alloc_reserved_desc(at, node, THIS_MODULE)
+ static inline void setup_irq_remapping_ops(void) { }
+@@ -91,10 +89,6 @@ static inline void panic_if_irq_remap(const char *msg)
+ {
+ }
  
- #define irq_alloc_desc(node)			\
- 	irq_alloc_descs(-1, 0, 1, node)
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index a151db6..1166545 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -410,6 +410,29 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- EXPORT_SYMBOL_GPL(__irq_alloc_descs);
+-static inline void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+-{
+-}
+-
+ static inline bool setup_remapped_irq(int irq,
+ 				      struct irq_cfg *cfg,
+ 				      struct irq_chip *chip)
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 39f81ae..85ae2cf 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -375,7 +375,7 @@ static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
+ 	seq_printf(p, " IR-%s", data->chip->name);
+ }
  
- /**
-+ * __irq_alloc_reserved_desc - allocate irq descriptor for irq that is already reserved
-+ * @irq:	Allocate for specific irq number if irq >= 0
-+ * @node:	Preferred node on which the irq descriptor should be allocated
-+ * @owner:	Owning module (can be NULL)
-+ *
-+ * Returns the irq number or error code
-+ */
-+int __ref __irq_alloc_reserved_desc(int irq, int node, struct module *owner)
-+{
-+	mutex_lock(&sparse_irq_lock);
-+	if (!test_bit(irq, allocated_irqs)) {
-+		mutex_unlock(&sparse_irq_lock);
-+		return -EINVAL;
-+	}
-+	mutex_unlock(&sparse_irq_lock);
-+
-+	if (irq_to_desc(irq))
-+		return irq;
-+
-+	return alloc_descs(irq, 1, node, owner);
-+}
-+
-+/**
-  * irq_reserve_irqs - mark irqs allocated
-  * @from:	mark from irq number
-  * @cnt:	number of irqs to mark
+-void irq_remap_modify_chip_defaults(struct irq_chip *chip)
++static void irq_remap_modify_chip_defaults(struct irq_chip *chip)
+ {
+ 	chip->irq_print_chip = ir_print_prefix;
+ 	chip->irq_ack = ir_ack_apic_edge;
 -- 
 1.8.1.4
 
