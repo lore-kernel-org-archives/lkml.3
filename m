@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab3HKCtF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 22:49:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25753 "EHLO
+	id S1753292Ab3HKCyp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 22:54:45 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25819 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab3HKCs4 (ORCPT
+	with ESMTP id S1753218Ab3HKCtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 22:48:56 -0400
+	Sat, 10 Aug 2013 22:49:05 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH v4 07/28] x86, irq: Show MSI-X in /proc/interrupt
-Date: Sat, 10 Aug 2013 19:47:53 -0700
-Message-Id: <1376189294-32022-8-git-send-email-yinghai@kernel.org>
+        Joerg Roedel <joro@8bytes.org>, Donald Dutile <ddutile@redhat.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        stable@vger.kernel.org
+Subject: [PATCH v4 10/28] iommu, irq: Allocate irq_desc for dmar_msi with local node
+Date: Sat, 10 Aug 2013 19:47:56 -0700
+Message-Id: <1376189294-32022-11-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
 References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now MSI-X is shown as MSI in /proc/interrupt.
+iommu irq's irq_desc should be on local node ram.
 
-We could use new added irq_print_chip() interface to append -X for MSI-X.
+Fix the return value checking problem.
+  create_irq() will return -1 when fail to allocate.
+  create_irq_nr() will return 0 when fail to allocate.
+here only check !irq, so need to change it to use create_irq_nr instead.
 
-After this patch, we will have PCI-MSI-X-edge IR-PCI-MSI-X-edge for MSI-X
-instead of PCI-MSI-edge IR-PCI-MSI-edge in the /proc/interrupt.
-
--v2: do not need to check if msi_desc is null in msi_irq_print_chip().
+-v2: According to Sebastian, add cc to stable.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: Joerg Roedel <joro@8bytes.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Donald Dutile <ddutile@redhat.com>
+Acked-by: Donald Dutile <ddutile@redhat.com>
 Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: stable@vger.kernel.org
 ---
- arch/x86/kernel/apic/io_apic.c | 7 +++++++
- drivers/iommu/irq_remapping.c  | 5 ++++-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/iommu/dmar.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 119fdf8..cf320fb 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3087,6 +3087,12 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 	return IRQ_SET_MASK_OK_NOCOPY;
- }
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 785675a..db41e36 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -1277,7 +1277,7 @@ int dmar_set_interrupt(struct intel_iommu *iommu)
+ 	if (iommu->irq)
+ 		return 0;
  
-+static void msi_irq_print_chip(struct irq_data *data, struct seq_file *p)
-+{
-+	seq_printf(p, " %s%s", data->chip->name,
-+			data->msi_desc->msi_attrib.is_msix ? "-X" : "");
-+}
-+
- /*
-  * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
-  * which implement the MSI or MSI-X Capability Structure.
-@@ -3098,6 +3104,7 @@ struct irq_chip msi_chip = {
- 	.irq_ack		= ack_apic_edge,
- 	.irq_set_affinity	= msi_set_affinity,
- 	.irq_retrigger		= ioapic_retrigger_irq,
-+	.irq_print_chip		= msi_irq_print_chip,
- };
- 
- int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 8e4e3af..6893d75 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -372,7 +372,10 @@ static void ir_ack_apic_level(struct irq_data *data)
- 
- static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
- {
--	seq_printf(p, " IR-%s", data->chip->name);
-+	seq_printf(p, " IR-%s%s", data->chip->name,
-+			data->msi_desc ?
-+			 (data->msi_desc->msi_attrib.is_msix ? "-X" : "")
-+			 : "");
- }
- 
- static void __init irq_remap_modify_chip_defaults(struct irq_chip *chip)
+-	irq = create_irq();
++	irq = create_irq_nr(0, iommu->node);
+ 	if (!irq) {
+ 		pr_err("IOMMU: no free vectors\n");
+ 		return -EINVAL;
 -- 
 1.8.1.4
 
