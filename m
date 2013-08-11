@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab3HKCyY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 22:54:24 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34808 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab3HKCtH (ORCPT
+	id S1753008Ab3HKCtF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 22:49:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25753 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059Ab3HKCs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 22:49:07 -0400
+	Sat, 10 Aug 2013 22:48:56 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
@@ -16,58 +16,76 @@ Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Joerg Roedel <joro@8bytes.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH v4 11/28] x86, irq: Kill create_irq()
-Date: Sat, 10 Aug 2013 19:47:57 -0700
-Message-Id: <1376189294-32022-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 07/28] x86, irq: Show MSI-X in /proc/interrupt
+Date: Sat, 10 Aug 2013 19:47:53 -0700
+Message-Id: <1376189294-32022-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
 References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-create_irq() will return -1 when failing to allocate.
-create_irq_nr() will return 0 when failing to allocate.
+Now MSI-X is shown as MSI in /proc/interrupt.
 
-It only causes confusion.
+We could use new added irq_print_chip() interface to append -X for MSI-X.
 
-Now we have no user for create_irq(), so remove create_irq() for x86.
+After this patch, we will have PCI-MSI-X-edge IR-PCI-MSI-X-edge for MSI-X
+instead of PCI-MSI-edge IR-PCI-MSI-edge in the /proc/interrupt.
+
+-v2: do not need to check if msi_desc is null in msi_irq_print_chip().
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- arch/x86/kernel/apic/io_apic.c | 15 ---------------
- 1 file changed, 15 deletions(-)
+ arch/x86/kernel/apic/io_apic.c | 7 +++++++
+ drivers/iommu/irq_remapping.c  | 5 ++++-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 47add1a..ccfb1d3 100644
+index 119fdf8..cf320fb 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2968,21 +2968,6 @@ unsigned int create_irq_nr(unsigned int from, int node)
- 	return __create_irqs(from, 1, node);
+@@ -3087,6 +3087,12 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 	return IRQ_SET_MASK_OK_NOCOPY;
  }
  
--int create_irq(void)
--{
--	int node = cpu_to_node(0);
--	unsigned int irq_want;
--	int irq;
--
--	irq_want = nr_irqs_gsi;
--	irq = create_irq_nr(irq_want, node);
--
--	if (irq == 0)
--		irq = -1;
--
--	return irq;
--}
--
- void destroy_irq(unsigned int irq)
++static void msi_irq_print_chip(struct irq_data *data, struct seq_file *p)
++{
++	seq_printf(p, " %s%s", data->chip->name,
++			data->msi_desc->msi_attrib.is_msix ? "-X" : "");
++}
++
+ /*
+  * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
+  * which implement the MSI or MSI-X Capability Structure.
+@@ -3098,6 +3104,7 @@ struct irq_chip msi_chip = {
+ 	.irq_ack		= ack_apic_edge,
+ 	.irq_set_affinity	= msi_set_affinity,
+ 	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_print_chip		= msi_irq_print_chip,
+ };
+ 
+ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 8e4e3af..6893d75 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -372,7 +372,10 @@ static void ir_ack_apic_level(struct irq_data *data)
+ 
+ static void ir_print_prefix(struct irq_data *data, struct seq_file *p)
  {
- 	struct irq_cfg *cfg = irq_get_chip_data(irq);
+-	seq_printf(p, " IR-%s", data->chip->name);
++	seq_printf(p, " IR-%s%s", data->chip->name,
++			data->msi_desc ?
++			 (data->msi_desc->msi_attrib.is_msix ? "-X" : "")
++			 : "");
+ }
+ 
+ static void __init irq_remap_modify_chip_defaults(struct irq_chip *chip)
 -- 
 1.8.1.4
 
