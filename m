@@ -1,72 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab3HKLut (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 07:50:49 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:37250 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab3HKLup (ORCPT
+	id S1753364Ab3HKMEq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 08:04:46 -0400
+Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:49565 "EHLO
+	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753202Ab3HKMEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 07:50:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1308102226220.32627@pobox.suse.cz>
-References: <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
- <20130617111031.GQ20992@atomide.com> <20130701211753.GC15318@amd.pavel.ucw.cz>
- <20130704171939.GA27374@blackmetal.musicnaut.iki.fi> <20130704202145.GB10752@amd.pavel.ucw.cz>
- <20130704203256.GB27374@blackmetal.musicnaut.iki.fi> <20130713121709.GC16473@amd.pavel.ucw.cz>
- <20130714222819.GB3296@blackmetal.musicnaut.iki.fi> <20130728134409.GB5382@amd.pavel.ucw.cz>
- <20130801234355.GA15611@amd.pavel.ucw.cz> <20130810110955.GA11437@amd.pavel.ucw.cz>
- <CAAfyv34w1e+sAuB==-+Pj2gOO1auVNQgawcNC1Z4QfeqchRh3g@mail.gmail.com> <alpine.LNX.2.00.1308102226220.32627@pobox.suse.cz>
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Sun, 11 Aug 2013 13:50:24 +0200
-Message-ID: <CAAwP0s3uNQ0Mp_QDdPuu4ThQW+cT3F6x62gkU1ku9fWUAtXLHg@mail.gmail.com>
-Subject: Re: [PATCH v2] N900: add device tree
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Pavel Machek <pavel@ucw.cz>, Belisko Marek <marek.belisko@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@osdl.org>,
-        Tony Lindgren <tony@atomide.com>, b-cousson@ti.com,
-        pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 11 Aug 2013 08:04:44 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Artem Savkov <artem.savkov@gmail.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Belisko Marek <marek.belisko@gmail.com>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH tty-next] n_tty: Fix termios_rwsem lockdep false positive
+Date: Sun, 11 Aug 2013 08:04:23 -0400
+Message-Id: <1376222663-5666-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
+References: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 10, 2013 at 10:29 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Sat, 10 Aug 2013, Pavel Machek wrote:
->
->> [I wonder if this is clean-enough cause for "trivial in resubmit
->> mode?]
->
-> On Sat, 10 Aug 2013, Belisko Marek wrote:
->
->> Same for gta04 (omap3 based device) [1].
->> It was send upstream 2 times and second time there is no reply from 1.3.2013.
->
-> Hi guys,
->
-> once I am able to match signoffs in the patches to MAINTAINERS, I can take
-> those through trivial.git in "re-transmission mode" (or feeeding those
-> thgough akpm si an option as well).
->
-> Please just send the patches to me in a new thread properly with all the
-> Acks/Signoffs, and mark those appropriately (i.e. maintainer that would
-> normally push this upstream desurfaced).
->
+Lockdep reports a circular lock dependency between
+atomic_read_lock and termios_rwsem [1]. However, a lock
+order deadlock is not possible since CPU1 only holds a
+read lock which cannot prevent CPU0 from also acquiring
+a read lock on the same r/w semaphore.
 
-Hi folks,
+Unfortunately, lockdep cannot currently distinguish whether
+the locks are read or write for any particular lock graph,
+merely that the locks _were_ previously read and/or write.
 
-I noticed that you are using Benoit older emails address
-(b-cousson@ti.com) which no longer exists instead of his new email
-address (benoit.cousson@linaro.org). So, it may be possible that
-Benoit have not even been getting your patches.
+Until lockdep is fixed, re-order atomic_read_lock so
+termios_rwsem can be dropped and reacquired without
+triggering lockdep.
 
-I'll send a patch to MAINTAINERS updating Benoit's email address so
-get_maintainer.pl will stop lying.
+Reported-by: Artem Savkov <artem.savkov@gmail.com>
+Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 
-Jiri, is ok if I send this patch to you? I guess this falls into the
-trivial group.
+[1] Initial lockdep report from Artem Savkov <artem.savkov@gmail.com>
 
-Thanks a lot and best regards,
-Javier
+ ======================================================
+ [ INFO: possible circular locking dependency detected ]
+ 3.11.0-rc3-next-20130730+ #140 Tainted: G        W
+ -------------------------------------------------------
+ bash/1198 is trying to acquire lock:
+  (&tty->termios_rwsem){++++..}, at: [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
+
+ but task is already holding lock:
+  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
+
+ which lock already depends on the new lock.
+
+ the existing dependency chain (in reverse order) is:
+
+ -> #1 (&ldata->atomic_read_lock){+.+...}:
+        [<ffffffff811111cc>] validate_chain+0x73c/0x850
+        [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
+        [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
+        [<ffffffff81d34b9c>] mutex_lock_interruptible_nested+0x7c/0x540
+        [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
+        [<ffffffff816a3bb6>] tty_read+0x86/0xf0
+        [<ffffffff811f21d3>] vfs_read+0xc3/0x130
+        [<ffffffff811f2702>] SyS_read+0x62/0xa0
+        [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
+
+ -> #0 (&tty->termios_rwsem){++++..}:
+        [<ffffffff8111064f>] check_prev_add+0x14f/0x590
+        [<ffffffff811111cc>] validate_chain+0x73c/0x850
+        [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
+        [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
+        [<ffffffff81d372c1>] down_read+0x51/0xa0
+        [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
+        [<ffffffff816a3bb6>] tty_read+0x86/0xf0
+        [<ffffffff811f21d3>] vfs_read+0xc3/0x130
+        [<ffffffff811f2702>] SyS_read+0x62/0xa0
+        [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
+
+ other info that might help us debug this:
+
+  Possible unsafe locking scenario:
+
+        CPU0                    CPU1
+        ----                    ----
+   lock(&ldata->atomic_read_lock);
+                                lock(&tty->termios_rwsem);
+                                lock(&ldata->atomic_read_lock);
+   lock(&tty->termios_rwsem);
+
+  *** DEADLOCK ***
+
+ 2 locks held by bash/1198:
+  #0:  (&tty->ldisc_sem){.+.+.+}, at: [<ffffffff816ade04>] tty_ldisc_ref_wait+0x24/0x60
+  #1:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
+
+ stack backtrace:
+ CPU: 1 PID: 1198 Comm: bash Tainted: G        W    3.11.0-rc3-next-20130730+ #140
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+  0000000000000000 ffff880019acdb28 ffffffff81d34074 0000000000000002
+  0000000000000000 ffff880019acdb78 ffffffff8110ed75 ffff880019acdb98
+  ffff880019fd0000 ffff880019acdb78 ffff880019fd0638 ffff880019fd0670
+ Call Trace:
+  [<ffffffff81d34074>] dump_stack+0x59/0x7d
+  [<ffffffff8110ed75>] print_circular_bug+0x105/0x120
+  [<ffffffff8111064f>] check_prev_add+0x14f/0x590
+  [<ffffffff81d3ab5f>] ? _raw_spin_unlock_irq+0x4f/0x70
+  [<ffffffff811111cc>] validate_chain+0x73c/0x850
+  [<ffffffff8110ae0f>] ? trace_hardirqs_off_caller+0x1f/0x190
+  [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
+  [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
+  [<ffffffff816aa3bb>] ? n_tty_read+0x49b/0x660
+  [<ffffffff81d372c1>] down_read+0x51/0xa0
+  [<ffffffff816aa3bb>] ? n_tty_read+0x49b/0x660
+  [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
+  [<ffffffff810e4130>] ? try_to_wake_up+0x210/0x210
+  [<ffffffff816a3bb6>] tty_read+0x86/0xf0
+  [<ffffffff811f21d3>] vfs_read+0xc3/0x130
+  [<ffffffff811f2702>] SyS_read+0x62/0xa0
+  [<ffffffff815e24ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
+---
+ drivers/tty/n_tty.c | 25 +++++++++++--------------
+ 1 file changed, 11 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index dd8ae0c..c9a9ddd 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2122,6 +2122,17 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 	if (c < 0)
+ 		return c;
+ 
++	/*
++	 *	Internal serialization of reads.
++	 */
++	if (file->f_flags & O_NONBLOCK) {
++		if (!mutex_trylock(&ldata->atomic_read_lock))
++			return -EAGAIN;
++	} else {
++		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
++			return -ERESTARTSYS;
++	}
++
+ 	down_read(&tty->termios_rwsem);
+ 
+ 	minimum = time = 0;
+@@ -2141,20 +2152,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 		}
+ 	}
+ 
+-	/*
+-	 *	Internal serialization of reads.
+-	 */
+-	if (file->f_flags & O_NONBLOCK) {
+-		if (!mutex_trylock(&ldata->atomic_read_lock)) {
+-			up_read(&tty->termios_rwsem);
+-			return -EAGAIN;
+-		}
+-	} else {
+-		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
+-			up_read(&tty->termios_rwsem);
+-			return -ERESTARTSYS;
+-		}
+-	}
+ 	packet = tty->packet;
+ 
+ 	add_wait_queue(&tty->read_wait, &wait);
+-- 
+1.8.1.2
+
