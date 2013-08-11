@@ -1,99 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372Ab3HKAht (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 20:37:49 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:46382 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab3HKAhs (ORCPT
+	id S1751431Ab3HKAzT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 20:55:19 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55460 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223Ab3HKAzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 20:37:48 -0400
-X-Originating-IP: 50.43.39.152
-Date: Sat, 10 Aug 2013 17:37:39 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: linux-kernel@vger.kernel.org
-Cc: Len Brown <len.brown@intel.com>, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org
-Subject: [PATCH] turbostat: Check return value of fscanf
-Message-ID: <20130811003737.GA13053@jtriplet-mobl1>
+	Sat, 10 Aug 2013 20:55:15 -0400
+Date: Sun, 11 Aug 2013 02:55:07 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Belisko Marek <marek.belisko@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@osdl.org>,
+        Tony Lindgren <tony@atomide.com>, b-cousson@ti.com,
+        pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: OMAP device tree maintainance (was Re: [PATCH v2] N900: add device
+ tree)
+Message-ID: <20130811005507.GA29513@amd.pavel.ucw.cz>
+References: <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
+ <20130704202145.GB10752@amd.pavel.ucw.cz>
+ <20130704203256.GB27374@blackmetal.musicnaut.iki.fi>
+ <20130713121709.GC16473@amd.pavel.ucw.cz>
+ <20130714222819.GB3296@blackmetal.musicnaut.iki.fi>
+ <20130728134409.GB5382@amd.pavel.ucw.cz>
+ <20130801234355.GA15611@amd.pavel.ucw.cz>
+ <20130810110955.GA11437@amd.pavel.ucw.cz>
+ <CAAfyv34w1e+sAuB==-+Pj2gOO1auVNQgawcNC1Z4QfeqchRh3g@mail.gmail.com>
+ <alpine.LNX.2.00.1308102226220.32627@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LNX.2.00.1308102226220.32627@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some systems declare fscanf with the warn_unused_result attribute.  On
-such systems, turbostat generates the following warnings:
+Hi!
 
-turbostat.c: In function 'get_core_id':
-turbostat.c:1203:8: warning: ignoring return value of 'fscanf', declared with attribute warn_unused_result [-Wunused-result]
-turbostat.c: In function 'get_physical_package_id':
-turbostat.c:1186:8: warning: ignoring return value of 'fscanf', declared with attribute warn_unused_result [-Wunused-result]
-turbostat.c: In function 'cpu_is_first_core_in_package':
-turbostat.c:1169:8: warning: ignoring return value of 'fscanf', declared with attribute warn_unused_result [-Wunused-result]
-turbostat.c: In function 'cpu_is_first_sibling_in_core':
-turbostat.c:1148:8: warning: ignoring return value of 'fscanf', declared with attribute warn_unused_result [-Wunused-result]
+> > [I wonder if this is clean-enough cause for "trivial in resubmit
+> > mode?]
+> 
+> On Sat, 10 Aug 2013, Belisko Marek wrote:
+> 
+> > Same for gta04 (omap3 based device) [1].
+> > It was send upstream 2 times and second time there is no reply from 1.3.2013.
+> 
+> Hi guys,
+> 
+> once I am able to match signoffs in the patches to MAINTAINERS, I can take 
+> those through trivial.git in "re-transmission mode" (or feeeding those 
+> thgough akpm si an option as well).
+> 
+> Please just send the patches to me in a new thread properly with all the 
+> Acks/Signoffs, and mark those appropriately (i.e. maintainer that would 
+> normally push this upstream desurfaced).
 
-Fix these by checking the return value of those four calls to fscanf.
+Mail sent (just to you, to keep mail volume down).
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
----
- tools/power/x86/turbostat/turbostat.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+I noticed two non-delivery reports in my INBOX; seems Benoit
+disappeared rather permanently:
 
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index dc30f1b..514adba 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -1167,7 +1167,10 @@ int cpu_is_first_sibling_in_core(int cpu)
- 		perror(path);
- 		exit(1);
- 	}
--	fscanf(filep, "%d", &first_cpu);
-+	if (fscanf(filep, "%d", &first_cpu) != 1) {
-+		perror(path);
-+		exit(1);
-+	}
- 	fclose(filep);
- 	return (cpu == first_cpu);
- }
-@@ -1188,7 +1191,10 @@ int cpu_is_first_core_in_package(int cpu)
- 		perror(path);
- 		exit(1);
- 	}
--	fscanf(filep, "%d", &first_cpu);
-+	if (fscanf(filep, "%d", &first_cpu) != 1) {
-+		perror(path);
-+		exit(1);
-+	}
- 	fclose(filep);
- 	return (cpu == first_cpu);
- }
-@@ -1205,7 +1211,10 @@ int get_physical_package_id(int cpu)
- 		perror(path);
- 		exit(1);
- 	}
--	fscanf(filep, "%d", &pkg);
-+	if (fscanf(filep, "%d", &pkg) != 1) {
-+		perror(path);
-+		exit(1);
-+	}
- 	fclose(filep);
- 	return pkg;
- }
-@@ -1222,7 +1231,10 @@ int get_core_id(int cpu)
- 		perror(path);
- 		exit(1);
- 	}
--	fscanf(filep, "%d", &core);
-+	if (fscanf(filep, "%d", &core) != 1) {
-+		perror(path);
-+		exit(1);
-+	}
- 	fclose(filep);
- 	return core;
- }
+...
+If you do so, please include this problem report. You can
+delete your own text from the attached returned message.
+ 
+                   The mail system
+ 
+<b-cousson@ti.com>: host cluster5.us.messagelabs.com[216.82.250.99]
+said: 550   
+    Invalid recipient <b-cousson@ti.com> (#5.1.1) (in reply to RCPT TO
+    command)
+ 
+
+...so maybe MAINTAINERS file will need fixing?
+
+OMAP DEVICE TREE SUPPORT
+M:      Benoît Cousson <b-cousson@ti.com>
+M:      Tony Lindgren <tony@atomide.com>
+L:      linux-omap@vger.kernel.org
+L:      devicetree@vger.kernel.org
+S:      Maintained
+F:      arch/arm/boot/dts/*omap*
+F:      arch/arm/boot/dts/*am3*
+
+:-(. Thanks,
+									Pavel
+
 -- 
-1.8.4.rc1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
