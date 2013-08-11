@@ -1,153 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab3HKCtR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 22:49:17 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25828 "EHLO
+	id S1753549Ab3HKCt1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 22:49:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25856 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab3HKCtI (ORCPT
+	with ESMTP id S1753043Ab3HKCtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 22:49:08 -0400
+	Sat, 10 Aug 2013 22:49:22 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH v4 12/28] x86, irq: Convert irq_2_pin list to generic list
-Date: Sat, 10 Aug 2013 19:47:58 -0700
-Message-Id: <1376189294-32022-13-git-send-email-yinghai@kernel.org>
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: [PATCH v4 17/28] x86, irq: Reserve irq range and alloc_reserved for booting path
+Date: Sat, 10 Aug 2013 19:48:03 -0700
+Message-Id: <1376189294-32022-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
 References: <1376189294-32022-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now irq_2_pin list is own grown list for ioapic irq/pin tracking.
-We can use generic list to replace it so we could use generic helper
-functions to operate it.
+We will use reserve and alloc_reserved_irq_and_cfg_at for hotplug ioapic path.
 
-Also make free_irq_cfg() free irq_2_pin list to support coming ioapic
-hotplug.
+To make thing simple, we could make booting path use same code.
+
+All irq range for all GSIs will be reserved at first, and alloc_reserved
+will really allocate those irq_desc/cfg when it is used.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Joerg Roedel <joro@8bytes.org>
 ---
- arch/x86/include/asm/hw_irq.h  |  2 +-
- arch/x86/kernel/apic/io_apic.c | 22 ++++++++++++----------
- 2 files changed, 13 insertions(+), 11 deletions(-)
+ arch/x86/include/asm/io_apic.h |  1 +
+ arch/x86/kernel/apic/io_apic.c | 80 +++++++++++++++++++++++++++++++-----------
+ 2 files changed, 60 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index e4ac559..8504333 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -139,7 +139,7 @@ struct irq_2_irte {
-  * Most irqs are mapped 1:1 with pins.
-  */
- struct irq_cfg {
--	struct irq_pin_list	*irq_2_pin;
-+	struct list_head	irq_2_pin;
- 	cpumask_var_t		domain;
- 	cpumask_var_t		old_domain;
- 	u8			vector;
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index eaff3ad..8181fd8 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -176,6 +176,7 @@ extern void setup_ioapic_ids_from_mpc_nocheck(void);
+ struct mp_ioapic_gsi{
+ 	u32 gsi_base;
+ 	u32 gsi_end;
++	u32 irq_base;
+ };
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
+ extern u32 gsi_top;
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index ccfb1d3..ef2d530 100644
+index 3e0530c..cb272c9 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -66,7 +66,7 @@
- #define __apicdebuginit(type) static type __init
- 
- #define for_each_irq_pin(entry, head) \
--	for (entry = head; entry; entry = entry->next)
-+	list_for_each_entry(entry, &head, list)
- 
- /*
-  *      Is the SiS APIC rmw bug present ?
-@@ -176,8 +176,8 @@ void mp_save_irq(struct mpc_intsrc *m)
+@@ -280,8 +280,47 @@ static struct irq_cfg *alloc_reserved_irq_and_cfg_at(unsigned int at, int node)
+ 	return alloc_irq_and_cfg_at(at, node);
  }
  
- struct irq_pin_list {
-+	struct list_head list;
- 	int apic, pin;
--	struct irq_pin_list *next;
- };
- 
- static struct irq_pin_list *alloc_irq_pin_list(int node)
-@@ -213,6 +213,7 @@ int __init arch_early_irq_init(void)
- 	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
- 
- 	for (i = 0; i < count; i++) {
-+		INIT_LIST_HEAD(&cfg[i].irq_2_pin);
- 		irq_set_chip_data(i, &cfg[i]);
- 		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
- 		zalloc_cpumask_var_node(&cfg[i].old_domain, GFP_KERNEL, node);
-@@ -245,6 +246,7 @@ static struct irq_cfg *alloc_irq_cfg(unsigned int irq, int node)
- 		goto out_cfg;
- 	if (!zalloc_cpumask_var_node(&cfg->old_domain, GFP_KERNEL, node))
- 		goto out_domain;
-+	INIT_LIST_HEAD(&cfg->irq_2_pin);
- 	return cfg;
- out_domain:
- 	free_cpumask_var(cfg->domain);
-@@ -255,11 +257,15 @@ out_cfg:
- 
- static void free_irq_cfg(unsigned int at, struct irq_cfg *cfg)
- {
-+	struct irq_pin_list *entry, *tmp;
+-/* irq_cfg is indexed by the sum of all RTEs in all I/O APICs. */
+-static struct irq_cfg irq_cfgx[NR_IRQS_LEGACY];
++static int reserve_ioapic_gsi_irq_base(int idx)
++{
++	int irq;
++	struct mp_ioapic_gsi *gsi_cfg = mp_ioapic_gsi_routing(idx);
++	int cnt = gsi_cfg->gsi_end - gsi_cfg->gsi_base + 1;
 +
- 	if (!cfg)
- 		return;
- 	irq_set_chip_data(at, NULL);
- 	free_cpumask_var(cfg->domain);
- 	free_cpumask_var(cfg->old_domain);
-+	list_for_each_entry_safe(entry, tmp, &cfg->irq_2_pin, list)
-+		kfree(entry);
- 	kfree(cfg);
- }
++	irq = __irq_reserve_irqs(-1, gsi_cfg->gsi_base, cnt);
++	if (irq >= 0) {
++		gsi_cfg->irq_base = irq;
++		apic_printk(APIC_VERBOSE, KERN_INFO
++			"IOAPIC[%d]: apic_id %d, GSI %d-%d ==> irq %d-%d reserved\n",
++			idx, mpc_ioapic_id(idx),
++			gsi_cfg->gsi_base, gsi_cfg->gsi_end,
++			irq, irq + cnt - 1);
++	} else
++		apic_printk(APIC_VERBOSE, KERN_WARNING
++			"IOAPIC[%d]: apic_id %d, GSI %d-%d ==> irq reserve failed\n",
++			idx, mpc_ioapic_id(idx),
++			gsi_cfg->gsi_base, gsi_cfg->gsi_end);
++
++	return irq;
++}
++
++static void __init reserve_ioapic_gsi_irq_extra(void)
++{
++	int irq;
++
++	/* to prevent hot add ioapic taking those slots */
++	if (gsi_top) {
++		irq = irq_reserve_irqs(gsi_top, NR_IRQS_LEGACY);
++		if (irq >= 0)
++			apic_printk(APIC_VERBOSE, KERN_INFO
++				"IOAPIC[extra]: GSI %d-%d ==> irq %d-%d reserved\n",
++				gsi_top, gsi_top + NR_IRQS_LEGACY - 1,
++				irq, irq + NR_IRQS_LEGACY - 1);
++		else
++			apic_printk(APIC_VERBOSE, KERN_WARNING
++				"IOAPIC[extra]: GSI %d-%d ==> irq reserve failed\n",
++				gsi_top, gsi_top + NR_IRQS_LEGACY - 1);
++	}
++}
  
-@@ -420,15 +426,12 @@ static void ioapic_mask_entry(int apic, int pin)
-  */
- static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pin)
+ static void alloc_ioapic_saved_registers(int idx)
  {
--	struct irq_pin_list **last, *entry;
-+	struct irq_pin_list *entry;
+@@ -298,8 +337,9 @@ static void alloc_ioapic_saved_registers(int idx)
  
- 	/* don't allow duplicates */
--	last = &cfg->irq_2_pin;
--	for_each_irq_pin(entry, cfg->irq_2_pin) {
-+	for_each_irq_pin(entry, cfg->irq_2_pin)
- 		if (entry->apic == apic && entry->pin == pin)
- 			return 0;
--		last = &entry->next;
--	}
+ int __init arch_early_irq_init(void)
+ {
++	int node = cpu_to_node(0);
+ 	struct irq_cfg *cfg;
+-	int count, node, i;
++	int i;
  
- 	entry = alloc_irq_pin_list(node);
- 	if (!entry) {
-@@ -439,7 +442,7 @@ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pi
- 	entry->apic = apic;
- 	entry->pin = pin;
+ 	if (!legacy_pic->nr_legacy_irqs)
+ 		io_apic_irqs = ~0UL;
+@@ -307,26 +347,23 @@ int __init arch_early_irq_init(void)
+ 	for (i = 0; i < nr_ioapics; i++)
+ 		alloc_ioapic_saved_registers(i);
  
--	*last = entry;
-+	list_add_tail(&entry->list, &cfg->irq_2_pin);
+-	cfg = irq_cfgx;
+-	count = ARRAY_SIZE(irq_cfgx);
+-	node = cpu_to_node(0);
++	for (i = 0; i < nr_ioapics; i++)
++		reserve_ioapic_gsi_irq_base(i);
+ 
+-	/* Make sure the legacy interrupts are marked in the bitmap */
+-	irq_reserve_irqs(0, legacy_pic->nr_legacy_irqs);
++	reserve_ioapic_gsi_irq_extra();
+ 
+-	for (i = 0; i < count; i++) {
+-		INIT_LIST_HEAD(&cfg[i].irq_2_pin);
+-		irq_set_chip_data(i, &cfg[i]);
+-		zalloc_cpumask_var_node(&cfg[i].domain, GFP_KERNEL, node);
+-		zalloc_cpumask_var_node(&cfg[i].old_domain, GFP_KERNEL, node);
+-		/*
+-		 * For legacy IRQ's, start with assigning irq0 to irq15 to
+-		 * IRQ0_VECTOR to IRQ15_VECTOR for all cpu's.
+-		 */
+-		if (i < legacy_pic->nr_legacy_irqs) {
+-			cfg[i].vector = IRQ0_VECTOR + i;
+-			cpumask_setall(cfg[i].domain);
++	/*
++	 * For legacy IRQ's, start with assigning irq0 to irq15 to
++	 * IRQ0_VECTOR to IRQ15_VECTOR for all cpu's.
++	 */
++	for (i = 0; i < legacy_pic->nr_legacy_irqs; i++) {
++		cfg = alloc_reserved_irq_and_cfg_at(i, node);
++		if (!cfg) {
++			pr_warn("can not allocate irq_desc/cfg for %d\n", i);
++			continue;
+ 		}
++		cfg->vector = IRQ0_VECTOR + i;
++		cpumask_setall(cfg->domain);
+ 	}
+ 
  	return 0;
+@@ -3460,7 +3497,8 @@ int __init arch_probe_nr_irqs(void)
+ 	if (nr < nr_irqs)
+ 		nr_irqs = nr;
+ 
+-	return NR_IRQS_LEGACY;
++	/* x86 arch code will allocate irq_desc/cfg */
++	return 0;
  }
  
-@@ -1622,8 +1625,7 @@ __apicdebuginit(void) print_IO_APICs(void)
- 		cfg = irq_get_chip_data(irq);
- 		if (!cfg)
- 			continue;
--		entry = cfg->irq_2_pin;
--		if (!entry)
-+		if (list_empty(&cfg->irq_2_pin))
- 			continue;
- 		printk(KERN_DEBUG "IRQ%d ", irq);
- 		for_each_irq_pin(entry, cfg->irq_2_pin)
+ int io_apic_set_pci_routing(struct device *dev, int irq,
 -- 
 1.8.1.4
 
