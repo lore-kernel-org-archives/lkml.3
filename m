@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab3HKSq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 14:46:27 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:42849 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569Ab3HKSqX (ORCPT
+	id S1754804Ab3HKTIn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 15:08:43 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43852 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754661Ab3HKTIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 14:46:23 -0400
+	Sun, 11 Aug 2013 15:08:41 -0400
+Date: Sun, 11 Aug 2013 20:08:26 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130811190826.GH6427@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <877gfsrxar.fsf@linux.vnet.ibm.com>
-References: <CALCETrUTyLO4BKX0SrmRd=nb2jvvZEhD9iTyFpSM23OUdQLhsA@mail.gmail.com>
- <877gfsrxar.fsf@linux.vnet.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 11 Aug 2013 11:46:01 -0700
-Message-ID: <CALCETrXKzMBwkEFCsGeLB1sqFFPjivpFR2P8ZMeuZX5SAuZZjA@mail.gmail.com>
-Subject: Re: Should unprivileged linkat(..., AT_EMPTY_PATH) work on O_TMPFILE files?
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="K2ilJF7ocWQIPRKZ"
+Content-Disposition: inline
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Non-enumerable devices on USB and other enumerable buses
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 11, 2013 at 9:45 AM, Aneesh Kumar K.V
-<aneesh.kumar@linux.vnet.ibm.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> The change:
->>
->> commit f4e0c30c191f87851c4a53454abb55ee276f4a7e
->> Author: Al Viro <viro@zeniv.linux.org.uk>
->> Date:   Tue Jun 11 08:34:36 2013 +0400
->>
->>     allow the temp files created by open() to be linked to
->>
->>     O_TMPFILE | O_CREAT => linkat() with AT_SYMLINK_FOLLOW and /proc/self/fd/<n>
->>     as oldpath (i.e. flink()) will create a link
->>     O_TMPFILE | O_CREAT | O_EXCL => ENOENT on attempt to link those guys
->>
->>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
->>
->> makes it possible to hardlink an O_TMPFILE file using procfs.  Should
->> linkat(fd, "", newdirfd, newpath, AT_EMPTY_PATH) also work?
->>
->> AFAICS it currently requires CAP_DAC_READ_SEARCH, but I'm a bit
->> confused as to why linkat(..., AT_EMPTY_PATH) should have a stricter
->> check than linkat(AT_FDCWD, "/proc/self/fd/n", ...,
->> AT_SYMLINK_FOLLOW),  (The relevant change is
->> 11a7b371b64ef39fc5fb1b6f2218eef7c4d035e3.)
->>
->> FWIW, this program works on Linux 3.9, which makes me doubt that the
->> security restriction on linkat is doing any good:
->>
->> #include <stdio.h>
->> #include <err.h>
->> #include <fcntl.h>
->> #include <unistd.h>
->>
->> int main(int argc, char **argv)
->> {
->>   char buf[128];
->>
->>   if (argc != 3)
->>     errx(1, "Usage: flink FD PATH");
->>
->>   sprintf(buf, "/proc/self/fd/%d", atoi(argv[1]));
->>   if (linkat(AT_FDCWD, buf, AT_FDCWD, argv[2], AT_SYMLINK_FOLLOW) != 0)
->>     err(1, "linkat");
->>   return 0;
->> }
->>
->>
->> Removing the check from the AT_EMPTY_PATH case would simplify code
->> that wants to write a file, fsync it, and then flink it in.
->
-> I understand that this got merged upstream. But in case of the above
-> test we would walk the path pointed by /proc/self/fd/<x> right ?
->
-> ie,
->
-> 20 -> /home/no-access/k
->
-> will the above test work ? Now if i pass the '20' to another application
-> I can affectively create a hardlink to that outside no-access and if k
-> happens to have 'r' for others, then everybody will be able to read
-> right ?. I understand that limitting the read access based on directory
-> permission is not a good idea. But aren't we expected to keep that ?
 
-The symlinks in /proc/self/fd are rather magical and don't actually
-walk the path.  Give it a try :)
+--K2ilJF7ocWQIPRKZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
---Andy
+Looking at the enumerable buses in the kernel I don't see any which have
+real support for any kind of registration of devices prior to their
+enumeration.  Similarly currently all the DT bindings in the kernel I've
+been able to notice cover only non-enumerable buses.  This generally
+makes sense where enumerable buses are used in standard fashions since
+the binding would be at best redundant and at worst inaccurate.  However
+there are often corner cases in embedded systems where hardware has been
+hooked up outside of the normal enumeration mechanisms, for example with
+software power control or extra signals wired.
+
+One example that's bugging me right now is that on the Insignal Arndale
+platform there's a USB hub connected to one of the USB ports on the SoC
+(not as a PHY, it seems we also need the internal PHY running to talk to
+the device).  The hub needs to be "plugged" into the SoC after the SoC
+USB controller has started with some GPIOs so we need to tell the system
+that the hub exists and needs to be synchronised with the USB controller.
+
+Another case that's going to be problematic once it's in mainline is
+Slimbus - this is a bus used in some embedded audio subsystems which is
+enumerable in a similar manner to USB but where the devices on the bus
+are normally powered up only on demand (causing them to hotplug when
+used and unplug when idle) and have at least interrupt lines wired to
+the SoC using a normal interrupt outside the enumerable bus.
+
+I know there's been some discussion of this topic but do we have any
+general consensus on how to handle such things both from a Linux driver
+model point of view and from a DT/ACPI point of view?
+
+--K2ilJF7ocWQIPRKZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSB+EnAAoJELSic+t+oim9NUUP/jZ3eJIVGvymQ9wkCHIZtCnM
+ZqmmzLYEI8sKbIGNTJ1dduaoQOZZhy/Mt51nzjbMfIWIYvv1OLD+AcY61RHxW/Xx
+1ilPKc7z8xDsEM0/mDSXP2D8QsHUShQ6ug3Xzlehf6A2LRWPRxjIXUPptReyFoMu
+KdU4Yx0U4/Io200WxcpO2/MEwJzBiK5kDdoF8PNjHPZnuhvrRqXAQVwM5xZl2xoc
+TvMzvYehqSq7VT7XzGTja2gC/UtgXN2H94HaSWb5OKbLVed6fpqVjeN8fbHjFUpE
++6+4gHkDMIBkrHDzrLmpHua1/SZeDnCGvs048+TQcz+jzIeZ+Cnth4keiUsHtJ9I
+70g0X/k72lj9t9UmOUSvZpPk3DstwcPbXyW9qhW2jctoXwnLHt7tqkNxObWB1Nw7
+8qXLghKSZd4n+MBzZ1yBgZt9+1OoSUBTjxFGohX32QLSOpyrRk9shne0p/EPqd+p
+L4ssoLwwIXOrQGa2HnfEft4X/mPBvaPyfL5KKktGa1hmehNPpESNEi3ROckciBU5
+tBYSrGSwOVDsRhdHXO/fgJb6UzYDrxFPhZyIDtg6dowNUWnB0bratgUj+R/cUDpJ
+b70KzcBm0mxFAaGBXC1b5mfKW9eBMXYRssYkjA75myFCWZEKpC6FrmJ1z2MVDdAL
+8rcAL0JpE8sCDZhIQRi/
+=s6o4
+-----END PGP SIGNATURE-----
+
+--K2ilJF7ocWQIPRKZ--
