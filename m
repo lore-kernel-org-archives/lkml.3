@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab3HKCr0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 22:47:26 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34511 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab3HKCqM (ORCPT
+	id S1752885Ab3HKCrY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 22:47:24 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25527 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab3HKCqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 22:46:12 -0400
+	Sat, 10 Aug 2013 22:46:11 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
@@ -16,51 +16,41 @@ Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Joerg Roedel <joro@8bytes.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Subject: [PATCH 08/28] x86, irq: Make dmar_msi/hpet_msi irq_chip name consistent
-Date: Sat, 10 Aug 2013 19:45:19 -0700
-Message-Id: <1376189139-31856-10-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 06/28] x86, irq: Show MSI-X clearly in debug message
+Date: Sat, 10 Aug 2013 19:45:17 -0700
+Message-Id: <1376189139-31856-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376189139-31856-1-git-send-email-yinghai@kernel.org>
 References: <1376189139-31856-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All others are using "-" instead of "_".
-
-Change dmar_msi and hpet_msi to use "-".
+Print out exact MSI or MSI-X instead of MSI/MSI-X.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- arch/x86/kernel/apic/io_apic.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apic/io_apic.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index cf320fb..47add1a 100644
+index eda56ad..119fdf8 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3199,7 +3199,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- }
+@@ -3125,7 +3125,8 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
  
- static struct irq_chip dmar_msi_type = {
--	.name			= "DMAR_MSI",
-+	.name			= "DMAR-MSI",
- 	.irq_unmask		= dmar_msi_unmask,
- 	.irq_mask		= dmar_msi_mask,
- 	.irq_ack		= ack_apic_edge,
-@@ -3247,7 +3247,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
- }
+ 	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
  
- struct irq_chip hpet_msi_type = {
--	.name = "HPET_MSI",
-+	.name = "HPET-MSI",
- 	.irq_unmask = hpet_msi_unmask,
- 	.irq_mask = hpet_msi_mask,
- 	.irq_ack = ack_apic_edge,
+-	dev_printk(KERN_DEBUG, &dev->dev, "irq %d for MSI/MSI-X\n", irq);
++	dev_printk(KERN_DEBUG, &dev->dev, "irq %d for MSI%s\n", irq,
++			 msidesc->msi_attrib.is_msix ? "-X" : "");
+ 
+ 	return 0;
+ }
 -- 
 1.8.1.4
 
