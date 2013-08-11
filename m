@@ -1,127 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab3HKVje (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 17:39:34 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:33561 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab3HKVjb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 17:39:31 -0400
-Date: Sun, 11 Aug 2013 23:39:23 +0200
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Steven Rostedt <rostedt@goodmis.org>, Michal Marek <mmarek@suse.cz>,
-        Kevin Hilman <khilman@linaro.org>, sedat.dilek@gmail.com,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux kbuild ML <linux-kbuild@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the ext4 tree
-Message-ID: <20130811213923.GA5312@free.fr>
-References: <20130729110816.12958c3a26400f444a9a5012@canb.auug.org.au>
- <CA+icZUUt4domktYZZn0Qp3BZoSFqmKic4qSnVP4cuTKwUww_=A@mail.gmail.com>
- <20130807153840.4f2997b603397c07aca98b2d@canb.auug.org.au>
- <87zjsted0c.fsf@linaro.org>
- <20130808102228.d2034d3a4c986d2970926ab9@canb.auug.org.au>
- <20130808103614.a039da2f236154b52329b28b@canb.auug.org.au>
- <20130808191650.GB3282@free.fr>
- <20130808215449.GD3282@free.fr>
- <20130809114248.GA5691@merkur.ravnborg.org>
+	id S1755051Ab3HKV56 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 17:57:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40381 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752193Ab3HKV5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 17:57:54 -0400
+Message-ID: <520808D1.70705@suse.cz>
+Date: Sun, 11 Aug 2013 23:57:37 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130616 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130809114248.GA5691@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/9] mm: thrash detection-based file cache sizing
+References: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org> <1375829050-12654-9-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <1375829050-12654-9-git-send-email-hannes@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sam, All,
+On 08/07/2013 12:44 AM, Johannes Weiner wrote:
+> To accomplish this, a per-zone counter is increased every time a page
+> is evicted and a snapshot of that counter is stored as shadow entry in
+> the page's now empty page cache radix tree slot.  Upon refault of that
+> page, the difference between the current value of that counter and the
+> shadow entry value is called the refault distance.  It tells how many
+> pages have been evicted from the zone since that page's eviction,
+This explanation of refault distance seems correct...
+> which is how many page slots are missing from the zone's inactive list
+> for this page to get accessed twice while in memory.
+But this part seems slightly incorrect. IMHO the correct formulation 
+would be "...how many page slots are AT MOST missing...". See below.
+> If the number of
+> missing slots is less than or equal to the number of active pages,
+> increasing the inactive list at the cost of the active list would give
+> this thrashing set a chance to establish itself:
+>
+> eviction counter = 4
+>                          evicted      inactive           active
+>   Page cache data:       [ a b c d ]  [ e f g h i j k ]  [ l m n ]
+>    Shadow entries:         0 1 2 3
+> Refault distance:         4 3 2 1
+Consider here that if 'd' was now accessed before 'c', I think 'e' would 
+be evicted and eviction counter would be incremented to 5. So for 'c' 
+you would now say that three slots would prevent the refault, but in 
+fact two would still be sufficient. This potential imprecision could 
+make the algorithm challenge more active pages than it should, but I am 
+not sure how bad the consequences could be... so just pointing it out.
 
-On 2013-08-09 13:42 +0200, Sam Ravnborg spake thusly:
-> On Thu, Aug 08, 2013 at 11:54:49PM +0200, Yann E. MORIN wrote:
-> > Stephen, All,
-> > 
-> > On 2013-08-08 21:16 +0200, Yann E. MORIN spake thusly:
-> > > On 2013-08-08 10:36 +1000, Stephen Rothwell spake thusly:
-> > > > On Thu, 8 Aug 2013 10:22:28 +1000 Stephen Rothwell <sfr@canb.auug.org.au>
-> > > > wrote:
-> > > > >
-> > > > > More quick testing with an empty file: v3.9 is OK, v3.10 gives
-> > > > > CONFIG_MODULES unset.
-> > > 
-> > > Sorry, I don't understand the above. Can you elaborate on what you did,
-> > > what you got, what expected, so I can try to reproduce and fix this,
-> > > please?
-> > 
-> > Ok, I've had a look in the linux-next archives, and I think I got it.
-> > Is the following right?
-> > 
-> >     git clean -d; git clean -dX     # To be sure tree is clean
-> >     touch empty
-> >     make KCONFIG_ALLCONFIG=empty allmodconfig
-> >     grep MODULES .config
-> >     $ CONFIG_MODULES is not set
-> > 
-> > If so, I think I found the reason: the modules symbol is _always_ set to
-> > being valid as soon as KCONFIG_ALLCONFIG is read, even if it was not
-> > present in that file.
-> > 
-> > Since it is set to be valid, the following change means it is not
-> > affected another value later on.
-> > 
-> > So, I wonder what the best option is:
-> >   1- revert the following, and find another solution,
-> >   2- de-specialise the modules symbol,
-> >   3- or further specialise the modules symbol.
-> 
-> If we drop the special handling of "MODULES" and introduced
-> the following in we may fix it - hopefully:
-> 
-> config MODULES
-> 	option modules
-> 
-> The option handling is already in place. It is even documented :-)
-
-Yes, indeed, that one is pretty easy! :-)
-
-> At least we could then drop the sym_lookup here (zconf.y):
->         if (!modules_sym->prop) {
->                 struct property *prop;
-> 
->                 prop = prop_alloc(P_DEFAULT, modules_sym);
->                 prop->expr = expr_alloc_symbol(sym_lookup("MODULES", 0));
->         }
-> Without the sym_lookup I think the symbol will not be defined and tus not marked valid.
-
-Sorry, I don't understand what we should do here.
-
->From what I understand, here's what happens:
-  - there's no symbol that declared the 'modules' option, so the
-    modules_sym->prop is NULL;
-  - so we look for the symbol 'MODULES' and use that as the symbol used
-    to evaluate if tristates are enabled.
-
-So, now we have 'option modules' added to MODULES, we never enter this
-if() condition.
-
-But what would happen to other projects that do not have a symbol set
-with 'option modules' and no 'MODULES' symbol? Surely, those projects do
-not need tristates, but what should the code do in this case?
-
-So, I don't know what to replace this 'sym_lookup("MODULES", 0)' with.
-
-> Soory - no patch as I am busy with day-time job stuff.
-
-I hope you can share some guidnce here, please... ;-)
-
-Regards,
-Yann E. MORIN.
-
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
