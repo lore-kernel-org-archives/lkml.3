@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab3HKQ4D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 12:56:03 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:38019
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754300Ab3HKQwD (ORCPT
+	id S1754475Ab3HKQ4c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 12:56:32 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56149 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754256Ab3HKQ4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 12:52:03 -0400
-X-IronPort-AV: E=Sophos;i="4.89,857,1367964000"; 
-   d="scan'208";a="23717947"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/16] arch/arm/mach-ux500/cpu-db8500.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
-Date: Sun, 11 Aug 2013 18:51:44 +0200
-Message-Id: <1376239917-15594-4-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
+	Sun, 11 Aug 2013 12:56:30 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Alex Thorlton <athorlton@sgi.com>, linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Kees Cook <keescook@chromium.org>, Robin Holt <holt@sgi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] Add per-process flag to control thp
+In-Reply-To: <20130802205735.GS26476@sgi.com>
+References: <20130802205735.GS26476@sgi.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Sun, 11 Aug 2013 22:26:21 +0530
+Message-ID: <874nawrwsq.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081116-3864-0000-0000-0000098959B1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Alex Thorlton <athorlton@sgi.com> writes:
 
-Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding the
-arity of the called function.
+> This patch implements functionality to allow processes to disable the use of
+> transparent hugepages through the prctl syscall.
+>
+> We've determined that some jobs perform significantly better with thp disabled,
+> and we needed a way to control thp on a per-process basis, without relying on
+> madvise.
+>
 
-The semantic match that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+Is that because of hugepage alloc on fault ? I understand, that could be
+a real issue when applications touch one byte per hugepage. In that case
+we would endup allocating more memory than the application footprint. I have
+observed that system almost hang and start hitting OOM when run with THP
+enabled. Now we could possibly handle that by not allowing alloc on fault and
+always depend on coallpse hugepage to instantiate a hugepage ? 
 
-// <smpl>
-@@
-expression e,f;
-@@
-
-f(...,
-- ARRAY_AND_SIZE(e)
-+ e,ARRAY_SIZE(e)
-  ,...)
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-Not compiled.
-
- arch/arm/mach-ux500/cpu-db8500.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 12eee81..a73bb3d 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -157,7 +157,8 @@ static void __init db8500_add_gpios(struct device *parent)
- 		.supports_sleepmode = true,
- 	};
- 
--	dbx500_add_gpios(parent, ARRAY_AND_SIZE(db8500_gpio_base),
-+	dbx500_add_gpios(parent, db8500_gpio_base,
-+			 ARRAY_SIZE(db8500_gpio_base),
- 			 IRQ_DB8500_GPIO0, &pdata);
- 	dbx500_add_pinctrl(parent, "pinctrl-db8500", U8500_PRCMU_BASE);
- }
+-aneesh
 
