@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab3HKCrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 22:47:16 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34499 "EHLO
+	id S1752729Ab3HKCrU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 22:47:20 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34518 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab3HKCqK (ORCPT
+	with ESMTP id S1751915Ab3HKCqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 22:46:10 -0400
+	Sat, 10 Aug 2013 22:46:14 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
         Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Alexander Gordeev <agordeev@redhat.com>
-Subject: [PATCH 01/28] genirq: Split __irq_reserve_irqs from irq_alloc_descs
-Date: Sat, 10 Aug 2013 19:45:11 -0700
-Message-Id: <1376189139-31856-2-git-send-email-yinghai@kernel.org>
+        Joerg Roedel <joro@8bytes.org>, Donald Dutile <ddutile@redhat.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        stable@vger.kernel.org
+Subject: [PATCH 10/28] iommu, irq: Allocate irq_desc for dmar_msi with local node
+Date: Sat, 10 Aug 2013 19:45:21 -0700
+Message-Id: <1376189139-31856-12-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376189139-31856-1-git-send-email-yinghai@kernel.org>
 References: <1376189139-31856-1-git-send-email-yinghai@kernel.org>
@@ -25,130 +27,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_alloc_descs and irq_reserve_irqs are almost the same.
-Separate code out to __irq_reserved_irqs, and other two reuse
-__irq_reserve_irqs.
+iommu irq's irq_desc should be on local node ram.
 
-We will use __irq_reserve_irqs for coming ioapic hotplug support.
+Fix the return value checking problem.
+  create_irq() will return -1 when fail to allocate.
+  create_irq_nr() will return 0 when fail to allocate.
+here only check !irq, so need to change it to use create_irq_nr instead.
 
--v2: fix func docbook related comments, pointed out by tglx.
+-v2: According to Sebastian, add cc to stable.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Reviewed-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Donald Dutile <ddutile@redhat.com>
+Acked-by: Donald Dutile <ddutile@redhat.com>
+Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: stable@vger.kernel.org
 ---
- include/linux/irq.h  |  1 +
- kernel/irq/irqdesc.c | 54 ++++++++++++++++++++++++++++++----------------------
- 2 files changed, 32 insertions(+), 23 deletions(-)
+ drivers/iommu/dmar.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index f04d3ba..8c46cb2 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -611,6 +611,7 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 785675a..db41e36 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -1277,7 +1277,7 @@ int dmar_set_interrupt(struct intel_iommu *iommu)
+ 	if (iommu->irq)
+ 		return 0;
  
- void irq_free_descs(unsigned int irq, unsigned int cnt);
- int irq_reserve_irqs(unsigned int from, unsigned int cnt);
-+int __irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt);
- 
- static inline void irq_free_desc(unsigned int irq)
- {
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 192a302..a151db6 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -340,18 +340,15 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
- EXPORT_SYMBOL_GPL(irq_free_descs);
- 
- /**
-- * irq_alloc_descs - allocate and initialize a range of irq descriptors
-- * @irq:	Allocate for specific irq number if irq >= 0
-+ * __irq_reserve_irqs - reserve a range of irqs
-+ * @irq:	Reserve for specific irq number if irq >= 0
-  * @from:	Start the search from this irq number
-- * @cnt:	Number of consecutive irqs to allocate.
-- * @node:	Preferred node on which the irq descriptor should be allocated
-- * @owner:	Owning module (can be NULL)
-+ * @cnt:	Number of consecutive irqs to reserve.
-  *
-  * Returns the first irq number or error code
-  */
- int __ref
--__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
--		  struct module *owner)
-+__irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt)
- {
- 	int start, ret;
- 
-@@ -369,7 +366,7 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
- 					   from, cnt, 0);
- 	ret = -EEXIST;
--	if (irq >=0 && start != irq)
-+	if (irq >= 0 && start != irq)
- 		goto err;
- 
- 	if (start + cnt > nr_irqs) {
-@@ -380,12 +377,36 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 
- 	bitmap_set(allocated_irqs, start, cnt);
- 	mutex_unlock(&sparse_irq_lock);
--	return alloc_descs(start, cnt, node, owner);
-+	return start;
- 
- err:
- 	mutex_unlock(&sparse_irq_lock);
- 	return ret;
- }
-+
-+/**
-+ * __irq_alloc_descs - allocate and initialize a range of irq descriptors
-+ * @irq:	Allocate for specific irq number if irq >= 0
-+ * @from:	Start the search from this irq number
-+ * @cnt:	Number of consecutive irqs to allocate.
-+ * @node:	Preferred node on which the irq descriptor should be allocated
-+ * @owner:	Owning module (can be NULL)
-+ *
-+ * Returns the first irq number or error code
-+ */
-+int __ref
-+__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
-+		  struct module *owner)
-+{
-+	int start;
-+
-+	start = __irq_reserve_irqs(irq, from, cnt);
-+
-+	if (start < 0)
-+		return start;
-+
-+	return alloc_descs(start, cnt, node, owner);
-+}
- EXPORT_SYMBOL_GPL(__irq_alloc_descs);
- 
- /**
-@@ -397,20 +418,7 @@ EXPORT_SYMBOL_GPL(__irq_alloc_descs);
-  */
- int irq_reserve_irqs(unsigned int from, unsigned int cnt)
- {
--	unsigned int start;
--	int ret = 0;
--
--	if (!cnt || (from + cnt) > nr_irqs)
--		return -EINVAL;
--
--	mutex_lock(&sparse_irq_lock);
--	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
--	if (start == from)
--		bitmap_set(allocated_irqs, start, cnt);
--	else
--		ret = -EEXIST;
--	mutex_unlock(&sparse_irq_lock);
--	return ret;
-+	return __irq_reserve_irqs(from, from, cnt);
- }
- 
- /**
+-	irq = create_irq();
++	irq = create_irq_nr(0, iommu->node);
+ 	if (!irq) {
+ 		pr_err("IOMMU: no free vectors\n");
+ 		return -EINVAL;
 -- 
 1.8.1.4
 
