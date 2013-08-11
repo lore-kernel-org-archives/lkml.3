@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab3HKBqi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 21:46:38 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:51933 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751493Ab3HKBqf (ORCPT
+	id S1751849Ab3HKCd4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 22:33:56 -0400
+Received: from smtpauth05.mfg.siteprotect.com ([64.26.60.144]:34814 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751706Ab3HKCdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 21:46:35 -0400
-Date: Sat, 10 Aug 2013 21:46:35 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Thomas Richter <richter@rus.uni-stuttgart.de>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [HANG] Trouble with NEC-based USB adapter in PCMCIA slot on
- E7110
-In-Reply-To: <52069907.6090602@rus.uni-stuttgart.de>
-Message-ID: <Pine.LNX.4.44L0.1308102140420.10834-100000@netrider.rowland.org>
+	Sat, 10 Aug 2013 22:33:54 -0400
+Date: Sat, 10 Aug 2013 22:34:58 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Stephane Eranian <eranian@google.com>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@au1.ibm.com>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Subject: Re: [PATCH 5/7] powerpc/perf: Define big-endian version of
+ perf_mem_data_src
+In-Reply-To: <20130810175153.GF15551@us.ibm.com>
+Message-ID: <alpine.DEB.2.02.1308102232120.4119@pianoman.cluster.toy>
+References: <20130810174831.GA15551@us.ibm.com> <20130810175153.GF15551@us.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020202.5206F811.0095,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Aug 2013, Thomas Richter wrote:
+On Sat, 10 Aug 2013, Sukadev Bhattiprolu wrote:
 
-> Sorry, need to look further. I replaced ehci-pci from 2.6.31.14, and 
-> yenta_socket as well. No changes were necessary. Also replaced ehci-hcd, 
-
-Do you mean that you took the source code for ehci-hcd from the 2.6.31 
-kernel, copied it into the source directory for the 2.6.32 kernel, and 
-built it there?
-
-> but that required two minor changes because in 2.6.32, apparently, one 
-> hardware related structure was pulled out of the ehci structure.
 > 
-> Still did not make any difference, still locks up.
-> 
-> What's the next module up in the call chain I should be looking at?
+>  include/uapi/linux/perf_event.h |   55 +++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 55 insertions(+), 0 deletions(-)
 
-Have you tried comparing a usbmon trace from 2.6.31 with a comparable 
-trace from 2.6.32?  I doubt there will be any important differences, 
-but you never know until you try.
+> +#define __PERF_LE	1234
+> +#define __PERF_BE	4321
+> +
+> +#if defined(__KERNEL__)
 
-If the two traces are the same, that rules out everything in the USB 
-and SCSI stacks except for ehci-hcd, and you have already ruled that 
-out.
+I could be wrong, but I thought files under uapi weren't supposed to 
+contain __KERNEL__ code.  Wasn't that the whole point of uapi?
 
-Alan Stern
+Also having the perf_event interface depend on endianess just seems like a 
+complicated mess.  Can't we just declare the interface to be a certain 
+endianess and have the kernel byte-swap as necessary?
 
+Vince
