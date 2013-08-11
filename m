@@ -1,101 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab3HKGC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 02:02:59 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:48602 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab3HKGC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 02:02:57 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>, Hans Verkuil <hverkuil@xs4all.nl>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] media: OF: add "sync-on-green-active" property
-Date: Sun, 11 Aug 2013 11:32:24 +0530
-Message-Id: <1376200944-20478-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752101Ab3HKGJi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 02:09:38 -0400
+Received: from mail.sf-mail.de ([62.27.20.61]:46334 "EHLO mail.sf-mail.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751656Ab3HKGJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 02:09:35 -0400
+From: Rolf Eike Beer <eike-kernel@sf-tec.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Hard lockups using 3.10.0
+Date: Sun, 11 Aug 2013 08:09:19 +0200
+Message-ID: <24155824.fdsQYPMaDK@donald.sf-tec.de>
+User-Agent: KMail/4.10.5 (Linux/3.9.8-1.gf3348a8-desktop; KDE/4.10.5; i686; ; )
+In-Reply-To: <20130711105207.GE25631@dyad.programming.kicks-ass.net>
+References: <8484013.LsABBJRIOx@devpool02> <20130711100721.GA28131@pd.tnic> <20130711105207.GE25631@dyad.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart7217183.Rmjntc6u6b"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-This patch adds 'sync-on-green-active' property as part
-of endpoint property.
+--nextPart7217183.Rmjntc6u6b
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
-  
-  Changes for non RFC:
-  1: Fixed review comments pointed by Hans.
-  2: Added Ack from Sylwester.
-  
-  Changes for v5:
-  1: Changed description for sync-on-green-active property in
-     documentation file as suggested by Sylwester.
-  
-  Changes for v4:
-  1: Fixed review comments pointed by Sylwester.
+Peter Zijlstra wrote:
+> On Thu, Jul 11, 2013 at 12:07:21PM +0200, Borislav Petkov wrote:
+> > On Thu, Jul 11, 2013 at 11:38:37AM +0200, Rolf Eike Beer wrote:
+> > > Hi,
+> > > 
+> > > I'm running 3.10.0 (from openSUSE packages) on an "Intel(R) Core(TM)
+> > > i7-2600 CPU @ 3.40GHz". I got a hard lockup on one of my CPUs twice,
+> > > once with backtrace (see attached image). Graphics is the builtin
+> > > Intel, used with X 7.6 and KDE 4.10beta2 (basically current openSUSE
+> > > 12.3+KDE).
+> > > 
+> > > I'm not aware that I had done anything special, just "normal" desktop
+> > > and
+> > > development usage, but no heavy compile work at the moment the lockups
+> > > happened.
+> > 
+> > Hmm, I can see commit_creds() doing some rcu pointers assignment and rcu
+> > calling into the scheduler which screams about a cpu runqueue of the
+> > task we're about to reschedule not being locked. Let's add some more
+> > people who should know better.
+> 
+> Ok, for the other people too lazy to bother finding the picture:
+> 
+>   http://marc.info/?l=linux-kernel&m=137353587012001&q=p3
+> 
+> So we bug at:
+> 
+> kernel/sched/core.c:519 assert_raw_spin_locked(&task_rq(p)->lock);
+> 
+> and get there through:
+> 
+>   resched_task()
+>   check_preempt_wakeup()
+>   check_preempt_curr()
+>   try_to_wake_up()
+>   autoremove_wake_function()
+>   __call_rcu_nocb_enqueue()
+>   __call_rcu()
+>   commit_creds()
+>   ____call_usermodehelper()
+>   ret_from_fork()
+> 
+> That don't make much sense though. Since:
+> 
+>   try_to_wake_up()
+>     ttwu_queue()
+>       raw_spin_lock(&rq->lock)
+>       ttwu_do_activate()
+>         ttwu_do_wakeup()
+>           check_preempt_curr()
+>             check_preempt_wakeup()
+>               resched_task(rq->curr)
+>                 assert_raw_spin_locked(task_rq(p)->lock)
+> 
+> It would somehow mean that 'task_rq(rq->curr) != rq', that's completely
+> bonkers, we do after all have rq->lock locked.
+> 
+> I must also say that I've _never_ seen this bug before.
 
-  Changes for v3:
-  1: Fixed review comments pointed by Laurent and Sylwester.
+Meanwhile I found that there was a hardware defect on this machine. So if it 
+does not happen again I will assume that this was caused by this.
 
-  RFC v2 https://patchwork.kernel.org/patch/2578091/
+Thanks for looking into this.
 
-  RFC V1 https://patchwork.kernel.org/patch/2572341/
-  
- .../devicetree/bindings/media/video-interfaces.txt |    2 ++
- drivers/media/v4l2-core/v4l2-of.c                  |    4 ++++
- include/media/v4l2-mediabus.h                      |    3 +++
- 3 files changed, 9 insertions(+)
+Eike
+--nextPart7217183.Rmjntc6u6b
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
 
-diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
-index e022d2d..ce719f8 100644
---- a/Documentation/devicetree/bindings/media/video-interfaces.txt
-+++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
-@@ -88,6 +88,8 @@ Optional endpoint properties
- - field-even-active: field signal level during the even field data transmission.
- - pclk-sample: sample data on rising (1) or falling (0) edge of the pixel clock
-   signal.
-+- sync-on-green-active: active state of Sync-on-green (SoG) signal, 0/1 for
-+  LOW/HIGH respectively.
- - data-lanes: an array of physical data lane indexes. Position of an entry
-   determines the logical lane number, while the value of an entry indicates
-   physical lane, e.g. for 2-lane MIPI CSI-2 bus we could have
-diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
-index aa59639..5c4c9f0 100644
---- a/drivers/media/v4l2-core/v4l2-of.c
-+++ b/drivers/media/v4l2-core/v4l2-of.c
-@@ -100,6 +100,10 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
- 	if (!of_property_read_u32(node, "data-shift", &v))
- 		bus->data_shift = v;
- 
-+	if (!of_property_read_u32(node, "sync-on-green-active", &v))
-+		flags |= v ? V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH :
-+			V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW;
-+
- 	bus->flags = flags;
- 
- }
-diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
-index 83ae07e..395c4a9 100644
---- a/include/media/v4l2-mediabus.h
-+++ b/include/media/v4l2-mediabus.h
-@@ -40,6 +40,9 @@
- #define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << 10)
- /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
- #define V4L2_MBUS_FIELD_EVEN_LOW		(1 << 11)
-+/* Active state of Sync-on-green (SoG) signal, 0/1 for LOW/HIGH respectively. */
-+#define V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH	(1 << 12)
-+#define V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW		(1 << 13)
- 
- /* Serial flags */
- /* How many lanes the client can use */
--- 
-1.7.9.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iEYEABECAAYFAlIHKpYACgkQXKSJPmm5/E7lagCfaDU07q4o0o/ueR/CH6+WppXK
+f8oAoJbL7tyc/7TXW3xb0DycQ77UhX59
+=xVA2
+-----END PGP SIGNATURE-----
+
+--nextPart7217183.Rmjntc6u6b--
 
