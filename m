@@ -1,32 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab3HKTIn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 15:08:43 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43852 "EHLO
+	id S1754825Ab3HKTMJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 15:12:09 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43874 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754661Ab3HKTIl (ORCPT
+	with ESMTP id S1754720Ab3HKTMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 15:08:41 -0400
-Date: Sun, 11 Aug 2013 20:08:26 +0100
+	Sun, 11 Aug 2013 15:12:07 -0400
+Date: Sun, 11 Aug 2013 20:11:40 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130811190826.GH6427@sirena.org.uk>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Message-ID: <20130811191140.GI6427@sirena.org.uk>
+References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
+ <1376243970-6489-18-git-send-email-tomasz.figa@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K2ilJF7ocWQIPRKZ"
+	protocol="application/pgp-signature"; boundary="9LzbfKVJ2kwORFXX"
 Content-Disposition: inline
+In-Reply-To: <1376243970-6489-18-git-send-email-tomasz.figa@gmail.com>
 X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Non-enumerable devices on USB and other enumerable buses
+Subject: Re: [PATCH 17/18] spi: s3c64xx: Always select S3C64XX_PL080 when
+ ARCH_S3C64XX is enabled
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,58 +42,44 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---K2ilJF7ocWQIPRKZ
+--9LzbfKVJ2kwORFXX
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-Looking at the enumerable buses in the kernel I don't see any which have
-real support for any kind of registration of devices prior to their
-enumeration.  Similarly currently all the DT bindings in the kernel I've
-been able to notice cover only non-enumerable buses.  This generally
-makes sense where enumerable buses are used in standard fashions since
-the binding would be at best redundant and at worst inaccurate.  However
-there are often corner cases in embedded systems where hardware has been
-hooked up outside of the normal enumeration mechanisms, for example with
-software power control or extra signals wired.
+On Sun, Aug 11, 2013 at 07:59:29PM +0200, Tomasz Figa wrote:
 
-One example that's bugging me right now is that on the Insignal Arndale
-platform there's a USB hub connected to one of the USB ports on the SoC
-(not as a PHY, it seems we also need the internal PHY running to talk to
-the device).  The hub needs to be "plugged" into the SoC after the SoC
-USB controller has started with some GPIOs so we need to tell the system
-that the hub exists and needs to be synchronised with the USB controller.
+> @@ -366,7 +366,7 @@ config SPI_S3C24XX_FIQ
+>  config SPI_S3C64XX
+>  	tristate "Samsung S3C64XX series type SPI"
+>  	depends on (ARCH_S3C24XX || ARCH_S3C64XX || ARCH_S5P64X0 || ARCH_EXYNOS)
+> -	select S3C64XX_DMA if ARCH_S3C64XX && !S3C64XX_PL080
+> +	select S3C64XX_PL080 if ARCH_S3C64XX
+>  	help
+>  	  SPI driver for Samsung S3C64XX and newer SoCs.
 
-Another case that's going to be problematic once it's in mainline is
-Slimbus - this is a bus used in some embedded audio subsystems which is
-enumerable in a similar manner to USB but where the devices on the bus
-are normally powered up only on demand (causing them to hotplug when
-used and unplug when idle) and have at least interrupt lines wired to
-the SoC using a normal interrupt outside the enumerable bus.
+Do we need the select here (or should we have other selects for the
+Exynos SoCs)?
 
-I know there's been some discussion of this topic but do we have any
-general consensus on how to handle such things both from a Linux driver
-model point of view and from a DT/ACPI point of view?
-
---K2ilJF7ocWQIPRKZ
+--9LzbfKVJ2kwORFXX
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSB+EnAAoJELSic+t+oim9NUUP/jZ3eJIVGvymQ9wkCHIZtCnM
-ZqmmzLYEI8sKbIGNTJ1dduaoQOZZhy/Mt51nzjbMfIWIYvv1OLD+AcY61RHxW/Xx
-1ilPKc7z8xDsEM0/mDSXP2D8QsHUShQ6ug3Xzlehf6A2LRWPRxjIXUPptReyFoMu
-KdU4Yx0U4/Io200WxcpO2/MEwJzBiK5kDdoF8PNjHPZnuhvrRqXAQVwM5xZl2xoc
-TvMzvYehqSq7VT7XzGTja2gC/UtgXN2H94HaSWb5OKbLVed6fpqVjeN8fbHjFUpE
-+6+4gHkDMIBkrHDzrLmpHua1/SZeDnCGvs048+TQcz+jzIeZ+Cnth4keiUsHtJ9I
-70g0X/k72lj9t9UmOUSvZpPk3DstwcPbXyW9qhW2jctoXwnLHt7tqkNxObWB1Nw7
-8qXLghKSZd4n+MBzZ1yBgZt9+1OoSUBTjxFGohX32QLSOpyrRk9shne0p/EPqd+p
-L4ssoLwwIXOrQGa2HnfEft4X/mPBvaPyfL5KKktGa1hmehNPpESNEi3ROckciBU5
-tBYSrGSwOVDsRhdHXO/fgJb6UzYDrxFPhZyIDtg6dowNUWnB0bratgUj+R/cUDpJ
-b70KzcBm0mxFAaGBXC1b5mfKW9eBMXYRssYkjA75myFCWZEKpC6FrmJ1z2MVDdAL
-8rcAL0JpE8sCDZhIQRi/
-=s6o4
+iQIcBAEBAgAGBQJSB+HoAAoJELSic+t+oim9AfoP/2P8URy5sIDCmqf1TOgeSMZr
+soLanB71RJUnJ/XhqRkJT4fyNExwv/fpmD8KtTNWyFvZWItCKJCba1JxWY07X4PF
+gLgaB4AjW9TxqnG9tvHmnjLnoxjeyHUiwYwPBKb0ye7/2moFrGc2kmY29wLePzL4
+iDEKpI5jSIxQe0uBSaHhje4nUDu5zHkzCVSXGfw6nSWOcZkmv5PLKyCSH7gI0KbX
+oYYznHGTPt2DHjq6t5GVKZ6dWS+v6cF6SHF4FgP6qHlq8NYgujN5H+dxK7Kst3n9
+nOObUiaS7ym96ft+x+UIVkhqaLIU4DpIwJGfVJ7Tmx9zyGGRIIMVRqIPrZZ+Zrd2
+brDmSs/+ErB+lZd1fpyNbVD9iOLfAw/Q+L+ZfEfSBwK4+YOKwmZ4HeEnVp3mHLYC
+dcREWYdCO5wKkJEi4Uw+BQgS+OzZFo1T57kubWUejHLSYTkpY3II3HP4biuTbnrt
+VYgXB7lU70sfE3EN47hTDlpfnzWXe7BwiDyhIfZ7Ofb0mv++IjhGEpNgkglezxBb
+Hguw7/pdcLkOKBxbXqcDwc/1jhRuPUb7WrSZCXK4p0mjHXl/laky2/oP26KlES9M
+VGvpqDjhqNWMuiIikukU9xBTY2uHA9o1Ydx2ThF5jiXy47Gf89gxRCiKUXKR+F6y
+/E0b0IFZ8cuB8y5onPl9
+=D9G+
 -----END PGP SIGNATURE-----
 
---K2ilJF7ocWQIPRKZ--
+--9LzbfKVJ2kwORFXX--
