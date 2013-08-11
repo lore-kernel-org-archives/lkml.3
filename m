@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab3HKQxq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 12:53:46 -0400
+	id S1754525Ab3HKQwJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 12:52:09 -0400
 Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4795 "EHLO
 	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754520Ab3HKQwK (ORCPT
+	by vger.kernel.org with ESMTP id S1754416Ab3HKQwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 12:52:10 -0400
+	Sun, 11 Aug 2013 12:52:05 -0400
 X-IronPort-AV: E=Sophos;i="4.89,857,1367964000"; 
-   d="scan'208";a="23717956"
+   d="scan'208";a="23717948"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: kernel-janitors@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 12/16] drivers/cpufreq/pxa3xx-cpufreq.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
-Date: Sun, 11 Aug 2013 18:51:53 +0200
-Message-Id: <1376239917-15594-13-git-send-email-Julia.Lawall@lip6.fr>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 4/16] arch/arm/mach-pxa/z2.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
+Date: Sun, 11 Aug 2013 18:51:45 +0200
+Message-Id: <1376239917-15594-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -48,26 +49,40 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not compiled.
 
- drivers/cpufreq/pxa3xx-cpufreq.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/arm/mach-pxa/z2.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/cpufreq/pxa3xx-cpufreq.c b/drivers/cpufreq/pxa3xx-cpufreq.c
-index 9c92ef0..d26306f 100644
---- a/drivers/cpufreq/pxa3xx-cpufreq.c
-+++ b/drivers/cpufreq/pxa3xx-cpufreq.c
-@@ -213,10 +213,12 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
- 	policy->cur = policy->min = policy->max;
+diff --git a/arch/arm/mach-pxa/z2.c b/arch/arm/mach-pxa/z2.c
+index 2513d8f..d8fb360 100644
+--- a/arch/arm/mach-pxa/z2.c
++++ b/arch/arm/mach-pxa/z2.c
+@@ -500,7 +500,8 @@ static struct i2c_board_info __initdata z2_i2c_board_info[] = {
+ static void __init z2_i2c_init(void)
+ {
+ 	pxa_set_i2c_info(NULL);
+-	i2c_register_board_info(0, ARRAY_AND_SIZE(z2_i2c_board_info));
++	i2c_register_board_info(0, z2_i2c_board_info,
++				ARRAY_SIZE(z2_i2c_board_info));
+ }
+ #else
+ static inline void z2_i2c_init(void) {}
+@@ -674,7 +675,8 @@ static struct i2c_board_info __initdata z2_pi2c_board_info[] = {
+ static void __init z2_pmic_init(void)
+ {
+ 	pxa27x_set_i2c_power_info(NULL);
+-	i2c_register_board_info(1, ARRAY_AND_SIZE(z2_pi2c_board_info));
++	i2c_register_board_info(1, z2_pi2c_board_info,
++				ARRAY_SIZE(z2_pi2c_board_info));
+ }
+ #else
+ static inline void z2_pmic_init(void) {}
+@@ -700,7 +702,7 @@ static void z2_power_off(void)
+  ******************************************************************************/
+ static void __init z2_init(void)
+ {
+-	pxa2xx_mfp_config(ARRAY_AND_SIZE(z2_pin_config));
++	pxa2xx_mfp_config(z2_pin_config, ARRAY_SIZE(z2_pin_config));
  
- 	if (cpu_is_pxa300() || cpu_is_pxa310())
--		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa300_freqs));
-+		ret = setup_freqs_table(policy, pxa300_freqs,
-+					ARRAY_SIZE(pxa300_freqs));
- 
- 	if (cpu_is_pxa320())
--		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa320_freqs));
-+		ret = setup_freqs_table(policy, pxa320_freqs,
-+					ARRAY_SIZE(pxa320_freqs));
- 
- 	if (ret) {
- 		pr_err("failed to setup frequency table\n");
+ 	pxa_set_ffuart_info(NULL);
+ 	pxa_set_btuart_info(NULL);
 
