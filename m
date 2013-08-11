@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338Ab3HKQpm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 12:45:42 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:43091 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211Ab3HKQpj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 12:45:39 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: Should unprivileged linkat(..., AT_EMPTY_PATH) work on O_TMPFILE files?
-In-Reply-To: <CALCETrUTyLO4BKX0SrmRd=nb2jvvZEhD9iTyFpSM23OUdQLhsA@mail.gmail.com>
-References: <CALCETrUTyLO4BKX0SrmRd=nb2jvvZEhD9iTyFpSM23OUdQLhsA@mail.gmail.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Sun, 11 Aug 2013 22:15:32 +0530
-Message-ID: <877gfsrxar.fsf@linux.vnet.ibm.com>
+	id S1754361Ab3HKQuf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 12:50:35 -0400
+Received: from mout.gmx.net ([212.227.17.22]:55043 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754212Ab3HKQue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 12:50:34 -0400
+Date: Sun, 11 Aug 2013 18:50:31 +0200
+From: Andreas Werner <wernerandy@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: question about ioremap_cache and PAT
+Message-ID: <20130811165031.GA4439@thinkpad.fritz.box>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081116-5564-0000-0000-00000936ACC7
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V03:K0:V5rblE5I16Y+X1XcbXrTGlhgddhg2AWGDwNj+xF6/hsH9jNi2S0
+ tF1C+TjOj2IW+rC2bEbRDU2nv2abk84CdF/5vHAyS91Vb6Ozxa8+aF5mNMY+nRiyM72Eaqt
+ r0ms7O3WM7BdMcAO+VXioZoS19knnK70BQeYjDmXSlLFZvAHJ7Np3Bx2c2Lo9zDHGcC98Hp
+ QKOSuhdUQFDE0/R+P0J/g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
+Hi i have a question about ioremap_cache and the resulting PAT attribute on X86 system. If I configure the mtrr to Write-Through for an adress range, and call ioremap_cache to map the mmio, the resulting PAT attribute is set to UC.
+If I check the Intel document IA-32 SDM vol 3a, the resulting PAT attribute should be WB.
 
-> The change:
->
-> commit f4e0c30c191f87851c4a53454abb55ee276f4a7e
-> Author: Al Viro <viro@zeniv.linux.org.uk>
-> Date:   Tue Jun 11 08:34:36 2013 +0400
->
->     allow the temp files created by open() to be linked to
->
->     O_TMPFILE | O_CREAT => linkat() with AT_SYMLINK_FOLLOW and /proc/self/fd/<n>
->     as oldpath (i.e. flink()) will create a link
->     O_TMPFILE | O_CREAT | O_EXCL => ENOENT on attempt to link those guys
->
->     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
->
-> makes it possible to hardlink an O_TMPFILE file using procfs.  Should
-> linkat(fd, "", newdirfd, newpath, AT_EMPTY_PATH) also work?
->
-> AFAICS it currently requires CAP_DAC_READ_SEARCH, but I'm a bit
-> confused as to why linkat(..., AT_EMPTY_PATH) should have a stricter
-> check than linkat(AT_FDCWD, "/proc/self/fd/n", ...,
-> AT_SYMLINK_FOLLOW),  (The relevant change is
-> 11a7b371b64ef39fc5fb1b6f2218eef7c4d035e3.)
->
-> FWIW, this program works on Linux 3.9, which makes me doubt that the
-> security restriction on linkat is doing any good:
->
-> #include <stdio.h>
-> #include <err.h>
-> #include <fcntl.h>
-> #include <unistd.h>
->
-> int main(int argc, char **argv)
-> {
->   char buf[128];
->
->   if (argc != 3)
->     errx(1, "Usage: flink FD PATH");
->
->   sprintf(buf, "/proc/self/fd/%d", atoi(argv[1]));
->   if (linkat(AT_FDCWD, buf, AT_FDCWD, argv[2], AT_SYMLINK_FOLLOW) != 0)
->     err(1, "linkat");
->   return 0;
-> }
->
->
-> Removing the check from the AT_EMPTY_PATH case would simplify code
-> that wants to write a file, fsync it, and then flink it in.
+I found the function pat_x_mtrr_type in arch/x86/mm/pat.c where the resulting attribute is returned. There will be always UC return expect if the MTRR is set to WB.
 
-I understand that this got merged upstream. But in case of the above
-test we would walk the path pointed by /proc/self/fd/<x> right ?
+Why is there only WB or UC returned? In the Intel document there are a lot of combinations "allowed".
 
-ie,
+I need a Attribute of WT, so what i did is to modify the pat_x_mtrr_type function to return also WB if the MTRR is set to WT.   
 
-20 -> /home/no-access/k
+Is this a solution to solve that or whats the reasion why the kernel doesn´t support this combination?
 
-will the above test work ? Now if i pass the '20' to another application
-I can affectively create a hardlink to that outside no-access and if k
-happens to have 'r' for others, then everybody will be able to read
-right ?. I understand that limitting the read access based on directory
-permission is not a good idea. But aren't we expected to keep that ?
+Best regards
 
-For O_TMPFILE we don't have a path name hence the above may not be a
-real issue ? Can you help me understand what i am missing ?
-
--aneesh
-
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+B
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+A
+B
+B
+B
+Best regards
