@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab3HKXD3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 19:03:29 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:40374 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755002Ab3HKXD0 (ORCPT
+	id S1755200Ab3HKXxG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 19:53:06 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51108 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755169Ab3HKXxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 19:03:26 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
-        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH 17/18] spi: s3c64xx: Always select S3C64XX_PL080 when ARCH_S3C64XX is enabled
-Date: Mon, 12 Aug 2013 01:03:19 +0200
-Message-ID: <2033369.1oHkX7kdGa@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.5-gentoo-r1; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130811191140.GI6427@sirena.org.uk>
-References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com> <1376243970-6489-18-git-send-email-tomasz.figa@gmail.com> <20130811191140.GI6427@sirena.org.uk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Sun, 11 Aug 2013 19:53:01 -0400
+Message-ID: <1376265179.17400.40.camel@dabdike>
+Subject: Re: Patch for lost wakeups
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Long Gao <gaolong@kylinos.com.cn>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 11 Aug 2013 16:52:59 -0700
+In-Reply-To: <20130811173942.GA10964@redhat.com>
+References: <tencent_26310211398C21034BD3B2F9@qq.com>
+	 <CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com>
+	 <20130808191749.GA12062@redhat.com>
+	 <CA+55aFw+vEp6+q+QUZm5rf+sKR9z76HWzEqWjoiLtataym5uwA@mail.gmail.com>
+	 <20130809130457.GA27493@redhat.com>
+	 <CA+55aFxh+4yK3AkPQWGq+hGhBgvDdWuPSfzko2aO76y7ej=Veg@mail.gmail.com>
+	 <tencent_293B72F26D71A4191C7C999A@qq.com>
+	 <20130811173942.GA10964@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Sunday 11 of August 2013 20:11:40 Mark Brown wrote:
-> On Sun, Aug 11, 2013 at 07:59:29PM +0200, Tomasz Figa wrote:
-> > @@ -366,7 +366,7 @@ config SPI_S3C24XX_FIQ
-> > 
-> >  config SPI_S3C64XX
-> >  
-> >  	tristate "Samsung S3C64XX series type SPI"
-> >  	depends on (ARCH_S3C24XX || ARCH_S3C64XX || ARCH_S5P64X0 ||
-> >  	ARCH_EXYNOS)> 
-> > -	select S3C64XX_DMA if ARCH_S3C64XX && !S3C64XX_PL080
-> > +	select S3C64XX_PL080 if ARCH_S3C64XX
-> > 
-> >  	help
-> >  	
-> >  	  SPI driver for Samsung S3C64XX and newer SoCs.
+On Sun, 2013-08-11 at 19:39 +0200, Oleg Nesterov wrote:
+> On 08/10, Long Gao wrote:
+> >
+> >   By the way, could you help me join the linux kernel mailling list?
 > 
-> Do we need the select here (or should we have other selects for the
-> Exynos SoCs)?
+> Do you mean, you want to subscribe?
+> 
+> Well, from http://www.tux.org/lkml/#s3-1
+> 
+>         send the line "subscribe linux-kernel your_email@your_ISP"
+>         in the body of the message to majordomo@vger.kernel.org
+> 
+> but since I was never subscribed I do not really know if this works ;)
+> 
+> > I have sent two letters to "Linux Kernel Mailing List"<linux-kernel@vger.kernel.org>,
+> > but did not receive any confirmation letter, except for two letters containing
+> > instructions, 3X!
+> 
+> If you simply want to send emails to this list, you do not need
+> to subscribe. However, I do not see your email in
+> 
+>         http://marc.info/?t=137598606900001
+> 
+> Perhaps this list doesn't like chinese letters in subject/body?
 
-The driver would build fine without this symbol selected, but since it 
-relies on availability of DMA, it doesn't make too much sense to build it 
-this way. This kind of selects makes kernel configuration more user 
-friendly IMHO.
+No, we get patches with UTC-16 characters in them OK.  The usual reason
+vger drops an email is if there's a text/html part.
 
-Possibly adding appropriate selects (PL330) for s5p* and exynos could make 
-sense.
+The information about what vger drops is here:
 
-Best regards,
-Tomasz
+http://vger.kernel.org/majordomo-info.html
+
+James
+
 
