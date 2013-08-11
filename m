@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab3HKV56 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 17:57:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40381 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab3HKV5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 17:57:54 -0400
-Message-ID: <520808D1.70705@suse.cz>
-Date: Sun, 11 Aug 2013 23:57:37 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130616 Thunderbird/17.0.6
+	id S1755117Ab3HKWGG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 18:06:06 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41153 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab3HKWGC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 18:06:02 -0400
+Date: Sun, 11 Aug 2013 23:04:50 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: SCSI bus failures with qemu-arm in kernel 3.8+
+Message-ID: <20130811220450.GY23006@n2100.arm.linux.org.uk>
+References: <5207B3C3.9080508@roeck-us.net>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 8/9] mm: thrash detection-based file cache sizing
-References: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org> <1375829050-12654-9-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1375829050-12654-9-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5207B3C3.9080508@roeck-us.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 12:44 AM, Johannes Weiner wrote:
-> To accomplish this, a per-zone counter is increased every time a page
-> is evicted and a snapshot of that counter is stored as shadow entry in
-> the page's now empty page cache radix tree slot.  Upon refault of that
-> page, the difference between the current value of that counter and the
-> shadow entry value is called the refault distance.  It tells how many
-> pages have been evicted from the zone since that page's eviction,
-This explanation of refault distance seems correct...
-> which is how many page slots are missing from the zone's inactive list
-> for this page to get accessed twice while in memory.
-But this part seems slightly incorrect. IMHO the correct formulation 
-would be "...how many page slots are AT MOST missing...". See below.
-> If the number of
-> missing slots is less than or equal to the number of active pages,
-> increasing the inactive list at the cost of the active list would give
-> this thrashing set a chance to establish itself:
+On Sun, Aug 11, 2013 at 08:54:43AM -0700, Guenter Roeck wrote:
+> Hi,
 >
-> eviction counter = 4
->                          evicted      inactive           active
->   Page cache data:       [ a b c d ]  [ e f g h i j k ]  [ l m n ]
->    Shadow entries:         0 1 2 3
-> Refault distance:         4 3 2 1
-Consider here that if 'd' was now accessed before 'c', I think 'e' would 
-be evicted and eviction counter would be incremented to 5. So for 'c' 
-you would now say that three slots would prevent the refault, but in 
-fact two would still be sufficient. This potential imprecision could 
-make the algorithm challenge more active pages than it should, but I am 
-not sure how bad the consequences could be... so just pointing it out.
+> trying to boot arm versatile images with qemu results in the following error
+> if I try to boot with a disk image.
+>
+>      sym0: <895a> rev 0x0 at pci 0000:00:0d.0 irq 92
+>      sym0: SCSI BUS has been reset.
+>      scsi0 : sym-2.2.3
+>      [...]
+>      scsi 0:0:0:0: ABORT operation started
+>      scsi 0:0:0:0: ABORT operation timed-out.
+>      [...]
+>
+> Yocto's 3.8 kernel images work, upstream kernels 3.8 and later fail
+> (I did not check if/how earlier kernels are affected).
+>
+> Tracking this down shows that the problem is known and has been fixed with
+> commit 351d1339 (arm: add dummy swizzle for versatile with qemu) in the
+> Yocto 3.8 kernel at git://git.yoctoproject.org/linux-yocto-3.8.
+>
+> Would it be possible to submit this patch for inclusion into affected upstream kernels ?
 
+It could be that it's qemu's PCI routing is wrong - it's not the first
+time that qemu has got something wrong.
+
+Unfortunately, the PCI routing is totally undocumented, and as I understand
+it, there's very few backplanes out there now that finding out their real
+routing is virtually impossible.  I'm loathed to change it unless someone
+can point to a definitive source of information on this.
