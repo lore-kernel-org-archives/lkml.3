@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab3HKQM4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 12:12:56 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:12044
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754129Ab3HKQMy (ORCPT
+	id S1754274Ab3HKQac (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 12:30:32 -0400
+Received: from hotel311.server4you.de ([85.25.146.15]:50020 "EHLO
+	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754201Ab3HKQab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 12:12:54 -0400
-X-IronPort-AV: E=Sophos;i="4.89,857,1367964000"; 
-   d="scan'208";a="23716867"
-Date: Sun, 11 Aug 2013 18:12:50 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Francois Romieu <romieu@fr.zoreil.com>
-cc: Julia Lawall <julia.lawall@lip6.fr>, grant.likely@linaro.org,
-        rob.herring@calxeda.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: question about netif_rx
-In-Reply-To: <20130811155640.GA10070@electric-eye.fr.zoreil.com>
-Message-ID: <alpine.DEB.2.02.1308111811440.2072@localhost6.localdomain6>
-References: <alpine.DEB.2.02.1308111151210.2072@localhost6.localdomain6> <20130811155640.GA10070@electric-eye.fr.zoreil.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 11 Aug 2013 12:30:31 -0400
+X-Greylist: delayed 542 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 Aug 2013 12:30:30 EDT
+Message-ID: <5207BA00.3030709@monom.org>
+Date: Sun, 11 Aug 2013 18:21:20 +0200
+From: Daniel Wagner <wagi@monom.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux-wireless@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Arend van Spriel <arend@broadcom.com>
+Subject: brcsmac kernel panic
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Aug 2013, Francois Romieu wrote:
+Hi,
 
-> Julia Lawall <julia.lawall@lip6.fr> :
-> > To my limited understanding, in a NAPI polling function, one should use 
-> > netif_receive_skb, rather than netif_rx.
-> 
-> Nit: or napi_gro_receive (+ napi_gro_flush with __napi_complete) when the
-> device offers some checksum offloading features.
+I just updated my laptop (MacBook Air 2012) from 3.11-rc3+ to 3.11-rc4+ 
+and since then brcsmac crashes short after enabling it. Unfortunately, I 
+did also change some config flags in the area of cpufreq (enabling 
+p-state driver) so the configuration is not exactly the same. Before I 
+try to figure out what I have changed, I am posting the picture of the 
+crash. Maybe it is something obvious.
 
-OK, thanks for the information.  I am just trying to understand these 
-functions...
+v3.11-rc4-197-gd92581f
+http://www.monom.org/misc/brcmsmac/v3.11-rc4.config
+http://www.monom.org/misc/brcmsmac/IMAG0064.jpg
 
-> > However, the via-velocity driver defines the NAPI polling function
-> > velocity_poll, which is the only caller of velocity_rx_srv, which
-> > is the only caller of velocity_receive_frame, which calls netif_rx.
-> > The call to netif_rx seems to predate the introduction of NAPI in
-> > this driver.  Is this correct?
-> 
-> You are right. It's a leftover of the NAPI changes in this driver.
-> 
-> Can you send a netif_receive_skb replacement patch for it ?
-
-Just to be sure, I just replace netif_rx by netif_receive_skb, nothing
-else?
-
-thanks,
-julia
+hth,
+daniel
