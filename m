@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab3HKCd4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Aug 2013 22:33:56 -0400
-Received: from smtpauth05.mfg.siteprotect.com ([64.26.60.144]:34814 "EHLO
-	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751706Ab3HKCdy (ORCPT
+	id S1751989Ab3HKCqP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Aug 2013 22:46:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25516 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab3HKCqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Aug 2013 22:33:54 -0400
-Date: Sat, 10 Aug 2013 22:34:58 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Stephane Eranian <eranian@google.com>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@au1.ibm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: Re: [PATCH 5/7] powerpc/perf: Define big-endian version of
- perf_mem_data_src
-In-Reply-To: <20130810175153.GF15551@us.ibm.com>
-Message-ID: <alpine.DEB.2.02.1308102232120.4119@pianoman.cluster.toy>
-References: <20130810174831.GA15551@us.ibm.com> <20130810175153.GF15551@us.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020202.5206F811.0095,ss=1,re=0.000,fgs=0
+	Sat, 10 Aug 2013 22:46:09 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 03/28] genirq: Do not free unallocated irq descriptors
+Date: Sat, 10 Aug 2013 19:45:13 -0700
+Message-Id: <1376189139-31856-4-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1376189139-31856-1-git-send-email-yinghai@kernel.org>
+References: <1376189139-31856-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Aug 2013, Sukadev Bhattiprolu wrote:
+Hot-added interrupt controllers can reserve a range of interrupt
+numbers, but only allocate some of them. To simplify the release on
+hot-remove allow them to iterate over the reserved range, let the
+free_desc() code return early when the descriptor does not exist
 
-> 
->  include/uapi/linux/perf_event.h |   55 +++++++++++++++++++++++++++++++++++++++
->  1 files changed, 55 insertions(+), 0 deletions(-)
+-v2: changelog from tglx
 
-> +#define __PERF_LE	1234
-> +#define __PERF_BE	4321
-> +
-> +#if defined(__KERNEL__)
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ kernel/irq/irqdesc.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-I could be wrong, but I thought files under uapi weren't supposed to 
-contain __KERNEL__ code.  Wasn't that the whole point of uapi?
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 1166545..bbf0601 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -165,6 +165,9 @@ static void free_desc(unsigned int irq)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 
++	if (!desc)
++		return;
++
+ 	unregister_irq_proc(irq, desc);
+ 
+ 	mutex_lock(&sparse_irq_lock);
+-- 
+1.8.1.4
 
-Also having the perf_event interface depend on endianess just seems like a 
-complicated mess.  Can't we just declare the interface to be a certain 
-endianess and have the kernel byte-swap as necessary?
-
-Vince
