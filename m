@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab3HKQyj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 12:54:39 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4795 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754471Ab3HKQwI (ORCPT
+	id S1754682Ab3HKQy7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 12:54:59 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:38019
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754442Ab3HKQwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 12:52:08 -0400
+	Sun, 11 Aug 2013 12:52:07 -0400
 X-IronPort-AV: E=Sophos;i="4.89,857,1367964000"; 
-   d="scan'208";a="23717953"
+   d="scan'208";a="23717952"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Sergey Lapin <slapin@ossfans.org>
 Cc: kernel-janitors@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
         Russell King <linux@arm.linux.org.uk>,
         Haojian Zhuang <haojian.zhuang@gmail.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 9/16] arch/arm/mach-pxa/mioa701.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
-Date: Sun, 11 Aug 2013 18:51:50 +0200
-Message-Id: <1376239917-15594-10-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 8/16] arch/arm/mach-pxa/palmz72.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
+Date: Sun, 11 Aug 2013 18:51:49 +0200
+Message-Id: <1376239917-15594-9-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -49,62 +49,34 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not compiled.
 
- arch/arm/mach-pxa/mioa701.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ arch/arm/mach-pxa/palmz72.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-pxa/mioa701.c b/arch/arm/mach-pxa/mioa701.c
-index acc9d3c..f287b1e 100644
---- a/arch/arm/mach-pxa/mioa701.c
-+++ b/arch/arm/mach-pxa/mioa701.c
-@@ -319,7 +319,7 @@ static int __init gsm_init(void)
+diff --git a/arch/arm/mach-pxa/palmz72.c b/arch/arm/mach-pxa/palmz72.c
+index 1a35ddf..5f8fd00 100644
+--- a/arch/arm/mach-pxa/palmz72.c
++++ b/arch/arm/mach-pxa/palmz72.c
+@@ -356,9 +356,11 @@ static inline void __init palmz72_cam_gpio_init(void)
  {
- 	int rc;
+ 	int ret;
  
--	rc = gpio_request_array(ARRAY_AND_SIZE(gsm_gpios));
-+	rc = gpio_request_array(gsm_gpios, ARRAY_SIZE(gsm_gpios));
- 	if (rc)
- 		goto err_gpio;
- 	rc = request_irq(gpio_to_irq(GPIO25_GSM_MOD_ON_STATE), gsm_on_irq,
-@@ -333,7 +333,7 @@ static int __init gsm_init(void)
+-	ret = gpio_request_array(ARRAY_AND_SIZE(palmz72_camera_gpios));
++	ret = gpio_request_array(palmz72_camera_gpios,
++				 ARRAY_SIZE(palmz72_camera_gpios));
+ 	if (!ret)
+-		gpio_free_array(ARRAY_AND_SIZE(palmz72_camera_gpios));
++		gpio_free_array(palmz72_camera_gpios,
++				ARRAY_SIZE(palmz72_camera_gpios));
+ 	else
+ 		printk(KERN_ERR "Camera GPIO init failed!\n");
  
- err_irq:
- 	printk(KERN_ERR "Mioa701: Can't request GSM_ON irq\n");
--	gpio_free_array(ARRAY_AND_SIZE(gsm_gpios));
-+	gpio_free_array(gsm_gpios, ARRAY_SIZE(gsm_gpios));
- err_gpio:
- 	printk(KERN_ERR "Mioa701: gsm not available\n");
- 	return rc;
-@@ -342,7 +342,7 @@ err_gpio:
- static void gsm_exit(void)
+@@ -381,7 +383,7 @@ static inline void palmz72_camera_init(void) {}
+  ******************************************************************************/
+ static void __init palmz72_init(void)
  {
- 	free_irq(gpio_to_irq(GPIO25_GSM_MOD_ON_STATE), NULL);
--	gpio_free_array(ARRAY_AND_SIZE(gsm_gpios));
-+	gpio_free_array(gsm_gpios, ARRAY_SIZE(gsm_gpios));
- }
- 
- /*
-@@ -731,11 +731,11 @@ static void __init mioa701_machine_init(void)
- 	__raw_writel(0x0001c391, MCIO0);
- 
- 
--	pxa2xx_mfp_config(ARRAY_AND_SIZE(mioa701_pin_config));
-+	pxa2xx_mfp_config(mioa701_pin_config, ARRAY_SIZE(mioa701_pin_config));
+-	pxa2xx_mfp_config(ARRAY_AND_SIZE(palmz72_pin_config));
++	pxa2xx_mfp_config(palmz72_pin_config, ARRAY_SIZE(palmz72_pin_config));
  	pxa_set_ffuart_info(NULL);
  	pxa_set_btuart_info(NULL);
  	pxa_set_stuart_info(NULL);
--	rc = gpio_request_array(ARRAY_AND_SIZE(global_gpios));
-+	rc = gpio_request_array(global_gpios, ARRAY_SIZE(global_gpios));
- 	if (rc)
- 		pr_err("MioA701: Failed to request GPIOs: %d", rc);
- 	bootstrap_init();
-@@ -748,7 +748,8 @@ static void __init mioa701_machine_init(void)
- 	platform_add_devices(devices, ARRAY_SIZE(devices));
- 	gsm_init();
- 
--	i2c_register_board_info(1, ARRAY_AND_SIZE(mioa701_pi2c_devices));
-+	i2c_register_board_info(1, mioa701_pi2c_devices,
-+				ARRAY_SIZE(mioa701_pi2c_devices));
- 	pxa_set_i2c_info(&i2c_pdata);
- 	pxa27x_set_i2c_power_info(NULL);
- 	pxa_set_camera_info(&mioa701_pxacamera_platform_data);
 
