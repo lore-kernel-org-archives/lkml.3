@@ -1,163 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab3HKQlQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 12:41:16 -0400
-Received: from ring0.de ([91.143.88.219]:44615 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754230Ab3HKQkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 12:40:39 -0400
-X-Spam-Report: *  0.0 URIBL_BLOCKED ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	*       See http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	*      for more information.
-	*      [URIs: ring0.de]
-	* -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-From: Sebastian Reichel <sre@debian.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-omap@vger.kernel.org, linus.walleij@linaro.org,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Sebastian Reichel <sre@ring0.de>
-Subject: [PATCH 1/3] ARM: OMAP2+: hwmod-data: Add SSI information
-Date: Sun, 11 Aug 2013 18:17:55 +0200
-Message-Id: <1376237877-1740-1-git-send-email-sre@debian.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1376237628-1077-1-git-send-email-sre@debian.org>
-References: <1376237628-1077-1-git-send-email-sre@debian.org>
+	id S1754338Ab3HKQpm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 12:45:42 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:43091 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754211Ab3HKQpj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 12:45:39 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: Should unprivileged linkat(..., AT_EMPTY_PATH) work on O_TMPFILE files?
+In-Reply-To: <CALCETrUTyLO4BKX0SrmRd=nb2jvvZEhD9iTyFpSM23OUdQLhsA@mail.gmail.com>
+References: <CALCETrUTyLO4BKX0SrmRd=nb2jvvZEhD9iTyFpSM23OUdQLhsA@mail.gmail.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Sun, 11 Aug 2013 22:15:32 +0530
+Message-ID: <877gfsrxar.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081116-5564-0000-0000-00000936ACC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Reichel <sre@ring0.de>
+Andy Lutomirski <luto@amacapital.net> writes:
 
-This patch adds Synchronous Serial Interface (SSI) hwmod support for
-OMAP34xx SoCs.
----
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  104 ++++++++++++++++++++++++++++
- 1 file changed, 104 insertions(+)
+> The change:
+>
+> commit f4e0c30c191f87851c4a53454abb55ee276f4a7e
+> Author: Al Viro <viro@zeniv.linux.org.uk>
+> Date:   Tue Jun 11 08:34:36 2013 +0400
+>
+>     allow the temp files created by open() to be linked to
+>
+>     O_TMPFILE | O_CREAT => linkat() with AT_SYMLINK_FOLLOW and /proc/self/fd/<n>
+>     as oldpath (i.e. flink()) will create a link
+>     O_TMPFILE | O_CREAT | O_EXCL => ENOENT on attempt to link those guys
+>
+>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+>
+> makes it possible to hardlink an O_TMPFILE file using procfs.  Should
+> linkat(fd, "", newdirfd, newpath, AT_EMPTY_PATH) also work?
+>
+> AFAICS it currently requires CAP_DAC_READ_SEARCH, but I'm a bit
+> confused as to why linkat(..., AT_EMPTY_PATH) should have a stricter
+> check than linkat(AT_FDCWD, "/proc/self/fd/n", ...,
+> AT_SYMLINK_FOLLOW),  (The relevant change is
+> 11a7b371b64ef39fc5fb1b6f2218eef7c4d035e3.)
+>
+> FWIW, this program works on Linux 3.9, which makes me doubt that the
+> security restriction on linkat is doing any good:
+>
+> #include <stdio.h>
+> #include <err.h>
+> #include <fcntl.h>
+> #include <unistd.h>
+>
+> int main(int argc, char **argv)
+> {
+>   char buf[128];
+>
+>   if (argc != 3)
+>     errx(1, "Usage: flink FD PATH");
+>
+>   sprintf(buf, "/proc/self/fd/%d", atoi(argv[1]));
+>   if (linkat(AT_FDCWD, buf, AT_FDCWD, argv[2], AT_SYMLINK_FOLLOW) != 0)
+>     err(1, "linkat");
+>   return 0;
+> }
+>
+>
+> Removing the check from the AT_EMPTY_PATH case would simplify code
+> that wants to write a file, fsync it, and then flink it in.
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-index 0c3a427..74006c4 100644
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -3693,6 +3693,109 @@ static struct omap_hwmod_ocp_if omap3xxx_l4_core__aes = {
- 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
- };
- 
-+/*
-+ * 'ssi' class
-+ * synchronous serial interface (multichannel and full-duplex serial if)
-+ */
-+
-+static struct omap_hwmod_class_sysconfig omap34xx_ssi_sysc = {
-+	.rev_offs	= 0x0000,
-+	.sysc_offs	= 0x0010,
-+	.syss_offs	= 0x0014,
-+	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_EMUFREE |
-+			   SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE |
-+			   SYSC_HAS_SOFTRESET | SYSS_HAS_RESET_STATUS),
-+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
-+			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
-+			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
-+	.sysc_fields	= &omap_hwmod_sysc_type1,
-+};
-+
-+static struct omap_hwmod_class omap34xx_ssi_hwmod_class = {
-+	.name	= "ssi",
-+	.sysc	= &omap34xx_ssi_sysc,
-+};
-+
-+static struct omap_hwmod_irq_info omap34xx_ssi_irqs[] = {
-+	{ .name = "ssi_p1_mpu_irq0", .irq = 67 },
-+	{ .name = "ssi_p1_mpu_irq1", .irq = 68 },
-+	{ .name = "ssi_p2_mpu_irq0", .irq = 69 },
-+	{ .name = "ssi_p2_mpu_irq1", .irq = 70 },
-+	{ .name = "ssi_gdd_mpu",     .irq = 71 },
-+	{ .irq = -1 },
-+};
-+
-+static struct omap_hwmod_addr_space omap34xx_ssi_addrs[] = {
-+	{
-+		.name		= "sys",
-+		.pa_start	= 0x48058000,
-+		.pa_end		= 0x48058fff,
-+		.flags		= ADDR_TYPE_RT,
-+	},
-+	{
-+		/* generic distributed DMA */
-+		.name		= "gdd",
-+		.pa_start	= 0x48059000,
-+		.pa_end		= 0x48059fff,
-+		.flags		= ADDR_TYPE_RT,
-+	},
-+	{
-+		/* port 1: synchronous serial transmitter */
-+		.name		= "p1_sst",
-+		.pa_start	= 0x4805a000,
-+		.pa_end		= 0x4805a7ff,
-+		.flags		= ADDR_TYPE_RT,
-+	},
-+	{
-+		/* port 1: synchronous serial receiver */
-+		.name		= "p1_ssr",
-+		.pa_start	= 0x4805a800,
-+		.pa_end		= 0x4805afff,
-+		.flags		= ADDR_TYPE_RT,
-+	},
-+	{
-+		/* port 2: synchronous serial transmitter */
-+		.name		= "p2_sst",
-+		.pa_start	= 0x4805b000,
-+		.pa_end		= 0x4805b7ff,
-+		.flags		= ADDR_TYPE_RT,
-+	},
-+	{
-+		/* port 2: synchronous serial receiver */
-+		.name		= "p2_ssr",
-+		.pa_start	= 0x4805b800,
-+		.pa_end		= 0x4805bfff,
-+		.flags		= ADDR_TYPE_RT,
-+	},
-+	{}
-+};
-+
-+static struct omap_hwmod omap34xx_ssi_hwmod = {
-+	.name		= "ssi",
-+	.class		= &omap34xx_ssi_hwmod_class,
-+	.clkdm_name	= "l3_init_clkdm",
-+	.mpu_irqs	= omap34xx_ssi_irqs,
-+	.main_clk	= "ssi_ssr_fck",
-+	.prcm		= {
-+		.omap2 = {
-+			.prcm_reg_id		= 1,
-+			.module_bit		= OMAP3430_EN_SSI_SHIFT,
-+			.module_offs		= WKUP_MOD,
-+			.idlest_reg_id		= 1,
-+			.idlest_idle_bit	= OMAP3430ES2_ST_SSI_IDLE_SHIFT,
-+		},
-+	},
-+};
-+
-+/* SSI -> l3 */
-+static struct omap_hwmod_ocp_if omap34xx_l3__ssi = {
-+	.master		= &omap3xxx_l3_main_hwmod,
-+	.slave		= &omap34xx_ssi_hwmod,
-+	.clk		= "ssi_ick",
-+	.addr		= omap34xx_ssi_addrs,
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
-+
- static struct omap_hwmod_ocp_if *omap3xxx_hwmod_ocp_ifs[] __initdata = {
- 	&omap3xxx_l3_main__l4_core,
- 	&omap3xxx_l3_main__l4_per,
-@@ -3818,6 +3921,7 @@ static struct omap_hwmod_ocp_if *omap34xx_hwmod_ocp_ifs[] __initdata = {
- #ifdef CONFIG_OMAP_IOMMU_IVA2
- 	&omap3xxx_l3_main__mmu_iva,
- #endif
-+	&omap34xx_l3__ssi,
- 	NULL
- };
- 
--- 
-1.7.10.4
+I understand that this got merged upstream. But in case of the above
+test we would walk the path pointed by /proc/self/fd/<x> right ?
+
+ie,
+
+20 -> /home/no-access/k
+
+will the above test work ? Now if i pass the '20' to another application
+I can affectively create a hardlink to that outside no-access and if k
+happens to have 'r' for others, then everybody will be able to read
+right ?. I understand that limitting the read access based on directory
+permission is not a good idea. But aren't we expected to keep that ?
+
+For O_TMPFILE we don't have a path name hence the above may not be a
+real issue ? Can you help me understand what i am missing ?
+
+-aneesh
 
