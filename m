@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab3HKQws (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 12:52:48 -0400
+	id S1754607Ab3HKQxq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 12:53:46 -0400
 Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4795 "EHLO
 	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754551Ab3HKQwM (ORCPT
+	by vger.kernel.org with ESMTP id S1754520Ab3HKQwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 12:52:12 -0400
+	Sun, 11 Aug 2013 12:52:10 -0400
 X-IronPort-AV: E=Sophos;i="4.89,857,1367964000"; 
-   d="scan'208";a="23717959"
+   d="scan'208";a="23717956"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: kernel-janitors@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/16] arch/arm/mach-kirkwood: Avoid using ARRAY_AND_SIZE(e) as a function argument
-Date: Sun, 11 Aug 2013 18:51:56 +0200
-Message-Id: <1376239917-15594-16-git-send-email-Julia.Lawall@lip6.fr>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: kernel-janitors@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 12/16] drivers/cpufreq/pxa3xx-cpufreq.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
+Date: Sun, 11 Aug 2013 18:51:53 +0200
+Message-Id: <1376239917-15594-13-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -48,37 +48,26 @@ Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 ---
 Not compiled.
 
- arch/arm/mach-kirkwood/openrd-setup.c    |    3 ++-
- arch/arm/mach-kirkwood/rd88f6281-setup.c |    4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/cpufreq/pxa3xx-cpufreq.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-kirkwood/openrd-setup.c b/arch/arm/mach-kirkwood/openrd-setup.c
-index 6a6eb54..e5cf841 100644
---- a/arch/arm/mach-kirkwood/openrd-setup.c
-+++ b/arch/arm/mach-kirkwood/openrd-setup.c
-@@ -158,7 +158,8 @@ static void __init openrd_init(void)
- 	kirkwood_mpp_conf(openrd_mpp_config);
+diff --git a/drivers/cpufreq/pxa3xx-cpufreq.c b/drivers/cpufreq/pxa3xx-cpufreq.c
+index 9c92ef0..d26306f 100644
+--- a/drivers/cpufreq/pxa3xx-cpufreq.c
++++ b/drivers/cpufreq/pxa3xx-cpufreq.c
+@@ -213,10 +213,12 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
+ 	policy->cur = policy->min = policy->max;
  
- 	kirkwood_uart0_init();
--	kirkwood_nand_init(ARRAY_AND_SIZE(openrd_nand_parts), 25);
-+	kirkwood_nand_init(openrd_nand_parts, ARRAY_SIZE(openrd_nand_parts),
-+			   25);
+ 	if (cpu_is_pxa300() || cpu_is_pxa310())
+-		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa300_freqs));
++		ret = setup_freqs_table(policy, pxa300_freqs,
++					ARRAY_SIZE(pxa300_freqs));
  
- 	kirkwood_ehci_init();
+ 	if (cpu_is_pxa320())
+-		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa320_freqs));
++		ret = setup_freqs_table(policy, pxa320_freqs,
++					ARRAY_SIZE(pxa320_freqs));
  
-diff --git a/arch/arm/mach-kirkwood/rd88f6281-setup.c b/arch/arm/mach-kirkwood/rd88f6281-setup.c
-index d242231..5154bd2 100644
---- a/arch/arm/mach-kirkwood/rd88f6281-setup.c
-+++ b/arch/arm/mach-kirkwood/rd88f6281-setup.c
-@@ -87,7 +87,9 @@ static void __init rd88f6281_init(void)
- 	kirkwood_init();
- 	kirkwood_mpp_conf(rd88f6281_mpp_config);
- 
--	kirkwood_nand_init(ARRAY_AND_SIZE(rd88f6281_nand_parts), 25);
-+	kirkwood_nand_init(rd88f6281_nand_parts,
-+			   ARRAY_SIZE(rd88f6281_nand_parts),
-+			   25);
- 	kirkwood_ehci_init();
- 
- 	kirkwood_ge00_init(&rd88f6281_ge00_data);
+ 	if (ret) {
+ 		pr_err("failed to setup frequency table\n");
 
