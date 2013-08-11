@@ -1,76 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3HKSH1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 14:07:27 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53384 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab3HKSHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 14:07:24 -0400
-Date: Sun, 11 Aug 2013 19:06:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Eric Miao <eric.y.miao@gmail.com>, kernel-janitors@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130811180648.GA11327@sirena.org.uk>
-References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
- <1376239917-15594-2-git-send-email-Julia.Lawall@lip6.fr>
+	id S1754735Ab3HKSgr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 14:36:47 -0400
+Received: from smtp-out.abv.bg ([194.153.145.99]:43956 "EHLO smtp-out.abv.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754435Ab3HKSgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 14:36:42 -0400
+DomainKey-Signature: a=rsa-sha1; s=smtp-out; d=abv.bg; c=simple; q=dns;
+	b=I40PN6RzkoD0pT5LPi22F8jFaE8ZpkywC5BCsp9OYFO2DGWM+8xVoX2v1RwOVXcX2
+	UztfULrvJH+oZgKjh6Umjm9jjrMNkogVfocx/UQYJreOpvFqk7wcvKLv9LkSojPvM8F
+	rNRwuR+DQDcqGcVn28jkHeD1llauDdOzI7BaIwg=
+Date: Sun, 11 Aug 2013 21:36:40 +0300 (EEST)
+From: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>
+To: Dave Martin <Dave.Martin@arm.com>
+Cc: pali.rohar@gmail.com, tony@atomide.com, nm@ti.com, linux@arm.linux.org.uk,
+        aaro.koskinen@iki.fi, pdeschrijver@nvidia.com,
+        linux-kernel@vger.kernel.org, santosh.shilimkar@ti.com, pavel@ucw.cz,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <2121638991.49538.1376246200421.JavaMail.apache@mail81.abv.bg>
+Subject: Re: [PATCH v3 1/2] ARM: OMAP: Add secure function omap_smc3() which calling instruction smc #1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
-Content-Disposition: inline
-In-Reply-To: <1376239917-15594-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Cookie: There is a 20% chance of tomorrow.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/16] sound/soc/pxa/mioa701_wm9713.c: Avoid using
- ARRAY_AND_SIZE(e) as a function argument
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
+X-Mailer: AbvMail 1.0
+X-Originating-IP: 130.204.50.168
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  >-------- Оригинално писмо --------
+ >От:  Dave Martin 
+ >Относно: Re: [PATCH v3 1/2] ARM: OMAP: Add secure function omap_smc3() which
+ calling instruction smc #1
+ >До: Pali Rohár 
+ >Изпратено на: Понеделник, 2013, Август 5 16:29:44 EEST
+ >
+ >
+ >On Sun, Aug 04, 2013 at 10:45:00AM +0200, Pali Rohár wrote:
+ >> Here is new version (v3) of omap secure part patch:
+ >> 
+ >> Other secure functions omap_smc1() and omap_smc2() calling instruction smc #0
+ >> but Nokia RX-51 board needs to call smc #1 for PPA access.
+ >> 
+ >> Signed-off-by: Ivaylo Dimitrov 
+ >> Signed-off-by: Pali Rohár 
+ >> ---
+ >> diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-secure.h
+ >> index 0e72917..c4586f4 100644
+ >> --- a/arch/arm/mach-omap2/omap-secure.h
+ >> +++ b/arch/arm/mach-omap2/omap-secure.h
+ >> @@ -51,6 +51,7 @@
+ >>  extern u32 omap_secure_dispatcher(u32 idx, u32 flag, u32 nargs,
+ >>  				u32 arg1, u32 arg2, u32 arg3, u32 arg4);
+ >>  extern u32 omap_smc2(u32 id, u32 falg, u32 pargs);
+ >> +extern u32 omap_smc3(u32 id, u32 process, u32 flag, u32 pargs);
+ >>  extern phys_addr_t omap_secure_ram_mempool_base(void);
+ >>  extern int omap_secure_ram_reserve_memblock(void);
+ >>  
+ >> diff --git a/arch/arm/mach-omap2/omap-smc.S b/arch/arm/mach-omap2/omap-smc.S
+ >> index f6441c1..7bbc043 100644
+ >> --- a/arch/arm/mach-omap2/omap-smc.S
+ >> +++ b/arch/arm/mach-omap2/omap-smc.S
+ >> @@ -1,9 +1,11 @@
+ >>  /*
+ >> - * OMAP44xx secure APIs file.
+ >> + * OMAP34xx and OMAP44xx secure APIs file.
+ >>   *
+ >>   * Copyright (C) 2010 Texas Instruments, Inc.
+ >>   * Written by Santosh Shilimkar 
+ >>   *
+ >> + * Copyright (C) 2012 Ivaylo Dimitrov 
+ >> + * Copyright (C) 2013 Pali Rohár 
+ >>   *
+ >>   * This program is free software,you can redistribute it and/or modify
+ >>   * it under the terms of the GNU General Public License version 2 as
+ >> @@ -54,6 +56,23 @@ ENTRY(omap_smc2)
+ >>  	ldmfd   sp!, {r4-r12, pc}
+ >>  ENDPROC(omap_smc2)
+ >>  
+ >> +/**
+ >> + * u32 omap_smc3(u32 service_id, u32 process_id, u32 flag, u32 pargs)
+ >> + * Low level common routine for secure HAL and PPA APIs via smc #1
+ >> + * r0 - @service_id: Secure Service ID
+ >> + * r1 - @process_id: Process ID
+ >> + * r2 - @flag: Flag to indicate the criticality of operation
+ >> + * r3 - @pargs: Physical address of parameter list
+ >> + */
+ >> +ENTRY(omap_smc3)
+ >> +	stmfd	sp!, {r4-r11, lr}
+ >> +	mov	r12, r0		@ Copy the secure service ID
+ >> +	mov	r6, #0xff	@ Indicate new Task call
+ >> +	dsb			@ Memory Barrier
+ >
+ >Can you explain _why_ the barrier is there?  The reader doesn't need to
+ >be told that a barrier instruction is a barrier instruction.
+ >
+ >Cheers
+ >---Dave
+ >
+Hi Dave,
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Would quoting Santosh's explanation "DSBs were needed on OMAP for power sequencing." do the job?
+Something like "@ Needed on OMAP for power sequencing" instead of "@ Memory Barrier".
 
-On Sun, Aug 11, 2013 at 06:51:42PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding t=
-he
-> arity of the called function.
+I want to be sure I correctly understand your requirement.
 
-Applied, thanks.
+Regards,
+Ivo
 
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSB9K1AAoJELSic+t+oim9cVkQAI35kkM/JfHY2JsYDv+7wdiT
-evmDTrMnHjTYs//jsFWdJhTxjFm1hTNA33R9kQDlUWKX0mMqAziaDdFSzSglry6Z
-IWneLx+chfjs0VkZiMb1cIIaBTDQl82g6vnvaFLVTA+n1wbZQ8uunt42O8MLS+Kz
-mPXHN/PrN0sPbPzZHrnKQh201dpbHs77/qEEymDHbiy19k46J7EPnUq6Y2O1Lf+A
-lJyv4S4qbrSyr/4GDmxCvhCPBrPaAa5zIOQh1pxkckPYc1SB2+cqlrXLuv0jV6Q+
-O5O5z4dqEWFggima9+74DY0iYcv+wJgtTX0CeTA5zEtxB/ET6YiNCn0J4Chzqf82
-rVtjbH5YCmOXDqO1WTQo7gC08xK7r3OJPfZqI5+lEvkwlahVVZY/NPrAilCZMmj+
-Mld4BT1IwsQoyWDaiWF9bS46j1bDko30tFOQ9T23AjMvWFKh0ap0p+5MxVixzJk1
-5b0NFgitgKYTYKKDkOE3QQXo47p0EMCKT+kM+2H05gYrRsiCK+QS+Etr8/HnDBuv
-AAKasq7xsUOkDvwXP/gTaplhDfFyUSizw2mWgucz5yT2j08ymAtOuRhLsWi457dJ
-y16x9nhB0Rd+eaNiF03TxOHVWF7BWchujBF6aWzjnBIektpMMiqz3qqma12/KI2d
-gyA6Ljl5n7wo/KE2T+LA
-=aixY
------END PGP SIGNATURE-----
-
---PNTmBPCT7hxwcZjr--
