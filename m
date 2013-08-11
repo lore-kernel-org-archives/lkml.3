@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752500Ab3HKIOM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 04:14:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46278 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288Ab3HKIOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 04:14:09 -0400
-Date: Sun, 11 Aug 2013 01:15:33 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Thomas Fjellstrom <thomas@fjellstrom.ca>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 044/102] ath: wil6210: Fix build error
-Message-ID: <20130811081533.GA433@kroah.com>
-References: <20130809015010.208118575@linuxfoundation.org>
- <20130809015020.242015405@linuxfoundation.org>
- <1415030.bySVpiWVc1@lx-vladimir>
+	id S1752614Ab3HKIh0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 04:37:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53449 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752430Ab3HKIhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 04:37:23 -0400
+Date: Sun, 11 Aug 2013 10:37:18 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        dhowells@redhat.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Hard lockups using 3.10.0
+Message-ID: <20130811083718.GA9461@pd.tnic>
+References: <8484013.LsABBJRIOx@devpool02>
+ <20130711100721.GA28131@pd.tnic>
+ <20130711105207.GE25631@dyad.programming.kicks-ass.net>
+ <24155824.fdsQYPMaDK@donald.sf-tec.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1415030.bySVpiWVc1@lx-vladimir>
+In-Reply-To: <24155824.fdsQYPMaDK@donald.sf-tec.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 11, 2013 at 11:09:24AM +0300, Vladimir Kondratiev wrote:
-> On Thursday, August 08, 2013 06:57:20 PM Greg Kroah-Hartman wrote:
-> > 3.10-stable review patch.  If anyone has any objections, please let me know.
-> 
-> This one is good for stable. I'd suggest to apply also commit
-> c6c7788fe26fdc91e729f60742815ccdb505fd81 - wil6210: drop -Werror compiler flag
-> it is not in Linus's tree yet, but in Linville's wireless-next
+On Sun, Aug 11, 2013 at 08:09:19AM +0200, Rolf Eike Beer wrote:
+> Meanwhile I found that there was a hardware defect on this machine.
+> So if it does not happen again I will assume that this was caused by
+> this.
 
-As it's not in Linus's tree yet, please resend this request when it hits
-that tree, as there's nothing I can do at the moment with this, and I
-know I will not remember it :)
+What hardware defect exactly? DIMMs failing...? Probably, since it looks
+like the spinlock gets corrupted and the assertion fires... In any case,
+it would be interesting to know for future reference.
 
-thanks,
+Thanks.
 
-greg k-h
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
