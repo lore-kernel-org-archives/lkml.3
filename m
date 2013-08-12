@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab3HLMt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 08:49:26 -0400
-Received: from mga09.intel.com ([134.134.136.24]:23275 "EHLO mga09.intel.com"
+	id S1756319Ab3HLMxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 08:53:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49368 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756020Ab3HLMtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 08:49:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,862,1367996400"; 
-   d="scan'208";a="379610401"
-Date: Mon, 12 Aug 2013 20:49:18 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: wangyun@linux.vnet.ibm.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [fmc] BUG: scheduling while atomic: swapper/0/1/0x00000002
-Message-ID: <20130812124918.GA11735@localhost>
-References: <52088127.7070109@linux.vnet.ibm.com>
- <20130811135232.GA16878@localhost>
- <20130812124227.GA22310@mail.gnudd.com>
+	id S1756204Ab3HLMxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 08:53:45 -0400
+Date: Mon, 12 Aug 2013 14:53:43 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, tony.luck@intel.com,
+        bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
+        lance.ortiz@hp.com, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Message-ID: <20130812125343.GE18018@pd.tnic>
+References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+ <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+ <20130808163822.67e0828a@samsung.com>
+ <20130810180322.GC4155@pd.tnic>
+ <20130812083355.47c1bae8@samsung.com>
+ <5208D80D.5030206@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130812124227.GA22310@mail.gnudd.com>
+In-Reply-To: <5208D80D.5030206@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 02:42:27PM +0200, Alessandro Rubini wrote:
-> > On 08/11/2013 09:52 PM, Fengguang Wu wrote:
-> >> FYI, the bug still exists in the upstream and linux-next kernels.
-> 
-> Strange. Greg approved the patch I sent. I see it in next-20130809
-> but also next-20130801 and other ones with the same hash:
-> 
->    783c2fb FMC: fix locking in sample chardev driver
+On Mon, Aug 12, 2013 at 06:11:49PM +0530, Naveen N. Rao wrote:
+> So, I looked at ghes_edac and it basically seems to boil down to
+> trace_mc_event. But, this only seems to expose the APEI data as a
+> string and doesn't look to really make all the fields available to
+> user-space in a raw manner. Not sure how well this can be utilised
+> by a user-space tool.
 
-Ah sorry! I checked log and find that the linux-next build failed. So
-it's not boot tested at all.
+Well, your tracepoint dumps the decoded memory error too. So all the
+information we need is already there, without edac. Or am I missing some
+bits?
 
-Thanks,
-Fengguang
+Thus why I'm saying is that we don't need the additional edac layer.
 
-> However, it is not in master.
-> 
-> It was sent as https://lkml.org/lkml/2013/7/16/196 .
-> 
-> Greg, can you please put the patch in the bugfix queue?
-> 
-> Thanks
-> /alessandro
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
