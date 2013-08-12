@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab3HLWs5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 18:48:57 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:59061 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579Ab3HLWs4 (ORCPT
+	id S1755910Ab3HLWu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 18:50:59 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.182]:17316 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752976Ab3HLWu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 18:48:56 -0400
-Date: Mon, 12 Aug 2013 15:48:53 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Peter Maydell <peter.maydell@linaro.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        qemu-devel@nongnu.org, Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
-Message-ID: <20130812224853.GA9580@roeck-us.net>
-References: <20130811220450.GY23006@n2100.arm.linux.org.uk>
- <52082EF8.10005@roeck-us.net>
- <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com>
- <20130812164548.GE23006@n2100.arm.linux.org.uk>
- <CAFEAcA97PuORg920f-A_8rvCgBq=k5Y=0W6m2Nv8nnzjY19Utg@mail.gmail.com>
- <20130812200628.GG23006@n2100.arm.linux.org.uk>
- <CAFEAcA9BA7zfaO1J5zVaEcG-AgOo6dyiew08-o2eObuBe-KWig@mail.gmail.com>
- <20130812212149.GH23006@n2100.arm.linux.org.uk>
- <CAFEAcA_0kzS=Z5oTxrr=B74wjf1x=M6dXwH7Fcgf77Pca90Gjw@mail.gmail.com>
- <20130812221250.GI23006@n2100.arm.linux.org.uk>
+	Mon, 12 Aug 2013 18:50:57 -0400
+X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTy+fSJcJG
+X-RZG-CLASS-ID: mo05
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 1/3] wistron_btns: drop bogus MODULE_VERSION macro
+Date: Tue, 13 Aug 2013 00:50:41 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-5.slh.2-aptosid-686; KDE/4.8.4; i686; ; )
+Cc: Miloslav Trmac <mitr@volny.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130812221250.GI23006@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308130050.52800.s.L-H@gmx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 11:12:50PM +0100, Russell King - ARM Linux wrote:
-> On Mon, Aug 12, 2013 at 10:36:17PM +0100, Peter Maydell wrote:
-> > On this point, yes. Equivalent bit from the PB926 TRM:
-> > http://infocenter.arm.com/help/topic/com.arm.doc.dui0224i/Cacdijji.html
-> > 
-> > (There are differences between the PCI controllers on
-> > the different boards. Differences I know of are:
-> >  * size of the three memory mapped regions
-> >  * whether the top bits of the PCI address come from the top
-> >    or bottom of the IMAP* registers
-> > I believe (based on some experimentation and an educated guess)
-> > that these both changed at the same point, but some of the board
-> > TRMs claim to be part one way part the other, presumably due to
-> > copy and paste error. In particular PB1176's TRM has a mangled
-> > description of the IMAP* registers which didn't match what the
-> > h/w actually did in my testing.)
-> 
-> Bah, updated TRMs since my version.
-> 
-> Right, so if I've traced everything correctly, this should work:
-> 
->         /*
->          * Slot INTA    INTB    INTC    INTD
->          *  31  PCI1    PCI2    PCI3    PCI0
->          *  30  PCI0    PCI1    PCI2    PCI3
->          *  29  PCI3    PCI0    PCI1    PCI2
->          */
->         return IRQ_SIC_PCI0 + ((slot + 2 + pin - 1) & 3);
-> 
-Assuming this is what you mean, I added the above code to
-versatile_map_irq(). It does not work, unfortunately, at least not
-in qemu 1.4.0.
+MODULE_VERSION is pointless for an in-kernel module and git log confirms that
+it has never been actually maintained as well (bumped a single time, despite 
+quite major feature additions later on, which haven't been reflected in
+MODULE_VERSION).
 
-This is what the kernel reports for interrupt numbers:
+Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+---
+ drivers/input/misc/wistron_btns.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-kernel			irq	result
---------------------------------------
-3.10.6:			92	fails
-3.10.6+above change:	94	fails
-3.10.6+Paul's patch:	91	works
-
-Now is this a qemu problem or a kernel problem ?
-
-Thanks,
-Guenter
+--- a/drivers/input/misc/wistron_btns.c
++++ b/drivers/input/misc/wistron_btns.c
+@@ -46,7 +46,6 @@
+ MODULE_AUTHOR("Miloslav Trmac <mitr@volny.cz>");
+ MODULE_DESCRIPTION("Wistron laptop button driver");
+ MODULE_LICENSE("GPL v2");
+-MODULE_VERSION("0.3");
+ 
+ static bool force; /* = 0; */
+ module_param(force, bool, 0);
