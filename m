@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab3HLRuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:50:35 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:65263 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab3HLRua (ORCPT
+	id S1753368Ab3HLRuo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:50:44 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:53391 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753279Ab3HLRui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:50:30 -0400
+	Mon, 12 Aug 2013 13:50:38 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: [PATCH 08/31] cpufreq: davinci: Covert to light weight ->target() routine
-Date: Mon, 12 Aug 2013 23:18:44 +0530
-Message-Id: <6ab130ddaaa25641dd980f73400ee9ec06aabc75.1376329128.git.viresh.kumar@linaro.org>
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 09/31] cpufreq: dbx500: Covert to light weight ->target() routine
+Date: Mon, 12 Aug 2013 23:18:45 +0530
+Message-Id: <e0c5392750876a08efea5db45eb13ece144fab55.1376329128.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376329128.git.viresh.kumar@linaro.org>
 References: <cover.1376329128.git.viresh.kumar@linaro.org>
@@ -31,56 +31,51 @@ This patch converts existing .target_old() to newly defined light weight
 CPUFreq core will call cpufreq_frequency_table_target() before calling this
 routine and will pass index to it.
 
-Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/davinci-cpufreq.c | 16 +++-------------
+ drivers/cpufreq/dbx500-cpufreq.c | 16 +++-------------
  1 file changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/cpufreq/davinci-cpufreq.c b/drivers/cpufreq/davinci-cpufreq.c
-index abefa13..8d622e0 100644
---- a/drivers/cpufreq/davinci-cpufreq.c
-+++ b/drivers/cpufreq/davinci-cpufreq.c
-@@ -68,28 +68,18 @@ static unsigned int davinci_getspeed(unsigned int cpu)
- 	return clk_get_rate(cpufreq.armclk) / 1000;
- }
+diff --git a/drivers/cpufreq/dbx500-cpufreq.c b/drivers/cpufreq/dbx500-cpufreq.c
+index bae4fe9..1943a03 100644
+--- a/drivers/cpufreq/dbx500-cpufreq.c
++++ b/drivers/cpufreq/dbx500-cpufreq.c
+@@ -20,23 +20,13 @@ static struct cpufreq_frequency_table *freq_table;
+ static struct clk *armss_clk;
  
--static int davinci_target(struct cpufreq_policy *policy,
--				unsigned int target_freq, unsigned int relation)
-+static int davinci_target(struct cpufreq_policy *policy, unsigned int idx)
+ static int dbx500_cpufreq_target(struct cpufreq_policy *policy,
+-				unsigned int target_freq,
+-				unsigned int relation)
++				unsigned int index)
  {
- 	int ret = 0;
--	unsigned int idx;
  	struct cpufreq_freqs freqs;
- 	struct davinci_cpufreq_config *pdata = cpufreq.dev->platform_data;
- 	struct clk *armclk = cpufreq.armclk;
+-	unsigned int idx;
+ 	int ret;
  
- 	freqs.old = davinci_getspeed(0);
--	freqs.new = clk_round_rate(armclk, target_freq * 1000) / 1000;
--
--	if (freqs.old == freqs.new)
--		return ret;
-+	freqs.new = pdata->freq_table[idx].frequency;
- 
- 	dev_dbg(cpufreq.dev, "transition: %u --> %u\n", freqs.old, freqs.new);
- 
--	ret = cpufreq_frequency_table_target(policy, pdata->freq_table,
--						freqs.new, relation, &idx);
--	if (ret)
+-	/* Lookup the next frequency */
+-	if (cpufreq_frequency_table_target(policy, freq_table, target_freq,
+-					relation, &idx))
 -		return -EINVAL;
 -
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ 	freqs.old = policy->cur;
+-	freqs.new = freq_table[idx].frequency;
+-
+-	if (freqs.old == freqs.new)
+-		return 0;
++	freqs.new = freq_table[index].frequency;
  
- 	/* if moving to higher frequency, up the voltage beforehand */
-@@ -160,7 +150,7 @@ static int davinci_cpu_init(struct cpufreq_policy *policy)
- static struct cpufreq_driver davinci_driver = {
- 	.flags		= CPUFREQ_STICKY,
- 	.verify		= davinci_verify_speed,
--	.target_old	= davinci_target,
-+	.target		= davinci_target,
- 	.get		= davinci_getspeed,
- 	.init		= davinci_cpu_init,
- 	.exit		= cpufreq_generic_exit,
+ 	/* pre-change notification */
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+@@ -104,7 +94,7 @@ static int dbx500_cpufreq_init(struct cpufreq_policy *policy)
+ static struct cpufreq_driver dbx500_cpufreq_driver = {
+ 	.flags  = CPUFREQ_STICKY | CPUFREQ_CONST_LOOPS,
+ 	.verify = cpufreq_generic_frequency_table_verify,
+-	.target_old = dbx500_cpufreq_target,
++	.target = dbx500_cpufreq_target,
+ 	.get    = dbx500_cpufreq_getspeed,
+ 	.init   = dbx500_cpufreq_init,
+ 	.name   = "DBX500",
 -- 
 1.7.12.rc2.18.g61b472e
 
