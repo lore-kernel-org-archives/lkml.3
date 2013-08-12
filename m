@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab3HLGIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 02:08:18 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:49231 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530Ab3HLGIP (ORCPT
+	id S1755849Ab3HLGIm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 02:08:42 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:61947 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577Ab3HLGIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 02:08:15 -0400
+	Mon, 12 Aug 2013 02:08:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <d518dd39781933a497d44253205b0c039965c718.1376116345.git.viresh.kumar@linaro.org>
+In-Reply-To: <707070e59966ed3982ee52b367991e0b175e0319.1376116345.git.viresh.kumar@linaro.org>
 References: <cover.1376116344.git.viresh.kumar@linaro.org>
-	<d518dd39781933a497d44253205b0c039965c718.1376116345.git.viresh.kumar@linaro.org>
-Date: Mon, 12 Aug 2013 11:38:14 +0530
-Message-ID: <CAKohpon5A-h5p7LNjv11QbiguauWMLgK1SK51L3HkSxh1myvoQ@mail.gmail.com>
-Subject: Re: [PATCH 43/44] cpufreq: unicore2: Use generic cpufreq routines
+	<707070e59966ed3982ee52b367991e0b175e0319.1376116345.git.viresh.kumar@linaro.org>
+Date: Mon, 12 Aug 2013 11:38:38 +0530
+Message-ID: <CAKohponHWE9iqm8PkLGHhCionnahkJVBJh5jRJQ+B5MQ+vnPAw@mail.gmail.com>
+Subject: Re: [PATCH 29/44] cpufreq: pcc: Use generic cpufreq routines
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,11 +31,10 @@ On 10 August 2013 12:14, Viresh Kumar <viresh.kumar@linaro.org> wrote:
 >
 > This patch uses these generic routines for this driver.
 >
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 > ---
->  drivers/cpufreq/unicore2-cpufreq.c | 16 +---------------
->  1 file changed, 1 insertion(+), 15 deletions(-)
+>  drivers/cpufreq/pcc-cpufreq.c | 9 +--------
+>  1 file changed, 1 insertion(+), 8 deletions(-)
 
 My patch was wrong.. It was based on the assumption that everybody who
 had implemented a .target() also implements a frequency table and exposes
