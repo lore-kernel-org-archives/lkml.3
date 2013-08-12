@@ -1,113 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab3HLP6X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 11:58:23 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:34286 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab3HLP6V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 11:58:21 -0400
-X-IronPort-AV: E=Sophos;i="4.89,863,1367971200"; 
-   d="scan'208";a="41400220"
-Message-ID: <5209061A.4030304@citrix.com>
-Date: Mon, 12 Aug 2013 16:58:18 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1757275Ab3HLQBz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:01:55 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52715 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753573Ab3HLQBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 12:01:50 -0400
+Date: Mon, 12 Aug 2013 12:00:59 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 8/9] mm: thrash detection-based file cache sizing
+Message-ID: <20130812160059.GQ715@cmpxchg.org>
+References: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
+ <1375829050-12654-9-git-send-email-hannes@cmpxchg.org>
+ <20130809154943.1663e5f04999e1979886246c@linux-foundation.org>
 MIME-Version: 1.0
-To: Andres Lagar-Cavilla <andreslc@gridcentric.ca>
-CC: <linux-kernel@vger.kernel.orgg>, <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>,
-        Andres Lagar-Cavilla <andres@lagarcavilla.org>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH] Xen: Fix retry calls into PRIVCMD_MMAPBATCH*.
-References: <1376057488-1008-1-git-send-email-andreslc@gridcentric.ca>
-In-Reply-To: <1376057488-1008-1-git-send-email-andreslc@gridcentric.ca>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130809154943.1663e5f04999e1979886246c@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/13 15:11, Andres Lagar-Cavilla wrote:
-> From: Andres Lagar-Cavilla <andres@lagarcavilla.org>
+On Fri, Aug 09, 2013 at 03:49:43PM -0700, Andrew Morton wrote:
+> On Tue,  6 Aug 2013 18:44:09 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
 > 
-> When a foreign mapper attempts to map guest frames that are paged out,
-> the mapper receives an ENOENT response and will have to try again
-> while a helper process pages the target frame back in.
+> > To accomplish this, a per-zone counter is increased every time a page
+> > is evicted and a snapshot of that counter is stored as shadow entry in
+> > the page's now empty page cache radix tree slot.
 > 
-> Gating checks on PRIVCMD_MMAPBATCH* ioctl args were preventing retries
-> of mapping calls.
-> 
-> V2: Fixed autotranslated physmap mode breakage introduced by V1.
-> V3: Enforce full range mapping for first ioctl call on a given VMA.
-> 
-> Signed-off-by: Andres Lagar-Cavilla <andres@lagarcavilla.org>
-> ---
->  drivers/xen/privcmd.c |   58 +++++++++++++++++++++++++++++++++++++++---------
->  1 files changed, 47 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-> index f8e5dd7..938e6e6 100644
-> --- a/drivers/xen/privcmd.c
-> +++ b/drivers/xen/privcmd.c
-> @@ -43,9 +43,12 @@ MODULE_LICENSE("GPL");
->  
->  #define PRIV_VMA_LOCKED ((void *)1)
->  
-> -#ifndef HAVE_ARCH_PRIVCMD_MMAP
->  static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
-> -#endif
-> +
-> +static int privcmd_enforce_singleshot_mapping_granular(
-> +               struct vm_area_struct *vma,
-> +               unsigned long addr,
-> +               unsigned long nr_pages);
->  
->  static long privcmd_ioctl_hypercall(void __user *udata)
->  {
-> @@ -422,19 +425,26 @@ static long privcmd_ioctl_mmap_batch(void __user *udata, int version)
->  	vma = find_vma(mm, m.addr);
->  	if (!vma ||
->  	    vma->vm_ops != &privcmd_vm_ops ||
-> -	    (m.addr != vma->vm_start) ||
-> -	    ((m.addr + (nr_pages << PAGE_SHIFT)) != vma->vm_end) ||
-> -	    !privcmd_enforce_singleshot_mapping(vma)) {
-> +	    (m.addr < vma->vm_start) ||
-> +	    ((m.addr + (nr_pages << PAGE_SHIFT)) > vma->vm_end) ||
-> +	    !privcmd_enforce_singleshot_mapping_granular(vma, m.addr, nr_pages)) {
->  		up_write(&mm->mmap_sem);
->  		ret = -EINVAL;
->  		goto out;
+> How do you handle wraparound of that counter on 32-bit machines?
 
-I think this unnecessarily calls
-privcmd_enforce_singleshot_mapping_granular() on the first call.
+The distance between two time stamps is an unsigned subtraction, so
+it's accurate even when the counter has wrapped between them.
 
-If you change the tests to the following, does it work for you?
+The per-zone counter lapping shadow entries is possible but not very
+likely because the shadow pages are reclaimed when more than
+2*global_dirtyable_memory() of them exist.  And usually they are
+refaulted or reclaimed along with the inode before that happens.
 
-/* Suitable VMA? */
-if (!vma || vma->vm_ops != &privcmd_vm_ops)
-	// error
-
-if (!privcmd_enforce_singleshot_mapping(..)) {
-        /* Already populated into this VMA once, are we populating a
-           subset that is not yet populated? */
-	if (is_subset_of_vma(vma, m,addr, nr_pages)
-            && privcmd_enforce_single_shot_mapping_granular())
-        	// ok
-	else
-		// error
-} else {
-	/* Nothing populated in this VMA, must try to fully populate
-	   it. */
-	if (is_all_of_vma(vma, m.addr, nr_pages))
-		// ok
-	else
-		// error
-}
-
-
-Thanks.
-
-David
+There is an unlikely case where some shadow entries make it into an
+inode and then that same inode is evicting and refaulting pages in
+another area, which increases the counter while not producing an
+excess of shadow entries.  Should the counter lap these inactive
+shadow entries, the worst case is that a refault will incorrectly
+interpret them as recently evicted and deactivate a page for every
+such entry.  Which would at worst be a "regression" to how the code
+was for a long time, where every reclaim run also always deactivated
+some pages.
