@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab3HLNf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:35:28 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:48844 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930Ab3HLNf0 (ORCPT
+	id S1756548Ab3HLNhI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:37:08 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:52687 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756166Ab3HLNhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:35:26 -0400
-Message-ID: <1376314512.3364.1.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 05/20] mm, hugetlb: grab a page_table_lock after
- page_cache_release
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Date: Mon, 12 Aug 2013 06:35:12 -0700
-In-Reply-To: <1376040398-11212-6-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1376040398-11212-6-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Mon, 12 Aug 2013 09:37:05 -0400
+Date: Mon, 12 Aug 2013 15:37:19 +0200
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] x86, AMD: simplify load_microcode_amd() to fix
+ early microcode loading to no longer access uninitialized per-cpu data
+Message-ID: <20130812153719.2b357d5d@fem.tu-ilmenau.de>
+In-Reply-To: <20130808192943.GF27974@pd.tnic>
+References: <20130723230610.73bd048d@googlemail.com>
+	<20130724193250.GO30777@pd.tnic>
+	<20130808192943.GF27974@pd.tnic>
+X-Mailer: Claws Mail 3.9.2-dirty (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-09 at 18:26 +0900, Joonsoo Kim wrote:
-> We don't need to grab a page_table_lock when we try to release a page.
-> So, defer to grab a page_table_lock.
+On Thu, 8 Aug 2013 21:29:43 +0200
+Borislav Petkov <bp@alien8.de> wrote:
+
+> On Wed, Jul 24, 2013 at 09:32:50PM +0200, Borislav Petkov wrote:
+> > Btw, this patch is the one that fixes the boot issue on your box,
+> > correct?
+> >
+> > If so, please put a minimal version of it in the next patch set
+> > you're sending right after
 > 
-> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
-
+> Ok, I've wiggled it ontop of the cpu_has_amd_erratum() patch, see
+> below. Can you guys - Torsten and Johannes - run this branch here:
 > 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index c017c52..6c8eec2 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2627,10 +2627,11 @@ retry_avoidcopy:
->  	}
->  	spin_unlock(&mm->page_table_lock);
->  	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-> -	/* Caller expects lock to be held */
-> -	spin_lock(&mm->page_table_lock);
->  	page_cache_release(new_page);
->  	page_cache_release(old_page);
-> +
-> +	/* Caller expects lock to be held */
-> +	spin_lock(&mm->page_table_lock);
->  	return 0;
->  }
->  
+> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git amd-ucode
+> 
+> to check whether you can boot your boxes with he failing configs? I
+> mean, I tried reproducing with your configs on my F10h box and no
+> luck - box boots just fine. And it is affected by E400 so...
+> 
+> In any case, the two patches make sense regardless so if they fix your
+> issues, I'd like to send them upwards soonish.
+> 
+> Thanks.
 
-
+Just tested your amd-ucode branch with CONFIG_MICROCODE_AMD_EARLY
+re-enabled and it works so far.
