@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab3HLSsK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:48:10 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:40730 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab3HLSrH (ORCPT
+	id S1755216Ab3HLSsH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:48:07 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:35704 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754459Ab3HLSrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Aug 2013 14:47:07 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Lunn <andrew@lunn.ch>, Olof Johansson <olof@lixom.net>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH 5/9] PCI: mvebu: add support for Marvell Dove SoCs
-Date: Mon, 12 Aug 2013 20:46:51 +0200
-Message-Id: <1376333215-12885-6-git-send-email-sebastian.hesselbarth@gmail.com>
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 6/9] ARM: dove: update dove_defconfig with SI5351, PCI, and xHCI
+Date: Mon, 12 Aug 2013 20:46:52 +0200
+Message-Id: <1376333215-12885-7-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -25,64 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a compatible for the PCIe controller found on Marvell
-Dove SoCs. Binding documentation and Kconfig entry are also updated.
+This adds SI5351 clock driver found on the SolidRun CuBox, PCI driver
+and USB 3.0 xHCI driver found on the Globalscale D3Plug to dove_defconfig.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Olof Johansson <olof@lixom.net>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-pci@vger.kernel.org
 ---
- Documentation/devicetree/bindings/pci/mvebu-pci.txt |    1 +
- drivers/pci/host/Kconfig                            |    2 +-
- drivers/pci/host/pci-mvebu.c                        |    1 +
- 3 files changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/configs/dove_defconfig |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/pci/mvebu-pci.txt b/Documentation/devicetree/bindings/pci/mvebu-pci.txt
-index f2fa261..cf470a9 100644
---- a/Documentation/devicetree/bindings/pci/mvebu-pci.txt
-+++ b/Documentation/devicetree/bindings/pci/mvebu-pci.txt
-@@ -5,6 +5,7 @@ Mandatory properties:
- - compatible: one of the following values:
-     marvell,armada-370-pcie
-     marvell,armada-xp-pcie
-+    marvell,dove-pcie
-     marvell,kirkwood-pcie
- - #address-cells, set to <3>
- - #size-cells, set to <2>
-diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
-index 1184ff6..492eec9 100644
---- a/drivers/pci/host/Kconfig
-+++ b/drivers/pci/host/Kconfig
-@@ -3,7 +3,7 @@ menu "PCI host controller drivers"
- 
- config PCI_MVEBU
- 	bool "Marvell EBU PCIe controller"
--	depends on ARCH_MVEBU || ARCH_KIRKWOOD
-+	depends on ARCH_MVEBU || ARCH_DOVE || ARCH_KIRKWOOD
- 
- config PCIE_DW
- 	bool
-diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
-index bdad4d4..b204c1d 100644
---- a/drivers/pci/host/pci-mvebu.c
-+++ b/drivers/pci/host/pci-mvebu.c
-@@ -986,6 +986,7 @@ static int mvebu_pcie_remove(struct platform_device *pdev)
- static const struct of_device_id mvebu_pcie_of_match_table[] = {
- 	{ .compatible = "marvell,armada-xp-pcie", },
- 	{ .compatible = "marvell,armada-370-pcie", },
-+	{ .compatible = "marvell,dove-pcie", },
- 	{ .compatible = "marvell,kirkwood-pcie", },
- 	{},
- };
+diff --git a/arch/arm/configs/dove_defconfig b/arch/arm/configs/dove_defconfig
+index 4364eff..1101054 100644
+--- a/arch/arm/configs/dove_defconfig
++++ b/arch/arm/configs/dove_defconfig
+@@ -13,6 +13,9 @@ CONFIG_ARCH_DOVE=y
+ CONFIG_MACH_DOVE_DB=y
+ CONFIG_MACH_CM_A510=y
+ CONFIG_MACH_DOVE_DT=y
++CONFIG_PCI=y
++CONFIG_PCI_MSI=y
++CONFIG_PCI_MVEBU=y
+ CONFIG_AEABI=y
+ CONFIG_HIGHMEM=y
+ CONFIG_ZBOOT_ROM_TEXT=0x0
+@@ -78,6 +81,7 @@ CONFIG_SPI_ORION=y
+ CONFIG_THERMAL=y
+ CONFIG_DOVE_THERMAL=y
+ CONFIG_USB=y
++CONFIG_USB_XHCI_HCD=y
+ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_ROOT_HUB_TT=y
+ CONFIG_USB_STORAGE=y
 -- 
 1.7.10.4
 
