@@ -1,115 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab3HLNSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:18:45 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42741 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756190Ab3HLNSl (ORCPT
+	id S1756499Ab3HLNUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:20:49 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:37679 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755746Ab3HLNUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:18:41 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19oXOUuBy8gT3P3d6Wpe2/sTq7Wds6a7pA=
-Date: Mon, 12 Aug 2013 09:18:33 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next list <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>
-Subject: Re: linux-next: Tree for Aug 8 (not CONFIG_PCI_MSI conflict)
-Message-ID: <20130812131833.GI25111@titan.lakedaemon.net>
-References: <20130808170822.82bf33d3cf5100f5e2646815@canb.auug.org.au>
- <5203F978.2050504@infradead.org>
- <20130809145939.GE25111@titan.lakedaemon.net>
- <52051BC2.2060004@infradead.org>
- <20130809185036.GG25111@titan.lakedaemon.net>
- <CAErSpo6S9uYTEhoS-+4EZv41pc0bu6jvcMaGX7WR9hY4o+2dsA@mail.gmail.com>
+	Mon, 12 Aug 2013 09:20:45 -0400
+Date: Mon, 12 Aug 2013 16:19:49 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Belisko Marek <marek.belisko@gmail.com>
+Subject: Re: [PATCH tty-next] n_tty: Fix termios_rwsem lockdep false positive
+Message-ID: <20130812131949.GA2297@swordfish>
+References: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
+ <1376222663-5666-1-git-send-email-peter@hurleysoftware.com>
+ <20130812092810.GA26400@cpv436-motbuntu.spb.ea.mot-mobility.com>
+ <20130812105041.GA2268@swordfish>
+ <5208DB32.40304@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo6S9uYTEhoS-+4EZv41pc0bu6jvcMaGX7WR9hY4o+2dsA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5208DB32.40304@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 10, 2013 at 08:01:49AM -0600, Bjorn Helgaas wrote:
-> On Fri, Aug 9, 2013 at 12:50 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > Randy,
+On (08/12/13 08:55), Peter Hurley wrote:
+> >>> [..]
+> >>>  drivers/tty/n_tty.c | 25 +++++++++++--------------
+> >>>  1 file changed, 11 insertions(+), 14 deletions(-)
+> >>>
 > >
-> > On Fri, Aug 09, 2013 at 09:41:38AM -0700, Randy Dunlap wrote:
-> >> On 08/09/13 07:59, Jason Cooper wrote:
-> >> > Randy,
-> >> >
-> >> > On Thu, Aug 08, 2013 at 01:03:04PM -0700, Randy Dunlap wrote:
-> >> >> On 08/08/13 00:08, Stephen Rothwell wrote:
-> >> >>> Hi all,
-> >> >>>
-> >> >>> Changes since 20130807:
-> >> >>>
-> >> >>
-> >> >> on i386 and x86_64:
-> >> >> when CONFIG_PCI_MSI is not enabled:
-> >> >>
-> >> >> There are many of these errors:
-> >> >> include/linux/msi.h:65:6: error: expected identifier or '(' before 'void'
-> >> >> include/linux/msi.h:65:6: error: expected ')' before numeric constant
-> >> >>
-> >> >> because arch/x86/include/asm/pci.h defines:
-> >> >> #define default_teardown_msi_irqs  NULL
-> >> >
-> >> > Do you have an example config you used?
+> >I hate to do this, but isn't it actually my patch posted here
+> >https://lkml.org/lkml/2013/8/1/510
+> >
+> >which was tagged as `wrong'?
+> 
+> Sergey,
+> 
+> My apologies; I was mistaken regarding this problem being a lockdep
+> regression (although it's still a false positive from lockdep). Once
+> I had worked around some issues with the nouveau driver, I was able to
+> reproduce the lockdep report on 3.10.
+>
+no problem.
+
+> I included Artem's lockdep report in the changelog because I received
+> that first, on 30 July.
+>
+> My patch below is not the same as your patch of 1 Aug. This patch
+> preserves the protected access of termios.c_cc[VMIN] and termios.c_cc[VTIME]
+> (via the MIN_CHAR() and TIME_CHAR() macros).
+
+fair enough. v3 was protecting VMIN/VTIME (my bad, I noticed this a bit later),
+but I didn't submit it since v2 did not get positive response.
+
+> If you'd prefer, I could add to changelog:
+> 
+>    Patch based on original posted here https://lkml.org/lkml/2013/8/1/510
+>    by Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+if you don't mind, that would be great.
+
+thanks a lot,
+	-ss
+
+> Regards,
+> Peter Hurley
+> 
+> 
+> >>>diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> >>>index dd8ae0c..c9a9ddd 100644
+> >>>--- a/drivers/tty/n_tty.c
+> >>>+++ b/drivers/tty/n_tty.c
+> >>>@@ -2122,6 +2122,17 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+> >>>  	if (c < 0)
+> >>>  		return c;
+> >>>
+> >>>+	/*
+> >>>+	 *	Internal serialization of reads.
+> >>>+	 */
+> >>>+	if (file->f_flags & O_NONBLOCK) {
+> >>>+		if (!mutex_trylock(&ldata->atomic_read_lock))
+> >>>+			return -EAGAIN;
+> >>>+	} else {
+> >>>+		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
+> >>>+			return -ERESTARTSYS;
+> >>>+	}
+> >>>+
+> >>>  	down_read(&tty->termios_rwsem);
+> >>>
+> >>>  	minimum = time = 0;
+> >>>@@ -2141,20 +2152,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+> >>>  		}
+> >>>  	}
+> >>>
+> >>>-	/*
+> >>>-	 *	Internal serialization of reads.
+> >>>-	 */
+> >>>-	if (file->f_flags & O_NONBLOCK) {
+> >>>-		if (!mutex_trylock(&ldata->atomic_read_lock)) {
+> >>>-			up_read(&tty->termios_rwsem);
+> >>>-			return -EAGAIN;
+> >>>-		}
+> >>>-	} else {
+> >>>-		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
+> >>>-			up_read(&tty->termios_rwsem);
+> >>>-			return -ERESTARTSYS;
+> >>>-		}
+> >>>-	}
+> >>>  	packet = tty->packet;
+> >>>
+> >>>  	add_wait_queue(&tty->read_wait, &wait);
+> >>>--
+> >>>1.8.1.2
+> >>>
 > >>
-> >> Sure, attached. (or I have 14 of them)
-> >
-> > Thanks, I was able to reproduce the error.  I'm not real familiar with
-> > this area of the code, but the relief is it doesn't appear to be caused
-> > by the mvebu changes (well, relief for us ;-) ).
-> >
-> > At any rate, give this a spin and see if it works for you
-> >
-> > If it's acceptable, I'll do an official patch for Bjorn.
-> >
-> > thx,
-> >
-> > Jason.
-> >
-> > ---------->8----------
-> > diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-> > index d9e9e6c..6169414 100644
-> > --- a/arch/x86/include/asm/pci.h
-> > +++ b/arch/x86/include/asm/pci.h
-> > @@ -138,8 +138,8 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq);
-> >  #else
-> >  #define native_setup_msi_irqs          NULL
-> >  #define native_teardown_msi_irq                NULL
-> > -#define default_teardown_msi_irqs      NULL
-> > -#define default_restore_msi_irqs       NULL
-> > +void __weak default_teardown_msi_irqs(struct pci_dev *dev) { }
-> > +void __weak default_restore_msi_irqs(struct pci_dev *dev, int irq) { }
+> >>--
+> >>Regards,
+> >>     Artem
+> >>
 > 
-> I don't really like this solution of putting the empty implementation
-> in the header file, because then a weak body is generated in the
-> object of every source file that includes the header.
-> 
-> default_teardown_msi_irqs() and default_restore_msi_irqs() seem like
-> fairly internal MSI functions, so I wonder why we need them defined at
-> all when CONFIG_PCI_MSI=n.  It seems like any uses of them should be
-> in code that's only compiled when CONFIG_PCI_MSI=y.  But I haven't
-> reproduced the problem and investigated yet.
-
-I first tried commenting out the definitions after reproducing the
-problem.  It also failed miserably.
-
-Please take a look at Thomas' latest MSI patch series,
-
-  [PATCHv9 01/10] PCI: use weak functions for MSI arch-specific functions
-
-I think his solution is much nicer than mine.
-
-thx,
-
-Jason.
