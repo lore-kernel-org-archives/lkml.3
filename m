@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab3HLIia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 04:38:30 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52638 "EHLO
+	id S1755864Ab3HLImA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 04:42:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52694 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754237Ab3HLIi2 (ORCPT
+	with ESMTP id S1755679Ab3HLIl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 04:38:28 -0400
-Date: Mon, 12 Aug 2013 10:38:25 +0200
+	Mon, 12 Aug 2013 04:41:59 -0400
+Date: Mon, 12 Aug 2013 10:41:57 +0200
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
+To: Mike Turquette <mturquette@linaro.org>,
+        Emilio Lopez <emilio@elopez.com.ar>
+Cc: kevin.z.m.zh@gmail.com, sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-sunxi@googlegroups.com
-Subject: Re: [PATCHv2 0/2] clk: sunxi: Add clock support for the A10s
-Message-ID: <20130812083825.GO2911@lukather>
-References: <1375735167-18031-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: Re: [PATCHv3 0/4] Add support for the Allwinner A31 clocks
+Message-ID: <20130812084157.GP2911@lukather>
+References: <1375735381-18214-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JsxH/ny24k1NEYXc"
+	protocol="application/pgp-signature"; boundary="nF5CeAc4QNWHTmva"
 Content-Disposition: inline
-In-Reply-To: <1375735167-18031-1-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1375735381-18214-1-git-send-email-maxime.ripard@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---JsxH/ny24k1NEYXc
+--nF5CeAc4QNWHTmva
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Mike,
+Hi Mike, Emilio,
 
-On Mon, Aug 05, 2013 at 10:39:24PM +0200, Maxime Ripard wrote:
-> This small patchset adds support for the gates found in the Allwinner A10=
-s SoC.
-> Since the gates are the only clock that differ from the other supported
-> Allwinner SoCs so far, the two patches are quite trivial.
+On Mon, Aug 05, 2013 at 10:42:57PM +0200, Maxime Ripard wrote:
+> Hi everyone,
+>=20
+> The Allwinner A31 SoC has a quite different clock tree and structure that=
+ the
+> other Allwinner SoCs that we already merged, so it requires more work tha=
+n what
+> we had for the other SoCs until now.
+>=20
+> It's also an opportunity to do some minor cleanup/refactoring to land the=
+ new
+> code properly.
+>=20
+> This patch set is based on the "ARM: sunxi: Add support for the Allwinner=
+ A31
+> SoC" serie I sent previously.
 
-It would be great if you could merge this in 3.12.
-Do you have comments on this one?
+It would be great if this could go in 3.12.
+Could you review these patches? The two first should be trivial, only
+the third one isn't and adds the basic A31 clocks support to the driver.
 
 Thanks,
 Maxime
@@ -52,26 +64,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---JsxH/ny24k1NEYXc
+--nF5CeAc4QNWHTmva
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSCJ8AAAoJEBx+YmzsjxAgersP+gOlq5Li1dXAV53l6KQporCr
-MTj9AxiRU8tcIelizeebCQpz36dHHuyUV2wc7CM4b0V5a/M9BQO+Kus/rrq/ljLN
-EQ4oPIJi5RTcvIqd+jjdyCt4ovtokinurstWtVUpkMARUoJLTAooVMa8e1dHixwn
-+RnhELT/+Iz6GTZcL95tj5UCkZmEJyy1YdnpCoXgnnwm0nfgu/+5iaRl+c4OFyLj
-3Wgd10W6Pem3zq7+Vhn0dRZ7LLJgJFToPre37izx8vfLko3c1s/kTsPQfsZof08e
-XYwc+uUT+Z13gEv12MjpsvGqWnf4dcYw3081FeiDENzZXskLNTqsVfM72uxRmqh4
-SK0O3fP0JtRs6GBlh3RsCT2F3hqsU62ZvhUxT8IOP0+SwQkXsGTEDMAoJPhZmiHi
-k+iPUAyWF9gGVajlHwBWATkOJD+b6Tjc52+BRwHy/Cw/r0RjbmK3TQflgyyARNRL
-hjiDGhVTuskBNBX7I7KcI7subEYDjZCJhhj/kWSLaGGgQOFZ9Kzgq1/gzcAv5Scx
-mwtBunIHrek9Fqp8foqrj80oJa3awVsQeOLIkWN8+S2szh/shV0HuF437OGuHecj
-pyX0ysLS45znG+7MbqJgYkVUF5+liQbLmgR6yxOl7t6L1zyIUp0etMBBQziWyjRh
-r0dDO1ZIkefi9cI7Tf5n
-=UhUg
+iQIcBAEBAgAGBQJSCJ/VAAoJEBx+YmzsjxAgfNwP/AniSJXKaNMIRt3S9fKiSa/1
+3Z65BbgVTWFggNgw+3adkHz9w3Y3YIj3n76y5EuA6I9Oa4YreUT8O3+zF2Ne+BNZ
+Ds5t6Znz5MpPghU17/GEuhav2dimBm9WWCfC+ixlGgAv0q1Oh0Fl4DpQm1FQ3/20
+Q7MHLOK4OpQWpti5LlWjHJAQj/ab2WhvJinojF4OFkz1A3eXnrjKStQROkw9DAeu
+ZEQjURpx2p0WIDFYfdYJardMk5hiyam1/kC4EP46+YG3ext2HnVXqtCgmcJFfAop
+nFzqc77xDbBZHCNujH/pB8dkhSG62RTb117EdGDnJ2+omRGhNKTx2JzDWyvslTCv
+zzepQBX8B0pAXwniQ7I1pDa3qINJHmM9338eMQFEX68wjcaaN0jF1Up0C50ZimXE
+ZGAc5eZfGzLVvY0P0G2CVPuReqJXc1RM4+pw+K2jhirCBfW469PsxtWU3VPK6X1O
+sPiU3qS4aG/oR7R0b+oD6xmq5Zhhf/M6EnXEhgYPSPIXzv1tKaL1Pc0c2Ud312Ay
+Fy+L4hcGAj+J3kW0/VMHhsit57n5G/CMKS3jlDQdbgkfrM0001TUnz5ISf+wEqns
+D95AMV/gXCl/zD0I46Y4NV+vY/uZqRPJoTwuwzUGwps2kstQTHC0IyGYKazA73wM
+qCKxEgOOQSdRzU6xPM02
+=xpgx
 -----END PGP SIGNATURE-----
 
---JsxH/ny24k1NEYXc--
+--nF5CeAc4QNWHTmva--
