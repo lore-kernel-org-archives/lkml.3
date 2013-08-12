@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab3HLPKO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 11:10:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57401 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756867Ab3HLPKJ (ORCPT
+	id S1756966Ab3HLPNL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 11:13:11 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:56408 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756596Ab3HLPNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 11:10:09 -0400
-Date: Mon, 12 Aug 2013 17:09:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] Teach perf_trace_##call() to check
- hlist_empty(perf_events)
-Message-ID: <20130812150945.GL27162@twins.programming.kicks-ass.net>
-References: <20130806160826.GA2717@redhat.com>
+	Mon, 12 Aug 2013 11:13:08 -0400
+Message-ID: <5208FB70.5010503@gmail.com>
+Date: Mon, 12 Aug 2013 23:12:48 +0800
+From: Tang Chen <imtangchen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130806160826.GA2717@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Tejun Heo <tj@kernel.org>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
+        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org, imtangchen@gmail.com
+Subject: Re: [PATCH part5 1/7] x86: get pg_data_t's memory from other node
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com> <1375956979-31877-2-git-send-email-tangchen@cn.fujitsu.com> <20130812143910.GH15892@htj.dyndns.org>
+In-Reply-To: <20130812143910.GH15892@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 06:08:26PM +0200, Oleg Nesterov wrote:
-> On 08/05, Steven Rostedt wrote:
-> >
-> > > Sorry... should I resend once again ?
-> >
-> > Sure, why not. It's only 3 patches :-)
-> 
-> OK. Added "v2" to avoid the confusion.
-> 
-> The only change is
-> 
-> 	- Reviewed-and-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> 	+ Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> 	+ Acked-by: Steven Rostedt <rostedt@goodmis.org>
-> 	
-> > I wonder if the Reviewed-by assumes the Acked-by?
-> 
-> I dunno. But since you gave me both, I'd better preserve them all.
+On 08/12/2013 10:39 PM, Tejun Heo wrote:
+> Hello,
+>
+> The subject is a bit misleading.  Maybe it should say "allow getting
+> ..." rather than "get ..."?
 
-So I suppose the down-side to putting them in TP_ARGS() is that you
-cannot use arbitrary expressions for them anymore; like:
+Ok, followed.
 
-  TP_ARGS(foo);
+>
+> On Thu, Aug 08, 2013 at 06:16:13PM +0800, Tang Chen wrote:
+......
+>
+> I suppose the above three paragraphs are trying to say
+>
+> * A hotpluggable NUMA node may be composed of multiple memory devices
+>    which individually are hot-pluggable.
+>
+> * pg_data_t and page tables the serving a NUMA node may be located in
+>    the same node they're serving; however, if the node is composed of
+>    multiple hotpluggable memory devices, the device containing them
+>    should be the last one to be removed.
+>
+> * For physical memory hotplug, whole NUMA node hotunplugging is fine;
+>    however, in virtualizied environments, finer grained hotunplugging
+>    is desirable; unfortunately, there currently is no way to which
+>    specific memory device pg_data_t and page tables are allocated
+>    inside making it impossible to order unpluggings of memory devices
+>    of a NUMA node.  To avoid the ordering problem while allowing
+>    removal of subset fo a NUMA node, it has been decided that pg_data_t
+>    and page tables should be allocated on a different non-hotpluggable
+>    NUMA node.
+>
+> Am I following it correctly?  If so, can you please update the
+> description?  It's quite confusing.
 
-  TP_perf_assign(
-    __perf_task(foo->ponies);
-    __perf_count(foo->horses);
-  ),
+Yes, you are right. I'll update the description.
 
-Not that we actually did something like that, but I imagine it might've
-been useful.. A well, lets not worry too much about that and go with
-this. We'll get creative again if we ever need something like that.
+> Also, the decision seems rather
+> poorly made.  It should be trivial to allocate memory for pg_data_t
+> and page tables in one end of the NUMA node and just record the
+> boundary to distinguish between the area which can be removed any time
+> and the other which can only be removed as a unit as the last step.
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+We have tried, but the hot-remove path is difficult to fix.
 
-Thanks!
+Please refer to:
+https://lkml.org/lkml/2013/6/13/249
+
+Actually, the above patch-set can achieve movable node, what you said.
+But we have the following problems:
+
+1. The device holding pagetable cannot be removed before other devices.
+    In virtualization environment, it could be prlblematic.
+    (https://lkml.org/lkml/2013/6/18/527)
+
+2. It will break the semanteme of memory_block online/offline. If part
+    of the memory_block is pagetable, and it is offlined, what status
+    it should have ? My patches set it to offline, but the kernel
+    is still using the memory.
+
+
+I'm not saying it is not fixable. But we finally came to that we
+may do the movable node in the current way and then improve it,
+including local pgdat and pagetable. We need more discussion on that.
+But it should not block the memory hotplug developping.
+
+I suggest to do movable node in the current way first, and improve
+it after this is done.
+
+Thanks.
+
+
