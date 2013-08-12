@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab3HLOjS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 10:39:18 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:35618 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720Ab3HLOjQ (ORCPT
+	id S1756471Ab3HLOl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 10:41:26 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49418 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab3HLOlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 10:39:16 -0400
-Date: Mon, 12 Aug 2013 10:39:10 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part5 1/7] x86: get pg_data_t's memory from other node
-Message-ID: <20130812143910.GH15892@htj.dyndns.org>
-References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
- <1375956979-31877-2-git-send-email-tangchen@cn.fujitsu.com>
+	Mon, 12 Aug 2013 10:41:25 -0400
+Date: Mon, 12 Aug 2013 15:41:10 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, devicetree@kernel.org,
+        Linux USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20130812144110.GA6427@sirena.org.uk>
+References: <20130811190826.GH6427@sirena.org.uk>
+ <CACxGe6sM8_d_omiQU=4qA207dnYMGDELN0KDbhYDsWDg7RKAKQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="nIPQBKNtp9w8F7mD"
 Content-Disposition: inline
-In-Reply-To: <1375956979-31877-2-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <CACxGe6sM8_d_omiQU=4qA207dnYMGDELN0KDbhYDsWDg7RKAKQ@mail.gmail.com>
+X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-The subject is a bit misleading.  Maybe it should say "allow getting
-..." rather than "get ..."?
+--nIPQBKNtp9w8F7mD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Thu, Aug 08, 2013 at 06:16:13PM +0800, Tang Chen wrote:
-....
-> A node could have several memory devices. And the device who holds node
-> data should be hot-removed in the last place. But in NUMA level, we don't
-> know which memory_block (/sys/devices/system/node/nodeX/memoryXXX) belongs
-> to which memory device. We only have node. So we can only do node hotplug.
-> 
-> But in virtualization, developers are now developing memory hotplug in qemu,
-> which support a single memory device hotplug. So a whole node hotplug will
-> not satisfy virtualization users.
-> 
-> So at last, we concluded that we'd better do memory hotplug and local node
-> things (local node node data, pagetable, vmemmap, ...) in two steps.
-> Please refer to https://lkml.org/lkml/2013/6/19/73
+On Sun, Aug 11, 2013 at 11:08:37PM +0100, Grant Likely wrote:
 
-I suppose the above three paragraphs are trying to say
+> full enumerating like that with either ACPI or FDT, but we could allow
+> for sparse population of devices when something is fixed like a
+> soldered down USB hub or USB Ethernet MAC.
 
-* A hotpluggable NUMA node may be composed of multiple memory devices
-  which individually are hot-pluggable.
+I agree, there's no point in listing things that can be done
+automatically - it's just introducing potential for error.
 
-* pg_data_t and page tables the serving a NUMA node may be located in
-  the same node they're serving; however, if the node is composed of
-  multiple hotpluggable memory devices, the device containing them
-  should be the last one to be removed.
+> To make it work would probably require a hook in the USB enumeration
+> path to look for matching nodes in DT/ACPI and attach it to the struct
+> device.
 
-* For physical memory hotplug, whole NUMA node hotunplugging is fine;
-  however, in virtualizied environments, finer grained hotunplugging
-  is desirable; unfortunately, there currently is no way to which
-  specific memory device pg_data_t and page tables are allocated
-  inside making it impossible to order unpluggings of memory devices
-  of a NUMA node.  To avoid the ordering problem while allowing
-  removal of subset fo a NUMA node, it has been decided that pg_data_t
-  and page tables should be allocated on a different non-hotpluggable
-  NUMA node.
+Yes, that was where I was heading too.  Have a mechanism for matching up
+hotplugged devices with pre-registered ones which appear from firmware
+or wherever if their IDs match.  It'd need some mechanism for drivers to
+opt into being bound to devices that aren't physically there I think so
+that normal drivers for enumerated devices don't get confused.
 
-Am I following it correctly?  If so, can you please update the
-description?  It's quite confusing.  Also, the decision seems rather
-poorly made.  It should be trivial to allocate memory for pg_data_t
-and page tables in one end of the NUMA node and just record the
-boundary to distinguish between the area which can be removed any time
-and the other which can only be removed as a unit as the last step.
+--nIPQBKNtp9w8F7mD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
--- 
-tejun
+iQIcBAEBAgAGBQJSCPQDAAoJELSic+t+oim9v6kP/2Fc7NWbNJWzqDfViqQjhgrO
+qNT25qplJo+7SEEcJF4pti5xwdyZQZGJoWGU76NW93a9yv4eD8G8P4pHT8gykLZX
+lWBDZFGzddiQsgVrwExpRMJDF4DVh2G8kbtU7AEQf8URNmlyHS8XapJcDWM1prXF
+zTA2sYMUw0YHF0SAxatPHSTSmZZ4dp5Erc4sEluaaC6hKX/h68/xLAmFkreNH+th
+FbPKw+s1TdaxmmCVb9Bzz9tlsJsPQtzQFmjsePS5OrrW3Ko6Rq+DLjJ2qSIpbvy3
+IdqoFpBWFHndfAg42W93Gc8nIH8p7HMwaOzuY4uQeDjoFEUqeOu7ldYBAuA2PM/K
+EMz5/7J9Gn2rF+bOnoAGIbueckoJ4UNkoKiyia+RU0Dt9R1uQgiE234d0xC8WV2h
+dRKw2WTvlGfYLEjTaIgfexmDN47zX2MGgAGD3oULVqwA2czSGPXiBiCIDltCB8yp
+bDAVT90r8Ztk45Hczr2lrpwgif8CFbZlN2hB017Il+f+gfkSAJhp1K5WbVDmDFhZ
+hBMlDZ7riFVKc0fDYNNkPtjQK+6ldVMrQ08SrNzl0c7Uq/VedAHVin7xNr/3k4Cl
+me/wA95hiOxcfmm1sQCh2UZqRPpt/dp6nQNhD96gZ5StANLADw3gTr/ZqHVyDFbc
+6EFju6ERfDgIteSnY1yU
+=htGK
+-----END PGP SIGNATURE-----
+
+--nIPQBKNtp9w8F7mD--
