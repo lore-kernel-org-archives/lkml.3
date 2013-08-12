@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab3HLUta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 16:49:30 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:36946 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750938Ab3HLUt2 (ORCPT
+	id S1755368Ab3HLUuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 16:50:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56723 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab3HLUuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 16:49:28 -0400
-X-IronPort-AV: E=Sophos;i="4.89,864,1367964000"; 
-   d="scan'208";a="29178542"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Eric Miao <eric.y.miao@gmail.com>, robert.jarzmik@free.fr
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/16 v2] sound/soc/pxa/mioa701_wm9713.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
-Date: Mon, 12 Aug 2013 22:49:24 +0200
-Message-Id: <1376340564-7975-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	Mon, 12 Aug 2013 16:50:08 -0400
+Date: Mon, 12 Aug 2013 13:50:07 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+Message-ID: <20130812205007.GA5822@kroah.com>
+References: <20130811190826.GH6427@sirena.org.uk>
+ <20130812020257.GA7028@kroah.com>
+ <20130812112344.GS6427@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130812112344.GS6427@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Mon, Aug 12, 2013 at 12:23:44PM +0100, Mark Brown wrote:
+> On Sun, Aug 11, 2013 at 07:02:57PM -0700, Greg Kroah-Hartman wrote:
+> > On Sun, Aug 11, 2013 at 08:08:26PM +0100, Mark Brown wrote:
+> 
+> > > I know there's been some discussion of this topic but do we have any
+> > > general consensus on how to handle such things both from a Linux driver
+> > > model point of view and from a DT/ACPI point of view?
+> 
+> > As these are usually bus-specific things, and really, platform-specific
+> 
+> I don't think they're bus specific - the main issue with a lot of this
+> is that they're outside the infrastructure that the bus standardises so
+> we should have a general way of understanding this.  There will be bits
+> where the bus needs to get involved but the overall pattern is generic.
 
-Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding the
-arity of the called function.
+The "pattern" is generic, yes, we've been dealing with that for well
+over a decade now (pci hotplug controllers are "out of line" and control
+when/if a PCI is device is added/removed.)
 
-At the suggestion of Robert Jarzmik, this additionally removes the
-definition of ARRAY_AND_SIZE, which is not used elsewhere in the file.
+I'd argue that each bus needs special logic to handle this, just like
+PCI hotplug did it with their hotplug controller logic.  Due to the
+nature of this type of thing, it's all out-of-line hardware that is
+custom to each device type / bus.
 
-The semantic match that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+> > things, I'd fall back and just recommend a "platform driver" that
+> > "knows" about where these gpios are, and how/when to enable them, which
+> > will cause the discoverable bus logic to kick in now that it notices a
+> > device is present/removed.
+> 
+> This doesn't work in general.  These things aren't really platform
+> specific at all, they're features of the devices that apply to any
+> system using them and while for some use cases (like WiFi and BT power)
+> an external thing that just manually applies power will be enough in
+> other cases we want to know about the device even while it's off and the
+> driver might be able to do extra things at runtime if it knows about for
+> example having some control over signals to the device.
 
-// <smpl>
-@@
-expression e,f;
-@@
+No, the device isn't platform specific, but the logic needed to turn
+on/off is platform specific, otherwise the device would "just work"
+properly as the bus is self-discoverable.
 
-f(...,
-- ARRAY_AND_SIZE(e)
-+ e,ARRAY_SIZE(e)
-  ,...)
-// </smpl>
+Much like rfkill is, as you point out.  Those are all platform specific.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> For example in the Slimbus case we're normally talking about audio
+> CODECs.  In order to preserve the userspace API the device has to appear
+> to be present at all times, the driver will remember the settings the
+> user is making to be applied when it actually powers up and indeed the
+> powering up should be kicked off as a result of userspac acting on the
+> apparently present device.
 
----
-Not compiled.
-v2 removes the definition of ARRAY_AND_SIZE.
+That's some horrible hardware, who thought of that?
 
-diff --git a/sound/soc/pxa/mioa701_wm9713.c b/sound/soc/pxa/mioa701_wm9713.c
-index 97b711e..bbea778 100644
---- a/sound/soc/pxa/mioa701_wm9713.c
-+++ b/sound/soc/pxa/mioa701_wm9713.c
-@@ -56,8 +56,6 @@
- #include "pxa2xx-ac97.h"
- #include "../codecs/wm9713.h"
- 
--#define ARRAY_AND_SIZE(x)	(x), ARRAY_SIZE(x)
--
- #define AC97_GPIO_PULL		0x58
- 
- /* Use GPIO8 for rear speaker amplifier */
-@@ -133,10 +131,11 @@ static int mioa701_wm9713_init(struct snd_soc_pcm_runtime *rtd)
- 	unsigned short reg;
- 
- 	/* Add mioa701 specific widgets */
--	snd_soc_dapm_new_controls(dapm, ARRAY_AND_SIZE(mioa701_dapm_widgets));
-+	snd_soc_dapm_new_controls(dapm, mioa701_dapm_widgets,
-+				  ARRAY_SIZE(mioa701_dapm_widgets));
- 
- 	/* Set up mioa701 specific audio path audio_mapnects */
--	snd_soc_dapm_add_routes(dapm, ARRAY_AND_SIZE(audio_map));
-+	snd_soc_dapm_add_routes(dapm, audio_map, ARRAY_SIZE(audio_map));
- 
- 	/* Prepare GPIO8 for rear speaker amplifier */
- 	reg = codec->driver->read(codec, AC97_GPIO_CFG);
+> Another example here (including USB devices) is interrupt signals wired
+> directly back to the processor, completely outside of the bus.
+
+Like rfkill switches that just power on/off a USB device built onto the
+laptop motherboard :)
+
+> > Perhaps a semi-generic "platform" driver could be created, that knows
+> > how to handle these settings in the DT, but odds are, that might be
+> > difficult to make generic enough to cover a wide range of boards, but
+> > without specifics, it's hard to tell.
+> 
+> There's things like the rfkill stuff already, and the reset controller
+> on the way, but again this only covers a fairly small subset of the
+> issues.
+
+"small subset"?  How common is this type of thing?
+
+thanks,
+
+greg k-h
