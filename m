@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751100Ab3HLRbg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:31:36 -0400
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:34873 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab3HLRbd (ORCPT
+	id S1751413Ab3HLRcX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:32:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55053 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab3HLRcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:31:33 -0400
+	Mon, 12 Aug 2013 13:32:20 -0400
+Date: Mon, 12 Aug 2013 10:32:18 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Matt Burtch <matt@grid-net.com>
+Cc: Johan Hovold <jhovold@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] USB-Serial: Fix error handling of usb_wwan
+Message-ID: <20130812173218.GA9476@kroah.com>
+References: <1376327499-528-1-git-send-email-matt@grid-net.com>
 MIME-Version: 1.0
-In-Reply-To: <000001ce9747$680a9800$381fc800$%jun@samsung.com>
-References: <1375846138-15839-1-git-send-email-dbasehore@chromium.org>
-	<000001ce9747$680a9800$381fc800$%jun@samsung.com>
-Date: Mon, 12 Aug 2013 10:31:32 -0700
-Message-ID: <CAD=FV=U69UONapHhy+LQ0cNe+G5SWmowvVnAWxcEP+CN_HOXkg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Don't disable vmmc if keeping power in suspend
-From: Doug Anderson <dianders@google.com>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Derek Basehore <dbasehore@chromium.org>, Chris Ball <cjb@laptop.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376327499-528-1-git-send-email-matt@grid-net.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seungwon and Derek,
+On Mon, Aug 12, 2013 at 10:11:39AM -0700, Matt Burtch wrote:
+> This fixes an issue where the bulk-in urb used for incoming data transfer
+> is not resubmitted if the packet recieved contains an error status.  This
+> results in the driver locking until the port is closed and re-opened.
+> 
+> Tested on a custom board with a Cinterion GSM module.
+> 
+> Signed-off-by: Matt Burtch <matt@grid-net.com>
 
-On Mon, Aug 12, 2013 at 3:33 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> On Wed, August 07, 2013, Derek Basehore
->> If we keep power for suspend on a host for dw_mmc, don't disable vmmc-supply
->> regulator when suspending the host.
->
-> I have a trivial comment.
-> It would be better to add some macro for checking MMC_PM_KEEP_POWER.
-> And I just wonder how the problem is silent. Origin code has stood up somewhat long.
-> Did you see?
->
-> Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
->
-> Thanks,
-> Seungwon Jeon
->
->>
->> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
->> Reviewed-by: Doug Anderson <dianders@chromium.org>
->> ---
->>  drivers/mmc/host/dw_mmc.c | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
+Ah, nice catch, thanks for this, I'll also mark it for the stable tree
+as it's something that those kernels would want to pick up.
 
-Though I reviewed this originally, I'd actually propose not landing it.
-
-I've spent more time with the regulator code in dw_mmc and currently
-believe that the regulators should be enabled / disabled in
-MMC_POWER_UP / MMC_POWER_OFF.  When we do that then the mmc core will
-handle MMC_PM_KEEP_POWER.  You can see my current thoughts on this in
-<https://gerrit.chromium.org/gerrit/#/c/65263/>.  I will try to post
-that upstream before too long, but feel free to let me know any
-comments.
-
--Doug
+greg k-h
