@@ -1,61 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3HLK5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:57:42 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:62383 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756123Ab3HLK5i (ORCPT
+	id S1756168Ab3HLK6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:58:42 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:26120 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755351Ab3HLK6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:57:38 -0400
-From: "Lee, Jae-Hong" <pyrasis@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: minchan@kernel.org, linux-kernel@vger.kernel.org,
-        "Lee, Jae-Hong" <pyrasis@gmail.com>
-Subject: =?y?q?=5BPATCH=20v3=203/3=5D=20Correct=20unfaithful=20translation=20on=20HOWTO=20in=20ko=5FKR?=
-Date: Mon, 12 Aug 2013 19:57:21 +0900
-Message-Id: <1376305041-10757-3-git-send-email-pyrasis@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1376305041-10757-1-git-send-email-pyrasis@gmail.com>
-References: <1376305041-10757-1-git-send-email-pyrasis@gmail.com>
+	Mon, 12 Aug 2013 06:58:41 -0400
+X-IronPort-AV: E=Sophos;i="4.89,861,1367971200"; 
+   d="scan'208";a="7708730"
+Message-ID: <5208BFDF.40308@citrix.com>
+Date: Mon, 12 Aug 2013 12:58:39 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=y
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xen.org>, <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [PATCH 3/3] xen-blkfront: revoke foreign access for
+ grants not mapped by the backend
+References: <1375282844-4314-1-git-send-email-roger.pau@citrix.com> <1375282844-4314-4-git-send-email-roger.pau@citrix.com> <51FA3407.7050106@citrix.com> <20130809150837.GA5637@phenom.dumpdata.com>
+In-Reply-To: <20130809150837.GA5637@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lee, Jae-Hong" <pyrasis@gmail.com>
+On 09/08/13 17:08, Konrad Rzeszutek Wilk wrote:
+> On Thu, Aug 01, 2013 at 11:10:15AM +0100, David Vrabel wrote:
+>> On 31/07/13 16:00, Roger Pau Monne wrote:
+>>> There's no need to keep the foreign access in a grant if it is not
+>>> persistently mapped by the backend. This allows us to free grants that
+>>> are not mapped by the backend, thus preventing blkfront from hoarding
+>>> all grants.
+>>>
+>>> The main effect of this is that blkfront will only persistently map
+>>> the same grants as the backend, and it will always try to use grants
+>>> that are already mapped by the backend. Also the number of persistent
+>>> grants in blkfront is the same as in blkback (and is controlled by the
+>>> value in blkback).
+>>>
+>>> Signed-off-by: Roger Pau Monn� <roger.pau@citrix.com>
+>>
+>> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+> 
+> Roger,
+> 
+> Could you repost patch #2 and #3 (as #1 is in v3.11-rc4) with the
+> comments and the Ack from Matt and Roger's Review-by tag addressed?
 
-This patch corrects unfaithful Korean translation in Documentation/ko_KR/HOWTO.
+Done (I guess you meant the Reviewed-by tag from David), see below however.
 
-Signed-off-by: Lee, Jae-Hong <pyrasis@gmail.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
----
- Documentation/ko_KR/HOWTO |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> Thanks.
+>>
+>> But please see the documentation updates needed below.
+>>
+>>> --- a/drivers/block/xen-blkfront.c
+>>> +++ b/drivers/block/xen-blkfront.c
+>>> @@ -1016,13 +1016,38 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
+>>>  	}
+>>>  	/* Add the persistent grant into the list of free grants */
+>>>  	for (i = 0; i < nseg; i++) {
+>>> -		list_add(&s->grants_used[i]->node, &info->persistent_gnts);
+>>> -		info->persistent_gnts_c++;
+>>> +		if (gnttab_query_foreign_access(s->grants_used[i]->gref)) {
+>>> +			/*
+>>> +			 * If the grant is still mapped by the backend (the
+>>> +			 * backend has chosen to make this grant persistent)
+>>> +			 * we add it at the head of the list, so it will be
+>>> +			 * reused first.
+>>> +			 */
+>>> +			list_add(&s->grants_used[i]->node, &info->persistent_gnts);
+>>> +			info->persistent_gnts_c++;
+>>> +		} else {
+>>> +			/*
+>>> +			 * If the grant is not mapped by the backend we end the
+>>> +			 * foreign access and add it to the tail of the list,
+>>> +			 * so it will not be picked again unless we run out of
+>>> +			 * persistent grants.
+>>> +			 */
+>>> +			gnttab_end_foreign_access(s->grants_used[i]->gref, 0, 0UL);
+>>> +			s->grants_used[i]->gref = GRANT_INVALID_REF;
+>>> +			list_add_tail(&s->grants_used[i]->node, &info->persistent_gnts);
+>>> +		}
+>>
+>> Because you only reclaim grants when a request is completed, can you add
+>> text similar to the following to xen/include/public/io/blkif.h (and the
+>> Linux copy).
+>>
+>> feature-persistent:
+>> ...
+>>    When the backend driver needs to unmap a persistent grant it should
+>>    do so prior to completing a request that used that grant reference.
+>>    If a persistent grant is unmapped at any other time, the frontend
+>>    driver may not notice and may be unable to reclaim the grant
+>>    reference.
+>>
 
-diff --git a/Documentation/ko_KR/HOWTO b/Documentation/ko_KR/HOWTO
-index 4aa79f9..6bf4832 100644
---- a/Documentation/ko_KR/HOWTO
-+++ b/Documentation/ko_KR/HOWTO
-@@ -455,7 +455,7 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
-  - 의견
-  - 변경을 위한 요구
-  - 당위성을 위한 요구
-- - 고요
-+ - 침묵
- 
- 기억하라. 이것들은 여러분의 패치가 커널로 들어가기 위한 과정이다. 여러분의
- 패치들은 비판과 다른 의견을 받을 수 있고 그것들을 기술적인 레벨로 평가하고
-@@ -489,7 +489,7 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
- 문제를 피하기 위한 목록이 있다.
-   여러분들이 제안한 변경들에 관하여 말할 때 좋은 것들 :
-     - "이것은 여러 문제들을 해결합니다."
--    - "이것은 2000 라인의 코드를 제거합니다."
-+    - "이것은 2000 라인의 코드를 줄입니다."
-     - "이것은 내가 말하려는 것에 관해 설명하는 패치입니다."
-     - "나는 5개의 다른 아키텍쳐에서 그것을 테스트 했으므로..."
-     - "여기에 일련의 작은 패치들이 있으므로..."
--- 
-1.7.10.4
+I've sent a patch to update the documentation about persistent grants in
+Xen source tree, but the Linux copy of blkif.h lacks any information
+about the blkif protocol extensions, so I have not added it there. If
+nobody else does it first (before I come back from vacation), I will
+send a patch to add the documentation about all the blkif extensions to
+the Linux copy of blkif.h (and of course add your comment about
+persistent grants unmap).
+
+Roger.
 
