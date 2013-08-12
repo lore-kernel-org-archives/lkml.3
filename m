@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab3HLNiZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:38:25 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:54220 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab3HLNiX (ORCPT
+	id S1756652Ab3HLNjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:39:08 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:52613 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756181Ab3HLNjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:38:23 -0400
+	Mon, 12 Aug 2013 09:39:04 -0400
+Message-ID: <5208E575.1080008@hurleysoftware.com>
+Date: Mon, 12 Aug 2013 09:39:01 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <1373803321-11628-2-git-send-email-gsi@denx.de>
-References: <1373642781-32631-1-git-send-email-gsi@denx.de>
-	<1373803321-11628-1-git-send-email-gsi@denx.de>
-	<1373803321-11628-2-git-send-email-gsi@denx.de>
-Date: Mon, 12 Aug 2013 17:38:21 +0400
-Message-ID: <CAF0T0X4f9RCjY-tyw9z+X_n7qRxXacKf7FOzT-U_rH0WtLOUHw@mail.gmail.com>
-Subject: Re: [PATCH RFC v2 1/5] dma: mpc512x: re-order mpc8308 specific instructions
-From: Alexander Popov <a13xp0p0v88@gmail.com>
-To: Gerhard Sittig <gsi@denx.de>
-Cc: linuxppc-dev@lists.ozlabs.org, Dan Williams <djbw@fb.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        Anatolij Gustschin <agust@denx.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Belisko Marek <marek.belisko@gmail.com>
+Subject: Re: [PATCH tty-next] n_tty: Fix termios_rwsem lockdep false positive
+References: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com> <1376222663-5666-1-git-send-email-peter@hurleysoftware.com> <20130812092810.GA26400@cpv436-motbuntu.spb.ea.mot-mobility.com> <20130812105041.GA2268@swordfish> <5208DB32.40304@hurleysoftware.com> <20130812131949.GA2297@swordfish>
+In-Reply-To: <20130812131949.GA2297@swordfish>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone!
-
-2013/7/14 Gerhard Sittig <gsi@denx.de>:
-> @@ -50,9 +50,23 @@
->  #define MPC_DMA_DESCRIPTORS    64
+On 08/12/2013 09:19 AM, Sergey Senozhatsky wrote:
+> On (08/12/13 08:55), Peter Hurley wrote:
+>>>>> [..]
+>>>>>   drivers/tty/n_tty.c | 25 +++++++++++--------------
+>>>>>   1 file changed, 11 insertions(+), 14 deletions(-)
+>>>>>
+>>>
+>>> I hate to do this, but isn't it actually my patch posted here
+>>> https://lkml.org/lkml/2013/8/1/510
+>>>
+>>> which was tagged as `wrong'?
+>>
+>> Sergey,
+>>
+>> My apologies; I was mistaken regarding this problem being a lockdep
+>> regression (although it's still a false positive from lockdep). Once
+>> I had worked around some issues with the nouveau driver, I was able to
+>> reproduce the lockdep report on 3.10.
+>>
+> no problem.
 >
->  /* Macro definitions */
-> -#define MPC_DMA_CHANNELS       64
->  #define MPC_DMA_TCD_OFFSET     0x1000
+>> I included Artem's lockdep report in the changelog because I received
+>> that first, on 30 July.
+>>
+>> My patch below is not the same as your patch of 1 Aug. This patch
+>> preserves the protected access of termios.c_cc[VMIN] and termios.c_cc[VTIME]
+>> (via the MIN_CHAR() and TIME_CHAR() macros).
 >
-> +/*
-> + * the maximum channel count, and specific channels which need
-> + * special processing, for individual hardware variants
-> + *
-> + * and the maximum channel count over all supported controllers,
-> + * used for data structure sizes
-> + */
-> +enum mpc8308_dmachan_id_t {
-> +       MPC8308_DMACHAN_MAX = 16,
-> +};
-> +enum mpc512x_dmachan_id_t {
-> +       MPC512x_DMACHAN_MAX = 64,
-> +};
-> +#define MPC_DMA_CHANNELS       64
-> +
+> fair enough. v3 was protecting VMIN/VTIME (my bad, I noticed this a bit later),
+> but I didn't submit it since v2 did not get positive response.
+>
+>> If you'd prefer, I could add to changelog:
+>>
+>>     Patch based on original posted here https://lkml.org/lkml/2013/8/1/510
+>>     by Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+>
+> if you don't mind, that would be great.
 
-I offer to use #define instead of enum here
-since individual channels don't require special handling.
+Ok.
 
-Best regards,
-Alexander.
+Greg,
+Should I re-spin a v2 to include the note above
+(or can you add it with Artem's Tested-by)?
+
+Regards,
+Peter Hurley
