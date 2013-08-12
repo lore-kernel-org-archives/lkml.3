@@ -1,72 +1,460 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab3HLVt6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 17:49:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57215 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754173Ab3HLVtq (ORCPT
+	id S1755508Ab3HLVuk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 17:50:40 -0400
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:49396 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755469Ab3HLVtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 17:49:46 -0400
-Date: Mon, 12 Aug 2013 14:49:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Arun KS <arunks.linux@gmail.com>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, bfields@fieldses.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        vinayak menon <vinayakm.list@gmail.com>,
-        Nagachandra P <nagachandra@gmail.com>, Vikram MP <mp.vikram@gmail.com>
-Subject: Re: Seq File: Return error if d_path fails
-Message-Id: <20130812144943.a09d6251bc20f8c3d0a6e8d8@linux-foundation.org>
-In-Reply-To: <CAKZGPANjwYxoAtO068UN1iMuMZPtkbjACz8C3yHjZMr5BkM63A@mail.gmail.com>
-References: <CAKZGPANjwYxoAtO068UN1iMuMZPtkbjACz8C3yHjZMr5BkM63A@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Aug 2013 17:49:47 -0400
+From: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
+To: herbert@gondor.hengli.com.au
+Cc: benh@kernel.crashing.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
+Subject: [PATCH] crypto: nx - fix concurrency issue
+Date: Mon, 12 Aug 2013 18:49:37 -0300
+Message-Id: <1376344177-7205-1-git-send-email-mhcerri@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.12
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081221-1524-0000-0000-00000701ADA4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Aug 2013 19:03:31 +0530 Arun KS <arunks.linux@gmail.com> wrote:
+The NX driver uses the transformation context to store several fields
+containing data related to the state of the operations in progress.
+Since a single tfm can be used by different kernel threads at the same
+time, we need to protect the data stored into the context.
 
-> >From 2558382c8a030f7261e47977ac62412cd78e6d38 Mon Sep 17 00:00:00 2001
-> From: Arun KS <arun.ks@broadcom.com>
-> Date: Thu, 8 Aug 2013 18:23:04 +0530
-> Subject: Seq File: Return error if d_path fails
-> 
-> Return error if d_path fails in seq_path funciton. If we do not return
-> from here,
-> seq_commit sets seq_file state as overflow. And this continues in a
-> loop utill we
-> increase the size of seq buf beyond KMALLOC_MAX_SIZE.
-> 
-> ...
->
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -471,7 +471,8 @@ int seq_path(struct seq_file *m, const struct path
-> *path, const char *esc)
->                         char *end = mangle_path(buf, p, esc);
->                         if (end)
->                                 res = end - buf;
-> -               }
-> +               } else
-> +                       return PTR_ERR(p);
->         }
->         seq_commit(m, res);
+This patch makes use of spin locks to protect the data where a race
+condition can happen.
 
-hm, does that really fix the bug?  Isn't the core problem the word "or":
+Reviewed-by: Fionnuala Gunter <fin@linux.vnet.ibm.com>
+Reviewed-by: Joy Latten <jmlatten@linux.vnet.ibm.com>
+Signed-off-by: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
+---
+ drivers/crypto/nx/nx-aes-cbc.c  | 10 ++++++++--
+ drivers/crypto/nx/nx-aes-ccm.c  | 20 ++++++++++++++++----
+ drivers/crypto/nx/nx-aes-ctr.c  | 10 ++++++++--
+ drivers/crypto/nx/nx-aes-ecb.c  | 10 ++++++++--
+ drivers/crypto/nx/nx-aes-gcm.c  |  4 ++++
+ drivers/crypto/nx/nx-aes-xcbc.c |  8 ++++++++
+ drivers/crypto/nx/nx-sha256.c   | 16 ++++++++++++++++
+ drivers/crypto/nx/nx-sha512.c   | 16 ++++++++++++++++
+ drivers/crypto/nx/nx.c          |  4 ++--
+ drivers/crypto/nx/nx.h          |  1 +
+ 10 files changed, 87 insertions(+), 12 deletions(-)
 
-/**
- * seq_commit - commit data to the buffer
- * @m: the seq_file handle
- * @num: the number of bytes to commit
- *
- * Commit @num bytes of data written to a buffer previously acquired
- * by seq_buf_get.  To signal an error condition, or that the data
-                                                  ^^
- * didn't fit in the available space, pass a negative @num value.
- */
-
-seq_path()/seq_commit() is treating a d_path() failure as an overflow
-condition, but it isn't.
+diff --git a/drivers/crypto/nx/nx-aes-cbc.c b/drivers/crypto/nx/nx-aes-cbc.c
+index 6d90808..9310982 100644
+--- a/drivers/crypto/nx/nx-aes-cbc.c
++++ b/drivers/crypto/nx/nx-aes-cbc.c
+@@ -70,10 +70,15 @@ static int cbc_aes_nx_crypt(struct blkcipher_desc *desc,
+ {
+ 	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++	unsigned long irq_flags;
+ 	int rc;
+ 
+-	if (nbytes > nx_ctx->ap->databytelen)
+-		return -EINVAL;
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
++	if (nbytes > nx_ctx->ap->databytelen) {
++		rc = -EINVAL;
++		goto out;
++	}
+ 
+ 	if (enc)
+ 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
+@@ -101,6 +106,7 @@ static int cbc_aes_nx_crypt(struct blkcipher_desc *desc,
+ 	atomic64_add(csbcpb->csb.processed_byte_count,
+ 		     &(nx_ctx->stats->aes_bytes));
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+diff --git a/drivers/crypto/nx/nx-aes-ccm.c b/drivers/crypto/nx/nx-aes-ccm.c
+index ef5eae6..39d4224 100644
+--- a/drivers/crypto/nx/nx-aes-ccm.c
++++ b/drivers/crypto/nx/nx-aes-ccm.c
+@@ -271,10 +271,15 @@ static int ccm_nx_decrypt(struct aead_request   *req,
+ 	unsigned int nbytes = req->cryptlen;
+ 	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
+ 	struct nx_ccm_priv *priv = &nx_ctx->priv.ccm;
++	unsigned long irq_flags;
+ 	int rc = -1;
+ 
+-	if (nbytes > nx_ctx->ap->databytelen)
+-		return -EINVAL;
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
++	if (nbytes > nx_ctx->ap->databytelen) {
++		rc = -EINVAL;
++		goto out;
++	}
+ 
+ 	nbytes -= authsize;
+ 
+@@ -308,6 +313,7 @@ static int ccm_nx_decrypt(struct aead_request   *req,
+ 	rc = memcmp(csbcpb->cpb.aes_ccm.out_pat_or_mac, priv->oauth_tag,
+ 		    authsize) ? -EBADMSG : 0;
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+@@ -318,10 +324,15 @@ static int ccm_nx_encrypt(struct aead_request   *req,
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	unsigned int nbytes = req->cryptlen;
+ 	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
++	unsigned long irq_flags;
+ 	int rc = -1;
+ 
+-	if (nbytes > nx_ctx->ap->databytelen)
+-		return -EINVAL;
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
++	if (nbytes > nx_ctx->ap->databytelen) {
++		rc = -EINVAL;
++		goto out;
++	}
+ 
+ 	rc = generate_pat(desc->info, req, nx_ctx, authsize, nbytes,
+ 			  csbcpb->cpb.aes_ccm.in_pat_or_b0);
+@@ -350,6 +361,7 @@ static int ccm_nx_encrypt(struct aead_request   *req,
+ 				 req->dst, nbytes, authsize,
+ 				 SCATTERWALK_TO_SG);
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+diff --git a/drivers/crypto/nx/nx-aes-ctr.c b/drivers/crypto/nx/nx-aes-ctr.c
+index b6286f1..762611b 100644
+--- a/drivers/crypto/nx/nx-aes-ctr.c
++++ b/drivers/crypto/nx/nx-aes-ctr.c
+@@ -88,10 +88,15 @@ static int ctr_aes_nx_crypt(struct blkcipher_desc *desc,
+ {
+ 	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++	unsigned long irq_flags;
+ 	int rc;
+ 
+-	if (nbytes > nx_ctx->ap->databytelen)
+-		return -EINVAL;
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
++	if (nbytes > nx_ctx->ap->databytelen) {
++		rc = -EINVAL;
++		goto out;
++	}
+ 
+ 	rc = nx_build_sg_lists(nx_ctx, desc, dst, src, nbytes,
+ 			       csbcpb->cpb.aes_ctr.iv);
+@@ -112,6 +117,7 @@ static int ctr_aes_nx_crypt(struct blkcipher_desc *desc,
+ 	atomic64_add(csbcpb->csb.processed_byte_count,
+ 		     &(nx_ctx->stats->aes_bytes));
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+diff --git a/drivers/crypto/nx/nx-aes-ecb.c b/drivers/crypto/nx/nx-aes-ecb.c
+index 7bbc9a8..77dbe08 100644
+--- a/drivers/crypto/nx/nx-aes-ecb.c
++++ b/drivers/crypto/nx/nx-aes-ecb.c
+@@ -70,10 +70,15 @@ static int ecb_aes_nx_crypt(struct blkcipher_desc *desc,
+ {
+ 	struct nx_crypto_ctx *nx_ctx = crypto_blkcipher_ctx(desc->tfm);
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
++	unsigned long irq_flags;
+ 	int rc;
+ 
+-	if (nbytes > nx_ctx->ap->databytelen)
+-		return -EINVAL;
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
++	if (nbytes > nx_ctx->ap->databytelen) {
++		rc = -EINVAL;
++		goto out;
++	}
+ 
+ 	if (enc)
+ 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
+@@ -98,6 +103,7 @@ static int ecb_aes_nx_crypt(struct blkcipher_desc *desc,
+ 	atomic64_add(csbcpb->csb.processed_byte_count,
+ 		     &(nx_ctx->stats->aes_bytes));
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+diff --git a/drivers/crypto/nx/nx-aes-gcm.c b/drivers/crypto/nx/nx-aes-gcm.c
+index 6cca6c3..df90d03 100644
+--- a/drivers/crypto/nx/nx-aes-gcm.c
++++ b/drivers/crypto/nx/nx-aes-gcm.c
+@@ -166,8 +166,11 @@ static int gcm_aes_nx_crypt(struct aead_request *req, int enc)
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	struct blkcipher_desc desc;
+ 	unsigned int nbytes = req->cryptlen;
++	unsigned long irq_flags;
+ 	int rc = -EINVAL;
+ 
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
+ 	if (nbytes > nx_ctx->ap->databytelen)
+ 		goto out;
+ 
+@@ -255,6 +258,7 @@ static int gcm_aes_nx_crypt(struct aead_request *req, int enc)
+ 		     -EBADMSG : 0;
+ 	}
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+diff --git a/drivers/crypto/nx/nx-aes-xcbc.c b/drivers/crypto/nx/nx-aes-xcbc.c
+index 93923e4..658da0f 100644
+--- a/drivers/crypto/nx/nx-aes-xcbc.c
++++ b/drivers/crypto/nx/nx-aes-xcbc.c
+@@ -89,8 +89,11 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	struct nx_sg *in_sg;
+ 	u32 to_process, leftover;
++	unsigned long irq_flags;
+ 	int rc = 0;
+ 
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
+ 	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
+ 		/* we've hit the nx chip previously and we're updating again,
+ 		 * so copy over the partial digest */
+@@ -158,6 +161,7 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 	/* everything after the first update is continuation */
+ 	NX_CPB_FDM(csbcpb) |= NX_FDM_CONTINUATION;
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+@@ -167,8 +171,11 @@ static int nx_xcbc_final(struct shash_desc *desc, u8 *out)
+ 	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	struct nx_sg *in_sg, *out_sg;
++	unsigned long irq_flags;
+ 	int rc = 0;
+ 
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
+ 	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
+ 		/* we've hit the nx chip previously, now we're finalizing,
+ 		 * so copy over the partial digest */
+@@ -211,6 +218,7 @@ static int nx_xcbc_final(struct shash_desc *desc, u8 *out)
+ 
+ 	memcpy(out, csbcpb->cpb.aes_xcbc.out_cv_mac, AES_BLOCK_SIZE);
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+diff --git a/drivers/crypto/nx/nx-sha256.c b/drivers/crypto/nx/nx-sha256.c
+index 254b01a..6547a71 100644
+--- a/drivers/crypto/nx/nx-sha256.c
++++ b/drivers/crypto/nx/nx-sha256.c
+@@ -57,8 +57,11 @@ static int nx_sha256_update(struct shash_desc *desc, const u8 *data,
+ 	struct nx_sg *in_sg;
+ 	u64 to_process, leftover, total;
+ 	u32 max_sg_len;
++	unsigned long irq_flags;
+ 	int rc = 0;
+ 
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
+ 	/* 2 cases for total data len:
+ 	 *  1: < SHA256_BLOCK_SIZE: copy into state, return 0
+ 	 *  2: >= SHA256_BLOCK_SIZE: process X blocks, copy in leftover
+@@ -136,6 +139,7 @@ static int nx_sha256_update(struct shash_desc *desc, const u8 *data,
+ 		memcpy(sctx->buf, data, leftover);
+ 	sctx->count = leftover;
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+@@ -146,8 +150,11 @@ static int nx_sha256_final(struct shash_desc *desc, u8 *out)
+ 	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
+ 	struct nx_sg *in_sg, *out_sg;
+ 	u32 max_sg_len;
++	unsigned long irq_flags;
+ 	int rc;
+ 
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
+ 	max_sg_len = min_t(u32, nx_driver.of.max_sg_len, nx_ctx->ap->sglen);
+ 
+ 	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
+@@ -186,6 +193,7 @@ static int nx_sha256_final(struct shash_desc *desc, u8 *out)
+ 		     &(nx_ctx->stats->sha256_bytes));
+ 	memcpy(out, csbcpb->cpb.sha256.message_digest, SHA256_DIGEST_SIZE);
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+@@ -195,6 +203,9 @@ static int nx_sha256_export(struct shash_desc *desc, void *out)
+ 	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
+ 	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
+ 	struct sha256_state *octx = out;
++	unsigned long irq_flags;
++
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
+ 
+ 	octx->count = sctx->count +
+ 		      (csbcpb->cpb.sha256.message_bit_length / 8);
+@@ -217,6 +228,7 @@ static int nx_sha256_export(struct shash_desc *desc, void *out)
+ 		octx->state[7] = SHA256_H7;
+ 	}
+ 
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return 0;
+ }
+ 
+@@ -226,6 +238,9 @@ static int nx_sha256_import(struct shash_desc *desc, const void *in)
+ 	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
+ 	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
+ 	const struct sha256_state *ictx = in;
++	unsigned long irq_flags;
++
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
+ 
+ 	memcpy(sctx->buf, ictx->buf, sizeof(ictx->buf));
+ 
+@@ -240,6 +255,7 @@ static int nx_sha256_import(struct shash_desc *desc, const void *in)
+ 		NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
+ 	}
+ 
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/crypto/nx/nx-sha512.c b/drivers/crypto/nx/nx-sha512.c
+index 2d6d913..236e6af 100644
+--- a/drivers/crypto/nx/nx-sha512.c
++++ b/drivers/crypto/nx/nx-sha512.c
+@@ -57,8 +57,11 @@ static int nx_sha512_update(struct shash_desc *desc, const u8 *data,
+ 	struct nx_sg *in_sg;
+ 	u64 to_process, leftover, total, spbc_bits;
+ 	u32 max_sg_len;
++	unsigned long irq_flags;
+ 	int rc = 0;
+ 
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
+ 	/* 2 cases for total data len:
+ 	 *  1: < SHA512_BLOCK_SIZE: copy into state, return 0
+ 	 *  2: >= SHA512_BLOCK_SIZE: process X blocks, copy in leftover
+@@ -138,6 +141,7 @@ static int nx_sha512_update(struct shash_desc *desc, const u8 *data,
+ 		memcpy(sctx->buf, data, leftover);
+ 	sctx->count[0] = leftover;
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+@@ -149,8 +153,11 @@ static int nx_sha512_final(struct shash_desc *desc, u8 *out)
+ 	struct nx_sg *in_sg, *out_sg;
+ 	u32 max_sg_len;
+ 	u64 count0;
++	unsigned long irq_flags;
+ 	int rc;
+ 
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
++
+ 	max_sg_len = min_t(u32, nx_driver.of.max_sg_len, nx_ctx->ap->sglen);
+ 
+ 	if (NX_CPB_FDM(csbcpb) & NX_FDM_CONTINUATION) {
+@@ -193,6 +200,7 @@ static int nx_sha512_final(struct shash_desc *desc, u8 *out)
+ 
+ 	memcpy(out, csbcpb->cpb.sha512.message_digest, SHA512_DIGEST_SIZE);
+ out:
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return rc;
+ }
+ 
+@@ -202,6 +210,9 @@ static int nx_sha512_export(struct shash_desc *desc, void *out)
+ 	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
+ 	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
+ 	struct sha512_state *octx = out;
++	unsigned long irq_flags;
++
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
+ 
+ 	/* move message_bit_length (128 bits) into count and convert its value
+ 	 * to bytes */
+@@ -233,6 +244,7 @@ static int nx_sha512_export(struct shash_desc *desc, void *out)
+ 		octx->state[7] = SHA512_H7;
+ 	}
+ 
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return 0;
+ }
+ 
+@@ -242,6 +254,9 @@ static int nx_sha512_import(struct shash_desc *desc, const void *in)
+ 	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
+ 	struct nx_csbcpb *csbcpb = (struct nx_csbcpb *)nx_ctx->csbcpb;
+ 	const struct sha512_state *ictx = in;
++	unsigned long irq_flags;
++
++	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
+ 
+ 	memcpy(sctx->buf, ictx->buf, sizeof(ictx->buf));
+ 	sctx->count[0] = ictx->count[0] & 0x3f;
+@@ -259,6 +274,7 @@ static int nx_sha512_import(struct shash_desc *desc, const void *in)
+ 		NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
+ 	}
+ 
++	spin_unlock_irqrestore(&nx_ctx->lock, irq_flags);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/crypto/nx/nx.c b/drivers/crypto/nx/nx.c
+index ad07dc6..bdf4990 100644
+--- a/drivers/crypto/nx/nx.c
++++ b/drivers/crypto/nx/nx.c
+@@ -61,8 +61,7 @@ int nx_hcall_sync(struct nx_crypto_ctx *nx_ctx,
+ 
+ 	do {
+ 		rc = vio_h_cop_sync(viodev, op);
+-	} while ((rc == -EBUSY && !may_sleep && retries--) ||
+-	         (rc == -EBUSY && may_sleep && cond_resched()));
++	} while (rc == -EBUSY && !may_sleep && retries--);
+ 
+ 	if (rc) {
+ 		dev_dbg(&viodev->dev, "vio_h_cop_sync failed: rc: %d "
+@@ -251,6 +250,7 @@ int nx_build_sg_lists(struct nx_crypto_ctx  *nx_ctx,
+  */
+ void nx_ctx_init(struct nx_crypto_ctx *nx_ctx, unsigned int function)
+ {
++	spin_lock_init(&nx_ctx->lock);
+ 	memset(nx_ctx->kmem, 0, nx_ctx->kmem_len);
+ 	nx_ctx->csbcpb->csb.valid |= NX_CSB_VALID_BIT;
+ 
+diff --git a/drivers/crypto/nx/nx.h b/drivers/crypto/nx/nx.h
+index 3232b18..14bb97f 100644
+--- a/drivers/crypto/nx/nx.h
++++ b/drivers/crypto/nx/nx.h
+@@ -117,6 +117,7 @@ struct nx_ctr_priv {
+ };
+ 
+ struct nx_crypto_ctx {
++	spinlock_t lock;	  /* synchronize access to the context */
+ 	void *kmem;		  /* unaligned, kmalloc'd buffer */
+ 	size_t kmem_len;	  /* length of kmem */
+ 	struct nx_csbcpb *csbcpb; /* aligned page given to phyp @ hcall time */
+-- 
+1.7.12
 
