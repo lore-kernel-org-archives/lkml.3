@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab3HLRiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:38:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51663 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab3HLRix (ORCPT
+	id S1751929Ab3HLRmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:42:11 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:32834 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab3HLRmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:38:53 -0400
-Message-ID: <52091DA9.7080200@wwwdotorg.org>
-Date: Mon, 12 Aug 2013 11:38:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 12 Aug 2013 13:42:08 -0400
+Message-ID: <52091E6B.10800@mit.edu>
+Date: Mon, 12 Aug 2013 10:42:03 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Sonic Zhang <sonic.adi@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: Re: [PATCH v2] pinctrl: pinmux: Don't free pins requested by other
- devices in pinmux_disable_setting.
-References: <1376287821-22980-1-git-send-email-sonic.adi@gmail.com>
-In-Reply-To: <1376287821-22980-1-git-send-email-sonic.adi@gmail.com>
-X-Enigmail-Version: 1.4.6
+To: Rich Felker <dalias@aerifal.cx>
+CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: Request for comments: reserving a value for O_SEARCH and O_EXEC
+References: <20130803024808.GA26932@brightrain.aerifal.cx>
+In-Reply-To: <20130803024808.GA26932@brightrain.aerifal.cx>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 12:10 AM, Sonic Zhang wrote:
-> From: Sonic Zhang <sonic.zhang@analog.com>
+[cc: linux-api]
+
+
+On 08/02/2013 07:48 PM, Rich Felker wrote:
+> Hi,
 > 
-> One peripheral may share part of its pins with the 2nd
-> peripheral and the other pins with the 3rd. If it requests all pins
-> when part of them has already be requested and owned by the 2nd
-> peripheral, this request fails and pinmux_disable_setting() is called.
-> The pinmux_disable_setting() frees all pins of the first peripheral
-> without checking if the pin is owned by itself or the 2nd, which
-> results in the malfunction of the 2nd peripheral driver.
+> At present, one of the few interface-level conformance issues for
+> Linux against POSIX 2008 is lack of O_SEARCH and O_EXEC. I am trying
+> to get full, conforming support for them both into musl libc (for
+> which I am the maintainer) and glibc (see the libc-alpha post[1]).
+> At this point, I believe it is possible to do so with no changes at
+> the kernel level, using O_PATH and a moderate amount of
+> userspace-level emulation where O_PATH semantics are lacking. What
+> we're missing, however, is a reserved O_ACCMODE value for O_SEARCH and
+> O_EXEC (it can be the same for both). Using O_PATH directly is not an
+> option because the semantics for O_PATH|O_NOFOLLOW differ from the
+> POSIX semantics for O_SEARCH|O_NOFOLLOW and O_EXEC|O_NOFOLLOW:
+> 
+> - Linux O_PATH|O_NOFOLLOW opens a file descriptor referring to the
+>   symlink inode itself.
+> 
+> - POSIX O_NOFOLLOW with O_SEARCH or O_EXEC forces failure if the
+>   pathname refers to a symlink.
+> 
+> Both are important functionality to support - the former for features
+> and the latter for security. We can't just fstat and reject symbolic
+> links in userspace when O_PATH gets one or we would break access to
+> the Linux-specific O_PATH functionality, which is useful. So there
+> needs to be a way for open (the library function) to detect whether
+> the caller requested O_PATH or O_SEARCH/O_EXEC.
+> 
+> We could chord O_PATH with another flag such as O_EXCL where the
+> behavior would otherwise be undefined, but I don't want to conflict
+> with future such use by the kernel; that would be a compatibility
+> disaster.
+> 
+> My preference would be to use the value 3 for O_SEARCH and O_EXEC, so
+> that the O_ACCMODE mask would not even need to change. But doing this
+> requires (even moreso than chording) agreement with the kernel
+> community that this value will not be used for something else in the
+> future. Looking back, I see that it's been accepted by the kernel for
+> a long time (at least since 2.6.32) and treated as "no access" (reads
+> and writes result in EBADF, like O_PATH) but still does not let you
+> open files you don't have permissions to, or directories. However I'm
+> not clear if this is a documented (or undocumented, but stable :)
+> interface that should be left with its current behavior. Taking the
+> value 3 for O_SEARCH and O_EXEC would mean having open (the library
+> function) automatically apply O_PATH before passing it to the kernel
+> and rejecting the resulting fd if it's a symbolic link.
+> 
+> An alternate, less graceful but perhaps more compatible approach,
+> would be to use O_PATH|3 for O_SEARCH and O_EXEC. Then open could just
+> look for the low bits of flags (which should be 0 when using O_PATH
+> for the Linux semantics, no?) and reject symbolic links if they are
+> set.
+> 
+> Whatever approach we settle on, it would be nice if it has the
+> property that the kernel could eventually provide the full O_SEARCH
+> and O_EXEC semantics itself and eliminate the need for userspace
+> emulation. The current emulations we need are:
+> 
+> - fchmod and fchown (still not supported for O_PATH) fall back to
+>   calling chmod or chown on the pseudo-symlink in /proc/self/fd.
+> 
+> - fchdir and fstat (not supported prior to 3.5/3.6) fall back to
+>   calling chdir or stat.
+> 
+> - open checks whether it obtained a symlink and if so closes it and
+>   reports ELOOP.
+> 
+> - fcntl, depending on the value chosen for O_SEARCH/O_EXEC, may have
+>   to map the flags from F_GETFL to the right value.
+> 
+> There may be others I'm missing, but emulation generally follows the
+> same pattern.
+> 
+> Opinions? Please keep me CC'd on replies since I am not on the list.
 
-This patch looks conceptually fine at a quick glance, but ...
+You'll have the same problem that O_TMPFILE had: the kernel currently
+ignores unrecognized flags.  I wonder if it's time to add a new syscall
+(or syscalls) with more sensible semantics.
 
-> diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
-
-> @@ -154,6 +154,7 @@ struct pin_desc {
->  	const char *mux_owner;
->  	const struct pinctrl_setting_mux *mux_setting;
->  	const char *gpio_owner;
-> +	const struct pinctrl_setting *owning_setting
-
-... I think you can use the existing "mux_setting" field instead of
-adding a new "owning_setting" field.
+--Andy
