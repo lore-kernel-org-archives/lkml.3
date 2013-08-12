@@ -1,106 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab3HLGHi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 02:07:38 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55862 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486Ab3HLGHe (ORCPT
+	id S1755799Ab3HLGHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 02:07:43 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:33691 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754645Ab3HLGHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 02:07:34 -0400
-Date: Mon, 12 Aug 2013 16:07:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20130812160733.b14fa70ef8ab575a3e42cd1b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__12_Aug_2013_16_07_33_+1000_GeXUIKGfLCFwJD/D"
+	Mon, 12 Aug 2013 02:07:38 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-SpamScore: 7
+X-BigFish: VS7(zzzz1f42h1ee6h1ce5h1fdah201ch2073h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz2ei87h2a8h668h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8hff4m129fi1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        <adi-buildroot-devel@lists.sourceforge.net>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH v2] pinctrl: pinmux: Don't free pins requested by other devices in pinmux_disable_setting.
+Date: Mon, 12 Aug 2013 14:10:21 +0800
+Message-ID: <1376287821-22980-1-git-send-email-sonic.adi@gmail.com>
+X-Mailer: git-send-email 1.8.2.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__12_Aug_2013_16_07_33_+1000_GeXUIKGfLCFwJD/D
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-Hi Andrew,
+One peripheral may share part of its pins with the 2nd
+peripheral and the other pins with the 3rd. If it requests all pins
+when part of them has already be requested and owned by the 2nd
+peripheral, this request fails and pinmux_disable_setting() is called.
+The pinmux_disable_setting() frees all pins of the first peripheral
+without checking if the pin is owned by itself or the 2nd, which
+results in the malfunction of the 2nd peripheral driver.
 
-After merging the akpm-current tree, today's linux-next build
-(x86_64 allmodconfig) failed like this:
-
-mm/memcontrol.c: In function '__mem_cgroup_iter_next':
-mm/memcontrol.c:982:4: error: 'prev_cgroup' undeclared (first use in this f=
-unction)
-    prev_cgroup =3D next_cgroup;
-    ^
-mm/memcontrol.c:982:18: error: 'next_cgroup' undeclared (first use in this =
-function)
-    prev_cgroup =3D next_cgroup;
-                  ^
-
-I applied this patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 12 Aug 2013 16:04:36 +1000
-Subject: [PATCH] memcontrol: further merge fix patch
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 ---
- mm/memcontrol.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pinctrl/core.h   |  1 +
+ drivers/pinctrl/pinmux.c | 18 ++++++++++++------
+ 2 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 624d69e..a367145 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -979,7 +979,7 @@ skip_node:
-=20
- 		switch (mem_cgroup_filter(mem, root, cond)) {
- 		case SKIP:
--			prev_cgroup =3D next_cgroup;
-+			prev_css =3D next_css;
- 			goto skip_node;
- 		case SKIP_TREE:
- 			if (mem =3D=3D root)
-@@ -998,7 +998,7 @@ skip_node:
- 			if (css_tryget(&mem->css))
- 				return mem;
- 			else {
--				prev_cgroup =3D next_cgroup;
-+				prev_css =3D next_css;
- 				goto skip_node;
- 			}
- 			break;
---=20
-1.8.4.rc0
+diff --git a/drivers/pinctrl/core.h b/drivers/pinctrl/core.h
+index 75476b3..a24e889 100644
+--- a/drivers/pinctrl/core.h
++++ b/drivers/pinctrl/core.h
+@@ -154,6 +154,7 @@ struct pin_desc {
+ 	const char *mux_owner;
+ 	const struct pinctrl_setting_mux *mux_setting;
+ 	const char *gpio_owner;
++	const struct pinctrl_setting *owning_setting
+ #endif
+ };
+ 
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 88cc509..c32a77b 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -428,6 +428,7 @@ int pinmux_enable_setting(struct pinctrl_setting const *setting)
+ 			continue;
+ 		}
+ 		desc->mux_setting = &(setting->data.mux);
++		desc->owning_setting = setting;
+ 	}
+ 
+ 	ret = ops->enable(pctldev, setting->data.mux.func,
+@@ -441,8 +442,10 @@ int pinmux_enable_setting(struct pinctrl_setting const *setting)
+ err_enable:
+ 	for (i = 0; i < num_pins; i++) {
+ 		desc = pin_desc_get(pctldev, pins[i]);
+-		if (desc)
++		if (desc) {
+ 			desc->mux_setting = NULL;
++			desc->owning_setting = NULL;
++		}
+ 	}
+ err_pin_request:
+ 	/* On error release all taken pins */
+@@ -480,15 +483,18 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+ 			dev_warn(pctldev->dev,
+ 				 "could not get pin desc for pin %d\n",
+ 				 pins[i]);
++			/* And release the pin */
++			pin_free(pctldev, pins[i], NULL);
+ 			continue;
+ 		}
+-		desc->mux_setting = NULL;
++		if (desc->owning_setting == setting) {
++			desc->mux_setting = NULL;
++			desc->owning_setting = NULL;
++			/* And release the pin */
++			pin_free(pctldev, pins[i], NULL);
++		}
+ 	}
+ 
+-	/* And release the pins */
+-	for (i = 0; i < num_pins; i++)
+-		pin_free(pctldev, pins[i], NULL);
+-
+ 	if (ops->disable)
+ 		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
+ }
+-- 
+1.8.2.3
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__12_Aug_2013_16_07_33_+1000_GeXUIKGfLCFwJD/D
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSCHulAAoJEECxmPOUX5FEzT0P/jdzPYB4GsNpExn6QOFMJVXf
-X/tfpQbUDPc4PZmcB+u1aYye8VRdmEh61ofeaFdNedfi3GD5B5h4caT6Vg8jmeth
-PTvFvIqnrqwc1mUVR556DCvhmdoLkB67qjqoR75lsIpcsFsg61kuqn2OqCJwsfCt
-zIrxRQybX37GDS2I6h0p8/KVSCOjsKR2oNFVhrwXjknGrex6s7cZno2HEOzrPjTd
-t7hmrUGRQOZj1q0+TKFGOiT3Lfzt9L0c2NYaCqSA7BeZ4EeeJwp7O2VK+hAqVBuZ
-v6jOqi6liPL/INmJ1OggkLeVfICMwdo/43SGB3+cS1mF5wzsibeN7HMn87GDtXrV
-LJsQanxT8+DcFouKjdp7lhjBi6CmAoXn3uCq3lz0jssM2CRhFafBY6c0LR4ii+LI
-+TItUMh0zqMynaFQB4RPdqC7Ccbt5XnMOU/gBRkBONASa9igzNwBhTj/aETtC9LQ
-OmqvEXxNflUkludbSjDpwnY4hsXaGPxeyS0Kblm6R2rriLlP8nAOB6vraUmbXgHf
-piuynxIV8qlGi0+i9hYx2epZ2j3oCAFIaQGeNaDaXweNs2wvcHffEwwm1bBhBKhL
-9NbXhWqcSsg/lXj5plUzSY05PMTA8sgWyt2nycGkD2qNQKyLwq2W1KdcGyGM3V9f
-uZXEJHF5jN1DmOPHP+F6
-=Yj+w
------END PGP SIGNATURE-----
-
---Signature=_Mon__12_Aug_2013_16_07_33_+1000_GeXUIKGfLCFwJD/D--
