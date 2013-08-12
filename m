@@ -1,102 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab3HLKud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:50:33 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:53658 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755737Ab3HLKu1 (ORCPT
+	id S1755737Ab3HLKvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:51:48 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:63753 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab3HLKvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:50:27 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-2e-5208bdf2aa51
-Date: Mon, 12 Aug 2013 12:50:12 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, durgadoss.r@intel.com
-Subject: Re: [PATCH v6 5/8] cpufreq:boost:Kconfig: Provide support for software
- managed BOOST
-Message-id: <20130812125012.193608da@amdc308.digital.local>
-In-reply-to: <CAKohponDoGhAdGOyK5f2Pxreq5-ZazxmkdZWfbU3OwtOMKbiHA@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-6-git-send-email-l.majewski@samsung.com>
- <CAKohpokL57mXSQooX=4LZKtjMxJoXAB4uuzj13fgr3Gs7Wcf0A@mail.gmail.com>
- <20130726132120.5b9cf32f@amdc308.digital.local>
- <CAKohponvOXuHSS+-+m5PR9tPkAqkrYtjA3FJaNh9NJXrhQ9wmw@mail.gmail.com>
- <20130812122614.0d4d31a3@amdc308.digital.local>
- <CAKohponDoGhAdGOyK5f2Pxreq5-ZazxmkdZWfbU3OwtOMKbiHA@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xgO6nvRxBBgvmSVlsnLGe1eJp0w92
-	i3mfZS36fl5htliz/yeTRefZJ8wWvQuuslm8ecRtcXnXHDaLz71HGC36F/YyWTx52MdmsfGr
-	hwOvx+I9L5k87lzbw+axbtpbZo++LasYPR4tbmH0OH5jO5PH501yAexRXDYpqTmZZalF+nYJ
-	XBk/OoUL+rkqluw5xNrAOJu9i5GTQ0LARGLb4RXMELaYxIV769m6GLk4hAQWMUrsebECymln
-	kljS3ccIUsUioCpxbPl+sG42AT2Jz3efMnUxcnCICGhJvLyZClLPLPCXWaLvUQMbSI2wQLxE
-	Y9MBMJtXwFpi1Zm9rCA2p0CwxOW+CywQC34wS1y5eghsKL+ApET7vx9QJ9lJnPu0gR2iWVDi
-	x+R7LCA2M9CyzduaWCFseYnNa94yT2AUnIWkbBaSsllIyhYwMq9iFE0tSC4oTkrPNdIrTswt
-	Ls1L10vOz93ECI6kZ9I7GFc1WBxiFOBgVOLh9fjCHiTEmlhWXJl7iFGCg1lJhFdtHkeQEG9K
-	YmVValF+fFFpTmrxIUZpDhYlcd6DrdaBQgLpiSWp2ampBalFMFkmDk6pBsZtV7/WX/jWyK/Q
-	Udievz6cc9uBqOMKDVWh95lWvPZOn7D2yOGVdyYrMM89uaYi55ATA0+YafXG1FXnj7eUTTbr
-	+85+skPaUZV715MPX7+ImpXJ/g9eeGJFT05eVwDHnVQbpV1p2rVNe09PWn5t0/KOi9qs873N
-	87P1PxRMNGDsspzm9YjXTF2JpTgj0VCLuag4EQBNg4UsoAIAAA==
+	Mon, 12 Aug 2013 06:51:43 -0400
+Date: Mon, 12 Aug 2013 13:50:41 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Belisko Marek <marek.belisko@gmail.com>
+Subject: Re: [PATCH tty-next] n_tty: Fix termios_rwsem lockdep false positive
+Message-ID: <20130812105041.GA2268@swordfish>
+References: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
+ <1376222663-5666-1-git-send-email-peter@hurleysoftware.com>
+ <20130812092810.GA26400@cpv436-motbuntu.spb.ea.mot-mobility.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130812092810.GA26400@cpv436-motbuntu.spb.ea.mot-mobility.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Aug 2013 15:58:12 +0530 Viresh Kumar viresh.kumar@linaro.org
-wrote,
-> On 12 August 2013 15:56, Lukasz Majewski <l.majewski@samsung.com>
-> wrote:
-> > 1. at ./drivers/cpufreq/Kconfig:
-> >
-> > +config CPU_FREQ_BOOST_SW
-> > +       bool
-> > +       depends on THERMAL
-> >
-> > 2. at ./drivers/cpufreq/Kconfig.arm:
-> >
-> > +config ARM_EXYNOS_CPU_FREQ_BOOST_SW
-> > +       bool "EXYNOS Frequency Overclocking - Software"
-> > +       depends on ARM_EXYNOS_CPUFREQ
-> > +       select CPU_FREQ_BOOST_SW
-> > +       select EXYNOS_THERMAL
-> > +       default n
-	    ^^^^^^^^^^^^^^^^ I will also remove this line.
-
-> > +       help
-> > +         This driver supports software managed overclocking
-> > (BOOST).
-> > +         It allows usage of special frequencies for Samsung Exynos
-> > +         processors if thermal conditions are appropriate.
-> > +
-> > +         It reguires, for safe operation, thermal framework with
-> >   properly
-> > +         defined trip points.
-> > +
-> > +         If in doubt, say N.
-> > +
-> >
-> > Shall I split this patch to two (1. and 2.) or leave it as a single
-> > one?
+On (08/12/13 13:28), Artem Savkov wrote:
+> Hi Peter,
 > 
-> Looks fine.. Keep it in a single patch.
+> On Sun, Aug 11, 2013 at 08:04:23AM -0400, Peter Hurley wrote:
+> > Lockdep reports a circular lock dependency between
+> > atomic_read_lock and termios_rwsem [1]. However, a lock
+> > order deadlock is not possible since CPU1 only holds a
+> > read lock which cannot prevent CPU0 from also acquiring
+> > a read lock on the same r/w semaphore.
+> > 
+> > Unfortunately, lockdep cannot currently distinguish whether
+> > the locks are read or write for any particular lock graph,
+> > merely that the locks _were_ previously read and/or write.
+> > 
+> > Until lockdep is fixed, re-order atomic_read_lock so
+> > termios_rwsem can be dropped and reacquired without
+> > triggering lockdep.
+> 
+> Works fine, thanks.
+> 
+> Reported-and-tested-by: Artem Savkov <artem.savkov@gmail.com>
+> 
+> > Reported-by: Artem Savkov <artem.savkov@gmail.com>
+> > Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> > 
+> > [1] Initial lockdep report from Artem Savkov <artem.savkov@gmail.com>
+> > 
+> >  ======================================================
+> >  [ INFO: possible circular locking dependency detected ]
+> >  3.11.0-rc3-next-20130730+ #140 Tainted: G        W
+> >  -------------------------------------------------------
+> >  bash/1198 is trying to acquire lock:
+> >   (&tty->termios_rwsem){++++..}, at: [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
+> > 
+> >  but task is already holding lock:
+> >   (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
+> > 
+> >  which lock already depends on the new lock.
+> > 
+> >  the existing dependency chain (in reverse order) is:
+> > 
+> >  -> #1 (&ldata->atomic_read_lock){+.+...}:
+> >         [<ffffffff811111cc>] validate_chain+0x73c/0x850
+> >         [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
+> >         [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
+> >         [<ffffffff81d34b9c>] mutex_lock_interruptible_nested+0x7c/0x540
+> >         [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
+> >         [<ffffffff816a3bb6>] tty_read+0x86/0xf0
+> >         [<ffffffff811f21d3>] vfs_read+0xc3/0x130
+> >         [<ffffffff811f2702>] SyS_read+0x62/0xa0
+> >         [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
+> > 
+> >  -> #0 (&tty->termios_rwsem){++++..}:
+> >         [<ffffffff8111064f>] check_prev_add+0x14f/0x590
+> >         [<ffffffff811111cc>] validate_chain+0x73c/0x850
+> >         [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
+> >         [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
+> >         [<ffffffff81d372c1>] down_read+0x51/0xa0
+> >         [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
+> >         [<ffffffff816a3bb6>] tty_read+0x86/0xf0
+> >         [<ffffffff811f21d3>] vfs_read+0xc3/0x130
+> >         [<ffffffff811f2702>] SyS_read+0x62/0xa0
+> >         [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
+> > 
+> >  other info that might help us debug this:
+> > 
+> >   Possible unsafe locking scenario:
+> > 
+> >         CPU0                    CPU1
+> >         ----                    ----
+> >    lock(&ldata->atomic_read_lock);
+> >                                 lock(&tty->termios_rwsem);
+> >                                 lock(&ldata->atomic_read_lock);
+> >    lock(&tty->termios_rwsem);
+> > 
+> >   *** DEADLOCK ***
+> > 
+> >  2 locks held by bash/1198:
+> >   #0:  (&tty->ldisc_sem){.+.+.+}, at: [<ffffffff816ade04>] tty_ldisc_ref_wait+0x24/0x60
+> >   #1:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
+> > 
+> >  stack backtrace:
+> >  CPU: 1 PID: 1198 Comm: bash Tainted: G        W    3.11.0-rc3-next-20130730+ #140
+> >  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+> >   0000000000000000 ffff880019acdb28 ffffffff81d34074 0000000000000002
+> >   0000000000000000 ffff880019acdb78 ffffffff8110ed75 ffff880019acdb98
+> >   ffff880019fd0000 ffff880019acdb78 ffff880019fd0638 ffff880019fd0670
+> >  Call Trace:
+> >   [<ffffffff81d34074>] dump_stack+0x59/0x7d
+> >   [<ffffffff8110ed75>] print_circular_bug+0x105/0x120
+> >   [<ffffffff8111064f>] check_prev_add+0x14f/0x590
+> >   [<ffffffff81d3ab5f>] ? _raw_spin_unlock_irq+0x4f/0x70
+> >   [<ffffffff811111cc>] validate_chain+0x73c/0x850
+> >   [<ffffffff8110ae0f>] ? trace_hardirqs_off_caller+0x1f/0x190
+> >   [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
+> >   [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
+> >   [<ffffffff816aa3bb>] ? n_tty_read+0x49b/0x660
+> >   [<ffffffff81d372c1>] down_read+0x51/0xa0
+> >   [<ffffffff816aa3bb>] ? n_tty_read+0x49b/0x660
+> >   [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
+> >   [<ffffffff810e4130>] ? try_to_wake_up+0x210/0x210
+> >   [<ffffffff816a3bb6>] tty_read+0x86/0xf0
+> >   [<ffffffff811f21d3>] vfs_read+0xc3/0x130
+> >   [<ffffffff811f2702>] SyS_read+0x62/0xa0
+> >   [<ffffffff815e24ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> >   [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
+> > ---
+> >  drivers/tty/n_tty.c | 25 +++++++++++--------------
+> >  1 file changed, 11 insertions(+), 14 deletions(-)
+> >
 
-Ok. 
+I hate to do this, but isn't it actually my patch posted here
+https://lkml.org/lkml/2013/8/1/510
 
--- 
-Best regards,
+which was tagged as `wrong'?
 
-Lukasz Majewski
+	-ss
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+> > diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> > index dd8ae0c..c9a9ddd 100644
+> > --- a/drivers/tty/n_tty.c
+> > +++ b/drivers/tty/n_tty.c
+> > @@ -2122,6 +2122,17 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+> >  	if (c < 0)
+> >  		return c;
+> >  
+> > +	/*
+> > +	 *	Internal serialization of reads.
+> > +	 */
+> > +	if (file->f_flags & O_NONBLOCK) {
+> > +		if (!mutex_trylock(&ldata->atomic_read_lock))
+> > +			return -EAGAIN;
+> > +	} else {
+> > +		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
+> > +			return -ERESTARTSYS;
+> > +	}
+> > +
+> >  	down_read(&tty->termios_rwsem);
+> >  
+> >  	minimum = time = 0;
+> > @@ -2141,20 +2152,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+> >  		}
+> >  	}
+> >  
+> > -	/*
+> > -	 *	Internal serialization of reads.
+> > -	 */
+> > -	if (file->f_flags & O_NONBLOCK) {
+> > -		if (!mutex_trylock(&ldata->atomic_read_lock)) {
+> > -			up_read(&tty->termios_rwsem);
+> > -			return -EAGAIN;
+> > -		}
+> > -	} else {
+> > -		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
+> > -			up_read(&tty->termios_rwsem);
+> > -			return -ERESTARTSYS;
+> > -		}
+> > -	}
+> >  	packet = tty->packet;
+> >  
+> >  	add_wait_queue(&tty->read_wait, &wait);
+> > -- 
+> > 1.8.1.2
+> > 
+> 
+> -- 
+> Regards,
+>     Artem
+> 
