@@ -1,108 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab3HLRmL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:42:11 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:32834 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060Ab3HLRmI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:42:08 -0400
-Message-ID: <52091E6B.10800@mit.edu>
-Date: Mon, 12 Aug 2013 10:42:03 -0700
-From: Andy Lutomirski <luto@amacapital.net>
+	id S1751981Ab3HLRrn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:47:43 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56411 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952Ab3HLRrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 13:47:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,863,1367996400"; 
+   d="scan'208";a="345238780"
+Message-ID: <52091FB9.4080805@linux.intel.com>
+Date: Mon, 12 Aug 2013 10:47:37 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Rich Felker <dalias@aerifal.cx>
-CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
-Subject: Re: Request for comments: reserving a value for O_SEARCH and O_EXEC
-References: <20130803024808.GA26932@brightrain.aerifal.cx>
-In-Reply-To: <20130803024808.GA26932@brightrain.aerifal.cx>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        gcc <gcc@gcc.gnu.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+References: <1375721715.22073.80.camel@gandalf.local.home> <20130812091707.GB27162@twins.programming.kicks-ass.net> <5208F78A.3000708@linux.intel.com> <20130812160950.GT3008@twins.programming.kicks-ass.net>
+In-Reply-To: <20130812160950.GT3008@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc: linux-api]
+On 08/12/2013 09:09 AM, Peter Zijlstra wrote:
+>>
+>> On the majority of architectures, including x86, you cannot simply copy
+>> a piece of code elsewhere and have it still work.
+> 
+> I thought we used -fPIC which would allow just that.
+> 
 
+Doubly wrong.  The kernel is not compiled with -fPIC, nor does -fPIC
+allow this kind of movement for code that contains intramodule
+references (that is *all* references in the kernel).  Since we really
+doesn't want to burden the kernel with a GOT and a PLT, that is life.
 
-On 08/02/2013 07:48 PM, Rich Felker wrote:
-> Hi,
+>> You end up doing a
+>> bunch of the work that a JIT would do anyway, and would end up with
+>> considerably higher complexity and worse results than a true JIT.  
 > 
-> At present, one of the few interface-level conformance issues for
-> Linux against POSIX 2008 is lack of O_SEARCH and O_EXEC. I am trying
-> to get full, conforming support for them both into musl libc (for
-> which I am the maintainer) and glibc (see the libc-alpha post[1]).
-> At this point, I believe it is possible to do so with no changes at
-> the kernel level, using O_PATH and a moderate amount of
-> userspace-level emulation where O_PATH semantics are lacking. What
-> we're missing, however, is a reserved O_ACCMODE value for O_SEARCH and
-> O_EXEC (it can be the same for both). Using O_PATH directly is not an
-> option because the semantics for O_PATH|O_NOFOLLOW differ from the
-> POSIX semantics for O_SEARCH|O_NOFOLLOW and O_EXEC|O_NOFOLLOW:
-> 
-> - Linux O_PATH|O_NOFOLLOW opens a file descriptor referring to the
->   symlink inode itself.
-> 
-> - POSIX O_NOFOLLOW with O_SEARCH or O_EXEC forces failure if the
->   pathname refers to a symlink.
-> 
-> Both are important functionality to support - the former for features
-> and the latter for security. We can't just fstat and reject symbolic
-> links in userspace when O_PATH gets one or we would break access to
-> the Linux-specific O_PATH functionality, which is useful. So there
-> needs to be a way for open (the library function) to detect whether
-> the caller requested O_PATH or O_SEARCH/O_EXEC.
-> 
-> We could chord O_PATH with another flag such as O_EXCL where the
-> behavior would otherwise be undefined, but I don't want to conflict
-> with future such use by the kernel; that would be a compatibility
-> disaster.
-> 
-> My preference would be to use the value 3 for O_SEARCH and O_EXEC, so
-> that the O_ACCMODE mask would not even need to change. But doing this
-> requires (even moreso than chording) agreement with the kernel
-> community that this value will not be used for something else in the
-> future. Looking back, I see that it's been accepted by the kernel for
-> a long time (at least since 2.6.32) and treated as "no access" (reads
-> and writes result in EBADF, like O_PATH) but still does not let you
-> open files you don't have permissions to, or directories. However I'm
-> not clear if this is a documented (or undocumented, but stable :)
-> interface that should be left with its current behavior. Taking the
-> value 3 for O_SEARCH and O_EXEC would mean having open (the library
-> function) automatically apply O_PATH before passing it to the kernel
-> and rejecting the resulting fd if it's a symbolic link.
-> 
-> An alternate, less graceful but perhaps more compatible approach,
-> would be to use O_PATH|3 for O_SEARCH and O_EXEC. Then open could just
-> look for the low bits of flags (which should be 0 when using O_PATH
-> for the Linux semantics, no?) and reject symbolic links if they are
-> set.
-> 
-> Whatever approach we settle on, it would be nice if it has the
-> property that the kernel could eventually provide the full O_SEARCH
-> and O_EXEC semantics itself and eliminate the need for userspace
-> emulation. The current emulations we need are:
-> 
-> - fchmod and fchown (still not supported for O_PATH) fall back to
->   calling chmod or chown on the pseudo-symlink in /proc/self/fd.
-> 
-> - fchdir and fstat (not supported prior to 3.5/3.6) fall back to
->   calling chdir or stat.
-> 
-> - open checks whether it obtained a symlink and if so closes it and
->   reports ELOOP.
-> 
-> - fcntl, depending on the value chosen for O_SEARCH/O_EXEC, may have
->   to map the flags from F_GETFL to the right value.
-> 
-> There may be others I'm missing, but emulation generally follows the
-> same pattern.
-> 
-> Opinions? Please keep me CC'd on replies since I am not on the list.
+> Well, less complexity but worse result, yes. We'd only poke the specific
+> static_branch sites with either NOPs or the (relative) jump target for
+> each of these branches. Then copy the result.
 
-You'll have the same problem that O_TMPFILE had: the kernel currently
-ignores unrecognized flags.  I wonder if it's time to add a new syscall
-(or syscalls) with more sensible semantics.
+Once again, you can't "copy the result".  You end up with a full
+disassembler.
 
---Andy
+	-hpa
+
