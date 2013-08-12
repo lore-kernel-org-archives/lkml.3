@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab3HLRBg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:01:36 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:42579 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757459Ab3HLRBb (ORCPT
+	id S1757447Ab3HLRCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:02:15 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:49673 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756725Ab3HLRCN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:01:31 -0400
-Message-ID: <520914D5.7080501@gmail.com>
-Date: Tue, 13 Aug 2013 01:01:09 +0800
-From: Tang Chen <imtangchen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
-        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
-References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com> <20130812145016.GI15892@htj.dyndns.org> <52090225.6070208@gmail.com> <20130812154623.GL15892@htj.dyndns.org> <52090AF6.6020206@gmail.com> <20130812162247.GM15892@htj.dyndns.org>
-In-Reply-To: <20130812162247.GM15892@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Aug 2013 13:02:13 -0400
+X-AuditID: cbfec37b-b7f306d0000047de-56-5209151440fb
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH] isa: Change driver to use dev_pm_ops infrastructure
+Thread-topic: [PATCH] isa: Change driver to use dev_pm_ops infrastructure
+Thread-index: AQHOld18lYTqavsD/UeX65TzDK6J4g==
+Date: Mon, 12 Aug 2013 17:02:11 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E617633C7@sisaex02sj>
+References: <1376148055-2539-1-git-send-email-shuah.kh@samsung.com>
+ <20130810185226.GA13293@kroah.com>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsVy+t9hX10RUc4gg3n7jS2aF69ns7i8aw6b
+	xdefDg7MHjtn3WX32D93DbvH501yAcxRXDYpqTmZZalF+nYJXBkPt+1kLZjEUfFtwW/GBsab
+	bF2MHBwSAiYSq9fqdzFyApliEhfurQcKc3EICSxjlLh+fgc7hNPLJNF4YS0ThDOfUWLOr4WM
+	IC1sAuoSn1+DVHFyiAhoSLw8eosFpIhZYDKjxOW3n5lBEsICHhJfX51jAlknIuApMbtPH6Je
+	T2LTtn6wOSwCqhJ3Jm5lBbF5Bewlfi6GaBUSyJCYs+IvG4jNCHTe91NrmEBsZgFxiebWmywQ
+	ZwtILNlznhnCFpV4+fgfK8RnihLbV1tBlGtJrN95HKpVW+LJuwtQqwQlfky+xzKBUWwWkqmz
+	kLTMQtIyC0nLAkaWVYxipcXJBcVJ6akVRnrFibnFpXnpesn5uZsYIRFVvYPx7lebQ4wCHIxK
+	PLwZHzmChFgTy4orcw8xSnAwK4nwbmHlDBLiTUmsrEotyo8vKs1JLT7EyMTBKdXAmHjs1vLE
+	blavVpHIZu59GayNK7Ykd+p/ZK6bJ6pvaPfu6+Ovty/tTuhatH7iLIMt7BzfbEQUVvPYzZzb
+	arWej/99RtOLjt5nvulbp7rUdDb9Zrzy1vXHs6VOExe8e7N7xltRvaAZRz8npX+4wvFmRjG/
+	4ywzzWwhVrvHglH9ERcNzh99f2ddqhJLcUaioRZzUXEiAHY+8lSGAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi tj,
-
-On 08/13/2013 12:22 AM, Tejun Heo wrote:
-> Hello, Tang.
+On 08/10/2013 12:51 PM, Greg KH wrote:
+> On Sat, Aug 10, 2013 at 09:20:46AM -0600, Shuah Khan wrote:
+>> Change isa bus to register dev_pm_ops via bus_type.pm. Add freeze ops for
+>> PM_EVENT_FREEZE handling.
 >
-> On Tue, Aug 13, 2013 at 12:19:02AM +0800, Tang Chen wrote:
->> The kernel can export info to users. The point is what kind of info.
->> Exporting phys addr is meaningless, of course. Now in /sys, we only
->> have memory_block and node. memory_block is only 128M on x86, and
->> hotplug a memory_block means nothing. So actually we only have node.
->>
->> So users want to hotplug a node is reasonable, I think. In the
->> beginning, we set the hotplug unit to a node. That is also why we
->> did the movable node.
->>
->> In summary, node hotplug is much meaningful and usable for users.
->> So it is the best that we can arrange a whole node to be movable
->> node, not opportunistic.
+> why?
 >
-> Still not following.  Yeah, sure, you can tell the userland that node
-> X is hotpluggable or not hotpluggable after boot is complete.  Why is
-> that relevant?
 
-Sorry for the misunderstanding.
+I see that my changelog is very cryptic. Sorry about that.
 
-I was trying to answer your question: "Why can't the kenrel allocate
-hotpluggable memory opportunistic ?".
+I have been converting drivers from using legacy pm_ops to dev_pm_ops 
+which will allow all drivers to use the same infrastructure and overtime 
+obsolete the legacy usage. With this change I made, __device_suspend() 
+will find  dev->bus->pm->suspend instead of dev->bus->suspend.
 
-If the kernel has any opportunity to allocate hotpluggable memory in
-SRAT, then the kernel should tell users which memory is hotpluggable.
+isa bus and isa drivers probably will never take advantage of the pm 
+capabilities dev_pm_ops allow for, the reason to update the isa bus to 
+use dev_pm_ops is to allow for obsoleting legacy pm_ops handling in pm.
 
-But in what way ?  I think node is the best for now. But a node could
-have a lot of memory. If the kernel uses only a little memory, we will
-lose the whole movable node, which I don't want to do.
+-- Shuah
 
-So, I don't want to allow the kenrel allocating hotpluggable memory
-opportunistic.
-
-
->
->> I'm just thinking of a more extreme case. For example, if a machine
->> has only one node hotpluggable, and the kernel resides in that node.
->> Then the system has no hotpluggable node.
->
-> Yeah, sure, then there's no way that node can be hotpluggable and the
-> right thing to do is booting up the machine and informing the userland
-> that memory is not hotpluggable.
->
->> If we can prevent the kernel from using hotpluggable memory, in such
->> a machine, users can still do memory hotplug.
->>
->> I wanted to do it as generic as possible. But yes, finding out the
->> nodes the kernel resides in and make it unhotpluggable can work.
->
-> Short of being able to remap memory under the kernel, I don't think
-> this can be very generic and as a compromise trying to keep as many
-> hotpluggable nodes as possible doesn't sound too bad.
-
-I think making one of the node hotpluggable is better. But OK, it is
-no big deal. There won't be such machine in reality, I think. :)
-
-Thanks. :)
-
-
-
-
-
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
