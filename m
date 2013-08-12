@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757406Ab3HLQXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:23:40 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57932 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755995Ab3HLQXj (ORCPT
+	id S1757410Ab3HLQZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:25:14 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:59825 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757285Ab3HLQZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:23:39 -0400
-Message-ID: <52090C0A.2000105@codeaurora.org>
-Date: Mon, 12 Aug 2013 09:23:38 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 12 Aug 2013 12:25:12 -0400
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: srinivas.kandagatla@st.com, S??ren Brinkmann <soren.brinkmann@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-References: <51F97CE3.9030306@linaro.org> <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local> <51FA9AE8.1060004@linaro.org> <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local> <51FA9F54.3060704@linaro.org> <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local> <5204C54A.9020105@st.com> <5204FA5D.3060908@linaro.org> <20130809172757.GD14845@codeaurora.org> <5208BEC4.7090700@linaro.org>
-In-Reply-To: <5208BEC4.7090700@linaro.org>
+In-Reply-To: <52082EF8.10005@roeck-us.net>
+References: <5207B3C3.9080508@roeck-us.net> <20130811220450.GY23006@n2100.arm.linux.org.uk>
+ <52082EF8.10005@roeck-us.net>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Mon, 12 Aug 2013 17:24:50 +0100
+Message-ID: <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com>
+Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        qemu-devel@nongnu.org, Arnd Bergmann <arnd.bergmann@linaro.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/13 03:53, Daniel Lezcano wrote:
-> On 08/09/2013 07:27 PM, Stephen Boyd wrote:
->> On 08/09, Daniel Lezcano wrote:
->>> yes, but at least the broadcast mechanism should send an IPI to cpu0 to
->>> wake it up, no ? As Stephen stated this kind of configuration should has
->>> never been tested before so the tick broadcast code is not handling this
->>> case properly IMHO.
->>>
->> If you have a per-cpu tick device that isn't suffering from
->> FEAT_C3_STOP why wouldn't you use that for the tick versus a
->> per-cpu tick device that has FEAT_C3_STOP? It sounds like there
->> is a bug in the preference logic or you should boost the rating
->> of the arm global timer above the twd. Does this patch help? It
->> should make the arm global timer the tick device and whatever the
->> cadence timer you have into the broadcast device.
->>
->> ---8<----
->> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
->> index 218bcb5..d3539e5 100644
->> --- a/kernel/time/tick-broadcast.c
->> +++ b/kernel/time/tick-broadcast.c
->> @@ -77,6 +77,9 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
->>  	    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
->>  		return false;
->>  
->> +	if (cpumask_equal(newdev->cpumask, cpumask_of(smp_processor_id())))
->> +		return false;
-> Yes, that makes sense to prevent local timer devices to be a broadcast one.
->
-> In the case of the arm global timer, each cpu will register their timer,
-> so the test will be ok but is it possible the cpu0 registers the timers
-> for the other cpus ?
+On 12 August 2013 01:40, Guenter Roeck <linux@roeck-us.net> wrote:
+> On 08/11/2013 03:04 PM, Russell King - ARM Linux wrote:
+>> It could be that it's qemu's PCI routing is wrong - it's not the first
+>> time that qemu has got something wrong.
 
-As far as I know every tick device has to be registered on the CPU that
-it will be used on. See tick_check_percpu().
+QEMU 1.5 has had its Versatile PCI routing code rewritten to
+correspond with the hardware (cross-tested versus Arnd Bergmann's
+patchset
+http://marc.info/?l=linux-arm-kernel&m=128707282403376&w=2
+which was run on real versatilePB backplane hardware and
+could handle a PCI SATA card). I believe it to be correct,
+and I spent a fairly long time wading through the various bits
+of documentation and testing those kernel patches on h/w.
 
->
->>  	return !curdev || newdev->rating > curdev->rating;
->>  }
->>  
->> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
->> index 64522ec..1628b9f 100644
->> --- a/kernel/time/tick-common.c
->> +++ b/kernel/time/tick-common.c
->> @@ -245,6 +245,15 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
->>  	}
->>  
->>  	/*
->> +	 * Prefer tick devices that don't suffer from FEAT_C3_STOP
->> +	 * regardless of their rating
->> +	 */
->> +	if (curdev && cpumask_equal(curdev->cpumask, newdev->cpumask) &&
->> +	    !(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
->> +	    (curdev->features & CLOCK_EVT_FEAT_C3STOP))
->> +		return true;
-> That sounds reasonable, but what is the acceptable gap between the
-> ratings ? I am wondering if there isn't too much heuristic in the tick
-> code...
+(It also includes a back-compatibility fudge so that old
+kernels which assumed the old broken QEMU behaviour will
+continue to work; it does not attempt to fix up the problems
+with kernels from commit 1bc39ac5d to present which don't
+work properly on either QEMU or real hardware. A fixed
+kernel can force-disable the fudge.)
 
-Yes I wonder if we should just change the ratings of the clockevents.
-But it feels to me like the rating should only matter if the two are
-equal in features. Otherwise we can use the features to determine what
-we want.
+http://git.qemu.org/?p=qemu.git;a=blob;f=hw/pci-host/versatile.c
+has the current PCI code, which includes comments about what
+the routing is (in particular tables at lines 321 and 340).
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+>> Unfortunately, the PCI routing is totally undocumented, and as I
+>> understand
+>> it, there's very few backplanes out there now that finding out their real
+>> routing is virtually impossible.  I'm loathed to change it unless someone
+>> can point to a definitive source of information on this.
 
+The Versatile boards have TRMs on infocenter.arm.com; the
+backplane's wiring is documented in the circuit diagrams
+which were distributed on the CD which came with the board
+(ie they are non-confidential information, just difficult
+to lay your hands on). It's also possible to just test
+the hardware, which is what Arnd and I did to confirm that
+his patchset was OK.
+
+If somebody would like to fix the kernel I am happy to
+locate the PCI backplane and test everything (again).
+I would suggest that producing some patches which work
+with QEMU 1.5 or later would be a good start; then we
+can test on h/w as confirmation before they are applied.
+
+-- PMM
