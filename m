@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab3HLNRA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:17:00 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:61112 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579Ab3HLNQ5 (ORCPT
+	id S1756488Ab3HLNSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:18:45 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42741 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190Ab3HLNSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:16:57 -0400
-Message-ID: <5208E044.7020306@linaro.org>
-Date: Mon, 12 Aug 2013 15:16:52 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Mon, 12 Aug 2013 09:18:41 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19oXOUuBy8gT3P3d6Wpe2/sTq7Wds6a7pA=
+Date: Mon, 12 Aug 2013 09:18:33 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next list <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v2 0/3] ARM/ARM64 architected timer updates
-References: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <51FB7CB8.6080103@arm.com> <51FB8081.6040501@linaro.org> <51FB81FB.3060709@arm.com> <51FBA21D.5010308@linaro.org> <51FFD1DF.9000907@arm.com> <5200AF41.7090405@linaro.org> <5200BB7D.3020501@arm.com>
-In-Reply-To: <5200BB7D.3020501@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        linux-pci <linux-pci@vger.kernel.org>
+Subject: Re: linux-next: Tree for Aug 8 (not CONFIG_PCI_MSI conflict)
+Message-ID: <20130812131833.GI25111@titan.lakedaemon.net>
+References: <20130808170822.82bf33d3cf5100f5e2646815@canb.auug.org.au>
+ <5203F978.2050504@infradead.org>
+ <20130809145939.GE25111@titan.lakedaemon.net>
+ <52051BC2.2060004@infradead.org>
+ <20130809185036.GG25111@titan.lakedaemon.net>
+ <CAErSpo6S9uYTEhoS-+4EZv41pc0bu6jvcMaGX7WR9hY4o+2dsA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo6S9uYTEhoS-+4EZv41pc0bu6jvcMaGX7WR9hY4o+2dsA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 11:01 AM, Sudeep KarkadaNagesha wrote:
-> On 06/08/13 09:09, Daniel Lezcano wrote:
->> On 08/05/2013 06:25 PM, Sudeep KarkadaNagesha wrote:
->>> Hi Daniel,
->>>
->>> On 02/08/13 13:12, Daniel Lezcano wrote:
->>>> On 08/02/2013 11:55 AM, Sudeep KarkadaNagesha wrote:
->>>>> On 02/08/13 10:48, Daniel Lezcano wrote:
->>>>>> On 08/02/2013 11:32 AM, Sudeep KarkadaNagesha wrote:
->>>>>>> Hi Daniel,
->>>>>>>
->>>>>>> On 22/07/13 12:21, Sudeep KarkadaNagesha wrote:
->>>>>>>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>>>>>>>
->>>>>>>> This patch series adds support to configure the rate and enable the event
->>>>>>>> stream for architected timer. Since the timer control register is reset to
->>>>>>>> zero on warm boot, CPU PM notifier is added to re-initialse it.
->>>>>>>>
->>>>>>> This series is required to support TC2 cpuidle.
->>>>>>> It will be good if you can review and get this in for v3.12
->>>>>>
->>>>>> So do you want me to take the series through my tree ?
->>>>>>
->>>>> Yes I believe it has to go through your(ARM specific clocksource?) tree,
->>>>> but currently there's a conflict with another bug fix(that should come
->>>>> from rmk as -rc fix)
->>>>> (Commit ab8d46c0 "ARM: 7788/1: elf: fix lpae hwcap feature reporting in
->>>>> proc/cpuinfo" in rmk -fixes)
->>>>
->>>> IMO, you should rebase this patch on top of tips/core, I will apply the
->>>> series and when the rmk fix hits this branch (through tips/urgent), that
->>>> will be up to the maintainer to resolve this conflict.
->>>>
->>>
->>> The fix with which this series was conflicting is already in v3.11-rc4
->>> So can I send pull request based on v3.11-rc4 or if you prefer any
->>> particular tree, can you provide details please ?
->>
->> Ok, I will ping Thomas to update the tips/core branch to 3.11-rc4.
->>
-> Thanks Daniel, will send pull request once it's updated.
+On Sat, Aug 10, 2013 at 08:01:49AM -0600, Bjorn Helgaas wrote:
+> On Fri, Aug 9, 2013 at 12:50 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> > Randy,
+> >
+> > On Fri, Aug 09, 2013 at 09:41:38AM -0700, Randy Dunlap wrote:
+> >> On 08/09/13 07:59, Jason Cooper wrote:
+> >> > Randy,
+> >> >
+> >> > On Thu, Aug 08, 2013 at 01:03:04PM -0700, Randy Dunlap wrote:
+> >> >> On 08/08/13 00:08, Stephen Rothwell wrote:
+> >> >>> Hi all,
+> >> >>>
+> >> >>> Changes since 20130807:
+> >> >>>
+> >> >>
+> >> >> on i386 and x86_64:
+> >> >> when CONFIG_PCI_MSI is not enabled:
+> >> >>
+> >> >> There are many of these errors:
+> >> >> include/linux/msi.h:65:6: error: expected identifier or '(' before 'void'
+> >> >> include/linux/msi.h:65:6: error: expected ')' before numeric constant
+> >> >>
+> >> >> because arch/x86/include/asm/pci.h defines:
+> >> >> #define default_teardown_msi_irqs  NULL
+> >> >
+> >> > Do you have an example config you used?
+> >>
+> >> Sure, attached. (or I have 14 of them)
+> >
+> > Thanks, I was able to reproduce the error.  I'm not real familiar with
+> > this area of the code, but the relief is it doesn't appear to be caused
+> > by the mvebu changes (well, relief for us ;-) ).
+> >
+> > At any rate, give this a spin and see if it works for you
+> >
+> > If it's acceptable, I'll do an official patch for Bjorn.
+> >
+> > thx,
+> >
+> > Jason.
+> >
+> > ---------->8----------
+> > diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+> > index d9e9e6c..6169414 100644
+> > --- a/arch/x86/include/asm/pci.h
+> > +++ b/arch/x86/include/asm/pci.h
+> > @@ -138,8 +138,8 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq);
+> >  #else
+> >  #define native_setup_msi_irqs          NULL
+> >  #define native_teardown_msi_irq                NULL
+> > -#define default_teardown_msi_irqs      NULL
+> > -#define default_restore_msi_irqs       NULL
+> > +void __weak default_teardown_msi_irqs(struct pci_dev *dev) { }
+> > +void __weak default_restore_msi_irqs(struct pci_dev *dev, int irq) { }
+> 
+> I don't really like this solution of putting the empty implementation
+> in the header file, because then a weak body is generated in the
+> object of every source file that includes the header.
+> 
+> default_teardown_msi_irqs() and default_restore_msi_irqs() seem like
+> fairly internal MSI functions, so I wonder why we need them defined at
+> all when CONFIG_PCI_MSI=n.  It seems like any uses of them should be
+> in code that's only compiled when CONFIG_PCI_MSI=y.  But I haven't
+> reproduced the problem and investigated yet.
 
-Sudeep,
+I first tried commenting out the definitions after reproducing the
+problem.  It also failed miserably.
 
-please send the PR, I will deal with it and send Thomas the PR later.
+Please take a look at Thomas' latest MSI patch series,
 
-Thanks
-  -- Daniel
+  [PATCHv9 01/10] PCI: use weak functions for MSI arch-specific functions
 
+I think his solution is much nicer than mine.
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+thx,
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Jason.
