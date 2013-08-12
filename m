@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab3HLBXM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 21:23:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18650 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755255Ab3HLBXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 21:23:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,858,1367996400"; 
-   d="scan'208";a="385408607"
-From: Andi Kleen <andi@firstfloor.org>
-To: Karim Yaghmour <karim.yaghmour@opersys.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+	id S1755314Ab3HLBjL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 21:39:11 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:40018 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755285Ab3HLBjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 21:39:07 -0400
+Message-ID: <52083CB4.2030308@opersys.com>
+Date: Sun, 11 Aug 2013 22:39:00 -0300
+From: Karim Yaghmour <karim.yaghmour@opersys.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
         mingo@elte.hu
 Subject: Re: Reading perf counters at ftrace trace boundaries
-References: <5208263D.2080205@opersys.com>
-Date: Sun, 11 Aug 2013 18:23:10 -0700
-In-Reply-To: <5208263D.2080205@opersys.com> (Karim Yaghmour's message of "Sun,
-	11 Aug 2013 21:03:09 -0300")
-Message-ID: <87haevog75.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+References: <5208263D.2080205@opersys.com> <87haevog75.fsf@tassilo.jf.intel.com>
+In-Reply-To: <87haevog75.fsf@tassilo.jf.intel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Karim Yaghmour <karim.yaghmour@opersys.com> writes:
 
-> Wondering if there's a way for reading perf counters in the kernel. I'd
-> like to read/record perf counters on ftrace function tracing
-> entries/exits to provide a rundown of the value of various counters on
-> function call boundaries.
+On 13-08-11 10:23 PM, Andi Kleen wrote:
+> KVM does it, see arch/x86/kvm/pmu.c. Essentially it would be doing RDPMC.
 
-KVM does it, see arch/x86/kvm/pmu.c. Essentially it would be doing RDPMC.
+Thx for the pointer, appreciated.
 
-But the overhead will be likely very high, some sampling approach
-is likely better.
+> But the overhead will be likely very high, some sampling approach
+> is likely better.
 
--Andi
+Indeed. It doesn't actually have to be at every single ftrace
+begin/exit. But possibly starting with some kind of every nth and then
+drilling down as the culprit is incrementally singled-out.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Karim Yaghmour
+CEO - Opersys inc. / www.opersys.com
+http://twitter.com/karimyaghmour
+
