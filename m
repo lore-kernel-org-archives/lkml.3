@@ -1,44 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab3HLQaj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:30:39 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58443 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755180Ab3HLQah (ORCPT
+	id S1756715Ab3HLQbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:31:14 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:54081 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755180Ab3HLQbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:30:37 -0400
-Message-ID: <52090DAC.3050407@codeaurora.org>
-Date: Mon, 12 Aug 2013 09:30:36 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 12 Aug 2013 12:31:13 -0400
+Date: Mon, 12 Aug 2013 17:31:05 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Michael Brunner <BrunnerMichael@t-online.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Kevin Strasser <strassek@engr.orst.edu>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Michael Brunner <Michael.Brunner@kontron.com>,
+        Chris Healy <chealy@imsco-us.com>
+Subject: Re: [PATCH] mfd: Add support for COMe-bHL6 and COMe-cTH6 to Kontron
+ PLD driver
+Message-ID: <20130812152515.GA3636@lee--X1>
+References: <20130809173343.7843a13a@charybdis>
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        devicetree@vger.kernel.org, Jeffrey Hugo <jhugo@codeaurora.org>,
-        Eric Holmberg <eholmber@codeaurora.org>
-Subject: Re: [PATCH] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex
- block
-References: <1375128719-23642-1-git-send-email-galak@codeaurora.org> <E9700EA7-7154-46C5-9258-03F030DF69F6@codeaurora.org> <20130729214035.GC8868@codeaurora.org> <9EB1A821-7137-4812-B58A-20F669BCA7DD@codeaurora.org> <0A09DA0F-86B4-4961-88E2-64FA0A4D380D@codeaurora.org> <CAK=WgbZSJmMz_U56ZsppBrB64XvTHBqJM4L+uFY1kKxhMCCtMQ@mail.gmail.com>
-In-Reply-To: <CAK=WgbZSJmMz_U56ZsppBrB64XvTHBqJM4L+uFY1kKxhMCCtMQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130809173343.7843a13a@charybdis>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/13 12:11, Ohad Ben-Cohen wrote:
-> Otherwise, Stephen - do we have your Ack here? I was happy to see your
-> review but not sure what's the latest status.
+On Fri, 09 Aug 2013, Michael Brunner wrote:
 
-The smp_mb() should be removed. Otherwise I'm willing to accept that we
-only build this driver on ARCH_MSM for now. We can fix that in the
-future to be available to hexagon if they ever want it. After that it
-just needs a DT review/ack so I'll be happy to add a reviewed-by on v3.
+> This patch adds DMI system IDs for the new Kontron modules COMe-bHL6 and
+> COMe-cTH6 to the Kontron PLD driver.
+> 
+> Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
+> ---
+>  drivers/mfd/kempld-core.c |   18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+
+Applied with Kevin's Ack, thanks.
+
+> diff --git a/drivers/mfd/kempld-core.c b/drivers/mfd/kempld-core.c
+> index 686a456..ee28e76 100644
+> --- a/drivers/mfd/kempld-core.c
+> +++ b/drivers/mfd/kempld-core.c
+> @@ -413,6 +413,15 @@ static struct platform_driver kempld_driver = {
+>  
+>  static struct dmi_system_id __initdata kempld_dmi_table[] = {
+>  	{
+> +		.ident = "BHL6",
+> +		.matches = {
+> +			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
+> +			DMI_MATCH(DMI_BOARD_NAME, "COMe-bHL6"),
+> +		},
+> +		.driver_data = (void *)&kempld_platform_data_generic,
+> +		.callback = kempld_create_platform_device,
+> +	},
+> +	{
+>  		.ident = "CCR2",
+>  		.matches = {
+>  			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
+> @@ -596,6 +605,15 @@ static struct dmi_system_id __initdata kempld_dmi_table[] = {
+>  		.driver_data = (void *)&kempld_platform_data_generic,
+>  		.callback = kempld_create_platform_device,
+>  	},
+> +	{
+> +		.ident = "UTH6",
+> +		.matches = {
+> +			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
+> +			DMI_MATCH(DMI_BOARD_NAME, "COMe-cTH6"),
+> +		},
+> +		.driver_data = (void *)&kempld_platform_data_generic,
+> +		.callback = kempld_create_platform_device,
+> +	},
+>  	{}
+>  };
+>  MODULE_DEVICE_TABLE(dmi, kempld_dmi_table);
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
