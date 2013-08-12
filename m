@@ -1,107 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab3HLUmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 16:42:01 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:44691 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754674Ab3HLUl6 (ORCPT
+	id S1755106Ab3HLUmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 16:42:24 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:63160 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390Ab3HLUmV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 16:41:58 -0400
-Message-ID: <1376340043.10300.360.camel@misato.fc.hp.com>
-Subject: Re: Cannot hot remove a memory device
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
-Date: Mon, 12 Aug 2013 14:40:43 -0600
-In-Reply-To: <1637752.e6s4mPrvSE@vostro.rjw.lan>
-References: <51FA1E41.20304@jp.fujitsu.com>
-	 <13789925.vhhiTlyGIy@vostro.rjw.lan>
-	 <1376002242.10300.235.camel@misato.fc.hp.com>
-	 <1637752.e6s4mPrvSE@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Aug 2013 16:42:21 -0400
+MIME-Version: 1.0
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 12 Aug 2013 14:42:00 -0600
+Message-ID: <CAErSpo6SzUF44pk3HVyR5UUN0BJUHUz+Z5egWKCoGG70VuB6wg@mail.gmail.com>
+Subject: Re: [PATCH v2] tile: support LSI MEGARAID SAS HBA hybrid dma_ops
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        adam radford <aradford@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-08-11 at 23:13 +0200, Rafael J. Wysocki wrote:
-> On Thursday, August 08, 2013 04:50:42 PM Toshi Kani wrote:
-> > On Fri, 2013-08-09 at 00:12 +0200, Rafael J. Wysocki wrote:
-> > > On Thursday, August 08, 2013 11:15:20 AM Toshi Kani wrote:
-> > > > On Fri, 2013-08-02 at 18:04 -0600, Toshi Kani wrote:
-> > > > > On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
-> > > > > > On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
-> > > > > > > On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
-> > > >  :
-> > > > > > > I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
-> > > > > > > handle is already set\n").  When two ACPI memory objects associate with
-> > > > > > > a same memory block, the bind procedure of the 2nd ACPI memory object
-> > > > > > > sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
-> > > > > > 
-> > > > > > That sound's plausible, but I wonder how we can fix that?
-> > > > > > 
-> > > > > > There's no way for a single physical device to have two different ACPI
-> > > > > > "companions".  It looks like the memory blocks should be 64 M each in that
-> > > > > > case.  Or we need to create two child devices for each memory block and
-> > > > > > associate each of them with an ACPI object.  That would lead to complications
-> > > > > > in the user space interface, though.
-> > > > > 
-> > > > > Right.  Even bigger issue is that I do not think __add_pages() and
-> > > > > __remove_pages() can add / delete a memory chunk that is less than
-> > > > > 128MB.  128MB is the granularity of them.  So, we may just have to fail
-> > > > > this case gracefully.
-> > > > 
-> > > > FYI: I have submitted the patch blow to close this part of the issue...
-> > > > 
-> > > > https://lkml.org/lkml/2013/8/8/396
-> > > 
-> > > That looks good to me, but we'd still need to make it possible to have
-> > > memory blocks smaller than 128 MB ...
-> > 
-> > Do you mean acpi_bind_one() needs to be able to handle such case?  If
-> > so, it should not be a problem since a memory block device won't be
-> > created when add_memory() fails with the change above.  So, there is no
-> > binding to be done.  If you mean add_memory() needs to be able to handle
-> > a smaller range, that's quite a tough one unless we make the section
-> > size smaller.
-> > 
-> > BTW, when add_memory() fails, the memory hot-add request still succeeds
-> > with no driver attached.  This seems logical, but the added device is
-> > useless when no handler is attached.  And it does not allow ejecting the
-> > device with no handler.  I am not too worry about this since this is a
-> > rare case, but it reminded me that the framework won't handle rollback.
-> 
-> I'm not sure which rollback you mean.  During removal?
+On Mon, Aug 12, 2013 at 1:42 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 8/9/2013 6:42 PM, Bjorn Helgaas wrote:
+>> On Thu, Aug 08, 2013 at 12:47:10PM -0400, Chris Metcalf wrote:
+>>> On 8/6/2013 1:48 PM, Bjorn Helgaas wrote:
+>>>> [+cc Myron, Adam]
+>>>>
+>>>> On Fri, Aug 2, 2013 at 10:24 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>>>>> According to LSI,
+>>>>> the firmware is not fully functional yet. This change implements a
+>>>>> kind of hybrid dma_ops to support this.
+>>>>>
+>>>>> Note that on most other platforms, the 64-bit DMA addressing space is the
+>>>>> same as the 32-bit DMA space and they overlap the physical memory space.
+>>>>> No special arrangement is needed to support this kind of mixed DMA
+>>>>> capability.  On TILE-Gx, the 64-bit DMA space is completely separate
+>>>>> from the 32-bit DMA space.
+>>>> Help me understand what's going on here.  My understanding is that on
+>>>> typical systems, the 32-bit DMA space is a subset of the 64-bit DMA
+>>>> space.  In conventional PCI, "a master that supports 64-bit addressing
+>>>> must generate a SAC, instead of a DAC, when the upper 32 bits of the
+>>>> address are zero" (PCI spec r3.0, sec 3.9).  PCIe doesn't have
+>>>> SAC/DAC, but it has both 32-bit and 64-bit address headers and has a
+>>>> similar requirement: "For Addresses below 4GB, Requesters must use the
+>>>> 32-bit format" (PCIe spec r3.0, sec 2.2.4.1).
+>>>>
+>>>> Those imply to me that the 0-4GB region of the 64-bit DMA space must
+>>>> be identical to the 0-4GB 32-bit DMA space, and in fact, the receiver
+>>>> of a transaction shouldn't be able to distinguish them.
+>>>>
+>>>> But it sounds like something's different on TILE-Gx?  Does it
+>>>> translate bus addresses to physical memory addresses based on the type
+>>>> of the transaction (SAC vs DAC, or 32-bit vs 64-bit header) in
+>>>> addition to the address?  Even if it does, the spec doesn't allow a
+>>>> DAC cycle or a 64-bit header where the 32 high-order bits are zero, so
+>>>> it shouldn't matter.
+>>> No, we don't translate based on the type of the transaction. Using
+>>> "DMA space" in the commit message was probably misleading. What's
+>>> really going on is different DMA windows. 32-bit DMA has the
+>>> obvious naive implementation where [0,4GB] in DMA space maps to
+>>> [0,4GB] in PA space.  However, for 64-bit DMA, we use DMA
+>>> addresses with a non-zero high 32 bits, in the [1TB,2TB] range,
+>>> but map the results down to PA [0,1TB] using our IOMMU.
+>> I guess this means devices can DMA to physical addresses [0,3GB]
+>> using either 32-bit bus addresses in the [0,3GB] range or 64-bit bus
+>> addresses in the [1TB,1TB+3GB] range, right?
+>
+> True in general, but not true for any specific individual device.
+>
+> 64-bit capable devices won’t generate 32-bit bus addresses, because the dma_ops makes sure that only bus/DMA addresses in [1TB,1TB+3GB] are handed out to the devices.
+>
+> 32-bit only devices use bus addresses in [0,3GB] to access the PA [0,3GB].  PA in [3GB, 4GB] is not accessed by the 32-bit only devices because the bounce buffers are allocated under 3GB limit.
+>
+>>> We did consider having the 64-bit DMA window be [0,1TB] and map
+>>> directly to PA space, like the 32-bit window. But this design
+>>> suffers from the “PCI hole” problem. Basically, the BAR space is
+>>> usually under 4GB (it occupies the range [3GB, 4GB] on tilegx) and
+>>> the host bridge uses negative decoding in passing DMA traffic
+>>> upstream. That is, DMA traffic with target address in [3GB, 4GB]
+>>> are not passed to the host memory. This means that the same amount
+>>> of physical memory as the BAR space cannot be used for DMA
+>>> purpose. And because it is not easy avoid this region in
+>>> allocating DMA memory, the kernel is simply told to not use this
+>>> chunk of PA at all, so it is wasted.
+>> OK, so physical memory in the [3GB,4GB] range is unreachable via DMA
+>> as you describe.  And even if DMA *could* reach it, the CPU couldn't
+>> see it because CPU accesses to that range would go to PCI for the
+>> memory-mapped BAR space, not to memory.
+>
+> Right.  Unreachability is only a problem if the DMA window overlaps [3G, 4G], and since the 64-bit DMA window is [1TB,2TB], the whole PA space can be reached by 64-bit capable devices.
 
-I meant rollback during hot-add.  Ideally, a device should be either
-added in usable state (success) or failed back to the original state
-(rollback).  Added in un-usable state is not really a success for users,
-and creates an odd state to deal with.  But it is still a LOT better
-than crashing the system.  So, I think this outcome is reasonable on
-this framework because adding rollback at this point will complicate the
-things unnecessarily.
+So the [0-1TB] memory range (including [3GB-4GB]) is reachable by
+64-bit DMA to bus addresses [1TB-2TB].  But if the CPU can't see
+physical memory from [3GB-4GB], how is it useful to DMA there?
 
-> There are two slight problems here in my view.  First, even if the device
-> cannot be ejected directly, it still will be removed when its parent is
-> ejected, so it may be more consistent to just allow everything to be ejected
-> regardless of whether or not it has a scan handler.  
+>> But I can't figure out why Tile needs to do something special.  I
+>> think other arches handle the PCI hole for MMIO space the same way.
+>>
+>> I don't know if other arches alias the [0,3GB] physical address
+>> range in both 32-bit and 64-bit DMA space like you do, but if that's
+>> part of the problem, it seems like you could easily avoid the
+>> aliasing by making the 64-bit DMA space [1TB+4GB,2TB] instead of
+>> [1TB,2TB].
+>
+> Perhaps, but since 64-bit capable devices can't actually see the aliasing (since they aren't offered the [0,4GB] address range) they only see an un-aliased space.
+>
+>>> For the LSI device, the way we manage it is to ensure that the
+>>> device’s streaming buffers and the consistent buffers come from
+>>> different pools, with the latter using the under-4GB bounce
+>>> buffers. Obviously, normal devices use the same buffer pool for
+>>> both streaming and consistent, either under 4GB or the whole PA.
+>> It seems like you could make your DMA space be the union of [0,3GB]
+>> and [1TB+4GB,2TB], then use pci_set_dma_mask(dev, DMA_BIT_MASK(64))
+>> and pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(32)) (I assume the
+>> driver already sets those masks correctly if it works on other
+>> arches).
+>
+> Unfortunately, the Megaraid driver doesn’t even call pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(32)).
 
-Agreed.
+If the Megaraid driver needs that call, but it's missing, why wouldn't
+we just add it?
 
-> Second, I guess the
-> removal is undesirable for memory devices for which the registration of the
-> scan handler failed, so it would be good to fail the "offline" of such devices
-> regardless of how we get there.  That's why I thought it would be good to have
-> an "offline disabled" flag in struct acpi_device.
+> More generally, your proposed DMA space suggestion isn't optimal because then the PA in [3GB, 4GB] can’t be reached by 64-bit capable devices.
 
-I see.  But when attach() failed, the memory device may not be used by
-the kernel.  So, I think it should be safe to remove it.
+True.  I assumed it wasn't useful to DMA there because the CPU
+couldn't see that memory anyway.  But apparently that assumption was
+wrong?
 
-Thanks,
--Toshi
+>>> Given all of that, does this change make sense? I can certainly
+>>> amend the commit description to include more commentary.
+>> Obviously, I'm missing something.  I guess it really doesn't matter
+>> because this is all arch code and I don't need to understand it, but
+>> it does niggle at me somehow.
+>
+> I will add the following comment to <asm/pci.h> in hopes of making it a bit clearer:
+>
+>  /*
+>  [...]
+> + * This design lets us avoid the "PCI hole" problem where the host bridge
+> + * won't pass DMA traffic with target addresses that happen to fall within the
+> + * BAR space. This enables us to use all the physical memory for DMA, instead
+> + * of wasting the same amount of physical memory as the BAR window size.
 
+By "target addresses", I guess you mean the bus address, not the CPU
+address, right?
+
+The whole reason I'm interested in this is to figure out whether this
+change is really specific to Tile, or whether other architectures need
+similar changes.  I think host bridges on other arches behave the same
+way (they don't allow DMA to addresses in the PCI hole), so I still
+haven't figured out what is truly Tile-specific.
+
+I guess the ability for 64-bit DMA to reach the PCI hole (3GB-4GB)
+might be unique, but it doesn't sound useful.
+
+>   */
+>  #define        TILE_PCI_MEM_MAP_BASE_OFFSET    (1ULL << CHIP_PA_WIDTH())
+>
+> --
+> Chris Metcalf, Tilera Corp.
+> http://www.tilera.com
+>
