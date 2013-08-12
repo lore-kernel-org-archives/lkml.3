@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab3HLITV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 04:19:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52476 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752474Ab3HLITT (ORCPT
+	id S1755049Ab3HLITb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 04:19:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24379 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751819Ab3HLITT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Aug 2013 04:19:19 -0400
-Date: Mon, 12 Aug 2013 10:19:16 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 07/10] pinctrl: sunxi: Add Allwinner A31 pins set
-Message-ID: <20130812081916.GL2911@lukather>
-References: <1375609657-15434-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375609657-15434-8-git-send-email-maxime.ripard@free-electrons.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,860,1367996400"; 
+   d="scan'208";a="344986184"
+From: "Berg, Johannes" <johannes.berg@intel.com>
+To: Djalal Harouni <tixxdz@opendz.org>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Subject: RE: [PATCH] iwlwifi: mvm: make debugfs write() operations write up
+ to count bytes
+Thread-Topic: [PATCH] iwlwifi: mvm: make debugfs write() operations write up
+ to count bytes
+Thread-Index: AQHOlvSPjBpjRMPsiEO/Jfxgsh6L2JmROu5g
+Date: Mon, 12 Aug 2013 08:19:12 +0000
+Message-ID: <1DC40B07CD6EC041A66726C271A73AE61AA5E38C@IRSMSX102.ger.corp.intel.com>
+References: <1376267972-5636-1-git-send-email-tixxdz@opendz.org>
+In-Reply-To: <1376267972-5636-1-git-send-email-tixxdz@opendz.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.181]
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B7kmwdlU7aE/dafw"
-Content-Disposition: inline
-In-Reply-To: <1375609657-15434-8-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Some debugfs write() operations of the MVM Firmware will ignore the count
+> argument, and will copy more bytes than what was specified.
+> Fix this by getting the right count of bytes.
+> 
+> This will also honor restrictions put on the number of bytes to write.
 
---B7kmwdlU7aE/dafw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That makes some sense.
 
-Hi Linus,
+> To be consitant this patch also switches the initializer from 'char buf[x] = {}' to
+> the explicit memset() as it is done in other places of the same file.
 
-On Sun, Aug 04, 2013 at 11:47:34AM +0200, Maxime Ripard wrote:
-> The Allwinner A31 SoC uses the same IP than the one found in the
-> A10/A13, with only different pins. Add the pins and the associated
-> functions found in the A31.
+I'd rather this (a) be done in a separate patch, and (b) the other way around, switch everything to C99.
 
-I'd like this to be in 3.12 if it's okay for you. Do you have any
-comments on it?
+> Cc: stable@vger.kernel.org
 
-Thanks,
-Maxime
+That doesn't really make sense for the debugfs interface.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> +	memset(buf, 0, sizeof(buf));
+> +	if (count > sizeof(buf) - 1)
+> +		count = sizeof(buf) - 1;
 
---B7kmwdlU7aE/dafw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Why -1? And why not use min()/min_t()?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+johannes
+-- 
 
-iQIcBAEBAgAGBQJSCJqEAAoJEBx+YmzsjxAg0zoP/0MoQapaalpTPE1biqnRlnha
-RrSDEUpiqZFYO5TxORqdMrbywMM4QynIUVRNdKqhKCBUdo4WZ+F8Xf6MC4tHS128
-1Nilt5xn0D+jiQghPdpsAnqgbVZ03uootICX9h4vc6CK3DDWO8ciiBKLfuFfIv/m
-f6EThWP5CeHb/NHW8zHZcFiSPwbnUa2i+QVPZsd3GkwwRycRqRO532HK8d7IUqZR
-U5jwzeXwn7dJmo/y5X93hGXAAUFFVYr+0uMQmxwsGQ3rwgovhYTGFnhsT8QSAl6m
-bHkqpkyUSGKbDuAjoIuwhMpr7KgddKdkV6hO2ZO5nZLG2skBc7E9NLTq3QFQaueO
-dzxZ6r6QXwmtMM1FMDIdWHlEuAA7z9wxLVWtuI6JGicxjSv+7WAa0JV5Cvym6uCG
-doYfw8bc0hxtqU/KdJBLadWV7z5lwERpJ1KAoGNeChtWu5C0BgB3TZ/4ru1EbU/r
-0L1MvfmQzu58HfNys2NC0Ve0w5tl2MJBeQ5qlF6o9CELurysQMz/SmZ0MIBtTfkt
-F4Pd4v/KjJOfZwMXyIBT4hs2hYeNM/oddifyNCumwzLKPs50O8djZYwouz+mEx5L
-5cWnkLjPV6RUzIppeSYopx9ZnbJ357NB9FdkfusGxqEF83PdOD2zKY7tzYw4A4Za
-9+/Xwi039ID/K+5mcoLL
-=pdQv
------END PGP SIGNATURE-----
+Intel GmbH
+Dornacher Strasse 1
+85622 Feldkirchen/Muenchen, Deutschland
+Sitz der Gesellschaft: Feldkirchen bei Muenchen
+Geschaeftsfuehrer: Christian Lamprechter, Hannes Schwaderer, Douglas Lusk
+Registergericht: Muenchen HRB 47456
+Ust.-IdNr./VAT Registration No.: DE129385895
+Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
 
---B7kmwdlU7aE/dafw--
