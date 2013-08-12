@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab3HLHUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 03:20:36 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:18947 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab3HLHUd (ORCPT
+	id S1753706Ab3HLHVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 03:21:53 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:14163 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab3HLHVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 03:20:33 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-52-52088cbec24c
+	Mon, 12 Aug 2013 03:21:50 -0400
+X-AuditID: cbfee68e-b7f276d000002279-2d-52088d0d9c00
 From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>
-Cc: "'Chris Ball'" <cjb@laptop.org>, "'Olof Johansson'" <olof@lixom.net>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
+To: "'Doug Anderson'" <dianders@chromium.org>, "'Chris Ball'" <cjb@laptop.org>
+Cc: "'Jaehoon Chung'" <jh80.chung@samsung.com>,
         "'James Hogan'" <james.hogan@imgtec.com>,
         "'Grant Grundler'" <grundler@chromium.org>,
         "'Alim Akhtar'" <alim.akhtar@samsung.com>,
         "'Abhilash Kesavan'" <a.kesavan@samsung.com>,
-        "'Tomasz Figa'" <tomasz.figa@gmail.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1373470926-19314-1-git-send-email-dianders@chromium.org>
- <1375825071-20922-1-git-send-email-dianders@chromium.org>
- <1375825071-20922-4-git-send-email-dianders@chromium.org>
- <001a01ce9505$59c28b20$0d47a160$%jun@samsung.com>
- <CAD=FV=VO=50uMXfwY5iNa+xiamRiHTSpTMXs+EdMeUTawkeyqw@mail.gmail.com>
-In-reply-to: <CAD=FV=VO=50uMXfwY5iNa+xiamRiHTSpTMXs+EdMeUTawkeyqw@mail.gmail.com>
-Subject: RE: [PATCH v4 3/4] mmc: dw_mmc: Always setup the bus after
- suspend/resume
-Date: Mon, 12 Aug 2013 16:20:30 +0900
-Message-id: <000d01ce972c$6cf14730$46d3d590$%jun@samsung.com>
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1375825071-20922-1-git-send-email-dianders@chromium.org>
+ <1376066000-5495-1-git-send-email-dianders@chromium.org>
+ <1376066000-5495-3-git-send-email-dianders@chromium.org>
+In-reply-to: <1376066000-5495-3-git-send-email-dianders@chromium.org>
+Subject: RE: [PATCH v5 2/4] mmc: dw_mmc: Add exynos resume_noirq callback to
+ clear WAKEUP_INT
+Date: Mon, 12 Aug 2013 16:21:48 +0900
+Message-id: <000e01ce972c$9be7d4a0$d3b77de0$%jun@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=windows-1252
+Content-type: text/plain; charset=ks_c_5601-1987
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac6VFyp9tN9l4MnmQfK6jCLZ2ZszGgB33Wuw
+Thread-index: Ac6VHjfqsaiJY8PLRuWAtr8ss3q8swCA1i0g
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPIsWRmVeSWpSXmKPExsVy+t8zY919PRxBBjN+WVs8XrOYyeLBvG1s
-	Fttfb2SzOLvsIJvFqyM/mCzezXvBbHHjVxurxeVdc9gsjvzvZ7Q4df0zm8WqXX8YHbg9Zjdc
-	ZPHYOesuu0fPzjOMHoeurGX0uHKiidWjb8sqRo/Pm+QC2KO4bFJSczLLUov07RK4MhY+/chW
-	8Fei4tD/9+wNjG+Euxg5OSQETCTmXfzPDGGLSVy4t56ti5GLQ0hgGaPE8UePGGGKLp7exgyR
-	WMQosenCClYI5w+jxJ2tb8Gq2AS0JP6+eQM2SkRAW+Llg5VgHcwCzcwS8/a0sIAkhAR2MEn8
-	mV4EYnMKBEucv7sFrFlYIERiy7LTYDUsAqoSr0+/ZAOxeQVsJSa9OMsOYQtK/Jh8D6iGA2io
-	nsT9i1ogYWYBeYnNa94yg4QlBNQlHv3VhTjBSGLJo6uMECUiEvtevGMEOUdCYC6HxI1Zb6FW
-	CUh8m3yIBaJXVmLTAWhISEocXHGDZQKjxCwki2chLJ6FZPEsJBsWMLKsYhRNLUguKE5KLzLV
-	K07MLS7NS9dLzs/dxAiJ/Ik7GO8fsD7EmAy0fSKzlGhyPjBx5JXEGxqbGVmYmpgaG5lbmpEm
-	rCTOq95iHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcenZ9cdnuOy/ry8gFJBqslbHfP78
-	aznWr+IVEqS7p3i8czi6ec4sPsVjwptWWiw8NvWLZ/uh7N9MLM+/3IhVTC+69P98i9SzVHmL
-	NasnRJ+4kHmi03J6av70xlVlNtxHnrz8Ja3nccU1IGfNsq1L65Qfpv47JDMrV3HDRu8zZtMF
-	HDM2f3WwElBiKc5INNRiLipOBAAzF02LEgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDKsWRmVeSWpSXmKPExsVy+t9jAd19PRxBBktOmFk8XrOYyeLBvG1s
-	Fttfb2SzOLvsIJvFqyM/mCzezXvBbHHjVxurxeVdc9gsjvzvZ7Q4df0zm8WqXX8YHbg9Zjdc
-	ZPHYOesuu0fPzjOMHoeurGX0uHKiidWjb8sqRo/Pm+QC2KMaGG0yUhNTUosUUvOS81My89Jt
-	lbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgK5UUihLzCkFCgUkFhcr6dthmhAa4qZr
-	AdMYoesbEgTXY2SABhLWMWYsfPqRreCvRMWh/+/ZGxjfCHcxcnJICJhIXDy9jRnCFpO4cG89
-	WxcjF4eQwCJGiU0XVrBCOH8YJe5sfcsIUsUmoCXx980bsA4RAW2Jlw9WMoMUMQs0M0vM29PC
-	ApIQEtjBJPFnehGIzSkQLHH+7hawZmGBEIkty06D1bAIqEq8Pv2SDcTmFbCVmPTiLDuELSjx
-	Y/I9oBoOoKF6EvcvaoGEmQXkJTavecsMEpYQUJd49FcX4gQjiSWPrjJClIhI7HvxjnECo9As
-	JINmIQyahWTQLCQdCxhZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEp5Vn0jsYVzVYHGIU
-	4GBU4uH1+MIeJMSaWFZcmXuIUYKDWUmEl7eRI0iINyWxsiq1KD++qDQntfgQYzLQmxOZpUST
-	84EpL68k3tDYxMzI0sjMwsjE3Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGPnKlcPM
-	ZWyfbMmYsj2t5sBksewMpzrVKZ3zpih525fLvToRWdO2TnfdA1m7p6yWH5e8/T/h8pnAF5v3
-	vq3f7F7g432+5+QCubLao/FOqg+ePn/422WlGZeQUPjkr4fj2n4XbrxbFxER1dU+f9/UPNOA
-	aT/Nn4dWhO70LGZbFyl1vLXr3L/wN0osxRmJhlrMRcWJAFDeCBtvAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t8zI13eXo4ggy8bhSwer1nMZPFg3jY2
+	i+2vN7JZnF12kM3i1ZEfTBbv5r1gtrjxq43VonfBVTaLTY+vsVpc3jWHzeLI/35Gixnn9zFZ
+	nLr+mc1i1a4/jA58HrMbLrJ47Jx1l92jZ+cZRo9DV9YyemxeUu9x5UQTq0ffllWMHp83yQVw
+	RHHZpKTmZJalFunbJXBl3Hvaz1RwSKGiYdFKlgbGyVJdjJwcEgImEo8fdTBD2GISF+6tZwOx
+	hQSWMUq8u8sDUzPh4SNmiPgiRonbX4HiXED2H0aJnUe/soIk2AS0JP6+eQNWJCLgJfFi9wNm
+	kCJmgavMEi2X57JDdOxmlPi7cy0jSBWngKvE1+WnwbqFBeIl+lY2MYHYLAKqEv+aP4DZvAK2
+	EgebuxkhbEGJH5PvsYDYzAIGEu9n9bFC2PISm9e8BdrGAXSqusSjv7oQRxhJbL13lg2iRERi
+	34t3jCA3SAjs4JCYtfsP1C4BiW+TD7FA9MpKbDoADQlJiYMrbrBMYJSYhWTzLCSbZyHZPAvJ
+	igWMLKsYRVMLkguKk9KLjPSKE3OLS/PS9ZLzczcxQhJE3w7GmwesDzEmA62fyCwlmpwPTDB5
+	JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamCszW77
+	OLvtNfPk2xYBwaXutn4T69LYlf+HPs848GzN1PzZ24rb/vJM3l+Q//rBMk39nhtNX67PD1CK
+	2fhuhuzlp/8YXbf/U/6y0IYv/cHSlX71cx7WzfNY37DAaFHGpG82ty9F7FusnqV+7Vr3LZbe
+	/w46v26se654m5NjynWzKR4iqrqVdis2KrEUZyQaajEXFScCAJP128AmAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIKsWRmVeSWpSXmKPExsVy+t9jAV3eXo4gg1/7eSwer1nMZPFg3jY2
+	i+2vN7JZnF12kM3i1ZEfTBbv5r1gtrjxq43VonfBVTaLTY+vsVpc3jWHzeLI/35Gixnn9zFZ
+	nLr+mc1i1a4/jA58HrMbLrJ47Jx1l92jZ+cZRo9DV9YyemxeUu9x5UQTq0ffllWMHp83yQVw
+	RDUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHa6k
+	UJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzLj3tJ+p4JBCRcOilSwNjJOl
+	uhg5OSQETCQmPHzEDGGLSVy4t54NxBYSWMQocfsrTxcjF5D9h1Fi59GvrCAJNgEtib9v3oA1
+	iAh4SbzY/YAZpIhZ4CqzRMvluewQHbsZJf7uXMsIUsUp4CrxdflpsG5hgXiJvpVNTCA2i4Cq
+	xL/mD2A2r4CtxMHmbkYIW1Dix+R7LCA2s4CBxPtZfawQtrzE5jVvgbZxAJ2qLvHory7EEUYS
+	W++dZYMoEZHY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66X
+	nJ+7iRGcgJ5J7WBc2WBxiFGAg1GJh9fjC3uQEGtiWXFl7iFGCQ5mJRFe3kaOICHelMTKqtSi
+	/Pii0pzU4kOMyUCPTmSWEk3OBybHvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGan
+	phakFsFsYeLglGpgXK9hv3LCgmnMa9b2P11vzW8YI5YlOYM1uoZn19Kvc5rSVAVPssw7XzBv
+	d470pWWly40ulxhKfJ96cHGcAMucsNWbROXm+UWdfZjS/PGh3WHBtz/1PiUF57qfle9/O/2+
+	tebBQ1P7885l6f91VJPazd5jyfEroHDbtZAzqtPEwhNnr9qYk/+lUomlOCPRUIu5qDgRACFu
+	kzOEAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -68,69 +69,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, August 10, 2013,Doug Anderson wrote:
-> Seungwon,
-> 
-> On Fri, Aug 9, 2013 at 6:35 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> > On Wed, August 07, 2013, Doug Anderson wrote:
-> >> After suspend/resume all of the dw_mmc registers are reset to
-> >> defaults.  We restore most of them, but specifically don't setup the
-> >> clock registers after resume unless we've got a powered card.  Things
-> >> still work because the core will eventually call set_ios() and we'll
-> >> set things up.
-> >
-> > Hmm, I didn't get the need of this call during resume.
-> > I think set_ios is only valid where core layer calls.
-> > Besides, important things is ios's parameters.
-> > If suspend has finished successfully, last call of set_ios() is from mmc_power_off().
-> > On seeing fields of 'mmc->ios' stored last, these values aren't proper in resume phase.
-> > Please check mmc_power_off() function.
-> > In case MMC_PM_KEEP_POWER it could be kept.
-> 
-> Most of my reasoning has to do with the fact that the state of the
-> system after suspend/resume should not be significantly different than
-> the state of the system before suspend/resume.  If the state of the
-> system is different in the two cases it points out potential problems
-> or inefficiencies.
-> 
-> To make this more concrete:
-> 
-> 1. Boot up a system with no card in the SD Card slot.
-> 2. Note down the value of registers like CLKDIV, CLKENA, etc.
-> 3. Suspend / resume (S2R)
-> 4. Check the values of CLKDIV, CLKENA, etc.
-> 
-> You will notice that they are different.  This is a bad sign and can
-> be a source of bugs (though I don't know of any).  ...or it could mean
-> that power draw is different (could be better, could be worse) after a
-> suspend/resume cycle.
-> 
-> 
-> Said another way, if the value of CLKDIV, CLKENA, etc is not important
-> when a card is not inserted, why do they get initialized at boot time?
-> 
-> 
-> In general, I think that the mmc core code makes the assumption that
-> it's up to the driver to make sure that its state is preserved across
-> S2R.  For dw_mmc the driver doesn't do the "brute force" that some
-> drivers do of just saving and restoring all registers using a copy
-> loop.  Instead, the dw_mmc driver runs code that tries to set the
-> state back to something reasonable.  Without my patch the dw_mmc
-> driver doesn't run any code that restores these registers.
-> dw_mci_set_ios() will do so.
+Doug,
+Looks good to me except for minor comment.
 
-This seems pretty associated with [1/4 patch]. (Anyway continued, ...)
-Basically, both CLKDIV and CLKENA will be set with the reset value of zero. This means clock is disabled.
-While resume of dw_mmc is completed, initial configuration registers will be set except for runtime registers.
-I think registers related to clock are close to runtime.
-Core layer knows the correct clock rate for current device mode and will actually request it by set_ios.
-If core layer requests set_ios no more after dw_mmc resume is completed, dw_mmc will keep the clock to be disabled.
-Then, dw_mmc doesn't need self call of dw_mci_set_ios.
+On Sat, August 10, 2013, Doug Anderson wrote:
+> If the WAKEUP_INT is asserted at wakeup and not cleared, we'll end up
+> looping around forever.  This has been seen to happen on exynos5420
+> silicon despite the fact that we haven't enabled any wakeup events due
+> to a silicon errata.  It is safe to do on all exynos variants.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v5:
+> - Cleaned up dw_mci_exynos_resume_noirq() comment as per Seungwon.
+> - Don't memcpy dev_pm_ops structure, define a new one.
+> 
+> Changes in v4:
+> - Take Seungwon's suggestion and don't add any dw_mmc-pltfm code.
+> 
+> Changes in v3:
+> - Add freeze/thaw and poweroff/restore noirq entries.
+> 
+> Changes in v2:
+> - Use suspend_noirq as per James Hogan.
+> 
+>  drivers/mmc/host/dw_mmc-exynos.c | 56 +++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 55 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+> index 866edef..7d88583 100644
+> --- a/drivers/mmc/host/dw_mmc-exynos.c
+> +++ b/drivers/mmc/host/dw_mmc-exynos.c
+> @@ -30,6 +30,7 @@
+>  #define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
+>  					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
+>  					SDMMC_CLKSEL_CCLK_DIVIDER(z))
+> +#define SDMMC_CLKSEL_WAKEUP_INT		BIT(11)
+> 
+>  #define EXYNOS4210_FIXED_CIU_CLK_DIV	2
+>  #define EXYNOS4412_FIXED_CIU_CLK_DIV	4
+> @@ -100,6 +101,52 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
+>  	return 0;
+>  }
+> 
+> +#ifdef CONFIG_PM_SLEEP
+> +/*
+> + * TODO: we should probably disable the clock to the card in the suspend path.
+In suspend, clock is gated, isn't it?
+Rather, no comment looks better, if intention is not clear.
 
 Thanks,
 Seungwon Jeon
+
+> + */
+> +static int dw_mci_exynos_suspend(struct device *dev)
+> +{
+> +	struct dw_mci *host = dev_get_drvdata(dev);
+> +
+> +	return dw_mci_suspend(host);
+> +}
+> +
+> +static int dw_mci_exynos_resume(struct device *dev)
+> +{
+> +	struct dw_mci *host = dev_get_drvdata(dev);
+> +
+> +	return dw_mci_resume(host);
+> +}
+> +
+> +/**
+> + * dw_mci_exynos_resume_noirq - Exynos-specific resume code
+> + *
+> + * On exynos5420 there is a silicon errata that will sometimes leave the
+> + * WAKEUP_INT bit in the CLKSEL register asserted.  This bit is 1 to indicate
+> + * that it fired and we can clear it by writing a 1 back.  Clear it to prevent
+> + * interrupts from going off constantly.
+> + *
+> + * We run this code on all exynos variants because it doesn't hurt.
+> + */
+> +
+> +static int dw_mci_exynos_resume_noirq(struct device *dev)
+> +{
+> +	struct dw_mci *host = dev_get_drvdata(dev);
+> +	u32 clksel;
+> +
+> +	clksel = mci_readl(host, CLKSEL);
+> +	if (clksel & SDMMC_CLKSEL_WAKEUP_INT)
+> +		mci_writel(host, CLKSEL, clksel);
+> +
+> +	return 0;
+> +}
+> +#else
+> +#define dw_mci_exynos_suspend		NULL
+> +#define dw_mci_exynos_resume		NULL
+> +#define dw_mci_exynos_resume_noirq	NULL
+> +#endif /* CONFIG_PM_SLEEP */
+> +
+>  static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
+>  {
+>  	/*
+> @@ -187,13 +234,20 @@ static int dw_mci_exynos_probe(struct platform_device *pdev)
+>  	return dw_mci_pltfm_register(pdev, drv_data);
+>  }
 > 
-> Another option would be to forcibly save/restore registers in suspend/resume.
+> +const struct dev_pm_ops dw_mci_exynos_pmops = {
+> +	SET_SYSTEM_SLEEP_PM_OPS(dw_mci_exynos_suspend, dw_mci_exynos_resume)
+> +	.resume_noirq = dw_mci_exynos_resume_noirq,
+> +	.thaw_noirq = dw_mci_exynos_resume_noirq,
+> +	.restore_noirq = dw_mci_exynos_resume_noirq,
+> +};
+> +
+>  static struct platform_driver dw_mci_exynos_pltfm_driver = {
+>  	.probe		= dw_mci_exynos_probe,
+>  	.remove		= __exit_p(dw_mci_pltfm_remove),
+>  	.driver		= {
+>  		.name		= "dwmmc_exynos",
+>  		.of_match_table	= dw_mci_exynos_match,
+> -		.pm		= &dw_mci_pltfm_pmops,
+> +		.pm		= &dw_mci_exynos_pmops,
+>  	},
+>  };
 > 
-> -Doug
+> --
+> 1.8.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
