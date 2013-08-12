@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab3HLN5J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:57:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50844 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756043Ab3HLN5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:57:06 -0400
-Date: Mon, 12 Aug 2013 15:57:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] x86, AMD: simplify load_microcode_amd() to fix early
- microcode loading to no longer access uninitialized per-cpu data
-Message-ID: <20130812135702.GG18018@pd.tnic>
-References: <20130723230610.73bd048d@googlemail.com>
- <20130724193250.GO30777@pd.tnic>
- <20130808192943.GF27974@pd.tnic>
- <20130812153719.2b357d5d@fem.tu-ilmenau.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1756512Ab3HLN6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:58:48 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:29448 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab3HLN6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 09:58:47 -0400
+Date: Mon, 12 Aug 2013 08:58:45 -0500
+From: scameron@beardog.cce.hp.com
+To: John Kacur <jkacur@redhat.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        linux-scsi@vger.kernel.org, James Bottomley <jbottomley@parallels.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Clark Williams <williams@redhat.com>, scameron@beardog.cce.hp.com
+Subject: Re: [PATCH] hpsa: fix warning with smp_processor_id() in preemptible
+Message-ID: <20130812135845.GA15147@beardog.cce.hp.com>
+References: <alpine.LFD.2.03.1307261640170.2642@tycho> <20130812131312.GF23040@linutronix.de> <1290115203.630841.1376314412366.JavaMail.root@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130812153719.2b357d5d@fem.tu-ilmenau.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1290115203.630841.1376314412366.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 03:37:19PM +0200, Johannes Hirte wrote:
-> Just tested your amd-ucode branch with CONFIG_MICROCODE_AMD_EARLY
-> re-enabled and it works so far.
+On Mon, Aug 12, 2013 at 09:33:32AM -0400, John Kacur wrote:
+> 
+> 
+> ----- Original Message -----
+> > * John Kacur | 2013-07-26 16:42:30 [+0200]:
+> > 
+> > >Signed-off-by: John Kacur <jkacur@redhat.com>
+> > >Acked-by: Stephen <scameron@beardog.cce.hp.com>
+> > 
+> > ping.
+> > 
+> > I checked the branches for-next, scsi-fixes, fixes and misc at [0] and I
+> > didn't see it. I'm going to take this for 3.10-rt but please don't lose
+> > it on its way to Linus :)
+> > 
+> > [0] git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git
+> 
+> 
+> I hope it was clear to everyone that this patch was intended for upstream.
+> It was discovered by running the real-time kernel, but it exposes a (minor) problem
+> that should be fixed in the mainline kernel. Please apply it there Stephen, and
+> push it upstream appropriately.
 
-Ok, that's good news. Thanks a lot!
+I don't have such pushing abilities.  Acking it as I've done is
+all I can do.  Bug James. :)
 
--- 
-Regards/Gruss,
-    Boris.
+-- steve
 
-Sent from a fat crate under my desk. Formatting is fine.
---
