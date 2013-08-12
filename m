@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602Ab3HLTOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 15:14:47 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56025 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab3HLTOp (ORCPT
+	id S1753466Ab3HLTYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 15:24:33 -0400
+Received: from smtpauth05.mfg.siteprotect.com ([64.26.60.144]:44187 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751739Ab3HLTY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 15:14:45 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+EEn/zbY5Yf3g+wpqy6Z4rOCvAB61iFwg=
-Date: Mon, 12 Aug 2013 15:14:07 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Andrew Lunn <andrew@lunn.ch>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 15/16] arch/arm/mach-kirkwood: Avoid using
- ARRAY_AND_SIZE(e) as a function argument
-Message-ID: <20130812191407.GS25111@titan.lakedaemon.net>
-References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
- <1376239917-15594-16-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 12 Aug 2013 15:24:29 -0400
+Date: Mon, 12 Aug 2013 15:25:33 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Ingo Molnar <mingo@kernel.org>
+cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
+ executable
+In-Reply-To: <20130812181956.GB19405@gmail.com>
+Message-ID: <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
+References: <1375669364-13838-1-git-send-email-andi@firstfloor.org> <20130805081641.GA24808@gmail.com> <20130805082320.GA9562@infradead.org> <20130805083132.GE26746@gmail.com> <20130805083434.GA20606@infradead.org> <20130805090857.GA26940@gmail.com>
+ <20130806061932.GA20485@infradead.org> <20130812181956.GB19405@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376239917-15594-16-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020208.5209366C.0132,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 11, 2013 at 06:51:56PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding the
-> arity of the called function.
-> 
-> The semantic match that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e,f;
-> @@
-> 
-> f(...,
-> - ARRAY_AND_SIZE(e)
-> + e,ARRAY_SIZE(e)
->   ,...)
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
-> Not compiled.
+On Mon, 12 Aug 2013, Ingo Molnar wrote:
 
-compiled fine on arm.
+> perf is the exact opposite: no split-up the development culture because 
+> they are closely related, yet a relatively disciplined ABI between the 
+> components. In fact the ABI is higher quality exactly because development 
+> is more integrated and allows for ABI problems to be resolved before they 
+> leak out. It also allows for faster iteration of development, without 
+> nonsensical ABI steps pulluting the way.
 
->  arch/arm/mach-kirkwood/openrd-setup.c    |    3 ++-
->  arch/arm/mach-kirkwood/rd88f6281-setup.c |    4 +++-
->  2 files changed, 5 insertions(+), 2 deletions(-)
+I don't know if I'd use "quality" and "perf ABI" in the same sentence.
+It's a horrible ABI; it has the honor of having the longest syscall
+manpage, beating out even ptrace.
 
-Applied to mvebu/boards
+It also really isn't that stable; I've had perf ABI changes break programs 
+I maintain at least three times in the last 2 kernel releases.  Part of 
+this is due to the tight coupling into the kernel, in fact the only ABI 
+anyone seems to care about is that presented by the perf-tool CLI 
+interface; the _actual_ kernel ABI seems like an afterthought.
 
-thx,
-
-Jason.
+Vince
