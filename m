@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab3HLDDg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 23:03:36 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:38464 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513Ab3HLDDf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 23:03:35 -0400
-Date: Mon, 12 Aug 2013 06:03:29 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Linux-Xtensa] Re: [PATCH] time: sched_clock: fix integer
- overflow
-Message-ID: <20130812030329.GB6440@tarshish>
-References: <232c026d1b8d2556679aea56cf77a6811f9a96c5.1374054369.git.baruch@tkos.co.il>
- <20130729055939.GK5161@tarshish>
-MIME-Version: 1.0
+	id S1755688Ab3HLDQw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 23:16:52 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:47974 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755641Ab3HLDQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 23:16:49 -0400
+Date: Sun, 11 Aug 2013 23:16:47 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>, guz.fnst@cn.fujitsu.com
+Subject: Re: [RFC PATCH v2 0/4] mm: reclaim zbud pages on migration and compaction
+Message-ID: <20130812031647.GB8043@kvack.org>
+References: <1376043740-10576-1-git-send-email-k.kozlowski@samsung.com> <20130812022535.GA18832@bbox>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130729055939.GK5161@tarshish>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130812022535.GA18832@bbox>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas, John,
+Hello Minchan,
 
-On Mon, Jul 29, 2013 at 08:59:39AM +0300, Baruch Siach wrote:
-> On Wed, Jul 17, 2013 at 12:46:53PM +0300, Baruch Siach wrote:
-> > The expression '(1 << 32)' happens to evaluate as 0 on ARM, but it evaluates as
-> > 1 on xtensa and x86_64. This zeros sched_clock_mask, and breaks sched_clock().
-> > Set the type of 1 to 'unsigned long long' to get the value we need.
+On Mon, Aug 12, 2013 at 11:25:35AM +0900, Minchan Kim wrote:
+> Hello,
 > 
-> Ping? -rc3 is out, and this bug (which currently breaks xtensa) is not fixed 
-> yet. Please consider applying.
-
-Sorry to bother again, but -rc5 is here and xtensa sched_clock is still 
-broken.
-
-baruch
-
-> > Reported-by: Max Filippov <jcmvbkbc@gmail.com>
-> > Tested-by: Max Filippov <jcmvbkbc@gmail.com>
-> > Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> > Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> > ---
-> >  kernel/time/sched_clock.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> On Fri, Aug 09, 2013 at 12:22:16PM +0200, Krzysztof Kozlowski wrote:
+> > Hi,
 > > 
-> > diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-> > index a326f27..0b479a6 100644
-> > --- a/kernel/time/sched_clock.c
-> > +++ b/kernel/time/sched_clock.c
-> > @@ -121,7 +121,7 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
-> >  	BUG_ON(bits > 32);
-> >  	WARN_ON(!irqs_disabled());
-> >  	read_sched_clock = read;
-> > -	sched_clock_mask = (1 << bits) - 1;
-> > +	sched_clock_mask = (1ULL << bits) - 1;
-> >  	cd.rate = rate;
-> >  
-> >  	/* calculate the mult/shift to convert counter ticks to ns. */
-> > -- 
+> > Currently zbud pages are not movable and they cannot be allocated from CMA
+> > region. These patches try to address the problem by:
+> 
+> The zcache, zram and GUP pages for memory-hotplug and/or CMA are
+> same situation.
+> 
+> > 1. Adding a new form of reclaim of zbud pages.
+> > 2. Reclaiming zbud pages during migration and compaction.
+> > 3. Allocating zbud pages with __GFP_RECLAIMABLE flag.
+> 
+> So I'd like to solve it with general approach.
+> 
+> Each subsystem or GUP caller who want to pin pages long time should
+> create own migration handler and register the page into pin-page
+> control subsystem like this.
+> 
+> driver/foo.c
+> 
+> int foo_migrate(struct page *page, void *private);
+> 
+> static struct pin_page_owner foo_migrate = {
+>         .migrate = foo_migrate;
+> };
+> 
+> int foo_allocate()
+> {
+>         struct page *newpage = alloc_pages();
+>         set_pinned_page(newpage, &foo_migrate);
+> }
+> 
+> And in compaction.c or somewhere where want to move/reclaim the page,
+> general VM can ask to owner if it founds it's pinned page.
+> 
+> mm/compaction.c
+> 
+>         if (PagePinned(page)) {
+>                 struct pin_page_info *info = get_page_pin_info(page);
+>                 info->migrate(page);
+>                 
+>         }
+> 
+> Only hurdle for that is that we should introduce a new page flag and
+> I believe if we all agree this approch, we can find a solution at last.
+> 
+> What do you think?
 
+I don't like this approach.  There will be too many collisions in the 
+hash that's been implemented (read: I don't think you can get away with 
+a naive implementation for core infrastructure that has to suite all 
+users), you've got a global spin lock, and it doesn't take into account 
+NUMA issues.  The address space migratepage method doesn't have those 
+issues (at least where it is usable as in aio's use-case).
+
+If you're going to go down this path, you'll have to decide if *all* users 
+of pinned pages are going to have to subscribe to supporting the un-pinning 
+of pages, and that means taking a real hard look at how O_DIRECT pins pages.  
+Once you start thinking about that, you'll find that addressing the 
+performance concerns is going to be an essential part of any design work to 
+be done in this area.
+
+		-ben
 -- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+"Thought is the essence of where you are now."
