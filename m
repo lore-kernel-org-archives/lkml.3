@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab3HLQjh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:39:37 -0400
-Received: from relay.parallels.com ([195.214.232.42]:38211 "EHLO
+	id S1757418Ab3HLQkC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:40:02 -0400
+Received: from relay.parallels.com ([195.214.232.42]:38251 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756596Ab3HLQje (ORCPT
+	with ESMTP id S1756917Ab3HLQj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:39:34 -0400
-Subject: [PATCH 1/2] fuse: postpone end_page_writeback() in
- fuse_writepage_locked()
+	Mon, 12 Aug 2013 12:39:59 -0400
+Subject: [PATCH 2/2] fuse: wait for writeback in fuse_file_fallocate()
 To: miklos@szeredi.hu
 From: Maxim Patlasov <MPatlasov@parallels.com>
 Cc: fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
         linux-kernel@vger.kernel.org, devel@openvz.org, xemul@parallels.com
-Date: Mon, 12 Aug 2013 20:39:30 +0400
-Message-ID: <20130812163906.10366.29310.stgit@maximpc.sw.ru>
+Date: Mon, 12 Aug 2013 20:39:55 +0400
+Message-ID: <20130812163935.10366.88320.stgit@maximpc.sw.ru>
 In-Reply-To: <20130812163739.10366.64896.stgit@maximpc.sw.ru>
 References: <20130812163739.10366.64896.stgit@maximpc.sw.ru>
 User-Agent: StGit/0.15
@@ -25,53 +24,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch fixes a race between ftruncate(2), mmap-ed write and write(2):
+The patch fixes a race between mmap-ed write and fallocate(PUNCH_HOLE):
 
 1) An user makes a page dirty via mmap-ed write.
-2) The user performs shrinking truncate(2) intended to purge the page.
-3) Before fuse_do_setattr calls truncate_pagecache, the page goes to
-   writeback. fuse_writepage_locked fills FUSE_WRITE request and releases
-   the original page by end_page_writeback.
-4) fuse_do_setattr() completes and successfully returns. Since now, i_mutex
-   is free.
-5) Ordinary write(2) extends i_size back to cover the page. Note that
-   fuse_send_write_pages do wait for fuse writeback, but for another
-   page->index.
-6) fuse_writepage_locked proceeds by queueing FUSE_WRITE request.
-   fuse_send_writepage is supposed to crop inarg->size of the request,
-   but it doesn't because i_size has already been extended back.
-
-Moving end_page_writeback to the end of fuse_writepage_locked fixes the race
-because now the fact that truncate_pagecache is successfully returned infers
-that fuse_writepage_locked has already called end_page_writeback. And this,
-in turn, infers that fuse_flush_writepages has already called
-fuse_send_writepage, and the latter used valid (shrunk) i_size. write(2)
-could not extend it because of i_mutex held by ftruncate(2).
+2) The user performs fallocate(2) with mode == PUNCH_HOLE|KEEP_SIZE
+   and <offset, size> covering the page.
+3) Before truncate_pagecache_range call from fuse_file_fallocate,
+   the page goes to write-back. The page is fully processed by fuse_writepage
+   (including end_page_writeback on the page), but fuse_flush_writepages did
+   nothing because fi->writectr < 0.
+4) truncate_pagecache_range is called and fuse_file_fallocate is finishing
+   by calling fuse_release_nowrite. The latter triggers processing queued
+   write-back request which will write stale date to the hole soon.
 
 Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 ---
- fs/fuse/file.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ fs/fuse/file.c |   53 ++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 44 insertions(+), 9 deletions(-)
 
 diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 5c121fe..d1715b3 100644
+index d1715b3..2b18c4b 100644
 --- a/fs/fuse/file.c
 +++ b/fs/fuse/file.c
-@@ -1529,7 +1529,6 @@ static int fuse_writepage_locked(struct page *page)
+@@ -344,6 +344,31 @@ static bool fuse_page_is_writeback(struct inode *inode, pgoff_t index)
+ 	return found;
+ }
  
- 	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
- 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
--	end_page_writeback(page);
- 
- 	spin_lock(&fc->lock);
- 	list_add(&req->writepages_entry, &fi->writepages);
-@@ -1537,6 +1536,8 @@ static int fuse_writepage_locked(struct page *page)
- 	fuse_flush_writepages(inode);
- 	spin_unlock(&fc->lock);
- 
-+	end_page_writeback(page);
++static bool fuse_range_is_writeback(struct inode *inode, pgoff_t idx_from,
++				    pgoff_t idx_to)
++{
++	struct fuse_conn *fc = get_fuse_conn(inode);
++	struct fuse_inode *fi = get_fuse_inode(inode);
++	struct fuse_req *req;
++	bool found = false;
 +
++	spin_lock(&fc->lock);
++	list_for_each_entry(req, &fi->writepages, writepages_entry) {
++		pgoff_t curr_index;
++
++		BUG_ON(req->inode != inode);
++		curr_index = req->misc.write.in.offset >> PAGE_CACHE_SHIFT;
++		if (!(idx_from >= curr_index + req->num_pages ||
++		      idx_to < curr_index)) {
++			found = true;
++			break;
++		}
++	}
++	spin_unlock(&fc->lock);
++
++	return found;
++}
++
+ /*
+  * Wait for page writeback to be completed.
+  *
+@@ -358,6 +383,19 @@ static int fuse_wait_on_page_writeback(struct inode *inode, pgoff_t index)
  	return 0;
+ }
  
- err_free:
++static void fuse_wait_on_writeback(struct inode *inode, pgoff_t start,
++				   size_t bytes)
++{
++	struct fuse_inode *fi = get_fuse_inode(inode);
++	pgoff_t idx_from, idx_to;
++
++	idx_from = start >> PAGE_CACHE_SHIFT;
++	idx_to = (start + bytes - 1) >> PAGE_CACHE_SHIFT;
++
++	wait_event(fi->page_waitq,
++		   !fuse_range_is_writeback(inode, idx_from, idx_to));
++}
++
+ static int fuse_flush(struct file *file, fl_owner_t id)
+ {
+ 	struct inode *inode = file_inode(file);
+@@ -2478,8 +2516,11 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 
+ 	if (lock_inode) {
+ 		mutex_lock(&inode->i_mutex);
+-		if (mode & FALLOC_FL_PUNCH_HOLE)
+-			fuse_set_nowrite(inode);
++		if (mode & FALLOC_FL_PUNCH_HOLE) {
++			truncate_pagecache_range(inode, offset,
++						 offset + length - 1);
++			fuse_wait_on_writeback(inode, offset, length);
++		}
+ 	}
+ 
+ 	req = fuse_get_req_nopages(fc);
+@@ -2508,17 +2549,11 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
+ 	if (!(mode & FALLOC_FL_KEEP_SIZE))
+ 		fuse_write_update_size(inode, offset + length);
+ 
+-	if (mode & FALLOC_FL_PUNCH_HOLE)
+-		truncate_pagecache_range(inode, offset, offset + length - 1);
+-
+ 	fuse_invalidate_attr(inode);
+ 
+ out:
+-	if (lock_inode) {
+-		if (mode & FALLOC_FL_PUNCH_HOLE)
+-			fuse_release_nowrite(inode);
++	if (lock_inode)
+ 		mutex_unlock(&inode->i_mutex);
+-	}
+ 
+ 	return err;
+ }
 
