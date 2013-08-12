@@ -1,104 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab3HLUuK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 16:50:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56723 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab3HLUuI (ORCPT
+	id S1755475Ab3HLUuU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 16:50:20 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:62446 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab3HLUuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 16:50:08 -0400
-Date: Mon, 12 Aug 2013 13:50:07 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-Message-ID: <20130812205007.GA5822@kroah.com>
-References: <20130811190826.GH6427@sirena.org.uk>
- <20130812020257.GA7028@kroah.com>
- <20130812112344.GS6427@sirena.org.uk>
+	Mon, 12 Aug 2013 16:50:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130812112344.GS6427@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130812200628.GG23006@n2100.arm.linux.org.uk>
+References: <5207B3C3.9080508@roeck-us.net> <20130811220450.GY23006@n2100.arm.linux.org.uk>
+ <52082EF8.10005@roeck-us.net> <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com>
+ <20130812164548.GE23006@n2100.arm.linux.org.uk> <CAFEAcA97PuORg920f-A_8rvCgBq=k5Y=0W6m2Nv8nnzjY19Utg@mail.gmail.com>
+ <20130812200628.GG23006@n2100.arm.linux.org.uk>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Mon, 12 Aug 2013 21:49:54 +0100
+Message-ID: <CAFEAcA9BA7zfaO1J5zVaEcG-AgOo6dyiew08-o2eObuBe-KWig@mail.gmail.com>
+Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        qemu-devel@nongnu.org, Arnd Bergmann <arnd.bergmann@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 12:23:44PM +0100, Mark Brown wrote:
-> On Sun, Aug 11, 2013 at 07:02:57PM -0700, Greg Kroah-Hartman wrote:
-> > On Sun, Aug 11, 2013 at 08:08:26PM +0100, Mark Brown wrote:
-> 
-> > > I know there's been some discussion of this topic but do we have any
-> > > general consensus on how to handle such things both from a Linux driver
-> > > model point of view and from a DT/ACPI point of view?
-> 
-> > As these are usually bus-specific things, and really, platform-specific
-> 
-> I don't think they're bus specific - the main issue with a lot of this
-> is that they're outside the infrastructure that the bus standardises so
-> we should have a general way of understanding this.  There will be bits
-> where the bus needs to get involved but the overall pattern is generic.
+On 12 August 2013 21:06, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Aug 12, 2013 at 06:33:28PM +0100, Peter Maydell wrote:
+>>     /* Slot to IRQ mapping for RealView EB and PB1176 backplane
+>>      *      name    slot    IntA    IntB    IntC    IntD
+>>      *      A       31      IRQ50   IRQ51   IRQ48   IRQ49
+>>      *      B       30      IRQ49   IRQ50   IRQ51   IRQ48
+>>      *      C       29      IRQ48   IRQ49   IRQ50   IRQ51
+>>      * Slot C is for the host bridge; A and B the peripherals.
+>>      * Our output irqs 0..3 correspond to the baseboard's 48..51.
+>>      */
+>>
+>> ie IRQ48 == board's PCI0 == slot C connector A6 (IntA) == PCI_nINTB
+>>    == Slot B connector B8 (IntD) == Slot A connector A7 (IntC).
+>>
+>> and so on round.
+>>
+>> The 926's routing is one extra round of swizzling because the
+>> board itself connects FPGA P_nINTA to its edge connector's
+>> INTB (B7) pin rather than INTA (A6) as the EB/1176 do.
+>> (This isn't even hinted at in the documentation, you need to
+>> either experiment or look at the 926 board schematic.)
+>
+> Okay, so the above just adds to the confusion, because you appear to be
+> mistaking "slot" for the AD signal which the IDSEL pin is connected to.
 
-The "pattern" is generic, yes, we've been dealing with that for well
-over a decade now (pci hotplug controllers are "out of line" and control
-when/if a PCI is device is added/removed.)
+The board TRM:
+http://infocenter.arm.com/help/topic/com.arm.doc.dui0411d/Cacdijji.html
+says that "slot position" and "AD signal connected to IDSEL"
+are the same thing:
 
-I'd argue that each bus needs special logic to handle this, just like
-PCI hotplug did it with their hotplug controller logic.  Due to the
-nature of this type of thing, it's all out-of-line hardware that is
-custom to each device type / bus.
+"The slot positions for PCI cards are numbered from 11 to 31.
+ The numbering is based on the address bit that is connected
+ to the IDSEL line."
 
-> > things, I'd fall back and just recommend a "platform driver" that
-> > "knows" about where these gpios are, and how/when to enable them, which
-> > will cause the discoverable bus logic to kick in now that it notices a
-> > device is present/removed.
-> 
-> This doesn't work in general.  These things aren't really platform
-> specific at all, they're features of the devices that apply to any
-> system using them and while for some use cases (like WiFi and BT power)
-> an external thing that just manually applies power will be enough in
-> other cases we want to know about the device even while it's off and the
-> driver might be able to do extra things at runtime if it knows about for
-> example having some control over signals to the device.
+> As I'm seeing a report of a card appearing in slot 0x0d at the top of
+> this thread, this doesn't match your numbering above.  So, is slot
+> 0x0d slot A or slot B?
 
-No, the device isn't platform specific, but the logic needed to turn
-on/off is platform specific, otherwise the device would "just work"
-properly as the bus is self-discoverable.
+Slot 0xd is where the second PCI card QEMU emulates appears.
+It doesn't correspond to either A or B in real hardware.
+That trace output is the result of running the kernel on QEMU.
 
-Much like rfkill is, as you point out.  Those are all platform specific.
+On QEMU we put the host at slot 11 (lowest possible) and
+then cards at 12, 13, ... because generally people want to
+be able to plug in more than two cards. It also improves our
+backward-compatiliity with old kernels which assume old broken
+QEMU behaviour. This is kind of like modelling a rather
+extended (but admittedly fictitious) backplane.
 
-> For example in the Slimbus case we're normally talking about audio
-> CODECs.  In order to preserve the userspace API the device has to appear
-> to be present at all times, the driver will remember the settings the
-> user is making to be applied when it actually powers up and indeed the
-> powering up should be kicked off as a result of userspac acting on the
-> apparently present device.
+On real hardware the physical "slot A" and "slot B" on
+the backplane are 'slot' 31 and 30, and the host appears
+at 29.
 
-That's some horrible hardware, who thought of that?
+I don't currently have the h/w set up, but digging in my email
+archives, when we were running the kernel on the real PB926
+h/w and backplane it was indeed reporting the PCI core (ie
+"slot C") as 29, and the other two as 30 and 31:
+[  128.920150] PCI core found (slot 29)
+[  128.920875] pci 0000:00:1f.0: reg 10: [io  0x0af0-0x0aff]
+[  128.920958] pci 0000:00:1f.0: reg 14: [io  0x0a70-0x0a7f]
+[  128.921032] pci 0000:00:1f.0: reg 18: [io  0x01f0-0x01ff]
+[  128.921103] pci 0000:00:1f.0: reg 1c: [io  0x0170-0x017f]
+[  128.921173] pci 0000:00:1f.0: reg 20: [io  0xcc00-0xcc1f]
+[  128.921244] pci 0000:00:1f.0: reg 24: [io  0x8c00-0x8cff]
+[  128.921320] pci 0000:00:1f.0: reg 30: [mem 0xffff0000-0xffffffff pref]
 
-> Another example here (including USB devices) is interrupt signals wired
-> directly back to the processor, completely outside of the bus.
+(that's from two years ago, a 2.6.35.6+ kernel with Arnd's
+patchset applied, detecting a SATA card in slot 31).
 
-Like rfkill switches that just power on/off a USB device built onto the
-laptop motherboard :)
-
-> > Perhaps a semi-generic "platform" driver could be created, that knows
-> > how to handle these settings in the DT, but odds are, that might be
-> > difficult to make generic enough to cover a wide range of boards, but
-> > without specifics, it's hard to tell.
-> 
-> There's things like the rfkill stuff already, and the reset controller
-> on the way, but again this only covers a fairly small subset of the
-> issues.
-
-"small subset"?  How common is this type of thing?
-
-thanks,
-
-greg k-h
+-- PMM
