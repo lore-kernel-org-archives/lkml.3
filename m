@@ -1,107 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab3HLJwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 05:52:37 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:60790 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382Ab3HLJwe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 05:52:34 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-bb-5208b060d414
-Date: Mon, 12 Aug 2013 11:52:05 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Subject: Re: [PATCH v6 6/8] cpufreq:exynos:Extend Exynos cpufreq driver to
- support boost framework
-Message-id: <20130812115205.6fb12667@amdc308.digital.local>
-In-reply-to: <CAKohponC=S=3=mrTpWvPvejqSeqfndVOwb2GDkQ0jKxXXa0TOQ@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-7-git-send-email-l.majewski@samsung.com>
- <CAKohponC=S=3=mrTpWvPvejqSeqfndVOwb2GDkQ0jKxXXa0TOQ@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jQd2EDRxBBte65C02zljPavG06Qe7
-	xbzPshZ9P68wW6zZ/5PJovPsE2aL3gVX2SzePOK2uLxrDpvF594jjBa3G1ewWfQv7GWyePKw
-	j81i41cPBz6PxXteMnncubaHzWPdtLfMHn1bVjF6PFrcwuhx/MZ2Jo/Pm+QC2KO4bFJSczLL
-	Uov07RK4Mlr3sBQ85q4481KwgXElZxcjJ4eEgIlE68kWVghbTOLCvfVsXYxcHEIC0xkl1u25
-	wwrhtDNJ7FwyB6yKRUBVov/BPnYQm01AT+Lz3adMXYwcHCICWhIvb6aC1DMLrGCR2P9nMiNI
-	XFggReLuqnyQcl4Ba4ndE4+DjeEUCJa40TKZHWJ+G5PE+l2nwGbyC0hKtP/7wQxxkZ3EuU8b
-	2CGaBSV+TL7HAmIzA+3avK2JFcKWl9i85i3zBEbBWUjKZiEpm4WkbAEj8ypG0dSC5ILipPRc
-	I73ixNzi0rx0veT83E2M4Hh6Jr2DcVWDxSFGAQ5GJR5ejy/sQUKsiWXFlbmHGCU4mJVEeNXm
-	cQQJ8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYOT1cP9R
-	ppPSdO2+/YIattsGHxT8TJ6z1zsGP1fd5Cm8/EGV4YPpiqe3BdW1ybbfc2VneM8fV1K+4uHS
-	/nWOix3+OPryeX0SqJtZIvHQfadik4+g0mXpnV56neZurdE3lgnf0OqNSri45YXVlc7ivge7
-	48XnKvyc2rcy5bZJQKb1wVKHLZ+blViKMxINtZiLihMB0gcAMqMCAAA=
+	id S1756005Ab3HLJ5N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 05:57:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55482 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755382Ab3HLJ5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 05:57:09 -0400
+Date: Mon, 12 Aug 2013 11:57:04 +0200
+From: Jan Kara <jack@suse.cz>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Guenter Roeck <linux@roeck-us.net>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230
+ ext4_evict_inode+0x4c9/0x500 [ext4]() still in 3.11-rc3
+Message-ID: <20130812095704.GA4596@quack.suse.cz>
+References: <1375388059.2097.10.camel@buesod1.americas.hpqcorp.net>
+ <20130801203320.GB31857@quack.suse.cz>
+ <1375415926.2269.1.camel@buesod1.americas.hpqcorp.net>
+ <20130807152050.GA26516@quack.suse.cz>
+ <1375898923.2134.63.camel@buesod1.americas.hpqcorp.net>
+ <20130807184551.GD26516@quack.suse.cz>
+ <1375909663.2134.70.camel@buesod1.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375909663.2134.70.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Jul 2013 15:56:53 +0530 Viresh Kumar viresh.kumar@linaro.org
-wrote,
-> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
+On Wed 07-08-13 14:07:43, Davidlohr Bueso wrote:
+> On Wed, 2013-08-07 at 20:45 +0200, Jan Kara wrote:
+> > On Wed 07-08-13 11:08:43, Davidlohr Bueso wrote:
+> > > Hi Jan,
+> > > 
+> > > On Wed, 2013-08-07 at 17:20 +0200, Jan Kara wrote:
+> > > > On Thu 01-08-13 20:58:46, Davidlohr Bueso wrote:
+> > > > > On Thu, 2013-08-01 at 22:33 +0200, Jan Kara wrote:
+> > > > > >   Hi,
+> > > > > > 
+> > > > > > On Thu 01-08-13 13:14:19, Davidlohr Bueso wrote:
+> > > > > > > FYI I'm seeing loads of the following messages with Linus' latest
+> > > > > > > 3.11-rc3 (which includes 822dbba33458cd6ad)
+> > > > > >   Thanks for notice. I see you are running reaim to trigger this. What
+> > > > > > workload?
+> > > > > 
+> > > > > After re-running the workloads one by one, I finally hit the issue again
+> > > > > with 'dbase'. FWIW I'm using ramdisks + ext4.
+> > > >   Hum, I'm not able to reproduce this with current Linus' kernel - commit
+> > > > e4ef108fcde0b97ed38923ba1ea06c7a152bab9e - I've tried with ramdisk but no
+> > > > luck. Are you using some special mount options?
+> > > > 
+> > > 
+> > > I just hit the issue again with today's latest pull, 3.11-rc4 (which has
+> > > e4ef108fcde0b97ed38923ba1ea06c7a152bab9e as of yesterday). I create the
+> > > fs with "-b 4096 -J size=4", and mount it with
+> > > "journal_async_commit,nobarrier,async,noatime,nodiratime"
+> >   Still no success :(.
+> > 
+> > > I cannot really think of any additional info I can give you, but if you
+> > > think of something else just shout :)
+> >   Maybe what's your reaim.config? And what is fs size and machine config?
 > 
-> > diff --git a/drivers/cpufreq/exynos-cpufreq.c
-> > b/drivers/cpufreq/exynos-cpufreq.c index 9ae1871..175172d9 100644
-> > --- a/drivers/cpufreq/exynos-cpufreq.c
-> > +++ b/drivers/cpufreq/exynos-cpufreq.c
-> > @@ -270,6 +270,9 @@ static int exynos_cpufreq_cpu_exit(struct
-> > cpufreq_policy *policy)
-> >
-> >  static struct freq_attr *exynos_cpufreq_attr[] = {
-> >         &cpufreq_freq_attr_scaling_available_freqs,
-> > +#ifdef CONFIG_CPU_FREQ_BOOST_SW
+> The machine is an 8 socket, 80 core, 256Gb RAM, HP DL980 server. No
+> special storage being used. Attached is the reaim.config and
+> workfile.dbase files.
+  This is curious. I was trying really hard even on a similar machine
+(well, about half of your size) but no luck with reproducing the warning
+you see. OTOH I was getting a *flood* of warnings from
+ext4_da_update_reserve_space() - I've fixed that up and posted patch to
+linux-ext4 (ext4: Fix warning in ext4_da_update_reserve_space()).
+
+								Honza
 > 
-> Use ARM_EXYNOS_CPU_FREQ_BOOST_SW instead.
-
-Ok, the ARM_EXYNOS_CPU_FREQ_BOOST_SW looks more appropriate here.
-
+> Thanks,
+> Davidlohr
 > 
-> > +       &cpufreq_freq_attr_scaling_boost_freqs,
-> > +#endif
-> >         NULL,
-> >  };
-> >
-> > @@ -332,6 +335,9 @@ static int __init exynos_cpufreq_probe(struct
-> > platform_device *pdev)
-> >
-> >         locking_frequency = exynos_getspeed(0);
-> >
-> > +#ifdef CONFIG_CPU_FREQ_BOOST_SW
-> > +       exynos_driver.boost_supported = true;
-> > +#endif
+> > 
+> > 								Honza
+> > 
+> > 
+> > > > > > > ------------[ cut here ]------------
+> > > > > > > WARNING: CPU: 26 PID: 93793 at fs/ext4/inode.c:230 ext4_evict_inode+0x4c9/0x500 [ext4]()
+> > > > > > > Modules linked in: autofs4 cpufreq_ondemand freq_table sunrpc 8021q garp stp llc pcc_cpufreq ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip_tables ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_mod uinput iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode pcspkr sg lpc_ich mfd_core hpilo hpwdt i7core_edac edac_core netxen_nic mperf ext4 jbd2 mbcache sd_mod crc_t10dif aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 hpsa radeon ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: freq_table]
+> > > > > > > CPU: 26 PID: 93793 Comm: reaim Tainted: G        W    3.11.0-rc3+ #1
+> > > > > > > Hardware name: HP ProLiant DL980 G7, BIOS P66 06/24/2011
+> > > > > > >  00000000000000e6 ffff8985db603d78 ffffffff8153ce4d 00000000000000e6
+> > > > > > >  0000000000000000 ffff8985db603db8 ffffffff8104cf1c ffff8985db603dc8
+> > > > > > >  ffff8b05c485b8b0 ffff8b05c485b9b8 ffff8b05c485b800 00000000ffffff9c
+> > > > > > > Call Trace:
+> > > > > > >  [<ffffffff8153ce4d>] dump_stack+0x49/0x5c
+> > > > > > >  [<ffffffff8104cf1c>] warn_slowpath_common+0x8c/0xc0
+> > > > > > >  [<ffffffff8104cf6a>] warn_slowpath_null+0x1a/0x20
+> > > > > > >  [<ffffffffa02a0179>] ext4_evict_inode+0x4c9/0x500 [ext4]
+> > > > > > >  [<ffffffff811915e7>] evict+0xa7/0x1c0
+> > > > > > >  [<ffffffff811917e3>] iput_final+0xe3/0x170
+> > > > > > >  [<ffffffff811918ae>] iput+0x3e/0x50
+> > > > > > >  [<ffffffff81187aa6>] do_unlinkat+0x1c6/0x280
+> > > > > > >  [<ffffffff8106f3e4>] ? task_work_run+0x94/0xf0
+> > > > > > >  [<ffffffff81003a44>] ? do_notify_resume+0x84/0x90
+> > > > > > >  [<ffffffff81187b76>] SyS_unlink+0x16/0x20
+> > > > > > >  [<ffffffff81549a02>] system_call_fastpath+0x16/0x1b
+> > > > > > > ---[ end trace 15e812809616488b ]---
+> > > > > > > 
+> > > > > > > 
+> > > > > 
+> > > > > 
+> > > 
+> > > 
 > 
-> So, why here and not in the definition of exynos_driver?
 
-Ok, I will move the above code to struct cpufreq_driver exynos_driver
+> # Sample configuration file for the reaim workload
+> # cliff white, OSDL 4/2003
+> #
+> # This is a comment (duh)
+> # all variables are named in UPPER CASE, unless you want
+> # to write a better option parser. Send me a patch
+> # I'm keeping this, but not used yet
+> #
+> # The disk tests in the AIM-7 test consist of three groups:
+> # basic block I/O tests, the same tests with an added sync,
+> # and the sync I/O tests. Each test determines file size from a
+> # global variable, disk_iteration_count.
+> # 
+> # There are two configuration variables that control this,
+> # FILESIZE and POOLSIZE  (specified in kilobytes or megabytes).
+> # If POOLSIZE is zero, each child will write or read a total of
+> # FILESIZE bytes. If POOLSIZE is non-zero, child file size is
+> # equal to FILESIZE + (POOLSIZE/number_of_children). Thus when
+> # POOLSIZE is non-zero, I/O per child will be reduced on each
+> # increase in child count.
+> # 
+> # For example, specifying a FILESIZE of 10K and a POOLSIZE of
+> # 100K will result in a single child creating a 110K byte file
+> # on each disk device listed. Two children will create a 60K
+> # file, etc. 24 children will create a 14K file, consuming
+> # 328KB per disk device.
+> #
+> # The file and poolsize values can be specified here, or
+> # in the workfile. Values in the workfile will over write
+> # these values
+> FILESIZE 10k
+> POOLSIZE 1m
+> # 
+> # A list of disk directories for the exerciser
+> # DISKDIR /tmp/diskdir
+> # To control number of users
+> # STARTUSERS 2
+> # ENDUSERS 3
+> # and to control the count
+> # INCREMENT 2
+> # Number of jobs per child
+> # JOBS 20
+> # All switch options will use '1' for on, anything else for off
+> # Extra output
+> # VERBOSE 1
+> # Switch for the crossover
+> # CROSSOVER 1
+> # Switch for STP-style results file
+> # BRIEF 1
+> DISKDIR /t0
+> DISKDIR /t1
+> DISKDIR /t2
+> DISKDIR /t3
+> DISKDIR /t4
+> DISKDIR /t5
+> DISKDIR /t6
+> DISKDIR /t7
+> DISKDIR /t8
+> DISKDIR /t9
+> DISKDIR /t10
+> DISKDIR /t11
+> DISKDIR /t12
+> DISKDIR /t13
+> DISKDIR /t14
+> DISKDIR /t15
 
-> 
-> >         register_pm_notifier(&exynos_cpufreq_nb);
-> >
-> >         if (cpufreq_register_driver(&exynos_driver)) {
-> > --
-> > 1.7.10.4
-> >
-
-
+> # @(#) workfile.dbase:1.3 1/22/96 00:00:00
+> # Large Database Mix
+> # Unchanged from AIM
+> # Total Hits: 550
+> # Hits with 100% user time: 120 ( 21.8 % )
+> # FILESIZE: 1M
+> # POOLSIZE: 25M
+> # Filesize controlled by reaim.config now - uncomment to over-ride
+> 20  add_int
+> 20  add_long
+> 20  add_short
+> 40  disk_rd
+> 40  disk_rr
+> 10  div_int
+> 10  div_long
+> 10  div_short
+> 10  jmp_test
+> 40  mem_rtns_1
+> 40  mem_rtns_2
+> 10  mul_int
+> 10  mul_long
+> 10  mul_short
+> 40  page_test
+> 20  ram_copy
+> 40  shared_memory
+> 30  sieve
+> 30  sort_rtns_1
+> 10  stream_pipe
+> 30  string_rtns
+> 30  sync_disk_rw
+> 30  sync_disk_update
+> # Calculated percentages
+> #Hits           Name            Percent of total
+> #20		add_int	 	3.64
+> #20		add_long	3.64
+> #20		add_short	3.64
+> #40		disk_rd	 	7.27
+> #40		disk_rr	 	7.27
+> #10		div_int	 	1.82
+> #10		div_long	1.82
+> #10		div_short	1.82
+> #10		jmp_test	1.82
+> #40		mem_rtns_1	7.27
+> #40		mem_rtns_2	7.27
+> #10		mul_int	 	1.82
+> #10		mul_long	1.82
+> #10		mul_short	1.82
+> #40		page_test	7.27
+> #20		ram_copy	3.64
+> #40		shared_memory	7.27
+> #30		sieve	 	5.45
+> #30		sort_rtns_1	5.45
+> #10		stream_pipe	1.82
+> #30		string_rtns	5.45
+> #30		sync_disk_rw	5.45
+> #30		sync_disk_update	5.45
 
 -- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
