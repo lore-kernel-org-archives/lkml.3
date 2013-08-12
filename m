@@ -1,120 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab3HLHPf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 03:15:35 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:5866
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753600Ab3HLHO4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 03:14:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1155h)
-From: <akhil.goyal@freescale.com>
-To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>, <lars@metafoo.de>,
-        <robin.getz@analog.com>, <Michael.Hennerich@analog.com>,
-        <lars-peter.clausen@analog.com>
-CC: <linux-kernel@vger.kernel.org>, <pankaj.chauhan@freescale.com>,
-        Akhil Goyal <akhil.goyal@freescale.com>
-Subject: [PATCH v2 4/4] BSC9131rdb/dts: Add nodes for supporting AIC
-Date: Mon, 12 Aug 2013 12:43:53 +0530
-Message-ID: <1376291633-4682-5-git-send-email-akhil.goyal@freescale.com>
-X-Mailer: git-send-email 1.6.3.1
-In-Reply-To: <1376291633-4682-4-git-send-email-akhil.goyal@freescale.com>
-References: <1376291633-4682-1-git-send-email-akhil.goyal@freescale.com>
- <1376291633-4682-2-git-send-email-akhil.goyal@freescale.com>
- <1376291633-4682-3-git-send-email-akhil.goyal@freescale.com>
- <1376291633-4682-4-git-send-email-akhil.goyal@freescale.com>
+	id S1753323Ab3HLHQe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 03:16:34 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44593 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751742Ab3HLHQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 03:16:32 -0400
+Message-ID: <52088B8B.9040000@ti.com>
+Date: Mon, 12 Aug 2013 12:45:23 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Joel Fernandes <joelf@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH v3 01/12] dma: edma: Setup parameters to DMA MAX_NR_SG
+ at a time
+References: <1375719297-12871-1-git-send-email-joelf@ti.com> <1375719297-12871-2-git-send-email-joelf@ti.com>
+In-Reply-To: <1375719297-12871-2-git-send-email-joelf@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Akhil Goyal <akhil.goyal@freescale.com>
+On Monday 05 August 2013 09:44 PM, Joel Fernandes wrote:
+> Changes are made here for configuring existing parameters to support
+> DMA'ing them out in batches as needed.
+> 
+> Also allocate as many as slots as needed by the SG list, but not more
+> than MAX_NR_SG. Then these slots will be reused accordingly.
+> For ex, if MAX_NR_SG=10, and number of SG entries is 40, still only
+> 10 slots will be allocated to DMA the entire SG list of size 40.
+> 
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
+> ---
+>  drivers/dma/edma.c |   14 +++++++++++---
+>  1 file changed, 11 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+> index 5f3e532..7b0853c 100644
+> --- a/drivers/dma/edma.c
+> +++ b/drivers/dma/edma.c
+> @@ -222,9 +222,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+>  	enum dma_slave_buswidth dev_width;
+>  	u32 burst;
+>  	struct scatterlist *sg;
+> -	int i;
+>  	int acnt, bcnt, ccnt, src, dst, cidx;
+>  	int src_bidx, dst_bidx, src_cidx, dst_cidx;
+> +	int i, num_slots_needed;
 
-BSC9131 is a hetrogenous system where Antenna interface controller
-(AIC) is a part of DSP subsystem. But its configuration is done from
-PA side. So a DSP node is added with appropriate CCSR address visible
-to PA and hence the address space for AIC will be visible to PA.
+'nslots' is more to my liking. Better keep variable names short.
 
-BSC9131 support 3 AIC lanes for ADI interface and 3 for MAXIM type of
-interface. This patch support only ADI lanes.
+>  
+>  	if (unlikely(!echan || !sgl || !sg_len))
+>  		return NULL;
+> @@ -262,8 +262,11 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+>  
+>  	edesc->pset_nr = sg_len;
+>  
+> -	for_each_sg(sgl, sg, sg_len, i) {
+> -		/* Allocate a PaRAM slot, if needed */
+> +	/* Allocate a PaRAM slot, if needed */
+> +
+> +	num_slots_needed = sg_len > MAX_NR_SG ? MAX_NR_SG : sg_len;
 
-Signed-off-by: Pankaj Chauhan <pankaj.chauhan@freescale.com>
-Signed-off-by: Shaveta Leekha <shaveta@freescale.com>
-Signed-off-by: Bhaskar Upadhaya <bhaskar.upadhaya@freescale.com>
-Signed-off-by: Akhil Goyal <akhil.goyal@freescale.com>
----
- arch/powerpc/boot/dts/bsc9131rdb.dts          |    4 ++
- arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi |   38 +++++++++++++++++++++++++
- 2 files changed, 42 insertions(+), 0 deletions(-)
+nslots = min(MAX_NR_SG, sg_len);
 
-diff --git a/arch/powerpc/boot/dts/bsc9131rdb.dts b/arch/powerpc/boot/dts/bsc9131rdb.dts
-index e13d2d4..c134de7 100644
---- a/arch/powerpc/boot/dts/bsc9131rdb.dts
-+++ b/arch/powerpc/boot/dts/bsc9131rdb.dts
-@@ -28,6 +28,10 @@
- 	board_soc: soc: soc@ff700000 {
- 		ranges = <0x0 0x0 0xff700000 0x100000>;
- 	};
-+
-+	dsp_soc: sc3850@ff600000 {
-+		ranges = <0x0 0x0 0xff600000 0x100000>;
-+	};
- };
- 
- /include/ "bsc9131rdb.dtsi"
-diff --git a/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi b/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi
-index 5180d9d..487e949 100644
---- a/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi
-@@ -191,3 +191,41 @@ global-utilities@e0000 {
- 		fsl,has-rstcr;
- 	};
- };
-+
-+&dsp_soc {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	compatible = "simple-bus";
-+	gcr@18000 {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "fsl,bsc9131-gcr", "fsl,bsc9132-gcr";
-+		reg = <0x18000 0x200>;
-+	};
-+	aic@50000 {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "fsl,bsc9131-aic", "fsl,bsc9132-aic";
-+		reg = <0x50000 0x200>;
-+		interrupts = <49 2 0 0 53 2 0 0>;
-+		lane0: aiclane@200 {
-+			reg = <0x200 0x200>;
-+			lane_id = <0>;
-+			interrupts = <45 2 0 0>;
-+		};
-+
-+		lane1: aiclane@400 {
-+			reg = <0x400 0x200>;
-+			lane_id = <1>;
-+			interrupts = <46 2 0 0>;
-+		};
-+
-+		lane2: aiclane@600 {
-+			reg = <0x600 0x200>;
-+			lane_id = <2>;
-+			interrupts = <47 2 0 0>;
-+		};
-+	};
-+};
-+
-+
--- 
-1.6.3.1
+> +
+> +	for (i = 0; i < num_slots_needed; i++) {
+>  		if (echan->slot[i] < 0) {
+>  			echan->slot[i] =
+>  				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
+> @@ -273,6 +276,10 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+>  				return NULL;
+>  			}
+>  		}
+> +	}
+> +
+> +	/* Configure PaRAM sets for each SG */
+> +	for_each_sg(sgl, sg, sg_len, i) {
+>  
+>  		acnt = dev_width;
+>  
+> @@ -330,6 +337,7 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+>  		/* Configure A or AB synchronized transfers */
+>  		if (edesc->absync)
+>  			edesc->pset[i].opt |= SYNCDIM;
+> +
 
+Random extra newline.
 
+The patch as such is fine, but I dont think it makes lot of sense
+standalone. This needs to be merged into the patch where you actually
+handle the entire SG list in batches.
+
+Thanks,
+Sekhar
 
