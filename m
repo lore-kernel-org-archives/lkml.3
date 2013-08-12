@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab3HLRFb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:05:31 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34849 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756780Ab3HLRFa (ORCPT
+	id S1757473Ab3HLRJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:09:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55225 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757343Ab3HLRJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:05:30 -0400
-Date: Mon, 12 Aug 2013 18:05:04 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Message-ID: <20130812170504.GC6427@sirena.org.uk>
-References: <1376069102-15658-1-git-send-email-broonie@kernel.org>
- <20130812163324.GB3636@lee--X1>
+	Mon, 12 Aug 2013 13:09:05 -0400
+Date: Mon, 12 Aug 2013 14:09:01 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Lior Amsalem <alior@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 1/3] ARM: Introduce atomic MMIO clear/set
+Message-ID: <20130812170900.GA7198@localhost>
+References: <1376138582-7550-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <20130810140237.GB3080@localhost>
+ <20130810140927.GC3080@localhost>
+ <1376149388.716003514@f150.i.mail.ru>
+ <20130810155552.GB17936@localhost>
+ <20130812154646.GA5460@localhost>
+ <520910DA.4000203@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JsPm5tED8eNFkDPA"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130812163324.GB3636@lee--X1>
-X-Cookie: Many pages make a thick book.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <520910DA.4000203@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] mfd: tps65010: Use power efficient workqueue for power
- polling
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sebastian,
 
---JsPm5tED8eNFkDPA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Aug 12, 2013 at 06:44:10PM +0200, Sebastian Hesselbarth wrote:
+> On 08/12/13 17:46, Ezequiel Garcia wrote:
+> >> Indeed, syscon looks like a nice match for this use case.
+> >> (although it still looks like an overkill to me).
+> >>
+> >> I've been trying to implement a working solution based in syscon but I'm
+> >> unable to overcome an issue.
+> >>
+> >> The problem is that we need the register/regmap to initialize the clocksource
+> >> driver for this machine (aka the timer). Of course, this happens at a
+> >> *very* early point, way before the syscon driver is available... :-(
+> >>
+> >> Maybe someone has an idea?
+> >
+> > Sebastian, Russell: I can't find the previous mail where you proposed
+> > this solution to address the shared register issue between Kirkwood's
+> > watchdog and clocksource.
+> 
+> Russell first mentioned an atomic modify function here:
+> http://archive.arm.linux.org.uk/lurker/message/20130618.113606.d7d4fe4b.en.html
+> 
 
-On Mon, Aug 12, 2013 at 05:33:24PM +0100, Lee Jones wrote:
-> On Fri, 09 Aug 2013, Mark Brown wrote:
+Thanks a lot for finding this thread. I see we all just went through the
+same line of reasoning.
 
-> > -		schedule_delayed_work(&the_tps->work, 0);
-> > +		queue_delayed_work(system_power_efficient_wq, &the_tps->work,
-> > +				   0);
+> 
+> The pro of a generic atomic clear/set is that we can use it
+> very early, on all platforms, and from totally unrelated
+> drivers. As you already mentioned, using syscon from timers will
+> get us into into trouble, because it has not been registered.
+> 
 
-> ... move this back up onto the line above, if it's all the same to you?
+Yes, indeed.
 
-If you do that it'll go over 80 columns, the ',' is the 78th character
-already.
+> > Do you think trying to use a regmap could be better (given we can
+> > sort out the problem explained above)?
+> 
+> Given the small number of registers we need to protect and especially
+> for using it in timers, I'd prefer your proposal. Otherwise, I guess,
+> we would have to mimic mfd/syscon for time-orion and time-armada-370-xp
+> and make wdt-orion depend on it. I doubt we can make any use of
+> mfd/syscon for the timer use case.
+> 
 
---JsPm5tED8eNFkDPA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Then I think we all agree here. Just to confirm:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+  * The proposed API is almost exactly the one proposed by Russell
+    in the mail you just mentioned:
+    http://archive.arm.linux.org.uk/lurker/message/20130618.113606.d7d4fe4b.en.html
 
-iQIcBAEBAgAGBQJSCRW9AAoJELSic+t+oim9ljoP/jhF1vxzcJFqBLT7sOCgnA+e
-TofuOABGPgFKWGBbdC3kdspZcPazTjPJ1gRSVf++2qveh2gwgauyAsIayH5DKwnV
-PLkvrVzGlanj2Oh8H+XKphAsgdX6JN+rGsjIfA3MiamsUVbJ6ISe7tUiEzcglUbt
-aq2IRvMfAWJlN2qCN18dFIDHjJA80aZDoSq/U8awsEEMhE2fRWyd9WmMMhyr5P+3
-dwfA3KGlISQyJ5avy5aCwKJZNBJfOVrNfOQgdyxsXglGq/va4bQBudxZBe2ai7GB
-ksg0QgnySFJhD4kV/ISpPy6N9l94O9jjIMt6QxUrevzpsfH7vdhV5+8j9Nuy0rcL
-uQEqa9iDvCygUDEKu0AILxKw2rl4V+zVeigp3AAXWiDH2yU9j4S+58xpA/vHVsdJ
-1CmcdTCMtBI5/HoDxsiOOKCMeY9JKn6IBD24+vMoWjrtEiWAel1NPh3hMVG7scKl
-6IMjRKqsLqHS7MO0pCydet+fD0sPSU3eIyOB3MbIOivzm16nbkNBqAyz4gm7nlgW
-B1BIEaf/WFD+J5whtxAQhZ7G+g4mTTXIqqiorRFHagd66UaqV5W1l94k4SB8aSmI
-WKEFHi04RBfZAFTCPlbE8V5zPUa2l8eHluh7EG/Qul4yF7aG9dXb+Fl+4omluXpG
-Wyrcv+m9ZrZCJGiy4p/i
-=Sn+r
------END PGP SIGNATURE-----
+  * Linus Walleij suggested mfd/syscon, but Russell, Mark and Linus
+    itself seem to agree it's more heavy-weight than necessary.
+    http://archive.arm.linux.org.uk/lurker/message/20130618.151116.712407e0.en.html
+    http://archive.arm.linux.org.uk/lurker/message/20130618.183359.a6184b7f.en.html
+    http://archive.arm.linux.org.uk/lurker/message/20130618.152300.bffa038f.en.html
 
---JsPm5tED8eNFkDPA--
+The only open question is: given there's nothing arch-dependent in this
+mechanism, should we keep this in arch/arm/kernel? And if not, where
+should we move this?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
