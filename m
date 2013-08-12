@@ -1,105 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab3HLKyB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:54:01 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:37434 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755524Ab3HLKx7 (ORCPT
+	id S1755974Ab3HLKzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:55:16 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41439 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755555Ab3HLKzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:53:59 -0400
-Message-ID: <5208BEC4.7090700@linaro.org>
-Date: Mon, 12 Aug 2013 12:53:56 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 12 Aug 2013 06:55:12 -0400
+Date: Mon, 12 Aug 2013 11:54:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Felipe Tonello <eu@felipetonello.com>, alsa-devel@alsa-project.org,
+        Jaroslav Kysela <perex@perex.cz>, linux-kernel@vger.kernel.org
+Message-ID: <20130812105447.GQ6427@sirena.org.uk>
+References: <1375430365-13232-2-git-send-email-eu@felipetonello.com>
+ <1376029315-3217-1-git-send-email-eu@felipetonello.com>
+ <s5h38qj2cqj.wl%tiwai@suse.de>
+ <CAGrhNMxj++uJ5HnhhcfOOxhu9u77WMBRP+H5ar5wATi=kHJYKg@mail.gmail.com>
+ <s5hli47yz01.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: srinivas.kandagatla@st.com, S??ren Brinkmann <soren.brinkmann@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-References: <51F97CE3.9030306@linaro.org> <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local> <51FA9AE8.1060004@linaro.org> <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local> <51FA9F54.3060704@linaro.org> <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local> <5204C54A.9020105@st.com> <5204FA5D.3060908@linaro.org> <20130809172757.GD14845@codeaurora.org>
-In-Reply-To: <20130809172757.GD14845@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8lV4/+ewWCwXF+0e"
+Content-Disposition: inline
+In-Reply-To: <s5hli47yz01.wl%tiwai@suse.de>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 1/2] ALSA: Added jack detection KControl support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 07:27 PM, Stephen Boyd wrote:
-> On 08/09, Daniel Lezcano wrote:
->>
->> yes, but at least the broadcast mechanism should send an IPI to cpu0 to
->> wake it up, no ? As Stephen stated this kind of configuration should has
->> never been tested before so the tick broadcast code is not handling this
->> case properly IMHO.
->>
-> 
-> If you have a per-cpu tick device that isn't suffering from
-> FEAT_C3_STOP why wouldn't you use that for the tick versus a
-> per-cpu tick device that has FEAT_C3_STOP? It sounds like there
-> is a bug in the preference logic or you should boost the rating
-> of the arm global timer above the twd. Does this patch help? It
-> should make the arm global timer the tick device and whatever the
-> cadence timer you have into the broadcast device.
-> 
-> ---8<----
-> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-> index 218bcb5..d3539e5 100644
-> --- a/kernel/time/tick-broadcast.c
-> +++ b/kernel/time/tick-broadcast.c
-> @@ -77,6 +77,9 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
->  	    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
->  		return false;
->  
-> +	if (cpumask_equal(newdev->cpumask, cpumask_of(smp_processor_id())))
-> +		return false;
 
-Yes, that makes sense to prevent local timer devices to be a broadcast one.
+--8lV4/+ewWCwXF+0e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-In the case of the arm global timer, each cpu will register their timer,
-so the test will be ok but is it possible the cpu0 registers the timers
-for the other cpus ?
+On Mon, Aug 12, 2013 at 12:39:10PM +0200, Takashi Iwai wrote:
 
->  	return !curdev || newdev->rating > curdev->rating;
->  }
->  
-> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-> index 64522ec..1628b9f 100644
-> --- a/kernel/time/tick-common.c
-> +++ b/kernel/time/tick-common.c
-> @@ -245,6 +245,15 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
->  	}
->  
->  	/*
-> +	 * Prefer tick devices that don't suffer from FEAT_C3_STOP
-> +	 * regardless of their rating
-> +	 */
-> +	if (curdev && cpumask_equal(curdev->cpumask, newdev->cpumask) &&
-> +	    !(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
-> +	    (curdev->features & CLOCK_EVT_FEAT_C3STOP))
-> +		return true;
+> But, don't get me wrong: I'm not against the action itself, the
+> removal of input jack support in HD-audio.  I myself did propose this
+> once ago.  Again,  what's missing in your approach is the proper
+> process.
 
-That sounds reasonable, but what is the acceptable gap between the
-ratings ? I am wondering if there isn't too much heuristic in the tick
-code...
+> - Think whether removal of input-jack support is really needed for
+>   HD-audio;
+>   for example, if you integrate snd_jack stuff to support both
+>   input-jack and kctl jack, HD-audio driver can use it solely instead
+>   of calling snd_kctl stuff.  Then both input and kctl jacks will be
+>   supported automagically.
 
+I think this is the best approach - just get everything using jack.c for
+all types of jack and deal with things there.  We've also got extcon
+based reporting to consider, having a single place where all the
+userspace interfaces are implemented will mean we can just add that.
 
-> +
-> +	/*
->  	 * Use the higher rated one, but prefer a CPU local device with a lower
->  	 * rating than a non-CPU local device
->  	 */
-> 
+This is why I put everything in jack.c in the first place :(
 
+--8lV4/+ewWCwXF+0e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+iQIcBAEBAgAGBQJSCL7zAAoJELSic+t+oim9qd4P/i8PFAPVUQe4sOWqndyUjCUg
+hc0Nt/cS3bLmlx2Nf+y5BC/ejqelZ+8KL0pNcG3mOVselB3DYD/lEnL6Egie3dWV
+Q1CaSsX73rEGZrkJGrEJKeck5eF5GTHzGUmWEhiL6LIVaj0gTKO1U467kiO6nXTw
+7nP5Q0AbKceg3sehzZaL10yg0Woia2F6kzVQeN29moPjpNIsS64xO9FE53Hdxser
+WrbRBIm8NPXpVLi8AdkUXV5bpV1YVsAFmGjwYufEp5edzuMwb5qjqlHZqK59OUM+
+P72ogtArBwefaCeiSOe6na5mvO1eo8e0jDST63PVHrpIjuaIYmrHgdUbmNvoqAuK
+G2se41+C/TTDn8mmp2FsPWkKHDLwJArZ6FnmYM03eo3NH5fLnPU+fIJH9Lwm6QLE
+JAdA0m4hg3RnKRS0J2sGtGpjkQrIWbTE6s6cAcn4GZNNUantb7ku+Nn7kcP4IRMb
+Ijh/nH1HJ7gOpdINrTsukvNl7UG6YVzUjAAh862llb7bwyxAIcoWw8bOkJqNvt9d
+Px4Jgt0C9pZ5vHk4aJr0UeEdf2cVGoNnhKbn/Pbed3GPI2slcuBcJMJ2glL/geYq
+ND/n9rs+dz9+s/NCCSsuBY3+RfIUXXU2aGWxTcOU8fwIAB/otV2Qa0JEW8UtTf5g
+PeUiFzTOJ0E5sW3wXKzM
+=cep3
+-----END PGP SIGNATURE-----
 
+--8lV4/+ewWCwXF+0e--
