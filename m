@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077Ab3HLNbf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:31:35 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:24548 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755736Ab3HLNbe (ORCPT
+	id S1756300Ab3HLNbt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:31:49 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34909 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755746Ab3HLNbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:31:34 -0400
-Message-ID: <1376314277.3364.0.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 04/20] mm, hugetlb: remove useless check about
- mapping type
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Date: Mon, 12 Aug 2013 06:31:17 -0700
-In-Reply-To: <1376040398-11212-5-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1376040398-11212-5-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Aug 2013 09:31:44 -0400
+Date: Mon, 12 Aug 2013 14:31:11 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sricharan R <r.sricharan@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Chris Ball <cjb@laptop.org>, Arnd Bergmann <arnd@arndb.de>,
+        Rajendra Nayak <rnayak@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Balaji TK <balajitk@ti.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Dan Williams <djbw@fb.com>, Olof Johansson <olof@lixom.net>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Matt Porter <matt@ohporter.com>
+Message-ID: <20130812133111.GZ6427@sirena.org.uk>
+References: <1375719297-12871-1-git-send-email-joelf@ti.com>
+ <1375719297-12871-9-git-send-email-joelf@ti.com>
+ <52087921.8040101@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tGkjKzRlkSQaY8nx"
+Content-Disposition: inline
+In-Reply-To: <52087921.8040101@ti.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 08/12] dma: edma: Add one more required slot to MAX
+ slots
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-09 at 18:26 +0900, Joonsoo Kim wrote:
-> is_vma_resv_set(vma, HPAGE_RESV_OWNER) implys that this mapping is
-> for private. So we don't need to check whether this mapping is for
-> shared or not.
-> 
-> This patch is just for clean-up.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+--tGkjKzRlkSQaY8nx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index ea1ae0a..c017c52 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2544,8 +2544,7 @@ retry_avoidcopy:
->  	 * at the time of fork() could consume its reserves on COW instead
->  	 * of the full address range.
->  	 */
-> -	if (!(vma->vm_flags & VM_MAYSHARE) &&
-> -			is_vma_resv_set(vma, HPAGE_RESV_OWNER) &&
-> +	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER) &&
->  			old_page != pagecache_page)
->  		outside_reserve = 1;
->  
+On Mon, Aug 12, 2013 at 11:26:49AM +0530, Sekhar Nori wrote:
 
+> No need for a separate patch for this, just do this in the patch where
+> you include the two linked sets.
 
+Can you guys please think about the CC lists you're using for these
+patch serieses?  I've certainly no interest in random patches to the
+DaVinci DMA controllers, and I suspect the same is true for most of the
+people on the CC list.
+
+--tGkjKzRlkSQaY8nx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSCOObAAoJELSic+t+oim9MDoP/1Pf5u0EF1e7uwz2dkWKEZxq
+Go181n0SjqRkqv9Mb/+Q0ITVmoT/r3kOaqK82s9Va5g7WxMQVejtRQsDsubLnI7H
+ywTmxaJicLA0PFbCZTM4n2Ghk1BZOMxjbS9pPqXgWzGuK3V+gKvGJoCRqhDspsVK
+5c+TVRuLDsij1y4QjklGY38DdCB0XsjCqVRItLaLFet78UZvgOdlTTBYO8nkDtnb
+QN8noUo2ZytYH0Zfp74tFgUvRZjo0psJkBRUb0JWX4jlUwaEFVMjYITrK1fUrtso
+kIcS9K6ckW4XSwwJ+QA3BzG9lG6lx9lW6NbbpgKd7QyZPnTfcRiw3hI8ELKVksfF
+6XxJRCCNyuCd7zOY40V7rS5Cjol9pMpYcT3mVp0fK1KCGKUGoxAVOa4p2ETcc5CH
+9E28arMhTiqrVaXjkyUagdmi59bSueetYzpOkhnbuiLnb41RPG1EESfv/6U8Halk
+S6S3KyM1sxqzyHM6++BCMazqVwKwLoXyz5KW9BFp0IlX5XwRuxqDKRMYp70fUGq4
+anLH9DgtMfYmdMywZI4mYOrbawl3OPvLLDew1VTyxyOeDz/pwetJWrTrMVDYbRXs
+B2h/bdN+fso0lcx/qONlSSb+9ARSEYwkJwJcrQiQmryNUYKqb7DvgBUM68rqRViO
+YJmwQJfhHy2K1uU7p7Nl
+=LYWm
+-----END PGP SIGNATURE-----
+
+--tGkjKzRlkSQaY8nx--
