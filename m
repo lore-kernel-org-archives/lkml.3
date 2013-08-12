@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab3HLPrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 11:47:35 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:39114 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757214Ab3HLPrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757225Ab3HLPrb (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 12 Aug 2013 11:47:31 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:30727 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756947Ab3HLPr2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 11:47:28 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: rjw@sisk.pl
 Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 2/2] ACPI: Acquire writer lock to update cpu maps
-Date: Mon, 12 Aug 2013 09:45:54 -0600
-Message-Id: <1376322354-13026-3-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH 1/2] CPU hotplug: Export cpu_hotplug_begin() interface
+Date: Mon, 12 Aug 2013 09:45:53 -0600
+Message-Id: <1376322354-13026-2-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376322354-13026-1-git-send-email-toshi.kani@hp.com>
 References: <1376322354-13026-1-git-send-email-toshi.kani@hp.com>
@@ -22,75 +22,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_map_lsapic() is called from acpi_processor_hotadd_init() to update
-cpu_possible_mask and cpu_present_mask.  acpi_unmap_lsapic() is called
-from acpi_processor_remove() to update cpu_possible_mask.  Currently,
-they are either unprotected or protected with the reader lock, which is
-not correct.
+cpu_hotplug_begin() and cpu_hotplug_done() are the interfaces to
+acquire the writer lock of the cpu_hotplug.lock.  The interfaces are
+used along with cpu_maps_update_begin() / cpu_maps_update_done() to
+serialize the updates to the system cpu maps, such as cpu_online_mask
+and cpu_present_mask.
 
-This patch protects them with the writer lock with cpu_hotplug_begin()
-along with cpu_maps_update_begin(), which must be held before calling
-cpu_hotplug_begin().  It also protects arch_register_cpu() /
-arch_unregister_cpu(), which creates / deletes a sysfs cpu device
-interface.
+cpu_present_mask is updated by the ACPI processor handler.  Therefore,
+this patch changes the interfaces to global, and exports them in cpu.h.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- drivers/acpi/acpi_processor.c |   21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+ include/linux/cpu.h |    4 ++++
+ kernel/cpu.c        |    9 +++------
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-index 5a74a9c..f29e06e 100644
---- a/drivers/acpi/acpi_processor.c
-+++ b/drivers/acpi/acpi_processor.c
-@@ -178,14 +178,17 @@ static int acpi_processor_hotadd_init(struct acpi_processor *pr)
- 	if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_PRESENT))
- 		return -ENODEV;
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index ab0eade..956c0a1 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -172,6 +172,8 @@ extern struct bus_type cpu_subsys;
+ #ifdef CONFIG_HOTPLUG_CPU
+ /* Stop CPUs going up and down. */
  
-+	cpu_maps_update_begin();
-+	cpu_hotplug_begin();
-+
- 	ret = acpi_map_lsapic(pr->handle, &pr->id);
- 	if (ret)
--		return ret;
-+		goto out;
++extern void cpu_hotplug_begin(void);
++extern void cpu_hotplug_done(void);
+ extern void get_online_cpus(void);
+ extern void put_online_cpus(void);
+ extern void cpu_hotplug_disable(void);
+@@ -197,6 +199,8 @@ static inline void cpu_hotplug_driver_unlock(void)
  
- 	ret = arch_register_cpu(pr->id);
- 	if (ret) {
- 		acpi_unmap_lsapic(pr->id);
--		return ret;
-+		goto out;
+ #else		/* CONFIG_HOTPLUG_CPU */
+ 
++static inline void cpu_hotplug_begin(void) {}
++static inline void cpu_hotplug_done(void) {}
+ #define get_online_cpus()	do { } while (0)
+ #define put_online_cpus()	do { } while (0)
+ #define cpu_hotplug_disable()	do { } while (0)
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index b2b227b..d7f07a2 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -113,7 +113,7 @@ EXPORT_SYMBOL_GPL(put_online_cpus);
+  * get_online_cpus() not an api which is called all that often.
+  *
+  */
+-static void cpu_hotplug_begin(void)
++void cpu_hotplug_begin(void)
+ {
+ 	cpu_hotplug.active_writer = current;
+ 
+@@ -127,7 +127,7 @@ static void cpu_hotplug_begin(void)
  	}
- 
- 	/*
-@@ -195,7 +198,11 @@ static int acpi_processor_hotadd_init(struct acpi_processor *pr)
- 	 */
- 	pr_info("CPU%d has been hot-added\n", pr->id);
- 	pr->flags.need_hotplug_init = 1;
--	return 0;
-+
-+out:
-+	cpu_hotplug_done();
-+	cpu_maps_update_done();
-+	return ret;
  }
- #else
- static inline int acpi_processor_hotadd_init(struct acpi_processor *pr)
-@@ -452,11 +459,15 @@ static void acpi_processor_remove(struct acpi_device *device)
- 	per_cpu(processor_device_array, pr->id) = NULL;
- 	per_cpu(processors, pr->id) = NULL;
  
-+	cpu_maps_update_begin();
-+	cpu_hotplug_begin();
-+
- 	/* Remove the CPU. */
--	get_online_cpus();
- 	arch_unregister_cpu(pr->id);
- 	acpi_unmap_lsapic(pr->id);
--	put_online_cpus();
-+
-+	cpu_hotplug_done();
-+	cpu_maps_update_done();
+-static void cpu_hotplug_done(void)
++void cpu_hotplug_done(void)
+ {
+ 	cpu_hotplug.active_writer = NULL;
+ 	mutex_unlock(&cpu_hotplug.lock);
+@@ -154,10 +154,7 @@ void cpu_hotplug_enable(void)
+ 	cpu_maps_update_done();
+ }
  
- 	try_offline_node(cpu_to_node(pr->id));
+-#else /* #if CONFIG_HOTPLUG_CPU */
+-static void cpu_hotplug_begin(void) {}
+-static void cpu_hotplug_done(void) {}
+-#endif	/* #else #if CONFIG_HOTPLUG_CPU */
++#endif	/* CONFIG_HOTPLUG_CPU */
  
+ /* Need to know about CPUs going up/down? */
+ int __ref register_cpu_notifier(struct notifier_block *nb)
