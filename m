@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab3HLW6v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 18:58:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57719 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab3HLW6t (ORCPT
+	id S1755893Ab3HLXA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 19:00:26 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:12060 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab3HLXAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 18:58:49 -0400
-Date: Mon, 12 Aug 2013 15:58:48 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudeep Dutt <sudeep.dutt@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
-        AsiasHeasias@redhat.com, Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [PATCH v2 1/7] Intel MIC Host Driver for X100 family.
-Message-ID: <20130812225848.GA30952@kroah.com>
-References: <cover.1375927849.git.sudeep.dutt@intel.com>
- <a5214cbe041674f0b5dcd7eb9b581b4d7f923947.1375927849.git.sudeep.dutt@intel.com>
+	Mon, 12 Aug 2013 19:00:24 -0400
+X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTy+fSJcJG
+X-RZG-CLASS-ID: mo05
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 2/3] wistron_btns: mark the Medion MD96500 keymap as tested
+Date: Tue, 13 Aug 2013 00:53:53 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-5.slh.2-aptosid-686; KDE/4.8.4; i686; ; )
+Cc: Miloslav Trmac <mitr@volny.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201308130050.52800.s.L-H@gmx.de>
+In-Reply-To: <201308130050.52800.s.L-H@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a5214cbe041674f0b5dcd7eb9b581b4d7f923947.1375927849.git.sudeep.dutt@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308130053.59956.s.L-H@gmx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 07, 2013 at 08:04:07PM -0700, Sudeep Dutt wrote:
-> diff --git a/drivers/misc/mic/host/mic_common.h b/drivers/misc/mic/host/mic_common.h
-> new file mode 100644
-> index 0000000..55b0337
-> --- /dev/null
-> +++ b/drivers/misc/mic/host/mic_common.h
-> @@ -0,0 +1,30 @@
-> +/*
-> + * Intel MIC Platform Software Stack (MPSS)
-> + *
-> + * Copyright(c) 2013 Intel Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License, version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-> + * General Public License for more details.
-> + *
-> + * The full GNU General Public License is included in this distribution in
-> + * the file called "COPYING".
-> + *
-> + * Intel MIC Host driver.
-> + *
-> + */
-> +#ifndef _MIC_HOST_COMMON_H_
-> +#define _MIC_HOST_COMMON_H_
-> +
-> +#include <linux/cdev.h>
-> +
-> +#include "../common/mic_device.h"
-> +#include "mic_device.h"
-> +#include "mic_x100.h"
-> +
-> +#endif
+DMI: MEDIONPC WIM 2040/WIM 2040, BIOS R01-A0O    11/04/2005
+wistron_btns: BIOS signature found at c00f6b00, entry point 000FDD50
+input: Wistron laptop buttons as /devices/platform/wistron-bios/input/input5
 
-Don't create .h files that just wrap other .h files up.  It makes it
-hard to unwind stuff and determine exactly what .c files need what .h
-files.  Just include the needed .h files properly in the .c code, and
-all should be fine.
+Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+---
+ drivers/input/misc/wistron_btns.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-thanks,
-
-greg k-h
+--- a/drivers/input/misc/wistron_btns.c
++++ b/drivers/input/misc/wistron_btns.c
+@@ -562,7 +562,7 @@ static struct key_entry keymap_wistron_m
+ 	{ KE_KEY, 0x36, {KEY_WWW} },
+ 	{ KE_WIFI, 0x30 },
+ 	{ KE_BLUETOOTH, 0x44 },
+-	{ KE_END, FE_UNTESTED }
++	{ KE_END, 0 }
+ };
+ 
+ static struct key_entry keymap_wistron_generic[] __initdata = {
