@@ -1,126 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab3HLSZO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:25:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53091 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750980Ab3HLSZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:25:10 -0400
-Date: Mon, 12 Aug 2013 13:24:39 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <balbi@ti.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>,
-        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [RFC 2/2] usb: dwc3: Add Qualcomm DWC3 glue layer driver
-Message-ID: <20130812182439.GG27954@radagast>
-Reply-To: <balbi@ti.com>
-References: <1375789991-30041-1-git-send-email-iivanov@mm-sol.com>
- <1375789991-30041-3-git-send-email-iivanov@mm-sol.com>
- <20130809132349.GC12041@radagast>
- <1376064558.7709.31.camel@iivanov-dev.int.mm-sol.com>
+	id S1754565Ab3HLSaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:30:23 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51088 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754358Ab3HLSaW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 14:30:22 -0400
+Date: Mon, 12 Aug 2013 19:29:42 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lior Amsalem <alior@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 1/3] ARM: Introduce atomic MMIO clear/set
+Message-ID: <20130812182942.GA28695@mudshark.cambridge.arm.com>
+References: <1376138582-7550-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <1376138582-7550-2-git-send-email-ezequiel.garcia@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/i8j2F0k9BYX4qLc"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376064558.7709.31.camel@iivanov-dev.int.mm-sol.com>
+In-Reply-To: <1376138582-7550-2-git-send-email-ezequiel.garcia@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---/i8j2F0k9BYX4qLc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Aug 10, 2013 at 01:43:00PM +0100, Ezequiel Garcia wrote:
+> Some SoC have MMIO regions that are shared across orthogonal
+> subsystems. This commit implements a possible solution for the
+> thread-safe access of such regions through a spinlock-protected API
+> with clear-set semantics.
+> 
+> Concurrent access is protected with a single spinlock for the
+> entire MMIO address space. While this protects shared-registers,
+> it also serializes access to unrelated/unshared registers.
+> 
+> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-On Fri, Aug 09, 2013 at 07:09:18PM +0300, Ivan T. Ivanov wrote:
-> Hi,=20
->=20
-> On Fri, 2013-08-09 at 16:23 +0300, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Tue, Aug 06, 2013 at 02:53:11PM +0300, Ivan T. Ivanov wrote:
-> > > diff --git a/drivers/usb/dwc3/dwc3-msm.c b/drivers/usb/dwc3/dwc3-msm.c
-> > > new file mode 100644
-> > > index 0000000..e509abc
-> > > --- /dev/null
-> > > +++ b/drivers/usb/dwc3/dwc3-msm.c
-> > > @@ -0,0 +1,175 @@
-> > > +#undef CONFIG_REGULATOR
-> >=20
-> > why ??????
-> >=20
->=20
-> 1. This shows that driver is still not fully tested=20
->    Regulators support is still missing in the MSM
-> 2. Helps me to load driver successfully.=20
+[...]
 
-Then remove all the regulator-related code from this.
+> +void atomic_io_clear_set(void __iomem *reg, u32 clear, u32 set)
+> +{
+> +	spin_lock(&__io_lock);
+> +	writel((readl(reg) & ~clear) | set, reg);
+> +	spin_unlock(&__io_lock);
+> +}
 
-> > > +	clk_prepare_enable(mdwc->core_clk);
-> > > +	clk_prepare_enable(mdwc->iface_clk);
-> > > +	clk_prepare_enable(mdwc->sleep_clk);
-> > > +	clk_prepare_enable(mdwc->utmi_clk);
-> >=20
-> > do you really need to enable your clocks here ? Why don't you enable
-> > them on runtime_resume and disable on runtime_suspend ?
->=20
-> I will like to make it working first and then will improve
-> power management.
+I appreciate that you've lifted this code from a previous driver, but this
+doesn't really make any sense to me. The spin_unlock operation is
+essentially a store to normal, cacheable memory, whilst the writel is an
+__iowmb followed by a store to device memory.
 
-alright, makes sense.
+This means that you don't have ordering guarantees between the two accesses
+outside of the CPU, potentially giving you:
 
-> > > +	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > > +	tcsr =3D devm_ioremap_resource(&pdev->dev, res);
-> > > +	if (!tcsr) {
-> > > +		dev_dbg(&pdev->dev, "tcsr ioremap failed\n");
-> >=20
-> > no need to ioremap, also you're likely leaking clocks and regulators
-> > enabled here.
-> >=20
-> > Make sure to have something like:
-> >=20
-> > 	if (!tcsr)
-> > 		goto err_disable_clocks;
-> >=20
-> > 	/* TODO This has to be revised */\
-> >=20
-> > 	[...]
-> >=20
->=20
-> Sure.
+	spin_lock(&__io_lock);
+	spin_unlock(&__io_lock);
+	writel((readl(reg) & ~clear) | set, reg);
 
-just to make it clear, I meant to say that you don't need to print the
-error message :-)
+which is probably not what you want.
 
---=20
-balbi
+I suggest adding an iowmb after the writel if you really need this ordering
+to be enforced (but this may have a significant performance impact,
+depending on your SoC).
 
---/i8j2F0k9BYX4qLc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCShnAAoJEIaOsuA1yqREvsYP/3POPDG+3Xt/Jm9+ntvZwRpe
-q0I8EVHQrw/UpcnJdjLkwCW0Z8ieHBbmmECMGuzQ+f6ZIUPGEQt9NM96qqEweMwd
-jQA6Sjm1CkMNFv6OU/yKr7LpjS/mc7xv3pCkTka9PKRJSqmoh2qF9Me0fO9WT/fY
-Sg1K2O8YBri2pqlKS/7fT4lTh+wUnz87f+NE+CfW+K4samgTZDNEDz02xMIOS85Y
-gF0jT3y1hmJWbkfobFihlR+KqBZPmzgZpYaVLiOwwNGrZE/o0aS9mbEjtKeh11Cf
-Zbx7h9CHBbff731xTFZn5gj6HWRGyFN97DYsat0Yn2e+bqCOTCqeNM/FgkMncl6I
-U2nAnYL1YlHDkID2H6okLljgnjoo1/zcY1hRVKY+cFYJH1G3ewz7CuGD17U0k06w
-oWWM7erXoE/GZ+qvOOCQ48Q2seOY+WUyE/Emjx0qcsZJsrcreo92ybo6OA2miMLJ
-/7qkOYs55kqYASpsL7maW67S4A6JOj5qapesrH39R9iEwnHZz2PR0GDDI+7lRpXC
-OZTKJLKNScxDaUantdWWqSJ5y9Kmimx7SWJgiShfBe9TeLMQYKZY8BoFqsqodyJz
-ocuzAC+T+XCcIquQANoO4Ry9244QkuxhMgMHqqJLJXogZbE4DBcisVwCSZpaoS72
-0bBxwdVmgdnrYs/gpmuz
-=HJ44
------END PGP SIGNATURE-----
-
---/i8j2F0k9BYX4qLc--
+Will
