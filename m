@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab3HLUDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 16:03:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58526 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292Ab3HLUDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 16:03:07 -0400
-Date: Mon, 12 Aug 2013 22:03:05 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: x86-ml <x86@kernel.org>
-Cc: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] AMD F15h, model 0x30 stuff for 3.12
-Message-ID: <20130812200305.GK18018@pd.tnic>
-References: <20130810184627.GB6189@pd.tnic>
+	id S1755468Ab3HLUFH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 16:05:07 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60912 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292Ab3HLUFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 16:05:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18dCM1VWVhnnarPIuORYAvObhkyDTbblEc=
+Date: Mon, 12 Aug 2013 16:04:52 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 7/9] ARM: dove: add PCIe controllers to SoC DT
+Message-ID: <20130812200452.GW25111@titan.lakedaemon.net>
+References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1376333215-12885-8-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130810184627.GB6189@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1376333215-12885-8-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Mon, Aug 12, 2013 at 08:46:53PM +0200, Sebastian Hesselbarth wrote:
+> This adds a node for the pcie controllers found on Dove SoCs to the
+> SoC DT include.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> ---
+>  arch/arm/boot/dts/dove.dtsi |   54 +++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 54 insertions(+)
 
-here's the properly based-off version; please pull.
+patches 7-9 applied to mvebu/dove_mbus since the dependencies are
+cleaner that way.
 
-Thanks.
+thx,
 
-The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
-
-  Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/amd_f15_m30
-
-for you to fetch changes up to a4b4bedce880046feeb5b206392960f395ed02ad:
-
-  amd64_edac: Get rid of boot_cpu_data accesses (2013-08-12 16:01:56 +0200)
-
-----------------------------------------------------------------
-AMD F15h, model 0x30 and later enablement stuff, more specifically EDAC
-support.
-
-----------------------------------------------------------------
-Aravind Gopalakrishnan (3):
-      pci_ids: Add PCI device ID functions 3 and 4 for newer F15h models.
-      x86, amd_nb: Clarify F15h, model 30h GART and L3 support
-      amd64_edac: Add ECC decoding support for newer F15h models
-
-Borislav Petkov (1):
-      amd64_edac: Get rid of boot_cpu_data accesses
-
- arch/x86/kernel/amd_nb.c  |  13 ++++-
- drivers/edac/amd64_edac.c | 324 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------
- drivers/edac/amd64_edac.h |  60 ++++++++++++++++++--
- include/linux/pci_ids.h   |   2 +
- 4 files changed, 322 insertions(+), 77 deletions(-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Jason.
