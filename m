@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab3HLUJl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 16:09:41 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:24379 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab3HLUJi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 16:09:38 -0400
-Message-ID: <1376338103.10300.336.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI, cpu hotplug: move try_offline_node() after
- acpi_unmap_lsapic()
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>
-Date: Mon, 12 Aug 2013 14:08:23 -0600
-In-Reply-To: <33585791.CVfk6FmZRF@vostro.rjw.lan>
-References: <5200CBBF.1090904@jp.fujitsu.com>
-	 <7919266.6MVd1N6sIX@vostro.rjw.lan>
-	 <1376100679.10300.333.camel@misato.fc.hp.com>
-	 <33585791.CVfk6FmZRF@vostro.rjw.lan>
+	id S1753593Ab3HLUKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 16:10:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40623 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752317Ab3HLUKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 16:10:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,864,1367996400"; 
+   d="scan'208";a="361541736"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20130812185247.GA20451@gmail.com>
+References: <20130629071245.GA5084@gmail.com>
+	 <1372710497.22432.224.camel@schen9-DESK> <20130702064538.GB3143@gmail.com>
+	 <1373997195.22432.297.camel@schen9-DESK> <20130723094513.GA24522@gmail.com>
+	 <20130723095124.GW27075@twins.programming.kicks-ass.net>
+	 <20130723095306.GA26174@gmail.com> <1375143209.22432.419.camel@schen9-DESK>
+	 <1375833325.2134.36.camel@buesod1.americas.hpqcorp.net>
+	 <1375836988.22432.435.camel@schen9-DESK> <20130812185247.GA20451@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Date: Mon, 12 Aug 2013 13:10:50 -0700
+Message-ID: <1376338250.22432.440.camel@schen9-DESK>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-08-11 at 22:42 +0200, Rafael J. Wysocki wrote:
-> On Friday, August 09, 2013 08:11:19 PM Toshi Kani wrote:
-> > On Sat, 2013-08-10 at 01:29 +0200, Rafael J. Wysocki wrote:
-> > > On Friday, August 09, 2013 04:16:56 PM Toshi Kani wrote:
-> > > > On Fri, 2013-08-09 at 15:28 +0800, Tang Chen wrote:
-> > > > > On 08/07/2013 12:56 AM, Toshi Kani wrote:
- :
-> > > > > > BTW, do you know why try_offline_node() has to use stop_machine()?
-> > > > > 
-> > > > > try_offline_node() is used to check if the node could be hot-removed
-> > > > > after each memory or cpu hot-remove operation.
-> > > > > 
-> > > > > In memory hot-remove path, we have lock_memory_hotplug() to series all
-> > > > > the memory hot-remove options.
-> > > > > 
-> > > > > But when doing cpu hot-remove,
-> > > > > 
-> > > > > acpi_processor_remove()
-> > > > >   |->try_offline_node()
-> > > > > 
-> > > > > There is no lock to protect it. I think, when we are going to hot-remove
-> > > > > a node, others should not do any memory or cpu hotplug operation. In memory
-> > > > > hotplug path, we have lock_memory_hotplug(). But in cpu hotplug path, I
-> > > > > didn't find any lock. So we used stop_machine() to call check_cpu_on_node().
-> > > > > If we find any cpu still present, we return and do not remove the node.
-> > > > 
-> > > > CPU/Memory hotplug operations and sysfs eject are serialized with
-> > > > acpi_os_hotplug_execute().  CPU online/offline is protected by
-> > > > cpu_hotplug_[begin|done]() and [get|put]_online_cpus().  But, yes,
-> > > > online/offline and hotplug operations are not serialized.  I tried to
-> > > > serialize them before, but that framework was not well received.
+On Mon, 2013-08-12 at 20:52 +0200, Ingo Molnar wrote:
+> * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> 
+> > On Tue, 2013-08-06 at 16:55 -0700, Davidlohr Bueso wrote:
+> > 
+> > > I got good numbers, recovering the performance drop I noticed with the
+> > > i_mmap_mutex to rwsem patches.
+> > 
+> > That's good.  I remembered that the earlier version of the patch not 
+> > only recovered the performance drop, but also provide some boost when 
+> > you switch from i_mmap_mutex to rwsem for aim7.  Do you see similar 
+> > boost with this version?
+> > 
+> > >  Looking forward to a more upstreamable
+> > > patchset that deals with this work, including the previous patches.
 > > > 
-> > > What about lock_device_hotplug()?  It is taken by both online/offline and
-> > > the ACPI hotplug code, isn't it?
+> > > One thing that's bugging me about this series though is the huge amount
+> > > of duplicated code being introduced to rwsems from mutexes. We can share
+> > > common functionality such as mcs locking (perhaps in a new file under
+> > > lib/), can_spin_on_owner() and owner_running(), perhaps moving those
+> > > functions into sheduler code, were AFAIK they were originally.
 > > 
-> > Oh, that's right!  I forgot about this one.  Yes, lock_device_hotplug()
-> > nicely protects online/offline and hotplug operations. :-)
-> > 
-> > > > Anyway, it looks to me that cpu_up()->mem_online_node() path can race
-> > > > with try_offline_node().
-> > > 
-> > > It can in principle, but I'm not sure if there's a way to trigger that
-> > > race.  Do you have an example?
-> > 
-> > With lock_device_hotplug(), I agree that we do not have this race
-> > condition -- cpu_up() may not run while other hotplug is running.
-> > store_online() will be blocked at lock_device_hotplug() in such case.
-> > When store_online() acquired the lock, this CPU may have been deleted.
-> > So, we still need to make sure that this case is handled properly.
+> > I think that MCS locking is worth breaking out as its
+> > own library.  After we've done that, the rest of
+> > the duplication are minimal. It is easier
+> > to keep them separate as there are some rwsem 
+> > specific logic that may require tweaking
+> > to can_spin_on_owner and owner_running.  
 > 
-> Yes.
+> That's what I would strongly suggest to be the approach of these patches: 
+> first the MCS locking factoring out, then changes in rwsem behavior.
 > 
-> > I suppose sysfs keeps *dev valid with ref_count (Is that right?).
+> I'd suggest the librarization should be done using inlines or so, so that 
+> we don't touch the current (pretty good) mutex.o code generation. I.e. 
+> code library only on the source code level.
 > 
-> Yes, it does.
-> 
-> > I think cpu_up() needs to check with cpu_present(), not cpu_possible(), at
-> > the top.  Otherwise, cpu_to_node(cpu) may return NUMA_NO_NODE (-1), which is
-> > probably not a good value for node_online(nid).
-> 
-> We do cpu_to_node(cpuid) in cpu_subsys_online() before that, so maybe
-> it's better to check the result already there and bail out if that's
-> negative?
-> 
-> Something like the patch below.
+> Done that way we could also apply the librarization first, without having 
+> to worry about performance aspects. Having the code shared will also make 
+> sure that an improvement to the mutex slowpaths automatically carries over 
+> into rwems and vice versa.
 
-That looks good to me.
+Ingo and Davidlohr,
 
-Thanks,
--Toshi
+Thanks for your feedbacks.  I'll spin off a set of new patches to
+incorporate your suggestions later.
+
+Tim
 
