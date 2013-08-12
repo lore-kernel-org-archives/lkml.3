@@ -1,96 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab3HLQaL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:30:11 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:50856 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755180Ab3HLQaG (ORCPT
+	id S1756822Ab3HLQaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:30:39 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58443 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755180Ab3HLQah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:30:06 -0400
-Message-ID: <52090D7F.6060600@gmail.com>
-Date: Tue, 13 Aug 2013 00:29:51 +0800
-From: Tang Chen <imtangchen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 12 Aug 2013 12:30:37 -0400
+Message-ID: <52090DAC.3050407@codeaurora.org>
+Date: Mon, 12 Aug 2013 09:30:36 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
-References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com> <20130812145016.GI15892@htj.dyndns.org> <5208FBBC.2080304@zytor.com> <20130812152343.GK15892@htj.dyndns.org>
-In-Reply-To: <20130812152343.GK15892@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        devicetree@vger.kernel.org, Jeffrey Hugo <jhugo@codeaurora.org>,
+        Eric Holmberg <eholmber@codeaurora.org>
+Subject: Re: [PATCH] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex
+ block
+References: <1375128719-23642-1-git-send-email-galak@codeaurora.org> <E9700EA7-7154-46C5-9258-03F030DF69F6@codeaurora.org> <20130729214035.GC8868@codeaurora.org> <9EB1A821-7137-4812-B58A-20F669BCA7DD@codeaurora.org> <0A09DA0F-86B4-4961-88E2-64FA0A4D380D@codeaurora.org> <CAK=WgbZSJmMz_U56ZsppBrB64XvTHBqJM4L+uFY1kKxhMCCtMQ@mail.gmail.com>
+In-Reply-To: <CAK=WgbZSJmMz_U56ZsppBrB64XvTHBqJM4L+uFY1kKxhMCCtMQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 11:23 PM, Tejun Heo wrote:
-> Hello,
->
-> On Mon, Aug 12, 2013 at 08:14:04AM -0700, H. Peter Anvin wrote:
->> It gets really messy if it is advisory.  Suddenly you have the user
->> thinking they can hotswap a memory bank and they just can't.
->
-> I'm very skeptical that not doing the strict re-ordering would
-> increase the chance of reaching memory allocation where hot unplug
-> would be impossible by much.  Given that, it'd be much better to be
-> able to boot w/o hotunplug capability than to fail boot.  The kernel
-> can whine loudly when hotunplug conditions aren't met but I think that
-> really is as far as that should go.
+On 08/10/13 12:11, Ohad Ben-Cohen wrote:
+> Otherwise, Stephen - do we have your Ack here? I was happy to see your
+> review but not sure what's the latest status.
 
-As you said, we can ensure at least one node to be unhotplug. Then the
-kernel will boot anyway. Just like CPU0. But we have the chance to lose
-one movable node.
+The smp_mb() should be removed. Otherwise I'm willing to accept that we
+only build this driver on ARCH_MSM for now. We can fix that in the
+future to be available to hexagon if they ever want it. After that it
+just needs a DT review/ack so I'll be happy to add a reviewed-by on v3.
 
-The best way is firmware and software corporate together. SRAT provides
-several movable node and enough non-movable memory for the kernel to
-boot. The hotplug users only use movable node.
-
->
->> Overall, I'm getting convinced that this whole approach is just doomed
->> to failure -- it will not provide the user what they expect and what
->> they need, which is to be able to hotswap any particular chunk of
->> memory.  This means that there has to be a remapping layer, either using
->> the TLBs (perhaps leveraging the Xen machine page number) or using
->> things like QPI memory routing.
->
-> For hot unplug to work in completely generic manner, yeah, there
-> probably needs to be an extra layer of indirection.
-
-I agree too.
-
-> Have no idea what
-> the correct way to achieve that would be tho.  I'm also not sure how
-> practicial memory hot unplug is for physical machines and improving
-> ballooning could be a better approach for vms.
-
-But, different users have different ways to use memory hotplug.
-
-Hotswaping any particular chunk of memory is the goal we will reach
-finally. But it is on specific hardware. In most current machines, we
-can use movable node to manage resource in node unit.
-
-And also, without this movablenode boot option, the MOVABLE_NODE
-functionality, which is already in the kernel, will not be able to
-work. All nodes has kernel memory means no movable node.
-
-So, how about this: Just like MOVABLE_NODE functionality, introduce
-a new config option. When we have better solutions for memory hotplug,
-we shutoff or remove the config and related code.
-
-For now, at least make movable node work.
-
-Thanks.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
