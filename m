@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab3HLR5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:57:10 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:35359 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063Ab3HLRvT (ORCPT
+	id S1753578Ab3HLR6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:58:38 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:48547 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab3HLR6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:51:19 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Andrew Lunn <andrew@lunn.ch>
-Subject: [PATCH 15/31] cpufreq: kirkwood: Covert to light weight ->target() routine
-Date: Mon, 12 Aug 2013 23:18:51 +0530
-Message-Id: <988373350842566f5c27734a65f6b0697fc16418.1376329128.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376329128.git.viresh.kumar@linaro.org>
-References: <cover.1376329128.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376329128.git.viresh.kumar@linaro.org>
-References: <cover.1376329128.git.viresh.kumar@linaro.org>
+	Mon, 12 Aug 2013 13:58:34 -0400
+Date: Mon, 12 Aug 2013 19:58:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <bitbucket@online.de>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] per-cpu preempt_count
+Message-ID: <20130812175830.GB18691@gmail.com>
+References: <20130812115113.GE27162@twins.programming.kicks-ass.net>
+ <CA+55aFznj9WqGa_Qa0B4=5iTio2br54uJG7xkm6otN2sG2P=8w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFznj9WqGa_Qa0B4=5iTio2br54uJG7xkm6otN2sG2P=8w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts existing .target_old() to newly defined light weight
-.target() routine for this driver.
 
-CPUFreq core will call cpufreq_frequency_table_target() before calling this
-routine and will pass index to it.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Cc: Andrew Lunn <andrew@lunn.ch>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/kirkwood-cpufreq.c | 19 +++----------------
- 1 file changed, 3 insertions(+), 16 deletions(-)
+> On Mon, Aug 12, 2013 at 4:51 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> > The below boots to wanting to mount a root filesystem with
+> > CONFIG_PREEMPT=y using kvm -smp 4.
+> 
+> But doesn't work in general? Or you just never tested?
 
-diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
-index 6360612..dddf23c 100644
---- a/drivers/cpufreq/kirkwood-cpufreq.c
-+++ b/drivers/cpufreq/kirkwood-cpufreq.c
-@@ -55,8 +55,8 @@ static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
- 	return kirkwood_freq_table[0].frequency;
- }
- 
--static void kirkwood_cpufreq_set_cpu_state(struct cpufreq_policy *policy,
--		unsigned int index)
-+static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
-+			    unsigned int index)
- {
- 	struct cpufreq_freqs freqs;
- 	unsigned int state = kirkwood_freq_table[index].driver_data;
-@@ -100,19 +100,6 @@ static void kirkwood_cpufreq_set_cpu_state(struct cpufreq_policy *policy,
- 		local_irq_enable();
- 	}
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
--};
--
--static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
--			    unsigned int target_freq,
--			    unsigned int relation)
--{
--	unsigned int index = 0;
--
--	if (cpufreq_frequency_table_target(policy, kirkwood_freq_table,
--				target_freq, relation, &index))
--		return -EINVAL;
--
--	kirkwood_cpufreq_set_cpu_state(policy, index);
- 
- 	return 0;
- }
-@@ -130,7 +117,7 @@ static int kirkwood_cpufreq_cpu_init(struct cpufreq_policy *policy)
- static struct cpufreq_driver kirkwood_cpufreq_driver = {
- 	.get	= kirkwood_cpufreq_get_cpu_frequency,
- 	.verify	= cpufreq_generic_frequency_table_verify,
--	.target_old = kirkwood_cpufreq_target,
-+	.target	= kirkwood_cpufreq_target,
- 	.init	= kirkwood_cpufreq_cpu_init,
- 	.exit	= cpufreq_generic_exit,
- 	.name	= "kirkwood-cpufreq",
--- 
-1.7.12.rc2.18.g61b472e
+(I think Peter never tested it on real hw - this is an RFC patch to show 
+the concept .)
 
+> > Adding TIF_NEED_RESCHED into the preempt count would allow a single 
+> > test in preempt_check_resched() instead of still needing the TI. 
+> > Removing PREEMPT_ACTIVE from preempt count should allow us to get rid 
+> > of ti::preempt_count altogether.
+> >
+> > The only problem with TIF_NEED_RESCHED is that its cross-cpu which 
+> > would make the entire thing atomic which would suck donkey balls so 
+> > maybe we need two separate per-cpu variables?
+> 
+> Agreed. Making it atomic would suck, and cancel all advantages of the 
+> better code generation to access it. Good point.
+
+We could still have the advantages of NEED_RESCHED in preempt_count() by 
+realizing that we only rarely actually set/clear need_resched and mostly 
+read it from the highest freq user, the preempt_enable() check.
+
+So we could have it atomic, but do atomic_read() in the preempt_enable() 
+hotpath which wouldn't suck donkey balls, right?
+
+That would allow a really sweet preempt_enable() fastpath, on x86 at 
+least.
+
+Thanks,
+
+	Ingo
