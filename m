@@ -1,580 +1,629 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab3HLCL7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 22:11:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50402 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab3HLCLz (ORCPT
+	id S1755423Ab3HLCNg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 22:13:36 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:31659 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab3HLCNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 22:11:55 -0400
-Date: Sun, 11 Aug 2013 19:13:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.90
-Message-ID: <20130812021318.GA15214@kroah.com>
-References: <20130812021259.GA15190@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130812021259.GA15190@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 11 Aug 2013 22:13:33 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-0a-520844cbe9be
+Date: Mon, 12 Aug 2013 11:13:30 +0900
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, "'Joerg Roedel'" <joro@8bytes.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Prathyush'" <prathyush.k@samsung.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
+        "'Grant Grundler'" <grundler@chromium.org>,
+        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
+        kvmarm@lists.cs.columbia.edu,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>
+Subject: Re: [PATCH v9 07/16] iommu/exynos: support for device tree
+Message-id: <20130812111330.f854810269e876140aa55634@samsung.com>
+In-reply-to: <3801687.TzcQoMh0Oe@flatron>
+References: <002b01ce941b$160a88a0$421f99e0$@samsung.com>
+ <5396565.vjlSOm37Vf@flatron>
+ <20130809153730.83d3a5ba419def5424bcbb0e@samsung.com>
+ <3801687.TzcQoMh0Oe@flatron>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPIsWRmVeSWpSXmKPExsVy+t8zI93TLhxBBif2KVrcuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLfoXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCwurNjIbjFl0WFWi5N/
+	ehktWq73Mlms2vWH0YHf48nBeUwesxsusnjsnHWX3ePOtT1sHuc3rWH22Lyk3mPyjeWMHn1b
+	VjF6fN4k53Hl6BmmAK4oLpuU1JzMstQifbsEroz3C04zF0zqZKz4tq6HqYGxObmLkYNDQsBE
+	4lqbYRcjJ5ApJnHh3nq2LkYuDiGBZYwSLb9WMEEkTCSO3NnPCpFYxCjxcMNsFghnEpPE9fO3
+	WUCqWARUJToO7ADrYBPQklg99zgjiC0ioC7xbUo/O4jNLPCDReLTNj4QW1jAWWL26jOsIDav
+	gKPEh6m/weZwCmhKTPq2D2rbekaJb1N/s0KcYSFxoamDHaJBUOLH5HssEEO1JDZva2KFsOUl
+	Nq95ywzSLCGwlkPiyreLjBDXCUh8m3yIBeJnWYlNB5ghZkpKHFxxg2UCo9gsJGNnIRk7C8nY
+	BYzMqxhFUwuSC4qT0ouM9YoTc4tL89L1kvNzNzFCIr9/B+PdA9aHGJOBVk5klhJNzgcmjryS
+	eENjMyMLUxNTYyNzSzPShJXEedVarAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MFraLVb6
+	IPpbyT3fQe+v7PRXQqpBm8UW7OQ2MDfrq/po8CT/2Jyolt7u5s2tf1nYS1zSnA2tlh95U2d/
+	qMU5LWZdwf/tvw5MPFGwaNXDx8pad/R98+cfvXZR6mSJTFnof+OU60Z+z2Sll3M/dtkfmm9j
+	MMc+5+xsh9K29pf/Tp9c4l+c9qCvXYmlOCPRUIu5qDgRACl2iLkSAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLKsWRmVeSWpSXmKPExsVy+t9jAd3TLhxBBg2fJS3u3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFv0LrjKZvHx1HF2i02Pr7FaXN41h81ixvl9TBYXVmxkt5iy6DCrxck/
+	vYwWLdd7mSxW7frD6MDv8eTgPCaP2Q0XWTx2zrrL7nHn2h42j/Ob1jB7bF5S7zH5xnJGj74t
+	qxg9Pm+S87hy9AxTAFdUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJu
+	qq2Si0+ArltmDtAbSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaM9wtO
+	MxdM6mSs+Lauh6mBsTm5i5GTQ0LAROLInf2sELaYxIV769m6GLk4hAQWMUo83DCbBcKZxCRx
+	/fxtFpAqFgFViY4DO5hAbDYBLYnVc48zgtgiAuoS36b0s4PYzAI/WCQ+beMDsYUFnCVmrz4D
+	toFXwFHiw9TfYHM4BTQlJn3bxwqxYD2jxLepv6HOsJC40NTBDtEgKPFj8j0WiKFaEpu3NbFC
+	2PISm9e8ZZ7AKDALSdksJGWzkJQtYGRexSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRGcWJ5J
+	72Bc1WBxiFGAg1GJh9fjC3uQEGtiWXFl7iFGCQ5mJRHeemOOICHelMTKqtSi/Pii0pzU4kOM
+	ycDgmMgsJZqcD0x6eSXxhsYmZkaWRmYWRibm5qQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTB
+	KdXA2LVyy7srwr7/H106ceahyf50V5d9O5JV37feMNFj8LW6UPZf8MW3+26HnzKqumR9udO5
+	1Fq55J4Zv+u2wqzjXVwWb74b1C9Q+nvo/vqgOV+yPFw6BR6oVDzadmVxzbnH1Y6XdOdcndFw
+	Z67s0og9xjIdh589/Bjm0HvnaXP5iXcdh51/3DW72qHEUpyRaKjFXFScCABNkygncAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 09 Aug 2013 10:30:11 +0200, Tomasz Figa wrote:
+> On Friday 09 of August 2013 15:37:30 Cho KyongHo wrote:
+> > On Fri, 09 Aug 2013 00:41:25 +0200, Tomasz Figa wrote:
+> > > Hi KyongHo,
+> > > 
+> > > On Thursday 08 of August 2013 18:38:49 Cho KyongHo wrote:
+> > > > This commit adds device tree support for System MMU.
+> > > > This also include the following changes and enhancements:
+> > > > 
+> > > > * use managed device helper functions.
+> > > > Simplyfies System MMU device driver.
+> > > > 
+> > > > * use only a single clock descriptor.
+> > > > System MMU device descriptor is seperate if it is imposible to make
+> > > > a single clock descriptor to make a device descriptor for a group of
+> > > > System MMUs.
+> > > > 
+> > > > * removed dbgname member from sysmmu_drvdata structure.
+> > > > debugging kernel message for a System MMU is distinguisheable with
+> > > > the
+> > > > name of device descroptors.
+> > > 
+> > > Please put all these three changes in separate patches. This patch is
+> > > hard to review with all the changes mixed together...
+> > 
+> > Ok.
+> > 
+> > > In addition, I believe this is the patch that should be adding device
+> > > tree binding documentation, not the 6/16 one, as this is where
+> > > actually support for this binding gets added to the kernel.
+> > 
+> > Oh, I didn't know that devicetree binding description and implementation
+> > need to be in the same patch.
+> > I will do as you advised.
+> 
+> Thanks. We are still missing a "best practices" document about device tree 
+> binding development, so it might not be clear.
+> 
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index d81f637..08e6f61 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5725,7 +5725,6 @@ P:	Vincent Sanders <vince@simtec.co.uk>
- M:	Simtec Linux Team <linux@simtec.co.uk>
- W:	http://www.simtec.co.uk/products/EB110ATX/
- S:	Supported
--F:	Documentation/stable_kernel_rules.txt
- 
- SIMTEC EB2410ITX (BAST)
- P:	Ben Dooks
-@@ -6041,7 +6040,8 @@ F:	arch/alpha/kernel/srm_env.c
- STABLE BRANCH
- M:	Greg Kroah-Hartman <greg@kroah.com>
- L:	stable@vger.kernel.org
--S:	Maintained
-+S:	Supported
-+F:	Documentation/stable_kernel_rules.txt
- 
- STAGING SUBSYSTEM
- M:	Greg Kroah-Hartman <gregkh@suse.de>
-diff --git a/Makefile b/Makefile
-index 45f74af..4789f7a 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 89
-+SUBLEVEL = 90
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 12aff25..f7183ec 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -51,7 +51,7 @@ void __cpuinit mxcsr_feature_mask_init(void)
- 	clts();
- 	if (cpu_has_fxsr) {
- 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
--		asm volatile("fxsave %0" : : "m" (fx_scratch));
-+		asm volatile("fxsave %0" : "+m" (fx_scratch));
- 		mask = fx_scratch.mxcsr_mask;
- 		if (mask == 0)
- 			mask = 0x0000ffbf;
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 4a15d57..908f40a 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -118,6 +118,7 @@ struct acpi_battery {
- 	struct acpi_device *device;
- 	struct notifier_block pm_nb;
- 	unsigned long update_time;
-+	int revision;
- 	int rate_now;
- 	int capacity_now;
- 	int voltage_now;
-@@ -350,6 +351,7 @@ static struct acpi_offsets info_offsets[] = {
- };
- 
- static struct acpi_offsets extended_info_offsets[] = {
-+	{offsetof(struct acpi_battery, revision), 0},
- 	{offsetof(struct acpi_battery, power_unit), 0},
- 	{offsetof(struct acpi_battery, design_capacity), 0},
- 	{offsetof(struct acpi_battery, full_charge_capacity), 0},
-diff --git a/drivers/net/arcnet/arcnet.c b/drivers/net/arcnet/arcnet.c
-index a746ba2..a956053 100644
---- a/drivers/net/arcnet/arcnet.c
-+++ b/drivers/net/arcnet/arcnet.c
-@@ -1007,7 +1007,7 @@ static void arcnet_rx(struct net_device *dev, int bufnum)
- 
- 	soft = &pkt.soft.rfc1201;
- 
--	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, sizeof(ARC_HDR_SIZE));
-+	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, ARC_HDR_SIZE);
- 	if (pkt.hard.offset[0]) {
- 		ofs = pkt.hard.offset[0];
- 		length = 256 - ofs;
-diff --git a/drivers/net/usb/smsc75xx.c b/drivers/net/usb/smsc75xx.c
-index 2f4775f..be27891 100644
---- a/drivers/net/usb/smsc75xx.c
-+++ b/drivers/net/usb/smsc75xx.c
-@@ -43,7 +43,6 @@
- #define EEPROM_MAC_OFFSET		(0x01)
- #define DEFAULT_TX_CSUM_ENABLE		(true)
- #define DEFAULT_RX_CSUM_ENABLE		(true)
--#define DEFAULT_TSO_ENABLE		(true)
- #define SMSC75XX_INTERNAL_PHY_ID	(1)
- #define SMSC75XX_TX_OVERHEAD		(8)
- #define MAX_RX_FIFO_SIZE		(20 * 1024)
-@@ -1034,17 +1033,14 @@ static int smsc75xx_bind(struct usbnet *dev, struct usb_interface *intf)
- 
- 	INIT_WORK(&pdata->set_multicast, smsc75xx_deferred_multicast_write);
- 
--	if (DEFAULT_TX_CSUM_ENABLE) {
-+	if (DEFAULT_TX_CSUM_ENABLE)
- 		dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
--		if (DEFAULT_TSO_ENABLE)
--			dev->net->features |= NETIF_F_SG |
--				NETIF_F_TSO | NETIF_F_TSO6;
--	}
-+
- 	if (DEFAULT_RX_CSUM_ENABLE)
- 		dev->net->features |= NETIF_F_RXCSUM;
- 
- 	dev->net->hw_features = NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
--		NETIF_F_SG | NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_RXCSUM;
-+				NETIF_F_RXCSUM;
- 
- 	/* Init all registers */
- 	ret = smsc75xx_reset(dev);
-@@ -1169,8 +1165,6 @@ static struct sk_buff *smsc75xx_tx_fixup(struct usbnet *dev,
- {
- 	u32 tx_cmd_a, tx_cmd_b;
- 
--	skb_linearize(skb);
--
- 	if (skb_headroom(skb) < SMSC75XX_TX_OVERHEAD) {
- 		struct sk_buff *skb2 =
- 			skb_copy_expand(skb, SMSC75XX_TX_OVERHEAD, 0, flags);
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_init.c b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-index 4099712..403d33f 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -873,6 +873,7 @@ static int ath9k_init_device(struct ath9k_htc_priv *priv,
- 	if (error != 0)
- 		goto err_rx;
- 
-+	ath9k_hw_disable(priv->ah);
- #ifdef CONFIG_MAC80211_LEDS
- 	/* must be initialized before ieee80211_register_hw */
- 	priv->led_cdev.default_trigger = ieee80211_create_tpt_led_trigger(priv->hw,
-diff --git a/drivers/net/wireless/mwifiex/sdio.c b/drivers/net/wireless/mwifiex/sdio.c
-index 3b1217f..61e152d 100644
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -1387,8 +1387,8 @@ static int mwifiex_sdio_host_to_card(struct mwifiex_adapter *adapter,
- 	/* Allocate buffer and copy payload */
- 	blk_size = MWIFIEX_SDIO_BLOCK_SIZE;
- 	buf_block_len = (pkt_len + blk_size - 1) / blk_size;
--	*(u16 *) &payload[0] = (u16) pkt_len;
--	*(u16 *) &payload[2] = type;
-+	*(__le16 *)&payload[0] = cpu_to_le16((u16)pkt_len);
-+	*(__le16 *)&payload[2] = cpu_to_le16(type);
- 
- 	/*
- 	 * This is SDIO specific header
-diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
-index 76f26ad..2d7c59f 100644
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -848,13 +848,8 @@ void rt2x00queue_index_inc(struct queue_entry *entry, enum queue_index index)
- 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
- }
- 
--void rt2x00queue_pause_queue(struct data_queue *queue)
-+void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
- {
--	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
--	    !test_bit(QUEUE_STARTED, &queue->flags) ||
--	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
--		return;
--
- 	switch (queue->qid) {
- 	case QID_AC_VO:
- 	case QID_AC_VI:
-@@ -870,6 +865,15 @@ void rt2x00queue_pause_queue(struct data_queue *queue)
- 		break;
- 	}
- }
-+void rt2x00queue_pause_queue(struct data_queue *queue)
-+{
-+	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
-+	    !test_bit(QUEUE_STARTED, &queue->flags) ||
-+	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
-+		return;
-+
-+	rt2x00queue_pause_queue_nocheck(queue);
-+}
- EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
- 
- void rt2x00queue_unpause_queue(struct data_queue *queue)
-@@ -931,7 +935,7 @@ void rt2x00queue_stop_queue(struct data_queue *queue)
- 		return;
- 	}
- 
--	rt2x00queue_pause_queue(queue);
-+	rt2x00queue_pause_queue_nocheck(queue);
- 
- 	queue->rt2x00dev->ops->lib->stop_queue(queue);
- 
-diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
-index 5b3d063..ab7d11e 100644
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -374,11 +374,18 @@ static void mxs_auart_settermios(struct uart_port *u,
- 
- static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
- {
--	u32 istatus, istat;
-+	u32 istat;
- 	struct mxs_auart_port *s = context;
- 	u32 stat = readl(s->port.membase + AUART_STAT);
- 
--	istatus = istat = readl(s->port.membase + AUART_INTR);
-+	istat = readl(s->port.membase + AUART_INTR);
-+
-+	/* ack irq */
-+	writel(istat & (AUART_INTR_RTIS
-+		| AUART_INTR_TXIS
-+		| AUART_INTR_RXIS
-+		| AUART_INTR_CTSMIS),
-+			s->port.membase + AUART_INTR_CLR);
- 
- 	if (istat & AUART_INTR_CTSMIS) {
- 		uart_handle_cts_change(&s->port, stat & AUART_STAT_CTS);
-@@ -397,12 +404,6 @@ static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
- 		istat &= ~AUART_INTR_TXIS;
- 	}
- 
--	writel(istatus & (AUART_INTR_RTIS
--		| AUART_INTR_TXIS
--		| AUART_INTR_RXIS
--		| AUART_INTR_CTSMIS),
--			s->port.membase + AUART_INTR_CLR);
--
- 	return IRQ_HANDLED;
- }
- 
-@@ -542,7 +543,7 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
- 	struct mxs_auart_port *s;
- 	struct uart_port *port;
- 	unsigned int old_ctrl0, old_ctrl2;
--	unsigned int to = 1000;
-+	unsigned int to = 20000;
- 
- 	if (co->index >	MXS_AUART_PORTS || co->index < 0)
- 		return;
-@@ -563,18 +564,23 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
- 
- 	uart_console_write(port, str, count, mxs_auart_console_putchar);
- 
--	/*
--	 * Finally, wait for transmitter to become empty
--	 * and restore the TCR
--	 */
-+	/* Finally, wait for transmitter to become empty ... */
- 	while (readl(port->membase + AUART_STAT) & AUART_STAT_BUSY) {
-+		udelay(1);
- 		if (!to--)
- 			break;
--		udelay(1);
- 	}
- 
--	writel(old_ctrl0, port->membase + AUART_CTRL0);
--	writel(old_ctrl2, port->membase + AUART_CTRL2);
-+	/*
-+	 * ... and restore the TCR if we waited long enough for the transmitter
-+	 * to be idle. This might keep the transmitter enabled although it is
-+	 * unused, but that is better than to disable it while it is still
-+	 * transmitting.
-+	 */
-+	if (!(readl(port->membase + AUART_STAT) & AUART_STAT_BUSY)) {
-+		writel(old_ctrl0, port->membase + AUART_CTRL0);
-+		writel(old_ctrl2, port->membase + AUART_CTRL2);
-+	}
- 
- 	clk_disable(s->clk);
- }
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 9fde1c0..9860f6b 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -118,6 +118,7 @@ static int fill_event_metadata(struct fsnotify_group *group,
- 	metadata->event_len = FAN_EVENT_METADATA_LEN;
- 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
- 	metadata->vers = FANOTIFY_METADATA_VERSION;
-+	metadata->reserved = 0;
- 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
- 	metadata->pid = pid_vnr(event->tgid);
- 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index da60cfa..a8102d2 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -223,9 +223,9 @@ perf_cgroup_match(struct perf_event *event)
- 	return !event->cgrp || event->cgrp == cpuctx->cgrp;
- }
- 
--static inline void perf_get_cgroup(struct perf_event *event)
-+static inline bool perf_tryget_cgroup(struct perf_event *event)
- {
--	css_get(&event->cgrp->css);
-+	return css_tryget(&event->cgrp->css);
- }
- 
- static inline void perf_put_cgroup(struct perf_event *event)
-@@ -415,7 +415,11 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
- 	event->cgrp = cgrp;
- 
- 	/* must be done before we fput() the file */
--	perf_get_cgroup(event);
-+	if (!perf_tryget_cgroup(event)) {
-+		event->cgrp = NULL;
-+		ret = -ENOENT;
-+		goto out;
-+	}
- 
- 	/*
- 	 * all events in a group must monitor
-@@ -839,6 +843,15 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- }
- 
- /*
-+ * Initialize event state based on the perf_event_attr::disabled.
-+ */
-+static inline void perf_event__state_init(struct perf_event *event)
-+{
-+	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
-+					      PERF_EVENT_STATE_INACTIVE;
-+}
-+
-+/*
-  * Called at perf_event creation and when events are attached/detached from a
-  * group.
-  */
-@@ -6241,8 +6254,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 
- 	event->overflow_handler	= overflow_handler;
- 
--	if (attr->disabled)
--		event->state = PERF_EVENT_STATE_OFF;
-+	perf_event__state_init(event);
- 
- 	pmu = NULL;
- 
-@@ -6616,9 +6628,17 @@ SYSCALL_DEFINE5(perf_event_open,
- 
- 		mutex_lock(&gctx->mutex);
- 		perf_remove_from_context(group_leader);
-+
-+		/*
-+		 * Removing from the context ends up with disabled
-+		 * event. What we want here is event in the initial
-+		 * startup state, ready to be add into new context.
-+		 */
-+		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
- 			perf_remove_from_context(sibling);
-+			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
- 		mutex_unlock(&gctx->mutex);
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index c768588..fae7d67 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -4277,7 +4277,7 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
- 	 * idle runqueue:
- 	 */
- 	if (rq->cfs.load.weight)
--		rr_interval = NS_TO_JIFFIES(sched_slice(&rq->cfs, se));
-+		rr_interval = NS_TO_JIFFIES(sched_slice(cfs_rq_of(se), se));
- 
- 	return rr_interval;
- }
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index 46b5950..3a22b1c 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -32,6 +32,8 @@ static int tcp_adv_win_scale_min = -31;
- static int tcp_adv_win_scale_max = 31;
- static int ip_ttl_min = 1;
- static int ip_ttl_max = 255;
-+static int tcp_syn_retries_min = 1;
-+static int tcp_syn_retries_max = MAX_TCP_SYNCNT;
- static int ip_ping_group_range_min[] = { 0, 0 };
- static int ip_ping_group_range_max[] = { GID_T_MAX, GID_T_MAX };
- 
-@@ -231,7 +233,9 @@ static struct ctl_table ipv4_table[] = {
- 		.data		= &sysctl_tcp_syn_retries,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_dointvec
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &tcp_syn_retries_min,
-+		.extra2		= &tcp_syn_retries_max
- 	},
- 	{
- 		.procname	= "tcp_synack_retries",
-diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-index def0538..4aa8a19 100644
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -256,10 +256,12 @@ static void __net_exit ip6mr_rules_exit(struct net *net)
- {
- 	struct mr6_table *mrt, *next;
- 
-+	rtnl_lock();
- 	list_for_each_entry_safe(mrt, next, &net->ipv6.mr6_tables, list) {
- 		list_del(&mrt->list);
- 		ip6mr_free_table(mrt);
- 	}
-+	rtnl_unlock();
- 	fib_rules_unregister(net->ipv6.mr6_rules_ops);
- }
- #else
-@@ -286,7 +288,10 @@ static int __net_init ip6mr_rules_init(struct net *net)
- 
- static void __net_exit ip6mr_rules_exit(struct net *net)
- {
-+	rtnl_lock();
- 	ip6mr_free_table(net->ipv6.mrt6);
-+	net->ipv6.mrt6 = NULL;
-+	rtnl_unlock();
- }
- #endif
- 
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index 01eb92c..d040880 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -2073,6 +2073,7 @@ static int pfkey_xfrm_policy2msg(struct sk_buff *skb, const struct xfrm_policy *
- 			pol->sadb_x_policy_type = IPSEC_POLICY_NONE;
- 	}
- 	pol->sadb_x_policy_dir = dir+1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = xp->index;
- 	pol->sadb_x_policy_priority = xp->priority;
- 
-@@ -3108,7 +3109,9 @@ static int pfkey_send_acquire(struct xfrm_state *x, struct xfrm_tmpl *t, struct
- 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
- 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
- 	pol->sadb_x_policy_dir = dir+1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = xp->index;
-+	pol->sadb_x_policy_priority = xp->priority;
- 
- 	/* Set sadb_comb's. */
- 	if (x->id.proto == IPPROTO_AH)
-@@ -3496,6 +3499,7 @@ static int pfkey_send_migrate(const struct xfrm_selector *sel, u8 dir, u8 type,
- 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
- 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
- 	pol->sadb_x_policy_dir = dir + 1;
-+	pol->sadb_x_policy_reserved = 0;
- 	pol->sadb_x_policy_id = 0;
- 	pol->sadb_x_policy_priority = 0;
- 
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index 785b6e9..10e8842 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -810,8 +810,14 @@ ieee80211_rx_h_check(struct ieee80211_rx_data *rx)
- 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)rx->skb->data;
- 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(rx->skb);
- 
--	/* Drop duplicate 802.11 retransmissions (IEEE 802.11 Chap. 9.2.9) */
--	if (rx->sta && !is_multicast_ether_addr(hdr->addr1)) {
-+	/*
-+	 * Drop duplicate 802.11 retransmissions
-+	 * (IEEE 802.11-2012: 9.3.2.10 "Duplicate detection and recovery")
-+	 */
-+	if (rx->skb->len >= 24 && rx->sta &&
-+	    !ieee80211_is_ctl(hdr->frame_control) &&
-+	    !ieee80211_is_qos_nullfunc(hdr->frame_control) &&
-+	    !is_multicast_ether_addr(hdr->addr1)) {
- 		if (unlikely(ieee80211_has_retry(hdr->frame_control) &&
- 			     rx->sta->last_seq_ctrl[rx->queue] ==
- 			     hdr->seq_ctrl)) {
-diff --git a/net/sched/sch_atm.c b/net/sched/sch_atm.c
-index 3f08158..46a39dc 100644
---- a/net/sched/sch_atm.c
-+++ b/net/sched/sch_atm.c
-@@ -605,6 +605,7 @@ static int atm_tc_dump_class(struct Qdisc *sch, unsigned long cl,
- 		struct sockaddr_atmpvc pvc;
- 		int state;
- 
-+		memset(&pvc, 0, sizeof(pvc));
- 		pvc.sap_family = AF_ATMPVC;
- 		pvc.sap_addr.itf = flow->vcc->dev ? flow->vcc->dev->number : -1;
- 		pvc.sap_addr.vpi = flow->vcc->vpi;
-diff --git a/net/sched/sch_cbq.c b/net/sched/sch_cbq.c
-index b7cddb9..7f59944 100644
---- a/net/sched/sch_cbq.c
-+++ b/net/sched/sch_cbq.c
-@@ -1467,6 +1467,7 @@ static int cbq_dump_wrr(struct sk_buff *skb, struct cbq_class *cl)
- 	unsigned char *b = skb_tail_pointer(skb);
- 	struct tc_cbq_wrropt opt;
- 
-+	memset(&opt, 0, sizeof(opt));
- 	opt.flags = 0;
- 	opt.allot = cl->allot;
- 	opt.priority = cl->priority + 1;
-diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
-index 2325ce6..35e44e2 100644
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -205,6 +205,8 @@ static inline int sctp_cacc_skip(struct sctp_transport *primary,
-  */
- void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
- {
-+	memset(q, 0, sizeof(struct sctp_outq));
-+
- 	q->asoc = asoc;
- 	INIT_LIST_HEAD(&q->out_chunk_list);
- 	INIT_LIST_HEAD(&q->control_chunk_list);
-@@ -212,13 +214,7 @@ void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
- 	INIT_LIST_HEAD(&q->sacked);
- 	INIT_LIST_HEAD(&q->abandoned);
- 
--	q->fast_rtx = 0;
--	q->outstanding_bytes = 0;
- 	q->empty = 1;
--	q->cork  = 0;
--
--	q->malloced = 0;
--	q->out_qlen = 0;
- }
- 
- /* Free the outqueue structure and any related pending chunks.
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index f310a0d..17bf4a7 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -4454,12 +4454,14 @@ EXPORT_SYMBOL(cfg80211_testmode_alloc_event_skb);
- 
- void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
- {
-+	struct cfg80211_registered_device *rdev = ((void **)skb->cb)[0];
- 	void *hdr = ((void **)skb->cb)[1];
- 	struct nlattr *data = ((void **)skb->cb)[2];
- 
- 	nla_nest_end(skb, data);
- 	genlmsg_end(skb, hdr);
--	genlmsg_multicast(skb, 0, nl80211_testmode_mcgrp.id, gfp);
-+	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
-+				nl80211_testmode_mcgrp.id, gfp);
- }
- EXPORT_SYMBOL(cfg80211_testmode_event);
- #endif
-@@ -6745,7 +6747,8 @@ void nl80211_send_mgmt_tx_status(struct cfg80211_registered_device *rdev,
- 		return;
- 	}
- 
--	genlmsg_multicast(msg, 0, nl80211_mlme_mcgrp.id, gfp);
-+	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
-+				nl80211_mlme_mcgrp.id, gfp);
- 	return;
- 
-  nla_put_failure:
+I saw Rob Herring has different idea about the seperation of patches.
+Let's talk about it more.
+
+> > > > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> > > > ---
+> > > > 
+> > > >  drivers/iommu/Kconfig        |    5 +-
+> > > >  drivers/iommu/exynos-iommu.c |  186
+> > > > 
+> > > > ++++++++++++++++------------------------- 2 files changed, 75
+> > > > insertions(+), 116 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+> > > > index 820d85c..9ad45f1 100644
+> > > > --- a/drivers/iommu/Kconfig
+> > > > +++ b/drivers/iommu/Kconfig
+> > > > @@ -168,16 +168,15 @@ config TEGRA_IOMMU_SMMU
+> > > > 
+> > > >  config EXYNOS_IOMMU
+> > > >  
+> > > >  	bool "Exynos IOMMU Support"
+> > > > 
+> > > > -	depends on ARCH_EXYNOS && EXYNOS_DEV_SYSMMU
+> > > > +	depends on ARCH_EXYNOS
+> > > > 
+> > > >  	select IOMMU_API
+> > > > 
+> > > > +	default n
+> > > > 
+> > > >  	help
+> > > >  	
+> > > >  	  Support for the IOMMU(System MMU) of Samsung Exynos application
+> > > >  	  processor family. This enables H/W multimedia accellerators to
+> > > 
+> > > see
+> > > 
+> > > >  	  non-linear physical memory chunks as a linear memory in their
+> > > >  	  address spaces
+> > > > 
+> > > > -	  If unsure, say N here.
+> > > > -
+> > > > 
+> > > >  config EXYNOS_IOMMU_DEBUG
+> > > >  
+> > > >  	bool "Debugging log for Exynos IOMMU"
+> > > >  	depends on EXYNOS_IOMMU
+> > > > 
+> > > > diff --git a/drivers/iommu/exynos-iommu.c
+> > > > b/drivers/iommu/exynos-iommu.c index a318049..0ee73e8 100644
+> > > > --- a/drivers/iommu/exynos-iommu.c
+> > > > +++ b/drivers/iommu/exynos-iommu.c
+> > > > @@ -26,6 +26,7 @@
+> > > > 
+> > > >  #include <linux/list.h>
+> > > >  #include <linux/memblock.h>
+> > > >  #include <linux/export.h>
+> > > > 
+> > > > +#include <linux/of.h>
+> > > > 
+> > > >  #include <asm/cacheflush.h>
+> > > >  #include <asm/pgtable.h>
+> > > > 
+> > > > @@ -170,15 +171,14 @@ struct sysmmu_drvdata {
+> > > > 
+> > > >  	struct list_head node; /* entry of exynos_iommu_domain.clients */
+> > > >  	struct device *sysmmu;	/* System MMU's device descriptor */
+> > > >  	struct device *dev;	/* Owner of system MMU */
+> > > > 
+> > > > -	char *dbgname;
+> > > > 
+> > > >  	int nsfrs;
+> > > > 
+> > > > -	void __iomem **sfrbases;
+> > > > -	struct clk *clk[2];
+> > > > +	struct clk *clk;
+> > > > 
+> > > >  	int activations;
+> > > >  	rwlock_t lock;
+> > > >  	struct iommu_domain *domain;
+> > > >  	sysmmu_fault_handler_t fault_handler;
+> > > >  	unsigned long pgtable;
+> > > > 
+> > > > +	void __iomem *sfrbases[0];
+> > > > 
+> > > >  };
+> > > >  
+> > > >  static bool set_sysmmu_active(struct sysmmu_drvdata *data)
+> > > > 
+> > > > @@ -385,8 +385,8 @@ static irqreturn_t exynos_sysmmu_irq(int irq,
+> > > > void
+> > > > *dev_id) if (!ret && (itype != SYSMMU_FAULT_UNKNOWN))
+> > > > 
+> > > >  		__raw_writel(1 << itype, data->sfrbases[i] +
+> > > 
+> > > REG_INT_CLEAR);
+> > > 
+> > > >  	else
+> > > > 
+> > > > -		dev_dbg(data->sysmmu, "(%s) %s is not handled.\n",
+> > > > -				data->dbgname, sysmmu_fault_name[itype]);
+> > > > +		dev_dbg(data->sysmmu, "%s is not handled.\n",
+> > > > +				sysmmu_fault_name[itype]);
+> > > > 
+> > > >  	if (itype != SYSMMU_FAULT_UNKNOWN)
+> > > >  	
+> > > >  		sysmmu_unblock(data->sfrbases[i]);
+> > > > 
+> > > > @@ -410,10 +410,8 @@ static bool __exynos_sysmmu_disable(struct
+> > > > sysmmu_drvdata *data) for (i = 0; i < data->nsfrs; i++)
+> > > > 
+> > > >  		__raw_writel(CTRL_DISABLE, data->sfrbases[i] +
+> > > 
+> > > REG_MMU_CTRL);
+> > > 
+> > > > -	if (data->clk[1])
+> > > > -		clk_disable(data->clk[1]);
+> > > > -	if (data->clk[0])
+> > > > -		clk_disable(data->clk[0]);
+> > > > +	if (data->clk)
+> > > > +		clk_disable(data->clk);
+> > > > 
+> > > >  	disabled = true;
+> > > >  	data->pgtable = 0;
+> > > > 
+> > > > @@ -422,10 +420,10 @@ finish:
+> > > >  	write_unlock_irqrestore(&data->lock, flags);
+> > > >  	
+> > > >  	if (disabled)
+> > > > 
+> > > > -		dev_dbg(data->sysmmu, "(%s) Disabled\n", data->dbgname);
+> > > > +		dev_dbg(data->sysmmu, "Disabled\n");
+> > > > 
+> > > >  	else
+> > > > 
+> > > > -		dev_dbg(data->sysmmu, "(%s) %d times left to be
+> > > 
+> > > disabled\n",
+> > > 
+> > > > -					data->dbgname, data->activations);
+> > > > +		dev_dbg(data->sysmmu, "%d times left to be disabled\n",
+> > > > +					data->activations);
+> > > > 
+> > > >  	return disabled;
+> > > >  
+> > > >  }
+> > > > 
+> > > > @@ -452,14 +450,12 @@ static int __exynos_sysmmu_enable(struct
+> > > > sysmmu_drvdata *data, ret = 1;
+> > > > 
+> > > >  		}
+> > > > 
+> > > > -		dev_dbg(data->sysmmu, "(%s) Already enabled\n", data-
+> > > >
+> > > >dbgname);
+> > > >
+> > > > +		dev_dbg(data->sysmmu, "Already enabled\n");
+> > > > 
+> > > >  		goto finish;
+> > > >  	
+> > > >  	}
+> > > > 
+> > > > -	if (data->clk[0])
+> > > > -		clk_enable(data->clk[0]);
+> > > > -	if (data->clk[1])
+> > > > -		clk_enable(data->clk[1]);
+> > > > +	if (data->clk)
+> > > > +		clk_enable(data->clk);
+> > > > 
+> > > >  	data->pgtable = pgtable;
+> > > > 
+> > > > @@ -479,7 +475,7 @@ static int __exynos_sysmmu_enable(struct
+> > > > sysmmu_drvdata *data,
+> > > > 
+> > > >  	data->domain = domain;
+> > > > 
+> > > > -	dev_dbg(data->sysmmu, "(%s) Enabled\n", data->dbgname);
+> > > > +	dev_dbg(data->sysmmu, "Enabled\n");
+> > > > 
+> > > >  finish:
+> > > >  	write_unlock_irqrestore(&data->lock, flags);
+> > > > 
+> > > > @@ -495,7 +491,7 @@ int exynos_sysmmu_enable(struct device *dev,
+> > > > unsigned long pgtable)
+> > > > 
+> > > >  	ret = pm_runtime_get_sync(data->sysmmu);
+> > > >  	if (ret < 0) {
+> > > > 
+> > > > -		dev_dbg(data->sysmmu, "(%s) Failed to enable\n", data-
+> > > >
+> > > >dbgname);
+> > > >
+> > > > +		dev_dbg(data->sysmmu, "Failed to enable\n");
+> > > > 
+> > > >  		return ret;
+> > > >  	
+> > > >  	}
+> > > > 
+> > > > @@ -503,8 +499,8 @@ int exynos_sysmmu_enable(struct device *dev,
+> > > > unsigned long pgtable) if (WARN_ON(ret < 0)) {
+> > > > 
+> > > >  		pm_runtime_put(data->sysmmu);
+> > > >  		dev_err(data->sysmmu,
+> > > > 
+> > > > -			"(%s) Already enabled with page table %#lx\n",
+> > > > -			data->dbgname, data->pgtable);
+> > > > +			"Already enabled with page table %#lx\n",
+> > > > +			data->pgtable);
+> > > > 
+> > > >  	} else {
+> > > >  	
+> > > >  		data->dev = dev;
+> > > >  	
+> > > >  	}
+> > > > 
+> > > > @@ -540,9 +536,7 @@ static void sysmmu_tlb_invalidate_entry(struct
+> > > > device *dev, unsigned long iova) }
+> > > > 
+> > > >  		}
+> > > >  	
+> > > >  	} else {
+> > > > 
+> > > > -		dev_dbg(data->sysmmu,
+> > > > -			"(%s) Disabled. Skipping invalidating TLB.\n",
+> > > > -			data->dbgname);
+> > > > +		dev_dbg(data->sysmmu, "Disabled. Skipping invalidating
+> > > 
+> > > TLB.\n");
+> > > 
+> > > >  	}
+> > > >  	
+> > > >  	read_unlock_irqrestore(&data->lock, flags);
+> > > > 
+> > > > @@ -564,141 +558,107 @@ void exynos_sysmmu_tlb_invalidate(struct
+> > > > device
+> > > > *dev) }
+> > > > 
+> > > >  		}
+> > > >  	
+> > > >  	} else {
+> > > > 
+> > > > -		dev_dbg(data->sysmmu,
+> > > > -			"(%s) Disabled. Skipping invalidating TLB.\n",
+> > > > -			data->dbgname);
+> > > > +		dev_dbg(data->sysmmu, "Disabled. Skipping invalidating
+> > > 
+> > > TLB.\n");
+> > > 
+> > > >  	}
+> > > >  	
+> > > >  	read_unlock_irqrestore(&data->lock, flags);
+> > > >  
+> > > >  }
+> > > > 
+> > > > -static int exynos_sysmmu_probe(struct platform_device *pdev)
+> > > > +static int __init exynos_sysmmu_probe(struct platform_device *pdev)
+> > > > 
+> > > >  {
+> > > >  
+> > > >  	int i, ret;
+> > > > 
+> > > > -	struct device *dev;
+> > > > +	struct device *dev = &pdev->dev;
+> > > > 
+> > > >  	struct sysmmu_drvdata *data;
+> > > > 
+> > > > -	dev = &pdev->dev;
+> > > > -
+> > > > -	data = kzalloc(sizeof(*data), GFP_KERNEL);
+> > > > -	if (!data) {
+> > > > -		dev_dbg(dev, "Not enough memory\n");
+> > > > -		ret = -ENOMEM;
+> > > > -		goto err_alloc;
+> > > > +	if (pdev->num_resources == 0) {
+> > > > +		dev_err(dev, "No System MMU resource defined\n");
+> > > > +		return -ENODEV;
+> > > > 
+> > > >  	}
+> > > > 
+> > > > -	ret = dev_set_drvdata(dev, data);
+> > > > -	if (ret) {
+> > > > -		dev_dbg(dev, "Unabled to initialize driver data\n");
+> > > > -		goto err_init;
+> > > > +	data = devm_kzalloc(dev,
+> > > > +			sizeof(*data) +
+> > > > +			sizeof(*data->sfrbases) * (pdev->num_resources /
+> > > 
+> > > 2),
+> > > 
+> > > > +			GFP_KERNEL);
+> > > > +	if (!data) {
+> > > > +		dev_err(dev, "Not enough memory for initialization\n");
+> > > 
+> > > nit: This message is not necessary, as kmalloc() already prints a
+> > > message if allocation error occurs.
+> > 
+> > Ok.
+> > 
+> > > > +		return -ENOMEM;
+> > > > 
+> > > >  	}
+> > > >  	
+> > > >  	data->nsfrs = pdev->num_resources / 2;
+> > > 
+> > > As Marek and Bart already mentioned before, please (oh please, really
+> > > please) finally remove this brokenness from this driver.
+> > > 
+> > > A device driver should not do this kind of abstraction, emulating one
+> > > instance of particular IP from multiple instances. This is a task for
+> > > the IOMMU core and this is already supported by IOMMU domains, which
+> > > is the right way to achieve a single virtual address space for
+> > > multiple IOMMUs.
+> > Let me show some example.
+> > FIMD in Exynos5250 has a single System MMU.
+> > FIMD in Exynos5420 has 2 System MMUs.
+> > I wanted to show the FIMD driver the same view of System MMU.
+> > Otherwise, FIMD driver must aware of how the System MMUs are connected
+> > with FIMD.
+> > 
+> > If it is responsible for the device drivers of master H/Ws, System MMU
+> > driver can be much more simpler which I also prefer :)
+> 
+> Yes, it is responsibility of FIMD driver to add all its IOMMUs into the 
+> same domain or into any other configuration it wants.
+> 
+> For example by some extension, the driver might want to have separate 
+> address spaces for each IOMMU and this would not be possible with current 
+> configuration of SysMMU driver.
+> 
+
+Ok. I will post seperate series of patches for this issue later.
+I think it is better to discuss because it is change in design.
+
+> > > > -	data->sfrbases = kmalloc(sizeof(*data->sfrbases) * data->nsfrs,
+> > > > -
+> > > 
+> > > GFP_KERNEL);
+> > > 
+> > > > -	if (data->sfrbases == NULL) {
+> > > > -		dev_dbg(dev, "Not enough memory\n");
+> > > > -		ret = -ENOMEM;
+> > > > -		goto err_init;
+> > > > -	}
+> > > > 
+> > > >  	for (i = 0; i < data->nsfrs; i++) {
+> > > >  	
+> > > >  		struct resource *res;
+> > > > 
+> > > > +
+> > > > 
+> > > >  		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
+> > > >  		if (!res) {
+> > > > 
+> > > > -			dev_dbg(dev, "Unable to find IOMEM region\n");
+> > > > -			ret = -ENOENT;
+> > > > -			goto err_res;
+> > > > +			dev_err(dev, "Unable to find IOMEM region\n");
+> > > > +			return -ENOENT;
+> > > > 
+> > > >  		}
+> > > > 
+> > > > -		data->sfrbases[i] = ioremap(res->start,
+> > > 
+> > > resource_size(res));
+> > > 
+> > > > +		data->sfrbases[i] = devm_request_and_ioremap(dev, res);
+> > > 
+> > > devm_request_and_ioremap() is deprecated. Please use
+> > > devm_ioremap_resource().
+> > 
+> > Oh. Thanks.
+> > 
+> > > >  		if (!data->sfrbases[i]) {
+> > > 
+> > > In case of devm_ioremap_resource() remember to adjust this check to
+> > > check for IS_ERR, not for NULL.
+> > 
+> > Ok. Thanks.
+> > 
+> > > > -			dev_dbg(dev, "Unable to map IOMEM @ PA:%#x\n",
+> > > > -							res->start);
+> > > > -			ret = -ENOENT;
+> > > > -			goto err_res;
+> > > > +			dev_err(dev, "Unable to map IOMEM @ %#x\n", res-
+> > > >
+> > > >start);
+> > > 
+> > > This message will not be needed with devm_ioremap_resource() as it
+> > > already prints a message if an error occurs.
+> > 
+> > Ok.
+> > 
+> > > > +			return -EBUSY;
+> > > > 
+> > > >  		}
+> > > >  	
+> > > >  	}
+> > > >  	
+> > > >  	for (i = 0; i < data->nsfrs; i++) {
+> > > > 
+> > > > -		ret = platform_get_irq(pdev, i);
+> > > > -		if (ret <= 0) {
+> > > > -			dev_dbg(dev, "Unable to find IRQ resource\n");
+> > > > -			goto err_irq;
+> > > > +		int irq;
+> > > > +
+> > > > +		irq = platform_get_irq(pdev, i);
+> > > > +		if (irq <= 0) {
+> > > > +			dev_err(dev, "Unable to find IRQ resource\n");
+> > > > +			return -ENOENT;
+> > > > 
+> > > >  		}
+> > > > 
+> > > > -		ret = request_irq(ret, exynos_sysmmu_irq, 0,
+> > > > -					dev_name(dev), data);
+> > > > +		ret = devm_request_irq(dev, irq, exynos_sysmmu_irq,
+> > > > +					0, dev_name(dev), data);
+> > > > 
+> > > >  		if (ret) {
+> > > > 
+> > > > -			dev_dbg(dev, "Unabled to register interrupt
+> > > 
+> > > handler\n");
+> > > 
+> > > > -			goto err_irq;
+> > > > +			dev_err(dev, "Unable to register handler to irq
+> > > 
+> > > %d\n",
+> > > 
+> > > > +				irq);
+> > > > +			return ret;
+> > > > 
+> > > >  		}
+> > > >  	
+> > > >  	}
+> > > > 
+> > > > -	if (dev_get_platdata(dev)) {
+> > > > -		char *deli, *beg;
+> > > > -		struct sysmmu_platform_data *platdata =
+> > > 
+> > > dev_get_platdata(dev);
+> > > 
+> > > > -
+> > > > -		beg = platdata->clockname;
+> > > > -
+> > > > -		for (deli = beg; (*deli != '\0') && (*deli != ',');
+> > > 
+> > > deli++)
+> > > 
+> > > > -			/* NOTHING */;
+> > > > +	pm_runtime_enable(dev);
+> > > > 
+> > > > -		if (*deli == '\0')
+> > > > -			deli = NULL;
+> > > > -		else
+> > > > -			*deli = '\0';
+> > > > -
+> > > > -		data->clk[0] = clk_get(dev, beg);
+> > > > -		if (IS_ERR(data->clk[0])) {
+> > > > -			data->clk[0] = NULL;
+> > > > -			dev_dbg(dev, "No clock descriptor registered\n");
+> > > > -		}
+> > > > +	__set_fault_handler(data, &default_fault_handler);
+> > > > 
+> > > > -		if (data->clk[0] && deli) {
+> > > > -			*deli = ',';
+> > > > -			data->clk[1] = clk_get(dev, deli + 1);
+> > > > -			if (IS_ERR(data->clk[1]))
+> > > > -				data->clk[1] = NULL;
+> > > > -		}
+> > > > +	data->sysmmu = dev;
+> > > > +	data->clk = devm_clk_get(dev, "sysmmu");
+> > > > +	if (IS_ERR(data->clk)) {
+> > > > +		dev_info(dev, "No gate clock found!\n");
+> > > > +		data->clk = NULL;
+> > > 
+> > > Just a note: In common clock framework NULL is a valid value for a
+> > > struct clk *, which should not be interpreted as a pointer, but as an
+> > > opaque cookie. This is material for separate patch, but this should
+> > > be fixed all around this driver so data->clk is for IS_ERR instead.
+> > 
+> > Error returned by devm_clk_get("sysmmu") is not an error actually.
+> > More specifically, -ENOENT returned by devm_clk_get("sysmmu") is not an
+> > error. It just means that a System MMU does not have to gating its
+> > clock. However, it is required to check if the error retruned is
+> > -ENOENT.
+> 
+> I agree with this. Since the clock is optional for this driver, the -
+> ENOENT error case is not an error for it.
+> 
+> > data->clk must be NULL if 'sysmmu' clock is not specified for a System
+> > MMU because clk_enable(data->clk) is called regardless of the value in
+> > data->clk.
+> 
+> Still, the return value convention for Common Clock Framework is that 
+> clk_get() can return a NULL and the driver must interpret this as a valid 
+> clock handle (for a dummy clock for example) that can be passed to further 
+> clock operations, such as clk_prepare() or clk_enable().
+> 
+> This is why the driver should not reserve NULL as its own value meaning 
+> that the clock is not present, but should rather check for IS_ERR 
+> everywhere to find out whether the clock was acquired at probe.
+> 
+> Separate patch fixing this would be nice.
+> 
+
+Ok. I understand that it must not be assumed that NULL as the arguement
+of clk_enable()/prepare() is ignored.
+I will change this patch not to call clk_enable/disable
+if IS_ERR(data->clk) is true.
+
+Thank you.
+
+> > Thank you for review :)
+> 
+> You're welcome. Thank you for your work on this series. :)
+> 
+> Best regards,
+> Tomasz
+> 
