@@ -1,126 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab3HLK0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:26:54 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:65461 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888Ab3HLK0s (ORCPT
+	id S1756624Ab3HLKWl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:22:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48047 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755968Ab3HLKWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:26:48 -0400
-X-AuditID: cbfee61a-b7f196d000007dfa-49-5208b8661f10
-Date: Mon, 12 Aug 2013 12:26:14 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, durgadoss.r@intel.com
-Subject: Re: [PATCH v6 5/8] cpufreq:boost:Kconfig: Provide support for software
- managed BOOST
-Message-id: <20130812122614.0d4d31a3@amdc308.digital.local>
-In-reply-to: <CAKohponvOXuHSS+-+m5PR9tPkAqkrYtjA3FJaNh9NJXrhQ9wmw@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-6-git-send-email-l.majewski@samsung.com>
- <CAKohpokL57mXSQooX=4LZKtjMxJoXAB4uuzj13fgr3Gs7Wcf0A@mail.gmail.com>
- <20130726132120.5b9cf32f@amdc308.digital.local>
- <CAKohponvOXuHSS+-+m5PR9tPkAqkrYtjA3FJaNh9NJXrhQ9wmw@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42I5/e+xoG7aDo4gg3kXhS02zljPavG06Qe7
-	xbzPshZ9P68wW6zZ/5PJovPsE2aL3gVX2SzePOK2uLxrDpvF594jjBb9C3uZLJ487GOz2PjV
-	w4HXY/Gel0wed67tYfNYN+0ts0ffllWMHo8WtzB6HL+xncnj8ya5APYoLpuU1JzMstQifbsE
-	roz3vUIFW4UqZk6Jb2A8xNfFyMkhIWAi8eHpPEYIW0ziwr31bF2MXBxCAtMZJd6+WswKkhAS
-	aGeSeLuIBcRmEVCVeHfxHDuIzSagJ/H57lOmLkYODhEBLYmXN1NBepkF/jJL9D1qYAOpERaI
-	l2hsOgBm8wpYS2zY+QXM5hQIlli7cgIrxLL/TBINbR/AlvELSEq0//vBDHGRncS5TxvYIZoF
-	JX5Mvgd2BDPQss3bmlghbHmJzWveMk9gFJyFpGwWkrJZSMoWMDKvYhRNLUguKE5KzzXUK07M
-	LS7NS9dLzs/dxAiOomdSOxhXNlgcYhTgYFTi4fX4wh4kxJpYVlyZe4hRgoNZSYRXbR5HkBBv
-	SmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6YklqdmpqQWpRTBZJg5OqQbGrRsCdX688lFw
-	rWPuv2DFIMq0vPid5uTMyi+vLGz6vmzUym5tkM27yMb89c+NLRsbN/9/p3xN1Zj5F3txKdcM
-	xZ45wYuEUmUj29/1CL+YKq7WEr086tm+m78YrOts3/JFHVw4XbsxeOM6u6ubrDf7bDurEb42
-	0v2YJKfCidwq64fKP9aXh7xSYinOSDTUYi4qTgQAqeCBgJ4CAAA=
+	Mon, 12 Aug 2013 06:22:37 -0400
+Date: Mon, 12 Aug 2013 03:22:01 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-bbb7f846f88df05646795854a014d73fb00f3b8b@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1375875537-4509-11-git-send-email-adrian.hunter@intel.com>
+References: <1375875537-4509-11-git-send-email-adrian.hunter@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf annotate: Allow disassembly using /proc/
+ kcore
+Git-Commit-ID: bbb7f846f88df05646795854a014d73fb00f3b8b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 12 Aug 2013 03:22:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Jul 2013 12:28:02 +0530 Viresh Kumar viresh.kumar@linaro.org
-wrote,
-> On 26 July 2013 16:51, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > On Fri, 26 Jul 2013 15:54:56 +0530 Viresh Kumar wrote,
-> >> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com>
-> >> wrote:
-> 
-> >> > +config CPU_FREQ_BOOST_SW
-> >> > +       bool
-> >>
-> >> Invisible is fine but this must be disabled by default and must
-> >> depend on thermal, rather than moving dependency on platform's
-> >> config.
-> >
-> > The CPU_FREQ_BOOST_SW [1] is a generic flag (invisible).
-> >
-> > I will add "default n" to it.
-> 
-> Leave it.. We don't need it now.. that's how these kind of config
-> options are defined as they are disabled by default.
+Commit-ID:  bbb7f846f88df05646795854a014d73fb00f3b8b
+Gitweb:     http://git.kernel.org/tip/bbb7f846f88df05646795854a014d73fb00f3b8b
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Wed, 7 Aug 2013 14:38:54 +0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 7 Aug 2013 17:35:34 -0300
 
-Ok. Please see below proposition.
+perf annotate: Allow disassembly using /proc/kcore
 
-> 
-> > Depending only on [3], results at situation where SW BOOST can be
-> > enabled at x86 or ARM target with only generic THERMAL support
-> > (which doesn't protect from overheating).
-> 
-> I had a similar concern.. Currently also we aren't stopping anybody to
-> enable boost. By selecting thermal from CPU_FREQ_BOOST_SW, atleast
-> we are communicating this very well to developers that they need
-> something else as well. And currently we only have thermal as a source
-> for telling when to block boost but it can be something else too..
-> 
-> I never said, don't use EXYNOS_THERMAL, its good to have a
-> dependency on it in the Exynos specific config for boost, but I wanted
-> normal sw boost also to depend on thermal..
+Annotation with /proc/kcore is possible so the logic is adjusted to
+allow it.  The main difference is that /proc/kcore had no symbols so the
+parsing logic needed a tweak to read jump offsets.
 
-1. at ./drivers/cpufreq/Kconfig:
+The other difference is that objdump cannot always read from kcore.
+That seems to be a bug with objdump.
 
-+config CPU_FREQ_BOOST_SW
-+	bool
-+	depends on THERMAL
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1375875537-4509-11-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-top.c   |  3 ++-
+ tools/perf/util/annotate.c | 13 +++++++++----
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
-2. at ./drivers/cpufreq/Kconfig.arm:
-
-+config ARM_EXYNOS_CPU_FREQ_BOOST_SW
-+	bool "EXYNOS Frequency Overclocking - Software"
-+	depends on ARM_EXYNOS_CPUFREQ
-+	select CPU_FREQ_BOOST_SW
-+	select EXYNOS_THERMAL
-+	default n
-+	help
-+	  This driver supports software managed overclocking (BOOST).
-+	  It allows usage of special frequencies for Samsung Exynos
-+	  processors if thermal conditions are appropriate.
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 9101f7c..440c3b3 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -103,7 +103,8 @@ static int perf_top__parse_source(struct perf_top *top, struct hist_entry *he)
+ 	/*
+ 	 * We can't annotate with just /proc/kallsyms
+ 	 */
+-	if (map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
++	if (map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS &&
++	    !dso__is_kcore(map->dso)) {
+ 		pr_err("Can't annotate %s: No vmlinux file was found in the "
+ 		       "path\n", sym->name);
+ 		sleep(1);
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index d102716..4ab2f11 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -110,10 +110,10 @@ static int jump__parse(struct ins_operands *ops)
+ {
+ 	const char *s = strchr(ops->raw, '+');
+ 
+-	ops->target.addr = strtoll(ops->raw, NULL, 16);
++	ops->target.addr = strtoull(ops->raw, NULL, 16);
+ 
+ 	if (s++ != NULL)
+-		ops->target.offset = strtoll(s, NULL, 16);
++		ops->target.offset = strtoull(s, NULL, 16);
+ 	else
+ 		ops->target.offset = UINT64_MAX;
+ 
+@@ -821,6 +821,10 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
+ 	if (dl == NULL)
+ 		return -1;
+ 
++	if (dl->ops.target.offset == UINT64_MAX)
++		dl->ops.target.offset = dl->ops.target.addr -
++					map__rip_2objdump(map, sym->start);
 +
-+	  It reguires, for safe operation, thermal framework with
-  properly
-+	  defined trip points.
-+
-+	  If in doubt, say N.
-+
-
-Shall I split this patch to two (1. and 2.) or leave it as a single one?
-
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+ 	disasm__add(&notes->src->source, dl);
+ 
+ 	return 0;
+@@ -864,7 +868,8 @@ fallback:
+ 		free_filename = false;
+ 	}
+ 
+-	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
++	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS &&
++	    !dso__is_kcore(dso)) {
+ 		char bf[BUILD_ID_SIZE * 2 + 16] = " with build id ";
+ 		char *build_id_msg = NULL;
+ 
+@@ -898,7 +903,7 @@ fallback:
+ 	snprintf(command, sizeof(command),
+ 		 "%s %s%s --start-address=0x%016" PRIx64
+ 		 " --stop-address=0x%016" PRIx64
+-		 " -d %s %s -C %s|grep -v %s|expand",
++		 " -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
+ 		 objdump_path ? objdump_path : "objdump",
+ 		 disassembler_style ? "-M " : "",
+ 		 disassembler_style ? disassembler_style : "",
