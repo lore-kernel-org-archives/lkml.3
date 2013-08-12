@@ -1,101 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab3HLQTV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:19:21 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:48052 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756890Ab3HLQTS (ORCPT
+	id S1757367Ab3HLQT5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:19:57 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48932 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754885Ab3HLQTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:19:18 -0400
-Message-ID: <52090AF6.6020206@gmail.com>
-Date: Tue, 13 Aug 2013 00:19:02 +0800
-From: Tang Chen <imtangchen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 12 Aug 2013 12:19:54 -0400
+Date: Mon, 12 Aug 2013 17:19:52 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] ARM: msm: Add SMP support for 8960
+Message-ID: <20130812161952.GD27165@e106331-lin.cambridge.arm.com>
+References: <1375409725-22004-1-git-send-email-rvaswani@codeaurora.org>
+ <1375409725-22004-4-git-send-email-rvaswani@codeaurora.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
-        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org, imtangchen@gmail.com
-Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
-References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com> <20130812145016.GI15892@htj.dyndns.org> <52090225.6070208@gmail.com> <20130812154623.GL15892@htj.dyndns.org>
-In-Reply-To: <20130812154623.GL15892@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375409725-22004-4-git-send-email-rvaswani@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 11:46 PM, Tejun Heo wrote:
-> Hello,
->
-> On Mon, Aug 12, 2013 at 11:41:25PM +0800, Tang Chen wrote:
->> Then there is no way to tell the users which memory is hotpluggable.
->>
->> phys addr is not user friendly. For users, node or memory device is the
->> best. The firmware should arrange the hotpluggable ranges well.
->
-> I don't follow.  Why can't the kernel export that information to
-> userland after boot is complete via printk / sysfs / proc / whatever?
-> The admin can "request" hotplug by boot param and the kernel would try
-> to honor that and return the result on boot completion.  I don't
-> understand why that wouldn't work.
+On Fri, Aug 02, 2013 at 03:15:24AM +0100, Rohit Vaswani wrote:
+> Add the cpus bindings and the Krait release sequence
+> to make SMP work for MSM8960
+> 
+> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+> ---
+>  Documentation/devicetree/bindings/arm/cpus.txt     |  2 +
+>  Documentation/devicetree/bindings/arm/msm/kpss.txt | 16 ++++++
+>  arch/arm/boot/dts/msm8960-cdp.dts                  | 22 +++++++++
+>  arch/arm/mach-msm/platsmp.c                        | 57 ++++++++++++++++++++++
+>  arch/arm/mach-msm/scm-boot.h                       |  8 +--
+>  5 files changed, 102 insertions(+), 3 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/arm/msm/kpss.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
+> index 327aad2..1132eac 100644
+> --- a/Documentation/devicetree/bindings/arm/cpus.txt
+> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
+> @@ -45,11 +45,13 @@ For the ARM architecture every CPU node must contain the following properties:
+>  		"marvell,xsc3"
+>  		"marvell,xscale"
+>  		"qcom,scorpion"
+> +		"qcom,krait"
+>  - enable-method: Specifies the method used to enable or take the secondary cores
+>  		 out of reset. This allows different reset sequence for
+>  		 different types of cpus.
+>  		 This should be one of:
+>  		 "qcom,scss"
+> +		 "qcom,kpssv1"
 
-Sorry, I was in such a hurry that I didn't make myself clear...
+Hopefully (though this series implies otherwise) we won't have an
+explosion of enable-methods. We haven't listed any common ones yet (e.g.
+PSCI), and both this and qcom,scss are "poke some cpu-specific
+registers".
 
-The kernel can export info to users. The point is what kind of info.
-Exporting phys addr is meaningless, of course. Now in /sys, we only
-have memory_block and node. memory_block is only 128M on x86, and
-hotplug a memory_block means nothing. So actually we only have node.
+I take it by the "v1" suffix you're expecting more variation here?
 
-So users want to hotplug a node is reasonable, I think. In the
-beginning, we set the hotplug unit to a node. That is also why we
-did the movable node.
+>  
+>  Example:
+>  
+> diff --git a/Documentation/devicetree/bindings/arm/msm/kpss.txt b/Documentation/devicetree/bindings/arm/msm/kpss.txt
+> new file mode 100644
+> index 0000000..7272340
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/arm/msm/kpss.txt
+> @@ -0,0 +1,16 @@
+> +* KPSS - Krait Processor Sub-system
+> +
+> +Properties
+> +
+> +- compatible : Should contain "qcom,kpss".
+> +
+> +- reg: Specifies the base address for the KPSS registers used for
+> +       booting up secondary cores.
+> +
+> +Example:
+> +
+> +	kpss@2088000 {
+> +		compatible = "qcom,kpss";
+> +		reg = <0x02088000 0x1000
+> +			0x02098000 0x2000>;
+> +	};
 
-In summary, node hotplug is much meaningful and usable for users.
-So it is the best that we can arrange a whole node to be movable
-node, not opportunistic.
+What's the secondary bank of registers? The binding only mentions one...
 
->
->> In my opinion, maybe some application layer tools may use SRAT to show
->> the users which memory is hotpluggable. I just think both of the kernel
->> and the application layer should obey the same rule.
->
-> Sure, just let the kernel tell the user which memory node ended up
-> hotpluggable after booting.
->
->>> * Similar to the point hpa raised.  If this can be made opportunistic,
->>>    do we need the strict reordering to discover things earlier?
->>>    Shouldn't it be possible to configure memblock to allocate close to
->>>    the kernel image until hotplug and numa information is available?
->>>    For most sane cases, the memory allocated will be contained in
->>>    non-hotpluggable node anyway and in case they aren't hotplug
->>>    wouldn't work but the system will boot and function perfectly fine.
->>
->> So far as I know, the kernel image and related data can be loaded
->> anywhere, above 4GB. I just can't make any assumption.
->
-> I don't follow why that would be problematic.  Wouldn't finding out
-> which node the kernel image is located in and preferring to allocate
-> from that node before hotplug info is available be enough?
+Is this a register bank per-cpu? There's no linkage to CPU ID, which
+means that handling logical mapping is going to get quite painful.
 
-I'm just thinking of a more extreme case. For example, if a machine
-has only one node hotpluggable, and the kernel resides in that node.
-Then the system has no hotpluggable node.
+For the vaguely standard "spin-table" enable-method, the address to poke
+(cpu-release-addr) may be stored inside a specific cpu node. Following
+that style may make more sense here, unless the kpss hardware is used
+for anything more than processor hotplug.
 
-If we can prevent the kernel from using hotpluggable memory, in such
-a machine, users can still do memory hotplug.
+We could have the cpu node refer to the specific kpss/register combo,
+which would also allow for future expansion if the kpss unit is
+per-cluster:
 
-I wanted to do it as generic as possible. But yes, finding out the
-nodes the kernel resides in and make it unhotpluggable can work.
+/ {
+	cpus {
+		device_type = "cpu";
+		compatible = "qcom,krait";
+		enable-method = "qcom,kpssv1";
 
-Thanks.
+		cpu@0 {
+			reg = <0>;
+			qcom,kpss-reg = <&kpss 1>; /* reg[1] in kpss */
+		};
 
+		cpu@1 {
+			reg = <1>;
+			qcom,kpss-reg = <&kpss 0>; /* reg[0] in kpss */
+		};
+	}
+
+	kpss: kpss@2088000 {
+		compatible = "qcom,kpss";
+		reg = <0x02088000 0x1000>,
+		      <0x02098000 0x2000>;
+	};
+}
+
+> diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+> index db2060c..8c82d5e 100644
+> --- a/arch/arm/boot/dts/msm8960-cdp.dts
+> +++ b/arch/arm/boot/dts/msm8960-cdp.dts
+> @@ -7,6 +7,22 @@
+>  	compatible = "qcom,msm8960-cdp", "qcom,msm8960";
+>  	interrupt-parent = <&intc>;
+>  
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		compatible = "qcom,krait";
+> +		device_type = "cpu";
+> +		enable-method = "qcom,kpssv1";
+> +
+> +		cpu@0 {
+> +			reg = <0>;
+> +		};
+> +
+> +		cpu@1 {
+> +			reg = <1>;
+> +		};
+> +	};
+
+Similarly to my comments on the first patch, I like making properties
+shared, but we *need* to have common infrastructure before we can do
+things this way.
+
+> +
+>  	intc: interrupt-controller@2000000 {
+>  		compatible = "qcom,msm-qgic2";
+>  		interrupt-controller;
+> @@ -37,6 +53,12 @@
+>  		reg = <0xfd510000 0x4000>;
+>  	};
+>  
+> +	kpss@2088000 {
+> +		compatible = "qcom,kpss";
+> +		reg = <0x02088000 0x1000
+> +			0x02098000 0x2000>;
+> +	};
+> +
+>  	serial@16440000 {
+>  		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+>  		reg = <0x16440000 0x1000>,
+> diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
+> index 17022e0..82eb079 100644
+> --- a/arch/arm/mach-msm/platsmp.c
+> +++ b/arch/arm/mach-msm/platsmp.c
+> @@ -74,6 +74,56 @@ static int scorpion_release_secondary(void)
+>  	return 0;
+>  }
+>  
+> +static int msm8960_release_secondary(unsigned int cpu)
+> +{
+> +	void __iomem *reg;
+> +	struct device_node *dn = NULL;
+> +
+> +	if (cpu == 0 || cpu >= num_possible_cpus())
+> +		return -EINVAL;
+
+We seem to describe a reg bank for CPU0. Is this check because we don't
+(yet) have a way of hotplugging CPU0 off? Is CPU0 special in that
+regard?
+
+> +
+> +	dn = of_find_compatible_node(dn, NULL, "qcom,kpss");
+> +	if (!dn) {
+> +		pr_err("%s : Missing kpss node from device tree\n", __func__);
+> +		return -ENXIO;
+> +	}
+> +
+> +	reg = of_iomap(dn, cpu);
+
+That doesn't handle logical id mapping.
+
+> +	if (!reg)
+> +		return -ENOMEM;
+> +
+> +	pr_debug("Starting secondary CPU %d\n", cpu);
+> +
+> +	/* Turn on CPU Rail */
+> +	writel_relaxed(0xA4, reg+0x1014);
+
+Symbolic names for registers please.
+
+[...]
+
+> @@ -151,6 +206,8 @@ static void __init msm_smp_init_cpus(void)
+>  static const int cold_boot_flags[] __initconst = {
+>  	0,
+>  	SCM_FLAG_COLDBOOT_CPU1,
+> +	SCM_FLAG_COLDBOOT_CPU2,
+> +	SCM_FLAG_COLDBOOT_CPU3,
+>  };
+>  
+>  static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
+> diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
+> index 7be32ff..6aabb24 100644
+> --- a/arch/arm/mach-msm/scm-boot.h
+> +++ b/arch/arm/mach-msm/scm-boot.h
+> @@ -13,9 +13,11 @@
+>  #define __MACH_SCM_BOOT_H
+>  
+>  #define SCM_BOOT_ADDR			0x1
+> -#define SCM_FLAG_COLDBOOT_CPU1		0x1
+> -#define SCM_FLAG_WARMBOOT_CPU1		0x2
+> -#define SCM_FLAG_WARMBOOT_CPU0		0x4
+> +#define SCM_FLAG_COLDBOOT_CPU1		0x01
+> +#define SCM_FLAG_COLDBOOT_CPU2		0x08
+> +#define SCM_FLAG_COLDBOOT_CPU3		0x20
+> +#define SCM_FLAG_WARMBOOT_CPU0		0x04
+> +#define SCM_FLAG_WARMBOOT_CPU1		0x02
+
+Is there any obvious sequencing for these values?
+
+How will they be extended in future for more CPUs/clusters?
+
+Do we possibly need this information in DT?
+
+Thanks,
+Mark.
