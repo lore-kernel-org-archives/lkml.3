@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab3HLVzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 17:55:22 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:57692 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755308Ab3HLVyp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 17:54:45 -0400
-From: Peter Wu <lekensteyn@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>, jkosina@suse.cz,
-        benjamin.tissoires@gmail.com, adlr@chromium.org,
-        joseph.salisbury@canonical.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing Unifying device issue""
-Date: Mon, 12 Aug 2013 23:54:40 +0200
-Message-ID: <2324751.QaRpZppUQy@al>
-User-Agent: KMail/4.10.5 (Linux/3.11.0-1-custom; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <51E84FD1.4050400@hurleysoftware.com>
-References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com> <51E84FD1.4050400@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1755868Ab3HLVz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 17:55:58 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:59885 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754959Ab3HLVyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 17:54:44 -0400
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: hpa@zytor.com, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, holt@sgi.com,
+        nzimmer@sgi.com, rob@landley.net, travis@sgi.com,
+        daniel@numascale-asia.com, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, yinghai@kernel.org, mgorman@suse.de
+Subject: [RFC v3 2/5] Have __free_pages_memory() free in larger chunks.
+Date: Mon, 12 Aug 2013 16:54:37 -0500
+Message-Id: <1376344480-156708-3-git-send-email-nzimmer@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1376344480-156708-1-git-send-email-nzimmer@sgi.com>
+References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
+ <1376344480-156708-1-git-send-email-nzimmer@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 July 2013 16:28:01 Peter Hurley wrote:
-> Before we revert to using the workaround, I'd like to suggest that
-> this new "hidden" problem may be an interaction with the xhci_hcd host
-> controller driver only.
-> 
-> Looking at the related bug, the OP indicates the machine only has
-> USB3 ports. Additionally, comments #7, #100, and #104 of the original
-> bug report add additional information that would seem to confirm
-> this suspicion.
-> 
-> Let me add I have this USB device running on the uhci_hcd driver
-> with or without this workaround on v3.10.
+From: Robin Holt <holt@sgi.com>
 
-This problem does not seem specific to xhci, uhci seems also effected. Today I 
-upgraded a system (running Arch Linux) from kernel 3.9.9 to 3.10.5. After a 
-reboot to 3.10.5, things broke. The setup:
+Currently, when free_all_bootmem() calls __free_pages_memory(), the
+number of contiguous pages that __free_pages_memory() passes to the
+buddy allocator is limited to BITS_PER_LONG.  In order to be able to
+free only the first page of a 2MiB chunk, we need that to be increased.
+We are increasing to the maximum size available.
 
-- There are two USB receivers plugged into USB 1.1 ports (different buses 
-according to lsusb, uhci), each receiver is paired to a K360 keyboard.
-- One of the receivers are passed to a QEMU guest with -usbdevice host:$busid.
-$devid. This keyboard is working (probably because QEMU performed a reset).
-- Since 3.10.5, the keyboard that is *not* passed to the QEMU guest is not 
-functioning on reboot.
+Signed-off-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linux MM <linux-mm@kvack.org>
+Cc: Rob Landley <rob@landley.net>
+Cc: Mike Travis <travis@sgi.com>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+---
+ mm/nobootmem.c | 25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
 
-After closing the QEMU guest, the USB bus gets reset(?) after which the other 
-keyboard suddenly gets detected. I had only booted 3.10.5 twice before rolling 
-back to 3.9.9, both boots triggered the issue. Do I need to provide a usbmon, 
-lsusb, dmesg and/ or other details from 3.10.5?
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index bdd3fa2..2159e68 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -82,27 +82,18 @@ void __init free_bootmem_late(unsigned long addr, unsigned long size)
+ 
+ static void __init __free_pages_memory(unsigned long start, unsigned long end)
+ {
+-	unsigned long i, start_aligned, end_aligned;
+-	int order = ilog2(BITS_PER_LONG);
++	int order;
+ 
+-	start_aligned = (start + (BITS_PER_LONG - 1)) & ~(BITS_PER_LONG - 1);
+-	end_aligned = end & ~(BITS_PER_LONG - 1);
++	while (start < end) {
++		order = min(MAX_ORDER - 1, __ffs(start));
+ 
+-	if (end_aligned <= start_aligned) {
+-		for (i = start; i < end; i++)
+-			__free_pages_bootmem(pfn_to_page(i), 0);
++		while (start + (1UL << order) > end)
++			order--;
+ 
+-		return;
+-	}
+-
+-	for (i = start; i < start_aligned; i++)
+-		__free_pages_bootmem(pfn_to_page(i), 0);
++		__free_pages_bootmem(pfn_to_page(start), order);
+ 
+-	for (i = start_aligned; i < end_aligned; i += BITS_PER_LONG)
+-		__free_pages_bootmem(pfn_to_page(i), order);
+-
+-	for (i = end_aligned; i < end; i++)
+-		__free_pages_bootmem(pfn_to_page(i), 0);
++		start += (1UL << order);
++	}
+ }
+ 
+ static unsigned long __init __free_memory_core(phys_addr_t start,
+-- 
+1.8.2.1
 
-
-Note that there are other Arch Linux users who have reported issues[1][2] 
-since upgrading to 3.10.z. Triggering a re-enumeration by writing the magic 
-HID++ message[3] makes the paired devices appear again (as reported in 
-forums[1], I haven't tried this on the affected UHCI machine).
-
-While the underlying bug is fixed, can this patch be forwarded to stable? I see 
-that 3.10.6 has been released, but still without this patch.
-
-Regards,
-Peter
-
- [1]: https://bbs.archlinux.org/viewtopic.php?id=167210
- [2]: https://bugs.archlinux.org/task/35991
- [3]: https://bbs.archlinux.org/viewtopic.php?pid=1309535#p1309535
