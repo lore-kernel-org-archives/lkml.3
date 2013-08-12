@@ -1,68 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab3HLNVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:21:15 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:33339 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab3HLNVI (ORCPT
+	id S1756647Ab3HLNVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:21:35 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:49649 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756570Ab3HLNV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:21:08 -0400
-Message-ID: <1376313658.2457.1.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 01/20] mm, hugetlb: protect reserved pages when soft
- offlining a hugepage
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Date: Mon, 12 Aug 2013 06:20:58 -0700
-In-Reply-To: <1376040398-11212-2-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1376040398-11212-2-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Aug 2013 09:21:28 -0400
+X-IronPort-AV: E=Sophos;i="4.89,862,1367964000"; 
+   d="scan'208";a="29143415"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Michal Marek <mmarek@suse.cz>
+Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, cocci@systeme.lip6.fr,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] scripts/coccinelle/misc/warn.cocci: use WARN
+Date: Mon, 12 Aug 2013 15:21:23 +0200
+Message-Id: <1376313683-32276-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-09 at 18:26 +0900, Joonsoo Kim wrote:
-> Don't use the reserve pool when soft offlining a hugepage.
-> Check we have free pages outside the reserve pool before we
-> dequeue the huge page. Otherwise, we can steal other's reserve page.
-> 
-> Reviewed-by: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Reviewed-by: Davidlohr Bueso <davidlohr@hp.com>
+Use WARN(1,...) rather than printk followed by WARN(1).
 
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 6782b41..d971233 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -935,10 +935,11 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
->   */
->  struct page *alloc_huge_page_node(struct hstate *h, int nid)
->  {
-> -	struct page *page;
-> +	struct page *page = NULL;
->  
->  	spin_lock(&hugetlb_lock);
-> -	page = dequeue_huge_page_node(h, nid);
-> +	if (h->free_huge_pages - h->resv_huge_pages > 0)
-> +		page = dequeue_huge_page_node(h, nid);
->  	spin_unlock(&hugetlb_lock);
->  
->  	if (!page)
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
+---
+ scripts/coccinelle/misc/warn.cocci |  109 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 109 insertions(+)
+
+diff --git a/scripts/coccinelle/misc/warn.cocci b/scripts/coccinelle/misc/warn.cocci
+new file mode 100644
+index 0000000..fda8c35
+--- /dev/null
++++ b/scripts/coccinelle/misc/warn.cocci
+@@ -0,0 +1,109 @@
++/// Use WARN(1,...) rather than printk followed by WARN_ON(1)
++///
++// Confidence: High
++// Copyright: (C) 2012 Julia Lawall, INRIA/LIP6.  GPLv2.
++// Copyright: (C) 2012 Gilles Muller, INRIA/LiP6.  GPLv2.
++// URL: http://coccinelle.lip6.fr/
++// Comments:
++// Options: -no_includes -include_headers
++
++virtual patch
++virtual context
++virtual org
++virtual report
++
++@bad1@
++position p;
++@@
++
++printk(...);
++printk@p(...);
++WARN_ON(1);
++
++@r1 depends on context || report || org@
++position p != bad1.p;
++@@
++
++ printk@p(...);
++*WARN_ON(1);
++
++@script:python depends on org@
++p << r1.p;
++@@
++
++cocci.print_main("printk + WARN_ON can be just WARN",p)
++
++@script:python depends on report@
++p << r1.p;
++@@
++
++msg = "SUGGESTION: printk + WARN_ON can be just WARN"
++coccilib.report.print_report(p[0],msg)
++
++@ok1 depends on patch@
++expression list es;
++position p != bad1.p;
++@@
++
++-printk@p(
+++WARN(1,
++  es);
++-WARN_ON(1);
++
++@depends on patch@
++expression list ok1.es;
++@@
++
++if (...)
++- {
++  WARN(1,es);
++- }
++
++// --------------------------------------------------------------------
++
++@bad2@
++position p;
++@@
++
++printk(...);
++printk@p(...);
++WARN_ON_ONCE(1);
++
++@r2 depends on context || report || org@
++position p != bad1.p;
++@@
++
++ printk@p(...);
++*WARN_ON_ONCE(1);
++
++@script:python depends on org@
++p << r2.p;
++@@
++
++cocci.print_main("printk + WARN_ON_ONCE can be just WARN_ONCE",p)
++
++@script:python depends on report@
++p << r2.p;
++@@
++
++msg = "SUGGESTION: printk + WARN_ON_ONCE can be just WARN_ONCE"
++coccilib.report.print_report(p[0],msg)
++
++@ok2 depends on patch@
++expression list es;
++position p != bad2.p;
++@@
++
++-printk@p(
+++WARN_ONCE(1,
++  es);
++-WARN_ON_ONCE(1);
++
++@depends on patch@
++expression list ok2.es;
++@@
++
++if (...)
++- {
++  WARN_ONCE(1,es);
++- }
 
