@@ -1,72 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab3HLKch (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:32:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60323 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab3HLKcg (ORCPT
+	id S1754663Ab3HLKdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:33:43 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:53662 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab3HLKdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:32:36 -0400
-Date: Mon, 12 Aug 2013 11:32:14 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: lgirdwood@gmail.com, sameo@linux.intel.com, lee.jones@linaro.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com,
-        J Keerthy <j-keerthy@ti.com>, Laxman Dewangan <ldewangan@nvidia.com>,
-        Axel Lin <axel.lin@ingics.com>
-Message-ID: <20130812103214.GM6427@sirena.org.uk>
-References: <1376297474-12242-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="m4dDEz192B/qme3Z"
-Content-Disposition: inline
-In-Reply-To: <1376297474-12242-1-git-send-email-kishon@ti.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4] regulator: palmas: model SMPS10 as two regulators
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 12 Aug 2013 06:33:40 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-3f-5208ba02ca99
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Derek Basehore'" <dbasehore@chromium.org>
+Cc: "'Chris Ball'" <cjb@laptop.org>,
+        "'Grant Likely'" <grant.likely@linaro.org>,
+        "'Rob Herring'" <rob.herring@calxeda.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+References: <1375846138-15839-1-git-send-email-dbasehore@chromium.org>
+In-reply-to: <1375846138-15839-1-git-send-email-dbasehore@chromium.org>
+Subject: RE: [PATCH] mmc: dw_mmc: Don't disable vmmc if keeping power in suspend
+Date: Mon, 12 Aug 2013 19:33:38 +0900
+Message-id: <000001ce9747$680a9800$381fc800$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac6THkXRLhCzjm9TR9ixc+ypb7DaZAEFCkOA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zY12mXRxBBnM/aFpsf72RzeLV5j1s
+	FvOPnGO1OPBnB6PF5V1z2CyO/O9ntDi84gCTA7vHgs9X2D1mN1xk8Th0ZS2jx51re9g8Pm+S
+	C2CN4rJJSc3JLEst0rdL4MpouXKHqWACT8XHP4fYGhjvc3YxcnJICJhIHG/ZwQhhi0lcuLee
+	rYuRi0NIYBmjxO/fj1i7GDnAivY2eIPUCAksYpRY/8oBouYPo8SbLW/YQRJsAloSf9+8YQax
+	RQR0JY4cO8gEUsQscJZRYuKuIywQ3W4SL65tASviFHCXOL/+LzPIAmGBAIlV04tAwiwCqhIb
+	l5xnA7F5BWwlrs5cxQJhC0r8mHwPzGYWMJB4P6uPFcKWl9i85i0zxJ3qEo/+6kKcYCRx5Np+
+	NogSEYl9L94xgpwjIfCWXWLitd8sELsEJL5NPsQC0SsrsekAMyQcJCUOrrjBMoFRYhaSzbOQ
+	bJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAiJ3Yk7GO8fsD7EmAy0fiKz
+	lGhyPjD280riDY3NjCxMTUyNjcwtzUgTVhLnVW+xDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTB
+	KdXAyDp1y3nF+24HD+utVpk3vU6bJY3nTE/O/qLZvBtkVXZIl1RVZU3weDAn2rS19conq0i5
+	+Q9uF2ax3HyoMedmbrl8teSWGfGbJ94KXMRV7umUOXFWcV+KQUbXsVPLlVYrqLxx2bsiTZr9
+	5PucOS0RzslPhSaFvz9vaFDTxPTwl8Wk0JAXus43lFiKMxINtZiLihMBD49E5/MCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLKsWRmVeSWpSXmKPExsVy+t9jAV2mXRxBBr8OqFhsf72RzeLV5j1s
+	FvOPnGO1OPBnB6PF5V1z2CyO/O9ntDi84gCTA7vHgs9X2D1mN1xk8Th0ZS2jx51re9g8Pm+S
+	C2CNamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6
+	Q0mhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY0XLlDlPBBJ6Kj38OsTUw
+	3ufsYuTgkBAwkdjb4N3FyAlkiklcuLeeDcQWEljEKLH+lUMXIxeQ/YdR4s2WN+wgCTYBLYm/
+	b94wg9giAroSR44dZAIpYhY4yygxcdcRFohuN4kX17aAFXEKuEucX/+XGWSZsECAxKrpRSBh
+	FgFViY1LzoMt4xWwlbg6cxULhC0o8WPyPTCbWcBA4v2sPlYIW15i85q3zBA3q0s8+qsLcYKR
+	xJFr+9kgSkQk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca6RUn5haX5qXr
+	JefnbmIEJ4Zn0jsYVzVYHGIU4GBU4uH1+MIeJMSaWFZcmXuIUYKDWUmEV20eR5AQb0piZVVq
+	UX58UWlOavEhxmSgRycyS4km5wOTVl5JvKGxiZmRpZGZhZGJuTlpwkrivAdbrQOFBNITS1Kz
+	U1MLUotgtjBxcEo1MC7g55YtfpD4omhOUCrrq+mvmvcveHTocCqHT7DLJonw+z2q/3fnB8/f
+	Mk2rK8yGb93NhaUSYruuTpXP82CoYnUx+RxUkrCwt/3ZgSnW1tO0LnJmB+zY9frmjgkaItf7
+	95Spn5TligswKcxaXsWVXMnWWT5phky/6XM3g8DJDasPlb3yF47RVmIpzkg01GIuKk4EAKRU
+	wbpQAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, August 07, 2013, Derek Basehore
+> If we keep power for suspend on a host for dw_mmc, don't disable vmmc-supply
+> regulator when suspending the host.
 
---m4dDEz192B/qme3Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I have a trivial comment.
+It would be better to add some macro for checking MMC_PM_KEEP_POWER.
+And I just wonder how the problem is silent. Origin code has stood up somewhat long.
+Did you see?
 
-On Mon, Aug 12, 2013 at 02:21:14PM +0530, Kishon Vijay Abraham I wrote:
-> SMPS10 has two outputs OUT1 and OUT2 and have one input IN1.
-> SMPS10-OUT2 is connected to SMPS10-IN1 and can be configured either
-> in BOOST mode or BYPASS mode. regulator_enable of SMPS10-OUT2 configures
-> it in BOOST mode. For BYPASS mode regulator_allow_bypass() API can be
-> used. SMPS10-OUT1 is connected to SMPS10-OUT2 and can be enabled using
-> regulator_enable().
+Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
 
-Applied, thanks.
+Thanks,
+Seungwon Jeon
 
---m4dDEz192B/qme3Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/mmc/host/dw_mmc.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index ee5f167..bf82d7c 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -2474,7 +2474,7 @@ int dw_mci_suspend(struct dw_mci *host)
+>  		}
+>  	}
+> 
+> -	if (host->vmmc)
+> +	if (host->vmmc && !(host->pdata->pm_caps & MMC_PM_KEEP_POWER))
+>  		regulator_disable(host->vmmc);
+> 
+>  	return 0;
+> @@ -2485,7 +2485,7 @@ int dw_mci_resume(struct dw_mci *host)
+>  {
+>  	int i, ret;
+> 
+> -	if (host->vmmc) {
+> +	if (host->vmmc && !(host->pdata->pm_caps & MMC_PM_KEEP_POWER)) {
+>  		ret = regulator_enable(host->vmmc);
+>  		if (ret) {
+>  			dev_err(host->dev,
+> --
+> 1.8.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCLmrAAoJELSic+t+oim9Tp4P/2wzUcsYXHrPYOJu9oaOrga9
-wACWMNmf93MIdLEKL5YEZVRGxSPAf4jkjjZsxqtvVz0/huW0SU4pPFJmDy8l+fLb
-KiCC0s+PpKyP4a7TxycSouVDlsqc9SDpcu04TMB9b+iGIJY/Hwi6RJIlM4KmR8+/
-OgalmRyBfk4Ay+6ddrjXLpWiH1MFsyrIRVUA/wtDjzbXQYxWalOEFW6I64KHgRO+
-w/whsTE46YmBQfgaiaWwXQKslUyel4IIXYaSjn0YQfcghhBf2vel+yC8RwACO5wc
-w0o3yV1bheTJsQezb0kYnngP9WHEgkWsyuFw1LjrXv1MRve3WHtRLBsX5ad6lWm8
-W15WZgW+c2Cro4OnY/YGw7Nez3aZ5MAC2cv7L1E3dx6uYHF9hqIqJNaz6XN2iMBn
-U/K84QFDg+lbixAiuOKW07lw1k9GgkwFg0BMbKYSMbV0BXQpWPHnZ8Q8+Srwub8u
-PDkIy/6vWhJ+qfkuNbAIb+Pv0vwOcZKugvE7gYE2LU4ffxKgNMusV+6PcRaBaggA
-Zfifp81uvqZbhVvnMDrprSJnPjRPWBnC24n2XdBScQ88XwP0GkyrGvZeTD9HW3Id
-pClrZv+WCGqiSwG8U1OPGErAsS5dUQasTXea2uZPBvahEtJN67m3dSit+AK/Wjsl
-FyyZuaW8D/d3R3K5sRJG
-=RlRV
------END PGP SIGNATURE-----
-
---m4dDEz192B/qme3Z--
