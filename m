@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab3HLQdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:33:32 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48590 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756189Ab3HLQdb (ORCPT
+	id S1757037Ab3HLQdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:33:49 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50998 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756277Ab3HLQdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:33:31 -0400
-Date: Mon, 12 Aug 2013 17:33:24 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] mfd: tps65010: Use power efficient workqueue for power
- polling
-Message-ID: <20130812163324.GB3636@lee--X1>
-References: <1376069102-15658-1-git-send-email-broonie@kernel.org>
+	Mon, 12 Aug 2013 12:33:47 -0400
+Message-ID: <52090E67.1080703@wwwdotorg.org>
+Date: Mon, 12 Aug 2013 10:33:43 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1376069102-15658-1-git-send-email-broonie@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: linaro-kernel@lists.linaro.org, Stephen Warren <swarren@nvidia.com>,
+        linux-pm@vger.kernel.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org, rjw@sisk.pl,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 35/35] cpufreq: tegra: use cpufreq_table_validate_and_show()
+References: <cover.1375964117.git.viresh.kumar@linaro.org> <568f3dbd414b050bb2319d960fb5044a5aed8ee3.1375964117.git.viresh.kumar@linaro.org> <5203BCDD.40809@wwwdotorg.org> <CAKohpomr8kwDitAFD7FKvHo3zNWz8qT5bkd3yOVEnC_k16o=Dw@mail.gmail.com> <CAKohpo=Gy7D2LYmdFU1p+eL-nMoPE18YXWvE2M8t-fb-a5HBgg@mail.gmail.com> <5205167F.1070906@wwwdotorg.org> <CAKohponQDAqHiRD7Aw5Wk6fEE-d8H=Svg0oBRyb9SKGdqYxGhw@mail.gmail.com> <52056842.8060109@wwwdotorg.org> <CAKohpon=j=NANLQzYuBdoFVLxQzETy5JDu2vORaAgK3NuEpeAg@mail.gmail.com>
+In-Reply-To: <CAKohpon=j=NANLQzYuBdoFVLxQzETy5JDu2vORaAgK3NuEpeAg@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Aug 2013, Mark Brown wrote:
-
-> From: Mark Brown <broonie@linaro.org>
+On 08/09/2013 08:53 PM, Viresh Kumar wrote:
+> On 10 August 2013 03:38, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> Well, I don't see any issues running this, although the cpufreq sysfs
+>> files seem to have disappeared on Tegra, even without your changes, so
+>> I'm not sure how to really verify cpufreq.
+>>
+>> Did the sysfs files go away, or do I need to investigate why/when the
+>> disappeared?
 > 
-> There is no need to use a per CPU workqueue to poll, especially with the
-> 5s delay used, so allow the scheduler to use any CPU.
-> 
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
->  drivers/mfd/tps65010.c | 12 +++++++-----
->  1 file changed, 7 insertions(+), 5 deletions(-)
+> It wasn't enabled by default in your defconfig... So enable it first with
+> your menuconfig.
 
-I'm going to apply the patch and ...
+It's in defconfig OK; I think the driver simply isn't initializing since
+some of the clocks it requests don't exist. I'll have our clock driver
+author look into it. In the meantime, I assume that your change is
+likely fine.
 
-> -		schedule_delayed_work(&the_tps->work, 0);
-> +		queue_delayed_work(system_power_efficient_wq, &the_tps->work,
-> +				   0);
-
-... move this back up onto the line above, if it's all the same to you?
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
