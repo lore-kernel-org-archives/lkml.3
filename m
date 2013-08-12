@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab3HLSIK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:08:10 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:45375 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab3HLSIF (ORCPT
+	id S1752898Ab3HLSIW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:08:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54499 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab3HLSIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:08:05 -0400
-Date: Mon, 12 Aug 2013 14:07:58 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <imtangchen@gmail.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
-        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
-Message-ID: <20130812180758.GA8288@mtj.dyndns.org>
-References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
- <20130812145016.GI15892@htj.dyndns.org>
- <52090225.6070208@gmail.com>
- <20130812154623.GL15892@htj.dyndns.org>
- <52090AF6.6020206@gmail.com>
- <20130812162247.GM15892@htj.dyndns.org>
- <520914D5.7080501@gmail.com>
+	Mon, 12 Aug 2013 14:08:20 -0400
+Date: Mon, 12 Aug 2013 13:08:04 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Philippe De Swert <philippe.deswert@jollamobile.com>
+CC: <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget/composite : Avoid crash with bad gadget
+ drivers
+Message-ID: <20130812180804.GE27954@radagast>
+Reply-To: <balbi@ti.com>
+References: <1376072588-2881-1-git-send-email-philippe.deswert@jollamobile.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7CZp05NP8/gJM8Cl"
 Content-Disposition: inline
-In-Reply-To: <520914D5.7080501@gmail.com>
+In-Reply-To: <1376072588-2881-1-git-send-email-philippe.deswert@jollamobile.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+--7CZp05NP8/gJM8Cl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Aug 13, 2013 at 01:01:09AM +0800, Tang Chen wrote:
-> Sorry for the misunderstanding.
-> 
-> I was trying to answer your question: "Why can't the kenrel allocate
-> hotpluggable memory opportunistic ?".
+On Fri, Aug 09, 2013 at 09:23:08PM +0300, Philippe De Swert wrote:
+> Some bad gadget drivers do not check the return status of usb_add_config.
 
-I've used the wrong word, I was meaning best-effort, which is the only
-thing we can do anyway given that we have no control over where the
-kernel image is linked in relation to NUMA nodes.
+fix the gadget driver
 
-> If the kernel has any opportunity to allocate hotpluggable memory in
-> SRAT, then the kernel should tell users which memory is hotpluggable.
-> 
-> But in what way ?  I think node is the best for now. But a node could
-> have a lot of memory. If the kernel uses only a little memory, we will
-> lose the whole movable node, which I don't want to do.
-> 
-> So, I don't want to allow the kenrel allocating hotpluggable memory
-> opportunistic.
+> Thus they get a not correctly initialized config and when this gadget gets
+> deactivated the whole kernel crashes. Since on initialization failure cdev
+> is set to NULL it can be used to detect this problem situation. It can be
+> argued that the faulty gadget driver should be fixed, but imho it is bett=
+er
+> to avoid crashing the kernel and letting the gadget developer know he/she
+> is making a mistake. And have the developer of said gadget driver then fix
+> the problem of course.
+>=20
+> Signed-off-by: Philippe De Swert <philippe.deswert@jollamobile.com>
+> ---
+>  drivers/usb/gadget/composite.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+>=20
+> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composit=
+e.c
+> index 55f4df6..e019bb5 100644
+> --- a/drivers/usb/gadget/composite.c
+> +++ b/drivers/usb/gadget/composite.c
+> @@ -848,12 +848,18 @@ void usb_remove_config(struct usb_composite_dev *cd=
+ev,
+>  {
+>  	unsigned long flags;
+> =20
+> +	if (config->cdev =3D=3D NULL) {
+> +		pr_warn("Calling usb_remove_config without a matching usb_add_config!\=
+n");
+> +		goto end;
+> +	}
 
-What I was saying was that the kernel should try !hotpluggable memory
-first then fall back to hotpluggable memory instead of failing boot as
-nothing really is worse than failing to boot.
+I would take a WARN() only, but let the crash happen and fix the gadget
+driver.
 
-> >Short of being able to remap memory under the kernel, I don't think
-> >this can be very generic and as a compromise trying to keep as many
-> >hotpluggable nodes as possible doesn't sound too bad.
-> 
-> I think making one of the node hotpluggable is better. But OK, it is
-> no big deal. There won't be such machine in reality, I think. :)
+--=20
+balbi
 
-Hmmm... but allocating close to kernel image will keep the number of
-nodes which are made un-removeable via permanent allocation to
-minimum.  In most configurations that I can recall, I don't think we'd
-lose anything really and the code will be much simpler and generic.
-It seems like a good trade-off to me given that we need to report
-which nodes are hot unpluggable no matter what.
+--7CZp05NP8/gJM8Cl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-tejun
+iQIcBAEBAgAGBQJSCSSEAAoJEIaOsuA1yqREeRwP/jmZEiaiaUzL8jIkr140kIdq
+asMvJcsL2eDZwDhEQ1NcnrbIYydzE9CQnpvUBgMUe+1FafY9JTHlgKrXpedy3bnU
+QMTAEH05ZYKYYPCEeTUbQX4JzqtqerTxTzaJgoHbFMEVBp8lHFGpqBVdmTnhOc1f
+NC6Yn3jPuYr+1M8tgz7R4jOGancPjvkv5dCngxtV9F7Re2pPDdzgstJWmohWxHfv
+i32GOp1rXSN+F5fLisq/HLJc2dgJI/dqaHFWt3zAFMgCrciNHkqoLPmz8ypBNxTL
+csOpRphOreWqu3OLSSbASQMKecWQZ/OeqEYX0YihIbbIYdnc8ZUDvzvLoIRjI/I1
+sRhOkFTxhTJW8/iYae63/gpXSV+3Y6+adfJEk+UL8THPX8XWqHCGuPNYILSVZXDD
+rmaFDfiIDq89Y1EWQIc3UY52UFC6SfitU0Y6FTQIYzEw406SF9ly+l2tarXpcQ3A
+YtyZjMg0lTgxUzmvI+U/qMc/IaiYRvXyaLEhYktCYKH9DjruSZWc/AR0I4ICXjSp
+4GQL2TNwKITqiT2vbZWZjKsdD1YNZW3Xw0z9Bnkp8sMWWWbMgIh7pFvDhxTfl3GU
+N4sONqGXyem2d3aaARnlP8eqclSKihgewoM8E6/q7Zruhw/EsPVXGkSIHJLsHyMa
+XJyrNX696/a3zLJ4FrgD
+=a9UF
+-----END PGP SIGNATURE-----
+
+--7CZp05NP8/gJM8Cl--
