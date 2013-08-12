@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab3HLI1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 04:27:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52536 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753017Ab3HLI1w (ORCPT
+	id S1755094Ab3HLI2z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 04:28:55 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:12410 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751321Ab3HLI2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 04:27:52 -0400
-Date: Mon, 12 Aug 2013 10:27:49 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 5/9] pinctrl: sunxi: Fix inconsistent indentation
-Message-ID: <20130812082749.GM2911@lukather>
-References: <1375610330-18185-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375610330-18185-6-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 12 Aug 2013 04:28:53 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19omsVhRAOJf4tGCLSWh4PM
+Date: Mon, 12 Aug 2013 01:28:51 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linus.walleij@linaro.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Sebastian Reichel <sre@ring0.de>
+Subject: Re: [PATCH 2/3] ARM: OMAP2+: HSI: Introduce OMAP SSI driver
+Message-ID: <20130812082851.GK7656@atomide.com>
+References: <1376237628-1077-1-git-send-email-sre@debian.org>
+ <1376237877-1740-1-git-send-email-sre@debian.org>
+ <1376237877-1740-2-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="N7hiGSZV0P2B4+ho"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375610330-18185-6-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1376237877-1740-2-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Sebastian Reichel <sre@debian.org> [130811 09:25]:
+> From: Sebastian Reichel <sre@ring0.de>
+> 
+> This patch adds an OMAP SSI driver to the HSI framework.
+> 
+> The Synchronous Serial Interface (SSI) is a legacy version
+> of HSI. As in the case of HSI, it is mainly used to connect
+> Application engines (APE) with cellular modem engines (CMT)
+> in cellular handsets.
+> 
+> It provides a multichannel, full-duplex, multi-core communication
+> with no reference clock. The OMAP SSI block is capable of reaching
+> speeds of 110 Mbit/s.
 
---N7hiGSZV0P2B4+ho
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Good to see this being worked on, maybe we can finally start
+making calls with mainline kernel :)
 
-Hi Linus,
+This one should be queued by:
 
-On Sun, Aug 04, 2013 at 11:58:46AM +0200, Maxime Ripard wrote:
-> Some pin functions in the array were not indented like the other
-> functions in this array. Fix this.
+$ scripts/get_maintainer.pl -f drivers/hsi
 
-Could you please take this trivial patch for 3.12?
+This should be a stand alone patch, right? You should resend
+with those people in cc.
 
-Thanks,
-Maxime
+Regards,
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---N7hiGSZV0P2B4+ho
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCJyFAAoJEBx+YmzsjxAgxfUQAKIP0i2GmKwTVO70VDm73Z/z
-unQOVSQTVJ/cDdmRUZK1LJ0nuOUx8GpuETUlLs/aAtNdrI6RXRcsb5QdO1d7p8YA
-FlVZtbPEVSjiGX/VPysTYx5PsYc8amctSlqHq++l/rgpQrvMhQ29INxafK7tEdhb
-C3E94TUAAnldNIQi9f22BTYD0cE1xsvdJlcyvOuvRZdXC2ntHaf7xwx8QAsggkmQ
-j6UhQGQszCAmvbnCT1xz7NtGcGMwPssT0DQNfBEooyNXl1vCTwJVyWpod9G+OLLx
-URUIRiRjmeReVWfd6LTCfHpF59LuJZdJZQ6Lm7anyVC/cvAD/Yv+6txwipgus3Og
-lmahMsqXAr2H1cdwBlf2g26YGT1K2HXQYShzm43S0FC45C1sz5i5ytUqqJ4o6+fI
-c4XUzR5FZFkiwg4Acna3dmzObyHcn9H6rhdwiG8UFIKupt/tUh/rGiY501GUSzx/
-6e78stTAfWHrQySFUI98IBtddRsQj+y2+nMKV4tSPPEnVvNfENo0dcS1OPJzowWw
-tsXTAr7FOTEX10wP9VCI9zP8RHNa5xYObAxTkHOM1o5fDcKrou+5CxRefWyd4lT9
-ay3GH+ARhGZqOBwI/VFHCTa/VkbMIGSp7fczUHaINbXpNJka3wtKvkSt72MMwptm
-BOoH4E+6q4ca+BmfvXXb
-=edtQ
------END PGP SIGNATURE-----
-
---N7hiGSZV0P2B4+ho--
+Tony
