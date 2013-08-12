@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab3HLXn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 19:43:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41329 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596Ab3HLXn5 (ORCPT
+	id S1756114Ab3HLXrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 19:47:08 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:42564 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807Ab3HLXrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 19:43:57 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave.hansen@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] x86: Fix booting with DEBUG_PAGE_ALLOC with more than 512G RAM
-Date: Mon, 12 Aug 2013 16:43:24 -0700
-Message-Id: <1376351004-4015-1-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
+	Mon, 12 Aug 2013 19:47:06 -0400
+MIME-Version: 1.0
 In-Reply-To: <52090CF2.3040505@sr71.net>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+References: <520578D0.7020607@intel.com>
+	<CAE9FiQUuPmZfhsHvmsS+_O_VOWMA_OBAexGyRF3eZR1_D3EehA@mail.gmail.com>
+	<52059508.3090405@sr71.net>
+	<CAE9FiQVvo+saJFpx=6A8O7GOns0cR302_GBe4A0a10a4Z0mZyw@mail.gmail.com>
+	<CAE9FiQWn5+XH7cjUjRJNuB747u2-aq3ZpXoPwyZEFYALCxZ30Q@mail.gmail.com>
+	<52090CF2.3040505@sr71.net>
+Date: Mon, 12 Aug 2013 16:47:04 -0700
+X-Google-Sender-Auth: ZyGVmdTMDGPZ0CoezcGE-mWyrz0
+Message-ID: <CAE9FiQVbGrXLEWVNugJUa=YAA8mHyTM32Ow5kUU7cYBvMpk5gA@mail.gmail.com>
+Subject: Re: x86: early boot crash: "alloc_low_page: ran out of memory" (bisected)
+From: Yinghai Lu <yinghai@kernel.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: "the arch/x86 maintainers" <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave reported that system have early crash if DEBUG_PAGEALLOC is selected,
-when system have between 500G and 600G.
-
-> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
-> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
-> [    0.000000] BRK [0x02086000, 0x02086fff] PGTABLE
-> [    0.000000] BRK [0x02087000, 0x02087fff] PGTABLE
-> [    0.000000] BRK [0x02088000, 0x02088fff] PGTABLE
-> [    0.000000] init_memory_mapping: [mem 0xe80ee00000-0xe80effffff]
-> [    0.000000]  [mem 0xe80ee00000-0xe80effffff] page 4k
-> [    0.000000] BRK [0x02089000, 0x02089fff] PGTABLE
-> [    0.000000] BRK [0x0208a000, 0x0208afff] PGTABLE
-> [    0.000000] Kernel panic - not syncing: alloc_low_page: ran out of memory
-
-It turns out that we missed increasing needed pages in BRK to mapping
-initial 2M and [0,1M) when we switch to use #PF handler set mem mapping.
-
-> commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
-> Author: H. Peter Anvin <hpa@zytor.com>
-> Date:   Thu Jan 24 12:19:52 2013 -0800
+On Mon, Aug 12, 2013 at 9:27 AM, Dave Hansen <dave@sr71.net> wrote:
+> On 08/09/2013 07:21 PM, Yinghai Lu wrote:
+>> -/* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
+>> -#define INIT_PGT_BUF_SIZE    (5 * PAGE_SIZE)
+>> +/* need 4 4k for initial PMD_SIZE,  3 4k for 0-ISA_END_ADDRESS */
+>> +#define INIT_PGT_BUF_SIZE    (7 * PAGE_SIZE)
+>>  RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
+>>  void  __init early_alloc_pgt_buf(void)
 >
->     x86, 64bit: Use a #PF handler to materialize early mappings on demand
+> That patch allows me to boot again.  I've also attached a boot with the
+> debug options that you asked for.
+>
+> I'm really curious to see the full changelog for why this patch helps
+> any why it's only triggered for large memory sizes. :)
 
-Before that, we have maping from [0,512M) in head_64.S, and we can
-spare two pages [0-1M).  After that change, we can not reuse pages anymore.
+Thanks, please check changelog at
 
-When we have more than 512M ram, we need extra page for pgd page with
-[512G, 1024g).
+https://patchwork.kernel.org/patch/2843321/
 
-Increase pages in BRK for page table to solve the booting problem.
-
-Reported-by: Dave Hansen <dave.hansen@intel.com>
-Bisected-by: Dave Hansen <dave.hansen@intel.com>
-Tested-by: Dave Hansen <dave.hansen@intel.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: <stable@vger.kernel.org> 3.9+
-
----
- arch/x86/mm/init.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/arch/x86/mm/init.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/init.c
-+++ linux-2.6/arch/x86/mm/init.c
-@@ -78,8 +78,8 @@ __ref void *alloc_low_pages(unsigned int
- 	return __va(pfn << PAGE_SHIFT);
- }
- 
--/* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
--#define INIT_PGT_BUF_SIZE	(5 * PAGE_SIZE)
-+/* need 3 4k for initial PMD_SIZE,  3 4k for 0-ISA_END_ADDRESS */
-+#define INIT_PGT_BUF_SIZE	(6 * PAGE_SIZE)
- RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
- void  __init early_alloc_pgt_buf(void)
- {
+Yinghai
