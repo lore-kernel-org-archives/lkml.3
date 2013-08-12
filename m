@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756756Ab3HLOPC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 10:15:02 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56613 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756670Ab3HLOO7 (ORCPT
+	id S1756690Ab3HLOP6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 10:15:58 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:42539 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756020Ab3HLOP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 10:14:59 -0400
-Date: Mon, 12 Aug 2013 16:14:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 5/8] rcu: eliminate deadlock for rcu read site
-Message-ID: <20130812141449.GI27162@twins.programming.kicks-ass.net>
-References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
- <1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com>
- <20130808204020.GA31127@linux.vnet.ibm.com>
- <5205B6FF.7060502@cn.fujitsu.com>
- <20130812135309.GF27162@twins.programming.kicks-ass.net>
- <20130812101008.27048d83@gandalf.local.home>
+	Mon, 12 Aug 2013 10:15:56 -0400
+Date: Mon, 12 Aug 2013 10:15:51 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part2 1/4] acpi: Print Hot-Pluggable Field in SRAT.
+Message-ID: <20130812141551.GD15892@htj.dyndns.org>
+References: <1375938239-18769-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1375938239-18769-2-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130812101008.27048d83@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1375938239-18769-2-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 10:10:08AM -0400, Steven Rostedt wrote:
-> On Mon, 12 Aug 2013 15:53:10 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Sat, Aug 10, 2013 at 11:43:59AM +0800, Lai Jiangshan wrote:
-> > > Hi, Steven
-> > > 
-> > > I was considering rtmutex's lock->wait_lock is a scheduler lock,
-> > > But it is not, and it is just a spinlock of process context.
-> > > I hope you change it to a spinlock of irq context.
-> > 
-> > rwmutex::wait_lock is irq-safe; it had better be because its taken under
-> > task_struct::pi_lock. 
-> 
-> It is? I thought it was the other way around. That is, pi_lock is taken
-> under wait_lock.
+On Thu, Aug 08, 2013 at 01:03:56PM +0800, Tang Chen wrote:
+> +	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]%s\n",
+> +		node, pxm,
+> +		(unsigned long long) start, (unsigned long long) end - 1,
+> +		hotpluggable ? " Hot Pluggable" : "");
 
-Urgh, right you are. 
+Wouldn't it be better to just print "hotplug"?
+
+Thanks.
+
+-- 
+tejun
