@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757035Ab3HLPRy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 11:17:54 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:38853 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757006Ab3HLPRv (ORCPT
+	id S1757077Ab3HLPSU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 11:18:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57534 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756940Ab3HLPSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 11:17:51 -0400
-Message-ID: <5208FCB1.9080009@atmel.com>
+	Mon, 12 Aug 2013 11:18:14 -0400
 Date: Mon, 12 Aug 2013 17:18:09 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH 3/3] perf, uncore: enable ev_sel_ext bit for PCU.
+Message-ID: <20130812151809.GN27162@twins.programming.kicks-ass.net>
+References: <1375856245-10717-1-git-send-email-zheng.z.yan@intel.com>
+ <1375856245-10717-3-git-send-email-zheng.z.yan@intel.com>
+ <CABPqkBRsKQLDjH_mynbeOQyX+_QEbuiPKF_Jv5tebqmYL090ig@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Boris BREZILLON <b.brezillon@overkiz.com>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pinctrl: at91: choose appropriate handler for level interrupts
-References: <1374331893-16009-1-git-send-email-b.brezillon@overkiz.com> <CACRpkdaGdgLeYrahv0qAJJjL3S2aiZeVwRVUtNcDqQgL3_mQkA@mail.gmail.com>
-In-Reply-To: <CACRpkdaGdgLeYrahv0qAJJjL3S2aiZeVwRVUtNcDqQgL3_mQkA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRsKQLDjH_mynbeOQyX+_QEbuiPKF_Jv5tebqmYL090ig@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/07/2013 17:42, Linus Walleij :
-> On Sat, Jul 20, 2013 at 4:51 PM, Boris BREZILLON
-> <b.brezillon@overkiz.com> wrote:
->
->> The current implementation handle both edge and level interrupts with the
->> 'handle_simple_irq' handler.
->>
->> Level interrupts are active as long as the pin stays at the configured
->> level (low or high). In this case we have to use 'handle_level_irq' which
->> mask the interrupt until the handle has treated it.
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->
-> Nicolas/Jean-Christophe: any opinion on this patch?
+On Fri, Aug 09, 2013 at 11:53:53AM +0200, Stephane Eranian wrote:
+> On Wed, Aug 7, 2013 at 8:17 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> >
+> > From: "Yan, Zheng" <zheng.z.yan@intel.com>
+> >
+> > PCU uncore event control register has a undocumented ev_sel_ext bit.
+> > The bit is needed by Andi's pmu-tools.
+> >
+> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> 
+> 
+> Works for me. Is also needed by libpfm4 uncore PCU events.
+> Now results make more sense. Please apply.
+> 
+> Reviewed-by: Stephane Eranian <eranian@google.com>
 
-Back online:
-
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-(maybe too late though)
-
-Thanks for fixing this.
-
-Bye,
-
-> I am tempted to just apply it and see if you react to it :-)
->
-> Yours,
-> Linus Walleij
->
+Seriously guys; how am I going to justify merging a changelog that
+reads: Provides magic bit to sprinkle fairy dust; required by $people. ?
 
 
--- 
-Nicolas Ferre
