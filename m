@@ -1,106 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab3HLQf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:35:56 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58924 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab3HLQfy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:35:54 -0400
-Message-ID: <52090EE9.7030602@codeaurora.org>
-Date: Mon, 12 Aug 2013 09:35:53 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: ohad@wizery.com, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
-        Jeffrey Hugo <jhugo@codeaurora.org>,
-        Eric Holmberg <eholmber@codeaurora.org>
-Subject: Re: [PATCH v2] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex
- block
-References: <1375135257-17222-1-git-send-email-galak@codeaurora.org>
-In-Reply-To: <1375135257-17222-1-git-send-email-galak@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757026Ab3HLQh2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:37:28 -0400
+Received: from mail.asbjorn.biz ([81.7.185.110]:58635 "EHLO mail.asbjorn.biz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755720Ab3HLQhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 12:37:21 -0400
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Aug 2013 12:37:20 EDT
+From: Asbjoern Sloth Toennesen <ast@fiberby.net>
+To: "David S. Miller" <davem@davemloft.net>,
+        Vlad Yasevich <vyasevic@redhat.com>,
+        Stephen Hemminger <stephen@networkplumber.org>, netdev@vger.kernel.org,
+        bridge@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] rtnetlink: rtnl_bridge_getlink: Call nlmsg_find_attr() with ifinfomsg header
+Date: Mon, 12 Aug 2013 16:30:09 +0000
+Message-Id: <1376325009-8399-1-git-send-email-ast@fiberby.net>
+X-Mailer: git-send-email 1.8.4.rc1
+In-Reply-To: <52090C26.4090001@fiberby.net>
+References: <52090C26.4090001@fiberby.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/13 15:00, Kumar Gala wrote:
-> diff --git a/drivers/hwspinlock/msm_hwspinlock.c b/drivers/hwspinlock/msm_hwspinlock.c
-> new file mode 100644
-> index 0000000..dbd9a69
-> --- /dev/null
-> +++ b/drivers/hwspinlock/msm_hwspinlock.c
-> @@ -0,0 +1,150 @@
-> +/*
-> + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/err.h>
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/device.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_device.h>
-> +#include <linux/hwspinlock.h>
-> +#include <linux/io.h>
-> +
-> +#include "hwspinlock_internal.h"
-> +
-> +#define SPINLOCK_ID_APPS_PROC	1
+Fix the iproute2 command `bridge vlan show`, after switching from
+rtgenmsg to ifinfomsg.
 
-Is this id only for the apps processor? What about hexagon? Does it need
-a different number?
+Signed-off-by: Asbjoern Sloth Toennesen <ast@fiberby.net>
+---
+ net/core/rtnetlink.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> +#define BASE_ID			0
-> +
-> +static int msm_hwspinlock_trylock(struct hwspinlock *lock)
-> +{
-> +	void __iomem *lock_addr = lock->priv;
-> +
-> +	writel_relaxed(SPINLOCK_ID_APPS_PROC, lock_addr);
-> +	smp_mb();
-> +	return readl_relaxed(lock_addr) == SPINLOCK_ID_APPS_PROC;
-> +}
-> +
-> +static void msm_hwspinlock_unlock(struct hwspinlock *lock)
-> +{
-> +	int lock_owner;
-
-This should probably be u32 to be explicit about the size of the register.
-
-> +	void __iomem *lock_addr = lock->priv;
-> +
-> +	lock_owner = readl_relaxed(lock_addr);
-> +	if (lock_owner != SPINLOCK_ID_APPS_PROC) {
-> +		pr_err("%s: spinlock not owned by Apps (actual owner is %d)\n",
-
-Maybe you should just say "spinlock not owned by us (actual owner is
-%d)" so that this driver is agnostic to the processor it runs on?
-
-> +				__func__, lock_owner);
-> +	}
-> +
-> +	writel_relaxed(0, lock_addr);
-> +	smp_mb();
-> +}
->
-
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 3de7408..a043171 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -2384,7 +2384,7 @@ static int rtnl_bridge_getlink(struct sk_buff *skb, struct netlink_callback *cb)
+ 	struct nlattr *extfilt;
+ 	u32 filter_mask = 0;
+ 
+-	extfilt = nlmsg_find_attr(cb->nlh, sizeof(struct rtgenmsg),
++	extfilt = nlmsg_find_attr(cb->nlh, sizeof(struct ifinfomsg),
+ 				  IFLA_EXT_MASK);
+ 	if (extfilt)
+ 		filter_mask = nla_get_u32(extfilt);
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.4.rc1
 
