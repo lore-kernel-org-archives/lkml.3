@@ -1,36 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab3HLT6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 15:58:55 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58428 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab3HLT6x (ORCPT
+	id S1755340Ab3HLUAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 16:00:43 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51128 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab3HLUAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 15:58:53 -0400
-Date: Mon, 12 Aug 2013 13:04:13 -0700 (PDT)
-Message-Id: <20130812.130413.1869715009441960165.davem@davemloft.net>
-To: sergei.shtylyov@cogentembedded.com
-Cc: clbchenlibo.chen@huawei.com, mugunthanvnm@ti.com, bigeasy@linutronix.de,
-        prabhakar.csengg@gmail.com, b-liu@ti.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH 8/8] net: davinci_mdio: use platform_{get,set}_drvdata()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <520926CB.4020500@cogentembedded.com>
-References: <5208E231.60104@huawei.com>
-	<520926CB.4020500@cogentembedded.com>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 12 Aug 2013 12:58:52 -0700 (PDT)
+	Mon, 12 Aug 2013 16:00:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18uO9YYGunQlkZGFM9+/mit+zCoxrkfGo8=
+Date: Mon, 12 Aug 2013 16:00:28 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 6/9] ARM: dove: update dove_defconfig with SI5351, PCI,
+ and xHCI
+Message-ID: <20130812200028.GV25111@titan.lakedaemon.net>
+References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1376333215-12885-7-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376333215-12885-7-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Date: Mon, 12 Aug 2013 22:17:47 +0400
+On Mon, Aug 12, 2013 at 08:46:52PM +0200, Sebastian Hesselbarth wrote:
+> This adds SI5351 clock driver found on the SolidRun CuBox, PCI driver
+> and USB 3.0 xHCI driver found on the Globalscale D3Plug to dove_defconfig.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> ---
+>  arch/arm/configs/dove_defconfig |    4 ++++
+>  1 file changed, 4 insertions(+)
 
->    Doesn't get described as well. I think you're mixing two types of
->    changes in one patchset.
+Applied to mvebu/defconfig
 
-Agreed, you're going to have to redo this entire patch set.
+thx,
+
+Jason.
