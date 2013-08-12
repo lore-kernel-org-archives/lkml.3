@@ -1,92 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab3HLDfz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 23:35:55 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:29256 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619Ab3HLDfy (ORCPT
+	id S1755734Ab3HLDtx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 23:49:53 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43065 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755669Ab3HLDtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 23:35:54 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-6c-520858136b82
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Alessandro Rubini'" <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] FMC: Staticize local symbols
-Date: Mon, 12 Aug 2013 12:35:46 +0900
-Message-id: <000001ce970d$085302b0$18f90810$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6XDPTcT6eFOvHjReSl4QF8DffxnA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t8zfV3hCI4gg7+P+CyaF69ns7i88BKr
-	xeVdc9gsfp9MdmDx2Np6gNVj/9w17B59W1YxenzeJBfAEsVlk5Kak1mWWqRvl8CV0fJAq2Au
-	Z8X7Z3OYGxjPsncxcnJICJhIrHi+ghnCFpO4cG89WxcjF4eQwDJGicU7bzDBFB1b8IUdIjGd
-	UWLH/pdMEM4vIOfvAbBRbAJqEl++HAazRQS0JG62fGADsZkFyiVm3n8EtIKDQ1hAV+LPOnOQ
-	MIuAqsS7S+2sIDavgKXE5v8zWCBsQYkfk++xQLRqSazfeZwJwpaX2LzmLdSlChI7zr5mhFil
-	J3F2bQMrRI2IxL4X7xhBbpMQWMUu0bS7gwVimYDEt8mHWEBukBCQldh0AGqOpMTBFTdYJjCK
-	zUKyehaS1bOQrJ6FZMUCRpZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGCExNnEH4/0D1ocY
-	k4HWT2SWEk3OB8ZoXkm8obGZkYWpiamxkbmlGWnCSuK86i3WgUIC6YklqdmpqQWpRfFFpTmp
-	xYcYmTg4pRoYp19r/6J3YMWJ6NUvHreH/ZNpXvh863PlE1JJET2d09bcnHDdc/01p/WOlcsP
-	epek8038WVnKN/e9RzvPyzWeJz4fcwlj0dBkmGgklzk7Tlairmon+87GfZ3K5596fPC1kzPR
-	CKmskb7IzthzUNXeovJ32smunujycgt35V/1WWVsiSGvO3yVWIozEg21mIuKEwFNPUsjxwIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jQV3hCI4ggy0d3BbNi9ezWVxeeInV
-	4vKuOWwWv08mO7B4bG09wOqxf+4ado++LasYPT5vkgtgiWpgtMlITUxJLVJIzUvOT8nMS7dV
-	8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBWqmkUJaYUwoUCkgsLlbSt8M0ITTETdcC
-	pjFC1zckCK7HyAANJKxjzGh5oFUwl7Pi/bM5zA2MZ9m7GDk5JARMJI4t+AJli0lcuLeerYuR
-	i0NIYDqjxI79L5kgnF9Azt8DYFVsAmoSX74cBrNFBLQkbrZ8YAOxmQXKJWbef8TcxcjBISyg
-	K/FnnTlImEVAVeLdpXZWEJtXwFJi8/8ZLBC2oMSPyfdYIFq1JNbvPM4EYctLbF7zlhniIAWJ
-	HWdfM0Ks0pM4u7aBFaJGRGLfi3eMExgFZiEZNQvJqFlIRs1C0rKAkWUVo2hqQXJBcVJ6rpFe
-	cWJucWleul5yfu4mRnAEP5PewbiqweIQowAHoxIPr8cX9iAh1sSy4srcQ4wSHMxKIrxMPhxB
-	QrwpiZVVqUX58UWlOanFhxiTgT6dyCwlmpwPTC55JfGGxiZmRpZGZhZGJubmpAkrifMebLUO
-	FBJITyxJzU5NLUgtgtnCxMEp1cDYoXWkvjetyeN0wre91o3pr5hmxDKy85xKybKTX7Ly0Cqe
-	H3tCbhaHxPt83fpP+9Fa9s9b6wUWW3+3q2LvSkvOtRVQ/T+BT8hI3Schb8qLvTsCo1SuPe8Q
-	nKFy2EZ8Ya/bQfs8W02Gbo2DeRbcKfMWTz7qLXgrjFlMt3ZWYuhMU0WHO1yaRUosxRmJhlrM
-	RcWJAJAc2WIkAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 11 Aug 2013 23:49:52 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-ab-52085b5e424d
+Date: Mon, 12 Aug 2013 12:49:50 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dave Hansen <dave.hansen@intel.com>, guz.fnst@cn.fujitsu.com
+Subject: Re: [RFC PATCH v2 0/4] mm: reclaim zbud pages on migration and
+ compaction
+Message-ID: <20130812034950.GB18832@bbox>
+References: <1376043740-10576-1-git-send-email-k.kozlowski@samsung.com>
+ <20130812022535.GA18832@bbox>
+ <20130812031647.GB8043@kvack.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130812031647.GB8043@kvack.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This local symbol is used only in this file.
-Fix the following sparse warnings:
+Hello Benjamin,
 
-drivers/fmc/fmc-write-eeprom.c:106:5: warning: symbol 'fwe_probe' was not declared. Should it be static?
-drivers/fmc/fmc-write-eeprom.c:147:5: warning: symbol 'fwe_remove' was not declared. Should it be static?
+On Sun, Aug 11, 2013 at 11:16:47PM -0400, Benjamin LaHaise wrote:
+> Hello Minchan,
+> 
+> On Mon, Aug 12, 2013 at 11:25:35AM +0900, Minchan Kim wrote:
+> > Hello,
+> > 
+> > On Fri, Aug 09, 2013 at 12:22:16PM +0200, Krzysztof Kozlowski wrote:
+> > > Hi,
+> > > 
+> > > Currently zbud pages are not movable and they cannot be allocated from CMA
+> > > region. These patches try to address the problem by:
+> > 
+> > The zcache, zram and GUP pages for memory-hotplug and/or CMA are
+> > same situation.
+> > 
+> > > 1. Adding a new form of reclaim of zbud pages.
+> > > 2. Reclaiming zbud pages during migration and compaction.
+> > > 3. Allocating zbud pages with __GFP_RECLAIMABLE flag.
+> > 
+> > So I'd like to solve it with general approach.
+> > 
+> > Each subsystem or GUP caller who want to pin pages long time should
+> > create own migration handler and register the page into pin-page
+> > control subsystem like this.
+> > 
+> > driver/foo.c
+> > 
+> > int foo_migrate(struct page *page, void *private);
+> > 
+> > static struct pin_page_owner foo_migrate = {
+> >         .migrate = foo_migrate;
+> > };
+> > 
+> > int foo_allocate()
+> > {
+> >         struct page *newpage = alloc_pages();
+> >         set_pinned_page(newpage, &foo_migrate);
+> > }
+> > 
+> > And in compaction.c or somewhere where want to move/reclaim the page,
+> > general VM can ask to owner if it founds it's pinned page.
+> > 
+> > mm/compaction.c
+> > 
+> >         if (PagePinned(page)) {
+> >                 struct pin_page_info *info = get_page_pin_info(page);
+> >                 info->migrate(page);
+> >                 
+> >         }
+> > 
+> > Only hurdle for that is that we should introduce a new page flag and
+> > I believe if we all agree this approch, we can find a solution at last.
+> > 
+> > What do you think?
+> 
+> I don't like this approach.  There will be too many collisions in the 
+> hash that's been implemented (read: I don't think you can get away with 
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/fmc/fmc-write-eeprom.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Yeb. That's why I'd like to change it with radix tree of pfn as
+I mentioned as comment(just used hash for fast prototyping without big
+considering).
 
-diff --git a/drivers/fmc/fmc-write-eeprom.c b/drivers/fmc/fmc-write-eeprom.c
-index 2cc680d..ee5b479 100644
---- a/drivers/fmc/fmc-write-eeprom.c
-+++ b/drivers/fmc/fmc-write-eeprom.c
-@@ -103,7 +103,7 @@ static int fwe_run(struct fmc_device *fmc, const struct firmware *fw, char *s)
-  * difficult to know in advance when probing the first card if others
-  * are there.
-  */
--int fwe_probe(struct fmc_device *fmc)
-+static int fwe_probe(struct fmc_device *fmc)
- {
- 	int err, index = 0;
- 	const struct firmware *fw;
-@@ -144,7 +144,7 @@ int fwe_probe(struct fmc_device *fmc)
- 	return 0;
- }
- 
--int fwe_remove(struct fmc_device *fmc)
-+static int fwe_remove(struct fmc_device *fmc)
- {
- 	return 0;
- }
+> a naive implementation for core infrastructure that has to suite all 
+> users), you've got a global spin lock, and it doesn't take into account 
+
+I think batching-drain of pinned page would be sufficient for avoiding
+global spinlock problem because we have been used it with page-allocator
+which is one of most critical hotpath.
+
+> NUMA issues.  The address space migratepage method doesn't have those 
+
+NUMA issues? Could you elaborate it a bit?
+
+> issues (at least where it is usable as in aio's use-case).
+> 
+> If you're going to go down this path, you'll have to decide if *all* users 
+> of pinned pages are going to have to subscribe to supporting the un-pinning 
+> of pages, and that means taking a real hard look at how O_DIRECT pins pages.  
+> Once you start thinking about that, you'll find that addressing the 
+> performance concerns is going to be an essential part of any design work to 
+> be done in this area.
+
+True. The patch I included just shows the cocnept so I didn't consider any
+performance critical part but if we all agree this arpproch does make sense
+and we can implement little overhead, I will step into next phase to enhance
+performance.
+
+Thanks for the input, Ben!
+
+> 
+> 		-ben
+> -- 
+> "Thought is the essence of where you are now."
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.10.4
-
-
+Kind regards,
+Minchan Kim
