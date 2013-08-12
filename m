@@ -1,43 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457Ab3HLRBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:01:24 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:39524 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756725Ab3HLRBW (ORCPT
+	id S1757484Ab3HLRBg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:01:36 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:42579 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757459Ab3HLRBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:01:22 -0400
+	Mon, 12 Aug 2013 13:01:31 -0400
+Message-ID: <520914D5.7080501@gmail.com>
+Date: Tue, 13 Aug 2013 01:01:09 +0800
+From: Tang Chen <imtangchen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <52090E67.1080703@wwwdotorg.org>
-References: <cover.1375964117.git.viresh.kumar@linaro.org>
-	<568f3dbd414b050bb2319d960fb5044a5aed8ee3.1375964117.git.viresh.kumar@linaro.org>
-	<5203BCDD.40809@wwwdotorg.org>
-	<CAKohpomr8kwDitAFD7FKvHo3zNWz8qT5bkd3yOVEnC_k16o=Dw@mail.gmail.com>
-	<CAKohpo=Gy7D2LYmdFU1p+eL-nMoPE18YXWvE2M8t-fb-a5HBgg@mail.gmail.com>
-	<5205167F.1070906@wwwdotorg.org>
-	<CAKohponQDAqHiRD7Aw5Wk6fEE-d8H=Svg0oBRyb9SKGdqYxGhw@mail.gmail.com>
-	<52056842.8060109@wwwdotorg.org>
-	<CAKohpon=j=NANLQzYuBdoFVLxQzETy5JDu2vORaAgK3NuEpeAg@mail.gmail.com>
-	<52090E67.1080703@wwwdotorg.org>
-Date: Mon, 12 Aug 2013 22:31:20 +0530
-Message-ID: <CAKohpom4WsD_BSSGEbtmGR3JRzPXx9j1exM7CagwOXZ=0GZnGw@mail.gmail.com>
-Subject: Re: [PATCH 35/35] cpufreq: tegra: use cpufreq_table_validate_and_show()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linaro-kernel@lists.linaro.org, Stephen Warren <swarren@nvidia.com>,
-        linux-pm@vger.kernel.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org, rjw@sisk.pl,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
+        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com> <20130812145016.GI15892@htj.dyndns.org> <52090225.6070208@gmail.com> <20130812154623.GL15892@htj.dyndns.org> <52090AF6.6020206@gmail.com> <20130812162247.GM15892@htj.dyndns.org>
+In-Reply-To: <20130812162247.GM15892@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 August 2013 22:03, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> It's in defconfig OK; I think the driver simply isn't initializing since
-> some of the clocks it requests don't exist. I'll have our clock driver
-> author look into it. In the meantime, I assume that your change is
-> likely fine.
+Hi tj,
 
-I wasn't' talking about your driver but cpufreq_stats.. That is disabled
-by default with your defconfig.
+On 08/13/2013 12:22 AM, Tejun Heo wrote:
+> Hello, Tang.
+>
+> On Tue, Aug 13, 2013 at 12:19:02AM +0800, Tang Chen wrote:
+>> The kernel can export info to users. The point is what kind of info.
+>> Exporting phys addr is meaningless, of course. Now in /sys, we only
+>> have memory_block and node. memory_block is only 128M on x86, and
+>> hotplug a memory_block means nothing. So actually we only have node.
+>>
+>> So users want to hotplug a node is reasonable, I think. In the
+>> beginning, we set the hotplug unit to a node. That is also why we
+>> did the movable node.
+>>
+>> In summary, node hotplug is much meaningful and usable for users.
+>> So it is the best that we can arrange a whole node to be movable
+>> node, not opportunistic.
+>
+> Still not following.  Yeah, sure, you can tell the userland that node
+> X is hotpluggable or not hotpluggable after boot is complete.  Why is
+> that relevant?
+
+Sorry for the misunderstanding.
+
+I was trying to answer your question: "Why can't the kenrel allocate
+hotpluggable memory opportunistic ?".
+
+If the kernel has any opportunity to allocate hotpluggable memory in
+SRAT, then the kernel should tell users which memory is hotpluggable.
+
+But in what way ?  I think node is the best for now. But a node could
+have a lot of memory. If the kernel uses only a little memory, we will
+lose the whole movable node, which I don't want to do.
+
+So, I don't want to allow the kenrel allocating hotpluggable memory
+opportunistic.
+
+
+>
+>> I'm just thinking of a more extreme case. For example, if a machine
+>> has only one node hotpluggable, and the kernel resides in that node.
+>> Then the system has no hotpluggable node.
+>
+> Yeah, sure, then there's no way that node can be hotpluggable and the
+> right thing to do is booting up the machine and informing the userland
+> that memory is not hotpluggable.
+>
+>> If we can prevent the kernel from using hotpluggable memory, in such
+>> a machine, users can still do memory hotplug.
+>>
+>> I wanted to do it as generic as possible. But yes, finding out the
+>> nodes the kernel resides in and make it unhotpluggable can work.
+>
+> Short of being able to remap memory under the kernel, I don't think
+> this can be very generic and as a compromise trying to keep as many
+> hotpluggable nodes as possible doesn't sound too bad.
+
+I think making one of the node hotpluggable is better. But OK, it is
+no big deal. There won't be such machine in reality, I think. :)
+
+Thanks. :)
+
+
+
+
+
