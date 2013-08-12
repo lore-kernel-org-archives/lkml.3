@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025Ab3HLPUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 11:20:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25564 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755720Ab3HLPUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 11:20:38 -0400
-Date: Mon, 12 Aug 2013 17:21:39 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-Message-ID: <20130812152138.GA10739@dhcp-26-207.brq.redhat.com>
-References: <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
- <20130726020928.GL29296@kernel.dk>
- <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
- <20130729114653.GB20951@mtj.dyndns.org>
- <20130809082335.GA25306@dhcp-26-207.brq.redhat.com>
- <5204FBA6.6040001@kernel.dk>
- <20130809150744.GB25306@dhcp-26-207.brq.redhat.com>
- <52051033.8050605@kernel.dk>
- <20130809164632.GC25306@dhcp-26-207.brq.redhat.com>
- <520521D9.3040104@kernel.dk>
+	id S1757053Ab3HLPXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 11:23:50 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:47087 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756917Ab3HLPXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 11:23:48 -0400
+Date: Mon, 12 Aug 2013 11:23:43 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
+        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+Message-ID: <20130812152343.GK15892@htj.dyndns.org>
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20130812145016.GI15892@htj.dyndns.org>
+ <5208FBBC.2080304@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <520521D9.3040104@kernel.dk>
+In-Reply-To: <5208FBBC.2080304@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 11:07:37AM -0600, Jens Axboe wrote:
-> You don't have to resubmit, I'll get it reviewed and applied today.
+Hello,
 
-Hi Jens,
+On Mon, Aug 12, 2013 at 08:14:04AM -0700, H. Peter Anvin wrote:
+> It gets really messy if it is advisory.  Suddenly you have the user
+> thinking they can hotswap a memory bank and they just can't.
 
-I limited the minimal queue depth to 4, which is apparently wrong
-in case of libata. I will post a new series.
+I'm very skeptical that not doing the strict re-ordering would
+increase the chance of reaching memory allocation where hot unplug
+would be impossible by much.  Given that, it'd be much better to be
+able to boot w/o hotunplug capability than to fail boot.  The kernel
+can whine loudly when hotunplug conditions aren't met but I think that
+really is as far as that should go.
 
-> -- 
-> Jens Axboe
-> 
+> Overall, I'm getting convinced that this whole approach is just doomed
+> to failure -- it will not provide the user what they expect and what
+> they need, which is to be able to hotswap any particular chunk of
+> memory.  This means that there has to be a remapping layer, either using
+> the TLBs (perhaps leveraging the Xen machine page number) or using
+> things like QPI memory routing.
+
+For hot unplug to work in completely generic manner, yeah, there
+probably needs to be an extra layer of indirection.  Have no idea what
+the correct way to achieve that would be tho.  I'm also not sure how
+practicial memory hot unplug is for physical machines and improving
+ballooning could be a better approach for vms.
+
+Thanks.
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+tejun
