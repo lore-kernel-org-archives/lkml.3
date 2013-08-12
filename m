@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab3HLVWL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 17:22:11 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41270 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298Ab3HLVWK (ORCPT
+	id S1754606Ab3HLVZK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 17:25:10 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:41034 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab3HLVZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 17:22:10 -0400
-Date: Mon, 12 Aug 2013 22:21:49 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Maydell <peter.maydell@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        qemu-devel@nongnu.org, Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
-Message-ID: <20130812212149.GH23006@n2100.arm.linux.org.uk>
-References: <5207B3C3.9080508@roeck-us.net> <20130811220450.GY23006@n2100.arm.linux.org.uk> <52082EF8.10005@roeck-us.net> <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com> <20130812164548.GE23006@n2100.arm.linux.org.uk> <CAFEAcA97PuORg920f-A_8rvCgBq=k5Y=0W6m2Nv8nnzjY19Utg@mail.gmail.com> <20130812200628.GG23006@n2100.arm.linux.org.uk> <CAFEAcA9BA7zfaO1J5zVaEcG-AgOo6dyiew08-o2eObuBe-KWig@mail.gmail.com>
+	Mon, 12 Aug 2013 17:25:09 -0400
+Date: Mon, 12 Aug 2013 23:25:07 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Thomas Richter <richter@rus.uni-stuttgart.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
+        Josep Lladonosa <jlladono@gmail.com>, dahinds@users.sourceforge.net,
+        linux-pcmcia@lists.infradead.org,
+        =?utf-8?B?VG9tw6HFoSBLb3bDocSNaWs=?= <nail@nodomain.sk>
+Subject: Re: [PCMCIA] Solved: No USB 2.0 (ehci) in PCMCIA slot on E7110
+Message-ID: <20130812212507.GA12254@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAFEAcA9BA7zfaO1J5zVaEcG-AgOo6dyiew08-o2eObuBe-KWig@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5207C8D4.1040609@rus.uni-stuttgart.de>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 09:49:54PM +0100, Peter Maydell wrote:
-> On 12 August 2013 21:06, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Mon, Aug 12, 2013 at 06:33:28PM +0100, Peter Maydell wrote:
-> >>     /* Slot to IRQ mapping for RealView EB and PB1176 backplane
-> >>      *      name    slot    IntA    IntB    IntC    IntD
-> >>      *      A       31      IRQ50   IRQ51   IRQ48   IRQ49
-> >>      *      B       30      IRQ49   IRQ50   IRQ51   IRQ48
-> >>      *      C       29      IRQ48   IRQ49   IRQ50   IRQ51
-> >>      * Slot C is for the host bridge; A and B the peripherals.
-> >>      * Our output irqs 0..3 correspond to the baseboard's 48..51.
-> >>      */
-> >>
-> >> ie IRQ48 == board's PCI0 == slot C connector A6 (IntA) == PCI_nINTB
-> >>    == Slot B connector B8 (IntD) == Slot A connector A7 (IntC).
-> >>
-> >> and so on round.
-> >>
-> >> The 926's routing is one extra round of swizzling because the
-> >> board itself connects FPGA P_nINTA to its edge connector's
-> >> INTB (B7) pin rather than INTA (A6) as the EB/1176 do.
-> >> (This isn't even hinted at in the documentation, you need to
-> >> either experiment or look at the 926 board schematic.)
-> >
-> > Okay, so the above just adds to the confusion, because you appear to be
-> > mistaking "slot" for the AD signal which the IDSEL pin is connected to.
-> 
-> The board TRM:
-> http://infocenter.arm.com/help/topic/com.arm.doc.dui0411d/Cacdijji.html
-> says that "slot position" and "AD signal connected to IDSEL"
-> are the same thing:
+Hi,
 
-That's realview, not versatile.  Are you saying that both are exactly
-the same wrt this?
+that means we're talking this one (have you had a look at Bugzilla #15014?
+Might be useful...):
 
-> I don't currently have the h/w set up, but digging in my email
-> archives, when we were running the kernel on the real PB926
-> h/w and backplane it was indeed reporting the PCI core (ie
-> "slot C") as 29, and the other two as 30 and 31:
-> [  128.920150] PCI core found (slot 29)
-> [  128.920875] pci 0000:00:1f.0: reg 10: [io  0x0af0-0x0aff]
-> [  128.920958] pci 0000:00:1f.0: reg 14: [io  0x0a70-0x0a7f]
-> [  128.921032] pci 0000:00:1f.0: reg 18: [io  0x01f0-0x01ff]
-> [  128.921103] pci 0000:00:1f.0: reg 1c: [io  0x0170-0x017f]
-> [  128.921173] pci 0000:00:1f.0: reg 20: [io  0xcc00-0xcc1f]
-> [  128.921244] pci 0000:00:1f.0: reg 24: [io  0x8c00-0x8cff]
-> [  128.921320] pci 0000:00:1f.0: reg 30: [mem 0xffff0000-0xffffffff pref]
+commit 35169529093be3bbef70afd3c4125e35cece7e03
+Author: Wolfram Sang <w.sang@pengutronix.de>
+Date:   Sun Jan 10 09:41:24 2010 +0100
 
-With realview or versatile?
+    pcmcia/yenta: add module parameter for O2 speedups
+    
+    O2-bridges can do read prefetch and write burst. However, for some combinations
+    of older bridges and cards, this causes problems, so it is disabled for those
+    bridges. Now, as some users know their setup works with the speedups enabled, a
+    new parameter is introduced to the driver. Now, a user can specifically enable
+    or disable these features, while the default is what we have today: detect the
+    bridge and decide accordingly. Fixes Bugzilla entry 15014.
+    
+    Simplify and unify the printouts, fix a whitespace issue while we are here.
+    
+    Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+    Tested-by: frodone@gmail.com
+    [linux@dominikbrodowski.net: whitespace fixes]
+    Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
+
+
+And my
+
+git log -p drivers/pcmcia/o2micro.h
+
+also mentions
+
+commit 1ff84890b62b20823b3697a6041bbec1b5280cee
+Author: Tomas Kovacik <nail@nodomain.sk>
+Date:   Sun Jul 26 22:04:58 2009 +0200
+
+    pcmcia: disable prefetch/burst for OZ6933
+    
+    Problems have been reported [1], so disable prefetch/burst, to be on the safe
+    side.
+    
+    [1] http://www.mail-archive.com/linux-pcmcia@lists.infradead.org/msg02048.html
+    
+    Signed-off-by: Tomáš Kováčik <nail@nodomain.sk>
+    Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+
+
+A useful idea would be to kindly ask Tomáš Kováčik (CC'd) about details of his system
+(4 years later - but hopefully...), specifically lspci -vv -xxx or some such
+(especially the revision of that controller might be *different*,
+so perhaps only *some* 6933 remained affected, whereas newer ones of that
+possibly more modern chipset ID started to get corrected).
+Or quite likely there's some sufficiently detailed lspci log of that hardware
+out on the internet somewhere...
+
+
+Note that there's the comment
+"for some bridges it is at 0x94, for others at 0xD4. it's
+         * ok to write to both registers on all O2 bridges."
+, yet our 6933 support lines were added *later*,
+so there's a faint possibility that the compatibility statement
+actually does not apply to this chipset.
+
+
+
+And of course there remains the question *why* such slow communication
+would then cause such severe USB HC communication trouble.
+There might be some safeguard missing there as well...
+
+
+And kudos to the patch submitters for having supplied
+such nicely detailed commit logs!
+(although mentioning the title of URLs probably would have been even better)
+
+
+
+> Note that this is only a 1.7Ghz Pentium-4-M dinosaur.
+
+That means you really don't want to know which kinds of machines I am using ;)
+(yes, I'm sitting at a CardBus box here, too)
+((TI CardBus controller))
+
+
+Greetings,
+
+Andreas Mohr (KA/S)
