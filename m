@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab3HLWNX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 18:13:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57328 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010Ab3HLWNW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 18:13:22 -0400
-Date: Mon, 12 Aug 2013 15:13:21 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Paul McQuade <paulmcquad@gmail.com>
-Cc: Linux-Devel <devel@driverdev.osuosl.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Review [2/2] Staging: BCM: Removed more whitespace/Errors
-Message-ID: <20130812221321.GC18287@kroah.com>
-References: <5203D6E4.9080201@gmail.com>
+	id S1755806Ab3HLWQW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 18:16:22 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52758 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752976Ab3HLWQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 18:16:20 -0400
+Date: Mon, 12 Aug 2013 18:15:24 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/9] mm: thrash detection-based file cache sizing v3
+Message-ID: <20130812221524.GU715@cmpxchg.org>
+References: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
+ <20130809155309.71d93380425ef8e19c0ff44c@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5203D6E4.9080201@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130809155309.71d93380425ef8e19c0ff44c@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 06:35:32PM +0100, Paul McQuade wrote:
-> From 9f6231ce16996e35545e20ce1d91abc058f2a6fb Mon Sep 17 00:00:00 2001
-> From: Paul McQuade <paulmcquad@gmail.com>
-> Date: Thu, 8 Aug 2013 17:49:22 +0100
-> Subject: [PATCH 2/2] Staging: BCM: Removed more whitespace/Errors
+On Fri, Aug 09, 2013 at 03:53:09PM -0700, Andrew Morton wrote:
+> On Tue,  6 Aug 2013 18:44:01 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > This series solves the problem by maintaining a history of pages
+> > evicted from the inactive list, enabling the VM to tell streaming IO
+> > from thrashing and rebalance the page cache lists when appropriate.
+> 
+> Looks nice. The lack of testing results is conspicuous ;)
+> 
+> It only really solves the problem in the case where
+> 
+> 	size-of-inactive-list < size-of-working-set < size-of-total-memory
+> 
+> yes?  In fact less than that, because the active list presumably
+> doesn't get shrunk to zero (how far *can* it go?).
 
-Why is this duplicated here?
+It can theoretically shrink to 0 if the replacing working set needs
+exactly 100% of the available memory and is perfectly sequential and
+the page allocator is 100% fair.  So in practice, it probably won't.
 
-Just use 'git send-email' to send patches out, that way this isn't a
-problem, and also:
+It's more likely that after some active pages have been deactivated
+and pushed out of memory that new pages get a chance to get activated
+so there will always be some pages on the active list.
 
->  drivers/staging/bcm/InterfaceMacros.h |    6 +-
->  drivers/staging/bcm/InterfaceMisc.h   |   14 +--
->  drivers/staging/bcm/InterfaceRx.c     |  166
-> ++++++++++++++-------------------
+> I wonder how many workloads fit into those constraints in the real
+> world.
 
-Your patch is line-wrapped, making it impossible to apply :(
+If the working set exceeds memory and the reference frequency is the
+same for each page in the set, there is nothing we can reasonably do
+to cache.
 
-The whitespace is also all broken.
+If the working set exceeds memory and all reference distances are
+bigger than memory but not all equal to each other, it would be great
+to be able to detect the more frequently used pages and prefer
+reclaiming the others over them.  But I don't think that's actually
+possible without a true LRU algorithm (as opposed to our
+approximation) because we would need to know about reference distances
+in the active page list and compare them to the refault distances.
 
-Take a look at the kernel file, Documentation/email_clients.txt for how
-to fix this up properly.
+So yes, this algorithm is limited to interpreting reference distances
+up to memory size.
 
-thanks,
-
-greg k-h
+The development of this was kicked off by actual bug reports and I'm
+working with the reporters to get these patches tested in the
+production environments that exhibited the problem.  The reporters
+always had usecases where the working set should have fit into memory
+but wasn't cached even after repeatedly referencing it, that's why
+they complained in the first place.  So it's hard to tell how many
+environments fall into this category, but they certainly do exist,
+they are not unreasonable setups, and the behavior is pretty abysmal
+(most accesses major faults when everything should fit in memory).
