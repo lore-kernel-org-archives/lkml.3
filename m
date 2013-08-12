@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3HLIKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 04:10:40 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:55393 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab3HLIKh (ORCPT
+	id S1753306Ab3HLIOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 04:14:43 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42780 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab3HLIOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 04:10:37 -0400
+	Mon, 12 Aug 2013 04:14:41 -0400
+Date: Mon, 12 Aug 2013 10:14:30 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.10.4-rt1
+Message-ID: <20130812081430.GA23040@linutronix.de>
+References: <alpine.DEB.2.02.1308011215160.4089@ionos.tec.linutronix.de>
+ <CAP=VYLp1ERhS4cFtgXGHL2DfCGoJ9VbPvShH5ZOWCpPuSzQY6w@mail.gmail.com>
+ <1375419917.3743.93.camel@pasglop>
+ <51FBA9CC.2090206@linutronix.de>
+ <20130802141936.GA8267@windriver.com>
 MIME-Version: 1.0
-In-Reply-To: <20130812075841.GG25061@S2101-09.ap.freescale.net>
-References: <cover.1376116344.git.viresh.kumar@linaro.org>
-	<6d7504823a31aea1e4773998f60720494fb0e6b6.1376116345.git.viresh.kumar@linaro.org>
-	<20130812075841.GG25061@S2101-09.ap.freescale.net>
-Date: Mon, 12 Aug 2013 13:40:36 +0530
-Message-ID: <CAKohponEs-5WEqKTkgyiZP0rfgHzSDy3O9Hyx4U0Xkc-wa-9Mg@mail.gmail.com>
-Subject: Re: [PATCH 21/44] cpufreq: imx6q: Use generic cpufreq routines
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130802141936.GA8267@windriver.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 August 2013 13:28, Shawn Guo <shawn.guo@linaro.org> wrote:
-> On Sat, Aug 10, 2013 at 12:14:17PM +0530, Viresh Kumar wrote:
->> Most of the CPUFreq drivers do similar things in .exit() and .verify() routines
->> and .attr. So its better if we have generic routines for them which can be used
->> by cpufreq drivers then.
->>
->> This patch uses these generic routines for this driver.
->>
->> Cc: Shawn Guo <shawn.guo@linaro.org>
->> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> Shawn Guo <shawn.guo@linaro.org>
+* Paul Gortmaker | 2013-08-02 10:19:36 [-0400]:
 
-I assume you meant an Ack here :)
+>The list of donor victims that aren't used in asm is getting
+>smaller, but TIF_POLLING_NRFLAG seems OK and it puts RESCHED
+>and RESCHED_LAZY right beside each other.
+
+Applied & merged into the original patch. Thanks.
+
+>Thanks guys,
+>Paul.
+
+Sebastian
