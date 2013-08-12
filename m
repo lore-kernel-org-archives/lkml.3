@@ -1,241 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab3HLQjV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:39:21 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49240 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755720Ab3HLQjJ (ORCPT
+	id S1757413Ab3HLQjl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:39:41 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:53749 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757153Ab3HLQjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:39:09 -0400
-Date: Mon, 12 Aug 2013 17:39:05 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Rohit Vaswani <rvaswani@codeaurora.org>
-Cc: David Brown <davidb@codeaurora.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [RESEND PATCH 4/4] ARM: msm: Add support for 8974 SMP
-Message-ID: <20130812163905.GE27165@e106331-lin.cambridge.arm.com>
-References: <1375409725-22004-1-git-send-email-rvaswani@codeaurora.org>
- <1375409725-22004-5-git-send-email-rvaswani@codeaurora.org>
+	Mon, 12 Aug 2013 12:39:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375409725-22004-5-git-send-email-rvaswani@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130812131833.GI25111@titan.lakedaemon.net>
+References: <20130808170822.82bf33d3cf5100f5e2646815@canb.auug.org.au>
+ <5203F978.2050504@infradead.org> <20130809145939.GE25111@titan.lakedaemon.net>
+ <52051BC2.2060004@infradead.org> <20130809185036.GG25111@titan.lakedaemon.net>
+ <CAErSpo6S9uYTEhoS-+4EZv41pc0bu6jvcMaGX7WR9hY4o+2dsA@mail.gmail.com> <20130812131833.GI25111@titan.lakedaemon.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 12 Aug 2013 10:38:58 -0600
+Message-ID: <CAErSpo52KKY9mRc7wduFqYYpKQakEBa5KrJ0P3J9su6P5tJ6gQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 8 (not CONFIG_PCI_MSI conflict)
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next list <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 02, 2013 at 03:15:25AM +0100, Rohit Vaswani wrote:
-> Add the cpus bindings and the Kraitv2 release sequence
-> to make SMP work for 2 cores on MSM8974.
-> 
-> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
-> ---
->  Documentation/devicetree/bindings/arm/cpus.txt |  1 +
->  arch/arm/boot/dts/msm8974.dts                  | 23 ++++++++
->  arch/arm/mach-msm/board-dt-8974.c              |  3 +
->  arch/arm/mach-msm/platsmp.c                    | 79 ++++++++++++++++++++++++++
->  4 files changed, 106 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-> index 1132eac..7c3c677 100644
-> --- a/Documentation/devicetree/bindings/arm/cpus.txt
-> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
-> @@ -52,6 +52,7 @@ For the ARM architecture every CPU node must contain the following properties:
->  		 This should be one of:
->  		 "qcom,scss"
->  		 "qcom,kpssv1"
-> +		 "qcom,kpssv2"
+On Mon, Aug 12, 2013 at 7:18 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Sat, Aug 10, 2013 at 08:01:49AM -0600, Bjorn Helgaas wrote:
+>> On Fri, Aug 9, 2013 at 12:50 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+>> > Randy,
+>> >
+>> > On Fri, Aug 09, 2013 at 09:41:38AM -0700, Randy Dunlap wrote:
+>> >> On 08/09/13 07:59, Jason Cooper wrote:
+>> >> > Randy,
+>> >> >
+>> >> > On Thu, Aug 08, 2013 at 01:03:04PM -0700, Randy Dunlap wrote:
+>> >> >> On 08/08/13 00:08, Stephen Rothwell wrote:
+>> >> >>> Hi all,
+>> >> >>>
+>> >> >>> Changes since 20130807:
+>> >> >>>
+>> >> >>
+>> >> >> on i386 and x86_64:
+>> >> >> when CONFIG_PCI_MSI is not enabled:
+>> >> >>
+>> >> >> There are many of these errors:
+>> >> >> include/linux/msi.h:65:6: error: expected identifier or '(' before 'void'
+>> >> >> include/linux/msi.h:65:6: error: expected ')' before numeric constant
+>> >> >>
+>> >> >> because arch/x86/include/asm/pci.h defines:
+>> >> >> #define default_teardown_msi_irqs  NULL
+>> >> >
+>> >> > Do you have an example config you used?
+>> >>
+>> >> Sure, attached. (or I have 14 of them)
+>> >
+>> > Thanks, I was able to reproduce the error.  I'm not real familiar with
+>> > this area of the code, but the relief is it doesn't appear to be caused
+>> > by the mvebu changes (well, relief for us ;-) ).
+>> >
+>> > At any rate, give this a spin and see if it works for you
+>> >
+>> > If it's acceptable, I'll do an official patch for Bjorn.
+>> >
+>> > thx,
+>> >
+>> > Jason.
+>> >
+>> > ---------->8----------
+>> > diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
+>> > index d9e9e6c..6169414 100644
+>> > --- a/arch/x86/include/asm/pci.h
+>> > +++ b/arch/x86/include/asm/pci.h
+>> > @@ -138,8 +138,8 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq);
+>> >  #else
+>> >  #define native_setup_msi_irqs          NULL
+>> >  #define native_teardown_msi_irq                NULL
+>> > -#define default_teardown_msi_irqs      NULL
+>> > -#define default_restore_msi_irqs       NULL
+>> > +void __weak default_teardown_msi_irqs(struct pci_dev *dev) { }
+>> > +void __weak default_restore_msi_irqs(struct pci_dev *dev, int irq) { }
+>>
+>> I don't really like this solution of putting the empty implementation
+>> in the header file, because then a weak body is generated in the
+>> object of every source file that includes the header.
+>>
+>> default_teardown_msi_irqs() and default_restore_msi_irqs() seem like
+>> fairly internal MSI functions, so I wonder why we need them defined at
+>> all when CONFIG_PCI_MSI=n.  It seems like any uses of them should be
+>> in code that's only compiled when CONFIG_PCI_MSI=y.  But I haven't
+>> reproduced the problem and investigated yet.
+>
+> I first tried commenting out the definitions after reproducing the
+> problem.  It also failed miserably.
+>
+> Please take a look at Thomas' latest MSI patch series,
+>
+>   [PATCHv9 01/10] PCI: use weak functions for MSI arch-specific functions
+>
+> I think his solution is much nicer than mine.
 
-I guess I should've looked at the whole series before responding, that
-answers my prior question about what variation we expect.
+OK, I'll assume I don't need to do anything until I hear otherwise.
 
->  
->  Example:
->  
-> diff --git a/arch/arm/boot/dts/msm8974.dts b/arch/arm/boot/dts/msm8974.dts
-> index c31c097..ef35a9b 100644
-> --- a/arch/arm/boot/dts/msm8974.dts
-> +++ b/arch/arm/boot/dts/msm8974.dts
-> @@ -7,6 +7,22 @@
->  	compatible = "qcom,msm8974";
->  	interrupt-parent = <&intc>;
->  
-> +	cpus {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		compatible = "qcom,krait";
-> +		device_type = "cpu";
-> +		enable-method = "qcom,kpssv2";
-> +
-> +		cpu@0 {
-> +			reg = <0>;
-> +		};
-> +
-> +		cpu@1 {
-> +			reg = <1>;
-> +		};
-> +	};
-> +
->  	intc: interrupt-controller@f9000000 {
->  		compatible = "qcom,msm-qgic2";
->  		interrupt-controller;
-> @@ -23,4 +39,11 @@
->  			     <1 1 0xf08>;
->  		clock-frequency = <19200000>;
->  	};
-> +
-> +	kpss@f9012000 {
-> +		compatible = "qcom,kpss";
-> +		reg = <0xf9012000 0x1000>,
-> +		      <0xf9088000 0x1000>,
-> +		      <0xf9098000 0x1000>;
-> +	};
-
-In the previous examples, the number of CPUs was equal to the number of
-kpss reg values. Why does it differ here. Either:
-
-* We always have the extra regsiter here, and it should be described
-  even if we don't use it.
-
-* It's a different hardware block, and needs a more specific
-  compatible string.
-
-Eitehr way this strengthens my feeling that we need to define the linkage
-from a CPU to the portion of the kpss which affects it.
-
->  };
-> diff --git a/arch/arm/mach-msm/board-dt-8974.c b/arch/arm/mach-msm/board-dt-8974.c
-> index d7f84f2..06119f9 100644
-> --- a/arch/arm/mach-msm/board-dt-8974.c
-> +++ b/arch/arm/mach-msm/board-dt-8974.c
-> @@ -13,11 +13,14 @@
->  #include <linux/of_platform.h>
->  #include <asm/mach/arch.h>
->  
-> +#include "common.h"
-> +
->  static const char * const msm8974_dt_match[] __initconst = {
->  	"qcom,msm8974",
->  	NULL
->  };
->  
->  DT_MACHINE_START(MSM8974_DT, "Qualcomm MSM (Flattened Device Tree)")
-> +	.smp = smp_ops(msm_smp_ops),
->  	.dt_compat = msm8974_dt_match,
->  MACHINE_END
-> diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-> index 82eb079..0fdae69 100644
-> --- a/arch/arm/mach-msm/platsmp.c
-> +++ b/arch/arm/mach-msm/platsmp.c
-> @@ -124,6 +124,80 @@ static int msm8960_release_secondary(unsigned int cpu)
->  	return 0;
->  }
->  
-> +static int msm8974_release_secondary(unsigned int cpu)
-> +{
-> +	void __iomem *reg;
-> +	void __iomem *l2_saw_base;
-> +	struct device_node *dn = NULL;
-> +	unsigned apc_pwr_gate_ctl = 0x14;
-> +	unsigned reg_val;
-> +
-> +	if (cpu == 0 || cpu >= num_possible_cpus())
-> +		return -EINVAL;
-> +
-> +	dn = of_find_compatible_node(dn, NULL, "qcom,kpss");
-> +	if (!dn) {
-> +		pr_err("%s : Missing kpss node from device tree\n", __func__);
-> +		return -ENXIO;
-> +	}
-> +
-> +	reg = of_iomap(dn, cpu+1);
-
-This looks very fishy given the prior patch being one off from this.
-why is reg[0] now different?
-
-> +	if (!reg)
-> +		return -ENOMEM;
-> +
-> +	pr_debug("Starting secondary CPU %d\n", cpu);
-> +
-> +	/* Turn on the BHS, turn off LDO Bypass and power down LDO */
-> +	reg_val =  0x403f0001;
-
-Magic number?
-
-> +	writel_relaxed(reg_val, reg + apc_pwr_gate_ctl);
-> +
-> +	/* complete the above write before the delay */
-> +	mb();
-
-Use writel?
-
-> +	/* wait for the bhs to settle */
-> +	udelay(1);
-> +
-> +	/* Turn on BHS segments */
-> +	reg_val |= 0x3f << 1;
-> +	writel_relaxed(reg_val, reg + apc_pwr_gate_ctl);
-> +
-> +	/* complete the above write before the delay */
-> +	mb();
-
-Use writel again?
-
-> +	 /* wait for the bhs to settle */
-> +	udelay(1);
-> +
-> +	/* Finally turn on the bypass so that BHS supplies power */
-> +	reg_val |= 0x3f << 8;
-> +	writel_relaxed(reg_val, reg + apc_pwr_gate_ctl);
-> +
-> +	/* enable max phases */
-> +	l2_saw_base = of_iomap(dn, 0);
-> +	if (!l2_saw_base) {
-> +		return -ENOMEM;
-> +	}
-
-What? 
-
-You've just lost your only reference to the mapping in reg.
-
-Why do you not do this at the start, before poking everything else? Even
-better, do it at probe time and fail once rather than for each CPU you
-have no chance of bringing up.
-
-[...]
->  static void boot_cold_cpu(unsigned int cpu)
-> @@ -151,6 +225,11 @@ static void boot_cold_cpu(unsigned int cpu)
->  			msm8960_release_secondary(cpu);
->  			per_cpu(cold_boot_done, cpu) = true;
->  		}
-> +	} else if (!strcmp(enable_method, "qcom,kpssv2")) {
-> +		if (per_cpu(cold_boot_done, cpu) == false) {
-> +			msm8974_release_secondary(cpu);
-> +			per_cpu(cold_boot_done, cpu) = true;
-> +		}
->  	} else {
->  		pr_err("%s: Invalid enable-method property: %s\n",
->  				__func__, enable_method);
-
-The enable-method parsing really should be moved out to common code. We
-could make it scan the enable-method if a machine has no smp ops (which
-is more general than the PSCI fallback that's been suggested before).
-
-Thanks,
-Mark.
+Bjorn
