@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab3HLTpx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 15:45:53 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:56976 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908Ab3HLTpt convert rfc822-to-8bit (ORCPT
+	id S1755412Ab3HLTsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 15:48:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23124 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab3HLTsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 15:45:49 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Tomasz Figa <tomasz.figa@gmail.com>, linux-samsung-soc@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1376243970-6489-17-git-send-email-tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org,
-        Dan Williams <djbw@fb.com>, Jaroslav Kysela <perex@perex.cz>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@kernel.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
-        Vinod Koul <vinod.koul@intel.com>, Tomasz Figa <tomasz.figa@gmail.com>
-References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
- <1376243970-6489-17-git-send-email-tomasz.figa@gmail.com>
-Message-ID: <20130812194542.5348.7468@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH 16/18] clk: samsung: s3c64xx: Remove clock aliases of old DMA
- driver
-Date: Mon, 12 Aug 2013 12:45:42 -0700
+	Mon, 12 Aug 2013 15:48:13 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F0my4ousGMIA:10 a=bLrdLSADGNXnhVwcH58A:9 a=CjuIK1q_8ugA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 12 Aug 2013 15:48:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.6-rt3
+Message-ID: <20130812154810.433858a5@gandalf.local.home>
+In-Reply-To: <20130812163413.GI23040@linutronix.de>
+References: <20130812163413.GI23040@linutronix.de>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tomasz Figa (2013-08-11 10:59:28)
-> Since the old DMA driver got removed, these aliases are no longer
-> necessary.
-> 
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+On Mon, 12 Aug 2013 18:34:13 +0200
+Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
 
-Acked-by: Mike Turquette <mturquette@linaro.org>
-
-> ---
->  drivers/clk/samsung/clk-s3c64xx.c | 2 --
->  1 file changed, 2 deletions(-)
+> Dear RT folks!
 > 
-> diff --git a/drivers/clk/samsung/clk-s3c64xx.c b/drivers/clk/samsung/clk-s3c64xx.c
-> index 79ee9a6..dd47a83 100644
-> --- a/drivers/clk/samsung/clk-s3c64xx.c
-> +++ b/drivers/clk/samsung/clk-s3c64xx.c
-> @@ -331,9 +331,7 @@ static struct samsung_clock_alias s3c64xx_clock_aliases[] = {
->         ALIAS(HCLK_HSMMC1, "s3c-sdhci.1", "mmc_busclk.0"),
->         ALIAS(HCLK_HSMMC0, "s3c-sdhci.0", "hsmmc"),
->         ALIAS(HCLK_HSMMC0, "s3c-sdhci.0", "mmc_busclk.0"),
-> -       ALIAS(HCLK_DMA1, NULL, "dma1"),
->         ALIAS(HCLK_DMA1, "dma-pl080s.1", "apb_pclk"),
-> -       ALIAS(HCLK_DMA0, NULL, "dma0"),
->         ALIAS(HCLK_DMA0, "dma-pl080s.0", "apb_pclk"),
->         ALIAS(HCLK_CAMIF, "s3c-camif", "camif"),
->         ALIAS(HCLK_LCD, "s3c-fb", "lcd"),
-> -- 
-> 1.8.3.2
+> I'm pleased to announce the v3.10.6-rt3 patch set.
+
+
+Does this mean that I can drop 3.6-rt in favor of 3.8-rt?
+
+I'm just about finished with a 3.6 stable, which I'll finish, add -rt
+to it, and then call it "unsupported" after that. Well, I may take bug
+fixes if people find any in the near future.
+
+I'm behind on 3.4-rt, 3.2-rt and of course 3.0-rt. Hopefully, I'll get
+them all out this week.
+
+-- Steve
