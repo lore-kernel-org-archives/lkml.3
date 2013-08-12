@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab3HLKU2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:20:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47877 "EHLO
+	id S1754580Ab3HLKVU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:21:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47928 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756272Ab3HLKUP (ORCPT
+	with ESMTP id S1753599Ab3HLKVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:20:15 -0400
-Date: Mon, 12 Aug 2013 03:19:37 -0700
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-8fdd84c44fd09d783caa4fb81d2d680b0cf07eeb@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
-        runzhen@linux.vnet.ibm.com, jolsa@redhat.com, fweisbec@gmail.com,
-        xiaoguangrong@linux.vnet.ibm.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, namhyung@kernel.org,
-        jolsa@redhat.com, runzhen@linux.vnet.ibm.com, fweisbec@gmail.com,
-        xiaoguangrong@linux.vnet.ibm.com, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1375473947-64285-5-git-send-email-dsahern@gmail.com>
-References: <1375473947-64285-5-git-send-email-dsahern@gmail.com>
+	Mon, 12 Aug 2013 06:21:14 -0400
+Date: Mon, 12 Aug 2013 03:20:28 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-3445432b7b24665cf4693fc4794c62d4d768a978@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1375875537-4509-6-git-send-email-adrian.hunter@intel.com>
+References: <1375875537-4509-6-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Split out tracepoints from record args
-Git-Commit-ID: 8fdd84c44fd09d783caa4fb81d2d680b0cf07eeb
+Subject: [tip:perf/core] perf symbols: avoid SyS kernel syscall aliases
+Git-Commit-ID: 3445432b7b24665cf4693fc4794c62d4d768a978
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,91 +33,76 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 12 Aug 2013 03:19:43 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 12 Aug 2013 03:20:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8fdd84c44fd09d783caa4fb81d2d680b0cf07eeb
-Gitweb:     http://git.kernel.org/tip/8fdd84c44fd09d783caa4fb81d2d680b0cf07eeb
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Fri, 2 Aug 2013 14:05:42 -0600
+Commit-ID:  3445432b7b24665cf4693fc4794c62d4d768a978
+Gitweb:     http://git.kernel.org/tip/3445432b7b24665cf4693fc4794c62d4d768a978
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Wed, 7 Aug 2013 14:38:49 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 7 Aug 2013 17:35:27 -0300
+CommitDate: Wed, 7 Aug 2013 17:35:30 -0300
 
-perf kvm: Split out tracepoints from record args
+perf symbols: avoid SyS kernel syscall aliases
 
-Needed by kvm live command. Make record_args a local while we are
-messing with the args.
+When removing duplicate symbols, prefer to remove syscall aliases
+starting with SyS or compat_SyS.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+A side-effect of that is that it results in slightly improved results
+for the "vmlinux symtab matches kallsyms" test.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1375473947-64285-5-git-send-email-dsahern@gmail.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1375875537-4509-6-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ tools/perf/util/symbol.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 24b78ae..7d14a3a 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -801,16 +801,11 @@ exit:
- 	return ret;
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 02718e7..ea62ecd 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -87,6 +87,7 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
+ {
+ 	s64 a;
+ 	s64 b;
++	size_t na, nb;
+ 
+ 	/* Prefer a symbol with non zero length */
+ 	a = syma->end - syma->start;
+@@ -120,11 +121,21 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
+ 	else if (a > b)
+ 		return SYMBOL_B;
+ 
+-	/* If all else fails, choose the symbol with the longest name */
+-	if (strlen(syma->name) >= strlen(symb->name))
++	/* Choose the symbol with the longest name */
++	na = strlen(syma->name);
++	nb = strlen(symb->name);
++	if (na > nb)
+ 		return SYMBOL_A;
+-	else
++	else if (na < nb)
++		return SYMBOL_B;
++
++	/* Avoid "SyS" kernel syscall aliases */
++	if (na >= 3 && !strncmp(syma->name, "SyS", 3))
+ 		return SYMBOL_B;
++	if (na >= 10 && !strncmp(syma->name, "compat_SyS", 10))
++		return SYMBOL_B;
++
++	return SYMBOL_A;
  }
  
--static const char * const record_args[] = {
--	"record",
--	"-R",
--	"-f",
--	"-m", "1024",
--	"-c", "1",
--	"-e", "kvm:kvm_entry",
--	"-e", "kvm:kvm_exit",
--	"-e", "kvm:kvm_mmio",
--	"-e", "kvm:kvm_pio",
-+static const char * const kvm_events_tp[] = {
-+	"kvm:kvm_entry",
-+	"kvm:kvm_exit",
-+	"kvm:kvm_mmio",
-+	"kvm:kvm_pio",
- };
- 
- #define STRDUP_FAIL_EXIT(s)		\
-@@ -826,8 +821,16 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- {
- 	unsigned int rec_argc, i, j;
- 	const char **rec_argv;
-+	const char * const record_args[] = {
-+		"record",
-+		"-R",
-+		"-f",
-+		"-m", "1024",
-+		"-c", "1",
-+	};
- 
--	rec_argc = ARRAY_SIZE(record_args) + argc + 2;
-+	rec_argc = ARRAY_SIZE(record_args) + argc + 2 +
-+		   2 * ARRAY_SIZE(kvm_events_tp);
- 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
- 
- 	if (rec_argv == NULL)
-@@ -836,6 +839,11 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
- 		rec_argv[i] = STRDUP_FAIL_EXIT(record_args[i]);
- 
-+	for (j = 0; j < ARRAY_SIZE(kvm_events_tp); j++) {
-+		rec_argv[i++] = "-e";
-+		rec_argv[i++] = STRDUP_FAIL_EXIT(kvm_events_tp[j]);
-+	}
-+
- 	rec_argv[i++] = STRDUP_FAIL_EXIT("-o");
- 	rec_argv[i++] = STRDUP_FAIL_EXIT(kvm->file_name);
- 
+ void symbols__fixup_duplicate(struct rb_root *symbols)
