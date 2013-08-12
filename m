@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab3HLUPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 16:15:36 -0400
-Received: from mail7.windriver.com ([128.224.252.3]:41108 "EHLO
-	mail7.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3HLUPc (ORCPT
+	id S1754204Ab3HLURN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 16:17:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56442 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab3HLURM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 16:15:32 -0400
-X-Greylist: delayed 4344 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Aug 2013 16:15:32 EDT
-Message-ID: <52093133.9050306@windriver.com>
-Date: Mon, 12 Aug 2013 15:02:11 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 12 Aug 2013 16:17:12 -0400
+Date: Mon, 12 Aug 2013 13:17:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Manjunath Goudar <manjunath.goudar@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, patches@linaro.org, arnd@linaro.org,
+        dsaxena@linaro.org, linaro-kernel@lists.linaro.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] USB: EHCI: make ehci-w90X900 a separate driver
+Message-ID: <20130812201710.GA26239@kroah.com>
+References: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org>
+ <1376120073-30502-1-git-send-email-manjunath.goudar@linaro.org>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <qemu-devel@nongnu.org>, <peter.maydell@linaro.org>
-Subject: Re: SCSI bus failures with qemu-arm in kernel 3.8+
-References: <5207B3C3.9080508@roeck-us.net> <20130811220450.GY23006@n2100.arm.linux.org.uk> <52082EF8.10005@roeck-us.net>
-In-Reply-To: <52082EF8.10005@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376120073-30502-1-git-send-email-manjunath.goudar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-08-11 08:40 PM, Guenter Roeck wrote:
-> On 08/11/2013 03:04 PM, Russell King - ARM Linux wrote:
->> On Sun, Aug 11, 2013 at 08:54:43AM -0700, Guenter Roeck wrote:
->>> Hi,
->>>
->>> trying to boot arm versatile images with qemu results in the following error
->>> if I try to boot with a disk image.
->>>
->>>       sym0: <895a> rev 0x0 at pci 0000:00:0d.0 irq 92
->>>       sym0: SCSI BUS has been reset.
->>>       scsi0 : sym-2.2.3
->>>       [...]
->>>       scsi 0:0:0:0: ABORT operation started
->>>       scsi 0:0:0:0: ABORT operation timed-out.
->>>       [...]
->>>
->>> Yocto's 3.8 kernel images work, upstream kernels 3.8 and later fail
->>> (I did not check if/how earlier kernels are affected).
->>>
->>> Tracking this down shows that the problem is known and has been fixed with
->>> commit 351d1339 (arm: add dummy swizzle for versatile with qemu) in the
->>> Yocto 3.8 kernel at git://git.yoctoproject.org/linux-yocto-3.8.
->>>
->>> Would it be possible to submit this patch for inclusion into affected upstream kernels ?
->>
->> It could be that it's qemu's PCI routing is wrong - it's not the first
->> time that qemu has got something wrong.
->>
->> Unfortunately, the PCI routing is totally undocumented, and as I understand
->> it, there's very few backplanes out there now that finding out their real
->> routing is virtually impossible.  I'm loathed to change it unless someone
->> can point to a definitive source of information on this.
->>
+On Sat, Aug 10, 2013 at 01:04:33PM +0530, Manjunath Goudar wrote:
+> Separate the W90X900(W90P910) on-chip host controller driver from
+> ehci-hcd host code so that it can be built as a separate driver module.
+> This work is part of enabling multi-platform kernels on ARM;
+> however, note that other changes are still needed before W90X900(W90P910)
+> can be booted with a multi-platform kernel
 > 
-> Maybe Paul can comment, as he wrote the patch.
+> and an ehci driver that only works on one of them.
+> 
+> With the infrastructure added by Alan Stern in patch 3e0232039
+> "USB: EHCI: prepare to make ehci-hcd a library module", we can
+> avoid this problem by turning a bus glue into a separate
+> module, as we do here for the w90X900 bus glue.
+> 
+> Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
+> Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Wan ZongShun <mcuos.com@gmail.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Greg KH <greg@kroah.com>
+> Cc: linux-usb@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> 
+> V2:
+> -Arranged  #include's in alphabetical order.
+> -Replaced "w90p910" by "w90x900" because it is supports
+>  all series of w90x900.
+> 
+>  drivers/usb/host/Kconfig        |    2 +-
+>  drivers/usb/host/Makefile       |    1 +
+>  drivers/usb/host/ehci-hcd.c     |    5 ---
+>  drivers/usb/host/ehci-w90x900.c |   85 ++++++++++++++++-----------------------
+>  4 files changed, 37 insertions(+), 56 deletions(-)
 
-If I recall correctly, I'd showed the patch to Russell at the time (via
-IRC, I believe) and he'd told me essentially the same thing as the above
-paragraph, which is why I didn't put it in the patch system, and why the
-commit log of the yocto patch (http://goo.gl/riEZXY) reads as it does
-(i.e. it is unclear what the real swizzle is).  If docs appear that help
-clarify where the real issue is, then great.
+This patch fails to apply:
 
-Paul.
---
+checking file drivers/usb/host/Kconfig
+Hunk #1 succeeded at 236 with fuzz 1 (offset -8 lines).
+checking file drivers/usb/host/Makefile
+Hunk #1 FAILED at 35.
+1 out of 1 hunk FAILED
+checking file drivers/usb/host/ehci-hcd.c
+Hunk #1 succeeded at 1246 (offset -3 lines).
+checking file drivers/usb/host/ehci-w90x900.c
+Hunk #2 FAILED at 114.
+1 out of 3 hunks FAILED
 
-> 
-> If it helps, I tried with qemu 1.4.0 from Ubuntu 13.4, qemu 1.4.0 from Poky 1.4.0-1,
-> and qemu 1.5.2 from the qemu repository.
-> 
-> Copying qemu-devel to increase the audience.
-> 
-> Guenter
-> 
+Please redo it against the latest usb-next branch and resend.
+
+thanks,
+
+greg k-h
