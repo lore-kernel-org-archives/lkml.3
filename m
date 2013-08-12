@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab3HLSgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:36:04 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:18625 "EHLO
+	id S1754624Ab3HLSgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:36:09 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:18626 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3HLSgA (ORCPT
+	with ESMTP id S1752984Ab3HLSgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:36:00 -0400
-Message-ID: <201308121835.r7CIZxjh004270@farm-0021.internal.tilera.com>
+	Mon, 12 Aug 2013 14:36:04 -0400
+Message-ID: <201308121836.r7CIa3Kj004272@farm-0021.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 12 Aug 2013 14:09:28 -0400
-Subject: [PATCH] tilegx: provide kernel support for the tilegx UART shim
-To: <linux-kernel@vger.kernel.org>
+Date: Mon, 12 Aug 2013 14:11:44 -0400
+Subject: [PATCH] tilegx: Add tty serial support for TILE-Gx on-chip UART
+To: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TILE-Gx chip includes an on-chip UART.  This change adds support
-for using the UART from within the kernel.  The UART shim has more
-functionality than is exposed here, but to keep the kernel code and
-binary simpler, this is a subset of the full API designed to enable
-a standard Linux tty serial driver only.
-
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/gxio/Kconfig               |   5 +
- arch/tile/gxio/Makefile              |   1 +
- arch/tile/gxio/iorpc_uart.c          |  77 +++++++++
- arch/tile/gxio/uart.c                |  87 ++++++++++
- arch/tile/include/arch/uart.h        | 300 +++++++++++++++++++++++++++++++++++
- arch/tile/include/arch/uart_def.h    | 120 ++++++++++++++
- arch/tile/include/gxio/iorpc_uart.h  |  40 +++++
- arch/tile/include/gxio/uart.h        | 105 ++++++++++++
- arch/tile/include/hv/drv_uart_intf.h |  33 ++++
- 9 files changed, 768 insertions(+)
- create mode 100644 arch/tile/gxio/iorpc_uart.c
- create mode 100644 arch/tile/gxio/uart.c
- create mode 100644 arch/tile/include/arch/uart.h
- create mode 100644 arch/tile/include/arch/uart_def.h
- create mode 100644 arch/tile/include/gxio/iorpc_uart.h
- create mode 100644 arch/tile/include/gxio/uart.h
- create mode 100644 arch/tile/include/hv/drv_uart_intf.h
+ MAINTAINERS                      |   1 +
+ drivers/tty/serial/Kconfig       |   9 +
+ drivers/tty/serial/Makefile      |   1 +
+ drivers/tty/serial/tilegx.c      | 708 +++++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/serial_core.h |   3 +
+ 5 files changed, 722 insertions(+)
+ create mode 100644 drivers/tty/serial/tilegx.c
 
-diff --git a/arch/tile/gxio/Kconfig b/arch/tile/gxio/Kconfig
-index d221f8d..d4e10d5 100644
---- a/arch/tile/gxio/Kconfig
-+++ b/arch/tile/gxio/Kconfig
-@@ -26,3 +26,8 @@ config TILE_GXIO_TRIO
- config TILE_GXIO_USB_HOST
- 	bool
- 	select TILE_GXIO
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b8e3bea..ec99ec5 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -8294,6 +8294,7 @@ F:	drivers/edac/tile_edac.c
+ F:	drivers/net/ethernet/tile/
+ F:	drivers/rtc/rtc-tile.c
+ F:	drivers/tty/hvc/hvc_tile.c
++F:	drivers/tty/serial/tilegx.c
+ F:	drivers/usb/host/*-tilegx.c
+ F:	include/linux/usb/tilegx.h
+ 
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 5e3d689..fdcaaef 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1436,6 +1436,15 @@ config SERIAL_EFM32_UART_CONSOLE
+ 	depends on SERIAL_EFM32_UART=y
+ 	select SERIAL_CORE_CONSOLE
+ 
++config SERIAL_TILEGX
++	tristate "TILE-Gx on-chip serial port support"
++	depends on TILEGX
++	select TILE_GXIO_UART
++	select SERIAL_CORE
++	---help---
++	  This device provides access to the on-chip UARTs on the TILE-Gx
++	  processor.
 +
-+# Support direct access to the TILE-Gx UART hardware from kernel space.
-+config TILE_GXIO_UART
-+	bool
-+	select TILE_GXIO
-diff --git a/arch/tile/gxio/Makefile b/arch/tile/gxio/Makefile
-index 8684bca..26ae2c7 100644
---- a/arch/tile/gxio/Makefile
-+++ b/arch/tile/gxio/Makefile
-@@ -6,4 +6,5 @@ obj-$(CONFIG_TILE_GXIO) += iorpc_globals.o kiorpc.o
- obj-$(CONFIG_TILE_GXIO_DMA) += dma_queue.o
- obj-$(CONFIG_TILE_GXIO_MPIPE) += mpipe.o iorpc_mpipe.o iorpc_mpipe_info.o
- obj-$(CONFIG_TILE_GXIO_TRIO) += trio.o iorpc_trio.o
-+obj-$(CONFIG_TILE_GXIO_UART) += uart.o iorpc_uart.o
- obj-$(CONFIG_TILE_GXIO_USB_HOST) += usb_host.o iorpc_usb_host.o
-diff --git a/arch/tile/gxio/iorpc_uart.c b/arch/tile/gxio/iorpc_uart.c
+ config SERIAL_ARC
+ 	tristate "ARC UART driver support"
+ 	select SERIAL_CORE
+diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+index cf650f0..3d0f097 100644
+--- a/drivers/tty/serial/Makefile
++++ b/drivers/tty/serial/Makefile
+@@ -65,6 +65,7 @@ obj-$(CONFIG_SERIAL_KGDB_NMI) += kgdb_nmi.o
+ obj-$(CONFIG_SERIAL_KS8695) += serial_ks8695.o
+ obj-$(CONFIG_SERIAL_OMAP) += omap-serial.o
+ obj-$(CONFIG_SERIAL_ALTERA_UART) += altera_uart.o
++obj-$(CONFIG_SERIAL_TILEGX) += tilegx.o
+ obj-$(CONFIG_KGDB_SERIAL_CONSOLE) += kgdboc.o
+ obj-$(CONFIG_SERIAL_QE) += ucc_uart.o
+ obj-$(CONFIG_SERIAL_TIMBERDALE)	+= timbuart.o
+diff --git a/drivers/tty/serial/tilegx.c b/drivers/tty/serial/tilegx.c
 new file mode 100644
-index 0000000..b9a6d61
+index 0000000..f92d7e6
 --- /dev/null
-+++ b/arch/tile/gxio/iorpc_uart.c
-@@ -0,0 +1,77 @@
++++ b/drivers/tty/serial/tilegx.c
+@@ -0,0 +1,708 @@
 +/*
 + * Copyright 2013 Tilera Corporation. All Rights Reserved.
 + *
@@ -85,792 +92,714 @@ index 0000000..b9a6d61
 + *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
 + *   NON INFRINGEMENT.  See the GNU General Public License for
 + *   more details.
-+ */
-+
-+/* This file is machine-generated; DO NOT EDIT! */
-+#include "gxio/iorpc_uart.h"
-+
-+struct cfg_interrupt_param {
-+	union iorpc_interrupt interrupt;
-+};
-+
-+int gxio_uart_cfg_interrupt(gxio_uart_context_t *context, int inter_x,
-+			    int inter_y, int inter_ipi, int inter_event)
-+{
-+	struct cfg_interrupt_param temp;
-+	struct cfg_interrupt_param *params = &temp;
-+
-+	params->interrupt.kernel.x = inter_x;
-+	params->interrupt.kernel.y = inter_y;
-+	params->interrupt.kernel.ipi = inter_ipi;
-+	params->interrupt.kernel.event = inter_event;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_UART_OP_CFG_INTERRUPT);
-+}
-+
-+EXPORT_SYMBOL(gxio_uart_cfg_interrupt);
-+
-+struct get_mmio_base_param {
-+	HV_PTE base;
-+};
-+
-+int gxio_uart_get_mmio_base(gxio_uart_context_t *context, HV_PTE *base)
-+{
-+	int __result;
-+	struct get_mmio_base_param temp;
-+	struct get_mmio_base_param *params = &temp;
-+
-+	__result =
-+	    hv_dev_pread(context->fd, 0, (HV_VirtAddr) params, sizeof(*params),
-+			 GXIO_UART_OP_GET_MMIO_BASE);
-+	*base = params->base;
-+
-+	return __result;
-+}
-+
-+EXPORT_SYMBOL(gxio_uart_get_mmio_base);
-+
-+struct check_mmio_offset_param {
-+	unsigned long offset;
-+	unsigned long size;
-+};
-+
-+int gxio_uart_check_mmio_offset(gxio_uart_context_t *context,
-+				unsigned long offset, unsigned long size)
-+{
-+	struct check_mmio_offset_param temp;
-+	struct check_mmio_offset_param *params = &temp;
-+
-+	params->offset = offset;
-+	params->size = size;
-+
-+	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_UART_OP_CHECK_MMIO_OFFSET);
-+}
-+
-+EXPORT_SYMBOL(gxio_uart_check_mmio_offset);
-diff --git a/arch/tile/gxio/uart.c b/arch/tile/gxio/uart.c
-new file mode 100644
-index 0000000..cd48a5a
---- /dev/null
-+++ b/arch/tile/gxio/uart.c
-@@ -0,0 +1,87 @@
-+/*
-+ * Copyright 2013 Tilera Corporation. All Rights Reserved.
 + *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
++ * TILEGx UART driver.
 + */
 +
-+/*
-+ * Implementation of UART gxio calls.
-+ */
-+
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
 +#include <linux/io.h>
-+#include <linux/errno.h>
++#include <linux/irq.h>
 +#include <linux/module.h>
++#include <linux/serial_core.h>
++#include <linux/tty.h>
++#include <linux/tty_flip.h>
 +
-+#include <gxio/uart.h>
++#include <gxio/common.h>
 +#include <gxio/iorpc_globals.h>
 +#include <gxio/iorpc_uart.h>
 +#include <gxio/kiorpc.h>
 +
-+int gxio_uart_init(gxio_uart_context_t *context, int uart_index)
-+{
-+	char file[32];
-+	int fd;
++#include <hv/drv_uart_intf.h>
 +
-+	snprintf(file, sizeof(file), "uart/%d/iorpc", uart_index);
-+	fd = hv_dev_open((HV_VirtAddr) file, 0);
-+	if (fd < 0) {
-+		if (fd >= GXIO_ERR_MIN && fd <= GXIO_ERR_MAX)
-+			return fd;
++/*
++ * Use device name ttyS, major 4, minor 64-65.
++ * This is the usual serial port name, 8250 conventional range.
++ */
++#define TILEGX_UART_MAJOR	TTY_MAJOR
++#define TILEGX_UART_MINOR	64
++#define TILEGX_UART_NAME	"ttyS"
++#define DRIVER_NAME_STRING	"TILEGx_Serial"
++#define TILEGX_UART_REF_CLK	125000000; /* REF_CLK is always 125 MHz. */
++
++struct tile_uart_port {
++	/* UART port. */
++	struct uart_port	uart;
++
++	/* GXIO device context. */
++	gxio_uart_context_t	context;
++
++	/* UART access mutex. */
++	struct mutex		mutex;
++
++	/* CPU receiving interrupts. */
++	int			irq_cpu;
++};
++
++static struct tile_uart_port tile_uart_ports[TILEGX_UART_NR];
++static struct uart_driver tilegx_uart_driver;
++
++
++/*
++ * Read UART rx fifo, and insert the chars into tty buffer.
++ */
++static void receive_chars(struct tile_uart_port *tile_uart,
++			  struct tty_struct *tty)
++{
++	int i;
++	char c;
++	UART_FIFO_COUNT_t count;
++	gxio_uart_context_t *context = &tile_uart->context;
++	struct tty_port *port = tty->port;
++
++	count.word = gxio_uart_read(context, UART_FIFO_COUNT);
++	for (i = 0; i < count.rfifo_count; i++) {
++		c = (char)gxio_uart_read(context, UART_RECEIVE_DATA);
++		tty_insert_flip_char(port, c, TTY_NORMAL);
++	}
++}
++
++
++/*
++ * Drain the Rx FIFO, called by interrupt handler.
++ */
++static void handle_receive(struct tile_uart_port *tile_uart)
++{
++	struct tty_port *port = &tile_uart->uart.state->port;
++	struct tty_struct *tty = tty_port_tty_get(port);
++	gxio_uart_context_t *context = &tile_uart->context;
++
++	if (!tty)
++		return;
++
++	/* First read UART rx fifo. */
++	receive_chars(tile_uart, tty);
++
++	/* Reset RFIFO_WE interrupt. */
++	gxio_uart_write(context, UART_INTERRUPT_STATUS,
++			UART_INTERRUPT_MASK__RFIFO_WE_MASK);
++
++	/* Final read, if any chars comes between the first read and
++	 * the interrupt reset.
++	 */
++	receive_chars(tile_uart, tty);
++
++	spin_unlock(&tile_uart->uart.lock);
++	tty_flip_buffer_push(port);
++	spin_lock(&tile_uart->uart.lock);
++	tty_kref_put(tty);
++}
++
++
++/*
++ * Push one char to UART Write FIFO.
++ * Return 0 on success, -1 if write filo is full.
++ */
++static int tilegx_putchar(gxio_uart_context_t *context, char c)
++{
++	UART_FLAG_t flag;
++	flag.word = gxio_uart_read(context, UART_FLAG);
++	if (flag.wfifo_full)
++		return -1;
++
++	gxio_uart_write(context, UART_TRANSMIT_DATA, (unsigned long)c);
++	return 0;
++}
++
++
++/*
++ * Send chars to UART Write FIFO; called by interrupt handler.
++ */
++static void handle_transmit(struct tile_uart_port *tile_uart)
++{
++	unsigned char ch;
++	struct uart_port *port;
++	struct circ_buf *xmit;
++	gxio_uart_context_t *context = &tile_uart->context;
++
++	/* First reset WFIFO_RE interrupt. */
++	gxio_uart_write(context, UART_INTERRUPT_STATUS,
++			UART_INTERRUPT_MASK__WFIFO_RE_MASK);
++
++	port = &tile_uart->uart;
++	xmit = &port->state->xmit;
++	if (port->x_char) {
++		if (tilegx_putchar(context, port->x_char))
++			return;
++		port->x_char = 0;
++		port->icount.tx++;
++	}
++
++	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
++		return;
++
++	while (!uart_circ_empty(xmit)) {
++		ch = xmit->buf[xmit->tail];
++		if (tilegx_putchar(context, ch))
++			break;
++		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
++		port->icount.tx++;
++	}
++
++	/* Reset WFIFO_RE interrupt. */
++	gxio_uart_write(context, UART_INTERRUPT_STATUS,
++			UART_INTERRUPT_MASK__WFIFO_RE_MASK);
++
++	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
++		uart_write_wakeup(port);
++}
++
++
++/*
++ * UART Interrupt handler.
++ */
++static irqreturn_t tilegx_interrupt(int irq, void *dev_id)
++{
++	unsigned long flags;
++	UART_INTERRUPT_STATUS_t intr_stat;
++	struct tile_uart_port *tile_uart;
++	gxio_uart_context_t *context;
++	struct uart_port *port = dev_id;
++	irqreturn_t ret = IRQ_NONE;
++
++	spin_lock_irqsave(&port->lock, flags);
++
++	tile_uart = container_of(port, struct tile_uart_port, uart);
++	context = &tile_uart->context;
++	intr_stat.word = gxio_uart_read(context, UART_INTERRUPT_STATUS);
++
++	if (intr_stat.rfifo_we) {
++		handle_receive(tile_uart);
++		ret = IRQ_HANDLED;
++	}
++	if (intr_stat.wfifo_re) {
++		handle_transmit(tile_uart);
++		ret = IRQ_HANDLED;
++	}
++
++	spin_unlock_irqrestore(&port->lock, flags);
++	return ret;
++}
++
++
++/*
++ * Return TIOCSER_TEMT when transmitter FIFO is empty.
++ */
++static u_int tilegx_tx_empty(struct uart_port *port)
++{
++	int ret;
++	UART_FLAG_t flag;
++	struct tile_uart_port *tile_uart;
++	gxio_uart_context_t *context;
++
++	tile_uart = container_of(port, struct tile_uart_port, uart);
++	if (!mutex_trylock(&tile_uart->mutex))
++		return 0;
++	context = &tile_uart->context;
++
++	flag.word = gxio_uart_read(context, UART_FLAG);
++	ret = (flag.wfifo_empty) ? TIOCSER_TEMT : 0;
++	mutex_unlock(&tile_uart->mutex);
++
++	return ret;
++}
++
++
++/*
++ * Set state of the modem control output lines.
++ */
++static void tilegx_set_mctrl(struct uart_port *port, u_int mctrl)
++{
++	/* N/A */
++}
++
++
++/*
++ * Get state of the modem control input lines.
++ */
++static u_int tilegx_get_mctrl(struct uart_port *port)
++{
++	return TIOCM_CTS | TIOCM_DSR | TIOCM_CAR;
++}
++
++
++/*
++ * Stop transmitting.
++ */
++static void tilegx_stop_tx(struct uart_port *port)
++{
++	/* N/A */
++}
++
++
++/*
++ * Start transmitting.
++ */
++static void tilegx_start_tx(struct uart_port *port)
++{
++	unsigned char ch;
++	struct circ_buf *xmit;
++	struct tile_uart_port *tile_uart;
++	gxio_uart_context_t *context;
++
++	tile_uart = container_of(port, struct tile_uart_port, uart);
++	if (!mutex_trylock(&tile_uart->mutex))
++		return;
++	context = &tile_uart->context;
++	xmit = &port->state->xmit;
++	if (port->x_char) {
++		if (tilegx_putchar(context, port->x_char))
++			return;
++		port->x_char = 0;
++		port->icount.tx++;
++	}
++
++	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
++		mutex_unlock(&tile_uart->mutex);
++		return;
++	}
++
++	while (!uart_circ_empty(xmit)) {
++		ch = xmit->buf[xmit->tail];
++		if (tilegx_putchar(context, ch))
++			break;
++		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
++		port->icount.tx++;
++	}
++
++	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
++		uart_write_wakeup(port);
++
++	mutex_unlock(&tile_uart->mutex);
++}
++
++
++/*
++ * Stop receiving - port is in process of being closed.
++ */
++static void tilegx_stop_rx(struct uart_port *port)
++{
++	int err;
++	struct tile_uart_port *tile_uart;
++	gxio_uart_context_t *context;
++	int cpu;
++
++	tile_uart = container_of(port, struct tile_uart_port, uart);
++	if (!mutex_trylock(&tile_uart->mutex))
++		return;
++
++	context = &tile_uart->context;
++	cpu = tile_uart->irq_cpu;
++	err = gxio_uart_cfg_interrupt(context, cpu_x(cpu), cpu_y(cpu),
++				      KERNEL_PL, -1);
++	mutex_unlock(&tile_uart->mutex);
++}
++
++
++/*
++ * Enable modem status interrupts.
++ */
++static void tilegx_enable_ms(struct uart_port *port)
++{
++	/* N/A */
++}
++
++/*
++ * Control the transmission of a break signal.
++ */
++static void tilegx_break_ctl(struct uart_port *port, int break_state)
++{
++	/* N/A */
++}
++
++
++/*
++ * Perform initialization and enable port for reception.
++ */
++static int tilegx_startup(struct uart_port *port)
++{
++	struct tile_uart_port *tile_uart;
++	gxio_uart_context_t *context;
++	int ret = 0;
++	int cpu = raw_smp_processor_id();  /* pick an arbitrary cpu */
++
++	tile_uart = container_of(port, struct tile_uart_port, uart);
++	if (mutex_lock_interruptible(&tile_uart->mutex))
++		return -EBUSY;
++	context = &tile_uart->context;
++
++	/* Now open the hypervisor device if we haven't already. */
++	if (context->fd < 0) {
++		UART_INTERRUPT_MASK_t intr_mask;
++
++		/* Initialize UART device. */
++		ret = gxio_uart_init(context, port->line);
++		if (ret) {
++			ret = -ENXIO;
++			goto err;
++		}
++
++		/* Create our IRQs. */
++		port->irq = create_irq();
++		if (port->irq < 0)
++			goto err_uart_dest;
++		tile_irq_activate(port->irq, TILE_IRQ_PERCPU);
++
++		/* Register our IRQs. */
++		ret = request_irq(port->irq, tilegx_interrupt, 0,
++				  tilegx_uart_driver.driver_name, port);
++		if (ret)
++			goto err_dest_irq;
++
++		/* Request that the hardware start sending us interrupts. */
++		tile_uart->irq_cpu = cpu;
++		ret = gxio_uart_cfg_interrupt(context, cpu_x(cpu), cpu_y(cpu),
++					      KERNEL_PL, port->irq);
++		if (ret)
++			goto err_free_irq;
++
++		/* Enable UART Tx/Rx Interrupt. */
++		intr_mask.word = gxio_uart_read(context, UART_INTERRUPT_MASK);
++		intr_mask.wfifo_re = 0;
++		intr_mask.rfifo_we = 0;
++		gxio_uart_write(context, UART_INTERRUPT_MASK, intr_mask.word);
++
++		/* Reset the Tx/Rx interrupt in case it's set. */
++		gxio_uart_write(context, UART_INTERRUPT_STATUS,
++				UART_INTERRUPT_MASK__WFIFO_RE_MASK |
++				UART_INTERRUPT_MASK__RFIFO_WE_MASK);
++	}
++
++	mutex_unlock(&tile_uart->mutex);
++	return ret;
++
++err_free_irq:
++	free_irq(port->irq, port);
++err_dest_irq:
++	destroy_irq(port->irq);
++err_uart_dest:
++	gxio_uart_destroy(context);
++	ret = -ENXIO;
++err:
++	mutex_unlock(&tile_uart->mutex);
++	return ret;
++}
++
++
++/*
++ * Release kernel resources if it is the last close, disable the port,
++ * free IRQ and close the port.
++ */
++static void tilegx_shutdown(struct uart_port *port)
++{
++	int err;
++	UART_INTERRUPT_MASK_t intr_mask;
++	struct tile_uart_port *tile_uart;
++	gxio_uart_context_t *context;
++	int cpu;
++
++	tile_uart = container_of(port, struct tile_uart_port, uart);
++	if (mutex_lock_interruptible(&tile_uart->mutex))
++		return;
++	context = &tile_uart->context;
++
++	/* Disable UART Tx/Rx Interrupt. */
++	intr_mask.word = gxio_uart_read(context, UART_INTERRUPT_MASK);
++	intr_mask.wfifo_re = 1;
++	intr_mask.rfifo_we = 1;
++	gxio_uart_write(context, UART_INTERRUPT_MASK, intr_mask.word);
++
++	/* Request that the hardware stop sending us interrupts. */
++	cpu = tile_uart->irq_cpu;
++	err = gxio_uart_cfg_interrupt(context, cpu_x(cpu), cpu_y(cpu),
++				      KERNEL_PL, -1);
++
++	if (port->irq > 0) {
++		free_irq(port->irq, port);
++		destroy_irq(port->irq);
++		port->irq = 0;
++	}
++
++	gxio_uart_destroy(context);
++
++	mutex_unlock(&tile_uart->mutex);
++}
++
++
++/*
++ * Flush the buffer.
++ */
++static void tilegx_flush_buffer(struct uart_port *port)
++{
++	/* N/A */
++}
++
++
++/*
++ * Change the port parameters.
++ */
++static void tilegx_set_termios(struct uart_port *port,
++			       struct ktermios *termios, struct ktermios *old)
++{
++	int err;
++	UART_DIVISOR_t divisor;
++	UART_TYPE_t type;
++	unsigned int baud;
++	struct tile_uart_port *tile_uart;
++	gxio_uart_context_t *context;
++
++	tile_uart = container_of(port, struct tile_uart_port, uart);
++	if (!mutex_trylock(&tile_uart->mutex))
++		return;
++	context = &tile_uart->context;
++
++	/* Open the hypervisor device if we haven't already. */
++	if (context->fd < 0) {
++		err = gxio_uart_init(context, port->line);
++		if (err) {
++			mutex_unlock(&tile_uart->mutex);
++			return;
++		}
++	}
++
++	divisor.word = gxio_uart_read(context, UART_DIVISOR);
++	type.word = gxio_uart_read(context, UART_TYPE);
++
++	/* Divisor. */
++	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk / 16);
++	divisor.divisor = uart_get_divisor(port, baud);
++
++	/* Byte size. */
++	if ((termios->c_cflag & CSIZE) == CS7)
++		type.dbits = UART_TYPE__DBITS_VAL_SEVEN_DBITS;
++	else
++		type.dbits = UART_TYPE__DBITS_VAL_EIGHT_DBITS;
++
++	/* Parity. */
++	if (termios->c_cflag & PARENB) {
++		/* Mark or Space parity. */
++		if (termios->c_cflag & CMSPAR)
++			if (termios->c_cflag & PARODD)
++				type.ptype = UART_TYPE__PTYPE_VAL_MARK;
++			else
++				type.ptype = UART_TYPE__PTYPE_VAL_SPACE;
++		else if (termios->c_cflag & PARODD)
++			type.ptype = UART_TYPE__PTYPE_VAL_ODD;
 +		else
-+			return -ENODEV;
++			type.ptype = UART_TYPE__PTYPE_VAL_EVEN;
++	} else
++		type.ptype = UART_TYPE__PTYPE_VAL_NONE;
++
++	/* Stop bits. */
++	if (termios->c_cflag & CSTOPB)
++		type.sbits = UART_TYPE__SBITS_VAL_TWO_SBITS;
++	else
++		type.sbits = UART_TYPE__SBITS_VAL_ONE_SBITS;
++
++	/* Set the uart paramters. */
++	gxio_uart_write(context, UART_DIVISOR, divisor.word);
++	gxio_uart_write(context, UART_TYPE, type.word);
++
++	mutex_unlock(&tile_uart->mutex);
++}
++
++
++/*
++ * Return string describing the specified port.
++ */
++static const char *tilegx_type(struct uart_port *port)
++{
++	return port->type == PORT_TILEGX ? DRIVER_NAME_STRING : NULL;
++}
++
++
++/*
++ * Release the resources being used by 'port'.
++ */
++static void tilegx_release_port(struct uart_port *port)
++{
++	/* Nothing to release. */
++}
++
++
++/*
++ * Request the resources being used by 'port'.
++ */
++static int tilegx_request_port(struct uart_port *port)
++{
++	/* Always present. */
++	return 0;
++}
++
++
++/*
++ * Configure/autoconfigure the port.
++ */
++static void tilegx_config_port(struct uart_port *port, int flags)
++{
++	if (flags & UART_CONFIG_TYPE)
++		port->type = PORT_TILEGX;
++}
++
++
++/*
++ * Verify the new serial_struct (for TIOCSSERIAL).
++ */
++static int tilegx_verify_port(struct uart_port *port,
++			      struct serial_struct *ser)
++{
++	if ((ser->type != PORT_UNKNOWN) && (ser->type != PORT_TILEGX))
++		return -EINVAL;
++
++	return 0;
++}
++
++#ifdef CONFIG_CONSOLE_POLL
++
++/*
++ * Console polling routines for writing and reading from the uart while
++ * in an interrupt or debug context.
++ */
++
++static int tilegx_poll_get_char(struct uart_port *port)
++{
++	UART_FIFO_COUNT_t count;
++	gxio_uart_context_t *context;
++	struct tile_uart_port *tile_uart;
++
++	tile_uart = container_of(port, struct tile_uart_port, uart);
++	context = &tile_uart->context;
++	count.word = gxio_uart_read(context, UART_FIFO_COUNT);
++	if (count.rfifo_count == 0)
++		return NO_POLL_CHAR;
++	return (char)gxio_uart_read(context, UART_RECEIVE_DATA);
++}
++
++static void tilegx_poll_put_char(struct uart_port *port, unsigned char c)
++{
++	gxio_uart_context_t *context;
++	struct tile_uart_port *tile_uart;
++
++	tile_uart = container_of(port, struct tile_uart_port, uart);
++	context = &tile_uart->context;
++	gxio_uart_write(context, UART_TRANSMIT_DATA, (unsigned long)c);
++}
++
++#endif /* CONFIG_CONSOLE_POLL */
++
++
++static const struct uart_ops tilegx_ops = {
++	.tx_empty	= tilegx_tx_empty,
++	.set_mctrl	= tilegx_set_mctrl,
++	.get_mctrl	= tilegx_get_mctrl,
++	.stop_tx	= tilegx_stop_tx,
++	.start_tx	= tilegx_start_tx,
++	.stop_rx	= tilegx_stop_rx,
++	.enable_ms	= tilegx_enable_ms,
++	.break_ctl	= tilegx_break_ctl,
++	.startup	= tilegx_startup,
++	.shutdown	= tilegx_shutdown,
++	.flush_buffer	= tilegx_flush_buffer,
++	.set_termios	= tilegx_set_termios,
++	.type		= tilegx_type,
++	.release_port	= tilegx_release_port,
++	.request_port	= tilegx_request_port,
++	.config_port	= tilegx_config_port,
++	.verify_port	= tilegx_verify_port,
++#ifdef CONFIG_CONSOLE_POLL
++	.poll_get_char	= tilegx_poll_get_char,
++	.poll_put_char	= tilegx_poll_put_char,
++#endif
++};
++
++
++static void tilegx_init_ports(void)
++{
++	int i;
++	struct uart_port *port;
++
++	for (i = 0; i < TILEGX_UART_NR; i++) {
++		port = &tile_uart_ports[i].uart;
++		port->ops = &tilegx_ops;
++		port->line = i;
++		port->type = PORT_TILEGX;
++		port->uartclk = TILEGX_UART_REF_CLK;
++		port->flags = UPF_BOOT_AUTOCONF;
++
++		tile_uart_ports[i].context.fd = -1;
++		mutex_init(&tile_uart_ports[i].mutex);
 +	}
++}
 +
-+	context->fd = fd;
 +
-+	/* Map in the MMIO space. */
-+	context->mmio_base = (void __force *)
-+		iorpc_ioremap(fd, HV_UART_MMIO_OFFSET, HV_UART_MMIO_SIZE);
++static struct uart_driver tilegx_uart_driver = {
++	.owner		= THIS_MODULE,
++	.driver_name	= DRIVER_NAME_STRING,
++	.dev_name	= TILEGX_UART_NAME,
++	.major		= TILEGX_UART_MAJOR,
++	.minor		= TILEGX_UART_MINOR,
++	.nr		= TILEGX_UART_NR,
++};
 +
-+	if (context->mmio_base == NULL) {
-+		hv_dev_close(context->fd);
-+		context->fd = -1;
-+		return -ENODEV;
++
++static int __init tilegx_init(void)
++{
++	int i;
++	int ret;
++	struct tty_driver *tty_drv;
++
++	ret = uart_register_driver(&tilegx_uart_driver);
++	if (ret)
++		return ret;
++	tty_drv = tilegx_uart_driver.tty_driver;
++	tty_drv->init_termios.c_cflag = B115200 | CS8 | CREAD | HUPCL | CLOCAL;
++	tty_drv->init_termios.c_ispeed = 115200;
++	tty_drv->init_termios.c_ospeed = 115200;
++
++	tilegx_init_ports();
++
++	for (i = 0; i < TILEGX_UART_NR; i++) {
++		struct uart_port *port = &tile_uart_ports[i].uart;
++		ret = uart_add_one_port(&tilegx_uart_driver, port);
 +	}
 +
 +	return 0;
 +}
 +
-+EXPORT_SYMBOL(gxio_uart_init);
 +
-+int gxio_uart_destroy(gxio_uart_context_t *context)
++static void __exit tilegx_exit(void)
 +{
-+	iounmap((void __force __iomem *)(context->mmio_base));
-+	hv_dev_close(context->fd);
++	int i;
++	struct uart_port *port;
 +
-+	context->mmio_base = NULL;
-+	context->fd = -1;
++	for (i = 0; i < TILEGX_UART_NR; i++) {
++		port = &tile_uart_ports[i].uart;
++		uart_remove_one_port(&tilegx_uart_driver, port);
++	}
 +
-+	return 0;
++	uart_unregister_driver(&tilegx_uart_driver);
 +}
 +
-+EXPORT_SYMBOL(gxio_uart_destroy);
 +
-+/* UART register write wrapper. */
-+void gxio_uart_write(gxio_uart_context_t *context, uint64_t offset,
-+		     uint64_t word)
-+{
-+	__gxio_mmio_write(context->mmio_base + offset, word);
-+}
++module_init(tilegx_init);
++module_exit(tilegx_exit);
 +
-+EXPORT_SYMBOL(gxio_uart_write);
++MODULE_AUTHOR("Tilera Corporation");
++MODULE_DESCRIPTION("TILEGx serial port driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/uapi/linux/serial_core.h b/include/uapi/linux/serial_core.h
+index 9119cc0..b466487 100644
+--- a/include/uapi/linux/serial_core.h
++++ b/include/uapi/linux/serial_core.h
+@@ -232,4 +232,7 @@
+ /* SH-SCI */
+ #define PORT_HSCIF	104
+ 
++/* Tilera TILE-Gx UART */
++#define PORT_TILEGX	105
 +
-+/* UART register read wrapper. */
-+uint64_t gxio_uart_read(gxio_uart_context_t *context, uint64_t offset)
-+{
-+	return __gxio_mmio_read(context->mmio_base + offset);
-+}
-+
-+EXPORT_SYMBOL(gxio_uart_read);
-diff --git a/arch/tile/include/arch/uart.h b/arch/tile/include/arch/uart.h
-new file mode 100644
-index 0000000..0796697
---- /dev/null
-+++ b/arch/tile/include/arch/uart.h
-@@ -0,0 +1,300 @@
-+/*
-+ * Copyright 2013 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+#ifndef __ARCH_UART_H__
-+#define __ARCH_UART_H__
-+
-+#include <arch/abi.h>
-+#include <arch/uart_def.h>
-+
-+#ifndef __ASSEMBLER__
-+
-+/* Divisor. */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /*
-+     * Baud Rate Divisor.  Desired_baud_rate = REF_CLK frequency / (baud *
-+     * 16).
-+     *                       Note: REF_CLK is always 125 MHz, the default
-+     * divisor = 68, baud rate = 125M/(68*16) = 115200 baud.
-+     */
-+    uint_reg_t divisor    : 12;
-+    /* Reserved. */
-+    uint_reg_t __reserved : 52;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved : 52;
-+    uint_reg_t divisor    : 12;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} UART_DIVISOR_t;
-+
-+/* FIFO Count. */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /*
-+     * n: n active entries in the receive FIFO (max is 2**8). Each entry has
-+     * 8 bits.
-+     * 0: no active entry in the receive FIFO (that is empty).
-+     */
-+    uint_reg_t rfifo_count  : 9;
-+    /* Reserved. */
-+    uint_reg_t __reserved_0 : 7;
-+    /*
-+     * n: n active entries in the transmit FIFO (max is 2**8). Each entry has
-+     * 8 bits.
-+     * 0: no active entry in the transmit FIFO (that is empty).
-+     */
-+    uint_reg_t tfifo_count  : 9;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1 : 7;
-+    /*
-+     * n: n active entries in the write FIFO (max is 2**2). Each entry has 8
-+     * bits.
-+     * 0: no active entry in the write FIFO (that is empty).
-+     */
-+    uint_reg_t wfifo_count  : 3;
-+    /* Reserved. */
-+    uint_reg_t __reserved_2 : 29;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved_2 : 29;
-+    uint_reg_t wfifo_count  : 3;
-+    uint_reg_t __reserved_1 : 7;
-+    uint_reg_t tfifo_count  : 9;
-+    uint_reg_t __reserved_0 : 7;
-+    uint_reg_t rfifo_count  : 9;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} UART_FIFO_COUNT_t;
-+
-+/* FLAG. */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /* Reserved. */
-+    uint_reg_t __reserved_0 : 1;
-+    /* 1: receive FIFO is empty */
-+    uint_reg_t rfifo_empty  : 1;
-+    /* 1: write FIFO is empty. */
-+    uint_reg_t wfifo_empty  : 1;
-+    /* 1: transmit FIFO is empty. */
-+    uint_reg_t tfifo_empty  : 1;
-+    /* 1: receive FIFO is full. */
-+    uint_reg_t rfifo_full   : 1;
-+    /* 1: write FIFO is full. */
-+    uint_reg_t wfifo_full   : 1;
-+    /* 1: transmit FIFO is full. */
-+    uint_reg_t tfifo_full   : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1 : 57;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved_1 : 57;
-+    uint_reg_t tfifo_full   : 1;
-+    uint_reg_t wfifo_full   : 1;
-+    uint_reg_t rfifo_full   : 1;
-+    uint_reg_t tfifo_empty  : 1;
-+    uint_reg_t wfifo_empty  : 1;
-+    uint_reg_t rfifo_empty  : 1;
-+    uint_reg_t __reserved_0 : 1;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} UART_FLAG_t;
-+
-+/*
-+ * Interrupt Vector Mask.
-+ * Each bit in this register corresponds to a specific interrupt. When set,
-+ * the associated interrupt will not be dispatched.
-+ */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /* Read data FIFO read and no data available */
-+    uint_reg_t rdat_err       : 1;
-+    /* Write FIFO was written but it was full */
-+    uint_reg_t wdat_err       : 1;
-+    /* Stop bit not found when current data was received */
-+    uint_reg_t frame_err      : 1;
-+    /* Parity error was detected when current data was received */
-+    uint_reg_t parity_err     : 1;
-+    /* Data was received but the receive FIFO was full */
-+    uint_reg_t rfifo_overflow : 1;
-+    /*
-+     * An almost full event is reached when data is to be written to the
-+     * receive FIFO, and the receive FIFO has more than or equal to
-+     * BUFFER_THRESHOLD.RFIFO_AFULL bytes.
-+     */
-+    uint_reg_t rfifo_afull    : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_0   : 1;
-+    /* An entry in the transmit FIFO was popped */
-+    uint_reg_t tfifo_re       : 1;
-+    /* An entry has been pushed into the receive FIFO */
-+    uint_reg_t rfifo_we       : 1;
-+    /* An entry of the write FIFO has been popped */
-+    uint_reg_t wfifo_re       : 1;
-+    /* Rshim read receive FIFO in protocol mode */
-+    uint_reg_t rfifo_err      : 1;
-+    /*
-+     * An almost empty event is reached when data is to be read from the
-+     * transmit FIFO, and the transmit FIFO has less than or equal to
-+     * BUFFER_THRESHOLD.TFIFO_AEMPTY bytes.
-+     */
-+    uint_reg_t tfifo_aempty   : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1   : 52;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved_1   : 52;
-+    uint_reg_t tfifo_aempty   : 1;
-+    uint_reg_t rfifo_err      : 1;
-+    uint_reg_t wfifo_re       : 1;
-+    uint_reg_t rfifo_we       : 1;
-+    uint_reg_t tfifo_re       : 1;
-+    uint_reg_t __reserved_0   : 1;
-+    uint_reg_t rfifo_afull    : 1;
-+    uint_reg_t rfifo_overflow : 1;
-+    uint_reg_t parity_err     : 1;
-+    uint_reg_t frame_err      : 1;
-+    uint_reg_t wdat_err       : 1;
-+    uint_reg_t rdat_err       : 1;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} UART_INTERRUPT_MASK_t;
-+
-+/*
-+ * Interrupt vector, write-one-to-clear.
-+ * Each bit in this register corresponds to a specific interrupt. Hardware
-+ * sets the bit when the associated condition has occurred. Writing a 1
-+ * clears the status bit.
-+ */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /* Read data FIFO read and no data available */
-+    uint_reg_t rdat_err       : 1;
-+    /* Write FIFO was written but it was full */
-+    uint_reg_t wdat_err       : 1;
-+    /* Stop bit not found when current data was received */
-+    uint_reg_t frame_err      : 1;
-+    /* Parity error was detected when current data was received */
-+    uint_reg_t parity_err     : 1;
-+    /* Data was received but the receive FIFO was full */
-+    uint_reg_t rfifo_overflow : 1;
-+    /*
-+     * Data was received and the receive FIFO is now almost full (more than
-+     * BUFFER_THRESHOLD.RFIFO_AFULL bytes in it)
-+     */
-+    uint_reg_t rfifo_afull    : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_0   : 1;
-+    /* An entry in the transmit FIFO was popped */
-+    uint_reg_t tfifo_re       : 1;
-+    /* An entry has been pushed into the receive FIFO */
-+    uint_reg_t rfifo_we       : 1;
-+    /* An entry of the write FIFO has been popped */
-+    uint_reg_t wfifo_re       : 1;
-+    /* Rshim read receive FIFO in protocol mode */
-+    uint_reg_t rfifo_err      : 1;
-+    /*
-+     * Data was read from the transmit FIFO and now it is almost empty (less
-+     * than or equal to BUFFER_THRESHOLD.TFIFO_AEMPTY bytes in it).
-+     */
-+    uint_reg_t tfifo_aempty   : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1   : 52;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved_1   : 52;
-+    uint_reg_t tfifo_aempty   : 1;
-+    uint_reg_t rfifo_err      : 1;
-+    uint_reg_t wfifo_re       : 1;
-+    uint_reg_t rfifo_we       : 1;
-+    uint_reg_t tfifo_re       : 1;
-+    uint_reg_t __reserved_0   : 1;
-+    uint_reg_t rfifo_afull    : 1;
-+    uint_reg_t rfifo_overflow : 1;
-+    uint_reg_t parity_err     : 1;
-+    uint_reg_t frame_err      : 1;
-+    uint_reg_t wdat_err       : 1;
-+    uint_reg_t rdat_err       : 1;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} UART_INTERRUPT_STATUS_t;
-+
-+/* Type. */
-+
-+__extension__
-+typedef union
-+{
-+  struct
-+  {
-+#ifndef __BIG_ENDIAN__
-+    /* Number of stop bits, rx and tx */
-+    uint_reg_t sbits        : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_0 : 1;
-+    /* Data word size, rx and tx */
-+    uint_reg_t dbits        : 1;
-+    /* Reserved. */
-+    uint_reg_t __reserved_1 : 1;
-+    /* Parity selection, rx and tx */
-+    uint_reg_t ptype        : 3;
-+    /* Reserved. */
-+    uint_reg_t __reserved_2 : 57;
-+#else   /* __BIG_ENDIAN__ */
-+    uint_reg_t __reserved_2 : 57;
-+    uint_reg_t ptype        : 3;
-+    uint_reg_t __reserved_1 : 1;
-+    uint_reg_t dbits        : 1;
-+    uint_reg_t __reserved_0 : 1;
-+    uint_reg_t sbits        : 1;
-+#endif
-+  };
-+
-+  uint_reg_t word;
-+} UART_TYPE_t;
-+#endif /* !defined(__ASSEMBLER__) */
-+
-+#endif /* !defined(__ARCH_UART_H__) */
-diff --git a/arch/tile/include/arch/uart_def.h b/arch/tile/include/arch/uart_def.h
-new file mode 100644
-index 0000000..42bcaf5
---- /dev/null
-+++ b/arch/tile/include/arch/uart_def.h
-@@ -0,0 +1,120 @@
-+/*
-+ * Copyright 2013 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* Machine-generated file; do not edit. */
-+
-+#ifndef __ARCH_UART_DEF_H__
-+#define __ARCH_UART_DEF_H__
-+#define UART_DIVISOR 0x0158
-+#define UART_FIFO_COUNT 0x0110
-+#define UART_FLAG 0x0108
-+#define UART_INTERRUPT_MASK 0x0208
-+#define UART_INTERRUPT_MASK__RDAT_ERR_SHIFT 0
-+#define UART_INTERRUPT_MASK__RDAT_ERR_WIDTH 1
-+#define UART_INTERRUPT_MASK__RDAT_ERR_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__RDAT_ERR_RMASK 0x1
-+#define UART_INTERRUPT_MASK__RDAT_ERR_MASK  0x1
-+#define UART_INTERRUPT_MASK__RDAT_ERR_FIELD 0,0
-+#define UART_INTERRUPT_MASK__WDAT_ERR_SHIFT 1
-+#define UART_INTERRUPT_MASK__WDAT_ERR_WIDTH 1
-+#define UART_INTERRUPT_MASK__WDAT_ERR_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__WDAT_ERR_RMASK 0x1
-+#define UART_INTERRUPT_MASK__WDAT_ERR_MASK  0x2
-+#define UART_INTERRUPT_MASK__WDAT_ERR_FIELD 1,1
-+#define UART_INTERRUPT_MASK__FRAME_ERR_SHIFT 2
-+#define UART_INTERRUPT_MASK__FRAME_ERR_WIDTH 1
-+#define UART_INTERRUPT_MASK__FRAME_ERR_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__FRAME_ERR_RMASK 0x1
-+#define UART_INTERRUPT_MASK__FRAME_ERR_MASK  0x4
-+#define UART_INTERRUPT_MASK__FRAME_ERR_FIELD 2,2
-+#define UART_INTERRUPT_MASK__PARITY_ERR_SHIFT 3
-+#define UART_INTERRUPT_MASK__PARITY_ERR_WIDTH 1
-+#define UART_INTERRUPT_MASK__PARITY_ERR_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__PARITY_ERR_RMASK 0x1
-+#define UART_INTERRUPT_MASK__PARITY_ERR_MASK  0x8
-+#define UART_INTERRUPT_MASK__PARITY_ERR_FIELD 3,3
-+#define UART_INTERRUPT_MASK__RFIFO_OVERFLOW_SHIFT 4
-+#define UART_INTERRUPT_MASK__RFIFO_OVERFLOW_WIDTH 1
-+#define UART_INTERRUPT_MASK__RFIFO_OVERFLOW_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__RFIFO_OVERFLOW_RMASK 0x1
-+#define UART_INTERRUPT_MASK__RFIFO_OVERFLOW_MASK  0x10
-+#define UART_INTERRUPT_MASK__RFIFO_OVERFLOW_FIELD 4,4
-+#define UART_INTERRUPT_MASK__RFIFO_AFULL_SHIFT 5
-+#define UART_INTERRUPT_MASK__RFIFO_AFULL_WIDTH 1
-+#define UART_INTERRUPT_MASK__RFIFO_AFULL_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__RFIFO_AFULL_RMASK 0x1
-+#define UART_INTERRUPT_MASK__RFIFO_AFULL_MASK  0x20
-+#define UART_INTERRUPT_MASK__RFIFO_AFULL_FIELD 5,5
-+#define UART_INTERRUPT_MASK__TFIFO_RE_SHIFT 7
-+#define UART_INTERRUPT_MASK__TFIFO_RE_WIDTH 1
-+#define UART_INTERRUPT_MASK__TFIFO_RE_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__TFIFO_RE_RMASK 0x1
-+#define UART_INTERRUPT_MASK__TFIFO_RE_MASK  0x80
-+#define UART_INTERRUPT_MASK__TFIFO_RE_FIELD 7,7
-+#define UART_INTERRUPT_MASK__RFIFO_WE_SHIFT 8
-+#define UART_INTERRUPT_MASK__RFIFO_WE_WIDTH 1
-+#define UART_INTERRUPT_MASK__RFIFO_WE_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__RFIFO_WE_RMASK 0x1
-+#define UART_INTERRUPT_MASK__RFIFO_WE_MASK  0x100
-+#define UART_INTERRUPT_MASK__RFIFO_WE_FIELD 8,8
-+#define UART_INTERRUPT_MASK__WFIFO_RE_SHIFT 9
-+#define UART_INTERRUPT_MASK__WFIFO_RE_WIDTH 1
-+#define UART_INTERRUPT_MASK__WFIFO_RE_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__WFIFO_RE_RMASK 0x1
-+#define UART_INTERRUPT_MASK__WFIFO_RE_MASK  0x200
-+#define UART_INTERRUPT_MASK__WFIFO_RE_FIELD 9,9
-+#define UART_INTERRUPT_MASK__RFIFO_ERR_SHIFT 10
-+#define UART_INTERRUPT_MASK__RFIFO_ERR_WIDTH 1
-+#define UART_INTERRUPT_MASK__RFIFO_ERR_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__RFIFO_ERR_RMASK 0x1
-+#define UART_INTERRUPT_MASK__RFIFO_ERR_MASK  0x400
-+#define UART_INTERRUPT_MASK__RFIFO_ERR_FIELD 10,10
-+#define UART_INTERRUPT_MASK__TFIFO_AEMPTY_SHIFT 11
-+#define UART_INTERRUPT_MASK__TFIFO_AEMPTY_WIDTH 1
-+#define UART_INTERRUPT_MASK__TFIFO_AEMPTY_RESET_VAL 1
-+#define UART_INTERRUPT_MASK__TFIFO_AEMPTY_RMASK 0x1
-+#define UART_INTERRUPT_MASK__TFIFO_AEMPTY_MASK  0x800
-+#define UART_INTERRUPT_MASK__TFIFO_AEMPTY_FIELD 11,11
-+#define UART_INTERRUPT_STATUS 0x0200
-+#define UART_RECEIVE_DATA 0x0148
-+#define UART_TRANSMIT_DATA 0x0140
-+#define UART_TYPE 0x0160
-+#define UART_TYPE__SBITS_SHIFT 0
-+#define UART_TYPE__SBITS_WIDTH 1
-+#define UART_TYPE__SBITS_RESET_VAL 1
-+#define UART_TYPE__SBITS_RMASK 0x1
-+#define UART_TYPE__SBITS_MASK  0x1
-+#define UART_TYPE__SBITS_FIELD 0,0
-+#define UART_TYPE__SBITS_VAL_ONE_SBITS 0x0
-+#define UART_TYPE__SBITS_VAL_TWO_SBITS 0x1
-+#define UART_TYPE__DBITS_SHIFT 2
-+#define UART_TYPE__DBITS_WIDTH 1
-+#define UART_TYPE__DBITS_RESET_VAL 0
-+#define UART_TYPE__DBITS_RMASK 0x1
-+#define UART_TYPE__DBITS_MASK  0x4
-+#define UART_TYPE__DBITS_FIELD 2,2
-+#define UART_TYPE__DBITS_VAL_EIGHT_DBITS 0x0
-+#define UART_TYPE__DBITS_VAL_SEVEN_DBITS 0x1
-+#define UART_TYPE__PTYPE_SHIFT 4
-+#define UART_TYPE__PTYPE_WIDTH 3
-+#define UART_TYPE__PTYPE_RESET_VAL 3
-+#define UART_TYPE__PTYPE_RMASK 0x7
-+#define UART_TYPE__PTYPE_MASK  0x70
-+#define UART_TYPE__PTYPE_FIELD 4,6
-+#define UART_TYPE__PTYPE_VAL_NONE 0x0
-+#define UART_TYPE__PTYPE_VAL_MARK 0x1
-+#define UART_TYPE__PTYPE_VAL_SPACE 0x2
-+#define UART_TYPE__PTYPE_VAL_EVEN 0x3
-+#define UART_TYPE__PTYPE_VAL_ODD 0x4
-+#endif /* !defined(__ARCH_UART_DEF_H__) */
-diff --git a/arch/tile/include/gxio/iorpc_uart.h b/arch/tile/include/gxio/iorpc_uart.h
-new file mode 100644
-index 0000000..55429d4
---- /dev/null
-+++ b/arch/tile/include/gxio/iorpc_uart.h
-@@ -0,0 +1,40 @@
-+/*
-+ * Copyright 2013 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/* This file is machine-generated; DO NOT EDIT! */
-+#ifndef __GXIO_UART_LINUX_RPC_H__
-+#define __GXIO_UART_LINUX_RPC_H__
-+
-+#include <hv/iorpc.h>
-+
-+#include <hv/drv_uart_intf.h>
-+#include <gxio/uart.h>
-+#include <gxio/kiorpc.h>
-+#include <linux/string.h>
-+#include <linux/module.h>
-+#include <asm/pgtable.h>
-+
-+#define GXIO_UART_OP_CFG_INTERRUPT     IORPC_OPCODE(IORPC_FORMAT_KERNEL_INTERRUPT, 0x1900)
-+#define GXIO_UART_OP_GET_MMIO_BASE     IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x8000)
-+#define GXIO_UART_OP_CHECK_MMIO_OFFSET IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x8001)
-+
-+int gxio_uart_cfg_interrupt(gxio_uart_context_t *context, int inter_x,
-+			    int inter_y, int inter_ipi, int inter_event);
-+
-+int gxio_uart_get_mmio_base(gxio_uart_context_t *context, HV_PTE *base);
-+
-+int gxio_uart_check_mmio_offset(gxio_uart_context_t *context,
-+				unsigned long offset, unsigned long size);
-+
-+#endif /* !__GXIO_UART_LINUX_RPC_H__ */
-diff --git a/arch/tile/include/gxio/uart.h b/arch/tile/include/gxio/uart.h
-new file mode 100644
-index 0000000..438ee7e
---- /dev/null
-+++ b/arch/tile/include/gxio/uart.h
-@@ -0,0 +1,105 @@
-+/*
-+ * Copyright 2013 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+#ifndef _GXIO_UART_H_
-+#define _GXIO_UART_H_
-+
-+#include "common.h"
-+
-+#include <hv/drv_uart_intf.h>
-+#include <hv/iorpc.h>
-+
-+/*
-+ *
-+ * An API for manipulating UART interface.
-+ */
-+
-+/*
-+ *
-+ * The Rshim allows access to the processor's UART interface.
-+ */
-+
-+/* A context object used to manage UART resources. */
-+typedef struct {
-+
-+	/* File descriptor for calling up to the hypervisor. */
-+	int fd;
-+
-+	/* The VA at which our MMIO registers are mapped. */
-+	char *mmio_base;
-+
-+} gxio_uart_context_t;
-+
-+/* Request UART interrupts.
-+ *
-+ *  Request that interrupts be delivered to a tile when the UART's
-+ *  Receive FIFO is written, or the Write FIFO is read.
-+ *
-+ * @param context Pointer to a properly initialized gxio_uart_context_t.
-+ * @param bind_cpu_x X coordinate of CPU to which interrupt will be delivered.
-+ * @param bind_cpu_y Y coordinate of CPU to which interrupt will be delivered.
-+ * @param bind_interrupt IPI interrupt number.
-+ * @param bind_event Sub-interrupt event bit number; a negative value can
-+ *  disable the interrupt.
-+ * @return Zero if all of the requested UART events were successfully
-+ *  configured to interrupt.
-+ */
-+extern int gxio_uart_cfg_interrupt(gxio_uart_context_t *context,
-+				   int bind_cpu_x,
-+				   int bind_cpu_y,
-+				   int bind_interrupt, int bind_event);
-+
-+/* Initialize a UART context.
-+ *
-+ *  A properly initialized context must be obtained before any of the other
-+ *  gxio_uart routines may be used.
-+ *
-+ * @param context Pointer to a gxio_uart_context_t, which will be initialized
-+ *  by this routine, if it succeeds.
-+ * @param uart_index Index of the UART to use.
-+ * @return Zero if the context was successfully initialized, else a
-+ *  GXIO_ERR_xxx error code.
-+ */
-+extern int gxio_uart_init(gxio_uart_context_t *context, int uart_index);
-+
-+/* Destroy a UART context.
-+ *
-+ *  Once destroyed, a context may not be used with any gxio_uart routines
-+ *  other than gxio_uart_init().  After this routine returns, no further
-+ *  interrupts requested on this context will be delivered.  The state and
-+ *  configuration of the pins which had been attached to this context are
-+ *  unchanged by this operation.
-+ *
-+ * @param context Pointer to a gxio_uart_context_t.
-+ * @return Zero if the context was successfully destroyed, else a
-+ *  GXIO_ERR_xxx error code.
-+ */
-+extern int gxio_uart_destroy(gxio_uart_context_t *context);
-+
-+/* Write UART register.
-+ * @param context Pointer to a gxio_uart_context_t.
-+ * @param offset UART register offset.
-+ * @param word Data will be wrote to UART reigister.
-+ */
-+extern void gxio_uart_write(gxio_uart_context_t *context, uint64_t offset,
-+			    uint64_t word);
-+
-+/* Read UART register.
-+ * @param context Pointer to a gxio_uart_context_t.
-+ * @param offset UART register offset.
-+ * @return Data read from UART register.
-+ */
-+extern uint64_t gxio_uart_read(gxio_uart_context_t *context, uint64_t offset);
-+
-+#endif /* _GXIO_UART_H_ */
-diff --git a/arch/tile/include/hv/drv_uart_intf.h b/arch/tile/include/hv/drv_uart_intf.h
-new file mode 100644
-index 0000000..f5379e2
---- /dev/null
-+++ b/arch/tile/include/hv/drv_uart_intf.h
-@@ -0,0 +1,33 @@
-+/*
-+ * Copyright 2013 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+/**
-+ * Interface definitions for the UART driver.
-+ */
-+
-+#ifndef _SYS_HV_DRV_UART_INTF_H
-+#define _SYS_HV_DRV_UART_INTF_H
-+
-+#include <arch/uart.h>
-+
-+/** Number of UART ports supported. */
-+#define TILEGX_UART_NR        2
-+
-+/** The mmap file offset (PA) of the UART MMIO region. */
-+#define HV_UART_MMIO_OFFSET   0
-+
-+/** The maximum size of the UARTs MMIO region (64K Bytes). */
-+#define HV_UART_MMIO_SIZE     (1UL << 16)
-+
-+#endif /* _SYS_HV_DRV_UART_INTF_H */
+ #endif /* _UAPILINUX_SERIAL_CORE_H */
 -- 
 1.8.3.1
 
