@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637Ab3HLL14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 07:27:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32866 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752123Ab3HLL1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 07:27:53 -0400
-Message-ID: <52087921.8040101@ti.com>
-Date: Mon, 12 Aug 2013 11:26:49 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH v3 08/12] dma: edma: Add one more required slot to MAX
- slots
-References: <1375719297-12871-1-git-send-email-joelf@ti.com> <1375719297-12871-9-git-send-email-joelf@ti.com>
-In-Reply-To: <1375719297-12871-9-git-send-email-joelf@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755958Ab3HLL2N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 07:28:13 -0400
+Received: from shelob.oktetlabs.ru ([195.131.132.186]:41482 "EHLO
+	shelob.oktetlabs.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755785Ab3HLL2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 07:28:09 -0400
+X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Aug 2013 07:28:09 EDT
+X-DKIM: Sendmail DKIM Filter v2.8.2 shelob.oktetlabs.ru 7A7DF7F481
+Authentication-Results: shelob.oktetlabs.ru/7A7DF7F481; dkim=none
+	(no signature) header.i=unknown; dkim-adsp=none
+From: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+To: Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org,
+        Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+Subject: [PATCH 1/1] ubi: remove and create MTD device back when UBI volume is resized
+Date: Mon, 12 Aug 2013 15:17:45 +0400
+Message-Id: <1376306265-8671-1-git-send-email-Andrew.Rybchenko@oktetlabs.ru>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 05 August 2013 09:44 PM, Joel Fernandes wrote:
-> We'd now need a separate slot just for the channel and separate
-> ones for the 2 linked sets, so we make adjustments to allocate
-> an extra channel accordingly.
-> 
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
+If underlying MTD device size is simply corrected (as it was before),
+MTD block device is not notified about MTD device size change. As the
+result, for example, mount fails after create with zero size, resize,
+write file system image.
 
-No need for a separate patch for this, just do this in the patch where
-you include the two linked sets.
+Side effect of the patch is change of MTD device number on resize/update.
 
-> ---
->  drivers/dma/edma.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-> index a242269..df50a04 100644
-> --- a/drivers/dma/edma.c
-> +++ b/drivers/dma/edma.c
-> @@ -48,7 +48,7 @@
->  
->  /* Max of 16 segments per channel to conserve PaRAM slots */
->  #define MAX_NR_SG		16
-> -#define EDMA_MAX_SLOTS		MAX_NR_SG
-> +#define EDMA_MAX_SLOTS		(MAX_NR_SG+1)
->  #define EDMA_DESCRIPTORS	16
->  
->  struct edma_desc {
-> @@ -311,6 +311,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
->  
->  	num_slots_needed = sg_len > MAX_NR_SG ? MAX_NR_SG : sg_len;
->  
-> +	/* Allocate one extra to account for the channel itself */
-> +	num_slots_needed++;
+Signed-off-by: Andrew Rybchenko <Andrew.Rybchenko@oktetlabs.ru>
+---
+ drivers/mtd/ubi/gluebi.c |   64 +++++-----------------------------------------
+ 1 file changed, 7 insertions(+), 57 deletions(-)
 
-You can do:
-
-	nslots = min(MAX_NR_SG, sg_len) + 1;
-
-Thanks,
-Sekhar
+diff --git a/drivers/mtd/ubi/gluebi.c b/drivers/mtd/ubi/gluebi.c
+index b93807b..fa4f764 100644
+--- a/drivers/mtd/ubi/gluebi.c
++++ b/drivers/mtd/ubi/gluebi.c
+@@ -403,60 +403,6 @@ static int gluebi_remove(struct ubi_volume_info *vi)
+ }
+ 
+ /**
+- * gluebi_updated - UBI volume was updated notifier.
+- * @vi: volume info structure
+- *
+- * This function is called every time an UBI volume is updated. It does nothing
+- * if te volume @vol is dynamic, and changes MTD device size if the
+- * volume is static. This is needed because static volumes cannot be read past
+- * data they contain. This function returns zero in case of success and a
+- * negative error code in case of error.
+- */
+-static int gluebi_updated(struct ubi_volume_info *vi)
+-{
+-	struct gluebi_device *gluebi;
+-
+-	mutex_lock(&devices_mutex);
+-	gluebi = find_gluebi_nolock(vi->ubi_num, vi->vol_id);
+-	if (!gluebi) {
+-		mutex_unlock(&devices_mutex);
+-		err_msg("got update notification for unknown UBI device %d volume %d",
+-			vi->ubi_num, vi->vol_id);
+-		return -ENOENT;
+-	}
+-
+-	if (vi->vol_type == UBI_STATIC_VOLUME)
+-		gluebi->mtd.size = vi->used_bytes;
+-	mutex_unlock(&devices_mutex);
+-	return 0;
+-}
+-
+-/**
+- * gluebi_resized - UBI volume was re-sized notifier.
+- * @vi: volume info structure
+- *
+- * This function is called every time an UBI volume is re-size. It changes the
+- * corresponding fake MTD device size. This function returns zero in case of
+- * success and a negative error code in case of error.
+- */
+-static int gluebi_resized(struct ubi_volume_info *vi)
+-{
+-	struct gluebi_device *gluebi;
+-
+-	mutex_lock(&devices_mutex);
+-	gluebi = find_gluebi_nolock(vi->ubi_num, vi->vol_id);
+-	if (!gluebi) {
+-		mutex_unlock(&devices_mutex);
+-		err_msg("got update notification for unknown UBI device %d volume %d",
+-			vi->ubi_num, vi->vol_id);
+-		return -ENOENT;
+-	}
+-	gluebi->mtd.size = vi->used_bytes;
+-	mutex_unlock(&devices_mutex);
+-	return 0;
+-}
+-
+-/**
+  * gluebi_notify - UBI notification handler.
+  * @nb: registered notifier block
+  * @l: notification type
+@@ -475,10 +421,14 @@ static int gluebi_notify(struct notifier_block *nb, unsigned long l,
+ 		gluebi_remove(&nt->vi);
+ 		break;
+ 	case UBI_VOLUME_RESIZED:
+-		gluebi_resized(&nt->vi);
+-		break;
+ 	case UBI_VOLUME_UPDATED:
+-		gluebi_updated(&nt->vi);
++		/*
++		 * In theory it could be possible to simply change MTD device
++		 * size, but it would require a way to notify
++		 * corresponding block device as well.
++		 */
++		gluebi_remove(&nt->vi);
++		gluebi_create(&nt->di, &nt->vi);
+ 		break;
+ 	default:
+ 		break;
+-- 
+1.7.10.4
 
