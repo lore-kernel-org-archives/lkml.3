@@ -1,195 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab3HLV5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 17:57:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57251 "EHLO
+	id S1755701Ab3HLV56 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 17:57:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57266 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754815Ab3HLV5X (ORCPT
+	with ESMTP id S1754866Ab3HLV55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 17:57:23 -0400
-Date: Mon, 12 Aug 2013 14:57:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, luto@amacapital.net,
-        xemul@parallels.com, mpm@selenic.com, xiaoguangrong@linux.vnet.ibm.com,
-        mtosatti@redhat.com, kosaki.motohiro@gmail.com, sfr@canb.auug.org.au,
-        peterz@infradead.org, aneesh.kumar@linux.vnet.ibm.com,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [patch 2/2] [PATCH] mm: Save soft-dirty bits on file pages
-Message-Id: <20130812145720.3b722b066fe1bd77291331e5@linux-foundation.org>
-In-Reply-To: <20130808145120.GA1775@moon>
-References: <20130730204154.407090410@gmail.com>
-	<20130730204654.966378702@gmail.com>
-	<20130807132812.60ad4bfe85127794094d385e@linux-foundation.org>
-	<20130808145120.GA1775@moon>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Aug 2013 17:57:57 -0400
+Date: Mon, 12 Aug 2013 14:57:56 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Rupesh Gujare <rupesh.gujare@atmel.com>
+Cc: devel@linuxdriverproject.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] staging: ozwpan: Increment port number for new
+ device.
+Message-ID: <20130812215756.GA28233@kroah.com>
+References: <1375724415-10801-1-git-send-email-rupesh.gujare@atmel.com>
+ <1375724415-10801-3-git-send-email-rupesh.gujare@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375724415-10801-3-git-send-email-rupesh.gujare@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Aug 2013 18:51:20 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> On Wed, Aug 07, 2013 at 01:28:12PM -0700, Andrew Morton wrote:
-> > 
-> > Good god.
-> > 
-> > I wonder if these can be turned into out-of-line functions in some form
-> > which humans can understand.
-> > 
-> > or
-> > 
-> > #define pte_to_pgoff(pte)
-> > 	frob(pte, PTE_FILE_SHIFT1, PTE_FILE_BITS1) +
-> > 	frob(PTE_FILE_SHIFT2, PTE_FILE_BITS2) +
-> > 	frob(PTE_FILE_SHIFT3, PTE_FILE_BITS3) +
-> > 	frob(PTE_FILE_SHIFT4, PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
+On Mon, Aug 05, 2013 at 06:40:13PM +0100, Rupesh Gujare wrote:
+> This patch fixes crash issue when there is quick cycle of
+> de-enumeration & enumeration due to loss of wireless link.
 > 
-> Hi, here is what I ended up with. Please take a look (I decided to post
-> patch in the thread since it's related to the context of the mails).
+> It is found that sometimes new device (or coming back device)
+> returns very fast, even before USB core read out hub status,
+> resulting in allocation of same port, which results in unstable
+> system & crash.
+> 
+> Above issue is resolved by making sure that we always assign
+> new port to new device, making sure that USB core reads correct
+> hub status.
+> 
+> Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+> ---
+>  drivers/staging/ozwpan/ozhcd.c |   16 +++++++++++-----
+>  1 file changed, 11 insertions(+), 5 deletions(-)
 
-You could have #undefed _mfrob and __frob after using them, but whatever.  
+No, don't paper over this, fix it correctly with reference counting as
+Dan has suggested.
 
-I saved this patch to wave at the x86 guys for 3.12.  I plan to merge
-mm-save-soft-dirty-bits-on-file-pages.patch for 3.11.
+thanks,
 
-> Guys, is there a reason for "if _PAGE_BIT_FILE < _PAGE_BIT_PROTNONE"
-> test present in this pgtable-2level.h file at all? I can't imagine
-> where it can be false on x86.
-
-I doubt if "Guys" read this.  x86 maintainers cc'ed.
-
-
-
-
-
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: arch/x86/include/asm/pgtable-2level.h: clean up pte_to_pgoff and pgoff_to_pte helpers
-
-Andrew asked if there a way to make pte_to_pgoff and pgoff_to_pte macro
-helpers somehow more readable.
-
-With this patch it should be more understandable what is happening with
-bits when they come to and from pte entry.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- arch/x86/include/asm/pgtable-2level.h |   82 ++++++++++++------------
- 1 file changed, 41 insertions(+), 41 deletions(-)
-
-diff -puN arch/x86/include/asm/pgtable-2level.h~arch-x86-include-asm-pgtable-2levelh-clean-up-pte_to_pgoff-and-pgoff_to_pte-helpers arch/x86/include/asm/pgtable-2level.h
---- a/arch/x86/include/asm/pgtable-2level.h~arch-x86-include-asm-pgtable-2levelh-clean-up-pte_to_pgoff-and-pgoff_to_pte-helpers
-+++ a/arch/x86/include/asm/pgtable-2level.h
-@@ -55,6 +55,9 @@ static inline pmd_t native_pmdp_get_and_
- #define native_pmdp_get_and_clear(xp) native_local_pmdp_get_and_clear(xp)
- #endif
- 
-+#define _mfrob(v,r,m,l)		((((v) >> (r)) & (m)) << (l))
-+#define __frob(v,r,l)		(((v) >> (r)) << (l))
-+
- #ifdef CONFIG_MEM_SOFT_DIRTY
- 
- /*
-@@ -71,31 +74,27 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
- #define PTE_FILE_BITS3		(PTE_FILE_SHIFT4 - PTE_FILE_SHIFT3 - 1)
- 
--#define pte_to_pgoff(pte)						\
--	((((pte).pte_low >> (PTE_FILE_SHIFT1))				\
--	  & ((1U << PTE_FILE_BITS1) - 1)))				\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT2))			\
--	    & ((1U << PTE_FILE_BITS2) - 1))				\
--	   << (PTE_FILE_BITS1))						\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT3))			\
--	    & ((1U << PTE_FILE_BITS3) - 1))				\
--	   << (PTE_FILE_BITS1 + PTE_FILE_BITS2))			\
--	+ ((((pte).pte_low >> (PTE_FILE_SHIFT4)))			\
--	    << (PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3))
--
--#define pgoff_to_pte(off)						\
--	((pte_t) { .pte_low =						\
--	 ((((off)) & ((1U << PTE_FILE_BITS1) - 1)) << PTE_FILE_SHIFT1)	\
--	 + ((((off) >> PTE_FILE_BITS1)					\
--	     & ((1U << PTE_FILE_BITS2) - 1))				\
--	    << PTE_FILE_SHIFT2)						\
--	 + ((((off) >> (PTE_FILE_BITS1 + PTE_FILE_BITS2))		\
--	     & ((1U << PTE_FILE_BITS3) - 1))				\
--	    << PTE_FILE_SHIFT3)						\
--	 + ((((off) >>							\
--	      (PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)))	\
--	    << PTE_FILE_SHIFT4)						\
--	 + _PAGE_FILE })
-+#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
-+#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
-+#define PTE_FILE_MASK3		((1U << PTE_FILE_BITS3) - 1)
-+
-+#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
-+#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
-+#define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
-+
-+#define pte_to_pgoff(pte)							    \
-+	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
-+	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
-+	 _mfrob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3, PTE_FILE_LSHIFT3) + \
-+	 __frob((pte).pte_low, PTE_FILE_SHIFT4, PTE_FILE_LSHIFT4))
-+
-+#define pgoff_to_pte(off)							\
-+	((pte_t) { .pte_low =							\
-+	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
-+	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
-+	_mfrob(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3, PTE_FILE_SHIFT3)	+	\
-+	__frob(off, PTE_FILE_LSHIFT4, PTE_FILE_SHIFT4)			+	\
-+	_PAGE_FILE })
- 
- #else /* CONFIG_MEM_SOFT_DIRTY */
- 
-@@ -115,22 +114,23 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_BITS1		(PTE_FILE_SHIFT2 - PTE_FILE_SHIFT1 - 1)
- #define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
- 
--#define pte_to_pgoff(pte)						\
--	((((pte).pte_low >> PTE_FILE_SHIFT1)				\
--	  & ((1U << PTE_FILE_BITS1) - 1))				\
--	 + ((((pte).pte_low >> PTE_FILE_SHIFT2)				\
--	     & ((1U << PTE_FILE_BITS2) - 1)) << PTE_FILE_BITS1)		\
--	 + (((pte).pte_low >> PTE_FILE_SHIFT3)				\
--	    << (PTE_FILE_BITS1 + PTE_FILE_BITS2)))
--
--#define pgoff_to_pte(off)						\
--	((pte_t) { .pte_low =						\
--	 (((off) & ((1U << PTE_FILE_BITS1) - 1)) << PTE_FILE_SHIFT1)	\
--	 + ((((off) >> PTE_FILE_BITS1) & ((1U << PTE_FILE_BITS2) - 1))	\
--	    << PTE_FILE_SHIFT2)						\
--	 + (((off) >> (PTE_FILE_BITS1 + PTE_FILE_BITS2))		\
--	    << PTE_FILE_SHIFT3)						\
--	 + _PAGE_FILE })
-+#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
-+#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
-+
-+#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
-+#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
-+
-+#define pte_to_pgoff(pte)							    \
-+	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
-+	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
-+	 __frob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_LSHIFT3))
-+
-+#define pgoff_to_pte(off)							\
-+	((pte_t) { .pte_low =							\
-+	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
-+	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
-+	__frob(off, PTE_FILE_LSHIFT3, PTE_FILE_SHIFT3)			+	\
-+	_PAGE_FILE })
- 
- #endif /* CONFIG_MEM_SOFT_DIRTY */
- 
-_
-
+greg k-h
