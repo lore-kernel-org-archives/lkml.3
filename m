@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab3HLSGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:06:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54402 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab3HLSGN (ORCPT
+	id S1752685Ab3HLSIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:08:10 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:45375 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab3HLSIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:06:13 -0400
-Date: Mon, 12 Aug 2013 13:05:53 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Kumar Gala <galak@codeaurora.org>
-CC: Mark Rutland <mark.rutland@arm.com>, "balbi@ti.com" <balbi@ti.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc3: core: clarify usb-phy array binding
-Message-ID: <20130812180553.GD27954@radagast>
-Reply-To: <balbi@ti.com>
-References: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
- <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
- <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
+	Mon, 12 Aug 2013 14:08:05 -0400
+Date: Mon, 12 Aug 2013 14:07:58 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <imtangchen@gmail.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
+        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+Message-ID: <20130812180758.GA8288@mtj.dyndns.org>
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20130812145016.GI15892@htj.dyndns.org>
+ <52090225.6070208@gmail.com>
+ <20130812154623.GL15892@htj.dyndns.org>
+ <52090AF6.6020206@gmail.com>
+ <20130812162247.GM15892@htj.dyndns.org>
+ <520914D5.7080501@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sXc4Kmr5FA7axrvy"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
+In-Reply-To: <520914D5.7080501@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---sXc4Kmr5FA7axrvy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hey,
 
-On Fri, Aug 09, 2013 at 01:42:15PM -0500, Kumar Gala wrote:
->=20
-> On Aug 9, 2013, at 11:28 AM, Mark Rutland wrote:
->=20
-> > On Fri, Aug 09, 2013 at 04:40:32PM +0100, Kumar Gala wrote:
-> >> The binding spec wasn't clear that the order of the phandles in the
-> >> usb-phy array has meaning.  Clarify this point in the binding that
-> >> it should be <USB2-HS-PHY, USB3-SS-PHY>.
-> >>=20
-> >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
-> >> ---
-> >> Documentation/devicetree/bindings/usb/dwc3.txt | 4 +++-
-> >> 1 file changed, 3 insertions(+), 1 deletion(-)
-> >>=20
-> >> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Document=
-ation/devicetree/bindings/usb/dwc3.txt
-> >> index 7a95c65..8a9770b 100644
-> >> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
-> >> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
-> >> @@ -6,7 +6,9 @@ Required properties:
-> >>  - compatible: must be "synopsys,dwc3"
-> >>  - reg : Address and length of the register set for the device
-> >>  - interrupts: Interrupts used by the dwc3 controller.
-> >> - - usb-phy : array of phandle for the PHY device
-> >> + - usb-phy : array of phandle for the PHY device.  The first element
-> >> +   in the array is expected to be a handle to the USB2/HS PHY and
-> >> +   the second element is expected to be a handle to the USB3/SS PHY
-> >=20
-> > Just to check - it's not valid to have a USB3 phy without a USB2 phy?
->=20
-> Don't know, hopefully Felipe will chime in on that.
+On Tue, Aug 13, 2013 at 01:01:09AM +0800, Tang Chen wrote:
+> Sorry for the misunderstanding.
+> 
+> I was trying to answer your question: "Why can't the kenrel allocate
+> hotpluggable memory opportunistic ?".
 
-that'd be a really non-standard implementation. Per-spec, USB3 is
-*always* backwards compatible with USB2.
+I've used the wrong word, I was meaning best-effort, which is the only
+thing we can do anyway given that we have no control over where the
+kernel image is linked in relation to NUMA nodes.
 
---=20
-balbi
+> If the kernel has any opportunity to allocate hotpluggable memory in
+> SRAT, then the kernel should tell users which memory is hotpluggable.
+> 
+> But in what way ?  I think node is the best for now. But a node could
+> have a lot of memory. If the kernel uses only a little memory, we will
+> lose the whole movable node, which I don't want to do.
+> 
+> So, I don't want to allow the kenrel allocating hotpluggable memory
+> opportunistic.
 
---sXc4Kmr5FA7axrvy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+What I was saying was that the kernel should try !hotpluggable memory
+first then fall back to hotpluggable memory instead of failing boot as
+nothing really is worse than failing to boot.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> >Short of being able to remap memory under the kernel, I don't think
+> >this can be very generic and as a compromise trying to keep as many
+> >hotpluggable nodes as possible doesn't sound too bad.
+> 
+> I think making one of the node hotpluggable is better. But OK, it is
+> no big deal. There won't be such machine in reality, I think. :)
 
-iQIcBAEBAgAGBQJSCSQAAAoJEIaOsuA1yqREuE4P/jUycln6LwcQWIP6Woju+AKp
-BLTY5U7oWEUkFTS9et6+8rgcIRkeLaax061JE/oZ8J7+oAV+2awYRgsQ2MWdwzXy
-NNOg3iNhtZMxg1gdz9ZxZPPEvOZDpldcIGVczgfCWqqxRU/Yh2PUPqizknk1XZFD
-uYU+DSQgg7V+fdlm/0g4gMsHvM2hTWYfNGdV7Ht2QEQMH9kXmyIu2graweYGAJxF
-aa15eaxsk/USv+u8jN8urCtzi8bf/rzVUtdQoKmY4zfifpUOhfjnDN5TGFcOY1HJ
-TK3jom5PPXfLIdTFXYEyD4T0aqAxa5k/p9a+QoWGrx06hNsAZHwCOCONZmNDx0fw
-z1DIK/7PHanlGFoof60KX+LlVkTGvZxUltSfUTY5gFoyOgBYbeGpLe6ZjKxJIpQv
-Iz8gErPt5lrQm7DoBNblCp9bl1dM+OykeuBeRqpyIgjLyNkum4kv79VYJG2YVeRs
-2qyurYKBmjk7nbyWuPe/6t336LGnJ1oLLHO8ooXSWm/CU+zKvuXZQ4mGxucENPjn
-GtBd4Tz/2JJdE+gLeriI6fvNDS6fQ0WUpTn5DsN13OoC46bRUc9yx03edWaajRx4
-e2r/DzCfEbNIyy56B5V56ARbD2uIUedFMlPaa6k+F7n/GeZyelttWUG0akMsvNnK
-aBSPqZaTPy+CL1noGyP/
-=i7U/
------END PGP SIGNATURE-----
+Hmmm... but allocating close to kernel image will keep the number of
+nodes which are made un-removeable via permanent allocation to
+minimum.  In most configurations that I can recall, I don't think we'd
+lose anything really and the code will be much simpler and generic.
+It seems like a good trade-off to me given that we need to report
+which nodes are hot unpluggable no matter what.
 
---sXc4Kmr5FA7axrvy--
+Thanks.
+
+-- 
+tejun
