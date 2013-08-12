@@ -1,73 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab3HLSAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:00:01 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51331 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab3HLR75 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:59:57 -0400
-Message-ID: <52092299.4080104@wwwdotorg.org>
-Date: Mon, 12 Aug 2013 11:59:53 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752229Ab3HLSFN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:05:13 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49655 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911Ab3HLSFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 14:05:07 -0400
+Date: Mon, 12 Aug 2013 13:04:38 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Kumar Gala <galak@codeaurora.org>
+CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>, <balbi@ti.com>,
+        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ian.campbell@citrix.com>, <rob@landley.net>,
+        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
+        <idos@codeaurora.org>, <mgautam@codeaurora.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 1/3] usb: dwc3: msm: Add device tree binding
+ information
+Message-ID: <20130812180438.GC27954@radagast>
+Reply-To: <balbi@ti.com>
+References: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com>
+ <1376042027-9798-2-git-send-email-iivanov@mm-sol.com>
+ <169628C9-00BA-4E58-BF65-7B180E6BE4ED@codeaurora.org>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: [PATCH 1/2] include: dt-binding: input: create a DT header defining
- key codes.
-References: <1375798370-2231-1-git-send-email-ldewangan@nvidia.com> <52014E50.6030508@wwwdotorg.org> <5203D138.4030107@nvidia.com> <20130808171331.GA6960@core.coreip.homeip.net> <5203D487.5020507@wwwdotorg.org> <20130812171504.GA31418@core.coreip.homeip.net>
-In-Reply-To: <20130812171504.GA31418@core.coreip.homeip.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="t0UkRYy7tHLRMCai"
+Content-Disposition: inline
+In-Reply-To: <169628C9-00BA-4E58-BF65-7B180E6BE4ED@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 11:15 AM, Dmitry Torokhov wrote:
-> On Thu, Aug 08, 2013 at 11:25:27AM -0600, Stephen Warren wrote:
->> On 08/08/2013 11:13 AM, Dmitry Torokhov wrote:
->>> On Thu, Aug 08, 2013 at 10:41:20PM +0530, Laxman Dewangan wrote:
->>>> On Wednesday 07 August 2013 12:58 AM, Stephen Warren wrote:
->>>>> (CC'ing DT bindings maintainers too, hence quoting a bit of the patch)
->>>>>
->>>>> On 08/06/2013 08:12 AM, Laxman Dewangan wrote:
->>>>>> Many of Key device tree bindings uses the constant number as key code
->>>>>> which matches with kernel header key code and then comment as follows
->>>>>> for reference/better readability:
->>>>>> 	linux,code = <102>; /* KEY_HOME */
->>>>>>
->>>>>> Create a DT header which defines all the key code so that DT key bindings
->>>>>> can use it as follows:
->>>>>> 	linux,code = <KEY_HOME>;
->> ...
->>> I am uncomfortable that we are duplicating the whole list of keycodes
->>> here. Do you think we could split keycodes and other event codes from
->>> include/uapi/linux/input.h into include/uapi/linux/input-events.h and
->>> unclude it directly into DTS?
->>
->> Device tree files can only include headers in include/dt-bindings.
->> Eventually/soon, all the DT files and the headers in the dt-bindings/
->> directory will be split out into a separate git tree, which does not
->> have access to include/uapi, or indeed any other Linux kernel header files.
-> 
-> OK, that makes it easier for me - please merge through whatever tree
-> that owns include/dt-bindings.
+--t0UkRYy7tHLRMCai
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Are there any objections to my taking both patches through the Tegra
-tree? Patch 2/2 depends on 1/2 and is Tegra-specific. This should work
-out fine unless anyone else wants to use the new header this kernel
-cycle; if they do, this should go into a topic branch in the DT tree
-that I can pull into the Tegra tree.
+On Fri, Aug 09, 2013 at 10:31:58AM -0500, Kumar Gala wrote:
+>=20
+> On Aug 9, 2013, at 4:53 AM, Ivan T. Ivanov wrote:
+>=20
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> >=20
+> > MSM USB3.0 core wrapper consist of USB3.0 IP (SNPS)
+>=20
+> probably good to spell out Synopsys rather than SNPS
+
+Synopsys (the company) has always used snps in their bindings though.
+
+> > +Required properities :
+> > +- compatible : sould be "qcom,dwc3-hsphy";
+> > +- reg : offset and length of the register set in the memory map
+> > +- clocks : phandles to clock instances of the device tree nodes
+> > +- clock-names :
+> > +	"xo" : External reference clock 19 MHz
+> > +	"sleep_a_clk" : Sleep clock, used when USB3 core goes into low
+> > +	power mode (U3).
+> > +<supply-name>-supply : phandle to the regulator device tree node
+> > +Required "supply-name" are:
+> > +	"v1p8" : 1.8v supply for HSPHY
+> > +	"v3p3" : 3.3v supply for HSPHY
+> > +	"vbus" : vbus supply for host mode
+> > +	"vddcx" : vdd supply for HS-PHY digital circuit operation
+
+I believe these regulators belong to the PHY, not DWC3. Please write a
+PHY driver.
+
+> > +Required properities :
+> > +- compatible : sould be "qcom,dwc3-ssphy";
+> > +- reg : offset and length of the register set in the memory map
+> > +- clocks : phandles to clock instances of the device tree nodes
+> > +- clock-names :
+> > +	"xo" : External reference clock 19 MHz
+> > +	"ref_clk" : Reference clock - used in host mode.
+> > +<supply-name>-supply : phandle to the regulator device tree node
+> > +Required "supply-name" are:
+> > +	"v1p8" : 1.8v supply for SS-PHY
+> > +	"vddcx" : vdd supply for SS-PHY digital circuit operation
+
+likewise, these regulators should be moved to the PHY driver.
+
+> > +Required properties :
+> > +- compatible : should be "qcom,dwc3"
+> > +- reg : offset and length of the register set in the memory map
+> > +	offset and length of the TCSR register for routing USB
+> > +	signals to either picoPHY0 or picoPHY1.
+> > +- clocks : phandles to clock instances of the device tree nodes
+> > +- clock-names :
+> > +	"core_clk" : Master/Core clock, have to be >=3D 125 MHz for SS
+> > +	operation and >=3D 60MHz for HS operation
+> > +	"iface_clk" : System bus AXI clock
+> > +	"sleep_clk" : Sleep clock, used when USB3 core goes into low
+> > +	power mode (U3).
+> > +	"utmi_clk" : Generated by HS-PHY. Used to clock the low power
+> > +	parts of thr HS Link layer.
+> > +
+> > +Optional properties :
+> > +- gdsc-supply : phandle to the globally distributed switch controller
+> > +  regulator node to the USB controller.
+> > +
+> > +Sub nodes:
+> > +- Sub node for "DWC3 USB3 controller".
+> > +  This sub node is required property for device node. The properties
+> > +  of this subnode are specified in dwc3.txt.
+>=20
+> Is tx-fifo-resize required for qcom,dwc3? if so we should call that
+> out in the binding.
+
+AFAICT that's only needed for OMAP5 ES1.0. Unless Qualcomm also screwed
+up default TX FIFO sizes :-p
+
+--=20
+balbi
+
+--t0UkRYy7tHLRMCai
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSCSO2AAoJEIaOsuA1yqREWxMP/3jiFI/Oy1xBYu8O8bTH98FH
+Wi1iBx5FToWYCUd74Yvk4xOJB2/0o1/JnoYvSJmILGirUAs2aRn/uIxpxMaCeg2v
+V4MR9vVLgEvFtg8jEwpDX/cgHWagSDSKGUX0zs+YKPLa8smn09LEOYVPPiDZIu7m
+8Rl6Rgak4WEYLvbImS1FY/gE/ih9bg/Ehrk/xgyyW8FI88dyTQkH2wNrsDSp/Sy5
+7D6cXFlGXqQdgbib4nj2KZ/H/megS2NQ8YXOv4YveDIKL8uIspgUldCWA4J4YCTg
+64nXHbuRS8/5uKzvIrxav08XR+9zk7N3/K6Y2pJSbTG/5K0v1VNLEwtgeDna9Zj7
+epwzq5BqVGJ7juEntKFyEbQak0KZUiABoJeL0ZqL5jxtja/BkLGbgOHcagm/aL/t
+owKTGEnfvySO+zjEJUBYUoc7ZFrqOYwV0eVnIosw2FHsirzjKIR5Umwffqf4ihyo
+oyw0DJs7d8ykn5d8wcBPv2QLRJDh+pCk7SDxWz6pbII6JZyYb3qkS8InEpkjt/9F
+Tfj/9N/X9YFbJ3PDHZEP0XFlfLtRlwYYCqEfg0EVU1SWIj8th8AX+q+0ctCBEnQu
+/tCzMKSt3ARqsiWLaM4BTqSnRGZkddMDRB5MpYTcECtEJnSDQTBT+wV6SQY+f4Df
+UF2kGRqNpfFzhqF98Jmo
+=OEER
+-----END PGP SIGNATURE-----
+
+--t0UkRYy7tHLRMCai--
