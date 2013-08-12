@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab3HLXrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 19:47:08 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:42564 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab3HLXrG (ORCPT
+	id S1756126Ab3HLXuB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 19:50:01 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:46719 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755911Ab3HLXt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 19:47:06 -0400
+	Mon, 12 Aug 2013 19:49:59 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: Re: [PATCH 10/18] spi: s3c64xx: Do not require legacy DMA API in case of S3C64XX
+Date: Tue, 13 Aug 2013 01:49:53 +0200
+Message-ID: <2472314.6b8DcBdcjO@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.5-gentoo-r1; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130812233641.GL6427@sirena.org.uk>
+References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com> <1376243970-6489-11-git-send-email-tomasz.figa@gmail.com> <20130812233641.GL6427@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <52090CF2.3040505@sr71.net>
-References: <520578D0.7020607@intel.com>
-	<CAE9FiQUuPmZfhsHvmsS+_O_VOWMA_OBAexGyRF3eZR1_D3EehA@mail.gmail.com>
-	<52059508.3090405@sr71.net>
-	<CAE9FiQVvo+saJFpx=6A8O7GOns0cR302_GBe4A0a10a4Z0mZyw@mail.gmail.com>
-	<CAE9FiQWn5+XH7cjUjRJNuB747u2-aq3ZpXoPwyZEFYALCxZ30Q@mail.gmail.com>
-	<52090CF2.3040505@sr71.net>
-Date: Mon, 12 Aug 2013 16:47:04 -0700
-X-Google-Sender-Auth: ZyGVmdTMDGPZ0CoezcGE-mWyrz0
-Message-ID: <CAE9FiQVbGrXLEWVNugJUa=YAA8mHyTM32Ow5kUU7cYBvMpk5gA@mail.gmail.com>
-Subject: Re: x86: early boot crash: "alloc_low_page: ran out of memory" (bisected)
-From: Yinghai Lu <yinghai@kernel.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: "the arch/x86 maintainers" <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 9:27 AM, Dave Hansen <dave@sr71.net> wrote:
-> On 08/09/2013 07:21 PM, Yinghai Lu wrote:
->> -/* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
->> -#define INIT_PGT_BUF_SIZE    (5 * PAGE_SIZE)
->> +/* need 4 4k for initial PMD_SIZE,  3 4k for 0-ISA_END_ADDRESS */
->> +#define INIT_PGT_BUF_SIZE    (7 * PAGE_SIZE)
->>  RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
->>  void  __init early_alloc_pgt_buf(void)
->
-> That patch allows me to boot again.  I've also attached a boot with the
-> debug options that you asked for.
->
-> I'm really curious to see the full changelog for why this patch helps
-> any why it's only triggered for large memory sizes. :)
+On Tuesday 13 of August 2013 00:36:41 Mark Brown wrote:
+> On Sun, Aug 11, 2013 at 07:59:22PM +0200, Tomasz Figa wrote:
+> > With support for amba-pl08x driver, on S3C64xx the generic DMA engine
+> > API can be used instead of the private s3c-dma interface.
+> 
+> I'm still getting issues for SPI with this:
+> 
+> [   50.952845] s3c64xx-spi s3c6410-spi.0: Failed to get RX DMA channel
+> [   50.953520] spi_master spi0: failed to prepare transfer hardware
+> 
+> when I test (with -next with this series applied on top), this is from
+> the first transfer that tries to DMA - there's actually no RX data.  No
+> errors are reported by the DMA controller itself.  I'm also getting
+> crashes setting up the audio DMA while derferencecing the channel.
+> 
+> This is without DT - are there any hookups missing because of that?
 
-Thanks, please check changelog at
+Hmm, strange.
 
-https://patchwork.kernel.org/patch/2843321/
+I've been testing this without any significant patches, like PWM, CCF or 
+DT support, just everything from the branch I pointed to and some board-
+specific patches to help in debugging.
 
-Yinghai
+Anyway, this is the exact branch I've been using:
+
+git://github.com/tom3q/linux.git v3.12-pl080-devel
+
+Best regards,
+Tomasz
+
