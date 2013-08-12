@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab3HLO0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 10:26:08 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:44431 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3HLO0E (ORCPT
+	id S1756085Ab3HLO17 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 10:27:59 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63752 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab3HLO15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 10:26:04 -0400
-Message-ID: <5208F06C.8090206@gmail.com>
-Date: Mon, 12 Aug 2013 22:25:48 +0800
-From: Tang Chen <imtangchen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 12 Aug 2013 10:27:57 -0400
+From: Jordi Pujol <jordipujolp@gmail.com>
+To: Jiang Liu <jiang.liu@huawei.com>, linux-kernel@vger.kernel.org
+Subject: ZRAM 3.10.6 Buffer I/O error
+Date: Mon, 12 Aug 2013 16:27:51 +0200
+Message-ID: <1998314.O9XRMyhM6u@pcjordi>
+User-Agent: KMail/4.10.5 (Linux/3.10.6-1-lnet-amd64; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Joe Perches <joe@perches.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part2 3/4] acpi: Remove "continue" in macro INVALID_TABLE().
-References: <1375938239-18769-1-git-send-email-tangchen@cn.fujitsu.com> <1375938239-18769-4-git-send-email-tangchen@cn.fujitsu.com> <1375939646.2424.132.camel@joe-AO722> <52038C84.4080608@cn.fujitsu.com> <1375970993.2424.142.camel@joe-AO722> <20130812142119.GF15892@htj.dyndns.org>
-In-Reply-To: <20130812142119.GF15892@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 10:21 PM, Tejun Heo wrote:
-> On Thu, Aug 08, 2013 at 07:09:53AM -0700, Joe Perches wrote:
->> If you really think that the #define is better, use
->> something like HW_ERR does and embed that #define
->> in the pr_err.
->>
->> #define ACPI_OVERRIDE	"ACPI OVERRIDE: "
->>
->> 	pr_err(ACPI_OVERRIDE "Table smaller than ACPI header [%s%s]\n",
->> 	       cpio_path, file.name);
->>
->> It's only used a few times by a single file so
->> I think it's unnecessary.
->
-> I agree with Joe here.  Just doing normal pr_err() should be enough.
-> You can use pr_fmt() to add headers but given that we aren't talking
-> about huge number of printks, that probably is an overkill too.
+Hello,
 
-OK, followed.
+zram shows an error when mounting a swap partition,
+current version Linux kernel 3.10.6,
+previous versions worked, I suppose that latest zram patches have some 
+problem,
 
-Thanks.
+machine is an AMD64 dual core, 4GB RAM
+
++ modprobe -qb zram num_devices=2
++ echo 104857600 > /sys/block/zram0/disksize
+
+# mkswap /dev/zram0
+Setting up swapspace version 1, size = 102396 KiB
+no label, UUID=6c249930-2ba0-46cf-a8c6-766481942b7d
+
+# pager /var/log/dmesg 
+(no more errors shown)
+
+# swapon /dev/zram0
+
+# pager /var/log/dmesg 
+...
+[  309.300479] Buffer I/O error on device zram0, logical block 25599
+[  309.300491] Buffer I/O error on device zram0, logical block 25599
+[  309.300514] Buffer I/O error on device zram0, logical block 25599
+[  345.205887] Adding 102396k swap on /dev/zram0.  Priority:-2 extents:1 
+across:102396k SSFS
+
+full log files and the kernel source are stored in the address:
+
+http://livenet.selfip.com/ftp/debian/zram_3.10.6_IO_error/
+
+Kind regards,
+
+Jordi Pujol
+
+Live never ending Tale
+GNU/Linux Live forever!
+http://livenet.selfip.com
 
