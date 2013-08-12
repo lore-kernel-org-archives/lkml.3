@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab3HLIdZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 04:33:25 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52585 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754028Ab3HLIdV (ORCPT
+	id S1755617Ab3HLIeK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 04:34:10 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:25065
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754759Ab3HLIeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 04:33:21 -0400
-Date: Mon, 12 Aug 2013 10:33:19 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 4/9] pinctrl: sunxi: Add Allwinner A20 pins set
-Message-ID: <20130812083319.GN2911@lukather>
-References: <1375610330-18185-1-git-send-email-maxime.ripard@free-electrons.com>
- <1375610330-18185-5-git-send-email-maxime.ripard@free-electrons.com>
+	Mon, 12 Aug 2013 04:34:08 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 6
+X-BigFish: VS6(z1039mcb8kz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Mon, 12 Aug 2013 16:34:14 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: <rjw@sisk.pl>, <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 21/44] cpufreq: imx6q: Use generic cpufreq routines
+Message-ID: <20130812083412.GI25061@S2101-09.ap.freescale.net>
+References: <cover.1376116344.git.viresh.kumar@linaro.org>
+ <6d7504823a31aea1e4773998f60720494fb0e6b6.1376116345.git.viresh.kumar@linaro.org>
+ <20130812075841.GG25061@S2101-09.ap.freescale.net>
+ <CAKohponEs-5WEqKTkgyiZP0rfgHzSDy3O9Hyx4U0Xkc-wa-9Mg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Yq3EGcigLBTDQpeG"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1375610330-18185-5-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <CAKohponEs-5WEqKTkgyiZP0rfgHzSDy3O9Hyx4U0Xkc-wa-9Mg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 12, 2013 at 01:40:36PM +0530, Viresh Kumar wrote:
+> On 12 August 2013 13:28, Shawn Guo <shawn.guo@linaro.org> wrote:
+> > On Sat, Aug 10, 2013 at 12:14:17PM +0530, Viresh Kumar wrote:
+> >> Most of the CPUFreq drivers do similar things in .exit() and .verify() routines
+> >> and .attr. So its better if we have generic routines for them which can be used
+> >> by cpufreq drivers then.
+> >>
+> >> This patch uses these generic routines for this driver.
+> >>
+> >> Cc: Shawn Guo <shawn.guo@linaro.org>
+> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> >
+> > Shawn Guo <shawn.guo@linaro.org>
+> 
+> I assume you meant an Ack here :)
 
---Yq3EGcigLBTDQpeG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ah, yeah.
 
-Hi Linus,
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-On Sun, Aug 04, 2013 at 11:58:45AM +0200, Maxime Ripard wrote:
-> The Allwinner A20 is pin-compatible with the older A10, so the two pin
-> set are quite similar. However, since the A20 has new features, we can't
-> just use the A10 pin set as is, and we need to define our own for the
-> A20.
-
-I'd like this to get merged in 3.12, do you have any comments on this
-patch?
-
-It's mostly just another round of pin sets additions for yet another
-SoC, like we already had a few times.
-
-Hopefully, it will be the end of it, unless if Allwinner release a new
-SoC.
-
-The only missing feature now is the gpio irq support for the A31 that
-had a slightly different interrupts handling. Anyway, this support will
-likely be in 3.13.
-
-Thanks,
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---Yq3EGcigLBTDQpeG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCJ3PAAoJEBx+YmzsjxAge/oQAIAhUbKul2vssUGw3k94aDvH
-PzOTxrLVII8sOoemz9fj1JkXuUuQFh7m07JC1fYZhEr2R98Ctr5rUs7ZAxaT8ugy
-+JzwAIGQTtmmO/v9mnMrA2FZw6fz0KYVmQnY9TqfaYKhPvOGoyAxIeIYlC5NrsDj
-ZPk2I2hHyr31exUJGiteF5lokV3ZIYSJWYKPo2Xg4OFms10h1/o/Syza2cHQsVX/
-TlGzQijfce17JJ6Ef5PSGujaXbqvscSBu9iEMNVhgcfJUZYZkpGsT1YI8BfrL9r1
-NUxnullbrEnkXZ4BaTp0vq3n4Wkpq1HTlO1/1W+/0Pfk5uQxzZUMlSs+iE5zcL98
-wpRY95Z2gou7WWEzews6nWoiopG9gbdvIFR3cSAgvMpX/pvn6D8yVY+4Onvc3go8
-opvl6SAQ/6TX38sl68elTiKePnRT2KgC2CkBcqjurT7tWSGNxYCTMkdivq+DPvoD
-I5Xh2wmBYwYSnmN/LtW9vXlon0uNlQ6tLpk937GYCloiCXlDiBCArShGRWAXpRNB
-p+bxJkOfOD54Dd4ObINvmYDWHhAfwwKuFc29O403FGfEEJKlGLy2quezDFRUdw/a
-WRmqzB0Vfd65JVGORDRFQuVrTmVr8iuJLa2oBoXthS9A3sNt8sPae9KdAtIAwQTb
-WBKtZbg6mApP9cvOjYhU
-=kkU6
------END PGP SIGNATURE-----
-
---Yq3EGcigLBTDQpeG--
