@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab3HLUUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 16:20:11 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:1318 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397Ab3HLUUJ (ORCPT
+	id S1754377Ab3HLUUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 16:20:38 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:44839 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab3HLUUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 16:20:09 -0400
-Message-ID: <1376338799.2697.18.camel@j-VirtualBox>
-Subject: Re: [PATCH] sched: Give idle_balance() a break when it does not
- move tasks.
-From: Jason Low <jason.low2@hp.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com, "Bui, Tuan" <tuan.d.bui@hp.com>,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Makphaibulchoke, Thavatchai" <thavatchai.makpahibulchoke@hp.com>,
-        "Bueso, Davidlohr" <davidlohr.bueso@hp.com>
-Date: Mon, 12 Aug 2013 13:19:59 -0700
-In-Reply-To: <20130812110045.GA1925@linux.vnet.ibm.com>
-References: <1376296970.1795.9.camel@j-VirtualBox>
-	 <20130812110045.GA1925@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 12 Aug 2013 16:20:35 -0400
+Date: Mon, 12 Aug 2013 16:20:29 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <imtangchen@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+Message-ID: <20130812202029.GB8288@mtj.dyndns.org>
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
+ <20130812145016.GI15892@htj.dyndns.org>
+ <5208FBBC.2080304@zytor.com>
+ <20130812152343.GK15892@htj.dyndns.org>
+ <52090D7F.6060600@gmail.com>
+ <20130812164650.GN15892@htj.dyndns.org>
+ <52092811.3020105@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52092811.3020105@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-08-12 at 16:30 +0530, Srikar Dronamraju wrote:
-> >  	/*
-> > @@ -5298,6 +5300,8 @@ void idle_balance(int this_cpu, struct rq *this_rq)
-> >  			continue;
-> > 
-> >  		if (sd->flags & SD_BALANCE_NEWIDLE) {
-> > +			load_balance_attempted = true;
-> > +
-> >  			/* If we've pulled tasks over stop searching: */
-> >  			pulled_task = load_balance(this_cpu, this_rq,
-> >  						   sd, CPU_NEWLY_IDLE, &balance);
-> > @@ -5322,6 +5326,10 @@ void idle_balance(int this_cpu, struct rq *this_rq)
-> >  		 */
-> >  		this_rq->next_balance = next_balance;
-> >  	}
-> > +
-> > +	/* Give idle balance on this CPU a break when it isn't moving tasks */
-> > +	if (load_balance_attempted && !pulled_task)
-> > +		this_rq->next_newidle_balance = jiffies + (HZ / 100);
-> >  }
+Hello,
+
+On Tue, Aug 13, 2013 at 02:23:13AM +0800, Tang Chen wrote:
+> >* However, we already *know* that the memory the kernel image is
+> >   occupying won't be removeable.  It's highly likely that the amount
+> >   of memory allocation before NUMA / hotplug information is fully
+> >   populated is pretty small.  Also, it's highly likely that small
+> >   amount of memory right after the kernel image is contained in the
+> >   same NUMA node, so if we allocate memory close to the kernel image,
+> >   it's likely that we don't contaminate hotpluggable node.  We're
+> >   talking about few megs at most right after the kernel image.  I
+> >   can't see how that would make any noticeable difference.
 > 
-> Looks reasonable. However should we do this per sd and not per rq. i.e
-> move the next_newidle_balance to sched_domain. So if we find a
-> load_balance in newly_idle context that wasn't successful, we skip
-> load_balance for that sd in the next newly idle balance.
+> This point, I don't quite agree. What you said is highly likely, but
+> not definitely. Users may find they lost hotpluggable memory.
 
-I wonder, if we skip newidle balance for a domain after a newidle
-balance attempt for a CPU did not move tasks, would that potentially
-cause some "unfairness" for all the other CPUS within the domain?
+I'm having difficult time buying that.  NUMA node granularity is
+usually pretty large - it's in the range of gigabytes.  By comparison,
+the area occupied by the kernel image is *tiny* and it's just highly
+unlikely that allocating a bit more memory afterwards would lead to
+any meaningful difference in hotunplug support.  The amount of memory
+we're talking about is likely to be less than a meg, right?
 
-Perhaps we can reduce the duration that idle balance is blocked from 10
-ms to a much smaller duration if we were to block on a per domain basis.
+> The node the kernel resides in won't be removable. This is agreed.
+> But I still want SRAT earlier for the following reasons:
+> 
+> 1. For a production provided to users, the firmware specified how
+>    many nodes are hotpluggable. When the system is up, if users
+>    found they lost movable nodes, I think it could be messy.
 
-Peter, any thoughts on which method is preferable?
+How is that different from the memory occupied by kernel image?
+Simply allocating early memory near kernel image is extremely unlikely
+to change the situation.  Again, we're talking about tiny allocation
+here.  It should be no different from having *slightly* larger kernel
+image.  How is that material in any way?
 
-Thanks for the suggestion,
-Jason
+> 2. Reorder SRAT parsing earlier is not that difficult to do. The
+>    only procedures reordered are acpi tables initialization and
+>    acpi_initrd_override. The acpi part patches are being reviewed.
+>    And it is better solution. If possible, I think we should do it.
 
+I don't think it's a better solution.  It's fragile and fiddly and
+without much, if any, additional benefit.  Why should we do that when
+we can almost trivially solve the problem almost in memblock proper in
+a way which is completely firmware-agnostic?
 
+But, what's the extra benefit of doing that?  Why would reserving less
+than a megabyte after the kernel be so problematic to require this
+invasive solution?
+
+Thanks.
+
+-- 
+tejun
