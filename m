@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab3HLIwn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 04:52:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49627 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382Ab3HLIwl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 04:52:41 -0400
-Date: Mon, 12 Aug 2013 10:52:27 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V9 09/14] perf: make events stream always parsable
-Message-ID: <20130812085227.GA27162@twins.programming.kicks-ass.net>
-References: <1375719994-26482-1-git-send-email-adrian.hunter@intel.com>
- <1375719994-26482-10-git-send-email-adrian.hunter@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375719994-26482-10-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755927Ab3HLIxv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 04:53:51 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:38607 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754084Ab3HLIxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 04:53:48 -0400
+Message-ID: <1376297561.7709.35.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v2 3/6] usb: phy: msm: Migrate to Managed Device
+ Resource allocation
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 12 Aug 2013 11:52:41 +0300
+In-Reply-To: <20130729122522.GI24801@radagast>
+References: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
+	 <1375081464-14206-4-git-send-email-iivanov@mm-sol.com>
+	 <20130729122522.GI24801@radagast>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 07:26:29PM +0300, Adrian Hunter wrote:
-> The event stream is not always parsable because the format of a sample
-> is dependent on the sample_type of the selected event.  When there
-> is more than one selected event and the sample_types are not the
-> same then parsing becomes problematic.  A sample can be matched to its
-> selected event using the ID that is allocated when the event is opened.
-> Unfortunately, to get the ID from the sample means first parsing it.
-> 
-> This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
-> the ID at a fixed position so that the ID can be retrieved without
-> parsing the sample.  For sample events, that is the first position
-> immediately after the header.  For non-sample events, that is the last
-> position.
-> 
-> In this respect parsing samples requires that the sample_type and ID
-> values are recorded.  For example, perf tools records struct perf_event_attr
-> and the IDs within the perf.data file.  Those must be read first
-> before it is possible to parse samples found later in the perf.data file.
-> 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+Hi, 
+
+On Mon, 2013-07-29 at 15:25 +0300, Felipe Balbi wrote:
+> Hi,
+> 
+> On Mon, Jul 29, 2013 at 10:04:21AM +0300, Ivan T. Ivanov wrote:
+> >  	motg->irq = platform_get_irq(pdev, 0);
+> > -	if (!motg->irq) {
+> > +	if (motg->irq < 0) {
+> 
+> looks like this particular hunk isn't part of $subject.
+> 
+
+Indeed. Will remove it. 
+
+Thanks, 
+Ivan
 
 
