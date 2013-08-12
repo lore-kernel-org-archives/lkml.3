@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab3HLWSS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 18:18:18 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:53183 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755529Ab3HLWSR (ORCPT
+	id S1755608Ab3HLW2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 18:28:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57499 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab3HLW2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 18:18:17 -0400
-MIME-Version: 1.0
-Date: Mon, 12 Aug 2013 15:18:16 -0700
-Message-ID: <CAOUhrBGcH4Oe32cDFs++a1UyKaGNfCm1sCG6UC4an_fO5vDjjQ@mail.gmail.com>
-Subject: [PATCH] fix a Sparse warning in the arch/x86/kernel/irq_work.c file
-From: Shailaja Neelam <neelamshaila@gmail.com>
-To: fweisbec@gmail.com, rostedt@goodmis.org, akpm@linux-foundation.org,
-        anish198519851985@gmail.com, james.hogan@imgtec.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Aug 2013 18:28:14 -0400
+Date: Mon, 12 Aug 2013 15:28:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: linux-mm@kvack.org, Glauber Costa <glommer@parallels.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] [RFC] kmemcg: remove union from memcg_params
+Message-Id: <20130812152812.915d5e8ebe5467586a457eb0@linux-foundation.org>
+In-Reply-To: <1375995086-15456-1-git-send-email-avagin@openvz.org>
+References: <1375995086-15456-1-git-send-email-avagin@openvz.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am a high school student trying to become familiar with the
-opensource process and linux kernel. This is my first submission to
-the ITC mailing list.
+On Fri,  9 Aug 2013 00:51:26 +0400 Andrey Vagin <avagin@openvz.org> wrote:
 
-My patch is for the file arch/x86/kernel/irq_work.c in the vesion
-linux-3.10 kernel. When I ran the kernel with Sparse, the error read:
-arch/x86/kernel/irq_work.c:21:
-6: warning: symbol 'arch_irq_work_raise'
-was not declared. Should it be static?
+> struct memcg_cache_params {
+>         bool is_root_cache;
+>         union {
+>                 struct kmem_cache *memcg_caches[0];
+>                 struct {
+>                         struct mem_cgroup *memcg;
+>                         struct list_head list;
+>                         struct kmem_cache *root_cache;
+>                         bool dead;
+>                         atomic_t nr_pages;
+>                         struct work_struct destroy;
+>                 };
+>         };
+> };
+> 
+> This union is a bit dangerous. //Andrew Morton
+> 
+> The first problem was fixed in v3.10-rc5-67-gf101a94.
+> The second problem is that the size of memory for root
+> caches is calculated incorrectly:
+> 
+> 	ssize_t size = memcg_caches_array_size(num_groups);
+> 
+> 	size *= sizeof(void *);
+> 	size += sizeof(struct memcg_cache_params);
+> 
+> The last line should be fixed like this:
+> 	size += offsetof(struct memcg_cache_params, memcg_caches)
+> 
+> Andrew suggested to rework this code without union and
+> this patch tries to do that.
 
-To fix this (rather than add static) I declared the symbol in the
-header file linux/irq_work.h. Afterwards, my error did not show up
-when I ran the kernel with Sparse again. I also ran the command "make
-menuconfig" to change the kernel version so that I could assure the
-correct kernel was running when I tested it, and it was. Then I test
-built the kernel. It built and rebooted correctly.
+hm, did I?
 
-Signed-off-by: Shailaja Neelam <neelamshaila@gmail.com>
----
---- linux-3.10/include/linux/irq_
-work.h    2013-06-30 15:13:29.000000000 -0700
-+++ linux-3.10.change/include/linux/irq_work.h    2013-07-24
-12:06:15.521140635 -0700
-@@ -33,6 +33,7 @@ void init_irq_work(struct irq_work *work
- void irq_work_queue(struct irq_work *work);
- void irq_work_run(void);
- void irq_work_sync(struct irq_work *work);
-+void arch_irq_work_raise(void);
+> This patch removes is_root_cache and union. The size of the
+> memcg_cache_params structure is not changed.
+> 
 
- #ifdef CONFIG_IRQ_WORK
- bool irq_work_needs_cpu(void);
+It's a bit sad to consume more space because we're sucky programmers. 
+It would be better to retain the union and to stop writing buggy code
+to handle it!
+
+Maybe there are things we can do to reduce the likelihood of people
+mishandling the union - don't use anonymous fields, name each member,
+access it via helper functions, etc.
+
