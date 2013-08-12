@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab3HLKYT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:24:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48167 "EHLO
+	id S1756763Ab3HLKY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:24:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48175 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755936Ab3HLKYN (ORCPT
+	with ESMTP id S1755936Ab3HLKYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:24:13 -0400
-Date: Mon, 12 Aug 2013 03:23:52 -0700
+	Mon, 12 Aug 2013 06:24:23 -0400
+Date: Mon, 12 Aug 2013 03:24:02 -0700
 From: tip-bot for Michael Ellerman <tipbot@zytor.com>
-Message-ID: <tip-e9a7c414477d20c3cc56f90f29c35b06f0f15e25@git.kernel.org>
+Message-ID: <tip-c9ee780f2736b7a149658b0cd8c8389da23e190a@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, michael@ellerman.id.au,
         namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         acme@redhat.com, a.p.zijlstra@chello.nl, michael@ellerman.id.au,
         namhyung@kernel.org, jolsa@redhat.com, tglx@linutronix.de
-In-Reply-To: <1375795686-4226-1-git-send-email-michael@ellerman.id.au>
-References: <1375795686-4226-1-git-send-email-michael@ellerman.id.au>
+In-Reply-To: <1375795686-4226-2-git-send-email-michael@ellerman.id.au>
+References: <1375795686-4226-2-git-send-email-michael@ellerman.id.au>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add support for pinned modifier
-Git-Commit-ID: e9a7c414477d20c3cc56f90f29c35b06f0f15e25
+Subject: [tip:perf/core] perf tests: Add tests of new pinned modifier
+Git-Commit-ID: c9ee780f2736b7a149658b0cd8c8389da23e190a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,148 +29,111 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 12 Aug 2013 03:23:59 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 12 Aug 2013 03:24:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e9a7c414477d20c3cc56f90f29c35b06f0f15e25
-Gitweb:     http://git.kernel.org/tip/e9a7c414477d20c3cc56f90f29c35b06f0f15e25
+Commit-ID:  c9ee780f2736b7a149658b0cd8c8389da23e190a
+Gitweb:     http://git.kernel.org/tip/c9ee780f2736b7a149658b0cd8c8389da23e190a
 Author:     Michael Ellerman <michael@ellerman.id.au>
-AuthorDate: Tue, 6 Aug 2013 23:28:05 +1000
+AuthorDate: Tue, 6 Aug 2013 23:28:06 +1000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
 CommitDate: Wed, 7 Aug 2013 17:35:40 -0300
 
-perf tools: Add support for pinned modifier
+perf tests: Add tests of new pinned modifier
 
-This commit adds support for a new modifier "D", which requests that the
-event, or group of events, be pinned to the PMU.
+Add a negative test to test__checkevent_pmu_events() to get lots of
+coverage of the negative case, ie. when the modifier is not specified.
 
-The "p" modifier is already taken for precise, and "P" may be used in
-future to mean "fully precise".
-
-So we use "D", which stands for pinneD - and looks like a padlock, or if
-you're using the ":D" syntax perf smiles at you.
-
-This is an oft-requested feature from our HW folks, who want to be able
-to run a large number of events, but also want 100% accurate results for
-instructions per cycle.
-
-Comparison of results with and without pinning:
-
-$ perf stat -e '{cycles,instructions}:D' -e cycles,instructions,...
-
-  79,590,480,683 cycles         #  0.000 GHz
- 166,123,716,524 instructions   #  2.09  insns per cycle
-                                #  0.11  stalled cycles per insn
-
-  79,352,134,463 cycles         #  0.000 GHz                     [11.11%]
- 165,178,301,818 instructions   #  2.08  insns per cycle
-                                #  0.11  stalled cycles per insn [11.13%]
-
-As you can see although perf does a very good job of scaling the values
-in the non-pinned case, there is some small discrepancy.
-
-The patch is fairly straight forward, the one detail is that we need to
-make sure we only request pinning for the group leader when we have a
-group.
+Add a test of a single event, and of the group case.
 
 Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1375795686-4226-1-git-send-email-michael@ellerman.id.au
-[ Use perf_evsel__is_group_leader instead of open coded equivalent, as
-  suggested by Jiri Olsa ]
+Link: http://lkml.kernel.org/r/1375795686-4226-2-git-send-email-michael@ellerman.id.au
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-list.txt |  1 +
- tools/perf/util/parse-events.c         | 11 ++++++++++-
- tools/perf/util/parse-events.l         |  3 ++-
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ tools/perf/tests/parse-events.c | 53 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index eb03f06..6fce6a6 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -30,6 +30,7 @@ counted. The following modifiers exist:
-  H - host counting (not in KVM guests)
-  p - precise level
-  S - read sample value (PERF_SAMPLE_READ)
-+ D - pin the event to the PMU
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index b46379c..48114d1 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -452,6 +452,7 @@ static int test__checkevent_pmu_events(struct perf_evlist *evlist)
+ 			evsel->attr.exclude_kernel);
+ 	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
+ 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong pinned", !evsel->attr.pinned);
  
- The 'p' modifier can be used for specifying how precise the instruction
- address should be. The 'p' modifier can be specified multiple times:
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index dba877d..9cba923 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -688,6 +688,7 @@ struct event_modifier {
- 	int precise;
- 	int exclude_GH;
- 	int sample_read;
-+	int pinned;
- };
- 
- static int get_event_modifier(struct event_modifier *mod, char *str,
-@@ -700,6 +701,7 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 	int eG = evsel ? evsel->attr.exclude_guest : 0;
- 	int precise = evsel ? evsel->attr.precise_ip : 0;
- 	int sample_read = 0;
-+	int pinned = evsel ? evsel->attr.pinned : 0;
- 
- 	int exclude = eu | ek | eh;
- 	int exclude_GH = evsel ? evsel->exclude_GH : 0;
-@@ -734,6 +736,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 				eG = 1;
- 		} else if (*str == 'S') {
- 			sample_read = 1;
-+		} else if (*str == 'D') {
-+			pinned = 1;
- 		} else
- 			break;
- 
-@@ -761,6 +765,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
- 	mod->precise = precise;
- 	mod->exclude_GH = exclude_GH;
- 	mod->sample_read = sample_read;
-+	mod->pinned = pinned;
-+
+ 	return 0;
+ }
+@@ -1070,6 +1071,50 @@ static int test__leader_sample2(struct perf_evlist *evlist __maybe_unused)
  	return 0;
  }
  
-@@ -773,7 +779,7 @@ static int check_modifier(char *str)
- 	char *p = str;
- 
- 	/* The sizeof includes 0 byte as well. */
--	if (strlen(str) > (sizeof("ukhGHpppS") - 1))
-+	if (strlen(str) > (sizeof("ukhGHpppSD") - 1))
- 		return -1;
- 
- 	while (*p) {
-@@ -812,6 +818,9 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add)
- 		evsel->attr.exclude_guest  = mod.eG;
- 		evsel->exclude_GH          = mod.exclude_GH;
- 		evsel->sample_read         = mod.sample_read;
++static int test__checkevent_pinned_modifier(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel = perf_evlist__first(evlist);
 +
-+		if (perf_evsel__is_group_leader(evsel))
-+			evsel->attr.pinned = mod.pinned;
- 	}
++	TEST_ASSERT_VAL("wrong exclude_user", !evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel", evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip);
++	TEST_ASSERT_VAL("wrong pinned", evsel->attr.pinned);
++
++	return test__checkevent_symbolic_name(evlist);
++}
++
++static int test__pinned_group(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel, *leader;
++
++	TEST_ASSERT_VAL("wrong number of entries", 3 == evlist->nr_entries);
++
++	/* cycles - group leader */
++	evsel = leader = perf_evlist__first(evlist);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CPU_CYCLES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
++	TEST_ASSERT_VAL("wrong leader", evsel->leader == leader);
++	TEST_ASSERT_VAL("wrong pinned", evsel->attr.pinned);
++
++	/* cache-misses - can not be pinned, but will go on with the leader */
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_HARDWARE == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_CACHE_MISSES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong pinned", !evsel->attr.pinned);
++
++	/* branch-misses - ditto */
++	evsel = perf_evsel__next(evsel);
++	TEST_ASSERT_VAL("wrong config",
++			PERF_COUNT_HW_BRANCH_MISSES == evsel->attr.config);
++	TEST_ASSERT_VAL("wrong pinned", !evsel->attr.pinned);
++
++	return 0;
++}
++
+ static int count_tracepoints(void)
+ {
+ 	char events_path[PATH_MAX];
+@@ -1294,6 +1339,14 @@ static struct evlist_test test__events[] = {
+ 		.name  = "{instructions,branch-misses}:Su",
+ 		.check = test__leader_sample2,
+ 	},
++	[40] = {
++		.name  = "instructions:uDp",
++		.check = test__checkevent_pinned_modifier,
++	},
++	[41] = {
++		.name  = "{cycles,cache-misses,branch-misses}:D",
++		.check = test__pinned_group,
++	},
+ };
  
- 	return 0;
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index b36115f..0790452 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -82,7 +82,8 @@ num_hex		0x[a-fA-F0-9]+
- num_raw_hex	[a-fA-F0-9]+
- name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
- name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
--modifier_event	[ukhpGHS]+
-+/* If you add a modifier you need to update check_modifier() */
-+modifier_event	[ukhpGHSD]+
- modifier_bp	[rwx]{1,3}
- 
- %%
+ static struct evlist_test test__events_pmu[] = {
