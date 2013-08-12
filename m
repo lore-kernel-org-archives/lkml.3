@@ -1,104 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab3HLCqO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 22:46:14 -0400
-Received: from shelob.oktetlabs.ru ([195.131.132.186]:48957 "EHLO
-	shelob.oktetlabs.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755418Ab3HLCqK (ORCPT
+	id S1755632Ab3HLCxg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 22:53:36 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:41520 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755439Ab3HLCxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 22:46:10 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 shelob.oktetlabs.ru 6C2CC7F574
-Date: Mon, 12 Aug 2013 06:45:58 +0400
-From: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: kmemleak in apei_res_add
-Message-ID: <20130812024556.GB29956@sanechka.spb.ru>
+	Sun, 11 Aug 2013 22:53:35 -0400
+Message-ID: <52084CC5.8050207@huawei.com>
+Date: Mon, 12 Aug 2013 10:47:33 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/14] cgroup: reorganize css init / exit paths
+References: <1375992831-4650-1-git-send-email-tj@kernel.org> <1375992831-4650-8-git-send-email-tj@kernel.org>
+In-Reply-To: <1375992831-4650-8-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running 3.10.3 with kmemleak enabled, I see following warnings from
-kmemleak:
+>  /* invoke ->css_online() on a new CSS and mark it online if successful */
+> -static int online_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
+> +static int online_css(struct cgroup_subsys_state *css)
+>  {
+> -	struct cgroup_subsys_state *css = cgroup_css(cgrp, ss->subsys_id);
+> +	struct cgroup_subsys *ss = css->ss;
+>  	int ret = 0;
+>  
+>  	lockdep_assert_held(&cgroup_mutex);
+> @@ -4342,9 +4340,9 @@ static int online_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
+>  }
+>  
+>  /* if the CSS is online, invoke ->css_offline() on it and mark it offline */
+> -static void offline_css(struct cgroup_subsys *ss, struct cgroup *cgrp)
+> +static void offline_css(struct cgroup_subsys_state *css)
+>  {
+> -	struct cgroup_subsys_state *css = cgroup_css(cgrp, ss->subsys_id);
+> +	struct cgroup_subsys *ss = css->ss;
+>  
+>  	lockdep_assert_held(&cgroup_mutex);
+>  
+> @@ -4442,10 +4440,10 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+>  			goto err_free_all;
+>  		}
+>  
+> -		init_cgroup_css(css, ss, cgrp);
+> +		init_css(css, ss, cgrp);
+>  
+>  		if (ss->use_id) {
+> -			err = alloc_css_id(ss, parent, cgrp);
+> +			err = alloc_css_id(css);
+>  			if (err)
+>  				goto err_free_all;
+>  		}
+> @@ -4467,20 +4465,18 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+>  	list_add_tail_rcu(&cgrp->sibling, &cgrp->parent->children);
+>  	root->number_of_cgroups++;
+>  
+> -	/* each css holds a ref to the cgroup's dentry and the parent css */
+> +	/* hold a ref to the parent's dentry */
+> +	dget(parent->dentry);
+> +
+>  	for_each_root_subsys(root, ss) {
+>  		struct cgroup_subsys_state *css = cgroup_css(cgrp, ss->subsys_id);
+>  
+> +		/* each css holds a ref to the cgroup and the parent css */
+>  		dget(dentry);
+>  		percpu_ref_get(&css->parent->refcnt);
 
-unreferenced object 0xffff88024d2219a0 (size 32):
-  comm "swapper/0", pid 1, jiffies 4294894532 (age 26865.180s)
-  hex dump (first 32 bytes):
-    58 de 0c 73 02 88 ff ff 58 de 0c 73 02 88 ff ff  X..s....X..s....
-    18 50 fd 7d 00 00 00 00 3f 50 fd 7d 00 00 00 00  .P.}....?P.}....
-  backtrace:
-    [<ffffffff813ddf40>] kmemleak_alloc+0x21/0x3e
-    [<ffffffff8111cb99>] kmemleak_alloc_recursive.constprop.58+0x16/0x18
-    [<ffffffff8111efac>] kmem_cache_alloc_trace+0xe6/0x12f
-    [<ffffffff81278f0e>] apei_res_add+0xb9/0xe8
-    [<ffffffff81278faa>] collect_res_callback+0x6d/0x7c
-    [<ffffffff812788ed>] apei_exec_for_each_entry+0x78/0x93
-    [<ffffffff8127891d>] apei_exec_collect_resources+0x15/0x17
-    [<ffffffff81b010e5>] erst_init+0x278/0x2a3
-    [<ffffffff810020b5>] do_one_initcall+0x7b/0x116
-    [<ffffffff81ac9ee7>] kernel_init_freeable+0x13f/0x1cc
-    [<ffffffff813db19f>] kernel_init+0x9/0xd6
-    [<ffffffff813fe5bc>] ret_from_fork+0x7c/0xb0
-    [<ffffffffffffffff>] 0xffffffffffffffff
-unreferenced object 0xffff88024d221980 (size 32):
-  comm "swapper/0", pid 1, jiffies 4294894532 (age 26865.180s)
-  hex dump (first 32 bytes):
-    68 de 0c 73 02 88 ff ff 68 de 0c 73 02 88 ff ff  h..s....h..s....
-    b2 00 00 00 00 00 00 00 b3 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff813ddf40>] kmemleak_alloc+0x21/0x3e
-    [<ffffffff8111cb99>] kmemleak_alloc_recursive.constprop.58+0x16/0x18
-    [<ffffffff8111efac>] kmem_cache_alloc_trace+0xe6/0x12f
-    [<ffffffff81278f0e>] apei_res_add+0xb9/0xe8
-    [<ffffffff81278faa>] collect_res_callback+0x6d/0x7c
-    [<ffffffff812788ed>] apei_exec_for_each_entry+0x78/0x93
-    [<ffffffff8127891d>] apei_exec_collect_resources+0x15/0x17
-    [<ffffffff81b010e5>] erst_init+0x278/0x2a3
-    [<ffffffff810020b5>] do_one_initcall+0x7b/0x116
-    [<ffffffff81ac9ee7>] kernel_init_freeable+0x13f/0x1cc
-    [<ffffffff813db19f>] kernel_init+0x9/0xd6
-    [<ffffffff813fe5bc>] ret_from_fork+0x7c/0xb0
-    [<ffffffffffffffff>] 0xffffffffffffffff
-unreferenced object 0xffff88024d221960 (size 32):
-  comm "swapper/0", pid 1, jiffies 4294894532 (age 26865.180s)
-  hex dump (first 32 bytes):
-    00 de 0c 73 02 88 ff ff 40 19 22 4d 02 88 ff ff  ...s....@."M....
-    00 50 09 7e 00 00 00 00 00 90 29 7e 00 00 00 00  .P.~......)~....
-  backtrace:
-    [<ffffffff813ddf40>] kmemleak_alloc+0x21/0x3e
-    [<ffffffff8111cb99>] kmemleak_alloc_recursive.constprop.58+0x16/0x18
-    [<ffffffff8111efac>] kmem_cache_alloc_trace+0xe6/0x12f
-    [<ffffffff81278f0e>] apei_res_add+0xb9/0xe8
-    [<ffffffff81278fce>] apei_get_nvs_callback+0x15/0x17
-    [<ffffffff8125197d>] acpi_nvs_for_each_region+0x25/0x46
-    [<ffffffff8127903b>] apei_resources_request+0x56/0x217
-    [<ffffffff81b00f28>] erst_init+0xbb/0x2a3
-    [<ffffffff810020b5>] do_one_initcall+0x7b/0x116
-    [<ffffffff81ac9ee7>] kernel_init_freeable+0x13f/0x1cc
-    [<ffffffff813db19f>] kernel_init+0x9/0xd6
-    [<ffffffff813fe5bc>] ret_from_fork+0x7c/0xb0
-    [<ffffffffffffffff>] 0xffffffffffffffff
-unreferenced object 0xffff88024d221940 (size 32):
-  comm "swapper/0", pid 1, jiffies 4294894532 (age 26865.180s)
-  hex dump (first 32 bytes):
-    60 19 22 4d 02 88 ff ff 00 de 0c 73 02 88 ff ff  `."M.......s....
-    00 00 37 7f 00 00 00 00 00 60 3f 7f 00 00 00 00  ..7......`?.....
-  backtrace:
-    [<ffffffff813ddf40>] kmemleak_alloc+0x21/0x3e
-    [<ffffffff8111cb99>] kmemleak_alloc_recursive.constprop.58+0x16/0x18
-    [<ffffffff8111efac>] kmem_cache_alloc_trace+0xe6/0x12f
-    [<ffffffff81278f0e>] apei_res_add+0xb9/0xe8
-    [<ffffffff81278fce>] apei_get_nvs_callback+0x15/0x17
-    [<ffffffff8125197d>] acpi_nvs_for_each_region+0x25/0x46
-    [<ffffffff8127903b>] apei_resources_request+0x56/0x217
-    [<ffffffff81b00f28>] erst_init+0xbb/0x2a3
-    [<ffffffff810020b5>] do_one_initcall+0x7b/0x116
-    [<ffffffff81ac9ee7>] kernel_init_freeable+0x13f/0x1cc
-    [<ffffffff813db19f>] kernel_init+0x9/0xd6
-    [<ffffffff813fe5bc>] ret_from_fork+0x7c/0xb0
-    [<ffffffffffffffff>] 0xffffffffffffffff
+We called dget() and percpu_ref_get() for each css unconditionally...
+
+> -	}
+>  
+> -	/* hold a ref to the parent's dentry */
+> -	dget(parent->dentry);
+> -
+> -	/* creation succeeded, notify subsystems */
+> -	for_each_root_subsys(root, ss) {
+> -		err = online_css(ss, cgrp);
+> +		/* creation succeeded, notify subsystems */
+> +		err = online_css(css);
+>  		if (err)
+>  			goto err_destroy;
+
+but now dget() and percpu_ref_get() may not be called for some css's,
+but the code in failure path is not updated accordingly, which seems
+wrong.
+
+>  
+> @@ -4700,7 +4696,7 @@ static void cgroup_offline_fn(struct work_struct *work)
+>  	 * initate destruction.
+>  	 */
+>  	for_each_root_subsys(cgrp->root, ss)
+> -		offline_css(ss, cgrp);
+> +		offline_css(cgroup_css(cgrp, ss->subsys_id));
+>  
+>  	/*
+>  	 * Put the css refs from cgroup_destroy_locked().  Each css holds
+> @@ -4778,7 +4774,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+>  	css = ss->css_alloc(cgroup_css(cgroup_dummy_top, ss->subsys_id));
+>  	/* We don't handle early failures gracefully */
+>  	BUG_ON(IS_ERR(css));
+> -	init_cgroup_css(css, ss, cgroup_dummy_top);
+> +	init_css(css, ss, cgroup_dummy_top);
+>  
+>  	/* Update the init_css_set to contain a subsys
+>  	 * pointer to this state - since the subsystem is
+> @@ -4793,7 +4789,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+>  	 * need to invoke fork callbacks here. */
+>  	BUG_ON(!list_empty(&init_task.tasks));
+>  
+> -	BUG_ON(online_css(ss, cgroup_dummy_top));
+> +	BUG_ON(online_css(cgroup_css(cgroup_dummy_top, ss->subsys_id)));
+>  
+>  	mutex_unlock(&cgroup_mutex);
+>  
+> @@ -4866,8 +4862,8 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+>  	ss->root = &cgroup_dummy_root;
+>  
+>  	/* our new subsystem will be attached to the dummy hierarchy. */
+> -	init_cgroup_css(css, ss, cgroup_dummy_top);
+> -	/* init_idr must be after init_cgroup_css because it sets css->id. */
+> +	init_css(css, ss, cgroup_dummy_top);
+> +	/* init_idr must be after init_css() because it sets css->id. */
+>  	if (ss->use_id) {
+>  		ret = cgroup_init_idr(ss, css);
+>  		if (ret)
+> @@ -4897,7 +4893,7 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+>  	}
+>  	write_unlock(&css_set_lock);
+>  
+> -	ret = online_css(ss, cgroup_dummy_top);
+> +	ret = online_css(cgroup_css(cgroup_dummy_top, ss->subsys_id));
+>  	if (ret)
+>  		goto err_unload;
+>  
+> @@ -4936,7 +4932,7 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+>  
+>  	mutex_lock(&cgroup_mutex);
+>  
+> -	offline_css(ss, cgroup_dummy_top);
+> +	offline_css(cgroup_css(cgroup_dummy_top, ss->subsys_id));
+>  
+>  	if (ss->use_id)
+>  		idr_destroy(&ss->idr);
+> @@ -5588,20 +5584,16 @@ static int __init_or_module cgroup_init_idr(struct cgroup_subsys *ss,
+>  	return 0;
+>  }
+>  
+> -static int alloc_css_id(struct cgroup_subsys *ss, struct cgroup *parent,
+> -			struct cgroup *child)
+> +static int alloc_css_id(struct cgroup_subsys_state *child_css)
+>  {
+> -	int subsys_id, i, depth = 0;
+> -	struct cgroup_subsys_state *parent_css, *child_css;
+> +	struct cgroup_subsys_state *parent_css = css_parent(child_css);
+>  	struct css_id *child_id, *parent_id;
+> +	int i, depth;
+>  
+> -	subsys_id = ss->subsys_id;
+> -	parent_css = cgroup_css(parent, subsys_id);
+> -	child_css = cgroup_css(child, subsys_id);
+>  	parent_id = rcu_dereference_protected(parent_css->id, true);
+>  	depth = parent_id->depth + 1;
+>  
+> -	child_id = get_new_cssid(ss, depth);
+> +	child_id = get_new_cssid(child_css->ss, depth);
+>  	if (IS_ERR(child_id))
+>  		return PTR_ERR(child_id);
+>  
+> 
 
