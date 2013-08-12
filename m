@@ -1,55 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3HLStW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:49:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43157 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755058Ab3HLStD convert rfc822-to-8bit (ORCPT
+	id S1755185Ab3HLStp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:49:45 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:42865 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752961Ab3HLSrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:49:03 -0400
-Subject: Re: [RFC PATCH v2 1/3] usb: dwc3: msm: Add device tree binding information
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <20130812180438.GC27954@radagast>
-Date: Mon, 12 Aug 2013 13:49:07 -0500
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>,
-        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
-        <idos@codeaurora.org>, <mgautam@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EA9DC11E-0A4A-4B03-8337-320C1F6D80D3@codeaurora.org>
-References: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com> <1376042027-9798-2-git-send-email-iivanov@mm-sol.com> <169628C9-00BA-4E58-BF65-7B180E6BE4ED@codeaurora.org> <20130812180438.GC27954@radagast>
-To: <balbi@ti.com>
-X-Mailer: Apple Mail (2.1283)
+	Mon, 12 Aug 2013 14:47:04 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH 4/9] PCI: mvebu: add support for reset on GPIO
+Date: Mon, 12 Aug 2013 20:46:50 +0200
+Message-Id: <1376333215-12885-5-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds a check for DT passed reset-gpios property and deasserts/
+asserts reset pin on probe/remove with configurable delay. Corresponding
+binding documentation is also updated.
 
-On Aug 12, 2013, at 1:04 PM, Felipe Balbi wrote:
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: devicetree@vger.kernel.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-pci@vger.kernel.org
+---
+ .../devicetree/bindings/pci/mvebu-pci.txt          |    2 ++
+ drivers/pci/host/pci-mvebu.c                       |   33 +++++++++++++++++++-
+ 2 files changed, 34 insertions(+), 1 deletion(-)
 
-> On Fri, Aug 09, 2013 at 10:31:58AM -0500, Kumar Gala wrote:
->> 
->> On Aug 9, 2013, at 4:53 AM, Ivan T. Ivanov wrote:
->> 
->>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->>> 
->>> MSM USB3.0 core wrapper consist of USB3.0 IP (SNPS)
->> 
->> probably good to spell out Synopsys rather than SNPS
-> 
-> Synopsys (the company) has always used snps in their bindings though.
-
-I just meant in the commit message as SNPS wasn't obvious to me and I think when someone comes back and looks the commit message doing "Synopsys (SNPS)" is a little more readable.
-
-- k
-
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+diff --git a/Documentation/devicetree/bindings/pci/mvebu-pci.txt b/Documentation/devicetree/bindings/pci/mvebu-pci.txt
+index 638673a..f2fa261 100644
+--- a/Documentation/devicetree/bindings/pci/mvebu-pci.txt
++++ b/Documentation/devicetree/bindings/pci/mvebu-pci.txt
+@@ -76,6 +76,8 @@ and the following optional properties:
+ - marvell,pcie-lane: the physical PCIe lane number, for ports having
+   multiple lanes. If this property is not found, we assume that the
+   value is 0.
++- reset-gpios: optional gpio to PERST#
++- reset-delay-ms: delay in ms to wait after reset de-assertion
+ 
+ Example:
+ 
+diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+index 2370b59..bdad4d4 100644
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -9,14 +9,17 @@
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
+ #include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/gpio.h>
+ #include <linux/module.h>
+ #include <linux/mbus.h>
+ #include <linux/msi.h>
+ #include <linux/slab.h>
+ #include <linux/platform_device.h>
+ #include <linux/of_address.h>
+-#include <linux/of_pci.h>
+ #include <linux/of_irq.h>
++#include <linux/of_gpio.h>
++#include <linux/of_pci.h>
+ #include <linux/of_platform.h>
+ 
+ /*
+@@ -126,6 +129,9 @@ struct mvebu_pcie_port {
+ 	unsigned int io_target;
+ 	unsigned int io_attr;
+ 	struct clk *clk;
++	int reset_gpio;
++	int reset_active_low;
++	char *reset_name;
+ 	struct mvebu_sw_pci_bridge bridge;
+ 	struct device_node *dn;
+ 	struct mvebu_pcie *pcie;
+@@ -856,6 +862,7 @@ static int mvebu_pcie_probe(struct platform_device *pdev)
+ 
+ 	for_each_child_of_node(pdev->dev.of_node, child) {
+ 		struct mvebu_pcie_port *port = &pcie->ports[pcie->nports];
++		enum of_gpio_flags flags;
+ 
+ 		if (!of_device_is_available(child))
+ 			continue;
+@@ -896,6 +903,25 @@ static int mvebu_pcie_probe(struct platform_device *pdev)
+ 			continue;
+ 		}
+ 
++		port->reset_gpio = of_get_named_gpio_flags(child,
++						   "reset-gpios", 0, &flags);
++		if (gpio_is_valid(port->reset_gpio)) {
++			u32 reset_mdelay = 20;
++			port->reset_active_low = flags & OF_GPIO_ACTIVE_LOW;
++			port->reset_name = kasprintf(GFP_KERNEL,
++				     "pcie%d.%d-reset", port->port, port->lane);
++			ret = devm_gpio_request_one(&pdev->dev,
++			    port->reset_gpio, GPIOF_DIR_OUT, port->reset_name);
++			if (ret)
++				return ret;
++			gpio_set_value(port->reset_gpio,
++				       (port->reset_active_low) ? 1 : 0);
++
++			of_property_read_u32(child, "reset-delay-ms",
++					     &reset_mdelay);
++			mdelay(reset_mdelay);
++		}
++
+ 		port->clk = of_clk_get_by_name(child, NULL);
+ 		if (IS_ERR(port->clk)) {
+ 			dev_err(&pdev->dev, "PCIe%d.%d: cannot get clock\n",
+@@ -945,6 +971,11 @@ static int mvebu_pcie_remove(struct platform_device *pdev)
+ 	int i;
+ 
+ 	for (i = 0; i < pcie->nports; i++, port++) {
++		if (gpio_is_valid(port->reset_gpio)) {
++			gpio_set_value(port->reset_gpio,
++			       (port->reset_active_low) ? 0 : 1);
++			kfree(port->reset_name);
++		}
+ 		clk_disable_unprepare(port->clk);
+ 		kfree(port->name);
+ 	}
+-- 
+1.7.10.4
 
