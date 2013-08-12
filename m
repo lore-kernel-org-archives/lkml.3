@@ -1,78 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab3HLPqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 11:46:31 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:42886 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755995Ab3HLPq2 (ORCPT
+	id S1757211Ab3HLPqw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 11:46:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54718 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757197Ab3HLPqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 11:46:28 -0400
-Date: Mon, 12 Aug 2013 11:46:23 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <imtangchen@gmail.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
-        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
-        mingo@elte.hu, hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
-Message-ID: <20130812154623.GL15892@htj.dyndns.org>
-References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
- <20130812145016.GI15892@htj.dyndns.org>
- <52090225.6070208@gmail.com>
+	Mon, 12 Aug 2013 11:46:50 -0400
+Date: Mon, 12 Aug 2013 12:46:47 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Lior Amsalem <alior@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: Re: [PATCH 1/3] ARM: Introduce atomic MMIO clear/set
+Message-ID: <20130812154646.GA5460@localhost>
+References: <1376138582-7550-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <20130810140237.GB3080@localhost>
+ <20130810140927.GC3080@localhost>
+ <1376149388.716003514@f150.i.mail.ru>
+ <20130810155552.GB17936@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <52090225.6070208@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130810155552.GB17936@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Aug 12, 2013 at 11:41:25PM +0800, Tang Chen wrote:
-> Then there is no way to tell the users which memory is hotpluggable.
+On Sat, Aug 10, 2013 at 12:55:53PM -0300, Ezequiel Garcia wrote:
+> On Sat, Aug 10, 2013 at 07:43:08PM +0400, Alexander Shiyan wrote:
+> > > On Sat, Aug 10, 2013 at 11:02:38AM -0300, Ezequiel Garcia wrote:
+> > > > On Sat, Aug 10, 2013 at 04:49:28PM +0400, Alexander Shiyan wrote:
+> > > > > > Some SoC have MMIO regions that are shared across orthogonal
+> > > > > > subsystems. This commit implements a possible solution for the
+> > > > > > thread-safe access of such regions through a spinlock-protected API
+> > > > > > with clear-set semantics.
+> > > > > > 
+> > > > > > Concurrent access is protected with a single spinlock for the
+> > > > > > entire MMIO address space. While this protects shared-registers,
+> > > > > > it also serializes access to unrelated/unshared registers.
+> > [...]
+> > > > > > +void atomic_io_clear_set(void __iomem *reg, u32 clear, u32 set)
+> > > > > > +{
+> > > > > > +	spin_lock(&__io_lock);
+> > > > > > +	writel((readl(reg) & ~clear) | set, reg);
+> > > > > > +	spin_unlock(&__io_lock);
+> > > > > > +}
+> > > > > > +EXPORT_SYMBOL(atomic_io_clear_set);
+> > > > > 
+> > > > > So, one lock is used to all possible registers?
+> > > > > Seems a regmap-mmio can be used for such access.
+> > > > > 
+> > > > 
+> > > > Thanks for the hint! Quite frankly, I wasn't familiar with regmap-mmio.
+> > > > 
+> > > > However, after reading some code, I fail to see how that helps in this case.
+> > > > 
+> > > > Note that we need to access the *same* MMIO address from completely
+> > > > different (and unrelated) drivers, such as watchdog and clocksource.
+> > > > 
+> > > > So I wonder who would "own" the regmap descriptor, and how does the other
+> > > > one gets aware of that descriptor?
+> > > > 
+> > > > In addition given we can use orion_wdt (originally meant for mach-kirkwood)
+> > > > to support mvebu SoC watchdog, we need to sort this out in a completely
+> > > > multiplatform capable way.
+> > > > 
+> > > > Ideas?
+> > > 
+> > > Answering myself...
+> > > 
+> > > How about using drivers/mfd/syscon.c to create the regmap owner for the shared
+> > > register (TIMER_CTRL in this case, but others might appear) ?
+> > > 
+> > > Or adding a new mfd implementation if syscon does not fit ?
+> > > 
+> > > Does this sound like an overkill ?
+> > 
+> > Yes, syscon is designed especially for such cases.
+> > 
 > 
-> phys addr is not user friendly. For users, node or memory device is the
-> best. The firmware should arrange the hotpluggable ranges well.
-
-I don't follow.  Why can't the kernel export that information to
-userland after boot is complete via printk / sysfs / proc / whatever?
-The admin can "request" hotplug by boot param and the kernel would try
-to honor that and return the result on boot completion.  I don't
-understand why that wouldn't work.
-
-> In my opinion, maybe some application layer tools may use SRAT to show
-> the users which memory is hotpluggable. I just think both of the kernel
-> and the application layer should obey the same rule.
-
-Sure, just let the kernel tell the user which memory node ended up
-hotpluggable after booting.
-
-> >* Similar to the point hpa raised.  If this can be made opportunistic,
-> >   do we need the strict reordering to discover things earlier?
-> >   Shouldn't it be possible to configure memblock to allocate close to
-> >   the kernel image until hotplug and numa information is available?
-> >   For most sane cases, the memory allocated will be contained in
-> >   non-hotpluggable node anyway and in case they aren't hotplug
-> >   wouldn't work but the system will boot and function perfectly fine.
+> Indeed, syscon looks like a nice match for this use case.
+> (although it still looks like an overkill to me).
 > 
-> So far as I know, the kernel image and related data can be loaded
-> anywhere, above 4GB. I just can't make any assumption.
+> I've been trying to implement a working solution based in syscon but I'm
+> unable to overcome an issue.
+> 
+> The problem is that we need the register/regmap to initialize the clocksource
+> driver for this machine (aka the timer). Of course, this happens at a
+> *very* early point, way before the syscon driver is available... :-(
+> 
+> Maybe someone has an idea?
 
-I don't follow why that would be problematic.  Wouldn't finding out
-which node the kernel image is located in and preferring to allocate
-from that node before hotplug info is available be enough?
+Sebastian, Russell: I can't find the previous mail where you proposed
+this solution to address the shared register issue between Kirkwood's
+watchdog and clocksource.
 
-Thanks.
+Is this what you had in mind?
 
+Do you think trying to use a regmap could be better (given we can
+sort out the problem explained above)?
 -- 
-tejun
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
