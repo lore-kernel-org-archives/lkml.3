@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab3HLSgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:36:09 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:18626 "EHLO
+	id S1754701Ab3HLSgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:36:17 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:18630 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab3HLSgE (ORCPT
+	with ESMTP id S1754632Ab3HLSgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:36:04 -0400
-Message-ID: <201308121836.r7CIa3Kj004272@farm-0021.internal.tilera.com>
+	Mon, 12 Aug 2013 14:36:13 -0400
+Message-ID: <201308121836.r7CIaBp1004274@farm-0021.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 12 Aug 2013 14:11:44 -0400
-Subject: [PATCH] tilegx: Add tty serial support for TILE-Gx on-chip UART
-To: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
+Date: Mon, 12 Aug 2013 12:49:24 -0400
+Subject: [PATCH] tilegx: support KGDB
+To: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>,
+        Jason Wessel <jason.wessel@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Enter kernel debugger at boot with:
+  --hvd UART_1=1 --hvx kgdbwait --hvx kgdboc=ttyS1,115200
+or at runtime with:
+  echo ttyS1,115200 > /sys/module/kgdboc/parameters/kgdboc
+  echo g > /proc/sysrq-trigger
+
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- MAINTAINERS                      |   1 +
- drivers/tty/serial/Kconfig       |   9 +
- drivers/tty/serial/Makefile      |   1 +
- drivers/tty/serial/tilegx.c      | 708 +++++++++++++++++++++++++++++++++++++++
- include/uapi/linux/serial_core.h |   3 +
- 5 files changed, 722 insertions(+)
- create mode 100644 drivers/tty/serial/tilegx.c
+ arch/tile/Kconfig            |   1 +
+ arch/tile/include/asm/kgdb.h |  71 ++++++
+ arch/tile/kernel/Makefile    |   1 +
+ arch/tile/kernel/kgdb.c      | 499 +++++++++++++++++++++++++++++++++++++++++++
+ arch/tile/kernel/traps.c     |   5 +
+ 5 files changed, 577 insertions(+)
+ create mode 100644 arch/tile/include/asm/kgdb.h
+ create mode 100644 arch/tile/kernel/kgdb.c
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b8e3bea..ec99ec5 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -8294,6 +8294,7 @@ F:	drivers/edac/tile_edac.c
- F:	drivers/net/ethernet/tile/
- F:	drivers/rtc/rtc-tile.c
- F:	drivers/tty/hvc/hvc_tile.c
-+F:	drivers/tty/serial/tilegx.c
- F:	drivers/usb/host/*-tilegx.c
- F:	include/linux/usb/tilegx.h
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index bbb6d51..f965582 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -128,6 +128,7 @@ config TILEGX
+ 	select HAVE_KPROBES
+ 	select HAVE_KRETPROBES
+ 	select HAVE_KVM if !KVM_GUEST
++	select HAVE_ARCH_KGDB
  
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 5e3d689..fdcaaef 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1436,6 +1436,15 @@ config SERIAL_EFM32_UART_CONSOLE
- 	depends on SERIAL_EFM32_UART=y
- 	select SERIAL_CORE_CONSOLE
- 
-+config SERIAL_TILEGX
-+	tristate "TILE-Gx on-chip serial port support"
-+	depends on TILEGX
-+	select TILE_GXIO_UART
-+	select SERIAL_CORE
-+	---help---
-+	  This device provides access to the on-chip UARTs on the TILE-Gx
-+	  processor.
-+
- config SERIAL_ARC
- 	tristate "ARC UART driver support"
- 	select SERIAL_CORE
-diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
-index cf650f0..3d0f097 100644
---- a/drivers/tty/serial/Makefile
-+++ b/drivers/tty/serial/Makefile
-@@ -65,6 +65,7 @@ obj-$(CONFIG_SERIAL_KGDB_NMI) += kgdb_nmi.o
- obj-$(CONFIG_SERIAL_KS8695) += serial_ks8695.o
- obj-$(CONFIG_SERIAL_OMAP) += omap-serial.o
- obj-$(CONFIG_SERIAL_ALTERA_UART) += altera_uart.o
-+obj-$(CONFIG_SERIAL_TILEGX) += tilegx.o
- obj-$(CONFIG_KGDB_SERIAL_CONSOLE) += kgdboc.o
- obj-$(CONFIG_SERIAL_QE) += ucc_uart.o
- obj-$(CONFIG_SERIAL_TIMBERDALE)	+= timbuart.o
-diff --git a/drivers/tty/serial/tilegx.c b/drivers/tty/serial/tilegx.c
+ config TILEPRO
+ 	def_bool !TILEGX
+diff --git a/arch/tile/include/asm/kgdb.h b/arch/tile/include/asm/kgdb.h
 new file mode 100644
-index 0000000..f92d7e6
+index 0000000..280c181
 --- /dev/null
-+++ b/drivers/tty/serial/tilegx.c
-@@ -0,0 +1,708 @@
++++ b/arch/tile/include/asm/kgdb.h
+@@ -0,0 +1,71 @@
 +/*
 + * Copyright 2013 Tilera Corporation. All Rights Reserved.
 + *
@@ -93,713 +67,596 @@ index 0000000..f92d7e6
 + *   NON INFRINGEMENT.  See the GNU General Public License for
 + *   more details.
 + *
-+ * TILEGx UART driver.
++ * TILE-Gx KGDB support.
 + */
 +
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/module.h>
-+#include <linux/serial_core.h>
-+#include <linux/tty.h>
-+#include <linux/tty_flip.h>
++#ifndef __TILE_KGDB_H__
++#define __TILE_KGDB_H__
 +
-+#include <gxio/common.h>
-+#include <gxio/iorpc_globals.h>
-+#include <gxio/iorpc_uart.h>
-+#include <gxio/kiorpc.h>
++#include <linux/kdebug.h>
++#include <arch/opcode.h>
 +
-+#include <hv/drv_uart_intf.h>
++#define GDB_SIZEOF_REG		sizeof(unsigned long)
 +
 +/*
-+ * Use device name ttyS, major 4, minor 64-65.
-+ * This is the usual serial port name, 8250 conventional range.
++ * TILE-Gx gdb is expecting the following register layout:
++ * 56 GPRs(R0 - R52, TP, SP, LR), 8 special GPRs(networks and ZERO),
++ * plus the PC and the faultnum.
++ *
++ * Even though kernel not use the 8 special GPRs, they need to be present
++ * in the registers sent for correct processing in the host-side gdb.
++ *
 + */
-+#define TILEGX_UART_MAJOR	TTY_MAJOR
-+#define TILEGX_UART_MINOR	64
-+#define TILEGX_UART_NAME	"ttyS"
-+#define DRIVER_NAME_STRING	"TILEGx_Serial"
-+#define TILEGX_UART_REF_CLK	125000000; /* REF_CLK is always 125 MHz. */
++#define DBG_MAX_REG_NUM		(56+8+2)
++#define NUMREGBYTES		(DBG_MAX_REG_NUM * GDB_SIZEOF_REG)
 +
-+struct tile_uart_port {
-+	/* UART port. */
-+	struct uart_port	uart;
++/*
++ * BUFMAX defines the maximum number of characters in inbound/outbound
++ * buffers at least NUMREGBYTES*2 are needed for register packets,
++ * Longer buffer is needed to list all threads.
++ */
++#define BUFMAX			2048
 +
-+	/* GXIO device context. */
-+	gxio_uart_context_t	context;
++#define BREAK_INSTR_SIZE	TILEGX_BUNDLE_SIZE_IN_BYTES
 +
-+	/* UART access mutex. */
-+	struct mutex		mutex;
++/*
++ * Require cache flush for set/clear a software breakpoint or write memory.
++ */
++#define CACHE_FLUSH_IS_SAFE	1
 +
-+	/* CPU receiving interrupts. */
-+	int			irq_cpu;
++/*
++ * The compiled-in breakpoint instruction can be used to "break" into
++ * the debugger via magic system request key (sysrq-G).
++ */
++static tile_bundle_bits compiled_bpt = TILEGX_BPT_BUNDLE | DIE_COMPILED_BPT;
++
++enum tilegx_regnum {
++	TILEGX_PC_REGNUM = TREG_LAST_GPR + 9,
++	TILEGX_FAULTNUM_REGNUM,
 +};
 +
-+static struct tile_uart_port tile_uart_ports[TILEGX_UART_NR];
-+static struct uart_driver tilegx_uart_driver;
-+
-+
 +/*
-+ * Read UART rx fifo, and insert the chars into tty buffer.
++ * Generate a breakpoint exception to "break" into the debugger.
 + */
-+static void receive_chars(struct tile_uart_port *tile_uart,
-+			  struct tty_struct *tty)
++static inline void arch_kgdb_breakpoint(void)
 +{
-+	int i;
-+	char c;
-+	UART_FIFO_COUNT_t count;
-+	gxio_uart_context_t *context = &tile_uart->context;
-+	struct tty_port *port = tty->port;
-+
-+	count.word = gxio_uart_read(context, UART_FIFO_COUNT);
-+	for (i = 0; i < count.rfifo_count; i++) {
-+		c = (char)gxio_uart_read(context, UART_RECEIVE_DATA);
-+		tty_insert_flip_char(port, c, TTY_NORMAL);
-+	}
++	asm volatile (".quad %0\n\t"
++		      ::""(compiled_bpt));
 +}
 +
-+
++#endif /* __TILE_KGDB_H__ */
+diff --git a/arch/tile/kernel/Makefile b/arch/tile/kernel/Makefile
+index b638d3e..4fb7098 100644
+--- a/arch/tile/kernel/Makefile
++++ b/arch/tile/kernel/Makefile
+@@ -30,5 +30,6 @@ obj-$(CONFIG_TILE_HVGLUE_TRACE)	+= hvglue_trace.o
+ obj-$(CONFIG_FUNCTION_TRACER)	+= ftrace.o mcount_64.o
+ obj-$(CONFIG_KPROBES)		+= kprobes.o
+ obj-$(CONFIG_KVM_GUEST)		+= kvm_virtio.o
++obj-$(CONFIG_KGDB)		+= kgdb.o
+ 
+ obj-y				+= vdso/
+diff --git a/arch/tile/kernel/kgdb.c b/arch/tile/kernel/kgdb.c
+new file mode 100644
+index 0000000..4cd8838
+--- /dev/null
++++ b/arch/tile/kernel/kgdb.c
+@@ -0,0 +1,499 @@
 +/*
-+ * Drain the Rx FIFO, called by interrupt handler.
++ * Copyright 2013 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * TILE-Gx KGDB support.
 + */
-+static void handle_receive(struct tile_uart_port *tile_uart)
++
++#include <linux/ptrace.h>
++#include <linux/kgdb.h>
++#include <linux/kdebug.h>
++#include <linux/uaccess.h>
++#include <linux/module.h>
++#include <asm/cacheflush.h>
++
++static tile_bundle_bits singlestep_insn = TILEGX_BPT_BUNDLE | DIE_SSTEPBP;
++static unsigned long stepped_addr;
++static tile_bundle_bits stepped_instr;
++
++struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
++	{ "r0", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[0])},
++	{ "r1", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[1])},
++	{ "r2", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[2])},
++	{ "r3", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[3])},
++	{ "r4", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[4])},
++	{ "r5", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[5])},
++	{ "r6", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[6])},
++	{ "r7", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[7])},
++	{ "r8", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[8])},
++	{ "r9", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[9])},
++	{ "r10", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[10])},
++	{ "r11", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[11])},
++	{ "r12", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[12])},
++	{ "r13", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[13])},
++	{ "r14", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[14])},
++	{ "r15", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[15])},
++	{ "r16", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[16])},
++	{ "r17", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[17])},
++	{ "r18", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[18])},
++	{ "r19", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[19])},
++	{ "r20", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[20])},
++	{ "r21", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[21])},
++	{ "r22", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[22])},
++	{ "r23", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[23])},
++	{ "r24", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[24])},
++	{ "r25", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[25])},
++	{ "r26", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[26])},
++	{ "r27", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[27])},
++	{ "r28", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[28])},
++	{ "r29", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[29])},
++	{ "r30", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[30])},
++	{ "r31", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[31])},
++	{ "r32", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[32])},
++	{ "r33", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[33])},
++	{ "r34", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[34])},
++	{ "r35", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[35])},
++	{ "r36", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[36])},
++	{ "r37", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[37])},
++	{ "r38", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[38])},
++	{ "r39", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[39])},
++	{ "r40", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[40])},
++	{ "r41", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[41])},
++	{ "r42", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[42])},
++	{ "r43", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[43])},
++	{ "r44", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[44])},
++	{ "r45", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[45])},
++	{ "r46", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[46])},
++	{ "r47", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[47])},
++	{ "r48", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[48])},
++	{ "r49", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[49])},
++	{ "r50", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[50])},
++	{ "r51", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[51])},
++	{ "r52", GDB_SIZEOF_REG, offsetof(struct pt_regs, regs[52])},
++	{ "tp", GDB_SIZEOF_REG, offsetof(struct pt_regs, tp)},
++	{ "sp", GDB_SIZEOF_REG, offsetof(struct pt_regs, sp)},
++	{ "lr", GDB_SIZEOF_REG, offsetof(struct pt_regs, lr)},
++	{ "sn", GDB_SIZEOF_REG, -1},
++	{ "idn0", GDB_SIZEOF_REG, -1},
++	{ "idn1", GDB_SIZEOF_REG, -1},
++	{ "udn0", GDB_SIZEOF_REG, -1},
++	{ "udn1", GDB_SIZEOF_REG, -1},
++	{ "udn2", GDB_SIZEOF_REG, -1},
++	{ "udn3", GDB_SIZEOF_REG, -1},
++	{ "zero", GDB_SIZEOF_REG, -1},
++	{ "pc", GDB_SIZEOF_REG, offsetof(struct pt_regs, pc)},
++	{ "faultnum", GDB_SIZEOF_REG, offsetof(struct pt_regs, faultnum)},
++};
++
++char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
 +{
-+	struct tty_port *port = &tile_uart->uart.state->port;
-+	struct tty_struct *tty = tty_port_tty_get(port);
-+	gxio_uart_context_t *context = &tile_uart->context;
-+
-+	if (!tty)
-+		return;
-+
-+	/* First read UART rx fifo. */
-+	receive_chars(tile_uart, tty);
-+
-+	/* Reset RFIFO_WE interrupt. */
-+	gxio_uart_write(context, UART_INTERRUPT_STATUS,
-+			UART_INTERRUPT_MASK__RFIFO_WE_MASK);
-+
-+	/* Final read, if any chars comes between the first read and
-+	 * the interrupt reset.
-+	 */
-+	receive_chars(tile_uart, tty);
-+
-+	spin_unlock(&tile_uart->uart.lock);
-+	tty_flip_buffer_push(port);
-+	spin_lock(&tile_uart->uart.lock);
-+	tty_kref_put(tty);
-+}
-+
-+
-+/*
-+ * Push one char to UART Write FIFO.
-+ * Return 0 on success, -1 if write filo is full.
-+ */
-+static int tilegx_putchar(gxio_uart_context_t *context, char c)
-+{
-+	UART_FLAG_t flag;
-+	flag.word = gxio_uart_read(context, UART_FLAG);
-+	if (flag.wfifo_full)
-+		return -1;
-+
-+	gxio_uart_write(context, UART_TRANSMIT_DATA, (unsigned long)c);
-+	return 0;
-+}
-+
-+
-+/*
-+ * Send chars to UART Write FIFO; called by interrupt handler.
-+ */
-+static void handle_transmit(struct tile_uart_port *tile_uart)
-+{
-+	unsigned char ch;
-+	struct uart_port *port;
-+	struct circ_buf *xmit;
-+	gxio_uart_context_t *context = &tile_uart->context;
-+
-+	/* First reset WFIFO_RE interrupt. */
-+	gxio_uart_write(context, UART_INTERRUPT_STATUS,
-+			UART_INTERRUPT_MASK__WFIFO_RE_MASK);
-+
-+	port = &tile_uart->uart;
-+	xmit = &port->state->xmit;
-+	if (port->x_char) {
-+		if (tilegx_putchar(context, port->x_char))
-+			return;
-+		port->x_char = 0;
-+		port->icount.tx++;
-+	}
-+
-+	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
-+		return;
-+
-+	while (!uart_circ_empty(xmit)) {
-+		ch = xmit->buf[xmit->tail];
-+		if (tilegx_putchar(context, ch))
-+			break;
-+		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-+		port->icount.tx++;
-+	}
-+
-+	/* Reset WFIFO_RE interrupt. */
-+	gxio_uart_write(context, UART_INTERRUPT_STATUS,
-+			UART_INTERRUPT_MASK__WFIFO_RE_MASK);
-+
-+	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
-+		uart_write_wakeup(port);
-+}
-+
-+
-+/*
-+ * UART Interrupt handler.
-+ */
-+static irqreturn_t tilegx_interrupt(int irq, void *dev_id)
-+{
-+	unsigned long flags;
-+	UART_INTERRUPT_STATUS_t intr_stat;
-+	struct tile_uart_port *tile_uart;
-+	gxio_uart_context_t *context;
-+	struct uart_port *port = dev_id;
-+	irqreturn_t ret = IRQ_NONE;
-+
-+	spin_lock_irqsave(&port->lock, flags);
-+
-+	tile_uart = container_of(port, struct tile_uart_port, uart);
-+	context = &tile_uart->context;
-+	intr_stat.word = gxio_uart_read(context, UART_INTERRUPT_STATUS);
-+
-+	if (intr_stat.rfifo_we) {
-+		handle_receive(tile_uart);
-+		ret = IRQ_HANDLED;
-+	}
-+	if (intr_stat.wfifo_re) {
-+		handle_transmit(tile_uart);
-+		ret = IRQ_HANDLED;
-+	}
-+
-+	spin_unlock_irqrestore(&port->lock, flags);
-+	return ret;
-+}
-+
-+
-+/*
-+ * Return TIOCSER_TEMT when transmitter FIFO is empty.
-+ */
-+static u_int tilegx_tx_empty(struct uart_port *port)
-+{
-+	int ret;
-+	UART_FLAG_t flag;
-+	struct tile_uart_port *tile_uart;
-+	gxio_uart_context_t *context;
-+
-+	tile_uart = container_of(port, struct tile_uart_port, uart);
-+	if (!mutex_trylock(&tile_uart->mutex))
-+		return 0;
-+	context = &tile_uart->context;
-+
-+	flag.word = gxio_uart_read(context, UART_FLAG);
-+	ret = (flag.wfifo_empty) ? TIOCSER_TEMT : 0;
-+	mutex_unlock(&tile_uart->mutex);
-+
-+	return ret;
-+}
-+
-+
-+/*
-+ * Set state of the modem control output lines.
-+ */
-+static void tilegx_set_mctrl(struct uart_port *port, u_int mctrl)
-+{
-+	/* N/A */
-+}
-+
-+
-+/*
-+ * Get state of the modem control input lines.
-+ */
-+static u_int tilegx_get_mctrl(struct uart_port *port)
-+{
-+	return TIOCM_CTS | TIOCM_DSR | TIOCM_CAR;
-+}
-+
-+
-+/*
-+ * Stop transmitting.
-+ */
-+static void tilegx_stop_tx(struct uart_port *port)
-+{
-+	/* N/A */
-+}
-+
-+
-+/*
-+ * Start transmitting.
-+ */
-+static void tilegx_start_tx(struct uart_port *port)
-+{
-+	unsigned char ch;
-+	struct circ_buf *xmit;
-+	struct tile_uart_port *tile_uart;
-+	gxio_uart_context_t *context;
-+
-+	tile_uart = container_of(port, struct tile_uart_port, uart);
-+	if (!mutex_trylock(&tile_uart->mutex))
-+		return;
-+	context = &tile_uart->context;
-+	xmit = &port->state->xmit;
-+	if (port->x_char) {
-+		if (tilegx_putchar(context, port->x_char))
-+			return;
-+		port->x_char = 0;
-+		port->icount.tx++;
-+	}
-+
-+	if (uart_circ_empty(xmit) || uart_tx_stopped(port)) {
-+		mutex_unlock(&tile_uart->mutex);
-+		return;
-+	}
-+
-+	while (!uart_circ_empty(xmit)) {
-+		ch = xmit->buf[xmit->tail];
-+		if (tilegx_putchar(context, ch))
-+			break;
-+		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-+		port->icount.tx++;
-+	}
-+
-+	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
-+		uart_write_wakeup(port);
-+
-+	mutex_unlock(&tile_uart->mutex);
-+}
-+
-+
-+/*
-+ * Stop receiving - port is in process of being closed.
-+ */
-+static void tilegx_stop_rx(struct uart_port *port)
-+{
-+	int err;
-+	struct tile_uart_port *tile_uart;
-+	gxio_uart_context_t *context;
-+	int cpu;
-+
-+	tile_uart = container_of(port, struct tile_uart_port, uart);
-+	if (!mutex_trylock(&tile_uart->mutex))
-+		return;
-+
-+	context = &tile_uart->context;
-+	cpu = tile_uart->irq_cpu;
-+	err = gxio_uart_cfg_interrupt(context, cpu_x(cpu), cpu_y(cpu),
-+				      KERNEL_PL, -1);
-+	mutex_unlock(&tile_uart->mutex);
-+}
-+
-+
-+/*
-+ * Enable modem status interrupts.
-+ */
-+static void tilegx_enable_ms(struct uart_port *port)
-+{
-+	/* N/A */
-+}
-+
-+/*
-+ * Control the transmission of a break signal.
-+ */
-+static void tilegx_break_ctl(struct uart_port *port, int break_state)
-+{
-+	/* N/A */
-+}
-+
-+
-+/*
-+ * Perform initialization and enable port for reception.
-+ */
-+static int tilegx_startup(struct uart_port *port)
-+{
-+	struct tile_uart_port *tile_uart;
-+	gxio_uart_context_t *context;
-+	int ret = 0;
-+	int cpu = raw_smp_processor_id();  /* pick an arbitrary cpu */
-+
-+	tile_uart = container_of(port, struct tile_uart_port, uart);
-+	if (mutex_lock_interruptible(&tile_uart->mutex))
-+		return -EBUSY;
-+	context = &tile_uart->context;
-+
-+	/* Now open the hypervisor device if we haven't already. */
-+	if (context->fd < 0) {
-+		UART_INTERRUPT_MASK_t intr_mask;
-+
-+		/* Initialize UART device. */
-+		ret = gxio_uart_init(context, port->line);
-+		if (ret) {
-+			ret = -ENXIO;
-+			goto err;
-+		}
-+
-+		/* Create our IRQs. */
-+		port->irq = create_irq();
-+		if (port->irq < 0)
-+			goto err_uart_dest;
-+		tile_irq_activate(port->irq, TILE_IRQ_PERCPU);
-+
-+		/* Register our IRQs. */
-+		ret = request_irq(port->irq, tilegx_interrupt, 0,
-+				  tilegx_uart_driver.driver_name, port);
-+		if (ret)
-+			goto err_dest_irq;
-+
-+		/* Request that the hardware start sending us interrupts. */
-+		tile_uart->irq_cpu = cpu;
-+		ret = gxio_uart_cfg_interrupt(context, cpu_x(cpu), cpu_y(cpu),
-+					      KERNEL_PL, port->irq);
-+		if (ret)
-+			goto err_free_irq;
-+
-+		/* Enable UART Tx/Rx Interrupt. */
-+		intr_mask.word = gxio_uart_read(context, UART_INTERRUPT_MASK);
-+		intr_mask.wfifo_re = 0;
-+		intr_mask.rfifo_we = 0;
-+		gxio_uart_write(context, UART_INTERRUPT_MASK, intr_mask.word);
-+
-+		/* Reset the Tx/Rx interrupt in case it's set. */
-+		gxio_uart_write(context, UART_INTERRUPT_STATUS,
-+				UART_INTERRUPT_MASK__WFIFO_RE_MASK |
-+				UART_INTERRUPT_MASK__RFIFO_WE_MASK);
-+	}
-+
-+	mutex_unlock(&tile_uart->mutex);
-+	return ret;
-+
-+err_free_irq:
-+	free_irq(port->irq, port);
-+err_dest_irq:
-+	destroy_irq(port->irq);
-+err_uart_dest:
-+	gxio_uart_destroy(context);
-+	ret = -ENXIO;
-+err:
-+	mutex_unlock(&tile_uart->mutex);
-+	return ret;
-+}
-+
-+
-+/*
-+ * Release kernel resources if it is the last close, disable the port,
-+ * free IRQ and close the port.
-+ */
-+static void tilegx_shutdown(struct uart_port *port)
-+{
-+	int err;
-+	UART_INTERRUPT_MASK_t intr_mask;
-+	struct tile_uart_port *tile_uart;
-+	gxio_uart_context_t *context;
-+	int cpu;
-+
-+	tile_uart = container_of(port, struct tile_uart_port, uart);
-+	if (mutex_lock_interruptible(&tile_uart->mutex))
-+		return;
-+	context = &tile_uart->context;
-+
-+	/* Disable UART Tx/Rx Interrupt. */
-+	intr_mask.word = gxio_uart_read(context, UART_INTERRUPT_MASK);
-+	intr_mask.wfifo_re = 1;
-+	intr_mask.rfifo_we = 1;
-+	gxio_uart_write(context, UART_INTERRUPT_MASK, intr_mask.word);
-+
-+	/* Request that the hardware stop sending us interrupts. */
-+	cpu = tile_uart->irq_cpu;
-+	err = gxio_uart_cfg_interrupt(context, cpu_x(cpu), cpu_y(cpu),
-+				      KERNEL_PL, -1);
-+
-+	if (port->irq > 0) {
-+		free_irq(port->irq, port);
-+		destroy_irq(port->irq);
-+		port->irq = 0;
-+	}
-+
-+	gxio_uart_destroy(context);
-+
-+	mutex_unlock(&tile_uart->mutex);
-+}
-+
-+
-+/*
-+ * Flush the buffer.
-+ */
-+static void tilegx_flush_buffer(struct uart_port *port)
-+{
-+	/* N/A */
-+}
-+
-+
-+/*
-+ * Change the port parameters.
-+ */
-+static void tilegx_set_termios(struct uart_port *port,
-+			       struct ktermios *termios, struct ktermios *old)
-+{
-+	int err;
-+	UART_DIVISOR_t divisor;
-+	UART_TYPE_t type;
-+	unsigned int baud;
-+	struct tile_uart_port *tile_uart;
-+	gxio_uart_context_t *context;
-+
-+	tile_uart = container_of(port, struct tile_uart_port, uart);
-+	if (!mutex_trylock(&tile_uart->mutex))
-+		return;
-+	context = &tile_uart->context;
-+
-+	/* Open the hypervisor device if we haven't already. */
-+	if (context->fd < 0) {
-+		err = gxio_uart_init(context, port->line);
-+		if (err) {
-+			mutex_unlock(&tile_uart->mutex);
-+			return;
-+		}
-+	}
-+
-+	divisor.word = gxio_uart_read(context, UART_DIVISOR);
-+	type.word = gxio_uart_read(context, UART_TYPE);
-+
-+	/* Divisor. */
-+	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk / 16);
-+	divisor.divisor = uart_get_divisor(port, baud);
-+
-+	/* Byte size. */
-+	if ((termios->c_cflag & CSIZE) == CS7)
-+		type.dbits = UART_TYPE__DBITS_VAL_SEVEN_DBITS;
++	if (regno >= DBG_MAX_REG_NUM || regno < 0)
++		return NULL;
++
++	if (dbg_reg_def[regno].offset != -1)
++		memcpy(mem, (void *)regs + dbg_reg_def[regno].offset,
++		       dbg_reg_def[regno].size);
 +	else
-+		type.dbits = UART_TYPE__DBITS_VAL_EIGHT_DBITS;
-+
-+	/* Parity. */
-+	if (termios->c_cflag & PARENB) {
-+		/* Mark or Space parity. */
-+		if (termios->c_cflag & CMSPAR)
-+			if (termios->c_cflag & PARODD)
-+				type.ptype = UART_TYPE__PTYPE_VAL_MARK;
-+			else
-+				type.ptype = UART_TYPE__PTYPE_VAL_SPACE;
-+		else if (termios->c_cflag & PARODD)
-+			type.ptype = UART_TYPE__PTYPE_VAL_ODD;
-+		else
-+			type.ptype = UART_TYPE__PTYPE_VAL_EVEN;
-+	} else
-+		type.ptype = UART_TYPE__PTYPE_VAL_NONE;
-+
-+	/* Stop bits. */
-+	if (termios->c_cflag & CSTOPB)
-+		type.sbits = UART_TYPE__SBITS_VAL_TWO_SBITS;
-+	else
-+		type.sbits = UART_TYPE__SBITS_VAL_ONE_SBITS;
-+
-+	/* Set the uart paramters. */
-+	gxio_uart_write(context, UART_DIVISOR, divisor.word);
-+	gxio_uart_write(context, UART_TYPE, type.word);
-+
-+	mutex_unlock(&tile_uart->mutex);
++		memset(mem, 0, dbg_reg_def[regno].size);
++	return dbg_reg_def[regno].name;
 +}
 +
-+
-+/*
-+ * Return string describing the specified port.
-+ */
-+static const char *tilegx_type(struct uart_port *port)
++int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
 +{
-+	return port->type == PORT_TILEGX ? DRIVER_NAME_STRING : NULL;
-+}
-+
-+
-+/*
-+ * Release the resources being used by 'port'.
-+ */
-+static void tilegx_release_port(struct uart_port *port)
-+{
-+	/* Nothing to release. */
-+}
-+
-+
-+/*
-+ * Request the resources being used by 'port'.
-+ */
-+static int tilegx_request_port(struct uart_port *port)
-+{
-+	/* Always present. */
-+	return 0;
-+}
-+
-+
-+/*
-+ * Configure/autoconfigure the port.
-+ */
-+static void tilegx_config_port(struct uart_port *port, int flags)
-+{
-+	if (flags & UART_CONFIG_TYPE)
-+		port->type = PORT_TILEGX;
-+}
-+
-+
-+/*
-+ * Verify the new serial_struct (for TIOCSSERIAL).
-+ */
-+static int tilegx_verify_port(struct uart_port *port,
-+			      struct serial_struct *ser)
-+{
-+	if ((ser->type != PORT_UNKNOWN) && (ser->type != PORT_TILEGX))
++	if (regno >= DBG_MAX_REG_NUM || regno < 0)
 +		return -EINVAL;
 +
++	if (dbg_reg_def[regno].offset != -1)
++		memcpy((void *)regs + dbg_reg_def[regno].offset, mem,
++		       dbg_reg_def[regno].size);
 +	return 0;
 +}
-+
-+#ifdef CONFIG_CONSOLE_POLL
 +
 +/*
-+ * Console polling routines for writing and reading from the uart while
-+ * in an interrupt or debug context.
++ * Similar to pt_regs_to_gdb_regs() except that process is sleeping and so
++ * we may not be able to get all the info.
 + */
-+
-+static int tilegx_poll_get_char(struct uart_port *port)
++void
++sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *task)
 +{
-+	UART_FIFO_COUNT_t count;
-+	gxio_uart_context_t *context;
-+	struct tile_uart_port *tile_uart;
++	int reg;
++	struct pt_regs *thread_regs;
++	unsigned long *ptr = gdb_regs;
 +
-+	tile_uart = container_of(port, struct tile_uart_port, uart);
-+	context = &tile_uart->context;
-+	count.word = gxio_uart_read(context, UART_FIFO_COUNT);
-+	if (count.rfifo_count == 0)
-+		return NO_POLL_CHAR;
-+	return (char)gxio_uart_read(context, UART_RECEIVE_DATA);
++	if (task == NULL)
++		return;
++
++	/* Initialize to zero. */
++	memset(gdb_regs, 0, NUMREGBYTES);
++
++	thread_regs = task_pt_regs(task);
++	for (reg = 0; reg <= TREG_LAST_GPR; reg++)
++		*(ptr++) = thread_regs->regs[reg];
++
++	gdb_regs[TILEGX_PC_REGNUM] = thread_regs->pc;
++	gdb_regs[TILEGX_FAULTNUM_REGNUM] = thread_regs->faultnum;
 +}
 +
-+static void tilegx_poll_put_char(struct uart_port *port, unsigned char c)
++void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long pc)
 +{
-+	gxio_uart_context_t *context;
-+	struct tile_uart_port *tile_uart;
-+
-+	tile_uart = container_of(port, struct tile_uart_port, uart);
-+	context = &tile_uart->context;
-+	gxio_uart_write(context, UART_TRANSMIT_DATA, (unsigned long)c);
++	regs->pc = pc;
 +}
 +
-+#endif /* CONFIG_CONSOLE_POLL */
-+
-+
-+static const struct uart_ops tilegx_ops = {
-+	.tx_empty	= tilegx_tx_empty,
-+	.set_mctrl	= tilegx_set_mctrl,
-+	.get_mctrl	= tilegx_get_mctrl,
-+	.stop_tx	= tilegx_stop_tx,
-+	.start_tx	= tilegx_start_tx,
-+	.stop_rx	= tilegx_stop_rx,
-+	.enable_ms	= tilegx_enable_ms,
-+	.break_ctl	= tilegx_break_ctl,
-+	.startup	= tilegx_startup,
-+	.shutdown	= tilegx_shutdown,
-+	.flush_buffer	= tilegx_flush_buffer,
-+	.set_termios	= tilegx_set_termios,
-+	.type		= tilegx_type,
-+	.release_port	= tilegx_release_port,
-+	.request_port	= tilegx_request_port,
-+	.config_port	= tilegx_config_port,
-+	.verify_port	= tilegx_verify_port,
-+#ifdef CONFIG_CONSOLE_POLL
-+	.poll_get_char	= tilegx_poll_get_char,
-+	.poll_put_char	= tilegx_poll_put_char,
-+#endif
-+};
-+
-+
-+static void tilegx_init_ports(void)
++static void kgdb_call_nmi_hook(void *ignored)
 +{
-+	int i;
-+	struct uart_port *port;
++	kgdb_nmicallback(raw_smp_processor_id(), NULL);
++}
 +
-+	for (i = 0; i < TILEGX_UART_NR; i++) {
-+		port = &tile_uart_ports[i].uart;
-+		port->ops = &tilegx_ops;
-+		port->line = i;
-+		port->type = PORT_TILEGX;
-+		port->uartclk = TILEGX_UART_REF_CLK;
-+		port->flags = UPF_BOOT_AUTOCONF;
++void kgdb_roundup_cpus(unsigned long flags)
++{
++	local_irq_enable();
++	smp_call_function(kgdb_call_nmi_hook, NULL, 0);
++	local_irq_disable();
++}
 +
-+		tile_uart_ports[i].context.fd = -1;
-+		mutex_init(&tile_uart_ports[i].mutex);
++/*
++ * Convert a kernel address to the writable kernel text mapping.
++ */
++static unsigned long writable_address(unsigned long addr)
++{
++	unsigned long ret = 0;
++
++	if (core_kernel_text(addr))
++		ret = addr - MEM_SV_START + PAGE_OFFSET;
++	else if (is_module_text_address(addr))
++		ret = addr;
++	else
++		pr_err("Unknown virtual address 0x%lx\n", addr);
++
++	return ret;
++}
++
++/*
++ * Calculate the new address for after a step.
++ */
++static unsigned long get_step_address(struct pt_regs *regs)
++{
++	int src_reg;
++	int jump_off;
++	int br_off;
++	unsigned long addr;
++	unsigned int opcode;
++	tile_bundle_bits bundle;
++
++	/* Move to the next instruction by default. */
++	addr = regs->pc + TILEGX_BUNDLE_SIZE_IN_BYTES;
++	bundle = *(unsigned long *)instruction_pointer(regs);
++
++	/* 0: X mode, Otherwise: Y mode. */
++	if (bundle & TILEGX_BUNDLE_MODE_MASK) {
++		if (get_Opcode_Y1(bundle) == RRR_1_OPCODE_Y1 &&
++		    get_RRROpcodeExtension_Y1(bundle) ==
++		    UNARY_RRR_1_OPCODE_Y1) {
++			opcode = get_UnaryOpcodeExtension_Y1(bundle);
++
++			switch (opcode) {
++			case JALR_UNARY_OPCODE_Y1:
++			case JALRP_UNARY_OPCODE_Y1:
++			case JR_UNARY_OPCODE_Y1:
++			case JRP_UNARY_OPCODE_Y1:
++				src_reg = get_SrcA_Y1(bundle);
++				dbg_get_reg(src_reg, &addr, regs);
++				break;
++			}
++		}
++	} else if (get_Opcode_X1(bundle) == RRR_0_OPCODE_X1) {
++		if (get_RRROpcodeExtension_X1(bundle) ==
++		    UNARY_RRR_0_OPCODE_X1) {
++			opcode = get_UnaryOpcodeExtension_X1(bundle);
++
++			switch (opcode) {
++			case JALR_UNARY_OPCODE_X1:
++			case JALRP_UNARY_OPCODE_X1:
++			case JR_UNARY_OPCODE_X1:
++			case JRP_UNARY_OPCODE_X1:
++				src_reg = get_SrcA_X1(bundle);
++				dbg_get_reg(src_reg, &addr, regs);
++				break;
++			}
++		}
++	} else if (get_Opcode_X1(bundle) == JUMP_OPCODE_X1) {
++		opcode = get_JumpOpcodeExtension_X1(bundle);
++
++		switch (opcode) {
++		case JAL_JUMP_OPCODE_X1:
++		case J_JUMP_OPCODE_X1:
++			jump_off = sign_extend(get_JumpOff_X1(bundle), 27);
++			addr = regs->pc +
++				(jump_off << TILEGX_LOG2_BUNDLE_SIZE_IN_BYTES);
++			break;
++		}
++	} else if (get_Opcode_X1(bundle) == BRANCH_OPCODE_X1) {
++		br_off = 0;
++		opcode = get_BrType_X1(bundle);
++
++		switch (opcode) {
++		case BEQZT_BRANCH_OPCODE_X1:
++		case BEQZ_BRANCH_OPCODE_X1:
++			if (get_SrcA_X1(bundle) == 0)
++				br_off = get_BrOff_X1(bundle);
++			break;
++		case BGEZT_BRANCH_OPCODE_X1:
++		case BGEZ_BRANCH_OPCODE_X1:
++			if (get_SrcA_X1(bundle) >= 0)
++				br_off = get_BrOff_X1(bundle);
++			break;
++		case BGTZT_BRANCH_OPCODE_X1:
++		case BGTZ_BRANCH_OPCODE_X1:
++			if (get_SrcA_X1(bundle) > 0)
++				br_off = get_BrOff_X1(bundle);
++			break;
++		case BLBCT_BRANCH_OPCODE_X1:
++		case BLBC_BRANCH_OPCODE_X1:
++			if (!(get_SrcA_X1(bundle) & 1))
++				br_off = get_BrOff_X1(bundle);
++			break;
++		case BLBST_BRANCH_OPCODE_X1:
++		case BLBS_BRANCH_OPCODE_X1:
++			if (get_SrcA_X1(bundle) & 1)
++				br_off = get_BrOff_X1(bundle);
++			break;
++		case BLEZT_BRANCH_OPCODE_X1:
++		case BLEZ_BRANCH_OPCODE_X1:
++			if (get_SrcA_X1(bundle) <= 0)
++				br_off = get_BrOff_X1(bundle);
++			break;
++		case BLTZT_BRANCH_OPCODE_X1:
++		case BLTZ_BRANCH_OPCODE_X1:
++			if (get_SrcA_X1(bundle) < 0)
++				br_off = get_BrOff_X1(bundle);
++			break;
++		case BNEZT_BRANCH_OPCODE_X1:
++		case BNEZ_BRANCH_OPCODE_X1:
++			if (get_SrcA_X1(bundle) != 0)
++				br_off = get_BrOff_X1(bundle);
++			break;
++		}
++
++		if (br_off != 0) {
++			br_off = sign_extend(br_off, 17);
++			addr = regs->pc +
++				(br_off << TILEGX_LOG2_BUNDLE_SIZE_IN_BYTES);
++		}
 +	}
++
++	return addr;
 +}
 +
-+
-+static struct uart_driver tilegx_uart_driver = {
-+	.owner		= THIS_MODULE,
-+	.driver_name	= DRIVER_NAME_STRING,
-+	.dev_name	= TILEGX_UART_NAME,
-+	.major		= TILEGX_UART_MAJOR,
-+	.minor		= TILEGX_UART_MINOR,
-+	.nr		= TILEGX_UART_NR,
-+};
-+
-+
-+static int __init tilegx_init(void)
++/*
++ * Replace the next instruction after the current instruction with a
++ * breakpoint instruction.
++ */
++static void do_single_step(struct pt_regs *regs)
 +{
-+	int i;
++	unsigned long addr_wr;
++
++	/* Determine where the target instruction will send us to. */
++	stepped_addr = get_step_address(regs);
++	probe_kernel_read((char *)&stepped_instr, (char *)stepped_addr,
++			  BREAK_INSTR_SIZE);
++
++	addr_wr = writable_address(stepped_addr);
++	probe_kernel_write((char *)addr_wr, (char *)&singlestep_insn,
++			   BREAK_INSTR_SIZE);
++	smp_wmb();
++	flush_icache_range(stepped_addr, stepped_addr + BREAK_INSTR_SIZE);
++}
++
++static void undo_single_step(struct pt_regs *regs)
++{
++	unsigned long addr_wr;
++
++	if (stepped_instr == 0)
++		return;
++
++	addr_wr = writable_address(stepped_addr);
++	probe_kernel_write((char *)addr_wr, (char *)&stepped_instr,
++			   BREAK_INSTR_SIZE);
++	stepped_instr = 0;
++	smp_wmb();
++	flush_icache_range(stepped_addr, stepped_addr + BREAK_INSTR_SIZE);
++}
++
++/*
++ * Calls linux_debug_hook before the kernel dies. If KGDB is enabled,
++ * then try to fall into the debugger.
++ */
++static int
++kgdb_notify(struct notifier_block *self, unsigned long cmd, void *ptr)
++{
 +	int ret;
-+	struct tty_driver *tty_drv;
++	unsigned long flags;
++	struct die_args *args = (struct die_args *)ptr;
++	struct pt_regs *regs = args->regs;
 +
-+	ret = uart_register_driver(&tilegx_uart_driver);
++#ifdef CONFIG_KPROBES
++	/*
++	 * Return immediately if the kprobes fault notifier has set
++	 * DIE_PAGE_FAULT.
++	 */
++	if (cmd == DIE_PAGE_FAULT)
++		return NOTIFY_DONE;
++#endif /* CONFIG_KPROBES */
++
++	switch (cmd) {
++	case DIE_BREAK:
++	case DIE_COMPILED_BPT:
++		break;
++	case DIE_SSTEPBP:
++		local_irq_save(flags);
++		kgdb_handle_exception(0, SIGTRAP, 0, regs);
++		local_irq_restore(flags);
++		return NOTIFY_STOP;
++	default:
++		/* Userspace events, ignore. */
++		if (user_mode(regs))
++			return NOTIFY_DONE;
++	}
++
++	local_irq_save(flags);
++	ret = kgdb_handle_exception(args->trapnr, args->signr, args->err, regs);
++	local_irq_restore(flags);
 +	if (ret)
-+		return ret;
-+	tty_drv = tilegx_uart_driver.tty_driver;
-+	tty_drv->init_termios.c_cflag = B115200 | CS8 | CREAD | HUPCL | CLOCAL;
-+	tty_drv->init_termios.c_ispeed = 115200;
-+	tty_drv->init_termios.c_ospeed = 115200;
++		return NOTIFY_DONE;
 +
-+	tilegx_init_ports();
-+
-+	for (i = 0; i < TILEGX_UART_NR; i++) {
-+		struct uart_port *port = &tile_uart_ports[i].uart;
-+		ret = uart_add_one_port(&tilegx_uart_driver, port);
-+	}
-+
-+	return 0;
++	return NOTIFY_STOP;
 +}
 +
++static struct notifier_block kgdb_notifier = {
++	.notifier_call = kgdb_notify,
++};
 +
-+static void __exit tilegx_exit(void)
++/*
++ * kgdb_arch_handle_exception - Handle architecture specific GDB packets.
++ * @vector: The error vector of the exception that happened.
++ * @signo: The signal number of the exception that happened.
++ * @err_code: The error code of the exception that happened.
++ * @remcom_in_buffer: The buffer of the packet we have read.
++ * @remcom_out_buffer: The buffer of %BUFMAX bytes to write a packet into.
++ * @regs: The &struct pt_regs of the current process.
++ *
++ * This function MUST handle the 'c' and 's' command packets,
++ * as well packets to set / remove a hardware breakpoint, if used.
++ * If there are additional packets which the hardware needs to handle,
++ * they are handled here. The code should return -1 if it wants to
++ * process more packets, and a %0 or %1 if it wants to exit from the
++ * kgdb callback.
++ */
++int kgdb_arch_handle_exception(int vector, int signo, int err_code,
++			       char *remcom_in_buffer, char *remcom_out_buffer,
++			       struct pt_regs *regs)
 +{
-+	int i;
-+	struct uart_port *port;
++	char *ptr;
++	unsigned long address;
 +
-+	for (i = 0; i < TILEGX_UART_NR; i++) {
-+		port = &tile_uart_ports[i].uart;
-+		uart_remove_one_port(&tilegx_uart_driver, port);
++	/* Undo any stepping we may have done. */
++	undo_single_step(regs);
++
++	switch (remcom_in_buffer[0]) {
++	case 'c':
++	case 's':
++	case 'D':
++	case 'k':
++		/*
++		 * Try to read optional parameter, pc unchanged if no parm.
++		 * If this was a compiled-in breakpoint, we need to move
++		 * to the next instruction or we will just breakpoint
++		 * over and over again.
++		 */
++		ptr = &remcom_in_buffer[1];
++		if (kgdb_hex2long(&ptr, &address))
++			regs->pc = address;
++		else if (*(unsigned long *)regs->pc == compiled_bpt)
++			regs->pc += BREAK_INSTR_SIZE;
++
++		if (remcom_in_buffer[0] == 's') {
++			do_single_step(regs);
++			kgdb_single_step = 1;
++			atomic_set(&kgdb_cpu_doing_single_step,
++				   raw_smp_processor_id());
++		} else
++			atomic_set(&kgdb_cpu_doing_single_step, -1);
++
++		return 0;
 +	}
 +
-+	uart_unregister_driver(&tilegx_uart_driver);
++	return -1; /* this means that we do not want to exit from the handler */
 +}
 +
++struct kgdb_arch arch_kgdb_ops;
 +
-+module_init(tilegx_init);
-+module_exit(tilegx_exit);
++/*
++ * kgdb_arch_init - Perform any architecture specific initalization.
++ *
++ * This function will handle the initalization of any architecture
++ * specific callbacks.
++ */
++int kgdb_arch_init(void)
++{
++	tile_bundle_bits bundle = TILEGX_BPT_BUNDLE;
 +
-+MODULE_AUTHOR("Tilera Corporation");
-+MODULE_DESCRIPTION("TILEGx serial port driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/uapi/linux/serial_core.h b/include/uapi/linux/serial_core.h
-index 9119cc0..b466487 100644
---- a/include/uapi/linux/serial_core.h
-+++ b/include/uapi/linux/serial_core.h
-@@ -232,4 +232,7 @@
- /* SH-SCI */
- #define PORT_HSCIF	104
- 
-+/* Tilera TILE-Gx UART */
-+#define PORT_TILEGX	105
++	memcpy(arch_kgdb_ops.gdb_bpt_instr, &bundle, BREAK_INSTR_SIZE);
++	return register_die_notifier(&kgdb_notifier);
++}
 +
- #endif /* _UAPILINUX_SERIAL_CORE_H */
++/*
++ * kgdb_arch_exit - Perform any architecture specific uninitalization.
++ *
++ * This function will handle the uninitalization of any architecture
++ * specific callbacks, for dynamic registration and unregistration.
++ */
++void kgdb_arch_exit(void)
++{
++	unregister_die_notifier(&kgdb_notifier);
++}
++
++int kgdb_arch_set_breakpoint(struct kgdb_bkpt *bpt)
++{
++	int err;
++	unsigned long addr_wr = writable_address(bpt->bpt_addr);
++
++	if (addr_wr == 0)
++		return -1;
++
++	err = probe_kernel_read(bpt->saved_instr, (char *)bpt->bpt_addr,
++				BREAK_INSTR_SIZE);
++	if (err)
++		return err;
++
++	err = probe_kernel_write((char *)addr_wr, arch_kgdb_ops.gdb_bpt_instr,
++				 BREAK_INSTR_SIZE);
++	smp_wmb();
++	flush_icache_range((unsigned long)bpt->bpt_addr,
++			   (unsigned long)bpt->bpt_addr + BREAK_INSTR_SIZE);
++	return err;
++}
++
++int kgdb_arch_remove_breakpoint(struct kgdb_bkpt *bpt)
++{
++	int err;
++	unsigned long addr_wr = writable_address(bpt->bpt_addr);
++
++	if (addr_wr == 0)
++		return -1;
++
++	err = probe_kernel_write((char *)addr_wr, (char *)bpt->saved_instr,
++				 BREAK_INSTR_SIZE);
++	smp_wmb();
++	flush_icache_range((unsigned long)bpt->bpt_addr,
++			   (unsigned long)bpt->bpt_addr + BREAK_INSTR_SIZE);
++	return err;
++}
+diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
+index 19d465c..ef95de2 100644
+--- a/arch/tile/kernel/traps.c
++++ b/arch/tile/kernel/traps.c
+@@ -240,6 +240,11 @@ static int do_bpt(struct pt_regs *regs)
+ 		notify_die(DIE_BREAK, "debug", regs, bundle,
+ 			INT_ILL, SIGTRAP);
+ 		break;
++	/* compiled_bpt */
++	case DIE_COMPILED_BPT:
++		notify_die(DIE_COMPILED_BPT, "debug", regs, bundle,
++			INT_ILL, SIGTRAP);
++		break;
+ 	/* breakpoint2_insn */
+ 	case DIE_SSTEPBP:
+ 		notify_die(DIE_SSTEPBP, "single_step", regs, bundle,
 -- 
 1.8.3.1
 
