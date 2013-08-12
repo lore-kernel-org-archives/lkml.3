@@ -1,66 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab3HLNpV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:45:21 -0400
-Received: from imap.thunk.org ([74.207.234.97]:42684 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754797Ab3HLNpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:45:18 -0400
-Date: Mon, 12 Aug 2013 09:45:14 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] more ext4 bug fixes (for v3.11-rc6)
-Message-ID: <20130812134514.GA13322@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1756592Ab3HLNvs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:51:48 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:3525 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755340Ab3HLNvn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 09:51:43 -0400
+Message-ID: <5208E881.3030205@atmel.com>
+Date: Mon, 12 Aug 2013 15:52:01 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Boris BREZILLON <b.brezillon@overkiz.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] usb: gadget: at91_udc: add usb_clk for transition to
+ common clk framework
+References: <1375337885-2684-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1375337885-2684-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
+On 01/08/2013 08:18, Boris BREZILLON :
+> The AT91 PMC (Power Management Controller) provides an USB clock used by
+> USB Full Speed host (ohci) and USB Full Speed device (udc).
+> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
+> This configuration was formely done in mach-at91/clock.c, but this
+> implementation will be removed when moving to common clk framework.
+>
+> This patch adds support for usb clock retrieval and configuration, and is
+> backward compatible with the current at91 clk implementation (if usb clk
+> is not found, it does not configure/enable it).
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 
-  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-are available in the git repository at:
+> ---
+>   drivers/usb/gadget/at91_udc.c |   17 ++++++++++++++++-
+>   drivers/usb/gadget/at91_udc.h |    2 +-
+>   2 files changed, 17 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
+> index fce8e4e..ae06585 100644
+> --- a/drivers/usb/gadget/at91_udc.c
+> +++ b/drivers/usb/gadget/at91_udc.c
+> @@ -870,6 +870,11 @@ static void clk_on(struct at91_udc *udc)
+>   	if (udc->clocked)
+>   		return;
+>   	udc->clocked = 1;
+> +
+> +	if (!IS_ERR(udc->uclk)) {
+> +		clk_set_rate(udc->uclk, 48000000);
+> +		clk_prepare_enable(udc->uclk);
+> +	}
+>   	clk_prepare_enable(udc->iclk);
+>   	clk_prepare_enable(udc->fclk);
+>   }
+> @@ -882,6 +887,8 @@ static void clk_off(struct at91_udc *udc)
+>   	udc->gadget.speed = USB_SPEED_UNKNOWN;
+>   	clk_disable_unprepare(udc->fclk);
+>   	clk_disable_unprepare(udc->iclk);
+> +	if (!IS_ERR(udc->uclk))
+> +		clk_disable_unprepare(udc->uclk);
+>   }
+>
+>   /*
+> @@ -1774,10 +1781,10 @@ static int at91udc_probe(struct platform_device *pdev)
+>   	/* get interface and function clocks */
+>   	udc->iclk = clk_get(dev, "udc_clk");
+>   	udc->fclk = clk_get(dev, "udpck");
+> +	udc->uclk = clk_get(dev, "usb_clk");
+>   	if (IS_ERR(udc->iclk) || IS_ERR(udc->fclk)) {
+>   		DBG("clocks missing\n");
+>   		retval = -ENODEV;
+> -		/* NOTE: we "know" here that refcounts on these are NOPs */
+>   		goto fail1;
+>   	}
+>
+> @@ -1851,6 +1858,12 @@ fail3:
+>   fail2:
+>   	free_irq(udc->udp_irq, udc);
+>   fail1:
+> +	if (!IS_ERR(udc->uclk))
+> +		clk_put(udc->uclk);
+> +	if (!IS_ERR(udc->fclk))
+> +		clk_put(udc->fclk);
+> +	if (!IS_ERR(udc->iclk))
+> +		clk_put(udc->iclk);
+>   	iounmap(udc->udp_baseaddr);
+>   fail0a:
+>   	if (cpu_is_at91rm9200())
+> @@ -1894,6 +1907,8 @@ static int __exit at91udc_remove(struct platform_device *pdev)
+>
+>   	clk_put(udc->iclk);
+>   	clk_put(udc->fclk);
+> +	if (!IS_ERR(udc->uclk))
+> +		clk_put(udc->uclk);
+>
+>   	return 0;
+>   }
+> diff --git a/drivers/usb/gadget/at91_udc.h b/drivers/usb/gadget/at91_udc.h
+> index e647d1c..0175246 100644
+> --- a/drivers/usb/gadget/at91_udc.h
+> +++ b/drivers/usb/gadget/at91_udc.h
+> @@ -126,7 +126,7 @@ struct at91_udc {
+>   	unsigned			active_suspend:1;
+>   	u8				addr;
+>   	struct at91_udc_data		board;
+> -	struct clk			*iclk, *fclk;
+> +	struct clk			*iclk, *fclk, *uclk;
+>   	struct platform_device		*pdev;
+>   	struct proc_dir_entry		*pde;
+>   	void __iomem			*udp_baseaddr;
+>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
 
-for you to fetch changes up to cde2d7a796f7e895e25b43471ed658079345636d:
-
-  ext4: flush the extent status cache during EXT4_IOC_SWAP_BOOT (2013-08-12 09:29:30 -0400)
-
-----------------------------------------------------------------
-A number of miscellaneous ext4 bugs fixes for v3.11, including a fix
-so that if ext4 is built as a module, to allow it to be unloaded.
-
-----------------------------------------------------------------
-Eric Sandeen (1):
-      ext4: destroy ext4_es_cachep on module unload
-
-Piotr Sarna (1):
-      ext4: fix mount/remount error messages for incompatible mount options
-
-Theodore Ts'o (4):
-      ext4: make sure group number is bumped after a inode allocation race
-      ext4: fix retry handling in ext4_ext_truncate()
-      ext4: allow the mount options nodelalloc and data=journal
-      ext4: flush the extent status cache during EXT4_IOC_SWAP_BOOT
-
-Zheng Liu (1):
-      ext4: add WARN_ON to check the length of allocated blocks
-
- fs/ext4/extents.c |  2 +-
- fs/ext4/ialloc.c  | 10 +++++-----
- fs/ext4/inode.c   | 39 ++++++++++++++++++---------------------
- fs/ext4/ioctl.c   |  6 ++++--
- fs/ext4/super.c   | 20 ++++++++++++++++++--
- 5 files changed, 46 insertions(+), 31 deletions(-)
+-- 
+Nicolas Ferre
