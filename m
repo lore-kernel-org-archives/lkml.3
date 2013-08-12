@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab3HLFf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 01:35:28 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:42325 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab3HLFf0 (ORCPT
+	id S1755576Ab3HLFpe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 01:45:34 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:7491 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750843Ab3HLFpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 01:35:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130809214255.GA5893@amd.pavel.ucw.cz>
-References: <20130809214255.GA5893@amd.pavel.ucw.cz>
-Date: Mon, 12 Aug 2013 11:05:26 +0530
-Message-ID: <CAKohpomAaeR_=J9mJLqdhm89WayePQRAGVw+rDJUayDzXDiT5A@mail.gmail.com>
-Subject: Re: AMD FX-4130 part only runs at 2.6/3.4GHz
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Pavel Machek <pavel@ucw.cz>, Dirk Brandewie <dirk.j.brandewie@intel.com>
-Cc: kernel list <linux-kernel@vger.kernel.org>, rjw@sisk.pl,
+	Mon, 12 Aug 2013 01:45:32 -0400
+X-IronPort-AV: E=Sophos;i="4.89,859,1367964000"; 
+   d="scan'208";a="23742026"
+Date: Mon, 12 Aug 2013 07:45:26 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, kernel-janitors@vger.kernel.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        andreas.herrmann3@amd.com
-Content-Type: text/plain; charset=ISO-8859-1
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/16] drivers/cpufreq/pxa3xx-cpufreq.c: Avoid using
+ ARRAY_AND_SIZE(e) as a function argument
+In-Reply-To: <CAKohpo=MfrUTYQKvJHP1Gns3kUfjqG6r9T8+7ZZ98-8yb0BZXw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1308120743030.2038@localhost6.localdomain6>
+References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr> <1376239917-15594-13-git-send-email-Julia.Lawall@lip6.fr> <CAKohpo=MfrUTYQKvJHP1Gns3kUfjqG6r9T8+7ZZ98-8yb0BZXw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 August 2013 03:12, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
-> I have
->
-> DMI: Gigabyte Technology Co., Ltd. GA-78LMT-S2P/GA-78LMT-S2P, BIOS F3 10/18/2012
->
-> mainboard and AMD FX-4130 processor.
->
-> processor : 3
-> vendor_id : AuthenticAMD
-> cpu family  : 21
-> model         : 1
-> model name    : AMD FX(tm)-4130 Quad-Core Processor
-> stepping      : 2
-> microcode     : 0x6000629
-> cpu MHz         : 1400.000
-> cache size      : 2048 KB
->
-> ...but it seems to run slower than it should. According to box, stock
-> frequency should be 3.8GHz, with 3.9GHz turbo, but it only goes to
-> 3.4GHz (and seems to only go there in "turbo" mode -- not all cores at
-> once.)
->
-> Kernel is:
->
-> Linux version 3.11.0-rc2 (pavel@Elf) (gcc version 4.4.5 (Debian
-> 4.4.5-8) ) #320 SMP Fri Aug 9 23:22:58 CEST 2013
->
-> cpufreq says:
->
-> pavel@Elf:~$ cat
-> /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies
-> 3400000 2800000 2600000 1800000 1400000
 
-So, cpufreq doesn't have this frequency to set..
 
-Which cpufreq driver are you using?
+On Mon, 12 Aug 2013, Viresh Kumar wrote:
 
-> pavel@Elf:~$
->
-> Suspicious dmesg:
->
-> ACPI Warning: \_PR_.C000._PSS: SubPackage[0,1] - suspicious power
-> dissipation values (20130517/nsrepair2-710)
-> acpi-cpufreq: overriding BIOS provided _PSD data
-> ACPI Warning: \_PR_.C001._PSS: SubPackage[0,1] - suspicious power
-> dissipation values (20130517/nsrepair2-710)
-> ACPI Warning: \_PR_.C002._PSS: SubPackage[0,1] - suspicious power
-> dissipation values (20130517/nsrepair2-710)
-> ACPI Warning: \_PR_.C003._PSS: SubPackage[0,1] - suspicious power
-> dissipation values (20130517/nsrepair2-710)
-> ALSA device list:
->   #0: HDA ATI SB at 0xfe024000 irq 16
->   #1: HD-Audio Generic at 0xfdffc000 irq 19
->
-> I can manually tweak multiplier in the BIOS to get to 3812 (or so)
-> MHz, but the machine does not seem stable in that setting.
->
-> Any idea what is going on?
->
-> Thanks,
->                                                                         Pavel
->
+> On 11 August 2013 22:21, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding the
+> > arity of the called function.
+> 
+> Makes sense.
+> 
+> > The semantic match that makes this change is as follows:
+> > (http://coccinelle.lip6.fr/)
+> 
+> What is this doing here?
+
+I'm not sure to understand the sense of the question.  The semantic patch 
+explains exactly what considerations were used when making the 
+transformation.  That is, any function call, having a call to 
+ARRAY_AND_SIZE as an argument is rewritten to replace the call to 
+ARRAY_AND_SIZE with the correspondingtwo arguments.  The transformation 
+was performed entirely automatically, although in a lot of cases it was 
+necessary to add newlines afterwards.
+
+julia
+
+> > // <smpl>
+> > @@
+> > expression e,f;
+> > @@
+> >
+> > f(...,
+> > - ARRAY_AND_SIZE(e)
+> > + e,ARRAY_SIZE(e)
+> >   ,...)
+> > // </smpl>
+> >
+> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> >
+> > ---
+> > Not compiled.
+> >
+> >  drivers/cpufreq/pxa3xx-cpufreq.c |    6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 > --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
