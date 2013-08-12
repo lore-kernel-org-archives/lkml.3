@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab3HLNer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:34:47 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:33857 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930Ab3HLNep (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:34:45 -0400
-Date: Mon, 12 Aug 2013 09:33:32 -0400 (EDT)
-From: John Kacur <jkacur@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Stephen Cameron <scameron@beardog.cce.hp.com>,
-        linux-scsi@vger.kernel.org, James Bottomley <jbottomley@parallels.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Clark Williams <williams@redhat.com>
-Message-ID: <1290115203.630841.1376314412366.JavaMail.root@redhat.com>
-In-Reply-To: <20130812131312.GF23040@linutronix.de>
-References: <alpine.LFD.2.03.1307261640170.2642@tycho> <20130812131312.GF23040@linutronix.de>
-Subject: Re: [PATCH] hpsa: fix warning with smp_processor_id() in
- preemptible
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1756570Ab3HLNfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:35:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756204Ab3HLNe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 09:34:57 -0400
+Date: Mon, 12 Aug 2013 09:34:50 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk,
+        bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mszeredi@suse.cz, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [PATCH 5/9] nfs: use check_submounts_and_drop()
+Message-ID: <20130812093450.678d9fd5@tlielax.poochiereds.net>
+In-Reply-To: <1375975490-18673-6-git-send-email-miklos@szeredi.hu>
+References: <1375975490-18673-1-git-send-email-miklos@szeredi.hu>
+	<1375975490-18673-6-git-send-email-miklos@szeredi.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF22 (Linux)/8.0.3_GA_5664)
-Thread-Topic: hpsa: fix warning with smp_processor_id() in preemptible
-Thread-Index: p4hcnbSKQi58494tLr/DBQYU9KpE3A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu,  8 Aug 2013 17:24:46 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
-
------ Original Message -----
-> * John Kacur | 2013-07-26 16:42:30 [+0200]:
+> From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> >Signed-off-by: John Kacur <jkacur@redhat.com>
-> >Acked-by: Stephen <scameron@beardog.cce.hp.com>
+> Do have_submounts(), shrink_dcache_parent() and d_drop() atomically.
 > 
-> ping.
+> check_submounts_and_drop() can deal with negative dentries and
+> non-directories as well.
 > 
-> I checked the branches for-next, scsi-fixes, fixes and misc at [0] and I
-> didn't see it. I'm going to take this for 3.10-rt but please don't lose
-> it on its way to Linus :)
+> Non-directories can also be mounted on.  And just like directories we don't
+> want these to disappear with invalidation.
 > 
-> [0] git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+> ---
+>  fs/nfs/dir.c | 9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> index e474ca2b..7468735 100644
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -1135,14 +1135,13 @@ out_zap_parent:
+>  	if (inode && S_ISDIR(inode->i_mode)) {
+>  		/* Purge readdir caches. */
+>  		nfs_zap_caches(inode);
+> -		/* If we have submounts, don't unhash ! */
+> -		if (have_submounts(dentry))
+> -			goto out_valid;
+>  		if (dentry->d_flags & DCACHE_DISCONNECTED)
+>  			goto out_valid;
+> -		shrink_dcache_parent(dentry);
+>  	}
+> -	d_drop(dentry);
+> +	/* If we have submounts, don't unhash ! */
+> +	if (check_submounts_and_drop(dentry) != 0)
+> +		goto out_valid;
+> +
+>  	dput(parent);
+>  	dfprintk(LOOKUPCACHE, "NFS: %s(%s/%s) is invalid\n",
+>  			__func__, dentry->d_parent->d_name.name,
 
-
-I hope it was clear to everyone that this patch was intended for upstream.
-It was discovered by running the real-time kernel, but it exposes a (minor) problem
-that should be fixed in the mainline kernel. Please apply it there Stephen, and
-push it upstream appropriately.
-
-Thank You.
-
-John Kacur
+Acked-by: Jeff Layton <jlayton@redhat.com>
