@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab3HLRxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:53:04 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:40832 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab3HLRw5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:52:57 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 29/31] cpufreq: SPEAr: Covert to light weight ->target() routine
-Date: Mon, 12 Aug 2013 23:19:05 +0530
-Message-Id: <48a7161dba289f6f98820d6129d82b639f12f3c6.1376329128.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376329128.git.viresh.kumar@linaro.org>
-References: <cover.1376329128.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376329128.git.viresh.kumar@linaro.org>
-References: <cover.1376329128.git.viresh.kumar@linaro.org>
+	id S1755393Ab3HLRxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:53:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51819 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755259Ab3HLRxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 13:53:03 -0400
+Message-ID: <520920AF.1050407@zytor.com>
+Date: Mon, 12 Aug 2013 10:51:43 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <bitbucket@online.de>, Andi Kleen <ak@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] per-cpu preempt_count
+References: <20130812115113.GE27162@twins.programming.kicks-ass.net> <CA+55aFznj9WqGa_Qa0B4=5iTio2br54uJG7xkm6otN2sG2P=8w@mail.gmail.com>
+In-Reply-To: <CA+55aFznj9WqGa_Qa0B4=5iTio2br54uJG7xkm6otN2sG2P=8w@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts existing .target_old() to newly defined light weight
-.target() routine for this driver.
+On 08/12/2013 10:35 AM, Linus Torvalds wrote:
+> 
+> Agreed. Making it atomic would suck, and cancel all advantages of the
+> better code generation to access it. Good point.
+> 
+> And yeah, it could be two variables in the same cacheline or something.
+> 
 
-CPUFreq core will call cpufreq_frequency_table_target() before calling this
-routine and will pass index to it.
+So we would have code looking something like:
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/spear-cpufreq.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+	decl %fs:preempt_count
+	jnz 1f
+	cmpb $0,%fs:need_resched
+	je 1f
+	call __preempt_schedule
+1:
 
-diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
-index 31af347..1049917 100644
---- a/drivers/cpufreq/spear-cpufreq.c
-+++ b/drivers/cpufreq/spear-cpufreq.c
-@@ -105,20 +105,16 @@ static int spear1340_set_cpu_rate(struct clk *sys_pclk, unsigned long newfreq)
- }
- 
- static int spear_cpufreq_target(struct cpufreq_policy *policy,
--		unsigned int target_freq, unsigned int relation)
-+		unsigned int index)
- {
- 	struct cpufreq_freqs freqs;
- 	unsigned long newfreq;
- 	struct clk *srcclk;
--	int index, ret, mult = 1;
--
--	if (cpufreq_frequency_table_target(policy, spear_cpufreq.freq_tbl,
--				target_freq, relation, &index))
--		return -EINVAL;
-+	int ret, mult = 1;
- 
- 	freqs.old = spear_cpufreq_get(0);
--
- 	newfreq = spear_cpufreq.freq_tbl[index].frequency * 1000;
-+
- 	if (of_machine_is_compatible("st,spear1340")) {
- 		/*
- 		 * SPEAr1340 is special in the sense that due to the possibility
-@@ -191,7 +187,7 @@ static struct cpufreq_driver spear_cpufreq_driver = {
- 	.name		= "cpufreq-spear",
- 	.flags		= CPUFREQ_STICKY,
- 	.verify		= cpufreq_generic_frequency_table_verify,
--	.target_old	= spear_cpufreq_target,
-+	.target		= spear_cpufreq_target,
- 	.get		= spear_cpufreq_get,
- 	.init		= spear_cpufreq_init,
- 	.exit		= cpufreq_generic_exit,
--- 
-1.7.12.rc2.18.g61b472e
+It's a nontrivial amount of code, but would seem a fair bit better than
+what we have now, at least.
+
+	-hpa
 
