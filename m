@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755103Ab3HLSx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:53:28 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:45779 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab3HLSx0 (ORCPT
+	id S1755316Ab3HLSzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:55:04 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:35172 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679Ab3HLSzA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:53:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <520920AF.1050407@zytor.com>
-References: <20130812115113.GE27162@twins.programming.kicks-ass.net>
-	<CA+55aFznj9WqGa_Qa0B4=5iTio2br54uJG7xkm6otN2sG2P=8w@mail.gmail.com>
-	<520920AF.1050407@zytor.com>
-Date: Mon, 12 Aug 2013 11:53:25 -0700
-X-Google-Sender-Auth: yiIN_VvthLfgFgX2hKNiBP8d2Wg
-Message-ID: <CA+55aFwP0nXWJ3-YXCxZC3kCJ-5nVG7dEbqqJa-HF5pdEc+xsg@mail.gmail.com>
-Subject: Re: [RFC] per-cpu preempt_count
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+	Mon, 12 Aug 2013 14:55:00 -0400
+Date: Mon, 12 Aug 2013 20:54:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <bitbucket@online.de>, Andi Kleen <ak@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] core/urgent fix
+Message-ID: <20130812185456.GA20494@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 10:51 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> So we would have code looking something like:
->
->         decl %fs:preempt_count
->         jnz 1f
->         cmpb $0,%fs:need_resched
->         je 1f
->         call __preempt_schedule
-> 1:
->
-> It's a nontrivial amount of code, but would seem a fair bit better than
-> what we have now, at least.
+Linus,
 
-Well, we currently don't even bother checking the preempt count at
-all, and we just optimistically assume that we don't nest in the
-common case. The preempt count is then re-checked in
-__preempt_schedule, I think.
+Please pull the latest core-urgent-for-linus git tree from:
 
-Which sounds like a fair approach.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
 
-So the code would be simplified to just
+   HEAD: 85f4896123d0299128f2c95cc40f3b8b01d4b0f6 mutex: Fix w/w mutex deadlock injection
 
-         decl %fs:preempt_count
-         cmpb $0,%fs:need_resched
-         jne .. unlikely branch that calls __preempt_schedule
+A w/w mutex fixlet.
 
-which is not horrible. Not *quite* as nice as just doing a single
-"decl+js", but hey, certainly better than what we have now.
+ Thanks,
 
-             Linus
+	Ingo
+
+------------------>
+Maarten Lankhorst (1):
+      mutex: Fix w/w mutex deadlock injection
+
+
+ kernel/mutex.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index ff05f4b..a52ee7bb 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -686,7 +686,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+ 	might_sleep();
+ 	ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
+ 				   0, &ctx->dep_map, _RET_IP_, ctx);
+-	if (!ret && ctx->acquired > 0)
++	if (!ret && ctx->acquired > 1)
+ 		return ww_mutex_deadlock_injection(lock, ctx);
+ 
+ 	return ret;
+@@ -702,7 +702,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+ 	ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
+ 				  0, &ctx->dep_map, _RET_IP_, ctx);
+ 
+-	if (!ret && ctx->acquired > 0)
++	if (!ret && ctx->acquired > 1)
+ 		return ww_mutex_deadlock_injection(lock, ctx);
+ 
+ 	return ret;
