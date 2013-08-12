@@ -1,95 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab3HLPrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 11:47:31 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:30727 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756947Ab3HLPr2 (ORCPT
+	id S1757238Ab3HLPt2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 11:49:28 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:53592 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757174Ab3HLPt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 11:47:28 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: rjw@sisk.pl
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 1/2] CPU hotplug: Export cpu_hotplug_begin() interface
-Date: Mon, 12 Aug 2013 09:45:53 -0600
-Message-Id: <1376322354-13026-2-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1376322354-13026-1-git-send-email-toshi.kani@hp.com>
-References: <1376322354-13026-1-git-send-email-toshi.kani@hp.com>
+	Mon, 12 Aug 2013 11:49:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130809172257.GA713@xanatos>
+References: <20130524210503.GC15788@xanatos>
+	<Pine.LNX.4.44L0.1305251005390.18146-100000@netrider.rowland.org>
+	<CALaWCOOGEDtF1z29df2ST9kV-VpMa9VbvFK0Hh71WJG5f_pngA@mail.gmail.com>
+	<20130809172257.GA713@xanatos>
+Date: Mon, 12 Aug 2013 08:49:24 -0700
+X-Google-Sender-Auth: VXjTfX5TpshkGtJ9HfBwofM9ih4
+Message-ID: <CALaWCON7VjevE=LLYirPiw_W6fvs-L8GVtwP6bk0mJpJTuFKrg@mail.gmail.com>
+Subject: Re: [PATCH] usb: xhci: Disable runtime PM suspend for quirky controllers.
+From: Shawn Nematbakhsh <shawnn@chromium.org>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Julius Werner <jwerner@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu_hotplug_begin() and cpu_hotplug_done() are the interfaces to
-acquire the writer lock of the cpu_hotplug.lock.  The interfaces are
-used along with cpu_maps_update_begin() / cpu_maps_update_done() to
-serialize the updates to the system cpu maps, such as cpu_online_mask
-and cpu_present_mask.
+Hi Sarah,
 
-cpu_present_mask is updated by the ACPI processor handler.  Therefore,
-this patch changes the interfaces to global, and exports them in cpu.h.
+I will resubmit the patch with these changes shortly.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- include/linux/cpu.h |    4 ++++
- kernel/cpu.c        |    9 +++------
- 2 files changed, 7 insertions(+), 6 deletions(-)
-
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index ab0eade..956c0a1 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -172,6 +172,8 @@ extern struct bus_type cpu_subsys;
- #ifdef CONFIG_HOTPLUG_CPU
- /* Stop CPUs going up and down. */
- 
-+extern void cpu_hotplug_begin(void);
-+extern void cpu_hotplug_done(void);
- extern void get_online_cpus(void);
- extern void put_online_cpus(void);
- extern void cpu_hotplug_disable(void);
-@@ -197,6 +199,8 @@ static inline void cpu_hotplug_driver_unlock(void)
- 
- #else		/* CONFIG_HOTPLUG_CPU */
- 
-+static inline void cpu_hotplug_begin(void) {}
-+static inline void cpu_hotplug_done(void) {}
- #define get_online_cpus()	do { } while (0)
- #define put_online_cpus()	do { } while (0)
- #define cpu_hotplug_disable()	do { } while (0)
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index b2b227b..d7f07a2 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -113,7 +113,7 @@ EXPORT_SYMBOL_GPL(put_online_cpus);
-  * get_online_cpus() not an api which is called all that often.
-  *
-  */
--static void cpu_hotplug_begin(void)
-+void cpu_hotplug_begin(void)
- {
- 	cpu_hotplug.active_writer = current;
- 
-@@ -127,7 +127,7 @@ static void cpu_hotplug_begin(void)
- 	}
- }
- 
--static void cpu_hotplug_done(void)
-+void cpu_hotplug_done(void)
- {
- 	cpu_hotplug.active_writer = NULL;
- 	mutex_unlock(&cpu_hotplug.lock);
-@@ -154,10 +154,7 @@ void cpu_hotplug_enable(void)
- 	cpu_maps_update_done();
- }
- 
--#else /* #if CONFIG_HOTPLUG_CPU */
--static void cpu_hotplug_begin(void) {}
--static void cpu_hotplug_done(void) {}
--#endif	/* #else #if CONFIG_HOTPLUG_CPU */
-+#endif	/* CONFIG_HOTPLUG_CPU */
- 
- /* Need to know about CPUs going up/down? */
- int __ref register_cpu_notifier(struct notifier_block *nb)
+On Fri, Aug 9, 2013 at 10:22 AM, Sarah Sharp
+<sarah.a.sharp@linux.intel.com> wrote:
+> Hi Shawn,
+>
+> I noticed that the ChromeOS kernel tree is still using this particular
+> patch, and thought it was probably time to revisit it.
+>
+> On Sat, May 25, 2013 at 09:57:57AM -0700, Shawn Nematbakhsh wrote:
+>> Hi Sarah and Alan,
+>>
+>> Thanks for the comments. I will make the following revisions:
+>>
+>> 1. Call pm_runtime_get_noresume only when the first device is connected,
+>> and call pm_runtime_put when the last device is disconnected.
+>> 2. Wrap the calls in an ifdef CONFIG_USB_DEFAULT_PERSIST.
+>> 3. Make sure that all pm_runtime_get_noresume calls have a corresponding
+>> pm_runtime_put somewhere (originally the intent was to disable runtime
+>> suspend "forever", but no longer).
+>>
+>> In principle, would the patch be acceptable with these revisions?
+>
+> The thread petered off with all other options turning out to be
+> dead-ends, so yes, if you made those changes, you could get that patch
+> upstream.  I would like the ChromeOS kernel to be as close to upstream
+> as possible, so please resubmit this patch with those changes.
+>
+> Thanks,
+> Sarah Sharp
+>
+>>
+>> On Sat, May 25, 2013 at 7:11 AM, Alan Stern <stern@rowland.harvard.edu>wrote:
+>>
+>> > On Fri, 24 May 2013, Sarah Sharp wrote:
+>> >
+>> > > On Fri, May 24, 2013 at 11:12:57AM -0700, Shawn Nematbakhsh wrote:
+>> > > > If a USB controller with XHCI_RESET_ON_RESUME goes to runtime suspend,
+>> > > > a reset will be performed upon runtime resume. Any previously suspended
+>> > > > devices attached to the controller will be re-enumerated at this time.
+>> > > > This will cause problems, for example, if an open system call on the
+>> > > > device triggered the resume (the open call will fail).
+>> > >
+>> > > That's ugly, but disabling runtime PM is going to have a big impact on
+>> > > the power consumption of those systems.
+>> > >
+>> > > Alan, do you think this is really the right thing to be doing here?  It
+>> > > feels like userspace should just be able to deal with devices
+>> > > disconnecting on resume.  After all, there are lots of USB devices that
+>> > > can't handle USB device suspend at all.
+>> >
+>> > This is a complicated issue.  It depends on the runtime PM settings for
+>> > both the device and the host controller.
+>> >
+>> > As just one aspect, consider the fact that if it wants to, userspace
+>> > can already prevent the controller from going into runtime suspend.
+>> > Always preventing this at the kernel level, even when no devices are
+>> > plugged in, does seem too heavy-handed.
+>> >
+>> > > Shouldn't userspace just disable runtime PM for the USB device classes
+>> > > that don't have a reset resume callback?
+>> >
+>> > That's not so easy, because the kernel changes over time.  Userspace
+>> > has no general way to tell which drivers have reset-resume support.
+>> >
+>> > > > Note that this change is only relevant when persist_enabled is not set
+>> > > > for USB devices.
+>> > >
+>> > > Could we at least wrap the call in an ifdef CONFIG_USB_DEFAULT_PERSIST?
+>> > > That way if people have USB persist turned off in their configuration,
+>> > > their host will still be able to suspend.
+>> >
+>> > Not just that; the patch is incorrect on the face of it...
+>> >
+>> > > > @@ -4687,6 +4687,12 @@ int xhci_gen_setup(struct usb_hcd *hcd,
+>> > xhci_get_quirks_t get_quirks)
+>> > > >
+>> > > >     get_quirks(dev, xhci);
+>> > > >
+>> > > > +   /* If we are resetting upon resume, we must disable runtime PM.
+>> > > > +    * Otherwise, an open() syscall to a device on our runtime
+>> > suspended
+>> > > > +    * controller will trigger controller reset and device
+>> > re-enumeration */
+>> > > > +   if (xhci->quirks & XHCI_RESET_ON_RESUME)
+>> > > > +           pm_runtime_get_noresume(dev);
+>> > > > +
+>> >
+>> > It adds a pm_runtime_get call with no corresponding pm_runtime_put.
+>> >
+>> > Alan Stern
+>> >
+>> >
