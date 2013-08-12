@@ -1,71 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab3HLBxJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 21:53:09 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:54363 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755312Ab3HLBxD (ORCPT
+	id S1755293Ab3HLBxj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 21:53:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49364 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303Ab3HLBxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 21:53:03 -0400
-Date: Sun, 11 Aug 2013 21:53:01 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Mark Brown <broonie@kernel.org>
-cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-In-Reply-To: <20130811190826.GH6427@sirena.org.uk>
-Message-ID: <Pine.LNX.4.44L0.1308112146410.29546-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 11 Aug 2013 21:53:37 -0400
+Date: Mon, 12 Aug 2013 11:53:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: linux-next: manual merge of the wireless-next tree with the
+ wireless tree
+Message-Id: <20130812115327.7bcbb203ac8614d16d32ba52@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__12_Aug_2013_11_53_27_+1000_Mwz1=7V6r1_BAeaa"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Aug 2013, Mark Brown wrote:
+--Signature=_Mon__12_Aug_2013_11_53_27_+1000_Mwz1=7V6r1_BAeaa
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Looking at the enumerable buses in the kernel I don't see any which have
-> real support for any kind of registration of devices prior to their
-> enumeration.  Similarly currently all the DT bindings in the kernel I've
-> been able to notice cover only non-enumerable buses.  This generally
-> makes sense where enumerable buses are used in standard fashions since
-> the binding would be at best redundant and at worst inaccurate.  However
-> there are often corner cases in embedded systems where hardware has been
-> hooked up outside of the normal enumeration mechanisms, for example with
-> software power control or extra signals wired.
-> 
-> One example that's bugging me right now is that on the Insignal Arndale
-> platform there's a USB hub connected to one of the USB ports on the SoC
-> (not as a PHY, it seems we also need the internal PHY running to talk to
-> the device).  The hub needs to be "plugged" into the SoC after the SoC
-> USB controller has started with some GPIOs so we need to tell the system
-> that the hub exists and needs to be synchronised with the USB controller.
+Hi John,
 
-On the surface, this seems like a particularly simple case.  Why wait 
-until the SoC's USB controller has started?  Why not "plug in" the hub 
-via the GPIOs right from the beginning?
+Today's linux-next merge of the wireless-next tree got a conflict in
+drivers/net/wireless/iwlwifi/pcie/trans.c between commit eabc4ac5d760
+("iwlwifi: pcie: disable L1 Active after pci_enable_device") from
+thewireless tree and commit f2532b04b2ec ("iwlwifi: pcie: don't disable
+L1 for newest NICs") from the wireless-next tree.
 
-> Another case that's going to be problematic once it's in mainline is
-> Slimbus - this is a bus used in some embedded audio subsystems which is
-> enumerable in a similar manner to USB but where the devices on the bus
-> are normally powered up only on demand (causing them to hotplug when
-> used and unplug when idle) and have at least interrupt lines wired to
-> the SoC using a normal interrupt outside the enumerable bus.
+I fixed it up (maybe - see below) and can carry the fix as necessary (no
+action is required).
 
-That is indeed more difficult, because it requires geniune cooperation 
-between the bus and platform subsystems.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> I know there's been some discussion of this topic but do we have any
-> general consensus on how to handle such things both from a Linux driver
-> model point of view and from a DT/ACPI point of view?
+diff --cc drivers/net/wireless/iwlwifi/pcie/trans.c
+index 390e2f0,e52d1ce..0000000
+--- a/drivers/net/wireless/iwlwifi/pcie/trans.c
++++ b/drivers/net/wireless/iwlwifi/pcie/trans.c
+@@@ -1502,16 -1400,22 +1400,22 @@@ struct iwl_trans *iwl_trans_pcie_alloc(
+  	spin_lock_init(&trans_pcie->reg_lock);
+  	init_waitqueue_head(&trans_pcie->ucode_write_waitq);
+ =20
+ +	if (pci_enable_device(pdev)) {
+ +		err =3D -ENODEV;
+ +		goto out_no_pci;
+ +	}
+ +
+- 	/* W/A - seems to solve weird behavior. We need to remove this if we
+- 	 * don't want to stay in L1 all the time. This wastes a lot of power */
+- 	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
+- 			       PCIE_LINK_STATE_CLKPM);
++ 	if (!cfg->base_params->pcie_l1_allowed) {
++ 		/*
++ 		 * W/A - seems to solve weird behavior. We need to remove this
++ 		 * if we don't want to stay in L1 all the time. This wastes a
++ 		 * lot of power.
++ 		 */
++ 		pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S |
++ 				       PCIE_LINK_STATE_L1 |
++ 				       PCIE_LINK_STATE_CLKPM);
++ 	}
+ =20
+ -	if (pci_enable_device(pdev)) {
+ -		err =3D -ENODEV;
+ -		goto out_no_pci;
+ -	}
+ -
+  	pci_set_master(pdev);
+ =20
+  	err =3D pci_set_dma_mask(pdev, DMA_BIT_MASK(36));
 
-The discussion involved some sort of pattern matching based on the
-device name and the bus, but nothing was ever settled.
+--Signature=_Mon__12_Aug_2013_11_53_27_+1000_Mwz1=7V6r1_BAeaa
+Content-Type: application/pgp-signature
 
-Alan Stern
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBCAAGBQJSCEAbAAoJEECxmPOUX5FErOEP/09pnS34ZHeiAxPdzgIi6y5A
++aeaQLwlODyxBWjLleU09bSaexqNUbL1NELSmTAtEIfM40B/55fMUR1yTChIC6I4
+aQ0Ldif1mCyui05aoPabA5W2ERHafVU/G4wZfT0FX8WPL0ufO5/gDXGVSG9jn1UO
+Qm0WRKO5ehK6pi6jHyNvzLEkpb4m2NlmFrB3kyiy1fqYe5zCm+xLQkrD9NrcDRji
+x7rt0dRMCSjRFosz9XMH6IKyOkwivTuIetJXH6Jxejx5Qofzt9jIXubrbuFJ5EHY
+tr9ScGDD5HyCWQWK2bHYt0dKQL7/oAF/BGjBrYux+/k/QGlZBN9E2t6i6YG7oWwT
+rFKJ4L0mxAWPacghoeUhSi8hksYLmrqIJbtZoPMvmFhbPwAMyOazV8INXuR8ot6/
+r7kBdS3ukbltWVFBYMpo3MaJ4xY3PN3Ke0Wnb1FGgdefTAw62/8oj8AiHBJCQWY2
++qgvUwbXnYEifxpQJhQ4jB0oBanlkjNvoxiu67AXIqmv2RAujMxiiG500DYOUtr0
+TvU+JTFlm6KGJQiLMayB+DghkmI080+vGU4EuViHiRjH6juiTxTeFD4qyxII4HUL
+05lny5fqEmmsGv8Ji19Yiy8l+1CLltapxDWEu0MGPnIetcWSHrfSiYxmiauY4WgG
+ARPblKx2j3N5MmkSo0E3
+=Nt/8
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__12_Aug_2013_11_53_27_+1000_Mwz1=7V6r1_BAeaa--
