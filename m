@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab3HLQoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:44:17 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:39536 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756343Ab3HLQoQ (ORCPT
+	id S1757162Ab3HLQos (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:44:48 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:45593 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343Ab3HLQoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:44:16 -0400
-Message-ID: <520910DA.4000203@gmail.com>
-Date: Mon, 12 Aug 2013 18:44:10 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 12 Aug 2013 12:44:46 -0400
+Date: Mon, 12 Aug 2013 09:44:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH 5/8] rcu: eliminate deadlock for rcu read site
+Message-ID: <20130812164436.GV29406@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
+ <1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com>
+ <20130808204020.GA31127@linux.vnet.ibm.com>
+ <5204B6EF.6000905@cn.fujitsu.com>
+ <20130812135544.GG27162@twins.programming.kicks-ass.net>
+ <20130812151618.GR29406@linux.vnet.ibm.com>
+ <20130812162126.GV3008@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: Russell King <linux@arm.linux.org.uk>, Lior Amsalem <alior@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 1/3] ARM: Introduce atomic MMIO clear/set
-References: <1376138582-7550-1-git-send-email-ezequiel.garcia@free-electrons.com> <20130810140237.GB3080@localhost> <20130810140927.GC3080@localhost> <1376149388.716003514@f150.i.mail.ru> <20130810155552.GB17936@localhost> <20130812154646.GA5460@localhost>
-In-Reply-To: <20130812154646.GA5460@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130812162126.GV3008@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081216-4834-0000-0000-00000A16F09C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/13 17:46, Ezequiel Garcia wrote:
->> Indeed, syscon looks like a nice match for this use case.
->> (although it still looks like an overkill to me).
->>
->> I've been trying to implement a working solution based in syscon but I'm
->> unable to overcome an issue.
->>
->> The problem is that we need the register/regmap to initialize the clocksource
->> driver for this machine (aka the timer). Of course, this happens at a
->> *very* early point, way before the syscon driver is available... :-(
->>
->> Maybe someone has an idea?
->
-> Sebastian, Russell: I can't find the previous mail where you proposed
-> this solution to address the shared register issue between Kirkwood's
-> watchdog and clocksource.
+On Mon, Aug 12, 2013 at 06:21:26PM +0200, Peter Zijlstra wrote:
+> On Mon, Aug 12, 2013 at 08:16:18AM -0700, Paul E. McKenney wrote:
+> > On Mon, Aug 12, 2013 at 03:55:44PM +0200, Peter Zijlstra wrote:
+> > > On Fri, Aug 09, 2013 at 05:31:27PM +0800, Lai Jiangshan wrote:
+> > > > On 08/09/2013 04:40 AM, Paul E. McKenney wrote:
+> > > > > One problem here -- it may take quite some time for a set_need_resched()
+> > > > > to take effect.  This is especially a problem for RCU priority boosting,
+> > > > > but can also needlessly delay preemptible-RCU grace periods because
+> > > > > local_irq_restore() and friends don't check the TIF_NEED_RESCHED bit.
+> > > > 
+> > > > 
+> > > > The final effect of deboosting(rt_mutex_unlock()) is also accomplished
+> > > > via set_need_resched()/set_tsk_need_resched().
+> > > > set_need_resched() is enough for RCU priority boosting issue here.
+> > > 
+> > > But there's a huge difference between the boosting and deboosting side
+> > > of things. rcu_read_unlock_special() starts the boost, the deboosting
+> > > only matters if/when you reschedule. 
+> > 
+> > Or if there is a pre-existing runnable task whose priority is such that
+> > deboosting makes it the highest-priority task.
+> 
+> Right, I got horribly lost in rt_mutex, but I suspect we deal with that
+> case the right way. -rt people would've noticed us screwing that up ;-)
+> 
+> But there too, we're fully limited to how fast we can get a
+> reschedule(). Deboosting sooner than we can reschedule to run the other
+> task is effectively pointless. The converse is obviously not true; we
+> must not be able to reschedule sooner than we can deboost ;-)
 
-Russell first mentioned an atomic modify function here:
-http://archive.arm.linux.org.uk/lurker/message/20130618.113606.d7d4fe4b.en.html
+In addition, the proposed change was to defer the deboost based on
+a set_need_resched(), which would provide additional opportunity for
+delay -- the running task would retain its high priority until the
+scheduler acted on the set_need_resched().
 
-Linus Walleij already suggested mfd/syscon as a container
-for protected register accesses later.
+							Thanx, Paul
 
-> Is this what you had in mind?
-
-The pro of a generic atomic clear/set is that we can use it
-very early, on all platforms, and from totally unrelated
-drivers. As you already mentioned, using syscon from timers will
-get us into into trouble, because it has not been registered.
-
-> Do you think trying to use a regmap could be better (given we can
-> sort out the problem explained above)?
-
-Given the small number of registers we need to protect and especially
-for using it in timers, I'd prefer your proposal. Otherwise, I guess,
-we would have to mimic mfd/syscon for time-orion and time-armada-370-xp
-and make wdt-orion depend on it. I doubt we can make any use of
-mfd/syscon for the timer use case.
-
-Sebastian
