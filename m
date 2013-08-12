@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab3HLKSk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:18:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58687 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756319Ab3HLKSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:18:35 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <benoit.cousson@linaro.org>, <tony@atomide.com>
-CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <swarren@wwwdotorg.org>, <ian.campbell@citrix.com>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <kishon@ti.com>, <balbi@ti.com>
-Subject: [PATCH v3] arm: omap5: dts: add palmas-usb node
-Date: Mon, 12 Aug 2013 15:47:55 +0530
-Message-ID: <1376302675-15795-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1373979037-27587-1-git-send-email-balbi@ti.com>
-References: <1373979037-27587-1-git-send-email-balbi@ti.com>
+	id S1756364Ab3HLKSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:18:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47766 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756252Ab3HLKSr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 06:18:47 -0400
+Date: Mon, 12 Aug 2013 03:18:26 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-602bab1b883090ffd125ed1253fe8ec127c048b1@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de
+In-Reply-To: <1374848843-43127-1-git-send-email-dsahern@gmail.com>
+References: <1374848843-43127-1-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Fix compile of util/tsc.c
+Git-Commit-ID: 602bab1b883090ffd125ed1253fe8ec127c048b1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 12 Aug 2013 03:18:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Balbi <balbi@ti.com>
+Commit-ID:  602bab1b883090ffd125ed1253fe8ec127c048b1
+Gitweb:     http://git.kernel.org/tip/602bab1b883090ffd125ed1253fe8ec127c048b1
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Fri, 26 Jul 2013 08:27:23 -0600
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 7 Aug 2013 17:35:24 -0300
 
-Without this node, there will be no palmas
-driver to notify dwc3 that a cable has
-been connected and, without that, dwc3
-will never initialize.
+perf tools: Fix compile of util/tsc.c
 
-[ kishon@ti.com : fix vbus-supply value after SMPS10 is modeled as 2 regulators]
+On Fedora 18, with gcc 4.6.4 compile fails with:
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+arch/x86/util/tsc.c: In function ‘perf_time_to_tsc’:
+arch/x86/util/tsc.c:13:6: error: declaration of ‘time’ shadows a global declaration [-Werror=shadow]
+cc1: all warnings being treated as errors
+make: *** [/tmp/junk/arch/x86/util/tsc.o] Error 1
+make: *** Waiting for unfinished jobs....
+
+Fix by renaming the local variable.
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Link: http://lkml.kernel.org/r/1374848843-43127-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-Change from v2:
-fix vbus-supply value after SMPS10 is modeled as 2 regulators. This is needed
-after SMPS10 is modeled as 2 regulators.
-[1] models SMPS10 as 2 regulators.
-[2] splits the SMPS10 node into two to represent the 2 regulators.
+ tools/perf/arch/x86/util/tsc.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-[1] -> http://comments.gmane.org/gmane.linux.kernel/1542521
-[2] -> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg93779.html
-
- arch/arm/boot/dts/omap5-uevm.dts |   10 ++++++++++
- arch/arm/boot/dts/omap5.dtsi     |    2 +-
- 2 files changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-index 08b7267..51a4acc 100644
---- a/arch/arm/boot/dts/omap5-uevm.dts
-+++ b/arch/arm/boot/dts/omap5-uevm.dts
-@@ -272,6 +272,11 @@
- 		interrupt-controller;
- 		#interrupt-cells = <2>;
+diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
+index f111744..9570c2b 100644
+--- a/tools/perf/arch/x86/util/tsc.c
++++ b/tools/perf/arch/x86/util/tsc.c
+@@ -10,11 +10,11 @@
  
-+		extcon_usb3: palmas_usb {
-+			compatible = "ti,palmas-usb";
-+			ti,wakeup;
-+		};
-+
- 		palmas_pmic {
- 			compatible = "ti,palmas-pmic";
- 			interrupt-parent = <&palmas>;
-@@ -450,6 +455,11 @@
- 	phys = <0 &hsusb2_phy &hsusb3_phy>;
- };
+ u64 perf_time_to_tsc(u64 ns, struct perf_tsc_conversion *tc)
+ {
+-	u64 time, quot, rem;
++	u64 t, quot, rem;
  
-+&usb3 {
-+	extcon = <&extcon_usb3>;
-+	vbus-supply = <&smps10_out1_reg>;
-+};
-+
- &mcspi1 {
- 
- };
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 4e41409..1659246 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -634,7 +634,7 @@
- 			ti,type = <2>;
- 		};
- 
--		omap_dwc3@4a020000 {
-+		usb3: omap_dwc3@4a020000 {
- 			compatible = "ti,dwc3";
- 			ti,hwmods = "usb_otg_ss";
- 			reg = <0x4a020000 0x10000>;
--- 
-1.7.10.4
-
+-	time = ns - tc->time_zero;
+-	quot = time / tc->time_mult;
+-	rem  = time % tc->time_mult;
++	t = ns - tc->time_zero;
++	quot = t / tc->time_mult;
++	rem  = t % tc->time_mult;
+ 	return (quot << tc->time_shift) +
+ 	       (rem << tc->time_shift) / tc->time_mult;
+ }
