@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab3HLQUX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:20:23 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57580 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757335Ab3HLQUU (ORCPT
+	id S1757369Ab3HLQVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:21:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59100 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755995Ab3HLQVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:20:20 -0400
-Message-ID: <52090B43.9090000@codeaurora.org>
-Date: Mon, 12 Aug 2013 09:20:19 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 12 Aug 2013 12:21:38 -0400
+Date: Mon, 12 Aug 2013 18:21:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>
+Subject: Re: [PATCH 5/8] rcu: eliminate deadlock for rcu read site
+Message-ID: <20130812162126.GV3008@twins.programming.kicks-ass.net>
+References: <1375871104-10688-1-git-send-email-laijs@cn.fujitsu.com>
+ <1375871104-10688-6-git-send-email-laijs@cn.fujitsu.com>
+ <20130808204020.GA31127@linux.vnet.ibm.com>
+ <5204B6EF.6000905@cn.fujitsu.com>
+ <20130812135544.GG27162@twins.programming.kicks-ass.net>
+ <20130812151618.GR29406@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>, srinivas.kandagatla@st.com,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Stuart Menefy <stuart.menefy@st.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: Enable arm_global_timer for Zynq brakes boot
-References: <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local> <51FA9AE8.1060004@linaro.org> <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local> <51FA9F54.3060704@linaro.org> <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local> <5204C54A.9020105@st.com> <5204FA5D.3060908@linaro.org> <20130809172757.GD14845@codeaurora.org> <c1e112a3-cfed-4e53-951e-b1a9208d7dc8@TX2EHSMHS038.ehs.local>
-In-Reply-To: <c1e112a3-cfed-4e53-951e-b1a9208d7dc8@TX2EHSMHS038.ehs.local>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130812151618.GR29406@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/13 09:03, Sören Brinkmann wrote:
-> On Fri, Aug 09, 2013 at 10:27:57AM -0700, Stephen Boyd wrote:
->> On 08/09, Daniel Lezcano wrote:
->>> yes, but at least the broadcast mechanism should send an IPI to cpu0 to
->>> wake it up, no ? As Stephen stated this kind of configuration should has
->>> never been tested before so the tick broadcast code is not handling this
->>> case properly IMHO.
->>>
->> If you have a per-cpu tick device that isn't suffering from
->> FEAT_C3_STOP why wouldn't you use that for the tick versus a
->> per-cpu tick device that has FEAT_C3_STOP? It sounds like there
->> is a bug in the preference logic or you should boost the rating
->> of the arm global timer above the twd. Does this patch help? It
->> should make the arm global timer the tick device and whatever the
->> cadence timer you have into the broadcast device.
-> I finally got to test your patch. Unfortunately, it makes the system
-> hang even earlier:
+On Mon, Aug 12, 2013 at 08:16:18AM -0700, Paul E. McKenney wrote:
+> On Mon, Aug 12, 2013 at 03:55:44PM +0200, Peter Zijlstra wrote:
+> > On Fri, Aug 09, 2013 at 05:31:27PM +0800, Lai Jiangshan wrote:
+> > > On 08/09/2013 04:40 AM, Paul E. McKenney wrote:
+> > > > One problem here -- it may take quite some time for a set_need_resched()
+> > > > to take effect.  This is especially a problem for RCU priority boosting,
+> > > > but can also needlessly delay preemptible-RCU grace periods because
+> > > > local_irq_restore() and friends don't check the TIF_NEED_RESCHED bit.
+> > > 
+> > > 
+> > > The final effect of deboosting(rt_mutex_unlock()) is also accomplished
+> > > via set_need_resched()/set_tsk_need_resched().
+> > > set_need_resched() is enough for RCU priority boosting issue here.
+> > 
+> > But there's a huge difference between the boosting and deboosting side
+> > of things. rcu_read_unlock_special() starts the boost, the deboosting
+> > only matters if/when you reschedule. 
+> 
+> Or if there is a pre-existing runnable task whose priority is such that
+> deboosting makes it the highest-priority task.
 
-Sorry it had a bug depending on the registration order. Can you try this
-one (tabs are probably spaces, sorry)? I will go read through this
-thread to see if we already covered the registration order.
+Right, I got horribly lost in rt_mutex, but I suspect we deal with that
+case the right way. -rt people would've noticed us screwing that up ;-)
 
----8<----
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 218bcb5..d3539e5 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -77,6 +77,9 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
-            !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
-                return false;
- 
-+       if (cpumask_equal(newdev->cpumask, cpumask_of(smp_processor_id())))
-+               return false;
-+
-        return !curdev || newdev->rating > curdev->rating;
- }
- 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 64522ec..dd08f3b 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -244,12 +244,22 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
-                        return false;
-        }
- 
-+       if (!curdev)
-+               return true;
-+
-+       /* Always prefer a tick device that doesn't suffer from FEAT_C3STOP */
-+       if (!(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
-+            (curdev->features & CLOCK_EVT_FEAT_C3STOP))
-+               return true;
-+       if ((newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
-+           !(curdev->features & CLOCK_EVT_FEAT_C3STOP))
-+               return false;
-+
-        /*
-         * Use the higher rated one, but prefer a CPU local device with a lower
-         * rating than a non-CPU local device
-         */
--       return !curdev ||
--               newdev->rating > curdev->rating ||
-+       return newdev->rating > curdev->rating ||
-               !cpumask_equal(curdev->cpumask, newdev->cpumask);
- }
- 
-
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+But there too, we're fully limited to how fast we can get a
+reschedule(). Deboosting sooner than we can reschedule to run the other
+task is effectively pointless. The converse is obviously not true; we
+must not be able to reschedule sooner than we can deboost ;-)
