@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883Ab3HLL3V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 07:29:21 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:59283 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab3HLL3R (ORCPT
+	id S1755745Ab3HLLcp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 07:32:45 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54121 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754278Ab3HLLcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 07:29:17 -0400
-Message-ID: <5208C6FB.8070807@linux.vnet.ibm.com>
-Date: Mon, 12 Aug 2013 16:58:59 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 12 Aug 2013 07:32:39 -0400
+Date: Mon, 12 Aug 2013 12:32:26 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Olof Johansson <olof@lixom.net>, Alan Stern <stern@rowland.harvard.edu>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@kernel.org" <devicetree@kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20130812113226.GV6427@sirena.org.uk>
+References: <20130811190826.GH6427@sirena.org.uk>
+ <Pine.LNX.4.44L0.1308112146410.29546-100000@netrider.rowland.org>
+ <20130812095136.GJ6427@sirena.org.uk>
+ <20130812110714.GA6616@e106331-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: tony.luck@intel.com, bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
-        lance.ortiz@hp.com, m.chehab@samsung.com, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mce: acpi/apei: trace: Add trace event for ghes memory
- error
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-3-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808191732.GE27974@pd.tnic>
-In-Reply-To: <20130808191732.GE27974@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081211-7014-0000-0000-0000037451A6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x8Ec79u/ZTqSPCUg"
+Content-Disposition: inline
+In-Reply-To: <20130812110714.GA6616@e106331-lin.cambridge.arm.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 12:47 AM, Borislav Petkov wrote:
-> On Thu, Aug 08, 2013 at 11:57:50PM +0530, Naveen N. Rao wrote:
->> +TRACE_EVENT(ghes_platform_memory_event,
->> +	TP_PROTO(const struct acpi_hest_generic_status *estatus,
->> +		 const struct acpi_hest_generic_data *gdata,
->> +		 const struct cper_sec_mem_err *mem),
->> +
->> +	TP_ARGS(estatus, gdata, mem),
->> +
->> +	TP_STRUCT__entry(
->> +		__field(	u32,	estatus_block_status		)
->> +		__field(	u32,	estatus_raw_data_offset		)
->> +		__field(	u32,	estatus_raw_data_length		)
->> +		__field(	u32,	estatus_data_length		)
->> +		__field(	u32,	estatus_error_severity		)
->> +		__array(	u8,	gdata_section_type,	16	)
->> +		__field(	u32,	gdata_error_severity		)
->> +		__field(	u16,	gdata_revision			)
->> +		__field(	u8,	gdata_validation_bits		)
->> +		__field(	u8,	gdata_flags			)
->> +		__field(	u32,	gdata_error_data_length		)
->> +		__array(	u8,	gdata_fru_id,		16	)
->> +		__array(	u8,	gdata_fru_text,		20	)
->> +		__field(	u64,	mem_validation_bits		)
->> +		__field(	u64,	mem_error_status		)
->> +		__field(	u64,	mem_physical_addr		)
->> +		__field(	u64,	mem_physical_addr_mask		)
->> +		__field(	u16,	mem_node			)
->> +		__field(	u16,	mem_card			)
->> +		__field(	u16,	mem_module			)
->> +		__field(	u16,	mem_bank			)
->> +		__field(	u16,	mem_device			)
->> +		__field(	u16,	mem_row				)
->> +		__field(	u16,	mem_column			)
->> +		__field(	u16,	mem_bit_pos			)
->> +		__field(	u64,	mem_requestor_id		)
->> +		__field(	u64,	mem_responder_id		)
->> +		__field(	u64,	mem_target_id			)
->> +		__field(	u8,	mem_error_type			)
->> +	),
->
-> Without looking at the rest, a trace record from this tracepoint is
-> going to be 160 bytes IINM, which looks kinda fat to me. And during an
-> error storm we're probably not going to be able to log them all, maybe?
-> Yes, no, maybe I'm off base...
->
-> In any case, are we sure we want all those fields above? Can we make
-> them smaller, drop some of them from the tracepoint, etc, etc? Can we
-> compute some of them in userspace with information we already have?
 
-Good idea - I hadn't thought from that perspective. I think we can drop 
-a few fields there, especially the length/offset fields and perhaps the 
-section_type since we know this is a memory error. Will get back with a 
-new revision.
+--x8Ec79u/ZTqSPCUg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
-Naveen
+On Mon, Aug 12, 2013 at 12:07:14PM +0100, Mark Rutland wrote:
 
+> As I understand it, the wifi chip on the Snow Chromebook has a similar
+> issue -- it hangs off of a probeable SDIO bus, but needs a regulator
+> poked for it to turn on and become probeable (see
+> exynos_wifi_bt_set_power in [1]).
+
+Yes, that's another example - this stuff is really common in practical
+systems, especially the power control for radios since that's how rfkill
+tends to end up being implemented.
+
+--x8Ec79u/ZTqSPCUg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSCMfHAAoJELSic+t+oim9tz0P/2byd0ZIAm14u74I0rn4dKa0
+MfFGaSRNxl70i5G3VZ7PhOkzEvOYRF+PkrxRoIgdINBmaWmkO3n2h1jxaLiEmFQr
+BytjPOpgNUfvVTo3AWvmznn9AobWWiTGAH3b86mGO4gFe/NifuifmqIEhC+uBHNu
+OKhpM17a/NvSkhNV5qaO2pZMEDvEqz+OS8PX/QqdFvuceYmGvJeVtU/m7PEeuDm4
+ebgiq0p73ayOvSV0sNwrz9A2KCCeTQz85JrBuFBHnwHaUFdAK00oybtlBIwHTb+S
+viu1jaKOFPotATFY+BPpc9EN4p+wGoBHTiBPUy/4m6/BaAQgJkYqN2KWaj0PNK9v
+a0nJ8wxyTJEvCgO1OOjV8RdPnh2Vh9RXpMq8EjtRbmGpNMOulVdAr3hyTCA6aOE1
+Hpzlo9PTXwdH/h4ZKG7EWg8uiG2QTSxFjcOGnuXYG8BBH0zaQ4aOKQTx++VUj1B1
+GzevNjZShd0gVuE8d/qK82G59s0nPgj/M01GrqHmTY0/A87baQh0QR5L/5bq4K0O
+8sUc+BTTyMB829w+w9PcA41MavH/BHR9Rz7jgbgPLBNxGHpUWVAm1TRGM8S9Z4N9
+AKDpgdLlTwbOcd/M2EVneAgq18W55k2fBty91ZRH1xzu9trwhSec30bnPDtpws3L
+ruumBV8KlL1K4JlJUx9R
+=SobK
+-----END PGP SIGNATURE-----
+
+--x8Ec79u/ZTqSPCUg--
