@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab3HLRx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:53:57 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:45266 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316Ab3HLRxt (ORCPT
+	id S1755246Ab3HLRye (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:54:34 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20631 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911Ab3HLRya convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:53:49 -0400
-Message-ID: <5209212A.2030300@amacapital.net>
-Date: Mon, 12 Aug 2013 10:53:46 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 12 Aug 2013 13:54:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,863,1367996400"; 
+   d="scan'208";a="385130850"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Borislav Petkov <bp@alien8.de>
+CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Thread-Topic: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Thread-Index: AQHOlGVcQB6qi1wV3Ei8qYoYEneewpmMKjwAgAMKHwCAArfagIAAEfeAgAAksACAAAQoAIAAJ4yA//+Q1mA=
+Date: Mon, 12 Aug 2013 17:54:21 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CB71B5@ORSMSX106.amr.corp.intel.com>
+References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+ <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+ <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic>
+ <20130812083355.47c1bae8@samsung.com> <20130812123813.GD18018@pd.tnic>
+ <20130812114932.52bb0314@samsung.com> <20130812150424.GH18018@pd.tnic>
+ <20130812142557.2a43f155@samsung.com>
+In-Reply-To: <20130812142557.2a43f155@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Andreas Werner <wernerandy@gmx.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: question about ioremap_cache and PAT
-References: <20130811165031.GA4439@thinkpad.fritz.box>
-In-Reply-To: <20130811165031.GA4439@thinkpad.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2013 09:50 AM, Andreas Werner wrote:
-> Hi i have a question about ioremap_cache and the resulting PAT attribute on X86 system. If I configure the mtrr to Write-Through for an adress range, and call ioremap_cache to map the mmio, the resulting PAT attribute is set to UC.
-> If I check the Intel document IA-32 SDM vol 3a, the resulting PAT attribute should be WB.
-> 
-> I found the function pat_x_mtrr_type in arch/x86/mm/pat.c where the resulting attribute is returned. There will be always UC return expect if the MTRR is set to WB.
-> 
-> Why is there only WB or UC returned? In the Intel document there are a lot of combinations "allowed".
-> 
-> I need a Attribute of WT, so what i did is to modify the pat_x_mtrr_type function to return also WB if the MTRR is set to WT.   
-> 
-> Is this a solution to solve that or whats the reasion why the kernel doesn´t support this combination?
+>> We are, of course, going to have only one tracepoint which reports
+>> memory errors, not two.
+>
+> Yes, that's my point.
 
-The kernel doesn't support it because I'm apparently the only person who
-ever wanted it and I haven't implemented it yet.
+Is life that simple?
 
-This stuff is handled in hardware, so modifying the kernel's idea of
-what hardware does won't do much.  Also, the kernel using MTRRs is on
-its (very slow) way out.  You could probably hack something up, but I
-can almost guarantee that hpa, etc won't accept the patches.
+We have systems that have no EDAC driver (in some cases because the
+architecture precludes one from ever being written, in other because
+we either don't have the documentation, or because no driver has been
+written yet).	
 
-That being said, I'm planning to support WT directly using PAT in the
-near future.  This will work on most recent cpus (there are errata that
-will prevent use of the high PAT entries on some cpus).
+Systems also have varying degrees of APEI support (from none at all, to
+full support ... possibly we may have some with apparent support, but BIOS
+provides bogus information ... assuming BIOS folks live up/down to our
+usual expectations).
 
-What do you need WT for?  I want it for NVDIMMs, and all I need to get
-started now is a heatsink*, so I'll hopefully start implementing this
-stuff in the next week or so.
+-Tony
 
---Andy
-
-* Damnit, Intel, it's not 2003 any more.  You already figured out that
-heatsinks want screw holes.  But why couldn't you make sure that all
-so-called "LGA 2011" sockets have the screw holes in the same place?
-
-
-> 
-> Best regards
-> 
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> B
-> A
-> A
-> A
-> A
-> A
-> A
-> A
-> A
-> A
-> A
-> A
-> A
-> A
-> A
-> A
-> B
-> B
-> B
-> Best regards
-> 
 
