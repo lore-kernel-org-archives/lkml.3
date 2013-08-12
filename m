@@ -1,113 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab3HLE0G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 00:26:06 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:47576 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab3HLE0D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 00:26:03 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: Should unprivileged linkat(..., AT_EMPTY_PATH) work on O_TMPFILE files?
-In-Reply-To: <87haevbkvw.fsf@linux.vnet.ibm.com>
-References: <CALCETrUTyLO4BKX0SrmRd=nb2jvvZEhD9iTyFpSM23OUdQLhsA@mail.gmail.com> <877gfsrxar.fsf@linux.vnet.ibm.com> <CALCETrXKzMBwkEFCsGeLB1sqFFPjivpFR2P8ZMeuZX5SAuZZjA@mail.gmail.com> <87haevbkvw.fsf@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Mon, 12 Aug 2013 09:55:54 +0530
-Message-ID: <87eh9zbkml.fsf@linux.vnet.ibm.com>
+	id S1755144Ab3HLE0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 00:26:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43334 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751914Ab3HLE0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 00:26:11 -0400
+Message-ID: <5208639F.8070406@ti.com>
+Date: Mon, 12 Aug 2013 09:55:03 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081215-3568-0000-0000-00000411F3FA
+To: Joel Fernandes <joelf@ti.com>
+CC: Mark Brown <broonie@linaro.org>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sricharan R <r.sricharan@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Chris Ball <cjb@laptop.org>, Arnd Bergmann <arnd@arndb.de>,
+        Rajendra Nayak <rnayak@ti.com>, Rob Herring <rob.herring@calxeda.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Balaji TK <balajitk@ti.com>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Dan Williams <djbw@fb.com>, Olof Johansson <olof@lixom.net>,
+        Benoit Cousson <benoit.cousson@linaro.org>
+Subject: Re: [PATCH v3 02/12] ARM: edma: Don't clear EMR of channel in edma_stop
+References: <1375719297-12871-1-git-send-email-joelf@ti.com> <1375719297-12871-3-git-send-email-joelf@ti.com> <520385D3.1060408@ti.com>
+In-Reply-To: <520385D3.1060408@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> writes:
-
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> On Sun, Aug 11, 2013 at 9:45 AM, Aneesh Kumar K.V
->> <aneesh.kumar@linux.vnet.ibm.com> wrote:
->>> Andy Lutomirski <luto@amacapital.net> writes:
->>>
->>>> The change:
->>>>
->>>> commit f4e0c30c191f87851c4a53454abb55ee276f4a7e
->>>> Author: Al Viro <viro@zeniv.linux.org.uk>
->>>> Date:   Tue Jun 11 08:34:36 2013 +0400
->>>>
->>>>     allow the temp files created by open() to be linked to
->>>>
->>>>     O_TMPFILE | O_CREAT => linkat() with AT_SYMLINK_FOLLOW and /proc/self/fd/<n>
->>>>     as oldpath (i.e. flink()) will create a link
->>>>     O_TMPFILE | O_CREAT | O_EXCL => ENOENT on attempt to link those guys
->>>>
->>>>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
->>>>
->>>> makes it possible to hardlink an O_TMPFILE file using procfs.  Should
->>>> linkat(fd, "", newdirfd, newpath, AT_EMPTY_PATH) also work?
->>>>
->>>> AFAICS it currently requires CAP_DAC_READ_SEARCH, but I'm a bit
->>>> confused as to why linkat(..., AT_EMPTY_PATH) should have a stricter
->>>> check than linkat(AT_FDCWD, "/proc/self/fd/n", ...,
->>>> AT_SYMLINK_FOLLOW),  (The relevant change is
->>>> 11a7b371b64ef39fc5fb1b6f2218eef7c4d035e3.)
->>>>
->>>> FWIW, this program works on Linux 3.9, which makes me doubt that the
->>>> security restriction on linkat is doing any good:
->>>>
->>>> #include <stdio.h>
->>>> #include <err.h>
->>>> #include <fcntl.h>
->>>> #include <unistd.h>
->>>>
->>>> int main(int argc, char **argv)
->>>> {
->>>>   char buf[128];
->>>>
->>>>   if (argc != 3)
->>>>     errx(1, "Usage: flink FD PATH");
->>>>
->>>>   sprintf(buf, "/proc/self/fd/%d", atoi(argv[1]));
->>>>   if (linkat(AT_FDCWD, buf, AT_FDCWD, argv[2], AT_SYMLINK_FOLLOW) != 0)
->>>>     err(1, "linkat");
->>>>   return 0;
->>>> }
->>>>
->>>>
->>>> Removing the check from the AT_EMPTY_PATH case would simplify code
->>>> that wants to write a file, fsync it, and then flink it in.
->>>
->>> I understand that this got merged upstream. But in case of the above
->>> test we would walk the path pointed by /proc/self/fd/<x> right ?
->>>
->>> ie,
->>>
->>> 20 -> /home/no-access/k
->>>
->>> will the above test work ? Now if i pass the '20' to another application
->>> I can affectively create a hardlink to that outside no-access and if k
->>> happens to have 'r' for others, then everybody will be able to read
->>> right ?. I understand that limitting the read access based on directory
->>> permission is not a good idea. But aren't we expected to keep that ?
+On 8/8/2013 5:19 PM, Sekhar Nori wrote:
+> On Monday 05 August 2013 09:44 PM, Joel Fernandes wrote:
+>> We certainly don't want error conditions to be cleared any other
+>> place but the EDMA error handler, as this will make us 'forget'
+>> about missed events we might need to know errors have occurred.
 >>
->> The symlinks in /proc/self/fd are rather magical and don't actually
->> walk the path.  Give it a try :)
+>> This fixes a race condition where the EMR was being cleared
+>> by the transfer completion interrupt handler.
 >>
->
-> How about fd passed from one application to another(say from a1 to
-> a2). a2 won't have read permission on /proc/a1/fd/ and also don't know
-> the value of file descriptor he should use right ? Will the /proc/self/fd
-> method work in such case ? IIUC with AT_EMPTY_PATH a2 can create the
-> link in the above case right ? So if /proc/self/fd doesn't work should
-> we allow that ?
+>> Basically, what was happening was:
+>>
+>>             Missed event
+>>              |
+>>              |
+>>              V
+>> SG1-SG2-SG3-Null
+>>          \
+>>           \__TC Interrupt (Almost same time as ARM is executing
+>> TC interrupt handler, an event got missed and also forgotten
+>> by clearing the EMR).
+>>
+>> This causes the following  problems:
+>>
+>> 1.
+>> If error interrupt is also pending and TC interrupt clears the EMR
+>> by calling edma_stop as has been observed in the edma_callback function,
+>> the ARM will execute the error interrupt even though the EMR is clear.
+>> As a result, the  dma_ccerr_handler returns IRQ_NONE. If this happens
+>> enough number of times, IRQ subsystem disables the interrupt thinking
+>> its spurious which makes error handler never execute again.
+>>
+>> 2.
+>> Also even if error handler doesn't return IRQ_NONE, the removing of EMR
+>> removes the knowledge about which channel had a missed event, and thus
+>> a manual trigger on such channels cannot be performed.
+>>
+>> The EMR is ultimately being cleared by the Error interrupt handler
+>> once it is handled so we remove code that does it in edma_stop and
+>> allow it to happen there.
+>>
+>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+> 
+> Queuing this for v3.11 fixes. While committing, I changed the headline
+> to remove capitalization and made it more readable by removing register
+> level details. The new headline is:
+> 
+> ARM: edma: don't clear missed events in edma_stop()
 
-Hmm I guess a2 will be able to use /proc/a2/fd/<received_fd> to create a
-link ?
+Forgot to ask, should this be tagged for stable? IOW, how serious is
+this race in current kernel (without the entire series applied)? I have
+never observed it myself - so please provide details how easy/difficult
+it is to hit this condition.
 
--aneesh
-
+Thanks,
+Sekhar
