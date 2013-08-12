@@ -1,201 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab3HLKvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:51:48 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:63753 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030Ab3HLKvn (ORCPT
+	id S1755850Ab3HLKyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:54:01 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:37434 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755524Ab3HLKx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:51:43 -0400
-Date: Mon, 12 Aug 2013 13:50:41 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Belisko Marek <marek.belisko@gmail.com>
-Subject: Re: [PATCH tty-next] n_tty: Fix termios_rwsem lockdep false positive
-Message-ID: <20130812105041.GA2268@swordfish>
-References: <20130731114726.GA11570@cpv436-motbuntu.spb.ea.mot-mobility.com>
- <1376222663-5666-1-git-send-email-peter@hurleysoftware.com>
- <20130812092810.GA26400@cpv436-motbuntu.spb.ea.mot-mobility.com>
+	Mon, 12 Aug 2013 06:53:59 -0400
+Message-ID: <5208BEC4.7090700@linaro.org>
+Date: Mon, 12 Aug 2013 12:53:56 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130812092810.GA26400@cpv436-motbuntu.spb.ea.mot-mobility.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: srinivas.kandagatla@st.com, S??ren Brinkmann <soren.brinkmann@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <51F97CE3.9030306@linaro.org> <15e19315-ce88-4d3c-bad9-0a37d9e52f6b@CO1EHSMHS007.ehs.local> <51F99747.4060901@linaro.org> <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local> <51FA9AE8.1060004@linaro.org> <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local> <51FA9F54.3060704@linaro.org> <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local> <5204C54A.9020105@st.com> <5204FA5D.3060908@linaro.org> <20130809172757.GD14845@codeaurora.org>
+In-Reply-To: <20130809172757.GD14845@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/12/13 13:28), Artem Savkov wrote:
-> Hi Peter,
+On 08/09/2013 07:27 PM, Stephen Boyd wrote:
+> On 08/09, Daniel Lezcano wrote:
+>>
+>> yes, but at least the broadcast mechanism should send an IPI to cpu0 to
+>> wake it up, no ? As Stephen stated this kind of configuration should has
+>> never been tested before so the tick broadcast code is not handling this
+>> case properly IMHO.
+>>
 > 
-> On Sun, Aug 11, 2013 at 08:04:23AM -0400, Peter Hurley wrote:
-> > Lockdep reports a circular lock dependency between
-> > atomic_read_lock and termios_rwsem [1]. However, a lock
-> > order deadlock is not possible since CPU1 only holds a
-> > read lock which cannot prevent CPU0 from also acquiring
-> > a read lock on the same r/w semaphore.
-> > 
-> > Unfortunately, lockdep cannot currently distinguish whether
-> > the locks are read or write for any particular lock graph,
-> > merely that the locks _were_ previously read and/or write.
-> > 
-> > Until lockdep is fixed, re-order atomic_read_lock so
-> > termios_rwsem can be dropped and reacquired without
-> > triggering lockdep.
+> If you have a per-cpu tick device that isn't suffering from
+> FEAT_C3_STOP why wouldn't you use that for the tick versus a
+> per-cpu tick device that has FEAT_C3_STOP? It sounds like there
+> is a bug in the preference logic or you should boost the rating
+> of the arm global timer above the twd. Does this patch help? It
+> should make the arm global timer the tick device and whatever the
+> cadence timer you have into the broadcast device.
 > 
-> Works fine, thanks.
-> 
-> Reported-and-tested-by: Artem Savkov <artem.savkov@gmail.com>
-> 
-> > Reported-by: Artem Savkov <artem.savkov@gmail.com>
-> > Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-> > 
-> > [1] Initial lockdep report from Artem Savkov <artem.savkov@gmail.com>
-> > 
-> >  ======================================================
-> >  [ INFO: possible circular locking dependency detected ]
-> >  3.11.0-rc3-next-20130730+ #140 Tainted: G        W
-> >  -------------------------------------------------------
-> >  bash/1198 is trying to acquire lock:
-> >   (&tty->termios_rwsem){++++..}, at: [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
-> > 
-> >  but task is already holding lock:
-> >   (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
-> > 
-> >  which lock already depends on the new lock.
-> > 
-> >  the existing dependency chain (in reverse order) is:
-> > 
-> >  -> #1 (&ldata->atomic_read_lock){+.+...}:
-> >         [<ffffffff811111cc>] validate_chain+0x73c/0x850
-> >         [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
-> >         [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
-> >         [<ffffffff81d34b9c>] mutex_lock_interruptible_nested+0x7c/0x540
-> >         [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
-> >         [<ffffffff816a3bb6>] tty_read+0x86/0xf0
-> >         [<ffffffff811f21d3>] vfs_read+0xc3/0x130
-> >         [<ffffffff811f2702>] SyS_read+0x62/0xa0
-> >         [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
-> > 
-> >  -> #0 (&tty->termios_rwsem){++++..}:
-> >         [<ffffffff8111064f>] check_prev_add+0x14f/0x590
-> >         [<ffffffff811111cc>] validate_chain+0x73c/0x850
-> >         [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
-> >         [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
-> >         [<ffffffff81d372c1>] down_read+0x51/0xa0
-> >         [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
-> >         [<ffffffff816a3bb6>] tty_read+0x86/0xf0
-> >         [<ffffffff811f21d3>] vfs_read+0xc3/0x130
-> >         [<ffffffff811f2702>] SyS_read+0x62/0xa0
-> >         [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
-> > 
-> >  other info that might help us debug this:
-> > 
-> >   Possible unsafe locking scenario:
-> > 
-> >         CPU0                    CPU1
-> >         ----                    ----
-> >    lock(&ldata->atomic_read_lock);
-> >                                 lock(&tty->termios_rwsem);
-> >                                 lock(&ldata->atomic_read_lock);
-> >    lock(&tty->termios_rwsem);
-> > 
-> >   *** DEADLOCK ***
-> > 
-> >  2 locks held by bash/1198:
-> >   #0:  (&tty->ldisc_sem){.+.+.+}, at: [<ffffffff816ade04>] tty_ldisc_ref_wait+0x24/0x60
-> >   #1:  (&ldata->atomic_read_lock){+.+...}, at: [<ffffffff816aa0f0>] n_tty_read+0x1d0/0x660
-> > 
-> >  stack backtrace:
-> >  CPU: 1 PID: 1198 Comm: bash Tainted: G        W    3.11.0-rc3-next-20130730+ #140
-> >  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-> >   0000000000000000 ffff880019acdb28 ffffffff81d34074 0000000000000002
-> >   0000000000000000 ffff880019acdb78 ffffffff8110ed75 ffff880019acdb98
-> >   ffff880019fd0000 ffff880019acdb78 ffff880019fd0638 ffff880019fd0670
-> >  Call Trace:
-> >   [<ffffffff81d34074>] dump_stack+0x59/0x7d
-> >   [<ffffffff8110ed75>] print_circular_bug+0x105/0x120
-> >   [<ffffffff8111064f>] check_prev_add+0x14f/0x590
-> >   [<ffffffff81d3ab5f>] ? _raw_spin_unlock_irq+0x4f/0x70
-> >   [<ffffffff811111cc>] validate_chain+0x73c/0x850
-> >   [<ffffffff8110ae0f>] ? trace_hardirqs_off_caller+0x1f/0x190
-> >   [<ffffffff811117e0>] __lock_acquire+0x500/0x5d0
-> >   [<ffffffff81111a29>] lock_acquire+0x179/0x1d0
-> >   [<ffffffff816aa3bb>] ? n_tty_read+0x49b/0x660
-> >   [<ffffffff81d372c1>] down_read+0x51/0xa0
-> >   [<ffffffff816aa3bb>] ? n_tty_read+0x49b/0x660
-> >   [<ffffffff816aa3bb>] n_tty_read+0x49b/0x660
-> >   [<ffffffff810e4130>] ? try_to_wake_up+0x210/0x210
-> >   [<ffffffff816a3bb6>] tty_read+0x86/0xf0
-> >   [<ffffffff811f21d3>] vfs_read+0xc3/0x130
-> >   [<ffffffff811f2702>] SyS_read+0x62/0xa0
-> >   [<ffffffff815e24ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> >   [<ffffffff81d45259>] system_call_fastpath+0x16/0x1b
-> > ---
-> >  drivers/tty/n_tty.c | 25 +++++++++++--------------
-> >  1 file changed, 11 insertions(+), 14 deletions(-)
-> >
+> ---8<----
+> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+> index 218bcb5..d3539e5 100644
+> --- a/kernel/time/tick-broadcast.c
+> +++ b/kernel/time/tick-broadcast.c
+> @@ -77,6 +77,9 @@ static bool tick_check_broadcast_device(struct clock_event_device *curdev,
+>  	    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
+>  		return false;
+>  
+> +	if (cpumask_equal(newdev->cpumask, cpumask_of(smp_processor_id())))
+> +		return false;
 
-I hate to do this, but isn't it actually my patch posted here
-https://lkml.org/lkml/2013/8/1/510
+Yes, that makes sense to prevent local timer devices to be a broadcast one.
 
-which was tagged as `wrong'?
+In the case of the arm global timer, each cpu will register their timer,
+so the test will be ok but is it possible the cpu0 registers the timers
+for the other cpus ?
 
-	-ss
+>  	return !curdev || newdev->rating > curdev->rating;
+>  }
+>  
+> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+> index 64522ec..1628b9f 100644
+> --- a/kernel/time/tick-common.c
+> +++ b/kernel/time/tick-common.c
+> @@ -245,6 +245,15 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
+>  	}
+>  
+>  	/*
+> +	 * Prefer tick devices that don't suffer from FEAT_C3_STOP
+> +	 * regardless of their rating
+> +	 */
+> +	if (curdev && cpumask_equal(curdev->cpumask, newdev->cpumask) &&
+> +	    !(newdev->features & CLOCK_EVT_FEAT_C3STOP) &&
+> +	    (curdev->features & CLOCK_EVT_FEAT_C3STOP))
+> +		return true;
 
-> > diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-> > index dd8ae0c..c9a9ddd 100644
-> > --- a/drivers/tty/n_tty.c
-> > +++ b/drivers/tty/n_tty.c
-> > @@ -2122,6 +2122,17 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
-> >  	if (c < 0)
-> >  		return c;
-> >  
-> > +	/*
-> > +	 *	Internal serialization of reads.
-> > +	 */
-> > +	if (file->f_flags & O_NONBLOCK) {
-> > +		if (!mutex_trylock(&ldata->atomic_read_lock))
-> > +			return -EAGAIN;
-> > +	} else {
-> > +		if (mutex_lock_interruptible(&ldata->atomic_read_lock))
-> > +			return -ERESTARTSYS;
-> > +	}
-> > +
-> >  	down_read(&tty->termios_rwsem);
-> >  
-> >  	minimum = time = 0;
-> > @@ -2141,20 +2152,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
-> >  		}
-> >  	}
-> >  
-> > -	/*
-> > -	 *	Internal serialization of reads.
-> > -	 */
-> > -	if (file->f_flags & O_NONBLOCK) {
-> > -		if (!mutex_trylock(&ldata->atomic_read_lock)) {
-> > -			up_read(&tty->termios_rwsem);
-> > -			return -EAGAIN;
-> > -		}
-> > -	} else {
-> > -		if (mutex_lock_interruptible(&ldata->atomic_read_lock)) {
-> > -			up_read(&tty->termios_rwsem);
-> > -			return -ERESTARTSYS;
-> > -		}
-> > -	}
-> >  	packet = tty->packet;
-> >  
-> >  	add_wait_queue(&tty->read_wait, &wait);
-> > -- 
-> > 1.8.1.2
-> > 
+That sounds reasonable, but what is the acceptable gap between the
+ratings ? I am wondering if there isn't too much heuristic in the tick
+code...
+
+
+> +
+> +	/*
+>  	 * Use the higher rated one, but prefer a CPU local device with a lower
+>  	 * rating than a non-CPU local device
+>  	 */
 > 
-> -- 
-> Regards,
->     Artem
-> 
+
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
