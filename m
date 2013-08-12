@@ -1,134 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab3HLQkC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:40:02 -0400
-Received: from relay.parallels.com ([195.214.232.42]:38251 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756917Ab3HLQj7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:39:59 -0400
-Subject: [PATCH 2/2] fuse: wait for writeback in fuse_file_fallocate()
-To: miklos@szeredi.hu
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org, xemul@parallels.com
-Date: Mon, 12 Aug 2013 20:39:55 +0400
-Message-ID: <20130812163935.10366.88320.stgit@maximpc.sw.ru>
-In-Reply-To: <20130812163739.10366.64896.stgit@maximpc.sw.ru>
-References: <20130812163739.10366.64896.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
+	id S1757124Ab3HLQkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:40:52 -0400
+Received: from smtp.multi.fi ([85.134.37.151]:44422 "EHLO smtp.multi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755720Ab3HLQkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 12:40:49 -0400
+Message-ID: <52090FD2.9030702@mageia.org>
+Date: Mon, 12 Aug 2013 19:39:46 +0300
+From: Thomas Backlund <tmb@mageia.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jordi Pujol <jordipujolp@gmail.com>, stable@vger.kernel.org
+CC: Jiang Liu <jiang.liu@huawei.com>, linux-kernel@vger.kernel.org
+Subject: Re: ZRAM 3.10.6 Buffer I/O error
+References: <1998314.O9XRMyhM6u@pcjordi>
+In-Reply-To: <1998314.O9XRMyhM6u@pcjordi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch fixes a race between mmap-ed write and fallocate(PUNCH_HOLE):
+12.08.2013 17:27, Jordi Pujol skrev:
+> Hello,
+>
+> zram shows an error when mounting a swap partition,
+> current version Linux kernel 3.10.6,
+> previous versions worked, I suppose that latest zram patches have some
+> problem,
+>
+> machine is an AMD64 dual core, 4GB RAM
+>
+> + modprobe -qb zram num_devices=2
+> + echo 104857600 > /sys/block/zram0/disksize
+>
+> # mkswap /dev/zram0
+> Setting up swapspace version 1, size = 102396 KiB
+> no label, UUID=6c249930-2ba0-46cf-a8c6-766481942b7d
+>
+> # pager /var/log/dmesg
+> (no more errors shown)
+>
+> # swapon /dev/zram0
+>
+> # pager /var/log/dmesg
+> ...
+> [  309.300479] Buffer I/O error on device zram0, logical block 25599
+> [  309.300491] Buffer I/O error on device zram0, logical block 25599
+> [  309.300514] Buffer I/O error on device zram0, logical block 25599
+> [  345.205887] Adding 102396k swap on /dev/zram0.  Priority:-2 extents:1
+> across:102396k SSFS
+>
+> full log files and the kernel source are stored in the address:
+>
+> http://livenet.selfip.com/ftp/debian/zram_3.10.6_IO_error/
+>
 
-1) An user makes a page dirty via mmap-ed write.
-2) The user performs fallocate(2) with mode == PUNCH_HOLE|KEEP_SIZE
-   and <offset, size> covering the page.
-3) Before truncate_pagecache_range call from fuse_file_fallocate,
-   the page goes to write-back. The page is fully processed by fuse_writepage
-   (including end_page_writeback on the page), but fuse_flush_writepages did
-   nothing because fi->writectr < 0.
-4) truncate_pagecache_range is called and fuse_file_fallocate is finishing
-   by calling fuse_release_nowrite. The latter triggers processing queued
-   write-back request which will write stale date to the hole soon.
 
-Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+I think this one should fix it and belongs in 3.10 stable too:
+
+ From 75c7caf5a052ffd8db3312fa7864ee2d142890c4 Mon Sep 17 00:00:00 2001
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Date: Sat, 22 Jun 2013 14:21:00 +0000
+Subject: zram: allow request end to coincide with disksize
+
+Pass valid_io_request() checks if request end coincides with disksize
+(end equals bound), only fail if we attempt to read beyond the bound.
+
+mkfs.ext2 produces numerous errors:
+[ 2164.632747] quiet_error: 1 callbacks suppressed
+[ 2164.633260] Buffer I/O error on device zram0, logical block 153599
+[ 2164.633265] lost page write due to I/O error on zram0
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/fuse/file.c |   53 ++++++++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 44 insertions(+), 9 deletions(-)
+diff --git a/drivers/staging/zram/zram_drv.c 
+b/drivers/staging/zram/zram_drv.c
+index 7538774..82c7202 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -180,7 +180,7 @@ static inline int valid_io_request(struct zram 
+*zram, struct bio *bio)
+  	end = start + (bio->bi_size >> SECTOR_SHIFT);
+  	bound = zram->disksize >> SECTOR_SHIFT;
+  	/* out of range range */
+-	if (unlikely(start >= bound || end >= bound || start > end))
++	if (unlikely(start >= bound || end > bound || start > end))
+  		return 0;
 
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index d1715b3..2b18c4b 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -344,6 +344,31 @@ static bool fuse_page_is_writeback(struct inode *inode, pgoff_t index)
- 	return found;
- }
- 
-+static bool fuse_range_is_writeback(struct inode *inode, pgoff_t idx_from,
-+				    pgoff_t idx_to)
-+{
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_inode *fi = get_fuse_inode(inode);
-+	struct fuse_req *req;
-+	bool found = false;
-+
-+	spin_lock(&fc->lock);
-+	list_for_each_entry(req, &fi->writepages, writepages_entry) {
-+		pgoff_t curr_index;
-+
-+		BUG_ON(req->inode != inode);
-+		curr_index = req->misc.write.in.offset >> PAGE_CACHE_SHIFT;
-+		if (!(idx_from >= curr_index + req->num_pages ||
-+		      idx_to < curr_index)) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	spin_unlock(&fc->lock);
-+
-+	return found;
-+}
-+
- /*
-  * Wait for page writeback to be completed.
-  *
-@@ -358,6 +383,19 @@ static int fuse_wait_on_page_writeback(struct inode *inode, pgoff_t index)
- 	return 0;
- }
- 
-+static void fuse_wait_on_writeback(struct inode *inode, pgoff_t start,
-+				   size_t bytes)
-+{
-+	struct fuse_inode *fi = get_fuse_inode(inode);
-+	pgoff_t idx_from, idx_to;
-+
-+	idx_from = start >> PAGE_CACHE_SHIFT;
-+	idx_to = (start + bytes - 1) >> PAGE_CACHE_SHIFT;
-+
-+	wait_event(fi->page_waitq,
-+		   !fuse_range_is_writeback(inode, idx_from, idx_to));
-+}
-+
- static int fuse_flush(struct file *file, fl_owner_t id)
- {
- 	struct inode *inode = file_inode(file);
-@@ -2478,8 +2516,11 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
- 
- 	if (lock_inode) {
- 		mutex_lock(&inode->i_mutex);
--		if (mode & FALLOC_FL_PUNCH_HOLE)
--			fuse_set_nowrite(inode);
-+		if (mode & FALLOC_FL_PUNCH_HOLE) {
-+			truncate_pagecache_range(inode, offset,
-+						 offset + length - 1);
-+			fuse_wait_on_writeback(inode, offset, length);
-+		}
- 	}
- 
- 	req = fuse_get_req_nopages(fc);
-@@ -2508,17 +2549,11 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
- 	if (!(mode & FALLOC_FL_KEEP_SIZE))
- 		fuse_write_update_size(inode, offset + length);
- 
--	if (mode & FALLOC_FL_PUNCH_HOLE)
--		truncate_pagecache_range(inode, offset, offset + length - 1);
--
- 	fuse_invalidate_attr(inode);
- 
- out:
--	if (lock_inode) {
--		if (mode & FALLOC_FL_PUNCH_HOLE)
--			fuse_release_nowrite(inode);
-+	if (lock_inode)
- 		mutex_unlock(&inode->i_mutex);
--	}
- 
- 	return err;
- }
+  	/* I/O request is valid */
+--
+cgit v0.9.2
 
