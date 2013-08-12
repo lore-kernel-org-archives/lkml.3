@@ -1,89 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab3HLIU0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 04:20:26 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:29395 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab3HLIUY (ORCPT
+	id S1754974Ab3HLIW1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 04:22:27 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:33539 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab3HLIWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 04:20:24 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-a6-52089ac72e71
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Ohad Ben-Cohen'" <ohad@wizery.com>
-Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH] remoteproc: ste_modem: Staticize local symbols
-Date: Mon, 12 Aug 2013 17:20:22 +0900
-Message-id: <000201ce9734$ca5e8a10$5f1b9e30$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6XNKt7AhfDSgeYSKCWr1zV6Bh3Nw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t8zI93jsziCDP5ME7W4vPASq8XlXXPY
-	LH6v/sHswOzRt2UVo8fnTXIenz7tYwtgjuKySUnNySxLLdK3S+DKWLHkCGvBC66KvZu2MjYw
-	TuXsYuTgkBAwkfh1vKqLkRPIFJO4cG89G4gtJLCMUeLxYXGIuInEndbnQHEuoPgiRonOC3eZ
-	IZxfjBKfLj1lB6liE1CT+PLlMJgtAmTvP9/JBGIzCzhJ/NwykwXEFhawl9i6+DGYzSKgKrH8
-	0ApGEJtXwFJi0c1prBC2oMSPyfdYIHq1JNbvPA41R15i85q3zBAXKUjsOPuaEWKXnsSCph9Q
-	NSIS+168YwQ5TkJgHrvEwXMbmSGWCUh8m3yIBeJjWYlNB6DmSEocXHGDZQKj2Cwkq2chWT0L
-	yepZSFYsYGRZxSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iRESURN2MN47YH2IMRlo/URmKdHk
-	fGBE5pXEGxqbGVmYmpgaG5lbmpEmrCTOq95iHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB
-	sej7x39FoZvvCM05uZTJZucvdpYDlq8auBrfHnjFHb1KNOrYD2mzuCcPcmo2rSiR2xlVtWjG
-	M9tVHsEJM2qabyit1NJgcHjasm7Vs73Tf1zgtmDniQ5b/a/cQ6I7lv1YiPXePzZf+LXYHBtM
-	MhoexC05MuFtx6SpFaJzE7c3rTS5xaxVmxDAqsRSnJFoqMVcVJwIADVZHxa+AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgO7xWRxBBltPCVpcXniJ1eLyrjls
-	Fr9X/2B2YPbo27KK0ePzJjmPT5/2sQUwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
-	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdj
-	ZIAGEtYxZqxYcoS14AVXxd5NWxkbGKdydjFyckgImEjcaX3OBmGLSVy4tx7I5uIQEljEKNF5
-	4S4zhPOLUeLTpafsIFVsAmoSX74cBrNFgOz95zuZQGxmASeJn1tmsoDYwgL2ElsXPwazWQRU
-	JZYfWsEIYvMKWEosujmNFcIWlPgx+R4LRK+WxPqdx6HmyEtsXvOWGeIiBYkdZ18zQuzSk1jQ
-	9AOqRkRi34t3jBMYBWYhGTULyahZSEbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7u
-	JkZwzD6T2sG4ssHiEKMAB6MSD6/HF/YgIdbEsuLK3EOMEhzMSiK8vI0cQUK8KYmVValF+fFF
-	pTmpxYcYk4E+ncgsJZqcD0wneSXxhsYmZkaWRmYWRibm5qQJK4nzHmi1DhQSSE8sSc1OTS1I
-	LYLZwsTBKdXA2Ooh1drVvtnmtf1Ls9cd5qYvQz9ZpoRwvruVUJJkZjxt+bvi2pOrNh1LFt3R
-	eulv3CTW0/PbU3MqQj+tcTR/5fTiwuuzH9SM/seoRacuPeQb93LtvWvVZ99osDx99EvTaEf9
-	P/vUtdyqbW4ekk2te03YavWj/TuPu/1QuLb9cOSrT65Ou17bKLEUZyQaajEXFScCACu2IF8d	AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 12 Aug 2013 04:22:22 -0400
+Message-ID: <5208A95A.70606@kernel.org>
+Date: Mon, 12 Aug 2013 10:22:34 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/16] arch/arm/mach-pxa/stargate2.c: Avoid using ARRAY_AND_SIZE(e)
+ as a function argument
+References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr> <1376239917-15594-17-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1376239917-15594-17-git-send-email-Julia.Lawall@lip6.fr>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These local symbols are used only in this file.
-Fix the following sparse warnings:
+On 08/11/13 17:51, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding the
+> arity of the called function.
+> 
+> The semantic match that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e,f;
+> @@
+> 
+> f(...,
+> - ARRAY_AND_SIZE(e)
+> + e,ARRAY_SIZE(e)
+>   ,...)
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
 
-drivers/remoteproc/ste_modem_rproc.c:167:27: warning: symbol 'sproc_fw_ops' was not declared. Should it be static?
-drivers/remoteproc/ste_modem_rproc.c:196:25: warning: symbol 'sproc_dev_cb' was not declared. Should it be static?
-
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/remoteproc/ste_modem_rproc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/remoteproc/ste_modem_rproc.c b/drivers/remoteproc/ste_modem_rproc.c
-index 1ec39a4..c4ac910 100644
---- a/drivers/remoteproc/ste_modem_rproc.c
-+++ b/drivers/remoteproc/ste_modem_rproc.c
-@@ -164,7 +164,7 @@ sproc_find_loaded_rsc_table(struct rproc *rproc, const struct firmware *fw)
- }
- 
- /* STE modem firmware handler operations */
--const struct rproc_fw_ops sproc_fw_ops = {
-+static const struct rproc_fw_ops sproc_fw_ops = {
- 	.load = sproc_load_segments,
- 	.find_rsc_table = sproc_find_rsc_table,
- 	.find_loaded_rsc_table = sproc_find_loaded_rsc_table,
-@@ -193,7 +193,7 @@ static void sproc_kick_callback(struct ste_modem_device *mdev, int vqid)
- 		sproc_dbg(sproc, "no message was found in vqid %d\n", vqid);
- }
- 
--struct ste_modem_dev_cb sproc_dev_cb = {
-+static struct ste_modem_dev_cb sproc_dev_cb = {
- 	.kick = sproc_kick_callback,
- };
- 
--- 
-1.7.10.4
-
-
+Thanks,
+> 
+> ---
+> Not compiled.
+> 
+>  arch/arm/mach-pxa/stargate2.c |   13 ++++++++-----
+>  1 file changed, 8 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/arm/mach-pxa/stargate2.c b/arch/arm/mach-pxa/stargate2.c
+> index 62aea3e..adacedd 100644
+> --- a/arch/arm/mach-pxa/stargate2.c
+> +++ b/arch/arm/mach-pxa/stargate2.c
+> @@ -406,7 +406,8 @@ static struct i2c_pxa_platform_data i2c_pdata = {
+>  static void __init imote2_stargate2_init(void)
+>  {
+>  
+> -	pxa2xx_mfp_config(ARRAY_AND_SIZE(sg2_im2_unified_pin_config));
+> +	pxa2xx_mfp_config(sg2_im2_unified_pin_config,
+> +			  ARRAY_SIZE(sg2_im2_unified_pin_config));
+>  
+>  	pxa_set_ffuart_info(NULL);
+>  	pxa_set_btuart_info(NULL);
+> @@ -604,7 +605,7 @@ static struct platform_device *imote2_devices[] = {
+>  
+>  static void __init imote2_init(void)
+>  {
+> -	pxa2xx_mfp_config(ARRAY_AND_SIZE(imote2_pin_config));
+> +	pxa2xx_mfp_config(imote2_pin_config, ARRAY_SIZE(imote2_pin_config));
+>  
+>  	imote2_stargate2_init();
+>  
+> @@ -983,13 +984,15 @@ static void __init stargate2_init(void)
+>  	   prior to connecting the MFP stuff up. */
+>  	__raw_writel(__raw_readl(MECR) & ~MECR_NOS, MECR);
+>  
+> -	pxa2xx_mfp_config(ARRAY_AND_SIZE(stargate2_pin_config));
+> +	pxa2xx_mfp_config(stargate2_pin_config,
+> +			  ARRAY_SIZE(stargate2_pin_config));
+>  
+>  	imote2_stargate2_init();
+>  
+> -	platform_add_devices(ARRAY_AND_SIZE(stargate2_devices));
+> +	platform_add_devices(stargate2_devices, ARRAY_SIZE(stargate2_devices));
+>  
+> -	i2c_register_board_info(0, ARRAY_AND_SIZE(stargate2_i2c_board_info));
+> +	i2c_register_board_info(0, stargate2_i2c_board_info,
+> +				ARRAY_SIZE(stargate2_i2c_board_info));
+>  	i2c_register_board_info(1, stargate2_pwr_i2c_board_info,
+>  				ARRAY_SIZE(stargate2_pwr_i2c_board_info));
+>  
+> 
