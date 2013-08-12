@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab3HLOtn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 10:49:43 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:10388 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720Ab3HLOtl (ORCPT
+	id S1756691Ab3HLOuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 10:50:25 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:38849 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433Ab3HLOuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 10:49:41 -0400
-X-AuditID: cbfec373-b7fca6d0000018b9-ea-5208f603b3a7
-Date: Mon, 12 Aug 2013 11:49:32 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>, tony.luck@intel.com,
-        bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
-        lance.ortiz@hp.com, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
- event
-Message-id: <20130812114932.52bb0314@samsung.com>
-In-reply-to: <20130812123813.GD18018@pd.tnic>
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
- <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
- <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic>
- <20130812083355.47c1bae8@samsung.com> <20130812123813.GD18018@pd.tnic>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t/hQF3mbxxBBn3bVCyWNGVYfN7wj83i
-	Q981Jovl+/oZLS7vmsNmcXbecTaL+y1P2S36F/YyWezreMBk8ebCPRYHLo/vrX0sHi37brF7
-	LNhU6rFr204mj8V7XjJ5PDi0mcXj0eIWRo/Pm+QCOKK4bFJSczLLUov07RK4Ms6/28NYsIiz
-	4vh9/wbG2exdjJwcEgImEnPP7mGEsMUkLtxbzwZiCwksYZRo+8vUxcgFZHczSay4dwOsiEVA
-	VWLh4edgRWwCRhKvGltYQWwRASWJr4vmgjUwC3xglJjVNxksISwQJrFnTzMTiM0rYCix88VG
-	sEGcAroSzw+tZoXYsIxJ4sOuZUAncQCd4SSxdaovRL2gxI/J91hAbGYBLYnN25pYIWx5ic1r
-	3jJPYBSYhaRsFpKyWUjKFjAyr2IULS1OLihOSs810itOzC0uzUvXS87P3cQIiY7iHYwvNlgd
-	YhTgYFTi4c34yBEkxJpYVlyZe4hRgoNZSYRXbR5QiDclsbIqtSg/vqg0J7X4ECMTB6dUA6O9
-	H+vzt6t273jSoGDhsa+Z/WnwTb8Lwn385cwHWdns55R9KSnZZfyhLE576af8OIMMD/c7q5iW
-	MevyCsuktl66bbD08omPixs+Pk+/9fNrl6qkiELXNOtzH0x1IzJWMmZX7+zMM7tmMHHDni9z
-	dOf0pP1Wd78u4bQnKNZ+6XqtbW5M7fXX+ZRYijMSDbWYi4oTARvRzYNsAgAA
+	Mon, 12 Aug 2013 10:50:21 -0400
+Date: Mon, 12 Aug 2013 10:50:16 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+Message-ID: <20130812145016.GI15892@htj.dyndns.org>
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 12 Aug 2013 14:38:13 +0200
-Borislav Petkov <bp@alien8.de> escreveu:
+Hello,
 
-> On Mon, Aug 12, 2013 at 08:33:55AM -0300, Mauro Carvalho Chehab wrote:
-> > APEI is just the mechanism that collects the data, not the mechanism
-> > that reports to userspace.
+On Thu, Aug 08, 2013 at 06:16:12PM +0800, Tang Chen wrote:
+> [How we do this]
 > 
-> Both methods add a tracepoint - no difference.
+> In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
+> affinities in SRAT record every memory range in the system, and also, flags
+> specifying if the memory range is hotpluggable.
+> (Please refer to ACPI spec 5.0 5.2.16)
 > 
-> > I really don't see any sense on adding yet-another-way to report the
-> > very same error.
+> With the help of SRAT, we have to do the following two things to achieve our
+> goal:
 > 
-> Well, your suggested way through the layers is this:
+> 1. When doing memory hot-add, allow the users arranging hotpluggable as
+>    ZONE_MOVABLE.
+>    (This has been done by the MOVABLE_NODE functionality in Linux.)
 > 
-> Hardware->APEI->EDAC.
-> 
-> His is
-> 
-> Hardware->APEI.
-> 
-> If I can lose the EDAC layer, then this is a clear win.
+> 2. when the system is booting, prevent bootmem allocator from allocating
+>    hotpluggable memory for the kernel before the memory initialization
+>    finishes.
+>    (This is what we are going to do. See below.)
 
-Clear win from what PoV? Userspace will need to decode a different type
-of tracing, and implement a different logic for APEI. So, it will be
-reinventing the wheel, with a different trace format, and will require
-userspace to implement another tracing event for the same thing that
-EDAC already provides.
+I think it's in a much better shape than before but there still are a
+couple things bothering me.
 
-Also, if both ghes_edac and this new tracing is enabled, userspace will
-receive twice the same event, as two traces will be received for the
-same thing.
+* Why can't it be opportunistic?  It's silly, for example, to fail
+  boot because ACPI tells the kernel that all memory is hotpluggable
+  especially as there'd be plenty of memory sitting around doing
+  nothing and failing to boot is one of the most grave failure mode.
+  The HOTPLUG flag can be advisory, right?  Try to allocate
+  !hotpluggable memory first, but if that fails, ignore it and
+  allocate from anywhere, much like the try_nid allocations.
 
-Worse than that, how userspace is supposed to merge those two events
-into one?
-> 
+* Similar to the point hpa raised.  If this can be made opportunistic,
+  do we need the strict reordering to discover things earlier?
+  Shouldn't it be possible to configure memblock to allocate close to
+  the kernel image until hotplug and numa information is available?
+  For most sane cases, the memory allocated will be contained in
+  non-hotpluggable node anyway and in case they aren't hotplug
+  wouldn't work but the system will boot and function perfectly fine.
 
+Thanks.
 
 -- 
-
-Cheers,
-Mauro
+tejun
