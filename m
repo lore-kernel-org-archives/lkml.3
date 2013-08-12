@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346Ab3HLNGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:06:15 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:61856 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab3HLNGM (ORCPT
+	id S1756434Ab3HLNHI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:07:08 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:2366 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115Ab3HLNHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:06:12 -0400
-Message-ID: <5208DDC0.5090200@linaro.org>
-Date: Mon, 12 Aug 2013 15:06:08 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 12 Aug 2013 09:07:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 12 Aug 2013 06:05:10 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <balbi@ti.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH v3 0/6] USB tree changes for Tegra30 and Tegra114 USB Host support
+Date: Mon, 12 Aug 2013 16:06:48 +0300
+Message-ID: <1376312814-18992-1-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] clocksource: add an "menu" item to Kconfig
-References: <1375873017-30625-1-git-send-email-bigeasy@linutronix.de> <520273FB.3030103@linaro.org> <52027623.20807@linutronix.de> <52027CCD.3060609@linaro.org> <5208DB43.6030404@linaro.org> <5208DD60.7080402@linutronix.de>
-In-Reply-To: <5208DD60.7080402@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 03:04 PM, Sebastian Andrzej Siewior wrote:
-> On 08/12/2013 02:55 PM, Daniel Lezcano wrote:
->> Sebastian,
-> 
-> Hi Daniel,
-> 
->> instead of adding a menu item in the Kconfig, is it possible to have
->> this Kconfig PCI board support to select the right driver ?
-> 
-> I decided to go with only with "tristate" so it does not pop up in
-> Kconfig and will be selected by the MFD/PCI driver. Is this what you
-> have in mind?
+Hi all,
 
-Yes, right. The clocksource's Kconfig is kept untouched.
+Here are the patches for the USB tree to enable USB Host support on Tegra30 and
+Tegra114. These are based on my and Mikko's cleanup patches that just got
+merged to Felipe's tree.
 
-Thanks
-  -- Daniel
+The first one touches the core hub code to prevent certain (non-standard) clock
+disable features as our controller doesn't support those.
+The rest are changes to our PHY and EHCI drivers to deal with a few changed
+register addresses and a few additional PHY parameters that need to be set
+for proper signal quality.
+
+v2 diff:
+Patch 1: Added Alan's ack
+Patch 2 & 5: Change register bitmasks to not contain shifted-out bits
+Changed the order of patches 4 & 5
+Patch 5: Don't touch new PHY params under T20
+
+v3 diff:
+Patch 6: Removed useless cast
+Added Stephen's Reviewed-by & Tested-by to all patches
+
+Tuomas Tynkkynen (6):
+  usb: host: add has_tdi_phy_lpm capability bit
+  usb: phy: tegra: Fix wrong PHY parameters
+  usb: phy: tegra: Tegra30 support
+  Documentation: New DT parameters for tegra30-usb-phy
+  usb: phy: tegra: Program new PHY parameters
+  usb: host: tegra: Tegra30 support
+
+ .../bindings/usb/nvidia,tegra20-usb-phy.txt        |  15 +-
+ drivers/usb/chipidea/host.c                        |   1 +
+ drivers/usb/host/ehci-hub.c                        |  14 +-
+ drivers/usb/host/ehci-tegra.c                      |  34 +++-
+ drivers/usb/host/ehci.h                            |   1 +
+ drivers/usb/phy/phy-tegra-usb.c                    | 220 ++++++++++++++++-----
+ include/linux/usb/tegra_usb_phy.h                  |  23 +++
+ 7 files changed, 242 insertions(+), 66 deletions(-)
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.8.1.5
 
