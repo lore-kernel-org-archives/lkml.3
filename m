@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820Ab3HLKZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:25:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48163 "EHLO
+	id S1755398Ab3HLK0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:26:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48081 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab3HLKYI (ORCPT
+	with ESMTP id S1754395Ab3HLKXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:24:08 -0400
-Date: Mon, 12 Aug 2013 03:23:32 -0700
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-2e73f00fe707a8f2476d989de946c12078c7c066@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
-        runzhen@linux.vnet.ibm.com, jolsa@redhat.com, fweisbec@gmail.com,
-        xiaoguangrong@linux.vnet.ibm.com, dsahern@gmail.com,
+	Mon, 12 Aug 2013 06:23:08 -0400
+Date: Mon, 12 Aug 2013 03:22:22 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-484a5e7476b7ce790ba37417a4976c7f86a87231@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
         tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, namhyung@kernel.org,
-        jolsa@redhat.com, runzhen@linux.vnet.ibm.com, fweisbec@gmail.com,
-        xiaoguangrong@linux.vnet.ibm.com, dsahern@gmail.com,
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
         tglx@linutronix.de
-In-Reply-To: <1375753297-69645-6-git-send-email-dsahern@gmail.com>
-References: <1375753297-69645-6-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1375875537-4509-13-git-send-email-adrian.hunter@intel.com>
+References: <1375875537-4509-13-git-send-email-adrian.hunter@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm stat report:
-  Add option to analyze specific VM
-Git-Commit-ID: 2e73f00fe707a8f2476d989de946c12078c7c066
+Subject: [tip:perf/core] perf annotate: Remove nop at end of annotation
+Git-Commit-ID: 484a5e7476b7ce790ba37417a4976c7f86a87231
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,127 +33,90 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 12 Aug 2013 03:23:39 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 12 Aug 2013 03:22:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2e73f00fe707a8f2476d989de946c12078c7c066
-Gitweb:     http://git.kernel.org/tip/2e73f00fe707a8f2476d989de946c12078c7c066
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Mon, 5 Aug 2013 21:41:37 -0400
+Commit-ID:  484a5e7476b7ce790ba37417a4976c7f86a87231
+Gitweb:     http://git.kernel.org/tip/484a5e7476b7ce790ba37417a4976c7f86a87231
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Wed, 7 Aug 2013 14:38:56 +0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 7 Aug 2013 17:35:39 -0300
+CommitDate: Wed, 7 Aug 2013 17:35:35 -0300
 
-perf kvm stat report: Add option to analyze specific VM
+perf annotate: Remove nop at end of annotation
 
-Add an option to analyze a specific VM within a data file. This allows
-the collection of kvm events for all VMs and then analyze data for each
-VM (or set of VMs) individually.
+When kcore is used for annotation, symbols do not have correct sizes
+because they come from kallsyms, that has only its start address, with
+the end address being the next symbol's minus one.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+That sometimes results in an extra nop being seen after the end of a
+function.  Remove it.
+
+Suggested-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1375753297-69645-6-git-send-email-dsahern@gmail.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1375875537-4509-13-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 38 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 36 insertions(+), 2 deletions(-)
+ tools/perf/util/annotate.c | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index b6595e9..2ceec81 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -9,7 +9,7 @@
- #include "util/thread.h"
- #include "util/header.h"
- #include "util/session.h"
--
-+#include "util/intlist.h"
- #include "util/parse-options.h"
- #include "util/trace-event.h"
- #include "util/debug.h"
-@@ -107,6 +107,9 @@ struct perf_kvm_stat {
- 	u64 total_count;
- 	u64 lost_events;
- 
-+	const char *pid_str;
-+	struct intlist *pid_list;
-+
- 	struct rb_root result;
- 
- 	int timerfd;
-@@ -777,16 +780,29 @@ static int process_lost_event(struct perf_tool *tool,
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 4ab2f11..646e38d 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -830,6 +830,30 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
  	return 0;
  }
  
-+static bool skip_sample(struct perf_kvm_stat *kvm,
-+			struct perf_sample *sample)
++static void delete_last_nop(struct symbol *sym)
 +{
-+	if (kvm->pid_list && intlist__find(kvm->pid_list, sample->pid) == NULL)
-+		return true;
++	struct annotation *notes = symbol__annotation(sym);
++	struct list_head *list = &notes->src->source;
++	struct disasm_line *dl;
 +
-+	return false;
-+}
++	while (!list_empty(list)) {
++		dl = list_entry(list->prev, struct disasm_line, node);
 +
- static int process_sample_event(struct perf_tool *tool,
- 				union perf_event *event,
- 				struct perf_sample *sample,
- 				struct perf_evsel *evsel,
- 				struct machine *machine)
- {
--	struct thread *thread = machine__findnew_thread(machine, sample->tid);
-+	struct thread *thread;
- 	struct perf_kvm_stat *kvm = container_of(tool, struct perf_kvm_stat,
- 						 tool);
- 
-+	if (skip_sample(kvm, sample))
-+		return 0;
-+
-+	thread = machine__findnew_thread(machine, sample->tid);
- 	if (thread == NULL) {
- 		pr_debug("problem processing %d event, skipping it.\n",
- 			event->header.type);
-@@ -1209,11 +1225,27 @@ static int read_events(struct perf_kvm_stat *kvm)
- 	return perf_session__process_events(kvm->session, &kvm->tool);
- }
- 
-+static int parse_target_str(struct perf_kvm_stat *kvm)
-+{
-+	if (kvm->pid_str) {
-+		kvm->pid_list = intlist__new(kvm->pid_str);
-+		if (kvm->pid_list == NULL) {
-+			pr_err("Error parsing process id string\n");
-+			return -EINVAL;
++		if (dl->ins && dl->ins->ops) {
++			if (dl->ins->ops != &nop_ops)
++				return;
++		} else {
++			if (!strstr(dl->line, " nop ") &&
++			    !strstr(dl->line, " nopl ") &&
++			    !strstr(dl->line, " nopw "))
++				return;
 +		}
-+	}
 +
-+	return 0;
++		list_del(&dl->node);
++		disasm_line__free(dl);
++	}
 +}
 +
- static int kvm_events_report_vcpu(struct perf_kvm_stat *kvm)
+ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
  {
- 	int ret = -EINVAL;
- 	int vcpu = kvm->trace_vcpu;
+ 	struct dso *dso = map->dso;
+@@ -923,6 +947,13 @@ fallback:
+ 		if (symbol__parse_objdump_line(sym, map, file, privsize) < 0)
+ 			break;
  
-+	if (parse_target_str(kvm) != 0)
-+		goto exit;
++	/*
++	 * kallsyms does not have symbol sizes so there may a nop at the end.
++	 * Remove it.
++	 */
++	if (dso__is_kcore(dso))
++		delete_last_nop(sym);
 +
- 	if (!verify_vcpu(vcpu))
- 		goto exit;
- 
-@@ -1300,6 +1332,8 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
- 			    "key for sorting: sample(sort by samples number)"
- 			    " time (sort by avg time)"),
-+		OPT_STRING('p', "pid", &kvm->pid_str, "pid",
-+			   "analyze events only for given process id(s)"),
- 		OPT_END()
- 	};
- 
+ 	pclose(file);
+ out_free_filename:
+ 	if (free_filename)
