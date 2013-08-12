@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab3HLQ2U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:28:20 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:52731 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753582Ab3HLQ2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:28:18 -0400
-Date: Mon, 12 Aug 2013 12:27:40 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-mm@kvack.org, Andi Kleen <andi@firstfloor.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Roman Gushchin <klamm@yandex-team.ru>,
-        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 8/9] mm: thrash detection-based file cache sizing
-Message-ID: <20130812162740.GS715@cmpxchg.org>
-References: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
- <1375829050-12654-9-git-send-email-hannes@cmpxchg.org>
- <520808D1.70705@suse.cz>
+	id S1756564Ab3HLQaL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:30:11 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:50856 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755180Ab3HLQaG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 12:30:06 -0400
+Message-ID: <52090D7F.6060600@gmail.com>
+Date: Tue, 13 Aug 2013 00:29:51 +0800
+From: Tang Chen <imtangchen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520808D1.70705@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com> <20130812145016.GI15892@htj.dyndns.org> <5208FBBC.2080304@zytor.com> <20130812152343.GK15892@htj.dyndns.org>
+In-Reply-To: <20130812152343.GK15892@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vlastimil!
+On 08/12/2013 11:23 PM, Tejun Heo wrote:
+> Hello,
+>
+> On Mon, Aug 12, 2013 at 08:14:04AM -0700, H. Peter Anvin wrote:
+>> It gets really messy if it is advisory.  Suddenly you have the user
+>> thinking they can hotswap a memory bank and they just can't.
+>
+> I'm very skeptical that not doing the strict re-ordering would
+> increase the chance of reaching memory allocation where hot unplug
+> would be impossible by much.  Given that, it'd be much better to be
+> able to boot w/o hotunplug capability than to fail boot.  The kernel
+> can whine loudly when hotunplug conditions aren't met but I think that
+> really is as far as that should go.
 
-On Sun, Aug 11, 2013 at 11:57:37PM +0200, Vlastimil Babka wrote:
-> On 08/07/2013 12:44 AM, Johannes Weiner wrote:
-> >To accomplish this, a per-zone counter is increased every time a page
-> >is evicted and a snapshot of that counter is stored as shadow entry in
-> >the page's now empty page cache radix tree slot.  Upon refault of that
-> >page, the difference between the current value of that counter and the
-> >shadow entry value is called the refault distance.  It tells how many
-> >pages have been evicted from the zone since that page's eviction,
-> This explanation of refault distance seems correct...
-> >which is how many page slots are missing from the zone's inactive list
-> >for this page to get accessed twice while in memory.
-> But this part seems slightly incorrect. IMHO the correct formulation
-> would be "...how many page slots are AT MOST missing...". See below.
+As you said, we can ensure at least one node to be unhotplug. Then the
+kernel will boot anyway. Just like CPU0. But we have the chance to lose
+one movable node.
 
-Yes, I think this would be better phrasing.
+The best way is firmware and software corporate together. SRAT provides
+several movable node and enough non-movable memory for the kernel to
+boot. The hotplug users only use movable node.
 
-> >If the number of
-> >missing slots is less than or equal to the number of active pages,
-> >increasing the inactive list at the cost of the active list would give
-> >this thrashing set a chance to establish itself:
-> >
-> >eviction counter = 4
-> >                         evicted      inactive           active
-> >  Page cache data:       [ a b c d ]  [ e f g h i j k ]  [ l m n ]
-> >   Shadow entries:         0 1 2 3
-> >Refault distance:         4 3 2 1
-> Consider here that if 'd' was now accessed before 'c', I think 'e'
-> would be evicted and eviction counter would be incremented to 5. So
-> for 'c' you would now say that three slots would prevent the
-> refault, but in fact two would still be sufficient. This potential
-> imprecision could make the algorithm challenge more active pages
-> than it should, but I am not sure how bad the consequences could
-> be... so just pointing it out.
+>
+>> Overall, I'm getting convinced that this whole approach is just doomed
+>> to failure -- it will not provide the user what they expect and what
+>> they need, which is to be able to hotswap any particular chunk of
+>> memory.  This means that there has to be a remapping layer, either using
+>> the TLBs (perhaps leveraging the Xen machine page number) or using
+>> things like QPI memory routing.
+>
+> For hot unplug to work in completely generic manner, yeah, there
+> probably needs to be an extra layer of indirection.
 
-Yes, pages are not accessed in strict order all the time and there is
-very much the occasional outlier that gets accessed before its peers.
+I agree too.
 
-In fact, the code treats it as an AT MOST already.  Every page fault
-is evaluated based on its refault distance, but a refault distance of
-N does not mean that N pages are deactivated.  Only one page is.
+> Have no idea what
+> the correct way to achieve that would be tho.  I'm also not sure how
+> practicial memory hot unplug is for physical machines and improving
+> ballooning could be a better approach for vms.
 
-An outlier is thus harmless but we catch if a whole group of pages is
-thrashing.
+But, different users have different ways to use memory hotplug.
 
-The changelog and documentation should be updated, thanks for pointing
-this out.
+Hotswaping any particular chunk of memory is the goal we will reach
+finally. But it is on specific hardware. In most current machines, we
+can use movable node to manage resource in node unit.
+
+And also, without this movablenode boot option, the MOVABLE_NODE
+functionality, which is already in the kernel, will not be able to
+work. All nodes has kernel memory means no movable node.
+
+So, how about this: Just like MOVABLE_NODE functionality, introduce
+a new config option. When we have better solutions for memory hotplug,
+we shutoff or remove the config and related code.
+
+For now, at least make movable node work.
+
+Thanks.
+
