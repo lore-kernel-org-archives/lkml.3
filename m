@@ -1,113 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab3HLQq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:46:58 -0400
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:62861 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756277Ab3HLQq4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:46:56 -0400
-Date: Mon, 12 Aug 2013 12:46:50 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <imtangchen@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
-Message-ID: <20130812164650.GN15892@htj.dyndns.org>
-References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com>
- <20130812145016.GI15892@htj.dyndns.org>
- <5208FBBC.2080304@zytor.com>
- <20130812152343.GK15892@htj.dyndns.org>
- <52090D7F.6060600@gmail.com>
+	id S1757223Ab3HLQsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:48:01 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:10035
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755433Ab3HLQsA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 12:48:00 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zzbb2dI98dIc89bh1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h906i1155h192ch)
+Date: Mon, 12 Aug 2013 09:32:49 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Daniel Lezcano <daniel.lezcano@linaro.org>, <srinivas.kandagatla@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <a48f159a-e88c-42fa-b76b-662302d3a585@AM1EHSMHS003.ehs.local>
+ <51FA9AE8.1060004@linaro.org>
+ <1c83c081-60c6-49e3-a85c-f64dd5be0e60@CH1EHSMHS030.ehs.local>
+ <51FA9F54.3060704@linaro.org>
+ <c44e700d-64da-487b-a975-1263d7505371@CH1EHSMHS043.ehs.local>
+ <5204C54A.9020105@st.com>
+ <5204FA5D.3060908@linaro.org>
+ <20130809172757.GD14845@codeaurora.org>
+ <c1e112a3-cfed-4e53-951e-b1a9208d7dc8@TX2EHSMHS038.ehs.local>
+ <52090B43.9090000@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <52090D7F.6060600@gmail.com>
+In-Reply-To: <52090B43.9090000@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <d36fc2db-1189-4c6a-9bc4-0ac2e29eaa1b@AM1EHSMHS009.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tang.
-
-On Tue, Aug 13, 2013 at 12:29:51AM +0800, Tang Chen wrote:
-> As you said, we can ensure at least one node to be unhotplug. Then the
-> kernel will boot anyway. Just like CPU0. But we have the chance to lose
-> one movable node.
+On Mon, Aug 12, 2013 at 09:20:19AM -0700, Stephen Boyd wrote:
+> On 08/12/13 09:03, Sören Brinkmann wrote:
+> > On Fri, Aug 09, 2013 at 10:27:57AM -0700, Stephen Boyd wrote:
+> >> On 08/09, Daniel Lezcano wrote:
+> >>> yes, but at least the broadcast mechanism should send an IPI to cpu0 to
+> >>> wake it up, no ? As Stephen stated this kind of configuration should has
+> >>> never been tested before so the tick broadcast code is not handling this
+> >>> case properly IMHO.
+> >>>
+> >> If you have a per-cpu tick device that isn't suffering from
+> >> FEAT_C3_STOP why wouldn't you use that for the tick versus a
+> >> per-cpu tick device that has FEAT_C3_STOP? It sounds like there
+> >> is a bug in the preference logic or you should boost the rating
+> >> of the arm global timer above the twd. Does this patch help? It
+> >> should make the arm global timer the tick device and whatever the
+> >> cadence timer you have into the broadcast device.
+> > I finally got to test your patch. Unfortunately, it makes the system
+> > hang even earlier:
 > 
-> The best way is firmware and software corporate together. SRAT provides
-> several movable node and enough non-movable memory for the kernel to
-> boot. The hotplug users only use movable node.
+> Sorry it had a bug depending on the registration order. Can you try this
+> one (tabs are probably spaces, sorry)? I will go read through this
+> thread to see if we already covered the registration order.
 
-I'm really lost on this conversation and have no idea what you're
-arguing.  My point was simple - let the kernel do its best during boot
-and report the result to userland on what nodes are hotpluggable or
-not.  Can you please elaborate what your point is from the ground up?
-Unfortunately, I currently have no idea what you're saying.
+That did it! Booted straight into the system. The broadcast device is
+the TTC instead of GT, now.
 
-> But, different users have different ways to use memory hotplug.
-> 
-> Hotswaping any particular chunk of memory is the goal we will reach
-> finally. But it is on specific hardware. In most current machines, we
-> can use movable node to manage resource in node unit.
-> 
-> And also, without this movablenode boot option, the MOVABLE_NODE
-> functionality, which is already in the kernel, will not be able to
-> work. All nodes has kernel memory means no movable node.
-> 
-> So, how about this: Just like MOVABLE_NODE functionality, introduce
-> a new config option. When we have better solutions for memory hotplug,
-> we shutoff or remove the config and related code.
-> 
-> For now, at least make movable node work.
+	Tick Device: mode:     1
+	Broadcast device
+	Clock Event Device: ttc_clockevent
+	 max_delta_ns:   1207932479
+	 min_delta_ns:   18432
+	 mult:           233015
+	 shift:          32
+	 mode:           1
+	 next_event:     9223372036854775807 nsecs
+	 set_next_event: ttc_set_next_event
+	 set_mode:       ttc_set_mode
+	 event_handler:  tick_handle_oneshot_broadcast
+	 retries:        0
+	
+	tick_broadcast_mask: 00000000
+	tick_broadcast_oneshot_mask: 00000000
+	
+	Tick Device: mode:     1
+	Per CPU device: 0
+	Clock Event Device: arm_global_timer
+	 max_delta_ns:   12884902005
+	 min_delta_ns:   1000
+	 mult:           715827876
+	 shift:          31
+	 mode:           3
+	 next_event:     24216749370 nsecs
+	 set_next_event: gt_clockevent_set_next_event
+	 set_mode:       gt_clockevent_set_mode
+	 event_handler:  hrtimer_interrupt
+	 retries:        0
+	
+	Tick Device: mode:     1
+	Per CPU device: 1
+	Clock Event Device: arm_global_timer
+	 max_delta_ns:   12884902005
+	 min_delta_ns:   1000
+	 mult:           715827876
+	 shift:          31
+	 mode:           3
+	 next_event:     24220000000 nsecs
+	 set_next_event: gt_clockevent_set_next_event
+	 set_mode:       gt_clockevent_set_mode
+	 event_handler:  hrtimer_interrupt
+	 retries:        0
 
-We are talking completely past each other.  I'll just try to clarify
-what I was saying.  Can you please do the same?  Let's re-sync on the
-discussion.
 
-* Adding an option to tell the kernel to try to stay away from
-  hotpluggable nodes is fine.  I have no problem with that at all.
+	# cat /proc/interrupts 
+	           CPU0       CPU1       
+	 27:       1668       1640       GIC  27  gt
+	 29:          0          0       GIC  29  twd
+	 43:          0          0       GIC  43  ttc_clockevent
+	 82:        536          0       GIC  82  xuartps
+	IPI0:          0          0  CPU wakeup interrupts
+	IPI1:          0          0  Timer broadcast interrupts
+	IPI2:       1264       1322  Rescheduling interrupts
+	IPI3:          0          0  Function call interrupts
+	IPI4:         24         70  Single function call interrupts
+	IPI5:          0          0  CPU stop interrupts
+	Err:          0
 
-* The patchsets upto this point have been somehow trying to reorder
-  operations shomehow such that *no* memory allocation happens before
-  memblock is populated with hotplug information.
 
-* However, we already *know* that the memory the kernel image is
-  occupying won't be removeable.  It's highly likely that the amount
-  of memory allocation before NUMA / hotplug information is fully
-  populated is pretty small.  Also, it's highly likely that small
-  amount of memory right after the kernel image is contained in the
-  same NUMA node, so if we allocate memory close to the kernel image,
-  it's likely that we don't contaminate hotpluggable node.  We're
-  talking about few megs at most right after the kernel image.  I
-  can't see how that would make any noticeable difference.
+	Thanks,
+	Sören
 
-* Once hotplug information is available, allocation can happen as
-  usual and the kernel can report the nodes which are actually
-  hotpluggable - marked as hotpluggable by the firmware && didn't get
-  contaminated during early alloc && didn't get overflow allocations
-  afterwards.  Note that we need such mechanism no matter what as the
-  kernel image can be loaded into hotpluggable nodes and reporting
-  that to userland is the only thing the kernel can do for cases like
-  that short of denying memory unplug on such nodes.
 
-The whole thing would be a lot simpler and generic.  It doesn't even
-have to care about which mechanism is being used to acquire all those
-information.  What am I missing here?
-
-Thanks.
-
--- 
-tejun
