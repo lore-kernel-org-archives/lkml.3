@@ -1,41 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3HLLKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 07:10:11 -0400
-Received: from sauhun.de ([89.238.76.85]:35224 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604Ab3HLLKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 07:10:08 -0400
-Date: Mon, 12 Aug 2013 13:09:54 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Shinya Kuribayashi <skuribay@pobox.com>, mika.westerberg@linux.intel.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c-designware: make *CNT values configurable
-Message-ID: <20130812110954.GA3776@the-dreams.de>
-References: <51DFB6C1.4040001@pobox.com>
- <20130712085140.GY4898@intel.com>
- <51E0E76B.1040304@pobox.com>
- <20130716111616.GA25835@ab42.lan>
- <51E6ACBE.7000509@pobox.com>
- <20130722131706.GA24081@ab42.lan>
- <51EFE550.1000507@pobox.com>
- <20130805093126.GE20936@ab42.lan>
- <20130805100225.GA9694@katana>
- <20130812074800.GA23792@ab42.lan>
+	id S1755555Ab3HLLXt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 07:23:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:32858 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388Ab3HLLXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 07:23:46 -0400
+Message-ID: <52087824.60002@ti.com>
+Date: Mon, 12 Aug 2013 11:22:36 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130812074800.GA23792@ab42.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joel Fernandes <joelf@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH v3 07/12] dma: edma: Add function to dump a PaRAM set
+ from PaRAM
+References: <1375719297-12871-1-git-send-email-joelf@ti.com> <1375719297-12871-8-git-send-email-joelf@ti.com>
+In-Reply-To: <1375719297-12871-8-git-send-email-joelf@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Every driver would thus have to implement its own defaults in case the
-> properties are not defined.
+On Monday 05 August 2013 09:44 PM, Joel Fernandes wrote:
+> Previously, such a dump function was used but it wasn't reading
+> from the PaRAM, rather just from a edmacc_param structure, we
+> add a helpful function for debugging that directly reads from
+> the PaRAM and gives the current state correctly (including links
+> and interrupt information).
+> 
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
 
-Placing the defaults at driver level sounds fine to me.
+You should convert existing instances of PaRAM set dump to use this new
+function along with introducing it.
 
-Thanks!
+Thanks,
+Sekhar
+
+> ---
+>  drivers/dma/edma.c |   31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+> 
+> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+> index 080d669..a242269 100644
+> --- a/drivers/dma/edma.c
+> +++ b/drivers/dma/edma.c
+> @@ -102,6 +102,37 @@ static void edma_desc_free(struct virt_dma_desc *vdesc)
+>  	kfree(container_of(vdesc, struct edma_desc, vdesc));
+>  }
+>  
+> +static inline void dump_pset(struct edma_chan *echan, int slot,
+> +		     struct edmacc_param *pset_unused, int pset_idx)
+> +{
+> +	struct edmacc_param pset_local, *pset;
+> +	pset = &pset_local;
+> +
+> +	edma_read_slot(slot, pset);
+> +
+> +	dev_dbg(echan->vchan.chan.device->dev,
+> +		"\n pset[%d]:\n"
+> +		"  chnum\t%d\n"
+> +		"  slot\t%d\n"
+> +		"  opt\t%08x\n"
+> +		"  src\t%08x\n"
+> +		"  dst\t%08x\n"
+> +		"  abcnt\t%08x\n"
+> +		"  ccnt\t%08x\n"
+> +		"  bidx\t%08x\n"
+> +		"  cidx\t%08x\n"
+> +		"  lkrld\t%08x\n",
+> +		pset_idx, echan->ch_num, slot,
+> +		pset[0].opt,
+> +		pset[0].src,
+> +		pset[0].dst,
+> +		pset[0].a_b_cnt,
+> +		pset[0].ccnt,
+> +		pset[0].src_dst_bidx,
+> +		pset[0].src_dst_cidx,
+> +		pset[0].link_bcntrld);
+> +}
+> +
+>  /* Dispatch a queued descriptor to the controller (caller holds lock) */
+>  static void edma_execute(struct edma_chan *echan)
+>  {
+> 
 
