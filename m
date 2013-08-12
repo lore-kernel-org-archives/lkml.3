@@ -1,228 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab3HLWDP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 18:03:15 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:6885 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab3HLWDO (ORCPT
+	id S1755607Ab3HLWEb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 18:04:31 -0400
+Received: from mail-qe0-f74.google.com ([209.85.128.74]:33846 "EHLO
+	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753378Ab3HLWE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 18:03:14 -0400
-Message-ID: <1376344985.13247.16.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 09/20] mm, hugetlb: protect region tracking via newly
- introduced resv_map lock
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Date: Mon, 12 Aug 2013 15:03:05 -0700
-In-Reply-To: <1376040398-11212-10-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1376040398-11212-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1376040398-11212-10-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Aug 2013 18:04:28 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
+Cc: Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@calxeda.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH] pwm-backlight: add "max-brightness" property
+Date: Mon, 12 Aug 2013 15:04:17 -0700
+Message-Id: <1376345057-29895-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-08-09 at 18:26 +0900, Joonsoo Kim wrote:
-> There is a race condition if we map a same file on different processes.
-> Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
-> When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
-> grab a mmap_sem. This doesn't prevent other process to modify region
-> structure, so it can be modified by two processes concurrently.
-> 
-> To solve this, I introduce a lock to resv_map and make region manipulation
-> function grab a lock before they do actual work. This makes region
-> tracking safe.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 2677c07..e29e28f 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -26,6 +26,7 @@ struct hugepage_subpool {
->  
->  struct resv_map {
->  	struct kref refs;
-> +	spinlock_t lock;
->  	struct list_head regions;
->  };
->  extern struct resv_map *resv_map_alloc(void);
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index d9cabf6..73034dd 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -134,15 +134,8 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
->   * Region tracking -- allows tracking of reservations and instantiated pages
->   *                    across the pages in a mapping.
->   *
-> - * The region data structures are protected by a combination of the mmap_sem
-> - * and the hugetlb_instantiation_mutex.  To access or modify a region the caller
-> - * must either hold the mmap_sem for write, or the mmap_sem for read and
-> - * the hugetlb_instantiation_mutex:
-> - *
-> - *	down_write(&mm->mmap_sem);
-> - * or
-> - *	down_read(&mm->mmap_sem);
-> - *	mutex_lock(&hugetlb_instantiation_mutex);
-> + * The region data structures are embedded into a resv_map and
-> + * protected by a resv_map's lock
->   */
->  struct file_region {
->  	struct list_head link;
-> @@ -155,6 +148,7 @@ static long region_add(struct resv_map *resv, long f, long t)
->  	struct list_head *head = &resv->regions;
->  	struct file_region *rg, *nrg, *trg;
->  
-> +	spin_lock(&resv->lock);
->  	/* Locate the region we are either in or before. */
->  	list_for_each_entry(rg, head, link)
->  		if (f <= rg->to)
-> @@ -184,15 +178,18 @@ static long region_add(struct resv_map *resv, long f, long t)
->  	}
->  	nrg->from = f;
->  	nrg->to = t;
-> +	spin_unlock(&resv->lock);
->  	return 0;
->  }
->  
->  static long region_chg(struct resv_map *resv, long f, long t)
->  {
->  	struct list_head *head = &resv->regions;
-> -	struct file_region *rg, *nrg;
-> +	struct file_region *rg, *nrg = NULL;
->  	long chg = 0;
->  
-> +retry:
-> +	spin_lock(&resv->lock);
->  	/* Locate the region we are before or in. */
->  	list_for_each_entry(rg, head, link)
->  		if (f <= rg->to)
-> @@ -202,15 +199,27 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  	 * Subtle, allocate a new region at the position but make it zero
->  	 * size such that we can guarantee to record the reservation. */
->  	if (&rg->link == head || t < rg->from) {
-> -		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-> -		if (!nrg)
-> -			return -ENOMEM;
-> +		if (!nrg) {
-> +			nrg = kmalloc(sizeof(*nrg), GFP_NOWAIT);
-> +			if (!nrg) {
-> +				spin_unlock(&resv->lock);
-> +				nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-> +				if (!nrg) {
-> +					chg = -ENOMEM;
-> +					goto out;
+Specifying each individual brightness value via the "brightness-levels"
+property can be a pain if we want to use a large continuous range of
+brightness values.  Add the property "max-brightness", which can be
+given in place of "brightness-levels", that specifies that all values
+between 0 and the given value can be used.
 
-Just return -ENOMEM here.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ .../bindings/video/backlight/pwm-backlight.txt     | 22 +++++++++---
+ drivers/video/backlight/pwm_bl.c                   | 39 +++++++++++++---------
+ 2 files changed, 42 insertions(+), 19 deletions(-)
 
-> +				}
-> +				goto retry;
-> +			}
-> +		}
-> +
-
-You seem to be right, at least in my workloads, the hold times for the
-region lock is quite small, so a spinlock is better than a sleeping
-lock.
-
-That said, this code is quite messy, but I cannot think of a
-better/cleaner approach right now.
-
-
->  		nrg->from = f;
->  		nrg->to   = f;
->  		INIT_LIST_HEAD(&nrg->link);
->  		list_add(&nrg->link, rg->link.prev);
-> +		nrg = NULL;
->  
-> -		return t - f;
-> +		chg = t - f;
-> +		goto out_locked;
->  	}
->  
->  	/* Round our left edge to the current segment if it encloses us. */
-> @@ -223,7 +232,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  		if (&rg->link == head)
->  			break;
->  		if (rg->from > t)
-> -			return chg;
-> +			goto out_locked;
->  
->  		/* We overlap with this area, if it extends further than
->  		 * us then we must extend ourselves.  Account for its
-> @@ -234,6 +243,11 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  		}
->  		chg -= rg->to - rg->from;
->  	}
-> +
-> +out_locked:
-> +	spin_unlock(&resv->lock);
-> +out:
-> +	kfree(nrg);
->  	return chg;
->  }
->  
-> @@ -243,12 +257,13 @@ static long region_truncate(struct resv_map *resv, long end)
->  	struct file_region *rg, *trg;
->  	long chg = 0;
->  
-> +	spin_lock(&resv->lock);
->  	/* Locate the region we are either in or before. */
->  	list_for_each_entry(rg, head, link)
->  		if (end <= rg->to)
->  			break;
->  	if (&rg->link == head)
-> -		return 0;
-> +		goto out;
->  
->  	/* If we are in the middle of a region then adjust it. */
->  	if (end > rg->from) {
-> @@ -265,6 +280,9 @@ static long region_truncate(struct resv_map *resv, long end)
->  		list_del(&rg->link);
->  		kfree(rg);
->  	}
-> +
-> +out:
-> +	spin_unlock(&resv->lock);
->  	return chg;
->  }
->  
-> @@ -274,6 +292,7 @@ static long region_count(struct resv_map *resv, long f, long t)
->  	struct file_region *rg;
->  	long chg = 0;
->  
-> +	spin_lock(&resv->lock);
->  	/* Locate each segment we overlap with, and count that overlap. */
->  	list_for_each_entry(rg, head, link) {
->  		long seg_from;
-> @@ -289,6 +308,7 @@ static long region_count(struct resv_map *resv, long f, long t)
->  
->  		chg += seg_to - seg_from;
->  	}
-> +	spin_unlock(&resv->lock);
->  
->  	return chg;
->  }
-> @@ -386,6 +406,7 @@ struct resv_map *resv_map_alloc(void)
->  		return NULL;
->  
->  	kref_init(&resv_map->refs);
-> +	spin_lock_init(&resv_map->lock);
->  	INIT_LIST_HEAD(&resv_map->regions);
->  
->  	return resv_map;
-
+diff --git a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+index 1e4fc72..856dfc9 100644
+--- a/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
++++ b/Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt
+@@ -3,15 +3,21 @@ pwm-backlight bindings
+ Required properties:
+   - compatible: "pwm-backlight"
+   - pwms: OF device-tree PWM specification (see PWM binding[0])
++  - one of "brightness-levels" or "max-brightness", described below
++  - default-brightness-level: the default brightness level (index into the array
++      defined by the "brightness-levels" property or a value between 0 and
++      "max-brightness")
++
++Optional properties:
+   - brightness-levels: Array of distinct brightness levels. Typically these
+       are in the range from 0 to 255, but any range starting at 0 will do.
+       The actual brightness level (PWM duty cycle) will be interpolated
+       from these values. 0 means a 0% duty cycle (darkest/off), while the
+       last value in the array represents a 100% duty cycle (brightest).
+-  - default-brightness-level: the default brightness level (index into the
+-      array defined by the "brightness-levels" property)
+-
+-Optional properties:
++  - max-brightness: Instead of specifying a complete set of brightness
++      levels, a single maximum brightness value may be given. This indicates
++      that all integers between 0 and max-brightness are valid brightness
++      values.
+   - pwm-names: a list of names for the PWM devices specified in the
+                "pwms" property (see PWM binding[0])
+ 
+@@ -26,3 +32,11 @@ Example:
+ 		brightness-levels = <0 4 8 16 32 64 128 255>;
+ 		default-brightness-level = <6>;
+ 	};
++or:
++	backlight {
++		compatible = "pwm-backlight";
++		pwms = <&pwm 0 1000000 0>;
++
++		max-brightness = <1024>;
++		default-brightness-level = <700>;
++	};
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 1fea627..92973b1 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -98,7 +98,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 				  struct platform_pwm_backlight_data *data)
+ {
+ 	struct device_node *node = dev->of_node;
+-	struct property *prop;
+ 	int length;
+ 	u32 value;
+ 	int ret;
+@@ -108,34 +107,44 @@ static int pwm_backlight_parse_dt(struct device *dev,
+ 
+ 	memset(data, 0, sizeof(*data));
+ 
+-	/* determine the number of brightness levels */
+-	prop = of_find_property(node, "brightness-levels", &length);
+-	if (!prop)
+-		return -EINVAL;
++	if (of_find_property(node, "brightness-levels", &length)) {
++		data->max_brightness = length / sizeof(u32);
+ 
+-	data->max_brightness = length / sizeof(u32);
++		/* read brightness levels from DT property */
++		if (data->max_brightness > 0) {
++			size_t size = sizeof(*data->levels) *
++					data->max_brightness;
+ 
+-	/* read brightness levels from DT property */
+-	if (data->max_brightness > 0) {
+-		size_t size = sizeof(*data->levels) * data->max_brightness;
+-
+-		data->levels = devm_kzalloc(dev, size, GFP_KERNEL);
+-		if (!data->levels)
+-			return -ENOMEM;
++			data->levels = devm_kzalloc(dev, size, GFP_KERNEL);
++			if (!data->levels)
++				return -ENOMEM;
+ 
+-		ret = of_property_read_u32_array(node, "brightness-levels",
++			ret = of_property_read_u32_array(node,
++						"brightness-levels",
+ 						 data->levels,
+ 						 data->max_brightness);
++			if (ret < 0)
++				return ret;
++
++			data->max_brightness--;
++		}
++	} else {
++		ret = of_property_read_u32(node, "max-brightness",
++					   &value);
+ 		if (ret < 0)
+ 			return ret;
+ 
++		/* brightness values are 0 to max-brightness */
++		data->max_brightness = value;
++	}
++
++	if (data->max_brightness > 0) {
+ 		ret = of_property_read_u32(node, "default-brightness-level",
+ 					   &value);
+ 		if (ret < 0)
+ 			return ret;
+ 
+ 		data->dft_brightness = value;
+-		data->max_brightness--;
+ 	}
+ 
+ 	/*
+-- 
+1.8.3
 
