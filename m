@@ -1,28 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab3HLGTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 02:19:23 -0400
-Received: from mail-lb0-f193.google.com ([209.85.217.193]:39197 "EHLO
-	mail-lb0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab3HLGTU convert rfc822-to-8bit (ORCPT
+	id S1755887Ab3HLGUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 02:20:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51787 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab3HLGUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 02:19:20 -0400
+	Mon, 12 Aug 2013 02:20:48 -0400
+Date: Sun, 11 Aug 2013 23:22:11 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Gujare, Rupesh" <Rupesh.Gujare@atmel.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Aug 9 (staging/ozwpan)
+Message-ID: <20130812062211.GA865@kroah.com>
+References: <20130809161540.f65dd6412ac59d49a32881c8@canb.auug.org.au>
+ <5206BB86.2000604@infradead.org>
+ <5206C9AB.8050706@infradead.org>
+ <CB57019DFBA97B45884DCA732411B955341FA6C8@hnombx02.corp.atmel.com>
 MIME-Version: 1.0
-Reply-To: Jeffgir57@yahoo.com.hk
-Date: Mon, 12 Aug 2013 07:19:18 +0100
-Message-ID: <CAGc2QNdAxe4-km3sXta9WvSdPg1zyDCrnoGRFHAaeBusi2Cw+g@mail.gmail.com>
-Subject: 
-From: Sunil Chudasama <08bph098@nirmauni.ac.in>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CB57019DFBA97B45884DCA732411B955341FA6C8@hnombx02.corp.atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-La primera $ 5000 fue enviado hoy por mi negocio partner.You están en
-contacto con el InCharge agente de Western Union para el information.I
-completa le pidió que continúe para enviarle $ 5000 todos los días
-hasta el pago de 1.500,000.00 es completed.Tel: 2347069351019 E
--mail:. (Jeffgir57@yahoo.com.hk) Usted está en contacto con él, con su
-nombre, país, número de teléfono.
+On Sun, Aug 11, 2013 at 09:04:00AM +0000, Gujare, Rupesh wrote:
+> 
+> ________________________________________
+> From: Randy Dunlap [rdunlap@infradead.org]
+> Sent: 11 August 2013 00:15
+> To: Stephen Rothwell
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org; Gujare, Rupesh; Greg Kroah-Hartman
+> Subject: Re: linux-next: Tree for Aug 9 (staging/ozwpan)
+> 
+> On 08/10/13 15:15, Randy Dunlap wrote:
+> > On 08/08/13 23:15, Stephen Rothwell wrote:
+> >> Hi all,
+> >>
+> >> Changes since 20130808:
+> >>
+> >> *crickets*
+> >>
+> >
+> > on i386:
+> >
+> > ERROR: "__divdi3" [drivers/staging/ozwpan/ozwpan.ko] undefined!
+> >
+> 
+> 2 occurrences of this in oz_hcd_heartbeat().
+> 
+> >
+> >
+> > Apologies if this has already been reported/fixed.
+> >
+> 
+> Yes, It had been already been fixed here :-
+> 
+> http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/2013-August/040091.html
+> I have been waiting for Greg to apply this patch to his tree.
+
+Yes I have it, will apply it tomorrow, thanks.
+
+greg k-h
