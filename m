@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab3HLHPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 03:15:07 -0400
-Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:5063
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753335Ab3HLHOx (ORCPT
+	id S1753087Ab3HLHPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 03:15:35 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:5866
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753600Ab3HLHO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 03:14:53 -0400
+	Mon, 12 Aug 2013 03:14:56 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1155h)
@@ -16,14 +16,15 @@ To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>, <lars@metafoo.de>,
         <lars-peter.clausen@analog.com>
 CC: <linux-kernel@vger.kernel.org>, <pankaj.chauhan@freescale.com>,
         Akhil Goyal <akhil.goyal@freescale.com>
-Subject: [PATCH v2 3/4] binding: Add device tree bindings for freescale AIC
-Date: Mon, 12 Aug 2013 12:43:52 +0530
-Message-ID: <1376291633-4682-4-git-send-email-akhil.goyal@freescale.com>
+Subject: [PATCH v2 4/4] BSC9131rdb/dts: Add nodes for supporting AIC
+Date: Mon, 12 Aug 2013 12:43:53 +0530
+Message-ID: <1376291633-4682-5-git-send-email-akhil.goyal@freescale.com>
 X-Mailer: git-send-email 1.6.3.1
-In-Reply-To: <1376291633-4682-3-git-send-email-akhil.goyal@freescale.com>
+In-Reply-To: <1376291633-4682-4-git-send-email-akhil.goyal@freescale.com>
 References: <1376291633-4682-1-git-send-email-akhil.goyal@freescale.com>
  <1376291633-4682-2-git-send-email-akhil.goyal@freescale.com>
  <1376291633-4682-3-git-send-email-akhil.goyal@freescale.com>
+ <1376291633-4682-4-git-send-email-akhil.goyal@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -34,72 +35,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Akhil Goyal <akhil.goyal@freescale.com>
 
-For platforms like BSC9131 and BSC9132, a Radio framework for supporting
-various network modes comprise of an Antenna interface controller driver
-and a phy driver.
-A combination of AIC lane and phy is called a rf device which can be used
-to operate on a particular network mode.
+BSC9131 is a hetrogenous system where Antenna interface controller
+(AIC) is a part of DSP subsystem. But its configuration is done from
+PA side. So a DSP node is added with appropriate CCSR address visible
+to PA and hence the address space for AIC will be visible to PA.
 
-This patch explain various device tree properties required for AIC driver
+BSC9131 support 3 AIC lanes for ADI interface and 3 for MAXIM type of
+interface. This patch support only ADI lanes.
 
+Signed-off-by: Pankaj Chauhan <pankaj.chauhan@freescale.com>
+Signed-off-by: Shaveta Leekha <shaveta@freescale.com>
+Signed-off-by: Bhaskar Upadhaya <bhaskar.upadhaya@freescale.com>
 Signed-off-by: Akhil Goyal <akhil.goyal@freescale.com>
 ---
- Documentation/devicetree/bindings/rf/fsl-aic.txt |   47 ++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rf/fsl-aic.txt
+ arch/powerpc/boot/dts/bsc9131rdb.dts          |    4 ++
+ arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi |   38 +++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/rf/fsl-aic.txt b/Documentation/devicetree/bindings/rf/fsl-aic.txt
-new file mode 100644
-index 0000000..4f54a92
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rf/fsl-aic.txt
-@@ -0,0 +1,47 @@
-+Freescale Antenna Interface Controller
+diff --git a/arch/powerpc/boot/dts/bsc9131rdb.dts b/arch/powerpc/boot/dts/bsc9131rdb.dts
+index e13d2d4..c134de7 100644
+--- a/arch/powerpc/boot/dts/bsc9131rdb.dts
++++ b/arch/powerpc/boot/dts/bsc9131rdb.dts
+@@ -28,6 +28,10 @@
+ 	board_soc: soc: soc@ff700000 {
+ 		ranges = <0x0 0x0 0xff700000 0x100000>;
+ 	};
 +
-+AIC is the antenna interface controller found in bsc913x
-+family of SOCs. It supports NCDMA, WCDMA-FDD, LTE-FDD, LTE-TDD
-+and GSM-SNIFF network modes. AIC has multiple lanes on which RFICs
-+can be connected. And AIC supports 4 RFICs working simultaneously.
++	dsp_soc: sc3850@ff600000 {
++		ranges = <0x0 0x0 0xff600000 0x100000>;
++	};
+ };
+ 
+ /include/ "bsc9131rdb.dtsi"
+diff --git a/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi b/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi
+index 5180d9d..487e949 100644
+--- a/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi
++++ b/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi
+@@ -191,3 +191,41 @@ global-utilities@e0000 {
+ 		fsl,has-rstcr;
+ 	};
+ };
 +
-+Required Properties:
-+- #address-cells : should be 1
-+- #size-cells : should be 1
-+- compatible : should be fsl,bsc9131-aic or fsl,bsc9132-aic or both
-+- reg : offset and length of common register set of AIC
-+- interrupts : For AIC, first is capture complete interrupt
-+		second is dsp general interrupt
-+aic node can have multiple sub nodes of aiclanes for each lane.
-+- aiclane : Required Properties
-+	- reg : offset and length of common register set of AIC lane
-+	- lane_id : it can be 0, 1, 2, 3, 4, 5
-+	- interrupts : lane specific TTI interrupt line
-+
-+For Example:
-+
-+aic@50000 {
++&dsp_soc {
 +	#address-cells = <1>;
 +	#size-cells = <1>;
-+	compatible = "fsl,bsc9131-aic", "fsl,bsc9132-aic";
-+	reg = <0x50000 0x200>;
-+	interrupts = <49 2 0 0 53 2 0 0>;
-+	lane0: aiclane@200 {
-+		reg = <0x200 0x200>;
-+		lane_id = <0>;
-+		interrupts = <45 2 0 0>;
++	compatible = "simple-bus";
++	gcr@18000 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "fsl,bsc9131-gcr", "fsl,bsc9132-gcr";
++		reg = <0x18000 0x200>;
 +	};
++	aic@50000 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "fsl,bsc9131-aic", "fsl,bsc9132-aic";
++		reg = <0x50000 0x200>;
++		interrupts = <49 2 0 0 53 2 0 0>;
++		lane0: aiclane@200 {
++			reg = <0x200 0x200>;
++			lane_id = <0>;
++			interrupts = <45 2 0 0>;
++		};
 +
-+	lane1: aiclane@400 {
-+		reg = <0x400 0x200>;
-+		lane_id = <1>;
-+		interrupts = <46 2 0 0>;
-+	};
++		lane1: aiclane@400 {
++			reg = <0x400 0x200>;
++			lane_id = <1>;
++			interrupts = <46 2 0 0>;
++		};
 +
-+	lane2: aiclane@600 {
-+		reg = <0x600 0x200>;
-+		lane_id = <2>;
-+		interrupts = <47 2 0 0>;
++		lane2: aiclane@600 {
++			reg = <0x600 0x200>;
++			lane_id = <2>;
++			interrupts = <47 2 0 0>;
++		};
 +	};
 +};
++
 +
 -- 
 1.6.3.1
