@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab3HLSIW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:08:22 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54499 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab3HLSIU (ORCPT
+	id S1753220Ab3HLSI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:08:27 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33241 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab3HLSIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:08:20 -0400
-Date: Mon, 12 Aug 2013 13:08:04 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Philippe De Swert <philippe.deswert@jollamobile.com>
-CC: <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget/composite : Avoid crash with bad gadget
- drivers
-Message-ID: <20130812180804.GE27954@radagast>
-Reply-To: <balbi@ti.com>
-References: <1376072588-2881-1-git-send-email-philippe.deswert@jollamobile.com>
+	Mon, 12 Aug 2013 14:08:22 -0400
+Message-ID: <52092491.7060605@wwwdotorg.org>
+Date: Mon, 12 Aug 2013 12:08:17 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7CZp05NP8/gJM8Cl"
-Content-Disposition: inline
-In-Reply-To: <1376072588-2881-1-git-send-email-philippe.deswert@jollamobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@kernel.org" <devicetree@kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+References: <20130811190826.GH6427@sirena.org.uk> <Pine.LNX.4.44L0.1308112146410.29546-100000@netrider.rowland.org> <20130812095136.GJ6427@sirena.org.uk> <20130812110714.GA6616@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130812110714.GA6616@e106331-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7CZp05NP8/gJM8Cl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/12/2013 05:07 AM, Mark Rutland wrote:
+> [Adding Olof]
+> 
+> On Mon, Aug 12, 2013 at 10:51:36AM +0100, Mark Brown wrote:
+>> On Sun, Aug 11, 2013 at 09:53:01PM -0400, Alan Stern wrote:
+>>> On Sun, 11 Aug 2013, Mark Brown wrote:
+>>
+>>>> One example that's bugging me right now is that on the Insignal Arndale
+>>>> platform there's a USB hub connected to one of the USB ports on the SoC
+>>>> (not as a PHY, it seems we also need the internal PHY running to talk to
+>>>> the device).  The hub needs to be "plugged" into the SoC after the SoC
+>>>> USB controller has started with some GPIOs so we need to tell the system
+>>>> that the hub exists and needs to be synchronised with the USB controller.
+...
+> As I understand it, the wifi chip on the Snow Chromebook has a similar
+> issue -- it hangs off of a probeable SDIO bus, but needs a regulator
+> poked for it to turn on and become probeable (see
+> exynos_wifi_bt_set_power in [1]).
 
-On Fri, Aug 09, 2013 at 09:23:08PM +0300, Philippe De Swert wrote:
-> Some bad gadget drivers do not check the return status of usb_add_config.
+In this case, I wonder if it makes sense to model the extra requirements
+as part of the bus/socket/... itself rather than as part of the device
+that's attached to the bus.
 
-fix the gadget driver
+It seems quite common for SDIO-based WiFi devices to need a few things:
+* Regulator
+* 32KHz clock
+* Enable GPIO (-> rfkill?)
+* Perhaps a reset GPIO
 
-> Thus they get a not correctly initialized config and when this gadget gets
-> deactivated the whole kernel crashes. Since on initialization failure cdev
-> is set to NULL it can be used to detect this problem situation. It can be
-> argued that the faulty gadget driver should be fixed, but imho it is bett=
-er
-> to avoid crashing the kernel and letting the gadget developer know he/she
-> is making a mistake. And have the developer of said gadget driver then fix
-> the problem of course.
->=20
-> Signed-off-by: Philippe De Swert <philippe.deswert@jollamobile.com>
-> ---
->  drivers/usb/gadget/composite.c | 6 ++++++
->  1 file changed, 6 insertions(+)
->=20
-> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composit=
-e.c
-> index 55f4df6..e019bb5 100644
-> --- a/drivers/usb/gadget/composite.c
-> +++ b/drivers/usb/gadget/composite.c
-> @@ -848,12 +848,18 @@ void usb_remove_config(struct usb_composite_dev *cd=
-ev,
->  {
->  	unsigned long flags;
-> =20
-> +	if (config->cdev =3D=3D NULL) {
-> +		pr_warn("Calling usb_remove_config without a matching usb_add_config!\=
-n");
-> +		goto end;
-> +	}
+Physically, these are provided to the socket into which the WiFi device
+plugs in. Perhaps we should try to explicitly model the socket (which I
+guess is really the SDIO bus in a way) rather than attaching these new
+resources to the controller or the device itself.
 
-I would take a WARN() only, but let the crash happen and fix the gadget
-driver.
+In a similar way, I wonder if the USB case can be considered the same
+way? This seems less like a good fit since I don't expect the resources
+are always so similar there, and also there's the case of the bus being
+potentially behind a few levels of USB hub.
 
---=20
-balbi
-
---7CZp05NP8/gJM8Cl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCSSEAAoJEIaOsuA1yqREeRwP/jmZEiaiaUzL8jIkr140kIdq
-asMvJcsL2eDZwDhEQ1NcnrbIYydzE9CQnpvUBgMUe+1FafY9JTHlgKrXpedy3bnU
-QMTAEH05ZYKYYPCEeTUbQX4JzqtqerTxTzaJgoHbFMEVBp8lHFGpqBVdmTnhOc1f
-NC6Yn3jPuYr+1M8tgz7R4jOGancPjvkv5dCngxtV9F7Re2pPDdzgstJWmohWxHfv
-i32GOp1rXSN+F5fLisq/HLJc2dgJI/dqaHFWt3zAFMgCrciNHkqoLPmz8ypBNxTL
-csOpRphOreWqu3OLSSbASQMKecWQZ/OeqEYX0YihIbbIYdnc8ZUDvzvLoIRjI/I1
-sRhOkFTxhTJW8/iYae63/gpXSV+3Y6+adfJEk+UL8THPX8XWqHCGuPNYILSVZXDD
-rmaFDfiIDq89Y1EWQIc3UY52UFC6SfitU0Y6FTQIYzEw406SF9ly+l2tarXpcQ3A
-YtyZjMg0lTgxUzmvI+U/qMc/IaiYRvXyaLEhYktCYKH9DjruSZWc/AR0I4ICXjSp
-4GQL2TNwKITqiT2vbZWZjKsdD1YNZW3Xw0z9Bnkp8sMWWWbMgIh7pFvDhxTfl3GU
-N4sONqGXyem2d3aaARnlP8eqclSKihgewoM8E6/q7Zruhw/EsPVXGkSIHJLsHyMa
-XJyrNX696/a3zLJ4FrgD
-=a9UF
------END PGP SIGNATURE-----
-
---7CZp05NP8/gJM8Cl--
+And of course it all gets a little more messy when you get
+board-specific logic that needs setup, rather than something more common
+across multiple devices.
