@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3HLSsH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:48:07 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:35704 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab3HLSrH (ORCPT
+	id S1755244Ab3HLStE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:49:04 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:55246 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231Ab3HLSrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:47:07 -0400
+	Mon, 12 Aug 2013 14:47:06 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Olof Johansson <olof@lixom.net>,
+        Andrew Lunn <andrew@lunn.ch>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 6/9] ARM: dove: update dove_defconfig with SI5351, PCI, and xHCI
-Date: Mon, 12 Aug 2013 20:46:52 +0200
-Message-Id: <1376333215-12885-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 9/9] ARM: dove: remove legacy pcie and clock init
+Date: Mon, 12 Aug 2013 20:46:55 +0200
+Message-Id: <1376333215-12885-10-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -23,44 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds SI5351 clock driver found on the SolidRun CuBox, PCI driver
-and USB 3.0 xHCI driver found on the Globalscale D3Plug to dove_defconfig.
+With DT support for PCIe controllers on Dove, we can now remove the
+legacy pcie init and the last remaining clock workaround for its clocks.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Jason Cooper <jason@lakedaemon.net>
 Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Olof Johansson <olof@lixom.net>
 Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 ---
- arch/arm/configs/dove_defconfig |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/mach-dove/board-dt.c |   29 -----------------------------
+ 1 file changed, 29 deletions(-)
 
-diff --git a/arch/arm/configs/dove_defconfig b/arch/arm/configs/dove_defconfig
-index 4364eff..1101054 100644
---- a/arch/arm/configs/dove_defconfig
-+++ b/arch/arm/configs/dove_defconfig
-@@ -13,6 +13,9 @@ CONFIG_ARCH_DOVE=y
- CONFIG_MACH_DOVE_DB=y
- CONFIG_MACH_CM_A510=y
- CONFIG_MACH_DOVE_DT=y
-+CONFIG_PCI=y
-+CONFIG_PCI_MSI=y
-+CONFIG_PCI_MVEBU=y
- CONFIG_AEABI=y
- CONFIG_HIGHMEM=y
- CONFIG_ZBOOT_ROM_TEXT=0x0
-@@ -78,6 +81,7 @@ CONFIG_SPI_ORION=y
- CONFIG_THERMAL=y
- CONFIG_DOVE_THERMAL=y
- CONFIG_USB=y
-+CONFIG_USB_XHCI_HCD=y
- CONFIG_USB_EHCI_HCD=y
- CONFIG_USB_EHCI_ROOT_HUB_TT=y
- CONFIG_USB_STORAGE=y
+diff --git a/arch/arm/mach-dove/board-dt.c b/arch/arm/mach-dove/board-dt.c
+index 1efbe1d..9a116d7 100644
+--- a/arch/arm/mach-dove/board-dt.c
++++ b/arch/arm/mach-dove/board-dt.c
+@@ -23,28 +23,6 @@
+ #include <plat/irq.h>
+ #include "common.h"
+ 
+-/*
+- * There are still devices that doesn't even know about DT,
+- * get clock gates here and add a clock lookup.
+- */
+-static void __init dove_legacy_clk_init(void)
+-{
+-	struct device_node *np = of_find_compatible_node(NULL, NULL,
+-					 "marvell,dove-gating-clock");
+-	struct of_phandle_args clkspec;
+-
+-	clkspec.np = np;
+-	clkspec.args_count = 1;
+-
+-	clkspec.args[0] = CLOCK_GATING_BIT_PCIE0;
+-	orion_clkdev_add("0", "pcie",
+-			 of_clk_get_from_provider(&clkspec));
+-
+-	clkspec.args[0] = CLOCK_GATING_BIT_PCIE1;
+-	orion_clkdev_add("1", "pcie",
+-			 of_clk_get_from_provider(&clkspec));
+-}
+-
+ static void __init dove_dt_time_init(void)
+ {
+ 	of_clk_init(NULL);
+@@ -59,13 +37,6 @@ static void __init dove_dt_init(void)
+ 	tauros2_init(0);
+ #endif
+ 	BUG_ON(mvebu_mbus_dt_init());
+-
+-	/* Setup clocks for legacy devices */
+-	dove_legacy_clk_init();
+-
+-	/* Internal devices not ported to DT yet */
+-	dove_pcie_init(1, 1);
+-
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
+ 
 -- 
 1.7.10.4
 
