@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab3HLXA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 19:00:26 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:12060 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab3HLXAY (ORCPT
+	id S1755937Ab3HLXCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 19:02:53 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:29840 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab3HLXCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 19:00:24 -0400
-X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTy+fSJcJG
-X-RZG-CLASS-ID: mo05
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 2/3] wistron_btns: mark the Medion MD96500 keymap as tested
-Date: Tue, 13 Aug 2013 00:53:53 +0200
-User-Agent: KMail/1.13.7 (Linux/3.10-5.slh.2-aptosid-686; KDE/4.8.4; i686; ; )
-Cc: Miloslav Trmac <mitr@volny.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201308130050.52800.s.L-H@gmx.de>
-In-Reply-To: <201308130050.52800.s.L-H@gmx.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308130053.59956.s.L-H@gmx.de>
+	Mon, 12 Aug 2013 19:02:53 -0400
+From: Linn Crosetto <linn@hp.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        yinghai@kernel.org, penberg@kernel.org, jacob.shin@amd.com
+Cc: linux-kernel@vger.kernel.org, Linn Crosetto <linn@hp.com>
+Subject: [PATCH v2] x86: selective remapping in parse_setup_data()
+Date: Mon, 12 Aug 2013 17:01:22 -0600
+Message-Id: <1376348482-1357-1-git-send-email-linn@hp.com>
+X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <52094ED2.1000308@zytor.com>
+References: <52094ED2.1000308@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMI: MEDIONPC WIM 2040/WIM 2040, BIOS R01-A0O    11/04/2005
-wistron_btns: BIOS signature found at c00f6b00, entry point 000FDD50
-input: Wistron laptop buttons as /devices/platform/wistron-bios/input/input5
+Type SETUP_PCI, added by setup_efi_pci(), may advertise a ROM size
+larger than early_memremap() is able to handle, which is currently
+limited to 256kB. If this occurs it leads to a NULL dereference in
+parse_setup_data().
 
-Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+To avoid this, first remap the setup_data header, and remap the data
+only for types actually parsed in parse_setup_data(). Type SETUP_PCI is
+handled later by pcibios_add_device(), when ioremap() is available.
+
+Signed-off-by: Linn Crosetto <linn@hp.com>
 ---
- drivers/input/misc/wistron_btns.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+v2: add more detail to the explanation as requested by hpa
+---
+ arch/x86/kernel/setup.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/input/misc/wistron_btns.c
-+++ b/drivers/input/misc/wistron_btns.c
-@@ -562,7 +562,7 @@ static struct key_entry keymap_wistron_m
- 	{ KE_KEY, 0x36, {KEY_WWW} },
- 	{ KE_WIFI, 0x30 },
- 	{ KE_BLUETOOTH, 0x44 },
--	{ KE_END, FE_UNTESTED }
-+	{ KE_END, 0 }
- };
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f8ec578..2063a49 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -423,6 +423,17 @@ static void __init reserve_initrd(void)
+ }
+ #endif /* CONFIG_BLK_DEV_INITRD */
  
- static struct key_entry keymap_wistron_generic[] __initdata = {
++static void __init remap_setup_data(u64 pa_data, u32 data_len,
++				    struct setup_data **data, u32 *map_len)
++{
++	if (data_len <= *map_len)
++		return;
++
++	early_iounmap(*data, *map_len);
++	*data = early_memremap(pa_data, data_len);
++	*map_len = data_len;
++}
++
+ static void __init parse_setup_data(void)
+ {
+ 	struct setup_data *data;
+@@ -432,18 +443,16 @@ static void __init parse_setup_data(void)
+ 	while (pa_data) {
+ 		u32 data_len, map_len;
+ 
++		/* The data length may be too large for early remapping,
++		   remap the data only when needed. */
+ 		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
+ 			      (u64)sizeof(struct setup_data));
+ 		data = early_memremap(pa_data, map_len);
+ 		data_len = data->len + sizeof(struct setup_data);
+-		if (data_len > map_len) {
+-			early_iounmap(data, map_len);
+-			data = early_memremap(pa_data, data_len);
+-			map_len = data_len;
+-		}
+ 
+ 		switch (data->type) {
+ 		case SETUP_E820_EXT:
++			remap_setup_data(pa_data, data_len, &data, &map_len);
+ 			parse_e820_ext(data);
+ 			break;
+ 		case SETUP_DTB:
+-- 
+1.7.11.3
+
