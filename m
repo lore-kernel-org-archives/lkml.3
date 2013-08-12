@@ -1,76 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab3HLVlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 17:41:17 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44541 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339Ab3HLVlP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 17:41:15 -0400
-Date: Mon, 12 Aug 2013 22:40:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Eric Miao <eric.y.miao@gmail.com>, robert.jarzmik@free.fr,
-        kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130812214050.GI6427@sirena.org.uk>
-References: <1376340564-7975-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S1755410Ab3HLVtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 17:49:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753662Ab3HLVto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 17:49:44 -0400
+Date: Mon, 12 Aug 2013 17:49:37 -0400
+From: Jerome Glisse <jglisse@redhat.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: j.glisse@gmail.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: fix special swap entry handling on copy mm
+Message-ID: <20130812214936.GA6373@redhat.com>
+References: <1376322204-20659-1-git-send-email-j.glisse@gmail.com>
+ <1376343400-jbl12uc3-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gqUrV6DUXoHnB0ku"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376340564-7975-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Cookie: Many pages make a thick book.
+In-Reply-To: <1376343400-jbl12uc3-mutt-n-horiguchi@ah.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/16 v2] sound/soc/pxa/mioa701_wm9713.c: Avoid using
- ARRAY_AND_SIZE(e) as a function argument
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 12, 2013 at 05:36:40PM -0400, Naoya Horiguchi wrote:
+> Hi Jerome,
+> 
+> On Mon, Aug 12, 2013 at 11:43:24AM -0400, j.glisse@gmail.com wrote:
+> > From: Jerome Glisse <jglisse@redhat.com>
+> > 
+> > Prior to this copy_one_pte will never reach the special swap file
+> > handling code because swap_duplicate will return invalid value.
+> > 
+> > Note this is not fatal so nothing bad ever happen because of that.
+> > Reason is that copy_pte_range would break of its loop and call
+> > add_swap_count_continuation which would see its a special swap
+> > file and return 0 triggering copy_pte_range to try again. Because
+> > we try again there is a huge chance that the temporarily special
+> > migration pte is now again valid and pointing to a new valid page.
+> > 
+> > This patch just split handling of special swap entry from regular
+> > one inside copy_one_pte.
+> > 
+> > (Note i spotted that while reading code i haven't tested my theory.)
+> > 
+> > Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+> 
+> non_swap_entry() means not only migration entry, but also hwpoison entry,
+> so it seems to me that simply moving the swap_duplicate() into the
+> if(!non_swap_entry) block can change the behavior for hwpoison entry.
+> Would it be nice to add check for such a case?
+> 
+> Thanks,
+> Naoya Horiguchi
 
---gqUrV6DUXoHnB0ku
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Well if my reading of the code is right for hwpoison entry current code will
+loop indefinitly inside the kernel on fork if one entry is set to hwpoison.
 
-On Mon, Aug 12, 2013 at 10:49:24PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding t=
-he
-> arity of the called function.
+My patch does not handle hwpoison because it seems useless as there is nothing
+to do for hwpoison pte beside giving setting the new pte to hwpoison to. So
+the fork child will also have a pte with hwpoison. My patch do just that.
 
-What is the difference between this and the patch I applied the other
-day?
+So change in behavior is current kernel loop indefinitly in kernel with hwpoison
+pte on fork, vs child get hwpoison pte with my patch. Meaning that both child
+and father can live as long as they dont access the hwpoisoned ptes.
 
---gqUrV6DUXoHnB0ku
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cheers,
+Jerome
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCVZfAAoJELSic+t+oim9mNkQAJzpxYPkBF49Qv88qzBnBeFZ
-PVubj8VLfgWrp/YnRUC0fIFpW5d5Z81j0GFlWtVmxrWxIkr9VGT7bLNfqNwPdXhd
-Wk2KwheLQ16qfqB2sndoX2lS0K7N/49K73t+H0AOoNC2JQHWsISvLeJiqqJ9wz0I
-9AZt8KIXqlQadl/dVApUaodpnAG6OsAYNQ+gYZxFrONTPp+YeDzkoxc6RopjZZ3U
-1HeoF83OM6xp7D4rzjBzpjau1eEVP0Hp5PZ0N3ECC5glR+JRABiwWbMbfayIdDId
-Ff/qw4XtrsZZ+oto0ERVOAFlS6hPa5d6CvnPtfff6ZPhu8Q3mm/14fKLPx43g+7a
-SA++xoJx/V3euevjzUlMgT5ihNq7KrC9ubXNfl1dTC75vVPMU2/VcQ7pbcMBJoJW
-ZO3fmyvmn+HFRCF5ZTWgMIXDMvjOa/pnkuosVeLsUOw8owneU7nRt4y9t12bpKil
-zGYt3vv6fdirMA5SaL4foQKK/W8BodRRWyI+fgSRRHSCfHJ0CuFKPcLPjGycfjVt
-gFfpCYVkxVj3QFSYXEgGofCsVui1oob6R4Li8WySFS9r0JGbv/ZNUKksajuAiS3q
-SCICQLWC54xhAQLz4pfYnXEqo8OAcq2RWxf/8m5SXbR0vkxEQSsjJGr8rcASX++q
-E7ozOEAvEaXOYEOojBLO
-=28+c
------END PGP SIGNATURE-----
-
---gqUrV6DUXoHnB0ku--
+> 
+> > ---
+> >  mm/memory.c | 26 +++++++++++++-------------
+> >  1 file changed, 13 insertions(+), 13 deletions(-)
+> > 
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 1ce2e2a..9f907dd 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -833,20 +833,20 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+> >  		if (!pte_file(pte)) {
+> >  			swp_entry_t entry = pte_to_swp_entry(pte);
+> >  
+> > -			if (swap_duplicate(entry) < 0)
+> > -				return entry.val;
+> > -
+> > -			/* make sure dst_mm is on swapoff's mmlist. */
+> > -			if (unlikely(list_empty(&dst_mm->mmlist))) {
+> > -				spin_lock(&mmlist_lock);
+> > -				if (list_empty(&dst_mm->mmlist))
+> > -					list_add(&dst_mm->mmlist,
+> > -						 &src_mm->mmlist);
+> > -				spin_unlock(&mmlist_lock);
+> > -			}
+> > -			if (likely(!non_swap_entry(entry)))
+> > +			if (likely(!non_swap_entry(entry))) {
+> > +				if (swap_duplicate(entry) < 0)
+> > +					return entry.val;
+> > +
+> > +				/* make sure dst_mm is on swapoff's mmlist. */
+> > +				if (unlikely(list_empty(&dst_mm->mmlist))) {
+> > +					spin_lock(&mmlist_lock);
+> > +					if (list_empty(&dst_mm->mmlist))
+> > +						list_add(&dst_mm->mmlist,
+> > +							 &src_mm->mmlist);
+> > +					spin_unlock(&mmlist_lock);
+> > +				}
+> >  				rss[MM_SWAPENTS]++;
+> > -			else if (is_migration_entry(entry)) {
+> > +			} else if (is_migration_entry(entry)) {
+> >  				page = migration_entry_to_page(entry);
+> >  
+> >  				if (PageAnon(page))
+> > -- 
+> > 1.8.3.1
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
