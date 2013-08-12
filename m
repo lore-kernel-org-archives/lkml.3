@@ -1,129 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab3HLNvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:51:48 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:3525 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340Ab3HLNvn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:51:43 -0400
-Message-ID: <5208E881.3030205@atmel.com>
-Date: Mon, 12 Aug 2013 15:52:01 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] usb: gadget: at91_udc: add usb_clk for transition to
- common clk framework
-References: <1375337885-2684-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1375337885-2684-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1756752Ab3HLNvz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:51:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:21071 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756629Ab3HLNvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 09:51:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,862,1367996400"; 
+   d="scan'208";a="345124250"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Ning Qu <quning@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-fsdevel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        Jan Kara <jack@suse.cz>, Dave Hansen <dave@sr71.net>,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Ning Qu <quning@google.com>
+In-Reply-To: <93894D4C-57FA-46B5-9141-4EFADEB7009E@gmail.com>
+References: <93894D4C-57FA-46B5-9141-4EFADEB7009E@gmail.com>
+Subject: RE: [PATCH] thp: Fix deadlock situation in vma_adjust with huge page
+ in page cache
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Message-Id: <20130812135509.DDF5FE0090@blue.fi.intel.com>
+Date: Mon, 12 Aug 2013 16:55:09 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 08:18, Boris BREZILLON :
-> The AT91 PMC (Power Management Controller) provides an USB clock used by
-> USB Full Speed host (ohci) and USB Full Speed device (udc).
-> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
-> This configuration was formely done in mach-at91/clock.c, but this
-> implementation will be removed when moving to common clk framework.
->
-> This patch adds support for usb clock retrieval and configuration, and is
-> backward compatible with the current at91 clk implementation (if usb clk
-> is not found, it does not configure/enable it).
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+Ning Qu wrote:
+> In vma_adjust, the current code grabs i_mmap_mutex before calling
+> vma_adjust_trans_huge. This used to be fine until huge page in page
+> cache comes in. The problem is the underlying function
+> split_file_huge_page will also grab the i_mmap_mutex before splitting
+> the huge page in page cache. Obviously this is causing deadlock
+> situation.
+> 
+> This fix is to move the vma_adjust_trans_huge before grab the lock for
+> file, the same as what the function is currently doing for anonymous
+> memory.
+> 
+> Tested, everything works fine so far.
+> 
+> Signed-off-by: Ning Qu <quning@google.com>
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> ---
->   drivers/usb/gadget/at91_udc.c |   17 ++++++++++++++++-
->   drivers/usb/gadget/at91_udc.h |    2 +-
->   2 files changed, 17 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
-> index fce8e4e..ae06585 100644
-> --- a/drivers/usb/gadget/at91_udc.c
-> +++ b/drivers/usb/gadget/at91_udc.c
-> @@ -870,6 +870,11 @@ static void clk_on(struct at91_udc *udc)
->   	if (udc->clocked)
->   		return;
->   	udc->clocked = 1;
-> +
-> +	if (!IS_ERR(udc->uclk)) {
-> +		clk_set_rate(udc->uclk, 48000000);
-> +		clk_prepare_enable(udc->uclk);
-> +	}
->   	clk_prepare_enable(udc->iclk);
->   	clk_prepare_enable(udc->fclk);
->   }
-> @@ -882,6 +887,8 @@ static void clk_off(struct at91_udc *udc)
->   	udc->gadget.speed = USB_SPEED_UNKNOWN;
->   	clk_disable_unprepare(udc->fclk);
->   	clk_disable_unprepare(udc->iclk);
-> +	if (!IS_ERR(udc->uclk))
-> +		clk_disable_unprepare(udc->uclk);
->   }
->
->   /*
-> @@ -1774,10 +1781,10 @@ static int at91udc_probe(struct platform_device *pdev)
->   	/* get interface and function clocks */
->   	udc->iclk = clk_get(dev, "udc_clk");
->   	udc->fclk = clk_get(dev, "udpck");
-> +	udc->uclk = clk_get(dev, "usb_clk");
->   	if (IS_ERR(udc->iclk) || IS_ERR(udc->fclk)) {
->   		DBG("clocks missing\n");
->   		retval = -ENODEV;
-> -		/* NOTE: we "know" here that refcounts on these are NOPs */
->   		goto fail1;
->   	}
->
-> @@ -1851,6 +1858,12 @@ fail3:
->   fail2:
->   	free_irq(udc->udp_irq, udc);
->   fail1:
-> +	if (!IS_ERR(udc->uclk))
-> +		clk_put(udc->uclk);
-> +	if (!IS_ERR(udc->fclk))
-> +		clk_put(udc->fclk);
-> +	if (!IS_ERR(udc->iclk))
-> +		clk_put(udc->iclk);
->   	iounmap(udc->udp_baseaddr);
->   fail0a:
->   	if (cpu_is_at91rm9200())
-> @@ -1894,6 +1907,8 @@ static int __exit at91udc_remove(struct platform_device *pdev)
->
->   	clk_put(udc->iclk);
->   	clk_put(udc->fclk);
-> +	if (!IS_ERR(udc->uclk))
-> +		clk_put(udc->uclk);
->
->   	return 0;
->   }
-> diff --git a/drivers/usb/gadget/at91_udc.h b/drivers/usb/gadget/at91_udc.h
-> index e647d1c..0175246 100644
-> --- a/drivers/usb/gadget/at91_udc.h
-> +++ b/drivers/usb/gadget/at91_udc.h
-> @@ -126,7 +126,7 @@ struct at91_udc {
->   	unsigned			active_suspend:1;
->   	u8				addr;
->   	struct at91_udc_data		board;
-> -	struct clk			*iclk, *fclk;
-> +	struct clk			*iclk, *fclk, *uclk;
->   	struct platform_device		*pdev;
->   	struct proc_dir_entry		*pde;
->   	void __iomem			*udp_baseaddr;
->
-
+Thanks, applied.
 
 -- 
-Nicolas Ferre
+ Kirill A. Shutemov
