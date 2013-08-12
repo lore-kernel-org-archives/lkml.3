@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab3HLIeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 04:34:10 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:25065
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754759Ab3HLIeI (ORCPT
+	id S1755783Ab3HLIia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 04:38:30 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52638 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754237Ab3HLIi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 04:34:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 6
-X-BigFish: VS6(z1039mcb8kz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 12 Aug 2013 16:34:14 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: <rjw@sisk.pl>, <linaro-kernel@lists.linaro.org>, <patches@linaro.org>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 21/44] cpufreq: imx6q: Use generic cpufreq routines
-Message-ID: <20130812083412.GI25061@S2101-09.ap.freescale.net>
-References: <cover.1376116344.git.viresh.kumar@linaro.org>
- <6d7504823a31aea1e4773998f60720494fb0e6b6.1376116345.git.viresh.kumar@linaro.org>
- <20130812075841.GG25061@S2101-09.ap.freescale.net>
- <CAKohponEs-5WEqKTkgyiZP0rfgHzSDy3O9Hyx4U0Xkc-wa-9Mg@mail.gmail.com>
+	Mon, 12 Aug 2013 04:38:28 -0400
+Date: Mon, 12 Aug 2013 10:38:25 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com
+Subject: Re: [PATCHv2 0/2] clk: sunxi: Add clock support for the A10s
+Message-ID: <20130812083825.GO2911@lukather>
+References: <1375735167-18031-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JsxH/ny24k1NEYXc"
 Content-Disposition: inline
-In-Reply-To: <CAKohponEs-5WEqKTkgyiZP0rfgHzSDy3O9Hyx4U0Xkc-wa-9Mg@mail.gmail.com>
+In-Reply-To: <1375735167-18031-1-git-send-email-maxime.ripard@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 01:40:36PM +0530, Viresh Kumar wrote:
-> On 12 August 2013 13:28, Shawn Guo <shawn.guo@linaro.org> wrote:
-> > On Sat, Aug 10, 2013 at 12:14:17PM +0530, Viresh Kumar wrote:
-> >> Most of the CPUFreq drivers do similar things in .exit() and .verify() routines
-> >> and .attr. So its better if we have generic routines for them which can be used
-> >> by cpufreq drivers then.
-> >>
-> >> This patch uses these generic routines for this driver.
-> >>
-> >> Cc: Shawn Guo <shawn.guo@linaro.org>
-> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> >
-> > Shawn Guo <shawn.guo@linaro.org>
-> 
-> I assume you meant an Ack here :)
 
-Ah, yeah.
+--JsxH/ny24k1NEYXc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Hi Mike,
 
+On Mon, Aug 05, 2013 at 10:39:24PM +0200, Maxime Ripard wrote:
+> This small patchset adds support for the gates found in the Allwinner A10=
+s SoC.
+> Since the gates are the only clock that differ from the other supported
+> Allwinner SoCs so far, the two patches are quite trivial.
+
+It would be great if you could merge this in 3.12.
+Do you have comments on this one?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--JsxH/ny24k1NEYXc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSCJ8AAAoJEBx+YmzsjxAgersP+gOlq5Li1dXAV53l6KQporCr
+MTj9AxiRU8tcIelizeebCQpz36dHHuyUV2wc7CM4b0V5a/M9BQO+Kus/rrq/ljLN
+EQ4oPIJi5RTcvIqd+jjdyCt4ovtokinurstWtVUpkMARUoJLTAooVMa8e1dHixwn
++RnhELT/+Iz6GTZcL95tj5UCkZmEJyy1YdnpCoXgnnwm0nfgu/+5iaRl+c4OFyLj
+3Wgd10W6Pem3zq7+Vhn0dRZ7LLJgJFToPre37izx8vfLko3c1s/kTsPQfsZof08e
+XYwc+uUT+Z13gEv12MjpsvGqWnf4dcYw3081FeiDENzZXskLNTqsVfM72uxRmqh4
+SK0O3fP0JtRs6GBlh3RsCT2F3hqsU62ZvhUxT8IOP0+SwQkXsGTEDMAoJPhZmiHi
+k+iPUAyWF9gGVajlHwBWATkOJD+b6Tjc52+BRwHy/Cw/r0RjbmK3TQflgyyARNRL
+hjiDGhVTuskBNBX7I7KcI7subEYDjZCJhhj/kWSLaGGgQOFZ9Kzgq1/gzcAv5Scx
+mwtBunIHrek9Fqp8foqrj80oJa3awVsQeOLIkWN8+S2szh/shV0HuF437OGuHecj
+pyX0ysLS45znG+7MbqJgYkVUF5+liQbLmgR6yxOl7t6L1zyIUp0etMBBQziWyjRh
+r0dDO1ZIkefi9cI7Tf5n
+=UhUg
+-----END PGP SIGNATURE-----
+
+--JsxH/ny24k1NEYXc--
