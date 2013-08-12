@@ -1,249 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab3HLN14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:27:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51071 "EHLO mx1.redhat.com"
+	id S1756893Ab3HLN2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:28:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33640 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756190Ab3HLN1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:27:50 -0400
-Date: Mon, 12 Aug 2013 09:27:41 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: rwheeler@redhat.com, avati@redhat.com, viro@ZenIV.linux.org.uk,
-        bfoster@redhat.com, dhowells@redhat.com, eparis@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mszeredi@suse.cz, Steven Whitehouse <swhiteho@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/9] vfs: check submounts and drop atomically
-Message-ID: <20130812092741.7a8da502@tlielax.poochiereds.net>
-In-Reply-To: <1375975490-18673-2-git-send-email-miklos@szeredi.hu>
-References: <1375975490-18673-1-git-send-email-miklos@szeredi.hu>
-	<1375975490-18673-2-git-send-email-miklos@szeredi.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756663Ab3HLN2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 09:28:14 -0400
+Message-ID: <52092FF7.7040508@ti.com>
+Date: Mon, 12 Aug 2013 18:56:55 +0000
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Joel Fernandes <joelf@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH v3 09/12] dma: edma: Implement multiple linked sets for
+ continuity
+References: <1375719297-12871-1-git-send-email-joelf@ti.com> <1375719297-12871-10-git-send-email-joelf@ti.com>
+In-Reply-To: <1375719297-12871-10-git-send-email-joelf@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  8 Aug 2013 17:24:42 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
-
-> From: Miklos Szeredi <mszeredi@suse.cz>
+On Monday 05 August 2013 04:14 PM, Joel Fernandes wrote:
+> Here we implement splitting up of the total MAX number of slots
+> available for a channel into 2 cyclically linked sets. Transfer
+> completion Interrupts are enabled on both linked sets and respective
+> handler recycles them on completion to process the next linked set.
+> Both linked sets are cyclically linked to each other to ensure
+> continuity of DMA operations. Interrupt handlers execute asynchronously
+> to the EDMA events and recycles the linked sets at the right time,
+> as a result EDMA is not blocked or dependent on interrupts and DMA
+> continues till the end of the SG-lists without any interruption.
 > 
-> We check submounts before doing d_drop() on a non-empty directory dentry in
-> NFS (have_submounts()), but we do not exclude a racing mount.
-> 
->  Process A: have_submounts() -> returns false
->  Process B: mount() -> success
->  Process A: d_drop()
-> 
-> This patch prepares the ground for the fix by doing the following
-> operations all under the same rename lock:
-> 
->   have_submounts()
->   shrink_dcache_parent()
->   d_drop()
-> 
-> This is actually an optimization since have_submounts() and
-> shrink_dcache_parent() both traverse the same dentry tree separately.
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> CC: David Howells <dhowells@redhat.com>
-> CC: Steven Whitehouse <swhiteho@redhat.com>
-> CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Suggested-by: Sekhar Nori <nsekhar@ti.com>
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
 > ---
->  fs/dcache.c            | 157 +++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/dcache.h |   1 +
->  2 files changed, 158 insertions(+)
+>  drivers/dma/edma.c |  157 +++++++++++++++++++++++++++++++++++++++-------------
+>  1 file changed, 118 insertions(+), 39 deletions(-)
 > 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 87bdb53..020004d 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1224,6 +1224,163 @@ void shrink_dcache_parent(struct dentry * parent)
->  }
->  EXPORT_SYMBOL(shrink_dcache_parent);
+> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+> index df50a04..70923a2 100644
+> --- a/drivers/dma/edma.c
+> +++ b/drivers/dma/edma.c
+> @@ -48,6 +48,7 @@
 >  
-> +static int __check_submounts_and_drop(struct dentry *parent,
-> +					     struct list_head *dispose)
-> +{
-> +	struct dentry *this_parent;
-> +	struct list_head *next;
-> +	unsigned seq;
-> +	int found = 0;
-> +	int locked = 0;
-> +
-> +	seq = read_seqbegin(&rename_lock);
-> +again:
-> +	this_parent = parent;
-> +	spin_lock(&this_parent->d_lock);
-> +repeat:
-> +	next = this_parent->d_subdirs.next;
-> +resume:
-> +	while (next != &this_parent->d_subdirs) {
-> +		struct list_head *tmp = next;
-> +		struct dentry *dentry;
-> +
-> +		dentry = list_entry(tmp, struct dentry, d_u.d_child);
-> +		next = tmp->next;
-> +
-> +		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-> +		if (d_mountpoint(dentry)) {
-> +			spin_unlock(&dentry->d_lock);
-> +			found = -EBUSY;
-> +			goto out;
-> +		}
-> +
-> +		/*
-> +		 * move only zero ref count dentries to the dispose list.
-> +		 *
-> +		 * Those which are presently on the shrink list, being processed
-> +		 * by shrink_dentry_list(), shouldn't be moved.  Otherwise the
-> +		 * loop in shrink_dcache_parent() might not make any progress
-> +		 * and loop forever.
-> +		 */
-> +		if (dentry->d_count) {
-> +			dentry_lru_del(dentry);
-> +		} else if (!(dentry->d_flags & DCACHE_SHRINK_LIST)) {
-> +			dentry_lru_move_list(dentry, dispose);
-> +			dentry->d_flags |= DCACHE_SHRINK_LIST;
-> +			found++;
-> +		}
-> +		/*
-> +		 * We can return to the caller if we have found some (this
-> +		 * ensures forward progress). We'll be coming back to find
-> +		 * the rest.
-> +		 */
-> +		if (found && need_resched()) {
-> +			spin_unlock(&dentry->d_lock);
-> +			goto out;
-> +		}
-> +
-> +		/*
-> +		 * Descend a level if the d_subdirs list is non-empty.
-> +		 */
-> +		if (!list_empty(&dentry->d_subdirs)) {
-> +			spin_unlock(&this_parent->d_lock);
-> +			spin_release(&dentry->d_lock.dep_map, 1, _RET_IP_);
-> +			this_parent = dentry;
-> +			spin_acquire(&this_parent->d_lock.dep_map, 0, 1, _RET_IP_);
-> +			goto repeat;
-> +		}
-> +
-> +		spin_unlock(&dentry->d_lock);
-> +	}
-> +	/*
-> +	 * All done at this level ... ascend and resume the search.
-> +	 */
-> +	if (this_parent != parent) {
-> +		struct dentry *child = this_parent;
-> +		this_parent = try_to_ascend(this_parent, locked, seq);
-> +		if (!this_parent)
-> +			goto rename_retry;
-> +		next = child->d_u.d_child.next;
-> +		goto resume;
-> +	}
-> +	if (!locked && read_seqretry(&rename_lock, seq)) {
-> +		spin_unlock(&this_parent->d_lock);
-> +		goto rename_retry;
-> +	}
-> +	if (d_mountpoint(this_parent))
-> +		found = -EBUSY;
-> +	if (!found)
-> +		__d_drop(this_parent);
-> +out:
-> +	spin_unlock(&this_parent->d_lock);
-> +
-> +	if (locked)
-> +		write_sequnlock(&rename_lock);
-> +	return found;
-> +
-> +rename_retry:
-> +	if (found)
-> +		return found;
-> +	if (locked)
-> +		goto again;
-> +	locked = 1;
-> +	write_seqlock(&rename_lock);
-> +	goto again;
-> +}
-> +
-> +/**
-> + * check_submounts_and_drop - prune dcache, check for submounts and drop
-> + *
-> + * All done as a single atomic operation relative to has_unlinked_ancestor().
-> + * Returns 0 if successfully unhashed @parent.  If there were submounts then
-> + * return -EBUSY.
-> + *
-> + * @dentry: dentry to prune and drop
-> + */
-> +int check_submounts_and_drop(struct dentry *dentry)
-> +{
-> +	int ret = 0;
-> +
-> +	/* Negative dentries can be dropped without further checks */
-> +	if (!dentry->d_inode) {
-> +		d_drop(dentry);
-> +		goto out;
-> +	}
-> +
-> +	spin_lock(&dentry->d_lock);
-> +	if (d_unhashed(dentry))
-> +		goto out_unlock;
-> +	if (list_empty(&dentry->d_subdirs)) {
-> +		if (d_mountpoint(dentry)) {
-> +			ret = -EBUSY;
-> +			goto out_unlock;
-> +		}
-> +		__d_drop(dentry);
-> +		goto out_unlock;
-> +	}
-> +	spin_unlock(&dentry->d_lock);
-> +
-> +	for (;;) {
-> +		LIST_HEAD(dispose);
-> +		ret = __check_submounts_and_drop(dentry, &dispose);
-> +		if (!list_empty(&dispose))
-> +			shrink_dentry_list(&dispose);
-> +
-> +		if (ret <= 0)
-> +			break;
-> +
-> +		cond_resched();
-> +	}
-> +
-> +out:
-> +	return ret;
-> +
-> +out_unlock:
-> +	spin_unlock(&dentry->d_lock);
-> +	goto out;
-> +}
-> +EXPORT_SYMBOL(check_submounts_and_drop);
-> +
->  /**
->   * __d_alloc	-	allocate a dcache entry
->   * @sb: filesystem it will belong to
-> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-> index b90337c..41b21ca 100644
-> --- a/include/linux/dcache.h
-> +++ b/include/linux/dcache.h
-> @@ -251,6 +251,7 @@ extern void d_prune_aliases(struct inode *);
+>  /* Max of 16 segments per channel to conserve PaRAM slots */
+>  #define MAX_NR_SG		16
+> +#define MAX_NR_LS		(MAX_NR_SG >> 1)
+>  #define EDMA_MAX_SLOTS		(MAX_NR_SG+1)
+>  #define EDMA_DESCRIPTORS	16
 >  
->  /* test whether we have any submounts in a subdir tree */
->  extern int have_submounts(struct dentry *);
-> +extern int check_submounts_and_drop(struct dentry *);
+> @@ -57,6 +58,7 @@ struct edma_desc {
+>  	int				absync;
+>  	int				pset_nr;
+>  	int				total_processed;
+> +	int				next_setup_linkset;
+>  	struct edmacc_param		pset[0];
+>  };
 >  
->  /*
->   * This adds the entry to the hash queues.
+> @@ -140,7 +142,9 @@ static void edma_execute(struct edma_chan *echan)
+>  	struct edma_desc *edesc;
+>  	struct device *dev = echan->vchan.chan.device->dev;
+>  
+> -	int i, j, total_left, total_process;
+> +	int i, total_left, total_link_set;
+> +	int ls_cur_off, ls_next_off, slot_off;
+> +	struct edmacc_param tmp_param;
+>  
+>  	/* If either we processed all psets or we're still not started */
+>  	if (!echan->edesc ||
+> @@ -159,48 +163,121 @@ static void edma_execute(struct edma_chan *echan)
+>  
+>  	/* Find out how many left */
+>  	total_left = edesc->pset_nr - edesc->total_processed;
+> -	total_process = total_left > MAX_NR_SG ? MAX_NR_SG : total_left;
+> -
+> -
+> -	/* Write descriptor PaRAM set(s) */
+> -	for (i = 0; i < total_process; i++) {
+> -		j = i + edesc->total_processed;
+> -		edma_write_slot(echan->slot[i], &edesc->pset[j]);
+> -		dev_dbg(echan->vchan.chan.device->dev,
+> -			"\n pset[%d]:\n"
+> -			"  chnum\t%d\n"
+> -			"  slot\t%d\n"
+> -			"  opt\t%08x\n"
+> -			"  src\t%08x\n"
+> -			"  dst\t%08x\n"
+> -			"  abcnt\t%08x\n"
+> -			"  ccnt\t%08x\n"
+> -			"  bidx\t%08x\n"
+> -			"  cidx\t%08x\n"
+> -			"  lkrld\t%08x\n",
+> -			j, echan->ch_num, echan->slot[i],
+> -			edesc->pset[j].opt,
+> -			edesc->pset[j].src,
+> -			edesc->pset[j].dst,
+> -			edesc->pset[j].a_b_cnt,
+> -			edesc->pset[j].ccnt,
+> -			edesc->pset[j].src_dst_bidx,
+> -			edesc->pset[j].src_dst_cidx,
+> -			edesc->pset[j].link_bcntrld);
+> -		/* Link to the previous slot if not the last set */
+> -		if (i != (total_process - 1))
 
-Nice work...
+> +	total_link_set = total_left > MAX_NR_LS ? MAX_NR_LS : total_left;
 
-Looks reasonable overall. The only (extremely minor) nit I have is that
-it might be nice to replace some of the direct struct list_head
-accesses with helper macros.
+The name you gave here sounds like this is defining total number of
+linked PaRAM sets. Rather this is actually tracking the number of PaRAM
+sets (slots) in current linked set, correct? Then may be just call it
+'nslots' or even 'num_slots'? There are just too many variables with
+"total" prefix to keep track of in this function!
 
-Acked-by: Jeff Layton <jlayton@redhat.com>
+> +
+> +	/* First time, setup 2 cyclically linked sets, each containing half
+> +	   the slots allocated for this channel */
+> +	if (edesc->total_processed == 0) {
+
+We dont need to check for this case for every DMA_COMPLETE interrupt.
+May be move the initial setup to another function called from
+edma_issue_pending()?
+
+> +		for (i = 0; i < total_link_set; i++) {
+> +			edma_write_slot(echan->slot[i+1], &edesc->pset[i]);
+> +
+> +			if (i != total_link_set - 1) {
+> +				edma_link(echan->slot[i+1], echan->slot[i+2]);
+> +				dump_pset(echan, echan->slot[i+1],
+> +					  edesc->pset, i);
+> +			}
+> +		}
+> +
+> +		edesc->total_processed += total_link_set;
+> +
+> +		total_left = edesc->pset_nr - edesc->total_processed;
+> +
+> +		total_link_set = total_left > MAX_NR_LS ?
+> +				 MAX_NR_LS : total_left;
+> +
+> +		if (total_link_set) {
+> +			/* Don't setup interrupt for first linked set for cases
+> +			   where total pset_nr is strictly within MAX_NR size */
+
+See Documentation/CodingStyle for multi-line commenting style.
+
+> +			if (total_left > total_link_set)
+> +				edma_enable_interrupt(echan->slot[i]);
+> +
+> +			/* Setup link between linked set 0 to set 1 */
+>  			edma_link(echan->slot[i], echan->slot[i+1]);
+> -		/* Final pset links to the dummy pset */
+> -		else
+> +
+> +			dump_pset(echan, echan->slot[i], edesc->pset, i-1);
+> +
+> +			/* Write out linked set 1 */
+> +			for (; i < total_link_set + MAX_NR_LS; i++) {
+> +				edma_write_slot(echan->slot[i+1],
+> +						&edesc->pset[i]);
+> +
+> +				if (i != total_link_set + MAX_NR_LS - 1) {
+> +					edma_link(echan->slot[i+1],
+> +						  echan->slot[i+2]);
+> +					dump_pset(echan, echan->slot[i+1],
+> +						  edesc->pset, i);
+> +				}
+> +			}
+> +
+> +			edesc->total_processed += total_link_set;
+> +			total_left = edesc->pset_nr - edesc->total_processed;
+
+There is way too much duplication of code here mainly because you
+decided not to loop twice in the course of setting up the two linked
+sets. Can you use a loop instead?
+
+> +
+> +			if (total_left)
+> +				/* Setup a link from linked set 1 to set 0 */
+> +				edma_link(echan->slot[i], echan->slot[1]);
+
+If you have more SGs to service at the end of setting up the two linked
+sets, you should stop right there and wait for CPU to recycle the linked
+sets. Right now you are setup for re-DMAing old data.
+
+You wont hit this issue in testing because you have setup an interrupt
+for LS0 and that will most likely service before LS1 completes but we
+cannot rely on that timing.
+
+Just link to dummy at end of LS1 to stall the DMA and wait for the
+completion handler to come-in and restart the DMA after recycling LS0.
+
+I haven't reviewed rest of the patch. Lets make sure we have a common
+understanding here.
+
+Thanks,
+Sekhar
+
