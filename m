@@ -1,155 +1,580 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab3HLCLj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 22:11:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50398 "EHLO
+	id S1755485Ab3HLCL7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 22:11:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab3HLCLh (ORCPT
+	with ESMTP id S1755388Ab3HLCLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 22:11:37 -0400
-Date: Sun, 11 Aug 2013 19:12:59 -0700
+	Sun, 11 Aug 2013 22:11:55 -0400
+Date: Sun, 11 Aug 2013 19:13:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.0.90
-Message-ID: <20130812021259.GA15190@kroah.com>
+Subject: Re: Linux 3.0.90
+Message-ID: <20130812021318.GA15214@kroah.com>
+References: <20130812021259.GA15190@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130812021259.GA15190@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-I'm announcing the release of the 3.0.90 kernel.
-
-All users of the 3.0 kernel series must upgrade.
-
-The updated 3.0.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
-x-3.0.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
-mmary
-
-thanks,
-
-greg k-h
-
-------------
-
- MAINTAINERS                                   |    4 +-
- Makefile                                      |    2 -
- arch/x86/kernel/i387.c                        |    2 -
- drivers/acpi/battery.c                        |    2 +
- drivers/net/arcnet/arcnet.c                   |    2 -
- drivers/net/usb/smsc75xx.c                    |   12 ++------
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |    1=20
- drivers/net/wireless/mwifiex/sdio.c           |    4 +-
- drivers/net/wireless/rt2x00/rt2x00queue.c     |   18 +++++++-----
- drivers/tty/serial/mxs-auart.c                |   38 +++++++++++++++------=
------
- fs/notify/fanotify/fanotify_user.c            |    1=20
- kernel/events/core.c                          |   30 +++++++++++++++++---
- kernel/sched_fair.c                           |    2 -
- net/ipv4/sysctl_net_ipv4.c                    |    6 +++-
- net/ipv6/ip6mr.c                              |    5 +++
- net/key/af_key.c                              |    4 ++
- net/mac80211/rx.c                             |   10 +++++-
- net/sched/sch_atm.c                           |    1=20
- net/sched/sch_cbq.c                           |    1=20
- net/sctp/outqueue.c                           |    8 +----
- net/wireless/nl80211.c                        |    7 +++-
- 21 files changed, 104 insertions(+), 56 deletions(-)
-
-Dan Carpenter (4):
-      fanotify: info leak in copy_event_to_user()
-      arcnet: cleanup sizeof parameter
-      af_key: more info leaks in pfkey messages
-      net_sched: info leak in atm_tc_dump_class()
-
-David S. Miller (1):
-      net_sched: Fix stack info leak in cbq_dump_wrr().
-
-Eric Dumazet (1):
-      usbnet: do not pretend to support SG/TSO
-
-Greg Kroah-Hartman (2):
-      MAINTAINERS: fix up stable_kernel_rules.txt location
-      Linux 3.0.90
-
-H.J. Lu (1):
-      x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
-
-Hannes Frederic Sowa (1):
-      ipv6: take rtnl_lock and mark mrt6 table as freed on namespace cleanup
-
-Jiri Olsa (1):
-      perf: Fix event group context move
-
-Johannes Berg (1):
-      mac80211: fix duplicate retransmission detection
-
-Lan Tianyu (1):
-      ACPI / battery: Fix parsing _BIX return value
-
-Michal Kazior (1):
-      nl80211: fix mgmt tx status and testmode reporting for netns
-
-Michal Tesar (1):
-      sysctl net: Keep tcp_syn_retries inside the boundary
-
-Neil Horman (1):
-      sctp: fully initialize sctp_outq in sctp_outq_init
-
-Oleksij Rempel (1):
-      ath9k_htc: do some initial hardware configuration
-
-Salman Qazi (1):
-      perf: Use css_tryget() to avoid propping up css refcount
-
-Stanislaw Gruszka (1):
-      rt2x00: fix stop queue
-
-Tomasz Mo=C5=84 (1):
-      mwifiex: Add missing endian conversion.
-
-Uwe Kleine-K=C3=B6nig (2):
-      serial/mxs-auart: fix race condition in interrupt handler
-      serial/mxs-auart: increase time to wait for transmitter to become idle
-
-Zhu Yanhai (1):
-      sched: Fix the broken sched_rr_get_interval()
-
-
---azLHFNyN32YCQGCU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCESrAAoJEDjbvchgkmk+DesP/20NIilZOkWeeLOo9XVGIUp0
-920P2vNiVSid6hNEmr8w6ZzHUcTDU/KUEKef1cZp5SIwYK7GAqLixBiFdNl+fuEZ
-SZ3uoKQ9XdLn45a2OJuDsNBvhBwosxreX5r0SU1nZCF/ItrccX6onf8GZqGMc9Yi
-TbnkRoqGXFenhqToF9ziHBFHKyQIbD0djkKMI+cvaezxHBn7OThg6Co2QFb1ffW+
-P4YJOjn+rmgLgrhrsjmO6pG2lMzUJzSIxJ+5CoRY/6kPe+wlAKiR/tPnTVzq6BTt
-trrJJBmdz4AjURL9dplVYlz5ZNLsGiertELxn9RWHyDlyakKa/mMVX59fMnivtn7
-E+W1+1IbHBWxYIVRc2kZ2U1lZ+XY9A+1dEyLE+lZDz+jED+CNolZjG9T8JKeqKmO
-8+I5C5es9d/pXEMGsD1N0NbfncbLlLFhMAr2zCOQAvLoXYuHqAy6/N3ilbIuuKv3
-EbSsUQDzqfe9rnRAvu88Z44ZvhJwxLoc5r6HcktmtKjp/Jtz8RXbN13HuQoErNcP
-yEin7M4XWdpK7oVkEVYYUB+LhFPNNsxoG6Fu9lJreGrykZ3M95U1MrWhpTMij4wB
-KTdoX/WGHs6PTAHzA6dXqTdJb3bTCWh8D1yCyvCMDE030fbd3zthd0ESBJfoW+qT
-FBm8jC6QWNE4DdCddoUL
-=QCmC
------END PGP SIGNATURE-----
-
---azLHFNyN32YCQGCU--
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d81f637..08e6f61 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5725,7 +5725,6 @@ P:	Vincent Sanders <vince@simtec.co.uk>
+ M:	Simtec Linux Team <linux@simtec.co.uk>
+ W:	http://www.simtec.co.uk/products/EB110ATX/
+ S:	Supported
+-F:	Documentation/stable_kernel_rules.txt
+ 
+ SIMTEC EB2410ITX (BAST)
+ P:	Ben Dooks
+@@ -6041,7 +6040,8 @@ F:	arch/alpha/kernel/srm_env.c
+ STABLE BRANCH
+ M:	Greg Kroah-Hartman <greg@kroah.com>
+ L:	stable@vger.kernel.org
+-S:	Maintained
++S:	Supported
++F:	Documentation/stable_kernel_rules.txt
+ 
+ STAGING SUBSYSTEM
+ M:	Greg Kroah-Hartman <gregkh@suse.de>
+diff --git a/Makefile b/Makefile
+index 45f74af..4789f7a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 0
+-SUBLEVEL = 89
++SUBLEVEL = 90
+ EXTRAVERSION =
+ NAME = Sneaky Weasel
+ 
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 12aff25..f7183ec 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -51,7 +51,7 @@ void __cpuinit mxcsr_feature_mask_init(void)
+ 	clts();
+ 	if (cpu_has_fxsr) {
+ 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+-		asm volatile("fxsave %0" : : "m" (fx_scratch));
++		asm volatile("fxsave %0" : "+m" (fx_scratch));
+ 		mask = fx_scratch.mxcsr_mask;
+ 		if (mask == 0)
+ 			mask = 0x0000ffbf;
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index 4a15d57..908f40a 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -118,6 +118,7 @@ struct acpi_battery {
+ 	struct acpi_device *device;
+ 	struct notifier_block pm_nb;
+ 	unsigned long update_time;
++	int revision;
+ 	int rate_now;
+ 	int capacity_now;
+ 	int voltage_now;
+@@ -350,6 +351,7 @@ static struct acpi_offsets info_offsets[] = {
+ };
+ 
+ static struct acpi_offsets extended_info_offsets[] = {
++	{offsetof(struct acpi_battery, revision), 0},
+ 	{offsetof(struct acpi_battery, power_unit), 0},
+ 	{offsetof(struct acpi_battery, design_capacity), 0},
+ 	{offsetof(struct acpi_battery, full_charge_capacity), 0},
+diff --git a/drivers/net/arcnet/arcnet.c b/drivers/net/arcnet/arcnet.c
+index a746ba2..a956053 100644
+--- a/drivers/net/arcnet/arcnet.c
++++ b/drivers/net/arcnet/arcnet.c
+@@ -1007,7 +1007,7 @@ static void arcnet_rx(struct net_device *dev, int bufnum)
+ 
+ 	soft = &pkt.soft.rfc1201;
+ 
+-	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, sizeof(ARC_HDR_SIZE));
++	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, ARC_HDR_SIZE);
+ 	if (pkt.hard.offset[0]) {
+ 		ofs = pkt.hard.offset[0];
+ 		length = 256 - ofs;
+diff --git a/drivers/net/usb/smsc75xx.c b/drivers/net/usb/smsc75xx.c
+index 2f4775f..be27891 100644
+--- a/drivers/net/usb/smsc75xx.c
++++ b/drivers/net/usb/smsc75xx.c
+@@ -43,7 +43,6 @@
+ #define EEPROM_MAC_OFFSET		(0x01)
+ #define DEFAULT_TX_CSUM_ENABLE		(true)
+ #define DEFAULT_RX_CSUM_ENABLE		(true)
+-#define DEFAULT_TSO_ENABLE		(true)
+ #define SMSC75XX_INTERNAL_PHY_ID	(1)
+ #define SMSC75XX_TX_OVERHEAD		(8)
+ #define MAX_RX_FIFO_SIZE		(20 * 1024)
+@@ -1034,17 +1033,14 @@ static int smsc75xx_bind(struct usbnet *dev, struct usb_interface *intf)
+ 
+ 	INIT_WORK(&pdata->set_multicast, smsc75xx_deferred_multicast_write);
+ 
+-	if (DEFAULT_TX_CSUM_ENABLE) {
++	if (DEFAULT_TX_CSUM_ENABLE)
+ 		dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
+-		if (DEFAULT_TSO_ENABLE)
+-			dev->net->features |= NETIF_F_SG |
+-				NETIF_F_TSO | NETIF_F_TSO6;
+-	}
++
+ 	if (DEFAULT_RX_CSUM_ENABLE)
+ 		dev->net->features |= NETIF_F_RXCSUM;
+ 
+ 	dev->net->hw_features = NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+-		NETIF_F_SG | NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_RXCSUM;
++				NETIF_F_RXCSUM;
+ 
+ 	/* Init all registers */
+ 	ret = smsc75xx_reset(dev);
+@@ -1169,8 +1165,6 @@ static struct sk_buff *smsc75xx_tx_fixup(struct usbnet *dev,
+ {
+ 	u32 tx_cmd_a, tx_cmd_b;
+ 
+-	skb_linearize(skb);
+-
+ 	if (skb_headroom(skb) < SMSC75XX_TX_OVERHEAD) {
+ 		struct sk_buff *skb2 =
+ 			skb_copy_expand(skb, SMSC75XX_TX_OVERHEAD, 0, flags);
+diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_init.c b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+index 4099712..403d33f 100644
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+@@ -873,6 +873,7 @@ static int ath9k_init_device(struct ath9k_htc_priv *priv,
+ 	if (error != 0)
+ 		goto err_rx;
+ 
++	ath9k_hw_disable(priv->ah);
+ #ifdef CONFIG_MAC80211_LEDS
+ 	/* must be initialized before ieee80211_register_hw */
+ 	priv->led_cdev.default_trigger = ieee80211_create_tpt_led_trigger(priv->hw,
+diff --git a/drivers/net/wireless/mwifiex/sdio.c b/drivers/net/wireless/mwifiex/sdio.c
+index 3b1217f..61e152d 100644
+--- a/drivers/net/wireless/mwifiex/sdio.c
++++ b/drivers/net/wireless/mwifiex/sdio.c
+@@ -1387,8 +1387,8 @@ static int mwifiex_sdio_host_to_card(struct mwifiex_adapter *adapter,
+ 	/* Allocate buffer and copy payload */
+ 	blk_size = MWIFIEX_SDIO_BLOCK_SIZE;
+ 	buf_block_len = (pkt_len + blk_size - 1) / blk_size;
+-	*(u16 *) &payload[0] = (u16) pkt_len;
+-	*(u16 *) &payload[2] = type;
++	*(__le16 *)&payload[0] = cpu_to_le16((u16)pkt_len);
++	*(__le16 *)&payload[2] = cpu_to_le16(type);
+ 
+ 	/*
+ 	 * This is SDIO specific header
+diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
+index 76f26ad..2d7c59f 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -848,13 +848,8 @@ void rt2x00queue_index_inc(struct queue_entry *entry, enum queue_index index)
+ 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
+ }
+ 
+-void rt2x00queue_pause_queue(struct data_queue *queue)
++void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
+ {
+-	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
+-	    !test_bit(QUEUE_STARTED, &queue->flags) ||
+-	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
+-		return;
+-
+ 	switch (queue->qid) {
+ 	case QID_AC_VO:
+ 	case QID_AC_VI:
+@@ -870,6 +865,15 @@ void rt2x00queue_pause_queue(struct data_queue *queue)
+ 		break;
+ 	}
+ }
++void rt2x00queue_pause_queue(struct data_queue *queue)
++{
++	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
++	    !test_bit(QUEUE_STARTED, &queue->flags) ||
++	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
++		return;
++
++	rt2x00queue_pause_queue_nocheck(queue);
++}
+ EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
+ 
+ void rt2x00queue_unpause_queue(struct data_queue *queue)
+@@ -931,7 +935,7 @@ void rt2x00queue_stop_queue(struct data_queue *queue)
+ 		return;
+ 	}
+ 
+-	rt2x00queue_pause_queue(queue);
++	rt2x00queue_pause_queue_nocheck(queue);
+ 
+ 	queue->rt2x00dev->ops->lib->stop_queue(queue);
+ 
+diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+index 5b3d063..ab7d11e 100644
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -374,11 +374,18 @@ static void mxs_auart_settermios(struct uart_port *u,
+ 
+ static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
+ {
+-	u32 istatus, istat;
++	u32 istat;
+ 	struct mxs_auart_port *s = context;
+ 	u32 stat = readl(s->port.membase + AUART_STAT);
+ 
+-	istatus = istat = readl(s->port.membase + AUART_INTR);
++	istat = readl(s->port.membase + AUART_INTR);
++
++	/* ack irq */
++	writel(istat & (AUART_INTR_RTIS
++		| AUART_INTR_TXIS
++		| AUART_INTR_RXIS
++		| AUART_INTR_CTSMIS),
++			s->port.membase + AUART_INTR_CLR);
+ 
+ 	if (istat & AUART_INTR_CTSMIS) {
+ 		uart_handle_cts_change(&s->port, stat & AUART_STAT_CTS);
+@@ -397,12 +404,6 @@ static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
+ 		istat &= ~AUART_INTR_TXIS;
+ 	}
+ 
+-	writel(istatus & (AUART_INTR_RTIS
+-		| AUART_INTR_TXIS
+-		| AUART_INTR_RXIS
+-		| AUART_INTR_CTSMIS),
+-			s->port.membase + AUART_INTR_CLR);
+-
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -542,7 +543,7 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
+ 	struct mxs_auart_port *s;
+ 	struct uart_port *port;
+ 	unsigned int old_ctrl0, old_ctrl2;
+-	unsigned int to = 1000;
++	unsigned int to = 20000;
+ 
+ 	if (co->index >	MXS_AUART_PORTS || co->index < 0)
+ 		return;
+@@ -563,18 +564,23 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
+ 
+ 	uart_console_write(port, str, count, mxs_auart_console_putchar);
+ 
+-	/*
+-	 * Finally, wait for transmitter to become empty
+-	 * and restore the TCR
+-	 */
++	/* Finally, wait for transmitter to become empty ... */
+ 	while (readl(port->membase + AUART_STAT) & AUART_STAT_BUSY) {
++		udelay(1);
+ 		if (!to--)
+ 			break;
+-		udelay(1);
+ 	}
+ 
+-	writel(old_ctrl0, port->membase + AUART_CTRL0);
+-	writel(old_ctrl2, port->membase + AUART_CTRL2);
++	/*
++	 * ... and restore the TCR if we waited long enough for the transmitter
++	 * to be idle. This might keep the transmitter enabled although it is
++	 * unused, but that is better than to disable it while it is still
++	 * transmitting.
++	 */
++	if (!(readl(port->membase + AUART_STAT) & AUART_STAT_BUSY)) {
++		writel(old_ctrl0, port->membase + AUART_CTRL0);
++		writel(old_ctrl2, port->membase + AUART_CTRL2);
++	}
+ 
+ 	clk_disable(s->clk);
+ }
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 9fde1c0..9860f6b 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -118,6 +118,7 @@ static int fill_event_metadata(struct fsnotify_group *group,
+ 	metadata->event_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->metadata_len = FAN_EVENT_METADATA_LEN;
+ 	metadata->vers = FANOTIFY_METADATA_VERSION;
++	metadata->reserved = 0;
+ 	metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
+ 	metadata->pid = pid_vnr(event->tgid);
+ 	if (unlikely(event->mask & FAN_Q_OVERFLOW))
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index da60cfa..a8102d2 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -223,9 +223,9 @@ perf_cgroup_match(struct perf_event *event)
+ 	return !event->cgrp || event->cgrp == cpuctx->cgrp;
+ }
+ 
+-static inline void perf_get_cgroup(struct perf_event *event)
++static inline bool perf_tryget_cgroup(struct perf_event *event)
+ {
+-	css_get(&event->cgrp->css);
++	return css_tryget(&event->cgrp->css);
+ }
+ 
+ static inline void perf_put_cgroup(struct perf_event *event)
+@@ -415,7 +415,11 @@ static inline int perf_cgroup_connect(int fd, struct perf_event *event,
+ 	event->cgrp = cgrp;
+ 
+ 	/* must be done before we fput() the file */
+-	perf_get_cgroup(event);
++	if (!perf_tryget_cgroup(event)) {
++		event->cgrp = NULL;
++		ret = -ENOENT;
++		goto out;
++	}
+ 
+ 	/*
+ 	 * all events in a group must monitor
+@@ -839,6 +843,15 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ }
+ 
+ /*
++ * Initialize event state based on the perf_event_attr::disabled.
++ */
++static inline void perf_event__state_init(struct perf_event *event)
++{
++	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
++					      PERF_EVENT_STATE_INACTIVE;
++}
++
++/*
+  * Called at perf_event creation and when events are attached/detached from a
+  * group.
+  */
+@@ -6241,8 +6254,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 
+ 	event->overflow_handler	= overflow_handler;
+ 
+-	if (attr->disabled)
+-		event->state = PERF_EVENT_STATE_OFF;
++	perf_event__state_init(event);
+ 
+ 	pmu = NULL;
+ 
+@@ -6616,9 +6628,17 @@ SYSCALL_DEFINE5(perf_event_open,
+ 
+ 		mutex_lock(&gctx->mutex);
+ 		perf_remove_from_context(group_leader);
++
++		/*
++		 * Removing from the context ends up with disabled
++		 * event. What we want here is event in the initial
++		 * startup state, ready to be add into new context.
++		 */
++		perf_event__state_init(group_leader);
+ 		list_for_each_entry(sibling, &group_leader->sibling_list,
+ 				    group_entry) {
+ 			perf_remove_from_context(sibling);
++			perf_event__state_init(sibling);
+ 			put_ctx(gctx);
+ 		}
+ 		mutex_unlock(&gctx->mutex);
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index c768588..fae7d67 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -4277,7 +4277,7 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
+ 	 * idle runqueue:
+ 	 */
+ 	if (rq->cfs.load.weight)
+-		rr_interval = NS_TO_JIFFIES(sched_slice(&rq->cfs, se));
++		rr_interval = NS_TO_JIFFIES(sched_slice(cfs_rq_of(se), se));
+ 
+ 	return rr_interval;
+ }
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index 46b5950..3a22b1c 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -32,6 +32,8 @@ static int tcp_adv_win_scale_min = -31;
+ static int tcp_adv_win_scale_max = 31;
+ static int ip_ttl_min = 1;
+ static int ip_ttl_max = 255;
++static int tcp_syn_retries_min = 1;
++static int tcp_syn_retries_max = MAX_TCP_SYNCNT;
+ static int ip_ping_group_range_min[] = { 0, 0 };
+ static int ip_ping_group_range_max[] = { GID_T_MAX, GID_T_MAX };
+ 
+@@ -231,7 +233,9 @@ static struct ctl_table ipv4_table[] = {
+ 		.data		= &sysctl_tcp_syn_retries,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &tcp_syn_retries_min,
++		.extra2		= &tcp_syn_retries_max
+ 	},
+ 	{
+ 		.procname	= "tcp_synack_retries",
+diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
+index def0538..4aa8a19 100644
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -256,10 +256,12 @@ static void __net_exit ip6mr_rules_exit(struct net *net)
+ {
+ 	struct mr6_table *mrt, *next;
+ 
++	rtnl_lock();
+ 	list_for_each_entry_safe(mrt, next, &net->ipv6.mr6_tables, list) {
+ 		list_del(&mrt->list);
+ 		ip6mr_free_table(mrt);
+ 	}
++	rtnl_unlock();
+ 	fib_rules_unregister(net->ipv6.mr6_rules_ops);
+ }
+ #else
+@@ -286,7 +288,10 @@ static int __net_init ip6mr_rules_init(struct net *net)
+ 
+ static void __net_exit ip6mr_rules_exit(struct net *net)
+ {
++	rtnl_lock();
+ 	ip6mr_free_table(net->ipv6.mrt6);
++	net->ipv6.mrt6 = NULL;
++	rtnl_unlock();
+ }
+ #endif
+ 
+diff --git a/net/key/af_key.c b/net/key/af_key.c
+index 01eb92c..d040880 100644
+--- a/net/key/af_key.c
++++ b/net/key/af_key.c
+@@ -2073,6 +2073,7 @@ static int pfkey_xfrm_policy2msg(struct sk_buff *skb, const struct xfrm_policy *
+ 			pol->sadb_x_policy_type = IPSEC_POLICY_NONE;
+ 	}
+ 	pol->sadb_x_policy_dir = dir+1;
++	pol->sadb_x_policy_reserved = 0;
+ 	pol->sadb_x_policy_id = xp->index;
+ 	pol->sadb_x_policy_priority = xp->priority;
+ 
+@@ -3108,7 +3109,9 @@ static int pfkey_send_acquire(struct xfrm_state *x, struct xfrm_tmpl *t, struct
+ 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
+ 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
+ 	pol->sadb_x_policy_dir = dir+1;
++	pol->sadb_x_policy_reserved = 0;
+ 	pol->sadb_x_policy_id = xp->index;
++	pol->sadb_x_policy_priority = xp->priority;
+ 
+ 	/* Set sadb_comb's. */
+ 	if (x->id.proto == IPPROTO_AH)
+@@ -3496,6 +3499,7 @@ static int pfkey_send_migrate(const struct xfrm_selector *sel, u8 dir, u8 type,
+ 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
+ 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
+ 	pol->sadb_x_policy_dir = dir + 1;
++	pol->sadb_x_policy_reserved = 0;
+ 	pol->sadb_x_policy_id = 0;
+ 	pol->sadb_x_policy_priority = 0;
+ 
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 785b6e9..10e8842 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -810,8 +810,14 @@ ieee80211_rx_h_check(struct ieee80211_rx_data *rx)
+ 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)rx->skb->data;
+ 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(rx->skb);
+ 
+-	/* Drop duplicate 802.11 retransmissions (IEEE 802.11 Chap. 9.2.9) */
+-	if (rx->sta && !is_multicast_ether_addr(hdr->addr1)) {
++	/*
++	 * Drop duplicate 802.11 retransmissions
++	 * (IEEE 802.11-2012: 9.3.2.10 "Duplicate detection and recovery")
++	 */
++	if (rx->skb->len >= 24 && rx->sta &&
++	    !ieee80211_is_ctl(hdr->frame_control) &&
++	    !ieee80211_is_qos_nullfunc(hdr->frame_control) &&
++	    !is_multicast_ether_addr(hdr->addr1)) {
+ 		if (unlikely(ieee80211_has_retry(hdr->frame_control) &&
+ 			     rx->sta->last_seq_ctrl[rx->queue] ==
+ 			     hdr->seq_ctrl)) {
+diff --git a/net/sched/sch_atm.c b/net/sched/sch_atm.c
+index 3f08158..46a39dc 100644
+--- a/net/sched/sch_atm.c
++++ b/net/sched/sch_atm.c
+@@ -605,6 +605,7 @@ static int atm_tc_dump_class(struct Qdisc *sch, unsigned long cl,
+ 		struct sockaddr_atmpvc pvc;
+ 		int state;
+ 
++		memset(&pvc, 0, sizeof(pvc));
+ 		pvc.sap_family = AF_ATMPVC;
+ 		pvc.sap_addr.itf = flow->vcc->dev ? flow->vcc->dev->number : -1;
+ 		pvc.sap_addr.vpi = flow->vcc->vpi;
+diff --git a/net/sched/sch_cbq.c b/net/sched/sch_cbq.c
+index b7cddb9..7f59944 100644
+--- a/net/sched/sch_cbq.c
++++ b/net/sched/sch_cbq.c
+@@ -1467,6 +1467,7 @@ static int cbq_dump_wrr(struct sk_buff *skb, struct cbq_class *cl)
+ 	unsigned char *b = skb_tail_pointer(skb);
+ 	struct tc_cbq_wrropt opt;
+ 
++	memset(&opt, 0, sizeof(opt));
+ 	opt.flags = 0;
+ 	opt.allot = cl->allot;
+ 	opt.priority = cl->priority + 1;
+diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+index 2325ce6..35e44e2 100644
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -205,6 +205,8 @@ static inline int sctp_cacc_skip(struct sctp_transport *primary,
+  */
+ void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
+ {
++	memset(q, 0, sizeof(struct sctp_outq));
++
+ 	q->asoc = asoc;
+ 	INIT_LIST_HEAD(&q->out_chunk_list);
+ 	INIT_LIST_HEAD(&q->control_chunk_list);
+@@ -212,13 +214,7 @@ void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
+ 	INIT_LIST_HEAD(&q->sacked);
+ 	INIT_LIST_HEAD(&q->abandoned);
+ 
+-	q->fast_rtx = 0;
+-	q->outstanding_bytes = 0;
+ 	q->empty = 1;
+-	q->cork  = 0;
+-
+-	q->malloced = 0;
+-	q->out_qlen = 0;
+ }
+ 
+ /* Free the outqueue structure and any related pending chunks.
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index f310a0d..17bf4a7 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -4454,12 +4454,14 @@ EXPORT_SYMBOL(cfg80211_testmode_alloc_event_skb);
+ 
+ void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
+ {
++	struct cfg80211_registered_device *rdev = ((void **)skb->cb)[0];
+ 	void *hdr = ((void **)skb->cb)[1];
+ 	struct nlattr *data = ((void **)skb->cb)[2];
+ 
+ 	nla_nest_end(skb, data);
+ 	genlmsg_end(skb, hdr);
+-	genlmsg_multicast(skb, 0, nl80211_testmode_mcgrp.id, gfp);
++	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
++				nl80211_testmode_mcgrp.id, gfp);
+ }
+ EXPORT_SYMBOL(cfg80211_testmode_event);
+ #endif
+@@ -6745,7 +6747,8 @@ void nl80211_send_mgmt_tx_status(struct cfg80211_registered_device *rdev,
+ 		return;
+ 	}
+ 
+-	genlmsg_multicast(msg, 0, nl80211_mlme_mcgrp.id, gfp);
++	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
++				nl80211_mlme_mcgrp.id, gfp);
+ 	return;
+ 
+  nla_put_failure:
