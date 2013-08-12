@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944Ab3HLQhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 12:37:23 -0400
-Received: from mail.asbjorn.biz ([81.7.185.110]:37724 "EHLO mail.asbjorn.biz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756189Ab3HLQhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 12:37:21 -0400
-Message-ID: <52090C26.4090001@fiberby.net>
-Date: Mon, 12 Aug 2013 16:24:06 +0000
-From: =?UTF-8?B?QXNiasO4cm4gU2xvdGggVMO4bm5lc2Vu?= <ast@fiberby.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	id S1756970Ab3HLQjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 12:39:07 -0400
+Received: from relay.parallels.com ([195.214.232.42]:38149 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755720Ab3HLQjE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 12:39:04 -0400
+Subject: [PATCH 0/2] fuse: fix races related to fuse writeback
+To: miklos@szeredi.hu
+From: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org, xemul@parallels.com
+Date: Mon, 12 Aug 2013 20:39:00 +0400
+Message-ID: <20130812163739.10366.64896.stgit@maximpc.sw.ru>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>,
-        Vlad Yasevich <vyasevic@redhat.com>,
-        Stephen Hemminger <stephen@networkplumber.org>, netdev@vger.kernel.org,
-        bridge@lists.linux-foundation.org
-CC: linux-kernel@vger.kernel.org
-Subject: Bridge VLAN kernel/iproute2 incompatibility
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-Let's start with a little history:
+The patchset fixes a few subtle races stemmed from incorrect expectation
+of what fuse_set_nowrite() guarantees. The fact that it makes fi->writectr
+negative and waits for fi->writectr == FUSE_NOWRITE ensures only two things:
 
-Feb 20:   Vlad Yasevich got his VLAN-aware bridge patchset included in
-          the 3.9 merge window.
-          In the kernel commit 6cbdceeb, he added attribute support to
-          bridge GETLINK requests sent with rtgenmsg.
+1) If there are any in-flight writeback requests right now, let's wait for
+them being completed.
+2) Suspend processing new writeback requests until fuse_release_nowrite().
 
-Mar 6th:  Vlad got this iproute2 reference implementation of the bridge
-          vlan netlink interface accepted (iproute2 9eff0e5c)
+Both are related to communication between in-kernel fuse and userspace
+fuse daemon. But fuse_set_nowrite() does not prevent generic kernel code
+from sending dirty pages to writeback resulting in fuse_writepage being
+called. I.e. fi->queued_writes may grow independently on fuse_set_nowrite()
+machinery.
 
-Apr 25th: iproute2 switched from using rtgenmsg to ifinfomsg (63338dca)
-          http://patchwork.ozlabs.org/patch/239602/
-          http://marc.info/?t=136680900700007
+As soon as fuse_writepage_locked() called end_page_writeback() generic
+kernel code may do with the page virtually anything w/o notifying fuse. See
+per-patch descriptions for details of some races.
 
-Apr 28th: Linus released 3.9
+Thanks,
+Maxim
 
-Apr 30th: Stephen released iproute2 3.9.0
+---
 
-The `bridge vlan show` command haven't been working since the switch to
-ifinfomsg, or in a released version of iproute2. Since the kernel side
-only supports rtgenmsg, which iproute2 switched away from just prior to
-the iproute2 3.9.0 release.
+Maxim Patlasov (2):
+      fuse: postpone end_page_writeback() in fuse_writepage_locked()
+      fuse: wait for writeback in fuse_file_fallocate()
 
-I haven't been able to find any documentation, about neither rtgenmsg
-nor ifinfomsg, and in which situation to use which, but kernel commit
-88c5b5ce seams to suggest that ifinfomsg should be used.
 
-Fixing this in kernel will break compatibility, but I doubt that anybody
-have been using it due to this bug in the user space reference
-implementation, at least not without noticing this bug. That said the
-functionality is still fully functional in 3.9, when reversing iproute2
-commit 63338dca.
-
-This could also be fixed in iproute2, but thats an ugly patch that would
-reintroduce rtgenmsg in iproute2, and from searching in netdev it seams
-like rtgenmsg usage is discouraged. I'm assuming that the only reason
-that Vlad implemented the kernel side to use rtgenmsg, was because
-iproute2 was using it at the time.
-
-I will reply with kernel patch, I can also post the alternative iproute2
-patch if requested.
+ fs/fuse/file.c |   56 ++++++++++++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 46 insertions(+), 10 deletions(-)
 
 -- 
-Best regards
-Asbjørn Sloth Tønnesen
-Network engineer
-Fiberby ApS - AS42541
+Signature
