@@ -1,107 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab3HLLhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 07:37:16 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:41583 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755109Ab3HLLhM (ORCPT
+	id S1756103Ab3HLLrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 07:47:51 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:58050 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755478Ab3HLLrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 07:37:12 -0400
-Message-ID: <5208C8DD.3050204@linux.vnet.ibm.com>
-Date: Mon, 12 Aug 2013 17:07:01 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 12 Aug 2013 07:47:48 -0400
+Date: Mon, 12 Aug 2013 17:17:22 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Mohit KUMAR DCG <Mohit.KUMAR@st.com>,
+        Siva Reddy Kallam <siva.kallam@samsung.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] PCI: exynos: add support for MSI
+Message-ID: <20130812114722.GA14050@pratyush-vbox>
+References: <000401ce9739$e0a65410$a1f2fc30$@samsung.com>
+ <20130812105638.GA12042@ulmo>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: tony.luck@intel.com, bp@alien8.de, bhelgaas@google.com, rjw@sisk.pl,
-        lance.ortiz@hp.com, m.chehab@samsung.com, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mce: acpi/apei: trace: Include PCIe AER trace event
- conditionally
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-2-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808152329.1f98b5e0@gandalf.local.home>
-In-Reply-To: <20130808152329.1f98b5e0@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081222-3568-0000-0000-0000041277C7
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130812105638.GA12042@ulmo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 12:53 AM, Steven Rostedt wrote:
-> [ attempting to try out claws-mail, hopefully this messages isn't
-> scrambled ;-) ]
+On Mon, Aug 12, 2013 at 06:56:40PM +0800, Thierry Reding wrote:
+> On Mon, Aug 12, 2013 at 05:56:47PM +0900, Jingoo Han wrote:
+> [...]
+> > diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+> > index 855d4a7..9ef1c95 100644
+> > --- a/arch/arm/mach-exynos/Kconfig
+> > +++ b/arch/arm/mach-exynos/Kconfig
+> > @@ -93,6 +93,7 @@ config SOC_EXYNOS5440
+> >  	default y
+> >  	depends on ARCH_EXYNOS5
+> >  	select ARCH_HAS_OPP
+> > +	select ARCH_SUPPORTS_MSI
+> 
+> This symbol goes away in Thomas Petazzoni's MSI patch series which is
+> targetted at 3.12, so I don't think you should add that here.
+> 
+> > +#ifdef CONFIG_PCI_MSI
+> > +static void exynos_pcie_clear_irq_level(struct pcie_port *pp)
+> > +{
+> > +	u32 val;
+> > +	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
+> > +	void __iomem *elbi_base = exynos_pcie->elbi_base;
+> > +
+> > +	val = readl(elbi_base + PCIE_IRQ_LEVEL);
+> > +	writel(val, elbi_base + PCIE_IRQ_LEVEL);
+> > +	return;
+> > +}
+> 
+> I'm a little confused by this: the above code seems to access the PCIe
+> controller registers to clear an interrupt, but you pass in a PCIe
+> port...
+> 
 
-Works just fine :)
+One struct pcie_port is associated with one controller and it has been
+assumed that there is only one root port per controller. 
 
->
-> On Thu,  8 Aug 2013 23:57:49 +0530
-> "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> wrote:
->
->> Since we'll be adding multiple trace events to ras.h, we need to protect
->> each block appropriately so that they only get included in the right
->> places. Update PCIe AER trace event for this purpose.
->
-> Why not make a separate file for each? You will have to define
+[...]
 
-The idea was to have all RAS-related trace points in a single place. 
-This was discussed back when the PCIe AER trace event was added and so I 
-chose to add the new event here as well.
+> > +void dw_pcie_msi_init(struct pcie_port *pp)
+> > +{
+> > +	/* program the msi_data */
+> > +	dw_pcie_wr_own_conf(pp, PCIE_MSI_ADDR_LO, 4,
+> > +			__virt_to_phys((u32)(&msi_data)));
+> 
+> That's slightly odd. You convert the virtual address of a local variable
+> (local to the file) to a physical address and program that into a
+> register. I assume that it works since you've probably tested this, but
+> I wonder if it's safe to do this. Perhaps a better way would be to
+> allocate a single free page (__get_free_pages(GFP_KERNEL, 0)) and write
+> the physical address of that into the register instead.
+> 
 
-> TRACE_EVENT_PCIE_AER for the users as well. That is, the places that
-> include ras.h and use the trace_aer_*() tracepoints.
+also msi_data must be different for different controller. Something
+like &msi_data[pp->port].
 
-Do you mean the change I've done to aerdrv-errprint.c below? This trace 
-point is currently only used there, so I guess we are ok?
+[...]
 
-Thanks,
-Naveen
+> > +void arch_teardown_msi_irq(unsigned int irq)
+> > +{
+> > +	clear_irq(irq);
+> > +}
+> 
+> And we've reworked this largely so that drivers no longer provide arch_*
+> functions because that prevents multi-platform support. So I think you
+> need to port this to the new msi_chip infrastructure that's being
+> introduced in 3.12.
 
+Yes, its needed.
 
->
->
->>
->> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
->> ---
->>   drivers/pci/pcie/aer/aerdrv_errprint.c | 1 +
->>   include/trace/events/ras.h             | 2 +-
->>   2 files changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
->> index 2c7c9f5..4d06859 100644
->> --- a/drivers/pci/pcie/aer/aerdrv_errprint.c
->> +++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
->> @@ -24,6 +24,7 @@
->>   #include "aerdrv.h"
->>
->>   #define CREATE_TRACE_POINTS
->> +#define TRACE_EVENT_PCIE_AER
->>   #include <trace/events/ras.h>
->>
->>   #define AER_AGENT_RECEIVER		0
->> diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
->> index 88b8783..4a66142 100644
->> --- a/include/trace/events/ras.h
->> +++ b/include/trace/events/ras.h
->> @@ -1,7 +1,7 @@
->>   #undef TRACE_SYSTEM
->>   #define TRACE_SYSTEM ras
->>
->> -#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
->> +#if (!defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)) && defined()
->
-> I think it would look cleaner to encapsulate the one define with the
-> other:
->
-> #ifdef TRACE_EVENT_PCIE_AER
-> #if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
->
->
-> -- Steve
->
->>   #define _TRACE_AER_H
->>
->>   #include <linux/tracepoint.h>
->
+Regards
+Pratyush
+
+> 
+> Thierry
+
 
