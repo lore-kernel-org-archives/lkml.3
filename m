@@ -1,91 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab3HLNbt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 09:31:49 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34909 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755746Ab3HLNbo (ORCPT
+	id S1756403Ab3HLNcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 09:32:06 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45136 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756125Ab3HLNbq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 09:31:44 -0400
-Date: Mon, 12 Aug 2013 14:31:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sricharan R <r.sricharan@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Chris Ball <cjb@laptop.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rajendra Nayak <rnayak@ti.com>, Rob Herring <rob.herring@calxeda.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Balaji TK <balajitk@ti.com>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Dan Williams <djbw@fb.com>, Olof Johansson <olof@lixom.net>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Matt Porter <matt@ohporter.com>
-Message-ID: <20130812133111.GZ6427@sirena.org.uk>
-References: <1375719297-12871-1-git-send-email-joelf@ti.com>
- <1375719297-12871-9-git-send-email-joelf@ti.com>
- <52087921.8040101@ti.com>
+	Mon, 12 Aug 2013 09:31:46 -0400
+Message-ID: <5208E3E2.4010505@arm.com>
+Date: Mon, 12 Aug 2013 14:32:18 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tGkjKzRlkSQaY8nx"
-Content-Disposition: inline
-In-Reply-To: <52087921.8040101@ti.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 08/12] dma: edma: Add one more required slot to MAX
- slots
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Catalin Marinas <Catalin.Marinas@arm.com>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>
+Subject: Re: [PATCH v3 1/3] drivers: clocksource: configure event stream for
+ ARM arch timer
+References: <1374492082-13686-2-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374745537-30389-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+In-Reply-To: <1374745537-30389-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 12 Aug 2013 13:31:43.0919 (UTC) FILETIME=[491683F0:01CE9760]
+X-MC-Unique: 113081214314405901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 25/07/13 10:45, Sudeep KarkadaNagesha wrote:
+> From: Will Deacon <will.deacon@arm.com>
+> 
+> The ARM architected timer can generate events (used for waking up
+> CPUs executing the wfe instruction) at a frequency represented as a
+> power-of-2 divisor of the clock rate.
+> 
+> This patch configures the event stream, aiming for a period of 100us
+> between events. This can be used to implement wfe-based timeouts for
+> userspace locking implementations.
+> 
+> This patch also adds the hwcaps for the same, so that userspace can
+> detect this feature.
+> 
+> Cc: Mathieu Poirier <mathieu.poirier@linaro.org>
+> Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
+>  arch/arm/include/asm/arch_timer.h    | 6 ++++--
+>  arch/arm/include/uapi/asm/hwcap.h    | 1 +
+>  arch/arm/kernel/setup.c              | 1 +
+>  arch/arm64/include/asm/arch_timer.h  | 6 +++---
+>  drivers/clocksource/arm_arch_timer.c | 9 ++++++++-
+>  include/clocksource/arm_arch_timer.h | 2 ++
+>  6 files changed, 19 insertions(+), 6 deletions(-)
+> 
+> ------------>8---------------------
+> 
+> Hi,
+> 
+> This version adds the hwcaps for publishing the event stream feature to the
+> userspace.
+> 
+Hi Catalin,
 
---tGkjKzRlkSQaY8nx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If you are OK with this patch, can I have your ACK ?
 
-On Mon, Aug 12, 2013 at 11:26:49AM +0530, Sekhar Nori wrote:
+Regards,
+Sudeep
 
-> No need for a separate patch for this, just do this in the patch where
-> you include the two linked sets.
+> This patch is now rebased on rmk's fixes branch as it conflicts with ab8d46c0 
+> "ARM: 7788/1: elf: fix lpae hwcap feature reporting in proc/cpuinfo"
+> 
+> Regards,
+> Sudeep
+> 
+> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+> index e406d57..8963877 100644
+> --- a/arch/arm/include/asm/arch_timer.h
+> +++ b/arch/arm/include/asm/arch_timer.h
+> @@ -89,16 +89,18 @@ static inline u64 arch_counter_get_cntvct(void)
+>  	return cval;
+>  }
+>  
+> -static inline void arch_counter_set_user_access(void)
+> +static inline void arch_counter_set_user_access(int divider)
+>  {
+>  	u32 cntkctl;
+>  
+>  	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
+>  
+>  	/* disable user access to everything */
+> -	cntkctl &= ~((3 << 8) | (7 << 0));
+> +	cntkctl &= ~((3 << 8) | (0xf << 4) | (3 << 0));
+> +	cntkctl |= (divider << 4) | (1 << 2);
+>  
+>  	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
+> +	elf_hwcap |= HWCAP_EVTSTRM;
+>  }
+>  #endif
+>  
+> diff --git a/arch/arm/include/uapi/asm/hwcap.h b/arch/arm/include/uapi/asm/hwcap.h
+> index 6d34d08..7dcc10d 100644
+> --- a/arch/arm/include/uapi/asm/hwcap.h
+> +++ b/arch/arm/include/uapi/asm/hwcap.h
+> @@ -26,5 +26,6 @@
+>  #define HWCAP_VFPD32	(1 << 19)	/* set if VFP has 32 regs (not 16) */
+>  #define HWCAP_IDIV	(HWCAP_IDIVA | HWCAP_IDIVT)
+>  #define HWCAP_LPAE	(1 << 20)
+> +#define HWCAP_EVTSTRM	(1 << 21)
+>  
+>  #endif /* _UAPI__ASMARM_HWCAP_H */
+> diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> index 96286cb..5191956 100644
+> --- a/arch/arm/kernel/setup.c
+> +++ b/arch/arm/kernel/setup.c
+> @@ -973,6 +973,7 @@ static const char *hwcap_str[] = {
+>  	"idivt",
+>  	"vfpd32",
+>  	"lpae",
+> +	"evtstrm",
+>  	NULL
+>  };
+>  
+> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> index 98abd47..8c1e42f 100644
+> --- a/arch/arm64/include/asm/arch_timer.h
+> +++ b/arch/arm64/include/asm/arch_timer.h
+> @@ -97,16 +97,16 @@ static inline u32 arch_timer_get_cntfrq(void)
+>  	return val;
+>  }
+>  
+> -static inline void arch_counter_set_user_access(void)
+> +static inline void arch_counter_set_user_access(int divider)
+>  {
+>  	u32 cntkctl;
+>  
+>  	/* Disable user access to the timers and the physical counter. */
+>  	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+> -	cntkctl &= ~((3 << 8) | (1 << 0));
+> +	cntkctl &= ~((3 << 8) | (0xf << 4) | (1 << 0));
+>  
+>  	/* Enable user access to the virtual counter and frequency. */
+> -	cntkctl |= (1 << 1);
+> +	cntkctl |= (divider << 4) | (1 << 2) | (1 << 1);
+>  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+>  }
+>  
+> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+> index ffadd83..6301ee5 100644
+> --- a/drivers/clocksource/arm_arch_timer.c
+> +++ b/drivers/clocksource/arm_arch_timer.c
+> @@ -125,6 +125,8 @@ static int arch_timer_set_next_event_phys(unsigned long evt,
+>  
+>  static int arch_timer_setup(struct clock_event_device *clk)
+>  {
+> +	int evt_stream_div, pos;
+> +
+>  	clk->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_C3STOP;
+>  	clk->name = "arch_sys_timer";
+>  	clk->rating = 450;
+> @@ -153,7 +155,12 @@ static int arch_timer_setup(struct clock_event_device *clk)
+>  			enable_percpu_irq(arch_timer_ppi[PHYS_NONSECURE_PPI], 0);
+>  	}
+>  
+> -	arch_counter_set_user_access();
+> +	/* Find the closest power of two to the divisor */
+> +	evt_stream_div = arch_timer_rate / ARCH_TIMER_EVT_STREAM_FREQ;
+> +	pos = fls(evt_stream_div);
+> +	if (pos > 1 && !(evt_stream_div & (1 << (pos - 2))))
+> +		pos--;
+> +	arch_counter_set_user_access(min(pos, 15));
+>  
+>  	return 0;
+>  }
+> diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+> index c463ce9..24dc140 100644
+> --- a/include/clocksource/arm_arch_timer.h
+> +++ b/include/clocksource/arm_arch_timer.h
+> @@ -29,6 +29,8 @@
+>  #define ARCH_TIMER_PHYS_ACCESS		0
+>  #define ARCH_TIMER_VIRT_ACCESS		1
+>  
+> +#define ARCH_TIMER_EVT_STREAM_FREQ	10000	/* 100us */
+> +
+>  #ifdef CONFIG_ARM_ARCH_TIMER
+>  
+>  extern u32 arch_timer_get_rate(void);
+> 
 
-Can you guys please think about the CC lists you're using for these
-patch serieses?  I've certainly no interest in random patches to the
-DaVinci DMA controllers, and I suspect the same is true for most of the
-people on the CC list.
 
---tGkjKzRlkSQaY8nx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCOObAAoJELSic+t+oim9MDoP/1Pf5u0EF1e7uwz2dkWKEZxq
-Go181n0SjqRkqv9Mb/+Q0ITVmoT/r3kOaqK82s9Va5g7WxMQVejtRQsDsubLnI7H
-ywTmxaJicLA0PFbCZTM4n2Ghk1BZOMxjbS9pPqXgWzGuK3V+gKvGJoCRqhDspsVK
-5c+TVRuLDsij1y4QjklGY38DdCB0XsjCqVRItLaLFet78UZvgOdlTTBYO8nkDtnb
-QN8noUo2ZytYH0Zfp74tFgUvRZjo0psJkBRUb0JWX4jlUwaEFVMjYITrK1fUrtso
-kIcS9K6ckW4XSwwJ+QA3BzG9lG6lx9lW6NbbpgKd7QyZPnTfcRiw3hI8ELKVksfF
-6XxJRCCNyuCd7zOY40V7rS5Cjol9pMpYcT3mVp0fK1KCGKUGoxAVOa4p2ETcc5CH
-9E28arMhTiqrVaXjkyUagdmi59bSueetYzpOkhnbuiLnb41RPG1EESfv/6U8Halk
-S6S3KyM1sxqzyHM6++BCMazqVwKwLoXyz5KW9BFp0IlX5XwRuxqDKRMYp70fUGq4
-anLH9DgtMfYmdMywZI4mYOrbawl3OPvLLDew1VTyxyOeDz/pwetJWrTrMVDYbRXs
-B2h/bdN+fso0lcx/qONlSSb+9ARSEYwkJwJcrQiQmryNUYKqb7DvgBUM68rqRViO
-YJmwQJfhHy2K1uU7p7Nl
-=LYWm
------END PGP SIGNATURE-----
-
---tGkjKzRlkSQaY8nx--
