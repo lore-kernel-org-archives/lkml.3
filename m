@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843Ab3HLWh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 18:37:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57537 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754765Ab3HLWh1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 18:37:27 -0400
-Date: Mon, 12 Aug 2013 15:37:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, xemul@parallels.com, mpm@selenic.com,
-        xiaoguangrong@linux.vnet.ibm.com, mtosatti@redhat.com,
-        kosaki.motohiro@gmail.com, sfr@canb.auug.org.au, peterz@infradead.org,
-        aneesh.kumar@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [patch 2/2] [PATCH] mm: Save soft-dirty bits on file pages
-Message-Id: <20130812153725.6ac5135a86994e4d766723f9@linux-foundation.org>
-In-Reply-To: <CALCETrUXOoKrOAXhvd=GcK3YpBNWr2rk2ArBBgekXDv9yj7sNg@mail.gmail.com>
-References: <20130730204154.407090410@gmail.com>
-	<20130730204654.966378702@gmail.com>
-	<20130807132812.60ad4bfe85127794094d385e@linux-foundation.org>
-	<20130808145120.GA1775@moon>
-	<20130812145720.3b722b066fe1bd77291331e5@linux-foundation.org>
-	<CALCETrUXOoKrOAXhvd=GcK3YpBNWr2rk2ArBBgekXDv9yj7sNg@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755933Ab3HLWhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 18:37:40 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40121 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754765Ab3HLWhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 18:37:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        John Crispin <blogic@openwrt.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-cris-kernel@axis.com,
+        Mikael Starvik <starvik@axis.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
+        sparclinux@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Steven Miao <realmz6@gmail.com>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 00/31] CPUFreq: Implement light weight ->target(): for 3.13
+Date: Tue, 13 Aug 2013 00:47:45 +0200
+Message-ID: <1391342.M2Jbj3t5qy@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <cover.1376329128.git.viresh.kumar@linaro.org>
+References: <cover.1376329128.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Aug 2013 15:28:06 -0700 Andy Lutomirski <luto@amacapital.net> wrote:
-
-> > +#define _mfrob(v,r,m,l)                ((((v) >> (r)) & (m)) << (l))
-> > +#define __frob(v,r,l)          (((v) >> (r)) << (l))
-> > +
-> >  #ifdef CONFIG_MEM_SOFT_DIRTY
-> >
+On Monday, August 12, 2013 11:18:36 PM Viresh Kumar wrote:
+> Currently prototype of cpufreq_drivers target routines is:
 > 
-> If I'm understanding this right, the idea is to take the bits in the
-> range a..b of v and stick them at c..d, where a-b == c-d.  Would it
-> make sense to change this to look something like
+> int target(struct cpufreq_policy *policy, unsigned int target_freq,
+> 	unsigned int relation);
 > 
-> #define __frob(v, inmsb, inlsb, outlsb) ((v >> inlsb) & ((1<<(inmsb -
-> inlsb + 1)-1) << outlsb)
+> And most of the drivers call cpufreq_frequency_table_target() to get a valid
+> index of their frequency table which is closest to the target_freq. And they
+> don't use target_freq and relation after it.
 > 
-> For extra fun, there could be an __unfrob macro that takes the same
-> inmsg, inlsb, outlsb parameters but undoes it so that it's (more)
-> clear that the operations that are supposed to be inverses are indeed
-> inverses.
+> So, it makes sense to just do this work in cpufreq core before calling
+> cpufreq_frequency_table_target() and simply pass index instead. But this can be
+> done only with drivers which expose their frequency table with cpufreq core. For
+> others we need to stick with the old prototype of target() until those drivers
+> are converted to expose frequency tables.
+> 
+> So, in order not to break those special drivers first patch renames ->target() to
+> ->target_old() and the following patches will define the new prototype and
+> convert existing drivers one by one.
 
-hm, I seem to remember writing
-drivers/net/ethernet/3com/3c59x.c:BFINS() and BFEXT() shortly after the
-invention of the electronic computer.
+Super-ugly.
 
-I'm kinda surprised that we don't already have something like this in
-kernel.h or somewhere - there's surely a ton of code which does such
-things.
+Please just keep the old .target() as is, add a new callback and switch the
+suitable drivers to using it.  You may call the new one .target_index() or
+something along these lines.
 
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
