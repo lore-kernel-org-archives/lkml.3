@@ -1,67 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab3HLSOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:14:12 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:1042 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751358Ab3HLSOI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:14:08 -0400
-From: Dan Williams <djbw@fb.com>
-To: Jon Mason <jon.mason@intel.com>, "Koul, Vinod" <vinod.koul@intel.com>
-CC: "Jiang, Dave" <dave.jiang@intel.com>, Brice Goglin <Brice.Goglin@inria.fr>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ioatdma: add ioat_raid_enabled module parameter
-Thread-Topic: ioatdma: add ioat_raid_enabled module parameter
-Thread-Index: AQHOjjoiBtjPT49UUk+OZVCSt3LB2pl/z3CAgAE92oCAAAEvgIAA7+UAgAAn/gCAAH1CgP//kKSAgACOpoCAD6RRgP//i6KA
-Date: Mon, 12 Aug 2013 18:13:35 +0000
-Message-ID: <CE2E73C0.1F076%djbw@fb.com>
-In-Reply-To: <20130812181002.GF6385@jonmason-lab>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.6.130613
-x-originating-ip: [192.168.16.4]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-ID: <ECC861A6E94BEF498BA30A69367E8CB4@fb.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Reason: safe
-X-FB-Internal: Safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
- definitions=2013-08-12_05:2013-08-12,2013-08-12,1970-01-01 signatures=0
+	id S1754104Ab3HLSP5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:15:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26687 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751358Ab3HLSPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 14:15:54 -0400
+Date: Mon, 12 Aug 2013 14:15:48 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: yonghua zheng <younghua.zheng@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Motohiro KOSAKI <kosaki.motohiro@gmail.com>
+Message-ID: <1376331348-jsc6hffx-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <CAMyfujeC_p-2cJteayPnA82wPRvoL2ekDNB6bd38d76v7Gb+6w@mail.gmail.com>
+References: <CAMyfujfZayb8_673vkb2hdE9J_w+wPTD4aQ6TsY+aWxb9EzY8A@mail.gmail.com>
+ <1376080406-4r7r3uye-mutt-n-horiguchi@ah.jp.nec.com>
+ <CAMyfujeC_p-2cJteayPnA82wPRvoL2ekDNB6bd38d76v7Gb+6w@mail.gmail.com>
+Subject: Re: [PATCH 1/1] pagemap: fix buffer overflow in add_page_map()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Aug 10, 2013 at 08:49:34AM +0800, yonghua zheng wrote:
+> Update the patch according to Naoya's comment, I also run
+> ./scripts/checkpatch.pl, and it passed ;D.
 
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-On 8/12/13 11:10 AM, "Jon Mason" <jon.mason@intel.com> wrote:
+# Sorry if I missed something, but I guess that your MTA might replace tabs
+# with spaces. Documentation/email-clients.txt can be helpful to solve it.
 
->On Fri, Aug 02, 2013 at 09:18:03PM +0200, Brice Goglin wrote:
->> Le 02/08/2013 19:47, Dan Williams a écrit :
->> > Yup, but should also fold in the deletions of the other is_xeon_cb32()
->> > alignment fixups further below.
->> >
->> > Actually all the alignment settings can be removed now.
->> >
->> > ...and the PQ_VAL/XOR_VAL fixup for is_xeon_cb32() can go.
->> 
->> Ok, here's another one, but we're close to the limit of my understanding
->> of this driver's internals.
->> 
->> Removed all alignment fixups and all is_xeon_cb32() fixups.
->> 
->> Brice
+> 
+> From 96826b0fdf9ec6d6e16c2c595f371dbb841250f7 Mon Sep 17 00:00:00 2001
+> From: Yonghua Zheng <younghua.zheng@gmail.com>
+> Date: Mon, 5 Aug 2013 12:12:24 +0800
+> Subject: [PATCH 1/1] pagemap: fix buffer overflow in add_to_pagemap()
+> 
+> In struc pagemapread:
+> 
+> struct pagemapread {
+>     int pos, len;
+>     pagemap_entry_t *buffer;
+>     bool v2;
+> };
+> 
+> pos is number of PM_ENTRY_BYTES in buffer, but len is the size of buffer,
+> it is a mistake to compare pos and len in add_to_pagemap() for checking
+> buffer is full or not, and this can lead to buffer overflow and random
+> kernel panic issue.
+> 
+> Correct len to be total number of PM_ENTRY_BYTES in buffer.
+> 
+> Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
+> 
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index dbf61f6..cb98853 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -1116,8 +1116,8 @@ static ssize_t pagemap_read(struct file *file,
+> char __user *buf,
+>          goto out_task;
+> 
+>      pm.v2 = soft_dirty_cleared;
+> -    pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+> -    pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
+> +    pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+> +    pm.buffer = kmalloc(pm.len * PM_ENTRY_BYTES, GFP_TEMPORARY);
+>      ret = -ENOMEM;
+>      if (!pm.buffer)
+>          goto out_task;
+> -- 
+> 1.7.9.5
+> 
+> On Sat, Aug 10, 2013 at 4:33 AM, Naoya Horiguchi
+> <n-horiguchi@ah.jp.nec.com> wrote:
+> > On Fri, Aug 09, 2013 at 01:16:41PM +0800, yonghua zheng wrote:
+> >> Hi,
+> >>
+> >> Recently we met quite a lot of random kernel panic issues after enable
+> >> CONFIG_PROC_PAGE_MONITOR in kernel, after debuggint sometime we found
+> >> this has something to do with following bug in pagemap:
+> >>
+> >> In struc pagemapread:
+> >>
+> >> struct pagemapread {
+> >>     int pos, len;
+> >>     pagemap_entry_t *buffer;
+> >>     bool v2;
+> >> };
+> >>
+> >> pos is number of PM_ENTRY_BYTES in buffer, but len is the size of buffer,
+> >> it is a mistake to compare pos and len in add_page_map() for checking
+> >
+> > s/add_page_map/add_to_pagemap/ ?
+> >
+> >> buffer is full or not, and this can lead to buffer overflow and random
+> >> kernel panic issue.
+> >>
+> >> Correct len to be total number of PM_ENTRY_BYTES in buffer.
+> >>
+> >> Signed-off-by: Yonghua Zheng <younghua.zheng@gmail.com>
+> >
+> > You can find coding style violation with scripts/checkpatch.pl.
+> > And I think this patch is worth going into -stable trees
+> > (maybe since 2.6.34.)
+> >
+> > The fix itself looks fine to me.
+> >
+> > Thanks,
+> > Naoya Horiguchi
+> >
+> >> ---
+> >>  fs/proc/task_mmu.c |    4 ++--
+> >>  1 file changed, 2 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> >> index dbf61f6..cb98853 100644
+> >> --- a/fs/proc/task_mmu.c
+> >> +++ b/fs/proc/task_mmu.c
+> >> @@ -1116,8 +1116,8 @@ static ssize_t pagemap_read(struct file *file,
+> >> char __user *buf,
+> >>          goto out_task;
+> >>
+> >>      pm.v2 = soft_dirty_cleared;
+> >> -    pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+> >> -    pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
+> >> +    pm.len = (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+> >> +    pm.buffer = kmalloc(pm.len * PM_ENTRY_BYTES, GFP_TEMPORARY);
+> >>      ret = -ENOMEM;
+> >>      if (!pm.buffer)
+> >>          goto out_task;
+> >>
+> >> --
+> >> 1.7.9.5
+> >>
+> >> --
+> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> >> see: http://www.linux-mm.org/ .
+> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 >
->Dan/Vinod, I would really like for this to get into 3.12.  It
->dovetails very nicely with my patch to use DMA engines in NTB, which I
->am aiming for 3.12 as well (though still waiting for some review,
->hint-hint).  Is this doable?
-
-Yes, look for an update in my tree by this weekend.
-
---
-Dan
-
