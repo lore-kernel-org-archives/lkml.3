@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab3HLK5i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:57:38 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:64932 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab3HLK5f (ORCPT
+	id S1756213Ab3HLK5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 06:57:42 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:62383 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756123Ab3HLK5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:57:35 -0400
+	Mon, 12 Aug 2013 06:57:38 -0400
 From: "Lee, Jae-Hong" <pyrasis@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: minchan@kernel.org, linux-kernel@vger.kernel.org,
         "Lee, Jae-Hong" <pyrasis@gmail.com>
-Subject: =?y?q?=5BPATCH=20v3=202/3=5D=20Type=20fix=20on=20stable=5Fapi=5Fnonsense=2Etxt?=
-Date: Mon, 12 Aug 2013 19:57:20 +0900
-Message-Id: <1376305041-10757-2-git-send-email-pyrasis@gmail.com>
+Subject: =?y?q?=5BPATCH=20v3=203/3=5D=20Correct=20unfaithful=20translation=20on=20HOWTO=20in=20ko=5FKR?=
+Date: Mon, 12 Aug 2013 19:57:21 +0900
+Message-Id: <1376305041-10757-3-git-send-email-pyrasis@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1376305041-10757-1-git-send-email-pyrasis@gmail.com>
 References: <1376305041-10757-1-git-send-email-pyrasis@gmail.com>
@@ -26,42 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lee, Jae-Hong" <pyrasis@gmail.com>
 
-This patch fixes some minor typos in Documentation/ko_KR/stable_api_nonsense.txt
+This patch corrects unfaithful Korean translation in Documentation/ko_KR/HOWTO.
 
 Signed-off-by: Lee, Jae-Hong <pyrasis@gmail.com>
 Acked-by: Minchan Kim <minchan@kernel.org>
 ---
- Documentation/ko_KR/stable_api_nonsense.txt |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ Documentation/ko_KR/HOWTO |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/ko_KR/stable_api_nonsense.txt b/Documentation/ko_KR/stable_api_nonsense.txt
-index 8f2b0e1..51f85ad 100644
---- a/Documentation/ko_KR/stable_api_nonsense.txt
-+++ b/Documentation/ko_KR/stable_api_nonsense.txt
-@@ -106,12 +106,12 @@ Greg Kroah-Hartman <greg@kroah.com>
- ---------------------------------
+diff --git a/Documentation/ko_KR/HOWTO b/Documentation/ko_KR/HOWTO
+index 4aa79f9..6bf4832 100644
+--- a/Documentation/ko_KR/HOWTO
++++ b/Documentation/ko_KR/HOWTO
+@@ -455,7 +455,7 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
+  - 의견
+  - 변경을 위한 요구
+  - 당위성을 위한 요구
+- - 고요
++ - 침묵
  
- 리눅스 커널 드라이버를 계속해서 메인 커널 트리에 반영하지 않고
--유지보수하려고 하는 사름들과 이 문제를 논의하게 되면 훨씬 더
-+유지보수하려고 하는 사람들과 이 문제를 논의하게 되면 훨씬 더
- "논란의 여지가 많은" 주제가 될 것이다.
- 
- 리눅스 커널 개발은 끊임없이 빠른 속도로 이루어지고 있으며 결코
- 느슨해진 적이 없다. 커널 개발자들이 현재 인터페이스들에서 버그를
--발견하거나 무엇인가 할수 있는 더 좋은 방법을 찾게 되었다고 하자.
-+발견하거나 무엇인가 할 수 있는 더 좋은 방법을 찾게 되었다고 하자.
- 그들이 발견한 것을 실행한다면 아마도 더 잘 동작하도록 현재 인터페이스들을
- 수정하게 될 것이다. 그들이 그런 일을 하게되면 함수 이름들은 변하게 되고,
- 구조체들은 늘어나거나 줄어들게 되고, 함수 파라미터들은 재작업될 것이다.
-@@ -174,7 +174,7 @@ GPL을 따르는 배포 드라이버에 관해 얘기하고 있다는 것을 상
- 동작하는 것을 보장한다.
- 
- 메인 커널 트리에 여러분의 드라이버를 반영하면 얻게 되는 장점들은 다음과 같다.
--   - 관리의 드는 비용(원래 개발자의)은 줄어줄면서 드라이버의 질은 향상될 것이다.
-+   - 관리에 드는 비용(원래 개발자의)은 줄어줄면서 드라이버의 질은 향상될 것이다.
-    - 다른 개발자들이 여러분의 드라이버에 기능들을 추가 할 것이다.
-    - 다른 사람들은 여러분의 드라이버에 버그를 발견하고 수정할 것이다.
-    - 다른 사람들은 여러분의 드라이버의 개선점을 찾을 줄 것이다.
+ 기억하라. 이것들은 여러분의 패치가 커널로 들어가기 위한 과정이다. 여러분의
+ 패치들은 비판과 다른 의견을 받을 수 있고 그것들을 기술적인 레벨로 평가하고
+@@ -489,7 +489,7 @@ bugme-janitor 메일링 리스트(bugzilla에 모든 변화들이 여기서 메
+ 문제를 피하기 위한 목록이 있다.
+   여러분들이 제안한 변경들에 관하여 말할 때 좋은 것들 :
+     - "이것은 여러 문제들을 해결합니다."
+-    - "이것은 2000 라인의 코드를 제거합니다."
++    - "이것은 2000 라인의 코드를 줄입니다."
+     - "이것은 내가 말하려는 것에 관해 설명하는 패치입니다."
+     - "나는 5개의 다른 아키텍쳐에서 그것을 테스트 했으므로..."
+     - "여기에 일련의 작은 패치들이 있으므로..."
 -- 
 1.7.10.4
 
