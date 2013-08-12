@@ -1,102 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab3HLJwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 05:52:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36364 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382Ab3HLJwQ (ORCPT
+	id S1756029Ab3HLJwh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 05:52:37 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:60790 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755382Ab3HLJwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 05:52:16 -0400
-Date: Mon, 12 Aug 2013 10:51:36 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20130812095136.GJ6427@sirena.org.uk>
-References: <20130811190826.GH6427@sirena.org.uk>
- <Pine.LNX.4.44L0.1308112146410.29546-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7OnDFbl3rdzPmmvv"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1308112146410.29546-100000@netrider.rowland.org>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 12 Aug 2013 05:52:34 -0400
+X-AuditID: cbfee61b-b7efe6d000007b11-bb-5208b060d414
+Date: Mon, 12 Aug 2013 11:52:05 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
+Subject: Re: [PATCH v6 6/8] cpufreq:exynos:Extend Exynos cpufreq driver to
+ support boost framework
+Message-id: <20130812115205.6fb12667@amdc308.digital.local>
+In-reply-to: <CAKohponC=S=3=mrTpWvPvejqSeqfndVOwb2GDkQ0jKxXXa0TOQ@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
+ <1374770011-22171-7-git-send-email-l.majewski@samsung.com>
+ <CAKohponC=S=3=mrTpWvPvejqSeqfndVOwb2GDkQ0jKxXXa0TOQ@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jQd2EDRxBBte65C02zljPavG06Qe7
+	xbzPshZ9P68wW6zZ/5PJovPsE2aL3gVX2SzePOK2uLxrDpvF594jjBa3G1ewWfQv7GWyePKw
+	j81i41cPBz6PxXteMnncubaHzWPdtLfMHn1bVjF6PFrcwuhx/MZ2Jo/Pm+QC2KO4bFJSczLL
+	Uov07RK4Mlr3sBQ85q4481KwgXElZxcjJ4eEgIlE68kWVghbTOLCvfVsXYxcHEIC0xkl1u25
+	wwrhtDNJ7FwyB6yKRUBVov/BPnYQm01AT+Lz3adMXYwcHCICWhIvb6aC1DMLrGCR2P9nMiNI
+	XFggReLuqnyQcl4Ba4ndE4+DjeEUCJa40TKZHWJ+G5PE+l2nwGbyC0hKtP/7wQxxkZ3EuU8b
+	2CGaBSV+TL7HAmIzA+3avK2JFcKWl9i85i3zBEbBWUjKZiEpm4WkbAEj8ypG0dSC5ILipPRc
+	I73ixNzi0rx0veT83E2M4Hh6Jr2DcVWDxSFGAQ5GJR5ejy/sQUKsiWXFlbmHGCU4mJVEeNXm
+	cQQJ8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYOT1cP9R
+	ppPSdO2+/YIattsGHxT8TJ6z1zsGP1fd5Cm8/EGV4YPpiqe3BdW1ybbfc2VneM8fV1K+4uHS
+	/nWOix3+OPryeX0SqJtZIvHQfadik4+g0mXpnV56neZurdE3lgnf0OqNSri45YXVlc7ivge7
+	48XnKvyc2rcy5bZJQKb1wVKHLZ+blViKMxINtZiLihMB0gcAMqMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 26 Jul 2013 15:56:53 +0530 Viresh Kumar viresh.kumar@linaro.org
+wrote,
+> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> 
+> > diff --git a/drivers/cpufreq/exynos-cpufreq.c
+> > b/drivers/cpufreq/exynos-cpufreq.c index 9ae1871..175172d9 100644
+> > --- a/drivers/cpufreq/exynos-cpufreq.c
+> > +++ b/drivers/cpufreq/exynos-cpufreq.c
+> > @@ -270,6 +270,9 @@ static int exynos_cpufreq_cpu_exit(struct
+> > cpufreq_policy *policy)
+> >
+> >  static struct freq_attr *exynos_cpufreq_attr[] = {
+> >         &cpufreq_freq_attr_scaling_available_freqs,
+> > +#ifdef CONFIG_CPU_FREQ_BOOST_SW
+> 
+> Use ARM_EXYNOS_CPU_FREQ_BOOST_SW instead.
 
---7OnDFbl3rdzPmmvv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ok, the ARM_EXYNOS_CPU_FREQ_BOOST_SW looks more appropriate here.
 
-On Sun, Aug 11, 2013 at 09:53:01PM -0400, Alan Stern wrote:
-> On Sun, 11 Aug 2013, Mark Brown wrote:
+> 
+> > +       &cpufreq_freq_attr_scaling_boost_freqs,
+> > +#endif
+> >         NULL,
+> >  };
+> >
+> > @@ -332,6 +335,9 @@ static int __init exynos_cpufreq_probe(struct
+> > platform_device *pdev)
+> >
+> >         locking_frequency = exynos_getspeed(0);
+> >
+> > +#ifdef CONFIG_CPU_FREQ_BOOST_SW
+> > +       exynos_driver.boost_supported = true;
+> > +#endif
+> 
+> So, why here and not in the definition of exynos_driver?
 
-> > One example that's bugging me right now is that on the Insignal Arndale
-> > platform there's a USB hub connected to one of the USB ports on the SoC
-> > (not as a PHY, it seems we also need the internal PHY running to talk to
-> > the device).  The hub needs to be "plugged" into the SoC after the SoC
-> > USB controller has started with some GPIOs so we need to tell the system
-> > that the hub exists and needs to be synchronised with the USB controlle=
-r.
+Ok, I will move the above code to struct cpufreq_driver exynos_driver
 
-> On the surface, this seems like a particularly simple case.  Why wait=20
-> until the SoC's USB controller has started?  Why not "plug in" the hub=20
-> via the GPIOs right from the beginning?
+> 
+> >         register_pm_notifier(&exynos_cpufreq_nb);
+> >
+> >         if (cpufreq_register_driver(&exynos_driver)) {
+> > --
+> > 1.7.10.4
+> >
 
-I tried that, it doesn't seem to work - for some reason it seems that
-the hub is only successfully enumerated if it starts after its parent is
-running.  I don't know enough about USB to speculate on why that might
-be, the GPIOs are brining the device out of reset not applying power or
-anything.
 
-> > Another case that's going to be problematic once it's in mainline is
-> > Slimbus - this is a bus used in some embedded audio subsystems which is
-> > enumerable in a similar manner to USB but where the devices on the bus
-> > are normally powered up only on demand (causing them to hotplug when
-> > used and unplug when idle) and have at least interrupt lines wired to
-> > the SoC using a normal interrupt outside the enumerable bus.
 
-> That is indeed more difficult, because it requires geniune cooperation=20
-> between the bus and platform subsystems.
+-- 
+Best regards,
 
-Yeah.  You might want to do the same with for example a USB network
-controller when you're in flight only mode, that seems to be one of the
-more common reasons for doing this sort of thing with USB.
+Lukasz Majewski
 
---7OnDFbl3rdzPmmvv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCLAlAAoJELSic+t+oim98swP/j2DDHFTNziNJJHLm1xJ3tGw
-dsoRp0otZu/OHiRjT+GxoDITbmbU8Cc6V1OeBXijxVkL9FdOtr/n2zV4+dSfXXTn
-T/7me1OQvy2x3ypFnFhWswAeB30bsTDqWu3d4BbqhMvXuf0J+tElem7g2QceJ2zf
-cVChwLf8CNOV13RsSB/mjZk6XbJQpbcyF4PxXwsbbjw2KYnOu379QuoIGW9SmRvr
-WOu0kOVHWy6Yn78NUHgcnH+/D5ODLmFnz+O34A4KpGBuWDdmxHrRLuqiS5I4IIOF
-xqxjlYA9VpKUBLdL4z9O9f+WmrVColJjK3OGHGreWklbu8+X4i1tzw591p8F1GSD
-yyr57aCPQilRjbY5ygUcb4vcWtxTslI6/tLh9A13tG9V8SS6WYQR2tlBhCSRSN3C
-FRYCun4gPJYnmejhDubKUlPP4CrW2bMm+2ROLymiLu8q+vuvNtckkDnwgFpnHdF1
-0q2WaM6tLLjRlIpLgE1l3iLFSqBq/0zCs1mAmdd8UQsSOR/Cywq9iwiLU2P4LThy
-3+5sCYuCo3ItB52sGEOQtB4CBW1ryiHZjJQzt6Ic9Fm73T+yVTAqwISL0Ma/MWCV
-J3jZ3eyLEJ0bdtYqRfRV/YLH+Z/p0GL6aorUQ82PNGi0xXg3bNqU0W1T8rSvtfzu
-DXYow1KP5l8k8sdXeOBe
-=x0hs
------END PGP SIGNATURE-----
-
---7OnDFbl3rdzPmmvv--
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
