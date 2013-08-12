@@ -1,111 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab3HLK6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 06:58:42 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:26120 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755351Ab3HLK6l (ORCPT
+	id S1756123Ab3HLLB0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 07:01:26 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:39269 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754817Ab3HLLBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 06:58:41 -0400
-X-IronPort-AV: E=Sophos;i="4.89,861,1367971200"; 
-   d="scan'208";a="7708730"
-Message-ID: <5208BFDF.40308@citrix.com>
-Date: Mon, 12 Aug 2013 12:58:39 +0200
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 12 Aug 2013 07:01:23 -0400
+Date: Mon, 12 Aug 2013 16:30:45 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com, "Bui, Tuan" <tuan.d.bui@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>,
+        "Makphaibulchoke, Thavatchai" <thavatchai.makpahibulchoke@hp.com>,
+        "Bueso, Davidlohr" <davidlohr.bueso@hp.com>
+Subject: Re: [PATCH] sched: Give idle_balance() a break when it does not move
+ tasks.
+Message-ID: <20130812110045.GA1925@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1376296970.1795.9.camel@j-VirtualBox>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xen.org>, <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 3/3] xen-blkfront: revoke foreign access for
- grants not mapped by the backend
-References: <1375282844-4314-1-git-send-email-roger.pau@citrix.com> <1375282844-4314-4-git-send-email-roger.pau@citrix.com> <51FA3407.7050106@citrix.com> <20130809150837.GA5637@phenom.dumpdata.com>
-In-Reply-To: <20130809150837.GA5637@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1376296970.1795.9.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081211-4834-0000-0000-00000A12A098
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/13 17:08, Konrad Rzeszutek Wilk wrote:
-> On Thu, Aug 01, 2013 at 11:10:15AM +0100, David Vrabel wrote:
->> On 31/07/13 16:00, Roger Pau Monne wrote:
->>> There's no need to keep the foreign access in a grant if it is not
->>> persistently mapped by the backend. This allows us to free grants that
->>> are not mapped by the backend, thus preventing blkfront from hoarding
->>> all grants.
->>>
->>> The main effect of this is that blkfront will only persistently map
->>> the same grants as the backend, and it will always try to use grants
->>> that are already mapped by the backend. Also the number of persistent
->>> grants in blkfront is the same as in blkback (and is controlled by the
->>> value in blkback).
->>>
->>> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
->>
->> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+>  	/*
+> @@ -5298,6 +5300,8 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+>  			continue;
 > 
-> Roger,
-> 
-> Could you repost patch #2 and #3 (as #1 is in v3.11-rc4) with the
-> comments and the Ack from Matt and Roger's Review-by tag addressed?
+>  		if (sd->flags & SD_BALANCE_NEWIDLE) {
+> +			load_balance_attempted = true;
+> +
+>  			/* If we've pulled tasks over stop searching: */
+>  			pulled_task = load_balance(this_cpu, this_rq,
+>  						   sd, CPU_NEWLY_IDLE, &balance);
+> @@ -5322,6 +5326,10 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+>  		 */
+>  		this_rq->next_balance = next_balance;
+>  	}
+> +
+> +	/* Give idle balance on this CPU a break when it isn't moving tasks */
+> +	if (load_balance_attempted && !pulled_task)
+> +		this_rq->next_newidle_balance = jiffies + (HZ / 100);
+>  }
 
-Done (I guess you meant the Reviewed-by tag from David), see below however.
+Looks reasonable. However should we do this per sd and not per rq. i.e
+move the next_newidle_balance to sched_domain. So if we find a
+load_balance in newly_idle context that wasn't successful, we skip
+load_balance for that sd in the next newly idle balance.
 
-> Thanks.
->>
->> But please see the documentation updates needed below.
->>
->>> --- a/drivers/block/xen-blkfront.c
->>> +++ b/drivers/block/xen-blkfront.c
->>> @@ -1016,13 +1016,38 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
->>>  	}
->>>  	/* Add the persistent grant into the list of free grants */
->>>  	for (i = 0; i < nseg; i++) {
->>> -		list_add(&s->grants_used[i]->node, &info->persistent_gnts);
->>> -		info->persistent_gnts_c++;
->>> +		if (gnttab_query_foreign_access(s->grants_used[i]->gref)) {
->>> +			/*
->>> +			 * If the grant is still mapped by the backend (the
->>> +			 * backend has chosen to make this grant persistent)
->>> +			 * we add it at the head of the list, so it will be
->>> +			 * reused first.
->>> +			 */
->>> +			list_add(&s->grants_used[i]->node, &info->persistent_gnts);
->>> +			info->persistent_gnts_c++;
->>> +		} else {
->>> +			/*
->>> +			 * If the grant is not mapped by the backend we end the
->>> +			 * foreign access and add it to the tail of the list,
->>> +			 * so it will not be picked again unless we run out of
->>> +			 * persistent grants.
->>> +			 */
->>> +			gnttab_end_foreign_access(s->grants_used[i]->gref, 0, 0UL);
->>> +			s->grants_used[i]->gref = GRANT_INVALID_REF;
->>> +			list_add_tail(&s->grants_used[i]->node, &info->persistent_gnts);
->>> +		}
->>
->> Because you only reclaim grants when a request is completed, can you add
->> text similar to the following to xen/include/public/io/blkif.h (and the
->> Linux copy).
->>
->> feature-persistent:
->> ...
->>    When the backend driver needs to unmap a persistent grant it should
->>    do so prior to completing a request that used that grant reference.
->>    If a persistent grant is unmapped at any other time, the frontend
->>    driver may not notice and may be unable to reclaim the grant
->>    reference.
->>
-
-I've sent a patch to update the documentation about persistent grants in
-Xen source tree, but the Linux copy of blkif.h lacks any information
-about the blkif protocol extensions, so I have not added it there. If
-nobody else does it first (before I come back from vacation), I will
-send a patch to add the documentation about all the blkif extensions to
-the Linux copy of blkif.h (and of course add your comment about
-persistent grants unmap).
-
-Roger.
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
