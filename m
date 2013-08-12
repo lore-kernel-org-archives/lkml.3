@@ -1,142 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab3HLSFN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 14:05:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49655 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab3HLSFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 14:05:07 -0400
-Date: Mon, 12 Aug 2013 13:04:38 -0500
+	id S1752518Ab3HLSGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 14:06:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54402 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab3HLSGN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 14:06:13 -0400
+Date: Mon, 12 Aug 2013 13:05:53 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Kumar Gala <galak@codeaurora.org>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>, <balbi@ti.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <rob@landley.net>,
-        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
-        <idos@codeaurora.org>, <mgautam@codeaurora.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 1/3] usb: dwc3: msm: Add device tree binding
- information
-Message-ID: <20130812180438.GC27954@radagast>
+CC: Mark Rutland <mark.rutland@arm.com>, "balbi@ti.com" <balbi@ti.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: core: clarify usb-phy array binding
+Message-ID: <20130812180553.GD27954@radagast>
 Reply-To: <balbi@ti.com>
-References: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com>
- <1376042027-9798-2-git-send-email-iivanov@mm-sol.com>
- <169628C9-00BA-4E58-BF65-7B180E6BE4ED@codeaurora.org>
+References: <1376062832-23288-1-git-send-email-galak@codeaurora.org>
+ <20130809162848.GW27325@e106331-lin.cambridge.arm.com>
+ <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="t0UkRYy7tHLRMCai"
+	protocol="application/pgp-signature"; boundary="sXc4Kmr5FA7axrvy"
 Content-Disposition: inline
-In-Reply-To: <169628C9-00BA-4E58-BF65-7B180E6BE4ED@codeaurora.org>
+In-Reply-To: <1A03353A-9299-4D73-9786-4ECBC1DD4E05@codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---t0UkRYy7tHLRMCai
+--sXc4Kmr5FA7axrvy
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, Aug 09, 2013 at 10:31:58AM -0500, Kumar Gala wrote:
+On Fri, Aug 09, 2013 at 01:42:15PM -0500, Kumar Gala wrote:
 >=20
-> On Aug 9, 2013, at 4:53 AM, Ivan T. Ivanov wrote:
+> On Aug 9, 2013, at 11:28 AM, Mark Rutland wrote:
 >=20
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > On Fri, Aug 09, 2013 at 04:40:32PM +0100, Kumar Gala wrote:
+> >> The binding spec wasn't clear that the order of the phandles in the
+> >> usb-phy array has meaning.  Clarify this point in the binding that
+> >> it should be <USB2-HS-PHY, USB3-SS-PHY>.
+> >>=20
+> >> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+> >> ---
+> >> Documentation/devicetree/bindings/usb/dwc3.txt | 4 +++-
+> >> 1 file changed, 3 insertions(+), 1 deletion(-)
+> >>=20
+> >> diff --git a/Documentation/devicetree/bindings/usb/dwc3.txt b/Document=
+ation/devicetree/bindings/usb/dwc3.txt
+> >> index 7a95c65..8a9770b 100644
+> >> --- a/Documentation/devicetree/bindings/usb/dwc3.txt
+> >> +++ b/Documentation/devicetree/bindings/usb/dwc3.txt
+> >> @@ -6,7 +6,9 @@ Required properties:
+> >>  - compatible: must be "synopsys,dwc3"
+> >>  - reg : Address and length of the register set for the device
+> >>  - interrupts: Interrupts used by the dwc3 controller.
+> >> - - usb-phy : array of phandle for the PHY device
+> >> + - usb-phy : array of phandle for the PHY device.  The first element
+> >> +   in the array is expected to be a handle to the USB2/HS PHY and
+> >> +   the second element is expected to be a handle to the USB3/SS PHY
 > >=20
-> > MSM USB3.0 core wrapper consist of USB3.0 IP (SNPS)
+> > Just to check - it's not valid to have a USB3 phy without a USB2 phy?
 >=20
-> probably good to spell out Synopsys rather than SNPS
+> Don't know, hopefully Felipe will chime in on that.
 
-Synopsys (the company) has always used snps in their bindings though.
-
-> > +Required properities :
-> > +- compatible : sould be "qcom,dwc3-hsphy";
-> > +- reg : offset and length of the register set in the memory map
-> > +- clocks : phandles to clock instances of the device tree nodes
-> > +- clock-names :
-> > +	"xo" : External reference clock 19 MHz
-> > +	"sleep_a_clk" : Sleep clock, used when USB3 core goes into low
-> > +	power mode (U3).
-> > +<supply-name>-supply : phandle to the regulator device tree node
-> > +Required "supply-name" are:
-> > +	"v1p8" : 1.8v supply for HSPHY
-> > +	"v3p3" : 3.3v supply for HSPHY
-> > +	"vbus" : vbus supply for host mode
-> > +	"vddcx" : vdd supply for HS-PHY digital circuit operation
-
-I believe these regulators belong to the PHY, not DWC3. Please write a
-PHY driver.
-
-> > +Required properities :
-> > +- compatible : sould be "qcom,dwc3-ssphy";
-> > +- reg : offset and length of the register set in the memory map
-> > +- clocks : phandles to clock instances of the device tree nodes
-> > +- clock-names :
-> > +	"xo" : External reference clock 19 MHz
-> > +	"ref_clk" : Reference clock - used in host mode.
-> > +<supply-name>-supply : phandle to the regulator device tree node
-> > +Required "supply-name" are:
-> > +	"v1p8" : 1.8v supply for SS-PHY
-> > +	"vddcx" : vdd supply for SS-PHY digital circuit operation
-
-likewise, these regulators should be moved to the PHY driver.
-
-> > +Required properties :
-> > +- compatible : should be "qcom,dwc3"
-> > +- reg : offset and length of the register set in the memory map
-> > +	offset and length of the TCSR register for routing USB
-> > +	signals to either picoPHY0 or picoPHY1.
-> > +- clocks : phandles to clock instances of the device tree nodes
-> > +- clock-names :
-> > +	"core_clk" : Master/Core clock, have to be >=3D 125 MHz for SS
-> > +	operation and >=3D 60MHz for HS operation
-> > +	"iface_clk" : System bus AXI clock
-> > +	"sleep_clk" : Sleep clock, used when USB3 core goes into low
-> > +	power mode (U3).
-> > +	"utmi_clk" : Generated by HS-PHY. Used to clock the low power
-> > +	parts of thr HS Link layer.
-> > +
-> > +Optional properties :
-> > +- gdsc-supply : phandle to the globally distributed switch controller
-> > +  regulator node to the USB controller.
-> > +
-> > +Sub nodes:
-> > +- Sub node for "DWC3 USB3 controller".
-> > +  This sub node is required property for device node. The properties
-> > +  of this subnode are specified in dwc3.txt.
->=20
-> Is tx-fifo-resize required for qcom,dwc3? if so we should call that
-> out in the binding.
-
-AFAICT that's only needed for OMAP5 ES1.0. Unless Qualcomm also screwed
-up default TX FIFO sizes :-p
+that'd be a really non-standard implementation. Per-spec, USB3 is
+*always* backwards compatible with USB2.
 
 --=20
 balbi
 
---t0UkRYy7tHLRMCai
+--sXc4Kmr5FA7axrvy
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSCSO2AAoJEIaOsuA1yqREWxMP/3jiFI/Oy1xBYu8O8bTH98FH
-Wi1iBx5FToWYCUd74Yvk4xOJB2/0o1/JnoYvSJmILGirUAs2aRn/uIxpxMaCeg2v
-V4MR9vVLgEvFtg8jEwpDX/cgHWagSDSKGUX0zs+YKPLa8smn09LEOYVPPiDZIu7m
-8Rl6Rgak4WEYLvbImS1FY/gE/ih9bg/Ehrk/xgyyW8FI88dyTQkH2wNrsDSp/Sy5
-7D6cXFlGXqQdgbib4nj2KZ/H/megS2NQ8YXOv4YveDIKL8uIspgUldCWA4J4YCTg
-64nXHbuRS8/5uKzvIrxav08XR+9zk7N3/K6Y2pJSbTG/5K0v1VNLEwtgeDna9Zj7
-epwzq5BqVGJ7juEntKFyEbQak0KZUiABoJeL0ZqL5jxtja/BkLGbgOHcagm/aL/t
-owKTGEnfvySO+zjEJUBYUoc7ZFrqOYwV0eVnIosw2FHsirzjKIR5Umwffqf4ihyo
-oyw0DJs7d8ykn5d8wcBPv2QLRJDh+pCk7SDxWz6pbII6JZyYb3qkS8InEpkjt/9F
-Tfj/9N/X9YFbJ3PDHZEP0XFlfLtRlwYYCqEfg0EVU1SWIj8th8AX+q+0ctCBEnQu
-/tCzMKSt3ARqsiWLaM4BTqSnRGZkddMDRB5MpYTcECtEJnSDQTBT+wV6SQY+f4Df
-UF2kGRqNpfFzhqF98Jmo
-=OEER
+iQIcBAEBAgAGBQJSCSQAAAoJEIaOsuA1yqREuE4P/jUycln6LwcQWIP6Woju+AKp
+BLTY5U7oWEUkFTS9et6+8rgcIRkeLaax061JE/oZ8J7+oAV+2awYRgsQ2MWdwzXy
+NNOg3iNhtZMxg1gdz9ZxZPPEvOZDpldcIGVczgfCWqqxRU/Yh2PUPqizknk1XZFD
+uYU+DSQgg7V+fdlm/0g4gMsHvM2hTWYfNGdV7Ht2QEQMH9kXmyIu2graweYGAJxF
+aa15eaxsk/USv+u8jN8urCtzi8bf/rzVUtdQoKmY4zfifpUOhfjnDN5TGFcOY1HJ
+TK3jom5PPXfLIdTFXYEyD4T0aqAxa5k/p9a+QoWGrx06hNsAZHwCOCONZmNDx0fw
+z1DIK/7PHanlGFoof60KX+LlVkTGvZxUltSfUTY5gFoyOgBYbeGpLe6ZjKxJIpQv
+Iz8gErPt5lrQm7DoBNblCp9bl1dM+OykeuBeRqpyIgjLyNkum4kv79VYJG2YVeRs
+2qyurYKBmjk7nbyWuPe/6t336LGnJ1oLLHO8ooXSWm/CU+zKvuXZQ4mGxucENPjn
+GtBd4Tz/2JJdE+gLeriI6fvNDS6fQ0WUpTn5DsN13OoC46bRUc9yx03edWaajRx4
+e2r/DzCfEbNIyy56B5V56ARbD2uIUedFMlPaa6k+F7n/GeZyelttWUG0akMsvNnK
+aBSPqZaTPy+CL1noGyP/
+=i7U/
 -----END PGP SIGNATURE-----
 
---t0UkRYy7tHLRMCai--
+--sXc4Kmr5FA7axrvy--
