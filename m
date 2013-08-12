@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757435Ab3HLRAr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 13:00:47 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33545 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756725Ab3HLRAo convert rfc822-to-8bit (ORCPT
+	id S1757457Ab3HLRBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 13:01:24 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:39524 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756725Ab3HLRBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 13:00:44 -0400
-Subject: Re: [PATCH] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex block
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <52090DAC.3050407@codeaurora.org>
-Date: Mon, 12 Aug 2013 12:00:49 -0500
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        devicetree@vger.kernel.org, Jeffrey Hugo <jhugo@codeaurora.org>,
-        Eric Holmberg <eholmber@codeaurora.org>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <77B23687-A04B-4037-BA94-62ECD06CFA3E@codeaurora.org>
-References: <1375128719-23642-1-git-send-email-galak@codeaurora.org> <E9700EA7-7154-46C5-9258-03F030DF69F6@codeaurora.org> <20130729214035.GC8868@codeaurora.org> <9EB1A821-7137-4812-B58A-20F669BCA7DD@codeaurora.org> <0A09DA0F-86B4-4961-88E2-64FA0A4D380D@codeaurora.org> <CAK=WgbZSJmMz_U56ZsppBrB64XvTHBqJM4L+uFY1kKxhMCCtMQ@mail.gmail.com> <52090DAC.3050407@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-X-Mailer: Apple Mail (2.1283)
+	Mon, 12 Aug 2013 13:01:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <52090E67.1080703@wwwdotorg.org>
+References: <cover.1375964117.git.viresh.kumar@linaro.org>
+	<568f3dbd414b050bb2319d960fb5044a5aed8ee3.1375964117.git.viresh.kumar@linaro.org>
+	<5203BCDD.40809@wwwdotorg.org>
+	<CAKohpomr8kwDitAFD7FKvHo3zNWz8qT5bkd3yOVEnC_k16o=Dw@mail.gmail.com>
+	<CAKohpo=Gy7D2LYmdFU1p+eL-nMoPE18YXWvE2M8t-fb-a5HBgg@mail.gmail.com>
+	<5205167F.1070906@wwwdotorg.org>
+	<CAKohponQDAqHiRD7Aw5Wk6fEE-d8H=Svg0oBRyb9SKGdqYxGhw@mail.gmail.com>
+	<52056842.8060109@wwwdotorg.org>
+	<CAKohpon=j=NANLQzYuBdoFVLxQzETy5JDu2vORaAgK3NuEpeAg@mail.gmail.com>
+	<52090E67.1080703@wwwdotorg.org>
+Date: Mon, 12 Aug 2013 22:31:20 +0530
+Message-ID: <CAKohpom4WsD_BSSGEbtmGR3JRzPXx9j1exM7CagwOXZ=0GZnGw@mail.gmail.com>
+Subject: Re: [PATCH 35/35] cpufreq: tegra: use cpufreq_table_validate_and_show()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linaro-kernel@lists.linaro.org, Stephen Warren <swarren@nvidia.com>,
+        linux-pm@vger.kernel.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org, rjw@sisk.pl,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12 August 2013 22:03, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> It's in defconfig OK; I think the driver simply isn't initializing since
+> some of the clocks it requests don't exist. I'll have our clock driver
+> author look into it. In the meantime, I assume that your change is
+> likely fine.
 
-On Aug 12, 2013, at 11:30 AM, Stephen Boyd wrote:
-
-> On 08/10/13 12:11, Ohad Ben-Cohen wrote:
->> Otherwise, Stephen - do we have your Ack here? I was happy to see your
->> review but not sure what's the latest status.
-> 
-> The smp_mb() should be removed. Otherwise I'm willing to accept that we
-> only build this driver on ARCH_MSM for now. We can fix that in the
-> future to be available to hexagon if they ever want it. After that it
-> just needs a DT review/ack so I'll be happy to add a reviewed-by on v3.
-
-Yeah, waiting on our DT resolution before posting v3 w/various changes like removing the smp_mb() and a few other things.
-
-- k
-
---
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+I wasn't' talking about your driver but cpufreq_stats.. That is disabled
+by default with your defconfig.
