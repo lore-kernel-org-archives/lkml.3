@@ -1,105 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab3HLIW1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 04:22:27 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:33539 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187Ab3HLIWW (ORCPT
+	id S1755013Ab3HLI02 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 04:26:28 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:63200 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751639Ab3HLI0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 04:22:22 -0400
-Message-ID: <5208A95A.70606@kernel.org>
-Date: Mon, 12 Aug 2013 10:22:34 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 12 Aug 2013 04:26:24 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1//sQcr+oICFHpVHeqw2mBh
+Date: Mon, 12 Aug 2013 01:26:21 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Sebastian Reichel <sre@debian.org>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linus.walleij@linaro.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Sebastian Reichel <sre@ring0.de>,
+        paul@pwsan.com
+Subject: Re: [PATCH 1/3] ARM: OMAP2+: hwmod-data: Add SSI information
+Message-ID: <20130812082621.GJ7656@atomide.com>
+References: <1376237628-1077-1-git-send-email-sre@debian.org>
+ <1376237877-1740-1-git-send-email-sre@debian.org>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, kernel-janitors@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/16] arch/arm/mach-pxa/stargate2.c: Avoid using ARRAY_AND_SIZE(e)
- as a function argument
-References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr> <1376239917-15594-17-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1376239917-15594-17-git-send-email-Julia.Lawall@lip6.fr>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376237877-1740-1-git-send-email-sre@debian.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/13 17:51, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+* Sebastian Reichel <sre@debian.org> [130811 09:25]:
+> From: Sebastian Reichel <sre@ring0.de>
 > 
-> Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding the
-> arity of the called function.
-> 
-> The semantic match that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression e,f;
-> @@
-> 
-> f(...,
-> - ARRAY_AND_SIZE(e)
-> + e,ARRAY_SIZE(e)
->   ,...)
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
+> This patch adds Synchronous Serial Interface (SSI) hwmod support for
+> OMAP34xx SoCs.
 
-Thanks,
+This should be queued or acked by Paul.
+
+Regards,
+
+Tony
+
+>  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |  104 ++++++++++++++++++++++++++++
+>  1 file changed, 104 insertions(+)
 > 
-> ---
-> Not compiled.
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> index 0c3a427..74006c4 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> @@ -3693,6 +3693,109 @@ static struct omap_hwmod_ocp_if omap3xxx_l4_core__aes = {
+>  	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+>  };
+>  
+> +/*
+> + * 'ssi' class
+> + * synchronous serial interface (multichannel and full-duplex serial if)
+> + */
+> +
+> +static struct omap_hwmod_class_sysconfig omap34xx_ssi_sysc = {
+> +	.rev_offs	= 0x0000,
+> +	.sysc_offs	= 0x0010,
+> +	.syss_offs	= 0x0014,
+> +	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_EMUFREE |
+> +			   SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE |
+> +			   SYSC_HAS_SOFTRESET | SYSS_HAS_RESET_STATUS),
+> +	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
+> +			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
+> +			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
+> +	.sysc_fields	= &omap_hwmod_sysc_type1,
+> +};
+> +
+> +static struct omap_hwmod_class omap34xx_ssi_hwmod_class = {
+> +	.name	= "ssi",
+> +	.sysc	= &omap34xx_ssi_sysc,
+> +};
+> +
+> +static struct omap_hwmod_irq_info omap34xx_ssi_irqs[] = {
+> +	{ .name = "ssi_p1_mpu_irq0", .irq = 67 },
+> +	{ .name = "ssi_p1_mpu_irq1", .irq = 68 },
+> +	{ .name = "ssi_p2_mpu_irq0", .irq = 69 },
+> +	{ .name = "ssi_p2_mpu_irq1", .irq = 70 },
+> +	{ .name = "ssi_gdd_mpu",     .irq = 71 },
+> +	{ .irq = -1 },
+> +};
+> +
+> +static struct omap_hwmod_addr_space omap34xx_ssi_addrs[] = {
+> +	{
+> +		.name		= "sys",
+> +		.pa_start	= 0x48058000,
+> +		.pa_end		= 0x48058fff,
+> +		.flags		= ADDR_TYPE_RT,
+> +	},
+> +	{
+> +		/* generic distributed DMA */
+> +		.name		= "gdd",
+> +		.pa_start	= 0x48059000,
+> +		.pa_end		= 0x48059fff,
+> +		.flags		= ADDR_TYPE_RT,
+> +	},
+> +	{
+> +		/* port 1: synchronous serial transmitter */
+> +		.name		= "p1_sst",
+> +		.pa_start	= 0x4805a000,
+> +		.pa_end		= 0x4805a7ff,
+> +		.flags		= ADDR_TYPE_RT,
+> +	},
+> +	{
+> +		/* port 1: synchronous serial receiver */
+> +		.name		= "p1_ssr",
+> +		.pa_start	= 0x4805a800,
+> +		.pa_end		= 0x4805afff,
+> +		.flags		= ADDR_TYPE_RT,
+> +	},
+> +	{
+> +		/* port 2: synchronous serial transmitter */
+> +		.name		= "p2_sst",
+> +		.pa_start	= 0x4805b000,
+> +		.pa_end		= 0x4805b7ff,
+> +		.flags		= ADDR_TYPE_RT,
+> +	},
+> +	{
+> +		/* port 2: synchronous serial receiver */
+> +		.name		= "p2_ssr",
+> +		.pa_start	= 0x4805b800,
+> +		.pa_end		= 0x4805bfff,
+> +		.flags		= ADDR_TYPE_RT,
+> +	},
+> +	{}
+> +};
+> +
+> +static struct omap_hwmod omap34xx_ssi_hwmod = {
+> +	.name		= "ssi",
+> +	.class		= &omap34xx_ssi_hwmod_class,
+> +	.clkdm_name	= "l3_init_clkdm",
+> +	.mpu_irqs	= omap34xx_ssi_irqs,
+> +	.main_clk	= "ssi_ssr_fck",
+> +	.prcm		= {
+> +		.omap2 = {
+> +			.prcm_reg_id		= 1,
+> +			.module_bit		= OMAP3430_EN_SSI_SHIFT,
+> +			.module_offs		= WKUP_MOD,
+> +			.idlest_reg_id		= 1,
+> +			.idlest_idle_bit	= OMAP3430ES2_ST_SSI_IDLE_SHIFT,
+> +		},
+> +	},
+> +};
+> +
+> +/* SSI -> l3 */
+> +static struct omap_hwmod_ocp_if omap34xx_l3__ssi = {
+> +	.master		= &omap3xxx_l3_main_hwmod,
+> +	.slave		= &omap34xx_ssi_hwmod,
+> +	.clk		= "ssi_ick",
+> +	.addr		= omap34xx_ssi_addrs,
+> +	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+> +};
+> +
+>  static struct omap_hwmod_ocp_if *omap3xxx_hwmod_ocp_ifs[] __initdata = {
+>  	&omap3xxx_l3_main__l4_core,
+>  	&omap3xxx_l3_main__l4_per,
+> @@ -3818,6 +3921,7 @@ static struct omap_hwmod_ocp_if *omap34xx_hwmod_ocp_ifs[] __initdata = {
+>  #ifdef CONFIG_OMAP_IOMMU_IVA2
+>  	&omap3xxx_l3_main__mmu_iva,
+>  #endif
+> +	&omap34xx_l3__ssi,
+>  	NULL
+>  };
+>  
+> -- 
+> 1.7.10.4
 > 
->  arch/arm/mach-pxa/stargate2.c |   13 ++++++++-----
->  1 file changed, 8 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/mach-pxa/stargate2.c b/arch/arm/mach-pxa/stargate2.c
-> index 62aea3e..adacedd 100644
-> --- a/arch/arm/mach-pxa/stargate2.c
-> +++ b/arch/arm/mach-pxa/stargate2.c
-> @@ -406,7 +406,8 @@ static struct i2c_pxa_platform_data i2c_pdata = {
->  static void __init imote2_stargate2_init(void)
->  {
->  
-> -	pxa2xx_mfp_config(ARRAY_AND_SIZE(sg2_im2_unified_pin_config));
-> +	pxa2xx_mfp_config(sg2_im2_unified_pin_config,
-> +			  ARRAY_SIZE(sg2_im2_unified_pin_config));
->  
->  	pxa_set_ffuart_info(NULL);
->  	pxa_set_btuart_info(NULL);
-> @@ -604,7 +605,7 @@ static struct platform_device *imote2_devices[] = {
->  
->  static void __init imote2_init(void)
->  {
-> -	pxa2xx_mfp_config(ARRAY_AND_SIZE(imote2_pin_config));
-> +	pxa2xx_mfp_config(imote2_pin_config, ARRAY_SIZE(imote2_pin_config));
->  
->  	imote2_stargate2_init();
->  
-> @@ -983,13 +984,15 @@ static void __init stargate2_init(void)
->  	   prior to connecting the MFP stuff up. */
->  	__raw_writel(__raw_readl(MECR) & ~MECR_NOS, MECR);
->  
-> -	pxa2xx_mfp_config(ARRAY_AND_SIZE(stargate2_pin_config));
-> +	pxa2xx_mfp_config(stargate2_pin_config,
-> +			  ARRAY_SIZE(stargate2_pin_config));
->  
->  	imote2_stargate2_init();
->  
-> -	platform_add_devices(ARRAY_AND_SIZE(stargate2_devices));
-> +	platform_add_devices(stargate2_devices, ARRAY_SIZE(stargate2_devices));
->  
-> -	i2c_register_board_info(0, ARRAY_AND_SIZE(stargate2_i2c_board_info));
-> +	i2c_register_board_info(0, stargate2_i2c_board_info,
-> +				ARRAY_SIZE(stargate2_i2c_board_info));
->  	i2c_register_board_info(1, stargate2_pwr_i2c_board_info,
->  				ARRAY_SIZE(stargate2_pwr_i2c_board_info));
->  
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
