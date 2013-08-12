@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab3HLLcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 07:32:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54121 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278Ab3HLLcj (ORCPT
+	id S1756062Ab3HLLeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 07:34:07 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:39025 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755019Ab3HLLeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 07:32:39 -0400
-Date: Mon, 12 Aug 2013 12:32:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Olof Johansson <olof@lixom.net>, Alan Stern <stern@rowland.harvard.edu>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@kernel.org" <devicetree@kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20130812113226.GV6427@sirena.org.uk>
-References: <20130811190826.GH6427@sirena.org.uk>
- <Pine.LNX.4.44L0.1308112146410.29546-100000@netrider.rowland.org>
- <20130812095136.GJ6427@sirena.org.uk>
- <20130812110714.GA6616@e106331-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x8Ec79u/ZTqSPCUg"
-Content-Disposition: inline
-In-Reply-To: <20130812110714.GA6616@e106331-lin.cambridge.arm.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 12 Aug 2013 07:34:04 -0400
+X-AuditID: cbfec372-b7f046d000001821-28-5208c82a20b3
+Date: Mon, 12 Aug 2013 08:33:55 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>, tony.luck@intel.com,
+        bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
+        lance.ortiz@hp.com, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
+ event
+Message-id: <20130812083355.47c1bae8@samsung.com>
+In-reply-to: <20130810180322.GC4155@pd.tnic>
+References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+ <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+ <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t/hIF2tExxBBi+nqFgsacqw+LzhH5vF
+	h75rTBbL9/UzWlzeNYfN4uy842wW91ueslv0L+xlstjX8YDJ4s2FeywOXB7fW/tYPFr23WL3
+	WLCp1GPXtp1MHov3vGTyeHBoM4vHo8UtjB6fN8kFcERx2aSk5mSWpRbp2yVwZew9/Zul4DFH
+	xbSOeWwNjL/Zuhg5OSQETCRWTWhnh7DFJC7cWw8U5+IQEljCKNF+aiIzhNPDJDG/p40ZpIpF
+	QFWir6sBzGYTMJJ41djCCmKLCChJfF00lwmkgVngA6PErL7JYAlhgTCJPXuamUBsXgFDiZ73
+	EIM4BXQkWo8cYYLYcJdR4sqFzUB3cADd4SSxdaovRL2gxI/J91hAbGYBLYnN25pYIWx5ic1r
+	3jJPYBSYhaRsFpKyWUjKFjAyr2IULS1OLihOSs811CtOzC0uzUvXS87P3cQIiZCiHYzPNlgd
+	YhTgYFTi4fX4wh4kxJpYVlyZe4hRgoNZSYRXbR5HkBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbG
+	DqtpT/2KPRWzHpbnXot+tuDnnfakHTzrZzpNZI9MLY8o5WL892N54x/LTfkKjF+lle9N0n68
+	fOKdldUPQsUTX7i1SAZvCooI8yx6/bDG/1CLnITlslkGuvyli57xBrnM+DH3AnO5vLvCT9Ut
+	ucXxH3l0bbe9jDX8JD3ROSjXWP7t4uucW2KVWIozEg21mIuKEwHoHbKObgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Sat, 10 Aug 2013 20:03:22 +0200
+Borislav Petkov <bp@alien8.de> escreveu:
 
---x8Ec79u/ZTqSPCUg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Thu, Aug 08, 2013 at 04:38:22PM -0300, Mauro Carvalho Chehab wrote:
+> > Em Thu, 08 Aug 2013 23:57:51 +0530
+> > "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> escreveu:
+> > 
+> > > Enable memory error trace event in cper.c
+> > 
+> > Why do we need to do that? Memory error events are already handled
+> > via edac_ghes module,
+> 
+> If APEI gives me all the required information in order to deal with the
+> hardware error - and it looks like it does - then the additional layer
+> of ghes_edac is not needed.
 
-On Mon, Aug 12, 2013 at 12:07:14PM +0100, Mark Rutland wrote:
+APEI is just the mechanism that collects the data, not the mechanism
+that reports to userspace.
 
-> As I understand it, the wifi chip on the Snow Chromebook has a similar
-> issue -- it hangs off of a probeable SDIO bus, but needs a regulator
-> poked for it to turn on and become probeable (see
-> exynos_wifi_bt_set_power in [1]).
+The current implementation is that APEI already reports those errors
+via ghes_edac driver. It also reports the very same error via MCE
+(although the APEI interface to MCE is currently broken for everything
+that it is not Nehalem-EX - as it basically emulates the MCE log for
+that specific architecture).
 
-Yes, that's another example - this stuff is really common in practical
-systems, especially the power control for radios since that's how rfkill
-tends to end up being implemented.
+I really don't see any sense on adding yet-another-way to report the
+very same error.
 
---x8Ec79u/ZTqSPCUg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCMfHAAoJELSic+t+oim9tz0P/2byd0ZIAm14u74I0rn4dKa0
-MfFGaSRNxl70i5G3VZ7PhOkzEvOYRF+PkrxRoIgdINBmaWmkO3n2h1jxaLiEmFQr
-BytjPOpgNUfvVTo3AWvmznn9AobWWiTGAH3b86mGO4gFe/NifuifmqIEhC+uBHNu
-OKhpM17a/NvSkhNV5qaO2pZMEDvEqz+OS8PX/QqdFvuceYmGvJeVtU/m7PEeuDm4
-ebgiq0p73ayOvSV0sNwrz9A2KCCeTQz85JrBuFBHnwHaUFdAK00oybtlBIwHTb+S
-viu1jaKOFPotATFY+BPpc9EN4p+wGoBHTiBPUy/4m6/BaAQgJkYqN2KWaj0PNK9v
-a0nJ8wxyTJEvCgO1OOjV8RdPnh2Vh9RXpMq8EjtRbmGpNMOulVdAr3hyTCA6aOE1
-Hpzlo9PTXwdH/h4ZKG7EWg8uiG2QTSxFjcOGnuXYG8BBH0zaQ4aOKQTx++VUj1B1
-GzevNjZShd0gVuE8d/qK82G59s0nPgj/M01GrqHmTY0/A87baQh0QR5L/5bq4K0O
-8sUc+BTTyMB829w+w9PcA41MavH/BHR9Rz7jgbgPLBNxGHpUWVAm1TRGM8S9Z4N9
-AKDpgdLlTwbOcd/M2EVneAgq18W55k2fBty91ZRH1xzu9trwhSec30bnPDtpws3L
-ruumBV8KlL1K4JlJUx9R
-=SobK
------END PGP SIGNATURE-----
-
---x8Ec79u/ZTqSPCUg--
+Regards,
+Mauro
