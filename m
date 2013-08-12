@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab3HLU7P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 16:59:15 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:62971 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab3HLU7O (ORCPT
+	id S1755501Ab3HLVBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 17:01:38 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:41227 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931Ab3HLVBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 16:59:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <52093133.9050306@windriver.com>
-References: <5207B3C3.9080508@roeck-us.net> <20130811220450.GY23006@n2100.arm.linux.org.uk>
- <52082EF8.10005@roeck-us.net> <52093133.9050306@windriver.com>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Mon, 12 Aug 2013 21:58:53 +0100
-Message-ID: <CAFEAcA--pjr8fqH6MdTr5P64PhteeJA=HXfAXFhPJ0ctQGpf_w@mail.gmail.com>
-Subject: Re: SCSI bus failures with qemu-arm in kernel 3.8+
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        qemu-devel@nongnu.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 12 Aug 2013 17:01:37 -0400
+From: Linn Crosetto <linn@hp.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        yinghai@kernel.org, penberg@kernel.org, jacob.shin@amd.com
+Cc: linux-kernel@vger.kernel.org, Linn Crosetto <linn@hp.com>
+Subject: [PATCH] x86: selective remapping in parse_setup_data()
+Date: Mon, 12 Aug 2013 15:00:06 -0600
+Message-Id: <1376341206-72835-1-git-send-email-linn@hp.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 August 2013 20:02, Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
->
-> If I recall correctly, I'd showed the patch to Russell at the time (via
-> IRC, I believe) and he'd told me essentially the same thing as the above
-> paragraph, which is why I didn't put it in the patch system, and why the
-> commit log of the yocto patch (http://goo.gl/riEZXY) reads as it does
-> (i.e. it is unclear what the real swizzle is).
+PCI devices may advertise a ROM size larger than early_memremap() is
+able to handle. If this occurs it leads to a NULL dereference in
+parse_setup_data(). Avoid this by remapping the data only when
+necessary.
 
-That patch reads like "make the kernel work with old (pre 1.5)
-QEMU behaviour" (where every IRQ for every PCI card was always
-IRQ27). I'm committing to making QEMU continue to support that
-for backward compatibility, as well as to "work like hardware"
-(our autodetect hack is based on what the kernel writes to
-PCI_INTERRUPT_LINE), so in that sense it's a stable and well
-defined[*] thing to write to, but for mainline I imagine the
-kernel will want to just go for the 'work on real h/w' approach.
+Signed-off-by: Linn Crosetto <linn@hp.com>
+---
+ arch/x86/kernel/setup.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-[*] by which I mean "not written down outside the QEMU source
-code but I will write it up if you need it" :-)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f8ec578..2063a49 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -423,6 +423,17 @@ static void __init reserve_initrd(void)
+ }
+ #endif /* CONFIG_BLK_DEV_INITRD */
+ 
++static void __init remap_setup_data(u64 pa_data, u32 data_len,
++				    struct setup_data **data, u32 *map_len)
++{
++	if (data_len <= *map_len)
++		return;
++
++	early_iounmap(*data, *map_len);
++	*data = early_memremap(pa_data, data_len);
++	*map_len = data_len;
++}
++
+ static void __init parse_setup_data(void)
+ {
+ 	struct setup_data *data;
+@@ -432,18 +443,16 @@ static void __init parse_setup_data(void)
+ 	while (pa_data) {
+ 		u32 data_len, map_len;
+ 
++		/* The data length may be too large for early remapping,
++		   remap the data only when needed. */
+ 		map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
+ 			      (u64)sizeof(struct setup_data));
+ 		data = early_memremap(pa_data, map_len);
+ 		data_len = data->len + sizeof(struct setup_data);
+-		if (data_len > map_len) {
+-			early_iounmap(data, map_len);
+-			data = early_memremap(pa_data, data_len);
+-			map_len = data_len;
+-		}
+ 
+ 		switch (data->type) {
+ 		case SETUP_E820_EXT:
++			remap_setup_data(pa_data, data_len, &data, &map_len);
+ 			parse_e820_ext(data);
+ 			break;
+ 		case SETUP_DTB:
+-- 
+1.7.11.3
 
--- PMM
