@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab3HLDQw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Aug 2013 23:16:52 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:47974 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755641Ab3HLDQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Aug 2013 23:16:49 -0400
-Date: Sun, 11 Aug 2013 23:16:47 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dave Hansen <dave.hansen@intel.com>, guz.fnst@cn.fujitsu.com
-Subject: Re: [RFC PATCH v2 0/4] mm: reclaim zbud pages on migration and compaction
-Message-ID: <20130812031647.GB8043@kvack.org>
-References: <1376043740-10576-1-git-send-email-k.kozlowski@samsung.com> <20130812022535.GA18832@bbox>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130812022535.GA18832@bbox>
-User-Agent: Mutt/1.4.2.2i
+	id S1755759Ab3HLDSw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Aug 2013 23:18:52 -0400
+Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:42820 "EHLO
+	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755739Ab3HLDSo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Aug 2013 23:18:44 -0400
+Date: Sun, 11 Aug 2013 23:19:52 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Michael Ellerman <michael@ellerman.id.au>
+cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Stephane Eranian <eranian@google.com>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@au1.ibm.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Subject: Re: [PATCH 5/7] powerpc/perf: Define big-endian version of
+ perf_mem_data_src
+In-Reply-To: <20130811235758.GA29824@concordia>
+Message-ID: <alpine.DEB.2.02.1308112308040.16609@pianoman.cluster.toy>
+References: <20130810174831.GA15551@us.ibm.com> <20130810175153.GF15551@us.ibm.com> <alpine.DEB.2.02.1308102232120.4119@pianoman.cluster.toy> <20130811235758.GA29824@concordia>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020205.52085413.00D3,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Minchan,
+On Mon, 12 Aug 2013, Michael Ellerman wrote:
+> 
+> Yes I think so. The interface is already defined and it's little endian,
+> so on big endian we just need to swap.
+> 
+> The only part I'm not clear on is how things are handled in perf
+> userspace, it seems to already do some byte swapping.
 
-On Mon, Aug 12, 2013 at 11:25:35AM +0900, Minchan Kim wrote:
-> Hello,
-> 
-> On Fri, Aug 09, 2013 at 12:22:16PM +0200, Krzysztof Kozlowski wrote:
-> > Hi,
-> > 
-> > Currently zbud pages are not movable and they cannot be allocated from CMA
-> > region. These patches try to address the problem by:
-> 
-> The zcache, zram and GUP pages for memory-hotplug and/or CMA are
-> same situation.
-> 
-> > 1. Adding a new form of reclaim of zbud pages.
-> > 2. Reclaiming zbud pages during migration and compaction.
-> > 3. Allocating zbud pages with __GFP_RECLAIMABLE flag.
-> 
-> So I'd like to solve it with general approach.
-> 
-> Each subsystem or GUP caller who want to pin pages long time should
-> create own migration handler and register the page into pin-page
-> control subsystem like this.
-> 
-> driver/foo.c
-> 
-> int foo_migrate(struct page *page, void *private);
-> 
-> static struct pin_page_owner foo_migrate = {
->         .migrate = foo_migrate;
-> };
-> 
-> int foo_allocate()
-> {
->         struct page *newpage = alloc_pages();
->         set_pinned_page(newpage, &foo_migrate);
-> }
-> 
-> And in compaction.c or somewhere where want to move/reclaim the page,
-> general VM can ask to owner if it founds it's pinned page.
-> 
-> mm/compaction.c
-> 
->         if (PagePinned(page)) {
->                 struct pin_page_info *info = get_page_pin_info(page);
->                 info->migrate(page);
->                 
->         }
-> 
-> Only hurdle for that is that we should introduce a new page flag and
-> I believe if we all agree this approch, we can find a solution at last.
-> 
-> What do you think?
+It would be nice to clarify this.
 
-I don't like this approach.  There will be too many collisions in the 
-hash that's been implemented (read: I don't think you can get away with 
-a naive implementation for core infrastructure that has to suite all 
-users), you've got a global spin lock, and it doesn't take into account 
-NUMA issues.  The address space migratepage method doesn't have those 
-issues (at least where it is usable as in aio's use-case).
+"struct perf_branch_entry" also has bitfields like this, though to make
+things more confusing that structure isn't exported via the uapi header
+so it's not clear how userspace code is supposed to interpret the values.
 
-If you're going to go down this path, you'll have to decide if *all* users 
-of pinned pages are going to have to subscribe to supporting the un-pinning 
-of pages, and that means taking a real hard look at how O_DIRECT pins pages.  
-Once you start thinking about that, you'll find that addressing the 
-performance concerns is going to be an essential part of any design work to 
-be done in this area.
+As you say it gets complicated with perf userspace, especially in cases
+where you record the data on big-endian but then try to analyze the
+results on a little-endian machine.
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+It would be nice to get confirmation that these bitfields will always be 
+little-endian.  I guess they currently are by definition because only 
+x86/pebs sets data.data_src.val so far?
+
+Vince
+
