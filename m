@@ -1,148 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab3HLUmw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 16:42:52 -0400
-Received: from 2.mo2.mail-out.ovh.net ([188.165.53.149]:37083 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754334Ab3HLUmu (ORCPT
+	id S1754900Ab3HLUnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 16:43:53 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46549 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab3HLUnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 16:42:50 -0400
-Message-ID: <520948C3.7060008@overkiz.com>
-Date: Mon, 12 Aug 2013 22:42:43 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Mon, 12 Aug 2013 16:43:52 -0400
+Date: Mon, 12 Aug 2013 21:43:28 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>
+Message-ID: <20130812204328.GG6427@sirena.org.uk>
+References: <1376069102-15658-1-git-send-email-broonie@kernel.org>
+ <20130812163324.GB3636@lee--X1>
+ <20130812170504.GC6427@sirena.org.uk>
+ <CAF2Aj3i3ZCt4Eimp5-4tGnFEAL6gruf+MuH7qEbWezTnfugiqg@mail.gmail.com>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH] usb: gadget: at91_udc: add usb_clk for transition to
- common clk framework
-References: <1375337885-2684-1-git-send-email-b.brezillon@overkiz.com> <5208E881.3030205@atmel.com>
-In-Reply-To: <5208E881.3030205@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 5243597341932615788
-X-Ovh-Remote: 78.236.240.82 (cha74-5-78-236-240-82.fbx.proxad.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrudejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeikedrudejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ra+QPBLzfvE2u76S"
+Content-Disposition: inline
+In-Reply-To: <CAF2Aj3i3ZCt4Eimp5-4tGnFEAL6gruf+MuH7qEbWezTnfugiqg@mail.gmail.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] mfd: tps65010: Use power efficient workqueue for power
+ polling
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Nicolas,
 
-On 12/08/2013 15:52, Nicolas Ferre wrote:
-> On 01/08/2013 08:18, Boris BREZILLON :
->> The AT91 PMC (Power Management Controller) provides an USB clock used by
->> USB Full Speed host (ohci) and USB Full Speed device (udc).
->> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
->> This configuration was formely done in mach-at91/clock.c, but this
->> implementation will be removed when moving to common clk framework.
->>
->> This patch adds support for usb clock retrieval and configuration, 
->> and is
->> backward compatible with the current at91 clk implementation (if usb clk
->> is not found, it does not configure/enable it).
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->
-Is there a reason you acked this version but not the 3rd one 
-(https://lkml.org/lkml/2013/8/2/102).
->> ---
->>   drivers/usb/gadget/at91_udc.c |   17 ++++++++++++++++-
->>   drivers/usb/gadget/at91_udc.h |    2 +-
->>   2 files changed, 17 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/usb/gadget/at91_udc.c 
->> b/drivers/usb/gadget/at91_udc.c
->> index fce8e4e..ae06585 100644
->> --- a/drivers/usb/gadget/at91_udc.c
->> +++ b/drivers/usb/gadget/at91_udc.c
->> @@ -870,6 +870,11 @@ static void clk_on(struct at91_udc *udc)
->>       if (udc->clocked)
->>           return;
->>       udc->clocked = 1;
->> +
->> +    if (!IS_ERR(udc->uclk)) {
->> +        clk_set_rate(udc->uclk, 48000000);
->> +        clk_prepare_enable(udc->uclk);
->> +    }
->>       clk_prepare_enable(udc->iclk);
->>       clk_prepare_enable(udc->fclk);
->>   }
->> @@ -882,6 +887,8 @@ static void clk_off(struct at91_udc *udc)
->>       udc->gadget.speed = USB_SPEED_UNKNOWN;
->>       clk_disable_unprepare(udc->fclk);
->>       clk_disable_unprepare(udc->iclk);
->> +    if (!IS_ERR(udc->uclk))
->> +        clk_disable_unprepare(udc->uclk);
->>   }
->>
->>   /*
->> @@ -1774,10 +1781,10 @@ static int at91udc_probe(struct 
->> platform_device *pdev)
->>       /* get interface and function clocks */
->>       udc->iclk = clk_get(dev, "udc_clk");
->>       udc->fclk = clk_get(dev, "udpck");
->> +    udc->uclk = clk_get(dev, "usb_clk");
->>       if (IS_ERR(udc->iclk) || IS_ERR(udc->fclk)) {
->>           DBG("clocks missing\n");
->>           retval = -ENODEV;
->> -        /* NOTE: we "know" here that refcounts on these are NOPs */
->>           goto fail1;
->>       }
->>
->> @@ -1851,6 +1858,12 @@ fail3:
->>   fail2:
->>       free_irq(udc->udp_irq, udc);
->>   fail1:
->> +    if (!IS_ERR(udc->uclk))
->> +        clk_put(udc->uclk);
->> +    if (!IS_ERR(udc->fclk))
->> +        clk_put(udc->fclk);
->> +    if (!IS_ERR(udc->iclk))
->> +        clk_put(udc->iclk);
->>       iounmap(udc->udp_baseaddr);
->>   fail0a:
->>       if (cpu_is_at91rm9200())
->> @@ -1894,6 +1907,8 @@ static int __exit at91udc_remove(struct 
->> platform_device *pdev)
->>
->>       clk_put(udc->iclk);
->>       clk_put(udc->fclk);
->> +    if (!IS_ERR(udc->uclk))
->> +        clk_put(udc->uclk);
->>
->>       return 0;
->>   }
->> diff --git a/drivers/usb/gadget/at91_udc.h 
->> b/drivers/usb/gadget/at91_udc.h
->> index e647d1c..0175246 100644
->> --- a/drivers/usb/gadget/at91_udc.h
->> +++ b/drivers/usb/gadget/at91_udc.h
->> @@ -126,7 +126,7 @@ struct at91_udc {
->>       unsigned            active_suspend:1;
->>       u8                addr;
->>       struct at91_udc_data        board;
->> -    struct clk            *iclk, *fclk;
->> +    struct clk            *iclk, *fclk, *uclk;
->>       struct platform_device        *pdev;
->>       struct proc_dir_entry        *pde;
->>       void __iomem            *udp_baseaddr;
->>
->
->
+--Ra+QPBLzfvE2u76S
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Aug 12, 2013 at 08:57:54PM +0100, Lee Jones wrote:
+> Right, I know checkpatch.pl will complain, but one must exercise some
+> common sense in situations such at these. To bring down a single zero for
+> the sake of the (in my opinion, slightly out of date) 80 char rule seems a
+> little rigid.
+>=20
+> If you feel strongly enough I'll keep your patch in tact however.
+
+Please do.  Lots of people do continue to use 80 column editors and mail
+clients and as you say the tooling complains.  It's one thing if it's
+hard to find a place to break the line but that's really not the case
+here.
+
+--Ra+QPBLzfvE2u76S
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSCUjtAAoJELSic+t+oim9rp0P/1yLQCeSF7WCo+vTMfHR17RX
+1FB7cT5cXf2YxKUZQPQ/UYmzmLTG8/gAeMcug0GZ1bWDp9iYJVqOt2BntyBdk3WX
+G+Rq9qWWbmj29ndu9dKOa8AVTxuqVgCRva4ILPZrNt/8ZZu2swLNlPRvMCxR6j9A
+yFughQs0RKrtzuqGe2/CbZIVEn9pWJjQ8CA0s80R2MslRGO5RAiVIzPcALUkoVj7
+M5zK+lqyvwYZ7sCg1JbdLS0vWpNlqj317M0LWqKOaW/gyJPxClyD/5hYGMUMfkjE
+t61uEIkf0mC0YbTucuGcxMs/bFUrw475zD8fFXJG6HEJKjeR3bI9rRxCuKp2T7Do
+dPH5l/7uw9WMQlmuq+d8xWVjzCovmNEnHz67Pi2GiYDRZntFHnisnQUKXF1LL9yU
+hLkOPaY+jizs4mfleqVO8XzfpMATZ1zbDBv5qDAmjcXLzcfU5RrMdjEKSV7lirft
+Lr5wVERVgC8RJPZne6GlrdTCifbpkGiQfTLf27rOvUoFwYvJCScZUZpcMr1iXfz/
+lv1CIqqnxl3WTwoIxiVk27PNVnUhRbS8wbm6ard/dMbm6hSjJzFfFN5sDQQ4UELd
+MtWAd3HmjyxxhF7XSo3YNKpeoBQ8716FW+i+CHPD0giIgvcl09EqR5zWApVMPJby
+bWevZJ+0F0dGOjBF5KUb
+=f7zq
+-----END PGP SIGNATURE-----
+
+--Ra+QPBLzfvE2u76S--
