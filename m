@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab3HLXg4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 19:36:56 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42615 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877Ab3HLXgz (ORCPT
+	id S1756087Ab3HLXn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 19:43:59 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41329 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596Ab3HLXn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 19:36:55 -0400
-Date: Tue, 13 Aug 2013 00:36:41 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
-        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
-        Vinod Koul <vinod.koul@intel.com>
-Message-ID: <20130812233641.GL6427@sirena.org.uk>
-References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
- <1376243970-6489-11-git-send-email-tomasz.figa@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aVF5wPVC5Z7LhB4n"
-Content-Disposition: inline
-In-Reply-To: <1376243970-6489-11-git-send-email-tomasz.figa@gmail.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 10/18] spi: s3c64xx: Do not require legacy DMA API in
- case of S3C64XX
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Mon, 12 Aug 2013 19:43:57 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave.hansen@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        <stable@vger.kernel.org>
+Subject: [PATCH] x86: Fix booting with DEBUG_PAGE_ALLOC with more than 512G RAM
+Date: Mon, 12 Aug 2013 16:43:24 -0700
+Message-Id: <1376351004-4015-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <52090CF2.3040505@sr71.net>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dave reported that system have early crash if DEBUG_PAGEALLOC is selected,
+when system have between 500G and 600G.
 
---aVF5wPVC5Z7LhB4n
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> [    0.000000] init_memory_mapping: [mem 0x00000000-0x000fffff]
+> [    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+> [    0.000000] BRK [0x02086000, 0x02086fff] PGTABLE
+> [    0.000000] BRK [0x02087000, 0x02087fff] PGTABLE
+> [    0.000000] BRK [0x02088000, 0x02088fff] PGTABLE
+> [    0.000000] init_memory_mapping: [mem 0xe80ee00000-0xe80effffff]
+> [    0.000000]  [mem 0xe80ee00000-0xe80effffff] page 4k
+> [    0.000000] BRK [0x02089000, 0x02089fff] PGTABLE
+> [    0.000000] BRK [0x0208a000, 0x0208afff] PGTABLE
+> [    0.000000] Kernel panic - not syncing: alloc_low_page: ran out of memory
 
-On Sun, Aug 11, 2013 at 07:59:22PM +0200, Tomasz Figa wrote:
-> With support for amba-pl08x driver, on S3C64xx the generic DMA engine
-> API can be used instead of the private s3c-dma interface.
+It turns out that we missed increasing needed pages in BRK to mapping
+initial 2M and [0,1M) when we switch to use #PF handler set mem mapping.
 
-I'm still getting issues for SPI with this:
+> commit 8170e6bed465b4b0c7687f93e9948aca4358a33b
+> Author: H. Peter Anvin <hpa@zytor.com>
+> Date:   Thu Jan 24 12:19:52 2013 -0800
+>
+>     x86, 64bit: Use a #PF handler to materialize early mappings on demand
 
-[   50.952845] s3c64xx-spi s3c6410-spi.0: Failed to get RX DMA channel
-[   50.953520] spi_master spi0: failed to prepare transfer hardware
+Before that, we have maping from [0,512M) in head_64.S, and we can
+spare two pages [0-1M).  After that change, we can not reuse pages anymore.
 
-when I test (with -next with this series applied on top), this is from
-the first transfer that tries to DMA - there's actually no RX data.  No
-errors are reported by the DMA controller itself.  I'm also getting
-crashes setting up the audio DMA while derferencecing the channel.
+When we have more than 512M ram, we need extra page for pgd page with
+[512G, 1024g).
 
-This is without DT - are there any hookups missing because of that?
+Increase pages in BRK for page table to solve the booting problem.
 
---aVF5wPVC5Z7LhB4n
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Reported-by: Dave Hansen <dave.hansen@intel.com>
+Bisected-by: Dave Hansen <dave.hansen@intel.com>
+Tested-by: Dave Hansen <dave.hansen@intel.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: <stable@vger.kernel.org> 3.9+
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+---
+ arch/x86/mm/init.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-iQIcBAEBAgAGBQJSCXGGAAoJELSic+t+oim9XdEP/jjU2+VNZYOHerrBv1kvn4ru
-4Y/cKtRQSgnvuhubIWr0eEiHa5gOYz7I27efZlbas90no+x7PkrQ9lHrJyzSXRGm
-w3rSHitDX3D+m18jam6Rl2Ok4Kaz1NkRhaiR4HXFj7hmsIzqjNBegEpHxTcAOJIp
-d5hslTMzUB+3uwAoVuIuS2lSyGKeTnT0WXeaB+qjmvamYDx8fU3YNDVX1Lf/3qBg
-0aIreTf5HqhyA7XYpaDotUQh4IcbkLJzUKCNyPQtph9H0e6+gvPpmjSPQqWd3VoO
-2Cfw9XXuIpDonW9PTflCPIxuOTbh7eEFtuYR0ZGcvhDWrax5dm82txJKy/6JQE/9
-pwsSyYZQWIcZ+UU2knj/wAfG4/wJQfOe81D6nANID3loWfpl6jEE9ooLF0Y8FcVw
-8+OrcD3RDLo3Xo/1HsHG6sxTYMlthh4HkA9EVjHp+lks8xm+VjSbj+oifoh6XfOI
-sdUW4c/Qt/etsB/p/VceNcb/cHpmGBaM9S5uMSkSj1jBEGIFdF1yxxk4GGzvDCX7
-PFfPFqfEHiBbmanBRTP/tbOwYknVhpCRvwprjUEW9oaakL+AoGXAG7uG2pKZT5/i
-dCuU4F9Gul4EbiG2HPYXPlOlCdSdWatPlG4YdpfX16J8UBduo07dgnqKhURPxwCg
-AbKwZ+IOADF6htqXUWtp
-=Vh+Z
------END PGP SIGNATURE-----
-
---aVF5wPVC5Z7LhB4n--
+Index: linux-2.6/arch/x86/mm/init.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/init.c
++++ linux-2.6/arch/x86/mm/init.c
+@@ -78,8 +78,8 @@ __ref void *alloc_low_pages(unsigned int
+ 	return __va(pfn << PAGE_SHIFT);
+ }
+ 
+-/* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
+-#define INIT_PGT_BUF_SIZE	(5 * PAGE_SIZE)
++/* need 3 4k for initial PMD_SIZE,  3 4k for 0-ISA_END_ADDRESS */
++#define INIT_PGT_BUF_SIZE	(6 * PAGE_SIZE)
+ RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
+ void  __init early_alloc_pgt_buf(void)
+ {
