@@ -1,84 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab3HMA3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 20:29:09 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:40247 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756059Ab3HMA3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 20:29:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH] driver core / cpu: Check if NUMA node is valid before bringing CPU up
-Date: Tue, 13 Aug 2013 02:39:30 +0200
-Message-ID: <12747916.Y6ImPYErWR@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1376338103.10300.336.camel@misato.fc.hp.com>
-References: <5200CBBF.1090904@jp.fujitsu.com> <33585791.CVfk6FmZRF@vostro.rjw.lan> <1376338103.10300.336.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756275Ab3HMA3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 20:29:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4477 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756059Ab3HMA3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 20:29:12 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=lGRwBxRWGKEA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jE_6hgDtenQA:10 a=pGLkceISAAAA:8 a=S5W3k2AicAlnduVw2YUA:9 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 12 Aug 2013 20:29:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Shailaja Neelam <neelamshaila@gmail.com>
+Cc: fweisbec@gmail.com, akpm@linux-foundation.org, anish198519851985@gmail.com,
+        james.hogan@imgtec.com, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] fix a Sparse warning in the arch/x86/kernel/irq_work.c
+ file
+Message-ID: <20130812202909.373bc152@gandalf.local.home>
+In-Reply-To: <CAOUhrBGcH4Oe32cDFs++a1UyKaGNfCm1sCG6UC4an_fO5vDjjQ@mail.gmail.com>
+References: <CAOUhrBGcH4Oe32cDFs++a1UyKaGNfCm1sCG6UC4an_fO5vDjjQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, 12 Aug 2013 15:18:16 -0700
+Shailaja Neelam <neelamshaila@gmail.com> wrote:
 
-There is a potential race condition between cpu_subsys_online()
-and either acpi_processor_remove() or remove_memory() that execute
-try_offline_node().  Namely, it is possible that cpu_subsys_online()
-will run right after the CPUs NUMA node has been put offline and
-cpu_to_node() executed by it will return NUMA_NO_NODE (-1).  In
-that case the CPU is gone and it doesn't make sense to call cpu_up()
-for it, so make cpu_subsys_online() return -ENODEV then.
+> I am a high school student trying to become familiar with the
+> opensource process and linux kernel. This is my first submission to
+> the ITC mailing list.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
----
+Hi Shailaja,
 
-Hi Greg,
+Welcome to Linux kernel development :-)
 
-Can you please kindly queue up this one for 3.12?
+> 
+> My patch is for the file arch/x86/kernel/irq_work.c in the vesion
+> linux-3.10 kernel. When I ran the kernel with Sparse, the error read:
+> arch/x86/kernel/irq_work.c:21:
+> 6: warning: symbol 'arch_irq_work_raise'
+> was not declared. Should it be static?
+> 
+> To fix this (rather than add static) I declared the symbol in the
+> header file linux/irq_work.h.
 
-I've added the Toshi's ACK as he said it looked good to him. :-)
+Correct, because adding static would have been a bug.
 
-Thanks,
-Rafael
 
----
- drivers/base/cpu.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+> Afterwards, my error did not show up
+> when I ran the kernel with Sparse again. I also ran the command "make
+> menuconfig" to change the kernel version so that I could assure the
+> correct kernel was running when I tested it, and it was. Then I test
+> built the kernel. It built and rebooted correctly.
 
-Index: linux-pm/drivers/base/cpu.c
-===================================================================
---- linux-pm.orig/drivers/base/cpu.c
-+++ linux-pm/drivers/base/cpu.c
-@@ -43,11 +43,14 @@ static int __ref cpu_subsys_online(struc
- 	struct cpu *cpu = container_of(dev, struct cpu, dev);
- 	int cpuid = dev->id;
- 	int from_nid, to_nid;
--	int ret;
-+	int ret = -ENODEV;
- 
- 	cpu_hotplug_driver_lock();
- 
- 	from_nid = cpu_to_node(cpuid);
-+	if (from_nid == NUMA_NO_NODE)
-+		goto out;
-+
- 	ret = cpu_up(cpuid);
- 	/*
- 	 * When hot adding memory to memoryless node and enabling a cpu
-@@ -57,6 +60,7 @@ static int __ref cpu_subsys_online(struc
- 	if (from_nid != to_nid)
- 		change_cpu_under_node(cpu, from_nid, to_nid);
- 
-+ out:
- 	cpu_hotplug_driver_unlock();
- 	return ret;
- }
+The patch looks good. Let me give you a bit more information and
+background on that function. Just your FYI.
+
+The purpose of irq_work() in general, is to trigger some event in a
+critical location that is not safe to do the event you want to trigger.
+For example, in perf, it may be executing within a Non-Maskable
+Interrupt (NMI) or within the scheduler with the runqueue (rq) lock
+held. If it would like to wake up a task that is monitoring the perf
+output, it can't because to do so would require taking the rq lock and
+possibly causing a deadlock.
+
+Instead, it calls irq_work() to do the event within a normal interrupt
+context. Some architectures have the ability to trigger an interrupt on
+the current CPU that it is running on. This way, if we are in an NMI,
+we trigger the self interrupt to the CPU, but because NMIs run with
+interrupts disable, and the rq lock is held with interrupts disabled,
+the interrupt will stay pending until interrupts are enabled again (out
+of NMI and out from holding the rq lock). When interrupts are enabled,
+the interrupt that we sent will trigger and run our event in a safe
+location (someplace that allows for interrupts to be enabled).
+
+But to do this self triggering of an interrupt requires specific
+architecture knowledge. As Linux supports 30 architectures, and few
+of us have hardware to test on each of these or even know how to write
+code for all of them, we have ways to do things for just the
+architectures we are familiar with. Some architectures may not even
+have the ability to do what we want, even if we knew the architecture
+well.
+
+The "arch_irq_work_raise()" function is one of these cases. For
+architectures that do not support a self triggering interrupt, or one
+that we just didn't get to yet, we create a generic
+arch_irq_work_raise() function that just does our work at the next
+timer interrupt. This isn't the most efficient way, because that next
+timer interrupt may be 10 milliseconds away. But we annotate that
+function with the gcc "__attribute__((weak))" attribute (defined in
+include/linux/compiler-gcc.h as "__weak").
+
+What the __weak attribute does, is to tell the compiler (linker really)
+that this function is to be used if it is not defined someplace else.
+Then, in an architecture that has this specific optimization, we write
+an arch_irq_work_raise() function without the "__weak" attribute, and
+the linker will use that function instead at all of the call sites that
+reference it. This way, the generic code can support architectures that
+does the optimization as well as those that don't.
+
+
+> 
+> Signed-off-by: Shailaja Neelam <neelamshaila@gmail.com>
+
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+
+> ---
+> --- linux-3.10/include/linux/irq_
+> work.h    2013-06-30 15:13:29.000000000 -0700
+> +++ linux-3.10.change/include/linux/irq_work.h    2013-07-24
+> 12:06:15.521140635 -0700
+> @@ -33,6 +33,7 @@ void init_irq_work(struct irq_work *work
+>  void irq_work_queue(struct irq_work *work);
+>  void irq_work_run(void);
+>  void irq_work_sync(struct irq_work *work);
+> +void arch_irq_work_raise(void);
+> 
+>  #ifdef CONFIG_IRQ_WORK
+>  bool irq_work_needs_cpu(void);
 
