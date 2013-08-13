@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab3HMGdX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:33:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60530 "EHLO
+	id S1756915Ab3HMGdb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:33:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60556 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab3HMGdU (ORCPT
+	with ESMTP id S1756524Ab3HMGdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:20 -0400
+	Tue, 13 Aug 2013 02:33:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 28/60] Btrfs: release both paths before logging dir/changed extents
-Date: Mon, 12 Aug 2013 23:33:55 -0700
-Message-Id: <20130813063335.999357981@linuxfoundation.org>
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Amit Shah <amit.shah@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 32/60] virtio/console: Quit from splice_write if pipe->nrbufs is 0
+Date: Mon, 12 Aug 2013 23:33:59 -0700
+Message-Id: <20130813063336.626648751@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -27,45 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 
-commit f3b15ccdbb9a79781578249a63318805e55a6c34 upstream.
+commit 68c034fefe20eaf7d5569aae84584b07987ce50a upstream.
 
-The ceph guys tripped over this bug where we were still holding onto the
-original path that we used to copy the inode with when logging.  This is based
-on Chris's fix which was reported to fix the problem.  We need to drop the paths
-in two cases anyway so just move the drop up so that we don't have duplicate
-code.  Thanks,
+Quit from splice_write if pipe->nrbufs is 0 for avoiding oops in virtio-serial.
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+When an application was doing splice from a kernel buffer to virtio-serial on
+a guest, the application received signal(SIGINT). This situation will normally
+happen, but the kernel executed a kernel panic by oops as follows:
+
+ BUG: unable to handle kernel paging request at ffff882071c8ef28
+ IP: [<ffffffff812de48f>] sg_init_table+0x2f/0x50
+ PGD 1fac067 PUD 0
+ Oops: 0000 [#1] SMP
+ Modules linked in: lockd sunrpc bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd microcode virtio_balloon virtio_net pcspkr soundcore i2c_piix4 i2c_core uinput floppy
+ CPU: 1 PID: 908 Comm: trace-cmd Not tainted 3.10.0+ #49
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+ task: ffff880071c64650 ti: ffff88007bf24000 task.ti: ffff88007bf24000
+ RIP: 0010:[<ffffffff812de48f>]  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
+ RSP: 0018:ffff88007bf25dd8  EFLAGS: 00010286
+ RAX: 0000001fffffffe0 RBX: ffff882071c8ef28 RCX: 0000000000000000
+ RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880071c8ef48
+ RBP: ffff88007bf25de8 R08: ffff88007fd15d40 R09: ffff880071c8ef48
+ R10: ffffea0001c71040 R11: ffffffff8139c555 R12: 0000000000000000
+ R13: ffff88007506a3c0 R14: ffff88007c862500 R15: ffff880071c8ef00
+ FS:  00007f0a3646c740(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: ffff882071c8ef28 CR3: 000000007acbb000 CR4: 00000000000006e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Stack:
+  ffff880071c8ef48 ffff88007bf25e20 ffff88007bf25e88 ffffffff8139d6fa
+  ffff88007bf25e28 ffffffff8127a3f4 0000000000000000 0000000000000000
+  ffff880071c8ef48 0000100000000000 0000000000000003 ffff88007bf25e08
+ Call Trace:
+  [<ffffffff8139d6fa>] port_fops_splice_write+0xaa/0x130
+  [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
+  [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
+  [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
+  [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
+  [<ffffffff8161f8c2>] system_call_fastpath+0x16/0x1b
+ Code: c1 e2 05 48 89 e5 48 83 ec 10 4c 89 65 f8 41 89 f4 31 f6 48 89 5d f0 48 89 fb e8 8d ce ff ff 41 8d 44 24 ff 48 c1 e0 05 48 01 c3 <48> 8b 03 48 83 e0 fe 48 83 c8 02 48 89 03 48 8b 5d f0 4c 8b 65
+ RIP  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
+  RSP <ffff88007bf25dd8>
+ CR2: ffff882071c8ef28
+ ---[ end trace 86323505eb42ea8f ]---
+
+It seems to induce pagefault in sg_init_tabel() when pipe->nrbufs is equal to
+zero. This may happen in a following situation:
+
+(1) The application normally does splice(read) from a kernel buffer, then does
+    splice(write) to virtio-serial.
+(2) The application receives SIGINT when is doing splice(read), so splice(read)
+    is failed by EINTR. However, the application does not finish the operation.
+(3) The application tries to do splice(write) without pipe->nrbufs.
+(4) The virtio-console driver tries to touch scatterlist structure sgl in
+    sg_init_table(), but the region is out of bound.
+
+To avoid the case, a kernel should check whether pipe->nrbufs is empty or not
+when splice_write is executed in the virtio-console driver.
+
+V3: Add Reviewed-by lines and stable@ line in sign-off area.
+
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Reviewed-by: Amit Shah <amit.shah@redhat.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/tree-log.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/char/virtio_console.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -3728,8 +3728,9 @@ next_slot:
- 	}
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -932,6 +932,13 @@ static ssize_t port_fops_splice_write(st
+ 	if (is_rproc_serial(port->out_vq->vdev))
+ 		return -EINVAL;
  
- log_extents:
-+	btrfs_release_path(path);
-+	btrfs_release_path(dst_path);
- 	if (fast_search) {
--		btrfs_release_path(dst_path);
- 		ret = btrfs_log_changed_extents(trans, root, inode, dst_path);
- 		if (ret) {
- 			err = ret;
-@@ -3746,8 +3747,6 @@ log_extents:
- 	}
- 
- 	if (inode_only == LOG_INODE_ALL && S_ISDIR(inode->i_mode)) {
--		btrfs_release_path(path);
--		btrfs_release_path(dst_path);
- 		ret = log_directory_changes(trans, root, inode, path, dst_path);
- 		if (ret) {
- 			err = ret;
++	/*
++	 * pipe->nrbufs == 0 means there are no data to transfer,
++	 * so this returns just 0 for no data.
++	 */
++	if (!pipe->nrbufs)
++		return 0;
++
+ 	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
+ 	if (ret < 0)
+ 		return ret;
 
 
