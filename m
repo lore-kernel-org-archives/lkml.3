@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab3HMGdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:33:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60556 "EHLO
+	id S1756960Ab3HMGdf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:33:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60590 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab3HMGdY (ORCPT
+	with ESMTP id S1756903Ab3HMGdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:24 -0400
+	Tue, 13 Aug 2013 02:33:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Amit Shah <amit.shah@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 32/60] virtio/console: Quit from splice_write if pipe->nrbufs is 0
-Date: Mon, 12 Aug 2013 23:33:59 -0700
-Message-Id: <20130813063336.626648751@linuxfoundation.org>
+        Asias He <asias@redhat.com>, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 03/60] virtio-scsi: Fix virtqueue affinity setup
+Date: Mon, 12 Aug 2013 23:33:30 -0700
+Message-Id: <20130813063332.260869775@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -29,96 +27,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+From: Asias He <asias@redhat.com>
 
-commit 68c034fefe20eaf7d5569aae84584b07987ce50a upstream.
+commit aa52aeea2725839bdd3dcce394486e9a043065e0 upstream.
 
-Quit from splice_write if pipe->nrbufs is 0 for avoiding oops in virtio-serial.
+vscsi->num_queues counts the number of request virtqueue which does not
+include the control and event virtqueue. It is wrong to subtract
+VIRTIO_SCSI_VQ_BASE from vscsi->num_queues.
 
-When an application was doing splice from a kernel buffer to virtio-serial on
-a guest, the application received signal(SIGINT). This situation will normally
-happen, but the kernel executed a kernel panic by oops as follows:
+This patch fixes the following panic.
 
- BUG: unable to handle kernel paging request at ffff882071c8ef28
- IP: [<ffffffff812de48f>] sg_init_table+0x2f/0x50
- PGD 1fac067 PUD 0
+(qemu) device_del scsi0
+
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+ IP: [<ffffffff8179b29f>] __virtscsi_set_affinity+0x6f/0x120
+ PGD 0
  Oops: 0000 [#1] SMP
- Modules linked in: lockd sunrpc bnep bluetooth rfkill ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd microcode virtio_balloon virtio_net pcspkr soundcore i2c_piix4 i2c_core uinput floppy
- CPU: 1 PID: 908 Comm: trace-cmd Not tainted 3.10.0+ #49
- Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
- task: ffff880071c64650 ti: ffff88007bf24000 task.ti: ffff88007bf24000
- RIP: 0010:[<ffffffff812de48f>]  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
- RSP: 0018:ffff88007bf25dd8  EFLAGS: 00010286
- RAX: 0000001fffffffe0 RBX: ffff882071c8ef28 RCX: 0000000000000000
- RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880071c8ef48
- RBP: ffff88007bf25de8 R08: ffff88007fd15d40 R09: ffff880071c8ef48
- R10: ffffea0001c71040 R11: ffffffff8139c555 R12: 0000000000000000
- R13: ffff88007506a3c0 R14: ffff88007c862500 R15: ffff880071c8ef00
- FS:  00007f0a3646c740(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: ffff882071c8ef28 CR3: 000000007acbb000 CR4: 00000000000006e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Modules linked in:
+ CPU: 0 PID: 659 Comm: kworker/0:1 Not tainted 3.11.0-rc2+ #1172
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ Workqueue: kacpi_hotplug _handle_hotplug_event_func
+ task: ffff88007bee1cc0 ti: ffff88007bfe4000 task.ti: ffff88007bfe4000
+ RIP: 0010:[<ffffffff8179b29f>]  [<ffffffff8179b29f>] __virtscsi_set_affinity+0x6f/0x120
+ RSP: 0018:ffff88007bfe5a38  EFLAGS: 00010202
+ RAX: 0000000000000010 RBX: ffff880077fd0d28 RCX: 0000000000000050
+ RDX: 0000000000000000 RSI: 0000000000000246 RDI: 0000000000000000
+ RBP: ffff88007bfe5a58 R08: ffff880077f6ff00 R09: 0000000000000001
+ R10: ffffffff8143e673 R11: 0000000000000001 R12: 0000000000000001
+ R13: ffff880077fd0800 R14: 0000000000000000 R15: ffff88007bf489b0
+ FS:  0000000000000000(0000) GS:ffff88007ea00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000020 CR3: 0000000079f8b000 CR4: 00000000000006f0
  Stack:
-  ffff880071c8ef48 ffff88007bf25e20 ffff88007bf25e88 ffffffff8139d6fa
-  ffff88007bf25e28 ffffffff8127a3f4 0000000000000000 0000000000000000
-  ffff880071c8ef48 0000100000000000 0000000000000003 ffff88007bf25e08
+  ffff880077fd0d28 0000000000000000 ffff880077fd0800 0000000000000008
+  ffff88007bfe5a78 ffffffff8179b37d ffff88007bccc800 ffff88007bccc800
+  ffff88007bfe5a98 ffffffff8179b3b6 ffff88007bccc800 ffff880077fd0d28
  Call Trace:
-  [<ffffffff8139d6fa>] port_fops_splice_write+0xaa/0x130
-  [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
-  [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
-  [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
-  [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
-  [<ffffffff8161f8c2>] system_call_fastpath+0x16/0x1b
- Code: c1 e2 05 48 89 e5 48 83 ec 10 4c 89 65 f8 41 89 f4 31 f6 48 89 5d f0 48 89 fb e8 8d ce ff ff 41 8d 44 24 ff 48 c1 e0 05 48 01 c3 <48> 8b 03 48 83 e0 fe 48 83 c8 02 48 89 03 48 8b 5d f0 4c 8b 65
- RIP  [<ffffffff812de48f>] sg_init_table+0x2f/0x50
-  RSP <ffff88007bf25dd8>
- CR2: ffff882071c8ef28
- ---[ end trace 86323505eb42ea8f ]---
+  [<ffffffff8179b37d>] virtscsi_set_affinity+0x2d/0x40
+  [<ffffffff8179b3b6>] virtscsi_remove_vqs+0x26/0x50
+  [<ffffffff8179c7d2>] virtscsi_remove+0x82/0xa0
+  [<ffffffff814cb6b2>] virtio_dev_remove+0x22/0x70
+  [<ffffffff8167ca49>] __device_release_driver+0x69/0xd0
+  [<ffffffff8167cb9d>] device_release_driver+0x2d/0x40
+  [<ffffffff8167bb96>] bus_remove_device+0x116/0x150
+  [<ffffffff81679936>] device_del+0x126/0x1e0
+  [<ffffffff81679a06>] device_unregister+0x16/0x30
+  [<ffffffff814cb889>] unregister_virtio_device+0x19/0x30
+  [<ffffffff814cdad6>] virtio_pci_remove+0x36/0x80
+  [<ffffffff81464ae7>] pci_device_remove+0x37/0x70
+  [<ffffffff8167ca49>] __device_release_driver+0x69/0xd0
+  [<ffffffff8167cb9d>] device_release_driver+0x2d/0x40
+  [<ffffffff8167bb96>] bus_remove_device+0x116/0x150
+  [<ffffffff81679936>] device_del+0x126/0x1e0
+  [<ffffffff8145edfc>] pci_stop_bus_device+0x9c/0xb0
+  [<ffffffff8145f036>] pci_stop_and_remove_bus_device+0x16/0x30
+  [<ffffffff81474a9e>] acpiphp_disable_slot+0x8e/0x150
+  [<ffffffff81474f6a>] hotplug_event_func+0xba/0x1a0
+  [<ffffffff814906c8>] ? acpi_os_release_object+0xe/0x12
+  [<ffffffff81475911>] _handle_hotplug_event_func+0x31/0x70
+  [<ffffffff810b5333>] process_one_work+0x183/0x500
+  [<ffffffff810b66e2>] worker_thread+0x122/0x400
+  [<ffffffff810b65c0>] ? manage_workers+0x2d0/0x2d0
+  [<ffffffff810bc5de>] kthread+0xce/0xe0
+  [<ffffffff810bc510>] ? kthread_freezable_should_stop+0x70/0x70
+  [<ffffffff81ca045c>] ret_from_fork+0x7c/0xb0
+  [<ffffffff810bc510>] ? kthread_freezable_should_stop+0x70/0x70
+ Code: 01 00 00 00 74 59 45 31 e4 83 bb c8 01 00 00 02 74 46 66 2e 0f 1f 84 00 00 00 00 00 49 63 c4 48 c1 e0 04 48 8b bc 0
+3 10 02 00 00 <48> 8b 47 20 48 8b 80 d0 01 00 00 48 8b 40 50 48 85 c0 74 07 be
+ RIP  [<ffffffff8179b29f>] __virtscsi_set_affinity+0x6f/0x120
+  RSP <ffff88007bfe5a38>
+ CR2: 0000000000000020
+ ---[ end trace 99679331a3775f48 ]---
 
-It seems to induce pagefault in sg_init_tabel() when pipe->nrbufs is equal to
-zero. This may happen in a following situation:
-
-(1) The application normally does splice(read) from a kernel buffer, then does
-    splice(write) to virtio-serial.
-(2) The application receives SIGINT when is doing splice(read), so splice(read)
-    is failed by EINTR. However, the application does not finish the operation.
-(3) The application tries to do splice(write) without pipe->nrbufs.
-(4) The virtio-console driver tries to touch scatterlist structure sgl in
-    sg_init_table(), but the region is out of bound.
-
-To avoid the case, a kernel should check whether pipe->nrbufs is empty or not
-when splice_write is executed in the virtio-console driver.
-
-V3: Add Reviewed-by lines and stable@ line in sign-off area.
-
-Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Reviewed-by: Amit Shah <amit.shah@redhat.com>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Asias He <asias@redhat.com>
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/virtio_console.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/scsi/virtio_scsi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -932,6 +932,13 @@ static ssize_t port_fops_splice_write(st
- 	if (is_rproc_serial(port->out_vq->vdev))
- 		return -EINVAL;
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -751,7 +751,7 @@ static void __virtscsi_set_affinity(stru
  
-+	/*
-+	 * pipe->nrbufs == 0 means there are no data to transfer,
-+	 * so this returns just 0 for no data.
-+	 */
-+	if (!pipe->nrbufs)
-+		return 0;
-+
- 	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
- 	if (ret < 0)
- 		return ret;
+ 		vscsi->affinity_hint_set = true;
+ 	} else {
+-		for (i = 0; i < vscsi->num_queues - VIRTIO_SCSI_VQ_BASE; i++)
++		for (i = 0; i < vscsi->num_queues; i++)
+ 			virtqueue_set_affinity(vscsi->req_vqs[i].vq, -1);
+ 
+ 		vscsi->affinity_hint_set = false;
 
 
