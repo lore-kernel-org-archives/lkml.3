@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab3HMOB5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:01:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11699 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757204Ab3HMOBq (ORCPT
+	id S1757228Ab3HMOCr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:02:47 -0400
+Received: from smtpauth05.mfg.siteprotect.com ([64.26.60.144]:44829 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755291Ab3HMOCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:01:46 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=RbvQYlb-YjEA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=aGOhDPDwV-YA:10 a=20KFwNOVAAAA:8 a=69EAbJreAAAA:8 a=tB4JYbadIHrABSbNQcoA:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=EfJqPEOeqlMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 13 Aug 2013 10:01:43 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [GIT PULL] tracing: final fixes for events and some
-Message-ID: <20130813100143.0f09fae2@gandalf.local.home>
-In-Reply-To: <20130813114503.GA31585@redhat.com>
-References: <1375712355.22073.45.camel@gandalf.local.home>
-	<20130805143257.GA32639@gmail.com>
-	<1375714329.22073.63.camel@gandalf.local.home>
-	<20130812181325.GA19405@gmail.com>
-	<20130813023922.GA1042@redhat.com>
-	<20130812231443.52563398@gandalf.local.home>
-	<20130813110618.GA3300@gmail.com>
-	<20130813114503.GA31585@redhat.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Aug 2013 10:02:46 -0400
+Date: Tue, 13 Aug 2013 10:03:52 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Ingo Molnar <mingo@kernel.org>
+cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        peterz@infradead.org, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
+ executable
+In-Reply-To: <20130813104821.GB2170@gmail.com>
+Message-ID: <alpine.DEB.2.02.1308130955360.4537@pianoman.cluster.toy>
+References: <1375669364-13838-1-git-send-email-andi@firstfloor.org> <20130805081641.GA24808@gmail.com> <20130805082320.GA9562@infradead.org> <20130805083132.GE26746@gmail.com> <20130805083434.GA20606@infradead.org> <20130805090857.GA26940@gmail.com>
+ <20130806061932.GA20485@infradead.org> <20130812181956.GB19405@gmail.com> <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy> <20130813104821.GB2170@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020202.520A3C85.01D0,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013 07:45:03 -0400
-Dave Jones <davej@redhat.com> wrote:
+On Tue, 13 Aug 2013, Ingo Molnar wrote:
+> * Vince Weaver <vince@deater.net> wrote:
 
+> In the past you used to only test your library once the -stable kernel was 
+> released - has this changed recently by any chance? I remember that in one 
+> particular case I got a regression bugreport from you essentially on the 
+> day of a -stable release.
+> 
+> If you tested -rc2 or so that would give us a much larger window to fix 
+> any breakages that affect your library. (I'm not even asking for 
+> linux-next testing.)
 
-> But the recent fix where you had a test-case that did module unloads
-> didn't really seem to fit the profile of what I was seeing.
-> It's feasible that my fuzzer can trigger module _loads_, but I
-> don't think there's any way we can trigger an rmmod.
+I wasn't aware that the Linux "no-ABI breakage guarantee" only applied to 
+people who ran -rc kernels.
 
-I don't know your tool well enough, so I don't know what its capable of.
+I've spent a lot of time enhancing trinity and writing my own perf syscall 
+fuzzer just to try to keep on top of ABI breaks as per your rules and they 
+still slip in and they still don't get reverted.
 
-The only reproducer that I had was on module loading. I don't know of
-any other way that could have corrupted the function tracing tables.
-But there may be another way. We'll have to wait till it happens again
-and hopefully next time we'll have more information to what exactly
-happened. 
+In any case, a list of perf-related ABI breakages is here.
+ http://web.eece.maine.edu/~vweaver/projects/perf_events/abi_breakage.html
+I guess whether it's a lot or just a few depends on your perspective.
 
--- Steve
+> To resolve this situation you could help us out by doing either of these:
+> 
+>  1) integrate your tests into tools/, there's 'perf test' that has a ton
+>     of testcases already
+
+I have enough trouble keeping my code up to date let alone wasting weeks 
+of time re-sending patches.  Some things are just simpler to maintain 
+outside the kernel.
+
+>  2) run your testsuite more frequently - instead of waiting for a stable
+>     kernel to be released and then complain about breakage.
+
+I only have so many machines and so much time, and no one is funding me 
+for this work.  I run -rc kernels when I can, but perf can be very 
+architecture and even CPU dependent so it is hard to get full coverage.  
+For example it's hard to test full SNB-EP uncore support w/o such a 
+machine.
+
+Vince
