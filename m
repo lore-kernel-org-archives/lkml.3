@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab3HMXKA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 19:10:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7933 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755605Ab3HMXJ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 19:09:59 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=KpzchuzAFZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ce-1e7Iquy0A:10 a=7d_E57ReAAAA:8 a=_WYZkrhRpS74BtdmUsIA:9 a=CjuIK1q_8ugA:10 a=D6-X0JM3zdQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Tue, 13 Aug 2013 19:09:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        chris <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH][RFC] tracing: Enable tracepoints via module parameters
-Message-ID: <20130813190956.2ec89dff@gandalf.local.home>
-In-Reply-To: <20130813223453.GB15394@Krystal>
-References: <1299622684.20306.77.camel@gandalf.stny.rr.com>
-	<877hc64klm.fsf@rustcorp.com.au>
-	<20130813111442.632f3421@gandalf.local.home>
-	<20130813223453.GB15394@Krystal>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758431Ab3HMXKY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 19:10:24 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:47479 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756090Ab3HMXKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 19:10:22 -0400
+Date: Tue, 13 Aug 2013 18:10:20 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Travis <travis@sgi.com>, Nathan Zimmer <nzimmer@sgi.com>,
+        Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
+	embedded in the buddy allocator
+Message-ID: <20130813231020.GA22667@asylum.americas.sgi.com>
+References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com> <1376344480-156708-1-git-send-email-nzimmer@sgi.com> <CA+55aFwTQLexJkf67P0b7Z7cw8fePjdDSdA4SOkM+Jf+kBPYEA@mail.gmail.com> <520A6DFC.1070201@sgi.com> <CA+55aFwRHdQ_f6ryUU1yWkW1Qz8cG958jLZuyhd_YdOq4-rfRA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwRHdQ_f6ryUU1yWkW1Qz8cG958jLZuyhd_YdOq4-rfRA@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013 18:34:53 -0400
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+On Tue, Aug 13, 2013 at 10:51:37AM -0700, Linus Torvalds wrote:
+> I realize that benchmarking cares, and yes, I also realize that some
+> benchmarks actually want to reboot the machine between some runs just
+> to get repeatability, but if you're benchmarking a 16TB machine I'm
+> guessing any serious benchmark that actually uses that much memory is
+> going to take many hours to a few days to run anyway? Having some way
+> to wait until the memory is all done (which might even be just a silly
+> shell script that does "ps" and waits for the kernel threads to all go
+> away) isn't going to kill the benchmark - and the benchmark itself
+> will then not have to worry about hittinf the "oops, I need to
+> initialize 2GB of RAM now because I hit an uninitialized page".
+> 
+I am not overly concerned with cost having to setup a page struct on first
+touch but what I need to avoid is adding more permanent cost to page faults
+on a system that is already "primed".
 
-
-> What I like about this approach, if applied to kernel modules, is that
-> it does not require users to interact with module load parameters to
-> specify which tracepoints should be enabled: this is all done through
-> the regular tracer UI, thus greatly improving user experience.
+> Ok, so I don't know all the issues, and in many ways I don't even
+> really care. You could do it other ways, I don't think this is a big
+> deal. The part I hate is the runtime hook into the core MM page
+> allocation code, so I'm just throwing out any random thing that comes
+> to my mind that could be used to avoid that part.
 > 
 
-I have thought about adding a file that would let you enable generic
-tracepoints as they are created. Doesn't even need to be specifically
-modules, but kprobes as well.
+The only mm structure we are adding to is a new flag in page->flags.
+That didn't seem too much.
 
-But that's agnostic to this patch. One thing I like about the patch is
-that it has modinfo show you the available tracepoints in a module.
+I had hoped to restrict the core mm changes to check_new_page and
+free_pages_check but I haven't gotten there yet.
 
--- Steve
+Not putting on uninitialized pages on to the lru would work but then I 
+would be concerned over any calculations based on totalpages.  I might be
+too paranoid there but having that be incorrect until after a system is booted
+worries me.
 
+
+Nate
