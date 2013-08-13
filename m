@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437Ab3HMK6w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 06:58:52 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38573 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214Ab3HMK6v (ORCPT
+	id S1757469Ab3HMLAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 07:00:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43918 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757441Ab3HMLAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 06:58:51 -0400
-Date: Tue, 13 Aug 2013 12:58:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        holt@sgi.com, rob@landley.net, travis@sgi.com,
-        daniel@numascale-asia.com, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, yinghai@kernel.org, mgorman@suse.de,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
- embedded in the buddy allocator
-Message-ID: <20130813105847.GC2170@gmail.com>
-References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
- <1376344480-156708-1-git-send-email-nzimmer@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376344480-156708-1-git-send-email-nzimmer@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Aug 2013 07:00:34 -0400
+Message-ID: <1376391580.4039.8.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH 4/9] PCI: mvebu: add support for reset on GPIO
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, devicetree@vger.kernel.org,
+        linux-pci@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org
+Date: Tue, 13 Aug 2013 12:59:40 +0200
+In-Reply-To: <520A0D1D.4050609@gmail.com>
+References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	 <1376333215-12885-5-git-send-email-sebastian.hesselbarth@gmail.com>
+	 <20130813080956.GE9316@ulmo> <20130813103030.1e4156a1@skate>
+	 <20130813100348.GA28762@ulmo> <520A0D1D.4050609@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sebastian,
 
-* Nathan Zimmer <nzimmer@sgi.com> wrote:
-
-> We are still restricting ourselves ourselves to 2MiB initialization. 
-> This was initially to keep the patch set a little smaller and more 
-> clear. However given how well it is currently performing I don't see a 
-> how much better it could be with to 2GiB chunks.
+Am Dienstag, den 13.08.2013, 12:40 +0200 schrieb Sebastian Hesselbarth:
+> On 08/13/13 12:03, Thierry Reding wrote:
+> > On Tue, Aug 13, 2013 at 10:30:30AM +0200, Thomas Petazzoni wrote:
+> >> Dear Thierry Reding,
+> >>
+> >> On Tue, 13 Aug 2013 10:09:56 +0200, Thierry Reding wrote:
+> >>
+> >>>> +- reset-gpios: optional gpio to PERST#
+> >>>> +- reset-delay-ms: delay in ms to wait after reset de-assertion
+> >>>
+> >>> I remember some recent discussion about this, and we now have this reset
+> >>> framework, so perhaps it makes more sense to use the reset binding for
+> >>> this? Cc'ing Stephen (as part of the device tree bindings maintainers
+> >>> team) who was involved in that recent reset bindings discussion.
+> >>
+> >> I also thought about this, but the reset framework seems to be designed
+> >> for "reset controller" IPs, i.e special IPs that are controlling reset
+> >> signals. Looking at Documentation/devicetree/bindings/reset/reset.txt,
+> >> I'm not sure to see how this would apply to GPIO-controlled reset
+> >> signals.
+> >
+> > See:
+> >
+> > 	http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg36900.html
+> >
+> > which seems to have carried over to this at some point:
+> >
+> > 	http://www.spinics.net/lists/devicetree/msg00521.html
+> >
+> > Some of the messages in between I can't find in any archive, sorry.
 > 
-> As far as extra overhead. We incur an extra function call to 
-> ensure_page_is_initialized but that is only really expensive when we 
-> find uninitialized pages, otherwise it is a flag check once every 
-> PTRS_PER_PMD. [...]
+> Thierry, Sascha,
+> 
+> thanks for the input. Flipping through the above discussion, I guess
+> using "reset-gpios" and "reset-delay-us" should be fine?
+> 
+> I can also remove the delay property for now, as I cannot find a final
+> conclusion about the configurable delay.
 
-Mind expanding on this in more detail?
+Yes, I'm in favor of using 'reset-gpios'. If we can agree on this
+binding, I'll add support to the reset framework core.
 
-The main fastpath overhead we are really interested in is the 'memory is 
-already fully ininialized and we reallocate a second time' case - i.e. the 
-*second* (and subsequent), post-initialization allocation of any page 
-range.
+> In the driver, I will stick to bare gpiolib and wait for gpio-reset
+> driver to become available. Currently, we don't have sophisticated
+> reset handling in pci-mvebu anyway.
 
-Those allocations are the ones that matter most: they will occur again and 
-again, for the lifetime of the booted up system.
+Sounds good to me.
 
-What extra overhead is there in that case? Only a flag check that is 
-merged into an existing flag check (in free_pages_check()) and thus is 
-essentially zero overhead? Or is it more involved - if yes, why?
+regards
+Philipp
 
-One would naively think that nothing but the flags check is needed in this 
-case: if all 512 pages in an aligned 2MB block is fully initialized, and 
-marked as initialized in all the 512 page heads, then no other runtime 
-check will be needed in the future.
-
-Thanks,
-
-	Ingo
