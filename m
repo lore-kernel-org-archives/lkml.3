@@ -1,187 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756358Ab3HMHRX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:17:23 -0400
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:10562 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab3HMHRV (ORCPT
+	id S1756279Ab3HMHSU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:18:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33286 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754914Ab3HMHST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:17:21 -0400
-Message-ID: <5209DD78.7050700@nsn.com>
-Date: Tue, 13 Aug 2013 09:17:12 +0200
-From: Ionut Nicu <ioan.nicu.ext@nsn.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Tue, 13 Aug 2013 03:18:19 -0400
+Date: Tue, 13 Aug 2013 00:19:44 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Shyam Kaushik <shyam@zadarastorage.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] regmap: flat: use the cache_present bitmap
-References: <5204BFC7.4090106@nsn.com> <20130809114426.GZ6427@sirena.org.uk> <52052401.7030707@nsn.com>
-In-Reply-To: <52052401.7030707@nsn.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-purgate-type: clean
-X-purgate-Ad: Categorized by eleven eXpurgate (R) http://www.eleven.de
-X-purgate: clean
-X-purgate: This mail is considered clean (visit http://www.eleven.de for further information)
-X-purgate-size: 5643
-X-purgate-ID: 151667::1376378234-00003561-5C69669E/0-0/0-0
+Subject: Re: BUG REPORT - IDR wraps around at 30-bits - works very bad with
+ NFSD/SCTP
+Message-ID: <20130813071944.GA11270@kroah.com>
+References: <9a92eee58fefc1b8e3b4771ecf210d29@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <9a92eee58fefc1b8e3b4771ecf210d29@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Tue, Aug 13, 2013 at 12:31:29PM +0530, Shyam Kaushik wrote:
+> Hi Folks,
+> 
+> We are using Ubuntu linux kernel 3.2.0-25-generic & 3.8.13-030813-generic
+> in our environments, but I think this bug is still present in mainline
+> kernel. Clients of IDR rollover at MAX_INT (NFSD & SCTP in kernel do this)
+> & others on MAX_IDR_MASK. This is ideally 2^31. But there is some BUG
+> within IDR that it wraps over at 2^30.
+> 
+> NFSD uses IDR for maintaining its stateids & tracks min_stateid with a
+> static variable which keeps incrementing. So over a period of time NFSD
+> could run into the issue that it allocates an ID with IDR, but IDR cant
+> locate this ID, resulting in NFSD constantly sending BAD_STATEIDS to all
+> its clients.
+> 
+> Following short driver (which closely resembles NFSD usage of IDR) shows
+> the BUG within IDR:
 
-On 09.08.2013 19:16, Ionut Nicu wrote:
-> On 09.08.2013 13:44, ext Mark Brown wrote:
->> On Fri, Aug 09, 2013 at 12:09:11PM +0200, Ionut Nicu wrote:
->>> As opposed to the other regmap cache implementations,
->>> regcache_flat didn't use the cache_present bitmap for
->>> figuring out whether a register was cached or not, nor
->>> did it mark a register as present in the cache when
->>> regcache_flat_write() was called.
->>
->>> This caused incorrect behaviour, such as returning
->>> value 0 for non-volatile registers without first reading
->>> their value from the device and storing it in the cache.
->>
->> The goal with the flat cache is to do as little work as possible for
->> things like memory mapped devices where the cache operations are
->> actually noticable in comparison with the I/O costs.  I would therefore
->> exapect that anything using the flat cache would want to ensure that the
->> cache is fully populated at init time, reading back from the device if
->> nothing else (by setting num_reg_defaults_raw but not providing values),
->> rather than do additional operations in the data path.
->>
-> 
-> Ok, I get your point. I've tried using this approach, but the thing is
-> that I have a device which supports only single rw operations. The
-> regcache_hw_init() function calls regmap_raw_read which in turn calls
-> _regmap_raw_read() when cache_bypass is enabled. But _regmap_raw_read()
-> doesn't take the use_single_rw flag into account and tries to read
-> num_reg_defaults_raw registers in a single bus transfer. Unfortunately
-> this doesn't work with my device. 
-> 
-> I thought about changing regcache_hw_init() to check for this flag in
-> the same way regmap_bulk_read() does, but I think this is pretty ugly.
-> 
-> What do you think about moving the check to use_single_rw inside
-> _regmap_raw_read(), right where the bus accesses are done?
-> 
-> Something like in the following patch:
-> 
-> 
-> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-> index 42b45ac..de7f353 100644
-> --- a/drivers/base/regmap/regmap.c
-> +++ b/drivers/base/regmap/regmap.c
-> @@ -1486,14 +1486,16 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
->  {
->  	struct regmap_range_node *range;
->  	u8 *u8 = map->work_buf;
-> -	int ret;
-> +	size_t val_bytes = map->format.val_bytes;
-> +	size_t reg_size = map->format.reg_bytes + map->format.pad_bytes;
-> +	int ret, i;
->  
->  	WARN_ON(!map->bus);
->  
->  	range = _regmap_range_lookup(map, reg);
->  	if (range) {
->  		ret = _regmap_select_page(map, &reg, range,
-> -					  val_len / map->format.val_bytes);
-> +					  val_len / val_bytes);
->  		if (ret != 0)
->  			return ret;
->  	}
-> @@ -1508,15 +1510,41 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
->  	 */
->  	u8[0] |= map->read_flag_mask;
->  
-> -	trace_regmap_hw_read_start(map->dev, reg,
-> -				   val_len / map->format.val_bytes);
-> +	/*
-> +	 * Some devices does not support bulk read, for
-> +	 * them we have a series of single read operations.
-> +	 */
-> +	if (map->use_single_rw) {
-> +		for (i = 0; i < val_len; i++) {
-> +			trace_regmap_hw_read_start(map->dev,
-> +					reg + (i * map->reg_stride), 1);
-> +
-> +			map->format.format_reg(map->work_buf,
-> +					reg + (i *  map->reg_stride),
-> +					map->reg_shift);
-> +			u8[0] |= map->read_flag_mask;
-> +
-> +			ret = map->bus->read(map->bus_context,
-> +					map->work_buf,
-> +					reg_size,
-> +					val + (i * val_bytes),
-> +					val_bytes);
-> +			if (ret != 0)
-> +				return ret;
->  
-> -	ret = map->bus->read(map->bus_context, map->work_buf,
-> -			     map->format.reg_bytes + map->format.pad_bytes,
-> -			     val, val_len);
-> +			trace_regmap_hw_read_done(map->dev,
-> +					reg + (i * map->reg_stride), 1);
-> +		}
-> +	} else {
-> +		trace_regmap_hw_read_start(map->dev, reg, val_len / val_bytes);
->  
-> -	trace_regmap_hw_read_done(map->dev, reg,
-> -				  val_len / map->format.val_bytes);
-> +		ret = map->bus->read(map->bus_context, map->work_buf,
-> +				reg_size, val, val_len);
-> +		if (ret != 0)
-> +			return ret;
-> +
-> +		trace_regmap_hw_read_done(map->dev, reg, val_len / val_bytes);
-> +	}
->  
->  	return ret;
->  }
-> @@ -1702,25 +1730,9 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
->  		return -EINVAL;
->  
->  	if (vol || map->cache_type == REGCACHE_NONE) {
-> -		/*
-> -		 * Some devices does not support bulk read, for
-> -		 * them we have a series of single read operations.
-> -		 */
-> -		if (map->use_single_rw) {
-> -			for (i = 0; i < val_count; i++) {
-> -				ret = regmap_raw_read(map,
-> -						reg + (i * map->reg_stride),
-> -						val + (i * val_bytes),
-> -						val_bytes);
-> -				if (ret != 0)
-> -					return ret;
-> -			}
-> -		} else {
-> -			ret = regmap_raw_read(map, reg, val,
-> -					      val_bytes * val_count);
-> -			if (ret != 0)
-> -				return ret;
-> -		}
-> +		ret = regmap_raw_read(map, reg, val, val_bytes * val_count);
-> +		if (ret != 0)
-> +			return ret;
->  
->  		for (i = 0; i < val_count * val_bytes; i += val_bytes)
->  			map->format.parse_inplace(val + i);
-> 
+The IDR code was rewritten very recently (3.9 or 3.10), so could you
+test 3.10.6 out and let us know if this is still an issue there?  And if
+so, cc: the idr developers (on cc:) would help out a lot.
 
-Do you have any feedback for this patch? 	
+Example left below for them...
 
-If you think the change is too complex, I have a simpler solution that could make
-things work with devices that set use_single_rw. Instead of enabling cache_bypass
-in regcache_hw_init(), we could temporarily set map->cache_type to REGCACHE_NONE
-and then call regmap_bulk_read() instead of regmap_raw_read().
+thanks,
 
-Please let me know your opinion on any of the two solutions.
+greg k-h
 
-Best regards,
-Ionut Nicu.
+> 
+> #include <linux/module.h>
+> #include <linux/init.h>
+> #include <linux/version.h>
+> #include <linux/idr.h>
+> 
+> static int log_idr_entry(int id, void *ptr, void *data)
+> {
+>         int     *expected_val = (int *)ptr;
+> 
+>         pr_info("\tIDR Actual ID[%d] %s Expected Value[%d]\n", id, (id ==
+> *expected_val)?"==":"!=", *expected_val);
+>         return 0;
+> }
+> 
+> static void process_idr_entry(struct idr *stateids, int min_stateid)
+> {
+>         int             new_stid;
+>         int             error;
+> 
+>         pr_info("\nProcessing for min_stateid[%d]\n", min_stateid);
+>         if (!idr_pre_get(stateids, GFP_KERNEL)) {
+>                 pr_info("Failed to pre-get\n");
+>                 return;
+>         }
+> 
+>         error = idr_get_new_above(stateids, &new_stid, min_stateid,
+> &new_stid);
+>         if (error) {
+>                 pr_info("Failed to get new id\n");
+>                 idr_remove(stateids, new_stid);
+>                 return;
+>         }
+> 
+>         pr_info("Allocated new_stid[%d]\n", new_stid);
+> 
+>         if (!idr_find(stateids, new_stid))
+>                 pr_info("BUG: Cant find ID[%d]\n", new_stid);
+> 
+>         pr_info("Dumping entries in IDR\n");
+>         idr_for_each(stateids, &log_idr_entry, NULL);
+>         idr_remove(stateids, new_stid);
+> }
+> 
+> void driver_exit(void)
+> {
+> }
+> 
+> int driver_init(void)
+> {
+>         struct idr      stateids;
+> 
+>         pr_info("%d\n", MAX_INT);
+>         idr_init(&stateids);
+>         process_idr_entry(&stateids, 0/*min_stateid*/);
+>         process_idr_entry(&stateids, 1073741823/*min_stateid*/);
+>         process_idr_entry(&stateids, 1073741824/*min_stateid*/);
+>         idr_remove_all(&stateids);
+>         idr_destroy(&stateids);
+>         return 0;
+> }
+> 
+> module_init(driver_init);
+> module_exit(driver_exit);
+> 
+> 
+> Upon loading the driver, the following message shows up
+> [71641.440846] Processing for min_stateid[0]
+> [71641.440857] Allocated new_stid[0]
+> [71641.440859] Dumping entries in IDR
+> [71641.440861]  IDR Actual ID[0] == Expected Value[0]
+> [71641.440864]
+> [71641.440864] Processing for min_stateid[1073741823]
+> [71641.440867] Allocated new_stid[1073741823]
+> [71641.440868] Dumping entries in IDR
+> [71641.440876]  IDR Actual ID[1073741823] == Expected Value[1073741823]
+> [71641.440878]
+> [71641.440878] Processing for min_stateid[1073741824]
+> [71641.440883] Allocated new_stid[1073741824]
+> [71641.440884] BUG: Cant find ID[1073741824]
+> [71641.440886] Dumping entries in IDR
+> [71641.440887]  IDR Actual ID[0] != Expected Value[1073741824]
+> 
+> i.e. when we allocate a stated==1073741824, IDR internally has it as 0.
+> 
+> --Shyam
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
