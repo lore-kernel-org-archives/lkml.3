@@ -1,138 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809Ab3HMP2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 11:28:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57181 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214Ab3HMP2O (ORCPT
+	id S1758006Ab3HMP3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 11:29:15 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:15315 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab3HMP3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 11:28:14 -0400
-Date: Tue, 13 Aug 2013 17:27:58 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, acme@infradead.org,
-        jolsa@redhat.com, eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/4] perf, x86: Report TSX transaction abort cost as
- weight
-Message-ID: <20130813152758.GB24092@twins.programming.kicks-ass.net>
-References: <1376010946-28666-1-git-send-email-andi@firstfloor.org>
- <1376010946-28666-3-git-send-email-andi@firstfloor.org>
- <20130813112301.GV27162@twins.programming.kicks-ass.net>
- <20130813143517.GT19750@two.firstfloor.org>
+	Tue, 13 Aug 2013 11:29:13 -0400
+Message-ID: <201308131529.r7DFTCkL028814@farm-0021.internal.tilera.com>
+In-Reply-To: <alpine.LNX.2.00.1308101849350.32627@pobox.suse.cz>
+References: <alpine.LNX.2.00.1308101849350.32627@pobox.suse.cz>
+From: Tony Lu <zlu@tilera.com>
+Date: Tue, 13 Aug 2013 10:45:24 -0400
+Subject: [PATCH v2] tile: support ASLR fully
+To: <linux-kernel@vger.kernel.org>, <cmetcalf@tilera.com>,
+        Jiri Kosina <jkosina@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813143517.GT19750@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 04:35:17PM +0200, Andi Kleen wrote:
-> > How about something like the below instead? I didn't copy the !fll test
-> > because I couldn't find why that was. Section 18.10.5.1 (Aug 2012)
-> 
-> !fll is so that if a memory weight is requested we don't overwrite it.
+With this change, tile Linux now supports address-space layout
+randomization for shared objects, stack, heap and vdso.
 
-Oh, hum.. it would be good to document that collision. Neither your
-changelog nor your patch clarified this. So fail on you.
+Signed-off-by: Tony Lu <zlu@tilera.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+v2: implement Jiri Kosina's suggestion to copy the math in
+mmap_rnd() for x86.
 
-> >  	u64 status, dla, dse, lat;
-> >  };
-> >  
-> > -/*
-> > - * Same as pebs_record_nhm, with two additional fields.
-> > - */
-> >  struct pebs_record_hsw {
-> > -	struct pebs_record_nhm nhm;
-> > -	/*
-> > -	 * Real IP of the event. In the Intel documentation this
-> > -	 * is called eventingrip.
-> > -	 */
-> > -	u64 real_ip;
-> > -	/*
-> > -	 * TSX tuning information field: abort cycles and abort flags.
-> > -	 */
-> > -	u64 tsx_tuning;
-> > +	u64 flags, ip;
-> > +	u64 ax, bx, cx, dx;
-> > +	u64 si, di, bp, sp;
-> > +	u64 r8,  r9,  r10, r11;
-> > +	u64 r12, r13, r14, r15;
-> > +	u64 status, dla, dse, lat;
-> 
-> Seems like an unrelated change.
+ arch/tile/include/asm/elf.h |  4 ++++
+ arch/tile/mm/mmap.c         | 24 ++++++++++++++++++++++--
+ 2 files changed, 26 insertions(+), 2 deletions(-)
 
-Sorta, it gets rid of pebs_hsw. That should've never been introduced.
+diff --git a/arch/tile/include/asm/elf.h b/arch/tile/include/asm/elf.h
+index 31d854f..e1da88e 100644
+--- a/arch/tile/include/asm/elf.h
++++ b/arch/tile/include/asm/elf.h
+@@ -137,6 +137,10 @@ do { \
+ 	NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_BASE); \
+ } while (0)
+ 
++struct mm_struct;
++extern unsigned long arch_randomize_brk(struct mm_struct *mm);
++#define arch_randomize_brk arch_randomize_brk
++
+ #ifdef CONFIG_COMPAT
+ 
+ #define COMPAT_ELF_PLATFORM "tilegx-m32"
+diff --git a/arch/tile/mm/mmap.c b/arch/tile/mm/mmap.c
+index d67d91e..4b99344 100644
+--- a/arch/tile/mm/mmap.c
++++ b/arch/tile/mm/mmap.c
+@@ -58,16 +58,36 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ #else
+ 	int is_32bit = 0;
+ #endif
++	unsigned long random_factor = 0UL;
++
++	/*
++	 *  8 bits of randomness in 32bit mmaps, 24 address space bits
++	 * 12 bits of randomness in 64bit mmaps, 28 address space bits
++	 */
++	if (current->flags & PF_RANDOMIZE) {
++		if (is_32bit)
++			random_factor = get_random_int() % (1<<8);
++		else
++			random_factor = get_random_int() % (1<<12);
++		
++		random_factor <<= PAGE_SHIFT;
++	}
+ 
+ 	/*
+ 	 * Use standard layout if the expected stack growth is unlimited
+ 	 * or we are running native 64 bits.
+ 	 */
+-	if (!is_32bit || rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
+-		mm->mmap_base = TASK_UNMAPPED_BASE;
++	if (rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
++		mm->mmap_base = TASK_UNMAPPED_BASE + random_factor;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base(mm);
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+ 	}
+ }
++
++unsigned long arch_randomize_brk(struct mm_struct *mm)
++{
++	unsigned long range_end = mm->brk + 0x02000000;
++	return randomize_range(mm->brk, range_end, 0) ? : mm->brk;
++}
+-- 
+1.8.3.1
 
-> > +	u64 real_ip; /* the actual eventing ip */
-> > +	u64 tsx_tuning; /* TSX abort cycles and flags */
-> >  };
-> >  
-> >  void init_debug_store_on_cpu(int cpu)
-> > @@ -759,16 +754,41 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
-> >  	return 0;
-> >  }
-> >  
-> > +union hsw_tsx_tuning {
-> > +	struct {
-> > +		u64 cycles_last_block : 32,
-> > +		    hle_abort         : 1,
-> > +		    rtm_abort         : 1,
-> > +		    ins_abort         : 1,
-> > +		    non_ins_abort     : 1,
-> > +		    retry             : 1,
-> > +		    mem_data_conflict : 1,
-> > +		    capacity          : 1;
-> 
-> I think you used an old SDM for this, there were some changes in the
-> latest.
-
-Like said, Aug 2012. If only Intel would properly announce new SDMs and
-with better names than: 325462.pdf.
-
-Let me go fetch a new one.
-
-> This would break my next patch which copies the abort bits into 
-> a new field (well it would need an union at least) 
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/ak/linux-misc.git/commit/?h=hsw/pmu7&id=a88a029a6b3cb95148452584c93cbb4004f77f28
-
-Make it a bigger mess: :-)
-
-struct hsw_tsx_abort_info {
-	union {
-		u64 value;
-		struct {
-			u32 cycles_last_tx;
-			union {
-				u32 abort_reason : 8;
-				struct {
-					u32 hle_abort : 1,
-					    rtm_abort : 1,
-					    ins_abort : 1,
-					    non_ins_abort : 1,
-					    retry : 1,
-					    data_conflict : 1,
-					    capacity_writes : 1,
-					    capacity_reads : 1;
-				};
-			};
-		};
-	};
-};
-
-Also, I think your patch is 'broken' in that it dumps the reserved bits
-out to userspace and this brand spanking new SDM doesn't say they're 0.
-
-> Other than that it seems ok and would likely generate the same
-> code as mine. I prefer mine as it's simpler (I don't think there
-> is anything in the kernel that needs to look at the individual bits,
-> they should be just reported together)
-
-The sole reason I even bothered poking at this was that your 'simple'
-patch was out there ugly. The moment you need to struggle with that many
-line breaks for a conditional you just know you've failed.
-
-__intel_pmu_pebs_event() isn't getting any prettier with all those
-pebs_format tests; but I'm not seeing anything to really fix that.
