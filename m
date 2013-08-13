@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab3HMLl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 07:41:27 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:33343 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756600Ab3HMLl0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 07:41:26 -0400
-Message-ID: <520A1B5E.8040105@linux.vnet.ibm.com>
-Date: Tue, 13 Aug 2013 17:11:18 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	id S1757260Ab3HMLpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 07:45:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34811 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756899Ab3HMLpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 07:45:22 -0400
+Date: Tue, 13 Aug 2013 07:45:03 -0400
+From: Dave Jones <davej@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [GIT PULL] tracing: final fixes for events and some
+Message-ID: <20130813114503.GA31585@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <1375712355.22073.45.camel@gandalf.local.home>
+ <20130805143257.GA32639@gmail.com>
+ <1375714329.22073.63.camel@gandalf.local.home>
+ <20130812181325.GA19405@gmail.com>
+ <20130813023922.GA1042@redhat.com>
+ <20130812231443.52563398@gandalf.local.home>
+ <20130813110618.GA3300@gmail.com>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, bhelgaas@google.com,
-        rostedt@goodmis.org, rjw@sisk.pl, lance.ortiz@hp.com,
-        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Aristeu Rozanski Filho <arozansk@redhat.com>
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
- event
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic> <20130812083355.47c1bae8@samsung.com> <5208D80D.5030206@linux.vnet.ibm.com> <20130812114404.3bd64fa0@samsung.com>
-In-Reply-To: <20130812114404.3bd64fa0@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081311-3864-0000-0000-0000099219C2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813110618.GA3300@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 08:14 PM, Mauro Carvalho Chehab wrote:
->> But, this only seems to expose the APEI data as a string
->> and doesn't look to really make all the fields available to user-space
->> in a raw manner. Not sure how well this can be utilised by a user-space
->> tool. Do you have suggestions on how we can do this?
->
-> There's already an userspace tool that handes it:
-> 	https://git.fedorahosted.org/cgit/rasdaemon.git/
->
-> What is missing there on the current version is the bits that would allow
-> to translate from APEI way to report an error (memory node, card, module,
-> bank, device) into a DIMM label[1].
+On Tue, Aug 13, 2013 at 01:06:18PM +0200, Ingo Molnar wrote:
+ > 
+ > * Steven Rostedt <rostedt@goodmis.org> wrote:
+ > 
+ > > On Mon, 12 Aug 2013 22:39:22 -0400
+ > > Dave Jones <davej@redhat.com> wrote:
+ > > 
+ > > 
+ > > > I'm not sure why I got cc'd on this, but for my part, the perf/tracing 
+ > > > related bugs I've found recently may have been there for ages, but 
+ > > > they were triggerable as non-root users.
+ > > 
+ > > Which bug was able to trigger with non-root? The hash one that you 
+ > > reported? That is something with the function tracer. Are you able to 
+ > > enable function tracing as non-root?
+ > > 
+ > > Or is it because you gave more permissions for non-root to use extra 
+ > > perf commands. Because no one but root should be able to enable function 
+ > > tracing, as that can add a large overhead to the system.
+ > 
+ > Hm, also, tracepoints should in general only be accessible to root - all 
+ > sorts of random privileged info leaks through tracepoints, a thorough 
+ > review and sanitizing is needed to expose that to users. (and that does 
+ > not consider the complication caused by exposing timing info.)
 
-If I'm reading this right, all APEI data seems to be squashed into a 
-string in mc_event. Also, the fru id/text don't seem to be passed to 
-user-space.
+With the benefit of sleep, I might take that back, though I'm working
+from memory of a bug that I've not seen in over a month.
 
-- Naveen
+I may have been chasing a user-triggerable bug, and used tracing (as root)
+to diagnose and then walked into one of these.  
+
+But the recent fix where you had a test-case that did module unloads
+didn't really seem to fit the profile of what I was seeing.
+It's feasible that my fuzzer can trigger module _loads_, but I
+don't think there's any way we can trigger an rmmod.
+
+	Dave
 
