@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab3HMNgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:36:53 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:45843 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932463Ab3HMNgp (ORCPT
+	id S932528Ab3HMNg7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:36:59 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:50454 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932493Ab3HMNgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:36:45 -0400
+	Tue, 13 Aug 2013 09:36:53 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH V2 29/35] cpufreq: s5pv210: Covert to light weight ->target_index() routine
-Date: Tue, 13 Aug 2013 19:02:42 +0530
-Message-Id: <9c8b6b62c4ae45f4c7766b79f083df0e7ba3c52f.1376392602.git.viresh.kumar@linaro.org>
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH V2 30/35] cpufreq: sa11x0: Covert to light weight ->target_index() routine
+Date: Tue, 13 Aug 2013 19:02:43 +0530
+Message-Id: <118e19db096e71b2b0bbb39cc83ee15941b49bdf.1376392602.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
 References: <cover.1376392602.git.viresh.kumar@linaro.org>
@@ -32,138 +32,166 @@ This patch converts existing .target() to newly defined light weight
 CPUFreq core will call cpufreq_frequency_table_target() before calling this
 routine and will pass index to it.
 
-This drivers wasn't as straight forward as other ones. It was doing some funny
-stuff to disable driver while going into suspend mode. This part is simplified
-as well to get this converted to ->target_index().
+Some existing routines are no more required and so are removed now.
 
-Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/s5pv210-cpufreq.c | 54 ++++++++++-----------------------------
- 1 file changed, 14 insertions(+), 40 deletions(-)
+ arch/arm/mach-sa1100/generic.c   | 20 --------------------
+ arch/arm/mach-sa1100/generic.h   |  2 --
+ drivers/cpufreq/sa1100-cpufreq.c | 24 ++++--------------------
+ drivers/cpufreq/sa1110-cpufreq.c | 26 ++++----------------------
+ 4 files changed, 8 insertions(+), 64 deletions(-)
 
-diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
-index 0eafc52..bdffc3d 100644
---- a/drivers/cpufreq/s5pv210-cpufreq.c
-+++ b/drivers/cpufreq/s5pv210-cpufreq.c
-@@ -36,16 +36,7 @@ static DEFINE_MUTEX(set_freq_lock);
- /* Use 800MHz when entering sleep mode */
- #define SLEEP_FREQ	(800 * 1000)
+diff --git a/arch/arm/mach-sa1100/generic.c b/arch/arm/mach-sa1100/generic.c
+index cb4b2ca..d4ea142 100644
+--- a/arch/arm/mach-sa1100/generic.c
++++ b/arch/arm/mach-sa1100/generic.c
+@@ -62,26 +62,6 @@ struct cpufreq_frequency_table sa11x0_freq_table[NR_FREQS+1] = {
+ 	{ .frequency = CPUFREQ_TABLE_END, },
+ };
  
--/*
-- * relation has an additional symantics other than the standard of cpufreq
-- * DISALBE_FURTHER_CPUFREQ: disable further access to target
-- * ENABLE_FURTUER_CPUFREQ: enable access to target
-- */
--enum cpufreq_access {
--	DISABLE_FURTHER_CPUFREQ = 0x10,
--	ENABLE_FURTHER_CPUFREQ = 0x20,
--};
+-/* rounds up(!)  */
+-unsigned int sa11x0_freq_to_ppcr(unsigned int khz)
+-{
+-	int i;
 -
-+/* Tracks if cpu freqency can be updated anymore */
- static bool no_cpufreq_access;
+-	for (i = 0; i < NR_FREQS; i++)
+-		if (sa11x0_freq_table[i].frequency >= khz)
+-			break;
+-
+-	return i;
+-}
+-
+-unsigned int sa11x0_ppcr_to_freq(unsigned int idx)
+-{
+-	unsigned int freq = 0;
+-	if (idx < NR_FREQS)
+-		freq = sa11x0_freq_table[idx].frequency;
+-	return freq;
+-}
+-
+ unsigned int sa11x0_getspeed(unsigned int cpu)
+ {
+ 	if (cpu)
+diff --git a/arch/arm/mach-sa1100/generic.h b/arch/arm/mach-sa1100/generic.h
+index 39d56a67..84505d5 100644
+--- a/arch/arm/mach-sa1100/generic.h
++++ b/arch/arm/mach-sa1100/generic.h
+@@ -22,9 +22,7 @@ extern void sa1110_mb_disable(void);
+ struct cpufreq_policy;
  
- /*
-@@ -182,12 +173,10 @@ static unsigned int s5pv210_getspeed(unsigned int cpu)
- 	return clk_get_rate(cpu_clk) / 1000;
+ extern struct cpufreq_frequency_table sa11x0_freq_table[];
+-extern unsigned int sa11x0_freq_to_ppcr(unsigned int khz);
+ extern unsigned int sa11x0_getspeed(unsigned int cpu);
+-extern unsigned int sa11x0_ppcr_to_freq(unsigned int idx);
+ 
+ struct flash_platform_data;
+ struct resource;
+diff --git a/drivers/cpufreq/sa1100-cpufreq.c b/drivers/cpufreq/sa1100-cpufreq.c
+index 02fe8b2..7e42bce 100644
+--- a/drivers/cpufreq/sa1100-cpufreq.c
++++ b/drivers/cpufreq/sa1100-cpufreq.c
+@@ -177,36 +177,20 @@ static void sa1100_update_dram_timings(int current_speed, int new_speed)
+ 	}
  }
  
--static int s5pv210_target(struct cpufreq_policy *policy,
--			  unsigned int target_freq,
--			  unsigned int relation)
-+static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
+-static int sa1100_target(struct cpufreq_policy *policy,
+-			 unsigned int target_freq,
+-			 unsigned int relation)
++static int sa1100_target(struct cpufreq_policy *policy, unsigned int ppcr)
  {
- 	unsigned long reg;
--	unsigned int index, priv_index;
-+	unsigned int priv_index;
- 	unsigned int pll_changing = 0;
- 	unsigned int bus_speed_changing = 0;
- 	int arm_volt, int_volt;
-@@ -195,9 +184,6 @@ static int s5pv210_target(struct cpufreq_policy *policy,
+ 	unsigned int cur = sa11x0_getspeed(0);
+-	unsigned int new_ppcr;
+ 	struct cpufreq_freqs freqs;
  
- 	mutex_lock(&set_freq_lock);
- 
--	if (relation & ENABLE_FURTHER_CPUFREQ)
--		no_cpufreq_access = false;
--
- 	if (no_cpufreq_access) {
- #ifdef CONFIG_PM_VERBOSE
- 		pr_err("%s:%d denied access to %s as it is disabled"
-@@ -207,27 +193,13 @@ static int s5pv210_target(struct cpufreq_policy *policy,
- 		goto exit;
- 	}
- 
--	if (relation & DISABLE_FURTHER_CPUFREQ)
--		no_cpufreq_access = true;
--
--	relation &= ~(ENABLE_FURTHER_CPUFREQ | DISABLE_FURTHER_CPUFREQ);
--
- 	freqs.old = s5pv210_getspeed(0);
--
--	if (cpufreq_frequency_table_target(policy, s5pv210_freq_table,
--					   target_freq, relation, &index)) {
--		ret = -EINVAL;
--		goto exit;
+-	new_ppcr = sa11x0_freq_to_ppcr(target_freq);
+-	switch (relation) {
+-	case CPUFREQ_RELATION_L:
+-		if (sa11x0_ppcr_to_freq(new_ppcr) > policy->max)
+-			new_ppcr--;
+-		break;
+-	case CPUFREQ_RELATION_H:
+-		if ((sa11x0_ppcr_to_freq(new_ppcr) > target_freq) &&
+-		    (sa11x0_ppcr_to_freq(new_ppcr - 1) >= policy->min))
+-			new_ppcr--;
+-		break;
 -	}
 -
- 	freqs.new = s5pv210_freq_table[index].frequency;
+ 	freqs.old = cur;
+-	freqs.new = sa11x0_ppcr_to_freq(new_ppcr);
++	freqs.new = sa11x0_freq_table[ppcr].frequency;
  
--	if (freqs.new == freqs.old)
--		goto exit;
--
- 	/* Finding current running level index */
- 	if (cpufreq_frequency_table_target(policy, s5pv210_freq_table,
--					   freqs.old, relation, &priv_index)) {
-+					   freqs.old, CPUFREQ_RELATION_H,
-+					   &priv_index)) {
- 		ret = -EINVAL;
- 		goto exit;
- 	}
-@@ -563,16 +535,18 @@ static int s5pv210_cpufreq_notifier_event(struct notifier_block *this,
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
  
- 	switch (event) {
- 	case PM_SUSPEND_PREPARE:
--		ret = cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ,
--					    DISABLE_FURTHER_CPUFREQ);
-+		ret = cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ, 0);
- 		if (ret < 0)
- 			return NOTIFY_BAD;
+ 	if (freqs.new > cur)
+ 		sa1100_update_dram_timings(cur, freqs.new);
  
-+		/* Disable updation of cpu frequency */
-+		no_cpufreq_access = true;
- 		return NOTIFY_OK;
- 	case PM_POST_RESTORE:
- 	case PM_POST_SUSPEND:
--		cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ,
--				      ENABLE_FURTHER_CPUFREQ);
-+		/* Enable updation of cpu frequency */
-+		no_cpufreq_access = false;
-+		cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ, 0);
+-	PPCR = new_ppcr;
++	PPCR = ppcr;
  
- 		return NOTIFY_OK;
- 	}
-@@ -585,18 +559,18 @@ static int s5pv210_cpufreq_reboot_notifier_event(struct notifier_block *this,
- {
- 	int ret;
- 
--	ret = cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ,
--				    DISABLE_FURTHER_CPUFREQ);
-+	ret = cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ, 0);
- 	if (ret < 0)
- 		return NOTIFY_BAD;
- 
-+	no_cpufreq_access = true;
- 	return NOTIFY_DONE;
- }
- 
- static struct cpufreq_driver s5pv210_driver = {
+ 	if (freqs.new < cur)
+ 		sa1100_update_dram_timings(cur, freqs.new);
+@@ -229,7 +213,7 @@ static int __init sa1100_cpu_init(struct cpufreq_policy *policy)
+ static struct cpufreq_driver sa1100_driver __refdata = {
  	.flags		= CPUFREQ_STICKY,
  	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= s5pv210_target,
-+	.target_index	= s5pv210_target,
- 	.get		= s5pv210_getspeed,
- 	.init		= s5pv210_cpu_init,
- 	.name		= "s5pv210",
+-	.target		= sa1100_target,
++	.target_index	= sa1100_target,
+ 	.get		= sa11x0_getspeed,
+ 	.init		= sa1100_cpu_init,
+ 	.name		= "sa1100",
+diff --git a/drivers/cpufreq/sa1110-cpufreq.c b/drivers/cpufreq/sa1110-cpufreq.c
+index a38d904..fb69553 100644
+--- a/drivers/cpufreq/sa1110-cpufreq.c
++++ b/drivers/cpufreq/sa1110-cpufreq.c
+@@ -229,34 +229,16 @@ sdram_update_refresh(u_int cpu_khz, struct sdram_params *sdram)
+ /*
+  * Ok, set the CPU frequency.
+  */
+-static int sa1110_target(struct cpufreq_policy *policy,
+-			 unsigned int target_freq,
+-			 unsigned int relation)
++static int sa1110_target(struct cpufreq_policy *policy, unsigned int ppcr)
+ {
+ 	struct sdram_params *sdram = &sdram_params;
+ 	struct cpufreq_freqs freqs;
+ 	struct sdram_info sd;
+ 	unsigned long flags;
+-	unsigned int ppcr, unused;
+-
+-	switch (relation) {
+-	case CPUFREQ_RELATION_L:
+-		ppcr = sa11x0_freq_to_ppcr(target_freq);
+-		if (sa11x0_ppcr_to_freq(ppcr) > policy->max)
+-			ppcr--;
+-		break;
+-	case CPUFREQ_RELATION_H:
+-		ppcr = sa11x0_freq_to_ppcr(target_freq);
+-		if (ppcr && (sa11x0_ppcr_to_freq(ppcr) > target_freq) &&
+-		    (sa11x0_ppcr_to_freq(ppcr-1) >= policy->min))
+-			ppcr--;
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
++	unsigned int unused;
+ 
+ 	freqs.old = sa11x0_getspeed(0);
+-	freqs.new = sa11x0_ppcr_to_freq(ppcr);
++	freqs.new = sa11x0_freq_table[ppcr].frequency;
+ 
+ 	sdram_calculate_timing(&sd, freqs.new, sdram);
+ 
+@@ -345,7 +327,7 @@ static int __init sa1110_cpu_init(struct cpufreq_policy *policy)
+ static struct cpufreq_driver sa1110_driver __refdata = {
+ 	.flags		= CPUFREQ_STICKY,
+ 	.verify		= cpufreq_generic_frequency_table_verify,
+-	.target		= sa1110_target,
++	.target_index	= sa1110_target,
+ 	.get		= sa11x0_getspeed,
+ 	.init		= sa1110_cpu_init,
+ 	.name		= "sa1110",
 -- 
 1.7.12.rc2.18.g61b472e
 
