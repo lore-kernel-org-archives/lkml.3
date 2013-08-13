@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab3HMEpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 00:45:15 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:40340 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751476Ab3HMEpO (ORCPT
+	id S1752227Ab3HMEtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 00:49:21 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:32897 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122Ab3HMEtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 00:45:14 -0400
+	Tue, 13 Aug 2013 00:49:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130812144309.GK27162@twins.programming.kicks-ass.net>
-References: <CALZhoSQgw_-UaF0VOMjMqRJC8D4oQTBp4Bv=zJS+x0Wu97f2FQ@mail.gmail.com>
-	<20130812144309.GK27162@twins.programming.kicks-ass.net>
-Date: Tue, 13 Aug 2013 12:45:12 +0800
-Message-ID: <CALZhoSRyfE78GbiJqVRvUrbJRq_NhSqYbK8vnxNP8kS9xz9qVQ@mail.gmail.com>
-Subject: Re: false nr_running check in load balance?
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, leiwen@marvell.com
+In-Reply-To: <1391342.M2Jbj3t5qy@vostro.rjw.lan>
+References: <cover.1376329128.git.viresh.kumar@linaro.org>
+	<1391342.M2Jbj3t5qy@vostro.rjw.lan>
+Date: Tue, 13 Aug 2013 10:19:18 +0530
+Message-ID: <CAKohpokOkWMo4UAcpXYzUMBz4rUn3253GFkdi+YtqRbmqFOm3Q@mail.gmail.com>
+Subject: Re: [PATCH 00/31] CPUFreq: Implement light weight ->target(): for 3.13
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        John Crispin <blogic@openwrt.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-cris-kernel@axis.com,
+        Mikael Starvik <starvik@axis.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
+        sparclinux@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Steven Miao <realmz6@gmail.com>, Tony Luck <tony.luck@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
-
-On Mon, Aug 12, 2013 at 10:43 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Aug 06, 2013 at 09:23:46PM +0800, Lei Wen wrote:
->> Hi Paul,
+On 13 August 2013 04:17, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, August 12, 2013 11:18:36 PM Viresh Kumar wrote:
+>> Currently prototype of cpufreq_drivers target routines is:
 >>
->> I notice in load_balance function, it would check busiest->nr_running
->> to decide whether to perform the real task movement.
+>> int target(struct cpufreq_policy *policy, unsigned int target_freq,
+>>       unsigned int relation);
 >>
->> But in some case, I saw the nr_running is not matching with
->> the task in the queue, which seems make scheduler to do many redundant
->> checking.
->> What I means is like there is only one task in the queue, but nr_running
->> shows it has two. So if that task cannot be moved, it would be still checked
->> for twice.
+>> And most of the drivers call cpufreq_frequency_table_target() to get a valid
+>> index of their frequency table which is closest to the target_freq. And they
+>> don't use target_freq and relation after it.
 >>
->> With further checking, I find there is one patch you submit before:
->> commit 953bfcd10e6f3697233e8e5128c611d275da39c1
->> Author: Paul Turner <pjt@google.com>
->> Date:   Thu Jul 21 09:43:27 2011 -0700
+>> So, it makes sense to just do this work in cpufreq core before calling
+>> cpufreq_frequency_table_target() and simply pass index instead. But this can be
+>> done only with drivers which expose their frequency table with cpufreq core. For
+>> others we need to stick with the old prototype of target() until those drivers
+>> are converted to expose frequency tables.
 >>
->>     sched: Implement hierarchical task accounting for SCHED_OTHER
->>
->> In this patch, you increase nr_running when enqueue enqueue_task_stop,
->> which is the reason nr_running is increase while task not be increased.
->> It is true at that time, the stopper has been waken up and enqueue again
->> into cpu, and do the migration job. So the logic should be right there.
->>
->> My question is whether we could change the judgment into cfs_rq->nr_running?
->> Since the load_balance is only for cfs, right?
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index bb456f4..ffc0d35 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -5096,7 +5096,7 @@ redo:
->>         schedstat_add(sd, lb_imbalance[idle], env.imbalance);
->>
->>         ld_moved = 0;
->> -       if (busiest->nr_running > 1) {
->> +       if (busiest->cfs.nr_running > 1) {
->>                 /*
->>                  * Attempt to move tasks. If find_busiest_group has found
->>                  * an imbalance but busiest->nr_running <= 1, the group is
->>
+>> So, in order not to break those special drivers first patch renames ->target() to
+>> ->target_old() and the following patches will define the new prototype and
+>> convert existing drivers one by one.
 >
-> Not quite right; I think you need busiest->cfs.h_nr_running.
-> cfs.nr_running is the number of entries running in this 'group'. If
-> you've got nested groups like:
->
->  'root'
->    \
->    'A'
->    / \
->   t1 t2
->
-> root.nr_running := 1 'A', even though you've got multiple running tasks.
->
+> Super-ugly.
 
-You're absolutely right for this. :)
-I miss it for not considering the group case...
+Thanks. I expected something similar.. :)
 
-Then do you think it is necessary to do below change in load_balance() code?
- -       if (busiest->nr_running > 1) {
- +       if (busiest->cfs.h_nr_running > 1) {
+> Please just keep the old .target() as is, add a new callback and switch the
+> suitable drivers to using it.  You may call the new one .target_index() or
+> something along these lines.
 
+I thought of implementing with this name but then thought maybe earlier name
+is good enough and can be kept and so went for the *Super-ugly* solution..
 
-Thanks,
-Lei
+Will be fixed :)
