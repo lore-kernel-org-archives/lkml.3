@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab3HMJ0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 05:26:20 -0400
-Received: from s16502780.onlinehome-server.info ([87.106.93.118]:59222 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755934Ab3HMJ0R (ORCPT
+	id S1756800Ab3HMJ0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 05:26:19 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:62728 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755939Ab3HMJ0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Aug 2013 05:26:17 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Tue, 13 Aug 2013 10:25:54 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical
- mode ]
-Message-ID: <20130813092554.GA4519@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Dave Airlie <airlied@gmail.com>,
-	DRI <dri-devel@lists.freedesktop.org>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>
-References: <CA+icZUWmee5nTZCGvFb4vLpna5vUn+RJ-V9pHpKPFaTc96BG5Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUWmee5nTZCGvFb4vLpna5vUn+RJ-V9pHpKPFaTc96BG5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 78.156.73.22
+In-Reply-To: <CALZhoSRszVz9=xm78u5r4ujgShDcajjs=WFOCAqHmzB+VZWBqQ@mail.gmail.com>
+References: <CALZhoSQgw_-UaF0VOMjMqRJC8D4oQTBp4Bv=zJS+x0Wu97f2FQ@mail.gmail.com>
+ <20130812144309.GK27162@twins.programming.kicks-ass.net> <CALZhoSRyfE78GbiJqVRvUrbJRq_NhSqYbK8vnxNP8kS9xz9qVQ@mail.gmail.com>
+ <20130813073842.GP27162@twins.programming.kicks-ass.net> <CAPM31R+FDXUNb_X9R6O+kqjsAJftEzmyk+Ji=KoAyzEsTDWLew@mail.gmail.com>
+ <CALZhoSRszVz9=xm78u5r4ujgShDcajjs=WFOCAqHmzB+VZWBqQ@mail.gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 13 Aug 2013 02:25:46 -0700
+Message-ID: <CAPM31R+zi4yO8N-bhHWfmPsSGOV7_tMPrYoJ4q5AqVRA4tBNeQ@mail.gmail.com>
+Subject: Re: false nr_running check in load balance?
+To: Lei Wen <adrian.wenl@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Lei Wen <leiwen@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 11:10:18AM +0200, Sedat Dilek wrote:
-> Hi,
-> 
-> with today's next-20130813 I cannot see 1/10 of my desktop-screen's
-> top, it's simply black.
-> I can estimate the URL line in Firefox (or open a new tab blindly and
-> get a known URL from my autocompleted history).
+On Tue, Aug 13, 2013 at 1:18 AM, Lei Wen <adrian.wenl@gmail.com> wrote:
+> Hi Paul,
+>
+> On Tue, Aug 13, 2013 at 4:08 PM, Paul Turner <pjt@google.com> wrote:
+>> On Tue, Aug 13, 2013 at 12:38 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> On Tue, Aug 13, 2013 at 12:45:12PM +0800, Lei Wen wrote:
+>>>> > Not quite right; I think you need busiest->cfs.h_nr_running.
+>>>> > cfs.nr_running is the number of entries running in this 'group'. If
+>>>> > you've got nested groups like:
+>>>> >
+>>>> >  'root'
+>>>> >    \
+>>>> >    'A'
+>>>> >    / \
+>>>> >   t1 t2
+>>>> >
+>>>> > root.nr_running := 1 'A', even though you've got multiple running tasks.
+>>>> >
+>>>>
+>>>> You're absolutely right for this. :)
+>>>> I miss it for not considering the group case...
+>>>>
+>>>> Then do you think it is necessary to do below change in load_balance() code?
+>>>>  -       if (busiest->nr_running > 1) {
+>>>>  +       if (busiest->cfs.h_nr_running > 1) {
+>>>>
+>>>
+>>> Yes I think that would be fine.
+>>
+>> If we pivot to use h_nr_running we should probably also update
+>> call-sites such as cpu_load_avg_per_task() for consistency.
+>
+> I didn't find cpu_load_avg_per_task in the latest linux git...
+> Is it a new patch pending while not being submitted?
 
-Can you attach a photograph?
- 
-> My Xorg stack did not change: libdrm-2.4.46 | mesa-9.16 | intel-ddx-2.4.14.
-> next-20130808 was OK - no screen corruptions.
-> 
-> Any idea, hint?
+Transposition typo: cpu_avg_load_per_task()
+More generally: Most things that examine ->nr_running in the fair
+load-balance path.
 
-Can you please try:
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index af1b2f0..b0f181d 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -1837,7 +1837,7 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
-                break;
-        case I915_TILING_X:
-                /* pin() will align the object as required by fence */
--               alignment = 0;
-+               alignment = 256 * 1024;
-                break;
-        case I915_TILING_Y:
-                /* Despite that we check this in framebuffer_init userspace can
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+>
+> Thanks,
+> Lei
