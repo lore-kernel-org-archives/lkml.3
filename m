@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab3HMHNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:13:00 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47939 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab3HMHM6 (ORCPT
+	id S1755575Ab3HMHOH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:14:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47725 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab3HMHOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:12:58 -0400
-Message-ID: <5209DC73.8000408@huawei.com>
-Date: Tue, 13 Aug 2013 15:12:51 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 13 Aug 2013 03:14:06 -0400
+Message-ID: <5209DCB9.8020705@linutronix.de>
+Date: Tue, 13 Aug 2013 09:14:01 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-To: Karim Yaghmour <karim.yaghmour@opersys.com>
-CC: <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        <mingo@elte.hu>
-Subject: Re: Reading perf counters at ftrace trace boundaries
-References: <5208263D.2080205@opersys.com> <52084774.7010009@huawei.com> <5208FEC1.7010206@opersys.com>
-In-Reply-To: <5208FEC1.7010206@opersys.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: Bin Liu <binmlist@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, george.cherian@ti.com
+Subject: Re: [PATCH] usb: musb: am335x: Do not remove the session bin HOST-only
+ mode
+References: <51F2BE6F.3010008@linutronix.de> <CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com> <51F2D427.7050106@linutronix.de> <CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com> <51F2DD90.2030405@linutronix.de> <CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com> <20130729165329.GA5773@linutronix.de> <CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com> <51F6ABA2.7060102@linutronix.de> <CADYTM3bcCoWKE9eR5Sd9MbaEUr4G=k=r6JKR+8KC=W_YrbMs3g@mail.gmail.com> <20130809160339.GA14829@linutronix.de> <5205516D.1030707@cogentembedded.com>
+In-Reply-To: <5205516D.1030707@cogentembedded.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/12 23:26, Karim Yaghmour wrote:
+On 08/09/2013 10:30 PM, Sergei Shtylyov wrote:
+> Hello.
+
+Hi Sergei,
+
+>> +    if (musb->port_mode == MUSB_PORT_MODE_HOST) {
+>> +        val = USBMODE_IDDIG_A;
+>> +        val |= USBMODE_ID_MUX_REG;
 > 
-> On 13-08-11 11:24 PM, zhangwei(Jovi) wrote:
->> If you want to base on ftrace, below two approach maybe take into use:
->>
->> - register_ftrace_function/unregister_ftrace_function
->>
->> - perf_event_create_kernel_counter (function event id is 1)
->>
->> the first one is simplest, IMO.
-> 
-> Thx for the pointers.
-> 
->> You need to write your own kernel module to use these approach.
-> 
-> As a proof-of-concept, sure. For something more permanent it would make
-> more sense to adapt the various perf/ftrace tools to make this available
-> on the command line with other options. But we're far away from that for
-> the moment.
-> 
-If you want to embed pmu reading into ftrace/perf permanently, perhaps
-make pmu reading as clock source would be a nice way to go, actually the
-question you raised is very common for all of us in practical, sometimes
-we want to read cpu cycles both in kvm host and kvm guest, then in that
-kvm case, pmu reading for each event is very valuable.
+>    Why not do the above in one line and save on {} {}? It will look more
+> aesthetically pleasing IMHO.
 
-(one issue need to handle specially for making pmu as tracing clock, is
-the pmu number overflow, because it relate with ftrace per-cpu ring
-buffer sync)
+I'm going to redo this if it is agreed that we want to fix it that way.
 
-Thanks.
-
-jovi
-
-
-
+Sebastian
