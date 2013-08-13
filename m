@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627Ab3HMGfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:35:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60853 "EHLO
+	id S1757559Ab3HMGey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:34:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60804 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757602Ab3HMGfA (ORCPT
+	with ESMTP id S1757485Ab3HMGev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:35:00 -0400
+	Tue, 13 Aug 2013 02:34:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 09/17] virtio: console: return -ENODEV on all read operations after unplug
-Date: Mon, 12 Aug 2013 23:35:55 -0700
-Message-Id: <20130813063502.484186083@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 16/17] vfs: d_obtain_alias() needs to use "/" as default name.
+Date: Mon, 12 Aug 2013 23:36:02 -0700
+Message-Id: <20130813063503.026832758@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063501.728847844@linuxfoundation.org>
 References: <20130813063501.728847844@linuxfoundation.org>
@@ -27,50 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 96f97a83910cdb9d89d127c5ee523f8fc040a804 upstream.
+commit b911a6bdeef5848c468597d040e3407e0aee04ce upstream.
 
-If a port gets unplugged while a user is blocked on read(), -ENODEV is
-returned.  However, subsequent read()s returned 0, indicating there's no
-host-side connection (but not indicating the device went away).
+NFS appears to use d_obtain_alias() to create the root dentry rather than
+d_make_root.  This can cause 'prepend_path()' to complain that the root
+has a weird name if an NFS filesystem is lazily unmounted.  e.g.  if
+"/mnt" is an NFS mount then
 
-This also happened when a port was unplugged and the user didn't have
-any blocking operation pending.  If the user didn't monitor the SIGIO
-signal, they won't have a chance to find out if the port went away.
+ { cd /mnt; umount -l /mnt ; ls -l /proc/self/cwd; }
 
-Fix by returning -ENODEV on all read()s after the port gets unplugged.
-write() already behaves this way.
+will cause a WARN message like
+   WARNING: at /home/git/linux/fs/dcache.c:2624 prepend_path+0x1d7/0x1e0()
+   ...
+   Root dentry has weird name <>
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+to appear in kernel logs.
+
+So change d_obtain_alias() to use "/" rather than "" as the anonymous
+name.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[bwh: Backported to 3.2: use named initialisers instead of QSTR_INIT()]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/virtio_console.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/dcache.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -633,6 +633,10 @@ static ssize_t port_fops_read(struct fil
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1556,7 +1556,7 @@ EXPORT_SYMBOL(d_find_any_alias);
+  */
+ struct dentry *d_obtain_alias(struct inode *inode)
+ {
+-	static const struct qstr anonstring = { .name = "" };
++	static const struct qstr anonstring = { .name = "/", .len = 1 };
+ 	struct dentry *tmp;
+ 	struct dentry *res;
  
- 	port = filp->private_data;
- 
-+	/* Port is hot-unplugged. */
-+	if (!port->guest_connected)
-+		return -ENODEV;
-+
- 	if (!port_has_data(port)) {
- 		/*
- 		 * If nothing's connected on the host just return 0 in
-@@ -649,7 +653,7 @@ static ssize_t port_fops_read(struct fil
- 		if (ret < 0)
- 			return ret;
- 	}
--	/* Port got hot-unplugged. */
-+	/* Port got hot-unplugged while we were waiting above. */
- 	if (!port->guest_connected)
- 		return -ENODEV;
- 	/*
 
 
