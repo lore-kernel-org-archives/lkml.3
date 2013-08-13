@@ -1,150 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab3HMHGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:06:14 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:42523 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab3HMHGM (ORCPT
+	id S1755064Ab3HMHKZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:10:25 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:44652 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751858Ab3HMHKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:06:12 -0400
-Message-ID: <5209DAF6.9020601@atmel.com>
-Date: Tue, 13 Aug 2013 09:06:30 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 13 Aug 2013 03:10:23 -0400
+From: Xiaoguang Chen <chenxg@marvell.com>
+To: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <viresh.kumar@linaro.org>, <rjw@sisk.pl>, <chenxg.marvell@gmail.com>,
+        <chenxg@marvell.com>
+Subject: [PATCH 1/2] cpufreq: Add governor operation ongoing flag
+Date: Tue, 13 Aug 2013 15:09:25 +0800
+Message-ID: <1376377766-2594-1-git-send-email-chenxg@marvell.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-To: boris brezillon <b.brezillon@overkiz.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] usb: gadget: at91_udc: add usb_clk for transition to
- common clk framework
-References: <1375337885-2684-1-git-send-email-b.brezillon@overkiz.com> <5208E881.3030205@atmel.com> <520948C3.7060008@overkiz.com>
-In-Reply-To: <520948C3.7060008@overkiz.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2013 22:42, boris brezillon :
-> Hello Nicolas,
->
-> On 12/08/2013 15:52, Nicolas Ferre wrote:
->> On 01/08/2013 08:18, Boris BREZILLON :
->>> The AT91 PMC (Power Management Controller) provides an USB clock used by
->>> USB Full Speed host (ohci) and USB Full Speed device (udc).
->>> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
->>> This configuration was formely done in mach-at91/clock.c, but this
->>> implementation will be removed when moving to common clk framework.
->>>
->>> This patch adds support for usb clock retrieval and configuration,
->>> and is
->>> backward compatible with the current at91 clk implementation (if usb clk
->>> is not found, it does not configure/enable it).
->>>
->>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
->>
->> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>
-> Is there a reason you acked this version but not the 3rd one
-> (https://lkml.org/lkml/2013/8/2/102).
+__cpufreq_governor operation needs to be executed one by one.
+If one operation is ongoing, the other operation can't be executed.
+If the order is not guaranteed, there may be unexpected behavior.
 
-No, only flow of emails while getting back online ;-)
+ For example, governor is in enable state, and one process
+tries to stop the goveror, but it is scheduled out before policy->
+governor->governor() is executed, but the governor enable flag is
+set to false already. Then one other process tries to start governor,
+It finds enable flag is false, and it can process down to do governor
+start operation, So the governor is started twice.
 
-Bye,
+Add the governor_ops_ongoing flag to check whether there is governor
+operation ongoing, if so, return -EAGAIN.
 
->>> ---
->>>    drivers/usb/gadget/at91_udc.c |   17 ++++++++++++++++-
->>>    drivers/usb/gadget/at91_udc.h |    2 +-
->>>    2 files changed, 17 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/usb/gadget/at91_udc.c
->>> b/drivers/usb/gadget/at91_udc.c
->>> index fce8e4e..ae06585 100644
->>> --- a/drivers/usb/gadget/at91_udc.c
->>> +++ b/drivers/usb/gadget/at91_udc.c
->>> @@ -870,6 +870,11 @@ static void clk_on(struct at91_udc *udc)
->>>        if (udc->clocked)
->>>            return;
->>>        udc->clocked = 1;
->>> +
->>> +    if (!IS_ERR(udc->uclk)) {
->>> +        clk_set_rate(udc->uclk, 48000000);
->>> +        clk_prepare_enable(udc->uclk);
->>> +    }
->>>        clk_prepare_enable(udc->iclk);
->>>        clk_prepare_enable(udc->fclk);
->>>    }
->>> @@ -882,6 +887,8 @@ static void clk_off(struct at91_udc *udc)
->>>        udc->gadget.speed = USB_SPEED_UNKNOWN;
->>>        clk_disable_unprepare(udc->fclk);
->>>        clk_disable_unprepare(udc->iclk);
->>> +    if (!IS_ERR(udc->uclk))
->>> +        clk_disable_unprepare(udc->uclk);
->>>    }
->>>
->>>    /*
->>> @@ -1774,10 +1781,10 @@ static int at91udc_probe(struct
->>> platform_device *pdev)
->>>        /* get interface and function clocks */
->>>        udc->iclk = clk_get(dev, "udc_clk");
->>>        udc->fclk = clk_get(dev, "udpck");
->>> +    udc->uclk = clk_get(dev, "usb_clk");
->>>        if (IS_ERR(udc->iclk) || IS_ERR(udc->fclk)) {
->>>            DBG("clocks missing\n");
->>>            retval = -ENODEV;
->>> -        /* NOTE: we "know" here that refcounts on these are NOPs */
->>>            goto fail1;
->>>        }
->>>
->>> @@ -1851,6 +1858,12 @@ fail3:
->>>    fail2:
->>>        free_irq(udc->udp_irq, udc);
->>>    fail1:
->>> +    if (!IS_ERR(udc->uclk))
->>> +        clk_put(udc->uclk);
->>> +    if (!IS_ERR(udc->fclk))
->>> +        clk_put(udc->fclk);
->>> +    if (!IS_ERR(udc->iclk))
->>> +        clk_put(udc->iclk);
->>>        iounmap(udc->udp_baseaddr);
->>>    fail0a:
->>>        if (cpu_is_at91rm9200())
->>> @@ -1894,6 +1907,8 @@ static int __exit at91udc_remove(struct
->>> platform_device *pdev)
->>>
->>>        clk_put(udc->iclk);
->>>        clk_put(udc->fclk);
->>> +    if (!IS_ERR(udc->uclk))
->>> +        clk_put(udc->uclk);
->>>
->>>        return 0;
->>>    }
->>> diff --git a/drivers/usb/gadget/at91_udc.h
->>> b/drivers/usb/gadget/at91_udc.h
->>> index e647d1c..0175246 100644
->>> --- a/drivers/usb/gadget/at91_udc.h
->>> +++ b/drivers/usb/gadget/at91_udc.h
->>> @@ -126,7 +126,7 @@ struct at91_udc {
->>>        unsigned            active_suspend:1;
->>>        u8                addr;
->>>        struct at91_udc_data        board;
->>> -    struct clk            *iclk, *fclk;
->>> +    struct clk            *iclk, *fclk, *uclk;
->>>        struct platform_device        *pdev;
->>>        struct proc_dir_entry        *pde;
->>>        void __iomem            *udp_baseaddr;
->>>
->>
->>
->
->
+Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+---
+ drivers/cpufreq/cpufreq.c | 9 +++++++++
+ include/linux/cpufreq.h   | 1 +
+ 2 files changed, 10 insertions(+)
 
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index f0a5e2b..dfe0b86 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1652,6 +1652,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 		mutex_unlock(&cpufreq_governor_lock);
+ 		return -EBUSY;
+ 	}
++	if (policy->governor_ops_ongoing) {
++		mutex_unlock(&cpufreq_governor_lock);
++		return -EAGAIN;
++	}
++	policy->governor_ops_ongoing = true;
+ 
+ 	if (event == CPUFREQ_GOV_STOP)
+ 		policy->governor_enabled = false;
+@@ -1684,6 +1689,10 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 	if ((event == CPUFREQ_GOV_STOP) && !ret)
+ 		module_put(policy->governor->owner);
+ 
++	mutex_lock(&cpufreq_governor_lock);
++	policy->governor_ops_ongoing = false;
++	mutex_unlock(&cpufreq_governor_lock);
++
+ 	return ret;
+ }
+ 
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 90d5a15..8d3eac2 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -111,6 +111,7 @@ struct cpufreq_policy {
+ 	struct cpufreq_governor	*governor; /* see below */
+ 	void			*governor_data;
+ 	bool			governor_enabled; /* governor start/stop flag */
++	bool			governor_ops_ongoing;
+ 
+ 	struct work_struct	update; /* if update_policy() needs to be
+ 					 * called, but you're in IRQ context */
 -- 
-Nicolas Ferre
+1.8.0
+
