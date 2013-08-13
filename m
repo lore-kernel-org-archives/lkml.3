@@ -1,103 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343Ab3HMU75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:59:57 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:12373 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759161Ab3HMU7z (ORCPT
+	id S1759340Ab3HMVA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 17:00:28 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:38328 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759161Ab3HMVA0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:59:55 -0400
-Message-ID: <520A9E4A.2050203@tilera.com>
-Date: Tue, 13 Aug 2013 16:59:54 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 13 Aug 2013 17:00:26 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] mm: make lru_add_drain_all() selective
-References: <5202CEAA.9040204@linux.vnet.ibm.com> <201308072335.r77NZZwl022494@farm-0012.internal.tilera.com> <20130812140520.c6a2255d2176a690fadf9ba7@linux-foundation.org> <52099187.80301@tilera.com> <20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org> <20130813201958.GA28996@mtj.dyndns.org> <20130813133135.3b580af557d1457e4ee8331a@linux-foundation.org>
-In-Reply-To: <20130813133135.3b580af557d1457e4ee8331a@linux-foundation.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1375948794-6286-10-git-send-email-milo.kim@ti.com>
+References: <1375948794-6286-1-git-send-email-milo.kim@ti.com> <1375948794-6286-10-git-send-email-milo.kim@ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 13 Aug 2013 14:00:04 -0700
+Message-ID: <CAK5ve-J8fLaT25qdEj0DrS-PPobzGPzaZ-mtq5i_rQgAkYf7hg@mail.gmail.com>
+Subject: Re: [PATCH 09/10] Documentation: leds-lp5521,lp5523: update device
+ attribute information
+To: Milo Kim <woogyom.kim@gmail.com>
+Cc: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/13/2013 3:35 PM, Andrew Morton wrote:
-> He may be
-> old and wrinkly, but I do suggest that the guy who wrote and maintains
-> that code could have got a cc. 
-
-Sorry about that - I just went by what MAINTAINERS shows.  There's no
-specific maintainer listed for the swap code.  I probably should have
-looked at the final Signed-off-by's on recent commits.
-
-On 8/13/2013 4:31 PM, Andrew Morton wrote:
-> On Tue, 13 Aug 2013 16:19:58 -0400 Tejun Heo <tj@kernel.org> wrote:
+On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim <woogyom.kim@gmail.com> wrote:
+> Now, all legacy application interfaces are restored.
+> Each driver documentation is updated.
 >
->> Hello,
->>
->> On Tue, Aug 13, 2013 at 12:35:12PM -0700, Andrew Morton wrote:
->>> I don't know how lots-of-kmallocs compares with alloc_percpu()
->>> performance-wise.
->> If this is actually performance sensitive,
-> I've always assumed that it isn't performance-sensitive. 
-> schedule_on_each_cpu() has to be slow as a dog.
+
+Good to merge, thanks,
+-Bryan
+
+> Cc: Pali Rohár <pali.rohar@gmail.com>
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
+> ---
+>  Documentation/leds/leds-lp5521.txt |   20 +++++++++++++++++++-
+>  Documentation/leds/leds-lp5523.txt |   21 ++++++++++++++++++++-
+>  2 files changed, 39 insertions(+), 2 deletions(-)
 >
-> Then again, why does this patchset exist?  It's a performance
-> optimisation so presumably someone cares.  But not enough to perform
-> actual measurements :(
-
-The patchset exists because of the difference between zero overhead on
-cpus that don't have drainable lrus, and non-zero overhead.  This turns
-out to be important on workloads where nohz cores are handling 10 Gb
-traffic in userspace and really, really don't want to be interrupted,
-or they drop packets on the floor.
-
->> the logical thing to do
->> would be pre-allocating per-cpu buffers instead of depending on
->> dynamic allocation.  Do the invocations need to be stackable?
-> schedule_on_each_cpu() calls should if course happen concurrently, and
-> there's the question of whether we wish to permit async
-> schedule_on_each_cpu().  Leaving the calling CPU twiddling thumbs until
-> everyone has finished is pretty sad if the caller doesn't want that.
+> diff --git a/Documentation/leds/leds-lp5521.txt b/Documentation/leds/leds-lp5521.txt
+> index 79e4c2e..d08d8c1 100644
+> --- a/Documentation/leds/leds-lp5521.txt
+> +++ b/Documentation/leds/leds-lp5521.txt
+> @@ -18,7 +18,25 @@ All three channels can be also controlled using the engine micro programs.
+>  More details of the instructions can be found from the public data sheet.
 >
->>> That being said, the `cpumask_var_t mask' which was added to
->>> lru_add_drain_all() is unneeded - it's just a temporary storage which
->>> can be eliminated by creating a schedule_on_each_cpu_cond() or whatever
->>> which is passed a function pointer of type `bool (*call_needed)(int
->>> cpu, void *data)'.
->> I'd really like to avoid that.  Decision callbacks tend to get abused
->> quite often and it's rather sad to do that because cpumask cannot be
->> prepared and passed around.  Can't it just preallocate all necessary
->> resources?
-> I don't recall seeing such abuse.  It's a very common and powerful
-> tool, and not implementing it because some dummy may abuse it weakens
-> the API for all non-dummies.  That allocation is simply unneeded.
-
-The problem with a callback version is that it's not clear that
-it helps with Andrew's original concern about allocation.  In
-schedule_on_each_cpu() we need to track which cpus we scheduled work
-on so that we can flush_work() after all the work has been scheduled.
-Even with a callback approach, we'd still end up wanting to record
-the results of the callback in the first pass so that we could
-properly flush_work() on the second pass.  Given that, having the
-caller just create the cpumask in the first place makes more sense.
-
-As Andrew suggests, we could also just have an asynchronous version
-of schedule_on_each_cpu(), but I don't know if that's beneficial
-enough to the swap code to make it worthwhile, or if it's tricky
-enough on the workqueue side to make it not worthwhile; it does seem
-like we would need to rethink the work_struct allocation, and
-e.g. avoid re-issuing the flush to a cpu that hadn't finished the
-previous flush, etc.  Potentially tricky, particularly if
-lru_add_drain_all() doesn't care about performance in the first place.
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+>  LP5521 has the internal program memory for running various LED patterns.
+> -For the details, please refer to 'firmware' section in leds-lp55xx.txt
+> +There are two ways to run LED patterns.
+> +
+> +1) Legacy interface - enginex_mode and enginex_load
+> +  Control interface for the engines:
+> +  x is 1 .. 3
+> +  enginex_mode : disabled, load, run
+> +  enginex_load : store program (visible only in engine load mode)
+> +
+> +  Example (start to blink the channel 2 led):
+> +  cd   /sys/class/leds/lp5521:channel2/device
+> +  echo "load" > engine3_mode
+> +  echo "037f4d0003ff6000" > engine3_load
+> +  echo "run" > engine3_mode
+> +
+> +  To stop the engine:
+> +  echo "disabled" > engine3_mode
+> +
+> +2) Firmware interface - LP55xx common interface
+> +  For the details, please refer to 'firmware' section in leds-lp55xx.txt
+>
+>  sysfs contains a selftest entry.
+>  The test communicates with the chip and checks that
+> diff --git a/Documentation/leds/leds-lp5523.txt b/Documentation/leds/leds-lp5523.txt
+> index 899fdad..5b3e91d 100644
+> --- a/Documentation/leds/leds-lp5523.txt
+> +++ b/Documentation/leds/leds-lp5523.txt
+> @@ -28,7 +28,26 @@ If both fields are NULL, 'lp5523' is used by default.
+>  /sys/class/leds/lp5523:channelN  (N: 0 ~ 8)
+>
+>  LP5523 has the internal program memory for running various LED patterns.
+> -For the details, please refer to 'firmware' section in leds-lp55xx.txt
+> +There are two ways to run LED patterns.
+> +
+> +1) Legacy interface - enginex_mode, enginex_load and enginex_leds
+> +  Control interface for the engines:
+> +  x is 1 .. 3
+> +  enginex_mode : disabled, load, run
+> +  enginex_load : microcode load (visible only in load mode)
+> +  enginex_leds : led mux control (visible only in load mode)
+> +
+> +  cd /sys/class/leds/lp5523:channel2/device
+> +  echo "load" > engine3_mode
+> +  echo "9d80400004ff05ff437f0000" > engine3_load
+> +  echo "111111111" > engine3_leds
+> +  echo "run" > engine3_mode
+> +
+> +  To stop the engine:
+> +  echo "disabled" > engine3_mode
+> +
+> +2) Firmware interface - LP55xx common interface
+> +  For the details, please refer to 'firmware' section in leds-lp55xx.txt
+>
+>  Selftest uses always the current from the platform data.
+>
+> --
+> 1.7.9.5
+>
