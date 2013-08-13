@@ -1,118 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758989Ab3HMVx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 17:53:27 -0400
-Received: from fieldses.org ([174.143.236.118]:46513 "EHLO fieldses.org"
+	id S1758809Ab3HMVyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 17:54:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11436 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265Ab3HMVxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 17:53:24 -0400
-Date: Tue, 13 Aug 2013 17:53:14 -0400
-To: Jan Kara <jack@suse.cz>
-Cc: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        linux-ext4@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: Re: Issues with a rather unusual configured NFS server
-Message-ID: <20130813215313.GH17781@fieldses.org>
-References: <52075E01.7030506@gmx.de>
- <20130812143640.GF4596@quack.suse.cz>
+	id S1756904Ab3HMVyj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 17:54:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,873,1367996400"; 
+   d="scan'208";a="380470954"
+From: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type
+ 00 to	PF Nacked" messages
+Thread-Topic: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type
+ 00 to	PF Nacked" messages
+Thread-Index: AQHOlSTqRXYmH+T/60yJytMLRmvNlZmTmTIQ
+Date: Tue, 13 Aug 2013 21:54:15 +0000
+Message-ID: <F6FB0E698C9B3143BDF729DF222866466FD41225@ORSMSX110.amr.corp.intel.com>
+References: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
+In-Reply-To: <CAErSpo53L3-feEw0qZvBTmRrY+SXpGrGU6oxZg3wVjH1M8JDXg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130812143640.GF4596@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 04:36:40PM +0200, Jan Kara wrote:
-> On Sun 11-08-13 11:48:49, Toralf Förster wrote:
-> > so that the server either crashes (if it is a user mode linux image) or at least its reboot functionality got broken
-> > - if the NFS server is hammered with scary NFS calls using a fuzzy tool running at a remote NFS client under a non-privileged user id.
-> > 
-> > It can re reproduced, if
-> > 	- the NFS share is an EXT3 or EXT4 directory
-> > 	- and it is created at file located at tempfs and mounted via loop device
-> > 	- and the NFS server is forced to umount the NFS share
-> > 	- and the server forced to restart the NSF service afterwards
-> > 	- and trinity is used
-> > 
-> > I could find a scenario for an automated bisect. 2 times it brought this commit 
-> > commit 68a3396178e6688ad7367202cdf0af8ed03c8727
-> > Author: J. Bruce Fields <bfields@redhat.com>
-> > Date:   Thu Mar 21 11:21:50 2013 -0400
-> > 
-> >     nfsd4: shut down more of delegation earlier
+Hey Bjorn,
 
-Thanks for the report.  I think I see the problem--after this commit
-nfs4_set_delegation() failures result in nfs4_put_delegation being
-called, but nfs4_put_delegation doesn't free the nfs4_file that has
-already been set by alloc_init_deleg().
+Sorry for the slow reply I was on vacation last week and have been playing catch up on my email.  
 
-Let me think about how to fix that....
+We were unable to recreate your failure here locally so I have some additional questions.  First off you mentioned it was failing as far back as v3.9, was it ever working for you?  If so bisecting would be really helpful as I mentioned we have been unable to cause the failure in house.  If not could you see if the problem still occurs without the external Magma PCIe expansion chassis, this is of course assuming that you can plug the X540 into your system without it.
 
---b.
+One other note we are in the process of testing several patch (in house) that touch on the code you are seeing the error in.  I can't say they would have any effect on what you are seeing, since I'm not sure what that is, but may be worth testing once they get upstream.
 
->   Added Bruce to CC.
+Thanks,
+-Don Skidmore <donald.c.skidmore@intel.com>
+	
+> -----Original Message-----
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> Sent: Friday, August 09, 2013 10:19 AM
+> To: e1000-devel@lists.sourceforge.net
+> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [E1000-devel] 3.11-rc4 ixgbevf: endless "Last Request of type 00 to
+> PF Nacked" messages
 > 
-> > to be the one after which the user mode linux server crashes with a back trace like this:
-> > 
-> > 
-> > $ cat /mnt/ramdisk/bt.v3.11-rc4-172-g8ae3f1d
-> > [New LWP 14025]
-> > Core was generated by `/home/tfoerste/devel/linux/linux earlyprintk ubda=/home/tfoerste/virtual/uml/tr'.
-> > Program terminated with signal 6, Aborted.
-> > #0  0xb77ef424 in __kernel_vsyscall ()
-> > #0  0xb77ef424 in __kernel_vsyscall ()
-> > #1  0x083a33c5 in kill ()
-> > #2  0x0807163d in uml_abort () at arch/um/os-Linux/util.c:93
-> > #3  0x08071925 in os_dump_core () at arch/um/os-Linux/util.c:138
-> > #4  0x080613a7 in panic_exit (self=0x85a1518 <panic_exit_notifier>, unused1=0, unused2=0x85d6ce0 <buf.15904>) at arch/um/kernel/um_arch.c:240
-> > #5  0x0809a3b8 in notifier_call_chain (nl=0x0, val=0, v=0x85d6ce0 <buf.15904>, nr_to_call=-2, nr_calls=0x0) at kernel/notifier.c:93
-> > #6  0x0809a503 in __atomic_notifier_call_chain (nr_calls=<optimized out>, nr_to_call=<optimized out>, v=<optimized out>, val=<optimized out>, nh=<optimized out>) at kernel/notifier.c:182
-> > #7  atomic_notifier_call_chain (nh=0x85d6cc4 <panic_notifier_list>, val=0, v=0x85d6ce0 <buf.15904>) at kernel/notifier.c:191
-> > #8  0x08400ba8 in panic (fmt=0x0) at kernel/panic.c:128
-> > #9  0x0818edf4 in ext4_put_super (sb=0x4a042690) at fs/ext4/super.c:818
-> > #10 0x081010d2 in generic_shutdown_super (sb=0x4a042690) at fs/super.c:418
-> > #11 0x0810209a in kill_block_super (sb=0x0) at fs/super.c:1028
-> > #12 0x08100f6a in deactivate_locked_super (s=0x4a042690) at fs/super.c:299
-> > #13 0x08101001 in deactivate_super (s=0x4a042690) at fs/super.c:324
-> > #14 0x08118e0c in mntfree (mnt=<optimized out>) at fs/namespace.c:891
-> > #15 mntput_no_expire (mnt=0x0) at fs/namespace.c:929
-> > #16 0x0811a2f5 in SYSC_umount (flags=<optimized out>, name=<optimized out>) at fs/namespace.c:1335
-> > #17 SyS_umount (name=134541632, flags=0) at fs/namespace.c:1305
-> > #18 0x0811a369 in SYSC_oldumount (name=<optimized out>) at fs/namespace.c:1347
-> > #19 SyS_oldumount (name=134541632) at fs/namespace.c:1345
-> > #20 0x080618e2 in handle_syscall (r=0x49e919d4) at arch/um/kernel/skas/syscall.c:35
-> > #21 0x08073c0d in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
-> > #22 userspace (regs=0x49e919d4) at arch/um/os-Linux/skas/process.c:431
-> > #23 0x0805e65c in fork_handler () at arch/um/kernel/process.c:160
-> > #24 0x00000000 in ?? ()
-> > 
-> > 
-> > 
-> > A real system however would not crash bug would give a kernel BUG as reported here:
-> > http://article.gmane.org/gmane.comp.file-systems.ext4/38915
->   We have deleted inodes (regular files) in the orphan list during
-> ext4_put_super(). My guess is that NFS is still holding some inode
-> references to these inodes and thus inodes don't get deleted. So ext3/4
-> would be just a victim here.
+> When I enable VFs via sysfs on an Intel X540-AT, I see an endless stream of
 > 
-> > Furthermore the server won't be able any longer to reboot - it would hang
-> > infinitely in the reboot phase.  Just the magic sysrq keys still works
-> > then.
->   Well, this is likely because the filesystem cannot be shut down.
+>     ixgbevf 0000:08:10.2: Last Request of type 03 to PF Nacked
 > 
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> messages.  This on an HP z420 with the Intel X540-AT in external Magma PCIe
+> expansion chassis.  No cable is attached to the X540-AT.
+> 
+> ixgbe is built as a module and is auto-loaded during boot, with no VFs
+> enabled.  The "Last request Nacked" messages start when I enable VFs
+> with:
+> 
+>     # echo -n 8 > /sys/bus/pci/devices/0000:08:00.0/sriov_numvfs
+>     ixgbe 0000:08:00.0 eth1: SR-IOV enabled with 8 VFs
+>     pci 0000:08:10.0: [8086:1515] type 00 class 0x020000
+>     pci 0000:08:10.2: [8086:1515] type 00 class 0x020000
+>     ...
+>     ixgbevf: Intel(R) 10 Gigabit PCI Express Virtual Function Network Driver -
+> version 2.7.12-k
+>     ...
+>     ixgbevf 0000:08:10.2: Last Request of type 03 to PF Nacked
+>     ...
+> 
+> This happens with v3.11-rc4, v3.10, and v3.9, which is as far back as I checked.
+> Complete console log and lspci output are here:
+> 
+>     http://helgaas.com/linux/ixgbe/z420.log
+>     http://helgaas.com/linux/ixgbe/lspci
+> 
+> ------------------------------------------------------------------------------
+> Get 100% visibility into Java/.NET code with AppDynamics Lite!
+> It's a free troubleshooting tool designed for production.
+> Get down to code-level detail for bottlenecks, with <2% overhead.
+> Download for free and get started troubleshooting in minutes.
+> http://pubads.g.doubleclick.net/gampad/clk?id=48897031&iu=/4140/ostg.clk
+> trk
+> _______________________________________________
+> E1000-devel mailing list
+> E1000-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/e1000-devel
+> To learn more about Intel&#174; Ethernet, visit
+> http://communities.intel.com/community/wired
