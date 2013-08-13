@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab3HMGsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:48:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60610 "EHLO
+	id S1757821Ab3HMGs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:48:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60607 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756494Ab3HMGdl (ORCPT
+	with ESMTP id S1756972Ab3HMGdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:41 -0400
+	Tue, 13 Aug 2013 02:33:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 08/60] powerpc: Save the TAR register earlier
-Date: Mon, 12 Aug 2013 23:33:35 -0700
-Message-Id: <20130813063332.965987608@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 43/60] drm/radeon: select audio dto based on encoder id for DCE3
+Date: Mon, 12 Aug 2013 23:34:10 -0700
+Message-Id: <20130813063337.790358710@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -27,82 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit c2d52644e2da8a07ecab5ca62dd0bc563089e8dc upstream.
+commit e1accbf0543eecfdb161131208c3dfefee22d61f upstream.
 
-This moves us to save the Target Address Register (TAR) a earlier in
-__switch_to.  It introduces a new function save_tar() to do this.
+There are two audio dtos on radeon asics that you can
+select between.  Normally, dto0 is used for hdmi and
+dto1 for DP, but it seems that the dto is somehow
+tied to the encoders on DCE3 asics.
 
-We need to save the TAR earlier as we will overwrite it in the transactional
-memory reclaim/recheckpoint path.  We are going to do this in a subsequent
-patch which will fix saving the TAR register when it's modified inside a
-transaction.
+fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=67435
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/switch_to.h |    9 +++++++++
- arch/powerpc/kernel/entry_64.S       |    9 ---------
- arch/powerpc/kernel/process.c        |   10 ++++++++++
- 3 files changed, 19 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/radeon/r600_hdmi.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/include/asm/switch_to.h
-+++ b/arch/powerpc/include/asm/switch_to.h
-@@ -15,6 +15,15 @@ extern struct task_struct *__switch_to(s
- struct thread_struct;
- extern struct task_struct *_switch(struct thread_struct *prev,
- 				   struct thread_struct *next);
-+#ifdef CONFIG_PPC_BOOK3S_64
-+static inline void save_tar(struct thread_struct *prev)
-+{
-+	if (cpu_has_feature(CPU_FTR_ARCH_207S))
-+		prev->tar = mfspr(SPRN_TAR);
-+}
-+#else
-+static inline void save_tar(struct thread_struct *prev) {}
-+#endif
- 
- extern void giveup_fpu(struct task_struct *);
- extern void load_up_fpu(void);
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -449,15 +449,6 @@ END_FTR_SECTION_IFSET(CPU_FTR_DSCR)
- 
- #ifdef CONFIG_PPC_BOOK3S_64
- BEGIN_FTR_SECTION
--	/*
--	 * Back up the TAR across context switches.  Note that the TAR is not
--	 * available for use in the kernel.  (To provide this, the TAR should
--	 * be backed up/restored on exception entry/exit instead, and be in
--	 * pt_regs.  FIXME, this should be in pt_regs anyway (for debug).)
--	 */
--	mfspr	r0,SPRN_TAR
--	std	r0,THREAD_TAR(r3)
--
- 	/* Event based branch registers */
- 	mfspr	r0, SPRN_BESCR
- 	std	r0, THREAD_BESCR(r3)
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -600,6 +600,16 @@ struct task_struct *__switch_to(struct t
- 	struct ppc64_tlb_batch *batch;
- #endif
- 
-+	/* Back up the TAR across context switches.
-+	 * Note that the TAR is not available for use in the kernel.  (To
-+	 * provide this, the TAR should be backed up/restored on exception
-+	 * entry/exit instead, and be in pt_regs.  FIXME, this should be in
-+	 * pt_regs anyway (for debug).)
-+	 * Save the TAR here before we do treclaim/trecheckpoint as these
-+	 * will change the TAR.
-+	 */
-+	save_tar(&prev->thread);
-+
- 	__switch_to_tm(prev);
- 
- #ifdef CONFIG_SMP
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -242,9 +242,15 @@ void r600_audio_set_dto(struct drm_encod
+ 		/* according to the reg specs, this should DCE3.2 only, but in
+ 		 * practice it seems to cover DCE3.0 as well.
+ 		 */
+-		WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
+-		WREG32(DCCG_AUDIO_DTO0_MODULE, clock * 100);
+-		WREG32(DCCG_AUDIO_DTO_SELECT, 0); /* select DTO0 */
++		if (dig->dig_encoder == 0) {
++			WREG32(DCCG_AUDIO_DTO0_PHASE, base_rate * 100);
++			WREG32(DCCG_AUDIO_DTO0_MODULE, clock * 100);
++			WREG32(DCCG_AUDIO_DTO_SELECT, 0); /* select DTO0 */
++		} else {
++			WREG32(DCCG_AUDIO_DTO1_PHASE, base_rate * 100);
++			WREG32(DCCG_AUDIO_DTO1_MODULE, clock * 100);
++			WREG32(DCCG_AUDIO_DTO_SELECT, 1); /* select DTO1 */
++		}
+ 	} else {
+ 		/* according to the reg specs, this should be DCE2.0 and DCE3.0 */
+ 		WREG32(AUDIO_DTO, AUDIO_DTO_PHASE(base_rate / 10) |
 
 
