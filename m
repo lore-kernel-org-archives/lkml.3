@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757857Ab3HMRHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:07:16 -0400
-Received: from sonora.mala.bc.ca ([142.25.103.169]:33522 "EHLO
-	sonora.mala.bc.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755407Ab3HMRHO convert rfc822-to-8bit (ORCPT
+	id S1758343Ab3HMRHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:07:43 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:54216 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757354Ab3HMRHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:07:14 -0400
-X-Greylist: delayed 648 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Aug 2013 13:07:14 EDT
-From: William Moore <William.Moore@viu.ca>
-To: "info@domain.org" <info@domain.org>
-Subject: =?iso-8859-1?Q?=A92013_Helpdesk_Support?=
-Thread-Topic: =?iso-8859-1?Q?=A92013_Helpdesk_Support?=
-Thread-Index: Ac6YRggHJawcE3YVS5u78WFXARW0XA==
-Date: Tue, 13 Aug 2013 16:56:19 +0000
-Message-ID: <8FD1405D3B739F4A873DC8051449EAEA010150@SATURNA.capitan.mala.bc.ca>
-Accept-Language: en-US, en-CA
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.95.15.20]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Aug 2013 13:07:41 -0400
+Date: Tue, 13 Aug 2013 18:07:34 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+Cc: jic23@cam.ac.uk, dmitry.torokhov@gmail.com, sameo@linux.intel.com,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bigeasy@linutronix.de,
+        gregkh@linuxfoundation.org, Russ.Dill@ti.com
+Subject: Re: [PATCH 3/4] input: ti_tsc: Enable shared IRQ for TSC and add
+ overrun, underflow checks
+Message-ID: <20130813170734.GJ15278@lee--X1>
+References: <1376412499-21007-1-git-send-email-zubair.lutfullah@gmail.com>
+ <1376412499-21007-4-git-send-email-zubair.lutfullah@gmail.com>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 13 Aug 2013 16:56:20.0642 (UTC) FILETIME=[08FF8820:01CE9846]
-X-PMX-Spam: Probability=73%
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1376412499-21007-4-git-send-email-zubair.lutfullah@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 13 Aug 2013, Zubair Lutfullah wrote:
 
-Dear Email User,
+> Enable shared IRQ to allow ADC to share IRQ line from
+> parent MFD core. Only FIFO0 IRQs are for TSC and handled
+> on the TSC side.
+> 
+> Patch also adds overrun and underflow irq handlers.
+> 
+> Russ Dill (TI) worked on overrun and underflow handlers.
+> Rachna Patil (TI) laid ground work for shared IRQ.
+> 
+> Signed-off-by: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+> ---
+>  drivers/input/touchscreen/ti_am335x_tsc.c |   37 +++++++++++++++++++++++++----
+>  include/linux/mfd/ti_am335x_tscadc.h      |    2 ++
+>  2 files changed, 34 insertions(+), 5 deletions(-)
 
-Your two (2) incoming mails were placed on pending status due to the recent upgrade in our database, Helpdesk Support require you to immediately update your account information by following the reference link below to prevent your Email address not to be de-activated on our Email service database today.
+For the MFD part when the remainder of the entries have been placed in
+order:
 
-CLICK HERE<http://revalidationhelpdesk.yolasite.com/>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Login with your correct Webmail information's and wait for responds from our date base service, We apologize for any inconvenience and do appreciate your understanding. Failure to confirm and verify your email account on our database as instructed, Your e-mail account will be blocked in 24 hours.
-
-Thank you for your cooperation.
-©2013 Helpdesk Support.
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
