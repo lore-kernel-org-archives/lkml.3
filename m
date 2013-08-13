@@ -1,96 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab3HMKs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 06:48:27 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:36939 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214Ab3HMKsZ (ORCPT
+	id S1757378Ab3HMKuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 06:50:10 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:55676 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757240Ab3HMKuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 06:48:25 -0400
-Date: Tue, 13 Aug 2013 12:48:21 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Vince Weaver <vince@deater.net>
-Cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, acme@infradead.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
- executable
-Message-ID: <20130813104821.GB2170@gmail.com>
-References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
- <20130805081641.GA24808@gmail.com>
- <20130805082320.GA9562@infradead.org>
- <20130805083132.GE26746@gmail.com>
- <20130805083434.GA20606@infradead.org>
- <20130805090857.GA26940@gmail.com>
- <20130806061932.GA20485@infradead.org>
- <20130812181956.GB19405@gmail.com>
- <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
+	Tue, 13 Aug 2013 06:50:07 -0400
+Message-ID: <520A0F5B.5080502@baylibre.com>
+Date: Tue, 13 Aug 2013 12:50:03 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>
+CC: Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
+        b-cousson@ti.com, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v2] N900: add device tree
+References: <20130613155240.GB3775@amd.pavel.ucw.cz> <20130613161418.GJ8164@atomide.com> <20130613230808.GA14876@amd.pavel.ucw.cz> <20130614055629.GM8164@atomide.com> <20130614212816.GA31768@atrey.karlin.mff.cuni.cz> <20130617111031.GQ20992@atomide.com> <20130701211753.GC15318@amd.pavel.ucw.cz> <20130704171939.GA27374@blackmetal.musicnaut.iki.fi> <20130704202145.GB10752@amd.pavel.ucw.cz> <20130704203256.GB27374@blackmetal.musicnaut.iki.fi> <20130713121709.GC16473@amd.pavel.ucw.cz> <CAAwP0s18PNn10q5qrzgi4Vz9t31AYuwBSthjE=rSdRb0FG0CFQ@mail.gmail.com>
+In-Reply-To: <CAAwP0s18PNn10q5qrzgi4Vz9t31AYuwBSthjE=rSdRb0FG0CFQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Pavel,
 
-* Vince Weaver <vince@deater.net> wrote:
+I finally got released by the aliens. It took longer than expected and 
+beside a small scar on the back of my neck, I feel pretty OK.
 
-> On Mon, 12 Aug 2013, Ingo Molnar wrote:
-> 
-> > perf is the exact opposite: no split-up the development culture 
-> > because they are closely related, yet a relatively disciplined ABI 
-> > between the components. In fact the ABI is higher quality exactly 
-> > because development is more integrated and allows for ABI problems to 
-> > be resolved before they leak out. It also allows for faster iteration 
-> > of development, without nonsensical ABI steps pulluting the way.
-> 
-> I don't know if I'd use "quality" and "perf ABI" in the same sentence. 
-> It's a horrible ABI; it has the honor of having the longest syscall 
-> manpage, beating out even ptrace.
+I just have few cosmetic comments on top of Javier's ones.
 
-The functionality it provides is useful, and comprehensive documentation 
-of it is useful as well.
+On 11/08/2013 17:02, Javier Martinez Canillas wrote:
+> Hi Pavel,
+>
+> some minor comments about your patch below
+>
+> On Sat, Jul 13, 2013 at 2:17 PM, Pavel Machek <pavel@ucw.cz> wrote:
+>>
+>> This adds device tree with neccessary support to boot with functional
 
-> It also really isn't that stable; I've had perf ABI changes break 
-> programs I maintain at least three times in the last 2 kernel releases.  
-> Part of this is due to the tight coupling into the kernel, in fact the 
-> only ABI anyone seems to care about is that presented by the perf-tool 
-> CLI interface; the _actual_ kernel ABI seems like an afterthought.
+Typo----------------------------^
 
-It's certainly complex, but the main root cause for your problems is what 
-I pointed out to you in previous, similar discussions: I'm not aware of 
-*any* tester using your library on devel kernels, so regressions in seldom 
-used functionality that you rely on simply doesn't get reported.
+>> video (on both emulator and real N900 device).
+>>
+>> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+>>
+>> ---
+>>
+>>  From v1: Aaro wants just GPLv2, so I did that. I re-enabled parts that
+>> can be enabled on 3.10, and tested it on that kernel.
+>>
+>> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+>> index f0895c5..1950aed 100644
+>> --- a/arch/arm/boot/dts/Makefile
+>> +++ b/arch/arm/boot/dts/Makefile
+>> @@ -141,6 +141,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+>>          omap3-devkit8000.dtb \
+>>          omap3-beagle-xm.dtb \
+>>          omap3-evm.dtb \
+>> +       omap3-n900.dtb \
+>>          omap3-tobi.dtb \
+>>          omap3-igep0020.dtb \
+>>          omap3-igep0030.dtb \
+>> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+>> new file mode 100644
+>> index 0000000..fb461bf
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/omap3-n900.dts
+>> @@ -0,0 +1,92 @@
+>> +/*
+>> + * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
+>> + * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +/dts-v1/;
+>> +
+>> +/include/ "omap34xx.dtsi"
+>> +
+>
+> The current trend is to use #include "omap34xx.dtsi" instead /include/
+> in order to use the C pre-processor and the macros defined in
+> include/dt-bindings.
+>
+>> +/ {
+>> +       model = "Nokia N900";
+>> +       compatible = "nokia,omap3-n900", "ti,omap3";
+>> +
+>> +       cpus {
+>> +               cpu@0 {
+>> +                       cpu0-supply = <&vcc>;
+>> +               };
+>> +       };
+>> +
+>> +       memory {
+>> +               device_type = "memory";
+>> +               reg = <0x80000000 0x10000000>; /* 256 MB */
+>> +       };
+>> +
+>> +};
+>> +
+>> +&i2c1 {
+>> +       clock-frequency = <2200000>;
+>> +
+>> +       twl: twl@48 {
+>> +               reg = <0x48>;
+>> +               interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+>> +               interrupt-parent = <&intc>;
+>> +       };
+>> +};
+>> +
+>> +/include/ "twl4030.dtsi"
+>> +
+>> +&twl_gpio {
+>> +       ti,pullups      = <0x0>;
+>> +       ti,pulldowns    = <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
+>> +};
+>> +
+>> +&i2c2 {
+>> +       clock-frequency = <400000>;
+>> +};
+>> +
+>> +&i2c3 {
+>> +       clock-frequency = <100000>;
+>> +};
+>> +
+>> +&mmc1 {
+>> +       status = "disabled";
+>> +};
+>> +
+>> +&mmc2 {
+>> +       status = "disabled";
+>> +};
+>> +
+>> +&mmc3 {
+>> +       status = "disabled";
+>> +};
+>> +
+>> +&mcspi1 {
+>> +       // For some reason, touchscreen is neccessary for screen to work at
 
-In the past you used to only test your library once the -stable kernel was 
-released - has this changed recently by any chance? I remember that in one 
-particular case I got a regression bugreport from you essentially on the 
-day of a -stable release.
+Same typo than before---------------------------^
 
-If you tested -rc2 or so that would give us a much larger window to fix 
-any breakages that affect your library. (I'm not even asking for 
-linux-next testing.)
+>> +       // all on real hw. It works well without it on emulator.
+>> +       //
+>> +       // Also... order in the device tree actually matters here.
 
-tools/perf is used much more prominently and breakages do get reported 
-reasonably early, typically before the merge window even opens.
+Nit: Please use the regular Linux style comment.
 
-Once we receive a report we do fix your regressions as well and mark them 
-for -stable.
+The order should not matter at all in DT, it should be a static 
+representation of the HW, so there is probably something wrong in the 
+code that make the device creation order important.
 
-To resolve this situation you could help us out by doing either of these:
+>> +       tsc2005@0 {
+>> +               compatible = "tsc2005";
+>> +               spi-max-frequency = <6000000>;
+>> +               reg = <0>;
+>> +       };
+>> +       mipid@2 {
+>> +               compatible = "acx565akm";
+>> +               spi-max-frequency = <6000000>;
+>> +               reg = <2>;
+>> +               // turbo_mode = 0,
+>> +               // cs_per_word = 0
+>> +       };
+>> +};
+>
+> You should remove these properties if they are not being used instead
+> of keeping them as commented.
+>
+>> +
+>> +&usb_otg_hs {
+>> +       interface-type = <0>;
+>> +       usb-phy = <&usb2_phy>;
+>> +       mode = <2>;
+>> +       power = <50>;
+>> +};
 
- 1) integrate your tests into tools/, there's 'perf test' that has a ton
-    of testcases already
-
- 2) run your testsuite more frequently - instead of waiting for a stable
-    kernel to be released and then complain about breakage.
-
-So far you refused to do any of this and blamed others for non-reported 
-breakages :-/
+Beside my comments and the ones from Javier, it looks good.
+If you can repost ASAP, I'll take it right after.
+It will be the first one in the list.
 
 Thanks,
+Benoit
 
-	Ingo
