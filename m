@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756393Ab3HMGdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:33:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60494 "EHLO
+	id S1757888Ab3HMGzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:55:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60503 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756312Ab3HMGdN (ORCPT
+	with ESMTP id S1756276Ab3HMGdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:13 -0400
+	Tue, 13 Aug 2013 02:33:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin von Gagern <Martin.vGagern@gmx.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 20/60] cpufreq: rename ignore_nice as ignore_nice_load
-Date: Mon, 12 Aug 2013 23:33:47 -0700
-Message-Id: <20130813063334.908306592@linuxfoundation.org>
+        Andrew Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 22/60] tracing: Fix fields of struct trace_iterator that are zeroed by mistake
+Date: Mon, 12 Aug 2013 23:33:49 -0700
+Message-Id: <20130813063335.063044611@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -28,236 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Andrew Vagin <avagin@openvz.org>
 
-commit 6c4640c3adfd97ce10efed7c07405f52d002b9a8 upstream.
+commit ed5467da0e369e65b247b99eb6403cb79172bcda upstream.
 
-This sysfs file was called ignore_nice_load earlier and commit
-4d5dcc4 (cpufreq: governor: Implement per policy instances of
-governors) changed its name to ignore_nice by mistake.
+tracing_read_pipe zeros all fields bellow "seq". The declaration contains
+a comment about that, but it doesn't help.
 
-Lets get it renamed back to its original name.
+The first field is "snapshot", it's true when current open file is
+snapshot. Looks obvious, that it should not be zeroed.
 
-Reported-by: Martin von Gagern <Martin.vGagern@gmx.net>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The second field is "started". It was converted from cpumask_t to
+cpumask_var_t (v2.6.28-4983-g4462344), in other words it was
+converted from cpumask to pointer on cpumask.
+
+Currently the reference on "started" memory is lost after the first read
+from tracing_read_pipe and a proper object will never be freed.
+
+The "started" is never dereferenced for trace_pipe, because trace_pipe
+can't have the TRACE_FILE_ANNOTATE options.
+
+Link: http://lkml.kernel.org/r/1375463803-3085183-1-git-send-email-avagin@openvz.org
+
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq_conservative.c |   20 ++++++++++----------
- drivers/cpufreq/cpufreq_governor.c     |    8 ++++----
- drivers/cpufreq/cpufreq_governor.h     |    4 ++--
- drivers/cpufreq/cpufreq_ondemand.c     |   20 ++++++++++----------
- 4 files changed, 26 insertions(+), 26 deletions(-)
+ include/linux/ftrace_event.h |   10 ++++++----
+ kernel/trace/trace.c         |    1 +
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/cpufreq/cpufreq_conservative.c
-+++ b/drivers/cpufreq/cpufreq_conservative.c
-@@ -221,8 +221,8 @@ static ssize_t store_down_threshold(stru
- 	return count;
- }
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -78,6 +78,11 @@ struct trace_iterator {
+ 	/* trace_seq for __print_flags() and __print_symbolic() etc. */
+ 	struct trace_seq	tmp_seq;
  
--static ssize_t store_ignore_nice(struct dbs_data *dbs_data, const char *buf,
--		size_t count)
-+static ssize_t store_ignore_nice_load(struct dbs_data *dbs_data,
-+		const char *buf, size_t count)
- {
- 	struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
- 	unsigned int input, j;
-@@ -235,10 +235,10 @@ static ssize_t store_ignore_nice(struct
- 	if (input > 1)
- 		input = 1;
++	cpumask_var_t		started;
++
++	/* it's true when current open file is snapshot */
++	bool			snapshot;
++
+ 	/* The below is zeroed out in pipe_read */
+ 	struct trace_seq	seq;
+ 	struct trace_entry	*ent;
+@@ -90,10 +95,7 @@ struct trace_iterator {
+ 	loff_t			pos;
+ 	long			idx;
  
--	if (input == cs_tuners->ignore_nice) /* nothing to do */
-+	if (input == cs_tuners->ignore_nice_load) /* nothing to do */
- 		return count;
- 
--	cs_tuners->ignore_nice = input;
-+	cs_tuners->ignore_nice_load = input;
- 
- 	/* we need to re-evaluate prev_cpu_idle */
- 	for_each_online_cpu(j) {
-@@ -246,7 +246,7 @@ static ssize_t store_ignore_nice(struct
- 		dbs_info = &per_cpu(cs_cpu_dbs_info, j);
- 		dbs_info->cdbs.prev_cpu_idle = get_cpu_idle_time(j,
- 					&dbs_info->cdbs.prev_cpu_wall, 0);
--		if (cs_tuners->ignore_nice)
-+		if (cs_tuners->ignore_nice_load)
- 			dbs_info->cdbs.prev_cpu_nice =
- 				kcpustat_cpu(j).cpustat[CPUTIME_NICE];
- 	}
-@@ -279,7 +279,7 @@ show_store_one(cs, sampling_rate);
- show_store_one(cs, sampling_down_factor);
- show_store_one(cs, up_threshold);
- show_store_one(cs, down_threshold);
--show_store_one(cs, ignore_nice);
-+show_store_one(cs, ignore_nice_load);
- show_store_one(cs, freq_step);
- declare_show_sampling_rate_min(cs);
- 
-@@ -287,7 +287,7 @@ gov_sys_pol_attr_rw(sampling_rate);
- gov_sys_pol_attr_rw(sampling_down_factor);
- gov_sys_pol_attr_rw(up_threshold);
- gov_sys_pol_attr_rw(down_threshold);
--gov_sys_pol_attr_rw(ignore_nice);
-+gov_sys_pol_attr_rw(ignore_nice_load);
- gov_sys_pol_attr_rw(freq_step);
- gov_sys_pol_attr_ro(sampling_rate_min);
- 
-@@ -297,7 +297,7 @@ static struct attribute *dbs_attributes_
- 	&sampling_down_factor_gov_sys.attr,
- 	&up_threshold_gov_sys.attr,
- 	&down_threshold_gov_sys.attr,
--	&ignore_nice_gov_sys.attr,
-+	&ignore_nice_load_gov_sys.attr,
- 	&freq_step_gov_sys.attr,
- 	NULL
- };
-@@ -313,7 +313,7 @@ static struct attribute *dbs_attributes_
- 	&sampling_down_factor_gov_pol.attr,
- 	&up_threshold_gov_pol.attr,
- 	&down_threshold_gov_pol.attr,
--	&ignore_nice_gov_pol.attr,
-+	&ignore_nice_load_gov_pol.attr,
- 	&freq_step_gov_pol.attr,
- 	NULL
- };
-@@ -338,7 +338,7 @@ static int cs_init(struct dbs_data *dbs_
- 	tuners->up_threshold = DEF_FREQUENCY_UP_THRESHOLD;
- 	tuners->down_threshold = DEF_FREQUENCY_DOWN_THRESHOLD;
- 	tuners->sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR;
--	tuners->ignore_nice = 0;
-+	tuners->ignore_nice_load = 0;
- 	tuners->freq_step = DEF_FREQUENCY_STEP;
- 
- 	dbs_data->tuners = tuners;
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -91,9 +91,9 @@ void dbs_check_cpu(struct dbs_data *dbs_
- 	unsigned int j;
- 
- 	if (dbs_data->cdata->governor == GOV_ONDEMAND)
--		ignore_nice = od_tuners->ignore_nice;
-+		ignore_nice = od_tuners->ignore_nice_load;
- 	else
--		ignore_nice = cs_tuners->ignore_nice;
-+		ignore_nice = cs_tuners->ignore_nice_load;
- 
- 	policy = cdbs->cur_policy;
- 
-@@ -336,12 +336,12 @@ int cpufreq_governor_dbs(struct cpufreq_
- 		cs_tuners = dbs_data->tuners;
- 		cs_dbs_info = dbs_data->cdata->get_cpu_dbs_info_s(cpu);
- 		sampling_rate = cs_tuners->sampling_rate;
--		ignore_nice = cs_tuners->ignore_nice;
-+		ignore_nice = cs_tuners->ignore_nice_load;
- 	} else {
- 		od_tuners = dbs_data->tuners;
- 		od_dbs_info = dbs_data->cdata->get_cpu_dbs_info_s(cpu);
- 		sampling_rate = od_tuners->sampling_rate;
--		ignore_nice = od_tuners->ignore_nice;
-+		ignore_nice = od_tuners->ignore_nice_load;
- 		od_ops = dbs_data->cdata->gov_ops;
- 		io_busy = od_tuners->io_is_busy;
- 	}
---- a/drivers/cpufreq/cpufreq_governor.h
-+++ b/drivers/cpufreq/cpufreq_governor.h
-@@ -165,7 +165,7 @@ struct cs_cpu_dbs_info_s {
- 
- /* Per policy Governers sysfs tunables */
- struct od_dbs_tuners {
--	unsigned int ignore_nice;
-+	unsigned int ignore_nice_load;
- 	unsigned int sampling_rate;
- 	unsigned int sampling_down_factor;
- 	unsigned int up_threshold;
-@@ -175,7 +175,7 @@ struct od_dbs_tuners {
+-	cpumask_var_t		started;
+-
+-	/* it's true when current open file is snapshot */
+-	bool			snapshot;
++	/* All new field here will be zeroed out in pipe_read */
  };
  
- struct cs_dbs_tuners {
--	unsigned int ignore_nice;
-+	unsigned int ignore_nice_load;
- 	unsigned int sampling_rate;
- 	unsigned int sampling_down_factor;
- 	unsigned int up_threshold;
---- a/drivers/cpufreq/cpufreq_ondemand.c
-+++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -403,8 +403,8 @@ static ssize_t store_sampling_down_facto
- 	return count;
- }
+ enum trace_iter_flags {
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4121,6 +4121,7 @@ waitagain:
+ 	memset(&iter->seq, 0,
+ 	       sizeof(struct trace_iterator) -
+ 	       offsetof(struct trace_iterator, seq));
++	cpumask_clear(iter->started);
+ 	iter->pos = -1;
  
--static ssize_t store_ignore_nice(struct dbs_data *dbs_data, const char *buf,
--		size_t count)
-+static ssize_t store_ignore_nice_load(struct dbs_data *dbs_data,
-+		const char *buf, size_t count)
- {
- 	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
- 	unsigned int input;
-@@ -419,10 +419,10 @@ static ssize_t store_ignore_nice(struct
- 	if (input > 1)
- 		input = 1;
- 
--	if (input == od_tuners->ignore_nice) { /* nothing to do */
-+	if (input == od_tuners->ignore_nice_load) { /* nothing to do */
- 		return count;
- 	}
--	od_tuners->ignore_nice = input;
-+	od_tuners->ignore_nice_load = input;
- 
- 	/* we need to re-evaluate prev_cpu_idle */
- 	for_each_online_cpu(j) {
-@@ -430,7 +430,7 @@ static ssize_t store_ignore_nice(struct
- 		dbs_info = &per_cpu(od_cpu_dbs_info, j);
- 		dbs_info->cdbs.prev_cpu_idle = get_cpu_idle_time(j,
- 			&dbs_info->cdbs.prev_cpu_wall, od_tuners->io_is_busy);
--		if (od_tuners->ignore_nice)
-+		if (od_tuners->ignore_nice_load)
- 			dbs_info->cdbs.prev_cpu_nice =
- 				kcpustat_cpu(j).cpustat[CPUTIME_NICE];
- 
-@@ -461,7 +461,7 @@ show_store_one(od, sampling_rate);
- show_store_one(od, io_is_busy);
- show_store_one(od, up_threshold);
- show_store_one(od, sampling_down_factor);
--show_store_one(od, ignore_nice);
-+show_store_one(od, ignore_nice_load);
- show_store_one(od, powersave_bias);
- declare_show_sampling_rate_min(od);
- 
-@@ -469,7 +469,7 @@ gov_sys_pol_attr_rw(sampling_rate);
- gov_sys_pol_attr_rw(io_is_busy);
- gov_sys_pol_attr_rw(up_threshold);
- gov_sys_pol_attr_rw(sampling_down_factor);
--gov_sys_pol_attr_rw(ignore_nice);
-+gov_sys_pol_attr_rw(ignore_nice_load);
- gov_sys_pol_attr_rw(powersave_bias);
- gov_sys_pol_attr_ro(sampling_rate_min);
- 
-@@ -478,7 +478,7 @@ static struct attribute *dbs_attributes_
- 	&sampling_rate_gov_sys.attr,
- 	&up_threshold_gov_sys.attr,
- 	&sampling_down_factor_gov_sys.attr,
--	&ignore_nice_gov_sys.attr,
-+	&ignore_nice_load_gov_sys.attr,
- 	&powersave_bias_gov_sys.attr,
- 	&io_is_busy_gov_sys.attr,
- 	NULL
-@@ -494,7 +494,7 @@ static struct attribute *dbs_attributes_
- 	&sampling_rate_gov_pol.attr,
- 	&up_threshold_gov_pol.attr,
- 	&sampling_down_factor_gov_pol.attr,
--	&ignore_nice_gov_pol.attr,
-+	&ignore_nice_load_gov_pol.attr,
- 	&powersave_bias_gov_pol.attr,
- 	&io_is_busy_gov_pol.attr,
- 	NULL
-@@ -544,7 +544,7 @@ static int od_init(struct dbs_data *dbs_
- 	}
- 
- 	tuners->sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR;
--	tuners->ignore_nice = 0;
-+	tuners->ignore_nice_load = 0;
- 	tuners->powersave_bias = default_powersave_bias;
- 	tuners->io_is_busy = should_io_be_busy();
- 
+ 	trace_event_read_lock();
 
 
