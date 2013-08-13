@@ -1,115 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759395Ab3HMWg1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 18:36:27 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:38417 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759250Ab3HMWgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 18:36:24 -0400
-Date: Tue, 13 Aug 2013 15:36:22 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/17] 3.4.58-stable review
-Message-ID: <20130813223622.GA12790@roeck-us.net>
-References: <20130813063501.728847844@linuxfoundation.org>
- <520A1D56.2050507@roeck-us.net>
- <20130813175858.GC7336@kroah.com>
- <20130813201936.GA18358@roeck-us.net>
- <CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com>
+	id S1757955Ab3HMWnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:43:55 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:41615 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757461Ab3HMWny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 18:43:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / QoS: Fix workqueue deadlock when using pm_qos_update_request_timeout()
+Date: Wed, 14 Aug 2013 00:54:18 +0200
+Message-ID: <9317874.UKPmemvZzk@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130813221325.GD28996@mtj.dyndns.org>
+References: <4423040.Ds5TZlivfo@vostro.rjw.lan> <1376428360-12560-1-git-send-email-sboyd@codeaurora.org> <20130813221325.GD28996@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 10:49:42PM +0200, Geert Uytterhoeven wrote:
-> On Tue, Aug 13, 2013 at 10:19 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > powerpc/chroma_defconfig:
-> > arch/powerpc/mm/numa.c: In function 'do_init_bootmem':
-> > arch/powerpc/mm/numa.c:529:19: error: 'aa.arrays' may be used uninitialized in this function [-Werror=maybe-uninitialized]
-> > arch/powerpc/mm/numa.c:642:22: note: 'aa.arrays' was declared here
-> > cc1: all warnings being treated as errors
-> >
-> > No idea. Code looks all different in 3.10.
+On Tuesday, August 13, 2013 06:13:25 PM Tejun Heo wrote:
+> Hello,
 > 
-> Never seen in my log collection from kissb, which doesn't build
-> chroma_defconfig.
+> On Tue, Aug 13, 2013 at 02:12:40PM -0700, Stephen Boyd wrote:
+> > @@ -308,7 +319,7 @@ static void pm_qos_work_fn(struct work_struct *work)
+> >  						  struct pm_qos_request,
+> >  						  work);
+> >  
+> > -	pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
+> > +	__pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
 > 
-> > m68k/allmodconfig:
-> > drivers/hid/hid-microsoft.c: In function 'ms_report_fixup':
-> > drivers/hid/hid-microsoft.c:52:18: error: macro "memcmp" passed 6 arguments, but takes just 3
-> > drivers/hid/hid-microsoft.c:51:5: error: 'memcmp' undeclared (first use in this function)
-> > drivers/hid/hid-microsoft.c:51:5: note: each undeclared identifier is reported only once for each function it appears in
+> Maybe a short comment explaining why this is different would be nice?
+> Other than that,
 > 
-> Fixed in v3.7-rc6:
-> 
-> commit 6b90466cfec2a2fe027187d675d8d14217c12d82
-> Author: Jiri Slaby <jslaby@suse.cz>
-> Date:   Mon Nov 12 10:16:09 2012 +0100
-> 
->     HID: microsoft: do not use compound literal - fix build
-> 
-Confirmed. Patching this commit into 3.4 fixes the build for m68k/allmodconfig.
+>  Reviewed-by: Tejun Heo <tj@kernel.org>
 
-> > blackfin/defconfig:
-> > ERROR: "vm_iomap_memory" [drivers/video/fb.ko] undefined!
-> > make[1]: *** [__modpost] Error 1
-> >
-> > sh/defconfig:
-> > drivers/built-in.o: In function `fb_mmap':
-> > fbmem.c:(.text+0x5e8): undefined reference to `vm_iomap_memory'
-> >
-> > Both look similar and might be easy to fix if someone knows what is wrong.
-> 
-> Fixed in v3.9:
-> 
-> commit 3c0b9de6d37a481673e81001c57ca0e410c72346
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Sat Apr 27 13:25:38 2013 -0700
-> 
->     vm: add no-mmu vm_iomap_memory() stub
-> 
-Confirmed. Patching this commit into 3.4 fixes the build for
-both blackbuid/defconfig and sh/defconfig.
+Thanks guys, I'm going to push that as a fix for 3.11-rc6 and stable.
 
-> > cris/...:
-> > In file included from include/linux/page-flags.h:8:0,
-> >                  from kernel/bounds.c:9:
-> > include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
-> > include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
-> > include/linux/types.h:30:1: error: unknown type name '__kernel_pid_t'
-> > include/linux/types.h:31:1: error: unknown type name '__kernel_daddr_t'
-> > include/linux/types.h:33:1: error: unknown type name '__kernel_suseconds_t'
-> >
-> > That one might be tricky (or simple if someone knows what is wrong).
-> 
-> Fixed in v3.5-rc1:
-> 
-> commit 74f077d2a7651409c44bb323471f219a4b0d2aab
-> Author: Jiri Slaby <jslaby@suse.cz>
-> Date:   Mon Apr 2 13:40:17 2012 +0200
-> 
->     cris: posix_types.h, include asm-generic/posix_types.h
-> 
-It does fix above error, but then there is another error:
+Rafael
 
-  AS      arch/cris/arch-v10/lib/checksum.o
-In file included from <command-line>:4:0:
-/home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
-make[1]: *** [arch/cris/arch-v10/lib/checksum.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
-  AS      arch/cris/arch-v10/lib/checksumcopy.o
-In file included from <command-line>:4:0:
-/home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
-make[1]: *** [arch/cris/arch-v10/lib/checksumcopy.o] Error 1
-
-Guenter
