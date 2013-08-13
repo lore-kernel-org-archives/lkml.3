@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758466Ab3HMPnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 11:43:14 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:58810 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758262Ab3HMPnL (ORCPT
+	id S1758516Ab3HMPnl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 11:43:41 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:37198 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758379Ab3HMPni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 11:43:11 -0400
-Date: Tue, 13 Aug 2013 16:43:05 +0100
+	Tue, 13 Aug 2013 11:43:38 -0400
+Date: Tue, 13 Aug 2013 16:43:31 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
         Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 15/22] ARM: dts: Remove '0x's from OMAP3 DTS file
-Message-ID: <20130813154305.GE15278@lee--X1>
+Subject: Re: [PATCH 14/22] ARM: dts: Remove '0x's from OMAP3 IGEP0030 DTS file
+Message-ID: <20130813154331.GF15278@lee--X1>
 References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
- <1374490361-25769-15-git-send-email-lee.jones@linaro.org>
+ <1374490361-25769-14-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1374490361-25769-15-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1374490361-25769-14-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,22 +38,37 @@ On Mon, 22 Jul 2013, Lee Jones wrote:
 > Cc: linux-omap@vger.kernel.org
 > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  arch/arm/boot/dts/omap3.dtsi | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  arch/arm/boot/dts/omap3-igep0030.dts | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 > 
-> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-> index 7d95cda..16420ae 100644
-> --- a/arch/arm/boot/dts/omap3.dtsi
-> +++ b/arch/arm/boot/dts/omap3.dtsi
-> @@ -111,7 +111,7 @@
->  			pinctrl-single,function-mask = <0x7f1f>;
+> diff --git a/arch/arm/boot/dts/omap3-igep0030.dts b/arch/arm/boot/dts/omap3-igep0030.dts
+> index 644d0538..f628200 100644
+> --- a/arch/arm/boot/dts/omap3-igep0030.dts
+> +++ b/arch/arm/boot/dts/omap3-igep0030.dts
+> @@ -74,19 +74,19 @@
+>  			label = "SPL";
+>  			reg = <0 0x100000>;
 >  		};
->  
-> -		omap3_pmx_wkup: pinmux@0x48002a00 {
-> +		omap3_pmx_wkup: pinmux@48002a00 {
->  			compatible = "ti,omap3-padconf", "pinctrl-single";
->  			reg = <0x48002a00 0x5c>;
->  			#address-cells = <1>;
+> -		partition@0x80000 {
+> +		partition@80000 {
+>  			label = "U-Boot";
+>  			reg = <0x100000 0x180000>;
+>  		};
+> -		partition@0x1c0000 {
+> +		partition@1c0000 {
+>  			label = "Environment";
+>  			reg = <0x280000 0x100000>;
+>  		};
+> -		partition@0x280000 {
+> +		partition@280000 {
+>  			label = "Kernel";
+>  			reg = <0x380000 0x300000>;
+>  		};
+> -		partition@0x780000 {
+> +		partition@780000 {
+>  			label = "Filesystem";
+>  			reg = <0x680000 0x1f980000>;
+>  		};
 
 -- 
 Lee Jones
