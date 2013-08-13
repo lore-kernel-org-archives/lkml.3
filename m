@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab3HMNLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:11:46 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41057 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757529Ab3HMNLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:11:44 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/16] drivers/cpufreq/pxa3xx-cpufreq.c: Avoid using ARRAY_AND_SIZE(e) as a function argument
-Date: Tue, 13 Aug 2013 15:22:09 +0200
-Message-ID: <2461013.EC2pHmIZ5g@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1376239917-15594-13-git-send-email-Julia.Lawall@lip6.fr>
-References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr> <1376239917-15594-13-git-send-email-Julia.Lawall@lip6.fr>
+	id S1757970Ab3HMNMB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:12:01 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:48078 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757924Ab3HMNL7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 09:11:59 -0400
+Date: Tue, 13 Aug 2013 09:11:31 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        dcrisan@flexiant.com, alex@alex.org.uk, ian.campbell@citrix.com
+Subject: Re: [PATCH v4 2/2] xen/m2p: use GNTTABOP_unmap_and_replace to
+ reinstate the original mapping
+Message-ID: <20130813131131.GA6359@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1308041531220.4893@kaball.uk.xensource.com>
+ <1375627181-14948-2-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20130809152601.GB5637@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1308131212040.4893@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1308131212040.4893@kaball.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, August 11, 2013 06:51:53 PM Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Tue, Aug 13, 2013 at 12:17:18PM +0100, Stefano Stabellini wrote:
+> On Fri, 9 Aug 2013, Konrad Rzeszutek Wilk wrote:
+> > On Sun, Aug 04, 2013 at 03:39:41PM +0100, Stefano Stabellini wrote:
+> > > GNTTABOP_unmap_grant_ref unmaps a grant and replaces it with a 0
+> > > mapping instead of reinstating the original mapping.
+> > > Doing so separately would be racy.
+> > > 
+> > > To unmap a grant and reinstate the original mapping atomically we use
+> > > GNTTABOP_unmap_and_replace.
+> > > GNTTABOP_unmap_and_replace doesn't work with GNTMAP_contains_pte, so
+> > > don't use it for kmaps.  GNTTABOP_unmap_and_replace zeroes the mapping
+> > > passed in new_addr so we have to reinstate it, however that is a
+> > > per-cpu mapping only used for balloon scratch pages, so we can be sure that
+> > > it's not going to be accessed while the mapping is not valid.
+> > 
+> > This looks to be depend on a new structure, which is not in Linux kernel?
+> > Are you missing a dependency patch?
 > 
-> Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding the
-> arity of the called function.
+> Nope, GNTTABOP_unmap_and_replace and struct gnttab_unmap_and_replace are
+> already present in include/xen/interface/grant_table.h.
 > 
-> The semantic match that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
 > 
-> // <smpl>
-> @@
-> expression e,f;
-> @@
+> > Shouldn't we use some logic to figure out which hypercall to use if the
+> > hypervisor does not support it?
 > 
-> f(...,
-> - ARRAY_AND_SIZE(e)
-> + e,ARRAY_SIZE(e)
->   ,...)
-> // </smpl>
+> GNTTABOP_unmap_and_replace is not a new hypercall, it has been supported
+> by Xen for a very long time.
 > 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> In a previous iteration of this patch series, I did introduce a new
+> hypercall, but then I dropped it because I figured out that I could
+> achieve the same thing with the existing hypercall.
 
-Queued up for 3.12.
+OK, Please tack on:
 
-Thanks,
-Rafael
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-
-> ---
-> Not compiled.
-> 
->  drivers/cpufreq/pxa3xx-cpufreq.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/pxa3xx-cpufreq.c b/drivers/cpufreq/pxa3xx-cpufreq.c
-> index 9c92ef0..d26306f 100644
-> --- a/drivers/cpufreq/pxa3xx-cpufreq.c
-> +++ b/drivers/cpufreq/pxa3xx-cpufreq.c
-> @@ -213,10 +213,12 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
->  	policy->cur = policy->min = policy->max;
->  
->  	if (cpu_is_pxa300() || cpu_is_pxa310())
-> -		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa300_freqs));
-> +		ret = setup_freqs_table(policy, pxa300_freqs,
-> +					ARRAY_SIZE(pxa300_freqs));
->  
->  	if (cpu_is_pxa320())
-> -		ret = setup_freqs_table(policy, ARRAY_AND_SIZE(pxa320_freqs));
-> +		ret = setup_freqs_table(policy, pxa320_freqs,
-> +					ARRAY_SIZE(pxa320_freqs));
->  
->  	if (ret) {
->  		pr_err("failed to setup frequency table\n");
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+P.S.
+If you could stick it on devel/for-linus-3.12 that would be super. Thanks!
