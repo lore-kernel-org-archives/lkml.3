@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759172Ab3HMWNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 18:13:54 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:37392 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758658Ab3HMWNx (ORCPT
+	id S1759140Ab3HMWRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:17:08 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:40288 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758658Ab3HMWRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 18:13:53 -0400
-Message-ID: <520AAF9C.1050702@tilera.com>
-Date: Tue, 13 Aug 2013 18:13:48 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 13 Aug 2013 18:17:07 -0400
+Date: Wed, 14 Aug 2013 00:17:05 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Vince Weaver <vince@deater.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate
+ perfgtk executable
+Message-ID: <20130813221705.GC19750@two.firstfloor.org>
+References: <20130805083132.GE26746@gmail.com>
+ <20130805083434.GA20606@infradead.org>
+ <20130805090857.GA26940@gmail.com>
+ <20130806061932.GA20485@infradead.org>
+ <20130812181956.GB19405@gmail.com>
+ <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
+ <20130813104821.GB2170@gmail.com>
+ <20130813121141.GB2188@ghostprotocols.net>
+ <20130813160043.GB5280@gmail.com>
+ <alpine.DEB.2.02.1308131749330.9154@pianoman.cluster.toy>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] mm: make lru_add_drain_all() selective
-References: <5202CEAA.9040204@linux.vnet.ibm.com> <201308072335.r77NZZwl022494@farm-0012.internal.tilera.com> <20130812140520.c6a2255d2176a690fadf9ba7@linux-foundation.org> <52099187.80301@tilera.com> <20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org> <20130813201958.GA28996@mtj.dyndns.org> <20130813133135.3b580af557d1457e4ee8331a@linux-foundation.org> <520A9E4A.2050203@tilera.com> <20130813141329.c55deccf462f3ad49129bbca@linux-foundation.org>
-In-Reply-To: <20130813141329.c55deccf462f3ad49129bbca@linux-foundation.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1308131749330.9154@pianoman.cluster.toy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/13/2013 5:13 PM, Andrew Morton wrote:
-> On Tue, 13 Aug 2013 16:59:54 -0400 Chris Metcalf <cmetcalf@tilera.com> wrote:
->
->>> Then again, why does this patchset exist?  It's a performance
->>> optimisation so presumably someone cares.  But not enough to perform
->>> actual measurements :(
->> The patchset exists because of the difference between zero overhead on
->> cpus that don't have drainable lrus, and non-zero overhead.  This turns
->> out to be important on workloads where nohz cores are handling 10 Gb
->> traffic in userspace and really, really don't want to be interrupted,
->> or they drop packets on the floor.
-> But what is the effect of the patchset?  Has it been tested against the
-> problematic workload(s)?
+On Tue, Aug 13, 2013 at 05:57:16PM -0400, Vince Weaver wrote:
+> On Tue, 13 Aug 2013, Ingo Molnar wrote:
+> 
+> > 
+> > that can only be addressed by either extending 'perf test' or by testing 
+> > libpfm et al sooner. The upstream kernel can only address regressions that 
+> > get reported.
+> 
+> Most of the tests in my test-suite are reactive.  Meaning, I wrote them 
+> after an ABI-breaking change was reported elsewhere, and I needed a small 
+> test case for bisection purposes.  Thus they are good for finding if a 
+> corner of the perf ABI re-breaks but they're not great at spotting new 
+> breakages.
 
-Yes.  The result is that syscalls such as mlockall(), which otherwise interrupt
-every core, don't interrupt the cores that are running purely in userspace.
-Since they are purely in userspace they don't have any drainable pagevecs,
-so the patchset means they don't get interrupted and don't drop packets.
+I guess best would be to just run the major other users (PAPI, perf, trinity, 
+numatop, ...?) once around rc1 time.
 
-I implemented this against Linux 2.6.38 and our home-grown version of nohz
-cpusets back in July 2012, and we have been shipping it to customers since then.
+If it's reported at rc1 things can usually be fixed.
 
->>>> the logical thing to do
->>>> would be pre-allocating per-cpu buffers instead of depending on
->>>> dynamic allocation.  Do the invocations need to be stackable?
->>> schedule_on_each_cpu() calls should if course happen concurrently, and
->>> there's the question of whether we wish to permit async
->>> schedule_on_each_cpu().  Leaving the calling CPU twiddling thumbs until
->>> everyone has finished is pretty sad if the caller doesn't want that.
->>>
->>>>> That being said, the `cpumask_var_t mask' which was added to
->>>>> lru_add_drain_all() is unneeded - it's just a temporary storage which
->>>>> can be eliminated by creating a schedule_on_each_cpu_cond() or whatever
->>>>> which is passed a function pointer of type `bool (*call_needed)(int
->>>>> cpu, void *data)'.
->>>> I'd really like to avoid that.  Decision callbacks tend to get abused
->>>> quite often and it's rather sad to do that because cpumask cannot be
->>>> prepared and passed around.  Can't it just preallocate all necessary
->>>> resources?
->>> I don't recall seeing such abuse.  It's a very common and powerful
->>> tool, and not implementing it because some dummy may abuse it weakens
->>> the API for all non-dummies.  That allocation is simply unneeded.
->> The problem with a callback version is that it's not clear that
->> it helps with Andrew's original concern about allocation.  In
->> schedule_on_each_cpu() we need to track which cpus we scheduled work
->> on so that we can flush_work() after all the work has been scheduled.
->> Even with a callback approach, we'd still end up wanting to record
->> the results of the callback in the first pass so that we could
->> properly flush_work() on the second pass.  Given that, having the
->> caller just create the cpumask in the first place makes more sense.
-> Nope.  schedule_on_each_cpu() can just continue to do
->
-> 	for_each_cpu(cpu, mask)
-> 		flush_work(per_cpu_ptr(works, cpu));
->
-> lru_add_drain_all() can do that as well.  An optimisation would be to
-> tag the unused works as not-needing-flush.  Set work.entry,next to
-> NULL, for example.
+So would just need a easy script to do a quick test of all of these.
 
-Good point - we already have a per-cpu data structure sitting there
-handy, so we might as well use it rather than allocating another cpumask.
-
->> As Andrew suggests, we could also just have an asynchronous version
->> of schedule_on_each_cpu(), but I don't know if that's beneficial
->> enough to the swap code to make it worthwhile, or if it's tricky
->> enough on the workqueue side to make it not worthwhile; it does seem
->> like we would need to rethink the work_struct allocation, and
->> e.g. avoid re-issuing the flush to a cpu that hadn't finished the
->> previous flush, etc.  Potentially tricky, particularly if
->> lru_add_drain_all() doesn't care about performance in the first place.
-> lru_add_drain_all() wants synchronous behavior.  I don't know how much
-> call there would be for an async schedule_on_each_cpu_cond().
-
-Let me work up a patchset using callbacks, and we can look at that as
-an example and see how it feels for both workqueue.c and swap.c. 
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+-Andi
