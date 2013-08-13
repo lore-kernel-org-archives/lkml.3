@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757436Ab3HMGeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:34:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60718 "EHLO
+	id S1757482Ab3HMGem (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:34:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60765 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757363Ab3HMGea (ORCPT
+	with ESMTP id S1757467Ab3HMGej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:34:30 -0400
+	Tue, 13 Aug 2013 02:34:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, GOTO Masanori <gotom@debian.or.jp>,
-        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 10/12] SCSI: nsp32: use mdelay instead of large udelay constants
-Date: Mon, 12 Aug 2013 23:35:45 -0700
-Message-Id: <20130813063521.079897423@linuxfoundation.org>
+        Joshua Zhu <zhu.wen-jie@hp.com>,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Vinson Lee <vlee@freedesktop.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [ 12/12] perf tools: Add anonymous huge page recognition
+Date: Mon, 12 Aug 2013 23:35:47 -0700
+Message-Id: <20130813063521.259105011@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063520.285638946@linuxfoundation.org>
 References: <20130813063520.285638946@linuxfoundation.org>
@@ -29,34 +33,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Joshua Zhu <zhu.wen-jie@hp.com>
 
-commit b497ceb964a80ebada3b9b3cea4261409039e25a upstream.
+commit d0528b5d71faf612014dd7672e44225c915344b2 upstream.
 
-ARM cannot handle udelay for more than 2 miliseconds, so we
-should use mdelay instead for those.
+Judging anonymous memory's vm_area_struct, perf_mmap_event's filename
+will be set to "//anon" indicating this vma belongs to anonymous
+memory.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: GOTO Masanori <gotom@debian.or.jp>
-Cc: YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Once hugepage is used, vma's vm_file points to hugetlbfs. In this way,
+this vma will not be regarded as anonymous memory by is_anon_memory() in
+perf user space utility.
+
+Signed-off-by: Joshua Zhu <zhu.wen-jie@hp.com>
+Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Joshua Zhu <zhu.wen-jie@hp.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vinson Lee <vlee@freedesktop.org>
+Link: http://lkml.kernel.org/r/1357363797-3550-1-git-send-email-zhu.wen-jie@hp.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/nsp32.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/util/map.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/nsp32.c
-+++ b/drivers/scsi/nsp32.c
-@@ -2927,7 +2927,7 @@ static void nsp32_do_bus_reset(nsp32_hw_
- 	 * reset SCSI bus
- 	 */
- 	nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
--	udelay(RESET_HOLD_TIME);
-+	mdelay(RESET_HOLD_TIME / 1000);
- 	nsp32_write1(base, SCSI_BUS_CONTROL, 0);
- 	for(i = 0; i < 5; i++) {
- 		intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -15,7 +15,8 @@ const char *map_type__name[MAP__NR_TYPES
+ 
+ static inline int is_anon_memory(const char *filename)
+ {
+-	return strcmp(filename, "//anon") == 0;
++	return !strcmp(filename, "//anon") ||
++	       !strcmp(filename, "/anon_hugepage (deleted)");
+ }
+ 
+ void map__init(struct map *self, enum map_type type,
 
 
