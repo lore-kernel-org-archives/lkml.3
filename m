@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab3HMNcl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:32:41 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:63515 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757836Ab3HMNch (ORCPT
+	id S1758138Ab3HMNdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:33:21 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:54993 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758036Ab3HMNdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:32:37 -0400
+	Tue, 13 Aug 2013 09:33:16 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
@@ -25,12 +25,14 @@ Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         Sekhar Nori <nsekhar@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
         sparclinux@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
         Steven Miao <realmz6@gmail.com>, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH V2 00/35] CPUFreq: Implement light weight ->target(): for 3.13
-Date: Tue, 13 Aug 2013 19:01:40 +0530
-Message-Id: <cover.1376392602.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 01/35] cpufreq: Implement light weight ->target_index() routine
+Date: Tue, 13 Aug 2013 19:02:14 +0530
+Message-Id: <eb988fc9e72b90b7ba99f16405f5dcb072da7840.1376392602.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <a>
-References: <a>
+In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
+References: <cover.1376392602.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
+References: <cover.1376392602.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -38,7 +40,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Currently prototype of cpufreq_drivers target routines is:
 
 int target(struct cpufreq_policy *policy, unsigned int target_freq,
-        unsigned int relation);
+		unsigned int relation);
 
 And most of the drivers call cpufreq_frequency_table_target() to get a valid
 index of their frequency table which is closest to the target_freq. And they
@@ -50,33 +52,19 @@ done only with drivers which expose their frequency table with cpufreq core. For
 others we need to stick with the old prototype of target() until those drivers
 are converted to expose frequency tables.
 
-There are 7 drivers after this patchset which still use the heavy weight
-version, i.e. target() and 44 drivers have adopted this new approach, i.e.
-target_index().
+This patch implements the new light weight prototype for target_index() routine.
+It looks like this:
 
-Once those 7 drivers are also moved to use .target_index(), .target() will be
-removed completely.
+int target_index(struct cpufreq_policy *policy, unsigned int index);
 
-This is part 3 of my generic cpufreq cleanup stuff.. First two are posted here
-and this one is rebased of them:
+CPUFreq core will call cpufreq_frequency_table_target() before calling this
+routine and pass index to it. Because CPUFreq core now requires to call routines
+present in freq_table.c CONFIG_CPU_FREQ_TABLE must be enabled all the time.
 
-1: cpufreq: Introduce cpufreq_table_validate_and_show()
-https://lkml.org/lkml/2013/8/8/263
+This also marks target() interface as deprecated. So, that new drivers avoid
+using it. And
 
-2: cpufreq: define generic routines for cpufreq drivers
-https://lkml.org/lkml/2013/8/10/48
-
-All these are pushed here:
-https://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/for-v3.13
-
-V1->V2:
-------
-- Must be less ugly this time :)
-- new interface is named as target_index() instead of target()
-- old interface is kept as target() instead of target_old()
-- few more drivers got converted to use this infrastructure (5)
-- Documentation updates
-- CONFIG_CPU_FREQ_TABLE removed completely as core depends on it now
+Documentation is updated accordingly.
 
 Cc: Andrew Lunn <andrew@lunn.ch>
 Cc: David S. Miller <davem@davemloft.net>
@@ -96,109 +84,293 @@ Cc: sparclinux@vger.kernel.org
 Cc: Stephen Warren <swarren@nvidia.com>
 Cc: Steven Miao <realmz6@gmail.com>
 Cc: Tony Luck <tony.luck@intel.com>
-
-Viresh Kumar (35):
-  cpufreq: Implement light weight ->target_index() routine
-  cpufreq: remove CONFIG_CPU_FREQ_TABLE
-  cpufreq: acpi: Covert to light weight ->target_index() routine
-  cpufreq: arm_big_little: Covert to light weight ->target_index()
-    routine
-  cpufreq: at32ap: Covert to light weight ->target_index() routine
-  cpufreq: blackfin: Covert to light weight ->target_index() routine
-  cpufreq: cpu0: Covert to light weight ->target_index() routine
-  cpufreq: cris: Covert to light weight ->target_index() routine
-  cpufreq: davinci: Covert to light weight ->target_index() routine
-  cpufreq: dbx500: Covert to light weight ->target_index() routine
-  cpufreq: e_powersaver: Covert to light weight ->target_index()
-    routine
-  cpufreq: elanfreq: Covert to light weight ->target_index() routine
-  cpufreq: exynos: Covert to light weight ->target_index() routine
-  cpufreq: ia64: Covert to light weight ->target_index() routine
-  cpufreq: imx6q: Covert to light weight ->target_index() routine
-  cpufreq: kirkwood: Covert to light weight ->target_index() routine
-  cpufreq: longhaul: Covert to light weight ->target_index() routine
-  cpufreq: loongson2: Covert to light weight ->target_index() routine
-  cpufreq: maple: Covert to light weight ->target_index() routine
-  cpufreq: omap: Covert to light weight ->target_index() routine
-  cpufreq: p4: Covert to light weight ->target_index() routine
-  cpufreq: pasemi: Covert to light weight ->target_index() routine
-  cpufreq: pmac32: Covert to light weight ->target_index() routine
-  cpufreq: powernow: Covert to light weight ->target_index() routine
-  cpufreq: ppc: Covert to light weight ->target_index() routine
-  cpufreq: pxa: Covert to light weight ->target_index() routine
-  cpufreq: s3c2416: Covert to light weight ->target_index() routine
-  cpufreq: s3c64xx: Covert to light weight ->target_index() routine
-  cpufreq: s5pv210: Covert to light weight ->target_index() routine
-  cpufreq: sa11x0: Covert to light weight ->target_index() routine
-  cpufreq: sc520: Covert to light weight ->target_index() routine
-  cpufreq: sparc: Covert to light weight ->target_index() routine
-  cpufreq: SPEAr: Covert to light weight ->target_index() routine
-  cpufreq: speedstep: Covert to light weight ->target_index() routine
-  cpufreq: tegra: Covert to light weight ->target_index() routine
-
- Documentation/cpu-freq/cpu-drivers.txt | 27 ++++++++++------
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ Documentation/cpu-freq/cpu-drivers.txt | 27 +++++++++++------
  Documentation/cpu-freq/governors.txt   |  4 +--
- arch/arm/mach-davinci/Kconfig          |  1 -
- arch/arm/mach-pxa/Kconfig              |  3 --
- arch/arm/mach-sa1100/generic.c         | 20 ------------
- arch/arm/mach-sa1100/generic.h         |  2 --
- arch/arm/mach-ux500/Kconfig            |  1 -
- arch/blackfin/Kconfig                  |  1 -
- arch/cris/Kconfig                      |  2 --
- drivers/cpufreq/Kconfig                | 11 -------
- drivers/cpufreq/Kconfig.arm            | 11 -------
- drivers/cpufreq/Kconfig.powerpc        |  6 ----
- drivers/cpufreq/Kconfig.x86            | 13 --------
- drivers/cpufreq/Makefile               |  5 +--
- drivers/cpufreq/acpi-cpufreq.c         | 21 ++++---------
- drivers/cpufreq/arm_big_little.c       | 17 +++-------
- drivers/cpufreq/at32ap-cpufreq.c       | 23 +++-----------
- drivers/cpufreq/blackfin-cpufreq.c     | 17 +++-------
- drivers/cpufreq/cpufreq-cpu0.c         | 17 ++--------
- drivers/cpufreq/cpufreq.c              | 57 ++++++++++++++++++++++++++--------
- drivers/cpufreq/cris-artpec3-cpufreq.c | 18 ++---------
- drivers/cpufreq/cris-etraxfs-cpufreq.c | 17 ++--------
- drivers/cpufreq/davinci-cpufreq.c      | 16 ++--------
- drivers/cpufreq/dbx500-cpufreq.c       | 16 ++--------
- drivers/cpufreq/e_powersaver.c         | 17 ++--------
- drivers/cpufreq/elanfreq.c             | 34 ++------------------
- drivers/cpufreq/exynos-cpufreq.c       | 21 ++-----------
- drivers/cpufreq/exynos5440-cpufreq.c   | 13 ++------
- drivers/cpufreq/ia64-acpi-cpufreq.c    | 21 ++-----------
- drivers/cpufreq/imx6q-cpufreq.c        | 17 ++--------
- drivers/cpufreq/kirkwood-cpufreq.c     | 19 ++----------
- drivers/cpufreq/longhaul.c             | 13 ++------
- drivers/cpufreq/loongson2_cpufreq.c    | 21 +++----------
- drivers/cpufreq/maple-cpufreq.c        | 16 +++-------
- drivers/cpufreq/omap-cpufreq.c         | 31 ++----------------
- drivers/cpufreq/p4-clockmod.c          | 18 +++--------
- drivers/cpufreq/pasemi-cpufreq.c       | 12 ++-----
- drivers/cpufreq/pmac32-cpufreq.c       | 12 ++-----
- drivers/cpufreq/pmac64-cpufreq.c       | 17 +++-------
- drivers/cpufreq/powernow-k6.c          | 35 +++------------------
- drivers/cpufreq/powernow-k7.c          | 22 +++----------
- drivers/cpufreq/powernow-k8.c          | 24 +++++---------
- drivers/cpufreq/ppc-corenet-cpufreq.c  | 15 +++------
- drivers/cpufreq/ppc_cbe_cpufreq.c      | 12 ++-----
- drivers/cpufreq/pxa2xx-cpufreq.c       | 13 ++------
- drivers/cpufreq/pxa3xx-cpufreq.c       | 17 ++--------
- drivers/cpufreq/s3c2416-cpufreq.c      | 17 +++-------
- drivers/cpufreq/s3c64xx-cpufreq.c      | 18 +++--------
- drivers/cpufreq/s5pv210-cpufreq.c      | 54 +++++++++-----------------------
- drivers/cpufreq/sa1100-cpufreq.c       | 24 +++-----------
- drivers/cpufreq/sa1110-cpufreq.c       | 26 +++-------------
- drivers/cpufreq/sc520_freq.c           | 19 ++----------
- drivers/cpufreq/sparc-us2e-cpufreq.c   | 21 ++-----------
- drivers/cpufreq/sparc-us3-cpufreq.c    | 23 ++------------
- drivers/cpufreq/spear-cpufreq.c        | 12 +++----
- drivers/cpufreq/speedstep-centrino.c   | 26 +++++-----------
- drivers/cpufreq/speedstep-ich.c        | 24 ++++----------
- drivers/cpufreq/speedstep-smi.c        | 20 +++---------
- drivers/cpufreq/tegra-cpufreq.c        | 12 ++-----
- drivers/thermal/Kconfig                |  1 -
+ drivers/cpufreq/Kconfig                |  1 +
+ drivers/cpufreq/cpufreq.c              | 55 +++++++++++++++++++++++++++-------
  include/linux/cpufreq.h                |  4 ++-
- 61 files changed, 238 insertions(+), 809 deletions(-)
+ 5 files changed, 68 insertions(+), 23 deletions(-)
 
+diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+index 40282e6..8b1a445 100644
+--- a/Documentation/cpu-freq/cpu-drivers.txt
++++ b/Documentation/cpu-freq/cpu-drivers.txt
+@@ -23,8 +23,8 @@ Contents:
+ 1.1  Initialization
+ 1.2  Per-CPU Initialization
+ 1.3  verify
+-1.4  target or setpolicy?
+-1.5  target
++1.4  target/target_index or setpolicy?
++1.5  target/target_index
+ 1.6  setpolicy
+ 2.   Frequency Table Helpers
+ 
+@@ -56,7 +56,8 @@ cpufreq_driver.init -		A pointer to the per-CPU initialization
+ cpufreq_driver.verify -		A pointer to a "verification" function.
+ 
+ cpufreq_driver.setpolicy _or_ 
+-cpufreq_driver.target -		See below on the differences.
++cpufreq_driver.target/
++target_index		-	See below on the differences.
+ 
+ And optionally
+ 
+@@ -66,7 +67,7 @@ cpufreq_driver.resume -		A pointer to a per-CPU resume function
+ 				which is called with interrupts disabled
+ 				and _before_ the pre-suspend frequency
+ 				and/or policy is restored by a call to
+-				->target or ->setpolicy.
++				->target/target_index or ->setpolicy.
+ 
+ cpufreq_driver.attr -		A pointer to a NULL-terminated list of
+ 				"struct freq_attr" which allow to
+@@ -103,8 +104,8 @@ policy->governor		must contain the "default policy" for
+ 				this CPU. A few moments later,
+ 				cpufreq_driver.verify and either
+ 				cpufreq_driver.setpolicy or
+-				cpufreq_driver.target is called with
+-				these values.
++				cpufreq_driver.target/target_index is called
++				with these values.
+ 
+ For setting some of these values (cpuinfo.min[max]_freq, policy->min[max]), the
+ frequency table helpers might be helpful. See the section 2 for more information
+@@ -133,20 +134,28 @@ range) is within policy->min and policy->max. If necessary, increase
+ policy->max first, and only if this is no solution, decrease policy->min.
+ 
+ 
+-1.4 target or setpolicy?
++1.4 target/target_index or setpolicy?
+ ----------------------------
+ 
+ Most cpufreq drivers or even most cpu frequency scaling algorithms 
+ only allow the CPU to be set to one frequency. For these, you use the
+-->target call.
++->target/target_index call.
+ 
+ Some cpufreq-capable processors switch the frequency between certain
+ limits on their own. These shall use the ->setpolicy call
+ 
+ 
+-1.4. target
++1.4. target/target_index
+ -------------
+ 
++The target_index call has two arguments: struct cpufreq_policy *policy,
++and unsigned int index (into the exposed frequency table).
++
++The CPUfreq driver must set the new frequency when called here. The
++actual frequency must be determined by freq_table[index].frequency.
++
++Deprecated:
++----------
+ The target call has three arguments: struct cpufreq_policy *policy,
+ unsigned int target_frequency, unsigned int relation.
+ 
+diff --git a/Documentation/cpu-freq/governors.txt b/Documentation/cpu-freq/governors.txt
+index 219970b..77ec215 100644
+--- a/Documentation/cpu-freq/governors.txt
++++ b/Documentation/cpu-freq/governors.txt
+@@ -40,7 +40,7 @@ Most cpufreq drivers (in fact, all except one, longrun) or even most
+ cpu frequency scaling algorithms only offer the CPU to be set to one
+ frequency. In order to offer dynamic frequency scaling, the cpufreq
+ core must be able to tell these drivers of a "target frequency". So
+-these specific drivers will be transformed to offer a "->target"
++these specific drivers will be transformed to offer a "->target/target_index"
+ call instead of the existing "->setpolicy" call. For "longrun", all
+ stays the same, though.
+ 
+@@ -71,7 +71,7 @@ CPU can be set to switch independently	 |	   CPU can only be set
+ 		    /			       the limits of policy->{min,max}
+ 		   /			            \
+ 		  /				     \
+-	Using the ->setpolicy call,		 Using the ->target call,
++	Using the ->setpolicy call,		 Using the ->target/target_index call,
+ 	    the limits and the			  the frequency closest
+ 	     "policy" is set.			  to target_freq is set.
+ 						  It is assured that it
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 534fcb8..2d06754 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -2,6 +2,7 @@ menu "CPU Frequency scaling"
+ 
+ config CPU_FREQ
+ 	bool "CPU Frequency scaling"
++	select CPU_FREQ_TABLE
+ 	help
+ 	  CPU Frequency scaling allows you to change the clock speed of 
+ 	  CPUs on the fly. This is a nice method to save power, because 
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 37a6874..f1b0e0f 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -47,6 +47,11 @@ static LIST_HEAD(cpufreq_policy_list);
+ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
+ #endif
+ 
++static inline bool has_target(void)
++{
++	return cpufreq_driver->target_index || cpufreq_driver->target;
++}
++
+ /*
+  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
+  * all cpufreq/hotplug/workqueue/etc related lock issues.
+@@ -377,7 +382,7 @@ static int cpufreq_parse_governor(char *str_governor, unsigned int *policy,
+ 			*policy = CPUFREQ_POLICY_POWERSAVE;
+ 			err = 0;
+ 		}
+-	} else if (cpufreq_driver->target) {
++	} else if (has_target()) {
+ 		struct cpufreq_governor *t;
+ 
+ 		mutex_lock(&cpufreq_governor_mutex);
+@@ -539,7 +544,7 @@ static ssize_t show_scaling_available_governors(struct cpufreq_policy *policy,
+ 	ssize_t i = 0;
+ 	struct cpufreq_governor *t;
+ 
+-	if (!cpufreq_driver->target) {
++	if (!has_target()) {
+ 		i += sprintf(buf, "performance powersave");
+ 		goto out;
+ 	}
+@@ -822,7 +827,7 @@ static int cpufreq_add_dev_interface(struct cpufreq_policy *policy,
+ 		if (ret)
+ 			goto err_out_kobj_put;
+ 	}
+-	if (cpufreq_driver->target) {
++	if (has_target()) {
+ 		ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
+ 		if (ret)
+ 			goto err_out_kobj_put;
+@@ -871,10 +876,10 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
+ 				  unsigned int cpu, struct device *dev,
+ 				  bool frozen)
+ {
+-	int ret = 0, has_target = !!cpufreq_driver->target;
++	int ret = 0;
+ 	unsigned long flags;
+ 
+-	if (has_target) {
++	if (has_target()) {
+ 		ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+ 		if (ret) {
+ 			pr_err("%s: Failed to stop governor\n", __func__);
+@@ -893,7 +898,7 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
+ 
+ 	unlock_policy_rwsem_write(policy->cpu);
+ 
+-	if (has_target) {
++	if (has_target()) {
+ 		if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
+ 			(ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
+ 			pr_err("%s: Failed to start governor\n", __func__);
+@@ -1204,7 +1209,7 @@ static int __cpufreq_remove_dev(struct device *dev,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (cpufreq_driver->target) {
++	if (has_target()) {
+ 		ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+ 		if (ret) {
+ 			pr_err("%s: Failed to stop governor\n", __func__);
+@@ -1244,7 +1249,7 @@ static int __cpufreq_remove_dev(struct device *dev,
+ 
+ 	/* If cpu is last user of policy, free policy */
+ 	if (cpus == 1) {
+-		if (cpufreq_driver->target) {
++		if (has_target()) {
+ 			ret = __cpufreq_governor(policy,
+ 					CPUFREQ_GOV_POLICY_EXIT);
+ 			if (ret) {
+@@ -1282,7 +1287,7 @@ static int __cpufreq_remove_dev(struct device *dev,
+ 		if (!frozen)
+ 			cpufreq_policy_free(policy);
+ 	} else {
+-		if (cpufreq_driver->target) {
++		if (has_target()) {
+ 			if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
+ 					(ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
+ 				pr_err("%s: Failed to start governor\n",
+@@ -1646,11 +1651,39 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 	pr_debug("target for CPU %u: %u kHz, relation %u, requested %u kHz\n",
+ 			policy->cpu, target_freq, relation, old_target_freq);
+ 
++	/*
++	 * This might look like a redundant call as we are checking it again
++	 * after finding index. But it is left intentionally for cases where
++	 * exactly same freq is called again and so we can save on few function
++	 * calls.
++	 */
+ 	if (target_freq == policy->cur)
+ 		return 0;
+ 
+ 	if (cpufreq_driver->target)
+ 		retval = cpufreq_driver->target(policy, target_freq, relation);
++	else if (cpufreq_driver->target_index) {
++		struct cpufreq_frequency_table *freq_table;
++		int index;
++
++		freq_table = cpufreq_frequency_get_table(policy->cpu);
++		if (unlikely(!freq_table)) {
++			pr_err("%s: Unable to find freq_table\n", __func__);
++			return retval;
++		}
++
++		retval = cpufreq_frequency_table_target(policy, freq_table,
++				target_freq, relation, &index);
++		if (unlikely(retval)) {
++			pr_err("%s: Unable to find matching freq\n", __func__);
++			return retval;
++		}
++
++		if (freq_table[index].frequency == policy->cur)
++			return 0;
++
++		retval = cpufreq_driver->target_index(policy, index);
++	}
+ 
+ 	return retval;
+ }
+@@ -1983,7 +2016,7 @@ int cpufreq_update_policy(unsigned int cpu)
+ 			pr_debug("Driver did not initialize current freq");
+ 			policy->cur = new_policy.cur;
+ 		} else {
+-			if (policy->cur != new_policy.cur && cpufreq_driver->target)
++			if (policy->cur != new_policy.cur && has_target())
+ 				cpufreq_out_of_sync(cpu, policy->cur,
+ 								new_policy.cur);
+ 		}
+@@ -2058,7 +2091,7 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
+ 		return -ENODEV;
+ 
+ 	if (!driver_data || !driver_data->verify || !driver_data->init ||
+-	    ((!driver_data->setpolicy) && (!driver_data->target)))
++	    (!driver_data->setpolicy && !has_target()))
+ 		return -EINVAL;
+ 
+ 	pr_debug("trying to register driver %s\n", driver_data->name);
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 4907eb2..ff9c8df 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -195,9 +195,11 @@ struct cpufreq_driver {
+ 
+ 	/* define one out of two */
+ 	int	(*setpolicy)	(struct cpufreq_policy *policy);
+-	int	(*target)	(struct cpufreq_policy *policy,
++	int	(*target)	(struct cpufreq_policy *policy,	/* Deprecated */
+ 				 unsigned int target_freq,
+ 				 unsigned int relation);
++	int	(*target_index)	(struct cpufreq_policy *policy,
++				 unsigned int index);
+ 
+ 	/* should be defined, if possible */
+ 	unsigned int	(*get)	(unsigned int cpu);
 -- 
 1.7.12.rc2.18.g61b472e
 
