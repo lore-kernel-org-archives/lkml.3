@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757683Ab3HMGoy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:44:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60682 "EHLO
+	id S1757725Ab3HMGqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:46:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60658 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756514Ab3HMGdv (ORCPT
+	with ESMTP id S1757028Ab3HMGdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:51 -0400
+	Tue, 13 Aug 2013 02:33:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen Gang <gang.chen@asianux.com>, Jeff Layton <jlayton@redhat.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
-        Scott Lovenberg <scott.lovenberg@gmail.com>,
-        Steve French <smfrench@gmail.com>
-Subject: [ 48/60] cifs: extend the buffer length enought for sprintf() using
-Date: Mon, 12 Aug 2013 23:34:15 -0700
-Message-Id: <20130813063338.179472960@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Afzal Mohammed <afzal@ti.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 59/60] mtd: omap2: allow bulding as a module
+Date: Mon, 12 Aug 2013 23:34:26 -0700
+Message-Id: <20130813063339.101984865@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -29,99 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen@asianux.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 057d6332b24a4497c55a761c83c823eed9e3f23b upstream.
+commit 930d800bded771b26d9944c47810829130ff7c8c upstream.
 
-For cifs_set_cifscreds() in "fs/cifs/connect.c", 'desc' buffer length
-is 'CIFSCREDS_DESC_SIZE' (56 is less than 256), and 'ses->domainName'
-length may be "255 + '\0'".
+The omap2 nand device driver calls into the the elm code, which can
+be a loadable module, and in that case it cannot be built-in itself.
+I can see no reason why the omap2 driver cannot also be a module,
+so let's make the option "tristate" in Kconfig to fix this allmodconfig
+build error:
 
-The related sprintf() may cause memory overflow, so need extend related
-buffer enough to hold all things.
+ERROR: "elm_config" [drivers/mtd/nand/omap2.ko] undefined!
+ERROR: "elm_decode_bch_error_page" [drivers/mtd/nand/omap2.ko] undefined!
 
-It is also necessary to be sure of 'ses->domainName' must be less than
-256, and define the related macro instead of hard code number '256'.
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Reviewed-by: Scott Lovenberg <scott.lovenberg@gmail.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Afzal Mohammed <afzal@ti.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsencrypt.c |    2 +-
- fs/cifs/cifsglob.h    |    1 +
- fs/cifs/connect.c     |    7 ++++---
- fs/cifs/sess.c        |    6 +++---
- 4 files changed, 9 insertions(+), 7 deletions(-)
+ drivers/mtd/nand/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/cifsencrypt.c
-+++ b/fs/cifs/cifsencrypt.c
-@@ -389,7 +389,7 @@ find_domain_name(struct cifs_ses *ses, c
- 		if (blobptr + attrsize > blobend)
- 			break;
- 		if (type == NTLMSSP_AV_NB_DOMAIN_NAME) {
--			if (!attrsize)
-+			if (!attrsize || attrsize >= CIFS_MAX_DOMAINNAME_LEN)
- 				break;
- 			if (!ses->domainName) {
- 				ses->domainName =
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -44,6 +44,7 @@
- #define MAX_TREE_SIZE (2 + MAX_SERVER_SIZE + 1 + MAX_SHARE_SIZE + 1)
- #define MAX_SERVER_SIZE 15
- #define MAX_SHARE_SIZE 80
-+#define CIFS_MAX_DOMAINNAME_LEN 256 /* max domain name length */
- #define MAX_USERNAME_SIZE 256	/* reasonable maximum for current servers */
- #define MAX_PASSWORD_SIZE 512	/* max for windows seems to be 256 wide chars */
+--- a/drivers/mtd/nand/Kconfig
++++ b/drivers/mtd/nand/Kconfig
+@@ -95,7 +95,7 @@ config MTD_NAND_OMAP2
  
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1662,7 +1662,8 @@ cifs_parse_mount_options(const char *mou
- 			if (string == NULL)
- 				goto out_nomem;
- 
--			if (strnlen(string, 256) == 256) {
-+			if (strnlen(string, CIFS_MAX_DOMAINNAME_LEN)
-+					== CIFS_MAX_DOMAINNAME_LEN) {
- 				printk(KERN_WARNING "CIFS: domain name too"
- 						    " long\n");
- 				goto cifs_parse_mount_err;
-@@ -2288,8 +2289,8 @@ cifs_put_smb_ses(struct cifs_ses *ses)
- 
- #ifdef CONFIG_KEYS
- 
--/* strlen("cifs:a:") + INET6_ADDRSTRLEN + 1 */
--#define CIFSCREDS_DESC_SIZE (7 + INET6_ADDRSTRLEN + 1)
-+/* strlen("cifs:a:") + CIFS_MAX_DOMAINNAME_LEN + 1 */
-+#define CIFSCREDS_DESC_SIZE (7 + CIFS_MAX_DOMAINNAME_LEN + 1)
- 
- /* Populate username and pw fields from keyring if possible */
- static int
---- a/fs/cifs/sess.c
-+++ b/fs/cifs/sess.c
-@@ -198,7 +198,7 @@ static void unicode_domain_string(char *
- 		bytes_ret = 0;
- 	} else
- 		bytes_ret = cifs_strtoUTF16((__le16 *) bcc_ptr, ses->domainName,
--					    256, nls_cp);
-+					    CIFS_MAX_DOMAINNAME_LEN, nls_cp);
- 	bcc_ptr += 2 * bytes_ret;
- 	bcc_ptr += 2;  /* account for null terminator */
- 
-@@ -256,8 +256,8 @@ static void ascii_ssetup_strings(char **
- 
- 	/* copy domain */
- 	if (ses->domainName != NULL) {
--		strncpy(bcc_ptr, ses->domainName, 256);
--		bcc_ptr += strnlen(ses->domainName, 256);
-+		strncpy(bcc_ptr, ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
-+		bcc_ptr += strnlen(ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
- 	} /* else we will send a null domain name
- 	     so the server will default to its own domain */
- 	*bcc_ptr = 0;
+ config MTD_NAND_OMAP_BCH
+ 	depends on MTD_NAND && MTD_NAND_OMAP2 && ARCH_OMAP3
+-	bool "Enable support for hardware BCH error correction"
++	tristate "Enable support for hardware BCH error correction"
+ 	default n
+ 	select BCH
+ 	select BCH_CONST_PARAMS
 
 
