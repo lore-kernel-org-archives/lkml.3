@@ -1,69 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab3HMEL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 00:11:29 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:53328 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab3HMEL2 convert rfc822-to-8bit (ORCPT
+	id S1752477Ab3HMEd5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 00:33:57 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:54179 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3HMEd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 00:11:28 -0400
+	Tue, 13 Aug 2013 00:33:56 -0400
+X-AuditID: 9c93017e-b7c76ae000003897-7a-5209b7326165
+Date: Tue, 13 Aug 2013 13:33:58 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Thomas Backlund <tmb@mageia.org>, Jordi Pujol <jordipujolp@gmail.com>,
+        stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: ZRAM 3.10.6 Buffer I/O error
+Message-ID: <20130813043358.GD3101@bbox>
+References: <1998314.O9XRMyhM6u@pcjordi>
+ <52090FD2.9030702@mageia.org>
+ <20130813013900.GC3101@bbox>
+ <20130813035802.GA24637@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130812172649.GB7198@localhost>
-References: <1376251908-7451-1-git-send-email-nilanjan.roychowdhury@gmail.com>
-	<20130812172649.GB7198@localhost>
-Date: Tue, 13 Aug 2013 09:41:28 +0530
-Message-ID: <CAGq6Fke=DYbK=KO6RdTD2at9NPMKcmxzOQ2TL6fBfM2UgSOfRQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mtd: mtdoops: fix for a potential memory leak in mtdoops_notify_remove
-From: Nilanjan Roychowdhury <nilanjan.roychowdhury@gmail.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813035802.GA24637@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 10:56 PM, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
->
-> On Sun, Aug 11, 2013 at 01:11:48PM -0700, Nilanjan Roychowdhury wrote:
-> > we are allocating cxt->oops_page_used using vmalloc in mtdoops_notify_add for
-> > every mtd_info addition but not freeing it in mtdoops_notify_remove
-> >
-> > Signed-off-by: Nilanjan Roychowdhury <nilanjan.roychowdhury@gmail.com>
-> > ---
-> >  drivers/mtd/mtdoops.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> > diff --git a/drivers/mtd/mtdoops.c b/drivers/mtd/mtdoops.c
-> > index 97bb8f6..02f49aa 100644
-> > --- a/drivers/mtd/mtdoops.c
-> > +++ b/drivers/mtd/mtdoops.c
-> > @@ -386,6 +386,7 @@ static void mtdoops_notify_remove(struct mtd_info *mtd)
-> >       cxt->mtd = NULL;
-> >       flush_work(&cxt->work_erase);
-> >       flush_work(&cxt->work_write);
-> > +     vfree(cxt->oops_page_used);
-> >  }
-> >
-> > --
-> > 1.7.9.5
-> >
->
-> Have you tested this patch doing an unregister/module remove cycle?
->
-> I'm not entirely sure, but I *think* you must also remove the
-> vfree(cxt->oops_page_used); at mtdoops_exit(). Otherwise,
-> you might call vfree() twice, the second time on a garbage pointer.
->
-> The reason for this is that the unregister_mtd_user(&mtdoops_notifier);
-> call in mtdoops_exit() will call the .remove callback (causing the first
-> vfree() with this patch) and then call vfree() for the second time, explicitly.
-> --
-> Ezequiel García, Free Electrons
-> Embedded Linux, Kernel and Android Engineering
-> http://free-electrons.com
-i did not do a module remove. I agree with your observation. I will
-resubmit the patch.
+Hello Greg,
+
+On Mon, Aug 12, 2013 at 08:58:02PM -0700, Greg Kroah-Hartman wrote:
+> On Tue, Aug 13, 2013 at 10:39:00AM +0900, Minchan Kim wrote:
+> > Hello,
+> > 
+> > On Mon, Aug 12, 2013 at 07:39:46PM +0300, Thomas Backlund wrote:
+> > > 12.08.2013 17:27, Jordi Pujol skrev:
+> > > >Hello,
+> > > >
+> > > >zram shows an error when mounting a swap partition,
+> > > >current version Linux kernel 3.10.6,
+> > > >previous versions worked, I suppose that latest zram patches have some
+> > > >problem,
+> > > >
+> > > >machine is an AMD64 dual core, 4GB RAM
+> > > >
+> > > >+ modprobe -qb zram num_devices=2
+> > > >+ echo 104857600 > /sys/block/zram0/disksize
+> > > >
+> > > ># mkswap /dev/zram0
+> > > >Setting up swapspace version 1, size = 102396 KiB
+> > > >no label, UUID=6c249930-2ba0-46cf-a8c6-766481942b7d
+> > > >
+> > > ># pager /var/log/dmesg
+> > > >(no more errors shown)
+> > > >
+> > > ># swapon /dev/zram0
+> > > >
+> > > ># pager /var/log/dmesg
+> > > >...
+> > > >[  309.300479] Buffer I/O error on device zram0, logical block 25599
+> > > >[  309.300491] Buffer I/O error on device zram0, logical block 25599
+> > > >[  309.300514] Buffer I/O error on device zram0, logical block 25599
+> > > >[  345.205887] Adding 102396k swap on /dev/zram0.  Priority:-2 extents:1
+> > > >across:102396k SSFS
+> > > >
+> > > >full log files and the kernel source are stored in the address:
+> > > >
+> > > >http://livenet.selfip.com/ftp/debian/zram_3.10.6_IO_error/
+> > > >
+> > > 
+> > > 
+> > > I think this one should fix it and belongs in 3.10 stable too:
+> > 
+> > Very true. Let's Cc Greg, explicitely.
+> 
+> -ENOCONTEXT
+
+https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/drivers/staging/zram?id=75c7caf5a052ffd8db3312fa7864ee2d142890c4
+
+It seems you already merge "zram:allow request end to conincide with disksize" to stable.
+So there is no concern any more.
+
+Thanks.
+
+
+-- 
+Kind regards,
+Minchan Kim
