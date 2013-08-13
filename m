@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757810Ab3HMGrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:47:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60642 "EHLO
+	id S1757095Ab3HMGdn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:33:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60614 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757116Ab3HMGdo (ORCPT
+	with ESMTP id S1756514Ab3HMGdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:44 -0400
+	Tue, 13 Aug 2013 02:33:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 56/60] drm/radeon: only save UVD bo when we have open handles
-Date: Mon, 12 Aug 2013 23:34:23 -0700
-Message-Id: <20130813063338.873041493@linuxfoundation.org>
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 05/60] powerpc: Fix hypervisor facility unavaliable vector number
+Date: Mon, 12 Aug 2013 23:33:32 -0700
+Message-Id: <20130813063332.498809812@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,172 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian König <christian.koenig@amd.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 4ad9c1c774c2af152283f510062094e768876f55 upstream.
+commit 88f094120bd2f012ff494ae50a8d4e0d8af8f69e upstream.
 
-Otherwise just reinitialize from scratch on resume,
-and so make it more likely to succeed.
+Currently if we take hypervisor facility unavaliable (from 0xf80/0x4f80) we
+mark it as an OS facility unavaliable (0xf60) as the two share the same code
+path.
 
-v2: rebased for 3.10-stable tree
+The becomes a problem in facility_unavailable_exception() as we aren't able to
+see the hypervisor facility unavailable exceptions.
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Below fixes this by duplication the required macros.
+
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon.h       |    2 -
- drivers/gpu/drm/radeon/radeon_fence.c |    2 -
- drivers/gpu/drm/radeon/radeon_uvd.c   |   46 ++++++++++++++++++++++++----------
- drivers/gpu/drm/radeon/rv770.c        |    2 -
- 4 files changed, 36 insertions(+), 16 deletions(-)
+ arch/powerpc/kernel/exceptions-64s.S |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -1146,7 +1146,6 @@ struct radeon_uvd {
- 	void			*cpu_addr;
- 	uint64_t		gpu_addr;
- 	void			*saved_bo;
--	unsigned		fw_size;
- 	atomic_t		handles[RADEON_MAX_UVD_HANDLES];
- 	struct drm_file		*filp[RADEON_MAX_UVD_HANDLES];
- 	struct delayed_work	idle_work;
-@@ -1686,6 +1685,7 @@ struct radeon_device {
- 	const struct firmware *rlc_fw;	/* r6/700 RLC firmware */
- 	const struct firmware *mc_fw;	/* NI MC firmware */
- 	const struct firmware *ce_fw;	/* SI CE firmware */
-+	const struct firmware *uvd_fw;	/* UVD firmware */
- 	struct r600_blit r600_blit;
- 	struct r600_vram_scratch vram_scratch;
- 	int msi_enabled; /* msi enabled */
---- a/drivers/gpu/drm/radeon/radeon_fence.c
-+++ b/drivers/gpu/drm/radeon/radeon_fence.c
-@@ -782,7 +782,7 @@ int radeon_fence_driver_start_ring(struc
+--- a/arch/powerpc/kernel/exceptions-64s.S
++++ b/arch/powerpc/kernel/exceptions-64s.S
+@@ -848,7 +848,7 @@ hv_facility_unavailable_relon_trampoline
+ 	. = 0x4f80
+ 	SET_SCRATCH0(r13)
+ 	EXCEPTION_PROLOG_0(PACA_EXGEN)
+-	b	facility_unavailable_relon_hv
++	b	hv_facility_unavailable_relon_hv
  
- 		} else {
- 			/* put fence directly behind firmware */
--			index = ALIGN(rdev->uvd.fw_size, 8);
-+			index = ALIGN(rdev->uvd_fw->size, 8);
- 			rdev->fence_drv[ring].cpu_addr = rdev->uvd.cpu_addr + index;
- 			rdev->fence_drv[ring].gpu_addr = rdev->uvd.gpu_addr + index;
- 		}
---- a/drivers/gpu/drm/radeon/radeon_uvd.c
-+++ b/drivers/gpu/drm/radeon/radeon_uvd.c
-@@ -55,7 +55,6 @@ static void radeon_uvd_idle_work_handler
- int radeon_uvd_init(struct radeon_device *rdev)
- {
- 	struct platform_device *pdev;
--	const struct firmware *fw;
- 	unsigned long bo_size;
- 	const char *fw_name;
- 	int i, r;
-@@ -105,7 +104,7 @@ int radeon_uvd_init(struct radeon_device
- 		return -EINVAL;
- 	}
+ 	STD_RELON_EXCEPTION_PSERIES(0x5300, 0x1300, instruction_breakpoint)
+ #ifdef CONFIG_PPC_DENORMALISATION
+@@ -1175,6 +1175,7 @@ END_FTR_SECTION_IFSET(CPU_FTR_VSX)
+ 	b	.ret_from_except
  
--	r = request_firmware(&fw, fw_name, &pdev->dev);
-+	r = request_firmware(&rdev->uvd_fw, fw_name, &pdev->dev);
- 	if (r) {
- 		dev_err(rdev->dev, "radeon_uvd: Can't load firmware \"%s\"\n",
- 			fw_name);
-@@ -115,7 +114,7 @@ int radeon_uvd_init(struct radeon_device
+ 	STD_EXCEPTION_COMMON(0xf60, facility_unavailable, .facility_unavailable_exception)
++	STD_EXCEPTION_COMMON(0xf80, hv_facility_unavailable, .facility_unavailable_exception)
  
- 	platform_device_unregister(pdev);
+ 	.align	7
+ 	.globl	__end_handlers
+@@ -1188,7 +1189,7 @@ __end_handlers:
+ 	STD_RELON_EXCEPTION_PSERIES_OOL(0xf20, altivec_unavailable)
+ 	STD_RELON_EXCEPTION_PSERIES_OOL(0xf40, vsx_unavailable)
+ 	STD_RELON_EXCEPTION_PSERIES_OOL(0xf60, facility_unavailable)
+-	STD_RELON_EXCEPTION_HV_OOL(0xf80, facility_unavailable)
++	STD_RELON_EXCEPTION_HV_OOL(0xf80, hv_facility_unavailable)
  
--	bo_size = RADEON_GPU_PAGE_ALIGN(fw->size + 8) +
-+	bo_size = RADEON_GPU_PAGE_ALIGN(rdev->uvd_fw->size + 8) +
- 		  RADEON_UVD_STACK_SIZE + RADEON_UVD_HEAP_SIZE;
- 	r = radeon_bo_create(rdev, bo_size, PAGE_SIZE, true,
- 			     RADEON_GEM_DOMAIN_VRAM, NULL, &rdev->uvd.vcpu_bo);
-@@ -148,12 +147,6 @@ int radeon_uvd_init(struct radeon_device
- 
- 	radeon_bo_unreserve(rdev->uvd.vcpu_bo);
- 
--	rdev->uvd.fw_size = fw->size;
--	memset(rdev->uvd.cpu_addr, 0, bo_size);
--	memcpy(rdev->uvd.cpu_addr, fw->data, fw->size);
--
--	release_firmware(fw);
--
- 	for (i = 0; i < RADEON_MAX_UVD_HANDLES; ++i) {
- 		atomic_set(&rdev->uvd.handles[i], 0);
- 		rdev->uvd.filp[i] = NULL;
-@@ -177,33 +170,60 @@ void radeon_uvd_fini(struct radeon_devic
- 	}
- 
- 	radeon_bo_unref(&rdev->uvd.vcpu_bo);
-+
-+	release_firmware(rdev->uvd_fw);
- }
- 
- int radeon_uvd_suspend(struct radeon_device *rdev)
- {
- 	unsigned size;
-+	void *ptr;
-+	int i;
- 
- 	if (rdev->uvd.vcpu_bo == NULL)
- 		return 0;
- 
-+	for (i = 0; i < RADEON_MAX_UVD_HANDLES; ++i)
-+		if (atomic_read(&rdev->uvd.handles[i]))
-+			break;
-+
-+	if (i == RADEON_MAX_UVD_HANDLES)
-+		return 0;
-+
- 	size = radeon_bo_size(rdev->uvd.vcpu_bo);
-+	size -= rdev->uvd_fw->size;
-+
-+	ptr = rdev->uvd.cpu_addr;
-+	ptr += rdev->uvd_fw->size;
-+
- 	rdev->uvd.saved_bo = kmalloc(size, GFP_KERNEL);
--	memcpy(rdev->uvd.saved_bo, rdev->uvd.cpu_addr, size);
-+	memcpy(rdev->uvd.saved_bo, ptr, size);
- 
- 	return 0;
- }
- 
- int radeon_uvd_resume(struct radeon_device *rdev)
- {
-+	unsigned size;
-+	void *ptr;
-+
- 	if (rdev->uvd.vcpu_bo == NULL)
- 		return -EINVAL;
- 
-+	memcpy(rdev->uvd.cpu_addr, rdev->uvd_fw->data, rdev->uvd_fw->size);
-+
-+	size = radeon_bo_size(rdev->uvd.vcpu_bo);
-+	size -= rdev->uvd_fw->size;
-+
-+	ptr = rdev->uvd.cpu_addr;
-+	ptr += rdev->uvd_fw->size;
-+
- 	if (rdev->uvd.saved_bo != NULL) {
--		unsigned size = radeon_bo_size(rdev->uvd.vcpu_bo);
--		memcpy(rdev->uvd.cpu_addr, rdev->uvd.saved_bo, size);
-+		memcpy(ptr, rdev->uvd.saved_bo, size);
- 		kfree(rdev->uvd.saved_bo);
- 		rdev->uvd.saved_bo = NULL;
--	}
-+	} else
-+		memset(ptr, 0, size);
- 
- 	return 0;
- }
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -813,7 +813,7 @@ int rv770_uvd_resume(struct radeon_devic
- 
- 	/* programm the VCPU memory controller bits 0-27 */
- 	addr = rdev->uvd.gpu_addr >> 3;
--	size = RADEON_GPU_PAGE_ALIGN(rdev->uvd.fw_size + 4) >> 3;
-+	size = RADEON_GPU_PAGE_ALIGN(rdev->uvd_fw->size + 4) >> 3;
- 	WREG32(UVD_VCPU_CACHE_OFFSET0, addr);
- 	WREG32(UVD_VCPU_CACHE_SIZE0, size);
- 
+ #if defined(CONFIG_PPC_PSERIES) || defined(CONFIG_PPC_POWERNV)
+ /*
 
 
