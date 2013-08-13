@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758983Ab3HMSKL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 14:10:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41313 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756819Ab3HMSKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 14:10:06 -0400
-Date: Tue, 13 Aug 2013 20:10:04 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
- trace event
-Message-ID: <20130813181004.GF4077@pd.tnic>
-References: <20130808163822.67e0828a@samsung.com>
- <20130810180322.GC4155@pd.tnic>
- <20130812083355.47c1bae8@samsung.com>
- <5208D80D.5030206@linux.vnet.ibm.com>
- <20130812125343.GE18018@pd.tnic>
- <520A16BD.30201@linux.vnet.ibm.com>
- <20130813124258.GC4077@pd.tnic>
- <520A6D98.9060204@linux.vnet.ibm.com>
- <20130813175809.GE4077@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F31CB8F53@ORSMSX106.amr.corp.intel.com>
+	id S1758875Ab3HMSNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 14:13:00 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:39965 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab3HMSM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 14:12:59 -0400
+Date: Tue, 13 Aug 2013 20:12:58 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, mingo@kernel.org, torvalds@linux-foundation.org
+Subject: Re: Re-tune x86 uaccess code for PREEMPT_VOLUNTARY
+Message-ID: <20130813181257.GV19750@two.firstfloor.org>
+References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
+ <520A7651.8020301@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31CB8F53@ORSMSX106.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <520A7651.8020301@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 06:05:02PM +0000, Luck, Tony wrote:
-> If the errors are serious (or a precursor to something serious) that
-> process may never get the chance to save the log.
+On Tue, Aug 13, 2013 at 11:09:21AM -0700, H. Peter Anvin wrote:
+> On 08/09/2013 04:04 PM, Andi Kleen wrote:
+> > The x86 user access functions (*_user) were originally very well tuned,
+> > with partial inline code and other optimizations.
+> > 
+> > Then over time various new checks -- particularly the sleep checks for
+> > a voluntary preempt kernel -- destroyed a lot of the tunings
+> > 
+> 
+> Hi Andi,
+> 
+> Are you going to respin this patchset to address the feedback?
 
-What about sending tracepoint data over serial and/or network? I agree
-that dmesg over serial would be helpful but we need a similar sure-fire
-way for carrying error info out.
+Yes. I'm dropping all the user checks.
 
-Which reminds me, pstore could also be a good thing to use, in addition.
-Only put error info there as it is limited anyway.
+But you could already merge the first patch, it's independent
+of all the others and not affected by the feedback.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+-Andi
