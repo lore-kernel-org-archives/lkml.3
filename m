@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875Ab3HMSNA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 14:13:00 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:39965 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab3HMSM7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 14:12:59 -0400
-Date: Tue, 13 Aug 2013 20:12:58 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, mingo@kernel.org, torvalds@linux-foundation.org
-Subject: Re: Re-tune x86 uaccess code for PREEMPT_VOLUNTARY
-Message-ID: <20130813181257.GV19750@two.firstfloor.org>
-References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
- <520A7651.8020301@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520A7651.8020301@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759019Ab3HMSNo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 14:13:44 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55718 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751265Ab3HMSNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 14:13:43 -0400
+From: Fred Chen <fchen@linux.vnet.ibm.com>
+To: x86@kernel.org, hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org, Fred Chen <fchen@linux.vnet.ibm.com>
+Subject: [PATCH] strlen patch
+Date: Tue, 13 Aug 2013 11:13:00 -0700
+Message-Id: <1376417580-11554-1-git-send-email-fchen@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081318-7182-0000-0000-00000812AB5D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 11:09:21AM -0700, H. Peter Anvin wrote:
-> On 08/09/2013 04:04 PM, Andi Kleen wrote:
-> > The x86 user access functions (*_user) were originally very well tuned,
-> > with partial inline code and other optimizations.
-> > 
-> > Then over time various new checks -- particularly the sleep checks for
-> > a voluntary preempt kernel -- destroyed a lot of the tunings
-> > 
-> 
-> Hi Andi,
-> 
-> Are you going to respin this patchset to address the feedback?
+Below is a patch that fixes sparse error "arch/x86/boot/string.c:119:8: warning: symbol 'strlen' was not declared." by declaring it in arch/x86/boot/boot.h.
 
-Yes. I'm dropping all the user checks.
+Signed-off-by: Fred Chen <fchen@linux.vnet.ibm.com>
+---
+ arch/x86/boot/boot.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-But you could already merge the first patch, it's independent
-of all the others and not affected by the feedback.
+diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+index 5b75319..ef72bae 100644
+--- a/arch/x86/boot/boot.h
++++ b/arch/x86/boot/boot.h
+@@ -355,6 +355,7 @@ int strncmp(const char *cs, const char *ct, size_t count);
+ size_t strnlen(const char *s, size_t maxlen);
+ unsigned int atou(const char *s);
+ unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base);
++size_t strlen(const char *s);
+ 
+ /* tty.c */
+ void puts(const char *);
+-- 
+1.7.1
 
--Andi
