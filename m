@@ -1,202 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab3HMHWj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:22:39 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:47774 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755579Ab3HMHWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:22:36 -0400
-Message-ID: <1376378480.2208.3.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [RFC PATCH v2 1/3] usb: dwc3: msm: Add device tree binding
- information
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        rob@landley.net, gregkh@linuxfoundation.org, grant.likely@linaro.org,
-        idos@codeaurora.org, mgautam@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Tue, 13 Aug 2013 10:21:20 +0300
-In-Reply-To: <169628C9-00BA-4E58-BF65-7B180E6BE4ED@codeaurora.org>
-References: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com>
-	 <1376042027-9798-2-git-send-email-iivanov@mm-sol.com>
-	 <169628C9-00BA-4E58-BF65-7B180E6BE4ED@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756502Ab3HMHYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:24:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33363 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862Ab3HMHYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 03:24:51 -0400
+Date: Tue, 13 Aug 2013 00:26:16 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Shyam Kaushik <shyam@zadarastorage.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: BUG REPORT - IDR wraps around at 30-bits - works very bad with
+ NFSD/SCTP
+Message-ID: <20130813072616.GA14019@kroah.com>
+References: <9a92eee58fefc1b8e3b4771ecf210d29@mail.gmail.com>
+ <20130813071944.GA11270@kroah.com>
+ <199217e8a2fc33f6aa0ecf764a0104cb@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <199217e8a2fc33f6aa0ecf764a0104cb@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 13, 2013 at 12:51:14PM +0530, Shyam Kaushik wrote:
+> Hi Greg,
+> 
+> Unfortunately we don’t have a 3.9/3.10 environment here. So if IDR
+> developers can try the example code, it should show if the bug is still
+> present in there. Thanks.
 
-Hi, 
+There shouldn't be anything in 3.10 preventing you from building and
+testing it out, is there?  Or do you have something that restricts you
+to specific kernel versions?
 
-On Fri, 2013-08-09 at 10:31 -0500, Kumar Gala wrote: 
-> On Aug 9, 2013, at 4:53 AM, Ivan T. Ivanov wrote:
-> 
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > MSM USB3.0 core wrapper consist of USB3.0 IP (SNPS)
-> 
-> probably good to spell out Synopsys rather than SNPS
+thanks,
 
-I could make it look like this? Synopsys (SNPS)
-
-> 
-> > and HS, SS PHY's controll and configuration registers.
-> > 
-> > It could operate in device mode (SS, HS, FS) and host
-> > mode (SS, HS, FS, LS).
-> > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > ---
-> > .../devicetree/bindings/usb/msm-ssusb.txt          |  101 ++++++++++++++++++++
-> > 1 file changed, 101 insertions(+)
-> > create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> > new file mode 100644
-> > index 0000000..7a97163
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-> > @@ -0,0 +1,101 @@
-> > +MSM SuperSpeed DWC3 USB SoC controller
-> > +
-> 
-> We should have a heading here like:
-> 
-> DWC3 Highspeed USB PHY
-
-Ok, I will add these headings.
-
-> 
-> > +Required properities :
-> > +- compatible : sould be "qcom,dwc3-hsphy";
-> > +- reg : offset and length of the register set in the memory map
-> > +- clocks : phandles to clock instances of the device tree nodes
-> > +- clock-names :
-> > +	"xo" : External reference clock 19 MHz
-> > +	"sleep_a_clk" : Sleep clock, used when USB3 core goes into low
-> > +	power mode (U3).
-> > +<supply-name>-supply : phandle to the regulator device tree node
-> > +Required "supply-name" are:
-> > +	"v1p8" : 1.8v supply for HSPHY
-> > +	"v3p3" : 3.3v supply for HSPHY
-> > +	"vbus" : vbus supply for host mode
-> > +	"vddcx" : vdd supply for HS-PHY digital circuit operation
-> > +
-> 
-> DWC3 Superspeed USB PHY
-> 
-> > +Required properities :
-> > +- compatible : sould be "qcom,dwc3-ssphy";
-> > +- reg : offset and length of the register set in the memory map
-> > +- clocks : phandles to clock instances of the device tree nodes
-> > +- clock-names :
-> > +	"xo" : External reference clock 19 MHz
-> > +	"ref_clk" : Reference clock - used in host mode.
-> > +<supply-name>-supply : phandle to the regulator device tree node
-> > +Required "supply-name" are:
-> > +	"v1p8" : 1.8v supply for SS-PHY
-> > +	"vddcx" : vdd supply for SS-PHY digital circuit operation
-> > +
-> 
-> DWC3 controller
-> 
-> > +Required properties :
-> > +- compatible : should be "qcom,dwc3"
-> > +- reg : offset and length of the register set in the memory map
-> > +	offset and length of the TCSR register for routing USB
-> > +	signals to either picoPHY0 or picoPHY1.
-> > +- clocks : phandles to clock instances of the device tree nodes
-> > +- clock-names :
-> > +	"core_clk" : Master/Core clock, have to be >= 125 MHz for SS
-> > +	operation and >= 60MHz for HS operation
-> > +	"iface_clk" : System bus AXI clock
-> > +	"sleep_clk" : Sleep clock, used when USB3 core goes into low
-> > +	power mode (U3).
-> > +	"utmi_clk" : Generated by HS-PHY. Used to clock the low power
-> > +	parts of thr HS Link layer.
-> > +
-> > +Optional properties :
-> > +- gdsc-supply : phandle to the globally distributed switch controller
-> > +  regulator node to the USB controller.
-> > +
-> > +Sub nodes:
-> > +- Sub node for "DWC3 USB3 controller".
-> > +  This sub node is required property for device node. The properties
-> > +  of this subnode are specified in dwc3.txt.
-> 
-> Is tx-fifo-resize required for qcom,dwc3? if so we should call that out in the binding.
-
-It looks like this is used in apq8084.dtsi (codeaurora repo)
-
-> 
-> > +
-> > +Example device nodes:
-> > +
-> > +	dwc3_hsphy: phy@f92f8800 {
-> > +		compatible = "qcom,dwc3-hsphy";
-> > +		reg = <0xf92f8800 0x30>;
-> > +
-> > +		clocks = <&cxo>, <&usb2a_phy_sleep_cxc>;
-> > +		clock-names = "xo", "sleep_a_clk";
-> > +
-> > +		vbus-supply = <&supply>;
-> > +		vddcx-supply = <&supply>;
-> > +		v1p8-supply = <&supply>;
-> > +		v3p3-supply = <&supply>;
-> > +	};
-> > +
-> > +	dwc3_ssphy: phy@f92f8830 {
-> > +		compatible = "qcom,dwc3-ssphy";
-> > +		reg = <0xf92f8830 0x30>;
-> > +
-> > +		clocks = <&cxo>, <&usb30_mock_utmi_cxc>;
-> > +		clock-names = "xo", "ref_clk";
-> > +
-> > +		vddcx-supply = <&supply>;
-> > +		v1p8-supply = <&supply>;
-> > +	};
-> > +
-> > +	usb@fd4ab000 {
-> > +		compatible = "qcom,dwc3";
-> > +		#address-cells = <1>;
-> > +		#size-cells = <1>;
-> > +		reg = <0xfd4ab000 0x4>;
-> > +
-> > +		clocks = <&usb30_master_cxc>, <&sys_noc_usb3_axi_cxc>,
-> > +				<&usb30_sleep_cxc>, <&usb30_mock_utmi_cxc>;
-> > +		clock-names = "core_clk", "iface_clk", "sleep_clk", "utmi_clk";
-> > +
-> > +		gdsc-supply = <&supply>;
-> > +		ranges;
-> > +
-> > +		dwc3@f9200000 {
-> > +			compatible = "snps,dwc3";
-> > +			reg = <0xf9200000 0xcd00>;
-> > +			interrupts = <0 131 0>;
-> > +			interrupt-names = "irq";
-> 
-> I'd drop interrupt-names since its not terribly meaningful w/a single IRQ
-
-Ok.
-
-Thanks, 
-Ivan
-
-> 
-> > +			usb-phy = <&dwc3_hsphy>, <&dwc3_ssphy>;
-> > +			tx-fifo-resize;
-> > +		};
-> > +	};
-> > -- 
-> > 1.7.9.5
-> > 
-
-> 
-
-
+greg k-h
