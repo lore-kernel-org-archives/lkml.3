@@ -1,331 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317Ab3HMFAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 01:00:08 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:44370
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751118Ab3HMFAG (ORCPT
+	id S1752298Ab3HMFCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 01:02:18 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:36445 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab3HMFCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 01:00:06 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h668h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h129fi1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Steven Miao <realmz6@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <adi-buildroot-devel@lists.sourceforge.net>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 2/3 v2] blackfin: gpio: Remove none gpio lib code.
-Date: Tue, 13 Aug 2013 13:04:17 +0800
-Message-ID: <1376370258-3633-2-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <1376370258-3633-1-git-send-email-sonic.adi@gmail.com>
-References: <1376370258-3633-1-git-send-email-sonic.adi@gmail.com>
+	Tue, 13 Aug 2013 01:02:16 -0400
+Date: Tue, 13 Aug 2013 09:02:13 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, xemul@parallels.com, mpm@selenic.com,
+        xiaoguangrong@linux.vnet.ibm.com, mtosatti@redhat.com,
+        kosaki.motohiro@gmail.com, sfr@canb.auug.org.au, peterz@infradead.org,
+        aneesh.kumar@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patch 2/2] [PATCH] mm: Save soft-dirty bits on file pages
+Message-ID: <20130813050213.GA2869@moon>
+References: <20130730204154.407090410@gmail.com>
+ <20130730204654.966378702@gmail.com>
+ <20130807132812.60ad4bfe85127794094d385e@linux-foundation.org>
+ <20130808145120.GA1775@moon>
+ <20130812145720.3b722b066fe1bd77291331e5@linux-foundation.org>
+ <CALCETrUXOoKrOAXhvd=GcK3YpBNWr2rk2ArBBgekXDv9yj7sNg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUXOoKrOAXhvd=GcK3YpBNWr2rk2ArBBgekXDv9yj7sNg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On Mon, Aug 12, 2013 at 03:28:06PM -0700, Andy Lutomirski wrote:
+> >
+> > You could have #undefed _mfrob and __frob after using them, but whatever.
 
-- Remove non gpio lib code from blackfin architecture.
-- Limit the lagecy blackfin gpio driver to bf5xx processors only.
-- Remove unused definition of the pint power functions.
+Sure, for some reason I forgot to do that. Will send update on top.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- arch/blackfin/Kconfig            |   7 ++
- arch/blackfin/include/asm/gpio.h | 157 +++++----------------------------------
- arch/blackfin/kernel/Makefile    |   3 +-
- 3 files changed, 29 insertions(+), 138 deletions(-)
+> > I saved this patch to wave at the x86 guys for 3.12.  I plan to merge
+> > mm-save-soft-dirty-bits-on-file-pages.patch for 3.11.
+> >
+> >> Guys, is there a reason for "if _PAGE_BIT_FILE < _PAGE_BIT_PROTNONE"
+> >> test present in this pgtable-2level.h file at all? I can't imagine
+> >> where it can be false on x86.
+> >
+> > I doubt if "Guys" read this.  x86 maintainers cc'ed.
 
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index a117652..9eff25b 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -52,6 +52,9 @@ config GENERIC_BUG
- config ZONE_DMA
- 	def_bool y
- 
-+config GENERIC_GPIO
-+	def_bool y
-+
- config FORCE_MAX_ZONEORDER
- 	int
- 	default "14"
-@@ -317,6 +320,10 @@ config BF53x
- 	depends on (BF531 || BF532 || BF533 || BF534 || BF536 || BF537)
- 	default y
- 
-+config GPIO_ADI
-+	def_bool y
-+	depends on (BF51x || BF52x || BF53x || BF538 || BF539 || BF561)
-+
- config MEM_MT48LC64M4A2FB_7E
- 	bool
- 	depends on (BFIN533_STAMP)
-diff --git a/arch/blackfin/include/asm/gpio.h b/arch/blackfin/include/asm/gpio.h
-index 98d0133..99d338c 100644
---- a/arch/blackfin/include/asm/gpio.h
-+++ b/arch/blackfin/include/asm/gpio.h
-@@ -25,8 +25,12 @@
- 
- #ifndef __ASSEMBLY__
- 
-+#ifndef CONFIG_PINCTRL
-+
- #include <linux/compiler.h>
--#include <linux/gpio.h>
-+#include <asm/blackfin.h>
-+#include <asm/portmux.h>
-+#include <asm/irq_handler.h>
- 
- /***********************************************************
- *
-@@ -45,7 +49,6 @@
- * MODIFICATION HISTORY :
- **************************************************************/
- 
--#if !BFIN_GPIO_PINT
- void set_gpio_dir(unsigned, unsigned short);
- void set_gpio_inen(unsigned, unsigned short);
- void set_gpio_polar(unsigned, unsigned short);
-@@ -115,7 +118,6 @@ struct gpio_port_t {
- 	unsigned short dummy16;
- 	unsigned short inen;
- };
--#endif
- 
- #ifdef BFIN_SPECIAL_GPIO_BANKS
- void bfin_special_gpio_free(unsigned gpio);
-@@ -127,25 +129,21 @@ void bfin_special_gpio_pm_hibernate_suspend(void);
- #endif
- 
- #ifdef CONFIG_PM
--int bfin_pm_standby_ctrl(unsigned ctrl);
-+void bfin_gpio_pm_hibernate_restore(void);
-+void bfin_gpio_pm_hibernate_suspend(void);
-+int bfin_gpio_pm_wakeup_ctrl(unsigned gpio, unsigned ctrl);
-+int bfin_gpio_pm_standby_ctrl(unsigned ctrl);
- 
- static inline int bfin_pm_standby_setup(void)
- {
--	return bfin_pm_standby_ctrl(1);
-+	return bfin_gpio_pm_standby_ctrl(1);
- }
- 
- static inline void bfin_pm_standby_restore(void)
- {
--	bfin_pm_standby_ctrl(0);
-+	bfin_gpio_pm_standby_ctrl(0);
- }
- 
--void bfin_gpio_pm_hibernate_restore(void);
--void bfin_gpio_pm_hibernate_suspend(void);
--void bfin_pint_suspend(void);
--void bfin_pint_resume(void);
--
--# if !BFIN_GPIO_PINT
--int gpio_pm_wakeup_ctrl(unsigned gpio, unsigned ctrl);
- 
- struct gpio_port_s {
- 	unsigned short data;
-@@ -161,7 +159,6 @@ struct gpio_port_s {
- 	unsigned short reserved;
- 	unsigned short mux;
- };
--# endif
- #endif /*CONFIG_PM*/
- 
- /***********************************************************
-@@ -178,36 +175,29 @@ struct gpio_port_s {
- *************************************************************
- * MODIFICATION HISTORY :
- **************************************************************/
--
--int bfin_gpio_request(unsigned gpio, const char *label);
--void bfin_gpio_free(unsigned gpio);
- int bfin_gpio_irq_request(unsigned gpio, const char *label);
- void bfin_gpio_irq_free(unsigned gpio);
--int bfin_gpio_direction_input(unsigned gpio);
--int bfin_gpio_direction_output(unsigned gpio, int value);
--int bfin_gpio_get_value(unsigned gpio);
--void bfin_gpio_set_value(unsigned gpio, int value);
-+void bfin_gpio_irq_prepare(unsigned gpio);
-+
-+static inline int irq_to_gpio(unsigned irq)
-+{
-+	return irq - GPIO_IRQ_BASE;
-+}
-+#endif /* CONFIG_PINCTRL */
- 
- #include <asm/irq.h>
- #include <asm/errno.h>
- 
--#ifdef CONFIG_GPIOLIB
- #include <asm-generic/gpio.h>		/* cansleep wrappers */
- 
- static inline int gpio_get_value(unsigned int gpio)
- {
--	if (gpio < MAX_BLACKFIN_GPIOS)
--		return bfin_gpio_get_value(gpio);
--	else
--		return __gpio_get_value(gpio);
-+	return __gpio_get_value(gpio);
- }
- 
- static inline void gpio_set_value(unsigned int gpio, int value)
- {
--	if (gpio < MAX_BLACKFIN_GPIOS)
--		bfin_gpio_set_value(gpio, value);
--	else
--		__gpio_set_value(gpio, value);
-+	__gpio_set_value(gpio, value);
- }
- 
- static inline int gpio_cansleep(unsigned int gpio)
-@@ -219,113 +209,6 @@ static inline int gpio_to_irq(unsigned gpio)
- {
- 	return __gpio_to_irq(gpio);
- }
--
--#else /* !CONFIG_GPIOLIB */
--
--static inline int gpio_request(unsigned gpio, const char *label)
--{
--	return bfin_gpio_request(gpio, label);
--}
--
--static inline void gpio_free(unsigned gpio)
--{
--	return bfin_gpio_free(gpio);
--}
--
--static inline int gpio_direction_input(unsigned gpio)
--{
--	return bfin_gpio_direction_input(gpio);
--}
--
--static inline int gpio_direction_output(unsigned gpio, int value)
--{
--	return bfin_gpio_direction_output(gpio, value);
--}
--
--static inline int gpio_set_debounce(unsigned gpio, unsigned debounce)
--{
--	return -EINVAL;
--}
--
--static inline int gpio_request_one(unsigned gpio, unsigned long flags, const char *label)
--{
--	int err;
--
--	err = bfin_gpio_request(gpio, label);
--	if (err)
--		return err;
--
--	if (flags & GPIOF_DIR_IN)
--		err = bfin_gpio_direction_input(gpio);
--	else
--		err = bfin_gpio_direction_output(gpio,
--			(flags & GPIOF_INIT_HIGH) ? 1 : 0);
--
--	if (err)
--		bfin_gpio_free(gpio);
--
--	return err;
--}
--
--static inline int gpio_request_array(const struct gpio *array, size_t num)
--{
--	int i, err;
--
--	for (i = 0; i < num; i++, array++) {
--		err = gpio_request_one(array->gpio, array->flags, array->label);
--		if (err)
--			goto err_free;
--	}
--	return 0;
--
--err_free:
--	while (i--)
--		bfin_gpio_free((--array)->gpio);
--	return err;
--}
--
--static inline void gpio_free_array(const struct gpio *array, size_t num)
--{
--	while (num--)
--		bfin_gpio_free((array++)->gpio);
--}
--
--static inline int __gpio_get_value(unsigned gpio)
--{
--	return bfin_gpio_get_value(gpio);
--}
--
--static inline void __gpio_set_value(unsigned gpio, int value)
--{
--	return bfin_gpio_set_value(gpio, value);
--}
--
--static inline int gpio_get_value(unsigned gpio)
--{
--	return __gpio_get_value(gpio);
--}
--
--static inline void gpio_set_value(unsigned gpio, int value)
--{
--	return __gpio_set_value(gpio, value);
--}
--
--static inline int gpio_to_irq(unsigned gpio)
--{
--	if (likely(gpio < MAX_BLACKFIN_GPIOS))
--		return gpio + GPIO_IRQ_BASE;
--
--	return -EINVAL;
--}
--
--#include <asm-generic/gpio.h>		/* cansleep wrappers */
--#endif	/* !CONFIG_GPIOLIB */
--
--static inline int irq_to_gpio(unsigned irq)
--{
--	return (irq - GPIO_IRQ_BASE);
--}
--
- #endif /* __ASSEMBLY__ */
- 
- #endif /* __ARCH_BLACKFIN_GPIO_H__ */
-diff --git a/arch/blackfin/kernel/Makefile b/arch/blackfin/kernel/Makefile
-index 735f24e..703dc7c 100644
---- a/arch/blackfin/kernel/Makefile
-+++ b/arch/blackfin/kernel/Makefile
-@@ -7,7 +7,7 @@ extra-y := vmlinux.lds
- obj-y := \
- 	entry.o process.o bfin_ksyms.o ptrace.o setup.o signal.o \
- 	sys_bfin.o traps.o irqchip.o dma-mapping.o flat.o \
--	fixed_code.o reboot.o bfin_gpio.o bfin_dma.o \
-+	fixed_code.o reboot.o bfin_dma.o \
- 	exception.o dumpstack.o
- 
- ifeq ($(CONFIG_GENERIC_CLOCKEVENTS),y)
-@@ -16,6 +16,7 @@ else
-     obj-y += time.o
- endif
- 
-+obj-$(CONFIG_GPIO_ADI)               += bfin_gpio.o
- obj-$(CONFIG_DYNAMIC_FTRACE)         += ftrace.o
- obj-$(CONFIG_FUNCTION_TRACER)        += ftrace-entry.o
- obj-$(CONFIG_FUNCTION_GRAPH_TRACER)  += ftrace.o
--- 
-1.8.2.3
+Thanks!
 
+> > +#define _mfrob(v,r,m,l)                ((((v) >> (r)) & (m)) << (l))
+> > +#define __frob(v,r,l)          (((v) >> (r)) << (l))
+> > +
+> >  #ifdef CONFIG_MEM_SOFT_DIRTY
+> 
+> If I'm understanding this right, the idea is to take the bits in the
+> range a..b of v and stick them at c..d, where a-b == c-d.  Would it
+> make sense to change this to look something like
+> 
+> #define __frob(v, inmsb, inlsb, outlsb) ((v >> inlsb) & ((1<<(inmsb -
+> inlsb + 1)-1) << outlsb)
 
+There is a case when you don't need a mask completely. And because this
+pte conversion is on hot path and time critical I kept generated code
+as it was (even if that lead to slightly less clear source code).
+
+> For extra fun, there could be an __unfrob macro that takes the same
+> inmsg, inlsb, outlsb parameters but undoes it so that it's (more)
+> clear that the operations that are supposed to be inverses are indeed
+> inverses.
