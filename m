@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757979Ab3HMNDd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:03:33 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:52251 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757460Ab3HMNDb (ORCPT
+	id S1757718Ab3HMNIw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:08:52 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:54907 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757132Ab3HMNIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:03:31 -0400
+	Tue, 13 Aug 2013 09:08:51 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: <netdev@vger.kernel.org>
+CC: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Mischa Jonker <Mischa.Jonker@synopsys.com>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ethernet/arc/arc_emac - fix NAPI "work > weight" warning
+Date: Tue, 13 Aug 2013 17:04:36 +0400
+Message-ID: <1376399076-9320-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-In-Reply-To: <5209DCB9.8020705@linutronix.de>
-References: <51F2BE6F.3010008@linutronix.de>
-	<CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
-	<51F2D427.7050106@linutronix.de>
-	<CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
-	<51F2DD90.2030405@linutronix.de>
-	<CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
-	<20130729165329.GA5773@linutronix.de>
-	<CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com>
-	<51F6ABA2.7060102@linutronix.de>
-	<CADYTM3bcCoWKE9eR5Sd9MbaEUr4G=k=r6JKR+8KC=W_YrbMs3g@mail.gmail.com>
-	<20130809160339.GA14829@linutronix.de>
-	<5205516D.1030707@cogentembedded.com>
-	<5209DCB9.8020705@linutronix.de>
-Date: Tue, 13 Aug 2013 08:03:29 -0500
-Message-ID: <CADYTM3a2M-X=eqz0LmSq4T9UF9khsTGB5TTYWWMRZWwkpRuRTQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: am335x: Do not remove the session bin
- HOST-only mode
-From: Bin Liu <binmlist@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.121.8.32]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+Initially I improperly set a boundary for maximum number of input
+packets to process on NAPI poll ("work") so it might be more than
+expected amount ("weight").
 
-On Tue, Aug 13, 2013 at 2:14 AM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> On 08/09/2013 10:30 PM, Sergei Shtylyov wrote:
->> Hello.
->
-> Hi Sergei,
->
->>> +    if (musb->port_mode == MUSB_PORT_MODE_HOST) {
->>> +        val = USBMODE_IDDIG_A;
->>> +        val |= USBMODE_ID_MUX_REG;
->>
->>    Why not do the above in one line and save on {} {}? It will look more
->> aesthetically pleasing IMHO.
->
-> I'm going to redo this if it is agreed that we want to fix it that way.
-I am going to so some tests today for this. I don't object to use the
-mode register, but am wondering why we have to play with it for
-host-only mode. The ID pin is grounded for host-only mode, which
-should cause the same as setting mode register.
+This was really harmless but seeing WARN_ON_ONCE on every device boot is
+not nice. So trivial fix ("<" instead of "<=") is here.
 
->
-> Sebastian
+Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 
--Bin.
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: Mischa Jonker <mjonker@synopsys.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/arc/emac_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
+index f1b121e..55d79cb 100644
+--- a/drivers/net/ethernet/arc/emac_main.c
++++ b/drivers/net/ethernet/arc/emac_main.c
+@@ -199,7 +199,7 @@ static int arc_emac_rx(struct net_device *ndev, int budget)
+ 	struct arc_emac_priv *priv = netdev_priv(ndev);
+ 	unsigned int work_done;
+ 
+-	for (work_done = 0; work_done <= budget; work_done++) {
++	for (work_done = 0; work_done < budget; work_done++) {
+ 		unsigned int *last_rx_bd = &priv->last_rx_bd;
+ 		struct net_device_stats *stats = &priv->stats;
+ 		struct buffer_state *rx_buff = &priv->rx_buff[*last_rx_bd];
+-- 
+1.8.1.2
+
