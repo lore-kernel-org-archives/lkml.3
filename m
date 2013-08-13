@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758376Ab3HMRQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:16:53 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:38742 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756904Ab3HMRQw (ORCPT
+	id S1758537Ab3HMRSB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:18:01 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48642 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756904Ab3HMRR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:16:52 -0400
-Date: Tue, 13 Aug 2013 18:16:44 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH] mfd: ti_am335x_tscadc: fix reg_cache in clr function
-Message-ID: <20130813171644.GK15278@lee--X1>
-References: <1376412056-20736-1-git-send-email-zubair.lutfullah@gmail.com>
+	Tue, 13 Aug 2013 13:17:59 -0400
+Message-ID: <520A6A30.1030406@linux.vnet.ibm.com>
+Date: Tue, 13 Aug 2013 22:47:36 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1376412056-20736-1-git-send-email-zubair.lutfullah@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+CC: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, bhelgaas@google.com,
+        rostedt@goodmis.org, rjw@sisk.pl, lance.ortiz@hp.com,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Aristeu Rozanski Filho <arozansk@redhat.com>
+Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
+ event
+References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic> <20130812083355.47c1bae8@samsung.com> <5208D80D.5030206@linux.vnet.ibm.com> <20130812114404.3bd64fa0@samsung.com> <520A1B5E.8040105@linux.vnet.ibm.com> <20130813094147.062317f8@concha.lan>
+In-Reply-To: <20130813094147.062317f8@concha.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081317-5140-0000-0000-000003AB73AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013, Zubair Lutfullah wrote:
+On 08/13/2013 06:11 PM, Mauro Carvalho Chehab wrote:
+> Em Tue, 13 Aug 2013 17:11:18 +0530
+> "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> escreveu:
+>
+>> On 08/12/2013 08:14 PM, Mauro Carvalho Chehab wrote:
+>>>> But, this only seems to expose the APEI data as a string
+>>>> and doesn't look to really make all the fields available to user-space
+>>>> in a raw manner. Not sure how well this can be utilised by a user-space
+>>>> tool. Do you have suggestions on how we can do this?
+>>>
+>>> There's already an userspace tool that handes it:
+>>> 	https://git.fedorahosted.org/cgit/rasdaemon.git/
+>>>
+>>> What is missing there on the current version is the bits that would allow
+>>> to translate from APEI way to report an error (memory node, card, module,
+>>> bank, device) into a DIMM label[1].
+>>
+>> If I'm reading this right, all APEI data seems to be squashed into a
+>> string in mc_event.
+>
+> Yes. We had lots of discussion about how to map memory errors over the
+> last couple years. Basically, it was decided that the information that
+> could be decoded into a DIMM to be mapped as integers, and all other
+> driver-specific data to be added as strings.
+>
+> On the tests I did, different machines/vendors fill the APEI data on
+> a different way, with makes harder to associate them to a DIMM.
 
-> Fixed reg_cache in the set function. But missed the clr function
-> in the previous patch. This updates the clr function as well.
-> 
-> This applies after the previous fix I sent that Lee has accepted.
-> mfd-next hasn't been updated yet.
-> 
-> 
-> Zubair Lutfullah (1):
->   mfd: ti_am335x_tscadc: Update reg_cache variable in clr function
-> 
->  drivers/mfd/ti_am335x_tscadc.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+Ok, so it looks like ghes_edac isn't quite useful yet.
 
-I assume this is a 0/1 patch.
+In the meantime, like Boris suggests, I think we can have a different 
+trace event for raw APEI reports - userspace can use it as it pleases.
 
-When you're sending a single patch, there's no need to send a front
-page. Also, when you do send one, it's helpful to name the patches:
+Once ghes_edac gets better, users can decide whether they want raw APEI 
+reports or the EDAC-processed version and choose one or the other trace 
+event.
 
-[PATCH 0/2] ...
-[PATCH 1/2] ...
-[PATCH 2/2] ...
-... etc
+Regards,
+Naveen
 
-Where 0/2 is the front page.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
