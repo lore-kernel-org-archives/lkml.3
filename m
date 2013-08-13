@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758639Ab3HMTEn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 15:04:43 -0400
-Received: from li42-95.members.linode.com ([209.123.162.95]:57280 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758522Ab3HMTEl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 15:04:41 -0400
-Subject: Re: [PATCH] staging: Platform device tester - Allow removal
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20130813190233.GB25647@n2100.arm.linux.org.uk>
-Date: Tue, 13 Aug 2013 22:04:36 +0300
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt_Coussno?= <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B2F211B9-E02D-4B02-8813-2DCE511CE48C@antoniou-consulting.com>
-References: <1376386470-27328-1-git-send-email-panto@antoniou-consulting.com> <20130813182012.GE7740@kroah.com> <70F17005-652E-4C04-B6EC-51E16EE237C3@antoniou-consulting.com> <20130813185521.GA9483@kroah.com> <DB915540-70CB-4600-BF8D-734107B1FE29@antoniou-consulting.com> <20130813190233.GB25647@n2100.arm.linux.org.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-X-Mailer: Apple Mail (2.1085)
+	id S1758515Ab3HMTFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 15:05:45 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:40440 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757094Ab3HMTFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 15:05:43 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130813185322.GA5982@cantiga.alporthouse.com>
+References: <CA+icZUUKH6Fa8WksqA69FXKUUJmKsNdXv0ZJH50HA2mFavfPCg@mail.gmail.com>
+	<CA+icZUXC73i4hO7LHDQ=85__JtrZmSMB+KyUnS+G6vRmm_=tkg@mail.gmail.com>
+	<CA+icZUXdS3EuXyGZiS1--rMu6H0ospzCiK_CXgPv8mOk0sMt+Q@mail.gmail.com>
+	<20130813163439.GA8805@cantiga.alporthouse.com>
+	<CA+icZUX8HZD3z-uwTMWX9CoLdYYqyPVuhH-vWGhJuoonvMQTbQ@mail.gmail.com>
+	<CA+icZUU1tbHGVPgjXNvsq-F44O6umbhp_bFcoLE35HZ0zTqo2g@mail.gmail.com>
+	<20130813171324.GB8805@cantiga.alporthouse.com>
+	<CA+icZUWFqpObp_6KzJExPs2pkJOofaKw6CKv8J0=VTfyVy_Uew@mail.gmail.com>
+	<20130813180129.GC8805@cantiga.alporthouse.com>
+	<CA+icZUWcF6bdoD1pSbbtBTAYNMC9237Eas7SemS6kPpnY=c2Sw@mail.gmail.com>
+	<20130813185322.GA5982@cantiga.alporthouse.com>
+Date: Tue, 13 Aug 2013 21:05:41 +0200
+Message-ID: <CA+icZUXwSRPoZ8bQ6xaoNz27fQKPtg3HiZRENQ5UEpHE_kmEag@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical mode ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "s.dilek" <s.dilek@jpberlin.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On Tue, Aug 13, 2013 at 8:53 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Tue, Aug 13, 2013 at 08:40:37PM +0200, Sedat Dilek wrote:
+>> On Tue, Aug 13, 2013 at 8:01 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> > On Tue, Aug 13, 2013 at 07:53:25PM +0200, Sedat Dilek wrote:
+>> >> Files attached.
+>> >
+>> > Can you also please attach a full dmesg so I can check for anything
+>> > unusual?
+>> >
+>
+> Nothing scarred me on a couple of read throughs.
+>
+> What happens if you try:
+>
+> diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
+> index 112c5e1..9828d9b 100644
+> --- a/drivers/gpu/drm/i915/i915_gem_stolen.c
+> +++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+> @@ -284,7 +284,7 @@ i915_gem_object_create_stolen(struct drm_device *dev, u32 size)
+>                 return NULL;
+>
+>         ret = drm_mm_insert_node(&dev_priv->mm.stolen, stolen, size,
+> -                                4096, DRM_MM_SEARCH_DEFAULT);
+> +                                1024*1024, DRM_MM_SEARCH_DEFAULT);
+>         if (ret) {
+>                 kfree(stolen);
+>                 return NULL;
+>
+> --
 
-On Aug 13, 2013, at 10:02 PM, Russell King - ARM Linux wrote:
+Now, 2/3 till 3/4 of my LightDM greeter screen is a black bar (seen
+from the top).
+On the bottom I can read "Ubuntu 12.04 LTS" with the known background.
+So-to-say 3/4 "blind".
 
-> On Tue, Aug 13, 2013 at 09:59:03PM +0300, Pantelis Antoniou wrote:
->> Hi Greg,
->> 
->> Just to make sure we're on the same page this is with my platform device
->> removal patchset applied.
->> 
->> Without it you get the original crash I've posted in the pdevtest patch with
->> the unbind method.
-> 
-> Yes, congratulations, you've found a bug in the way OMAP uses the runtime
-> PM stuff in this driver.  That bug needs to be fixed irrespective of
-> anything else.
-
-Not just OMAP. And not just PM stuff. 
-There are crashes occurring due to the way resources are handled by
-platform devices created via OF.
-
-Regards
-
--- Pantelis
-
+- Sedat -
