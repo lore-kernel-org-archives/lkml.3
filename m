@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab3HMEuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 00:50:08 -0400
-Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:29633
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751370Ab3HMEuF (ORCPT
+	id S1752550Ab3HMEwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 00:52:05 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:48283 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab3HMEwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 00:50:05 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h668h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h129fi1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <adi-buildroot-devel@lists.sourceforge.net>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH v3] pinctrl: pinmux: Don't free pins requested by other devices in pinmux_disable_setting.
-Date: Tue, 13 Aug 2013 12:54:26 +0800
-Message-ID: <1376369666-2564-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.8.2.3
+	Tue, 13 Aug 2013 00:52:04 -0400
+Message-ID: <5209BB6F.2000208@codeaurora.org>
+Date: Mon, 12 Aug 2013 21:51:59 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Kees Cook <keescook@chromium.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ARM ATTEND] catching up on exploit mitigations
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+In-Reply-To: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On 7/30/2013 12:05 PM, Kees Cook wrote:
+> I'd like to propose the topic of catching up to x86 exploit
+> mitigations and security features, and potentially identifying
+> ARM-unique mitigations/features that could be implemented. Several
+> years ago, with Nicolas Pitre doing all the real work, I coordinated
+> getting ARM caught up on things like userspace ASLR and
+> stack-protector. Recently, based on work by Will Drewry, I ported
+> seccomp-bpf to ARM. I'd like to continue this kind of thing, and I
+> think it's overdue to examine this area again. A lot of work has
+> already been done by grsecurity in this area (see
+> http://forums.grsecurity.net/viewtopic.php?f=7&t=3292), so it would be
+> good to start there.
+>
+> While it may expose my current ignorance of low level ARM mechanics,
+> I'd like to examine and discuss:
+>
+> - RO and W^X kernel page table protections (similar to x86's
+> DEBUG_RODATA and DEBUG_SET_MODULE_RONX; it's not clear to me how much
+> LPAE and PXN is already handling this, if at all)
+>
 
-One peripheral may share part of its pins with the 2nd
-peripheral and the other pins with the 3rd. If it requests all pins
-when part of them has already be requested and owned by the 2nd
-peripheral, this request fails and pinmux_disable_setting() is called.
-The pinmux_disable_setting() frees all pins of the first peripheral
-without checking if the pin is owned by itself or the 2nd, which
-results in the malfunction of the 2nd peripheral driver.
+We've had support for RO/NX on our tree for a while. I'm interested in 
+attending the summit to share what we've done and to see how much of it 
+could be mainlined.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/pinctrl/pinmux.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+> - something like x86's SMEP and SMAP (to deter kernel exploitation
+> from userspace)
+>
+> - vector table protections (needs to be protected like the x86_64
+> vsyscall table, RO, etc)
+>
+> - kernel ASLR (I'm close to having this upstreamable for x86)
+>
+> - fuzzing (is anyone running trinity or similar on the ARM tree?)
+>
+> - any other things ... ?
 
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 88cc509..ab41552 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -480,15 +480,17 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
- 			dev_warn(pctldev->dev,
- 				 "could not get pin desc for pin %d\n",
- 				 pins[i]);
-+			/* And release the pin */
-+			pin_free(pctldev, pins[i], NULL);
- 			continue;
- 		}
--		desc->mux_setting = NULL;
-+		if (desc->mux_setting == &(setting->data.mux)) {
-+			desc->mux_setting = NULL;
-+			/* And release the pin */
-+			pin_free(pctldev, pins[i], NULL);
-+		}
- 	}
- 
--	/* And release the pins */
--	for (i = 0; i < num_pins; i++)
--		pin_free(pctldev, pins[i], NULL);
--
- 	if (ops->disable)
- 		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
- }
+I'd add getting something similar to CONFIG_ARCH_RANDOM for ARM. It 
+wouldn't be a direct drop in to x86 but we have some usecases for a 
+framework to hook into the arch_get_random_{int,long}. This is mostly 
+useful for cases where we need random numbers before the kernel's 
+entropy source is completely initialized. The last point is a separate 
+discussion all together.
+
+>
+> Thanks,
+>
+> -Kees
+>
+
+Thanks,
+Laura
+
 -- 
-1.8.2.3
-
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
