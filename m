@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab3HMQBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:01:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8897 "EHLO
+	id S932207Ab3HMQBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:01:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25171 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758663Ab3HMP6i (ORCPT
+	with ESMTP id S1758739Ab3HMP6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Aug 2013 11:58:38 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=h4RyWjNRlbIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Y-i6R1FSy98A:10 a=ls8vHrqWAAAA:8 a=VwQbUJbxAAAA:8 a=gvl4HP8tAAAA:8 a=vmLDa1wCAAAA:8 a=XvLrpgH1AAAA:8 a=JSVNQiBkAAAA:8 a=z9odyffjMVvEqKmo1QkA:9 a=9uYNF-1IU98A:10 a=KZ3pOzVjQMkA:10 a=OTgC_HKJBnUA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=mtI8OIhqsmF2CNS3:21 a=8oGM5MMmI3lLkPR-:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=ceGk0XyAaRAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jf_v5ImpO34A:10 a=JfrnYn6hAAAA:8 a=drOt6m5kAAAA:8 a=hGzw-44bAAAA:8 a=h3sCQ_blAAAA:8 a=VwQbUJbxAAAA:8 a=WsHKUha7AAAA:8 a=fKdyK08RZqAfU4mYAzYA:9 a=3Rfx1nUSh_UA:10 a=dowx1zmaLagA:10 a=fNChW5oJl9MA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130813155830.050999814@goodmis.org>
+Message-Id: <20130813155829.435734675@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 13 Aug 2013 11:57:35 -0400
+Date: Tue, 13 Aug 2013 11:57:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Anderson Lizardo <anderson.lizardo@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [41/88] Bluetooth: Fix crash in l2cap_build_cmd() with small MTU
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [37/88] perf: Fix perf mmap bugs
 References: <20130813155654.069291373@goodmis.org>
-Content-Disposition: inline; filename=0041-Bluetooth-Fix-crash-in-l2cap_build_cmd-with-small-MT.patch
+Content-Disposition: inline; filename=0037-perf-Fix-perf-mmap-bugs.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,93 +33,177 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Anderson Lizardo <anderson.lizardo@openbossa.org>
+From: Peter Zijlstra <peterz@infradead.org>
 
-[ Upstream commit 300b962e5244a1ea010df7e88595faa0085b461d ]
+[ Upstream commit 26cb63ad11e04047a64309362674bcbbd6a6f246 ]
 
-If a too small MTU value is set with ioctl(HCISETACLMTU) or by a bogus
-controller, memory corruption happens due to a memcpy() call with
-negative length.
+Vince reported a problem found by his perf specific trinity
+fuzzer.
 
-Fix this crash on either incoming or outgoing connections with a MTU
-smaller than L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE:
+Al noticed 2 problems with perf's mmap():
 
-[   46.885433] BUG: unable to handle kernel paging request at f56ad000
-[   46.888037] IP: [<c03d94cd>] memcpy+0x1d/0x40
-[   46.888037] *pdpt = 0000000000ac3001 *pde = 00000000373f8067 *pte = 80000000356ad060
-[   46.888037] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
-[   46.888037] Modules linked in: hci_vhci bluetooth virtio_balloon i2c_piix4 uhci_hcd usbcore usb_common
-[   46.888037] CPU: 0 PID: 1044 Comm: kworker/u3:0 Not tainted 3.10.0-rc1+ #12
-[   46.888037] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[   46.888037] Workqueue: hci0 hci_rx_work [bluetooth]
-[   46.888037] task: f59b15b0 ti: f55c4000 task.ti: f55c4000
-[   46.888037] EIP: 0060:[<c03d94cd>] EFLAGS: 00010212 CPU: 0
-[   46.888037] EIP is at memcpy+0x1d/0x40
-[   46.888037] EAX: f56ac1c0 EBX: fffffff8 ECX: 3ffffc6e EDX: f55c5cf2
-[   46.888037] ESI: f55c6b32 EDI: f56ad000 EBP: f55c5c68 ESP: f55c5c5c
-[   46.888037]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[   46.888037] CR0: 8005003b CR2: f56ad000 CR3: 3557d000 CR4: 000006f0
-[   46.888037] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[   46.888037] DR6: ffff0ff0 DR7: 00000400
-[   46.888037] Stack:
-[   46.888037]  fffffff8 00000010 00000003 f55c5cac f8c6a54c ffffffff f8c69eb2 00000000
-[   46.888037]  f4783cdc f57f0070 f759c590 1001c580 00000003 0200000a 00000000 f5a88560
-[   46.888037]  f5ba2600 f5a88560 00000041 00000000 f55c5d90 f8c6f4c7 00000008 f55c5cf2
-[   46.888037] Call Trace:
-[   46.888037]  [<f8c6a54c>] l2cap_send_cmd+0x1cc/0x230 [bluetooth]
-[   46.888037]  [<f8c69eb2>] ? l2cap_global_chan_by_psm+0x152/0x1a0 [bluetooth]
-[   46.888037]  [<f8c6f4c7>] l2cap_connect+0x3f7/0x540 [bluetooth]
-[   46.888037]  [<c019b37b>] ? trace_hardirqs_off+0xb/0x10
-[   46.888037]  [<c01a0ff8>] ? mark_held_locks+0x68/0x110
-[   46.888037]  [<c064ad20>] ? mutex_lock_nested+0x280/0x360
-[   46.888037]  [<c064b9d9>] ? __mutex_unlock_slowpath+0xa9/0x150
-[   46.888037]  [<c01a118c>] ? trace_hardirqs_on_caller+0xec/0x1b0
-[   46.888037]  [<c064ad08>] ? mutex_lock_nested+0x268/0x360
-[   46.888037]  [<c01a125b>] ? trace_hardirqs_on+0xb/0x10
-[   46.888037]  [<f8c72f8d>] l2cap_recv_frame+0xb2d/0x1d30 [bluetooth]
-[   46.888037]  [<c01a0ff8>] ? mark_held_locks+0x68/0x110
-[   46.888037]  [<c064b9d9>] ? __mutex_unlock_slowpath+0xa9/0x150
-[   46.888037]  [<c01a118c>] ? trace_hardirqs_on_caller+0xec/0x1b0
-[   46.888037]  [<f8c754f1>] l2cap_recv_acldata+0x2a1/0x320 [bluetooth]
-[   46.888037]  [<f8c491d8>] hci_rx_work+0x518/0x810 [bluetooth]
-[   46.888037]  [<f8c48df2>] ? hci_rx_work+0x132/0x810 [bluetooth]
-[   46.888037]  [<c0158979>] process_one_work+0x1a9/0x600
-[   46.888037]  [<c01588fb>] ? process_one_work+0x12b/0x600
-[   46.888037]  [<c015922e>] ? worker_thread+0x19e/0x320
-[   46.888037]  [<c015922e>] ? worker_thread+0x19e/0x320
-[   46.888037]  [<c0159187>] worker_thread+0xf7/0x320
-[   46.888037]  [<c0159090>] ? rescuer_thread+0x290/0x290
-[   46.888037]  [<c01602f8>] kthread+0xa8/0xb0
-[   46.888037]  [<c0656777>] ret_from_kernel_thread+0x1b/0x28
-[   46.888037]  [<c0160250>] ? flush_kthread_worker+0x120/0x120
-[   46.888037] Code: c3 90 8d 74 26 00 e8 63 fc ff ff eb e8 90 55 89 e5 83 ec 0c 89 5d f4 89 75 f8 89 7d fc 3e 8d 74 26 00 89 cb 89 c7 c1 e9 02 89 d6 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 8b 5d f4 8b 75 f8 8b 7d fc 89
-[   46.888037] EIP: [<c03d94cd>] memcpy+0x1d/0x40 SS:ESP 0068:f55c5c5c
-[   46.888037] CR2: 00000000f56ad000
-[   46.888037] ---[ end trace 0217c1f4d78714a9 ]---
+ - it has issues against fork() since we use vma->vm_mm for accounting.
+ - it has an rb refcount leak on double mmap().
 
-Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
-Cc: stable@vger.kernel.org
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+We fix the issues against fork() by using VM_DONTCOPY; I don't
+think there's code out there that uses this; we didn't hear
+about weird accounting problems/crashes. If we do need this to
+work, the previously proposed VM_PINNED could make this work.
+
+Aside from the rb reference leak spotted by Al, Vince's example
+prog was indeed doing a double mmap() through the use of
+perf_event_set_output().
+
+This exposes another problem, since we now have 2 events with
+one buffer, the accounting gets screwy because we account per
+event. Fix this by making the buffer responsible for its own
+accounting.
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/20130528085548.GA12193@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/bluetooth/l2cap_core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ include/linux/perf_event.h |    3 +--
+ kernel/events/core.c       |   37 ++++++++++++++++++++-----------------
+ kernel/events/internal.h   |    3 +++
+ 3 files changed, 24 insertions(+), 19 deletions(-)
 
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index 38c00f1..bca5c33 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -2548,6 +2548,9 @@ static struct sk_buff *l2cap_build_cmd(struct l2cap_conn *conn, u8 code,
- 	BT_DBG("conn %p, code 0x%2.2x, ident 0x%2.2x, len %u",
- 	       conn, code, ident, dlen);
- 
-+	if (conn->mtu < L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE)
-+		return NULL;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index bdb4161..9332017 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -953,8 +953,7 @@ struct perf_event {
+ 	/* mmap bits */
+ 	struct mutex			mmap_mutex;
+ 	atomic_t			mmap_count;
+-	int				mmap_locked;
+-	struct user_struct		*mmap_user;
 +
- 	len = L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE + dlen;
- 	count = min_t(unsigned int, conn->mtu, len);
+ 	struct ring_buffer		*rb;
+ 	struct list_head		rb_entry;
  
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 44b3539..dd61172 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2854,7 +2854,7 @@ static void free_event_rcu(struct rcu_head *head)
+ 	kfree(event);
+ }
+ 
+-static void ring_buffer_put(struct ring_buffer *rb);
++static bool ring_buffer_put(struct ring_buffer *rb);
+ 
+ static void free_event(struct perf_event *event)
+ {
+@@ -3525,13 +3525,13 @@ static struct ring_buffer *ring_buffer_get(struct perf_event *event)
+ 	return rb;
+ }
+ 
+-static void ring_buffer_put(struct ring_buffer *rb)
++static bool ring_buffer_put(struct ring_buffer *rb)
+ {
+ 	struct perf_event *event, *n;
+ 	unsigned long flags;
+ 
+ 	if (!atomic_dec_and_test(&rb->refcount))
+-		return;
++		return false;
+ 
+ 	spin_lock_irqsave(&rb->event_lock, flags);
+ 	list_for_each_entry_safe(event, n, &rb->event_list, rb_entry) {
+@@ -3541,6 +3541,7 @@ static void ring_buffer_put(struct ring_buffer *rb)
+ 	spin_unlock_irqrestore(&rb->event_lock, flags);
+ 
+ 	call_rcu(&rb->rcu_head, rb_free_rcu);
++	return true;
+ }
+ 
+ static void perf_mmap_open(struct vm_area_struct *vma)
+@@ -3555,18 +3556,20 @@ static void perf_mmap_close(struct vm_area_struct *vma)
+ 	struct perf_event *event = vma->vm_file->private_data;
+ 
+ 	if (atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex)) {
+-		unsigned long size = perf_data_size(event->rb);
+-		struct user_struct *user = event->mmap_user;
+ 		struct ring_buffer *rb = event->rb;
++		struct user_struct *mmap_user = rb->mmap_user;
++		int mmap_locked = rb->mmap_locked;
++		unsigned long size = perf_data_size(rb);
+ 
+-		atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
+-		vma->vm_mm->pinned_vm -= event->mmap_locked;
+ 		rcu_assign_pointer(event->rb, NULL);
+ 		ring_buffer_detach(event, rb);
+ 		mutex_unlock(&event->mmap_mutex);
+ 
+-		ring_buffer_put(rb);
+-		free_uid(user);
++		if (ring_buffer_put(rb)) {
++			atomic_long_sub((size >> PAGE_SHIFT) + 1, &mmap_user->locked_vm);
++			vma->vm_mm->pinned_vm -= mmap_locked;
++			free_uid(mmap_user);
++		}
+ 	}
+ }
+ 
+@@ -3619,9 +3622,7 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+ 	WARN_ON_ONCE(event->ctx->parent_ctx);
+ 	mutex_lock(&event->mmap_mutex);
+ 	if (event->rb) {
+-		if (event->rb->nr_pages == nr_pages)
+-			atomic_inc(&event->rb->refcount);
+-		else
++		if (event->rb->nr_pages != nr_pages)
+ 			ret = -EINVAL;
+ 		goto unlock;
+ 	}
+@@ -3663,12 +3664,14 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+ 		ret = -ENOMEM;
+ 		goto unlock;
+ 	}
+-	rcu_assign_pointer(event->rb, rb);
++
++	rb->mmap_locked = extra;
++	rb->mmap_user = get_current_user();
+ 
+ 	atomic_long_add(user_extra, &user->locked_vm);
+-	event->mmap_locked = extra;
+-	event->mmap_user = get_current_user();
+-	vma->vm_mm->pinned_vm += event->mmap_locked;
++	vma->vm_mm->pinned_vm += extra;
++
++	rcu_assign_pointer(event->rb, rb);
+ 
+ 	perf_event_update_userpage(event);
+ 
+@@ -3677,7 +3680,7 @@ unlock:
+ 		atomic_inc(&event->mmap_count);
+ 	mutex_unlock(&event->mmap_mutex);
+ 
+-	vma->vm_flags |= VM_RESERVED;
++	vma->vm_flags |= VM_DONTCOPY | VM_RESERVED;
+ 	vma->vm_ops = &perf_mmap_vmops;
+ 
+ 	return ret;
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index a096c19..d83b3e9 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -30,6 +30,9 @@ struct ring_buffer {
+ 	spinlock_t			event_lock;
+ 	struct list_head		event_list;
+ 
++	int				mmap_locked;
++	struct user_struct		*mmap_user;
++
+ 	struct perf_event_mmap_page	*user_page;
+ 	void				*data_pages[0];
+ };
 -- 
 1.7.10.4
 
