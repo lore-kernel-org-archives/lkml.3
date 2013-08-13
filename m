@@ -1,38 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab3HMQAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:00:42 -0400
-Received: from mout.gmx.net ([212.227.15.19]:62943 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932068Ab3HMQAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 12:00:37 -0400
-Message-ID: <520A5822.4080804@gmx.de>
-Date: Tue, 13 Aug 2013 18:00:34 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130807 Thunderbird/17.0.8
+	id S932198Ab3HMQAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:00:51 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:63360 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932068Ab3HMQAs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 12:00:48 -0400
+Date: Tue, 13 Aug 2013 18:00:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Vince Weaver <vince@deater.net>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
+ executable
+Message-ID: <20130813160043.GB5280@gmail.com>
+References: <20130805081641.GA24808@gmail.com>
+ <20130805082320.GA9562@infradead.org>
+ <20130805083132.GE26746@gmail.com>
+ <20130805083434.GA20606@infradead.org>
+ <20130805090857.GA26940@gmail.com>
+ <20130806061932.GA20485@infradead.org>
+ <20130812181956.GB19405@gmail.com>
+ <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
+ <20130813104821.GB2170@gmail.com>
+ <20130813121141.GB2188@ghostprotocols.net>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: stable@vger.kernel.org
-Subject: s2ram + X11 broken between 3.10.5 and 3.10.6 (i915)
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:2hobglr3vLv8VpRcTNvopJv9bmJVpLF1enTC9D9/NWWuNp0DPt2
- mGms3nqkdGADbL6a7S5EKuIBV1ngjtxEpnH9lyksNz834xuUnWPnuUaWp3r5WCc7Co8TlVH
- UpX+S/+AOUwH+P/8pYeJZId5iUR3UOtOHO0x27xfEYAbf5IJPibIQihlH0X6/2fRsW9Djb7
- pE0RzONo+jKvzPHur9+2g==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813121141.GB2188@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At a ThinkPad T420 w/ a 32 bit stable Gentoo Linux and a started X11
-server an attempt to s2ram results in a blank scree, a gloomy blinking
-power button and no syslog message or something helpful . If the system
-is booting w/o X11 then s2ram works.
 
-s2ram in 3.10.5 works - and FWIW in 3.11-rc5 s2ram is fine.
+* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+> Em Tue, Aug 13, 2013 at 12:48:21PM +0200, Ingo Molnar escreveu:
+> > To resolve this situation you could help us out by doing either of these:
+>  
+> >  1) integrate your tests into tools/, there's 'perf test' that has a ton
+> >     of testcases already
+> 
+> I think Jiri is working on merging some of those tests, Jiri?
+> 
+> Yeah, these at least:
+> 
+> commit 06933e3a732bb305b0721f1051a45264588e0519
+> Author: Jiri Olsa <jolsa@redhat.com>
+> Date:   Sun Mar 10 19:41:11 2013 +0100
+> 
+>     perf tests: Test breakpoint overflow signal handler counts
+> 
+> commit 5a6bef47b418676546ab86d25631c3cfb9ffaf2a
+> Author: Jiri Olsa <jolsa@redhat.com>
+> Date:   Sun Mar 10 19:41:10 2013 +0100
+> 
+>     perf tests: Test breakpoint overflow signal handler
+>  
+> >  2) run your testsuite more frequently - instead of waiting for a stable
+> >     kernel to be released and then complain about breakage.
+> 
+> My feeling is that he increased the frequency of such tests.
+> 
+> > So far you refused to do any of this and blamed others for non-reported 
+> > breakages :-/
+> 
+> He has been using the perf trinity fuzzer and reporting problems, thanks
+> Vince!
+
+Absolutely, it's much appreciated, thanks Vince!
+
+I was reacting to this claim:
+
+> > I've had perf ABI changes break programs I maintain at least three 
+> > times in the last 2 kernel releases.
+
+that can only be addressed by either extending 'perf test' or by testing 
+libpfm et al sooner. The upstream kernel can only address regressions that 
+get reported.
+
+Thanks,
+
+	Ingo
