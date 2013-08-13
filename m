@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab3HMOcQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:32:16 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:60924 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756058Ab3HMOcP (ORCPT
+	id S1757691Ab3HMOeM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:34:12 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:47904 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755291Ab3HMOeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:32:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <520A414A.1000102@linutronix.de>
-References: <51F2BE6F.3010008@linutronix.de>
-	<CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
-	<51F2D427.7050106@linutronix.de>
-	<CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
-	<51F2DD90.2030405@linutronix.de>
-	<CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
-	<20130729165329.GA5773@linutronix.de>
-	<CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com>
-	<51F6ABA2.7060102@linutronix.de>
-	<CADYTM3bcCoWKE9eR5Sd9MbaEUr4G=k=r6JKR+8KC=W_YrbMs3g@mail.gmail.com>
-	<20130809160339.GA14829@linutronix.de>
-	<5205516D.1030707@cogentembedded.com>
-	<5209DCB9.8020705@linutronix.de>
-	<CADYTM3a2M-X=eqz0LmSq4T9UF9khsTGB5TTYWWMRZWwkpRuRTQ@mail.gmail.com>
-	<520A3206.5080505@linutronix.de>
-	<CADYTM3YU=xt-YDaoOqothjAv_rdnzRmop10Rf7PSA7POaE5DBQ@mail.gmail.com>
-	<520A3847.4090506@linutronix.de>
-	<CADYTM3YDmBw2Due5boftM_a+U2EcVaw8d9sFo8167Q0v1KSRgQ@mail.gmail.com>
-	<520A414A.1000102@linutronix.de>
-Date: Tue, 13 Aug 2013 09:32:13 -0500
-Message-ID: <CADYTM3Z9AwRz1z2k-Ve4xMoW5i2YRdxk2sJ3Aw-6tjR0oD1y7w@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: am335x: Do not remove the session bin
- HOST-only mode
-From: Bin Liu <binmlist@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 Aug 2013 10:34:10 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee690-b7f6f6d00000740c-66-520a43e09a34
+Content-transfer-encoding: 8BIT
+Message-id: <520A43D4.5090606@samsung.com>
+Date: Tue, 13 Aug 2013 23:33:56 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411
+ Thunderbird/11.0.1
+To: Sangjung Woo <sangjung.woo@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
+        Myugnjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] drivers/rtc/rtc-max77686.c: Fix wrong register
+References: <1376401032-31244-1-git-send-email-sangjung.woo@samsung.com>
+In-reply-to: <1376401032-31244-1-git-send-email-sangjung.woo@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsWyRsSkWPeBM1eQwalOHos569ewWXSefcJs
+	cXnXHDaL240r2CwW7ClxYPU4MeM3i0ffllWMHp83yQUwR3HZpKTmZJalFunbJXBlrNk3mbFg
+	N0fFgx8rWRoYv7N1MXJySAiYSMxqv88CYYtJXLi3HijOxSEksJRRYtmdw6wwRR8232GCSCxi
+	lDjXexCsg1dAUOLH5HtANgcHs4C8xJFL2SBhZgF1iUnzFjFD1L9mlNi97ww7RL2WxMWm3WBD
+	WQRUJQ7OXQY2h01ATuJt0zdGEFtUIEzi6oTjYHERAW2J+xM+s4AMYhZYwCgxYc4GsISwgLPE
+	3mmLwAYJCXhI9LdPZAaxOQU8JbZ8WwO2WUJgG7vEge+n2CC2CUh8m3wI7FIJAVmJTQeYIT6T
+	lDi44gbLBEaxWUj+mYXwzywk/yxgZF7FKJpakFxQnJReZKJXnJhbXJqXrpecn7uJERhNp/89
+	m7CD8d4B60OMyUAbJzJLiSbnA6MxryTe0NjMyMLUxNTYyNzSjDRhJXFe9RbrQCGB9MSS1OzU
+	1ILUovii0pzU4kOMTBycUg2MMp/4FqWx33o8od9x6bHUtX1Pzupq8TlHbboyw43NUzgwRSpM
+	bL70vatb2p9t4nqyreLI45Ovw/4fvsAuNe2U8NSdMxddmXN1Y/hknbW+NYWqRzu2FZyrN2uR
+	D4zonPgxKk2S/57Ywdd5yb8O/X8Xy9zB+dEsQPSvolRK7dGuPduDs9QqjhgGKrEUZyQaajEX
+	FScCAJtU07e8AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+xgO4DZ64gg4M7WCzmrF/DZtF59gmz
+	xeVdc9gsbjeuYLNYsKfEgdXjxIzfLB59W1YxenzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r
+	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtFJJoSwxpxQoFJBYXKykb4dpQmiIm64F
+	TGOErm9IEFyPkQEaSFjDmLFm32TGgt0cFQ9+rGRpYPzO1sXIySEhYCLxYfMdJghbTOLCvfVA
+	cS4OIYFFjBLneg+ygCR4BQQlfky+B2RzcDALyEscuZQNEmYWUJeYNG8RM0T9a0aJ3fvOsEPU
+	a0lcbNrNCmKzCKhKHJy7DGwOm4CcxNumb4wgtqhAmMTVCcfB4iIC2hL3J3xmARnELLCAUWLC
+	nA1gCWEBZ4m90xaBDRIS8JDob5/IDGJzCnhKbPm2hnkCo8AsJPfNQrhvFpL7FjAyr2IUTS1I
+	LihOSs810itOzC0uzUvXS87P3cQIjtVn0jsYVzVYHGIU4GBU4uG1sOMKEmJNLCuuzD3EKMHB
+	rCTC+9UGKMSbklhZlVqUH19UmpNafIgxGei7icxSosn5wDSSVxJvaGxiZmRpZG5oYWRsTpqw
+	kjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MVixBnxqlfyc5G9pMLfZZbWEU/VGr4uqNs01+
+	OWzBB7LLRP2E3Ir0p3GXTpxq8lJ/5XcxL/nex2//7ep1dbD88aDFzH+ifodbTMGOpTN+f+/1
+	2qnXMudKgsr6y1HC/TvqPlTbbdly5aGE7Ha5S2I/Y0JuXZvG17hH4h7r/82qYZ5Lw3uWXt6v
+	xFKckWioxVxUnAgAbD3THxkDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+On 2013년 08월 13일 22:37, Sangjung Woo wrote:
 
-On Tue, Aug 13, 2013 at 9:23 AM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> Where is my memory going? So now I have a beagle bone in front of me
-> and I see a micro USB port a standard A connector. My memory was
-> different.
-> The micro USB is the UART and standard is most likely the first musb
-> instance. So this should run also in host mode and not in OTG mode.
-> Hmmm. Let me double check this.
-I don't know how dts instances both in mainline, but I would think if
-you create two musb instances, and load a gadget driver for this micro
-USB port, the USB host should enumerate it. The standard port should
-be the 2nd instance which has its ID pin grounded and work in
-host-only mode.
+> Fix to read the wrong register when cheching whether the RTC timer has
+> reached or not.
+> 
+> Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
+> Signed-off-by: Myugnjoo Ham <myungjoo.ham@samsung.com>
+> Reviewed-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> ---
+>  drivers/rtc/rtc-max77686.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+> index 9915cb9..a1140c8 100644
+> --- a/drivers/rtc/rtc-max77686.c
+> +++ b/drivers/rtc/rtc-max77686.c
+> @@ -240,7 +240,7 @@ static int max77686_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+>  	}
+>  
+>  	alrm->pending = 0;
+> -	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS1, &val);
+> +	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS2, &val);
+>  	if (ret < 0) {
+>  		dev_err(info->dev, "%s:%d fail to read status1 reg(%d)\n",
 
-This is how they work in TI 3.2 kernel.
 
->
->
-> Sebastian
+Would you change the error message either?
+
+>  				__func__, __LINE__, ret);
+
+Thanks,
+Jonghwa.
+
