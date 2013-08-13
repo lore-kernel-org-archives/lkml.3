@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab3HMD4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 23:56:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59667 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756919Ab3HMD4g (ORCPT
+	id S1751203Ab3HMECK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 00:02:10 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47056 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab3HMECI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 23:56:36 -0400
-Date: Mon, 12 Aug 2013 20:58:02 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Thomas Backlund <tmb@mageia.org>, Jordi Pujol <jordipujolp@gmail.com>,
-        stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: ZRAM 3.10.6 Buffer I/O error
-Message-ID: <20130813035802.GA24637@kroah.com>
-References: <1998314.O9XRMyhM6u@pcjordi>
- <52090FD2.9030702@mageia.org>
- <20130813013900.GC3101@bbox>
+	Tue, 13 Aug 2013 00:02:08 -0400
+Date: Mon, 12 Aug 2013 21:02:06 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: [ 000/102] 3.10.6-stable review
+Message-ID: <20130813040206.GA6009@roeck-us.net>
+References: <20130809015010.208118575@linuxfoundation.org>
+ <20130809192030.GD4079@1wt.eu>
+ <20130809193329.GA5792@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130813013900.GC3101@bbox>
+In-Reply-To: <20130809193329.GA5792@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 10:39:00AM +0900, Minchan Kim wrote:
-> Hello,
-> 
-> On Mon, Aug 12, 2013 at 07:39:46PM +0300, Thomas Backlund wrote:
-> > 12.08.2013 17:27, Jordi Pujol skrev:
-> > >Hello,
-> > >
-> > >zram shows an error when mounting a swap partition,
-> > >current version Linux kernel 3.10.6,
-> > >previous versions worked, I suppose that latest zram patches have some
-> > >problem,
-> > >
-> > >machine is an AMD64 dual core, 4GB RAM
-> > >
-> > >+ modprobe -qb zram num_devices=2
-> > >+ echo 104857600 > /sys/block/zram0/disksize
-> > >
-> > ># mkswap /dev/zram0
-> > >Setting up swapspace version 1, size = 102396 KiB
-> > >no label, UUID=6c249930-2ba0-46cf-a8c6-766481942b7d
-> > >
-> > ># pager /var/log/dmesg
-> > >(no more errors shown)
-> > >
-> > ># swapon /dev/zram0
-> > >
-> > ># pager /var/log/dmesg
-> > >...
-> > >[  309.300479] Buffer I/O error on device zram0, logical block 25599
-> > >[  309.300491] Buffer I/O error on device zram0, logical block 25599
-> > >[  309.300514] Buffer I/O error on device zram0, logical block 25599
-> > >[  345.205887] Adding 102396k swap on /dev/zram0.  Priority:-2 extents:1
-> > >across:102396k SSFS
-> > >
-> > >full log files and the kernel source are stored in the address:
-> > >
-> > >http://livenet.selfip.com/ftp/debian/zram_3.10.6_IO_error/
-> > >
+On Fri, Aug 09, 2013 at 12:33:29PM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Aug 09, 2013 at 09:20:30PM +0200, Willy Tarreau wrote:
+> > Hi Greg,
 > > 
+> > On Thu, Aug 08, 2013 at 06:56:36PM -0700, Greg Kroah-Hartman wrote:
+> > > This is the start of the stable review cycle for the 3.10.6 release.
+> > > There are 102 patches in this series, all will be posted as a response
+> > > to this one.  If anyone has any issues with these being applied, please
+> > > let me know.
 > > 
-> > I think this one should fix it and belongs in 3.10 stable too:
+> > Just checked on my OpenBlocks AX3 (dual-core ARMv7 in thumbs mode),
+> > everything seems OK, I did not even notice any performance regression
+> > compared to 3.10.5 on syscall intensive workloads with the recent
+> > changes. I'm sure that I'm using the kuser helpers page since the
+> > system doesn't boot without. Also I did observe minor changes in
+> > /proc/self/maps, but I don't think they should have any impact, so
+> > all in all it's OK :
 > 
-> Very true. Let's Cc Greg, explicitely.
+> Wonderful, thanks so much for testing the arm stuff, I wasn't sure I got
+> it all correct in the backport.
+> 
+> One of these days I'll get a system here that I can test arm changes
+> on...
+> 
+Have a look at http://server.roeck-us.net:8010/waterfall.
 
--ENOCONTEXT
+If everything works as intended, we should get automated builds
+for various platforms, plus automated qemu tests for some of them.
 
+I have qemu boot tests running for mips (3.4 and 3.10), ppc (3.0, 3.4, 3.10),
+and x86 (3.0, 3.4, 3.10) working. x86_64 and mips64 should follow soon.
 
+Unfortunately, arm tests don't work yet because of a bug in the arm
+kernel code.
+
+Builds are started about 30 minutes after a change in the stable-queue
+repository has been detected, and complete after 3-4 hours unless
+the servers are busy doing real work. Which explains why I can annoy
+you with results pretty quickly lately :).
+
+Guenter
