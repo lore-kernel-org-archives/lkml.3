@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab3HMXWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 19:22:17 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:63162 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab3HMXWQ (ORCPT
+	id S1758429Ab3HMXXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 19:23:38 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:40129 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab3HMXXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 19:22:16 -0400
-Date: Tue, 13 Aug 2013 19:22:11 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] idr: Document ida tree sections
-Message-ID: <20130813232211.GI28996@mtj.dyndns.org>
-References: <1375896905-6074-1-git-send-email-kmo@daterainc.com>
- <1375896905-6074-4-git-send-email-kmo@daterainc.com>
- <20130807202201.GA28039@mtj.dyndns.org>
- <20130807205117.GC11612@kmo-pixel>
- <20130809145756.GL20515@mtj.dyndns.org>
- <20130813221308.GA11980@kmo-pixel>
- <20130813221928.GE28996@mtj.dyndns.org>
- <20130813222759.GA12069@kmo-pixel>
- <20130813224428.GG28996@mtj.dyndns.org>
- <20130813225927.GA2000@kmo-pixel>
+	Tue, 13 Aug 2013 19:23:36 -0400
+X-Originating-IP: 173.246.103.110
+Date: Tue, 13 Aug 2013 16:23:17 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        intel-gfx@lists.freedesktop.org
+Cc: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH] i915: Add a Kconfig option to turn on
+ i915.preliminary_hw_support by default
+Message-ID: <20130813232130.GA20895@jtriplet-mobl1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130813225927.GA2000@kmo-pixel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+When building kernels for a preliminary hardware target, having to add a
+kernel command-line option can prove inconvenient.  Add a Kconfig option
+that changes the default of this option to 1.
 
-On Tue, Aug 13, 2013 at 03:59:27PM -0700, Kent Overstreet wrote:
-> > Well, it's not necessarily about requiring it but more about surviving
-> > it with some grace when things don't go as expected, which is an
-> > important characteristic for common library stuff.
-> 
-> The patch I posted should solve the high order allocations stuff, and
-> sparseness from cyclic allocations was already solved.
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
 
-I don't know.  Yeah, using vmalloc would be able to work around the
-issue for most cases, I suppose.  It's iffy to consume vmalloc space
-from ida, which functionally is such a basic algorithmic construct.
-It probably won't worsen things noticeably but vmalloc area can be a
-very precious resource on 32bit configs.
+I dropped the indication of the default in the module parameter
+documentation, but I could also change it to show the default for the
+current kernel via ifdef.
 
-> Whatever caching optimizations you do with a radix tree version I could
-> apply to this bitmap tree version, and my bitmap tree code is simpler
-> and _considerably_ faster than the existing code.
+ drivers/gpu/drm/Kconfig         | 9 +++++++++
+ drivers/gpu/drm/i915/i915_drv.c | 4 ++--
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
-But the difference won't really matter.  Cached performance would be
-the same and that's likely to cover most cases, right?  It's not like
-radix tree is orders of magnitude slower.
-
-Thanks.
-
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index a7c54c8..35d57ed 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -168,6 +168,15 @@ config DRM_I915_KMS
+ 	  the driver to bind to PCI devices, which precludes loading things
+ 	  like intelfb.
+ 
++config DRM_I915_PRELIMINARY_HW_SUPPORT
++	bool "Enable preliminary support for prerelease Intel hardware by default"
++	depends on DRM_I915
++	help
++	  Choose this option if you have prerelease Intel hardware and want the
++	  i915 driver to support it by default.  You can enable such support at
++	  runtime with the module option i915.preliminary_hw_support=1; this
++	  option changes the default for that module option.
++
+ config DRM_MGA
+ 	tristate "Matrox g200/g400"
+ 	depends on DRM && PCI
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index 45b3c03..594e06c 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -118,10 +118,10 @@ module_param_named(i915_enable_ppgtt, i915_enable_ppgtt, int, 0600);
+ MODULE_PARM_DESC(i915_enable_ppgtt,
+ 		"Enable PPGTT (default: true)");
+ 
+-unsigned int i915_preliminary_hw_support __read_mostly = 0;
++unsigned int i915_preliminary_hw_support __read_mostly = IS_ENABLED(CONFIG_DRM_I915_PRELIMINARY_HW_SUPPORT);
+ module_param_named(preliminary_hw_support, i915_preliminary_hw_support, int, 0600);
+ MODULE_PARM_DESC(preliminary_hw_support,
+-		"Enable preliminary hardware support. (default: false)");
++		"Enable preliminary hardware support.");
+ 
+ int i915_disable_power_well __read_mostly = 1;
+ module_param_named(disable_power_well, i915_disable_power_well, int, 0600);
 -- 
-tejun
+1.8.4.rc2
+
