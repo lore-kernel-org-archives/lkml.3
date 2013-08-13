@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700Ab3HMGi3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:38:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60799 "EHLO
+	id S1757712Ab3HMGiv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:38:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60792 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757522Ab3HMGeu (ORCPT
+	with ESMTP id S1757467Ab3HMGet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:34:50 -0400
+	Tue, 13 Aug 2013 02:34:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, GOTO Masanori <gotom@debian.or.jp>,
-        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 15/17] SCSI: nsp32: use mdelay instead of large udelay constants
-Date: Mon, 12 Aug 2013 23:36:01 -0700
-Message-Id: <20130813063502.946145118@linuxfoundation.org>
+        Andrew Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 14/17] tracing: Fix fields of struct trace_iterator that are zeroed by mistake
+Date: Mon, 12 Aug 2013 23:36:00 -0700
+Message-Id: <20130813063502.863895070@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063501.728847844@linuxfoundation.org>
 References: <20130813063501.728847844@linuxfoundation.org>
@@ -29,34 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Andrew Vagin <avagin@openvz.org>
 
-commit b497ceb964a80ebada3b9b3cea4261409039e25a upstream.
+commit ed5467da0e369e65b247b99eb6403cb79172bcda upstream.
 
-ARM cannot handle udelay for more than 2 miliseconds, so we
-should use mdelay instead for those.
+tracing_read_pipe zeros all fields bellow "seq". The declaration contains
+a comment about that, but it doesn't help.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: GOTO Masanori <gotom@debian.or.jp>
-Cc: YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Guenter Roeck <linux@roeck-us.net>
+The first field is "snapshot", it's true when current open file is
+snapshot. Looks obvious, that it should not be zeroed.
+
+The second field is "started". It was converted from cpumask_t to
+cpumask_var_t (v2.6.28-4983-g4462344), in other words it was
+converted from cpumask to pointer on cpumask.
+
+Currently the reference on "started" memory is lost after the first read
+from tracing_read_pipe and a proper object will never be freed.
+
+The "started" is never dereferenced for trace_pipe, because trace_pipe
+can't have the TRACE_FILE_ANNOTATE options.
+
+Link: http://lkml.kernel.org/r/1375463803-3085183-1-git-send-email-avagin@openvz.org
+
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/nsp32.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/ftrace_event.h |    4 +++-
+ kernel/trace/trace.c         |    1 +
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/nsp32.c
-+++ b/drivers/scsi/nsp32.c
-@@ -2926,7 +2926,7 @@ static void nsp32_do_bus_reset(nsp32_hw_
- 	 * reset SCSI bus
- 	 */
- 	nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
--	udelay(RESET_HOLD_TIME);
-+	mdelay(RESET_HOLD_TIME / 1000);
- 	nsp32_write1(base, SCSI_BUS_CONTROL, 0);
- 	for(i = 0; i < 5; i++) {
- 		intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -71,6 +71,8 @@ struct trace_iterator {
+ 	/* trace_seq for __print_flags() and __print_symbolic() etc. */
+ 	struct trace_seq	tmp_seq;
+ 
++	cpumask_var_t		started;
++
+ 	/* The below is zeroed out in pipe_read */
+ 	struct trace_seq	seq;
+ 	struct trace_entry	*ent;
+@@ -83,7 +85,7 @@ struct trace_iterator {
+ 	loff_t			pos;
+ 	long			idx;
+ 
+-	cpumask_var_t		started;
++	/* All new field here will be zeroed out in pipe_read */
+ };
+ 
+ 
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3478,6 +3478,7 @@ waitagain:
+ 	memset(&iter->seq, 0,
+ 	       sizeof(struct trace_iterator) -
+ 	       offsetof(struct trace_iterator, seq));
++	cpumask_clear(iter->started);
+ 	iter->pos = -1;
+ 
+ 	trace_event_read_lock();
 
 
