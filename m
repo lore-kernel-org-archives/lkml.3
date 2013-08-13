@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab3HMBDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 21:03:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32100 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249Ab3HMBDm (ORCPT
+	id S1756589Ab3HMBEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 21:04:00 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:41801 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485Ab3HMBD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 21:03:42 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F0my4ousGMIA:10 a=t7CeM3EgAAAA:8 a=PCqPzcZwi1q9O-lKYIUA:9 a=CjuIK1q_8ugA:10 a=2e6ZYRoF4I4A:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Mon, 12 Aug 2013 21:03:41 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.10.6-rt3
-Message-ID: <20130812210341.4fa2165b@gandalf.local.home>
-In-Reply-To: <CAP=VYLrd_ZU94Nf0X+FtT3M2Xx85t9FF13o-hV+_xHi7EjTf=w@mail.gmail.com>
-References: <20130812163413.GI23040@linutronix.de>
-	<20130812154810.433858a5@gandalf.local.home>
-	<CAP=VYLrd_ZU94Nf0X+FtT3M2Xx85t9FF13o-hV+_xHi7EjTf=w@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Mon, 12 Aug 2013 21:03:58 -0400
+Message-ID: <1376355764.10300.383.camel@misato.fc.hp.com>
+Subject: Re: Cannot hot remove a memory device
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
+Date: Mon, 12 Aug 2013 19:02:44 -0600
+In-Reply-To: <2995970.hSi3JdcGZF@vostro.rjw.lan>
+References: <51FA1E41.20304@jp.fujitsu.com>
+	 <1637752.e6s4mPrvSE@vostro.rjw.lan>
+	 <1376340043.10300.360.camel@misato.fc.hp.com>
+	 <2995970.hSi3JdcGZF@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Aug 2013 20:47:18 -0400
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-
-> On Mon, Aug 12, 2013 at 3:48 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Mon, 12 Aug 2013 18:34:13 +0200
-> > Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
-> >
-> >> Dear RT folks!
-> >>
-> >> I'm pleased to announce the v3.10.6-rt3 patch set.
-> >
-> >
-> > Does this mean that I can drop 3.6-rt in favor of 3.8-rt?
+On Tue, 2013-08-13 at 02:45 +0200, Rafael J. Wysocki wrote:
+> On Monday, August 12, 2013 02:40:43 PM Toshi Kani wrote:
+> > On Sun, 2013-08-11 at 23:13 +0200, Rafael J. Wysocki wrote:
+> > > On Thursday, August 08, 2013 04:50:42 PM Toshi Kani wrote:
+> > > > On Fri, 2013-08-09 at 00:12 +0200, Rafael J. Wysocki wrote:
+> > > > > On Thursday, August 08, 2013 11:15:20 AM Toshi Kani wrote:
+> > > > > > On Fri, 2013-08-02 at 18:04 -0600, Toshi Kani wrote:
+> > > > > > > On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
+> > > > > > > > On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
+> > > > > > > > > On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
+> > > > > >  :
+> > > > > > > > > I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
+> > > > > > > > > handle is already set\n").  When two ACPI memory objects associate with
+> > > > > > > > > a same memory block, the bind procedure of the 2nd ACPI memory object
+> > > > > > > > > sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
+> > > > > > > > 
+> > > > > > > > That sound's plausible, but I wonder how we can fix that?
+> > > > > > > > 
+> > > > > > > > There's no way for a single physical device to have two different ACPI
+> > > > > > > > "companions".  It looks like the memory blocks should be 64 M each in that
+> > > > > > > > case.  Or we need to create two child devices for each memory block and
+> > > > > > > > associate each of them with an ACPI object.  That would lead to complications
+> > > > > > > > in the user space interface, though.
+> > > > > > > 
+> > > > > > > Right.  Even bigger issue is that I do not think __add_pages() and
+> > > > > > > __remove_pages() can add / delete a memory chunk that is less than
+> > > > > > > 128MB.  128MB is the granularity of them.  So, we may just have to fail
+> > > > > > > this case gracefully.
+> > > > > > 
+> > > > > > FYI: I have submitted the patch blow to close this part of the issue...
+> > > > > > 
+> > > > > > https://lkml.org/lkml/2013/8/8/396
+> > > > > 
+> > > > > That looks good to me, but we'd still need to make it possible to have
+> > > > > memory blocks smaller than 128 MB ...
+> > > > 
+> > > > Do you mean acpi_bind_one() needs to be able to handle such case?  If
+> > > > so, it should not be a problem since a memory block device won't be
+> > > > created when add_memory() fails with the change above.  So, there is no
+> > > > binding to be done.  If you mean add_memory() needs to be able to handle
+> > > > a smaller range, that's quite a tough one unless we make the section
+> > > > size smaller.
+> > > > 
+> > > > BTW, when add_memory() fails, the memory hot-add request still succeeds
+> > > > with no driver attached.  This seems logical, but the added device is
+> > > > useless when no handler is attached.  And it does not allow ejecting the
+> > > > device with no handler.  I am not too worry about this since this is a
+> > > > rare case, but it reminded me that the framework won't handle rollback.
+> > > 
+> > > I'm not sure which rollback you mean.  During removal?
+> > 
+> > I meant rollback during hot-add.  Ideally, a device should be either
+> > added in usable state (success) or failed back to the original state
+> > (rollback).  Added in un-usable state is not really a success for users,
+> > and creates an odd state to deal with.  But it is still a LOT better
+> > than crashing the system.  So, I think this outcome is reasonable on
+> > this framework because adding rollback at this point will complicate the
+> > things unnecessarily.
+> > 
+> > > There are two slight problems here in my view.  First, even if the device
+> > > cannot be ejected directly, it still will be removed when its parent is
+> > > ejected, so it may be more consistent to just allow everything to be ejected
+> > > regardless of whether or not it has a scan handler.  
+> > 
+> > Agreed.
+> > 
+> > > Second, I guess the
+> > > removal is undesirable for memory devices for which the registration of the
+> > > scan handler failed, so it would be good to fail the "offline" of such devices
+> > > regardless of how we get there.  That's why I thought it would be good to have
+> > > an "offline disabled" flag in struct acpi_device.
+> > 
+> > I see.  But when attach() failed, the memory device may not be used by
+> > the kernel.  So, I think it should be safe to remove it.
 > 
-> I'd guess that the trade-off would be 3.0-rt against 3.8-rt.
-> The above comment assumes 3.0 is aged out vs. 3.6 kernel.
+> The failure of .attach() need not mean that the memory is not used by the
+> kernel, though, and the ACPI device object is still there and still may
+> be involved in some removal scenarios (through its parent).
 
-Not at all. I've always said that I would support -rt as long as the
-base was supported by the official stable. 3.6 is not supported, and I
-only supported it because it was the "latest" stable -rt. When 3.8-rt
-comes out, it would also be the latest. But it too is not supported by
-the official stable release. I'll only be doing that one until 3.10
-becomes stable again. Luckily, 3.8 is being supported by Kamal, and
-I'll probably just base my work off of his.
+As long as .attach() is failed cleanly, which I think is the case for
+the memory handler (if not, we need to fix it), the rest of the kernel
+code may not know what this device is.  That is, the ACPI memory handler
+is the only one that knows PNP0C80 is a memory device.  So, I do not
+think the memory can be used in such case...
 
-3.0-rt wont last long, as IIRC, Greg will be letting that go off to
-ashes in a few months.
+Thanks,
+-Toshi
 
-> 
-> >
-> > I'm just about finished with a 3.6 stable, which I'll finish, add -rt
-> > to it, and then call it "unsupported" after that. Well, I may take bug
-> > fixes if people find any in the near future.
-> >
-> > I'm behind on 3.4-rt, 3.2-rt and of course 3.0-rt. Hopefully, I'll get
-> > them all out this week.
-> 
-> I expect that the 3.10-rt kernel will replace the older RT kernels.
 
-No, it will just enter the realm of the official stable releases.
-
--- Steve
