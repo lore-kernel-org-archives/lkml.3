@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324Ab3HMOBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:01:30 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:39523 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab3HMOB3 convert rfc822-to-8bit (ORCPT
+	id S1757415Ab3HMOBr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:01:47 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:33857 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756967Ab3HMOBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:01:29 -0400
+	Tue, 13 Aug 2013 10:01:43 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19yT/YbToJXaJp6Z3sEIgYZ9/hPY7W0FrE=
+Date: Tue, 13 Aug 2013 10:01:30 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Thierry Reding <thierry.reding@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/5] ARM: dove: DT PCIe support
+Message-ID: <20130813140130.GA25111@titan.lakedaemon.net>
+References: <1376396724-32048-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <520A3847.4090506@linutronix.de>
-References: <51F2BE6F.3010008@linutronix.de>
-	<CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
-	<51F2D427.7050106@linutronix.de>
-	<CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
-	<51F2DD90.2030405@linutronix.de>
-	<CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
-	<20130729165329.GA5773@linutronix.de>
-	<CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com>
-	<51F6ABA2.7060102@linutronix.de>
-	<CADYTM3bcCoWKE9eR5Sd9MbaEUr4G=k=r6JKR+8KC=W_YrbMs3g@mail.gmail.com>
-	<20130809160339.GA14829@linutronix.de>
-	<5205516D.1030707@cogentembedded.com>
-	<5209DCB9.8020705@linutronix.de>
-	<CADYTM3a2M-X=eqz0LmSq4T9UF9khsTGB5TTYWWMRZWwkpRuRTQ@mail.gmail.com>
-	<520A3206.5080505@linutronix.de>
-	<CADYTM3YU=xt-YDaoOqothjAv_rdnzRmop10Rf7PSA7POaE5DBQ@mail.gmail.com>
-	<520A3847.4090506@linutronix.de>
-Date: Tue, 13 Aug 2013 09:01:27 -0500
-Message-ID: <CADYTM3YDmBw2Due5boftM_a+U2EcVaw8d9sFo8167Q0v1KSRgQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: am335x: Do not remove the session bin
- HOST-only mode
-From: Bin Liu <binmlist@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376396724-32048-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+Bjorn,
 
-On Tue, Aug 13, 2013 at 8:44 AM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> This was a misunderstanding then. Sorry. I understood that the bin has
-> to be unset and then the controller set it once a device there.
-You meant ID pin? I think it should be set all the time since the
-driver initialized for host-only mode, if it is unset, the controller
-has not way to know if a device is plugged or not.
+On Tue, Aug 13, 2013 at 02:25:19PM +0200, Sebastian Hesselbarth wrote:
+> This patch set adds support for the PCIe controllers found on Marvell
+> Dove SoCs. It depends on mvebu-pci patches sent by Thomas Petazzoni.
 
->
->> I am not sure if anywhere mentioned about the ID pin, but ASAIK all
->> the different boards using am335x have ID pin grounded for host port.
-> evm is the only I am aware of. The evm-sk and beagle bone have just one
-> port. Beagle bone black is not mainline.
-You meant the dts only supports one port for evm-sk and bone? The
-boards physically have two ports, usb0 is device only, usb1 is host
-only.
+Well, when it rains, it pours.  If this series looks good to you, I'll
+go ahead and add it on top of Thomas' patches.
 
-> This is the case already. From musb_start()
-> …
->         if (musb->port_mode != MUSB_PORT_MODE_HOST &&
->              (devctl & MUSB_DEVCTL_VBUS) == MUSB_DEVCTL_VBUS) {
->                  musb->is_active = 1;
->          } else {
->                  devctl |= MUSB_DEVCTL_SESSION;
->          }
-> …
-great! then the host port on gp evm should work now, right?
+> The ARM Dove related patches have already been taken by Jason Cooper
+> and have been removed from v2 of this patch set. Changelog is added
+> to the individual patch emails.
+> 
+> Patches 1 and 2 fix some minor issues with pci-mvebu by moving
+> clk_prepare_enable before accessing any controller registers and
+> counting sucessfully registered ports only.
+> 
+> Patch 3 converts pci-mvebu from subsys_initcall registration to
+> normal platform driver registration to allow it to fail with
+> EPROBE_DEFER later.
+> 
+> Patch 4 adds DT parsing for reset (PERST#) GPIO pins and delay to
+> wait for PCIe devices after reset de-assertion.
+> 
+> Patch 5 finally adds a compatible to pci-mvebu for Dove SoCs.
+> 
+> [Patch 6-9 have already been taken by Jason Cooper]
 
->
->>>> -Bin.
->
-> Sebastian
+These were the dts files.
+
+> Sebastian Hesselbarth (5):
+>   PCI: mvebu: move clock enable before register access
+>   PCI: mvebu: increment nports only for registered ports
+>   PCI: mvebu: remove subsys_initcall
+>   PCI: mvebu: add support for reset on GPIO
+>   PCI: mvebu: add support for Marvell Dove SoCs
+> 
+>  .../devicetree/bindings/pci/mvebu-pci.txt          |    7 ++
+>  drivers/pci/host/Kconfig                           |    2 +-
+>  drivers/pci/host/pci-mvebu.c                       |   99 +++++++++++++-------
+>  3 files changed, 71 insertions(+), 37 deletions(-)
+
+Should be pretty isolated.
+
+thx,
+
+Jason.
