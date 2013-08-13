@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757061Ab3HMKLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 06:11:40 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56392 "EHLO
+	id S1756813Ab3HMKRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 06:17:23 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50100 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab3HMKLi (ORCPT
+	with ESMTP id S1752756Ab3HMKRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 06:11:38 -0400
-Date: Tue, 13 Aug 2013 11:11:23 +0100
+	Tue, 13 Aug 2013 06:17:21 -0400
+Date: Tue, 13 Aug 2013 11:16:48 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Eric Miao <eric.y.miao@gmail.com>, robert.jarzmik@free.fr,
-        kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130813101123.GP6427@sirena.org.uk>
-References: <1376340564-7975-1-git-send-email-Julia.Lawall@lip6.fr>
- <20130812214050.GI6427@sirena.org.uk>
- <alpine.DEB.2.02.1308130652080.1997@localhost6.localdomain6>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: sameo@linux.intel.com, swarren@wwwdotorg.org, rob.herring@calxeda.com,
+        pawel.moll@arm.com, mark.rutland@arm.com, rob@landley.net,
+        lee.jones@linaro.org, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gg@slimlogic.co.uk, kishon@ti.com,
+        j-keerthy@ti.com, ian.campbell@citrix.com
+Message-ID: <20130813101648.GQ6427@sirena.org.uk>
+References: <1376380392-19723-1-git-send-email-ldewangan@nvidia.com>
+ <1376380392-19723-2-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oA7V6t2EmJH400al"
+	protocol="application/pgp-signature"; boundary="LOQ7DyX4IjkXnFQm"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308130652080.1997@localhost6.localdomain6>
+In-Reply-To: <1376380392-19723-2-git-send-email-ldewangan@nvidia.com>
 X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/16 v2] sound/soc/pxa/mioa701_wm9713.c: Avoid using
- ARRAY_AND_SIZE(e) as a function argument
+Subject: Re: [PATCH V2 1/3] regulator: palmas: Update the DT binding doc for
+ smps10 out1 and out2
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -38,45 +37,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---oA7V6t2EmJH400al
+--LOQ7DyX4IjkXnFQm
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Aug 13, 2013 at 06:52:56AM +0200, Julia Lawall wrote:
-> On Mon, 12 Aug 2013, Mark Brown wrote:
+On Tue, Aug 13, 2013 at 01:23:10PM +0530, Laxman Dewangan wrote:
+> Palmas regulator SMPS10 is splitted into two regulators SMPS10-OUT1 and
+> SMPS10-OUT2 to match with hw behavior. With this regulator's name got
+> changed in driver.
 
-> > What is the difference between this and the patch I applied the other
-> > day?
+Applied, thanks.
 
-> Sorry, it should have also removed the local definition of ARRAY_AND_SIZE=
-? =20
-> I thought that was in the commit message.
-
-It was, sorry - to be hoenst I didn't read beyond the first paragraph
-since I'd already applied the patch.  If a patch has been applied you
-should really send incremental updates rather than resending the patch.
-
---oA7V6t2EmJH400al
+--LOQ7DyX4IjkXnFQm
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSCgZHAAoJELSic+t+oim9cTQP/jCxprT9aMttrviAYQSAkiPc
-s3zDcmhYAormPLohaRpjD8PX19cpnEGX+760Ot+ymU6cSIpMCy/deXhpiZ679LE2
-ikNUd0nd6ek8fBxqtLQTbQ7LSLUf5Sn+sIBT4Nerz5ha0W9qWfqWdSx2K73mck7p
-0jWCff+RMXPjC43ISJ58JZpRZWlPU6ZygxaK7+JF2ewqCar2deYcvc5/A+RGu2eh
-oi0ED3Y6EgE9woS693KyFVkR6DhrVgPs1n5g9NelFCE7AXeX0MbFoXzmIObybcUI
-p/IsUw1AdqySElgz4anWP/FpIOfxcOvg7qZY2WdYLABx7I6nY2WMtQrjwWMIAqLL
-b2D4IBASUU67+4a/jMSZ3/I37/ozMLAFOwKFqdYD6J1ZBPC8MDylKI3LmZ3I0W+A
-nF0M2F7QlP8UbzUf08gi4xNRRilole6AVTlpH+33+INSO+5Yvx8I+YRbq2MA0U9r
-SKnlTGAzmPYb4L9zvOkZfXsIHpYhf/etiaNFpqOjyQsan8477LYORel1augjRek5
-yx1csEwWALR4h5zVtkyEBOAuwaysKSTXT3n1TpwB1nLgNx34KRE6rvtfeiKy45uY
-1Kk4tgwPJW2tJOaC6/VUZuyiyo2Fw4DzeyJwYx5tTei2JCVRlv2T/v26zRXBTlT8
-VrSCy6p0IFxIKsrTYwsW
-=DhoH
+iQIcBAEBAgAGBQJSCgeMAAoJELSic+t+oim9DVYP/ie8UpA3ekp1bY4psslPQhtX
+vXCVv2kh5FxTb8kJPQYQ3ThVFoZPyQXb/jVOW/67d1wpN9BNII4v8N3ZU2TJnWrR
+yIF4sio2HOGRPK4OicRr4Fb9lSU4JDHEWvscGMmbz1sSbltVyqZsd1AJgOW877gY
+pLY7tQTX5KinJt/iHz2gSc/p9vQak7xtISmLEtMZedYio4pKElCWoLR6qLBy+IIY
+NGHw9pby9Va4D0VlOlCodZ0jgR9aZXZ6VkxhOJ/I3kUzhjv5iZKseVb7vXynEN59
+6f62bfqxKnOWIc8wKZRf0lRij8bES6lrDbPAsTaRVsZCRMRkwxl58d//T7+tYZGh
+/Sw6KaVREW+THuR+wYcghydTtcQUreYPTzHcQ2+Pls3nUiby1+K9k3Nkzo/kqYv+
+nQstHqS//9NueSM4luCHVY0JkWQakwg/khVo9ZM9YfaxJhgBY1+PzWpriKWAgJRY
+leLXWcEazstWB6xxyheb3UUZz3oMDJ/PHouElYTkjiYCCfy3ZV762KavauY5d+4Q
+faX9SToE1OaOwhJ3R9XsBmB5KcKICuXieMjPG0bngqWjGTLK1RLvgXCiXFGlGQIU
+swlf3GnwrpP1atThJd84wCZkCDegDkY4HXEPOsru+QNqNJkqFyF/j3D8XC8+XoDM
+HwvJyKZP61mISOdMd8jN
+=4mf0
 -----END PGP SIGNATURE-----
 
---oA7V6t2EmJH400al--
+--LOQ7DyX4IjkXnFQm--
