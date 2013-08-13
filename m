@@ -1,156 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab3HMCXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 22:23:21 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:60808 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756687Ab3HMCXU (ORCPT
+	id S1756905Ab3HMC2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 22:28:48 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59711 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756774Ab3HMC2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 22:23:20 -0400
+	Mon, 12 Aug 2013 22:28:47 -0400
+X-AuditID: 9c930197-b7b44ae00000347f-61-520999dd326c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/3] perf: add a dummy software event to keep tracking
+References: <1375882231-18339-1-git-send-email-adrian.hunter@intel.com>
+Date: Tue, 13 Aug 2013 11:28:45 +0900
+In-Reply-To: <1375882231-18339-1-git-send-email-adrian.hunter@intel.com>
+	(Adrian Hunter's message of "Wed, 7 Aug 2013 16:30:28 +0300")
+Message-ID: <87mwomwcgy.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1376358377-9jx2v1w2-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1376322204-20659-1-git-send-email-j.glisse@gmail.com>
-	<1376343400-jbl12uc3-mutt-n-horiguchi@ah.jp.nec.com>
-	<20130812214936.GA6373@redhat.com>
-	<1376358377-9jx2v1w2-mutt-n-horiguchi@ah.jp.nec.com>
-Date: Mon, 12 Aug 2013 22:23:19 -0400
-Message-ID: <CAH3drwYcVTJb=it7zmqWLx=6aowCehRPgTB4OET_Vo81bjs-Eg@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix special swap entry handling on copy mm
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Jerome Glisse <jglisse@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 9:46 PM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> On Mon, Aug 12, 2013 at 05:49:37PM -0400, Jerome Glisse wrote:
->> On Mon, Aug 12, 2013 at 05:36:40PM -0400, Naoya Horiguchi wrote:
->> > Hi Jerome,
->> >
->> > On Mon, Aug 12, 2013 at 11:43:24AM -0400, j.glisse@gmail.com wrote:
->> > > From: Jerome Glisse <jglisse@redhat.com>
->> > >
->> > > Prior to this copy_one_pte will never reach the special swap file
->> > > handling code because swap_duplicate will return invalid value.
->> > >
->> > > Note this is not fatal so nothing bad ever happen because of that.
->> > > Reason is that copy_pte_range would break of its loop and call
->> > > add_swap_count_continuation which would see its a special swap
->> > > file and return 0 triggering copy_pte_range to try again. Because
->> > > we try again there is a huge chance that the temporarily special
->> > > migration pte is now again valid and pointing to a new valid page.
->> > >
->> > > This patch just split handling of special swap entry from regular
->> > > one inside copy_one_pte.
->> > >
->> > > (Note i spotted that while reading code i haven't tested my theory.)
->> > >
->> > > Signed-off-by: Jerome Glisse <jglisse@redhat.com>
->> >
->> > non_swap_entry() means not only migration entry, but also hwpoison entry,
->> > so it seems to me that simply moving the swap_duplicate() into the
->> > if(!non_swap_entry) block can change the behavior for hwpoison entry.
->> > Would it be nice to add check for such a case?
->> >
->> > Thanks,
->> > Naoya Horiguchi
->>
->> Well if my reading of the code is right for hwpoison entry current code will
->> loop indefinitly inside the kernel on fork if one entry is set to hwpoison.
->
-> (Sorry if I missed something, but) __swap_duplicate always returns
-> -EINVAL if non_swap_entry is true and then swap_duplicate returns 0.
-> So copy_one_pte() doesn't return at if (swap_duplicate(entry) < 0)
-> block for non_swap_entry. So ...
+Hi Adrian,
 
-No, it's my fault i didn't pay attention to swap_duplicate only to
-__swap_duplicate, also means my bug
-is elsewhere.
+On Wed,  7 Aug 2013 16:30:28 +0300, Adrian Hunter wrote:
+> Hi
+>
+> This is an alternative to the 'keep tracking' flag patch
+> which is here:
+>
+> 	http://marc.info/?l=linux-kernel&m=137242545521246&w=2
+>
+> perf tools is updated and a test added to demonstrate the
+> new event.
 
-Thanks for looking.
-Cheers,
-Jerome
+It looks like a perfect fit for tracking fork/mmap events on
+perf-ftrace. :)
 
->> > > Prior to this copy_one_pte will never reach the special swap file
->> > > handling code because swap_duplicate will return invalid value.
->
-> this seems not correct to me.
-> Could you explain more about this point?
-> (Maybe I don't understand the terminology "special swap file"...)
->
->> My patch does not handle hwpoison because it seems useless as there is nothing
->> to do for hwpoison pte beside giving setting the new pte to hwpoison to. So
->> the fork child will also have a pte with hwpoison. My patch do just that.
->
-> Yes, just copying hwpoison entry looks a right behavior to me.
->
-> Thanks,
-> Naoya Horiguchi
->
->> So change in behavior is current kernel loop indefinitly in kernel with hwpoison
->> pte on fork, vs child get hwpoison pte with my patch. Meaning that both child
->> and father can live as long as they dont access the hwpoisoned ptes.
->>
->> >
->> > > ---
->> > >  mm/memory.c | 26 +++++++++++++-------------
->> > >  1 file changed, 13 insertions(+), 13 deletions(-)
->> > >
->> > > diff --git a/mm/memory.c b/mm/memory.c
->> > > index 1ce2e2a..9f907dd 100644
->> > > --- a/mm/memory.c
->> > > +++ b/mm/memory.c
->> > > @@ -833,20 +833,20 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
->> > >           if (!pte_file(pte)) {
->> > >                   swp_entry_t entry = pte_to_swp_entry(pte);
->> > >
->> > > -                 if (swap_duplicate(entry) < 0)
->> > > -                         return entry.val;
->> > > -
->> > > -                 /* make sure dst_mm is on swapoff's mmlist. */
->> > > -                 if (unlikely(list_empty(&dst_mm->mmlist))) {
->> > > -                         spin_lock(&mmlist_lock);
->> > > -                         if (list_empty(&dst_mm->mmlist))
->> > > -                                 list_add(&dst_mm->mmlist,
->> > > -                                          &src_mm->mmlist);
->> > > -                         spin_unlock(&mmlist_lock);
->> > > -                 }
->> > > -                 if (likely(!non_swap_entry(entry)))
->> > > +                 if (likely(!non_swap_entry(entry))) {
->> > > +                         if (swap_duplicate(entry) < 0)
->> > > +                                 return entry.val;
->> > > +
->> > > +                         /* make sure dst_mm is on swapoff's mmlist. */
->> > > +                         if (unlikely(list_empty(&dst_mm->mmlist))) {
->> > > +                                 spin_lock(&mmlist_lock);
->> > > +                                 if (list_empty(&dst_mm->mmlist))
->> > > +                                         list_add(&dst_mm->mmlist,
->> > > +                                                  &src_mm->mmlist);
->> > > +                                 spin_unlock(&mmlist_lock);
->> > > +                         }
->> > >                           rss[MM_SWAPENTS]++;
->> > > -                 else if (is_migration_entry(entry)) {
->> > > +                 } else if (is_migration_entry(entry)) {
->> > >                           page = migration_entry_to_page(entry);
->> > >
->> > >                           if (PageAnon(page))
->> > > --
->> > > 1.8.3.1
->> > >
->> > > --
->> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> > > the body to majordomo@kvack.org.  For more info on Linux MM,
->> > > see: http://www.linux-mm.org/ .
->> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->> > >
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>
+Thanks,
+Namhyung
