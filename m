@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758277Ab3HMPRO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 11:17:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54752 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758185Ab3HMPRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 11:17:12 -0400
-Message-ID: <1376407030.3033.13.camel@linux-fkkt.site>
-Subject: Re: [PATCH net-next 1/3] net/usb/r8152: support aggregation
-From: Oliver Neukum <oneukum@suse.de>
-To: hayeswang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Date: Tue, 13 Aug 2013 17:17:10 +0200
-In-Reply-To: <9E410853D1BD483E9479C175D5E72EB6@realtek.com.tw>
-References: <1376378913-879-1-git-send-email-hayeswang@realtek.com>
-	 <1376383742.1681.1.camel@linux-fkkt.site>
-	 <9E410853D1BD483E9479C175D5E72EB6@realtek.com.tw>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.9.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758287Ab3HMPXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 11:23:05 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:51872 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758046Ab3HMPXC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 11:23:02 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: poeschel@lemonage.de, grant.likely@linaro.org, linus.walleij@linaro.org,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Balaji T K <balajitk@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v2] RFC: interrupt consistency check for OF GPIO IRQs
+References: <1376387195-27469-1-git-send-email-larsi@wh2.tu-dresden.de>
+Date: Tue, 13 Aug 2013 08:22:58 -0700
+In-Reply-To: <1376387195-27469-1-git-send-email-larsi@wh2.tu-dresden.de> (Lars
+	Poeschel's message of "Tue, 13 Aug 2013 11:46:35 +0200")
+Message-ID: <87eh9xobsd.fsf@kernel.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-13 at 20:32 +0800, hayeswang wrote:
->  Oliver Neukum [mailto:oneukum@suse.de] 
-> > Sent: Tuesday, August 13, 2013 4:49 PM
-> > To: Hayeswang
-> > Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; 
-> > linux-usb@vger.kernel.org
-> > Subject: Re: [PATCH net-next 1/3] net/usb/r8152: support aggregation
-> > 
-> [...]
-> > > +               len_used = 0;
-> > > +               rx_desc = agg->head;
-> > > +               rx_data = agg->head;
-> > > +               smp_wmb();
-> > > +               pkt_len = le32_to_cpu(rx_desc->opts1) & RX_LEN_MASK;
-> > > +               len_used += sizeof(struct rx_desc) + pkt_len;
-> > > +
-> > > +               while (urb->actual_length >= len_used) {
-> > > +                       if (pkt_len < ETH_ZLEN)
-> > > +                               break;
-> > > +
-> > > +                       pkt_len -= 4; /* CRC */
-> > > +                       rx_data += sizeof(struct rx_desc);
-> > > +
-> > > +                       skb = netdev_alloc_skb_ip_align(netdev,
-> > > pkt_len);
-> > > +                       if (!skb) {
-> > > +                               stats->rx_dropped++;
-> > > +                               break;
-> > > +                       }
-> > > +                       memcpy(skb->data, rx_data, pkt_len);
-> > > +                       skb_put(skb, pkt_len);
-> > > +                       skb->protocol = eth_type_trans(skb, netdev);
-> > > +                       netif_rx(skb);
-> > > +                       stats->rx_packets++;
-> > > +                       stats->rx_bytes += pkt_len;
-> > > +
-> > > +                       rx_data = rx_agg_align(rx_data + 
-> > pkt_len + 4);
-> > > +                       rx_desc = (struct rx_desc *)rx_data;
-> > > +                       smp_wmb();
-> > 
-> > Against what is the memory barrier?
-> 
-> Excuse me. I don't understand your question. Do you mean the function should not
-> be used here?
+Lars Poeschel <larsi@wh2.tu-dresden.de> writes:
 
-I don't understand what problem the function is supposed to fix. As long
-as I don't understand it I cannot say for sure whether it is correct.
-There seems no obvious reason for a memory barrier, but there may be a
-hidden reason I don't see.
+> From: Linus Walleij <linus.walleij@linaro.org>
+>
+> Currently the kernel is ambigously treating GPIOs and interrupts
+> from a GPIO controller: GPIOs and interrupts are treated as
+> orthogonal. This unfortunately makes it unclear how to actually
+> retrieve and request a GPIO line or interrupt from a GPIO
+> controller in the device tree probe path.
+>
+> In the non-DT probe path it is clear that the GPIO number has to
+> be passed to the consuming device, and if it is to be used as
+> an interrupt, the consumer shall performa a gpio_to_irq() mapping
+> and request the resulting IRQ number.
+>
+> In the DT boot path consumers may have been given one or more
+> interrupts from the interrupt-controller side of the GPIO chip
+> in an abstract way, such that the driver is not aware of the
+> fact that a GPIO chip is backing this interrupt, and the GPIO
+> side of the same line is never requested with gpio_request().
+> A typical case for this is ethernet chips which just take some
+> interrupt line which may be a "hard" interrupt line (such as an
+> external interrupt line from an SoC) or a cascaded interrupt
+> connected to a GPIO line.
+>
+> This has the following undesired effects:
+>
+> - The GPIOlib subsystem is not aware that the line is in use
+>   and willingly lets some other consumer perform gpio_request()
+>   on it, leading to a complex resource conflict if it occurs.
 
-	Regards
-		Oliver
+And another reason, which happens on OMAP (not that the others aren't
+already enough to make the case):
 
+ - Platform-specific power management code may gate clocks or power to
+   unused GPIO banks resulting in faults when accessing a GPIO that
+   has not been properly requested via gpio_request().
 
+> - The GPIO debugfs file claims this GPIO line is "free".
+>
+> - The line direction of the interrupt GPIO line is not
+>   explicitly set as input, even though it is obvious that such
+>   a line need to be set up in this way, often making the system
+>   depend on boot-on defaults for this kind of settings.
+
+Kevin
