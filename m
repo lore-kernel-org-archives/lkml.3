@@ -1,194 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757111Ab3HMOYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:24:17 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:60900 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074Ab3HMOYP convert rfc822-to-8bit (ORCPT
+	id S1757636Ab3HMOaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:30:23 -0400
+Received: from mail-ea0-f170.google.com ([209.85.215.170]:37296 "EHLO
+	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757497Ab3HMOaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:24:15 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 13 Aug 2013 10:30:20 -0400
+Message-ID: <520A42F8.9050108@monstr.eu>
+Date: Tue, 13 Aug 2013 16:30:16 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Boyd <sboyd@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20130813050334.GE14845@codeaurora.org>
-Cc: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
- <1374713022-6049-10-git-send-email-sboyd@codeaurora.org>
- <20130808170015.GE27325@e106331-lin.cambridge.arm.com>
- <20130813050334.GE14845@codeaurora.org>
-Message-ID: <20130813142411.4443.85003@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH v1 09/14] clk: msm: Add support for MSM8960's global clock
- controller (GCC)
-Date: Tue, 13 Aug 2013 07:24:11 -0700
+To: Mike Turquette <mturquette@linaro.org>
+CC: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Zynq clk fixes
+References: <51F26716.6030701@monstr.eu> <20130726200703.7598.86150@quantum> <a76b3a5d-dadc-43b3-87ee-3c65258c15d7@CO1EHSMHS029.ehs.local> <20130726222501.7598.33060@quantum>
+In-Reply-To: <20130726222501.7598.33060@quantum>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="VM1JQGvt87arbNRmCOOPqhVa6RD8AACcb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Boyd (2013-08-12 22:03:34)
-> On 08/08, Mark Rutland wrote:
-> > Hi Stephen,
-> > 
-> > On Thu, Jul 25, 2013 at 01:43:37AM +0100, Stephen Boyd wrote:
-> > > Fill in the data and wire up the global clock controller to the
-> > > MSM clock driver. This should allow most non-multimedia device
-> > > drivers to control their clocks on 8960 based platforms.
-> > > 
-> > > Cc: devicetree@vger.kernel.org
-> > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > > ---
-> > >  .../devicetree/bindings/clock/qcom,gcc.txt         |  55 +++++++
-> > >  drivers/clk/msm/Kconfig                            |  10 ++
-> > >  drivers/clk/msm/Makefile                           |   2 +
-> > >  drivers/clk/msm/core.c                             |   3 +
-> > >  drivers/clk/msm/gcc-8960.c                         | 174 +++++++++++++++++++++
-> > >  drivers/clk/msm/internal.h                         |   2 +
-> > >  6 files changed, 246 insertions(+)
-> > >  create mode 100644 Documentation/devicetree/bindings/clock/qcom,gcc.txt
-> > >  create mode 100644 drivers/clk/msm/gcc-8960.c
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/clock/qcom,gcc.txt b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-> > > new file mode 100644
-> > > index 0000000..2311e1a
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
-> > > @@ -0,0 +1,55 @@
-> > > +MSM Global Clock Controller Binding
-> > > +-----------------------------------
-> > > +
-> > > +Required properties :
-> > > +- compatible : shall contain at least "qcom,gcc" and only one of the
-> > > +              following:
-> > > +
-> > > +                       "qcom,gcc-8660"
-> > > +                       "qcom,gcc-8960"
-> > > +
-> > > +- reg : shall contain base register location and length
-> > > +- clocks : shall contain clocks supplied by the clock controller
-> > > +
-> > > +Example:
-> > > +       clock-controller@900000 {
-> > > +               compatible = "qcom,gcc-8960", "qcom,gcc";
-> > > +               reg = <0x900000 0x4000>;
-> > > +
-> > > +               clocks {
-> > > +                       pxo: pxo {
-> > > +                               #clock-cells = <0>;
-> > > +                               compatible = "fixed-clock";
-> > > +                               clock-frequency = <27000000>;
-> > > +                       };
-> > > +
-> > > +                       pll8: pll8 {
-> > > +                               #clock-cells = <0>;
-> > > +                               compatible = "qcom,pll";
-> > > +                               clocks = <&pxo>;
-> > > +                       };
-> > > +
-> > > +                       vpll8: vpll8 {
-> > > +                               #clock-cells = <0>;
-> > > +                               compatible = "qcom,pll-vote";
-> > > +                               clocks = <&pll8>;
-> > > +                       };
-> > > +
-> > > +                       gsbi5_uart_rcg: gsbi5_uart_rcg {
-> > > +                               #clock-cells = <0>;
-> > > +                               compatible = "qcom,p2-mn16-clock";
-> > > +                               clocks = <&pxo>, <&vpll8>;
-> > > +                       };
-> > > +
-> > > +                       gsbi5_uart_clk: gsbi5_uart_cxc {
-> > > +                               #clock-cells = <0>;
-> > > +                               compatible = "qcom,cxc-clock";
-> > > +                               clocks = <&gsbi5_uart_rcg>;
-> > > +                       };
-> > > +
-> > > +                       gsbi5_uart_ahb: gsbi5_uart_ahb {
-> > > +                               #clock-cells = <0>;
-> > > +                               compatible = "qcom,cxc-hg-clock";
-> > > +                       };
-> > > +               };
-> > > +       };
-> > 
-> > I'm slightly confused by this. How is each of the clocks described in
-> > the clocks node related to a portion of the register set?
-> 
-> The registers to control clocks and determine their state are
-> scattered throughout the registers in the gcc (in this example
-> from 0x900000 to 0x903fff). If you match up gsbi5_uart_rcg with
-> its C struct counterpart you'll notice that there are multiple
-> registers used to configure the clock. It isn't as simple as one
-> reg property per clock even for the case where we're just
-> toggling a bit to turn a clock on and off either. And it isn't as
-> simple as saying the clock has a base register that we can offset
-> from because offsets are almost always different (we've tried
-> to correct this in future chip versions).
-> 
-> > 
-> > If the set of clocks is fixed, surely the gcc node gives you enough
-> > information alone, and the whole block can be modelled as a single
-> > provider of multiple clock outputs, or it's not fixed, and some linkage
-> > needs to be defined?
-> > 
-> > The code seems to imply the former, unless only a subset of clocks may
-> > be present? In that case, the set of clocks which might be present
-> > should be described in the binding.
-> 
-> The clock controller is hardware and the number of clock outputs
-> is fixed. Isn't all hardware fixed until you start talking about
-> FPGAs? The next minor revision of the clock controller may add
-> more clocks or remove clocks from that base design, but otherwise
-> the two are 90% the same and generally software compatible. It
-> isn't until we start a new generation of chips that we make major
-> changes to the design. Is that loose enough to qualify?
-> 
-> These bindings attempt to follow the regulator bindings. With
-> regulators there is a node for each regulator and we describe
-> physical characteristics of those regulators within the nodes but
-> we don't describe the software interface (bits, masks, shifts,
-> etc). I imagine we could extend these clock nodes to describe
-> physical characteristics such as min/max frequency or if the
-> bootloader has left the clocks on. Right now we're using the
-> nodes to describe what types of clocks there are and how the
-> clock tree is layed out.
-> 
-> Or perhaps you're talking about clock sharing? We share the clock
-> controller with multiple masters (processors running other OSes)
-> and the partitioning of the clocks is mostly predefined. We just
-> won't use some clocks because they're reserved for other
-> processors. They're still part of the same clock controller
-> hardware block but we don't want to control them on Linux because
-> we'll trample over other processors and most likely hang the
-> system. I wonder how this would work for hexagon and krait both
-> running linux on the same SoC. If all DT says is that there is a
-> gcc here at this address how are we supposed to know that we
-> shouldn't use some clock? 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--VM1JQGvt87arbNRmCOOPqhVa6RD8AACcb
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Do Krait and Hexagon have the same register map? On the ARM SoCs I am
-familiar with the masters have differing views of register addresses for
-the same peripherals and hardware blocks. So you couldn't use the same
-DTS in a straightforward way if this is true for your system.
+Hi Mike,
 
-Regards,
-Mike
+On 07/27/2013 12:25 AM, Mike Turquette wrote:
+> Quoting S=C3=B6ren Brinkmann (2013-07-26 14:11:52)
+>> On Fri, Jul 26, 2013 at 01:07:03PM -0700, Mike Turquette wrote:
+>>> Quoting Michal Simek (2013-07-26 05:09:58)
+>>>> Hi Mike, [cc: Arnd and Olof]
+>>>>
+>>>> Soren has found two bug fixes in zynq clk code.
+>>>> Can you please add these two patches to your tree?
+>>>> Will be great if you can add them to v3.11.
+>>>>
+>>>> Arnd, Olof: I expect that all these clock changes should go through =
+Mike.
+>>>> If I am wrong please let me know.
+>>>
+>>> Looks right to me. Do these fix regressions in the current -rc cycle?=
 
-> In fact we have some clocks that are
-> "voteable" in the sense that each master has its own register to
-> vote for a clock to be on or off. The registers are all ORed
-> together by hardware to determine if the clock should be on or
-> not. I should probably rename those clocks to have a _krait or
-> _apps at the end so that it's clear we want to instantiate the
-> krait version of the clock and not the hexagon version. I suppose
-> the other solution there is to say we have gcc-8960-krait and
-> gcc-8960-hexagon so we know which voting registers to use or put
-> an ifdef ARCH_HEXAGON/ARCH_ARM. Is that the right solution?
-> 
-> -- 
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by The Linux Foundation
+>>
+>> I doubt there are real regressions. But since it's still early in
+>> the release cycle and the driver was added in this merge window, I'd p=
+refer
+>> having it hit a release kernel with these fixes included.
+>=20
+> I've taken these into clk-fixes and added the following to the changelo=
+g
+> for each patch:
+>=20
+> "This does not fix a specific regression but the clock driver was merge=
+d
+> for 3.11-rc1, so best to fix the known bugs before the release."
+
+Can you please tell me where you have added these two patches?
+      clk/zynq/clkc: Add dedicated spinlock for the SWDT
+      clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet muxes
+
+I can't see them in clk-fixes branch (this branch is pretty obsolete).
+http://git.linaro.org/gitweb?p=3Dpeople/mturquette/linux.git;a=3Dsummary
+
+Thanks,
+Michal
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--VM1JQGvt87arbNRmCOOPqhVa6RD8AACcb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlIKQvgACgkQykllyylKDCGmZQCbBGvcNc20esnPtuT3tQA9QnmI
+q6YAn19WbDXc1fJcZDfgKgn9rY6GPajL
+=iAYq
+-----END PGP SIGNATURE-----
+
+--VM1JQGvt87arbNRmCOOPqhVa6RD8AACcb--
