@@ -1,39 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758721Ab3HMQbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:31:44 -0400
-Received: from a9-92.smtp-out.amazonses.com ([54.240.9.92]:57391 "EHLO
-	a9-92.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757965Ab3HMQbl (ORCPT
+	id S1758840Ab3HMQcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:32:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32930 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab3HMQ0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 12:31:41 -0400
-X-Greylist: delayed 610 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Aug 2013 12:31:41 EDT
-Date: Tue, 13 Aug 2013 16:21:30 +0000
-From: Christoph Lameter <cl@gentwo.org>
-To: Minchan Kim <minchan@kernel.org>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, k.kozlowski@samsung.com,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
-        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
-        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC 0/3] Pin page control subsystem
-In-Reply-To: <1376377502-28207-1-git-send-email-minchan@kernel.org>
-Message-ID: <00000140787b6191-ae3f2eb1-515e-48a1-8e64-502772af4700-000000@email.amazonses.com>
-References: <1376377502-28207-1-git-send-email-minchan@kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.08.13-54.240.9.92
+	Tue, 13 Aug 2013 12:26:51 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=w4QqruI4SNMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=8vd7h3DxAKQA:10 a=QyXUC8HyAAAA:8 a=jIQo8A4GAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=jiJFkoeR32oA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130813155834.516407848@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 13 Aug 2013 11:58:03 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        John Youn <johnyoun@synopsys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [69/88] xhci: check for failed dma pool allocation
+References: <20130813155654.069291373@goodmis.org>
+Content-Disposition: inline; filename=0069-xhci-check-for-failed-dma-pool-allocation.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013, Minchan Kim wrote:
+3.6.11.7-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-> VM sometime want to migrate and/or reclaim pages for CMA, memory-hotplug,
-> THP and so on but at the moment, it could handle only userspace pages
-> so if above example subsystem have pinned a some page in a range VM want
-> to migrate, migration is failed so above exmaple couldn't work well.
+------------------
 
-Dont we have the mmu_notifiers that could help in that case? You could get
-a callback which could prepare the pages for migration?
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+
+[ Upstream commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 ]
+
+Fail and free the container context in case dma_pool_alloc() can't allocate
+the raw context data part of it
+
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
+Support for 64-byte contexts".
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: John Youn <johnyoun@synopsys.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/usb/host/xhci-mem.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 419d34a..e833270 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -364,6 +364,10 @@ static struct xhci_container_ctx *xhci_alloc_container_ctx(struct xhci_hcd *xhci
+ 		ctx->size += CTX_SIZE(xhci->hcc_params);
+ 
+ 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
++	if (!ctx->bytes) {
++		kfree(ctx);
++		return NULL;
++	}
+ 	memset(ctx->bytes, 0, ctx->size);
+ 	return ctx;
+ }
+-- 
+1.7.10.4
+
+
