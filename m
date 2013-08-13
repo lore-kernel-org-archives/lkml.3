@@ -1,142 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758861Ab3HMVxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 17:53:17 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:33324 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757021Ab3HMVxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 17:53:15 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Chris Metcalf <cmetcalf@tilera.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        "adam radford" <aradford@gmail.com>
-Subject: Re: [PATCH v2] tile: support LSI MEGARAID SAS HBA hybrid dma_ops
-Thread-Topic: [PATCH v2] tile: support LSI MEGARAID SAS HBA hybrid dma_ops
-Thread-Index: AQHOmGQBNw2dMUyC4kKnyEgBN9EO/ZmUI5EA
-Date: Tue, 13 Aug 2013 21:53:11 +0000
-Message-ID: <1376430790.3467.85.camel@dabdike.int.hansenpartnership.com>
-References: <CAErSpo6SzUF44pk3HVyR5UUN0BJUHUz+Z5egWKCoGG70VuB6wg@mail.gmail.com>
-	 <520A5B01.2010207@tilera.com>
-	 <CAErSpo4sFPiuPLboJ_wsg2cketUaciP7EgmufJmuEEryJmDW7Q@mail.gmail.com>
-In-Reply-To: <CAErSpo4sFPiuPLboJ_wsg2cketUaciP7EgmufJmuEEryJmDW7Q@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.17.213.192]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <91229F46AB7CBF4F8AC1A05CBA1E417A@sw.swsoft.com>
+	id S1758989Ab3HMVx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 17:53:27 -0400
+Received: from fieldses.org ([174.143.236.118]:46513 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751265Ab3HMVxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 17:53:24 -0400
+Date: Tue, 13 Aug 2013 17:53:14 -0400
+To: Jan Kara <jack@suse.cz>
+Cc: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        linux-ext4@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: Re: Issues with a rather unusual configured NFS server
+Message-ID: <20130813215313.GH17781@fieldses.org>
+References: <52075E01.7030506@gmx.de>
+ <20130812143640.GF4596@quack.suse.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130812143640.GF4596@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7DLrOG7002540
 
-On Tue, 2013-08-13 at 14:30 -0600, Bjorn Helgaas wrote:
-> [+cc James in case he has opinions on the DMA mask question]
-> 
-> On Tue, Aug 13, 2013 at 10:12 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> > (Trimming the quoted material a little to try to keep this email under control.)
-> >
-> > On 8/12/2013 4:42 PM, Bjorn Helgaas wrote:
-> >> On Mon, Aug 12, 2013 at 1:42 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> >>> On 8/9/2013 6:42 PM, Bjorn Helgaas wrote:
-> >>>> OK, so physical memory in the [3GB,4GB] range is unreachable via DMA
-> >>>> as you describe.  And even if DMA *could* reach it, the CPU couldn't
-> >>>> see it because CPU accesses to that range would go to PCI for the
-> >>>> memory-mapped BAR space, not to memory.
-> >>> Right.  Unreachability is only a problem if the DMA window overlaps [3G, 4G], and since the 64-bit DMA window is [1TB,2TB], the whole PA space can be reached by 64-bit capable devices.
-> >> So the [0-1TB] memory range (including [3GB-4GB]) is reachable by
-> >> 64-bit DMA to bus addresses [1TB-2TB].  But if the CPU can't see
-> >> physical memory from [3GB-4GB], how is it useful to DMA there?
-> >
-> > Sorry, looking back I can see that the thread is a little confusing.
-> > The CPU can see the whole PA space. The confusion comes from the BAR space
-> > in [3GB, 4GB].
-> >
-> > On Tile, we define the CPU memory space as follows:
-> >
-> > [0, 1TB]: PA
-> > [1TB + 3GB, 1TB + 4GB]: BAR space for RC port 0, in [3GB, 4GB]
-> > [1TB + 3GB + N*4GB, 1TB + (1 + N)*4GB]: BAR space for RC port N, in [3GB, 4GB]
-> >
-> > The mapping from [1TB + 3GB + N*4GB, 1TB + (1 + N)*4GB] to [3GB, 4GB] is done by a
-> > hardware PIO region, which generates PCI bus addresses in [3GB, 4GB] for MMIOs to
-> > the BAR space.
-> 
-> OK, I think I get it now.  CPU address space:
->   [0, 1TB]: physical memory
->   [1TB + 3GB, 1TB + 4GB]: translated to bus address [3GB, 4GB] under RC port 0
->   [1TB + 3GB + N*4GB, 1TB + (1 + N)*4GB]: translated to bus address
-> [3GB, 4GB] under RC port N
-> 
-> Bus address space:
->   [0, 3GB]: 32-bit DMA reaches physical memory [0, 3GB]
->   [3GB, 4GB]: 32-bit DMA (peer-to-peer DMA under local RC port, I guess?)
->   [1TB, 2TB]: 64-bit DMA mapped via IOMMU to physical memory [0, 1TB]
-> 
-> I guess the problem is that 32-bit DMA can't reach physical memory
-> [3GB, 4GB], so you're using bounce buffers so the bus address is in
-> [0, 3GB].  That makes sense, and I don't see another possibility other
-> than just throwing away the [3GB, 4GB] range by leaving it out of the
-> kernel allocator altogether, or using  hardware (which tilegx probably
-> doesn't have) to remap it somewhere else.
+On Mon, Aug 12, 2013 at 04:36:40PM +0200, Jan Kara wrote:
+> On Sun 11-08-13 11:48:49, Toralf FÃ¶rster wrote:
+> > so that the server either crashes (if it is a user mode linux image) or at least its reboot functionality got broken
+> > - if the NFS server is hammered with scary NFS calls using a fuzzy tool running at a remote NFS client under a non-privileged user id.
+> > 
+> > It can re reproduced, if
+> > 	- the NFS share is an EXT3 or EXT4 directory
+> > 	- and it is created at file located at tempfs and mounted via loop device
+> > 	- and the NFS server is forced to umount the NFS share
+> > 	- and the server forced to restart the NSF service afterwards
+> > 	- and trinity is used
+> > 
+> > I could find a scenario for an automated bisect. 2 times it brought this commit 
+> > commit 68a3396178e6688ad7367202cdf0af8ed03c8727
+> > Author: J. Bruce Fields <bfields@redhat.com>
+> > Date:   Thu Mar 21 11:21:50 2013 -0400
+> > 
+> >     nfsd4: shut down more of delegation earlier
 
-This is remarkably familiar.  I think almost every system on earth has a
-configuration similar to this.  On PARISC, the top 256MB of memory on a
-32 bit system is reserved for I/O access and is designated as "F Space".
+Thanks for the report.  I think I see the problem--after this commit
+nfs4_set_delegation() failures result in nfs4_put_delegation being
+called, but nfs4_put_delegation doesn't free the nfs4_file that has
+already been set by alloc_init_deleg().
 
-What is unusual is that you seem to have responding memory behind the F
-Space which is accessible to some bus entities.  On PARISC 32 bit, the
-memory is just lost (inaccessible) on 64 bit, it's remapped above 32GB
-(and the low F Space window expanded to 1GB).
+Let me think about how to fix that....
 
-> So it seems like just a question of how you wrap this all up in
-> dma_ops, and *that* is all arch stuff that I don't have an opinion on.
+--b.
+
+>   Added Bruce to CC.
 > 
-> >>> Unfortunately, the Megaraid driver doesnâ€™t even call pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(32)).
-> >> If the Megaraid driver needs that call, but it's missing, why wouldn't
-> >> we just add it?
-> >
-> > The Megaraid driver doesnâ€™t strictly need that call on other platforms, because
-> > by default the device coherent_dma_mask is DMA_BIT_MASK(32) and the consistent
-> > memory pool doesnâ€™t come from the bounce buffers on most other platforms.
-> >
-> > Of course, for the sake of correctness, this call should be added across all platforms.
-> > ...
+> > to be the one after which the user mode linux server crashes with a back trace like this:
+> > 
+> > 
+> > $ cat /mnt/ramdisk/bt.v3.11-rc4-172-g8ae3f1d
+> > [New LWP 14025]
+> > Core was generated by `/home/tfoerste/devel/linux/linux earlyprintk ubda=/home/tfoerste/virtual/uml/tr'.
+> > Program terminated with signal 6, Aborted.
+> > #0  0xb77ef424 in __kernel_vsyscall ()
+> > #0  0xb77ef424 in __kernel_vsyscall ()
+> > #1  0x083a33c5 in kill ()
+> > #2  0x0807163d in uml_abort () at arch/um/os-Linux/util.c:93
+> > #3  0x08071925 in os_dump_core () at arch/um/os-Linux/util.c:138
+> > #4  0x080613a7 in panic_exit (self=0x85a1518 <panic_exit_notifier>, unused1=0, unused2=0x85d6ce0 <buf.15904>) at arch/um/kernel/um_arch.c:240
+> > #5  0x0809a3b8 in notifier_call_chain (nl=0x0, val=0, v=0x85d6ce0 <buf.15904>, nr_to_call=-2, nr_calls=0x0) at kernel/notifier.c:93
+> > #6  0x0809a503 in __atomic_notifier_call_chain (nr_calls=<optimized out>, nr_to_call=<optimized out>, v=<optimized out>, val=<optimized out>, nh=<optimized out>) at kernel/notifier.c:182
+> > #7  atomic_notifier_call_chain (nh=0x85d6cc4 <panic_notifier_list>, val=0, v=0x85d6ce0 <buf.15904>) at kernel/notifier.c:191
+> > #8  0x08400ba8 in panic (fmt=0x0) at kernel/panic.c:128
+> > #9  0x0818edf4 in ext4_put_super (sb=0x4a042690) at fs/ext4/super.c:818
+> > #10 0x081010d2 in generic_shutdown_super (sb=0x4a042690) at fs/super.c:418
+> > #11 0x0810209a in kill_block_super (sb=0x0) at fs/super.c:1028
+> > #12 0x08100f6a in deactivate_locked_super (s=0x4a042690) at fs/super.c:299
+> > #13 0x08101001 in deactivate_super (s=0x4a042690) at fs/super.c:324
+> > #14 0x08118e0c in mntfree (mnt=<optimized out>) at fs/namespace.c:891
+> > #15 mntput_no_expire (mnt=0x0) at fs/namespace.c:929
+> > #16 0x0811a2f5 in SYSC_umount (flags=<optimized out>, name=<optimized out>) at fs/namespace.c:1335
+> > #17 SyS_umount (name=134541632, flags=0) at fs/namespace.c:1305
+> > #18 0x0811a369 in SYSC_oldumount (name=<optimized out>) at fs/namespace.c:1347
+> > #19 SyS_oldumount (name=134541632) at fs/namespace.c:1345
+> > #20 0x080618e2 in handle_syscall (r=0x49e919d4) at arch/um/kernel/skas/syscall.c:35
+> > #21 0x08073c0d in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
+> > #22 userspace (regs=0x49e919d4) at arch/um/os-Linux/skas/process.c:431
+> > #23 0x0805e65c in fork_handler () at arch/um/kernel/process.c:160
+> > #24 0x00000000 in ?? ()
+> > 
+> > 
+> > 
+> > A real system however would not crash bug would give a kernel BUG as reported here:
+> > http://article.gmane.org/gmane.comp.file-systems.ext4/38915
+>   We have deleted inodes (regular files) in the orphan list during
+> ext4_put_super(). My guess is that NFS is still holding some inode
+> references to these inodes and thus inodes don't get deleted. So ext3/4
+> would be just a victim here.
 > 
-> > What is unique about Tile is that the PCI drivers must explicitly declare
-> > its DMA capability by calling pci_set_dma_mask() and pci_set_consistent_dma_mask().
+> > Furthermore the server won't be able any longer to reboot - it would hang
+> > infinitely in the reboot phase.  Just the magic sysrq keys still works
+> > then.
+>   Well, this is likely because the filesystem cannot be shut down.
 > 
-> It looks like the reason you need drivers to explicitly call
-> pci_set_dma_mask() and pci_set_consistent_dma_mask() is because you
-> have hooks in those functions to tweak the dma_ops, even though the
-> mask itself might not be changed.
-> 
-> That doesn't sound like a robust solution: we have well-known defaults
-> for the mask sizes, and I don't think it's reasonable to expect
-> drivers to explicitly set the mask even if they are happy with the
-> defaults (though Documentation/DMA-API-HOWTO.txt does say that being
-> explicit is good style).  I'm afraid you'll just keep tripping over
-> drivers that don't work on tilegx because they don't set the mask.
-
-Right, it's not a robust solution at all.  A DMA mask is just that: an
-accessibility mask.  The founding assumption is that an address line is
-either connected or not, which is why the mask works.  What you have is
-two different classes of memory: 0-3GB which is usable for I/O and 3-4GB
-which isn't.  Surely what you need to do is implement ZONE_DMA32? which
-stretches from 0-3GB, which means all kmallocs in the driver will be in
-the right range.  Then you need a bounce pfn at 3GB which means that
-user space which gets the 3-4GB is bounced.  There's a magic pfn in
-BLK_BOUNCE_HIGH that was designed for this, but I'm not sure the design
-contemplated BLK_BOUNCE_HIGH being different for 64 and 32 bit.
-
-James
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 								Honza
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
