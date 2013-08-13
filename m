@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab3HMEd5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 00:33:57 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:54179 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab3HMEd4 (ORCPT
+	id S1753259Ab3HMEpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 00:45:15 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:40340 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab3HMEpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 00:33:56 -0400
-X-AuditID: 9c93017e-b7c76ae000003897-7a-5209b7326165
-Date: Tue, 13 Aug 2013 13:33:58 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Thomas Backlund <tmb@mageia.org>, Jordi Pujol <jordipujolp@gmail.com>,
-        stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: ZRAM 3.10.6 Buffer I/O error
-Message-ID: <20130813043358.GD3101@bbox>
-References: <1998314.O9XRMyhM6u@pcjordi>
- <52090FD2.9030702@mageia.org>
- <20130813013900.GC3101@bbox>
- <20130813035802.GA24637@kroah.com>
+	Tue, 13 Aug 2013 00:45:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813035802.GA24637@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20130812144309.GK27162@twins.programming.kicks-ass.net>
+References: <CALZhoSQgw_-UaF0VOMjMqRJC8D4oQTBp4Bv=zJS+x0Wu97f2FQ@mail.gmail.com>
+	<20130812144309.GK27162@twins.programming.kicks-ass.net>
+Date: Tue, 13 Aug 2013 12:45:12 +0800
+Message-ID: <CALZhoSRyfE78GbiJqVRvUrbJRq_NhSqYbK8vnxNP8kS9xz9qVQ@mail.gmail.com>
+Subject: Re: false nr_running check in load balance?
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, leiwen@marvell.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+Peter,
 
-On Mon, Aug 12, 2013 at 08:58:02PM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Aug 13, 2013 at 10:39:00AM +0900, Minchan Kim wrote:
-> > Hello,
-> > 
-> > On Mon, Aug 12, 2013 at 07:39:46PM +0300, Thomas Backlund wrote:
-> > > 12.08.2013 17:27, Jordi Pujol skrev:
-> > > >Hello,
-> > > >
-> > > >zram shows an error when mounting a swap partition,
-> > > >current version Linux kernel 3.10.6,
-> > > >previous versions worked, I suppose that latest zram patches have some
-> > > >problem,
-> > > >
-> > > >machine is an AMD64 dual core, 4GB RAM
-> > > >
-> > > >+ modprobe -qb zram num_devices=2
-> > > >+ echo 104857600 > /sys/block/zram0/disksize
-> > > >
-> > > ># mkswap /dev/zram0
-> > > >Setting up swapspace version 1, size = 102396 KiB
-> > > >no label, UUID=6c249930-2ba0-46cf-a8c6-766481942b7d
-> > > >
-> > > ># pager /var/log/dmesg
-> > > >(no more errors shown)
-> > > >
-> > > ># swapon /dev/zram0
-> > > >
-> > > ># pager /var/log/dmesg
-> > > >...
-> > > >[  309.300479] Buffer I/O error on device zram0, logical block 25599
-> > > >[  309.300491] Buffer I/O error on device zram0, logical block 25599
-> > > >[  309.300514] Buffer I/O error on device zram0, logical block 25599
-> > > >[  345.205887] Adding 102396k swap on /dev/zram0.  Priority:-2 extents:1
-> > > >across:102396k SSFS
-> > > >
-> > > >full log files and the kernel source are stored in the address:
-> > > >
-> > > >http://livenet.selfip.com/ftp/debian/zram_3.10.6_IO_error/
-> > > >
-> > > 
-> > > 
-> > > I think this one should fix it and belongs in 3.10 stable too:
-> > 
-> > Very true. Let's Cc Greg, explicitely.
-> 
-> -ENOCONTEXT
+On Mon, Aug 12, 2013 at 10:43 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Aug 06, 2013 at 09:23:46PM +0800, Lei Wen wrote:
+>> Hi Paul,
+>>
+>> I notice in load_balance function, it would check busiest->nr_running
+>> to decide whether to perform the real task movement.
+>>
+>> But in some case, I saw the nr_running is not matching with
+>> the task in the queue, which seems make scheduler to do many redundant
+>> checking.
+>> What I means is like there is only one task in the queue, but nr_running
+>> shows it has two. So if that task cannot be moved, it would be still checked
+>> for twice.
+>>
+>> With further checking, I find there is one patch you submit before:
+>> commit 953bfcd10e6f3697233e8e5128c611d275da39c1
+>> Author: Paul Turner <pjt@google.com>
+>> Date:   Thu Jul 21 09:43:27 2011 -0700
+>>
+>>     sched: Implement hierarchical task accounting for SCHED_OTHER
+>>
+>> In this patch, you increase nr_running when enqueue enqueue_task_stop,
+>> which is the reason nr_running is increase while task not be increased.
+>> It is true at that time, the stopper has been waken up and enqueue again
+>> into cpu, and do the migration job. So the logic should be right there.
+>>
+>> My question is whether we could change the judgment into cfs_rq->nr_running?
+>> Since the load_balance is only for cfs, right?
+>>
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index bb456f4..ffc0d35 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5096,7 +5096,7 @@ redo:
+>>         schedstat_add(sd, lb_imbalance[idle], env.imbalance);
+>>
+>>         ld_moved = 0;
+>> -       if (busiest->nr_running > 1) {
+>> +       if (busiest->cfs.nr_running > 1) {
+>>                 /*
+>>                  * Attempt to move tasks. If find_busiest_group has found
+>>                  * an imbalance but busiest->nr_running <= 1, the group is
+>>
+>
+> Not quite right; I think you need busiest->cfs.h_nr_running.
+> cfs.nr_running is the number of entries running in this 'group'. If
+> you've got nested groups like:
+>
+>  'root'
+>    \
+>    'A'
+>    / \
+>   t1 t2
+>
+> root.nr_running := 1 'A', even though you've got multiple running tasks.
+>
 
-https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/drivers/staging/zram?id=75c7caf5a052ffd8db3312fa7864ee2d142890c4
+You're absolutely right for this. :)
+I miss it for not considering the group case...
 
-It seems you already merge "zram:allow request end to conincide with disksize" to stable.
-So there is no concern any more.
+Then do you think it is necessary to do below change in load_balance() code?
+ -       if (busiest->nr_running > 1) {
+ +       if (busiest->cfs.h_nr_running > 1) {
 
-Thanks.
 
-
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+Lei
