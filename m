@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758003Ab3HMNV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:21:26 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:35459 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757828Ab3HMNVY (ORCPT
+	id S1758023Ab3HMNVq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:21:46 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:45587 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757828Ab3HMNVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:21:24 -0400
-Message-ID: <520A32CF.1010701@baylibre.com>
-Date: Tue, 13 Aug 2013 15:21:19 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Tue, 13 Aug 2013 09:21:45 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/HNzuFt8rKI2VJ/tpZZk4IPXedy13BPYo=
+Date: Tue, 13 Aug 2013 09:21:32 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 7/9] ARM: dove: add PCIe controllers to SoC DT
+Message-ID: <20130813132132.GY25111@titan.lakedaemon.net>
+References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1376333215-12885-8-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130812200452.GW25111@titan.lakedaemon.net>
+ <520A1871.4000501@gmail.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: benoit.cousson@linaro.org, tony@atomide.com, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ian.campbell@citrix.com, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, balbi@ti.com
-Subject: Re: [PATCH] arm: omap5: dts: split SMPS10 dt node
-References: <1376300221-15172-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1376300221-15172-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520A1871.4000501@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
+On Tue, Aug 13, 2013 at 01:28:49PM +0200, Sebastian Hesselbarth wrote:
+> On 08/12/13 22:04, Jason Cooper wrote:
+> >On Mon, Aug 12, 2013 at 08:46:53PM +0200, Sebastian Hesselbarth wrote:
+> >>This adds a node for the pcie controllers found on Dove SoCs to the
+> >>SoC DT include.
+> >>
+> >>Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> >>---
+> >>Cc: Russell King <linux@arm.linux.org.uk>
+> >>Cc: Jason Cooper <jason@lakedaemon.net>
+> >>Cc: Andrew Lunn <andrew@lunn.ch>
+> >>Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> >>Cc: linux-kernel@vger.kernel.org
+> >>Cc: linux-arm-kernel@lists.infradead.org
+> >>---
+> >>  arch/arm/boot/dts/dove.dtsi |   54 +++++++++++++++++++++++++++++++++++++++++++
+> >>  1 file changed, 54 insertions(+)
+> >
+> >patches 7-9 applied to mvebu/dove_mbus since the dependencies are
+> >cleaner that way.
+> 
+> Jason,
+> 
+> I will have to slightly modify the reset-gpio property names and that
+> requires a fixup patch for patch 8. Can you still squash it or do you
+> need a proper patch?
 
-On 12/08/2013 11:37, Kishon Vijay Abraham I wrote:
-> SMPS10 has two outputs OUT1 and OUT2. Hence SMPS10 is modeled as
-> two regulators. The dt node is split to reflect it.
+I can squash it, no problem.
 
-Mmm, I'm curious. How is it supposed to work?
+thx,
 
-Do you have dedicated control on each output?
+Jason.
 
-Otherwise, it should be seen as one output with two potential consumers.
-
-Regards,
-Benoit
-
->
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
->   arch/arm/boot/dts/omap5-uevm.dts |   13 +++++++++++--
->   1 file changed, 11 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-> index 65d7b60..05b9b12 100644
-> --- a/arch/arm/boot/dts/omap5-uevm.dts
-> +++ b/arch/arm/boot/dts/omap5-uevm.dts
-> @@ -334,9 +334,18 @@
->   					ti,smps-range = <0x80>;
->   				};
->
-> -				smps10_reg: smps10 {
-> +				smps10_out2_reg: smps10_out2 {
->   					/* VBUS_5V_OTG */
-> -					regulator-name = "smps10";
-> +					regulator-name = "smps10_out2";
-> +					regulator-min-microvolt = <5000000>;
-> +					regulator-max-microvolt = <5000000>;
-> +					regulator-always-on;
-> +					regulator-boot-on;
-> +				};
-> +
-> +				smps10_out1_reg: smps10_out1 {
-> +					/* VBUS_5V_OTG */
-> +					regulator-name = "smps10_out1";
->   					regulator-min-microvolt = <5000000>;
->   					regulator-max-microvolt = <5000000>;
->   					regulator-always-on;
->
+> diff --git a/arch/arm/boot/dts/dove-d3plug.dts b/arch/arm/boot/dts/dove-d3plug.dts
+> index ead90eb..f5f59bb 100644
+> --- a/arch/arm/boot/dts/dove-d3plug.dts
+> +++ b/arch/arm/boot/dts/dove-d3plug.dts
+> @@ -91,7 +91,7 @@
+>  	pcie-port@0 {
+>  		status = "okay";
+>  		reset-gpios = <&gpio0 26 1>;
+> -		reset-delay-ms = <20>;
+> +		reset-delay-us = <20000>;
+>  		pinctrl-0 = <&pmx_camera_gpio>;
+>  		pinctrl-names = "default";
+>  	};
 
