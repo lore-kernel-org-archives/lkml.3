@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab3HMLqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 07:46:39 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63636 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756899Ab3HMLqi (ORCPT
+	id S1757480Ab3HMLrc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 07:47:32 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:51152 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756974Ab3HMLrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 07:46:38 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520A1C9E.4040102@roeck-us.net>
-Date: Tue, 13 Aug 2013 04:46:38 -0700
-From: Guenter Roeck <linux@roeck-us.net>
+	Tue, 13 Aug 2013 07:47:31 -0400
+Message-ID: <520A1CCF.8000501@baylibre.com>
+Date: Tue, 13 Aug 2013 13:47:27 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/12] 3.0.91-stable review
-References: <20130813063520.285638946@linuxfoundation.org>
-In-Reply-To: <20130813063520.285638946@linuxfoundation.org>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Benoit Cousson <benoit.cousson@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] ARM: DTS: AM33XX: Add PMU support
+References: <1375552854-8468-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1375552854-8468-1-git-send-email-alexandre.belloni@free-electrons.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 11:35 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.0.91 release.
-> There are 12 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+Salut Alexandre,
+
+On 03/08/2013 20:00, Alexandre Belloni wrote:
+> ARM Performance Monitor Units are available on the am33xx, add the support in
+> the dtsi.
 >
-> Responses should be made by Thu Aug 15 06:35:11 UTC 2013.
-> Anything received after that time might be too late.
+> Tested with perf and oprofile on a regular beaglebone.
 >
-Cross build results:
-	Total builds: 58 Total build errors: 14
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-qemu test results (images loading to login prompt):
-	ppc, x86, x86_64 tested ok
+Thanks, applied for 3.12.
 
-Details:
-	http://server.roeck-us.net:8010/waterfall
-
-Everything working as expected.
-
-Guenter
+Regards,
+Benoit
 
