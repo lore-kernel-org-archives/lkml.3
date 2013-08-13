@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758537Ab3HMRSB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:18:01 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48642 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756904Ab3HMRR7 (ORCPT
+	id S1758669Ab3HMRSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:18:14 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:27259 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758572Ab3HMRSK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:17:59 -0400
-Message-ID: <520A6A30.1030406@linux.vnet.ibm.com>
-Date: Tue, 13 Aug 2013 22:47:36 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, bhelgaas@google.com,
-        rostedt@goodmis.org, rjw@sisk.pl, lance.ortiz@hp.com,
-        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Aristeu Rozanski Filho <arozansk@redhat.com>
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
- event
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic> <20130812083355.47c1bae8@samsung.com> <5208D80D.5030206@linux.vnet.ibm.com> <20130812114404.3bd64fa0@samsung.com> <520A1B5E.8040105@linux.vnet.ibm.com> <20130813094147.062317f8@concha.lan>
-In-Reply-To: <20130813094147.062317f8@concha.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081317-5140-0000-0000-000003AB73AB
+	Tue, 13 Aug 2013 13:18:10 -0400
+X-AuditID: cbfec37d-b7f036d000004805-9f-520a6a504768
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/60] 3.10.7-stable review
+Thread-topic: [ 00/60] 3.10.7-stable review
+Thread-index: AQHOmC3IYEMswpIxik+aQrqeWYprJA==
+Date: Tue, 13 Aug 2013 17:18:07 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E61763FC9@sisaex02sj>
+References: <20130813063331.950321483@linuxfoundation.org>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.34.4]
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e+wr25gFleQwYlbzBZz1q9hs2hevJ7N
+	4vKuOWwWX386WCzY+IjR4lHfW3YHNo+ds+6ye5yY8ZvFY//cNewenzfJBbBEcdmkpOZklqUW
+	6dslcGX0bbrEVvCTv+LQ/3ssDYwTeLsYOTkkBEwkmpd1sEDYYhIX7q1n62Lk4hASWMYosWHh
+	O3YIp5dJovP8ayhnPqPEk5f7WUFa2ATUJT6/3sEOYosIGEv0n50FZjMLHGOS6OgsA7GFBbQk
+	Xj+4xQZRoy2xorsJaB0HkK0nced9OkiYRUBVYuLOB0wgNq+AvcTCJVOZQWwhASuJHb27wFYx
+	Al33/dQaJojx4hLNrTehrhaQWLLnPDOELSrx8vE/VghbQWLFjTcsEPVaEut3Hofq1ZZ48u4C
+	K8QuQYkfk++xTGAUm4Vk7CwkLbOQtMxC0rKAkWUVo1hpcXJBcVJ6aoWJXnFibnFpXrpecn7u
+	JkZI7NXuYLz/1eYQowAHoxIPr4UdV5AQa2JZcWXuIUYJDmYlEd6vNkAh3pTEyqrUovz4otKc
+	1OJDjEwcnFINjMmy2948WnI1Z4XZvk6Hqx5ir+fLv3u81/Djy/cFO9NjQhdcuZlSfLn36lT+
+	GwUK20p2uZ9J3d+06ep042uqAX3ckdPeM9vf3auZdXshR0Cvr0Lh7sNpImeaDp4T4ttw+PHM
+	Hfa6X/b1+N/09a34I/GqMSA2d8qhxSUnj+1gOOZfeUHN1+rT+RQlluKMREMt5qLiRAB9imOV
+	mwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 06:11 PM, Mauro Carvalho Chehab wrote:
-> Em Tue, 13 Aug 2013 17:11:18 +0530
-> "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> escreveu:
+On 08/13/2013 08:02 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.7 release.
+> There are 60 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
->> On 08/12/2013 08:14 PM, Mauro Carvalho Chehab wrote:
->>>> But, this only seems to expose the APEI data as a string
->>>> and doesn't look to really make all the fields available to user-space
->>>> in a raw manner. Not sure how well this can be utilised by a user-space
->>>> tool. Do you have suggestions on how we can do this?
->>>
->>> There's already an userspace tool that handes it:
->>> 	https://git.fedorahosted.org/cgit/rasdaemon.git/
->>>
->>> What is missing there on the current version is the bits that would allow
->>> to translate from APEI way to report an error (memory node, card, module,
->>> bank, device) into a DIMM label[1].
->>
->> If I'm reading this right, all APEI data seems to be squashed into a
->> string in mc_event.
+> Responses should be made by Thu Aug 15 06:33:14 UTC 2013.
+> Anything received after that time might be too late.
 >
-> Yes. We had lots of discussion about how to map memory errors over the
-> last couple years. Basically, it was decided that the information that
-> could be decoded into a DIMM to be mapped as integers, and all other
-> driver-specific data to be added as strings.
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.7-rc1.gz
+> and the diffstat can be found below.
 >
-> On the tests I did, different machines/vendors fill the APEI data on
-> a different way, with makes harder to associate them to a DIMM.
+> thanks,
+>
+> greg k-h
+>
 
-Ok, so it looks like ghes_edac isn't quite useful yet.
+Patches applied cleanly to 3.0.90, 3.4.57 and 3.10.6
 
-In the meantime, like Boris suggests, I think we can have a different 
-trace event for raw APEI reports - userspace can use it as it pleases.
+Compiled and booted on the following systems:
 
-Once ghes_edac gets better, users can decide whether they want raw APEI 
-reports or the EDAC-processed version and choose one or the other trace 
-event.
+Samsung Series 9 900X4C Intel Corei5:
+     (3.4.58-rc1, 3.10.7-rc1)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
+     (3.0.91-rc1, 3.4.58-rc1, and 3.10.7-rc1)
 
-Regards,
-Naveen
+dmesgs for all releases look good. No regressions compared to the 
+previous dmesgs for each of these releases. dmesg emerg, crit, alert, 
+err are clean. No regressions in warn.
 
+Cross-compile testing:
+HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+     (3.0.91-rc1, 3.4.58-rc1, and 3.10.7-rc1)
+
+Cross-compile tests results:
+
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.10.y
+blackfin: defconfig passed on all
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.10.y
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
+
+-- Shuah
+
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
