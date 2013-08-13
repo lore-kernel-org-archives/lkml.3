@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759276Ab3HMUln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:41:43 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:48846 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758487Ab3HMUlm (ORCPT
+	id S1759289Ab3HMUnD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:43:03 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37338 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759208Ab3HMUnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:41:42 -0400
-Date: Tue, 13 Aug 2013 22:41:31 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: David Shwatrz <dshwatrz@gmail.com>
-Cc: Julia Lawall <julia.lawall@lip6.fr>, grant.likely@linaro.org,
-        rob.herring@calxeda.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: question about netif_rx
-Message-ID: <20130813204131.GA4696@electric-eye.fr.zoreil.com>
-References: <alpine.DEB.2.02.1308111151210.2072@localhost6.localdomain6>
- <20130811155640.GA10070@electric-eye.fr.zoreil.com>
- <alpine.DEB.2.02.1308111811440.2072@localhost6.localdomain6>
- <20130813052036.GA11640@electric-eye.fr.zoreil.com>
- <alpine.DEB.2.02.1308130828550.1997@localhost6.localdomain6>
- <CAJJAcocQ59Kc9a1b=jrNSc1akLLN_74yKANMEmLVmvxoRjX4hw@mail.gmail.com>
+	Tue, 13 Aug 2013 16:43:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJJAcocQ59Kc9a1b=jrNSc1akLLN_74yKANMEmLVmvxoRjX4hw@mail.gmail.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1375948794-6286-5-git-send-email-milo.kim@ti.com>
+References: <1375948794-6286-1-git-send-email-milo.kim@ti.com> <1375948794-6286-5-git-send-email-milo.kim@ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 13 Aug 2013 13:42:39 -0700
+Message-ID: <CAK5ve-Lr6-P2nyGtGoxQZewS-m9ySQMfaE=tng0p6hJKnj+9mA@mail.gmail.com>
+Subject: Re: [PATCH 04/10] leds: lp5521: remove unnecessary writing commands
+To: Milo Kim <woogyom.kim@gmail.com>
+Cc: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(no top-post nor lazy quote please)
+On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim <woogyom.kim@gmail.com> wrote:
+> This patch reduces the number of programming commands.
+>
+> (Count of sending commands)
+> Old code: 32 + program size (32 counts for clearing program memory)
+> New code: 32
+>
+> Pattern buffer is initialized to 0 in this function.
+> Just update new program data and remaining buffers are filled with 0.
+> So it's needless to clear whole area.
+>
 
-David Shwatrz <dshwatrz@gmail.com> :
-[...]
-> In the napi_gro_receive() we check that the device supports
-> NETIF_F_GRO, but I don't see that we inspect checksum or that
-> NETIF_F_GRO is depends on checksum.
+Good, I will merge this.
+-Bryan
 
-napi_gro_receive is irrelevant. Let aside tunnel, the real work happens
-in the protocol specific gro_receive handlers.
-
-However I am an happy retard and I missed that tcp gro stopped depending
-on Rx checksum since commit 861b650101eb0c627d171eb18de81dddb93d395e. :o/
-
-So, yes, napi_gro_receive could be used.
-
--- 
-Ueimor
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
+> ---
+>  drivers/leds/leds-lp5521.c |   14 +++-----------
+>  1 file changed, 3 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+> index c00f922..0518835 100644
+> --- a/drivers/leds/leds-lp5521.c
+> +++ b/drivers/leds/leds-lp5521.c
+> @@ -220,17 +220,11 @@ static int lp5521_update_program_memory(struct lp55xx_chip *chip,
+>         };
+>         unsigned cmd;
+>         char c[3];
+> -       int program_size;
+>         int nrchars;
+> -       int offset = 0;
+>         int ret;
+> -       int i;
+> -
+> -       /* clear program memory before updating */
+> -       for (i = 0; i < LP5521_PROGRAM_LENGTH; i++)
+> -               lp55xx_write(chip, addr[idx] + i, 0);
+> +       int offset = 0;
+> +       int i = 0;
+>
+> -       i = 0;
+>         while ((offset < size - 1) && (i < LP5521_PROGRAM_LENGTH)) {
+>                 /* separate sscanfs because length is working only for %s */
+>                 ret = sscanf(data + offset, "%2s%n ", c, &nrchars);
+> @@ -250,11 +244,9 @@ static int lp5521_update_program_memory(struct lp55xx_chip *chip,
+>         if (i % 2)
+>                 goto err;
+>
+> -       program_size = i;
+> -
+>         mutex_lock(&chip->lock);
+>
+> -       for (i = 0; i < program_size; i++) {
+> +       for (i = 0; i < LP5521_PROGRAM_LENGTH; i++) {
+>                 ret = lp55xx_write(chip, addr[idx] + i, pattern[i]);
+>                 if (ret) {
+>                         mutex_unlock(&chip->lock);
+> --
+> 1.7.9.5
+>
