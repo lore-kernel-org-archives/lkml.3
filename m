@@ -1,82 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758306Ab3HMQdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:33:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4213 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757854Ab3HMQ0v (ORCPT
+	id S1758075Ab3HMQdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:33:13 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:58171 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755358Ab3HMQdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 12:26:51 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=JIRhoisSancA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=GA9nCqaG_WIA:10 a=20KFwNOVAAAA:8 a=yMhMjlubAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=0cRFCE-MzT_khLpehsgA:9 a=jEp0ucaQiEUA:10 a=-AOE9ft50oIA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=u5mEQeM0wOFTezRi:21 a=ph9TMAlYN4lwFIry:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130813155834.826743057@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 13 Aug 2013 11:58:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [71/88] drivers: hv: switch to use mb() instead of smp_mb()
-References: <20130813155654.069291373@goodmis.org>
-Content-Disposition: inline; filename=0071-drivers-hv-switch-to-use-mb-instead-of-smp_mb.patch
+	Tue, 13 Aug 2013 12:33:10 -0400
+Date: Tue, 13 Aug 2013 18:32:59 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Zach Brown <zab@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+cc: Andreas Schwab <schwab@linux-m68k.org>, Josef Bacik <jbacik@fusionio.com>,
+        Thorsten Glaser <tg@mirbsd.de>, Joe Perches <joe@perches.com>,
+        Debian GNU/Linux m68k <debian-68k@lists.debian.org>,
+        linux-btrfs@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: Re: btrfs zero divide
+In-Reply-To: <20130809180441.GB12314@lenny.home.zabbo.net>
+Message-ID: <alpine.DEB.2.02.1308131714130.12565@ayla.of.borg>
+References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org> <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg> <20130730171329.GF24583@localhost.localdomain> <Pine.BSM.4.64L.1307301741360.20305@herc.mirbsd.org> <20130730204001.GG24583@localhost.localdomain>
+ <87eha33v9f.fsf@igel.home> <20130809180441.GB12314@lenny.home.zabbo.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.7-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On Fri, 9 Aug 2013, Zach Brown wrote:
+> On Fri, Aug 09, 2013 at 02:26:36PM +0200, Andreas Schwab wrote:
+> > Josef Bacik <jbacik@fusionio.com> writes:
+> > 
+> > > So stripe_len shouldn't be 0, if it is you have bigger problems :).
+> > 
+> > The bigger problem is that stripe_nr is u64, this is completely bogus.
+> > The first operand of do_div must be u32.  This goes through the whole
+> > file.
 
-------------------
+This was introduced by commit 53b381b3abeb86f12787a6c40fee9b2f71edc23b
+("Btrfs: RAID5 and RAID6"), which changed the divisor from
+map->stripe_len (struct map_lookup.stripe_len is int) to a 64-bit
+temporary.
 
-From: Jason Wang <jasowang@redhat.com>
+> Definitely.  Can we get some typeof() tricks in the macros to have the
+> build fail if (when, evidently) someone gets it wrong?
 
-[ Upstream commit 35848f68b07df3f917cb13fc3c134718669f569b ]
+Not using typeof, as there are way too many callsites where int is used
+instead of u32.
 
-Even if guest were compiled without SMP support, it could not assume that host
-wasn't. So switch to use mb() instead of smp_mb() to force memory barriers for
-UP guest.
+However, checking that sizeof() equals to 4 seems to work.
+Below is a patch for asm-generic, which is untested, but it works when
+adding the same checks to arch/m68k/include/asm/div64.h
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This is not something we just want to drop in, as it has the potential of
+breaking lots of things (yes, it breaks btrfs :-)
+
+>From 7ccabf41beae38da514f3e09624219a9362375d7 Mon Sep 17 00:00:00 2001
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Tue, 13 Aug 2013 18:04:40 +0200
+Subject: [PATCH] asm-generic: Check divisor size in do_div()
+
+The second parameter of do_div() should be a 32-bit number.
+Enforce this using BUILD_BUG_ON().
+
+The first parameter of do_div() should be a 64-bit number,
+enforce this on 64-bit architectures, just like is done on 32-bit
+architectures.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/hv/ring_buffer.c |    2 +-
- drivers/hv/vmbus_drv.c   |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ include/asm-generic/div64.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/hv/ring_buffer.c b/drivers/hv/ring_buffer.c
-index 7233c88..14aa6fe 100644
---- a/drivers/hv/ring_buffer.c
-+++ b/drivers/hv/ring_buffer.c
-@@ -454,7 +454,7 @@ int hv_ringbuffer_read(struct hv_ring_buffer_info *inring_info, void *buffer,
- 	/* Make sure all reads are done before we update the read index since */
- 	/* the writer may start writing to the read area once the read index */
- 	/*is updated */
--	smp_mb();
-+	mb();
+diff --git a/include/asm-generic/div64.h b/include/asm-generic/div64.h
+index 8f4e319..69c0307 100644
+--- a/include/asm-generic/div64.h
++++ b/include/asm-generic/div64.h
+@@ -19,12 +19,15 @@
  
- 	/* Update the read index */
- 	hv_set_next_read_location(inring_info, next_read_location);
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 4748086..db5fc10 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -466,7 +466,7 @@ static void vmbus_on_msg_dpc(unsigned long data)
- 		 * will not deliver any more messages since there is
- 		 * no empty slot
- 		 */
--		smp_mb();
-+		mb();
+ #include <linux/types.h>
+ #include <linux/compiler.h>
++#include <linux/bug.h>
  
- 		if (msg->header.message_flags.msg_pending) {
- 			/*
+ #if BITS_PER_LONG == 64
+ 
+ # define do_div(n,base) ({					\
+ 	uint32_t __base = (base);				\
+ 	uint32_t __rem;						\
++	(void)(((typeof((n)) *)0) == ((uint64_t *)0));		\
++	BUILD_BUG_ON(sizeof(base) != 4);			\
+ 	__rem = ((uint64_t)(n)) % __base;			\
+ 	(n) = ((uint64_t)(n)) / __base;				\
+ 	__rem;							\
+@@ -41,6 +44,7 @@ extern uint32_t __div64_32(uint64_t *dividend, uint32_t divisor);
+ 	uint32_t __base = (base);			\
+ 	uint32_t __rem;					\
+ 	(void)(((typeof((n)) *)0) == ((uint64_t *)0));	\
++	BUILD_BUG_ON(sizeof(base) != 4);		\
+ 	if (likely(((n) >> 32) == 0)) {			\
+ 		__rem = (uint32_t)(n) % __base;		\
+ 		(n) = (uint32_t)(n) / __base;		\
 -- 
-1.7.10.4
+1.7.9.5
 
+Gr{oetje,eeting}s,
 
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
