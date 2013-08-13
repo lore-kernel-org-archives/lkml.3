@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757371Ab3HMKJK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 06:09:10 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:10997 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754613Ab3HMKJD (ORCPT
+	id S1757388Ab3HMKJS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 06:09:18 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:63259 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613Ab3HMKJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 06:09:03 -0400
-X-AuditID: cbfee61a-b7f196d000007dfa-9b-520a05bdb64c
+	Tue, 13 Aug 2013 06:09:13 -0400
+X-AuditID: cbfee61b-b7efe6d000007b11-45-520a05c8f4e1
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Zhang Rui <rui.zhang@intel.com>,
@@ -22,105 +22,98 @@ Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Kukjin Kim <kgene.kim@samsung.com>,
         Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Subject: [PATCH v7 4/7] cpufreq:boost:Kconfig: Provide support for software
- managed BOOST
-Date: Tue, 13 Aug 2013 12:08:22 +0200
-Message-id: <1376388505-30233-5-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH v7 6/7] Documentation:cpufreq:boost: Update BOOST documentation
+Date: Tue, 13 Aug 2013 12:08:24 +0200
+Message-id: <1376388505-30233-7-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1376388505-30233-1-git-send-email-l.majewski@samsung.com>
 References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
  <1376388505-30233-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jAd29rFxBBvMeSlpsnLGe1eJp0w92
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t9jAd0TrFxBBp8/KFhsnLGe1eJp0w92
 	i3mfZS36fl5htliz/yeTRefZJ8wWvQuuslm8ecRt8ebhZkaLy7vmsFl87j3CaHG7cQWbRf/C
 	XiaLJw/72Cw2fvVw4PdYvOclk8eda3vYPNZNe8vs0bdlFaPHo8UtjB7Hb2xn8vi8SS6APYrL
-	JiU1J7MstUjfLoEro2c5e8FD4YpjXx4yNzCuEuhi5OSQEDCR+HloEjuELSZx4d56ti5GLg4h
-	gUWMEl+utkI5XUwSjXdfs4BUsQnoSXy++5QJxBYRmMMoceeoO0gRs8ADZonF378wdjFycAgL
-	REs8vWQGUsMioCrx7+ZfZhCbV8BN4sHMh0wQ2+Qlnt7vYwOxOQXcJVb/b4Fa1sQo0XHsMNsE
-	Rt4FjAyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYKD9pnUDsaVDRaHGAU4GJV4eAXecwQJ
-	sSaWFVfmHmKU4GBWEuGNY+QKEuJNSaysSi3Kjy8qzUktPsQozcGiJM57oNU6UEggPbEkNTs1
-	tSC1CCbLxMEp1cAoweBY6vLzhnCxl9snRbYrGT3PzRUZeRMWRuxy/Od599qGrdFzZ0odFAoM
-	jTaQSdt/eE9K7TmD5V9/XkkO2139frLOvl05p/qlUm7ErnafKdoekzBnhky37K7kfTsmMEnJ
-	t26f/fLMzxetCjH9PdNvH1HeXFYh4ef/VLnuiaGAd0qM1g8+vedKLMUZiYZazEXFiQDKeM/D
-	VgIAAA==
+	JiU1J7MstUjfLoEr4/HCl8wFWyQqdu+aw9zA2CrSxcjJISFgIrF9xTsmCFtM4sK99WxdjFwc
+	QgKLGCUmPZsO5XQxSay4OJENpIpNQE/i892nYB0iAnMYJe4cdQcpYhZ4wCyx+PsXRpCEsIC/
+	RHvzUzCbRUBVYtK7BWA2r4CbxKsLJ1gh1slLPL3fBzaUU8BdYvX/FqhtTYwSHccOs01g5F3A
+	yLCKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzhwn0nvYFzVYHGIUYCDUYmHN+MjR5AQa2JZ
+	cWXuIUYJDmYlEd44Rq4gId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHW60DhQTSE0tSs1NTC1KL
+	YLJMHJxSDYycMld3p+UVqV2+dSnce2PaZe3G5WVr+CWeXE9T/aXs+/Cf5cJN7xlSP4lJ16/6
+	/XVF3nsO5p6P2hxtcc8LVRrKA52naf/iqSq8eTdzwqJ4A9v/zzYZNF/5539T7g5HrbwH0+ZF
+	/jqCS/1zCzq0/9vHbfyQzZ63/HHvywuv71SuEeif3Ft6p0WJpTgj0VCLuag4EQANX837WAIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For safety reasons new flag - CONFIG_CPU_FREQ_BOOST_SW has been added.
-Only after selecting "EXYNOS Frequency Overclocking - Software" Kconfig
-option the software managed boost is enabled. It also selects thermal
-subsystem to be compiled in. Thermal is necessary for disabling boost
-and cooling down the device when overheating detected.
-
-Boost _MUST_NOT_ work without thermal subsystem with properly defined
-overheating temperatures.
-
-This option doesn't affect x86's ACPI hardware managed boost support
-(i.e. Intel, AMD). In this situation boost management is embedded at
-hardware.
+Since the support for software and hardware controlled boosting has been
+added, the corresponding Documentation entry had been updated.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 
 ---
 Changes for v7:
-- Remove superfluous "default n" definition
-- Generic CPU_FREQ_BOOST_SW depends on THERMAL
+- None
 
 Changes for v6:
-- CPU_FREQ_BOOST_SW [1] is now defined as "invisible" bool option.
-- Platform dependent ARM_EXYNOS_CPU_FREQ_BOOST_SW config option has been
-  added. It depends on ARM_EXYNOS_CPUFREQ options and selects
-  EXYNOS_THERMAL with the main boost config [1].
+- None
 
 Changes for v5:
 - New patch
 
- drivers/cpufreq/Kconfig     |    4 ++++
- drivers/cpufreq/Kconfig.arm |   15 +++++++++++++++
- 2 files changed, 19 insertions(+)
+ Documentation/cpu-freq/boost.txt |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 534fcb8..e3cbf72 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -23,6 +23,10 @@ config CPU_FREQ_TABLE
- config CPU_FREQ_GOV_COMMON
- 	bool
+diff --git a/Documentation/cpu-freq/boost.txt b/Documentation/cpu-freq/boost.txt
+index 9b4edfc..dd62e13 100644
+--- a/Documentation/cpu-freq/boost.txt
++++ b/Documentation/cpu-freq/boost.txt
+@@ -17,8 +17,8 @@ Introduction
+ Some CPUs support a functionality to raise the operating frequency of
+ some cores in a multi-core package if certain conditions apply, mostly
+ if the whole chip is not fully utilized and below it's intended thermal
+-budget. This is done without operating system control by a combination
+-of hardware and firmware.
++budget. The decision about boost disable/enable is made either at hardware
++(e.g. x86) or software (e.g ARM).
+ On Intel CPUs this is called "Turbo Boost", AMD calls it "Turbo-Core",
+ in technical documentation "Core performance boost". In Linux we use
+ the term "boost" for convenience.
+@@ -48,24 +48,24 @@ be desirable:
+ User controlled switch
+ ----------------------
  
-+config CPU_FREQ_BOOST_SW
-+	bool
-+	depends on THERMAL
-+
- config CPU_FREQ_STAT
- 	tristate "CPU frequency translation statistics"
- 	select CPU_FREQ_TABLE
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index 0fa204b..6a6d173 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -67,6 +67,21 @@ config ARM_EXYNOS5440_CPUFREQ
+-To allow the user to toggle the boosting functionality, the acpi-cpufreq
+-driver exports a sysfs knob to disable it. There is a file:
++To allow the user to toggle the boosting functionality, the cpufreq core
++driver exports a sysfs knob to enable or disable it. There is a file:
+ /sys/devices/system/cpu/cpufreq/boost
+ which can either read "0" (boosting disabled) or "1" (boosting enabled).
+-Reading the file is always supported, even if the processor does not
+-support boosting. In this case the file will be read-only and always
+-reads as "0". Explicitly changing the permissions and writing to that
+-file anyway will return EINVAL.
++The file is exported only when cpufreq driver supports boosting.
++Explicitly changing the permissions and writing to that file anyway will
++return EINVAL.
  
- 	  If in doubt, say N.
+ On supported CPUs one can write either a "0" or a "1" into this file.
+ This will either disable the boost functionality on all cores in the
+-whole system (0) or will allow the hardware to boost at will (1).
++whole system (0) or will allow the software or hardware to boost at will
++(1).
  
-+config ARM_EXYNOS_CPU_FREQ_BOOST_SW
-+	bool "EXYNOS Frequency Overclocking - Software"
-+	depends on ARM_EXYNOS_CPUFREQ
-+	select CPU_FREQ_BOOST_SW
-+	select EXYNOS_THERMAL
-+	help
-+	  This driver supports software managed overclocking (BOOST).
-+	  It allows usage of special frequencies for Samsung Exynos
-+	  processors if thermal conditions are appropriate.
-+
-+	  It reguires, for safe operation, thermal framework with properly
-+	  defined trip points.
-+
-+	  If in doubt, say N.
-+
- config ARM_HIGHBANK_CPUFREQ
- 	tristate "Calxeda Highbank-based"
- 	depends on ARCH_HIGHBANK
+ Writing a "1" does not explicitly boost the system, but just allows the
+-CPU (and the firmware) to boost at their discretion. Some implementations
+-take external factors like the chip's temperature into account, so
+-boosting once does not necessarily mean that it will occur every time
+-even using the exact same software setup.
++CPU to boost at their discretion. Some implementations take external
++factors like the chip's temperature into account, so boosting once does
++not necessarily mean that it will occur every time even using the exact
++same software setup.
+ 
+ 
+ AMD legacy cpb switch
 -- 
 1.7.10.4
 
