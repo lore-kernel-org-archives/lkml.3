@@ -1,102 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758399Ab3HMS4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 14:56:37 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:42422 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109Ab3HMS4g (ORCPT
+	id S1758283Ab3HMS7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 14:59:11 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:56808 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758085Ab3HMS7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 14:56:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1375948794-6286-2-git-send-email-milo.kim@ti.com>
-References: <1375948794-6286-1-git-send-email-milo.kim@ti.com> <1375948794-6286-2-git-send-email-milo.kim@ti.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 13 Aug 2013 11:56:14 -0700
-Message-ID: <CAK5ve-K10M3+=ctxu+5hU=pPz1_x6p1JgQS6jEin-LfxnP8Hog@mail.gmail.com>
-Subject: Re: [PATCH 01/10] leds: lp55xx: add common data structure for program
-To: Milo Kim <woogyom.kim@gmail.com>
-Cc: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 Aug 2013 14:59:10 -0400
+Subject: Re: [PATCH] staging: Platform device tester - Allow removal
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20130813185521.GA9483@kroah.com>
+Date: Tue, 13 Aug 2013 21:59:03 +0300
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        =?iso-8859-1?Q?Beno=EEt_Coussno?= <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <DB915540-70CB-4600-BF8D-734107B1FE29@antoniou-consulting.com>
+References: <1376386470-27328-1-git-send-email-panto@antoniou-consulting.com> <20130813182012.GE7740@kroah.com> <70F17005-652E-4C04-B6EC-51E16EE237C3@antoniou-consulting.com> <20130813185521.GA9483@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim <woogyom.kim@gmail.com> wrote:
-> LP55xx family devices have internal three program engines which are used for
-> loading LED patterns.
-> To maintain legacy device attributes, specific data structure is used, 'mode'
-> and 'led_mux'.
-> The mode is used for showing/storing current engine mode such like disabled,
-> load and run.
-> Then led_mux is used for showing/storing current output LED selection.
-> This is only for LP5523/55231.
->
+Hi Greg,
 
-This patch looks good to me, but the commit message format is little
-bit odd to me. I will fix that and merge into my tree.
+Just to make sure we're on the same page this is with my platform device
+removal patchset applied.
 
-Thanks,
--Bryan
+Without it you get the original crash I've posted in the pdevtest patch with
+the unbind method.
+
+Regards
+
+-- Pantelis
 
 
-> Signed-off-by: Milo Kim <milo.kim@ti.com>
-> ---
->  drivers/leds/leds-lp55xx-common.h |   19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
->
-> diff --git a/drivers/leds/leds-lp55xx-common.h b/drivers/leds/leds-lp55xx-common.h
-> index dbbf86d..04c1d4f 100644
-> --- a/drivers/leds/leds-lp55xx-common.h
-> +++ b/drivers/leds/leds-lp55xx-common.h
-> @@ -20,6 +20,13 @@ enum lp55xx_engine_index {
->         LP55XX_ENGINE_1,
->         LP55XX_ENGINE_2,
->         LP55XX_ENGINE_3,
-> +       LP55XX_ENGINE_MAX = LP55XX_ENGINE_3,
-> +};
-> +
-> +enum lp55xx_engine_mode {
-> +       LP55XX_ENGINE_DISABLED,
-> +       LP55XX_ENGINE_LOAD,
-> +       LP55XX_ENGINE_RUN,
->  };
->
->  struct lp55xx_led;
-> @@ -72,6 +79,16 @@ struct lp55xx_device_config {
->  };
->
->  /*
-> + * struct lp55xx_engine
-> + * @mode       : Engine mode
-> + * @led_mux    : Mux bits for LED selection. Only used in LP5523
-> + */
-> +struct lp55xx_engine {
-> +       enum lp55xx_engine_mode mode;
-> +       u16 led_mux;
-> +};
-> +
-> +/*
->   * struct lp55xx_chip
->   * @cl         : I2C communication for access registers
->   * @pdata      : Platform specific data
-> @@ -79,6 +96,7 @@ struct lp55xx_device_config {
->   * @num_leds   : Number of registered LEDs
->   * @cfg        : Device specific configuration data
->   * @engine_idx : Selected engine number
-> + * @engines    : Engine structure for the device attribute R/W interface
->   * @fw         : Firmware data for running a LED pattern
->   */
->  struct lp55xx_chip {
-> @@ -89,6 +107,7 @@ struct lp55xx_chip {
->         int num_leds;
->         struct lp55xx_device_config *cfg;
->         enum lp55xx_engine_index engine_idx;
-> +       struct lp55xx_engine engines[LP55XX_ENGINE_MAX];
->         const struct firmware *fw;
->  };
->
-> --
-> 1.7.9.5
->
