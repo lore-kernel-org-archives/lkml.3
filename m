@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378Ab3HMArv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 20:47:51 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:64637 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756245Ab3HMAru (ORCPT
+	id S1756365Ab3HMA4U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 20:56:20 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:40423 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756154Ab3HMA4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 20:47:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130812154810.433858a5@gandalf.local.home>
-References: <20130812163413.GI23040@linutronix.de> <20130812154810.433858a5@gandalf.local.home>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Mon, 12 Aug 2013 20:47:18 -0400
-X-Google-Sender-Auth: UHeEHOcqBwCzxle9R_dYGWj2GlY
-Message-ID: <CAP=VYLrd_ZU94Nf0X+FtT3M2Xx85t9FF13o-hV+_xHi7EjTf=w@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.10.6-rt3
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Aug 2013 20:56:19 -0400
+Message-ID: <1376355303.10300.376.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 0/2] Protect cpu map updates from ACPI processor
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com
+Date: Mon, 12 Aug 2013 18:55:03 -0600
+In-Reply-To: <2206062.QmFJav0XuL@vostro.rjw.lan>
+References: <1376322354-13026-1-git-send-email-toshi.kani@hp.com>
+	 <2206062.QmFJav0XuL@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 3:48 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 12 Aug 2013 18:34:13 +0200
-> Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
->
->> Dear RT folks!
->>
->> I'm pleased to announce the v3.10.6-rt3 patch set.
->
->
-> Does this mean that I can drop 3.6-rt in favor of 3.8-rt?
+On Tue, 2013-08-13 at 02:43 +0200, Rafael J. Wysocki wrote:
+> On Monday, August 12, 2013 09:45:52 AM Toshi Kani wrote:
+> > CPU system maps are protected with reader/writer locks.  The reader
+> > lock, put_online_cpus(), assures that the maps are not updated while
+> > holding the lock.  The writer lock, cpu_hotplug_begin(), is used to
+> > udpate the cpu maps along with cpu_maps_update_begin().
+> > 
+> > However, the ACPI processor handler updates the cpu maps without
+> > holding the the writer lock.  This patchset fixes this problem.
+> > 
+> > ---
+> > The patchset is based on linux-next of the pm tree.
+> 
+> Basically looks OK to me, but I'd just merge the patches together,
+> because the [2/2] is the very reason for the change made by [1/2].
 
-I'd guess that the trade-off would be 3.0-rt against 3.8-rt.
-The above comment assumes 3.0 is aged out vs. 3.6 kernel.
+I separated for reviewing purpose, but yes, they can be together.  Let
+me know if you need me to re-send it together.
 
->
-> I'm just about finished with a 3.6 stable, which I'll finish, add -rt
-> to it, and then call it "unsupported" after that. Well, I may take bug
-> fixes if people find any in the near future.
->
-> I'm behind on 3.4-rt, 3.2-rt and of course 3.0-rt. Hopefully, I'll get
-> them all out this week.
+> Also it would be good to mention the actual scenario that may lead
+> to problems with that.
 
-I expect that the 3.10-rt kernel will replace the older RT kernels.
+For example, the get_online_cpus() below is supposed to assure that
+cpu_possible_mask is not changed while the code is iterating with
+for_each_possible_cpu().
 
->
-> -- Steve
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+        get_online_cpus();
+        for_each_possible_cpu(cpu) {
+		:
+        }
+        put_online_cpus();
+
+However, this lock has no protection with CPU hotplug since the ACPI
+processor handler does not use the writer lock when it updates
+cpu_possible_mask.  The reader lock does not serialize within the
+readers.
+
+Thanks,
+-Toshi
+
+
+
