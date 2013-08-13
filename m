@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab3HMIxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 04:53:19 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:58687 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab3HMIxR (ORCPT
+	id S1754637Ab3HMI5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 04:57:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48082 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691Ab3HMI5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 04:53:17 -0400
-Date: Tue, 13 Aug 2013 10:53:06 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: linux-sh@vger.kernel.org
-Subject: Re: Build regressions/improvements in v3.11-rc5
-In-Reply-To: <alpine.DEB.2.02.1308131050570.25134@ayla.of.borg>
-Message-ID: <alpine.DEB.2.02.1308131052320.25160@ayla.of.borg>
-References: <alpine.DEB.2.02.1308131050570.25134@ayla.of.borg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 13 Aug 2013 04:57:13 -0400
+Date: Tue, 13 Aug 2013 10:57:08 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Felipe Balbi <balbi@ti.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [PATCH] usb: phy: am335x: include linux/err.h
+Message-ID: <20130813085707.GB23842@linutronix.de>
+References: <20130813181719.e2dea691c1e3c19bd6306983@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130813181719.e2dea691c1e3c19bd6306983@canb.auug.org.au>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.11-rc5 to v3.11-rc4[3], the summaries are:
->   - build errors: +11/-21
+Stephen Rothwell reported that this driver does not compile on PowerPC
+due to this missing include. One could argue why this driver is enabled
+on PowerPC in the first place but it sure isn't wrong to include headers
+for used function instead of to rely that they sneak in.
 
-  + arch/sh/drivers/pci/pci.c: error: 'sh_io_port_base' undeclared (first use in this function):  => 304:23
-  + drivers/atm/eni.c: error: conflicting types for 'dump_mem':  => 166:13
-  + lib/checksum.c: error: redefinition of 'csum_partial_copy_from_user':  => 156:1
-  + lib/checksum.c: error: redefinition of 'csum_tcpudp_nofold':  => 184:8
-  + lib/checksum.c: error: redefinition of 'ip_compute_csum':  => 146:9
-  + lib/checksum.c: error: redefinition of 'ip_fast_csum':  => 110:9
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/usb/phy/phy-am335x-control.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-sh-randconfig
+diff --git a/drivers/usb/phy/phy-am335x-control.c b/drivers/usb/phy/phy-am335x-control.c
+index 35494f1..7597545 100644
+--- a/drivers/usb/phy/phy-am335x-control.c
++++ b/drivers/usb/phy/phy-am335x-control.c
+@@ -1,5 +1,6 @@
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
++#include <linux/err.h>
+ #include <linux/of.h>
+ #include <linux/io.h>
+ 
+-- 
+1.8.4.rc1
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6532/ (all 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6510/ (all 120 configs)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
