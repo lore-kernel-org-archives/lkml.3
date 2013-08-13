@@ -1,166 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906Ab3HMOjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:39:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39100 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757806Ab3HMOjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:39:44 -0400
-Date: Tue, 13 Aug 2013 16:33:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Long Gao <gaolong@kylinos.com.cn>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] sched: fix the theoretical signal_wake_up() vs
-	schedule() race
-Message-ID: <20130813143325.GA5541@redhat.com>
-References: <tencent_26310211398C21034BD3B2F9@qq.com> <CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com> <20130808191749.GA12062@redhat.com> <CA+55aFw+vEp6+q+QUZm5rf+sKR9z76HWzEqWjoiLtataym5uwA@mail.gmail.com> <20130809130457.GA27493@redhat.com> <CA+55aFxh+4yK3AkPQWGq+hGhBgvDdWuPSfzko2aO76y7ej=Veg@mail.gmail.com> <20130812170257.GA32358@redhat.com> <20130813075550.GS27162@twins.programming.kicks-ass.net>
+	id S1757279Ab3HMOkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:40:07 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:53550 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757497Ab3HMOje (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 10:39:34 -0400
+Message-ID: <520A4528.6020609@cogentembedded.com>
+Date: Tue, 13 Aug 2013 18:39:36 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813075550.GS27162@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Hayes Wang <hayeswang@realtek.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 2/3] net/usb/r8152: enable tx checksum
+References: <1376378913-879-1-git-send-email-hayeswang@realtek.com> <1376378913-879-2-git-send-email-hayeswang@realtek.com>
+In-Reply-To: <1376378913-879-2-git-send-email-hayeswang@realtek.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13, Peter Zijlstra wrote:
+Hello.
+
+On 08/13/2013 11:28 AM, Hayes Wang wrote:
+
+> Enable tx checksum.
+
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
+>   drivers/net/usb/r8152.c | 63 +++++++++++++++++++++++++++++++++++++++++++++----
+>   1 file changed, 58 insertions(+), 5 deletions(-)
+
+> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+> index c6c5aa2..5d9d949 100644
+> --- a/drivers/net/usb/r8152.c
+> +++ b/drivers/net/usb/r8152.c
+[...]
+> @@ -964,6 +971,51 @@ err1:
+>   	return -ENOMEM;
+>   }
 >
-> On Mon, Aug 12, 2013 at 07:02:57PM +0200, Oleg Nesterov wrote:
-> > +/*
-> > + * Despite its name it doesn't necessarily has to be a full barrier.
-> > + * It should only guarantee that a STORE before the critical section
-> > + * can not be reordered with a LOAD inside this section.
-> > + * So the default implementation simply ensures that a STORE can not
-> > + * move into the critical section, smp_wmb() should serialize it with
-> > + * another STORE done by spin_lock().
-> > + */
-> > +#ifndef smp_mb__before_spinlock
-> > +#define smp_mb__before_spinlock()	smp_wmb()
-> >  #endif
->
-> I would have expected mention of the ACQUIRE of the lock keeping the
-> LOAD inside the locked section.
+> +static void
+> +r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc, struct sk_buff *skb)
+> +{
+[...]
+> +		if (ip_protocol == IPPROTO_TCP) {
+> +			opts2 |= TCP_CS;
+> +			opts2 |= (skb_transport_offset(skb) & 0x7fff) << 17;
+> +		} else if (ip_protocol == IPPROTO_UDP) {
+> +			opts2 |= UDP_CS;
+> +		} else
+> +			WARN_ON_ONCE(1);
 
-OK, please see v2 below.
+    Stange, why *else if* branch has {} and *else* don't. It should, according 
+to Documentation/CodingStyle.
 
----
->From 8de96d3feae3b4b51669902b7c24ac1748ecdbfe Mon Sep 17 00:00:00 2001
-From: Oleg Nesterov <oleg@redhat.com>
-Date: Mon, 12 Aug 2013 18:14:00 +0200
-Subject: sched: fix the theoretical signal_wake_up() vs schedule() race
+> +
+> +		desc->opts2 = cpu_to_le32(opts2);
+> +	}
+> +}
+> +
 
-This is only theoretical, but after try_to_wake_up(p) was changed
-to check p->state under p->pi_lock the code like
-
-	__set_current_state(TASK_INTERRUPTIBLE);
-	schedule();
-
-can miss a signal. This is the special case of wait-for-condition,
-it relies on try_to_wake_up/schedule interaction and thus it does
-not need mb() between __set_current_state() and if(signal_pending).
-
-However, this __set_current_state() can move into the critical
-section protected by rq->lock, now that try_to_wake_up() takes
-another lock we need to ensure that it can't be reordered with
-"if (signal_pending(current))" check inside that section.
-
-The patch is actually one-liner, it simply adds smp_wmb() before
-spin_lock_irq(rq->lock). This is what try_to_wake_up() already
-does by the same reason.
-
-We turn this wmb() into the new helper, smp_mb__before_spinlock(),
-for better documentation and to allow the architectures to change
-the default implementation.
-
-While at it, kill smp_mb__after_lock(), it has no callers.
-
-Perhaps we can also add smp_mb__before/after_spinunlock() for
-prepare_to_wait().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/include/asm/spinlock.h |    4 ----
- include/linux/spinlock.h        |   14 +++++++++++---
- kernel/sched/core.c             |   14 +++++++++++++-
- 3 files changed, 24 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 33692ea..e3ddd7d 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -233,8 +233,4 @@ static inline void arch_write_unlock(arch_rwlock_t *rw)
- #define arch_read_relax(lock)	cpu_relax()
- #define arch_write_relax(lock)	cpu_relax()
- 
--/* The {read|write|spin}_lock() on x86 are full memory barriers. */
--static inline void smp_mb__after_lock(void) { }
--#define ARCH_HAS_SMP_MB_AFTER_LOCK
--
- #endif /* _ASM_X86_SPINLOCK_H */
-diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
-index 7d537ce..75f3494 100644
---- a/include/linux/spinlock.h
-+++ b/include/linux/spinlock.h
-@@ -117,9 +117,17 @@ do {								\
- #endif /*arch_spin_is_contended*/
- #endif
- 
--/* The lock does not imply full memory barrier. */
--#ifndef ARCH_HAS_SMP_MB_AFTER_LOCK
--static inline void smp_mb__after_lock(void) { smp_mb(); }
-+/*
-+ * Despite its name it doesn't necessarily has to be a full barrier.
-+ * It should only guarantee that a STORE before the critical section
-+ * can not be reordered with a LOAD inside this section.
-+ * spin_lock() is the one-way barrier, this LOAD can not escape out
-+ * of the region. So the default implementation simply ensures that
-+ * a STORE can not move into the critical section, smp_wmb() should
-+ * serialize it with another STORE done by spin_lock().
-+ */
-+#ifndef smp_mb__before_spinlock
-+#define smp_mb__before_spinlock()	smp_wmb()
- #endif
- 
- /**
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 6df0fbe..97dac0e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1491,7 +1491,13 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
- 	unsigned long flags;
- 	int cpu, success = 0;
- 
--	smp_wmb();
-+	/*
-+	 * If we are going to wake up a thread waiting for CONDITION we
-+	 * need to ensure that CONDITION=1 done by the caller can not be
-+	 * reordered with p->state check below. This pairs with mb() in
-+	 * set_current_state() the waiting thread does.
-+	 */
-+	smp_mb__before_spinlock();
- 	raw_spin_lock_irqsave(&p->pi_lock, flags);
- 	if (!(p->state & state))
- 		goto out;
-@@ -2394,6 +2400,12 @@ need_resched:
- 	if (sched_feat(HRTICK))
- 		hrtick_clear(rq);
- 
-+	/*
-+	 * Make sure that signal_pending_state()->signal_pending() below
-+	 * can't be reordered with __set_current_state(TASK_INTERRUPTIBLE)
-+	 * done by the caller to avoid the race with signal_wake_up().
-+	 */
-+	smp_mb__before_spinlock();
- 	raw_spin_lock_irq(&rq->lock);
- 
- 	switch_count = &prev->nivcsw;
--- 
-1.5.5.1
-
+WBR, Sergei
 
