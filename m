@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757636Ab3HMOaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:30:23 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:37296 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757497Ab3HMOaU (ORCPT
+	id S1757608Ab3HMOcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:32:16 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:60924 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756058Ab3HMOcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:30:20 -0400
-Message-ID: <520A42F8.9050108@monstr.eu>
-Date: Tue, 13 Aug 2013 16:30:16 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 13 Aug 2013 10:32:15 -0400
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Zynq clk fixes
-References: <51F26716.6030701@monstr.eu> <20130726200703.7598.86150@quantum> <a76b3a5d-dadc-43b3-87ee-3c65258c15d7@CO1EHSMHS029.ehs.local> <20130726222501.7598.33060@quantum>
-In-Reply-To: <20130726222501.7598.33060@quantum>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="VM1JQGvt87arbNRmCOOPqhVa6RD8AACcb"
+In-Reply-To: <520A414A.1000102@linutronix.de>
+References: <51F2BE6F.3010008@linutronix.de>
+	<CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
+	<51F2D427.7050106@linutronix.de>
+	<CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
+	<51F2DD90.2030405@linutronix.de>
+	<CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
+	<20130729165329.GA5773@linutronix.de>
+	<CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com>
+	<51F6ABA2.7060102@linutronix.de>
+	<CADYTM3bcCoWKE9eR5Sd9MbaEUr4G=k=r6JKR+8KC=W_YrbMs3g@mail.gmail.com>
+	<20130809160339.GA14829@linutronix.de>
+	<5205516D.1030707@cogentembedded.com>
+	<5209DCB9.8020705@linutronix.de>
+	<CADYTM3a2M-X=eqz0LmSq4T9UF9khsTGB5TTYWWMRZWwkpRuRTQ@mail.gmail.com>
+	<520A3206.5080505@linutronix.de>
+	<CADYTM3YU=xt-YDaoOqothjAv_rdnzRmop10Rf7PSA7POaE5DBQ@mail.gmail.com>
+	<520A3847.4090506@linutronix.de>
+	<CADYTM3YDmBw2Due5boftM_a+U2EcVaw8d9sFo8167Q0v1KSRgQ@mail.gmail.com>
+	<520A414A.1000102@linutronix.de>
+Date: Tue, 13 Aug 2013 09:32:13 -0500
+Message-ID: <CADYTM3Z9AwRz1z2k-Ve4xMoW5i2YRdxk2sJ3Aw-6tjR0oD1y7w@mail.gmail.com>
+Subject: Re: [PATCH] usb: musb: am335x: Do not remove the session bin
+ HOST-only mode
+From: Bin Liu <binmlist@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---VM1JQGvt87arbNRmCOOPqhVa6RD8AACcb
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Sebastian,
 
-Hi Mike,
+On Tue, Aug 13, 2013 at 9:23 AM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> Where is my memory going? So now I have a beagle bone in front of me
+> and I see a micro USB port a standard A connector. My memory was
+> different.
+> The micro USB is the UART and standard is most likely the first musb
+> instance. So this should run also in host mode and not in OTG mode.
+> Hmmm. Let me double check this.
+I don't know how dts instances both in mainline, but I would think if
+you create two musb instances, and load a gadget driver for this micro
+USB port, the USB host should enumerate it. The standard port should
+be the 2nd instance which has its ID pin grounded and work in
+host-only mode.
 
-On 07/27/2013 12:25 AM, Mike Turquette wrote:
-> Quoting S=C3=B6ren Brinkmann (2013-07-26 14:11:52)
->> On Fri, Jul 26, 2013 at 01:07:03PM -0700, Mike Turquette wrote:
->>> Quoting Michal Simek (2013-07-26 05:09:58)
->>>> Hi Mike, [cc: Arnd and Olof]
->>>>
->>>> Soren has found two bug fixes in zynq clk code.
->>>> Can you please add these two patches to your tree?
->>>> Will be great if you can add them to v3.11.
->>>>
->>>> Arnd, Olof: I expect that all these clock changes should go through =
-Mike.
->>>> If I am wrong please let me know.
->>>
->>> Looks right to me. Do these fix regressions in the current -rc cycle?=
+This is how they work in TI 3.2 kernel.
 
->>
->> I doubt there are real regressions. But since it's still early in
->> the release cycle and the driver was added in this merge window, I'd p=
-refer
->> having it hit a release kernel with these fixes included.
->=20
-> I've taken these into clk-fixes and added the following to the changelo=
-g
-> for each patch:
->=20
-> "This does not fix a specific regression but the clock driver was merge=
-d
-> for 3.11-rc1, so best to fix the known bugs before the release."
-
-Can you please tell me where you have added these two patches?
-      clk/zynq/clkc: Add dedicated spinlock for the SWDT
-      clk/zynq/clkc: Add CLK_SET_RATE_PARENT flag to ethernet muxes
-
-I can't see them in clk-fixes branch (this branch is pretty obsolete).
-http://git.linaro.org/gitweb?p=3Dpeople/mturquette/linux.git;a=3Dsummary
-
-Thanks,
-Michal
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---VM1JQGvt87arbNRmCOOPqhVa6RD8AACcb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlIKQvgACgkQykllyylKDCGmZQCbBGvcNc20esnPtuT3tQA9QnmI
-q6YAn19WbDXc1fJcZDfgKgn9rY6GPajL
-=iAYq
------END PGP SIGNATURE-----
-
---VM1JQGvt87arbNRmCOOPqhVa6RD8AACcb--
+>
+>
+> Sebastian
