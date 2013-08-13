@@ -1,978 +1,888 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565Ab3HMOIF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:08:05 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:52959 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756428Ab3HMOIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:08:01 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: linux-mmc@vger.kernel.org
-Cc: cjb@laptop.org, grant.likely@linaro.org, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        bjorn@kryo.se, davidb@codeaurora.org,
-        Georgi Djakov <gdjakov@mm-sol.com>,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>,
-        Sahitya Tummala <stummala@codeaurora.org>,
-        Subhash Jadavani <subhashj@codeaurora.org>
-Subject: [PATCH RFC v2] mmc: sdhci-msm: Add support for MSM chipsets
-Date: Tue, 13 Aug 2013 17:06:30 +0300
-Message-Id: <1376402790-16864-1-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375201355-26906-1-git-send-email-gdjakov@mm-sol.com>
-References: <1375201355-26906-1-git-send-email-gdjakov@mm-sol.com>
+	id S1757320Ab3HMOUe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:20:34 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:47363 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756428Ab3HMOUc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 10:20:32 -0400
+Date: Tue, 13 Aug 2013 15:19:48 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Roy Franz <roy.franz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
+        linux@arm.linux.org.uk, leif.lindholm@linaro.org, msalter@redhat.com
+Subject: Re: [PATCH 15/16] Add EFI stub for ARM
+Message-ID: <20130813141947.GF2823@localhost.localdomain>
+References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
+ <1376090777-20090-16-git-send-email-roy.franz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376090777-20090-16-git-send-email-roy.franz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This platform driver adds the support of Secure Digital Host
-Controller Interface compliant controller in MSM chipsets.
+On Fri, Aug 09, 2013 at 04:26:16PM -0700, Roy Franz wrote:
+> This patch adds EFI stub support for the ARM Linux kernel.  The EFI stub
+> operations similarly to the x86 stub: it is a shim between the EFI firmware
+> and the normal zImage entry point, and sets up the environment that the
+> zImage is expecting.  This includes loading the initrd (optionaly) and
+> device tree from the system partition based on the kernel command line.
+> The stub updates the device tree as necessary, including adding reserved
+> memory regions and adding entries for EFI runtime services. The PE/COFF
+> "MZ" header at offset 0 results in the first instruction being an add
+> that corrupts r5, which is not used by the zImage interface.
 
-CC: Asutosh Das <asutoshd@codeaurora.org>
-CC: Venkat Gopalakrishnan <venkatg@codeaurora.org>
-CC: Sahitya Tummala <stummala@codeaurora.org>
-CC: Subhash Jadavani <subhashj@codeaurora.org>
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
----
-Changes from v1:
-- GPIO references are replaced by pinctrl
-- DT parsing is done mostly by mmc_of_parse()
-- Use of_match_device() for DT matching
-- A few minor changes
+Thanks for the update -- a few more comments, nothing major.
 
- .../devicetree/bindings/mmc/sdhci-msm.txt          |   62 ++
- drivers/mmc/host/Kconfig                           |   13 +
- drivers/mmc/host/Makefile                          |    1 +
- drivers/mmc/host/sdhci-msm.c                       |  813 ++++++++++++++++++++
- 4 files changed, 889 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mmc/sdhci-msm.txt
- create mode 100644 drivers/mmc/host/sdhci-msm.c
+> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+> ---
+>  arch/arm/boot/compressed/Makefile     |   15 +-
+>  arch/arm/boot/compressed/efi-header.S |  111 ++++++++
+>  arch/arm/boot/compressed/efi-stub.c   |  448 +++++++++++++++++++++++++++++++++
+>  arch/arm/boot/compressed/efi-stub.h   |    5 +
+>  arch/arm/boot/compressed/head.S       |   90 ++++++-
+>  5 files changed, 661 insertions(+), 8 deletions(-)
+>  create mode 100644 arch/arm/boot/compressed/efi-header.S
+>  create mode 100644 arch/arm/boot/compressed/efi-stub.c
+>  create mode 100644 arch/arm/boot/compressed/efi-stub.h
+> 
+> diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
+> index 7ac1610..5fad8bd 100644
+> --- a/arch/arm/boot/compressed/Makefile
+> +++ b/arch/arm/boot/compressed/Makefile
+> @@ -103,11 +103,22 @@ libfdt_objs	:= $(addsuffix .o, $(basename $(libfdt)))
+>  $(addprefix $(obj)/,$(libfdt) $(libfdt_hdrs)): $(obj)/%: $(srctree)/scripts/dtc/libfdt/%
+>  	$(call cmd,shipped)
+>  
+> -$(addprefix $(obj)/,$(libfdt_objs) atags_to_fdt.o): \
+> +$(addprefix $(obj)/,$(libfdt_objs) atags_to_fdt.o efi-stub.o): \
+>  	$(addprefix $(obj)/,$(libfdt_hdrs))
+>  
+>  ifeq ($(CONFIG_ARM_ATAG_DTB_COMPAT),y)
+> -OBJS	+= $(libfdt_objs) atags_to_fdt.o
+> +OBJS	+= atags_to_fdt.o
+> +USE_LIBFDT = y
+> +endif
+> +
+> +ifeq ($(CONFIG_EFI_STUB),y)
+> +CFLAGS_efi-stub.o += -DTEXT_OFFSET=$(TEXT_OFFSET)
+> +OBJS	+= efi-stub.o
+> +USE_LIBFDT = y
+> +endif
+> +
+> +ifeq ($(USE_LIBFDT),y)
+> +OBJS	+= $(libfdt_objs)
+>  endif
+>  
+>  targets       := vmlinux vmlinux.lds \
+> diff --git a/arch/arm/boot/compressed/efi-header.S b/arch/arm/boot/compressed/efi-header.S
+> new file mode 100644
+> index 0000000..6965e0f
+> --- /dev/null
+> +++ b/arch/arm/boot/compressed/efi-header.S
+> @@ -0,0 +1,111 @@
+> +@ Copyright (C) 2013 Linaro Ltd;  <roy.franz@linaro.org>
+> +@
+> +@ This file contains the PE/COFF header that is part of the
+> +@ EFI stub.
+> +@
+> +
+> +	.org	0x3c
+> +	@
+> +	@ The PE header can be anywhere in the file, but for
+> +	@ simplicity we keep it together with the MSDOS header
+> +	@ The offset to the PE/COFF header needs to be at offset
+> +	@ 0x3C in the MSDOS header.
+> +	@ The only 2 fields of the MSDOS header that are used are this
+> +	@ PE/COFF offset, and the "MZ" bytes at offset 0x0.
+> +	@
+> +	.long	pe_header			@ Offset to the PE header.
+> +
+> +      .align 3
+> +pe_header:
+> +	.ascii	"PE"
+> +	.short 	0
+> +
+> +coff_header:
+> +	.short	0x01c2				@ ARM or Thumb
+> +	.short	2				@ nr_sections
+> +	.long	0 				@ TimeDateStamp
+> +	.long	0				@ PointerToSymbolTable
+> +	.long	1				@ NumberOfSymbols
+> +	.short	section_table - optional_header	@ SizeOfOptionalHeader
+> +	.short	0x306				@ Characteristics.
+> +						@ IMAGE_FILE_32BIT_MACHINE |
+> +						@ IMAGE_FILE_DEBUG_STRIPPED |
+> +						@ IMAGE_FILE_EXECUTABLE_IMAGE |
+> +						@ IMAGE_FILE_LINE_NUMS_STRIPPED
+> +
+> +optional_header:
+> +	.short	0x10b				@ PE32 format
+> +	.byte	0x02				@ MajorLinkerVersion
+> +	.byte	0x14				@ MinorLinkerVersion
+> +
+> +	.long	_edata - efi_stub_entry		@ SizeOfCode
+> +
+> +	.long	0				@ SizeOfInitializedData
+> +	.long	0				@ SizeOfUninitializedData
+> +
+> +	.long	efi_stub_entry			@ AddressOfEntryPoint
+> +	.long	efi_stub_entry			@ BaseOfCode
+> +	.long	0				@ data
+> +
+> +extra_header_fields:
+> +	.long	0				@ ImageBase
+> +	.long	0x20				@ SectionAlignment
+> +	.long	0x20				@ FileAlignment
+> +	.short	0				@ MajorOperatingSystemVersion
+> +	.short	0				@ MinorOperatingSystemVersion
+> +	.short	0				@ MajorImageVersion
+> +	.short	0				@ MinorImageVersion
+> +	.short	0				@ MajorSubsystemVersion
+> +	.short	0				@ MinorSubsystemVersion
+> +	.long	0				@ Win32VersionValue
+> +
+> +	.long	_edata				@ SizeOfImage
+> +
+> +	@ Everything before the entry point is considered part of the header
+> +	.long	efi_stub_entry			@ SizeOfHeaders
+> +	.long	0				@ CheckSum
+> +	.short	0xa				@ Subsystem (EFI application)
+> +	.short	0				@ DllCharacteristics
+> +	.long	0				@ SizeOfStackReserve
+> +	.long	0				@ SizeOfStackCommit
+> +	.long	0				@ SizeOfHeapReserve
+> +	.long	0				@ SizeOfHeapCommit
+> +	.long	0				@ LoaderFlags
+> +	.long	0x0				@ NumberOfRvaAndSizes
+> +
+> +	# Section table
+> +section_table:
+> +
+> +	#
+> +	# The EFI application loader requires a relocation section
+> +	# because EFI applications must be relocatable.  This is a
+> +	# dummy section as far as we are concerned.
+> +	#
+> +	.ascii	".reloc"
+> +	.byte	0
+> +	.byte	0			@ end of 0 padding of section name
+> +	.long	0
+> +	.long	0
+> +	.long	0			@ SizeOfRawData
+> +	.long	0			@ PointerToRawData
+> +	.long	0			@ PointerToRelocations
+> +	.long	0			@ PointerToLineNumbers
+> +	.short	0			@ NumberOfRelocations
+> +	.short	0			@ NumberOfLineNumbers
+> +	.long	0x42100040		@ Characteristics (section flags)
+> +
+> +
+> +	.ascii	".text"
+> +	.byte	0
+> +	.byte	0
+> +	.byte	0        		@ end of 0 padding of section name
+> +	.long	_edata - efi_stub_entry		@ VirtualSize
+> +	.long	efi_stub_entry			@ VirtualAddress
+> +	.long	_edata - efi_stub_entry		@ SizeOfRawData
+> +	.long	efi_stub_entry			@ PointerToRawData
+> +
+> +	.long	0		@ PointerToRelocations (0 for executables)
+> +	.long	0		@ PointerToLineNumbers (0 for executables)
+> +	.short	0		@ NumberOfRelocations  (0 for executables)
+> +	.short	0		@ NumberOfLineNumbers  (0 for executables)
+> +	.long	0xe0500020	@ Characteristics (section flags)
+> diff --git a/arch/arm/boot/compressed/efi-stub.c b/arch/arm/boot/compressed/efi-stub.c
+> new file mode 100644
+> index 0000000..4fce68b
+> --- /dev/null
+> +++ b/arch/arm/boot/compressed/efi-stub.c
+> @@ -0,0 +1,448 @@
+> +/*
+> + * linux/arch/arm/boot/compressed/efi-stub.c
+> + *
+> + * Copyright (C) 2013 Linaro Ltd;  <roy.franz@linaro.org>
+> + *
+> + * This file implements the EFI boot stub for the ARM kernel
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +#include <linux/efi.h>
+> +#include <libfdt.h>
+> +#include "efi-stub.h"
+> +
+> +/* EFI function call wrappers.  These are not required for
+> + * ARM, but wrappers are required for X86 to convert between
+> + * ABIs.  These wrappers are provided to allow code sharing
+> + * between X86 and ARM.  Since these wrappers directly invoke the
+> + * EFI function pointer, the function pointer type must be properly
+> + * defined, which is not the case for X86  One advantage of this is
+> + * it allows for type checking of arguments, which is not
+> + * possible with the X86 wrappers.
+> + */
+> +#define efi_call_phys0(f)			f()
+> +#define efi_call_phys1(f, a1)			f(a1)
+> +#define efi_call_phys2(f, a1, a2)		f(a1, a2)
+> +#define efi_call_phys3(f, a1, a2, a3)		f(a1, a2, a3)
+> +#define efi_call_phys4(f, a1, a2, a3, a4)	f(a1, a2, a3, a4)
+> +#define efi_call_phys5(f, a1, a2, a3, a4, a5)	f(a1, a2, a3, a4, a5)
+> +
+> +/* The maximum uncompressed kernel size is 32 MBytes, so we will reserve
+> + * that for the decompressed kernel.  We have no easy way to tell what
+> + * the actuall size of code + data the uncompressed kernel will use.
+> + */
+> +#define MAX_UNCOMP_KERNEL_SIZE	0x02000000
+> +
+> +/* The kernel zImage should be located between 32 Mbytes
+> + * and 128 MBytes from the base of DRAM.  The min
+> + * address leaves space for a maximal size uncompressed image,
+> + * and the max address is due to how the zImage decompressor
+> + * picks a destination address.
+> + */
+> +#define ZIMAGE_OFFSET_LIMIT	0x08000000
+> +#define MIN_ZIMAGE_OFFSET	MAX_UNCOMP_KERNEL_SIZE
+> +
+> +#define PRINTK_PREFIX		"EFIstub: "
+> +
+> +struct fdt_region {
+> +	u64 base;
+> +	u64 size;
+> +};
+> +
+> +
+> +/* Include shared EFI stub code */
+> +#include "../../../../drivers/firmware/efi/efi-stub-helper.c"
+> +
+> +static int relocate_kernel(efi_system_table_t *sys_table,
+> +			   unsigned long *zimage_addr,
+> +			   unsigned long zimage_size,
+> +			   unsigned long min_addr, unsigned long max_addr)
+> +{
+> +	/* Get current address of kernel. */
+> +	unsigned long cur_zimage_addr = *zimage_addr;
+> +	unsigned long new_addr = 0;
+> +
+> +	efi_status_t status;
+> +
+> +	if (!zimage_addr || !zimage_size)
+> +		return EFI_INVALID_PARAMETER;
+> +
+> +	if (cur_zimage_addr > min_addr
+> +	    && (cur_zimage_addr + zimage_size) < max_addr) {
+> +		/* We don't need to do anything, as kernel is at an
+> +		 * acceptable address already.
+> +		 */
+> +		return EFI_SUCCESS;
+> +	}
+> +	/*
+> +	 * The EFI firmware loader could have placed the kernel image
+> +	 * anywhere in memory, but the kernel has restrictions on the
+> +	 * min and max physical address it can run at.
+> +	 */
+> +	status = efi_low_alloc(sys_table, zimage_size, 0,
+> +			   &new_addr, min_addr);
+> +	if (status != EFI_SUCCESS) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Failed to allocate usable memory for kernel.\n");
+> +		return status;
+> +	}
+> +
+> +	if (new_addr > (max_addr - zimage_size)) {
+> +		efi_free(sys_table, zimage_size, new_addr);
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Failed to allocate usable memory for kernel.\n");
+> +		return EFI_INVALID_PARAMETER;
+> +	}
+> +
+> +	/* We know source/dest won't overlap since both memory ranges
+> +	 * have been allocated by UEFI, so we can safely use memcpy.
+> +	 */
+> +	memcpy((void *)new_addr, (void *)(unsigned long)cur_zimage_addr,
+> +	       zimage_size);
+> +
+> +	/* Return the load address  */
+> +	*zimage_addr = new_addr;
+> +
+> +	return status;
+> +}
+> +
+> +
+> +/* Convert the unicode UEFI command line to ASCII to pass to kernel.
+> + * Size of memory allocated return in *cmd_line_len.
+> + * Returns NULL on error.
+> + */
+> +static char *convert_cmdline_to_ascii(efi_system_table_t *sys_table,
+> +				      efi_loaded_image_t *image,
+> +				      unsigned long *cmd_line_len,
+> +				      u32 max_addr)
+> +{
+> +	u16 *s2;
+> +	u8 *s1 = NULL;
+> +	unsigned long cmdline_addr = 0;
+> +	int load_options_size = image->load_options_size / 2; /* ASCII */
+> +	void *options = (u16 *)image->load_options;
+> +	int options_size = 0;
+> +	int status;
+> +	int i;
+> +	u16 zero = 0;
+> +
+> +	if (options) {
+> +		s2 = options;
+> +		while (*s2 && *s2 != '\n' && options_size < load_options_size) {
+> +			s2++;
+> +			options_size++;
+> +		}
+> +	}
+> +
+> +	if (options_size == 0) {
+> +		/* No command line options, so return empty string*/
+> +		options_size = 1;
+> +		options = &zero;
+> +	}
+> +
+> +	options_size++;  /* NUL termination */
+> +
+> +	status = efi_high_alloc(sys_table, options_size, 0,
+> +			    &cmdline_addr, max_addr);
+> +	if (status != EFI_SUCCESS)
+> +		return NULL;
+> +
+> +	s1 = (u8 *)(unsigned long)cmdline_addr;
+> +	s2 = (u16 *)options;
+> +
+> +	for (i = 0; i < options_size - 1; i++)
+> +		*s1++ = *s2++;
+> +
+> +	*s1 = '\0';
+> +
+> +	*cmd_line_len = options_size;
+> +	return (char *)(unsigned long)cmdline_addr;
+> +}
+> +
+> +
+> +static u32 update_fdt(efi_system_table_t *sys_table, void *orig_fdt, void *fdt,
+> +		      int new_fdt_size, char *cmdline_ptr, u64 initrd_addr,
+> +		      u64 initrd_size, efi_memory_desc_t *memory_map,
+> +		      int map_size, int desc_size)
+> +{
+> +	int node;
+> +	int status;
+> +	unsigned long fdt_val;
+> +
+> +	status = fdt_open_into(orig_fdt, fdt, new_fdt_size);
+> +	if (status != 0)
+> +		goto fdt_set_fail;
+> +
+> +	node = fdt_subnode_offset(fdt, 0, "chosen");
+> +	if (node < 0) {
+> +		node = fdt_add_subnode(fdt, 0, "chosen");
+> +		if (node < 0) {
+> +			status = node; /* node is error code when negative */
+> +			goto fdt_set_fail;
+> +		}
+> +	}
+> +
+> +	if ((cmdline_ptr != NULL) && (strlen(cmdline_ptr) > 0)) {
+> +		status = fdt_setprop(fdt, node, "bootargs", cmdline_ptr,
+> +				     strlen(cmdline_ptr) + 1);
+> +		if (status)
+> +			goto fdt_set_fail;
+> +	}
+> +
+> +	/* Set intird address/end in device tree, if present */
+> +	if (initrd_size != 0) {
+> +		u64 initrd_image_end;
+> +		u64 initrd_image_start = cpu_to_fdt64(initrd_addr);
+> +		status = fdt_setprop(fdt, node, "linux,initrd-start",
+> +				     &initrd_image_start, sizeof(u64));
+> +		if (status)
+> +			goto fdt_set_fail;
+> +		initrd_image_end = cpu_to_fdt64(initrd_addr + initrd_size);
+> +		status = fdt_setprop(fdt, node, "linux,initrd-end",
+> +				     &initrd_image_end, sizeof(u64));
+> +		if (status)
+> +			goto fdt_set_fail;
+> +	}
+> +
+> +	/* Add FDT entries for EFI runtime services in chosen node. */
+> +	node = fdt_subnode_offset(fdt, 0, "chosen");
+> +	fdt_val = cpu_to_fdt32((unsigned long)sys_table);
+> +	status = fdt_setprop(fdt, node, "efi-system-table",
+> +			     &fdt_val, sizeof(fdt_val));
+> +	if (status)
+> +		goto fdt_set_fail;
+> +
+> +	fdt_val = cpu_to_fdt32(desc_size);
+> +	status = fdt_setprop(fdt, node, "efi-mmap-desc-size",
+> +			     &fdt_val, sizeof(fdt_val));
+> +	if (status)
+> +		goto fdt_set_fail;
+> +
+> +	fdt_val = cpu_to_fdt32(map_size);
+> +	status = fdt_setprop(fdt, node, "efi-runtime-mmap-size",
+> +			     &fdt_val, sizeof(fdt_val));
+> +	if (status)
+> +		goto fdt_set_fail;
+> +
+> +	fdt_val = cpu_to_fdt32((unsigned long)memory_map);
+> +	status = fdt_setprop(fdt, node, "efi-runtime-mmap",
+> +			     &fdt_val, sizeof(fdt_val));
+> +	if (status)
+> +		goto fdt_set_fail;
+> +
+> +	return EFI_SUCCESS;
 
-diff --git a/Documentation/devicetree/bindings/mmc/sdhci-msm.txt b/Documentation/devicetree/bindings/mmc/sdhci-msm.txt
-new file mode 100644
-index 0000000..4008f1f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mmc/sdhci-msm.txt
-@@ -0,0 +1,62 @@
-+* Qualcomm SDHCI controller (sdhci-msm)
-+
-+This file documents differences between the core properties in mmc.txt
-+and the properties used by the sdhci-msm driver.
-+
-+Required properties:
-+- compatible: should be "qcom,sdhci-msm"
-+- reg: should contain SDHC, SD Core register map
-+- reg-names: indicates various resources passed to driver (via reg proptery) by name
-+	"reg-names" examples are "hc_mem" and "core_mem"
-+- interrupts: should contain SDHC interrupts
-+- interrupt-names: indicates interrupts passed to driver (via interrupts property) by name
-+	"interrupt-names" examples are "hc_irq" and "pwr_irq"
-+- <supply-name>-supply: phandle to the regulator device tree node
-+	"supply-name" examples are "vdd" and "vdd-io"
-+- pinctrl-names: Should contain only one value - "default".
-+- pinctrl-0: Should specify pin control groups used for this controller.
-+
-+Optional properties:
-+- qcom,bus-speed-mode - specifies supported bus speed modes by host
-+	The supported bus speed modes are :
-+	"HS200_1p8v" - indicates that host can support HS200 at 1.8v
-+	"HS200_1p2v" - indicates that host can support HS200 at 1.2v
-+	"DDR_1p8v" - indicates that host can support DDR mode at 1.8v
-+	"DDR_1p2v" - indicates that host can support DDR mode at 1.2v
-+
-+In the following, <supply> can be vdd (flash core voltage) or vdd-io (I/O voltage).
-+- qcom,<supply>-always-on - specifies whether supply should be kept "on" always.
-+- qcom,<supply>-lpm-sup - specifies whether supply can be kept in low power mode (lpm).
-+- qcom,<supply>-voltage-level - specifies voltage levels for supply. Should be
-+specified in pairs (min, max), units uV.
-+- qcom,<supply>-current-level - specifies load levels for supply in lpm or high power mode
-+	(hpm). Should be specified in pairs (lpm, hpm), units uA.
-+
-+Example:
-+
-+	aliases {
-+		sdhc1 = &sdhc_1;
-+	};
-+
-+	sdhc_1: qcom,sdhc@f9824900 {
-+		compatible = "qcom,sdhci-msm";
-+		reg = <0xf9824900 0x11c>, <0xf9824000 0x800>;
-+		reg-names = "hc_mem", "core_mem";
-+		interrupts = <0 123 0>, <0 138 0>;
-+		interrupt-names = "hc_irq", "pwr_irq";
-+		bus-width = <4>;
-+		non-removable;
-+
-+		vdd-supply = <&pm8941_l21>;
-+		vdd-io-supply = <&pm8941_l13>;
-+		qcom,vdd-voltage-level = <2950000 2950000>;
-+		qcom,vdd-current-level = <9000 800000>;
-+		qcom,vdd-io-always-on;
-+		qcom,vdd-io-lpm-sup;
-+		qcom,vdd-io-voltage-level = <1800000 2950000>;
-+		qcom,vdd-io-current-level = <6 22000>;
-+		qcom,bus-speed-mode = "HS200_1p8v", "DDR_1p8v";
-+
-+		pinctrl-names = "default"
-+		pinctrl-0 = <&sdc1_clk &sdc1_cmd &sdc1_data>;
-+	};
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index 8a4c066..2b31471 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -322,6 +322,19 @@ config MMC_ATMELMCI
- 
- 	  If unsure, say N.
- 
-+config MMC_SDHCI_MSM
-+	tristate "Qualcomm SDHCI Controller Support"
-+	depends on ARCH_MSM
-+	depends on MMC_SDHCI_PLTFM
-+	help
-+	  This selects the Secure Digital Host Controller Interface (SDHCI)
-+	  support present in MSM SOCs from Qualcomm. The controller
-+	  supports SD/MMC/SDIO devices.
-+
-+	  If you have a controller with this interface, say Y or M here.
-+
-+	  If unsure, say N.
-+
- config MMC_MSM
- 	tristate "Qualcomm SDCC Controller Support"
- 	depends on MMC && ARCH_MSM
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index d422e21..efd6e6a 100644
---- a/drivers/mmc/host/Makefile
-+++ b/drivers/mmc/host/Makefile
-@@ -63,6 +63,7 @@ obj-$(CONFIG_MMC_SDHCI_OF_ESDHC)	+= sdhci-of-esdhc.o
- obj-$(CONFIG_MMC_SDHCI_OF_HLWD)		+= sdhci-of-hlwd.o
- obj-$(CONFIG_MMC_SDHCI_BCM_KONA)	+= sdhci-bcm-kona.o
- obj-$(CONFIG_MMC_SDHCI_BCM2835)		+= sdhci-bcm2835.o
-+obj-$(CONFIG_MMC_SDHCI_MSM)		+= sdhci-msm.o
- 
- ifeq ($(CONFIG_CB710_DEBUG),y)
- 	CFLAGS-cb710-mmc	+= -DDEBUG
-diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
-new file mode 100644
-index 0000000..8222061
---- /dev/null
-+++ b/drivers/mmc/host/sdhci-msm.c
-@@ -0,0 +1,813 @@
-+/*
-+ * drivers/mmc/host/sdhci-msm.c - Qualcomm MSM SDHCI Platform
-+ * driver source file
-+ *
-+ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/mmc/host.h>
-+#include <linux/mmc/card.h>
-+#include <linux/mmc/sdio_func.h>
-+#include <linux/gfp.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/pinctrl/consumer.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/types.h>
-+#include <linux/input.h>
-+#include <linux/platform_device.h>
-+
-+#include "sdhci-pltfm.h"
-+
-+#define CORE_HC_MODE		0x78
-+#define HC_MODE_EN		0x1
-+
-+#define CORE_POWER		0x0
-+#define CORE_SW_RST		(1 << 7)
-+
-+#define CORE_PWRCTL_STATUS	0xDC
-+#define CORE_PWRCTL_MASK	0xE0
-+#define CORE_PWRCTL_CLEAR	0xE4
-+#define CORE_PWRCTL_CTL		0xE8
-+
-+#define CORE_PWRCTL_BUS_OFF	0x01
-+#define CORE_PWRCTL_BUS_ON	(1 << 1)
-+#define CORE_PWRCTL_IO_LOW	(1 << 2)
-+#define CORE_PWRCTL_IO_HIGH	(1 << 3)
-+
-+#define CORE_PWRCTL_BUS_SUCCESS	0x01
-+#define CORE_PWRCTL_BUS_FAIL	(1 << 1)
-+#define CORE_PWRCTL_IO_SUCCESS	(1 << 2)
-+#define CORE_PWRCTL_IO_FAIL	(1 << 3)
-+
-+#define INT_MASK		0xF
-+
-+/* This structure keeps information per regulator */
-+struct sdhci_msm_reg_data {
-+	/* voltage regulator handle */
-+	struct regulator *reg;
-+	/* regulator name */
-+	const char *name;
-+	/* voltage level to be set */
-+	u32 low_vol_level;
-+	u32 high_vol_level;
-+	/* Load values for low power and high power mode */
-+	u32 lpm_uA;
-+	u32 hpm_uA;
-+
-+	/* is this regulator enabled? */
-+	bool is_enabled;
-+	/* is this regulator needs to be always on? */
-+	bool is_always_on;
-+	/* is low power mode setting required for this regulator? */
-+	bool lpm_sup;
-+};
-+
-+/*
-+ * This structure keeps information for all the
-+ * regulators required for a SDCC slot.
-+ */
-+struct sdhci_msm_slot_reg_data {
-+	/* keeps VDD/VCC regulator info */
-+	struct sdhci_msm_reg_data *vdd_data;
-+	/* keeps VDD IO regulator info */
-+	struct sdhci_msm_reg_data *vdd_io_data;
-+};
-+
-+struct sdhci_msm_pltfm_data {
-+	/* Supported UHS-I Modes */
-+	u32 caps;
-+
-+	/* More capabilities */
-+	u32 caps2;
-+
-+	struct sdhci_msm_slot_reg_data *vreg_data;
-+};
-+
-+struct sdhci_msm_host {
-+	struct platform_device	*pdev;
-+	void __iomem *core_mem;	/* MSM SDCC mapped address */
-+	int	pwr_irq;	/* power irq */
-+	struct clk *clk;	/* main SD/MMC bus clock */
-+	struct clk *pclk;	/* SDHC peripheral bus clock */
-+	struct clk *bus_clk;	/* SDHC bus voter clock */
-+	struct sdhci_msm_pltfm_data *pdata;
-+	struct mmc_host *mmc;
-+	struct sdhci_pltfm_data sdhci_msm_pdata;
-+};
-+
-+enum vdd_io_level {
-+	/* set vdd_io_data->low_vol_level */
-+	VDD_IO_LOW,
-+	/* set vdd_io_data->high_vol_level */
-+	VDD_IO_HIGH,
-+	/*
-+	 * set whatever there in voltage_level (third argument) of
-+	 * sdhci_msm_set_vdd_io_vol() function.
-+	 */
-+	VDD_IO_SET_LEVEL,
-+};
-+
-+#define MAX_PROP_SIZE 32
-+static int sdhci_msm_dt_parse_vreg_info(struct device *dev,
-+					struct sdhci_msm_reg_data **vreg_data,
-+					const char *vreg_name)
-+{
-+	int len, ret = 0;
-+	const __be32 *prop;
-+	char prop_name[MAX_PROP_SIZE];
-+	struct sdhci_msm_reg_data *vreg;
-+	struct device_node *np = dev->of_node;
-+
-+	snprintf(prop_name, MAX_PROP_SIZE, "%s-supply", vreg_name);
-+	if (!of_parse_phandle(np, prop_name, 0)) {
-+		dev_info(dev, "No vreg data found for %s\n", vreg_name);
-+		ret = -EINVAL;
-+		return ret;
-+	}
-+
-+	vreg = devm_kzalloc(dev, sizeof(*vreg), GFP_KERNEL);
-+	if (!vreg) {
-+		dev_err(dev, "No memory for vreg: %s\n", vreg_name);
-+		ret = -ENOMEM;
-+		return ret;
-+	}
-+
-+	vreg->name = vreg_name;
-+
-+	snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-always-on", vreg_name);
-+	if (of_get_property(np, prop_name, NULL))
-+		vreg->is_always_on = true;
-+
-+	snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-lpm-sup", vreg_name);
-+	if (of_get_property(np, prop_name, NULL))
-+		vreg->lpm_sup = true;
-+
-+	snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-voltage-level", vreg_name);
-+	prop = of_get_property(np, prop_name, &len);
-+	if (!prop || (len != (2 * sizeof(__be32)))) {
-+		dev_warn(dev, "%s %s property\n",
-+			 prop ? "invalid format" : "no", prop_name);
-+	} else {
-+		vreg->low_vol_level = be32_to_cpup(&prop[0]);
-+		vreg->high_vol_level = be32_to_cpup(&prop[1]);
-+	}
-+
-+	snprintf(prop_name, MAX_PROP_SIZE, "qcom,%s-current-level", vreg_name);
-+	prop = of_get_property(np, prop_name, &len);
-+	if (!prop || (len != (2 * sizeof(__be32)))) {
-+		dev_warn(dev, "%s %s property\n",
-+			 prop ? "invalid format" : "no", prop_name);
-+	} else {
-+		vreg->lpm_uA = be32_to_cpup(&prop[0]);
-+		vreg->hpm_uA = be32_to_cpup(&prop[1]);
-+	}
-+
-+	*vreg_data = vreg;
-+	dev_dbg(dev, "%s: %s %s vol=[%d %d]uV, curr=[%d %d]uA\n",
-+		vreg->name, vreg->is_always_on ? "always_on," : "",
-+		vreg->lpm_sup ? "lpm_sup," : "", vreg->low_vol_level,
-+		vreg->high_vol_level, vreg->lpm_uA, vreg->hpm_uA);
-+
-+	return ret;
-+}
-+
-+/* Parse platform data */
-+static struct sdhci_msm_pltfm_data *sdhci_msm_populate_pdata(struct device *dev)
-+{
-+	struct sdhci_msm_pltfm_data *pdata = NULL;
-+	struct device_node *np = dev->of_node;
-+	int len, i;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(dev, "failed to allocate memory for platform data\n");
-+		goto out;
-+	}
-+
-+	pdata->vreg_data = devm_kzalloc(dev, sizeof(struct
-+						    sdhci_msm_slot_reg_data),
-+					GFP_KERNEL);
-+	if (!pdata->vreg_data) {
-+		dev_err(dev, "failed to allocate memory for vreg data\n");
-+		goto out;
-+	}
-+
-+	if (sdhci_msm_dt_parse_vreg_info(dev, &pdata->vreg_data->vdd_data,
-+					 "vdd")) {
-+		dev_err(dev, "failed parsing vdd data\n");
-+		goto out;
-+	}
-+	if (sdhci_msm_dt_parse_vreg_info(dev,
-+					 &pdata->vreg_data->vdd_io_data,
-+					 "vdd-io")) {
-+		dev_err(dev, "failed parsing vdd-io data\n");
-+		goto out;
-+	}
-+
-+	len = of_property_count_strings(np, "qcom,bus-speed-mode");
-+
-+	for (i = 0; i < len; i++) {
-+		const char *name = NULL;
-+
-+		of_property_read_string_index(np,
-+					      "qcom,bus-speed-mode", i, &name);
-+		if (!name)
-+			continue;
-+
-+		if (!strncmp(name, "HS200_1p8v", sizeof("HS200_1p8v")))
-+			pdata->caps2 |= MMC_CAP2_HS200_1_8V_SDR;
-+		else if (!strncmp(name, "HS200_1p2v", sizeof("HS200_1p2v")))
-+			pdata->caps2 |= MMC_CAP2_HS200_1_2V_SDR;
-+		else if (!strncmp(name, "DDR_1p8v", sizeof("DDR_1p8v")))
-+			pdata->caps |= MMC_CAP_1_8V_DDR | MMC_CAP_UHS_DDR50;
-+		else if (!strncmp(name, "DDR_1p2v", sizeof("DDR_1p2v")))
-+			pdata->caps |= MMC_CAP_1_2V_DDR | MMC_CAP_UHS_DDR50;
-+	}
-+
-+	return pdata;
-+out:
-+	return NULL;
-+}
-+
-+/* Regulator utility functions */
-+static int sdhci_msm_vreg_init_reg(struct device *dev,
-+				   struct sdhci_msm_reg_data *vreg)
-+{
-+	int ret = 0;
-+
-+	/* check if regulator is already initialized? */
-+	if (vreg->reg)
-+		goto out;
-+
-+	/* Get the regulator handle */
-+	vreg->reg = devm_regulator_get(dev, vreg->name);
-+	if (IS_ERR(vreg->reg)) {
-+		ret = PTR_ERR(vreg->reg);
-+		pr_err("%s: devm_regulator_get(%s) failed. ret=%d\n",
-+		       __func__, vreg->name, ret);
-+		goto out;
-+	}
-+
-+	/* sanity check */
-+	if (!vreg->high_vol_level || !vreg->hpm_uA) {
-+		pr_err("%s: %s invalid constraints specified\n",
-+		       __func__, vreg->name);
-+		ret = -EINVAL;
-+	}
-+
-+out:
-+	return ret;
-+}
-+
-+static void sdhci_msm_vreg_deinit_reg(struct sdhci_msm_reg_data *vreg)
-+{
-+	if (vreg->reg)
-+		devm_regulator_put(vreg->reg);
-+}
-+
-+static int sdhci_msm_vreg_set_optimum_mode(struct sdhci_msm_reg_data
-+					   *vreg, int uA_load)
-+{
-+	int ret = 0;
-+
-+	/*
-+	 * regulators that do not support regulator_set_voltage also
-+	 * do not support regulator_set_optimum_mode
-+	 */
-+	ret = regulator_set_optimum_mode(vreg->reg, uA_load);
-+	if (ret < 0)
-+		pr_err
-+		    ("%s: regulator_set_optimum_mode(%s,uA_load=%d) fail(%d)\n",
-+		     __func__, vreg->name, uA_load, ret);
-+	else
-+		/*
-+		 * regulator_set_optimum_mode() can return non zero
-+		 * value even for success case.
-+		 */
-+		ret = 0;
-+	return ret;
-+}
-+
-+static int sdhci_msm_vreg_set_voltage(struct sdhci_msm_reg_data *vreg,
-+				      int min_uV, int max_uV)
-+{
-+	int ret = 0;
-+
-+	ret = regulator_set_voltage(vreg->reg, min_uV, max_uV);
-+	if (ret) {
-+		pr_err
-+		    ("%s: regulator_set_voltage(%s,min_uV=%d,max_uV=%d) (%d)\n",
-+		     __func__, vreg->name, min_uV, max_uV, ret);
-+	}
-+
-+	return ret;
-+}
-+
-+static int sdhci_msm_vreg_enable(struct sdhci_msm_reg_data *vreg)
-+{
-+	int ret = 0;
-+
-+	/* Put regulator in HPM (high power mode) */
-+	ret = sdhci_msm_vreg_set_optimum_mode(vreg, vreg->hpm_uA);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (!vreg->is_enabled) {
-+		/* Set voltage level */
-+		ret = sdhci_msm_vreg_set_voltage(vreg, vreg->high_vol_level,
-+						 vreg->high_vol_level);
-+		if (ret)
-+			return ret;
-+	}
-+	ret = regulator_enable(vreg->reg);
-+	if (ret) {
-+		pr_err("%s: regulator_enable(%s) failed. ret=%d\n",
-+		       __func__, vreg->name, ret);
-+		return ret;
-+	}
-+	vreg->is_enabled = true;
-+	return ret;
-+}
-+
-+static int sdhci_msm_vreg_disable(struct sdhci_msm_reg_data *vreg)
-+{
-+	int ret = 0;
-+
-+	/* Never disable regulator marked as always_on */
-+	if (vreg->is_enabled && !vreg->is_always_on) {
-+		ret = regulator_disable(vreg->reg);
-+		if (ret) {
-+			pr_err("%s: regulator_disable(%s) failed. ret=%d\n",
-+			       __func__, vreg->name, ret);
-+			goto out;
-+		}
-+		vreg->is_enabled = false;
-+
-+		ret = sdhci_msm_vreg_set_optimum_mode(vreg, 0);
-+		if (ret < 0)
-+			goto out;
-+
-+		/* Set min. voltage level to 0 */
-+		ret = sdhci_msm_vreg_set_voltage(vreg, 0, vreg->high_vol_level);
-+		if (ret)
-+			goto out;
-+	} else if (vreg->is_enabled && vreg->is_always_on) {
-+		if (vreg->lpm_sup) {
-+			/* Put always_on regulator in LPM (low power mode) */
-+			ret = sdhci_msm_vreg_set_optimum_mode(vreg,
-+							      vreg->lpm_uA);
-+			if (ret < 0)
-+				goto out;
-+		}
-+	}
-+out:
-+	return ret;
-+}
-+
-+static int sdhci_msm_setup_vreg(struct sdhci_msm_pltfm_data *pdata,
-+				bool enable, bool is_init)
-+{
-+	int ret = 0, i;
-+	struct sdhci_msm_slot_reg_data *curr_slot;
-+	struct sdhci_msm_reg_data *vreg_table[2];
-+
-+	curr_slot = pdata->vreg_data;
-+	if (!curr_slot) {
-+		pr_debug
-+		    ("%s: no vreg info, assuming the slot is always powered\n",
-+		     __func__);
-+		goto out;
-+	}
-+
-+	vreg_table[0] = curr_slot->vdd_data;
-+	vreg_table[1] = curr_slot->vdd_io_data;
-+
-+	for (i = 0; i < ARRAY_SIZE(vreg_table); i++) {
-+		if (vreg_table[i]) {
-+			if (enable)
-+				ret = sdhci_msm_vreg_enable(vreg_table[i]);
-+			else
-+				ret = sdhci_msm_vreg_disable(vreg_table[i]);
-+			if (ret)
-+				goto out;
-+		}
-+	}
-+out:
-+	return ret;
-+}
-+
-+/*
-+ * Reset vreg by ensuring it is off during probe. A call
-+ * to enable vreg is needed to balance disable vreg
-+ */
-+static int sdhci_msm_vreg_reset(struct sdhci_msm_pltfm_data *pdata)
-+{
-+	int ret;
-+
-+	ret = sdhci_msm_setup_vreg(pdata, 1, true);
-+	if (ret)
-+		return ret;
-+	ret = sdhci_msm_setup_vreg(pdata, 0, true);
-+	return ret;
-+}
-+
-+/* This init function should be called only once for each SDHC slot */
-+static int sdhci_msm_vreg_init(struct device *dev,
-+			       struct sdhci_msm_pltfm_data *pdata, bool is_init)
-+{
-+	int ret = 0;
-+	struct sdhci_msm_slot_reg_data *curr_slot;
-+	struct sdhci_msm_reg_data *curr_vdd_reg, *curr_vdd_io_reg;
-+
-+	curr_slot = pdata->vreg_data;
-+	if (!curr_slot)
-+		goto out;
-+
-+	curr_vdd_reg = curr_slot->vdd_data;
-+	curr_vdd_io_reg = curr_slot->vdd_io_data;
-+
-+	if (!is_init)
-+		/* Deregister all regulators from regulator framework */
-+		goto vdd_io_reg_deinit;
-+
-+	/*
-+	 * Get the regulator handle from voltage regulator framework
-+	 * and then try to set the voltage level for the regulator
-+	 */
-+	if (curr_vdd_reg) {
-+		ret = sdhci_msm_vreg_init_reg(dev, curr_vdd_reg);
-+		if (ret)
-+			goto out;
-+	}
-+	if (curr_vdd_io_reg) {
-+		ret = sdhci_msm_vreg_init_reg(dev, curr_vdd_io_reg);
-+		if (ret)
-+			goto vdd_reg_deinit;
-+	}
-+	ret = sdhci_msm_vreg_reset(pdata);
-+	if (ret)
-+		dev_err(dev, "vreg reset failed (%d)\n", ret);
-+	goto out;
-+
-+vdd_io_reg_deinit:
-+	if (curr_vdd_io_reg)
-+		sdhci_msm_vreg_deinit_reg(curr_vdd_io_reg);
-+vdd_reg_deinit:
-+	if (curr_vdd_reg)
-+		sdhci_msm_vreg_deinit_reg(curr_vdd_reg);
-+out:
-+	return ret;
-+}
-+
-+static int sdhci_msm_set_vdd_io_vol(struct sdhci_msm_pltfm_data *pdata,
-+				    enum vdd_io_level level,
-+				    unsigned int voltage_level)
-+{
-+	int ret = 0;
-+	int set_level;
-+
-+	if (pdata->vreg_data) {
-+		struct sdhci_msm_reg_data *vdd_io_reg =
-+		    pdata->vreg_data->vdd_io_data;
-+
-+		if (vdd_io_reg && vdd_io_reg->is_enabled) {
-+			switch (level) {
-+			case VDD_IO_LOW:
-+				set_level = vdd_io_reg->low_vol_level;
-+				break;
-+			case VDD_IO_HIGH:
-+				set_level = vdd_io_reg->high_vol_level;
-+				break;
-+			case VDD_IO_SET_LEVEL:
-+				set_level = voltage_level;
-+				break;
-+			default:
-+				pr_err("%s: invalid argument level = %d",
-+				       __func__, level);
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+			ret = sdhci_msm_vreg_set_voltage(vdd_io_reg,
-+							 set_level, set_level);
-+		}
-+	}
-+
-+out:
-+	return ret;
-+}
-+
-+static irqreturn_t sdhci_msm_pwr_irq(int irq, void *data)
-+{
-+	struct sdhci_msm_host *msm_host = (struct sdhci_msm_host *)data;
-+	u8 irq_status = 0;
-+	u8 irq_ack = 0;
-+	int ret = 0;
-+
-+	irq_status = readb_relaxed(msm_host->core_mem + CORE_PWRCTL_STATUS);
-+	pr_debug("%s: Received IRQ(%d), status=0x%x\n",
-+		 mmc_hostname(msm_host->mmc), irq, irq_status);
-+
-+	/* Clear the interrupt */
-+	writeb_relaxed(irq_status, (msm_host->core_mem + CORE_PWRCTL_CLEAR));
-+	/*
-+	 * SDHC has core_mem and hc_mem device memory and these memory
-+	 * addresses do not fall within 1KB region. Hence, any update to
-+	 * core_mem address space would require an mb() to ensure this gets
-+	 * completed before its next update to registers within hc_mem.
-+	 */
-+	mb();
-+
-+	/* Handle BUS ON/OFF */
-+	if (irq_status & (CORE_PWRCTL_BUS_ON | CORE_PWRCTL_BUS_OFF)) {
-+		bool flag = (irq_status & CORE_PWRCTL_BUS_ON) ? 1 : 0;
-+		ret = sdhci_msm_setup_vreg(msm_host->pdata, flag, false);
-+		if (ret)
-+			irq_ack |= CORE_PWRCTL_BUS_FAIL;
-+		else
-+			irq_ack |= CORE_PWRCTL_BUS_SUCCESS;
-+		goto out;
-+	}
-+	/* Handle IO LOW/HIGH */
-+	if (irq_status & (CORE_PWRCTL_IO_LOW | CORE_PWRCTL_IO_HIGH)) {
-+		/* Switch voltage */
-+		int io_status = (irq_status & CORE_PWRCTL_IO_LOW) ?
-+		    VDD_IO_LOW : VDD_IO_HIGH;
-+		ret = sdhci_msm_set_vdd_io_vol(msm_host->pdata, io_status, 0);
-+		if (ret)
-+			irq_ack |= CORE_PWRCTL_IO_FAIL;
-+		else
-+			irq_ack |= CORE_PWRCTL_IO_SUCCESS;
-+		goto out;
-+	}
-+
-+out:
-+	/* ACK status to the core */
-+	writeb_relaxed(irq_ack, (msm_host->core_mem + CORE_PWRCTL_CTL));
-+	/*
-+	 * SDHC has core_mem and hc_mem device memory and these memory
-+	 * addresses do not fall within 1KB region. Hence, any update to
-+	 * core_mem address space would require an mb() to ensure this gets
-+	 * completed before its next update to registers within hc_mem.
-+	 */
-+	mb();
-+
-+	pr_debug("%s: Handled IRQ(%d), ret=%d, ack=0x%x\n",
-+		 mmc_hostname(msm_host->mmc), irq, ret, irq_ack);
-+	return IRQ_HANDLED;
-+}
-+
-+/* This function returns the max. current supported by VDD rail in mA */
-+static unsigned int sdhci_msm_get_vreg_vdd_max_current(struct sdhci_msm_host
-+						       *host)
-+{
-+	struct sdhci_msm_slot_reg_data *curr_slot = host->pdata->vreg_data;
-+	if (!curr_slot)
-+		return 0;
-+	if (curr_slot->vdd_data)
-+		return curr_slot->vdd_data->hpm_uA / 1000;
-+	else
-+		return 0;
-+}
-+
-+static const struct of_device_id sdhci_msm_dt_match[] = {
-+	{.compatible = "qcom,sdhci-msm"},
-+};
-+
-+MODULE_DEVICE_TABLE(of, sdhci_msm_dt_match);
-+
-+static int sdhci_msm_probe(struct platform_device *pdev)
-+{
-+	const struct of_device_id *match;
-+	struct sdhci_host *host;
-+	struct sdhci_pltfm_host *pltfm_host;
-+	struct sdhci_msm_host *msm_host;
-+	struct resource *core_memres = NULL;
-+	int ret = 0, dead = 0;
-+	struct pinctrl	*pinctrl;
-+
-+	match = of_match_device(of_match_ptr(sdhci_msm_dt_match), &pdev->dev);
-+	if (!match)
-+		return -ENXIO;
-+
-+	msm_host = devm_kzalloc(&pdev->dev, sizeof(struct sdhci_msm_host),
-+				GFP_KERNEL);
-+	if (!msm_host) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	host = sdhci_pltfm_init(pdev, &msm_host->sdhci_msm_pdata, 0);
-+	if (IS_ERR(host)) {
-+		dev_err(mmc_dev(host->mmc), "sdhci_pltfm_init error\n");
-+		ret = PTR_ERR(host);
-+		goto out;
-+	}
-+
-+	pltfm_host = sdhci_priv(host);
-+	pltfm_host->priv = msm_host;
-+	msm_host->mmc = host->mmc;
-+	msm_host->pdev = pdev;
-+
-+	ret = mmc_of_parse(host->mmc);
-+	if (ret)
-+		goto out;
-+
-+	/* Extract platform data */
-+	if (pdev->dev.of_node) {
-+		msm_host->pdata = sdhci_msm_populate_pdata(&pdev->dev);
-+		if (!msm_host->pdata) {
-+			dev_err(&pdev->dev, "DT parsing error\n");
-+			goto pltfm_free;
-+		}
-+	} else {
-+		dev_err(&pdev->dev, "No device tree node\n");
-+		goto pltfm_free;
-+	}
-+
-+	/* Setup pins */
-+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-+	if (IS_ERR(pinctrl))
-+		dev_warn(&pdev->dev, "pins are not configured by the driver\n");
-+
-+	/* Setup Clocks */
-+
-+	/* Setup SDCC bus voter clock. */
-+	msm_host->bus_clk = devm_clk_get(&pdev->dev, "bus_clk");
-+	if (!IS_ERR_OR_NULL(msm_host->bus_clk)) {
-+		/* Vote for max. clk rate for max. performance */
-+		ret = clk_set_rate(msm_host->bus_clk, INT_MAX);
-+		if (ret)
-+			goto pltfm_free;
-+		ret = clk_prepare_enable(msm_host->bus_clk);
-+		if (ret)
-+			goto pltfm_free;
-+	}
-+
-+	/* Setup main peripheral bus clock */
-+	msm_host->pclk = devm_clk_get(&pdev->dev, "iface_clk");
-+	if (!IS_ERR(msm_host->pclk)) {
-+		ret = clk_prepare_enable(msm_host->pclk);
-+		if (ret) {
-+			dev_err(&pdev->dev,
-+				"Main peripheral clock setup failed (%d)\n",
-+				ret);
-+			goto bus_clk_disable;
-+		}
-+	}
-+
-+	/* Setup SDC MMC clock */
-+	msm_host->clk = devm_clk_get(&pdev->dev, "core_clk");
-+	if (IS_ERR(msm_host->clk)) {
-+		ret = PTR_ERR(msm_host->clk);
-+		dev_err(&pdev->dev, "SDC MMC clock setup failed (%d)\n", ret);
-+		goto pclk_disable;
-+	}
-+
-+	ret = clk_prepare_enable(msm_host->clk);
-+	if (ret)
-+		goto pclk_disable;
-+
-+	/* Setup regulators */
-+	ret = sdhci_msm_vreg_init(&pdev->dev, msm_host->pdata, true);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Regulator setup failed (%d)\n", ret);
-+		goto clk_disable;
-+	}
-+
-+	/* Reset the core and Enable SDHC mode */
-+	core_memres = platform_get_resource_byname(pdev,
-+						   IORESOURCE_MEM, "core_mem");
-+	msm_host->core_mem = devm_ioremap(&pdev->dev, core_memres->start,
-+					  resource_size(core_memres));
-+
-+	if (!msm_host->core_mem) {
-+		dev_err(&pdev->dev, "Failed to remap registers\n");
-+		ret = -ENOMEM;
-+		goto vreg_deinit;
-+	}
-+
-+	/* Set SW_RST bit in POWER register (Offset 0x0) */
-+	writel_relaxed(CORE_SW_RST, msm_host->core_mem + CORE_POWER);
-+	/* Set HC_MODE_EN bit in HC_MODE register */
-+	writel_relaxed(HC_MODE_EN, (msm_host->core_mem + CORE_HC_MODE));
-+
-+	/*
-+	 * Following are the deviations from SDHC spec v3.0 -
-+	 * 1. Card detection is handled using separate GPIO.
-+	 * 2. Bus power control is handled by interacting with PMIC.
-+	 */
-+	host->quirks |= SDHCI_QUIRK_BROKEN_CARD_DETECTION;
-+
-+	/* Setup PWRCTL irq */
-+	msm_host->pwr_irq = platform_get_irq_byname(pdev, "pwr_irq");
-+	if (msm_host->pwr_irq < 0) {
-+		dev_err(&pdev->dev, "Failed to get pwr_irq by name (%d)\n",
-+			msm_host->pwr_irq);
-+		goto vreg_deinit;
-+	}
-+	ret = devm_request_threaded_irq(&pdev->dev, msm_host->pwr_irq, NULL,
-+					sdhci_msm_pwr_irq, IRQF_ONESHOT,
-+					dev_name(&pdev->dev), host);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Request threaded irq(%d) failed (%d)\n",
-+			msm_host->pwr_irq, ret);
-+		goto vreg_deinit;
-+	}
-+
-+	/* Enable pwr irq interrupts */
-+	writel_relaxed(INT_MASK, (msm_host->core_mem + CORE_PWRCTL_MASK));
-+
-+	/* Set host capabilities */
-+	msm_host->mmc->caps |= msm_host->pdata->caps;
-+	msm_host->mmc->caps2 |= msm_host->pdata->caps2;
-+
-+	ret = sdhci_add_host(host);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Add host failed (%d)\n", ret);
-+		goto vreg_deinit;
-+	}
-+
-+	/* Set core clk rate */
-+	ret = clk_set_rate(msm_host->clk, host->max_clk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "MClk rate set failed (%d)\n", ret);
-+		goto remove_host;
-+	}
-+
-+	host->mmc->max_current_180 =
-+	    sdhci_msm_get_vreg_vdd_max_current(msm_host);
-+	host->mmc->max_current_300 =
-+	    sdhci_msm_get_vreg_vdd_max_current(msm_host);
-+	host->mmc->max_current_330 =
-+	    sdhci_msm_get_vreg_vdd_max_current(msm_host);
-+
-+	/* Successful initialization */
-+	goto out;
-+
-+remove_host:
-+	dead = (readl_relaxed(host->ioaddr + SDHCI_INT_STATUS) == 0xffffffff);
-+	sdhci_remove_host(host, dead);
-+vreg_deinit:
-+	sdhci_msm_vreg_init(&pdev->dev, msm_host->pdata, false);
-+clk_disable:
-+	if (!IS_ERR(msm_host->clk))
-+		clk_disable_unprepare(msm_host->clk);
-+pclk_disable:
-+	if (!IS_ERR(msm_host->pclk))
-+		clk_disable_unprepare(msm_host->pclk);
-+bus_clk_disable:
-+	if (!IS_ERR_OR_NULL(msm_host->bus_clk))
-+		clk_disable_unprepare(msm_host->bus_clk);
-+pltfm_free:
-+	sdhci_pltfm_free(pdev);
-+out:
-+	return ret;
-+}
-+
-+static int sdhci_msm_remove(struct platform_device *pdev)
-+{
-+	struct sdhci_host *host = platform_get_drvdata(pdev);
-+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-+	struct sdhci_msm_host *msm_host = pltfm_host->priv;
-+	int dead = (readl_relaxed(host->ioaddr + SDHCI_INT_STATUS) ==
-+		    0xffffffff);
-+
-+	pr_debug("%s: %s\n", dev_name(&pdev->dev), __func__);
-+	sdhci_remove_host(host, dead);
-+	sdhci_pltfm_free(pdev);
-+	sdhci_msm_vreg_init(&pdev->dev, msm_host->pdata, false);
-+	if (!IS_ERR(msm_host->clk))
-+		clk_disable_unprepare(msm_host->clk);
-+	if (!IS_ERR(msm_host->pclk))
-+		clk_disable_unprepare(msm_host->pclk);
-+	if (!IS_ERR_OR_NULL(msm_host->bus_clk))
-+		clk_disable_unprepare(msm_host->bus_clk);
-+	return 0;
-+}
-+
-+static struct platform_driver sdhci_msm_driver = {
-+	.probe = sdhci_msm_probe,
-+	.remove = sdhci_msm_remove,
-+	.driver = {
-+		   .name = "sdhci_msm",
-+		   .owner = THIS_MODULE,
-+		   .of_match_table = of_match_ptr(sdhci_msm_dt_match),
-+		   },
-+};
-+
-+module_platform_driver(sdhci_msm_driver);
-+
-+MODULE_DESCRIPTION("Qualcomm Secure Digital Host Controller Interface driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+This looks better.
 
+> +
+> +fdt_set_fail:
+> +	if (status == -FDT_ERR_NOSPACE)
+> +		return EFI_BUFFER_TOO_SMALL;
+> +
+> +	return EFI_LOAD_ERROR;
+> +}
+> +
+> +
+> +
+
+Maybe add a comment to indicate that this returns the address of the
+relocated fdt, or EFI_LOAD_ERROR.
+
+By default "int" feels more likely to return a status code.
+
+It is not common to return pointers using the "int" type: it may be
+preferable to use unsigned long of void * instead.  This won't
+change the functionality.
+
+Casts to (int) which could overflow the signed range can cause GCC
+to generate bizarre code in some situations, because C doesn't
+have to guarantee wrapping when casting to signed types.  Since we
+just pass that value through without doing any arithmetic I think we're
+unlikely to hit that here, but it's best avoided anyhow.
+
+> +int efi_entry(void *handle, efi_system_table_t *sys_table,
+> +	      unsigned long *zimage_addr)
+> +{
+> +	efi_loaded_image_t *image;
+> +	int status;
+> +	unsigned long nr_pages;
+> +	const struct fdt_region *region;
+> +
+> +	void *fdt;
+> +	int err;
+> +	int node;
+> +	unsigned long zimage_size = 0;
+> +	unsigned long dram_base;
+> +	/* addr/point and size pairs for memory management*/
+> +	u64 initrd_addr;
+> +	u64 initrd_size = 0;
+> +	u64 fdt_addr;
+> +	u64 fdt_size = 0;
+> +	u64 kernel_reserve_addr;
+> +	u64 kernel_reserve_size = 0;
+> +	char *cmdline_ptr;
+> +	unsigned long cmdline_size = 0;
+> +
+> +	unsigned long map_size, desc_size;
+> +	unsigned long mmap_key;
+> +	efi_memory_desc_t *memory_map;
+> +
+> +	unsigned long new_fdt_size;
+> +	unsigned long new_fdt_addr;
+> +
+> +	efi_guid_t proto = LOADED_IMAGE_PROTOCOL_GUID;
+> +
+> +	/* Check if we were booted by the EFI firmware */
+> +	if (sys_table->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
+> +		goto fail;
+> +
+> +	efi_printk(sys_table, PRINTK_PREFIX"Booting Linux using EFI stub.\n");
+> +
+> +
+> +	/* get the command line from EFI, using the LOADED_IMAGE protocol */
+> +	status = efi_call_phys3(sys_table->boottime->handle_protocol,
+> +				handle, &proto, (void *)&image);
+> +	if (status != EFI_SUCCESS) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Failed to get handle for LOADED_IMAGE_PROTOCOL\n");
+> +		goto fail;
+> +	}
+> +
+> +	/* We are going to copy this into device tree, so we don't care where in
+> +	 * memory it is.
+> +	 */
+> +	cmdline_ptr = convert_cmdline_to_ascii(sys_table, image,
+> +					       &cmdline_size, 0xFFFFFFFF);
+> +	if (!cmdline_ptr) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: converting command line to ascii failed.\n");
+
+The real reason for this failure is failure to allocate memory: there's
+no other way it can fail.
+
+So, the error message could be "Unable to allocate memory for command
+line"
+
+> +		goto fail;
+> +	}
+> +
+> +	/* We first load the device tree, as we need to get the base address of
+> +	 * DRAM from the device tree.  The zImage, device tree, and initrd
+> +	 * have address restrictions that are relative to the base of DRAM.
+> +	 */
+> +	status = handle_cmdline_files(sys_table, image, cmdline_ptr, "dtb=",
+> +				      0xffffffff, &fdt_addr, &fdt_size);
+> +	if (status != EFI_SUCCESS) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Unable to load device tree blob.\n");
+> +		goto fail_free_cmdline;
+> +	}
+> +
+> +	err = fdt_check_header((void *)(unsigned long)fdt_addr);
+> +	if (err != 0) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: device tree header not valid\n");
+> +		goto fail_free_fdt;
+> +	}
+> +	if (fdt_totalsize((void *)(unsigned long)fdt_addr) > fdt_size) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Incomplete device tree.\n");
+> +		goto fail_free_fdt;
+> +
+> +	}
+> +
+> +
+> +	/* Look up the base of DRAM from the device tree.*/
+> +	fdt = (void *)(u32)fdt_addr;
+> +	node = fdt_subnode_offset(fdt, 0, "memory");
+> +	region = fdt_getprop(fdt, node, "reg", NULL);
+> +	if (region) {
+> +		dram_base = fdt64_to_cpu(region->base);
+> +	} else {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: no 'memory' node in device tree.\n");
+> +		goto fail_free_fdt;
+> +	}
+> +
+> +	/* Reserve memory for the uncompressed kernel image. */
+> +	kernel_reserve_addr = dram_base;
+> +	kernel_reserve_size = MAX_UNCOMP_KERNEL_SIZE;
+> +	nr_pages = round_up(kernel_reserve_size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+> +	status = efi_call_phys4(sys_table->boottime->allocate_pages,
+> +				EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+> +				nr_pages, &kernel_reserve_addr);
+> +	if (status != EFI_SUCCESS) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: unable to allocate memory for uncompressed kernel.\n");
+> +		goto fail_free_fdt;
+> +	}
+> +
+> +	/* Relocate the zImage, if required. */
+> +	zimage_size = image->image_size;
+> +	status = relocate_kernel(sys_table, zimage_addr, zimage_size,
+> +				 dram_base + MIN_ZIMAGE_OFFSET,
+> +				 dram_base + ZIMAGE_OFFSET_LIMIT);
+> +	if (status != EFI_SUCCESS) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Failed to relocate kernel\n");
+> +		goto fail_free_kernel_reserve;
+> +	}
+> +
+> +	status = handle_cmdline_files(sys_table, image, cmdline_ptr, "initrd=",
+> +				      dram_base + ZIMAGE_OFFSET_LIMIT,
+> +				      &initrd_addr, &initrd_size);
+> +	if (status != EFI_SUCCESS) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Unable to load initrd\n");
+> +		goto fail_free_zimage;
+> +	}
+> +
+> +	/* Estimate size of new FDT, and allocate memory for it. We
+> +	 * will allocate a bigger buffer if this ends up being too
+> +	 * small, so a rough guess is OK here.*/
+> +	new_fdt_size = fdt_size + cmdline_size + 0x200;
+> +
+> +fdt_alloc_retry:
+
+Minor stylistic thing, but looping using goto is not too readable.
+
+The following while loop might be a bit clearer, but I leave it
+up to you.
+
+while (1) {
+
+> +	status = efi_high_alloc(sys_table, new_fdt_size, 0, &new_fdt_addr,
+> +			    dram_base + ZIMAGE_OFFSET_LIMIT);
+> +	if (status != EFI_SUCCESS) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Unable to allocate memory for new device tree.\n");
+> +		goto fail_free_initrd;
+> +	}
+> +
+> +	/* Now that we have done our final memory allocation (and free)
+> +	 * we can get the memory map key needed
+> +	 * forexit_boot_services.*/
+> +	status = efi_get_memory_map(sys_table, &memory_map, &map_size,
+> +				    &desc_size, &mmap_key);
+> +	if (status != EFI_SUCCESS)
+> +		goto fail_free_new_fdt;
+> +
+> +	status = update_fdt(sys_table,
+> +			    fdt, (void *)new_fdt_addr, new_fdt_size,
+> +			    cmdline_ptr,
+> +			    initrd_addr, initrd_size,
+> +			    memory_map, map_size, desc_size);
+
+if (status == EFI_SUCCESS)
+	break;
+
+instead of
+
+> +
+> +	if (status != EFI_SUCCESS) {
+
+then
+
+	if (status != EFI_BUFFER_TOO_SMALL)
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Unable to constuct new device tree.\n");
+> +		goto fail_free_initrd;
+
+instead of
+
+> +		if (status == EFI_BUFFER_TOO_SMALL) {
+
+then
+
+> +			/* We need to allocate more space for the new
+> +			 * device tree, so free existing buffer that is
+> +			 * too small.  Also free memory map, as we will need
+> +			 * to get new one that reflects the free/alloc we do
+> +			 * on the device tree buffer. */
+> +			efi_free(sys_table, new_fdt_size, new_fdt_addr);
+> +			efi_call_phys1(sys_table->boottime->free_pool,
+> +				       memory_map);
+> +			new_fdt_size += new_fdt_size/4;
+
+And then just loop
+	}
+
+instead of the rest:
+
+> +			goto fdt_alloc_retry;
+> +		}
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: Unable to constuct new device tree.\n");
+> +		goto fail_free_initrd;
+> +	}
+> +
+> +	/* Now we are ready to exit_boot_services.*/
+> +	status = efi_call_phys2(sys_table->boottime->exit_boot_services,
+> +				handle, mmap_key);
+> +
+> +	if (status != EFI_SUCCESS) {
+> +		efi_printk(sys_table, PRINTK_PREFIX"ERROR: exit boot services failed.\n");
+> +		goto fail_free_mmap;
+> +	}
+> +
+> +
+> +	/* Now we need to return the FDT address to the calling
+> +	 * assembly to this can be used as part of normal boot.
+> +	 */
+> +	return new_fdt_addr;
+> +
+> +fail_free_mmap:
+> +	efi_call_phys1(sys_table->boottime->free_pool, memory_map);
+> +
+> +fail_free_new_fdt:
+> +	efi_free(sys_table, new_fdt_size, new_fdt_addr);
+> +
+> +fail_free_initrd:
+> +	efi_free(sys_table, initrd_size, initrd_addr);
+> +
+> +fail_free_zimage:
+> +	efi_free(sys_table, zimage_size, *zimage_addr);
+> +
+> +fail_free_kernel_reserve:
+> +	efi_free(sys_table, kernel_reserve_addr, kernel_reserve_size);
+> +
+> +fail_free_fdt:
+> +	efi_free(sys_table, fdt_size, fdt_addr);
+> +
+> +fail_free_cmdline:
+> +	efi_free(sys_table, cmdline_size, (u32)cmdline_ptr);
+> +
+> +fail:
+> +	return EFI_STUB_ERROR;
+> +}
+> diff --git a/arch/arm/boot/compressed/efi-stub.h b/arch/arm/boot/compressed/efi-stub.h
+> new file mode 100644
+> index 0000000..0fe9376
+> --- /dev/null
+> +++ b/arch/arm/boot/compressed/efi-stub.h
+> @@ -0,0 +1,5 @@
+> +#ifndef _ARM_EFI_STUB_H
+> +#define _ARM_EFI_STUB_H
+> +/* Error code returned to ASM code instead of valid FDT address. */
+> +#define EFI_STUB_ERROR		(~0)
+> +#endif
+> diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
+> index 75189f1..5401a3a 100644
+> --- a/arch/arm/boot/compressed/head.S
+> +++ b/arch/arm/boot/compressed/head.S
+> @@ -10,6 +10,7 @@
+>   */
+>  #include <linux/linkage.h>
+>  #include <asm/assembler.h>
+> +#include "efi-stub.h"
+>  
+>  	.arch	armv7-a
+>  /*
+> @@ -120,21 +121,99 @@
+>   */
+>  		.align
+>  		.arm				@ Always enter in ARM state
+> +		.text
+>  start:
+>  		.type	start,#function
+> -		.rept	7
+> +#ifdef CONFIG_EFI_STUB
+> +		@ Magic MSDOS signature for PE/COFF + ADD opcode
+> +		.word	0x62805a4d
+> +#else
+> +		mov	r0, r0
+> +#endif
+> +		.rept	5
+>  		mov	r0, r0
+>  		.endr
+> -   ARM(		mov	r0, r0		)
+> -   ARM(		b	1f		)
+> - THUMB(		adr	r12, BSYM(1f)	)
+> - THUMB(		bx	r12		)
+> +
+> +		adrl	r12, BSYM(zimage_continue)
+> + ARM(		mov     pc, r12 )
+> + THUMB(		bx	r12     )
+> +		@ zimage_continue will be in ARM or thumb mode as configured
+>  
+>  		.word	0x016f2818		@ Magic numbers to help the loader
+>  		.word	start			@ absolute load/run zImage address
+>  		.word	_edata			@ zImage end address
+> +
+> +#ifdef CONFIG_EFI_STUB
+> +		@ Portions of the MSDOS file header must be at offset
+> +		@ 0x3c from the start of the file.  All PE/COFF headers
+> +		@ are kept contiguous for simplicity.
+> +#include "efi-header.S"
+> +
+> +efi_stub_entry:
+> +		@ The EFI stub entry point is not at a fixed address, however
+> +		@ this address must be set in the PE/COFF header.
+> +		@ EFI entry point is in A32 mode, switch to T32 if configured.
+> + THUMB(		adr	r12, BSYM(1f)	)
+> + THUMB(		bx	r12		)
+>   THUMB(		.thumb			)
+>  1:
+> +		@ Save lr on stack for possible return to EFI firmware.
+> +		@ Don't care about fp, but need 64 bit alignment....
+> +		stmfd	sp!, {fp, lr}
+> +
+> +		@ allocate space on stack for return of new entry point of
+> +		@ zImage, as EFI stub may copy the kernel.  Pass address
+> +		@ of space in r2 - EFI stub will fill in the pointer.
+> +
+> +		sub	sp, sp, #8		@ we only need 4 bytes,
+> +						@ but keep stack 8 byte aligned.
+> +		mov	r2, sp
+
+You can save an instruction here: skip these two instructions, and see
+below just before the call to efi_entry [1]
+
+> +		@ Pass our actual runtime start address in pointer data
+> +		adr	r11, LC0		@ address of LC0 at run time
+> +		ldr	r12, [r11, #0]		@ address of LC0 at link time
+
+Can we just move this delta calculation after efi_entry?
+
+You don't need to specifiy an explicit offset if it's zero, btw:
+
+	ldr	r12, [r11]
+
+works just as well.  Same for the other instances.
+
+> +
+> +		sub	r3, r11, r12		@ calculate the delta offset
+> +		str	r3, [r2, #0]
+
+I think r2 is still equal to sp, so
+
+	str	r3, [sp]
+
+should be OK.
+
+[1]Or, combine this with the modification of sp:
+
+	str	r3, [sp, #-8]!
+	mov	r2, sp
+
+> +		bl	efi_entry
+> +
+> +		@ get new zImage entry address from stack, put into r3
+> +		ldr	r3, [sp, #0]
+> +		add	sp, sp, #8  		@ restore stack
+
+	ldr	r3, [sp], #8
+
+> +
+> +		@ Check for error return from EFI stub
+> +		mov	r1, #EFI_STUB_ERROR
+> +		cmp	r0, r1
+
+	cmp r0, #EFI_STUB_ERROR
+
+probably works.  The assembler will turn this into a cmn as necessary.
+
+> +		beq	efi_load_fail
+> +
+> +
+> +		@ Save return values of efi_entry
+> +		stmfd	sp!, {r0, r3}
+> +		bl	cache_clean_flush
+> +		bl	cache_off
+> +		ldmfd   sp!, {r0, r3}
+> +
+> +		@ Set parameters for booting zImage according to boot protocol
+> +		@ put FDT address in r2, it was returned by efi_entry()
+> +		@ r1 is FDT machine type, and r0 needs to be 0
+> +		mov	r2, r0
+> +		mov	r1, #0xFFFFFFFF
+> +		mov	r0, #0
+> +
+> +		@ Branch to (possibly) relocated zImage that is in r3
+> +		@ Make sure we are in A32 mode, as zImage requires
+> + THUMB(		bx	r3		)
+> + ARM(		mov	pc, r3		)
+> +
+> +efi_load_fail:
+> +		@ Return EFI_LOAD_ERROR to EFI firmware on error.
+> +		@ Switch back to ARM mode for EFI is done based on
+> +		@ return address on stack
+> +		ldr	r0, =0x80000001
+> +		ldmfd	sp!, {fp, pc}
+> +#endif
+> +
+> + THUMB(		.thumb			)
+> +zimage_continue:
+>  		mrs	r9, cpsr
+>  #ifdef CONFIG_ARM_VIRT_EXT
+>  		bl	__hyp_stub_install	@ get into SVC mode, reversibly
+> @@ -167,7 +246,6 @@ not_angel:
+>  		 * by the linker here, but it should preserve r7, r8, and r9.
+>  		 */
+>  
+> -		.text
+>  
+>  #ifdef CONFIG_AUTO_ZRELADDR
+>  		@ determine final kernel image address
+> -- 
+> 1.7.10.4
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
