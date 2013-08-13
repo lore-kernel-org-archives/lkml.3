@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab3HMLg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 07:36:28 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:33323 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab3HMLg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 07:36:26 -0400
-Message-ID: <520A1A2E.9080500@linux.vnet.ibm.com>
-Date: Tue, 13 Aug 2013 17:06:14 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+	id S1757297Ab3HMLh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 07:37:29 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40930 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757080Ab3HMLh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 07:37:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH 0/2] Protect cpu map updates from ACPI processor
+Date: Tue, 13 Aug 2013 13:47:49 +0200
+Message-ID: <1497141.gLtk1PtyFs@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1376355303.10300.376.camel@misato.fc.hp.com>
+References: <1376322354-13026-1-git-send-email-toshi.kani@hp.com> <2206062.QmFJav0XuL@vostro.rjw.lan> <1376355303.10300.376.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, tony.luck@intel.com,
-        bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
-        lance.ortiz@hp.com, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
- event
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic> <20130812083355.47c1bae8@samsung.com> <20130812123813.GD18018@pd.tnic> <20130812114932.52bb0314@samsung.com> <20130812150424.GH18018@pd.tnic> <20130812142557.2a43f155@samsung.com> <20130812175631.GI18018@pd.tnic>
-In-Reply-To: <20130812175631.GI18018@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081311-5140-0000-0000-000003AB281E
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 11:26 PM, Borislav Petkov wrote:
-> On Mon, Aug 12, 2013 at 02:25:57PM -0300, Mauro Carvalho Chehab wrote:
->> Userspace still needs the EDAC sysfs, in order to identify how the
->> memory is organized, and do the proper memory labels association.
->>
->> What edac_ghes does is to fill those sysfs nodes, and to call the
->> existing tracing to report errors.
+On Monday, August 12, 2013 06:55:03 PM Toshi Kani wrote:
+> On Tue, 2013-08-13 at 02:43 +0200, Rafael J. Wysocki wrote:
+> > On Monday, August 12, 2013 09:45:52 AM Toshi Kani wrote:
+> > > CPU system maps are protected with reader/writer locks.  The reader
+> > > lock, put_online_cpus(), assures that the maps are not updated while
+> > > holding the lock.  The writer lock, cpu_hotplug_begin(), is used to
+> > > udpate the cpu maps along with cpu_maps_update_begin().
+> > > 
+> > > However, the ACPI processor handler updates the cpu maps without
+> > > holding the the writer lock.  This patchset fixes this problem.
+> > > 
+> > > ---
+> > > The patchset is based on linux-next of the pm tree.
+> > 
+> > Basically looks OK to me, but I'd just merge the patches together,
+> > because the [2/2] is the very reason for the change made by [1/2].
+> 
+> I separated for reviewing purpose, but yes, they can be together.  Let
+> me know if you need me to re-send it together.
 
-I suppose you're referring to the entries under /sys/devices/system/edac/mc?
+I combined them and added a changelog built out of the messages you sent in
+this thread.  Please check:
 
-I'm not sure I understand how this helps. ghes_edac seems to just be 
-populating this based on dmi, which if I'm not mistaken, can be obtained 
-in userspace (mcelog as an example).
-
-Also, on my system, all DIMMs are being reported under mc0. I doubt if 
-the labels there are accurate.
-
->
-> This is the only reason which justifies EDAC's existence. Naveen, can
-> your BIOS directly report the silkscreen label of the DIMM in error?
-> Generally, can any BIOS do that?
->
-> More specifically, what are those gdata_fru_id and gdata_fru_text
-> things?
-
-My understanding was that this provides the DIMM serial number, but I'm 
-double checking just to be sure.
+http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=bleeding-edge&id=b9d10be7a8e88fdcb12540387c219cdde87b0795
 
 Thanks,
-Naveen
-
->
-> Because if it can, then having the memory error tracepoint come direct
-> from APEI should be enough. The ghes_edac functionality could be then
-> fallback for BIOSes which cannot report the silkscreen label and in such
-> case I can imagine keeping both tracepoints, but disabling one of the
-> two...
->
+Rafael
 
