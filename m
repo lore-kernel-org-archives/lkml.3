@@ -1,58 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757730Ab3HMOje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:39:34 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:34942 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756248Ab3HMOjd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:39:33 -0400
-From: Mark Rusk <Mark.Rusk@hp.com>
-To: arnd@arndb.de
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Mark Rusk <Mark.Rusk@hp.com>
-Subject: [PATCH] drivers/misc/hpilo: Correct panic when an AUX iLO is detected 
-Date: Tue, 13 Aug 2013 09:32:13 -0500
-Message-Id: <1376404333-33815-1-git-send-email-Mark.Rusk@hp.com>
-X-Mailer: git-send-email 1.7.1
+	id S1757906Ab3HMOjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:39:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757806Ab3HMOjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 10:39:44 -0400
+Date: Tue, 13 Aug 2013 16:33:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Long Gao <gaolong@kylinos.com.cn>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] sched: fix the theoretical signal_wake_up() vs
+	schedule() race
+Message-ID: <20130813143325.GA5541@redhat.com>
+References: <tencent_26310211398C21034BD3B2F9@qq.com> <CA+55aFwAnWZGkXbyLmL3RxQGW-dX_jjDBPfA5PjxeVWn==a6tA@mail.gmail.com> <20130808191749.GA12062@redhat.com> <CA+55aFw+vEp6+q+QUZm5rf+sKR9z76HWzEqWjoiLtataym5uwA@mail.gmail.com> <20130809130457.GA27493@redhat.com> <CA+55aFxh+4yK3AkPQWGq+hGhBgvDdWuPSfzko2aO76y7ej=Veg@mail.gmail.com> <20130812170257.GA32358@redhat.com> <20130813075550.GS27162@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813075550.GS27162@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Using an uninitialized variable 'devnum' after 'goto out;' was causing
- panic.  Just go ahead and return, we need to ignore AUX iLO devs.
+On 08/13, Peter Zijlstra wrote:
+>
+> On Mon, Aug 12, 2013 at 07:02:57PM +0200, Oleg Nesterov wrote:
+> > +/*
+> > + * Despite its name it doesn't necessarily has to be a full barrier.
+> > + * It should only guarantee that a STORE before the critical section
+> > + * can not be reordered with a LOAD inside this section.
+> > + * So the default implementation simply ensures that a STORE can not
+> > + * move into the critical section, smp_wmb() should serialize it with
+> > + * another STORE done by spin_lock().
+> > + */
+> > +#ifndef smp_mb__before_spinlock
+> > +#define smp_mb__before_spinlock()	smp_wmb()
+> >  #endif
+>
+> I would have expected mention of the ACQUIRE of the lock keeping the
+> LOAD inside the locked section.
 
- Oops: 0002 [#1] SMP
-   .
-   .
-   .
- RIP  [<ffffffffa033e270>] ilo_probe+0xec/0xe7c [hpilo]
+OK, please see v2 below.
+
 ---
- drivers/misc/hpilo.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+>From 8de96d3feae3b4b51669902b7c24ac1748ecdbfe Mon Sep 17 00:00:00 2001
+From: Oleg Nesterov <oleg@redhat.com>
+Date: Mon, 12 Aug 2013 18:14:00 +0200
+Subject: sched: fix the theoretical signal_wake_up() vs schedule() race
 
-diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
-index 621c7a3..b83e3ca 100644
---- a/drivers/misc/hpilo.c
-+++ b/drivers/misc/hpilo.c
-@@ -759,7 +759,7 @@ static int ilo_probe(struct pci_dev *pdev,
+This is only theoretical, but after try_to_wake_up(p) was changed
+to check p->state under p->pi_lock the code like
+
+	__set_current_state(TASK_INTERRUPTIBLE);
+	schedule();
+
+can miss a signal. This is the special case of wait-for-condition,
+it relies on try_to_wake_up/schedule interaction and thus it does
+not need mb() between __set_current_state() and if(signal_pending).
+
+However, this __set_current_state() can move into the critical
+section protected by rq->lock, now that try_to_wake_up() takes
+another lock we need to ensure that it can't be reordered with
+"if (signal_pending(current))" check inside that section.
+
+The patch is actually one-liner, it simply adds smp_wmb() before
+spin_lock_irq(rq->lock). This is what try_to_wake_up() already
+does by the same reason.
+
+We turn this wmb() into the new helper, smp_mb__before_spinlock(),
+for better documentation and to allow the architectures to change
+the default implementation.
+
+While at it, kill smp_mb__after_lock(), it has no callers.
+
+Perhaps we can also add smp_mb__before/after_spinunlock() for
+prepare_to_wait().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/include/asm/spinlock.h |    4 ----
+ include/linux/spinlock.h        |   14 +++++++++++---
+ kernel/sched/core.c             |   14 +++++++++++++-
+ 3 files changed, 24 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 33692ea..e3ddd7d 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -233,8 +233,4 @@ static inline void arch_write_unlock(arch_rwlock_t *rw)
+ #define arch_read_relax(lock)	cpu_relax()
+ #define arch_write_relax(lock)	cpu_relax()
  
- 	/* Ignore subsystem_device = 0x1979 (set by BIOS)  */
- 	if (pdev->subsystem_device == 0x1979)
--		goto out;
-+		return 0;
+-/* The {read|write|spin}_lock() on x86 are full memory barriers. */
+-static inline void smp_mb__after_lock(void) { }
+-#define ARCH_HAS_SMP_MB_AFTER_LOCK
+-
+ #endif /* _ASM_X86_SPINLOCK_H */
+diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
+index 7d537ce..75f3494 100644
+--- a/include/linux/spinlock.h
++++ b/include/linux/spinlock.h
+@@ -117,9 +117,17 @@ do {								\
+ #endif /*arch_spin_is_contended*/
+ #endif
  
- 	if (max_ccb > MAX_CCB)
- 		max_ccb = MAX_CCB;
-@@ -899,7 +899,7 @@ static void __exit ilo_exit(void)
- 	class_destroy(ilo_class);
- }
+-/* The lock does not imply full memory barrier. */
+-#ifndef ARCH_HAS_SMP_MB_AFTER_LOCK
+-static inline void smp_mb__after_lock(void) { smp_mb(); }
++/*
++ * Despite its name it doesn't necessarily has to be a full barrier.
++ * It should only guarantee that a STORE before the critical section
++ * can not be reordered with a LOAD inside this section.
++ * spin_lock() is the one-way barrier, this LOAD can not escape out
++ * of the region. So the default implementation simply ensures that
++ * a STORE can not move into the critical section, smp_wmb() should
++ * serialize it with another STORE done by spin_lock().
++ */
++#ifndef smp_mb__before_spinlock
++#define smp_mb__before_spinlock()	smp_wmb()
+ #endif
  
--MODULE_VERSION("1.4");
-+MODULE_VERSION("1.4.1");
- MODULE_ALIAS(ILO_NAME);
- MODULE_DESCRIPTION(ILO_NAME);
- MODULE_AUTHOR("David Altobelli <david.altobelli@hp.com>");
+ /**
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 6df0fbe..97dac0e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1491,7 +1491,13 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
+ 	unsigned long flags;
+ 	int cpu, success = 0;
+ 
+-	smp_wmb();
++	/*
++	 * If we are going to wake up a thread waiting for CONDITION we
++	 * need to ensure that CONDITION=1 done by the caller can not be
++	 * reordered with p->state check below. This pairs with mb() in
++	 * set_current_state() the waiting thread does.
++	 */
++	smp_mb__before_spinlock();
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+ 	if (!(p->state & state))
+ 		goto out;
+@@ -2394,6 +2400,12 @@ need_resched:
+ 	if (sched_feat(HRTICK))
+ 		hrtick_clear(rq);
+ 
++	/*
++	 * Make sure that signal_pending_state()->signal_pending() below
++	 * can't be reordered with __set_current_state(TASK_INTERRUPTIBLE)
++	 * done by the caller to avoid the race with signal_wake_up().
++	 */
++	smp_mb__before_spinlock();
+ 	raw_spin_lock_irq(&rq->lock);
+ 
+ 	switch_count = &prev->nivcsw;
 -- 
-1.7.1
+1.5.5.1
+
 
