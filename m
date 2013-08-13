@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab3HMWSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 18:18:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41259 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758937Ab3HMWSH (ORCPT
+	id S1759218Ab3HMWTe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:19:34 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:35722 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758472Ab3HMWTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 18:18:07 -0400
-Date: Tue, 13 Aug 2013 15:18:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] mm: make lru_add_drain_all() selective
-Message-Id: <20130813151805.b1177b60cba5b127b2aa6aee@linux-foundation.org>
-In-Reply-To: <20130813220700.GC28996@mtj.dyndns.org>
-References: <5202CEAA.9040204@linux.vnet.ibm.com>
-	<201308072335.r77NZZwl022494@farm-0012.internal.tilera.com>
-	<20130812140520.c6a2255d2176a690fadf9ba7@linux-foundation.org>
-	<52099187.80301@tilera.com>
-	<20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org>
-	<20130813201958.GA28996@mtj.dyndns.org>
-	<20130813133135.3b580af557d1457e4ee8331a@linux-foundation.org>
-	<20130813210719.GB28996@mtj.dyndns.org>
-	<20130813141621.3f1c3415901d4236942ee736@linux-foundation.org>
-	<20130813220700.GC28996@mtj.dyndns.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Aug 2013 18:19:33 -0400
+Date: Tue, 13 Aug 2013 18:19:28 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] idr: Document ida tree sections
+Message-ID: <20130813221928.GE28996@mtj.dyndns.org>
+References: <1375896905-6074-1-git-send-email-kmo@daterainc.com>
+ <1375896905-6074-4-git-send-email-kmo@daterainc.com>
+ <20130807202201.GA28039@mtj.dyndns.org>
+ <20130807205117.GC11612@kmo-pixel>
+ <20130809145756.GL20515@mtj.dyndns.org>
+ <20130813221308.GA11980@kmo-pixel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813221308.GA11980@kmo-pixel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013 18:07:00 -0400 Tejun Heo <tj@kernel.org> wrote:
+Hello,
 
-> Hello,
+On Tue, Aug 13, 2013 at 03:13:08PM -0700, Kent Overstreet wrote:
+> If you're convinced this is a real issue though - how about
+
+It is a real issue.  Large order allocation is fine for optimization
+but shouldn't be depended upon.  It does fail easily without
+compaction and compaction is heavy-ass operation which will blow up
+any minute performance advantage you might get from avoiding proper
+radix tree implementation.
+
+> IDA_SECTION_SIZE conditional on CONFIG_COMPACTION, so we use order 2 or
+> 3 allocations if CONFIG_COMPACTION=n?
 > 
-> On Tue, Aug 13, 2013 at 02:16:21PM -0700, Andrew Morton wrote:
-> > I've yet to see any evidence that callback APIs have been abused and
-> > I've yet to see any reasoning which makes me believe that this one will
-> > be abused.
-> 
-> Well, off the top of my head.
-> 
-> * In general, it's clunkier.  Callbacks become artificial boundaries
->   across which context has to be carried over explicitly.  It often
->   involves packing data into a temporary struct.  The artificial
->   barrier also generally makes the logic more difficult to follow.
->   This is pretty general problem with callback based interface and why
->   many programming languages / conventions prefer iterator style
->   interface over callback based ones.  It makes the code a lot easier
->   to organize around the looping construct.  Here, it isn't as
->   pronounced because the thing naturally requires a callback anyway.
-> 
-> * From the API itself, it often isn't clear what restrictions the
->   context the callback is called under would have.  It sure is partly
->   documentation problem but is pretty easy to get wrong inadvertantly
->   as the code evolves and can be difficult to spot as the context
->   isn't apparent.
-> 
-> Moving away from callbacks started with higher level languages but the
-> kernel sure is on the boat too where possible.  This one is muddier as
-> the interface is async in nature but still it's at least partially
-> applicable.
+> Then the max size toplevel array of pointers to segments would be
+> bigger, but that's only an issue when we're allocating up to near
+> INT_MAX ids, so it's difficult to see how _that_ would be an issue on a
+> small/embedded system... and we could even use vmalloc for that
+> allocation when the size of that array is > IDA_SECTION_SIZE.
 
-I don't buy it.  The callback simply determines whether "we need to
-schuedule work on this cpu".  It's utterly simple.  Nobody will have
-trouble understanding or using such a thing.
+What about cyclic allocations then?  This is natrually a radix tree
+problem.  I don't know why you're resisting radix tree so much here.
 
-> > >  It feels a bit silly to me to push the API
-> > > that way when doing so doesn't even solve the allocation problem.
-> > 
-> > It removes the need to perform a cpumask allocation in
-> > lru_add_drain_all().
-> 
-> But that doesn't really solve anything, does it?
+Thanks.
 
-It removes one memory allocation and initialisation per call.  It
-removes an entire for_each_online_cpu() loop.
-
-> > >  It doesn't really buy us much while making the interface more complex.
-> > 
-> > It's a superior interface.
-> 
-> It is more flexible but at the same time clunkier.
-
-The callback predicate is a quite natural thing in this case.
-
->  I wouldn't call it
-> superior and the flexibility doesn't buy us much here.
-
-It buys quite a lot and demonstrates why a callback interface is better.
-
-
-I really don't understand what's going on here.  You're advocating for
-a weaker kernel interface and for inferior kernel runtime behaviour. 
-Forcing callers to communicate their needs via a large,
-dynamically-allocated temporary rather than directly.  And what do we
-get in return for all this?  Some stuff about callbacks which frankly
-has me scratching my head.
-
+-- 
+tejun
