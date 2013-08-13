@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab3HMAUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 20:20:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40330 "EHLO comal.ext.ti.com"
+	id S1756238Ab3HMA3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 20:29:09 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40247 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756049Ab3HMAUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 20:20:32 -0400
-Message-ID: <52097BAE.3010103@ti.com>
-Date: Mon, 12 Aug 2013 19:19:58 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1756059Ab3HMA3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 20:29:07 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>
+Subject: [PATCH] driver core / cpu: Check if NUMA node is valid before bringing CPU up
+Date: Tue, 13 Aug 2013 02:39:30 +0200
+Message-ID: <12747916.Y6ImPYErWR@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1376338103.10300.336.camel@misato.fc.hp.com>
+References: <5200CBBF.1090904@jp.fujitsu.com> <33585791.CVfk6FmZRF@vostro.rjw.lan> <1376338103.10300.336.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-To: <joelf@ti.com>
-CC: Sekhar Nori <nsekhar@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 01/12] dma: edma: Setup parameters to DMA MAX_NR_SG
- at a time
-References: <1375719297-12871-1-git-send-email-joelf@ti.com> <1375719297-12871-2-git-send-email-joelf@ti.com> <52088B8B.9040000@ti.com> <52097604.7010503@ti.com>
-In-Reply-To: <52097604.7010503@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 06:55 PM, Joel Fernandes wrote:
-> Dropped quite a few from the CC list...
-> 
-> On 08/12/2013 02:15 AM, Sekhar Nori wrote:
->> On Monday 05 August 2013 09:44 PM, Joel Fernandes wrote:
->>> Changes are made here for configuring existing parameters to support
->>> DMA'ing them out in batches as needed.
->>>
->>> Also allocate as many as slots as needed by the SG list, but not more
->>> than MAX_NR_SG. Then these slots will be reused accordingly.
->>> For ex, if MAX_NR_SG=10, and number of SG entries is 40, still only
->>> 10 slots will be allocated to DMA the entire SG list of size 40.
->>>
->>> Signed-off-by: Joel Fernandes <joelf@ti.com>
->>> ---
->>>  drivers/dma/edma.c |   14 +++++++++++---
->>>  1 file changed, 11 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
->>> index 5f3e532..7b0853c 100644
->>> --- a/drivers/dma/edma.c
->>> +++ b/drivers/dma/edma.c
->>> @@ -222,9 +222,9 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
->>>  	enum dma_slave_buswidth dev_width;
->>>  	u32 burst;
->>>  	struct scatterlist *sg;
->>> -	int i;
->>>  	int acnt, bcnt, ccnt, src, dst, cidx;
->>>  	int src_bidx, dst_bidx, src_cidx, dst_cidx;
->>> +	int i, num_slots_needed;
->>
->> 'nslots' is more to my liking. Better keep variable names short.
->>
->>>  
->>>  	if (unlikely(!echan || !sgl || !sg_len))
->>>  		return NULL;
->>> @@ -262,8 +262,11 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
->>>  
->>>  	edesc->pset_nr = sg_len;
->>>  
->>> -	for_each_sg(sgl, sg, sg_len, i) {
->>> -		/* Allocate a PaRAM slot, if needed */
->>> +	/* Allocate a PaRAM slot, if needed */
->>> +
->>> +	num_slots_needed = sg_len > MAX_NR_SG ? MAX_NR_SG : sg_len;
->>
->> nslots = min(MAX_NR_SG, sg_len);
-> 
-> I agree the original naming was quite long. I would rather using
-> something more descriptive though than nslots. How does slots_needed sound?
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Sorry for the noise, nslots is fine and I've changed it to the same.
+There is a potential race condition between cpu_subsys_online()
+and either acpi_processor_remove() or remove_memory() that execute
+try_offline_node().  Namely, it is possible that cpu_subsys_online()
+will run right after the CPUs NUMA node has been put offline and
+cpu_to_node() executed by it will return NUMA_NO_NODE (-1).  In
+that case the CPU is gone and it doesn't make sense to call cpu_up()
+for it, so make cpu_subsys_online() return -ENODEV then.
 
--Joel
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+---
+
+Hi Greg,
+
+Can you please kindly queue up this one for 3.12?
+
+I've added the Toshi's ACK as he said it looked good to him. :-)
+
+Thanks,
+Rafael
+
+---
+ drivers/base/cpu.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+Index: linux-pm/drivers/base/cpu.c
+===================================================================
+--- linux-pm.orig/drivers/base/cpu.c
++++ linux-pm/drivers/base/cpu.c
+@@ -43,11 +43,14 @@ static int __ref cpu_subsys_online(struc
+ 	struct cpu *cpu = container_of(dev, struct cpu, dev);
+ 	int cpuid = dev->id;
+ 	int from_nid, to_nid;
+-	int ret;
++	int ret = -ENODEV;
+ 
+ 	cpu_hotplug_driver_lock();
+ 
+ 	from_nid = cpu_to_node(cpuid);
++	if (from_nid == NUMA_NO_NODE)
++		goto out;
++
+ 	ret = cpu_up(cpuid);
+ 	/*
+ 	 * When hot adding memory to memoryless node and enabling a cpu
+@@ -57,6 +60,7 @@ static int __ref cpu_subsys_online(struc
+ 	if (from_nid != to_nid)
+ 		change_cpu_under_node(cpu, from_nid, to_nid);
+ 
++ out:
+ 	cpu_hotplug_driver_unlock();
+ 	return ret;
+ }
 
