@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759073Ab3HMULh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:11:37 -0400
-Received: from s16502780.onlinehome-server.info ([87.106.93.118]:50386 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759024Ab3HMULf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:11:35 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Tue, 13 Aug 2013 21:10:42 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "s.dilek" <s.dilek@jpberlin.de>
-Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical
- mode ]
-Message-ID: <20130813201042.GA6390@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Dave Airlie <airlied@gmail.com>,
-	DRI <dri-devel@lists.freedesktop.org>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	"s.dilek" <s.dilek@jpberlin.de>
-References: <CA+icZUXdS3EuXyGZiS1--rMu6H0ospzCiK_CXgPv8mOk0sMt+Q@mail.gmail.com>
- <20130813163439.GA8805@cantiga.alporthouse.com>
- <CA+icZUX8HZD3z-uwTMWX9CoLdYYqyPVuhH-vWGhJuoonvMQTbQ@mail.gmail.com>
- <CA+icZUU1tbHGVPgjXNvsq-F44O6umbhp_bFcoLE35HZ0zTqo2g@mail.gmail.com>
- <20130813171324.GB8805@cantiga.alporthouse.com>
- <CA+icZUWFqpObp_6KzJExPs2pkJOofaKw6CKv8J0=VTfyVy_Uew@mail.gmail.com>
- <20130813180129.GC8805@cantiga.alporthouse.com>
- <CA+icZUWcF6bdoD1pSbbtBTAYNMC9237Eas7SemS6kPpnY=c2Sw@mail.gmail.com>
- <20130813185322.GA5982@cantiga.alporthouse.com>
- <CA+icZUXwSRPoZ8bQ6xaoNz27fQKPtg3HiZRENQ5UEpHE_kmEag@mail.gmail.com>
+	id S1759000Ab3HMUOD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:14:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:4709 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758094Ab3HMUN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 16:13:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,872,1367996400"; 
+   d="scan'208";a="385801371"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Thread-Topic: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Thread-Index: AQHOlGVcQB6qi1wV3Ei8qYoYEneewpmMKjwAgAMKHwCAArfagIAAEviAgAADVICAAXiUgIAAFsAAgABQygCAAAdFgP//i8NwgAB3kgD//6n/UA==
+Date: Tue, 13 Aug 2013 20:13:56 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CB9150@ORSMSX106.amr.corp.intel.com>
+References: <20130808163822.67e0828a@samsung.com>
+ <20130810180322.GC4155@pd.tnic> <20130812083355.47c1bae8@samsung.com>
+ <5208D80D.5030206@linux.vnet.ibm.com> <20130812125343.GE18018@pd.tnic>
+ <520A16BD.30201@linux.vnet.ibm.com> <20130813124258.GC4077@pd.tnic>
+ <520A6D98.9060204@linux.vnet.ibm.com> <20130813175809.GE4077@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F31CB8F53@ORSMSX106.amr.corp.intel.com>
+ <20130813181004.GF4077@pd.tnic>
+In-Reply-To: <20130813181004.GF4077@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUXwSRPoZ8bQ6xaoNz27fQKPtg3HiZRENQ5UEpHE_kmEag@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 78.156.73.22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7DKE8kP001899
 
-On Tue, Aug 13, 2013 at 09:05:41PM +0200, Sedat Dilek wrote:
-> On Tue, Aug 13, 2013 at 8:53 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Tue, Aug 13, 2013 at 08:40:37PM +0200, Sedat Dilek wrote:
-> >> On Tue, Aug 13, 2013 at 8:01 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> >> > On Tue, Aug 13, 2013 at 07:53:25PM +0200, Sedat Dilek wrote:
-> >> >> Files attached.
-> >> >
-> >> > Can you also please attach a full dmesg so I can check for anything
-> >> > unusual?
-> >> >
-> >
-> > Nothing scarred me on a couple of read throughs.
-> >
-> > What happens if you try:
-> >
-> > diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
-> > index 112c5e1..9828d9b 100644
-> > --- a/drivers/gpu/drm/i915/i915_gem_stolen.c
-> > +++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
-> > @@ -284,7 +284,7 @@ i915_gem_object_create_stolen(struct drm_device *dev, u32 size)
-> >                 return NULL;
-> >
-> >         ret = drm_mm_insert_node(&dev_priv->mm.stolen, stolen, size,
-> > -                                4096, DRM_MM_SEARCH_DEFAULT);
-> > +                                1024*1024, DRM_MM_SEARCH_DEFAULT);
-> >         if (ret) {
-> >                 kfree(stolen);
-> >                 return NULL;
-> >
-> > --
-> 
-> Now, 2/3 till 3/4 of my LightDM greeter screen is a black bar (seen
-> from the top).
-> On the bottom I can read "Ubuntu 12.04 LTS" with the known background.
-> So-to-say 3/4 "blind".
+> What about sending tracepoint data over serial and/or network? I agree
+> that dmesg over serial would be helpful but we need a similar sure-fire
+> way for carrying error info out.
 
-That implies that the scanout is always reading from the base of stolen.
-Can you grab intel_reg_dumper so that I can check what values the
-transcoder is set to?
+Generic tracepoints are architected to be able to fire at very high rates and
+log huge amounts of information.  So we'd need something special to say
+just log these special tracepoints to network/serial.
 
-At the moment, I am guessing that the display never sees the updated
-surface offset and so persists with the value programmed by the BIOS -
-which will be 0 and set to the base of stolen memory in the GTT. A
-drm.debug=6 dmesg would help here as well.
+> Which reminds me, pstore could also be a good thing to use, in addition.
+> Only put error info there as it is limited anyway.
 
-If you forced a mode change, I think that too would restore the output.
--Chris
+Yes - space is very limited.  I don't know how to assign priority for logging
+the dmesg data vs. some error logs.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+
+If we just "printk()" the most important parts - then that data will automatically
+flow to the serial console and to pstore.  Then we have multiple paths for the
+critical bits of the error log - and the tracepoints give us more details for the
+cases where the machine doesn't spontaneously explode.
+
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
