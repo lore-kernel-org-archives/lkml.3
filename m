@@ -1,127 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab3HMAEF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 20:04:05 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:51477 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756048Ab3HMAED (ORCPT
+	id S1756216Ab3HMAGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 20:06:10 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43556 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756048Ab3HMAGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 20:04:03 -0400
-Date: Tue, 13 Aug 2013 02:03:57 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [GIT PULL] timers/nohz updates for 3.12
-Message-ID: <20130813000355.GD27436@somewhere>
-References: <1375729264-19845-1-git-send-email-fweisbec@gmail.com>
- <20130812184428.GA19785@gmail.com>
+	Mon, 12 Aug 2013 20:06:08 -0400
+Message-ID: <5209784D.8080502@ti.com>
+Date: Mon, 12 Aug 2013 19:05:33 -0500
+From: Joel Fernandes <joelf@ti.com>
+Reply-To: <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130812184428.GA19785@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH v3 01/12] dma: edma: Setup parameters to DMA MAX_NR_SG
+ at a time
+References: <1375719297-12871-1-git-send-email-joelf@ti.com> <1375719297-12871-2-git-send-email-joelf@ti.com> <52088B8B.9040000@ti.com>
+In-Reply-To: <52088B8B.9040000@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 08:44:28PM +0200, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > Ingo,
-> > 
-> > Please pull the timers/nohz branch that can be found at:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> > 	timers/nohz
-> > 
-> > It mostly contains fixes and full dynticks off-case optimizations. I believe that
-> > distros want to enable this feature so it seems important to optimize the case
-> > where the "nohz_full=" parameter is empty. ie: I'm trying to remove any performance
-> > regression that comes with NO_HZ_FULL=y when the feature is not used.
-> > 
-> > This patchset improves the current situation a lot (off-case appears to be around 11% faster
-> > with hackbench, although I guess it may vary depending on the configuration but it should be
-> > significantly faster in any case) now there is still some work to do: I can still observe a
-> > remaining loss of 1.6% throughput seen with hackbench compared to CONFIG_NO_HZ_FULL=n
-> > 
-> > Thanks,
-> > 	Frederic
-> > ---
-> > 
-> > Frederic Weisbecker (23):
-> >       sched: Consolidate open coded preemptible() checks
-> >       context_tracing: Fix guest accounting with native vtime
-> >       vtime: Update a few comments
-> >       context_tracking: Fix runtime CPU off-case
-> >       nohz: Only enable context tracking on full dynticks CPUs
-> >       context_tracking: Remove full dynticks' hacky dependency on wide context tracking
-> >       context_tracking: Ground setup for static key use
-> >       context_tracking: Optimize main APIs off case with static key
-> >       context_tracking: Optimize guest APIs off case with static key
-> >       context_tracking: Optimize context switch off case with static keys
-> >       context_tracking: User/kernel broundary cross trace events
-> >       vtime: Remove a few unneeded generic vtime state checks
-> >       vtime: Fix racy cputime delta update
-> >       context_tracking: Split low level state headers
-> >       hardirq: Split preempt count mask definitions
-> >       m68k: hardirq_count() only need preempt_mask.h
-> >       vtime: Describe overriden functions in dedicated arch headers
-> >       vtime: Optimize full dynticks accounting off case with static keys
-> >       vtime: Always scale generic vtime accounting results
-> >       vtime: Always debug check snapshot source _before_ updating it
-> >       nohz: Rename a few state variables
-> >       nohz: Optimize full dynticks state checks with static keys
-> >       nohz: Optimize full dynticks's sched hooks with static keys
-> > 
-> > 
-> >  arch/ia64/include/asm/Kbuild            |    1 +
-> >  arch/m68k/include/asm/irqflags.h        |    2 +-
-> >  arch/powerpc/include/asm/Kbuild         |    1 +
-> >  arch/s390/include/asm/cputime.h         |    3 -
-> >  arch/s390/include/asm/vtime.h           |    7 ++
-> >  arch/s390/kernel/vtime.c                |    1 +
-> >  include/linux/context_tracking.h        |  120 +++++++++++++++--------------
-> >  include/linux/context_tracking_state.h  |   39 +++++++++
-> >  include/linux/hardirq.h                 |  117 +----------------------------
-> >  include/linux/preempt_mask.h            |  122 +++++++++++++++++++++++++++++
-> >  include/linux/tick.h                    |   45 +++++++++--
-> >  include/linux/vtime.h                   |   74 ++++++++++++++++--
-> >  include/trace/events/context_tracking.h |   58 ++++++++++++++
-> >  init/Kconfig                            |   28 +++++--
-> >  kernel/context_tracking.c               |  128 ++++++++++++++++++-------------
-> >  kernel/sched/core.c                     |    4 +-
-> >  kernel/sched/cputime.c                  |   53 ++++---------
-> >  kernel/time/Kconfig                     |    1 -
-> >  kernel/time/tick-sched.c                |   56 ++++++--------
-> >  19 files changed, 534 insertions(+), 326 deletions(-)
-> 
-> When merged to -tip it causes this build error:
-> 
->  kernel/time/tick-sched.c:186:3: error: 'have_nohz_full_mask' undeclared (first use in this function)
->  kernel/time/tick-sched.c:345:2: error: 'cpu' undeclared (first use in this function)
-> 
-> config attached.
-> 
-> I did what looked like to be an obvious conflict resolution to 
-> tick-sched.c (attached), please double check that too.
-> 
-> While at it, mind rebasing your changes to tip:timers/urgent, which has a 
-> few nohz fixes pending as well?
+Responding to other comments in this post,
 
-Ok I did the rebase on top of tip:timers/urgent and handled the conflicts along.
-The new branch is "timers/nohz-v2".
+On 08/12/2013 02:15 AM, Sekhar Nori wrote:
 
-Tell me if anything goes wrong with it.
+[..]
+>>  	if (unlikely(!echan || !sgl || !sg_len))
+>>  		return NULL;
+>> @@ -262,8 +262,11 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+>>  
+>>  	edesc->pset_nr = sg_len;
+>>  
+>> -	for_each_sg(sgl, sg, sg_len, i) {
+>> -		/* Allocate a PaRAM slot, if needed */
+>> +	/* Allocate a PaRAM slot, if needed */
+>> +
+>> +	num_slots_needed = sg_len > MAX_NR_SG ? MAX_NR_SG : sg_len;
+> 
+> nslots = min(MAX_NR_SG, sg_len);
 
-Thanks.
+Changed to this, with the +1
+
+> 
+>> +
+>> +	for (i = 0; i < num_slots_needed; i++) {
+>>  		if (echan->slot[i] < 0) {
+>>  			echan->slot[i] =
+>>  				edma_alloc_slot(EDMA_CTLR(echan->ch_num),
+>> @@ -273,6 +276,10 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+>>  				return NULL;
+>>  			}
+>>  		}
+>> +	}
+>> +
+>> +	/* Configure PaRAM sets for each SG */
+>> +	for_each_sg(sgl, sg, sg_len, i) {
+>>  
+>>  		acnt = dev_width;
+>>  
+>> @@ -330,6 +337,7 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+>>  		/* Configure A or AB synchronized transfers */
+>>  		if (edesc->absync)
+>>  			edesc->pset[i].opt |= SYNCDIM;
+>> +
+> 
+> Random extra newline.
+
+Removing..
+
+> 
+> The patch as such is fine, but I dont think it makes lot of sense
+> standalone. This needs to be merged into the patch where you actually
+> handle the entire SG list in batches.
+
+I think it does actually, this patch just takes care of preparing the
+param set list correctly and allocating slots. It doesn't the actual DMA
+or take part in the algorithm. As a result, the patch can be reused
+incase in future the main algorithm is rewritten in a subsequent series.
+Further this patch was reused straight from old implementation so it
+proved to be useful being a separate patch last time. I also plan to
+rewrite just this functionality in the future.
+
+Thanks,
+
+-Joel
+
+
