@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab3HMNoC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:44:02 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:33991 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758182Ab3HMNdi (ORCPT
+	id S1758210Ab3HMNoo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:44:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49618 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758072Ab3HMNom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:33:38 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 04/35] cpufreq: arm_big_little: Covert to light weight ->target_index() routine
-Date: Tue, 13 Aug 2013 19:02:17 +0530
-Message-Id: <9875f25f50527a9f415851a324dafb260e302928.1376392602.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
-References: <cover.1376392602.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
-References: <cover.1376392602.git.viresh.kumar@linaro.org>
+	Tue, 13 Aug 2013 09:44:42 -0400
+Message-ID: <520A3847.4090506@linutronix.de>
+Date: Tue, 13 Aug 2013 15:44:39 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+MIME-Version: 1.0
+To: Bin Liu <binmlist@gmail.com>
+CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
+Subject: Re: [PATCH] usb: musb: am335x: Do not remove the session bin HOST-only
+ mode
+References: <51F2BE6F.3010008@linutronix.de> <CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com> <51F2D427.7050106@linutronix.de> <CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com> <51F2DD90.2030405@linutronix.de> <CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com> <20130729165329.GA5773@linutronix.de> <CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com> <51F6ABA2.7060102@linutronix.de> <CADYTM3bcCoWKE9eR5Sd9MbaEUr4G=k=r6JKR+8KC=W_YrbMs3g@mail.gmail.com> <20130809160339.GA14829@linutronix.de> <5205516D.1030707@cogentembedded.com> <5209DCB9.8020705@linutronix.de> <CADYTM3a2M-X=eqz0LmSq4T9UF9khsTGB5TTYWWMRZWwkpRuRTQ@mail.gmail.com> <520A3206.5080505@linutronix.de> <CADYTM3YU=xt-YDaoOqothjAv_rdnzRmop10Rf7PSA7POaE5DBQ@mail.gmail.com>
+In-Reply-To: <CADYTM3YU=xt-YDaoOqothjAv_rdnzRmop10Rf7PSA7POaE5DBQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts existing .target() to newly defined light weight
-.target_index() routine for this driver.
+On 08/13/2013 03:33 PM, Bin Liu wrote:
+> Sebastian,
 
-CPUFreq core will call cpufreq_frequency_table_target() before calling this
-routine and will pass index to it.
+Hi Bin,
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/arm_big_little.c | 17 +++++------------
- 1 file changed, 5 insertions(+), 12 deletions(-)
+>> I've been looking at the wiki page and it did not mention the ID pin
+>> for the second port. If it is grounded then this piece can be removed
+> I thought you have already tried that without setting the mode
+> register the session bit cannot stay set.
 
-diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
-index 7e92586..4bba5ad 100644
---- a/drivers/cpufreq/arm_big_little.c
-+++ b/drivers/cpufreq/arm_big_little.c
-@@ -49,28 +49,21 @@ static unsigned int bL_cpufreq_get(unsigned int cpu)
- 
- /* Set clock frequency */
- static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
--		unsigned int target_freq, unsigned int relation)
-+		unsigned int index)
- {
- 	struct cpufreq_freqs freqs;
--	u32 cpu = policy->cpu, freq_tab_idx, cur_cluster;
-+	u32 cpu = policy->cpu, cur_cluster;
- 	int ret = 0;
- 
- 	cur_cluster = cpu_to_cluster(policy->cpu);
- 
- 	freqs.old = bL_cpufreq_get(policy->cpu);
--
--	/* Determine valid target frequency using freq_table */
--	cpufreq_frequency_table_target(policy, freq_table[cur_cluster],
--			target_freq, relation, &freq_tab_idx);
--	freqs.new = freq_table[cur_cluster][freq_tab_idx].frequency;
-+	freqs.new = freq_table[cur_cluster][index].frequency;
- 
- 	pr_debug("%s: cpu: %d, cluster: %d, oldfreq: %d, target freq: %d, new freq: %d\n",
--			__func__, cpu, cur_cluster, freqs.old, target_freq,
-+			__func__, cpu, cur_cluster, freqs.old, freqs.new,
- 			freqs.new);
- 
--	if (freqs.old == freqs.new)
--		return 0;
--
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
- 
- 	ret = clk_set_rate(clk[cur_cluster], freqs.new * 1000);
-@@ -201,7 +194,7 @@ static struct cpufreq_driver bL_cpufreq_driver = {
- 	.name			= "arm-big-little",
- 	.flags			= CPUFREQ_STICKY,
- 	.verify			= cpufreq_generic_frequency_table_verify,
--	.target			= bL_cpufreq_set_target,
-+	.target_index		= bL_cpufreq_set_target,
- 	.get			= bL_cpufreq_get,
- 	.init			= bL_cpufreq_init,
- 	.exit			= bL_cpufreq_exit,
--- 
-1.7.12.rc2.18.g61b472e
+This was a misunderstanding then. Sorry. I understood that the bin has
+to be unset and then the controller set it once a device there.
 
+> I am not sure if anywhere mentioned about the ID pin, but ASAIK all
+> the different boards using am335x have ID pin grounded for host port.
+evm is the only I am aware of. The evm-sk and beagle bone have just one
+port. Beagle bone black is not mainline.
+
+>> and the magic trick is just to skip the try_idle() call.
+> Agreed.
+> 
+>>
+>> I haven't found anything saying that it is required to clear the
+>> session bin in host mode, only in OTG. And then, I would assume to
+> Agreed.
+> 
+>> receive a session interrupt once we have the proper VBUS level which
+>> does not happen.
+> The TI 3.2 kernel for am335x sets the session bit in musb_start() for
+> host-only mode. Maybe we can do something similar in here? (I noticed
+> mush_start() has gone in mainline, but have not got a chance to check
+> the details...)
+
+This is the case already. From musb_start()
+…
+        if (musb->port_mode != MUSB_PORT_MODE_HOST &&
+             (devctl & MUSB_DEVCTL_VBUS) == MUSB_DEVCTL_VBUS) {
+                 musb->is_active = 1;
+         } else {
+                 devctl |= MUSB_DEVCTL_SESSION;
+         }
+…
+
+>>> -Bin.
+
+Sebastian
