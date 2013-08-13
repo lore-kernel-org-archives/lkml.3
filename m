@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301Ab3HMW0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 18:26:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41283 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758951Ab3HMW0X (ORCPT
+	id S1759361Ab3HMW15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:27:57 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:46608 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759191Ab3HMW14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 18:26:23 -0400
-Date: Tue, 13 Aug 2013 15:26:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH v4 2/2] mm: make lru_add_drain_all() selective
-Message-Id: <20130813152622.f15dcaaa672ba182308ce29f@linux-foundation.org>
-In-Reply-To: <520AAF9C.1050702@tilera.com>
-References: <5202CEAA.9040204@linux.vnet.ibm.com>
-	<201308072335.r77NZZwl022494@farm-0012.internal.tilera.com>
-	<20130812140520.c6a2255d2176a690fadf9ba7@linux-foundation.org>
-	<52099187.80301@tilera.com>
-	<20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org>
-	<20130813201958.GA28996@mtj.dyndns.org>
-	<20130813133135.3b580af557d1457e4ee8331a@linux-foundation.org>
-	<520A9E4A.2050203@tilera.com>
-	<20130813141329.c55deccf462f3ad49129bbca@linux-foundation.org>
-	<520AAF9C.1050702@tilera.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Aug 2013 18:27:56 -0400
+Date: Tue, 13 Aug 2013 15:27:59 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] idr: Document ida tree sections
+Message-ID: <20130813222759.GA12069@kmo-pixel>
+References: <1375896905-6074-1-git-send-email-kmo@daterainc.com>
+ <1375896905-6074-4-git-send-email-kmo@daterainc.com>
+ <20130807202201.GA28039@mtj.dyndns.org>
+ <20130807205117.GC11612@kmo-pixel>
+ <20130809145756.GL20515@mtj.dyndns.org>
+ <20130813221308.GA11980@kmo-pixel>
+ <20130813221928.GE28996@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813221928.GE28996@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013 18:13:48 -0400 Chris Metcalf <cmetcalf@tilera.com> wrote:
-
-> On 8/13/2013 5:13 PM, Andrew Morton wrote:
-> > On Tue, 13 Aug 2013 16:59:54 -0400 Chris Metcalf <cmetcalf@tilera.com> wrote:
-> >
-> >>> Then again, why does this patchset exist?  It's a performance
-> >>> optimisation so presumably someone cares.  But not enough to perform
-> >>> actual measurements :(
-> >> The patchset exists because of the difference between zero overhead on
-> >> cpus that don't have drainable lrus, and non-zero overhead.  This turns
-> >> out to be important on workloads where nohz cores are handling 10 Gb
-> >> traffic in userspace and really, really don't want to be interrupted,
-> >> or they drop packets on the floor.
-> > But what is the effect of the patchset?  Has it been tested against the
-> > problematic workload(s)?
+On Tue, Aug 13, 2013 at 06:19:28PM -0400, Tejun Heo wrote:
+> Hello,
 > 
-> Yes.  The result is that syscalls such as mlockall(), which otherwise interrupt
-> every core, don't interrupt the cores that are running purely in userspace.
-> Since they are purely in userspace they don't have any drainable pagevecs,
-> so the patchset means they don't get interrupted and don't drop packets.
+> On Tue, Aug 13, 2013 at 03:13:08PM -0700, Kent Overstreet wrote:
+> > If you're convinced this is a real issue though - how about
 > 
-> I implemented this against Linux 2.6.38 and our home-grown version of nohz
-> cpusets back in July 2012, and we have been shipping it to customers since then.
+> It is a real issue.  Large order allocation is fine for optimization
+> but shouldn't be depended upon.  It does fail easily without
+> compaction and compaction is heavy-ass operation which will blow up
+> any minute performance advantage you might get from avoiding proper
+> radix tree implementation.
+> 
+> > IDA_SECTION_SIZE conditional on CONFIG_COMPACTION, so we use order 2 or
+> > 3 allocations if CONFIG_COMPACTION=n?
+> > 
+> > Then the max size toplevel array of pointers to segments would be
+> > bigger, but that's only an issue when we're allocating up to near
+> > INT_MAX ids, so it's difficult to see how _that_ would be an issue on a
+> > small/embedded system... and we could even use vmalloc for that
+> > allocation when the size of that array is > IDA_SECTION_SIZE.
+> 
+> What about cyclic allocations then?  This is natrually a radix tree
+> problem.  I don't know why you're resisting radix tree so much here.
 
-argh.
+It's only naturally a radix tree problem _if_ you require sparseness.
+Otherwise, radix trees require pointer chasing, which we can avoid -
+which saves us both the cost of chasing pointers (which is significant)
+and the overhead of storing them.
 
-Those per-cpu LRU pagevecs were a nasty but very effective locking
-amortization hack back in, umm, 2002.  They have caused quite a lot of
-weird corner-case behaviour, resulting in all the lru_add_drain_all()
-calls sprinkled around the place.  I'd like to nuke the whole thing,
-but that would require a fundamental rethnik/rework of all the LRU list
-locking.
+The patch handles cyclic allocation by limiting sparseness - we talked
+about this and I thought you were ok with this solution, though it was
+awhile ago and I could be misremembering your comments.
 
-According to the 8891d6da17db0f changelog, the lru_add_drain_all() in
-sys_mlock() isn't really required: "it isn't must.  but it reduce the
-failure of moving to unevictable list.  its failure can rescue in
-vmscan later.  but reducing is better."
+To recap, here's the code that implements that sparseness limiting, it's
+documented in ida_alloc_cyclic()'s docs:
 
-I suspect we could just kill it.
+static int __ida_alloc_cyclic(struct ida *ida, unsigned start, unsigned end,
+			      gfp_t gfp, unsigned long *flags)
+	__releases(&ida->lock)
+	__acquires(&ida->lock)
+{
+	int ret;
+	unsigned id;
+
+	ret = __ida_alloc_range_multiple(ida, &id, 1,
+					 max(start, ida->cur_id),
+					 end, gfp, flags);
+
+	if (ret < 0)
+		ret = __ida_alloc_range_multiple(ida, &id, 1, start,
+						 end, gfp, flags);
+	if (ret == 1) {
+		ida->cur_id = id + 1;
+		if ((ida->cur_id - start) / 2 > max(1024U, ida->allocated_ids))
+			ida->cur_id = 0;
+
+		return id;
+	}
+
+	return ret;
+}
