@@ -1,125 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab3HMHBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:01:30 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:64555 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab3HMHB2 convert rfc822-to-8bit (ORCPT
+	id S1754794Ab3HMHFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:05:05 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:44209 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab3HMHFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:01:28 -0400
-From: Shyam Kaushik <shyam@zadarastorage.com>
-MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-thread-index: Ac6X8k59hs3hR1G+T7+M7pmVA7CvDwAABCbAAAAgZ9A=
-Date: Tue, 13 Aug 2013 12:31:29 +0530
-Message-ID: <9a92eee58fefc1b8e3b4771ecf210d29@mail.gmail.com>
-Subject: BUG REPORT - IDR wraps around at 30-bits - works very bad with NFSD/SCTP
+	Tue, 13 Aug 2013 03:05:02 -0400
+X-AuditID: 9c93017e-b7c76ae000003897-c9-5209da9b66bb
+From: Minchan Kim <minchan@kernel.org>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: linux-mm@kvack.org, k.kozlowski@samsung.com,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
+        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
+        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [RFC 0/3] Pin page control subsystem
+Date: Tue, 13 Aug 2013 16:04:59 +0900
+Message-Id: <1376377502-28207-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Folks,
+!! NOTICE !!
+It's totally untested patchset so please AVOID real testing.
+I'd like to show just concept and want to discuss it on very early stage.
+(so there isn't enough description but I guess code is very simple so
+not a big problem to understand the intention).
 
-We are using Ubuntu linux kernel 3.2.0-25-generic & 3.8.13-030813-generic
-in our environments, but I think this bug is still present in mainline
-kernel. Clients of IDR rollover at MAX_INT (NFSD & SCTP in kernel do this)
-& others on MAX_IDR_MASK. This is ideally 2^31. But there is some BUG
-within IDR that it wraps over at 2^30.
+This patchset is for solving *kernel* pinpage migration problem more
+general. Now, zswap, zram and z* family, not sure upcoming what
+solution are using memory don't live in harmony with VM.
+(I don't remember ballon compaction but we might be able to unify
+ballon compaction with this.)
 
-NFSD uses IDR for maintaining its stateids & tracks min_stateid with a
-static variable which keeps incrementing. So over a period of time NFSD
-could run into the issue that it allocates an ID with IDR, but IDR cant
-locate this ID, resulting in NFSD constantly sending BAD_STATEIDS to all
-its clients.
+VM sometime want to migrate and/or reclaim pages for CMA, memory-hotplug,
+THP and so on but at the moment, it could handle only userspace pages
+so if above example subsystem have pinned a some page in a range VM want
+to migrate, migration is failed so above exmaple couldn't work well.
 
-Following short driver (which closely resembles NFSD usage of IDR) shows
-the BUG within IDR:
+This patchset is for basic facility for the role.
 
-#include <linux/module.h>
-#include <linux/init.h>
-#include <linux/version.h>
-#include <linux/idr.h>
+patch 1 introduces a new page flags and patch 2 introduce pinpage control
+subsystem. So, subsystems want to control pinpage should implement own
+pinpage_xxx functions because each subsystem would have other character
+so what kinds of data structure for managing pinpage information depends
+on them. Otherwise, they can use general functions defined in pinpage
+subsystem. patch 3 hacks migration.c so that migration is
+aware of pinpage now and migrate them with pinpage subsystem.
 
-static int log_idr_entry(int id, void *ptr, void *data)
-{
-        int     *expected_val = (int *)ptr;
+It exposes new rule that users of pinpage control subsystem shouldn't use
+struct page->flags and struct page->lru field freely because lru field
+is used for migration.c and flags field is used for lock_page in pinpage
+control subsystem. I think it's not a big problem because subsystem can
+use other fields of the page descriptor, instead.
 
-        pr_info("\tIDR Actual ID[%d] %s Expected Value[%d]\n", id, (id ==
-*expected_val)?"==":"!=", *expected_val);
-        return 0;
-}
+This patch's limitation is that it couldn't apply user space pages
+although I'd REALLY REALLY like to unify them.
+IOW, it couldn't handle long pin page by get_user_pages.
+Basic hurdle is that how to handle nesting cases caused by that
+several subsystem pin on same page with GUP but they could have 
+different migrate methods. It could add rather complexity and overhead
+but I'm not sure it's worth because proved culprit until now is AIO
+ring pages and Gu and Benjamin have approached it with another way
+so I'd like to hear their opinions.
 
-static void process_idr_entry(struct idr *stateids, int min_stateid)
-{
-        int             new_stid;
-        int             error;
+Minchan Kim (3):
+  mm: Introduce new page flag
+  pinpage control subsystem
+  mm: migrate pinned page
 
-        pr_info("\nProcessing for min_stateid[%d]\n", min_stateid);
-        if (!idr_pre_get(stateids, GFP_KERNEL)) {
-                pr_info("Failed to pre-get\n");
-                return;
-        }
+ include/linux/page-flags.h |    2 +
+ include/linux/pinpage.h    |   39 +++++++++++++
+ mm/Makefile                |    2 +-
+ mm/compaction.c            |   26 ++++++++-
+ mm/migrate.c               |   58 ++++++++++++++++---
+ mm/page_alloc.c            |    1 +
+ mm/pinpage.c               |  134 ++++++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 252 insertions(+), 10 deletions(-)
+ create mode 100644 include/linux/pinpage.h
+ create mode 100644 mm/pinpage.c
 
-        error = idr_get_new_above(stateids, &new_stid, min_stateid,
-&new_stid);
-        if (error) {
-                pr_info("Failed to get new id\n");
-                idr_remove(stateids, new_stid);
-                return;
-        }
+-- 
+1.7.9.5
 
-        pr_info("Allocated new_stid[%d]\n", new_stid);
-
-        if (!idr_find(stateids, new_stid))
-                pr_info("BUG: Cant find ID[%d]\n", new_stid);
-
-        pr_info("Dumping entries in IDR\n");
-        idr_for_each(stateids, &log_idr_entry, NULL);
-        idr_remove(stateids, new_stid);
-}
-
-void driver_exit(void)
-{
-}
-
-int driver_init(void)
-{
-        struct idr      stateids;
-
-        pr_info("%d\n", MAX_INT);
-        idr_init(&stateids);
-        process_idr_entry(&stateids, 0/*min_stateid*/);
-        process_idr_entry(&stateids, 1073741823/*min_stateid*/);
-        process_idr_entry(&stateids, 1073741824/*min_stateid*/);
-        idr_remove_all(&stateids);
-        idr_destroy(&stateids);
-        return 0;
-}
-
-module_init(driver_init);
-module_exit(driver_exit);
-
-
-Upon loading the driver, the following message shows up
-[71641.440846] Processing for min_stateid[0]
-[71641.440857] Allocated new_stid[0]
-[71641.440859] Dumping entries in IDR
-[71641.440861]  IDR Actual ID[0] == Expected Value[0]
-[71641.440864]
-[71641.440864] Processing for min_stateid[1073741823]
-[71641.440867] Allocated new_stid[1073741823]
-[71641.440868] Dumping entries in IDR
-[71641.440876]  IDR Actual ID[1073741823] == Expected Value[1073741823]
-[71641.440878]
-[71641.440878] Processing for min_stateid[1073741824]
-[71641.440883] Allocated new_stid[1073741824]
-[71641.440884] BUG: Cant find ID[1073741824]
-[71641.440886] Dumping entries in IDR
-[71641.440887]  IDR Actual ID[0] != Expected Value[1073741824]
-
-i.e. when we allocate a stated==1073741824, IDR internally has it as 0.
-
---Shyam
