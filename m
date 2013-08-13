@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758714Ab3HMSSO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 14:18:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:43278 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757344Ab3HMSSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 14:18:13 -0400
-Message-ID: <1376417892.1949.41.camel@joe-AO722>
-Subject: Re: [PATCH] strlen patch
-From: Joe Perches <joe@perches.com>
-To: Fred Chen <fchen@linux.vnet.ibm.com>
-Cc: x86@kernel.org, hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Date: Tue, 13 Aug 2013 11:18:12 -0700
-In-Reply-To: <1376417580-11554-1-git-send-email-fchen@linux.vnet.ibm.com>
-References: <1376417580-11554-1-git-send-email-fchen@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757715Ab3HMSTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 14:19:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36003 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754691Ab3HMSTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 14:19:12 -0400
+Date: Tue, 13 Aug 2013 20:18:02 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V10 11/13] perf tools: expand
+ perf_event__synthesize_sample()
+Message-ID: <20130813181802.GA21321@krava.brq.redhat.com>
+References: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
+ <1376045519-13832-12-git-send-email-adrian.hunter@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376045519-13832-12-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-13 at 11:13 -0700, Fred Chen wrote:
-> fixes sparse error "arch/x86/boot/string.c:119:8: warning: symbol 'strlen' was not declared." by declaring it in arch/x86/boot/boot.h.
-[]
-> diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-[]
-> @@ -355,6 +355,7 @@ int strncmp(const char *cs, const char *ct, size_t count);
->  size_t strnlen(const char *s, size_t maxlen);
->  unsigned int atou(const char *s);
->  unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base);
-> +size_t strlen(const char *s);
+On Fri, Aug 09, 2013 at 01:51:57PM +0300, Adrian Hunter wrote:
 
-better placed before strnlen no?
- 
+SNIP
 
+> +
+> +	if (type & PERF_SAMPLE_BRANCH_STACK) {
+> +		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
+> +		sz += sizeof(u64);
+> +		memcpy(array, sample->branch_stack, sz);
+> +		array = (void *)array + sz;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_REGS_USER) {
+> +		if (sample->user_regs.regs && sample_regs_user) {
+> +			*array++ = sample_regs_user;
+
+this one is still missing 'enum perf_sample_regs_abi' value
+
+as used in perf_inject__sched_stat, we could parse it out in
+perf_evsel__parse_sample into perf_sample::regs_dump::abi
+and use the value in here
+
+jirka
