@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab3HMHvO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:51:14 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56324 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756276Ab3HMHvL (ORCPT
+	id S1756347Ab3HMHxm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:53:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34580 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755546Ab3HMHxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:51:11 -0400
-From: Shyam Kaushik <shyam@zadarastorage.com>
-References: <9a92eee58fefc1b8e3b4771ecf210d29@mail.gmail.com>
- <20130813071944.GA11270@kroah.com> <199217e8a2fc33f6aa0ecf764a0104cb@mail.gmail.com>
- <20130813072616.GA14019@kroah.com>
-In-Reply-To: <20130813072616.GA14019@kroah.com>
-MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-thread-index: Ac6X9jLHzVSNUOVzSB279QJqBM61PgAAuimQ
-Date: Tue, 13 Aug 2013 13:21:12 +0530
-Message-ID: <446f41f4a3ea0c758b05c0348d2b6f5d@mail.gmail.com>
-Subject: RE: BUG REPORT - IDR wraps around at 30-bits - works very bad with NFSD/SCTP
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 Aug 2013 03:53:40 -0400
+Date: Tue, 13 Aug 2013 17:53:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Dave Chinner <dchinner@redhat.com>
+Subject: linux-next: manual merge of the akpm tree with the staging tree
+Message-Id: <20130813175332.3db3f440e9419326c83360aa@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Aug_2013_17_53_32_+1000_dw4hfxG3+N6bf.zb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was just more time from me on this:-) But anyways since you wanted I
-tried.
+--Signature=_Tue__13_Aug_2013_17_53_32_+1000_dw4hfxG3+N6bf.zb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I tested 3.10.6-031006-generic & it works perfect in there!
+Hi Andrew,
 
-[  832.513688] Processing for min_stateid[0]
-[  832.513701] Allocated new_stid[0]
-[  832.513703] Dumping entries in IDR
-[  832.513705]  IDR Actual ID[0] == Expected Value[0]
-[  832.513710]
-[  832.513710] Processing for min_stateid[1073741823]
-[  832.513713] Allocated new_stid[1073741823]
-[  832.513714] Dumping entries in IDR
-[  832.513729]  IDR Actual ID[1073741823] == Expected Value[1073741823]
-[  832.513731]
-[  832.513731] Processing for min_stateid[1073741824]
-[  832.513736] Allocated new_stid[1073741824]
-[  832.513737] Dumping entries in IDR
-[  832.513739]  IDR Actual ID[1073741824] == Expected Value[1073741824]
-[  832.513754]
-[  832.513754] Processing for min_stateid[2147483647]
-[  832.513763] Allocated new_stid[2147483647]
-[  832.513765] Dumping entries in IDR
-[  832.513779]  IDR Actual ID[2147483647] == Expected Value[2147483647]
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/staging/zcache/zcache-main.c between commit 962564604873
+("staging: zcache: delete it") from the staging tree and commits "drivers:
+convert shrinkers to new count/scan API" and
+"drivers-convert-shrinkers-to-new-count-scan-api-fix" from the akpm tree.
 
-Any chances of backporting some parts of fix to <3.9 kernels?
+I fixed it up (I just removed the file) and can carry the fix as
+necessary (no action is required).
 
-Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---Shyam
+--Signature=_Tue__13_Aug_2013_17_53_32_+1000_dw4hfxG3+N6bf.zb
+Content-Type: application/pgp-signature
 
------Original Message-----
-From: Greg KH [mailto:gregkh@linuxfoundation.org]
-Sent: Tuesday, August 13, 2013 12:56 PM
-To: Shyam Kaushik
-Cc: Tejun Heo; Andrew Morton; linux-kernel@vger.kernel.org
-Subject: Re: BUG REPORT - IDR wraps around at 30-bits - works very bad
-with NFSD/SCTP
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-On Tue, Aug 13, 2013 at 12:51:14PM +0530, Shyam Kaushik wrote:
-> Hi Greg,
->
-> Unfortunately we don't have a 3.9/3.10 environment here. So if IDR
-> developers can try the example code, it should show if the bug is still
-> present in there. Thanks.
+iQIcBAEBCAAGBQJSCeYAAAoJEECxmPOUX5FEH2MP/j9GV1TeIfHl1PRp9W2p15yl
+YPY+o982+9S797DAUYRb/nAdVd4I/CTqX/ntBJ82z7nd9DHiv1yvzDPnhhkD5fKK
+35kf9B9Ti3j0QDejX2jIRObeeWeLD1E1N8/udaREf8vmglBspmOK9buYeLlTDxiv
+g/w7BP9/Orfo9BpQ3uUX5Zi5NtgASE+UZ0q815waYfrQuPbW+heOJsKEriAwfUXX
+W884ifqNGhI5JTUwstbTsToHqTQMU5AL3cRGhH62b2cVOmf7LZpZ8NU5Bh/o+cQS
+eG1vLVbFnIxbGEuwpsicA9w3wL1yYAGL9FDWMzQMFtpovFrUSXZVc4jnXZQsYRfJ
+rv8I1ZF4OCf6bL80zqC7lcvK3z6gIbxAlvUfBGdu2p505bWr0b4+33hFDEvRtwg1
+NcjLnPZorN5BLJCorEEhLNRcKkdJxsVjgqZZqTv5Ihn60lVCR4awWFo99z4X9Srq
+p1zFI+RcRmNhhZlsQDtAztfErKDy/GDJZOpyb1X4VbBe8lMFhgZtpvgtT9OL2QP7
+/UIfGQeDpFNAvCtFmYqrppaYc4Jbnty4LKYJh+gCKQfSvDRuZ0ylR3oqTLOPOMCh
+gmL1W5jrFlOcVxpzp9UIkNWyi3mvlgvOCBwapgo+jdLzfVhTpwpMvpI/S9/ngH/2
+m5YSi/TYGpBMCLxv7/EK
+=gWxH
+-----END PGP SIGNATURE-----
 
-There shouldn't be anything in 3.10 preventing you from building and
-testing it out, is there?  Or do you have something that restricts you
-to specific kernel versions?
-
-thanks,
-
-greg k-h
-
------
-No virus found in this message.
-Checked by AVG - www.avg.com
-Version: 2013.0.2904 / Virus Database: 3211/6571 - Release Date: 08/12/13
+--Signature=_Tue__13_Aug_2013_17_53_32_+1000_dw4hfxG3+N6bf.zb--
