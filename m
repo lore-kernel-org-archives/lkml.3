@@ -1,135 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759011Ab3HMR37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:29:59 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45617 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758961Ab3HMR3z (ORCPT
+	id S1759093Ab3HMRcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:32:24 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:51236 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759021Ab3HMRcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:29:55 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Sudeep.KarkadaNagesha@arm.com,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH v3 2/6] drivers: clocksource: configure event stream for ARM arch timer
-Date: Tue, 13 Aug 2013 18:29:40 +0100
-Message-Id: <1376414984-14182-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 13 Aug 2013 17:29:51.0767 (UTC) FILETIME=[B7B8DA70:01CE984A]
-X-MC-Unique: 113081318295402201
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 13 Aug 2013 13:32:21 -0400
+Message-ID: <520A6D98.9060204@linux.vnet.ibm.com>
+Date: Tue, 13 Aug 2013 23:02:08 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, tony.luck@intel.com,
+        bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
+        lance.ortiz@hp.com, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
+ event
+References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic> <20130812083355.47c1bae8@samsung.com> <5208D80D.5030206@linux.vnet.ibm.com> <20130812125343.GE18018@pd.tnic> <520A16BD.30201@linux.vnet.ibm.com> <20130813124258.GC4077@pd.tnic>
+In-Reply-To: <20130813124258.GC4077@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081317-6102-0000-0000-00000402E8E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7DHWBvi000837
 
-From: Will Deacon <will.deacon@arm.com>
+On 08/13/2013 06:12 PM, Borislav Petkov wrote:
+> On Tue, Aug 13, 2013 at 04:51:33PM +0530, Naveen N. Rao wrote:
+>> You're right - my trace point makes all the data provided by apei
+>> as-is to userspace. However, ghes_edac seems to squash some of this
+>> data into a string when reporting through mc_event.
+>
+> Right, for systems which don't need EDAC to decode to the DIMM or for
+> which there are no EDAC drivers written, they could use a tracepoint
+> which carries APEI info as-is. Others, which need EDAC, should probably
+> use trace_mc_event and disable the APEI tracepoint.
 
-The ARM architected timer can generate events (used for waking up
-CPUs executing the wfe instruction) at a frequency represented as a
-power-of-2 divisor of the clock rate.
+If I'm not mistaken, even for systems that have EDAC drivers, it looks 
+to me like EDAC can't really decode to the DIMM given what is provided 
+by the bios in the APEI report currently. If and when ghes_edac gains 
+this capability, users will have a choice between raw APEI reports vs. 
+edac processed ones.
 
-An event stream might be used:
-- To impose a time-out on a WFE polling loop.
-- To safeguard against any programming error in case an expected event
-  is not generated.
-- To implement wfe-based timeouts for userspace locking implementations.
+>
+> I think this should address Tony's concerns...
+>
+> Btw, you could call your TP something simpler like
+> trace_ghes_memory_event or so.
 
-This patch only computes the event stream frequency, aiming for a period
-of 100us between events. ARM/ARM64 specific backends needs to configure
-and enable the event stream using this frequency.
+I started out with a simpler name, but eventually decided to use the 
+name from the CPER record so it is clear what this event carries. I 
+think this will be better when adding further ghes events for say, 
+processor generic, PCIe and others.
 
-Cc: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-[sudeep: moving ARM/ARM64 changes into separate patches,
-         cosmetic changes to commit message]
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
----
- arch/arm/include/asm/arch_timer.h    | 2 +-
- arch/arm64/include/asm/arch_timer.h  | 2 +-
- drivers/clocksource/arm_arch_timer.c | 9 ++++++++-
- include/clocksource/arm_arch_timer.h | 2 ++
- 4 files changed, 12 insertions(+), 3 deletions(-)
+>
+> Btw 2, if GHES can report other types of errors (I'm pretty sure it can)
+> maybe we can use a single tracepoint called trace_ghes_event for any
+> types of errors coming out of it...
 
-diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-index 9ef74da..12f3fac 100644
---- a/arch/arm/include/asm/arch_timer.h
-+++ b/arch/arm/include/asm/arch_timer.h
-@@ -89,7 +89,7 @@ static inline u64 arch_counter_get_cntvct(void)
- 	return cval;
- }
- 
--static inline void arch_counter_set_user_access(void)
-+static inline void arch_counter_set_user_access(int divider)
- {
- 	u32 cntkctl;
- 
-diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-index 00b09d0..69f5c8e 100644
---- a/arch/arm64/include/asm/arch_timer.h
-+++ b/arch/arm64/include/asm/arch_timer.h
-@@ -97,7 +97,7 @@ static inline u32 arch_timer_get_cntfrq(void)
- 	return val;
- }
- 
--static inline void arch_counter_set_user_access(void)
-+static inline void arch_counter_set_user_access(int divider)
- {
- 	u32 cntkctl;
- 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index ffadd83..6301ee5 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -125,6 +125,8 @@ static int arch_timer_set_next_event_phys(unsigned long evt,
- 
- static int arch_timer_setup(struct clock_event_device *clk)
- {
-+	int evt_stream_div, pos;
-+
- 	clk->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_C3STOP;
- 	clk->name = "arch_sys_timer";
- 	clk->rating = 450;
-@@ -153,7 +155,12 @@ static int arch_timer_setup(struct clock_event_device *clk)
- 			enable_percpu_irq(arch_timer_ppi[PHYS_NONSECURE_PPI], 0);
- 	}
- 
--	arch_counter_set_user_access();
-+	/* Find the closest power of two to the divisor */
-+	evt_stream_div = arch_timer_rate / ARCH_TIMER_EVT_STREAM_FREQ;
-+	pos = fls(evt_stream_div);
-+	if (pos > 1 && !(evt_stream_div & (1 << (pos - 2))))
-+		pos--;
-+	arch_counter_set_user_access(min(pos, 15));
- 
- 	return 0;
- }
-diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
-index 551f7e9..c4d0fc4 100644
---- a/include/clocksource/arm_arch_timer.h
-+++ b/include/clocksource/arm_arch_timer.h
-@@ -37,6 +37,8 @@
- #define ARCH_TIMER_USR_VT_ACCESS_EN	(1 << 8) /* virtual timer registers */
- #define ARCH_TIMER_USR_PT_ACCESS_EN	(1 << 9) /* physical timer registers */
- 
-+#define ARCH_TIMER_EVT_STREAM_FREQ	10000	/* 100us */
-+
- #ifdef CONFIG_ARM_ARCH_TIMER
- 
- extern u32 arch_timer_get_rate(void);
--- 
-1.8.1.2
+Two problems with this:
+- One, the record size will be really big since the cper records for 
+each type of error is large.
+- Two, it may be better to filter events based on the type of error 
+(memory error, processor, pcie, ...) rather than subscribing for all 
+ghes error reports.
 
+>
+> Oh, and while at it, we probably need to start thinking of a mechanism
+> to disable all the error printing, i.e. cper_print_mem() and such,
+> if a userspace agent is listening in on the tracepoint and the error
+> information is carried through it to userspace.
+
+Do you mean conditionally print the cper records based on whether the 
+tracepoint is enabled or not? Wouldn't that be confusing if someone is 
+monitoring dmesg as well?
+
+
+Thanks,
+Naveen
 
