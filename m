@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758952Ab3HMT5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 15:57:37 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45199 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758848Ab3HMT5e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 15:57:34 -0400
-Message-ID: <520A8FA9.2080603@wwwdotorg.org>
-Date: Tue, 13 Aug 2013 13:57:29 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S932077Ab3HMUA1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:00:27 -0400
+Received: from claw.goop.org ([74.207.240.146]:40463 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758796Ab3HMUAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 16:00:24 -0400
+Message-ID: <520A9056.3080707@goop.org>
+Date: Tue, 13 Aug 2013 13:00:22 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, ian.campbell@citrix.com, rob@landley.net,
-        gregkh@linuxfoundation.org, grant.likely@linaro.org,
-        idos@codeaurora.org, mgautam@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [RFC PATCH v2 1/3] usb: dwc3: msm: Add device tree binding information
-References: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com> <1376042027-9798-2-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1376042027-9798-2-git-send-email-iivanov@mm-sol.com>
-X-Enigmail-Version: 1.4.6
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org, konrad.wilk@oracle.com,
+        gleb@redhat.com, pbonzini@redhat.com, gregkh@suse.de,
+        peterz@infradead.org, tglx@linutronix.de, agraf@suse.de,
+        riel@redhat.com, avi.kivity@gmail.com, habanero@linux.vnet.ibm.com,
+        chegu_vinod@hp.com, ouyang@cs.pitt.edu, drjones@redhat.com,
+        attilio.rao@citrix.com, linux-doc@vger.kernel.org,
+        torvalds@linux-foundation.org, kvm@vger.kernel.org,
+        andi@firstfloor.org, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        stefano.stabellini@eu.citrix.com, mtosatti@redhat.com,
+        srivatsa.vaddagiri@gmail.com,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Suzuki Poulose <suzuki@in.ibm.com>
+Subject: Re: [PATCH delta V13 14/14] kvm : Paravirtual ticketlocks support
+ for linux guests running on KVM hypervisor
+References: <y> <1376058122-8248-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <1376058122-8248-15-git-send-email-raghavendra.kt@linux.vnet.ibm.com> <20130810193849.GA25260@linux.vnet.ibm.com> <520A620B.6070702@zytor.com> <20130813165552.GA6795@gmail.com> <20130813200211.GA27811@linux.vnet.ibm.com>
+In-Reply-To: <20130813200211.GA27811@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2013 03:53 AM, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> MSM USB3.0 core wrapper consist of USB3.0 IP (SNPS)
-> and HS, SS PHY's controll and configuration registers.
+On 08/13/2013 01:02 PM, Raghavendra K T wrote:
+> * Ingo Molnar <mingo@kernel.org> [2013-08-13 18:55:52]:
+>
+>> Would be nice to have a delta fix patch against tip:x86/spinlocks, which 
+>> I'll then backmerge into that series via rebasing it.
+>>
+> There was a namespace collision of PER_CPU lock_waiting variable when
+> we have both Xen and KVM enabled. 
+>
+> Perhaps this week wasn't for me. Had run 100 times randconfig in a loop
+> for the fix sent earlier :(. 
+>
+> Ingo, below delta patch should fix it, IIRC, I hope you will be folding this
+> back to patch 14/14 itself. Else please let me.
+> I have already run allnoconfig, allyesconfig, randconfig with below patch. But will
+> test again. This should apply on top of tip:x86/spinlocks.
+>
+> ---8<---
+> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>
+> Fix Namespace collision for lock_waiting
+>
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> ---
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index d442471..b8ef630 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -673,7 +673,7 @@ struct kvm_lock_waiting {
+>  static cpumask_t waiting_cpus;
+>  
+>  /* Track spinlock on which a cpu is waiting */
+> -static DEFINE_PER_CPU(struct kvm_lock_waiting, lock_waiting);
+> +static DEFINE_PER_CPU(struct kvm_lock_waiting, klock_waiting);
 
-s/controll/control/
+Has static stopped meaning static?
 
-> It could operate in device mode (SS, HS, FS) and host
-> mode (SS, HS, FS, LS).
+    J
 
-> diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+>  
+>  static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+>  {
+> @@ -685,7 +685,7 @@ static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+>  	if (in_nmi())
+>  		return;
+>  
+> -	w = &__get_cpu_var(lock_waiting);
+> +	w = &__get_cpu_var(klock_waiting);
+>  	cpu = smp_processor_id();
+>  	start = spin_time_start();
+>  
+> @@ -756,7 +756,7 @@ static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
+>  
+>  	add_stats(RELEASED_SLOW, 1);
+>  	for_each_cpu(cpu, &waiting_cpus) {
+> -		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
+> +		const struct kvm_lock_waiting *w = &per_cpu(klock_waiting, cpu);
+>  		if (ACCESS_ONCE(w->lock) == lock &&
+>  		    ACCESS_ONCE(w->want) == ticket) {
+>  			add_stats(RELEASED_SLOW_KICKED, 1);
+>
+>
 
-> +MSM SuperSpeed DWC3 USB SoC controller
-> +
-> +Required properities :
-> +- compatible : sould be "qcom,dwc3-hsphy";
-...
-> +Required properities :
-> +- compatible : sould be "qcom,dwc3-ssphy";
-
-I would expect different compatible values to be documented in different
-files.
-
-> +Optional properties :
-> +- gdsc-supply : phandle to the globally distributed switch controller
-> +  regulator node to the USB controller.
-
-Which of the 3 compatible values that were described above is that
-property optional for?
-
-> +Sub nodes:
-> +- Sub node for "DWC3 USB3 controller".
-> +  This sub node is required property for device node. The properties
-> +  of this subnode are specified in dwc3.txt.
-
-Why not represent the PHY and USB controller as separate top-level
-nodes? They can point at each-other with phandles if they need to know
-each-others' identity.
