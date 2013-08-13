@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab3HMHLU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:11:20 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58018 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753114Ab3HMHLS (ORCPT
+	id S1755497Ab3HMHNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:13:00 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:47939 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab3HMHM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:11:18 -0400
-Date: Tue, 13 Aug 2013 09:11:06 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 1/9] PCI: mvebu: move clock enable before register
- access
-Message-ID: <20130813091106.326c562a@skate>
-In-Reply-To: <1376333215-12885-2-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1376333215-12885-2-git-send-email-sebastian.hesselbarth@gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 13 Aug 2013 03:12:58 -0400
+Message-ID: <5209DC73.8000408@huawei.com>
+Date: Tue, 13 Aug 2013 15:12:51 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Karim Yaghmour <karim.yaghmour@opersys.com>
+CC: <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        <mingo@elte.hu>
+Subject: Re: Reading perf counters at ftrace trace boundaries
+References: <5208263D.2080205@opersys.com> <52084774.7010009@huawei.com> <5208FEC1.7010206@opersys.com>
+In-Reply-To: <5208FEC1.7010206@opersys.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sebastian Hesselbarth,
+On 2013/8/12 23:26, Karim Yaghmour wrote:
+> 
+> On 13-08-11 11:24 PM, zhangwei(Jovi) wrote:
+>> If you want to base on ftrace, below two approach maybe take into use:
+>>
+>> - register_ftrace_function/unregister_ftrace_function
+>>
+>> - perf_event_create_kernel_counter (function event id is 1)
+>>
+>> the first one is simplest, IMO.
+> 
+> Thx for the pointers.
+> 
+>> You need to write your own kernel module to use these approach.
+> 
+> As a proof-of-concept, sure. For something more permanent it would make
+> more sense to adapt the various perf/ftrace tools to make this available
+> on the command line with other options. But we're far away from that for
+> the moment.
+> 
+If you want to embed pmu reading into ftrace/perf permanently, perhaps
+make pmu reading as clock source would be a nice way to go, actually the
+question you raised is very common for all of us in practical, sometimes
+we want to read cpu cycles both in kvm host and kvm guest, then in that
+kvm case, pmu reading for each event is very valuable.
 
-On Mon, 12 Aug 2013 20:46:47 +0200, Sebastian Hesselbarth wrote:
+(one issue need to handle specially for making pmu as tracing clock, is
+the pmu number overflow, because it relate with ftrace per-cpu ring
+buffer sync)
 
-> +		port->clk = of_clk_get_by_name(child, NULL);
-> +		if (IS_ERR(port->clk)) {
-> +			dev_err(&pdev->dev, "PCIe%d.%d: cannot get clock\n",
-> +			       port->port, port->lane);
-> +			iounmap(port->base);
+Thanks.
 
-You shouldn't iounmap() here in case of error, since the register
-mapping hasn't been done yet.
+jovi
 
-> +			port->haslink = 0;
-> +			continue;
-> +		}
-> +		clk_prepare_enable(port->clk);
 
-Nitpick, an empty new line between the closing } and the
-clk_prepare_enable() line would be nice.
 
-> +
->  		port->base = mvebu_pcie_map_registers(pdev, child, port);
->  		if (!port->base) {
->  			dev_err(&pdev->dev, "PCIe%d.%d: cannot map registers\n",
-> @@ -916,22 +926,9 @@ static int __init mvebu_pcie_probe(struct platform_device *pdev)
->  				 port->port, port->lane);
-
-and maybe here you could unprepare+release the clock if we haven't
-managed to remap registers?
-
->  		}
->  
-> -		port->clk = of_clk_get_by_name(child, NULL);
-> -		if (IS_ERR(port->clk)) {
-> -			dev_err(&pdev->dev, "PCIe%d.%d: cannot get clock\n",
-> -			       port->port, port->lane);
-> -			iounmap(port->base);
-> -			port->haslink = 0;
-> -			continue;
-> -		}
-> -
->  		port->dn = child;
-> -
-> -		clk_prepare_enable(port->clk);
->  		spin_lock_init(&port->conf_lock);
-> -
->  		mvebu_sw_pci_bridge_init(port);
-> -
->  		i++;
->  	}
->  
-
-Thanks!
-
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
