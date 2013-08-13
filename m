@@ -1,199 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab3HMNrv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:47:51 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38250 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756891Ab3HMNrt (ORCPT
+	id S1757980Ab3HMNtF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:49:05 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:61001 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757185Ab3HMNtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:47:49 -0400
-Date: Tue, 13 Aug 2013 14:47:45 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "denis.ciocca@st.com" <denis.ciocca@st.com>,
-        "srinivas.pandruvada@linux.intel.com" 
-	<srinivas.pandruvada@linux.intel.com>,
-        "lars@metafoo.de" <lars@metafoo.de>
-Subject: Re: [PATCH v2] iio: add Bosch BMA180 acceleration sensor driver
-Message-ID: <20130813134745.GP27165@e106331-lin.cambridge.arm.com>
-References: <1376384956-16720-1-git-send-email-o.v.kravchenko@globallogic.com>
+	Tue, 13 Aug 2013 09:49:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18XNWMrt6jqvcLISR1dgzwS7+qsDNU05NQ=
+Date: Tue, 13 Aug 2013 09:48:50 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 7/9] ARM: dove: add PCIe controllers to SoC DT
+Message-ID: <20130813134850.GZ25111@titan.lakedaemon.net>
+References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1376333215-12885-8-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130812200452.GW25111@titan.lakedaemon.net>
+ <520A1871.4000501@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376384956-16720-1-git-send-email-o.v.kravchenko@globallogic.com>
+In-Reply-To: <520A1871.4000501@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 10:09:16AM +0100, Oleksandr Kravchenko wrote:
-> This patch adds IIO driver for Bosch BMA180 triaxial
-> acceleration sensor.
-> http://omapworld.com/BMA180_111_1002839.pdf
+On Tue, Aug 13, 2013 at 01:28:49PM +0200, Sebastian Hesselbarth wrote:
+> On 08/12/13 22:04, Jason Cooper wrote:
+> >On Mon, Aug 12, 2013 at 08:46:53PM +0200, Sebastian Hesselbarth wrote:
+> >>This adds a node for the pcie controllers found on Dove SoCs to the
+> >>SoC DT include.
+> >>
+> >>Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> >>---
+> >>Cc: Russell King <linux@arm.linux.org.uk>
+> >>Cc: Jason Cooper <jason@lakedaemon.net>
+> >>Cc: Andrew Lunn <andrew@lunn.ch>
+> >>Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> >>Cc: linux-kernel@vger.kernel.org
+> >>Cc: linux-arm-kernel@lists.infradead.org
+> >>---
+> >>  arch/arm/boot/dts/dove.dtsi |   54 +++++++++++++++++++++++++++++++++++++++++++
+> >>  1 file changed, 54 insertions(+)
+> >
+> >patches 7-9 applied to mvebu/dove_mbus since the dependencies are
+> >cleaner that way.
 > 
-> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-> ---
->  .../devicetree/bindings/iio/accel/bma180.txt       |   35 ++
->  drivers/iio/accel/Kconfig                          |   12 +
->  drivers/iio/accel/Makefile                         |    2 +
->  drivers/iio/accel/bma180.c                         |  635 ++++++++++++++++++++
->  4 files changed, 684 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iio/accel/bma180.txt
->  create mode 100644 drivers/iio/accel/bma180.c
+> Jason,
 > 
-> diff --git a/Documentation/devicetree/bindings/iio/accel/bma180.txt b/Documentation/devicetree/bindings/iio/accel/bma180.txt
-> new file mode 100644
-> index 0000000..e08780b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/accel/bma180.txt
-> @@ -0,0 +1,35 @@
-> +* Bosch BMA180 triaxial acceleration sensor
-> +
-> +http://omapworld.com/BMA180_111_1002839.pdf
-> +
-> +Required properties:
-> +
-> +  - compatible : should be "bosch,bma180"
-> +  - reg : the I2C address of the sensor
-> +
-> +Optional properties:
-> +
-> +  - interrupt-parent : should be the phandle for the interrupt controller
-> +
-> +  - interrupts : interrupt mapping for GPIO IRQ, it should by configured with
-> +               flags IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING
-> +
-> +  - bosch,resolution : ADC resolution. Must be 130, 190, 250, 380, 500,
-> +               990 or 1980 mcg/LSB only
-> +
-> +  - bosch,bandwidth : select bandwidth frequency. Must be 10, 20, 40, 75,
-> +               150 or 300 Hz only
-> +
-> +  - bosch,mode : 0 - select low noise mode, 1 - select low power mode
+> I will have to slightly modify the reset-gpio property names and that
+> requires a fixup patch for patch 8. Can you still squash it or do you
+> need a proper patch?
+...
+> diff --git a/arch/arm/boot/dts/dove-d3plug.dts b/arch/arm/boot/dts/dove-d3plug.dts
+> index ead90eb..f5f59bb 100644
+> --- a/arch/arm/boot/dts/dove-d3plug.dts
+> +++ b/arch/arm/boot/dts/dove-d3plug.dts
+> @@ -91,7 +91,7 @@
+>  	pcie-port@0 {
+>  		status = "okay";
+>  		reset-gpios = <&gpio0 26 1>;
+> -		reset-delay-ms = <20>;
+> +		reset-delay-us = <20000>;
+>  		pinctrl-0 = <&pmx_camera_gpio>;
+>  		pinctrl-names = "default";
+>  	};
 
->From the looks of the code, those last three properties seem to get
-programmed into the device, have default values, and look far more like
-configuration rather than hardware description.
+Squashed into 'ARM: dove: add initial DT file for Globalscale D3Plug' in
+mvebu/dove_mbus-dt
 
-I don't think these need to be in the dt -- you can set sane defaults
-and then have something under sysfs to change them dynamically later if
-necessary.
+thx,
 
-> +
-> +Example:
-> +
-> +bma180@40 {
-> +       compatible = "bosch,bma180";
-> +       reg = <0x40>;
-> +       interrupt-parent = <&gpio6>;
-> +       interrupts = <18 (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING)>;
-> +       bosch,bandwidth = <300>;
-> +       bosch,resolution = <250>;
-> +       bosch,mode = <0>;
-> +};
+Jason.
 
-[...]
-
-> +static int bma180_probe(struct i2c_client *client,
-> +               const struct i2c_device_id *id)
-> +{
-> +       struct bma180_data *data;
-> +       struct iio_dev *indio_dev;
-> +       struct iio_trigger *trig;
-> +       struct device_node *np = client->dev.of_node;
-> +       int ret;
-> +
-> +       indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
-> +       if (!indio_dev)
-> +               return -ENOMEM;
-> +
-> +       data = iio_priv(indio_dev);
-> +       i2c_set_clientdata(client, indio_dev);
-> +       data->client = client;
-> +
-> +       if (of_property_read_u32(np, "bosch,bandwidth", &data->bw))
-> +               data->bw = BMA180_DEF_BW;
-> +       if (of_property_read_u32(np, "bosch,resolution", &data->scale))
-> +               data->scale = BMA180_DEF_SCALE;
-> +       of_property_read_u32(np, "bosch,mode", &data->mode);
-
-What if bosch,mode isn't decribed? It looks like it'll have an
-uninitialised value.
-
-> +
-> +       ret = bma180_chip_init(data);
-> +       if (ret < 0)
-> +               goto err_1;
-> +
-> +       mutex_init(&data->mutex);
-> +
-> +       indio_dev->dev.parent = &client->dev;
-> +       indio_dev->channels = bma180_channels;
-> +       indio_dev->num_channels = ARRAY_SIZE(bma180_channels);
-> +       indio_dev->name = BMA180_DRV_NAME;
-> +       indio_dev->modes = INDIO_DIRECT_MODE;
-> +       indio_dev->info = &bma180_info;
-> +
-> +       trig = iio_trigger_alloc("%s-dev%d", indio_dev->name, indio_dev->id);
-> +       if (!trig) {
-> +               ret = -ENOMEM;
-> +               goto err_1;
-> +       }
-> +
-> +       ret = devm_request_irq(&client->dev, client->irq,
-> +                       iio_trigger_generic_data_rdy_poll,
-> +                       IRQF_TRIGGER_RISING, BMA180_IRQ_NAME, trig);
-> +       if (ret) {
-> +               dev_err(&client->dev, "unable to request IRQ\n");
-> +               goto err_2;
-> +       }
-> +
-> +       trig->dev.parent = &client->dev;
-> +       trig->ops = &bma180_trigger_ops;
-> +       iio_trigger_set_drvdata(trig, indio_dev);
-> +       data->trig = trig;
-> +       indio_dev->trig = trig;
-> +
-> +       ret = iio_trigger_register(trig);
-> +       if (ret)
-> +               goto err_2;
-> +
-> +       ret = iio_triggered_buffer_setup(indio_dev, NULL,
-> +                       bma180_trigger_handler, NULL);
-> +       if (ret < 0) {
-> +               dev_err(&client->dev, "unable to setup iio triggered buffer\n");
-> +               goto err_3;
-> +       }
-> +
-> +       ret = iio_device_register(indio_dev);
-> +       if (ret < 0) {
-> +               dev_err(&client->dev, "unable to register iio device\n");
-> +               goto err_4;
-> +       }
-> +
-> +       return 0;
-> +
-> +err_4:
-> +       iio_triggered_buffer_cleanup(indio_dev);
-> +err_3:
-> +       iio_trigger_unregister(trig);
-> +err_2:
-> +       iio_trigger_free(trig);
-> +err_1:
-> +       bma180_chip_disable(data);
-
-It would be nice to have (slightly) clearer labels here, e.g.
-err_chip, err_trigger.
-
-Thanks,
-Mark.
