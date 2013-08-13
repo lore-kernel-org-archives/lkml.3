@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757711Ab3HML2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 07:28:55 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:34213 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757318Ab3HML2y (ORCPT
+	id S1757695Ab3HMLab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 07:30:31 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41311 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757522Ab3HMLaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 07:28:54 -0400
-Message-ID: <520A1871.4000501@gmail.com>
-Date: Tue, 13 Aug 2013 13:28:49 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 13 Aug 2013 07:30:30 -0400
+Date: Tue, 13 Aug 2013 12:30:04 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Rob Landley <rob@landley.net>
+Cc: Peter Maydell <peter.maydell@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        qemu-devel@nongnu.org, Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
+Message-ID: <20130813113004.GJ23006@n2100.arm.linux.org.uk>
+References: <20130812164548.GE23006@n2100.arm.linux.org.uk> <1376383051.2737.20@driftwood>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 7/9] ARM: dove: add PCIe controllers to SoC DT
-References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com> <1376333215-12885-8-git-send-email-sebastian.hesselbarth@gmail.com> <20130812200452.GW25111@titan.lakedaemon.net>
-In-Reply-To: <20130812200452.GW25111@titan.lakedaemon.net>
-Content-Type: multipart/mixed;
- boundary="------------020806050301020800090405"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376383051.2737.20@driftwood>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020806050301020800090405
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Tue, Aug 13, 2013 at 03:37:31AM -0500, Rob Landley wrote:
+> Because working with old and new qemu, like it used to before everybody  
+> fiddled with it to not actually match hardware nobody _has_, is  
+> definitely not an interesting goal.
 
-On 08/12/13 22:04, Jason Cooper wrote:
-> On Mon, Aug 12, 2013 at 08:46:53PM +0200, Sebastian Hesselbarth wrote:
->> This adds a node for the pcie controllers found on Dove SoCs to the
->> SoC DT include.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Jason Cooper <jason@lakedaemon.net>
->> Cc: Andrew Lunn <andrew@lunn.ch>
->> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->> Cc: linux-kernel@vger.kernel.org
->> Cc: linux-arm-kernel@lists.infradead.org
->> ---
->>   arch/arm/boot/dts/dove.dtsi |   54 +++++++++++++++++++++++++++++++++++++++++++
->>   1 file changed, 54 insertions(+)
->
-> patches 7-9 applied to mvebu/dove_mbus since the dependencies are
-> cleaner that way.
+It appears that people *do* have the hardware.
 
-Jason,
+What is also "not interesting" is to have bugs reported, I state that I
+won't fix it unless we know what the hardware is supposed to be, and
+then for everything to go quiet, and qemu to have patches put in to
+"work around" the problem.
 
-I will have to slightly modify the reset-gpio property names and that
-requires a fixup patch for patch 8. Can you still squash it or do you
-need a proper patch?
+Software emulators are exactly that: they are software.  They contain
+bugs, just like any other bit of software.  With the lack of clear
+documentation about the hardware, and comments in the code written by
+ARM Ltd when this stuff was first created, the only thing which can
+be taken as definitive is the comments, which is exactly what I did.
 
-Sebastian
+Then to have people using qemu report that something is broken - sorry,
+but software emulation doesn't matter in that regard.  Especially when
+we've had reports that "the kernel is broken" wrt timers and it turns
+out to be a bug in qemu not emulating them correctly.  Think about it -
+how do we know whether the kernel is buggy or the software emulation is
+buggy.  Without going back to the hardware or pointing at documentation,
+we can't answer that question.  So it's safer to leave things as-is.
 
----
+It seems that the documentation over the years from ARM Ltd has improved
+to the point that it is now possible to figure out some of the details,
+if you're prepared to spend a lot of time finding it in the latest
+documentation and tracing circuit diagrams.  (ARMs documentation site is
+pretty horrid to find documents on.)
 
-
-
---------------020806050301020800090405
-Content-Type: text/x-patch;
- name="d3plug-dts.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="d3plug-dts.diff"
-
-diff --git a/arch/arm/boot/dts/dove-d3plug.dts b/arch/arm/boot/dts/dove-d3plug.dts
-index ead90eb..f5f59bb 100644
---- a/arch/arm/boot/dts/dove-d3plug.dts
-+++ b/arch/arm/boot/dts/dove-d3plug.dts
-@@ -91,7 +91,7 @@
- 	pcie-port@0 {
- 		status = "okay";
- 		reset-gpios = <&gpio0 26 1>;
--		reset-delay-ms = <20>;
-+		reset-delay-us = <20000>;
- 		pinctrl-0 = <&pmx_camera_gpio>;
- 		pinctrl-names = "default";
- 	};
-
---------------020806050301020800090405--
+Well, that has now finally happened, so we can be finally be confident
+what the correct answer is to this.  This is all something which should
+have happened yonks ago.
