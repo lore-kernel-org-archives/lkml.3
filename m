@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865Ab3HMOrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:47:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10689 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756543Ab3HMOrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:47:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,869,1367996400"; 
-   d="scan'208";a="380259922"
-Message-ID: <520A46D6.90005@linux.intel.com>
-Date: Tue, 13 Aug 2013 07:46:46 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1758007Ab3HMOsx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:48:53 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45868 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757562Ab3HMOsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 10:48:51 -0400
+Message-ID: <520A474F.9080500@baylibre.com>
+Date: Tue, 13 Aug 2013 16:48:47 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        gcc <gcc@gcc.gnu.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Behan Webster <behanw@converseincode.com>
-Subject: Re: [RFC] gcc feature request: Moving blocks into sections
-References: <1375721715.22073.80.camel@gandalf.local.home> <20130812091707.GB27162@twins.programming.kicks-ass.net> <5208F78A.3000708@linux.intel.com> <20130812160950.GT3008@twins.programming.kicks-ass.net> <52091FB9.4080805@linux.intel.com> <20130813075048.GR27162@twins.programming.kicks-ass.net>
-In-Reply-To: <20130813075048.GR27162@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: tony@atomide.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, balbi@ti.com
+Subject: Re: [PATCH] arm: omap5: dts: split SMPS10 dt node
+References: <1376300221-15172-1-git-send-email-kishon@ti.com> <520A32CF.1010701@baylibre.com> <520A4685.7050503@ti.com>
+In-Reply-To: <520A4685.7050503@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Aug 12, 2013 at 10:47:37AM -0700, H. Peter Anvin wrote:
->> Since we really doesn't want to...
+On 13/08/2013 16:45, Kishon Vijay Abraham I wrote:
+> Hi,
+>
+> On Tuesday 13 August 2013 06:51 PM, Benoit Cousson wrote:
+>> Hi Kishon,
+>>
+>> On 12/08/2013 11:37, Kishon Vijay Abraham I wrote:
+>>> SMPS10 has two outputs OUT1 and OUT2. Hence SMPS10 is modeled as
+>>> two regulators. The dt node is split to reflect it.
+>>
+>> Mmm, I'm curious. How is it supposed to work?
+>>
+>> Do you have dedicated control on each output?
+>
+> Yes. It can be controlled by setting different values to the same bit fields.
+> You can refer [1] where we actually implement SMPS10 as two different regulators.
+>
+> [1] -> http://permalink.gmane.org/gmane.linux.kernel/1542521
 
-Ow.  Can't believe I wrote that.
+Great, thanks.
 
-	-hpa
+Can we merge that one safely if the driver changed are not done yet?
 
+Regards,
+Benoit
