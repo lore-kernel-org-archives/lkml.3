@@ -1,115 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab3HMKpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 06:45:34 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45666 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757147Ab3HMKpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 06:45:31 -0400
-Message-ID: <520A0E1C.5000306@ti.com>
-Date: Tue, 13 Aug 2013 16:14:44 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1757340Ab3HMKs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 06:48:27 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:36939 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab3HMKsZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 06:48:25 -0400
+Date: Tue, 13 Aug 2013 12:48:21 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Vince Weaver <vince@deater.net>
+Cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, acme@infradead.org,
+        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        peterz@infradead.org
+Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
+ executable
+Message-ID: <20130813104821.GB2170@gmail.com>
+References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
+ <20130805081641.GA24808@gmail.com>
+ <20130805082320.GA9562@infradead.org>
+ <20130805083132.GE26746@gmail.com>
+ <20130805083434.GA20606@infradead.org>
+ <20130805090857.GA26940@gmail.com>
+ <20130806061932.GA20485@infradead.org>
+ <20130812181956.GB19405@gmail.com>
+ <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, <kyungmin.park@samsung.com>,
-        <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
-        <kgene.kim@samsung.com>, <grant.likely@linaro.org>, <tony@atomide.com>,
-        <arnd@arndb.de>, <swarren@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-References: <20130720220006.GA7977@kroah.com> <3839600.WiC1OLF35o@flatron> <51EBC0F5.70601@ti.com> <9748041.Qq1fWJBg6D@flatron> <20130721154653.GG16598@kroah.com> <20130730071106.GC16441@radagast> <51F8A440.8010803@ti.com> <20130731061538.GC13289@radagast>
-In-Reply-To: <20130731061538.GC13289@radagast>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Wednesday 31 July 2013 11:45 AM, Felipe Balbi wrote:
-> Hi,
+* Vince Weaver <vince@deater.net> wrote:
+
+> On Mon, 12 Aug 2013, Ingo Molnar wrote:
 > 
-> On Wed, Jul 31, 2013 at 11:14:32AM +0530, Kishon Vijay Abraham I wrote:
->>>>>>> IMHO we need a lookup method for PHYs, just like for clocks,
->>>>>>> regulators, PWMs or even i2c busses because there are complex cases
->>>>>>> when passing just a name using platform data will not work. I would
->>>>>>> second what Stephen said [1] and define a structure doing things in a
->>>>>>> DT-like way.
->>>>>>>
->>>>>>> Example;
->>>>>>>
->>>>>>> [platform code]
->>>>>>>
->>>>>>> static const struct phy_lookup my_phy_lookup[] = {
->>>>>>>
->>>>>>> 	PHY_LOOKUP("s3c-hsotg.0", "otg", "samsung-usbphy.1", "phy.2"),
->>>>>>
->>>>>> The only problem here is that if *PLATFORM_DEVID_AUTO* is used while
->>>>>> creating the device, the ids in the device name would change and
->>>>>> PHY_LOOKUP wont be useful.
->>>>>
->>>>> I don't think this is a problem. All the existing lookup methods already 
->>>>> use ID to identify devices (see regulators, clkdev, PWMs, i2c, ...). You 
->>>>> can simply add a requirement that the ID must be assigned manually, 
->>>>> without using PLATFORM_DEVID_AUTO to use PHY lookup.
->>>>
->>>> And I'm saying that this idea, of using a specific name and id, is
->>>> frought with fragility and will break in the future in various ways when
->>>> devices get added to systems, making these strings constantly have to be
->>>> kept up to date with different board configurations.
->>>>
->>>> People, NEVER, hardcode something like an id.  The fact that this
->>>> happens today with the clock code, doesn't make it right, it makes the
->>>> clock code wrong.  Others have already said that this is wrong there as
->>>> well, as systems change and dynamic ids get used more and more.
->>>>
->>>> Let's not repeat the same mistakes of the past just because we refuse to
->>>> learn from them...
->>>>
->>>> So again, the "find a phy by a string" functions should be removed, the
->>>> device id should be automatically created by the phy core just to make
->>>> things unique in sysfs, and no driver code should _ever_ be reliant on
->>>> the number that is being created, and the pointer to the phy structure
->>>> should be used everywhere instead.
->>>>
->>>> With those types of changes, I will consider merging this subsystem, but
->>>> without them, sorry, I will not.
->>>
->>> I'll agree with Greg here, the very fact that we see people trying to
->>> add a requirement of *NOT* using PLATFORM_DEVID_AUTO already points to a
->>> big problem in the framework.
->>>
->>> The fact is that if we don't allow PLATFORM_DEVID_AUTO we will end up
->>> adding similar infrastructure to the driver themselves to make sure we
->>> don't end up with duplicate names in sysfs in case we have multiple
->>> instances of the same IP in the SoC (or several of the same PCIe card).
->>> I really don't want to go back to that.
->>
->> If we are using PLATFORM_DEVID_AUTO, then I dont see any way we can give the
->> correct binding information to the PHY framework. I think we can drop having
->> this non-dt support in PHY framework? I see only one platform (OMAP3) going to
->> be needing this non-dt support and we can use the USB PHY library for it.
+> > perf is the exact opposite: no split-up the development culture 
+> > because they are closely related, yet a relatively disciplined ABI 
+> > between the components. In fact the ABI is higher quality exactly 
+> > because development is more integrated and allows for ABI problems to 
+> > be resolved before they leak out. It also allows for faster iteration 
+> > of development, without nonsensical ABI steps pulluting the way.
 > 
-> you shouldn't drop support for non-DT platform, in any case we lived
-> without DT (and still do) for years. Gotta find a better way ;-)
+> I don't know if I'd use "quality" and "perf ABI" in the same sentence. 
+> It's a horrible ABI; it has the honor of having the longest syscall 
+> manpage, beating out even ptrace.
 
-hmm..
+The functionality it provides is useful, and comprehensive documentation 
+of it is useful as well.
 
-how about passing the device names of PHY in platform data of the controller?
-It should be deterministic as the PHY framework assigns its own id and we
-*don't* want to add any requirement that the ID must be assigned manually
-without using PLATFORM_DEVID_AUTO. We can get rid of *phy_init_data* in the v10
-patch series.
+> It also really isn't that stable; I've had perf ABI changes break 
+> programs I maintain at least three times in the last 2 kernel releases.  
+> Part of this is due to the tight coupling into the kernel, in fact the 
+> only ABI anyone seems to care about is that presented by the perf-tool 
+> CLI interface; the _actual_ kernel ABI seems like an afterthought.
 
-Thanks
-Kishon
-> 
+It's certainly complex, but the main root cause for your problems is what 
+I pointed out to you in previous, similar discussions: I'm not aware of 
+*any* tester using your library on devel kernels, so regressions in seldom 
+used functionality that you rely on simply doesn't get reported.
 
+In the past you used to only test your library once the -stable kernel was 
+released - has this changed recently by any chance? I remember that in one 
+particular case I got a regression bugreport from you essentially on the 
+day of a -stable release.
+
+If you tested -rc2 or so that would give us a much larger window to fix 
+any breakages that affect your library. (I'm not even asking for 
+linux-next testing.)
+
+tools/perf is used much more prominently and breakages do get reported 
+reasonably early, typically before the merge window even opens.
+
+Once we receive a report we do fix your regressions as well and mark them 
+for -stable.
+
+To resolve this situation you could help us out by doing either of these:
+
+ 1) integrate your tests into tools/, there's 'perf test' that has a ton
+    of testcases already
+
+ 2) run your testsuite more frequently - instead of waiting for a stable
+    kernel to be released and then complain about breakage.
+
+So far you refused to do any of this and blamed others for non-reported 
+breakages :-/
+
+Thanks,
+
+	Ingo
