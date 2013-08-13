@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab3HMGkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:40:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60865 "EHLO
+	id S1757614Ab3HMGkw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:40:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757461Ab3HMGk3 (ORCPT
+	with ESMTP id S1757439Ab3HMGei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:40:29 -0400
-Date: Mon, 12 Aug 2013 23:41:54 -0700
+	Tue, 13 Aug 2013 02:34:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [ 000/102] 3.10.6-stable review
-Message-ID: <20130813064154.GA9867@kroah.com>
-References: <20130809015010.208118575@linuxfoundation.org>
- <20130809192030.GD4079@1wt.eu>
- <20130809193329.GA5792@kroah.com>
- <20130813040206.GA6009@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [ 08/12] cifs: silence compiler warnings showing up with gcc-4.7.0
+Date: Mon, 12 Aug 2013 23:35:43 -0700
+Message-Id: <20130813063520.918853027@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
+In-Reply-To: <20130813063520.285638946@linuxfoundation.org>
+References: <20130813063520.285638946@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813040206.GA6009@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 09:02:06PM -0700, Guenter Roeck wrote:
-> On Fri, Aug 09, 2013 at 12:33:29PM -0700, Greg Kroah-Hartman wrote:
-> > On Fri, Aug 09, 2013 at 09:20:30PM +0200, Willy Tarreau wrote:
-> > > Hi Greg,
-> > > 
-> > > On Thu, Aug 08, 2013 at 06:56:36PM -0700, Greg Kroah-Hartman wrote:
-> > > > This is the start of the stable review cycle for the 3.10.6 release.
-> > > > There are 102 patches in this series, all will be posted as a response
-> > > > to this one.  If anyone has any issues with these being applied, please
-> > > > let me know.
-> > > 
-> > > Just checked on my OpenBlocks AX3 (dual-core ARMv7 in thumbs mode),
-> > > everything seems OK, I did not even notice any performance regression
-> > > compared to 3.10.5 on syscall intensive workloads with the recent
-> > > changes. I'm sure that I'm using the kuser helpers page since the
-> > > system doesn't boot without. Also I did observe minor changes in
-> > > /proc/self/maps, but I don't think they should have any impact, so
-> > > all in all it's OK :
-> > 
-> > Wonderful, thanks so much for testing the arm stuff, I wasn't sure I got
-> > it all correct in the backport.
-> > 
-> > One of these days I'll get a system here that I can test arm changes
-> > on...
-> > 
-> Have a look at http://server.roeck-us.net:8010/waterfall.
-> 
-> If everything works as intended, we should get automated builds
-> for various platforms, plus automated qemu tests for some of them.
-> 
-> I have qemu boot tests running for mips (3.4 and 3.10), ppc (3.0, 3.4, 3.10),
-> and x86 (3.0, 3.4, 3.10) working. x86_64 and mips64 should follow soon.
-> 
-> Unfortunately, arm tests don't work yet because of a bug in the arm
-> kernel code.
-> 
-> Builds are started about 30 minutes after a change in the stable-queue
-> repository has been detected, and complete after 3-4 hours unless
-> the servers are busy doing real work. Which explains why I can annoy
-> you with results pretty quickly lately :).
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Very nice, thanks for doing this, I'll watch it and see what I can break
-:)
+------------------
 
-greg k-h
+From: Jeff Layton <jlayton@redhat.com>
+
+commit b2a3ad9ca502169fc4c11296fa20f56059c7c031 upstream.
+
+gcc-4.7.0 has started throwing these warnings when building cifs.ko.
+
+  CC [M]  fs/cifs/cifssmb.o
+fs/cifs/cifssmb.c: In function ‘CIFSSMBSetCIFSACL’:
+fs/cifs/cifssmb.c:3905:9: warning: array subscript is above array bounds [-Warray-bounds]
+fs/cifs/cifssmb.c: In function ‘CIFSSMBSetFileInfo’:
+fs/cifs/cifssmb.c:5711:8: warning: array subscript is above array bounds [-Warray-bounds]
+fs/cifs/cifssmb.c: In function ‘CIFSSMBUnixSetFileInfo’:
+fs/cifs/cifssmb.c:6001:25: warning: array subscript is above array bounds [-Warray-bounds]
+
+This patch cleans up the code a bit by using the offsetof macro instead
+of the funky "&pSMB->hdr.Protocol" construct.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/cifs/cifssmb.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -3473,13 +3473,12 @@ CIFSSMBSetCIFSACL(const int xid, struct
+ 	int rc = 0;
+ 	int bytes_returned = 0;
+ 	SET_SEC_DESC_REQ *pSMB = NULL;
+-	NTRANSACT_RSP *pSMBr = NULL;
++	void *pSMBr;
+ 
+ setCifsAclRetry:
+-	rc = smb_init(SMB_COM_NT_TRANSACT, 19, tcon, (void **) &pSMB,
+-			(void **) &pSMBr);
++	rc = smb_init(SMB_COM_NT_TRANSACT, 19, tcon, (void **) &pSMB, &pSMBr);
+ 	if (rc)
+-			return (rc);
++		return rc;
+ 
+ 	pSMB->MaxSetupCount = 0;
+ 	pSMB->Reserved = 0;
+@@ -3507,9 +3506,8 @@ setCifsAclRetry:
+ 	pSMB->AclFlags = cpu_to_le32(CIFS_ACL_DACL);
+ 
+ 	if (pntsd && acllen) {
+-		memcpy((char *) &pSMBr->hdr.Protocol + data_offset,
+-			(char *) pntsd,
+-			acllen);
++		memcpy((char *)pSMBr + offsetof(struct smb_hdr, Protocol) +
++				data_offset, pntsd, acllen);
+ 		inc_rfc1001_len(pSMB, byte_count + data_count);
+ 	} else
+ 		inc_rfc1001_len(pSMB, byte_count);
+@@ -5291,7 +5289,8 @@ CIFSSMBSetFileInfo(const int xid, struct
+ 	param_offset = offsetof(struct smb_com_transaction2_sfi_req, Fid) - 4;
+ 	offset = param_offset + params;
+ 
+-	data_offset = (char *) (&pSMB->hdr.Protocol) + offset;
++	data_offset = (char *)pSMB +
++			offsetof(struct smb_hdr, Protocol) + offset;
+ 
+ 	count = sizeof(FILE_BASIC_INFO);
+ 	pSMB->MaxParameterCount = cpu_to_le16(2);
+@@ -5560,7 +5559,7 @@ CIFSSMBUnixSetFileInfo(const int xid, st
+ 		       u16 fid, u32 pid_of_opener)
+ {
+ 	struct smb_com_transaction2_sfi_req *pSMB  = NULL;
+-	FILE_UNIX_BASIC_INFO *data_offset;
++	char *data_offset;
+ 	int rc = 0;
+ 	u16 params, param_offset, offset, byte_count, count;
+ 
+@@ -5582,8 +5581,9 @@ CIFSSMBUnixSetFileInfo(const int xid, st
+ 	param_offset = offsetof(struct smb_com_transaction2_sfi_req, Fid) - 4;
+ 	offset = param_offset + params;
+ 
+-	data_offset = (FILE_UNIX_BASIC_INFO *)
+-				((char *)(&pSMB->hdr.Protocol) + offset);
++	data_offset = (char *)pSMB +
++			offsetof(struct smb_hdr, Protocol) + offset;
++
+ 	count = sizeof(FILE_UNIX_BASIC_INFO);
+ 
+ 	pSMB->MaxParameterCount = cpu_to_le16(2);
+@@ -5605,7 +5605,7 @@ CIFSSMBUnixSetFileInfo(const int xid, st
+ 	inc_rfc1001_len(pSMB, byte_count);
+ 	pSMB->ByteCount = cpu_to_le16(byte_count);
+ 
+-	cifs_fill_unix_set_info(data_offset, args);
++	cifs_fill_unix_set_info((FILE_UNIX_BASIC_INFO *)data_offset, args);
+ 
+ 	rc = SendReceiveNoRsp(xid, tcon->ses, (struct smb_hdr *) pSMB, 0);
+ 	if (rc)
+
+
