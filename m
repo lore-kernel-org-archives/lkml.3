@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758934Ab3HMQLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:11:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13725 "EHLO
+	id S1758914Ab3HMQLU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:11:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16548 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758592Ab3HMP61 (ORCPT
+	with ESMTP id S1758607Ab3HMP61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Aug 2013 11:58:27 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=2XlrhHUARbkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=N6GxHJm4w-MA:10 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=FNyBlpCuAAAA:8 a=h1aNt0RaAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=GY2gF6XR40cA:10 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=9n0VZpmWo7gA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=ij7k4DA2UHkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=bnd2UCV7HGcA:10 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130813155825.546401589@goodmis.org>
+Message-Id: <20130813155825.243947706@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 13 Aug 2013 11:57:06 -0400
+Date: Tue, 13 Aug 2013 11:57:04 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Neal Cardwell <ncardwell@google.com>
-Subject: [12/88] ipv6: fix possible crashes in ip6_cork_release()
+Cc: Matt Schnall <mischnal@google.com>, Eric Dumazet <edumazet@google.com>,
+        Bernhard Beck <bbeck@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [10/88] tcp: fix tcp_md5_hash_skb_data()
 References: <20130813155654.069291373@goodmis.org>
-Content-Disposition: inline; filename=0012-ipv6-fix-possible-crashes-in-ip6_cork_release.patch
+Content-Disposition: inline; filename=0010-tcp-fix-tcp_md5_hash_skb_data.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,37 +33,48 @@ If anyone has any objections, please let me know.
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 284041ef21fdf2e0d216ab6b787bc9072b4eb58a ]
+[ Upstream commit 54d27fcb338bd9c42d1dfc5a39e18f6f9d373c2e ]
 
-commit 0178b695fd6b4 ("ipv6: Copy cork options in ip6_append_data")
-added some code duplication and bad error recovery, leading to potential
-crash in ip6_cork_release() as kfree() could be called with garbage.
+TCP md5 communications fail [1] for some devices, because sg/crypto code
+assume page offsets are below PAGE_SIZE.
 
-use kzalloc() to make sure this wont happen.
+This was discovered using mlx4 driver [2], but I suspect loopback
+might trigger the same bug now we use order-3 pages in tcp_sendmsg()
 
+[1] Failure is giving following messages.
+
+huh, entered softirq 3 NET_RX ffffffff806ad230 preempt_count 00000100,
+exited with 00000101?
+
+[2] mlx4 driver uses order-2 pages to allocate RX frags
+
+Reported-by: Matt Schnall <mischnal@google.com>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Bernhard Beck <bbeck@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/ipv6/ip6_output.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/tcp.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 3d485ec..a26d44c 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1236,7 +1236,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 			if (WARN_ON(np->cork.opt))
- 				return -EINVAL;
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 094a01f..5871c25 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -3368,8 +3368,11 @@ int tcp_md5_hash_skb_data(struct tcp_md5sig_pool *hp,
  
--			np->cork.opt = kmalloc(opt->tot_len, sk->sk_allocation);
-+			np->cork.opt = kzalloc(opt->tot_len, sk->sk_allocation);
- 			if (unlikely(np->cork.opt == NULL))
- 				return -ENOBUFS;
- 
+ 	for (i = 0; i < shi->nr_frags; ++i) {
+ 		const struct skb_frag_struct *f = &shi->frags[i];
+-		struct page *page = skb_frag_page(f);
+-		sg_set_page(&sg, page, skb_frag_size(f), f->page_offset);
++		unsigned int offset = f->page_offset;
++		struct page *page = skb_frag_page(f) + (offset >> PAGE_SHIFT);
++
++		sg_set_page(&sg, page, skb_frag_size(f),
++			    offset_in_page(offset));
+ 		if (crypto_hash_update(desc, &sg, skb_frag_size(f)))
+ 			return 1;
+ 	}
 -- 
 1.7.10.4
 
