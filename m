@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757146Ab3HMKDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 06:03:55 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:57867 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab3HMKDx (ORCPT
+	id S1757224Ab3HMKF7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 06:05:59 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:62637 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756594Ab3HMKF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 06:03:53 -0400
-Date: Tue, 13 Aug 2013 12:03:49 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Bjorn Helgaas <bhelgaas@google.com>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 4/9] PCI: mvebu: add support for reset on GPIO
-Message-ID: <20130813100348.GA28762@ulmo>
-References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1376333215-12885-5-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130813080956.GE9316@ulmo>
- <20130813103030.1e4156a1@skate>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mYCpIKhGyMATD0i+"
-Content-Disposition: inline
-In-Reply-To: <20130813103030.1e4156a1@skate>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Aug 2013 06:05:58 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-dd-520a05041a1a
+Message-id: <520A0504.6060203@samsung.com>
+Date: Tue, 13 Aug 2013 19:05:56 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: myungjoo.ham@samsung.com, broonie@kernel.org,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] extcon: arizona: Clear trig_sts bits on all paths
+References: <1375874234-30549-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+In-reply-to: <1375874234-30549-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsWyRsSkQJeFlSvIYNNBbYsrFw8xWUx9+ITN
+	4t+UG+wWl3fNYbO43biCzWL52/9sDmweGz43sXlsWtXJ5vFy4m82j74tqxg9Pm+SC2CN4rJJ
+	Sc3JLEst0rdL4MroOLmMpWAHd8XBLQeYGhiXcHYxcnJICJhI7P3ZygRhi0lcuLeeDcQWEljK
+	KPHuYglMzZ1Jt4HiXEDxRYwSZ6Y8YoRwXjFK/JmxnRGkildAS2LO9yZ2EJtFQFVi1+3PYDYb
+	UHz/ixtgU0UFwiRWTr/CAlEvKPFj8j0wW0TAQmLKklvMIEOZBaYwSsz49xfsJGEBT4kpE3qY
+	IU4KlTh68yLYIE6gQZ/bV4PFmQV0JPa3TmODsOUlNq95CzZIQuAYu0TD5OWsEBcJSHybfAho
+	GwdQQlZi0wFmiNckJQ6uuMEygVFsFpKbZiEZOwvJ2AWMzKsYRVMLkguKk9KLjPWKE3OLS/PS
+	9ZLzczcxAuPt9L9n/TsY7x6wPsSYDLRyIrOUaHI+MF7zSuINjc2MLExNTI2NzC3NSBNWEudV
+	a7EOFBJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDYznn6A7ezf/2rfbzstz7se+G41SJQdrvB
+	h43Xtq/btqwyg8M54ruI6YIlEiX8reJPJvw7fztFlLGJfRX7jn2Tat2me/ZJpPKwVt2U7Ki6
+	dfbt7JIozWPHiuVDpe84ZCrnSV5tYdny5tg+pY93H7WdXtxb1Dv92WfO1//29vi/4J116p/0
+	iRcrlViKMxINtZiLihMB8/o1Z80CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAV0WVq4ggxuflC2uXDzEZDH14RM2
+	i39TbrBbXN41h83iduMKNovlb/+zObB5bPjcxOaxaVUnm8fLib/ZPPq2rGL0+LxJLoA1qoHR
+	JiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoBCWFssSc
+	UqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jRsfJZSwFO7grDm45wNTAuISzi5GT
+	Q0LAROLOpNtsELaYxIV764FsLg4hgUWMEmemPGKEcF4xSvyZsZ0RpIpXQEtizvcmdhCbRUBV
+	Ytftz2A2G1B8/4sbYJNEBcIkVk6/wgJRLyjxY/I9MFtEwEJiypJbzCBDmQWmMErM+PeXCSQh
+	LOApMWVCDzOILSQQKnH05kWwQZxAgz63rwaLMwvoSOxvncYGYctLbF7zlnkCo8AsJDtmISmb
+	haRsASPzKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgeH4mvYNxVYPFIUYBDkYlHt6MjxxB
+	QqyJZcWVuYcYJTiYlUR44xi5goR4UxIrq1KL8uOLSnNSiw8xJgODYCKzlGhyPjDV5JXEGxqb
+	mBlZGpkbWhgZm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY1qsdavkMcckySnMfSIK
+	SYfWfa5TvyMcz1nOu7cyc+39PQpHdy3U608JfcnNaiyyzU7UO41p3Y7Z0ktbF0YoLYn+cPJY
+	27ofZ0oWdfeurW4XjCr5m6nfwMsmd/veklUup/+I1oomtk0+Jz1Tr6zvzIFKJe9Wm68HWO6m
+	uL+dLTvj4iHXwqLNSizFGYmGWsxFxYkAIJuf1isDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Charles,
 
---mYCpIKhGyMATD0i+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/07/2013 08:17 PM, Charles Keepax wrote:
+> We want the trig_sts bits to be cleared in all cases where we consider
+> the jack detection interrupt to have been handled. Specifically, if a
+> duplicate detection event was suppressed these bits were not cleared
+> causing the CODEC to not enter a low power state. This patch clears the
+> bits on the duplicate detection code path.
+> 
+> Reported-by: Ryo Tsutsui <ryo.tsutsui@wolfsonmicro.com>
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/extcon/extcon-arizona.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+> index 7a1b4a7..4df68de 100644
+> --- a/drivers/extcon/extcon-arizona.c
+> +++ b/drivers/extcon/extcon-arizona.c
+> @@ -1034,6 +1034,7 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
+>  	else
+>  		info->micd_timeout = DEFAULT_MICD_TIMEOUT;
+>  
+> +out:
+>  	/* Clear trig_sts to make sure DCVDD is not forced up */
+>  	regmap_write(arizona->regmap, ARIZONA_AOD_WKUP_AND_TRIG,
+>  		     ARIZONA_MICD_CLAMP_FALL_TRIG_STS |
+> @@ -1041,7 +1042,6 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
+>  		     ARIZONA_JD1_FALL_TRIG_STS |
+>  		     ARIZONA_JD1_RISE_TRIG_STS);
+>  
+> -out:
+>  	mutex_unlock(&info->lock);
+>  
+>  	pm_runtime_mark_last_busy(info->dev);
+> 
 
-On Tue, Aug 13, 2013 at 10:30:30AM +0200, Thomas Petazzoni wrote:
-> Dear Thierry Reding,
->=20
-> On Tue, 13 Aug 2013 10:09:56 +0200, Thierry Reding wrote:
->=20
-> > > +- reset-gpios: optional gpio to PERST#
-> > > +- reset-delay-ms: delay in ms to wait after reset de-assertion
-> >=20
-> > I remember some recent discussion about this, and we now have this reset
-> > framework, so perhaps it makes more sense to use the reset binding for
-> > this? Cc'ing Stephen (as part of the device tree bindings maintainers
-> > team) who was involved in that recent reset bindings discussion.
->=20
-> I also thought about this, but the reset framework seems to be designed
-> for "reset controller" IPs, i.e special IPs that are controlling reset
-> signals. Looking at Documentation/devicetree/bindings/reset/reset.txt,
-> I'm not sure to see how this would apply to GPIO-controlled reset
-> signals.
+Applied it.
 
-See:
-
-	http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg36900.h=
-tml
-
-which seems to have carried over to this at some point:
-
-	http://www.spinics.net/lists/devicetree/msg00521.html
-
-Some of the messages in between I can't find in any archive, sorry.
-
-Thierry
-
---mYCpIKhGyMATD0i+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCgSEAAoJEN0jrNd/PrOhXqQP/00k9qpbbGmfxex3TNrgv2Is
-ocoESbsytg3Xz4eBN12343/Yc+goQeKF0W0yumiMceW8JsQ/u2J9x0YMIrHvPMFC
-abbcGgLsTdgs3IBgA1hYeFMCjSTzTeFtNEYjDTzJQY0+hVCVWlj2SOZQqeX/DZ8w
-GPxmeelIHUOxHEAsyCSiDu2g3DD8TJ0N3y3mSTuD2nFrgysgtfrhwlFeEeLfF4UU
-rkmRVLMPyFGN0AlXckrIkDk/BG7cyppM7BwhqtsigHmrt2yCQjXpA+ML6I2AAqvR
-LPW0obWNl+Mn4smudv49XiIc3+MHnOVtq+0NoW1YemXIJ49ggKXpoeLF1whg38VM
-m4O0qNoMCul/xv+RPCh5QgVY+vWdlG/8YWU4DZTXT+IhYti7xzY1+iFb3bHds0uC
-BNNouYq/pTrr6atjX4fTNZNxnN15eTJqiKvxBx355TUkMQbuJ/EKvaDXWpALbyVc
-Mn420vIa/X2f7INmjZigKDKDLEAzZUOGzLQLKErJBjW2qWP/ADzfr5lS/xRC4IFg
-9r40/MXSJDx1/V6hpLKRI+hP+cjkdcqNrNThJeVa1BMKniB7pPu08lGEtWhknGsv
-Ab//4nOjKv07qWJUcCDzRKb8jLO2nTxfunQNTlTlAchjDfysTjZJKnW+cWOzya00
-vrz6kNWJzKQGdNc4xmag
-=+4Qp
------END PGP SIGNATURE-----
-
---mYCpIKhGyMATD0i+--
+Thanks.
+Chanwoo Choi
