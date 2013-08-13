@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758614Ab3HMQfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:35:43 -0400
-Received: from s16502780.onlinehome-server.info ([87.106.93.118]:53246 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757806Ab3HMQfj (ORCPT
+	id S1758684Ab3HMQgC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:36:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4213 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757681Ab3HMQ0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 12:35:39 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Tue, 13 Aug 2013 17:34:39 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "s.dilek" <s.dilek@jpberlin.de>
-Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical
- mode ]
-Message-ID: <20130813163439.GA8805@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Dave Airlie <airlied@gmail.com>,
-	DRI <dri-devel@lists.freedesktop.org>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	"s.dilek" <s.dilek@jpberlin.de>
-References: <20130813092554.GA4519@cantiga.alporthouse.com>
- <CA+icZUUrJt_sJqp0CNMuM_b36tvv_rUskegLY5zcnm0w+JcW5Q@mail.gmail.com>
- <20130813093920.GB4519@cantiga.alporthouse.com>
- <CA+icZUVEcCTbBre99FWiDXRAMKcdQxUagXE-2-rO9g=YVUAieQ@mail.gmail.com>
- <20130813095259.GC4519@cantiga.alporthouse.com>
- <CA+icZUX6KM3dKrdX3Qkwg-DeBYobjQ+WG6oQEUjJQG3Q=qf+Sg@mail.gmail.com>
- <CA+icZUWPdivbDc=cBUR2BJzKGwWwK-P0OP0CZ5EfCupii7sP_w@mail.gmail.com>
- <CA+icZUUKH6Fa8WksqA69FXKUUJmKsNdXv0ZJH50HA2mFavfPCg@mail.gmail.com>
- <CA+icZUXC73i4hO7LHDQ=85__JtrZmSMB+KyUnS+G6vRmm_=tkg@mail.gmail.com>
- <CA+icZUXdS3EuXyGZiS1--rMu6H0ospzCiK_CXgPv8mOk0sMt+Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+icZUXdS3EuXyGZiS1--rMu6H0ospzCiK_CXgPv8mOk0sMt+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 78.156.73.22
+	Tue, 13 Aug 2013 12:26:49 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=TEo7vrPS8MAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qmOBUxuKaeIA:10 a=RsOVOdp7AAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=8pxQKEWLuQwA:10 a=-Pj1cSz79GQA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130813155835.595154007@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 13 Aug 2013 11:58:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Axel Lin <axel.lin@ingics.com>, Heiko Schocher <hs@denx.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [76/88] drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
+References: <20130813155654.069291373@goodmis.org>
+Content-Disposition: inline; filename=0076-drivers-rtc-rtc-rv3029c2.c-fix-disabling-AIE-irq.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 06:23:29PM +0200, Sedat Dilek wrote:
-> On Tue, Aug 13, 2013 at 5:59 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> > I have bisected the issue on Linux v3.11-rc5 + drm-intel-nightly:
-> >
-> > 5456fe3882812aba251886e36fe55bfefb8e8829 is the first bad commit
-> > commit 5456fe3882812aba251886e36fe55bfefb8e8829
-> > Author: Chris Wilson <chris@chris-wilson.co.uk>
-> > Date:   Thu Aug 8 14:41:07 2013 +0100
-> >
-> >     drm/i915: Allocate LLC ringbuffers from stolen
-> >
-> >     As stolen objects now behave identically (wrt to default LLC cacheing)
-> >     as their normal system counterparts, we no longer have to differentiate
-> >     our usage for ringbuffers. So allocate them from stolen on SNB+ as well.
-> >
-> >     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> >     Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-> >     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> >
-> > :040000 040000 de063a052f39095f4d2f51b49caef9f827df41e8
-> > 1c819aa5501a9fcc9912a5c7c037c71b9b9e9a6b M      drivers
-> >
-> > See also attached files!
-> >
-> 
-> With the attached revert-patch my system is OK (with my customized X stack).
+3.6.11.7-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-No indication of a GPU hang? I'm puzzled as to how this ends up with the
-scanout being misread.
+------------------
 
-cat /sys/kernel/debug/dri/0/i915_gem_stolen
-cat /sys/kernel/debug/dri/0/i915_gem_framebuffer
+From: Axel Lin <axel.lin@ingics.com>
 
-would be interesting.
--Chris
+[ Upstream commit 29ecd78c0fd6ee05f2c6b07b23823a6ae43c13ff ]
 
+In the disable AIE irq code path, current code passes "1" to enable
+parameter of rv3029c2_rtc_i2c_alarm_set_irq().  Thus it does not disable
+AIE irq.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Heiko Schocher <hs@denx.de>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/rtc/rtc-rv3029c2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/rtc/rtc-rv3029c2.c b/drivers/rtc/rtc-rv3029c2.c
+index 0fbe57b..21d63d1 100644
+--- a/drivers/rtc/rtc-rv3029c2.c
++++ b/drivers/rtc/rtc-rv3029c2.c
+@@ -310,7 +310,7 @@ static int rv3029c2_rtc_i2c_set_alarm(struct i2c_client *client,
+ 		dev_dbg(&client->dev, "alarm IRQ armed\n");
+ 	} else {
+ 		/* disable AIE irq */
+-		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 1);
++		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 0);
+ 		if (ret)
+ 			return ret;
+ 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.10.4
+
+
