@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757694Ab3HMGgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:36:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60836 "EHLO
+	id S1757670Ab3HMGhT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:37:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757573Ab3HMGe4 (ORCPT
+	with ESMTP id S1757554Ab3HMGex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:34:56 -0400
+	Tue, 13 Aug 2013 02:34:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 05/17] virtio: console: fix race with port unplug and open/close
-Date: Mon, 12 Aug 2013 23:35:51 -0700
-Message-Id: <20130813063502.170974398@linuxfoundation.org>
+        Sumit Saxena <sumit.saxena@lsi.com>,
+        Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 02/17] SCSI: megaraid_sas: megaraid_sas driver init fails in kdump kernel
+Date: Mon, 12 Aug 2013 23:35:48 -0700
+Message-Id: <20130813063501.934380668@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063501.728847844@linuxfoundation.org>
 References: <20130813063501.728847844@linuxfoundation.org>
@@ -27,57 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: "Sumit.Saxena@lsi.com" <Sumit.Saxena@lsi.com>
 
-commit 057b82be3ca3d066478e43b162fc082930a746c9 upstream.
+commit 6431f5d7c6025f8b007af06ea090de308f7e6881 upstream.
 
-There's a window between find_port_by_devt() returning a port and us
-taking a kref on the port, where the port could get unplugged.  Fix it
-by taking the reference in find_port_by_devt() itself.
+Problem: When Hardware IOMMU is on, megaraid_sas driver initialization fails
+in kdump kernel with LSI MegaRAID controller(device id-0x73).
 
-Problem reported and analyzed by Mateusz Guzik.
+Actually this issue needs fix in firmware, but for firmware running in field,
+this driver fix is proposed to resolve the issue.  At firmware initialization
+time, if firmware does not come to ready state, driver will reset the adapter
+and retry for firmware transition to ready state unconditionally(not only
+executed for kdump kernel).
 
-Reported-by: Mateusz Guzik <mguzik@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Sumit Saxena <sumit.saxena@lsi.com>
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/virtio_console.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -256,9 +256,12 @@ static struct port *find_port_by_devt_in
- 	unsigned long flags;
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -3493,11 +3493,21 @@ static int megasas_init_fw(struct megasa
+ 		break;
+ 	}
  
- 	spin_lock_irqsave(&portdev->ports_lock, flags);
--	list_for_each_entry(port, &portdev->ports, list)
--		if (port->cdev->dev == dev)
-+	list_for_each_entry(port, &portdev->ports, list) {
-+		if (port->cdev->dev == dev) {
-+			kref_get(&port->kref);
- 			goto out;
-+		}
+-	/*
+-	 * We expect the FW state to be READY
+-	 */
+-	if (megasas_transition_to_ready(instance, 0))
+-		goto fail_ready_state;
++	if (megasas_transition_to_ready(instance, 0)) {
++		atomic_set(&instance->fw_reset_no_pci_access, 1);
++		instance->instancet->adp_reset
++			(instance, instance->reg_set);
++		atomic_set(&instance->fw_reset_no_pci_access, 0);
++		dev_info(&instance->pdev->dev,
++			"megasas: FW restarted successfully from %s!\n",
++			__func__);
++
++		/*waitting for about 30 second before retry*/
++		ssleep(30);
++
++		if (megasas_transition_to_ready(instance, 0))
++			goto fail_ready_state;
 +	}
- 	port = NULL;
- out:
- 	spin_unlock_irqrestore(&portdev->ports_lock, flags);
-@@ -789,14 +792,10 @@ static int port_fops_open(struct inode *
- 	struct port *port;
- 	int ret;
  
-+	/* We get the port with a kref here */
- 	port = find_port_by_devt(cdev->dev);
- 	filp->private_data = port;
- 
--	/* Prevent against a port getting hot-unplugged at the same time */
--	spin_lock_irq(&port->portdev->ports_lock);
--	kref_get(&port->kref);
--	spin_unlock_irq(&port->portdev->ports_lock);
--
- 	/*
- 	 * Don't allow opening of console port devices -- that's done
- 	 * via /dev/hvc
+ 	/* Check if MSI-X is supported while in ready state */
+ 	msix_enable = (instance->instancet->read_fw_status_reg(reg_set) &
 
 
