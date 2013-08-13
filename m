@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203Ab3HMECK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 00:02:10 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:47056 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab3HMECI (ORCPT
+	id S1751523Ab3HMEL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 00:11:29 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:53328 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab3HMEL2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 00:02:08 -0400
-Date: Mon, 12 Aug 2013 21:02:06 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [ 000/102] 3.10.6-stable review
-Message-ID: <20130813040206.GA6009@roeck-us.net>
-References: <20130809015010.208118575@linuxfoundation.org>
- <20130809192030.GD4079@1wt.eu>
- <20130809193329.GA5792@kroah.com>
+	Tue, 13 Aug 2013 00:11:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130809193329.GA5792@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130812172649.GB7198@localhost>
+References: <1376251908-7451-1-git-send-email-nilanjan.roychowdhury@gmail.com>
+	<20130812172649.GB7198@localhost>
+Date: Tue, 13 Aug 2013 09:41:28 +0530
+Message-ID: <CAGq6Fke=DYbK=KO6RdTD2at9NPMKcmxzOQ2TL6fBfM2UgSOfRQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mtd: mtdoops: fix for a potential memory leak in mtdoops_notify_remove
+From: Nilanjan Roychowdhury <nilanjan.roychowdhury@gmail.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 12:33:29PM -0700, Greg Kroah-Hartman wrote:
-> On Fri, Aug 09, 2013 at 09:20:30PM +0200, Willy Tarreau wrote:
-> > Hi Greg,
-> > 
-> > On Thu, Aug 08, 2013 at 06:56:36PM -0700, Greg Kroah-Hartman wrote:
-> > > This is the start of the stable review cycle for the 3.10.6 release.
-> > > There are 102 patches in this series, all will be posted as a response
-> > > to this one.  If anyone has any issues with these being applied, please
-> > > let me know.
-> > 
-> > Just checked on my OpenBlocks AX3 (dual-core ARMv7 in thumbs mode),
-> > everything seems OK, I did not even notice any performance regression
-> > compared to 3.10.5 on syscall intensive workloads with the recent
-> > changes. I'm sure that I'm using the kuser helpers page since the
-> > system doesn't boot without. Also I did observe minor changes in
-> > /proc/self/maps, but I don't think they should have any impact, so
-> > all in all it's OK :
-> 
-> Wonderful, thanks so much for testing the arm stuff, I wasn't sure I got
-> it all correct in the backport.
-> 
-> One of these days I'll get a system here that I can test arm changes
-> on...
-> 
-Have a look at http://server.roeck-us.net:8010/waterfall.
-
-If everything works as intended, we should get automated builds
-for various platforms, plus automated qemu tests for some of them.
-
-I have qemu boot tests running for mips (3.4 and 3.10), ppc (3.0, 3.4, 3.10),
-and x86 (3.0, 3.4, 3.10) working. x86_64 and mips64 should follow soon.
-
-Unfortunately, arm tests don't work yet because of a bug in the arm
-kernel code.
-
-Builds are started about 30 minutes after a change in the stable-queue
-repository has been detected, and complete after 3-4 hours unless
-the servers are busy doing real work. Which explains why I can annoy
-you with results pretty quickly lately :).
-
-Guenter
+On Mon, Aug 12, 2013 at 10:56 PM, Ezequiel Garcia
+<ezequiel.garcia@free-electrons.com> wrote:
+>
+> On Sun, Aug 11, 2013 at 01:11:48PM -0700, Nilanjan Roychowdhury wrote:
+> > we are allocating cxt->oops_page_used using vmalloc in mtdoops_notify_add for
+> > every mtd_info addition but not freeing it in mtdoops_notify_remove
+> >
+> > Signed-off-by: Nilanjan Roychowdhury <nilanjan.roychowdhury@gmail.com>
+> > ---
+> >  drivers/mtd/mtdoops.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > diff --git a/drivers/mtd/mtdoops.c b/drivers/mtd/mtdoops.c
+> > index 97bb8f6..02f49aa 100644
+> > --- a/drivers/mtd/mtdoops.c
+> > +++ b/drivers/mtd/mtdoops.c
+> > @@ -386,6 +386,7 @@ static void mtdoops_notify_remove(struct mtd_info *mtd)
+> >       cxt->mtd = NULL;
+> >       flush_work(&cxt->work_erase);
+> >       flush_work(&cxt->work_write);
+> > +     vfree(cxt->oops_page_used);
+> >  }
+> >
+> > --
+> > 1.7.9.5
+> >
+>
+> Have you tested this patch doing an unregister/module remove cycle?
+>
+> I'm not entirely sure, but I *think* you must also remove the
+> vfree(cxt->oops_page_used); at mtdoops_exit(). Otherwise,
+> you might call vfree() twice, the second time on a garbage pointer.
+>
+> The reason for this is that the unregister_mtd_user(&mtdoops_notifier);
+> call in mtdoops_exit() will call the .remove callback (causing the first
+> vfree() with this patch) and then call vfree() for the second time, explicitly.
+> --
+> Ezequiel García, Free Electrons
+> Embedded Linux, Kernel and Android Engineering
+> http://free-electrons.com
+i did not do a module remove. I agree with your observation. I will
+resubmit the patch.
