@@ -1,106 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab3HMT4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 15:56:12 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44718 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758124Ab3HMT4J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 15:56:09 -0400
-Date: Wed, 14 Aug 2013 01:32:11 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
-        konrad.wilk@oracle.com, gleb@redhat.com, pbonzini@redhat.com,
-        gregkh@suse.de, peterz@infradead.org, tglx@linutronix.de,
-        agraf@suse.de, riel@redhat.com, avi.kivity@gmail.com,
-        habanero@linux.vnet.ibm.com, chegu_vinod@hp.com, ouyang@cs.pitt.edu,
-        drjones@redhat.com, attilio.rao@citrix.com, linux-doc@vger.kernel.org,
-        torvalds@linux-foundation.org, kvm@vger.kernel.org,
-        andi@firstfloor.org, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        stefano.stabellini@eu.citrix.com, mtosatti@redhat.com,
-        srivatsa.vaddagiri@gmail.com,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suzuki Poulose <suzuki@in.ibm.com>
-Subject: Re: [PATCH delta V13 14/14] kvm : Paravirtual ticketlocks support
- for linux guests running on KVM hypervisor
-Message-ID: <20130813200211.GA27811@linux.vnet.ibm.com>
-Reply-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-References: <y>
- <1376058122-8248-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <1376058122-8248-15-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <20130810193849.GA25260@linux.vnet.ibm.com>
- <520A620B.6070702@zytor.com>
- <20130813165552.GA6795@gmail.com>
+	id S1758904Ab3HMT5N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 15:57:13 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37746 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758177Ab3HMT5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 15:57:11 -0400
+Date: Tue, 13 Aug 2013 14:56:38 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+CC: <balbi@ti.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (usb-gadget tree related)
+Message-ID: <20130813195638.GD11075@radagast>
+Reply-To: <balbi@ti.com>
+References: <20130813181719.e2dea691c1e3c19bd6306983@canb.auug.org.au>
+ <20130813194803.GA11075@radagast>
+ <20130813195133.GC11075@radagast>
+ <CA+icZUUse7BHLQWZYAq1znr8XbiiFyxrCN1YxiR+z=cUH+D6jQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="C+ts3FVlLX8+P6JN"
 Content-Disposition: inline
-In-Reply-To: <20130813165552.GA6795@gmail.com>
+In-Reply-To: <CA+icZUUse7BHLQWZYAq1znr8XbiiFyxrCN1YxiR+z=cUH+D6jQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081319-3620-0000-0000-000003EC5024
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar <mingo@kernel.org> [2013-08-13 18:55:52]:
+--C+ts3FVlLX8+P6JN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Would be nice to have a delta fix patch against tip:x86/spinlocks, which 
-> I'll then backmerge into that series via rebasing it.
-> 
+On Tue, Aug 13, 2013 at 09:52:53PM +0200, Sedat Dilek wrote:
+> On Tue, Aug 13, 2013 at 9:51 PM, Felipe Balbi <balbi@ti.com> wrote:
+> > On Tue, Aug 13, 2013 at 02:48:03PM -0500, Felipe Balbi wrote:
+> >> Hi,
+> >>
+> >> On Tue, Aug 13, 2013 at 06:17:19PM +1000, Stephen Rothwell wrote:
+> >> > Hi all,
+> >> >
+> >> > After merging the final tree, today's linux-next build (powerpc ally=
+esconfig)
+> >> > failed like this:
+> >> >
+> >> > drivers/usb/phy/phy-am335x-control.c: In function 'am335x_control_us=
+b_probe':
+> >> > drivers/usb/phy/phy-am335x-control.c:117:2: error: implicit declarat=
+ion of function 'IS_ERR' [-Werror=3Dimplicit-function-declaration]
+> >> >   if (IS_ERR(ctrl_usb->phy_reg))
+> >> >   ^
+> >> > drivers/usb/phy/phy-am335x-control.c:118:3: error: implicit declarat=
+ion of function 'PTR_ERR' [-Werror=3Dimplicit-function-declaration]
+> >> >    return PTR_ERR(ctrl_usb->phy_reg);
+> >> >    ^
+> >> >
+> >> > Caused by commit 3bb869c8b3f1 ("usb: phy: Add AM335x PHY driver") fr=
+om
+> >> > the usb-gadget tree.  Forgot to include linux/err.h.
+> >> >
+> >> > I have reverted that commit for today.
+> >>
+> >> damn, I didn't catch that. Sebastian, can you send a patch ?
+> >
+> > nevermind already patched it myself.
+> >
+>=20
+> Sebastian sent some hours ago this one:
+>=20
+> [PATCH] usb: phy: am335x: include linux/err.h
 
-There was a namespace collision of PER_CPU lock_waiting variable when
-we have both Xen and KVM enabled. 
+will replace with that.
 
-Perhaps this week wasn't for me. Had run 100 times randconfig in a loop
-for the fix sent earlier :(. 
+--=20
+balbi
 
-Ingo, below delta patch should fix it, IIRC, I hope you will be folding this
-back to patch 14/14 itself. Else please let me.
-I have already run allnoconfig, allyesconfig, randconfig with below patch. But will
-test again. This should apply on top of tip:x86/spinlocks.
+--C+ts3FVlLX8+P6JN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
----8<---
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Fix Namespace collision for lock_waiting
+iQIcBAEBAgAGBQJSCo92AAoJEIaOsuA1yqRE67gQAJMjflfC1vX23VY7x097ias4
+zAsYRhJM3dY53MFsK7dCTKLtXjnvWKn89cTCwjiRflnWPOpx9OjvvJiokC+/pkGc
+nOU9IAcUtq4SRFjdlzxQP1OqwJbhtSoHbLDHbwRHzE5UolVQHahPmbi0Ic9o6201
+3/p8663inyOL4JFJXHDXjcrRCGAW1DTY89Y0c2Hu7q05H6McBQefEDocZkqXXwn3
+OXtAqNALOiyq3JhGAPxHFnRa73m62RIADDt1PJ+sMQLxoMSXb/HBGpadtT/UhZqe
+h1FYtFR1I14h0laVzjfLppkKrwHmT9Yp6DX+clstRYQ7/MXFPZk+m88xvg18p6MM
+7SRNEo2yTMFsXuaiig8/+KPVVHMw7xqjYevw6kRopL1tY8F2v9utVtrBspjAcGGV
+QiKxOEbA/U1fFhLVYdSQWyyblKf7yGwELsP6TNegVaT8HOmCPpLZmCPc8ELV3HU8
+ZaUTQ6fnZY4Im6P31bfxLrDMFY0Q6QHPsENI3AKShs/uzQEUAKwvtjGVwq1aRJR1
+fCUB9+Q6OweKJsb0S7+C0Fg+QpBtmg8kX3BdEgoDYpTnxtF4+1BWk6Bh6ANLUA9T
+uFAqm+YrFzRJHGWfIyeLovl16i0cuZERpzLTi/V95fFBCX/KX97adl2iNAUaEX0E
+Xz98cv0zkl1M1ncs8aiA
+=5MNQ
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index d442471..b8ef630 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -673,7 +673,7 @@ struct kvm_lock_waiting {
- static cpumask_t waiting_cpus;
- 
- /* Track spinlock on which a cpu is waiting */
--static DEFINE_PER_CPU(struct kvm_lock_waiting, lock_waiting);
-+static DEFINE_PER_CPU(struct kvm_lock_waiting, klock_waiting);
- 
- static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- {
-@@ -685,7 +685,7 @@ static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- 	if (in_nmi())
- 		return;
- 
--	w = &__get_cpu_var(lock_waiting);
-+	w = &__get_cpu_var(klock_waiting);
- 	cpu = smp_processor_id();
- 	start = spin_time_start();
- 
-@@ -756,7 +756,7 @@ static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
- 
- 	add_stats(RELEASED_SLOW, 1);
- 	for_each_cpu(cpu, &waiting_cpus) {
--		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
-+		const struct kvm_lock_waiting *w = &per_cpu(klock_waiting, cpu);
- 		if (ACCESS_ONCE(w->lock) == lock &&
- 		    ACCESS_ONCE(w->want) == ticket) {
- 			add_stats(RELEASED_SLOW_KICKED, 1);
-
-
+--C+ts3FVlLX8+P6JN--
