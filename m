@@ -1,33 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab3HMNdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:33:21 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:54993 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758036Ab3HMNdQ (ORCPT
+	id S1758162Ab3HMNd2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:33:28 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:40346 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758117Ab3HMNdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:33:16 -0400
+	Tue, 13 Aug 2013 09:33:24 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        John Crispin <blogic@openwrt.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-cris-kernel@axis.com,
-        Mikael Starvik <starvik@axis.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
-        sparclinux@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Steven Miao <realmz6@gmail.com>, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH V2 01/35] cpufreq: Implement light weight ->target_index() routine
-Date: Tue, 13 Aug 2013 19:02:14 +0530
-Message-Id: <eb988fc9e72b90b7ba99f16405f5dcb072da7840.1376392602.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 02/35] cpufreq: remove CONFIG_CPU_FREQ_TABLE
+Date: Tue, 13 Aug 2013 19:02:15 +0530
+Message-Id: <3ea13a485f2395d6187ee602f3d264c20e1a1fd6.1376392602.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
 References: <cover.1376392602.git.viresh.kumar@linaro.org>
@@ -37,340 +25,490 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently prototype of cpufreq_drivers target routines is:
+CONFIG_CPU_FREQ_TABLE will be always enabled when cpufreq framework is used, as
+cpufreq core depends on it. So, we don't need this CONFIG option anymore as it
+is not configurable. Remove CONFIG_CPU_FREQ_TABLE and update its users.
 
-int target(struct cpufreq_policy *policy, unsigned int target_freq,
-		unsigned int relation);
-
-And most of the drivers call cpufreq_frequency_table_target() to get a valid
-index of their frequency table which is closest to the target_freq. And they
-don't use target_freq and relation after it.
-
-So, it makes sense to just do this work in cpufreq core before calling
-cpufreq_frequency_table_target() and simply pass index instead. But this can be
-done only with drivers which expose their frequency table with cpufreq core. For
-others we need to stick with the old prototype of target() until those drivers
-are converted to expose frequency tables.
-
-This patch implements the new light weight prototype for target_index() routine.
-It looks like this:
-
-int target_index(struct cpufreq_policy *policy, unsigned int index);
-
-CPUFreq core will call cpufreq_frequency_table_target() before calling this
-routine and pass index to it. Because CPUFreq core now requires to call routines
-present in freq_table.c CONFIG_CPU_FREQ_TABLE must be enabled all the time.
-
-This also marks target() interface as deprecated. So, that new drivers avoid
-using it. And
-
-Documentation is updated accordingly.
-
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: John Crispin <blogic@openwrt.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-cris-kernel@axis.com
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: sparclinux@vger.kernel.org
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: Steven Miao <realmz6@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- Documentation/cpu-freq/cpu-drivers.txt | 27 +++++++++++------
- Documentation/cpu-freq/governors.txt   |  4 +--
- drivers/cpufreq/Kconfig                |  1 +
- drivers/cpufreq/cpufreq.c              | 55 +++++++++++++++++++++++++++-------
- include/linux/cpufreq.h                |  4 ++-
- 5 files changed, 68 insertions(+), 23 deletions(-)
+ arch/arm/mach-davinci/Kconfig   |  1 -
+ arch/arm/mach-pxa/Kconfig       |  3 ---
+ arch/arm/mach-ux500/Kconfig     |  1 -
+ arch/blackfin/Kconfig           |  1 -
+ arch/cris/Kconfig               |  2 --
+ drivers/cpufreq/Kconfig         | 12 ------------
+ drivers/cpufreq/Kconfig.arm     | 11 -----------
+ drivers/cpufreq/Kconfig.powerpc |  6 ------
+ drivers/cpufreq/Kconfig.x86     | 13 -------------
+ drivers/cpufreq/Makefile        |  5 +----
+ drivers/cpufreq/cpufreq.c       |  2 --
+ drivers/thermal/Kconfig         |  1 -
+ 12 files changed, 1 insertion(+), 57 deletions(-)
 
-diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
-index 40282e6..8b1a445 100644
---- a/Documentation/cpu-freq/cpu-drivers.txt
-+++ b/Documentation/cpu-freq/cpu-drivers.txt
-@@ -23,8 +23,8 @@ Contents:
- 1.1  Initialization
- 1.2  Per-CPU Initialization
- 1.3  verify
--1.4  target or setpolicy?
--1.5  target
-+1.4  target/target_index or setpolicy?
-+1.5  target/target_index
- 1.6  setpolicy
- 2.   Frequency Table Helpers
+diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
+index e026b19..a075b3e 100644
+--- a/arch/arm/mach-davinci/Kconfig
++++ b/arch/arm/mach-davinci/Kconfig
+@@ -40,7 +40,6 @@ config ARCH_DAVINCI_DA850
+ 	bool "DA850/OMAP-L138/AM18x based system"
+ 	select ARCH_DAVINCI_DA8XX
+ 	select ARCH_HAS_CPUFREQ
+-	select CPU_FREQ_TABLE
+ 	select CP_INTC
  
-@@ -56,7 +56,8 @@ cpufreq_driver.init -		A pointer to the per-CPU initialization
- cpufreq_driver.verify -		A pointer to a "verification" function.
+ config ARCH_DAVINCI_DA8XX
+diff --git a/arch/arm/mach-pxa/Kconfig b/arch/arm/mach-pxa/Kconfig
+index a842711..96100db 100644
+--- a/arch/arm/mach-pxa/Kconfig
++++ b/arch/arm/mach-pxa/Kconfig
+@@ -615,14 +615,12 @@ endmenu
+ config PXA25x
+ 	bool
+ 	select CPU_XSCALE
+-	select CPU_FREQ_TABLE if CPU_FREQ
+ 	help
+ 	  Select code specific to PXA21x/25x/26x variants
  
- cpufreq_driver.setpolicy _or_ 
--cpufreq_driver.target -		See below on the differences.
-+cpufreq_driver.target/
-+target_index		-	See below on the differences.
+ config PXA27x
+ 	bool
+ 	select CPU_XSCALE
+-	select CPU_FREQ_TABLE if CPU_FREQ
+ 	help
+ 	  Select code specific to PXA27x variants
  
- And optionally
+@@ -635,7 +633,6 @@ config CPU_PXA26x
+ config PXA3xx
+ 	bool
+ 	select CPU_XSC3
+-	select CPU_FREQ_TABLE if CPU_FREQ
+ 	help
+ 	  Select code specific to PXA3xx variants
  
-@@ -66,7 +67,7 @@ cpufreq_driver.resume -		A pointer to a per-CPU resume function
- 				which is called with interrupts disabled
- 				and _before_ the pre-suspend frequency
- 				and/or policy is restored by a call to
--				->target or ->setpolicy.
-+				->target/target_index or ->setpolicy.
+diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
+index b19b072..e6eaefa 100644
+--- a/arch/arm/mach-ux500/Kconfig
++++ b/arch/arm/mach-ux500/Kconfig
+@@ -34,7 +34,6 @@ config UX500_SOC_COMMON
  
- cpufreq_driver.attr -		A pointer to a NULL-terminated list of
- 				"struct freq_attr" which allow to
-@@ -103,8 +104,8 @@ policy->governor		must contain the "default policy" for
- 				this CPU. A few moments later,
- 				cpufreq_driver.verify and either
- 				cpufreq_driver.setpolicy or
--				cpufreq_driver.target is called with
--				these values.
-+				cpufreq_driver.target/target_index is called
-+				with these values.
+ config UX500_SOC_DB8500
+ 	bool
+-	select CPU_FREQ_TABLE if CPU_FREQ
+ 	select MFD_DB8500_PRCMU
+ 	select PINCTRL_DB8500
+ 	select PINCTRL_DB8540
+diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
+index 3b6abc5..1ac474a 100644
+--- a/arch/blackfin/Kconfig
++++ b/arch/blackfin/Kconfig
+@@ -1430,7 +1430,6 @@ source "drivers/cpufreq/Kconfig"
+ config BFIN_CPU_FREQ
+ 	bool
+ 	depends on CPU_FREQ
+-	select CPU_FREQ_TABLE
+ 	default y
  
- For setting some of these values (cpuinfo.min[max]_freq, policy->min[max]), the
- frequency table helpers might be helpful. See the section 2 for more information
-@@ -133,20 +134,28 @@ range) is within policy->min and policy->max. If necessary, increase
- policy->max first, and only if this is no solution, decrease policy->min.
+ config CPU_VOLTAGE
+diff --git a/arch/cris/Kconfig b/arch/cris/Kconfig
+index 3201ddb..9f3c5436 100644
+--- a/arch/cris/Kconfig
++++ b/arch/cris/Kconfig
+@@ -134,13 +134,11 @@ config SVINTO_SIM
  
+ config ETRAXFS
+ 	bool "ETRAX-FS-V32"
+-	select CPU_FREQ_TABLE if CPU_FREQ
+ 	help
+ 	  Support CRIS V32.
  
--1.4 target or setpolicy?
-+1.4 target/target_index or setpolicy?
- ----------------------------
+ config CRIS_MACH_ARTPEC3
+         bool "ARTPEC-3"
+-	select CPU_FREQ_TABLE if CPU_FREQ
+         help
+           Support Axis ARTPEC-3.
  
- Most cpufreq drivers or even most cpu frequency scaling algorithms 
- only allow the CPU to be set to one frequency. For these, you use the
--->target call.
-+->target/target_index call.
- 
- Some cpufreq-capable processors switch the frequency between certain
- limits on their own. These shall use the ->setpolicy call
- 
- 
--1.4. target
-+1.4. target/target_index
- -------------
- 
-+The target_index call has two arguments: struct cpufreq_policy *policy,
-+and unsigned int index (into the exposed frequency table).
-+
-+The CPUfreq driver must set the new frequency when called here. The
-+actual frequency must be determined by freq_table[index].frequency.
-+
-+Deprecated:
-+----------
- The target call has three arguments: struct cpufreq_policy *policy,
- unsigned int target_frequency, unsigned int relation.
- 
-diff --git a/Documentation/cpu-freq/governors.txt b/Documentation/cpu-freq/governors.txt
-index 219970b..77ec215 100644
---- a/Documentation/cpu-freq/governors.txt
-+++ b/Documentation/cpu-freq/governors.txt
-@@ -40,7 +40,7 @@ Most cpufreq drivers (in fact, all except one, longrun) or even most
- cpu frequency scaling algorithms only offer the CPU to be set to one
- frequency. In order to offer dynamic frequency scaling, the cpufreq
- core must be able to tell these drivers of a "target frequency". So
--these specific drivers will be transformed to offer a "->target"
-+these specific drivers will be transformed to offer a "->target/target_index"
- call instead of the existing "->setpolicy" call. For "longrun", all
- stays the same, though.
- 
-@@ -71,7 +71,7 @@ CPU can be set to switch independently	 |	   CPU can only be set
- 		    /			       the limits of policy->{min,max}
- 		   /			            \
- 		  /				     \
--	Using the ->setpolicy call,		 Using the ->target call,
-+	Using the ->setpolicy call,		 Using the ->target/target_index call,
- 	    the limits and the			  the frequency closest
- 	     "policy" is set.			  to target_freq is set.
- 						  It is assured that it
 diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 534fcb8..2d06754 100644
+index 2d06754..38093e2 100644
 --- a/drivers/cpufreq/Kconfig
 +++ b/drivers/cpufreq/Kconfig
-@@ -2,6 +2,7 @@ menu "CPU Frequency scaling"
+@@ -2,7 +2,6 @@ menu "CPU Frequency scaling"
  
  config CPU_FREQ
  	bool "CPU Frequency scaling"
-+	select CPU_FREQ_TABLE
+-	select CPU_FREQ_TABLE
  	help
  	  CPU Frequency scaling allows you to change the clock speed of 
  	  CPUs on the fly. This is a nice method to save power, because 
+@@ -18,15 +17,11 @@ config CPU_FREQ
+ 
+ if CPU_FREQ
+ 
+-config CPU_FREQ_TABLE
+-	tristate
+-
+ config CPU_FREQ_GOV_COMMON
+ 	bool
+ 
+ config CPU_FREQ_STAT
+ 	tristate "CPU frequency translation statistics"
+-	select CPU_FREQ_TABLE
+ 	default y
+ 	help
+ 	  This driver exports CPU frequency statistics information through sysfs
+@@ -144,7 +139,6 @@ config CPU_FREQ_GOV_USERSPACE
+ 
+ config CPU_FREQ_GOV_ONDEMAND
+ 	tristate "'ondemand' cpufreq policy governor"
+-	select CPU_FREQ_TABLE
+ 	select CPU_FREQ_GOV_COMMON
+ 	help
+ 	  'ondemand' - This driver adds a dynamic cpufreq policy governor.
+@@ -188,7 +182,6 @@ config CPU_FREQ_GOV_CONSERVATIVE
+ config GENERIC_CPUFREQ_CPU0
+ 	tristate "Generic CPU0 cpufreq driver"
+ 	depends on HAVE_CLK && REGULATOR && PM_OPP && OF
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds a generic cpufreq driver for CPU0 frequency management.
+ 	  It supports both uniprocessor (UP) and symmetric multiprocessor (SMP)
+@@ -224,7 +217,6 @@ depends on IA64
+ 
+ config IA64_ACPI_CPUFREQ
+ 	tristate "ACPI Processor P-States driver"
+-	select CPU_FREQ_TABLE
+ 	depends on ACPI_PROCESSOR
+ 	help
+ 	This driver adds a CPUFreq driver which utilizes the ACPI
+@@ -241,7 +233,6 @@ depends on MIPS
+ 
+ config LOONGSON2_CPUFREQ
+ 	tristate "Loongson2 CPUFreq Driver"
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This option adds a CPUFreq driver for loongson processors which
+ 	  support software configurable cpu frequency.
+@@ -263,7 +254,6 @@ menu "SPARC CPU frequency scaling drivers"
+ depends on SPARC64
+ config SPARC_US3_CPUFREQ
+ 	tristate "UltraSPARC-III CPU Frequency driver"
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds the CPUFreq driver for UltraSPARC-III processors.
+ 
+@@ -273,7 +263,6 @@ config SPARC_US3_CPUFREQ
+ 
+ config SPARC_US2E_CPUFREQ
+ 	tristate "UltraSPARC-IIe CPU Frequency driver"
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds the CPUFreq driver for UltraSPARC-IIe processors.
+ 
+@@ -286,7 +275,6 @@ menu "SH CPU Frequency scaling"
+ depends on SUPERH
+ config SH_CPU_FREQ
+ 	tristate "SuperH CPU Frequency driver"
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds the cpufreq driver for SuperH. Any CPU that supports
+ 	  clock rate rounding through the clock framework can use this
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index de4d5d9..1bbb71e 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -5,7 +5,6 @@
+ config ARM_BIG_LITTLE_CPUFREQ
+ 	tristate "Generic ARM big LITTLE CPUfreq driver"
+ 	depends on ARM_CPU_TOPOLOGY && PM_OPP && HAVE_CLK
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This enables the Generic CPUfreq driver for ARM big.LITTLE platforms.
+ 
+@@ -19,7 +18,6 @@ config ARM_DT_BL_CPUFREQ
+ config ARM_EXYNOS_CPUFREQ
+ 	bool "SAMSUNG EXYNOS SoCs"
+ 	depends on ARCH_EXYNOS
+-	select CPU_FREQ_TABLE
+ 	default y
+ 	help
+ 	  This adds the CPUFreq driver common part for Samsung
+@@ -48,7 +46,6 @@ config ARM_EXYNOS5250_CPUFREQ
+ config ARM_EXYNOS5440_CPUFREQ
+ 	def_bool SOC_EXYNOS5440
+ 	depends on HAVE_CLK && PM_OPP && OF
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds the CPUFreq driver for Samsung EXYNOS5440
+ 	  SoC. The nature of exynos5440 clock controller is
+@@ -73,7 +70,6 @@ config ARM_IMX6Q_CPUFREQ
+ 	tristate "Freescale i.MX6Q cpufreq support"
+ 	depends on SOC_IMX6Q
+ 	depends on REGULATOR_ANATOP
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds cpufreq driver support for Freescale i.MX6Q SOC.
+ 
+@@ -89,7 +85,6 @@ config ARM_INTEGRATOR
+ 
+ config ARM_KIRKWOOD_CPUFREQ
+ 	def_bool ARCH_KIRKWOOD && OF
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds the CPUFreq driver for Marvell Kirkwood
+ 	  SoCs.
+@@ -98,7 +93,6 @@ config ARM_OMAP2PLUS_CPUFREQ
+ 	bool "TI OMAP2+"
+ 	depends on ARCH_OMAP2PLUS
+ 	default ARCH_OMAP2PLUS
+-	select CPU_FREQ_TABLE
+ 
+ config ARM_S3C_CPUFREQ
+ 	bool
+@@ -153,7 +147,6 @@ config ARM_S3C2412_CPUFREQ
+ config ARM_S3C2416_CPUFREQ
+ 	bool "S3C2416 CPU Frequency scaling support"
+ 	depends on CPU_S3C2416
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds the CPUFreq driver for the Samsung S3C2416 and
+ 	  S3C2450 SoC. The S3C2416 supports changing the rate of the
+@@ -184,7 +177,6 @@ config ARM_S3C2440_CPUFREQ
+ config ARM_S3C64XX_CPUFREQ
+ 	bool "Samsung S3C64XX"
+ 	depends on CPU_S3C6410
+-	select CPU_FREQ_TABLE
+ 	default y
+ 	help
+ 	  This adds the CPUFreq driver for Samsung S3C6410 SoC.
+@@ -194,7 +186,6 @@ config ARM_S3C64XX_CPUFREQ
+ config ARM_S5PV210_CPUFREQ
+ 	bool "Samsung S5PV210 and S5PC110"
+ 	depends on CPU_S5PV210
+-	select CPU_FREQ_TABLE
+ 	default y
+ 	help
+ 	  This adds the CPUFreq driver for Samsung S5PV210 and
+@@ -211,7 +202,6 @@ config ARM_SA1110_CPUFREQ
+ config ARM_SPEAR_CPUFREQ
+ 	bool "SPEAr CPUFreq support"
+ 	depends on PLAT_SPEAR
+-	select CPU_FREQ_TABLE
+ 	default y
+ 	help
+ 	  This adds the CPUFreq driver support for SPEAr SOCs.
+@@ -219,7 +209,6 @@ config ARM_SPEAR_CPUFREQ
+ config ARM_TEGRA_CPUFREQ
+ 	bool "TEGRA CPUFreq support"
+ 	depends on ARCH_TEGRA
+-	select CPU_FREQ_TABLE
+ 	default y
+ 	help
+ 	  This adds the CPUFreq driver support for TEGRA SOCs.
+diff --git a/drivers/cpufreq/Kconfig.powerpc b/drivers/cpufreq/Kconfig.powerpc
+index 25ca9db..ca0021a 100644
+--- a/drivers/cpufreq/Kconfig.powerpc
++++ b/drivers/cpufreq/Kconfig.powerpc
+@@ -1,7 +1,6 @@
+ config CPU_FREQ_CBE
+ 	tristate "CBE frequency scaling"
+ 	depends on CBE_RAS && PPC_CELL
+-	select CPU_FREQ_TABLE
+ 	default m
+ 	help
+ 	  This adds the cpufreq driver for Cell BE processors.
+@@ -20,7 +19,6 @@ config CPU_FREQ_CBE_PMI
+ config CPU_FREQ_MAPLE
+ 	bool "Support for Maple 970FX Evaluation Board"
+ 	depends on PPC_MAPLE
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds support for frequency switching on Maple 970FX
+ 	  Evaluation Board and compatible boards (IBM JS2x blades).
+@@ -28,7 +26,6 @@ config CPU_FREQ_MAPLE
+ config PPC_CORENET_CPUFREQ
+ 	tristate "CPU frequency scaling driver for Freescale E500MC SoCs"
+ 	depends on PPC_E500MC && OF && COMMON_CLK
+-	select CPU_FREQ_TABLE
+ 	select CLK_PPC_CORENET
+ 	help
+ 	  This adds the CPUFreq driver support for Freescale e500mc,
+@@ -38,7 +35,6 @@ config PPC_CORENET_CPUFREQ
+ config CPU_FREQ_PMAC
+ 	bool "Support for Apple PowerBooks"
+ 	depends on ADB_PMU && PPC32
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds support for frequency switching on Apple PowerBooks,
+ 	  this currently includes some models of iBook & Titanium
+@@ -47,7 +43,6 @@ config CPU_FREQ_PMAC
+ config CPU_FREQ_PMAC64
+ 	bool "Support for some Apple G5s"
+ 	depends on PPC_PMAC && PPC64
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds support for frequency switching on Apple iMac G5,
+ 	  and some of the more recent desktop G5 machines as well.
+@@ -55,7 +50,6 @@ config CPU_FREQ_PMAC64
+ config PPC_PASEMI_CPUFREQ
+ 	bool "Support for PA Semi PWRficient"
+ 	depends on PPC_PASEMI
+-	select CPU_FREQ_TABLE
+ 	default y
+ 	help
+ 	  This adds the support for frequency switching on PA Semi
+diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
+index e2b6eab..6897ad8 100644
+--- a/drivers/cpufreq/Kconfig.x86
++++ b/drivers/cpufreq/Kconfig.x86
+@@ -31,7 +31,6 @@ config X86_PCC_CPUFREQ
+ 
+ config X86_ACPI_CPUFREQ
+ 	tristate "ACPI Processor P-States driver"
+-	select CPU_FREQ_TABLE
+ 	depends on ACPI_PROCESSOR
+ 	help
+ 	  This driver adds a CPUFreq driver which utilizes the ACPI
+@@ -60,7 +59,6 @@ config X86_ACPI_CPUFREQ_CPB
+ 
+ config ELAN_CPUFREQ
+ 	tristate "AMD Elan SC400 and SC410"
+-	select CPU_FREQ_TABLE
+ 	depends on MELAN
+ 	---help---
+ 	  This adds the CPUFreq driver for AMD Elan SC400 and SC410
+@@ -76,7 +74,6 @@ config ELAN_CPUFREQ
+ 
+ config SC520_CPUFREQ
+ 	tristate "AMD Elan SC520"
+-	select CPU_FREQ_TABLE
+ 	depends on MELAN
+ 	---help---
+ 	  This adds the CPUFreq driver for AMD Elan SC520 processor.
+@@ -88,7 +85,6 @@ config SC520_CPUFREQ
+ 
+ config X86_POWERNOW_K6
+ 	tristate "AMD Mobile K6-2/K6-3 PowerNow!"
+-	select CPU_FREQ_TABLE
+ 	depends on X86_32
+ 	help
+ 	  This adds the CPUFreq driver for mobile AMD K6-2+ and mobile
+@@ -100,7 +96,6 @@ config X86_POWERNOW_K6
+ 
+ config X86_POWERNOW_K7
+ 	tristate "AMD Mobile Athlon/Duron PowerNow!"
+-	select CPU_FREQ_TABLE
+ 	depends on X86_32
+ 	help
+ 	  This adds the CPUFreq driver for mobile AMD K7 mobile processors.
+@@ -118,7 +113,6 @@ config X86_POWERNOW_K7_ACPI
+ 
+ config X86_POWERNOW_K8
+ 	tristate "AMD Opteron/Athlon64 PowerNow!"
+-	select CPU_FREQ_TABLE
+ 	depends on ACPI && ACPI_PROCESSOR && X86_ACPI_CPUFREQ
+ 	help
+ 	  This adds the CPUFreq driver for K8/early Opteron/Athlon64 processors.
+@@ -132,7 +126,6 @@ config X86_POWERNOW_K8
+ config X86_AMD_FREQ_SENSITIVITY
+ 	tristate "AMD frequency sensitivity feedback powersave bias"
+ 	depends on CPU_FREQ_GOV_ONDEMAND && X86_ACPI_CPUFREQ && CPU_SUP_AMD
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds AMD-specific powersave bias function to the ondemand
+ 	  governor, which allows it to make more power-conscious frequency
+@@ -160,7 +153,6 @@ config X86_GX_SUSPMOD
+ 
+ config X86_SPEEDSTEP_CENTRINO
+ 	tristate "Intel Enhanced SpeedStep (deprecated)"
+-	select CPU_FREQ_TABLE
+ 	select X86_SPEEDSTEP_CENTRINO_TABLE if X86_32
+ 	depends on X86_32 || (X86_64 && ACPI_PROCESSOR)
+ 	help
+@@ -190,7 +182,6 @@ config X86_SPEEDSTEP_CENTRINO_TABLE
+ 
+ config X86_SPEEDSTEP_ICH
+ 	tristate "Intel Speedstep on ICH-M chipsets (ioport interface)"
+-	select CPU_FREQ_TABLE
+ 	depends on X86_32
+ 	help
+ 	  This adds the CPUFreq driver for certain mobile Intel Pentium III
+@@ -204,7 +195,6 @@ config X86_SPEEDSTEP_ICH
+ 
+ config X86_SPEEDSTEP_SMI
+ 	tristate "Intel SpeedStep on 440BX/ZX/MX chipsets (SMI interface)"
+-	select CPU_FREQ_TABLE
+ 	depends on X86_32
+ 	help
+ 	  This adds the CPUFreq driver for certain mobile Intel Pentium III
+@@ -217,7 +207,6 @@ config X86_SPEEDSTEP_SMI
+ 
+ config X86_P4_CLOCKMOD
+ 	tristate "Intel Pentium 4 clock modulation"
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This adds the CPUFreq driver for Intel Pentium 4 / XEON
+ 	  processors.  When enabled it will lower CPU temperature by skipping
+@@ -259,7 +248,6 @@ config X86_LONGRUN
+ 
+ config X86_LONGHAUL
+ 	tristate "VIA Cyrix III Longhaul"
+-	select CPU_FREQ_TABLE
+ 	depends on X86_32 && ACPI_PROCESSOR
+ 	help
+ 	  This adds the CPUFreq driver for VIA Samuel/CyrixIII,
+@@ -272,7 +260,6 @@ config X86_LONGHAUL
+ 
+ config X86_E_POWERSAVER
+ 	tristate "VIA C7 Enhanced PowerSaver (DANGEROUS)"
+-	select CPU_FREQ_TABLE
+ 	depends on X86_32 && ACPI_PROCESSOR
+ 	help
+ 	  This adds the CPUFreq driver for VIA C7 processors.  However, this driver
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index ad5866c..b7948bb 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -1,5 +1,5 @@
+ # CPUfreq core
+-obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o
++obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o freq_table.o
+ # CPUfreq stats
+ obj-$(CONFIG_CPU_FREQ_STAT)             += cpufreq_stats.o
+ 
+@@ -11,9 +11,6 @@ obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)	+= cpufreq_ondemand.o
+ obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)	+= cpufreq_conservative.o
+ obj-$(CONFIG_CPU_FREQ_GOV_COMMON)		+= cpufreq_governor.o
+ 
+-# CPUfreq cross-arch helpers
+-obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
+-
+ obj-$(CONFIG_GENERIC_CPUFREQ_CPU0)	+= cpufreq-cpu0.o
+ 
+ ##################################################################################
 diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 37a6874..f1b0e0f 100644
+index f1b0e0f..4d37306 100644
 --- a/drivers/cpufreq/cpufreq.c
 +++ b/drivers/cpufreq/cpufreq.c
-@@ -47,6 +47,11 @@ static LIST_HEAD(cpufreq_policy_list);
- static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
- #endif
+@@ -1130,9 +1130,7 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
+ 	for_each_cpu(j, policy->cpus)
+ 		per_cpu(cpufreq_policy_cpu, j) = cpu;
  
-+static inline bool has_target(void)
-+{
-+	return cpufreq_driver->target_index || cpufreq_driver->target;
-+}
-+
- /*
-  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
-  * all cpufreq/hotplug/workqueue/etc related lock issues.
-@@ -377,7 +382,7 @@ static int cpufreq_parse_governor(char *str_governor, unsigned int *policy,
- 			*policy = CPUFREQ_POLICY_POWERSAVE;
- 			err = 0;
- 		}
--	} else if (cpufreq_driver->target) {
-+	} else if (has_target()) {
- 		struct cpufreq_governor *t;
- 
- 		mutex_lock(&cpufreq_governor_mutex);
-@@ -539,7 +544,7 @@ static ssize_t show_scaling_available_governors(struct cpufreq_policy *policy,
- 	ssize_t i = 0;
- 	struct cpufreq_governor *t;
- 
--	if (!cpufreq_driver->target) {
-+	if (!has_target()) {
- 		i += sprintf(buf, "performance powersave");
- 		goto out;
- 	}
-@@ -822,7 +827,7 @@ static int cpufreq_add_dev_interface(struct cpufreq_policy *policy,
- 		if (ret)
- 			goto err_out_kobj_put;
- 	}
--	if (cpufreq_driver->target) {
-+	if (has_target()) {
- 		ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
- 		if (ret)
- 			goto err_out_kobj_put;
-@@ -871,10 +876,10 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
- 				  unsigned int cpu, struct device *dev,
- 				  bool frozen)
- {
--	int ret = 0, has_target = !!cpufreq_driver->target;
-+	int ret = 0;
- 	unsigned long flags;
- 
--	if (has_target) {
-+	if (has_target()) {
- 		ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
- 		if (ret) {
- 			pr_err("%s: Failed to stop governor\n", __func__);
-@@ -893,7 +898,7 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
- 
- 	unlock_policy_rwsem_write(policy->cpu);
- 
--	if (has_target) {
-+	if (has_target()) {
- 		if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
- 			(ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
- 			pr_err("%s: Failed to start governor\n", __func__);
-@@ -1204,7 +1209,7 @@ static int __cpufreq_remove_dev(struct device *dev,
- 		return -EINVAL;
- 	}
- 
--	if (cpufreq_driver->target) {
-+	if (has_target()) {
- 		ret = __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
- 		if (ret) {
- 			pr_err("%s: Failed to stop governor\n", __func__);
-@@ -1244,7 +1249,7 @@ static int __cpufreq_remove_dev(struct device *dev,
- 
- 	/* If cpu is last user of policy, free policy */
- 	if (cpus == 1) {
--		if (cpufreq_driver->target) {
-+		if (has_target()) {
- 			ret = __cpufreq_governor(policy,
- 					CPUFREQ_GOV_POLICY_EXIT);
- 			if (ret) {
-@@ -1282,7 +1287,7 @@ static int __cpufreq_remove_dev(struct device *dev,
- 		if (!frozen)
- 			cpufreq_policy_free(policy);
- 	} else {
--		if (cpufreq_driver->target) {
-+		if (has_target()) {
- 			if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
- 					(ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
- 				pr_err("%s: Failed to start governor\n",
-@@ -1646,11 +1651,39 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
- 	pr_debug("target for CPU %u: %u kHz, relation %u, requested %u kHz\n",
- 			policy->cpu, target_freq, relation, old_target_freq);
- 
-+	/*
-+	 * This might look like a redundant call as we are checking it again
-+	 * after finding index. But it is left intentionally for cases where
-+	 * exactly same freq is called again and so we can save on few function
-+	 * calls.
-+	 */
- 	if (target_freq == policy->cur)
- 		return 0;
- 
- 	if (cpufreq_driver->target)
- 		retval = cpufreq_driver->target(policy, target_freq, relation);
-+	else if (cpufreq_driver->target_index) {
-+		struct cpufreq_frequency_table *freq_table;
-+		int index;
-+
-+		freq_table = cpufreq_frequency_get_table(policy->cpu);
-+		if (unlikely(!freq_table)) {
-+			pr_err("%s: Unable to find freq_table\n", __func__);
-+			return retval;
-+		}
-+
-+		retval = cpufreq_frequency_table_target(policy, freq_table,
-+				target_freq, relation, &index);
-+		if (unlikely(retval)) {
-+			pr_err("%s: Unable to find matching freq\n", __func__);
-+			return retval;
-+		}
-+
-+		if (freq_table[index].frequency == policy->cur)
-+			return 0;
-+
-+		retval = cpufreq_driver->target_index(policy, index);
-+	}
- 
- 	return retval;
+-#ifdef CONFIG_CPU_FREQ_TABLE
+ 	cpufreq_frequency_table_update_policy_cpu(policy);
+-#endif
+ 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+ 			CPUFREQ_UPDATE_POLICY_CPU, policy);
  }
-@@ -1983,7 +2016,7 @@ int cpufreq_update_policy(unsigned int cpu)
- 			pr_debug("Driver did not initialize current freq");
- 			policy->cur = new_policy.cur;
- 		} else {
--			if (policy->cur != new_policy.cur && cpufreq_driver->target)
-+			if (policy->cur != new_policy.cur && has_target())
- 				cpufreq_out_of_sync(cpu, policy->cur,
- 								new_policy.cur);
- 		}
-@@ -2058,7 +2091,7 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
- 		return -ENODEV;
- 
- 	if (!driver_data || !driver_data->verify || !driver_data->init ||
--	    ((!driver_data->setpolicy) && (!driver_data->target)))
-+	    (!driver_data->setpolicy && !has_target()))
- 		return -EINVAL;
- 
- 	pr_debug("trying to register driver %s\n", driver_data->name);
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 4907eb2..ff9c8df 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -195,9 +195,11 @@ struct cpufreq_driver {
- 
- 	/* define one out of two */
- 	int	(*setpolicy)	(struct cpufreq_policy *policy);
--	int	(*target)	(struct cpufreq_policy *policy,
-+	int	(*target)	(struct cpufreq_policy *policy,	/* Deprecated */
- 				 unsigned int target_freq,
- 				 unsigned int relation);
-+	int	(*target_index)	(struct cpufreq_policy *policy,
-+				 unsigned int index);
- 
- 	/* should be defined, if possible */
- 	unsigned int	(*get)	(unsigned int cpu);
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index e988c81..6a5b948 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -69,7 +69,6 @@ config THERMAL_GOV_USER_SPACE
+ config CPU_THERMAL
+ 	bool "generic cpu cooling support"
+ 	depends on CPU_FREQ
+-	select CPU_FREQ_TABLE
+ 	help
+ 	  This implements the generic cpu cooling mechanism through frequency
+ 	  reduction. An ACPI version of this already exists
 -- 
 1.7.12.rc2.18.g61b472e
 
