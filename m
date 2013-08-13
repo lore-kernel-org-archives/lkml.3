@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab3HMGuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:50:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60586 "EHLO
+	id S1757595Ab3HMGub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:50:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60583 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756881Ab3HMGda (ORCPT
+	with ESMTP id S1756861Ab3HMGd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:30 -0400
+	Tue, 13 Aug 2013 02:33:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Srb <msrb@suse.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 39/60] drm/cirrus: Invalidate page tables when pinning a BO
-Date: Mon, 12 Aug 2013 23:34:06 -0700
-Message-Id: <20130813063337.463966880@linuxfoundation.org>
+        Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 38/60] virtio: console: return -ENODEV on all read operations after unplug
+Date: Mon, 12 Aug 2013 23:34:05 -0700
+Message-Id: <20130813063337.359784188@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -26,35 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Srb <msrb@suse.com>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit 109a51598869a39fdcec2d49672a9a39b6d89481 upstream.
+commit 96f97a83910cdb9d89d127c5ee523f8fc040a804 upstream.
 
-This is a cirrus version of Egbert Eich's patch for mgag200.
+If a port gets unplugged while a user is blocked on read(), -ENODEV is
+returned.  However, subsequent read()s returned 0, indicating there's no
+host-side connection (but not indicating the device went away).
 
-Without bo.bdev->dev_mapping set, the ttm_bo_unmap_virtual_locked
-called from ttm_bo_handle_move_mem returns with no effect. If any
-application accessed the memory before it was moved, it will
-access wrong memory next time. This causes crashes when changing
-resolution down.
+This also happened when a port was unplugged and the user didn't have
+any blocking operation pending.  If the user didn't monitor the SIGIO
+signal, they won't have a chance to find out if the port went away.
 
-Signed-off-by: Michal Srb <msrb@suse.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Fix by returning -ENODEV on all read()s after the port gets unplugged.
+write() already behaves this way.
+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/cirrus/cirrus_ttm.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/char/virtio_console.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/cirrus/cirrus_ttm.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_ttm.c
-@@ -353,6 +353,7 @@ int cirrus_bo_create(struct drm_device *
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -749,6 +749,10 @@ static ssize_t port_fops_read(struct fil
  
- 	cirrusbo->gem.driver_private = NULL;
- 	cirrusbo->bo.bdev = &cirrus->ttm.bdev;
-+	cirrusbo->bo.bdev->dev_mapping = dev->dev_mapping;
+ 	port = filp->private_data;
  
- 	cirrus_ttm_placement(cirrusbo, TTM_PL_FLAG_VRAM | TTM_PL_FLAG_SYSTEM);
- 
++	/* Port is hot-unplugged. */
++	if (!port->guest_connected)
++		return -ENODEV;
++
+ 	if (!port_has_data(port)) {
+ 		/*
+ 		 * If nothing's connected on the host just return 0 in
+@@ -765,7 +769,7 @@ static ssize_t port_fops_read(struct fil
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+-	/* Port got hot-unplugged. */
++	/* Port got hot-unplugged while we were waiting above. */
+ 	if (!port->guest_connected)
+ 		return -ENODEV;
+ 	/*
 
 
