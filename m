@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab3HMDBp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 23:01:45 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:43033 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756349Ab3HMDBo (ORCPT
+	id S1757200Ab3HMDDT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 23:03:19 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:60605 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756352Ab3HMDDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 23:01:44 -0400
-X-AuditID: 9c93017e-b7c76ae000003897-ab-5209a1962c2c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V10 04/13] perf tools: change machine__findnew_thread() to set thread pid
-References: <1376045519-13832-1-git-send-email-adrian.hunter@intel.com>
-	<1376045519-13832-5-git-send-email-adrian.hunter@intel.com>
-Date: Tue, 13 Aug 2013 12:01:42 +0900
-In-Reply-To: <1376045519-13832-5-git-send-email-adrian.hunter@intel.com>
-	(Adrian Hunter's message of "Fri, 9 Aug 2013 13:51:50 +0300")
-Message-ID: <87a9kmway1.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 12 Aug 2013 23:03:18 -0400
+Message-ID: <5209A173.3090600@huawei.com>
+Date: Tue, 13 Aug 2013 11:01:07 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Andrew Morton <akpm@linux-foundation.org>, <tglx@linutronix.de>
+CC: <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, <linux-mm@kvack.org>, <wangchen@cn.fujitsu.com>,
+        Hanjun Guo <guohanjun@huawei.com>
+Subject: [PATCH] mm: remove unnecessary variable idx0 in __early_ioremap()
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Aug 2013 13:51:50 +0300, Adrian Hunter wrote:
-> Add a new parameter for 'pid' to machine__findnew_thread().
-> Change callers to pass 'pid' when it is known.
+After commit 8827247ffcc(x86: don't define __this_fixmap_does_not_exist()),
+variable idx0 is no longer needed, so just remove it.
 
-I think the changelog should mention the subtlety of passing pid/tid to
-prevent possible future misusages.
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+---
+ arch/x86/mm/ioremap.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-Thanks,
-Namhyung
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 0215e2c..799580c 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -487,7 +487,7 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
+ 	unsigned long offset;
+ 	resource_size_t last_addr;
+ 	unsigned int nrpages;
+-	enum fixed_addresses idx0, idx;
++	enum fixed_addresses idx;
+ 	int i, slot;
+ 
+ 	WARN_ON(system_state != SYSTEM_BOOTING);
+@@ -540,8 +540,7 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
+ 	/*
+ 	 * Ok, go for it..
+ 	 */
+-	idx0 = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
+-	idx = idx0;
++	idx = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
+ 	while (nrpages > 0) {
+ 		early_set_fixmap(idx, phys_addr, prot);
+ 		phys_addr += PAGE_SIZE;
+-- 
+1.7.1
+
+
