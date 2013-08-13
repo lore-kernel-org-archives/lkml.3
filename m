@@ -1,109 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758494Ab3HMXHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 19:07:09 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:16724 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758408Ab3HMXHF (ORCPT
+	id S1758118Ab3HMXKA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 19:10:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7933 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755605Ab3HMXJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 19:07:05 -0400
-Message-ID: <201308132307.r7DN74M5029053@farm-0021.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Tue, 13 Aug 2013 18:53:32 -0400
-In-Reply-To: <520AAF9C.1050702@tilera.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH v7 2/2] mm: make lru_add_drain_all() selective
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 13 Aug 2013 19:09:59 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=KpzchuzAFZgA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ce-1e7Iquy0A:10 a=7d_E57ReAAAA:8 a=_WYZkrhRpS74BtdmUsIA:9 a=CjuIK1q_8ugA:10 a=D6-X0JM3zdQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Tue, 13 Aug 2013 19:09:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        chris <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH][RFC] tracing: Enable tracepoints via module parameters
+Message-ID: <20130813190956.2ec89dff@gandalf.local.home>
+In-Reply-To: <20130813223453.GB15394@Krystal>
+References: <1299622684.20306.77.camel@gandalf.stny.rr.com>
+	<877hc64klm.fsf@rustcorp.com.au>
+	<20130813111442.632f3421@gandalf.local.home>
+	<20130813223453.GB15394@Krystal>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes lru_add_drain_all() only selectively interrupt
-the cpus that have per-cpu free pages that can be drained.
+On Tue, 13 Aug 2013 18:34:53 -0400
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
-This is important in nohz mode where calling mlockall(), for
-example, otherwise will interrupt every core unnecessarily.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
-v7: try a version with callbacks instead of cpu masks.
-Either this or v6 seem like reasonable solutions.
+> What I like about this approach, if applied to kernel modules, is that
+> it does not require users to interact with module load parameters to
+> specify which tracepoints should be enabled: this is all done through
+> the regular tracer UI, thus greatly improving user experience.
+> 
 
-v6: add Tejun's Acked-by, and add missing get/put_cpu_online to
-lru_add_drain_all().
+I have thought about adding a file that would let you enable generic
+tracepoints as they are created. Doesn't even need to be specifically
+modules, but kprobes as well.
 
-v5: provide validity checking on the cpumask for schedule_on_cpu_mask.
-By providing an all-or-nothing EINVAL check, we impose the requirement
-that the calling code actually know clearly what it's trying to do.
-(Note: no change to the mm/swap.c commit)
+But that's agnostic to this patch. One thing I like about the patch is
+that it has modinfo show you the available tracepoints in a module.
 
-v4: don't lose possible -ENOMEM in schedule_on_each_cpu()
-(Note: no change to the mm/swap.c commit)
-
-v3: split commit into two, one for workqueue and one for mm, though both
-should probably be taken through -mm.
-
- mm/swap.c | 21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
-
-diff --git a/mm/swap.c b/mm/swap.c
-index 4a1d0d2..fe3a488 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -405,6 +405,11 @@ static void activate_page_drain(int cpu)
- 		pagevec_lru_move_fn(pvec, __activate_page, NULL);
- }
- 
-+static bool need_activate_page_drain(int cpu)
-+{
-+	return pagevec_count(&per_cpu(activate_page_pvecs, cpu)) != 0;
-+}
-+
- void activate_page(struct page *page)
- {
- 	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
-@@ -422,6 +427,11 @@ static inline void activate_page_drain(int cpu)
- {
- }
- 
-+static bool need_activate_page_drain(int cpu)
-+{
-+	return false;
-+}
-+
- void activate_page(struct page *page)
- {
- 	struct zone *zone = page_zone(page);
-@@ -673,6 +683,14 @@ void lru_add_drain(void)
- 	put_cpu();
- }
- 
-+static bool lru_add_drain_cond(void *data, int cpu)
-+{
-+	return pagevec_count(&per_cpu(lru_add_pvec, cpu)) ||
-+		pagevec_count(&per_cpu(lru_rotate_pvecs, cpu)) ||
-+		pagevec_count(&per_cpu(lru_deactivate_pvecs, cpu)) ||
-+		need_activate_page_drain(cpu);
-+}
-+
- static void lru_add_drain_per_cpu(struct work_struct *dummy)
- {
- 	lru_add_drain();
-@@ -683,7 +701,8 @@ static void lru_add_drain_per_cpu(struct work_struct *dummy)
-  */
- int lru_add_drain_all(void)
- {
--	return schedule_on_each_cpu(lru_add_drain_per_cpu);
-+	return schedule_on_each_cpu_cond(lru_add_drain_per_cpu,
-+					 lru_add_drain_cond, NULL);
- }
- 
- /*
--- 
-1.8.3.1
+-- Steve
 
