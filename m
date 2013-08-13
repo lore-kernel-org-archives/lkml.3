@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab3HMNgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:36:22 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:62718 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352Ab3HMNgP (ORCPT
+	id S932335Ab3HMNga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:36:30 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:46735 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932395Ab3HMNgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:36:15 -0400
+	Tue, 13 Aug 2013 09:36:24 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 25/35] cpufreq: ppc: Covert to light weight ->target_index() routine
-Date: Tue, 13 Aug 2013 19:02:38 +0530
-Message-Id: <d0f9214845aaa33dee88462f46ce6d873a089277.1376392602.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: [PATCH V2 26/35] cpufreq: pxa: Covert to light weight ->target_index() routine
+Date: Tue, 13 Aug 2013 19:02:39 +0530
+Message-Id: <7185a969620bd0d10ac2db6d658186832d6cacd7.1376392602.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
 References: <cover.1376392602.git.viresh.kumar@linaro.org>
@@ -31,89 +32,105 @@ This patch converts existing .target() to newly defined light weight
 CPUFreq core will call cpufreq_frequency_table_target() before calling this
 routine and will pass index to it.
 
+Cc: Eric Miao <eric.y.miao@gmail.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/ppc-corenet-cpufreq.c | 15 ++++-----------
- drivers/cpufreq/ppc_cbe_cpufreq.c     | 12 ++----------
- 2 files changed, 6 insertions(+), 21 deletions(-)
+ drivers/cpufreq/pxa2xx-cpufreq.c | 13 ++-----------
+ drivers/cpufreq/pxa3xx-cpufreq.c | 17 +++--------------
+ 2 files changed, 5 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
-index befd489..243a396 100644
---- a/drivers/cpufreq/ppc-corenet-cpufreq.c
-+++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
-@@ -253,27 +253,20 @@ static int __exit corenet_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+diff --git a/drivers/cpufreq/pxa2xx-cpufreq.c b/drivers/cpufreq/pxa2xx-cpufreq.c
+index 5a72bf3..17326e1 100644
+--- a/drivers/cpufreq/pxa2xx-cpufreq.c
++++ b/drivers/cpufreq/pxa2xx-cpufreq.c
+@@ -267,14 +267,11 @@ static unsigned int pxa_cpufreq_get(unsigned int cpu)
+ 	return get_clk_frequency_khz(0);
  }
  
- static int corenet_cpufreq_target(struct cpufreq_policy *policy,
--		unsigned int target_freq, unsigned int relation)
-+		unsigned int index)
+-static int pxa_set_target(struct cpufreq_policy *policy,
+-			  unsigned int target_freq,
+-			  unsigned int relation)
++static int pxa_set_target(struct cpufreq_policy *policy, unsigned int idx)
  {
+ 	struct cpufreq_frequency_table *pxa_freqs_table;
+ 	pxa_freqs_t *pxa_freq_settings;
  	struct cpufreq_freqs freqs;
--	unsigned int new;
- 	struct clk *parent;
- 	int ret;
- 	struct cpu_data *data = per_cpu(cpu_data, policy->cpu);
+-	unsigned int idx;
+ 	unsigned long flags;
+ 	unsigned int new_freq_cpu, new_freq_mem;
+ 	unsigned int unused, preset_mdrefr, postset_mdrefr, cclkcfg;
+@@ -283,12 +280,6 @@ static int pxa_set_target(struct cpufreq_policy *policy,
+ 	/* Get the current policy */
+ 	find_freq_tables(&pxa_freqs_table, &pxa_freq_settings);
  
--	cpufreq_frequency_table_target(policy, data->table,
--			target_freq, relation, &new);
+-	/* Lookup the next frequency */
+-	if (cpufreq_frequency_table_target(policy, pxa_freqs_table,
+-					   target_freq, relation, &idx)) {
+-		return -EINVAL;
+-	}
 -
--	if (policy->cur == data->table[new].frequency)
--		return 0;
--
+ 	new_freq_cpu = pxa_freq_settings[idx].khz;
+ 	new_freq_mem = pxa_freq_settings[idx].membus;
  	freqs.old = policy->cur;
--	freqs.new = data->table[new].frequency;
-+	freqs.new = data->table[index].frequency;
+@@ -450,7 +441,7 @@ static int pxa_cpufreq_init(struct cpufreq_policy *policy)
  
- 	mutex_lock(&cpufreq_lock);
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
- 
--	parent = of_clk_get(data->parent, data->table[new].driver_data);
-+	parent = of_clk_get(data->parent, data->table[index].driver_data);
- 	ret = clk_set_parent(data->clk, parent);
- 	if (ret)
- 		freqs.new = freqs.old;
-@@ -290,7 +283,7 @@ static struct cpufreq_driver ppc_corenet_cpufreq_driver = {
- 	.init		= corenet_cpufreq_cpu_init,
- 	.exit		= __exit_p(corenet_cpufreq_cpu_exit),
- 	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= corenet_cpufreq_target,
-+	.target_index	= corenet_cpufreq_target,
- 	.get		= corenet_cpufreq_get_speed,
- 	.attr		= cpufreq_generic_attr,
- };
-diff --git a/drivers/cpufreq/ppc_cbe_cpufreq.c b/drivers/cpufreq/ppc_cbe_cpufreq.c
-index 38540d1..52f707d 100644
---- a/drivers/cpufreq/ppc_cbe_cpufreq.c
-+++ b/drivers/cpufreq/ppc_cbe_cpufreq.c
-@@ -129,18 +129,10 @@ static int cbe_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ static struct cpufreq_driver pxa_cpufreq_driver = {
+ 	.verify	= cpufreq_generic_frequency_table_verify,
+-	.target	= pxa_set_target,
++	.target_index = pxa_set_target,
+ 	.init	= pxa_cpufreq_init,
+ 	.exit	= cpufreq_generic_exit,
+ 	.get	= pxa_cpufreq_get,
+diff --git a/drivers/cpufreq/pxa3xx-cpufreq.c b/drivers/cpufreq/pxa3xx-cpufreq.c
+index 2837fd6..66e8cd0 100644
+--- a/drivers/cpufreq/pxa3xx-cpufreq.c
++++ b/drivers/cpufreq/pxa3xx-cpufreq.c
+@@ -155,24 +155,16 @@ static unsigned int pxa3xx_cpufreq_get(unsigned int cpu)
+ 	return pxa3xx_get_clk_frequency_khz(0);
  }
  
- static int cbe_cpufreq_target(struct cpufreq_policy *policy,
+-static int pxa3xx_cpufreq_set(struct cpufreq_policy *policy,
 -			      unsigned int target_freq,
 -			      unsigned int relation)
-+			      unsigned int cbe_pmode_new)
++static int pxa3xx_cpufreq_set(struct cpufreq_policy *policy, unsigned int index)
  {
- 	int rc;
+ 	struct pxa3xx_freq_info *next;
  	struct cpufreq_freqs freqs;
--	unsigned int cbe_pmode_new;
+ 	unsigned long flags;
+-	int idx;
+ 
+ 	if (policy->cpu != 0)
+ 		return -EINVAL;
+ 
+-	/* Lookup the next frequency */
+-	if (cpufreq_frequency_table_target(policy, pxa3xx_freqs_table,
+-				target_freq, relation, &idx))
+-		return -EINVAL;
 -
--	cpufreq_frequency_table_target(policy,
--				       cbe_freqs,
--				       target_freq,
--				       relation,
--				       &cbe_pmode_new);
+-	next = &pxa3xx_freqs[idx];
++	next = &pxa3xx_freqs[index];
  
  	freqs.old = policy->cur;
- 	freqs.new = cbe_freqs[cbe_pmode_new].frequency;
-@@ -164,7 +156,7 @@ static int cbe_cpufreq_target(struct cpufreq_policy *policy,
+ 	freqs.new = next->cpufreq_mhz * 1000;
+@@ -181,9 +173,6 @@ static int pxa3xx_cpufreq_set(struct cpufreq_policy *policy,
+ 			freqs.old / 1000, freqs.new / 1000,
+ 			(freqs.old == freqs.new) ? " (skipped)" : "");
  
- static struct cpufreq_driver cbe_cpufreq_driver = {
+-	if (freqs.old == target_freq)
+-		return 0;
+-
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ 
+ 	local_irq_save(flags);
+@@ -224,7 +213,7 @@ static int pxa3xx_cpufreq_init(struct cpufreq_policy *policy)
+ 
+ static struct cpufreq_driver pxa3xx_cpufreq_driver = {
  	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= cbe_cpufreq_target,
-+	.target_index	= cbe_cpufreq_target,
- 	.init		= cbe_cpufreq_cpu_init,
+-	.target		= pxa3xx_cpufreq_set,
++	.target_index	= pxa3xx_cpufreq_set,
+ 	.init		= pxa3xx_cpufreq_init,
  	.exit		= cpufreq_generic_exit,
- 	.name		= "cbe-cpufreq",
+ 	.get		= pxa3xx_cpufreq_get,
 -- 
 1.7.12.rc2.18.g61b472e
 
