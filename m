@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3HMI5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 04:57:15 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48082 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691Ab3HMI5N (ORCPT
+	id S1755436Ab3HMJB3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 05:01:29 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:36870 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753156Ab3HMJB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 04:57:13 -0400
-Date: Tue, 13 Aug 2013 10:57:08 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Felipe Balbi <balbi@ti.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH] usb: phy: am335x: include linux/err.h
-Message-ID: <20130813085707.GB23842@linutronix.de>
-References: <20130813181719.e2dea691c1e3c19bd6306983@canb.auug.org.au>
+	Tue, 13 Aug 2013 05:01:27 -0400
+Date: Tue, 13 Aug 2013 12:00:39 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Anton Vorontsov'" <anton@enomsg.org>,
+        "'David Woodhouse'" <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 33/35] power: use dev_get_platdata()
+Message-ID: <20130813090039.GA5604@mwanda>
+References: <005c01ce8cfd$82078af0$8616a0d0$@samsung.com>
+ <20130809220451.GG12638@lizard.sbx05730.santaca.wayport.net>
+ <003401ce96f2$0f53b840$2dfb28c0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130813181719.e2dea691c1e3c19bd6306983@canb.auug.org.au>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <003401ce96f2$0f53b840$2dfb28c0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell reported that this driver does not compile on PowerPC
-due to this missing include. One could argue why this driver is enabled
-on PowerPC in the first place but it sure isn't wrong to include headers
-for used function instead of to rely that they sneak in.
+On Mon, Aug 12, 2013 at 09:22:42AM +0900, Jingoo Han wrote:
+> On Saturday, August 10, 2013 7:05 AM, Anton Vorontsov wrote:
+> > On Tue, Jul 30, 2013 at 05:19:27PM +0900, Jingoo Han wrote:
+> > > Use the wrapper function for retrieving the platform data instead of
+> > > accessing dev->platform_data directly.
+> > 
+> > Um.. what is the benefit or rationale of this patch?
+> 
+> CC'ed Joe Perches, Dan Carpenter
+> 
+> Hi Anton Vorontsov,
+> 
+> Usually, using the wrapper function makes the code simpler.
+> Also, it make the code more readable.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- drivers/usb/phy/phy-am335x-control.c | 1 +
- 1 file changed, 1 insertion(+)
+Since people are asking my opinion, then yes using
+dev_get_platdata() as intended is better than open coding.  It's a
+coding standard thing.
 
-diff --git a/drivers/usb/phy/phy-am335x-control.c b/drivers/usb/phy/phy-am335x-control.c
-index 35494f1..7597545 100644
---- a/drivers/usb/phy/phy-am335x-control.c
-+++ b/drivers/usb/phy/phy-am335x-control.c
-@@ -1,5 +1,6 @@
- #include <linux/module.h>
- #include <linux/platform_device.h>
-+#include <linux/err.h>
- #include <linux/of.h>
- #include <linux/io.h>
- 
--- 
-1.8.4.rc1
+regards,
+dan carpenter
 
