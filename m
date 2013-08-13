@@ -1,191 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab3HMNgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:36:46 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34650 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413Ab3HMNgi (ORCPT
+	id S932491Ab3HMNgx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:36:53 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:45843 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932463Ab3HMNgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:36:38 -0400
-Date: Tue, 13 Aug 2013 15:36:36 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Benoit Cousson <bcousson@baylibre.com>
-Cc: Javier Martinez Canillas <martinez.javier@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
-        b-cousson@ti.com, pali.rohar@gmail.com,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org
-Subject: [PATCH v3] N900: add device tree
-Message-ID: <20130813133636.GA12364@amd.pavel.ucw.cz>
-References: <20130614055629.GM8164@atomide.com>
- <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
- <20130617111031.GQ20992@atomide.com>
- <20130701211753.GC15318@amd.pavel.ucw.cz>
- <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
- <20130704202145.GB10752@amd.pavel.ucw.cz>
- <20130704203256.GB27374@blackmetal.musicnaut.iki.fi>
- <20130713121709.GC16473@amd.pavel.ucw.cz>
- <CAAwP0s18PNn10q5qrzgi4Vz9t31AYuwBSthjE=rSdRb0FG0CFQ@mail.gmail.com>
- <520A0F5B.5080502@baylibre.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520A0F5B.5080502@baylibre.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 13 Aug 2013 09:36:45 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH V2 29/35] cpufreq: s5pv210: Covert to light weight ->target_index() routine
+Date: Tue, 13 Aug 2013 19:02:42 +0530
+Message-Id: <9c8b6b62c4ae45f4c7766b79f083df0e7ba3c52f.1376392602.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
+References: <cover.1376392602.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
+References: <cover.1376392602.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+This patch converts existing .target() to newly defined light weight
+.target_index() routine for this driver.
 
-> I finally got released by the aliens. It took longer than expected
-> and beside a small scar on the back of my neck, I feel pretty OK.
+CPUFreq core will call cpufreq_frequency_table_target() before calling this
+routine and will pass index to it.
 
-Scars on neck sound scary...
+This drivers wasn't as straight forward as other ones. It was doing some funny
+stuff to disable driver while going into suspend mode. This part is simplified
+as well to get this converted to ->target_index().
 
-> The order should not matter at all in DT, it should be a static
-> representation of the HW, so there is probably something wrong in
-> the code that make the device creation order important.
-
-I understand that there's something wrong with the code, but it turned
-out not to be easy to debug. Yes, it will have to be debugged some
-day, but it happens with old code, too, so it is actually orthogonal
-to device tree.
-
-> Beside my comments and the ones from Javier, it looks good.
-> If you can repost ASAP, I'll take it right after.
-> It will be the first one in the list.
-
-Thanks, here you go.
-								Pavel
-
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
+ drivers/cpufreq/s5pv210-cpufreq.c | 54 ++++++++++-----------------------------
+ 1 file changed, 14 insertions(+), 40 deletions(-)
 
-This adds device tree with neccessary support to boot with functional
-video (on both emulator and real N900 device).
-
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-
----
-
->From v1: Aaro wants just GPLv2, so I did that. I re-enabled parts that
-can be enabled on 3.10, and tested it on that kernel.
-
->From v2: spelling, improved comments. Tested on 3.11-rc (0ed4402).
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index a0f2365..c48b1ef 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -162,6 +162,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
- 	omap3-devkit8000.dtb \
- 	omap3-beagle-xm.dtb \
- 	omap3-evm.dtb \
-+	omap3-n900.dtb \
- 	omap3-tobi.dtb \
- 	omap3-igep0020.dtb \
- 	omap3-igep0030.dtb \
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-new file mode 100644
-index 0000000..7ff90f8
---- /dev/null
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -0,0 +1,92 @@
-+/*
-+ * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
-+ * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 (or later) as
-+ * published by the Free Software Foundation.
-+ */
-+
-+/dts-v1/;
-+
-+#include "omap34xx.dtsi"
-+
-+/ {
-+	model = "Nokia N900";
-+	compatible = "nokia,omap3-n900", "ti,omap3";
-+
-+	cpus {
-+		cpu@0 {
-+			cpu0-supply = <&vcc>;
-+		};
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x80000000 0x10000000>; /* 256 MB */
-+	};
-+
-+};
-+
-+&i2c1 {
-+	clock-frequency = <2200000>;
-+
-+	twl: twl@48 {
-+		reg = <0x48>;
-+		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
-+		interrupt-parent = <&intc>;
-+	};
-+};
-+
-+#include "twl4030.dtsi"
-+
-+&twl_gpio {
-+	ti,pullups	= <0x0>;
-+	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
-+};
-+
-+&i2c2 {
-+	clock-frequency = <400000>;
-+};
-+
-+&i2c3 {
-+	clock-frequency = <100000>;
-+};
-+
-+&mmc1 {
-+	status = "disabled";
-+};
-+
-+&mmc2 {
-+	status = "disabled";
-+};
-+
-+&mmc3 {
-+	status = "disabled";
-+};
-+
-+&mcspi1 {
-+	/*
-+	 * For some reason, touchscreen is necessary for screen to work at 
-+	 * all on real hw. It works well without it on emulator.
-+	 *
-+	 * Also... order in the device tree actually matters here.
-+	 */
-+	tsc2005@0 {
-+		compatible = "tsc2005";
-+		spi-max-frequency = <6000000>;
-+		reg = <0>;
-+	};
-+	mipid@2 {
-+		compatible = "acx565akm";
-+		spi-max-frequency = <6000000>;
-+		reg = <2>;
-+	};
-+};
-+
-+&usb_otg_hs {
-+	interface-type = <0>;
-+	usb-phy = <&usb2_phy>;
-+	mode = <2>;
-+	power = <50>;
-+};
-
+diff --git a/drivers/cpufreq/s5pv210-cpufreq.c b/drivers/cpufreq/s5pv210-cpufreq.c
+index 0eafc52..bdffc3d 100644
+--- a/drivers/cpufreq/s5pv210-cpufreq.c
++++ b/drivers/cpufreq/s5pv210-cpufreq.c
+@@ -36,16 +36,7 @@ static DEFINE_MUTEX(set_freq_lock);
+ /* Use 800MHz when entering sleep mode */
+ #define SLEEP_FREQ	(800 * 1000)
+ 
+-/*
+- * relation has an additional symantics other than the standard of cpufreq
+- * DISALBE_FURTHER_CPUFREQ: disable further access to target
+- * ENABLE_FURTUER_CPUFREQ: enable access to target
+- */
+-enum cpufreq_access {
+-	DISABLE_FURTHER_CPUFREQ = 0x10,
+-	ENABLE_FURTHER_CPUFREQ = 0x20,
+-};
+-
++/* Tracks if cpu freqency can be updated anymore */
+ static bool no_cpufreq_access;
+ 
+ /*
+@@ -182,12 +173,10 @@ static unsigned int s5pv210_getspeed(unsigned int cpu)
+ 	return clk_get_rate(cpu_clk) / 1000;
+ }
+ 
+-static int s5pv210_target(struct cpufreq_policy *policy,
+-			  unsigned int target_freq,
+-			  unsigned int relation)
++static int s5pv210_target(struct cpufreq_policy *policy, unsigned int index)
+ {
+ 	unsigned long reg;
+-	unsigned int index, priv_index;
++	unsigned int priv_index;
+ 	unsigned int pll_changing = 0;
+ 	unsigned int bus_speed_changing = 0;
+ 	int arm_volt, int_volt;
+@@ -195,9 +184,6 @@ static int s5pv210_target(struct cpufreq_policy *policy,
+ 
+ 	mutex_lock(&set_freq_lock);
+ 
+-	if (relation & ENABLE_FURTHER_CPUFREQ)
+-		no_cpufreq_access = false;
+-
+ 	if (no_cpufreq_access) {
+ #ifdef CONFIG_PM_VERBOSE
+ 		pr_err("%s:%d denied access to %s as it is disabled"
+@@ -207,27 +193,13 @@ static int s5pv210_target(struct cpufreq_policy *policy,
+ 		goto exit;
+ 	}
+ 
+-	if (relation & DISABLE_FURTHER_CPUFREQ)
+-		no_cpufreq_access = true;
+-
+-	relation &= ~(ENABLE_FURTHER_CPUFREQ | DISABLE_FURTHER_CPUFREQ);
+-
+ 	freqs.old = s5pv210_getspeed(0);
+-
+-	if (cpufreq_frequency_table_target(policy, s5pv210_freq_table,
+-					   target_freq, relation, &index)) {
+-		ret = -EINVAL;
+-		goto exit;
+-	}
+-
+ 	freqs.new = s5pv210_freq_table[index].frequency;
+ 
+-	if (freqs.new == freqs.old)
+-		goto exit;
+-
+ 	/* Finding current running level index */
+ 	if (cpufreq_frequency_table_target(policy, s5pv210_freq_table,
+-					   freqs.old, relation, &priv_index)) {
++					   freqs.old, CPUFREQ_RELATION_H,
++					   &priv_index)) {
+ 		ret = -EINVAL;
+ 		goto exit;
+ 	}
+@@ -563,16 +535,18 @@ static int s5pv210_cpufreq_notifier_event(struct notifier_block *this,
+ 
+ 	switch (event) {
+ 	case PM_SUSPEND_PREPARE:
+-		ret = cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ,
+-					    DISABLE_FURTHER_CPUFREQ);
++		ret = cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ, 0);
+ 		if (ret < 0)
+ 			return NOTIFY_BAD;
+ 
++		/* Disable updation of cpu frequency */
++		no_cpufreq_access = true;
+ 		return NOTIFY_OK;
+ 	case PM_POST_RESTORE:
+ 	case PM_POST_SUSPEND:
+-		cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ,
+-				      ENABLE_FURTHER_CPUFREQ);
++		/* Enable updation of cpu frequency */
++		no_cpufreq_access = false;
++		cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ, 0);
+ 
+ 		return NOTIFY_OK;
+ 	}
+@@ -585,18 +559,18 @@ static int s5pv210_cpufreq_reboot_notifier_event(struct notifier_block *this,
+ {
+ 	int ret;
+ 
+-	ret = cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ,
+-				    DISABLE_FURTHER_CPUFREQ);
++	ret = cpufreq_driver_target(cpufreq_cpu_get(0), SLEEP_FREQ, 0);
+ 	if (ret < 0)
+ 		return NOTIFY_BAD;
+ 
++	no_cpufreq_access = true;
+ 	return NOTIFY_DONE;
+ }
+ 
+ static struct cpufreq_driver s5pv210_driver = {
+ 	.flags		= CPUFREQ_STICKY,
+ 	.verify		= cpufreq_generic_frequency_table_verify,
+-	.target		= s5pv210_target,
++	.target_index	= s5pv210_target,
+ 	.get		= s5pv210_getspeed,
+ 	.init		= s5pv210_cpu_init,
+ 	.name		= "s5pv210",
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.12.rc2.18.g61b472e
+
