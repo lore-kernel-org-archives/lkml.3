@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab3HMNg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:36:59 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:50454 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932493Ab3HMNgx (ORCPT
+	id S932546Ab3HMNhK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:37:10 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:45918 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932493Ab3HMNhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:36:53 -0400
+	Tue, 13 Aug 2013 09:37:03 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH V2 30/35] cpufreq: sa11x0: Covert to light weight ->target_index() routine
-Date: Tue, 13 Aug 2013 19:02:43 +0530
-Message-Id: <118e19db096e71b2b0bbb39cc83ee15941b49bdf.1376392602.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 31/35] cpufreq: sc520: Covert to light weight ->target_index() routine
+Date: Tue, 13 Aug 2013 19:02:44 +0530
+Message-Id: <6d9dbb87bae62a0f387d1528065dea6db1d21fdd.1376392602.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
 References: <cover.1376392602.git.viresh.kumar@linaro.org>
@@ -32,166 +31,59 @@ This patch converts existing .target() to newly defined light weight
 CPUFreq core will call cpufreq_frequency_table_target() before calling this
 routine and will pass index to it.
 
-Some existing routines are no more required and so are removed now.
-
-Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- arch/arm/mach-sa1100/generic.c   | 20 --------------------
- arch/arm/mach-sa1100/generic.h   |  2 --
- drivers/cpufreq/sa1100-cpufreq.c | 24 ++++--------------------
- drivers/cpufreq/sa1110-cpufreq.c | 26 ++++----------------------
- 4 files changed, 8 insertions(+), 64 deletions(-)
+ drivers/cpufreq/sc520_freq.c | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/arch/arm/mach-sa1100/generic.c b/arch/arm/mach-sa1100/generic.c
-index cb4b2ca..d4ea142 100644
---- a/arch/arm/mach-sa1100/generic.c
-+++ b/arch/arm/mach-sa1100/generic.c
-@@ -62,26 +62,6 @@ struct cpufreq_frequency_table sa11x0_freq_table[NR_FREQS+1] = {
- 	{ .frequency = CPUFREQ_TABLE_END, },
- };
- 
--/* rounds up(!)  */
--unsigned int sa11x0_freq_to_ppcr(unsigned int khz)
--{
--	int i;
--
--	for (i = 0; i < NR_FREQS; i++)
--		if (sa11x0_freq_table[i].frequency >= khz)
--			break;
--
--	return i;
--}
--
--unsigned int sa11x0_ppcr_to_freq(unsigned int idx)
--{
--	unsigned int freq = 0;
--	if (idx < NR_FREQS)
--		freq = sa11x0_freq_table[idx].frequency;
--	return freq;
--}
--
- unsigned int sa11x0_getspeed(unsigned int cpu)
- {
- 	if (cpu)
-diff --git a/arch/arm/mach-sa1100/generic.h b/arch/arm/mach-sa1100/generic.h
-index 39d56a67..84505d5 100644
---- a/arch/arm/mach-sa1100/generic.h
-+++ b/arch/arm/mach-sa1100/generic.h
-@@ -22,9 +22,7 @@ extern void sa1110_mb_disable(void);
- struct cpufreq_policy;
- 
- extern struct cpufreq_frequency_table sa11x0_freq_table[];
--extern unsigned int sa11x0_freq_to_ppcr(unsigned int khz);
- extern unsigned int sa11x0_getspeed(unsigned int cpu);
--extern unsigned int sa11x0_ppcr_to_freq(unsigned int idx);
- 
- struct flash_platform_data;
- struct resource;
-diff --git a/drivers/cpufreq/sa1100-cpufreq.c b/drivers/cpufreq/sa1100-cpufreq.c
-index 02fe8b2..7e42bce 100644
---- a/drivers/cpufreq/sa1100-cpufreq.c
-+++ b/drivers/cpufreq/sa1100-cpufreq.c
-@@ -177,36 +177,20 @@ static void sa1100_update_dram_timings(int current_speed, int new_speed)
+diff --git a/drivers/cpufreq/sc520_freq.c b/drivers/cpufreq/sc520_freq.c
+index 8556225..cd62472 100644
+--- a/drivers/cpufreq/sc520_freq.c
++++ b/drivers/cpufreq/sc520_freq.c
+@@ -53,8 +53,7 @@ static unsigned int sc520_freq_get_cpu_frequency(unsigned int cpu)
  	}
  }
  
--static int sa1100_target(struct cpufreq_policy *policy,
--			 unsigned int target_freq,
--			 unsigned int relation)
-+static int sa1100_target(struct cpufreq_policy *policy, unsigned int ppcr)
+-static void sc520_freq_set_cpu_state(struct cpufreq_policy *policy,
+-		unsigned int state)
++static int sc520_freq_target(struct cpufreq_policy *policy, unsigned int state)
  {
- 	unsigned int cur = sa11x0_getspeed(0);
--	unsigned int new_ppcr;
- 	struct cpufreq_freqs freqs;
  
--	new_ppcr = sa11x0_freq_to_ppcr(target_freq);
--	switch (relation) {
--	case CPUFREQ_RELATION_L:
--		if (sa11x0_ppcr_to_freq(new_ppcr) > policy->max)
--			new_ppcr--;
--		break;
--	case CPUFREQ_RELATION_H:
--		if ((sa11x0_ppcr_to_freq(new_ppcr) > target_freq) &&
--		    (sa11x0_ppcr_to_freq(new_ppcr - 1) >= policy->min))
--			new_ppcr--;
--		break;
--	}
+ 	struct cpufreq_freqs	freqs;
+@@ -76,24 +75,10 @@ static void sc520_freq_set_cpu_state(struct cpufreq_policy *policy,
+ 	local_irq_enable();
+ 
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+-};
 -
- 	freqs.old = cur;
--	freqs.new = sa11x0_ppcr_to_freq(new_ppcr);
-+	freqs.new = sa11x0_freq_table[ppcr].frequency;
- 
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
- 
- 	if (freqs.new > cur)
- 		sa1100_update_dram_timings(cur, freqs.new);
- 
--	PPCR = new_ppcr;
-+	PPCR = ppcr;
- 
- 	if (freqs.new < cur)
- 		sa1100_update_dram_timings(cur, freqs.new);
-@@ -229,7 +213,7 @@ static int __init sa1100_cpu_init(struct cpufreq_policy *policy)
- static struct cpufreq_driver sa1100_driver __refdata = {
- 	.flags		= CPUFREQ_STICKY,
- 	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= sa1100_target,
-+	.target_index	= sa1100_target,
- 	.get		= sa11x0_getspeed,
- 	.init		= sa1100_cpu_init,
- 	.name		= "sa1100",
-diff --git a/drivers/cpufreq/sa1110-cpufreq.c b/drivers/cpufreq/sa1110-cpufreq.c
-index a38d904..fb69553 100644
---- a/drivers/cpufreq/sa1110-cpufreq.c
-+++ b/drivers/cpufreq/sa1110-cpufreq.c
-@@ -229,34 +229,16 @@ sdram_update_refresh(u_int cpu_khz, struct sdram_params *sdram)
- /*
-  * Ok, set the CPU frequency.
-  */
--static int sa1110_target(struct cpufreq_policy *policy,
--			 unsigned int target_freq,
--			 unsigned int relation)
-+static int sa1110_target(struct cpufreq_policy *policy, unsigned int ppcr)
- {
- 	struct sdram_params *sdram = &sdram_params;
- 	struct cpufreq_freqs freqs;
- 	struct sdram_info sd;
- 	unsigned long flags;
--	unsigned int ppcr, unused;
+-static int sc520_freq_target(struct cpufreq_policy *policy,
+-			    unsigned int target_freq,
+-			    unsigned int relation)
+-{
+-	unsigned int newstate = 0;
 -
--	switch (relation) {
--	case CPUFREQ_RELATION_L:
--		ppcr = sa11x0_freq_to_ppcr(target_freq);
--		if (sa11x0_ppcr_to_freq(ppcr) > policy->max)
--			ppcr--;
--		break;
--	case CPUFREQ_RELATION_H:
--		ppcr = sa11x0_freq_to_ppcr(target_freq);
--		if (ppcr && (sa11x0_ppcr_to_freq(ppcr) > target_freq) &&
--		    (sa11x0_ppcr_to_freq(ppcr-1) >= policy->min))
--			ppcr--;
--		break;
--	default:
+-	if (cpufreq_frequency_table_target(policy, sc520_freq_table,
+-				target_freq, relation, &newstate))
 -		return -EINVAL;
--	}
-+	unsigned int unused;
+-
+-	sc520_freq_set_cpu_state(policy, newstate);
  
- 	freqs.old = sa11x0_getspeed(0);
--	freqs.new = sa11x0_ppcr_to_freq(ppcr);
-+	freqs.new = sa11x0_freq_table[ppcr].frequency;
+ 	return 0;
+ }
  
- 	sdram_calculate_timing(&sd, freqs.new, sdram);
- 
-@@ -345,7 +327,7 @@ static int __init sa1110_cpu_init(struct cpufreq_policy *policy)
- static struct cpufreq_driver sa1110_driver __refdata = {
- 	.flags		= CPUFREQ_STICKY,
- 	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= sa1110_target,
-+	.target_index	= sa1110_target,
- 	.get		= sa11x0_getspeed,
- 	.init		= sa1110_cpu_init,
- 	.name		= "sa1110",
+-
+ /*
+  *	Module init and exit code
+  */
+@@ -118,7 +103,7 @@ static int sc520_freq_cpu_init(struct cpufreq_policy *policy)
+ static struct cpufreq_driver sc520_freq_driver = {
+ 	.get	= sc520_freq_get_cpu_frequency,
+ 	.verify	= cpufreq_generic_frequency_table_verify,
+-	.target	= sc520_freq_target,
++	.target_index = sc520_freq_target,
+ 	.init	= sc520_freq_cpu_init,
+ 	.exit	= cpufreq_generic_exit,
+ 	.name	= "sc520_freq",
 -- 
 1.7.12.rc2.18.g61b472e
 
