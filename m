@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944Ab3HMNSE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:18:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49370 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757640Ab3HMNSC (ORCPT
+	id S1757994Ab3HMNSe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:18:34 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:61529 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757893Ab3HMNSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:18:02 -0400
-Message-ID: <520A3206.5080505@linutronix.de>
-Date: Tue, 13 Aug 2013 15:17:58 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	Tue, 13 Aug 2013 09:18:32 -0400
 MIME-Version: 1.0
-To: Bin Liu <binmlist@gmail.com>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Subject: Re: [PATCH] usb: musb: am335x: Do not remove the session bin HOST-only
- mode
-References: <51F2BE6F.3010008@linutronix.de> <CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com> <51F2D427.7050106@linutronix.de> <CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com> <51F2DD90.2030405@linutronix.de> <CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com> <20130729165329.GA5773@linutronix.de> <CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com> <51F6ABA2.7060102@linutronix.de> <CADYTM3bcCoWKE9eR5Sd9MbaEUr4G=k=r6JKR+8KC=W_YrbMs3g@mail.gmail.com> <20130809160339.GA14829@linutronix.de> <5205516D.1030707@cogentembedded.com> <5209DCB9.8020705@linutronix.de> <CADYTM3a2M-X=eqz0LmSq4T9UF9khsTGB5TTYWWMRZWwkpRuRTQ@mail.gmail.com>
-In-Reply-To: <CADYTM3a2M-X=eqz0LmSq4T9UF9khsTGB5TTYWWMRZWwkpRuRTQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
+Reply-To: konrad@darnok.org
+In-Reply-To: <520A2C52.3000804@citrix.com>
+References: <1376316812-30346-1-git-send-email-lccycc123@gmail.com>
+ <1376339161.15390.281.camel@Solace> <520A2C52.3000804@citrix.com>
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Date: Tue, 13 Aug 2013 09:18:11 -0400
+X-Google-Sender-Auth: WtG2xOI6QCydvu7eM8yaOqZNijU
+Message-ID: <CAPbh3ru-gq0oL-MFbXmWDWOLwXVqZSbKUSJbotBJVy7OLYgKbw@mail.gmail.com>
+Subject: Re: [PATCH v1][RFC] drivers/xen, balloon driver numa support in kernel
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Dario Faggioli <dario.faggioli@citrix.com>,
+        Yechen Li <lccycc123@gmail.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 03:03 PM, Bin Liu wrote:
-> Sebastian,
+On Tue, Aug 13, 2013 at 8:53 AM, David Vrabel <david.vrabel@citrix.com> wrote:
+> On 12/08/13 21:26, Dario Faggioli wrote:
+>>
+>> Mmm... Is that the case? I tried to apply it there and I have one failed
+>> hunk (#12). Anyway, could you please rebase it on the tip of some
+>> relevant git tree?
+>>
+>> Linus' tree would be fine, I guess:
+>>
+>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git
+>
+> This is the one I use for most of my development work.  I wouldn't use a
+> subsystem specific tree unless there were specific conflicts to resolve
+> before hand.
 
-Hi Bin,
+Which we do:
 
->>>> +    if (musb->port_mode == MUSB_PORT_MODE_HOST) {
->>>> +        val = USBMODE_IDDIG_A;
->>>> +        val |= USBMODE_ID_MUX_REG;
->>>
-> I am going to so some tests today for this. I don't object to use the
-> mode register, but am wondering why we have to play with it for
-> host-only mode. The ID pin is grounded for host-only mode, which
-> should cause the same as setting mode register.
+commit cd9151e26d31048b2b5e00fd02e110e07d2200c9
+Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Date:   Sun Aug 4 15:39:40 2013 +0100
+    xen/balloon: set a mapping for ballooned out pages
 
-I've been looking at the wiki page and it did not mention the ID pin
-for the second port. If it is grounded then this piece can be removed
-and the magic trick is just to skip the try_idle() call.
-
-I haven't found anything saying that it is required to clear the
-session bin in host mode, only in OTG. And then, I would assume to
-receive a session interrupt once we have the proper VBUS level which
-does not happen.
-
-> -Bin.
-
-Sebastian
+>
+> David
