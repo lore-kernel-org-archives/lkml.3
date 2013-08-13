@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab3HMMLu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 08:11:50 -0400
-Received: from mail-gh0-f182.google.com ([209.85.160.182]:65354 "EHLO
-	mail-gh0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757703Ab3HMMLt (ORCPT
+	id S1757802Ab3HMMMH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 08:12:07 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:54129 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757719Ab3HMMMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 08:11:49 -0400
-Date: Tue, 13 Aug 2013 09:11:41 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Vince Weaver <vince@deater.net>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
- executable
-Message-ID: <20130813121141.GB2188@ghostprotocols.net>
-References: <1375669364-13838-1-git-send-email-andi@firstfloor.org>
- <20130805081641.GA24808@gmail.com>
- <20130805082320.GA9562@infradead.org>
- <20130805083132.GE26746@gmail.com>
- <20130805083434.GA20606@infradead.org>
- <20130805090857.GA26940@gmail.com>
- <20130806061932.GA20485@infradead.org>
- <20130812181956.GB19405@gmail.com>
- <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
- <20130813104821.GB2170@gmail.com>
+	Tue, 13 Aug 2013 08:12:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813104821.GB2170@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87a9kr3v2p.fsf@igel.home>
+References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
+	<alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
+	<20130730171329.GF24583@localhost.localdomain>
+	<Pine.BSM.4.64L.1307301741360.20305@herc.mirbsd.org>
+	<20130730204001.GG24583@localhost.localdomain>
+	<87eha33v9f.fsf@igel.home>
+	<87a9kr3v2p.fsf@igel.home>
+Date: Tue, 13 Aug 2013 14:12:04 +0200
+X-Google-Sender-Auth: GR_C1iSmV2Xsy0X5Plt55gno2rc
+Message-ID: <CAMuHMdWWz7EmU0-OyM+hnBss4AZjR30tLsRbBVsXF0cy2THMyA@mail.gmail.com>
+Subject: Re: btrfs zero divide
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Josef Bacik <jbacik@fusionio.com>, Thorsten Glaser <tg@mirbsd.de>,
+        Joe Perches <joe@perches.com>,
+        "Debian GNU/Linux m68k" <debian-68k@lists.debian.org>,
+        linux-btrfs@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-am33-list@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 13, 2013 at 12:48:21PM +0200, Ingo Molnar escreveu:
-> To resolve this situation you could help us out by doing either of these:
- 
->  1) integrate your tests into tools/, there's 'perf test' that has a ton
->     of testcases already
+On Fri, Aug 9, 2013 at 2:30 PM, Andreas Schwab <schwab@linux-m68k.org> wrote:
+> Andreas Schwab <schwab@linux-m68k.org> writes:
+>> Josef Bacik <jbacik@fusionio.com> writes:
+>>> So stripe_len shouldn't be 0, if it is you have bigger problems :).
 
-I think Jiri is working on merging some of those tests, Jiri?
+[ lost context: this is about the first do_div() in __btrfs_map_block() ]
 
-Yeah, these at least:
+>> The bigger problem is that stripe_nr is u64, this is completely bogus.
+>> The first operand of do_div must be u32.  This goes through the whole
+>> file.
+>
+> Of course, what I meant was that the *second* operand must be u32, but
+> that doesn't change my point.
 
-commit 06933e3a732bb305b0721f1051a45264588e0519
-Author: Jiri Olsa <jolsa@redhat.com>
-Date:   Sun Mar 10 19:41:11 2013 +0100
+I checked all do_div() implementations, and (unless I missed one) m68k and
+mn10300 were the only two that didn't truncate base to 32 bits.
 
-    perf tests: Test breakpoint overflow signal handler counts
+Mn10300 is little endian, so I think the problem won't happen there.
 
-commit 5a6bef47b418676546ab86d25631c3cfb9ffaf2a
-Author: Jiri Olsa <jolsa@redhat.com>
-Date:   Sun Mar 10 19:41:10 2013 +0100
+Andreas, I'll apply your patch
+(http://permalink.gmane.org/gmane.linux.ports.m68k/5008)
+with the crash log added to the commit message, so it's appropriate for -stable.
 
-    perf tests: Test breakpoint overflow signal handler
- 
->  2) run your testsuite more frequently - instead of waiting for a stable
->     kernel to be released and then complain about breakage.
+Gr{oetje,eeting}s,
 
-My feeling is that he increased the frequency of such tests.
+                        Geert
 
-> So far you refused to do any of this and blamed others for non-reported 
-> breakages :-/
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-He has been using the perf trinity fuzzer and reporting problems, thanks
-Vince!
-
-- Arnaldo
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
