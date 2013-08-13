@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab3HMUxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:53:49 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31298 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759076Ab3HMUxs (ORCPT
+	id S1759311Ab3HMUyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:54:32 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:39118 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759076Ab3HMUya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:53:48 -0400
-Date: Tue, 13 Aug 2013 16:53:32 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: [Xen-devel] [PATCH] xen/hvc: If we use xen_raw_printk let it
- also work on HVM guests.
-Message-ID: <20130813205332.GA10243@phenom.dumpdata.com>
-References: <1376060133-6382-1-git-send-email-konrad.wilk@oracle.com>
- <1376425904.9273.25.camel@hastur.hellion.org.uk>
+	Tue, 13 Aug 2013 16:54:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376425904.9273.25.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1375948794-6286-6-git-send-email-milo.kim@ti.com>
+References: <1375948794-6286-1-git-send-email-milo.kim@ti.com> <1375948794-6286-6-git-send-email-milo.kim@ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 13 Aug 2013 13:54:08 -0700
+Message-ID: <CAK5ve-KT6x-OyyWmAHOsF9jfRctQ2U9d_GZGz6q9E4LQKSMmxA@mail.gmail.com>
+Subject: Re: [PATCH 05/10] leds: lp5523: make separate API for loading engine
+To: Milo Kim <woogyom.kim@gmail.com>
+Cc: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 09:31:44PM +0100, Ian Campbell wrote:
-> On Fri, 2013-08-09 at 10:55 -0400, Konrad Rzeszutek Wilk wrote:
-> > The xen_raw_printk works great for debugging purposes and for
-> > it print anything the Xen hypervisor has to be built with 'debug=y'.
-> > 
-> > As such there is no difference between a PV or an PVHVM guest
-> > using the hypercall, so lets use it.
-> >
-> > Lastly if the hyper-page is not setup yet (for example during
-> > early HVM boot), then use the 0xe9 port if it has detected
-> > that it is running under an Xen hypervisor.
-> 
-> Does this really do what you say?
-> 
-> I think xen_pv_domain returns false for a PVHVM guest, meaning that we
-> only use the hypercall for proper PV guests and for PVHVM we use port
-> 0xe9 until the hypercall page is setup at which point we silently
-> discard any attempt to print via this mechanism.
-> 
+On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim <woogyom.kim@gmail.com> wrote:
+> lp5523_load_engine()
+>   It is called whenever the operation mode is changed to 'load'.
+>   It is used for simple operation mode change.
+>   It will be used when engine mode and LED selection is updated in later patch.
+>
+> lp5523_load_engine_and_select_page()
+>   Change the operation mode to 'load' and select program page number.
+>   This is used for programming a LED pattern at a time.
+>   So load_engine() is replaced with new API, load_engine_and_select_page()
+>   in lp5523_firmware_loaded().
+>
 
-'via this mechanism' refers to 0xe9 or dom0_write_console?
+Looks good, please make sure these functions are called with mutex lock hold.
+Thanks,
+-Bryan
 
-> or am I reading it wrong?
-
-The code did have a bug as it would on HVM (after the hyper-page
-was setup) still use 0xe9 instead of the dom0_write_console.
-
-What it should be is:
-> >  
-> >  void xen_raw_console_write(const char *str)
-> >  {
-> > -	dom0_write_console(0, str, strlen(str));
-> > +	if (!xen_domain())
-> > +		return;
-> > +
-> > +	if (xen_pv_domain())
-            xen_domain()
-
-> > +		dom0_write_console(0, str, strlen(str));
-> > +	else if (xen_hvm_domain() || xen_cpuid_base()) {
-     
-	else if (xen_cpuid_base()) {
-
-> > +		/* The hyperpage has not been setup yet. */
-> > +		int i, len = strlen(str);
-> > +		for (i = 0; i < len; i++)
-> > +			 outb(str[i], 0xe9);
-> > +	}
-> >  }
-
-And then that should adhere to what I wrote up.
-Thanks for pointing this out!
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
+> ---
+>  drivers/leds/leds-lp5523.c |   14 ++++++++++----
+>  1 file changed, 10 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/leds/leds-lp5523.c b/drivers/leds/leds-lp5523.c
+> index 72c10e2..b509480 100644
+> --- a/drivers/leds/leds-lp5523.c
+> +++ b/drivers/leds/leds-lp5523.c
+> @@ -152,15 +152,21 @@ static void lp5523_load_engine(struct lp55xx_chip *chip)
+>                 [LP55XX_ENGINE_3] = LP5523_LOAD_ENG3,
+>         };
+>
+> +       lp55xx_update_bits(chip, LP5523_REG_OP_MODE, mask[idx], val[idx]);
+> +
+> +       lp5523_wait_opmode_done();
+> +}
+> +
+> +static void lp5523_load_engine_and_select_page(struct lp55xx_chip *chip)
+> +{
+> +       enum lp55xx_engine_index idx = chip->engine_idx;
+>         u8 page_sel[] = {
+>                 [LP55XX_ENGINE_1] = LP5523_PAGE_ENG1,
+>                 [LP55XX_ENGINE_2] = LP5523_PAGE_ENG2,
+>                 [LP55XX_ENGINE_3] = LP5523_PAGE_ENG3,
+>         };
+>
+> -       lp55xx_update_bits(chip, LP5523_REG_OP_MODE, mask[idx], val[idx]);
+> -
+> -       lp5523_wait_opmode_done();
+> +       lp5523_load_engine(chip);
+>
+>         lp55xx_write(chip, LP5523_REG_PROG_PAGE_SEL, page_sel[idx]);
+>  }
+> @@ -290,7 +296,7 @@ static void lp5523_firmware_loaded(struct lp55xx_chip *chip)
+>          *  2) write firmware data into program memory
+>          */
+>
+> -       lp5523_load_engine(chip);
+> +       lp5523_load_engine_and_select_page(chip);
+>         lp5523_update_program_memory(chip, fw->data, fw->size);
+>  }
+>
+> --
+> 1.7.9.5
+>
