@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757617Ab3HMGvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:51:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60575 "EHLO
+	id S1756753Ab3HMGd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:33:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756659Ab3HMGd1 (ORCPT
+	with ESMTP id S1756659Ab3HMGdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:27 -0400
+	Tue, 13 Aug 2013 02:33:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        chayang <chayang@redhat.com>,
-        YOGANANTH SUBRAMANIAN <anantyog@in.ibm.com>,
-        FuXiangChun <xfu@redhat.com>, Qunfang Zhang <qzhang@redhat.com>,
-        Sibiao Luo <sluo@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 36/60] virtio: console: clean up port data immediately at time of unplug
-Date: Mon, 12 Aug 2013 23:34:03 -0700
-Message-Id: <20130813063337.160112387@linuxfoundation.org>
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Amit Shah <amit.shah@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 33/60] virtio/console: Add pipe_lock/unlock for splice_write
+Date: Mon, 12 Aug 2013 23:34:00 -0700
+Message-Id: <20130813063336.785700982@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -30,126 +29,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
 
-commit ea3768b4386a8d1790f4cc9a35de4f55b92d6442 upstream.
+commit 2b4fbf029dff5a28d9bf646346dea891ec43398a upstream.
 
-We used to keep the port's char device structs and the /sys entries
-around till the last reference to the port was dropped.  This is
-actually unnecessary, and resulted in buggy behaviour:
+Add pipe_lock/unlock for splice_write to avoid oops by following competition:
 
-1. Open port in guest
-2. Hot-unplug port
-3. Hot-plug a port with the same 'name' property as the unplugged one
+(1) An application gets fds of a trace buffer, virtio-serial, pipe.
+(2) The application does fork()
+(3) The processes execute splice_read(trace buffer) and
+    splice_write(virtio-serial) via same pipe.
 
-This resulted in hot-plug being unsuccessful, as a port with the same
-name already exists (even though it was unplugged).
+        <parent>                   <child>
+  get fds of a trace buffer,
+         virtio-serial, pipe
+          |
+        fork()----------create--------+
+          |                           |
+      splice(read)                    |           ---+
+      splice(write)                   |              +-- no competition
+          |                       splice(read)       |
+          |                       splice(write)   ---+
+          |                           |
+      splice(read)                    |
+      splice(write)               splice(read)    ------ competition
+          |                       splice(write)
 
-This behaviour resulted in a warning message like this one:
+Two processes share a pipe_inode_info structure. If the child execute
+splice(read) when the parent tries to execute splice(write), the
+structure can be broken. Existing virtio-serial driver does not get
+lock for the structure in splice_write, so this competition will induce
+oops.
 
--------------------8<---------------------------------------
-WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xc9/0x130() (Not tainted)
-Hardware name: KVM
-sysfs: cannot create duplicate filename
-'/devices/pci0000:00/0000:00:04.0/virtio0/virtio-ports/vport0p1'
+<oops messages>
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+ IP: [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+ PGD 7223e067 PUD 72391067 PMD 0
+ Oops: 0000 [#1] SMP
+ Modules linked in: lockd bnep bluetooth rfkill sunrpc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd soundcore pcspkr virtio_net virtio_balloon i2c_piix4 i2c_core microcode uinput floppy
+ CPU: 0 PID: 1072 Comm: compete-test Not tainted 3.10.0ws+ #55
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+ task: ffff880071b98000 ti: ffff88007b55e000 task.ti: ffff88007b55e000
+ RIP: 0010:[<ffffffff811a6b5f>]  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+ RSP: 0018:ffff88007b55fd78  EFLAGS: 00010287
+ RAX: 0000000000000000 RBX: ffff88007b55fe20 RCX: 0000000000000000
+ RDX: 0000000000001000 RSI: ffff88007a95ba30 RDI: ffff880036f9e6c0
+ RBP: ffff88007b55fda8 R08: 00000000000006ec R09: ffff880077626708
+ R10: 0000000000000003 R11: ffffffff8139ca59 R12: ffff88007a95ba30
+ R13: 0000000000000000 R14: ffffffff8139dd00 R15: ffff880036f9e6c0
+ FS:  00007f2e2e3a0740(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000018 CR3: 0000000071bd1000 CR4: 00000000000006f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Stack:
+  ffffffff8139ca59 ffff88007b55fe20 ffff880036f9e6c0 ffffffff8139dd00
+  ffff8800776266c0 ffff880077626708 ffff88007b55fde8 ffffffff811a6e8e
+  ffff88007b55fde8 ffffffff8139ca59 ffff880036f9e6c0 ffff88007b55fe20
+ Call Trace:
+  [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
+  [<ffffffff8139dd00>] ? virtcons_restore+0x100/0x100
+  [<ffffffff811a6e8e>] __splice_from_pipe+0x7e/0x90
+  [<ffffffff8139ca59>] ? alloc_buf.isra.13+0x39/0xb0
+  [<ffffffff8139d739>] port_fops_splice_write+0xe9/0x140
+  [<ffffffff8127a3f4>] ? selinux_file_permission+0xc4/0x120
+  [<ffffffff8139d650>] ? wait_port_writable+0x1b0/0x1b0
+  [<ffffffff811a6fe0>] do_splice_from+0xa0/0x110
+  [<ffffffff811a951f>] SyS_splice+0x5ff/0x6b0
+  [<ffffffff8161facf>] tracesys+0xdd/0xe2
+ Code: 49 8b 87 80 00 00 00 4c 8d 24 d0 8b 53 04 41 8b 44 24 0c 4d 8b 6c 24 10 39 d0 89 03 76 02 89 13 49 8b 44 24 10 4c 89 e6 4c 89 ff <ff> 50 18 85 c0 0f 85 aa 00 00 00 48 89 da 4c 89 e6 4c 89 ff 41
+ RIP  [<ffffffff811a6b5f>] splice_from_pipe_feed+0x6f/0x130
+  RSP <ffff88007b55fd78>
+ CR2: 0000000000000018
+ ---[ end trace 24572beb7764de59 ]---
 
-Call Trace:
- [<ffffffff8106b607>] ? warn_slowpath_common+0x87/0xc0
- [<ffffffff8106b6f6>] ? warn_slowpath_fmt+0x46/0x50
- [<ffffffff811f2319>] ? sysfs_add_one+0xc9/0x130
- [<ffffffff811f23e8>] ? create_dir+0x68/0xb0
- [<ffffffff811f2469>] ? sysfs_create_dir+0x39/0x50
- [<ffffffff81273129>] ? kobject_add_internal+0xb9/0x260
- [<ffffffff812733d8>] ? kobject_add_varg+0x38/0x60
- [<ffffffff812734b4>] ? kobject_add+0x44/0x70
- [<ffffffff81349de4>] ? get_device_parent+0xf4/0x1d0
- [<ffffffff8134b389>] ? device_add+0xc9/0x650
+V2: Fix a locking problem for error
+V3: Add Reviewed-by lines and stable@ line in sign-off area
 
--------------------8<---------------------------------------
-
-Instead of relying on guest applications to release all references to
-the ports, we should go ahead and unregister the port from all the core
-layers.  Any open/read calls on the port will then just return errors,
-and an unplug/plug operation on the host will succeed as expected.
-
-This also caused buggy behaviour in case of the device removal (not just
-a port): when the device was removed (which means all ports on that
-device are removed automatically as well), the ports with active
-users would clean up only when the last references were dropped -- and
-it would be too late then to be referencing char device pointers,
-resulting in oopses:
-
--------------------8<---------------------------------------
-PID: 6162   TASK: ffff8801147ad500  CPU: 0   COMMAND: "cat"
- #0 [ffff88011b9d5a90] machine_kexec at ffffffff8103232b
- #1 [ffff88011b9d5af0] crash_kexec at ffffffff810b9322
- #2 [ffff88011b9d5bc0] oops_end at ffffffff814f4a50
- #3 [ffff88011b9d5bf0] die at ffffffff8100f26b
- #4 [ffff88011b9d5c20] do_general_protection at ffffffff814f45e2
- #5 [ffff88011b9d5c50] general_protection at ffffffff814f3db5
-    [exception RIP: strlen+2]
-    RIP: ffffffff81272ae2  RSP: ffff88011b9d5d00  RFLAGS: 00010246
-    RAX: 0000000000000000  RBX: ffff880118901c18  RCX: 0000000000000000
-    RDX: ffff88011799982c  RSI: 00000000000000d0  RDI: 3a303030302f3030
-    RBP: ffff88011b9d5d38   R8: 0000000000000006   R9: ffffffffa0134500
-    R10: 0000000000001000  R11: 0000000000001000  R12: ffff880117a1cc10
-    R13: 00000000000000d0  R14: 0000000000000017  R15: ffffffff81aff700
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #6 [ffff88011b9d5d00] kobject_get_path at ffffffff8126dc5d
- #7 [ffff88011b9d5d40] kobject_uevent_env at ffffffff8126e551
- #8 [ffff88011b9d5dd0] kobject_uevent at ffffffff8126e9eb
- #9 [ffff88011b9d5de0] device_del at ffffffff813440c7
-
--------------------8<---------------------------------------
-
-So clean up when we have all the context, and all that's left to do when
-the references to the port have dropped is to free up the port struct
-itself.
-
-Reported-by: chayang <chayang@redhat.com>
-Reported-by: YOGANANTH SUBRAMANIAN <anantyog@in.ibm.com>
-Reported-by: FuXiangChun <xfu@redhat.com>
-Reported-by: Qunfang Zhang <qzhang@redhat.com>
-Reported-by: Sibiao Luo <sluo@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Reviewed-by: Amit Shah <amit.shah@redhat.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Amit Shah <amit.shah@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/virtio_console.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/char/virtio_console.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
 --- a/drivers/char/virtio_console.c
 +++ b/drivers/char/virtio_console.c
-@@ -1518,14 +1518,6 @@ static void remove_port(struct kref *kre
+@@ -936,16 +936,21 @@ static ssize_t port_fops_splice_write(st
+ 	 * pipe->nrbufs == 0 means there are no data to transfer,
+ 	 * so this returns just 0 for no data.
+ 	 */
+-	if (!pipe->nrbufs)
+-		return 0;
++	pipe_lock(pipe);
++	if (!pipe->nrbufs) {
++		ret = 0;
++		goto error_out;
++	}
  
- 	port = container_of(kref, struct port, kref);
+ 	ret = wait_port_writable(port, filp->f_flags & O_NONBLOCK);
+ 	if (ret < 0)
+-		return ret;
++		goto error_out;
  
--	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
--	device_destroy(pdrvdata.class, port->dev->devt);
--	cdev_del(port->cdev);
--
--	kfree(port->name);
--
--	debugfs_remove(port->debugfs_file);
--
- 	kfree(port);
+ 	buf = alloc_buf(port->out_vq, 0, pipe->nrbufs);
+-	if (!buf)
+-		return -ENOMEM;
++	if (!buf) {
++		ret = -ENOMEM;
++		goto error_out;
++	}
+ 
+ 	sgl.n = 0;
+ 	sgl.len = 0;
+@@ -953,12 +958,17 @@ static ssize_t port_fops_splice_write(st
+ 	sgl.sg = buf->sg;
+ 	sg_init_table(sgl.sg, sgl.size);
+ 	ret = __splice_from_pipe(pipe, &sd, pipe_to_sg);
++	pipe_unlock(pipe);
+ 	if (likely(ret > 0))
+ 		ret = __send_to_port(port, buf->sg, sgl.n, sgl.len, buf, true);
+ 
+ 	if (unlikely(ret <= 0))
+ 		free_buf(buf, true);
+ 	return ret;
++
++error_out:
++	pipe_unlock(pipe);
++	return ret;
  }
  
-@@ -1583,6 +1575,14 @@ static void unplug_port(struct port *por
- 	 */
- 	port->portdev = NULL;
- 
-+	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
-+	device_destroy(pdrvdata.class, port->dev->devt);
-+	cdev_del(port->cdev);
-+
-+	kfree(port->name);
-+
-+	debugfs_remove(port->debugfs_file);
-+
- 	/*
- 	 * Locks around here are not necessary - a port can't be
- 	 * opened after we removed the port struct from ports_list
+ static unsigned int port_fops_poll(struct file *filp, poll_table *wait)
 
 
