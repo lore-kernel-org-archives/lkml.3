@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757Ab3HMGqA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:46:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60666 "EHLO
+	id S1757683Ab3HMGoy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:44:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60682 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757204Ab3HMGds (ORCPT
+	with ESMTP id S1756514Ab3HMGdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:48 -0400
+	Tue, 13 Aug 2013 02:33:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Guenter Roeck <linux@roeck-us.net>
-Subject: [ 60/60] MIPS: Expose missing pci_io{map,unmap} declarations
-Date: Mon, 12 Aug 2013 23:34:27 -0700
-Message-Id: <20130813063339.181013238@linuxfoundation.org>
+        Chen Gang <gang.chen@asianux.com>, Jeff Layton <jlayton@redhat.com>,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Scott Lovenberg <scott.lovenberg@gmail.com>,
+        Steve French <smfrench@gmail.com>
+Subject: [ 48/60] cifs: extend the buffer length enought for sprintf() using
+Date: Mon, 12 Aug 2013 23:34:15 -0700
+Message-Id: <20130813063338.179472960@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -28,67 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: Chen Gang <gang.chen@asianux.com>
 
-commit 78857614104a26cdada4c53eea104752042bf5a1 upstream.
+commit 057d6332b24a4497c55a761c83c823eed9e3f23b upstream.
 
-The GENERIC_PCI_IOMAP does not depend on CONFIG_PCI so move
-it to the CONFIG_MIPS symbol so it's always selected for MIPS.
-This fixes the missing pci_iomap declaration for MIPS.
-Moreover, the pci_iounmap function was not defined in the
-io.h header file if the CONFIG_PCI symbol is not set,
-but it should since MIPS is not using CONFIG_GENERIC_IOMAP.
+For cifs_set_cifscreds() in "fs/cifs/connect.c", 'desc' buffer length
+is 'CIFSCREDS_DESC_SIZE' (56 is less than 256), and 'ses->domainName'
+length may be "255 + '\0'".
 
-This fixes the following problem on a allyesconfig:
+The related sprintf() may cause memory overflow, so need extend related
+buffer enough to hold all things.
 
-drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of
-function 'pci_iomap' [-Werror=implicit-function-declaration]
-drivers/net/ethernet/3com/3c59x.c:1044:3: error: implicit declaration of
-function 'pci_iounmap' [-Werror=implicit-function-declaration]
+It is also necessary to be sure of 'ses->domainName' must be less than
+256, and define the related macro instead of hard code number '256'.
 
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Acked-by: Steven J. Hill <Steven.Hill@imgtec.com>
-Patchwork: https://patchwork.linux-mips.org/patch/5478/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Reviewed-by: Scott Lovenberg <scott.lovenberg@gmail.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/Kconfig          |    2 +-
- arch/mips/include/asm/io.h |    5 +++++
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ fs/cifs/cifsencrypt.c |    2 +-
+ fs/cifs/cifsglob.h    |    1 +
+ fs/cifs/connect.c     |    7 ++++---
+ fs/cifs/sess.c        |    6 +++---
+ 4 files changed, 9 insertions(+), 7 deletions(-)
 
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -27,6 +27,7 @@ config MIPS
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_IRQ_SHOW
-+	select GENERIC_PCI_IOMAP
- 	select HAVE_ARCH_JUMP_LABEL
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select IRQ_FORCED_THREADING
-@@ -2412,7 +2413,6 @@ config PCI
- 	bool "Support for PCI controller"
- 	depends on HW_HAS_PCI
- 	select PCI_DOMAINS
--	select GENERIC_PCI_IOMAP
- 	select NO_GENERIC_PCI_IOPORT_MAP
- 	help
- 	  Find out whether you have a PCI motherboard. PCI is the name of a
---- a/arch/mips/include/asm/io.h
-+++ b/arch/mips/include/asm/io.h
-@@ -170,6 +170,11 @@ static inline void * isa_bus_to_virt(uns
- extern void __iomem * __ioremap(phys_t offset, phys_t size, unsigned long flags);
- extern void __iounmap(const volatile void __iomem *addr);
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -389,7 +389,7 @@ find_domain_name(struct cifs_ses *ses, c
+ 		if (blobptr + attrsize > blobend)
+ 			break;
+ 		if (type == NTLMSSP_AV_NB_DOMAIN_NAME) {
+-			if (!attrsize)
++			if (!attrsize || attrsize >= CIFS_MAX_DOMAINNAME_LEN)
+ 				break;
+ 			if (!ses->domainName) {
+ 				ses->domainName =
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -44,6 +44,7 @@
+ #define MAX_TREE_SIZE (2 + MAX_SERVER_SIZE + 1 + MAX_SHARE_SIZE + 1)
+ #define MAX_SERVER_SIZE 15
+ #define MAX_SHARE_SIZE 80
++#define CIFS_MAX_DOMAINNAME_LEN 256 /* max domain name length */
+ #define MAX_USERNAME_SIZE 256	/* reasonable maximum for current servers */
+ #define MAX_PASSWORD_SIZE 512	/* max for windows seems to be 256 wide chars */
  
-+#ifndef CONFIG_PCI
-+struct pci_dev;
-+static inline void pci_iounmap(struct pci_dev *dev, void __iomem *addr) {}
-+#endif
-+
- static inline void __iomem * __ioremap_mode(phys_t offset, unsigned long size,
- 	unsigned long flags)
- {
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -1662,7 +1662,8 @@ cifs_parse_mount_options(const char *mou
+ 			if (string == NULL)
+ 				goto out_nomem;
+ 
+-			if (strnlen(string, 256) == 256) {
++			if (strnlen(string, CIFS_MAX_DOMAINNAME_LEN)
++					== CIFS_MAX_DOMAINNAME_LEN) {
+ 				printk(KERN_WARNING "CIFS: domain name too"
+ 						    " long\n");
+ 				goto cifs_parse_mount_err;
+@@ -2288,8 +2289,8 @@ cifs_put_smb_ses(struct cifs_ses *ses)
+ 
+ #ifdef CONFIG_KEYS
+ 
+-/* strlen("cifs:a:") + INET6_ADDRSTRLEN + 1 */
+-#define CIFSCREDS_DESC_SIZE (7 + INET6_ADDRSTRLEN + 1)
++/* strlen("cifs:a:") + CIFS_MAX_DOMAINNAME_LEN + 1 */
++#define CIFSCREDS_DESC_SIZE (7 + CIFS_MAX_DOMAINNAME_LEN + 1)
+ 
+ /* Populate username and pw fields from keyring if possible */
+ static int
+--- a/fs/cifs/sess.c
++++ b/fs/cifs/sess.c
+@@ -198,7 +198,7 @@ static void unicode_domain_string(char *
+ 		bytes_ret = 0;
+ 	} else
+ 		bytes_ret = cifs_strtoUTF16((__le16 *) bcc_ptr, ses->domainName,
+-					    256, nls_cp);
++					    CIFS_MAX_DOMAINNAME_LEN, nls_cp);
+ 	bcc_ptr += 2 * bytes_ret;
+ 	bcc_ptr += 2;  /* account for null terminator */
+ 
+@@ -256,8 +256,8 @@ static void ascii_ssetup_strings(char **
+ 
+ 	/* copy domain */
+ 	if (ses->domainName != NULL) {
+-		strncpy(bcc_ptr, ses->domainName, 256);
+-		bcc_ptr += strnlen(ses->domainName, 256);
++		strncpy(bcc_ptr, ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
++		bcc_ptr += strnlen(ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
+ 	} /* else we will send a null domain name
+ 	     so the server will default to its own domain */
+ 	*bcc_ptr = 0;
 
 
