@@ -1,163 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759321Ab3HMWTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 18:19:41 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:42942 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758472Ab3HMWTg (ORCPT
+	id S1759373Ab3HMWUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:20:11 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:12668 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759255Ab3HMWUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 18:19:36 -0400
-Message-ID: <520AB0F0.8010106@gmail.com>
-Date: Wed, 14 Aug 2013 00:19:28 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 13 Aug 2013 18:20:08 -0400
+X-IronPort-AV: E=Sophos;i="4.89,873,1367971200"; 
+   d="scan'208";a="41891402"
+Message-ID: <1376432405.9273.54.camel@hastur.hellion.org.uk>
+Subject: Re: [Xen-devel] [PATCH] xen/hvc: If we use xen_raw_printk let it
+ also work on HVM guests.
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>
+Date: Tue, 13 Aug 2013 23:20:05 +0100
+In-Reply-To: <1376427570.9273.39.camel@hastur.hellion.org.uk>
+References: <1376060133-6382-1-git-send-email-konrad.wilk@oracle.com>
+	 <1376425904.9273.25.camel@hastur.hellion.org.uk>
+	 <20130813205332.GA10243@phenom.dumpdata.com>
+	 <1376427570.9273.39.camel@hastur.hellion.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: Tomasz Figa <t.figa@samsung.com>, linux-fbdev@vger.kernel.org,
-        linux-doc@vger.kernel.org, tony@atomide.com, nsekhar@ti.com,
-        Tomasz Figa <tomasz.figa@gmail.com>, s.nawrocki@samsung.com,
-        kgene.kim@samsung.com, swarren@nvidia.com, jg1.han@samsung.com,
-        Alan Stern <stern@rowland.harvard.edu>, grant.likely@linaro.org,
-        linux-media@vger.kernel.org, george.cherian@ti.com, arnd@arndb.de,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        balajitk@ti.com, Greg KH <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        kyungmin.park@samsung.com, akpm@linux-foundation.org
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-References: <20130720220006.GA7977@kroah.com> <20130731061538.GC13289@radagast> <520A0E1C.5000306@ti.com> <2034985.S0danJZqk4@amdc1227> <520A2100.6000709@ti.com>
-In-Reply-To: <520A2100.6000709@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Antivirus: avast! (VPS 130813-1, 2013-08-13), Outbound message
-X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 2013-08-13 14:05, Kishon Vijay Abraham I pisze:
-> On Tuesday 13 August 2013 05:07 PM, Tomasz Figa wrote:
->> On Tuesday 13 of August 2013 16:14:44 Kishon Vijay Abraham I wrote:
->>> On Wednesday 31 July 2013 11:45 AM, Felipe Balbi wrote:
->>>> On Wed, Jul 31, 2013 at 11:14:32AM +0530, Kishon Vijay Abraham I wrote:
->>>>>>>>>> IMHO we need a lookup method for PHYs, just like for clocks,
->>>>>>>>>> regulators, PWMs or even i2c busses because there are complex
->>>>>>>>>> cases
->>>>>>>>>> when passing just a name using platform data will not work. I
->>>>>>>>>> would
->>>>>>>>>> second what Stephen said [1] and define a structure doing things
->>>>>>>>>> in a
->>>>>>>>>> DT-like way.
->>>>>>>>>>
->>>>>>>>>> Example;
->>>>>>>>>>
->>>>>>>>>> [platform code]
->>>>>>>>>>
->>>>>>>>>> static const struct phy_lookup my_phy_lookup[] = {
->>>>>>>>>>
->>>>>>>>>> 	PHY_LOOKUP("s3c-hsotg.0", "otg", "samsung-usbphy.1", "phy.2"),
->>>>>>>>>
->>>>>>>>> The only problem here is that if *PLATFORM_DEVID_AUTO* is used
->>>>>>>>> while
->>>>>>>>> creating the device, the ids in the device name would change and
->>>>>>>>> PHY_LOOKUP wont be useful.
->>>>>>>>
->>>>>>>> I don't think this is a problem. All the existing lookup methods
->>>>>>>> already
->>>>>>>> use ID to identify devices (see regulators, clkdev, PWMs, i2c,
->>>>>>>> ...). You
->>>>>>>> can simply add a requirement that the ID must be assigned manually,
->>>>>>>> without using PLATFORM_DEVID_AUTO to use PHY lookup.
->>>>>>>
->>>>>>> And I'm saying that this idea, of using a specific name and id, is
->>>>>>> frought with fragility and will break in the future in various ways
->>>>>>> when
->>>>>>> devices get added to systems, making these strings constantly have
->>>>>>> to be
->>>>>>> kept up to date with different board configurations.
->>>>>>>
->>>>>>> People, NEVER, hardcode something like an id.  The fact that this
->>>>>>> happens today with the clock code, doesn't make it right, it makes
->>>>>>> the
->>>>>>> clock code wrong.  Others have already said that this is wrong there
->>>>>>> as
->>>>>>> well, as systems change and dynamic ids get used more and more.
->>>>>>>
->>>>>>> Let's not repeat the same mistakes of the past just because we
->>>>>>> refuse to
->>>>>>> learn from them...
->>>>>>>
->>>>>>> So again, the "find a phy by a string" functions should be removed,
->>>>>>> the
->>>>>>> device id should be automatically created by the phy core just to
->>>>>>> make
->>>>>>> things unique in sysfs, and no driver code should _ever_ be reliant
->>>>>>> on
->>>>>>> the number that is being created, and the pointer to the phy
->>>>>>> structure
->>>>>>> should be used everywhere instead.
->>>>>>>
->>>>>>> With those types of changes, I will consider merging this subsystem,
->>>>>>> but
->>>>>>> without them, sorry, I will not.
->>>>>>
->>>>>> I'll agree with Greg here, the very fact that we see people trying to
->>>>>> add a requirement of *NOT* using PLATFORM_DEVID_AUTO already points
->>>>>> to a big problem in the framework.
->>>>>>
->>>>>> The fact is that if we don't allow PLATFORM_DEVID_AUTO we will end up
->>>>>> adding similar infrastructure to the driver themselves to make sure
->>>>>> we
->>>>>> don't end up with duplicate names in sysfs in case we have multiple
->>>>>> instances of the same IP in the SoC (or several of the same PCIe
->>>>>> card).
->>>>>> I really don't want to go back to that.
->>>>>
->>>>> If we are using PLATFORM_DEVID_AUTO, then I dont see any way we can
->>>>> give the correct binding information to the PHY framework. I think we
->>>>> can drop having this non-dt support in PHY framework? I see only one
->>>>> platform (OMAP3) going to be needing this non-dt support and we can
->>>>> use the USB PHY library for it.>
->>>> you shouldn't drop support for non-DT platform, in any case we lived
->>>> without DT (and still do) for years. Gotta find a better way ;-)
->>>
->>> hmm..
->>>
->>> how about passing the device names of PHY in platform data of the
->>> controller? It should be deterministic as the PHY framework assigns its
->>> own id and we *don't* want to add any requirement that the ID must be
->>> assigned manually without using PLATFORM_DEVID_AUTO. We can get rid of
->>> *phy_init_data* in the v10 patch series.
+On Tue, 2013-08-13 at 21:59 +0100, Ian Campbell wrote:
 
-OK, so the PHY device name would have a fixed part, passed as
-platform data of the controller and a variable part appended
-by the PHY core, depending on the number of registered PHYs ?
+> > What it should be is:
+> > > >  
+> > > >  void xen_raw_console_write(const char *str)
+> > > >  {
+> > > > -	dom0_write_console(0, str, strlen(str));
+> > > > +	if (!xen_domain())
+> > > > +		return;
+> > > > +
+> > > > +	if (xen_pv_domain())
+> >             xen_domain()
+> > 
+> > > > +		dom0_write_console(0, str, strlen(str));
+> > > > +	else if (xen_hvm_domain() || xen_cpuid_base()) {
+> >      
+> > 	else if (xen_cpuid_base()) {
+> > 
+> > > > +		/* The hyperpage has not been setup yet. */
+> > > > +		int i, len = strlen(str);
+> > > > +		for (i = 0; i < len; i++)
+> > > > +			 outb(str[i], 0xe9);
+> > > > +	}
+> > > >  }
+> > 
+> > And then that should adhere to what I wrote up.
+> 
+> I think it does too.
 
-Then same PHY names would be passed as the PHY provider driver's
-platform data ?
+Except as Daniel notes in <520A7145.5010306@tycho.nsa.gov> for unrelated
+reasons:
 
-Then if there are 2 instances of the above (same names in platform
-data) how would be determined which PHY controller is linked to
-which PHY supplier ?
+>         HVM guests can still use the PV output - they just need to use the console
+>         write hypercall instead of the HVM I/O port. I would think that PVH guests
+>         would default to using the hypercall as it is more efficient (it takes a
+>         string rather than one character per write).
+>         
+>         Actually, checking... the console_io hypercall would need to be added to
+>         the hvm_hypercall{32,64}_table for an HVM guest to be able to use it; they
+>         currently must use the I/O port. I didn't check the PVH patches.
 
-I guess you want each device instance to have different PHY device
-names already in platform data ? That might work. We probably will
-be focused mostly on DT anyway. It seem without DT we are trying
-to find some layer that would allow us to couple relevant devices
-and overcome driver core inconvenience that it provides to means
-to identify specific devices in advance. :) Your proposal sounds
-reasonable, however I might be missing some details or corner cases.
+Or did you actually try this code and it worked?
 
->> What about slightly altering the concept of v9 to pass a pointer to struct
->> device instead of device name inside phy_init_data?
+Ian.
 
-As Felipe said, we don't want to pass pointers in platform_data
-to/from random subsystems. We pass data, passing pointers would
-be a total mess IMHO.
-
-> The problem is device might be created very late. (For example in omap4, usb2
-> phy device gets created when ocp2scp bus is probed). And we have to pass the
-> init data in board file.
-
-Regards,
-Sylwester
