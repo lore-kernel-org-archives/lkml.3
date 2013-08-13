@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478Ab3HMGdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:33:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60488 "EHLO
+	id S1757876Ab3HMGxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:53:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60515 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755845Ab3HMGdM (ORCPT
+	with ESMTP id S1756455Ab3HMGdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:12 -0400
+	Tue, 13 Aug 2013 02:33:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Stuart Foster <smf.linux@ntlworld.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 01/60] SCSI: Dont attempt to send extended INQUIRY command if skip_vpd_pages is set
-Date: Mon, 12 Aug 2013 23:33:28 -0700
-Message-Id: <20130813063332.096498852@linuxfoundation.org>
+        Alexander Z Lam <azl@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        David Sharp <dhsharp@google.com>,
+        Alexander Z Lam <lambchop468@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 25/60] tracing: Fix reset of time stamps during trace_clock changes
+Date: Mon, 12 Aug 2013 23:33:52 -0700
+Message-Id: <20130813063335.440826205@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -29,34 +30,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Alexander Z Lam <azl@google.com>
 
-commit 7562523e84ddc742fe1f9db8bd76b01acca89f6b upstream.
+commit 9457158bbc0ee04ecef76862d73eecd8076e9c7b upstream.
 
-If a device has the skip_vpd_pages flag set we should simply fail the
-scsi_get_vpd_page() call.
+Fixed two issues with changing the timestamp clock with trace_clock:
 
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Stuart Foster <smf.linux@ntlworld.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+ - The global buffer was reset on instance clock changes. Change this to pass
+   the correct per-instance buffer
+ - ftrace_now() is used to set buf->time_start in tracing_reset_online_cpus().
+   This was incorrect because ftrace_now() used the global buffer's clock to
+   return the current time. Change this to use buffer_ftrace_now() which
+   returns the current time for the correct per-instance buffer.
+
+Also removed tracing_reset_current() because it is not used anywhere
+
+Link: http://lkml.kernel.org/r/1375493777-17261-2-git-send-email-azl@google.com
+
+Signed-off-by: Alexander Z Lam <azl@google.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Cc: Alexander Z Lam <lambchop468@gmail.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/trace/trace.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -1031,6 +1031,9 @@ int scsi_get_vpd_page(struct scsi_device
- {
- 	int i, result;
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -232,20 +232,25 @@ int filter_current_check_discard(struct
+ }
+ EXPORT_SYMBOL_GPL(filter_current_check_discard);
  
-+	if (sdev->skip_vpd_pages)
-+		goto fail;
+-cycle_t ftrace_now(int cpu)
++cycle_t buffer_ftrace_now(struct trace_buffer *buf, int cpu)
+ {
+ 	u64 ts;
+ 
+ 	/* Early boot up does not have a buffer yet */
+-	if (!global_trace.trace_buffer.buffer)
++	if (!buf->buffer)
+ 		return trace_clock_local();
+ 
+-	ts = ring_buffer_time_stamp(global_trace.trace_buffer.buffer, cpu);
+-	ring_buffer_normalize_time_stamp(global_trace.trace_buffer.buffer, cpu, &ts);
++	ts = ring_buffer_time_stamp(buf->buffer, cpu);
++	ring_buffer_normalize_time_stamp(buf->buffer, cpu, &ts);
+ 
+ 	return ts;
+ }
+ 
++cycle_t ftrace_now(int cpu)
++{
++	return buffer_ftrace_now(&global_trace.trace_buffer, cpu);
++}
 +
- 	/* Ask for all the pages supported by this device */
- 	result = scsi_vpd_inquiry(sdev, buf, 0, buf_len);
- 	if (result)
+ /**
+  * tracing_is_enabled - Show if global_trace has been disabled
+  *
+@@ -1194,7 +1199,7 @@ void tracing_reset_online_cpus(struct tr
+ 	/* Make sure all commits have finished */
+ 	synchronize_sched();
+ 
+-	buf->time_start = ftrace_now(buf->cpu);
++	buf->time_start = buffer_ftrace_now(buf, buf->cpu);
+ 
+ 	for_each_online_cpu(cpu)
+ 		ring_buffer_reset_cpu(buffer, cpu);
+@@ -1202,11 +1207,6 @@ void tracing_reset_online_cpus(struct tr
+ 	ring_buffer_record_enable(buffer);
+ }
+ 
+-void tracing_reset_current(int cpu)
+-{
+-	tracing_reset(&global_trace.trace_buffer, cpu);
+-}
+-
+ /* Must have trace_types_lock held */
+ void tracing_reset_all_online_cpus(void)
+ {
+@@ -4647,12 +4647,12 @@ static ssize_t tracing_clock_write(struc
+ 	 * New clock may not be consistent with the previous clock.
+ 	 * Reset the buffer so that it doesn't have incomparable timestamps.
+ 	 */
+-	tracing_reset_online_cpus(&global_trace.trace_buffer);
++	tracing_reset_online_cpus(&tr->trace_buffer);
+ 
+ #ifdef CONFIG_TRACER_MAX_TRACE
+ 	if (tr->flags & TRACE_ARRAY_FL_GLOBAL && tr->max_buffer.buffer)
+ 		ring_buffer_set_clock(tr->max_buffer.buffer, trace_clocks[i].func);
+-	tracing_reset_online_cpus(&global_trace.max_buffer);
++	tracing_reset_online_cpus(&tr->max_buffer);
+ #endif
+ 
+ 	mutex_unlock(&trace_types_lock);
 
 
