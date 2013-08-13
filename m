@@ -1,86 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab3HMVMo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 17:12:44 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58591 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932141Ab3HMVMn (ORCPT
+	id S932256Ab3HMVNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 17:13:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40941 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932141Ab3HMVNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 17:12:43 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: "Rafael J . Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH] PM / QoS: Fix workqueue deadlock when using pm_qos_update_request_timeout()
-Date: Tue, 13 Aug 2013 14:12:40 -0700
-Message-Id: <1376428360-12560-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.4.rc2.15.g96cb27a
-In-reply-to: <4423040.Ds5TZlivfo@vostro.rjw.lan>
+	Tue, 13 Aug 2013 17:13:31 -0400
+Date: Tue, 13 Aug 2013 14:13:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] mm: make lru_add_drain_all() selective
+Message-Id: <20130813141329.c55deccf462f3ad49129bbca@linux-foundation.org>
+In-Reply-To: <520A9E4A.2050203@tilera.com>
+References: <5202CEAA.9040204@linux.vnet.ibm.com>
+	<201308072335.r77NZZwl022494@farm-0012.internal.tilera.com>
+	<20130812140520.c6a2255d2176a690fadf9ba7@linux-foundation.org>
+	<52099187.80301@tilera.com>
+	<20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org>
+	<20130813201958.GA28996@mtj.dyndns.org>
+	<20130813133135.3b580af557d1457e4ee8331a@linux-foundation.org>
+	<520A9E4A.2050203@tilera.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pm_qos_update_request_timeout() updates a qos and then schedules
-a delayed work item to bring the qos back down to the default
-after the timeout. When the work item runs, pm_qos_work_fn() will
-call pm_qos_update_request() and deadlock because it tries to
-cancel itself via cancel_delayed_work_sync(). Future callers of
-that qos will also hang waiting to cancel the work that is
-canceling itself. Let's extract the little bit of code that does
-the real work of pm_qos_update_request() and call it from the
-work function so that we don't deadlock.
+On Tue, 13 Aug 2013 16:59:54 -0400 Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- kernel/power/qos.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+> >
+> > Then again, why does this patchset exist?  It's a performance
+> > optimisation so presumably someone cares.  But not enough to perform
+> > actual measurements :(
+> 
+> The patchset exists because of the difference between zero overhead on
+> cpus that don't have drainable lrus, and non-zero overhead.  This turns
+> out to be important on workloads where nohz cores are handling 10 Gb
+> traffic in userspace and really, really don't want to be interrupted,
+> or they drop packets on the floor.
 
-diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-index 06fe285..a394297 100644
---- a/kernel/power/qos.c
-+++ b/kernel/power/qos.c
-@@ -296,6 +296,17 @@ int pm_qos_request_active(struct pm_qos_request *req)
- }
- EXPORT_SYMBOL_GPL(pm_qos_request_active);
- 
-+static void __pm_qos_update_request(struct pm_qos_request *req,
-+			   s32 new_value)
-+{
-+	trace_pm_qos_update_request(req->pm_qos_class, new_value);
-+
-+	if (new_value != req->node.prio)
-+		pm_qos_update_target(
-+			pm_qos_array[req->pm_qos_class]->constraints,
-+			&req->node, PM_QOS_UPDATE_REQ, new_value);
-+}
-+
- /**
-  * pm_qos_work_fn - the timeout handler of pm_qos_update_request_timeout
-  * @work: work struct for the delayed work (timeout)
-@@ -308,7 +319,7 @@ static void pm_qos_work_fn(struct work_struct *work)
- 						  struct pm_qos_request,
- 						  work);
- 
--	pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
-+	__pm_qos_update_request(req, PM_QOS_DEFAULT_VALUE);
- }
- 
- /**
-@@ -364,12 +375,7 @@ void pm_qos_update_request(struct pm_qos_request *req,
- 	}
- 
- 	cancel_delayed_work_sync(&req->work);
--
--	trace_pm_qos_update_request(req->pm_qos_class, new_value);
--	if (new_value != req->node.prio)
--		pm_qos_update_target(
--			pm_qos_array[req->pm_qos_class]->constraints,
--			&req->node, PM_QOS_UPDATE_REQ, new_value);
-+	__pm_qos_update_request(req, new_value);
- }
- EXPORT_SYMBOL_GPL(pm_qos_update_request);
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+But what is the effect of the patchset?  Has it been tested against the
+problematic workload(s)?
+
+> >> the logical thing to do
+> >> would be pre-allocating per-cpu buffers instead of depending on
+> >> dynamic allocation.  Do the invocations need to be stackable?
+> > schedule_on_each_cpu() calls should if course happen concurrently, and
+> > there's the question of whether we wish to permit async
+> > schedule_on_each_cpu().  Leaving the calling CPU twiddling thumbs until
+> > everyone has finished is pretty sad if the caller doesn't want that.
+> >
+> >>> That being said, the `cpumask_var_t mask' which was added to
+> >>> lru_add_drain_all() is unneeded - it's just a temporary storage which
+> >>> can be eliminated by creating a schedule_on_each_cpu_cond() or whatever
+> >>> which is passed a function pointer of type `bool (*call_needed)(int
+> >>> cpu, void *data)'.
+> >> I'd really like to avoid that.  Decision callbacks tend to get abused
+> >> quite often and it's rather sad to do that because cpumask cannot be
+> >> prepared and passed around.  Can't it just preallocate all necessary
+> >> resources?
+> > I don't recall seeing such abuse.  It's a very common and powerful
+> > tool, and not implementing it because some dummy may abuse it weakens
+> > the API for all non-dummies.  That allocation is simply unneeded.
+> 
+> The problem with a callback version is that it's not clear that
+> it helps with Andrew's original concern about allocation.  In
+> schedule_on_each_cpu() we need to track which cpus we scheduled work
+> on so that we can flush_work() after all the work has been scheduled.
+> Even with a callback approach, we'd still end up wanting to record
+> the results of the callback in the first pass so that we could
+> properly flush_work() on the second pass.  Given that, having the
+> caller just create the cpumask in the first place makes more sense.
+
+Nope.  schedule_on_each_cpu() can just continue to do
+
+	for_each_cpu(cpu, mask)
+		flush_work(per_cpu_ptr(works, cpu));
+
+lru_add_drain_all() can do that as well.  An optimisation would be to
+tag the unused works as not-needing-flush.  Set work.entry,next to
+NULL, for example.
+
+If we were to switch from alloc_per_cpu() to bunch-of-kmallocs then
+they'd need to be assembled into a list which is pretty trivial. 
+
+> As Andrew suggests, we could also just have an asynchronous version
+> of schedule_on_each_cpu(), but I don't know if that's beneficial
+> enough to the swap code to make it worthwhile, or if it's tricky
+> enough on the workqueue side to make it not worthwhile; it does seem
+> like we would need to rethink the work_struct allocation, and
+> e.g. avoid re-issuing the flush to a cpu that hadn't finished the
+> previous flush, etc.  Potentially tricky, particularly if
+> lru_add_drain_all() doesn't care about performance in the first place.
+
+lru_add_drain_all() wants synchronous behavior.  I don't know how much
+call there would be for an async schedule_on_each_cpu_cond().
 
