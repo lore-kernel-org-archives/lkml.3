@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888Ab3HMGzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:55:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60503 "EHLO
+	id S1757926Ab3HMGzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:55:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756276Ab3HMGdO (ORCPT
+	with ESMTP id S1756324Ab3HMGdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:14 -0400
+	Tue, 13 Aug 2013 02:33:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrew Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 22/60] tracing: Fix fields of struct trace_iterator that are zeroed by mistake
-Date: Mon, 12 Aug 2013 23:33:49 -0700
-Message-Id: <20130813063335.063044611@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 21/60] ACPI / PM: Walk physical_node_list under physical_node_lock
+Date: Mon, 12 Aug 2013 23:33:48 -0700
+Message-Id: <20130813063334.984600825@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -26,72 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Vagin <avagin@openvz.org>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit ed5467da0e369e65b247b99eb6403cb79172bcda upstream.
+commit 623cf33cb055b1e81fa47e4fc16789b2c129e31e upstream.
 
-tracing_read_pipe zeros all fields bellow "seq". The declaration contains
-a comment about that, but it doesn't help.
+The list of physical devices corresponding to an ACPI device
+object is walked by acpi_system_wakeup_device_seq_show() and
+physical_device_enable_wakeup() without taking that object's
+physical_node_lock mutex.  Since each of those functions may be
+run at any time as a result of a user space action, the lack of
+appropriate locking in them may lead to a kernel crash if that
+happens during device hot-add or hot-remove involving the device
+object in question.
 
-The first field is "snapshot", it's true when current open file is
-snapshot. Looks obvious, that it should not be zeroed.
+Fix the issue by modifying acpi_system_wakeup_device_seq_show() and
+physical_device_enable_wakeup() to use physical_node_lock as
+appropriate.
 
-The second field is "started". It was converted from cpumask_t to
-cpumask_var_t (v2.6.28-4983-g4462344), in other words it was
-converted from cpumask to pointer on cpumask.
-
-Currently the reference on "started" memory is lost after the first read
-from tracing_read_pipe and a proper object will never be freed.
-
-The "started" is never dereferenced for trace_pipe, because trace_pipe
-can't have the TRACE_FILE_ANNOTATE options.
-
-Link: http://lkml.kernel.org/r/1375463803-3085183-1-git-send-email-avagin@openvz.org
-
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ftrace_event.h |   10 ++++++----
- kernel/trace/trace.c         |    1 +
- 2 files changed, 7 insertions(+), 4 deletions(-)
+ drivers/acpi/proc.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -78,6 +78,11 @@ struct trace_iterator {
- 	/* trace_seq for __print_flags() and __print_symbolic() etc. */
- 	struct trace_seq	tmp_seq;
+--- a/drivers/acpi/proc.c
++++ b/drivers/acpi/proc.c
+@@ -311,6 +311,8 @@ acpi_system_wakeup_device_seq_show(struc
+ 			   dev->pnp.bus_id,
+ 			   (u32) dev->wakeup.sleep_state);
  
-+	cpumask_var_t		started;
++		mutex_lock(&dev->physical_node_lock);
 +
-+	/* it's true when current open file is snapshot */
-+	bool			snapshot;
+ 		if (!dev->physical_node_count) {
+ 			seq_printf(seq, "%c%-8s\n",
+ 				dev->wakeup.flags.run_wake ? '*' : ' ',
+@@ -338,6 +340,8 @@ acpi_system_wakeup_device_seq_show(struc
+ 				put_device(ldev);
+ 			}
+ 		}
 +
- 	/* The below is zeroed out in pipe_read */
- 	struct trace_seq	seq;
- 	struct trace_entry	*ent;
-@@ -90,10 +95,7 @@ struct trace_iterator {
- 	loff_t			pos;
- 	long			idx;
++		mutex_unlock(&dev->physical_node_lock);
+ 	}
+ 	mutex_unlock(&acpi_device_lock);
+ 	return 0;
+@@ -347,12 +351,16 @@ static void physical_device_enable_wakeu
+ {
+ 	struct acpi_device_physical_node *entry;
  
--	cpumask_var_t		started;
--
--	/* it's true when current open file is snapshot */
--	bool			snapshot;
-+	/* All new field here will be zeroed out in pipe_read */
- };
++	mutex_lock(&adev->physical_node_lock);
++
+ 	list_for_each_entry(entry,
+ 		&adev->physical_node_list, node)
+ 		if (entry->dev && device_can_wakeup(entry->dev)) {
+ 			bool enable = !device_may_wakeup(entry->dev);
+ 			device_set_wakeup_enable(entry->dev, enable);
+ 		}
++
++	mutex_unlock(&adev->physical_node_lock);
+ }
  
- enum trace_iter_flags {
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4121,6 +4121,7 @@ waitagain:
- 	memset(&iter->seq, 0,
- 	       sizeof(struct trace_iterator) -
- 	       offsetof(struct trace_iterator, seq));
-+	cpumask_clear(iter->started);
- 	iter->pos = -1;
- 
- 	trace_event_read_lock();
+ static ssize_t
 
 
