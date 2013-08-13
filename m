@@ -1,171 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab3HMFq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 01:46:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59296 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab3HMFq5 (ORCPT
+	id S1754946Ab3HMFsm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 01:48:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51545 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035Ab3HMFsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 01:46:57 -0400
-From: Keerthy <j-keerthy@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <swarren@wwwdotorg.org>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <nm@ti.com>, <balajitk@ti.com>,
-        <j-keerthy@ti.com>
-Subject: [PATCH] ARM: DTS: DRA7: Add TPS659038 PMIC nodes
-Date: Tue, 13 Aug 2013 11:12:36 +0530
-Message-ID: <1376372556-4244-1-git-send-email-j-keerthy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 13 Aug 2013 01:48:40 -0400
+Date: Mon, 12 Aug 2013 22:48:39 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v1 03/14] clk: Add of_clk_match() for device drivers
+Message-ID: <20130813054839.GF14845@codeaurora.org>
+References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
+ <1374713022-6049-4-git-send-email-sboyd@codeaurora.org>
+ <20130812202347.5348.76490@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130812202347.5348.76490@quantum>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Patch adds nodes for TPS659038 PMIC for DRA7 boards.
+On 08/12, Mike Turquette wrote:
+> Quoting Stephen Boyd (2013-07-24 17:43:31)
+> > In similar fashion as of_regulator_match() add an of_clk_match()
+> > function that finds an initializes clock init_data structs from
+> > devicetree. Drivers should use this API to find clocks that their
+> > device is providing and then iterate over their match table
+> > registering the clocks with the init data parsed.
+> > 
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> Stephen,
+> 
+> In general I like this approach. Writing real device drivers for clock
+> controllers is The Right Way and of_clk_match helps.
+> 
+> Am I reading this correctly that the base register addresses/offsets for
+> the clock nodes still come from C files? For example I still see
+> pll8_desc defining reg stuff in drivers/clk/msm/gcc-8960.c.
 
-It is based on:
-http://comments.gmane.org/gmane.linux.ports.arm.omap/102459.
+I think we may be able to put the registers in DT but I don't
+know why we need to do that if we're already matching up nodes
+with C structs. It also made me want to introduce devm_of_iomap()
+which just seemed wrong (if you have a dev struct why can't you
+use devm_ioremap()).
 
-Documentation:	Documentation/devicetree/bindings/mfd/palmas.txt
-		Documentation/devicetree/bindings/regulator/palmas-pmic.txt		
+> 
+> What do you think about fetching this data from DT? My thinking here is
+> that the definition of that PLL structure would be in C, as would all of
+> the control logic. But any per-clock data whatsoever should live in DTS.
+> This means the clock data you supply in the DTS files in patches #9 and
+> #10 would have base addresses or offsets per-clock. I think this echoes
+> Mark R's concerns as well.
+> 
+> In the future if new chips have more of that type of PLL it would not
+> require changes to your clock driver, only new DTS data for the new
+> chip.
+> 
+> I could have that wrong though, there is a fair amount of indirection in
+> this series...
 
-Tested on DRA7 Board, 3.11-rc5 plus the above patch-set.
+Let's take the PLL example and see if I follow what would be in
+DT and what would be in C.
 
-Signed-off-by: Keerthy <j-keerthy@ti.com>
----
- arch/arm/boot/dts/dra7-evm.dts |  118 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 118 insertions(+)
+Right now we have
 
-diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-index b270e24..96f409f 100644
---- a/arch/arm/boot/dts/dra7-evm.dts
-+++ b/arch/arm/boot/dts/dra7-evm.dts
-@@ -93,6 +93,124 @@
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&i2c1_pins>;
- 	clock-frequency = <400000>;
-+
-+	tps659038: tps659038@58 {
-+		compatible = "ti,tps659038";
-+		reg = <0x58>;
-+		interrupt-controller;
-+		#interrupt-cells = <2>;
-+
-+		tps659038_pmic {
-+			compatible = "ti,tps659038-pmic";
-+
-+			regulators {
-+				smps123_reg: smps123 {
-+					/* VDD_MPU */
-+						regulator-name = "smps123";
-+						regulator-min-microvolt = < 600000>;
-+						regulator-max-microvolt = <1500000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				smps45_reg: smps45 {
-+						/* VDD_DSPEVE */
-+						regulator-name = "smps45";
-+						regulator-min-microvolt = < 600000>;
-+						regulator-max-microvolt = <1310000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				smps6_reg: smps6 {
-+						/* VDD_GPU - over VDD_SMPS6 */
-+						regulator-name = "smps6";
-+						regulator-min-microvolt = <600000>;
-+						regulator-max-microvolt = <13100000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				smps7_reg: smps7 {
-+						/* VDDS_CORE */
-+						regulator-name = "smps7";
-+						regulator-min-microvolt = <600000>;
-+						regulator-max-microvolt = <1310000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				smps8_reg: smps8 {
-+						/* VDD_IVAHD */
-+						regulator-name = "smps8";
-+						regulator-min-microvolt = < 600000>;
-+						regulator-max-microvolt = <1310000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				smps9_reg: smps9 {
-+						/* VDD_1V8 */
-+						regulator-name = "smps9";
-+						regulator-min-microvolt = <1800000>;
-+						regulator-max-microvolt = <1800000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				ldo1_reg: ldo1 {
-+						/* LDO1_OUT --> SDIO  */
-+						regulator-name = "ldo1";
-+						regulator-min-microvolt = <1800000>;
-+						regulator-max-microvolt = <3300000>;
-+					};
-+
-+				ldo2_reg: ldo2 {
-+						/* VDD_RTCIO */
-+						regulator-name = "ldo2";
-+						regulator-min-microvolt = <3300000>;
-+						regulator-max-microvolt = <3300000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				ldo3_reg: ldo3 {
-+						/* VDDA_1V8 PHYs */
-+						regulator-name = "ldo3";
-+						regulator-min-microvolt = <1800000>;
-+						regulator-max-microvolt = <1800000>;
-+					};
-+
-+				ldo9_reg: ldo9 {
-+						/* VDD_RTC */
-+						regulator-name = "ldo9";
-+						regulator-min-microvolt = <1000000>;
-+						regulator-max-microvolt = <1000000>;
-+						regulator-boot-on;
-+						regulator-always-on;
-+					};
-+
-+				ldoln_reg: ldoln {
-+						/* VDDA_1v8: PLLs */
-+						regulator-name = "ldoln";
-+						regulator-min-microvolt = <1800000>;
-+						regulator-max-microvolt = <1800000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				ldousb_reg: ldousb {
-+						/* VDDA_3V_USB: VDDA_USBHS33 */
-+						regulator-name = "ldousb";
-+						regulator-min-microvolt = <3250000>;
-+						regulator-max-microvolt = <3250000>;
-+						regulator-always-on;
-+						regulator-boot-on;
-+					};
-+
-+				};
-+			};
-+		};
- };
- 
- &i2c2 {
+	pll8: pll8 {
+		#clock-cells = <0>;
+		compatible = "qcom,pll";
+		clocks = <&pxo>;
+	};
+
+in DT and
+
+	static struct pll_desc pll8_desc = {
+		.l_reg = 0x3144,
+		.m_reg = 0x3148,
+		.n_reg = 0x314c,
+		.config_reg = 0x3154,
+		.mode_reg = 0x3140,
+		.status_reg = 0x3158,
+		.status_bit = 16,
+	};
+
+in C. Do you want everything to be in DT? Something like:
+
+	pll8: pll8@3140 {
+		#clock-cells = <0>;
+		compatible = "qcom,pll";
+		clocks = <&pxo>;
+		reg = <0x3140 0x20>;
+	};
+
+and then assume that all those registers are offset from the base
+register and that the status bit is 16 (it usually is but not
+always)?
+
+The problem I see is this quickly breaks down with more
+complicated clocks like the RCGs.
+
+We have
+
+	gsbi5_uart_rcg: gsbi5_uart_rcg {
+		#clock-cells = <0>;
+		compatible = "qcom,p2-mn16-clock";
+		clocks = <&pxo>, <&vpll8>;
+	};
+
+in DT and
+
+	static struct freq_tbl clk_tbl_gsbi_uart[] = {
+		{  1843200, PLL8, 2,  6, 625 },
+		{  3686400, PLL8, 2, 12, 625 },
+		{  7372800, PLL8, 2, 24, 625 },
+		{ 14745600, PLL8, 2, 48, 625 },
+		{ 16000000, PLL8, 4,  1,   6 },
+		{ 24000000, PLL8, 4,  1,   4 },
+		{ 32000000, PLL8, 4,  1,   3 },
+		{ 40000000, PLL8, 1,  5,  48 },
+		{ 46400000, PLL8, 1, 29, 240 },
+		{ 48000000, PLL8, 4,  1,   2 },
+		{ 51200000, PLL8, 1,  2,  15 },
+		{ 56000000, PLL8, 1,  7,  48 },
+		{ 58982400, PLL8, 1, 96, 625 },
+		{ 64000000, PLL8, 2,  1,   3 },
+		{ }
+	};
+
+	static struct rcg_desc gsbi5_uart_rcg = {
+		.ctl_reg = 0x2a54,
+		.ns_reg = 0x2a54,
+		.md_reg = 0x2a50,
+		.ctl_bit = 11,
+		.mnctr_en_bit = 8,
+		.mnctr_reset_bit = 7,
+		.mnctr_mode_shift = 5,
+		.pre_div_shift = 3,
+		.src_sel_shift = 0,
+		.n_val_shift = 16,
+		.m_val_shift = 16,
+		.parent_map = gcc_pxo_pll8_map,
+		.freq_tbl = clk_tbl_gsbi_uart,
+	};
+
+in C. It starts to get pretty unwieldy when you put this all in
+DT, plus you'll notice that the ns_reg and ctl_reg are the same
+here because we've generalized the code to work with different
+types of software interfaces (technically this clock has no ctl
+register, just an NS and MD register). Our multimedia clock
+controllers don't follow any standard base/offset pair and so the
+ctl_reg can be a different offset from the md_reg depending on
+which clock we're talking about. My initial try at translating
+this into DT pretty much just made every struct member into a
+property, including the duplicate register, expect for the
+frequency table, which could probably also be DT-ified with some
+work.
+
+	gsbi5_uart_rcg: gsbi5_uart_rcg@2a54 {
+		#clock-cells = <0>;
+		compatible = "qcom,p2-mn16-clock";
+		clocks = <&pxo>, <&vpll8>;
+		reg = <0x2a54 0x4>,
+		      <0x2a54 0x4>,
+		      <0x2a50 0x4>;
+		ctl_bit = <11>;
+		mnctr_en_bit = <8>;
+		mnctr_reset_bit = <7>;
+		mnctr_mode_shift = <5>;
+		pre_div_shift = <3>;
+		src_sel_shift = <0>;
+		n_val_shift = <16>;
+		m_val_shift = <16>;
+	};
+
+This is great for making the kernel DT-data-driven, but I
+couldn't find any other driver that was describing register level
+details in DT.
+
+The good news is that newer clock controllers follow a standard
+and so we can specify one or two register properties and the type
+of clock and we're pretty much done. The software interface
+hasn't been randomized like on earlier controllers and bits
+within registers are always the same. We still have some clocks
+that are just on/off switches though and so we'll have to put
+register level details like which bit turns that clock on in DT
+(which I believe is not preferred/allowed?). I don't see any way
+to avoid that if we want it to be entirely DT driven.
+
 -- 
-1.7.9.5
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
