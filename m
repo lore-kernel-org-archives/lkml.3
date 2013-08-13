@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606Ab3HMNhg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:37:36 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:62520 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932592Ab3HMNhc (ORCPT
+	id S1758381Ab3HMNiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:38:12 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:43449 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932572Ab3HMNh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:37:32 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2 35/35] cpufreq: tegra: Covert to light weight ->target_index() routine
-Date: Tue, 13 Aug 2013 19:02:48 +0530
-Message-Id: <8becd7a6b5383426e35e89d108dbc9bb8ee17655.1376392602.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
-References: <cover.1376392602.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
-References: <cover.1376392602.git.viresh.kumar@linaro.org>
+	Tue, 13 Aug 2013 09:37:26 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-76-520a3694cce0
+From: Sangjung Woo <sangjung.woo@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sangjung Woo <sangjung.woo@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
+        Myugnjoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH] drivers/rtc/rtc-max77686.c: Fix wrong register
+Date: Tue, 13 Aug 2013 22:37:12 +0900
+Message-id: <1376401032-31244-1-git-send-email-sangjung.woo@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsWyRsSkWHeKGVeQwYROfos569ewWXSefcJs
+	cXnXHDaL240r2CwW7ClxYPU4MeM3i0ffllWMHp83yQUwR3HZpKTmZJalFunbJXBlTFsUVDCf
+	veLUlstMDYw9bF2MnBwSAiYSM/7fZ4WwxSQu3FsPFOfiEBJYyigx/9R+Jpiijy9b2SES0xkl
+	tpyaCFXVxiSxYc1/sCo2AV2JJwcuM4PYIkD2que7wGxmgXmMEhtfeoLYwgL2EnOP7WEBsVkE
+	VCU6F3aD1fAKeEisv3WTsYuRA2ibgsScSTYg8yUEHrNJzGv5xw5RLyDxbfIhFogaWYlNB5gh
+	jpOUOLjiBssERsEFjAyrGEVTC5ILipPSiwz1ihNzi0vz0vWS83M3MQJD8fS/Z707GG8fsD7E
+	mAw0biKzlGhyPjCU80riDY3NjCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1J
+	LT7EyMTBKdXAyPs3z/0UbzPX6nV7Tz05uH3Zvkgex560Z5sYK1Q/XnE80LTo/D5jmQC/n9e/
+	O6cGxZz60+StGWPzNqJLVXbDrjeTZOwNP50/vsOj48yz7r9qG8Mu/JSym3E0z1Y0/3vTW7Pz
+	YYuurTWOvSdyxyr11b8MWXv2Yh2vM3e2HtJSigyduvTZ8eAfa5VYijMSDbWYi4oTAfrejjVb	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jQd0pZlxBBjfPs1vMWb+GzaLz7BNm
+	i8u75rBZ3G5cwWaxYE+JA6vHiRm/WTz6tqxi9Pi8SS6AOaqB0SYjNTEltUghNS85PyUzL91W
+	yTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaKWSQlliTilQKCCxuFhJ3w7ThNAQN10L
+	mMYIXd+QILgeIwM0kLCGMWPaoqCC+ewVp7ZcZmpg7GHrYuTkkBAwkfj4spUdwhaTuHBvPVCc
+	i0NIYDqjxJZTE6GcNiaJDWv+M4FUsQnoSjw5cJkZxBYBslc93wVmMwvMY5TY+NITxBYWsJeY
+	e2wPC4jNIqAq0bmwG6yGV8BDYv2tm4xdjBxA2xQk5kyymcDIvYCRYRWjaGpBckFxUnqukV5x
+	Ym5xaV66XnJ+7iZGcKA/k97BuKrB4hCjAAejEg9vxkeOICHWxLLiytxDjBIczEoivHGMXEFC
+	vCmJlVWpRfnxRaU5qcWHGJOBlk9klhJNzgdGYV5JvKGxiZmRpZG5oYWRsTlpwkrivAdbrQOF
+	BNITS1KzU1MLUotgtjBxcEo1MG5edCdyv3OW4Ssbx0+fWwVZdF5/Yc45+32O0hMTntS5Gd9e
+	TzTVjNtjdPbZd4X3LAf1juvnVBwqEeneqHJ9UeM1tlMyM55PcDpzwVYg1zdv07eQ1m8PJpq2
+	Tk74dT3jVnGf++QJgqV/wr64b9+leZLJ/mJr6n7uH/ss0rczC+xTK2Y7Uer+JleJpTgj0VCL
+	uag4EQA5Y5WYuAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts existing .target() to newly defined light weight
-.target_index() routine for this driver.
+Fix to read the wrong register when cheching whether the RTC timer has
+reached or not.
 
-CPUFreq core will call cpufreq_frequency_table_target() before calling this
-routine and will pass index to it.
-
-Cc: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
+Signed-off-by: Myugnjoo Ham <myungjoo.ham@samsung.com>
+Reviewed-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 ---
- drivers/cpufreq/tegra-cpufreq.c | 12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ drivers/rtc/rtc-max77686.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-index affb294..ee2cf8f3 100644
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ b/drivers/cpufreq/tegra-cpufreq.c
-@@ -150,11 +150,8 @@ static unsigned long tegra_cpu_highest_speed(void)
- 	return rate;
- }
- 
--static int tegra_target(struct cpufreq_policy *policy,
--		       unsigned int target_freq,
--		       unsigned int relation)
-+static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
- {
--	unsigned int idx;
- 	unsigned int freq;
- 	int ret = 0;
- 
-@@ -165,10 +162,7 @@ static int tegra_target(struct cpufreq_policy *policy,
- 		goto out;
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+index 9915cb9..a1140c8 100644
+--- a/drivers/rtc/rtc-max77686.c
++++ b/drivers/rtc/rtc-max77686.c
+@@ -240,7 +240,7 @@ static int max77686_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
  	}
  
--	cpufreq_frequency_table_target(policy, freq_table, target_freq,
--		relation, &idx);
--
--	freq = freq_table[idx].frequency;
-+	freq = freq_table[index].frequency;
- 
- 	target_cpu_speed[policy->cpu] = freq;
- 
-@@ -234,7 +228,7 @@ static int tegra_cpu_exit(struct cpufreq_policy *policy)
- 
- static struct cpufreq_driver tegra_cpufreq_driver = {
- 	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= tegra_target,
-+	.target_index	= tegra_target,
- 	.get		= tegra_getspeed,
- 	.init		= tegra_cpu_init,
- 	.exit		= tegra_cpu_exit,
+ 	alrm->pending = 0;
+-	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS1, &val);
++	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS2, &val);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "%s:%d fail to read status1 reg(%d)\n",
+ 				__func__, __LINE__, ret);
 -- 
-1.7.12.rc2.18.g61b472e
+1.7.9.5
 
