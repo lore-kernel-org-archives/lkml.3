@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758657Ab3HMXvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 19:51:31 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:58682 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758297Ab3HMXv3 (ORCPT
+	id S1758489Ab3HMXyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 19:54:25 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54360 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754221Ab3HMXyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 19:51:29 -0400
-Date: Tue, 13 Aug 2013 16:51:33 -0700
-From: Kent Overstreet <kmo@daterainc.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] idr: Document ida tree sections
-Message-ID: <20130813235133.GA3807@kmo-pixel>
-References: <1375896905-6074-4-git-send-email-kmo@daterainc.com>
- <20130807202201.GA28039@mtj.dyndns.org>
- <20130807205117.GC11612@kmo-pixel>
- <20130809145756.GL20515@mtj.dyndns.org>
- <20130813221308.GA11980@kmo-pixel>
- <20130813221928.GE28996@mtj.dyndns.org>
- <20130813222759.GA12069@kmo-pixel>
- <20130813224428.GG28996@mtj.dyndns.org>
- <20130813225927.GA2000@kmo-pixel>
- <20130813232211.GI28996@mtj.dyndns.org>
+	Tue, 13 Aug 2013 19:54:24 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-64-520ac72b4709
+Date: Wed, 14 Aug 2013 08:54:25 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
+        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
+        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>
+Subject: Re: [RFC 0/3] Pin page control subsystem
+Message-ID: <20130813235425.GA2271@bbox>
+References: <1376377502-28207-1-git-send-email-minchan@kernel.org>
+ <1376387202.31048.2.camel@AMDC1943>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130813232211.GI28996@mtj.dyndns.org>
+In-Reply-To: <1376387202.31048.2.camel@AMDC1943>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 07:22:11PM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Aug 13, 2013 at 03:59:27PM -0700, Kent Overstreet wrote:
-> > > Well, it's not necessarily about requiring it but more about surviving
-> > > it with some grace when things don't go as expected, which is an
-> > > important characteristic for common library stuff.
-> > 
-> > The patch I posted should solve the high order allocations stuff, and
-> > sparseness from cyclic allocations was already solved.
-> 
-> I don't know.  Yeah, using vmalloc would be able to work around the
-> issue for most cases, I suppose.  It's iffy to consume vmalloc space
-> from ida, which functionally is such a basic algorithmic construct.
-> It probably won't worsen things noticeably but vmalloc area can be a
-> very precious resource on 32bit configs.
+Hello Krzysztof,
 
-This is only using it for the array of pointers to sections though, not
-the bitmap itself - and only when that allocations is > 16k. For INT_MAX
-allocated ids (absolute worst case) we'd be using 256k of vmalloc memory
-on 64 bit, half that on 32 bit.
+On Tue, Aug 13, 2013 at 11:46:42AM +0200, Krzysztof Kozlowski wrote:
+> Hi Minchan,
+> 
+> On wto, 2013-08-13 at 16:04 +0900, Minchan Kim wrote:
+> > patch 2 introduce pinpage control
+> > subsystem. So, subsystems want to control pinpage should implement own
+> > pinpage_xxx functions because each subsystem would have other character
+> > so what kinds of data structure for managing pinpage information depends
+> > on them. Otherwise, they can use general functions defined in pinpage
+> > subsystem. patch 3 hacks migration.c so that migration is
+> > aware of pinpage now and migrate them with pinpage subsystem.
+> 
+> I wonder why don't we use page->mapping and a_ops? Is there any
+> disadvantage of such mapping/a_ops?
+
+Most concern of the approach is how to handle nested pin case.
+For example, driver A and driver B pin same file-backed page
+conincidently by get_user_pages.
+For the migration, we needs following operations.
+
+1. [buffer]'s migrate_page for the file-backed page
+2. [driver A]'s migrate_page 
+3. [driver B]'s migrate_page
+
+But the page's mapping is only one. How can we handle it?
+
+If we give up pinpage subsystem unifying userspace pages(ex, GUP)
+and kernel space pages(ex, zswap, zram and zcache), we can go
+address_space's migatepages but we might lost abstraction so that
+all of users should implement own pinpage manager. It's not hard,
+I guess but it's more error-prone and not maintainable for the future.
 
 > 
-> > Whatever caching optimizations you do with a radix tree version I could
-> > apply to this bitmap tree version, and my bitmap tree code is simpler
-> > and _considerably_ faster than the existing code.
+> Best regards,
+> Krzysztof
 > 
-> But the difference won't really matter.  Cached performance would be
-> the same and that's likely to cover most cases, right?  It's not like
-> radix tree is orders of magnitude slower.
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Should probably be almost as good, yeah... in theory, but the space
-efficiency still isn't going to be as good, and it'll probably be more
-code... and at this point I really just don't want to futz with it more.
-At this point unless there's something really wrong with this code I
-just want to move onto something else :P
+-- 
+Kind regards,
+Minchan Kim
