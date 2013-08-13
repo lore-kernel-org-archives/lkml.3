@@ -1,124 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab3HMGDx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:03:53 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:45138 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506Ab3HMGDv (ORCPT
+	id S1755425Ab3HMGOK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:14:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52640 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab3HMGOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:03:51 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-aa-5209cc4552c9
-Date: Tue, 13 Aug 2013 15:03:54 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Thomas Backlund <tmb@mageia.org>, Jordi Pujol <jordipujolp@gmail.com>,
-        stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: ZRAM 3.10.6 Buffer I/O error
-Message-ID: <20130813060354.GA27002@bbox>
-References: <1998314.O9XRMyhM6u@pcjordi>
- <52090FD2.9030702@mageia.org>
- <20130813013900.GC3101@bbox>
- <20130813035802.GA24637@kroah.com>
- <20130813043358.GD3101@bbox>
- <5209BD97.6000605@mageia.org>
- <20130813051829.GE3101@bbox>
- <20130813054712.GA9584@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813054712.GA9584@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 13 Aug 2013 02:14:07 -0400
+Date: Tue, 13 Aug 2013 16:13:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>
+Subject: linux-next: manual merge of the usb tree with the net-next tree
+Message-Id: <20130813161359.0613bddf9bbf983253333f30@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Aug_2013_16_13_59_+1000_q2NBtoo=EXcmLy5y"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 10:47:12PM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Aug 13, 2013 at 02:18:29PM +0900, Minchan Kim wrote:
-> > On Tue, Aug 13, 2013 at 08:01:11AM +0300, Thomas Backlund wrote:
-> > > Minchan Kim skrev 13.8.2013 07:33:
-> > > >Hello Greg,
-> > > >
-> > > >On Mon, Aug 12, 2013 at 08:58:02PM -0700, Greg Kroah-Hartman wrote:
-> > > >>On Tue, Aug 13, 2013 at 10:39:00AM +0900, Minchan Kim wrote:
-> > > >>>Hello,
-> > > >>>
-> > > >>>On Mon, Aug 12, 2013 at 07:39:46PM +0300, Thomas Backlund wrote:
-> > > >>>>12.08.2013 17:27, Jordi Pujol skrev:
-> > > >>>>>Hello,
-> > > >>>>>
-> > > >>>>>zram shows an error when mounting a swap partition,
-> > > >>>>>current version Linux kernel 3.10.6,
-> > > >>>>>previous versions worked, I suppose that latest zram patches have some
-> > > >>>>>problem,
-> > > >>>>>
-> > > >>>>>machine is an AMD64 dual core, 4GB RAM
-> > > >>>>>
-> > > >>>>>+ modprobe -qb zram num_devices=2
-> > > >>>>>+ echo 104857600 > /sys/block/zram0/disksize
-> > > >>>>>
-> > > >>>>># mkswap /dev/zram0
-> > > >>>>>Setting up swapspace version 1, size = 102396 KiB
-> > > >>>>>no label, UUID=6c249930-2ba0-46cf-a8c6-766481942b7d
-> > > >>>>>
-> > > >>>>># pager /var/log/dmesg
-> > > >>>>>(no more errors shown)
-> > > >>>>>
-> > > >>>>># swapon /dev/zram0
-> > > >>>>>
-> > > >>>>># pager /var/log/dmesg
-> > > >>>>>...
-> > > >>>>>[  309.300479] Buffer I/O error on device zram0, logical block 25599
-> > > >>>>>[  309.300491] Buffer I/O error on device zram0, logical block 25599
-> > > >>>>>[  309.300514] Buffer I/O error on device zram0, logical block 25599
-> > > >>>>>[  345.205887] Adding 102396k swap on /dev/zram0.  Priority:-2 extents:1
-> > > >>>>>across:102396k SSFS
-> > > >>>>>
-> > > >>>>>full log files and the kernel source are stored in the address:
-> > > >>>>>
-> > > >>>>>http://livenet.selfip.com/ftp/debian/zram_3.10.6_IO_error/
-> > > >>>>>
-> > > >>>>
-> > > >>>>
-> > > >>>>I think this one should fix it and belongs in 3.10 stable too:
-> > > >>>
-> > > >>>Very true. Let's Cc Greg, explicitely.
-> > > >>
-> > > >>-ENOCONTEXT
-> > > >
-> > > >https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/drivers/staging/zram?id=75c7caf5a052ffd8db3312fa7864ee2d142890c4
-> > > >
-> > > >It seems you already merge "zram:allow request end to conincide with disksize" to stable.
-> > > >So there is no concern any more.
-> > > 
-> > > Nope...
-> > > 
-> > > thats master branch wich tracks upstream tree...
-> > > 
-> > > it's not in the 3.10 stable as of 3.10.6 (or current stable queue)
-> > > 
-> > > https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/log/drivers/staging/zram?h=linux-3.10.y
-> > 
-> > Okay, Then, we should explain it to Greg.
-> > 
-> > While Jiang was fixing a BUG A with [1], [1] made another BUG B.
-> > So, Sergey fixed BUG B with [2]. But unfortunately, [1] was in stable
-> > now but [2] wasn't so [2] should go to the stable to fix BUG B.
-> > 
-> > [1] 12a7ad3b8, zram: avoid access beyond the zram device
-> > [2] 75c7caf5a, zram: allow request end to coincide with disksize
-> 
-> Ok, but that's what Thomas's original email to stable@vger.kernel.org
-> asked for, to apply the 2nd patch above to the stable tree, which I've
-> already done...
-> 
-> Emailing me directly, with half-of-a-thread causes me nothing but
-> confusion, as I'm sure you can imagine.
+--Signature=_Tue__13_Aug_2013_16_13_59_+1000_q2NBtoo=EXcmLy5y
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for the noise and I will keep in mind.
-Thanks!
+Hi Greg,
 
--- 
-Kind regards,
-Minchan Kim
+Today's linux-next merge of the usb tree got a conflict in
+include/linux/usb/usbnet.h between commit a88c32ae15f2 ("USBNET:
+centralize computing of max rx/tx qlen") from the net-next tree and
+commit 638c5115a794 ("USBNET: support DMA SG") from the usb tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/usb/usbnet.h
+index 8fbc008,2b47e63..0000000
+--- a/include/linux/usb/usbnet.h
++++ b/include/linux/usb/usbnet.h
+@@@ -34,7 -34,7 +34,8 @@@ struct usbnet=20
+  	struct mutex		phy_mutex;
+  	unsigned char		suspend_count;
+  	unsigned char		pkt_cnt, pkt_err;
+ +	unsigned short		rx_qlen, tx_qlen;
++ 	unsigned		can_dma_sg:1;
+ =20
+  	/* i/o info: pipes etc */
+  	unsigned		in, out;
+
+--Signature=_Tue__13_Aug_2013_16_13_59_+1000_q2NBtoo=EXcmLy5y
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSCc6rAAoJEECxmPOUX5FE2ukP/jGIGxaMvyFbQ1WgLw57jIcq
+xM70s2Yp0kK8MOOcfWjUA8f2EV/e2B3vDmNH8bRd9+rpJNqB10JgWNSoQTC6H4Jv
+aQsrD6PpOUWVOfxOanmjBSDOCLriYWyqqIAtvhPaJxLMZc++yQx+mCizfCqz6OJd
++vw2JkCr1Wghmhs2ZYwgkU3aRjBaZyNf0z8Ex8K0l9rvK3C6FQSftTFZjVq4tYGa
+4uBc9dtV4H8NjqZQsDuntlScqY/LlV5zEvQv5gaFm7DUzCyDpRKgdc6CFCooEfn3
+xkmOArnPdZtXoC95Sy9r4x8onrHUCsAb17mBOxVD2OJ0fB+RsnAPp8thveSOsFRs
+3G7sOnOXjMTIX3wN4yWtMZOppkm/aqWuqLTNlEwjIoyMMWeov4Cvg2XwPdCS2Aum
+aXOHE6Qq6B8rckSPy/V6GKwjlUPd+mFa7s7lD2hdHC7McNTUfRmPcSDKf+c8eiWy
+AfrLrgCtjGI0Xc5t2jYpFovowByrz7C/SZ9o2rhUTcyF/Q2/KX/Q6zzJuLlRiVrn
+PcbFv929l40vSW/D7bu8aHRuMTdhUWdG+VRJqt7/M+Im3RL7fkr1cjYYClIQKh04
+Hr5vZFhoD5beeHs1U3yLSs2164p3uLtBHoMBNoeEw1jycgfNXUhuwJwwogo83eQ2
+tM2tp6+tbtSn61KVjRvq
+=e0S0
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__13_Aug_2013_16_13_59_+1000_q2NBtoo=EXcmLy5y--
