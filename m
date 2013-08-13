@@ -1,78 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab3HMAeN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 20:34:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55241 "EHLO mx2.suse.de"
+	id S1756318Ab3HMAff (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 20:35:35 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40261 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756142Ab3HMAeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 20:34:12 -0400
-Date: Tue, 13 Aug 2013 02:34:07 +0200
-From: Tomas Cech <sleep_walker@suse.cz>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Tomas Cech <sleep_walker@suse.cz>, kernel-janitors@vger.kernel.org,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/16] arch/arm/mach-pxa/palmtreo.c: Avoid using
- ARRAY_AND_SIZE(e) as a function argument
-Message-ID: <20130813003407.GA1390@venom>
-References: <1376239917-15594-1-git-send-email-Julia.Lawall@lip6.fr>
- <1376239917-15594-12-git-send-email-Julia.Lawall@lip6.fr>
+	id S1756059Ab3HMAfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 20:35:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
+Subject: Re: Cannot hot remove a memory device
+Date: Tue, 13 Aug 2013 02:45:55 +0200
+Message-ID: <2995970.hSi3JdcGZF@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1376340043.10300.360.camel@misato.fc.hp.com>
+References: <51FA1E41.20304@jp.fujitsu.com> <1637752.e6s4mPrvSE@vostro.rjw.lan> <1376340043.10300.360.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
-Content-Disposition: inline
-In-Reply-To: <1376239917-15594-12-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, August 12, 2013 02:40:43 PM Toshi Kani wrote:
+> On Sun, 2013-08-11 at 23:13 +0200, Rafael J. Wysocki wrote:
+> > On Thursday, August 08, 2013 04:50:42 PM Toshi Kani wrote:
+> > > On Fri, 2013-08-09 at 00:12 +0200, Rafael J. Wysocki wrote:
+> > > > On Thursday, August 08, 2013 11:15:20 AM Toshi Kani wrote:
+> > > > > On Fri, 2013-08-02 at 18:04 -0600, Toshi Kani wrote:
+> > > > > > On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
+> > > > > > > On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
+> > > > > > > > On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
+> > > > >  :
+> > > > > > > > I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
+> > > > > > > > handle is already set\n").  When two ACPI memory objects associate with
+> > > > > > > > a same memory block, the bind procedure of the 2nd ACPI memory object
+> > > > > > > > sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
+> > > > > > > 
+> > > > > > > That sound's plausible, but I wonder how we can fix that?
+> > > > > > > 
+> > > > > > > There's no way for a single physical device to have two different ACPI
+> > > > > > > "companions".  It looks like the memory blocks should be 64 M each in that
+> > > > > > > case.  Or we need to create two child devices for each memory block and
+> > > > > > > associate each of them with an ACPI object.  That would lead to complications
+> > > > > > > in the user space interface, though.
+> > > > > > 
+> > > > > > Right.  Even bigger issue is that I do not think __add_pages() and
+> > > > > > __remove_pages() can add / delete a memory chunk that is less than
+> > > > > > 128MB.  128MB is the granularity of them.  So, we may just have to fail
+> > > > > > this case gracefully.
+> > > > > 
+> > > > > FYI: I have submitted the patch blow to close this part of the issue...
+> > > > > 
+> > > > > https://lkml.org/lkml/2013/8/8/396
+> > > > 
+> > > > That looks good to me, but we'd still need to make it possible to have
+> > > > memory blocks smaller than 128 MB ...
+> > > 
+> > > Do you mean acpi_bind_one() needs to be able to handle such case?  If
+> > > so, it should not be a problem since a memory block device won't be
+> > > created when add_memory() fails with the change above.  So, there is no
+> > > binding to be done.  If you mean add_memory() needs to be able to handle
+> > > a smaller range, that's quite a tough one unless we make the section
+> > > size smaller.
+> > > 
+> > > BTW, when add_memory() fails, the memory hot-add request still succeeds
+> > > with no driver attached.  This seems logical, but the added device is
+> > > useless when no handler is attached.  And it does not allow ejecting the
+> > > device with no handler.  I am not too worry about this since this is a
+> > > rare case, but it reminded me that the framework won't handle rollback.
+> > 
+> > I'm not sure which rollback you mean.  During removal?
+> 
+> I meant rollback during hot-add.  Ideally, a device should be either
+> added in usable state (success) or failed back to the original state
+> (rollback).  Added in un-usable state is not really a success for users,
+> and creates an odd state to deal with.  But it is still a LOT better
+> than crashing the system.  So, I think this outcome is reasonable on
+> this framework because adding rollback at this point will complicate the
+> things unnecessarily.
+> 
+> > There are two slight problems here in my view.  First, even if the device
+> > cannot be ejected directly, it still will be removed when its parent is
+> > ejected, so it may be more consistent to just allow everything to be ejected
+> > regardless of whether or not it has a scan handler.  
+> 
+> Agreed.
+> 
+> > Second, I guess the
+> > removal is undesirable for memory devices for which the registration of the
+> > scan handler failed, so it would be good to fail the "offline" of such devices
+> > regardless of how we get there.  That's why I thought it would be good to have
+> > an "offline disabled" flag in struct acpi_device.
+> 
+> I see.  But when attach() failed, the memory device may not be used by
+> the kernel.  So, I think it should be safe to remove it.
 
---Q68bSM7Ycu6FN28Q
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
+The failure of .attach() need not mean that the memory is not used by the
+kernel, though, and the ACPI device object is still there and still may
+be involved in some removal scenarios (through its parent).
 
-On Sun, Aug 11, 2013 at 06:51:52PM +0200, Julia Lawall wrote:
->From: Julia Lawall <Julia.Lawall@lip6.fr>
->
->Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding the
->arity of the called function.
->
->The semantic match that makes this change is as follows:
->(http://coccinelle.lip6.fr/)
->
->// <smpl>
->@@
->expression e,f;
->@@
->
->f(...,
->- ARRAY_AND_SIZE(e)
->+ e,ARRAY_SIZE(e)
->  ,...)
->// </smpl>
->
->Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
-I used to be happy with this macro as it improves readability.
-
-but ack.
+Thanks,
+Rafael
 
 
-Tomas Cech
-
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlIJfv8ACgkQ37XrCapiVCNnDwCdH/BQKaGsNRAAJxlrGDlAcBXT
-qrMAn1fQhF0dntxwrHzlJj4VpaQOdCRB
-=ZwEo
------END PGP SIGNATURE-----
-
---Q68bSM7Ycu6FN28Q--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
