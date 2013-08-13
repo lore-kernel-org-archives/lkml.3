@@ -1,94 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759234Ab3HMUaL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:30:11 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60712 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759201Ab3HMUaI (ORCPT
+	id S1759215Ab3HMUay (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:30:54 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:57222 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759059Ab3HMUaw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:30:08 -0400
-Date: Tue, 13 Aug 2013 21:29:41 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
-        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
-        Vinod Koul <vinod.koul@intel.com>
-Message-ID: <20130813202941.GH6427@sirena.org.uk>
-References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
- <20130813185547.GD6427@sirena.org.uk>
- <20130813201816.GG6427@sirena.org.uk>
- <1686992.nQEd3xdoHn@flatron>
+	Tue, 13 Aug 2013 16:30:52 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="t8sZUJWWzCYn6PHL"
-Content-Disposition: inline
-In-Reply-To: <1686992.nQEd3xdoHn@flatron>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 10/18] spi: s3c64xx: Do not require legacy DMA API in
- case of S3C64XX
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <520A5B01.2010207@tilera.com>
+References: <CAErSpo6SzUF44pk3HVyR5UUN0BJUHUz+Z5egWKCoGG70VuB6wg@mail.gmail.com>
+ <520A5B01.2010207@tilera.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 13 Aug 2013 14:30:31 -0600
+Message-ID: <CAErSpo4sFPiuPLboJ_wsg2cketUaciP7EgmufJmuEEryJmDW7Q@mail.gmail.com>
+Subject: Re: [PATCH v2] tile: support LSI MEGARAID SAS HBA hybrid dma_ops
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        adam radford <aradford@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[+cc James in case he has opinions on the DMA mask question]
 
---t8sZUJWWzCYn6PHL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Aug 13, 2013 at 10:12 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> (Trimming the quoted material a little to try to keep this email under control.)
+>
+> On 8/12/2013 4:42 PM, Bjorn Helgaas wrote:
+>> On Mon, Aug 12, 2013 at 1:42 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>>> On 8/9/2013 6:42 PM, Bjorn Helgaas wrote:
+>>>> OK, so physical memory in the [3GB,4GB] range is unreachable via DMA
+>>>> as you describe.  And even if DMA *could* reach it, the CPU couldn't
+>>>> see it because CPU accesses to that range would go to PCI for the
+>>>> memory-mapped BAR space, not to memory.
+>>> Right.  Unreachability is only a problem if the DMA window overlaps [3G, 4G], and since the 64-bit DMA window is [1TB,2TB], the whole PA space can be reached by 64-bit capable devices.
+>> So the [0-1TB] memory range (including [3GB-4GB]) is reachable by
+>> 64-bit DMA to bus addresses [1TB-2TB].  But if the CPU can't see
+>> physical memory from [3GB-4GB], how is it useful to DMA there?
+>
+> Sorry, looking back I can see that the thread is a little confusing.
+> The CPU can see the whole PA space. The confusion comes from the BAR space
+> in [3GB, 4GB].
+>
+> On Tile, we define the CPU memory space as follows:
+>
+> [0, 1TB]: PA
+> [1TB + 3GB, 1TB + 4GB]: BAR space for RC port 0, in [3GB, 4GB]
+> [1TB + 3GB + N*4GB, 1TB + (1 + N)*4GB]: BAR space for RC port N, in [3GB, 4GB]
+>
+> The mapping from [1TB + 3GB + N*4GB, 1TB + (1 + N)*4GB] to [3GB, 4GB] is done by a
+> hardware PIO region, which generates PCI bus addresses in [3GB, 4GB] for MMIOs to
+> the BAR space.
 
-On Tue, Aug 13, 2013 at 10:20:19PM +0200, Tomasz Figa wrote:
-> On Tuesday 13 of August 2013 21:18:16 Mark Brown wrote:
+OK, I think I get it now.  CPU address space:
+  [0, 1TB]: physical memory
+  [1TB + 3GB, 1TB + 4GB]: translated to bus address [3GB, 4GB] under RC port 0
+  [1TB + 3GB + N*4GB, 1TB + (1 + N)*4GB]: translated to bus address
+[3GB, 4GB] under RC port N
 
-> > 	if (dev->chancnt > 1 && !dma_has_cap(DMA_PRIVATE, dev->cap_mask))
-> > 		list_for_each_entry(chan, &dev->channels, device_node) {
-> > 			/* some channels are already publicly allocated */
-> > 			if (chan->client_count) {
+Bus address space:
+  [0, 3GB]: 32-bit DMA reaches physical memory [0, 3GB]
+  [3GB, 4GB]: 32-bit DMA (peer-to-peer DMA under local RC port, I guess?)
+  [1TB, 2TB]: 64-bit DMA mapped via IOMMU to physical memory [0, 1TB]
 
-> > which is happening because dma1chan0 (which is on the same DMA
-> > controller as the SPI controller) and in fact every other DMA channel
-> > had references grabbed by the network stack dmaengine helpers which I'd
-> > enabled in config.  The fact that they do that is unhelpful, it renders
-> > the API mostly useless, but is nothing to do with this series.
+I guess the problem is that 32-bit DMA can't reach physical memory
+[3GB, 4GB], so you're using bounce buffers so the bus address is in
+[0, 3GB].  That makes sense, and I don't see another possibility other
+than just throwing away the [3GB, 4GB] range by leaving it out of the
+kernel allocator altogether, or using  hardware (which tilegx probably
+doesn't have) to remap it somewhere else.
 
-> I believe you just found another brokenness of current DMA channel=20
-> matching.
+So it seems like just a question of how you wrap this all up in
+dma_ops, and *that* is all arch stuff that I don't have an opinion on.
 
-Yeah, at first glance the reference grabbing thing seems a bit peculiar.
-I didn't research why it's done that way yet.
+>>> Unfortunately, the Megaraid driver doesn’t even call pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(32)).
+>> If the Megaraid driver needs that call, but it's missing, why wouldn't
+>> we just add it?
+>
+> The Megaraid driver doesn’t strictly need that call on other platforms, because
+> by default the device coherent_dma_mask is DMA_BIT_MASK(32) and the consistent
+> memory pool doesn’t come from the bounce buffers on most other platforms.
+>
+> Of course, for the sake of correctness, this call should be added across all platforms.
+> ...
 
---t8sZUJWWzCYn6PHL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> What is unique about Tile is that the PCI drivers must explicitly declare
+> its DMA capability by calling pci_set_dma_mask() and pci_set_consistent_dma_mask().
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+It looks like the reason you need drivers to explicitly call
+pci_set_dma_mask() and pci_set_consistent_dma_mask() is because you
+have hooks in those functions to tweak the dma_ops, even though the
+mask itself might not be changed.
 
-iQIcBAEBAgAGBQJSCpcxAAoJELSic+t+oim9bxAP/0QJ1lRL0/9GWqrLeXp5Sb7q
-yt/beBWYPnfQyGZ0dtWZZfnD4Ftfi8x/rzEWOkGPGsm0BqmiP0Szjb7Imm9Nd5WK
-rM62iGiK+eZzTfcc6EaSXWZwf5IEJyrvqcqDjWNjDqREaA4jWSz/bFIYuk+djOL9
-BiB5Q9C+AfzfwL4ZG0Wm+74pd/FR5rLG87H++86tJzYgaKeGE7si3UiPmUXAiUTN
-cFW8MAEKjqD/eQkUN9gRrSl/sUx7adLEPLTdc3U7nPGVqH+unD2Qis5moBe3WKfo
-ZRGjk4dfi2hC56EJIuTXUr9VkMcCMtmvc63l4thYEXxk1Kw36vWnn7pasEHlWTRT
-TYUHRxWTIWxIt92Vv9Bu17wPIrh+99xCOwSmw2zsVE+hTijq6VErgtDTt2onx/S7
-oG6IpmetjBprM2HPk0WZxj8glFl3o80nb/eFgz8fJCc9RE6lb5lnmutKZ6izRQYR
-+oGRH46+OZXCWl7WlFO11ybmuJK2ApbKUJGiqUaj7xKBe5kCNXUnzM+Hn37kMaUl
-GVZ1ENzmduPOpu8G3Kcc27VCANIgcC0iCrXe7ol1Wodpdc3VxYybFLIoHCYhEx0t
-sa4Mwn/ApZRZZXsZtiU2YAA9IubaBwTcqKmDUgEUOqT8nwgL7tfTQMXIRk8J3s0L
-edyU0gFv7A4OeFAskC67
-=dMF/
------END PGP SIGNATURE-----
+That doesn't sound like a robust solution: we have well-known defaults
+for the mask sizes, and I don't think it's reasonable to expect
+drivers to explicitly set the mask even if they are happy with the
+defaults (though Documentation/DMA-API-HOWTO.txt does say that being
+explicit is good style).  I'm afraid you'll just keep tripping over
+drivers that don't work on tilegx because they don't set the mask.
 
---t8sZUJWWzCYn6PHL--
+Bjorn
