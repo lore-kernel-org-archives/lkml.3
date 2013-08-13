@@ -1,282 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab3HMBBu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 21:01:50 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44015 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756314Ab3HMBBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 21:01:48 -0400
-Message-ID: <52098549.7070505@ti.com>
-Date: Mon, 12 Aug 2013 20:00:57 -0500
-From: Joel Fernandes <joelf@ti.com>
-Reply-To: <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH v3 09/12] dma: edma: Implement multiple linked sets for
- continuity
-References: <1375719297-12871-1-git-send-email-joelf@ti.com> <1375719297-12871-10-git-send-email-joelf@ti.com> <52092FF7.7040508@ti.com>
-In-Reply-To: <52092FF7.7040508@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1756507Ab3HMBDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 21:03:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32100 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756249Ab3HMBDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 21:03:42 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F0my4ousGMIA:10 a=t7CeM3EgAAAA:8 a=PCqPzcZwi1q9O-lKYIUA:9 a=CjuIK1q_8ugA:10 a=2e6ZYRoF4I4A:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 12 Aug 2013 21:03:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.6-rt3
+Message-ID: <20130812210341.4fa2165b@gandalf.local.home>
+In-Reply-To: <CAP=VYLrd_ZU94Nf0X+FtT3M2Xx85t9FF13o-hV+_xHi7EjTf=w@mail.gmail.com>
+References: <20130812163413.GI23040@linutronix.de>
+	<20130812154810.433858a5@gandalf.local.home>
+	<CAP=VYLrd_ZU94Nf0X+FtT3M2Xx85t9FF13o-hV+_xHi7EjTf=w@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 01:56 PM, Sekhar Nori wrote:
-> On Monday 05 August 2013 04:14 PM, Joel Fernandes wrote:
->> Here we implement splitting up of the total MAX number of slots
->> available for a channel into 2 cyclically linked sets. Transfer
->> completion Interrupts are enabled on both linked sets and respective
->> handler recycles them on completion to process the next linked set.
->> Both linked sets are cyclically linked to each other to ensure
->> continuity of DMA operations. Interrupt handlers execute asynchronously
->> to the EDMA events and recycles the linked sets at the right time,
->> as a result EDMA is not blocked or dependent on interrupts and DMA
->> continues till the end of the SG-lists without any interruption.
->>
->> Suggested-by: Sekhar Nori <nsekhar@ti.com>
->> Signed-off-by: Joel Fernandes <joelf@ti.com>
->> ---
->>  drivers/dma/edma.c |  157 +++++++++++++++++++++++++++++++++++++++-------------
->>  1 file changed, 118 insertions(+), 39 deletions(-)
->>
->> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
->> index df50a04..70923a2 100644
->> --- a/drivers/dma/edma.c
->> +++ b/drivers/dma/edma.c
->> @@ -48,6 +48,7 @@
->>  
->>  /* Max of 16 segments per channel to conserve PaRAM slots */
->>  #define MAX_NR_SG		16
->> +#define MAX_NR_LS		(MAX_NR_SG >> 1)
->>  #define EDMA_MAX_SLOTS		(MAX_NR_SG+1)
->>  #define EDMA_DESCRIPTORS	16
->>  
->> @@ -57,6 +58,7 @@ struct edma_desc {
->>  	int				absync;
->>  	int				pset_nr;
->>  	int				total_processed;
->> +	int				next_setup_linkset;
->>  	struct edmacc_param		pset[0];
->>  };
->>  
->> @@ -140,7 +142,9 @@ static void edma_execute(struct edma_chan *echan)
->>  	struct edma_desc *edesc;
->>  	struct device *dev = echan->vchan.chan.device->dev;
->>  
->> -	int i, j, total_left, total_process;
->> +	int i, total_left, total_link_set;
->> +	int ls_cur_off, ls_next_off, slot_off;
->> +	struct edmacc_param tmp_param;
->>  
->>  	/* If either we processed all psets or we're still not started */
->>  	if (!echan->edesc ||
->> @@ -159,48 +163,121 @@ static void edma_execute(struct edma_chan *echan)
->>  
->>  	/* Find out how many left */
->>  	total_left = edesc->pset_nr - edesc->total_processed;
->> -	total_process = total_left > MAX_NR_SG ? MAX_NR_SG : total_left;
->> -
->> -
->> -	/* Write descriptor PaRAM set(s) */
->> -	for (i = 0; i < total_process; i++) {
->> -		j = i + edesc->total_processed;
->> -		edma_write_slot(echan->slot[i], &edesc->pset[j]);
->> -		dev_dbg(echan->vchan.chan.device->dev,
->> -			"\n pset[%d]:\n"
->> -			"  chnum\t%d\n"
->> -			"  slot\t%d\n"
->> -			"  opt\t%08x\n"
->> -			"  src\t%08x\n"
->> -			"  dst\t%08x\n"
->> -			"  abcnt\t%08x\n"
->> -			"  ccnt\t%08x\n"
->> -			"  bidx\t%08x\n"
->> -			"  cidx\t%08x\n"
->> -			"  lkrld\t%08x\n",
->> -			j, echan->ch_num, echan->slot[i],
->> -			edesc->pset[j].opt,
->> -			edesc->pset[j].src,
->> -			edesc->pset[j].dst,
->> -			edesc->pset[j].a_b_cnt,
->> -			edesc->pset[j].ccnt,
->> -			edesc->pset[j].src_dst_bidx,
->> -			edesc->pset[j].src_dst_cidx,
->> -			edesc->pset[j].link_bcntrld);
->> -		/* Link to the previous slot if not the last set */
->> -		if (i != (total_process - 1))
-> 
->> +	total_link_set = total_left > MAX_NR_LS ? MAX_NR_LS : total_left;
-> 
-> The name you gave here sounds like this is defining total number of
-> linked PaRAM sets. Rather this is actually tracking the number of PaRAM
-> sets (slots) in current linked set, correct? Then may be just call it
-> 'nslots' or even 'num_slots'? There are just too many variables with
-> "total" prefix to keep track of in this function!
+On Mon, 12 Aug 2013 20:47:18 -0400
+Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-I would rather just leave this naming alone. The code is quite self
-documenting: total_link_set means "Calculate what's the total size of a
-Linkset, or total no.of slots in a linkset we need". This naming is fine
-in my opinion and doesn't hurt line size at all, instead improving code
-readability. I could dump the _ between link and set to make it:
-total_linkset if that makes it any easier.
+> On Mon, Aug 12, 2013 at 3:48 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > On Mon, 12 Aug 2013 18:34:13 +0200
+> > Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+> >
+> >> Dear RT folks!
+> >>
+> >> I'm pleased to announce the v3.10.6-rt3 patch set.
+> >
+> >
+> > Does this mean that I can drop 3.6-rt in favor of 3.8-rt?
+> 
+> I'd guess that the trade-off would be 3.0-rt against 3.8-rt.
+> The above comment assumes 3.0 is aged out vs. 3.6 kernel.
 
-I agree there are too many variables in this function, but they each
-serve a different purpose and required to implement the algorithm, which
-is precisely I made them naming a bit more descriptive.
+Not at all. I've always said that I would support -rt as long as the
+base was supported by the official stable. 3.6 is not supported, and I
+only supported it because it was the "latest" stable -rt. When 3.8-rt
+comes out, it would also be the latest. But it too is not supported by
+the official stable release. I'll only be doing that one until 3.10
+becomes stable again. Luckily, 3.8 is being supported by Kamal, and
+I'll probably just base my work off of his.
+
+3.0-rt wont last long, as IIRC, Greg will be letting that go off to
+ashes in a few months.
 
 > 
->> +
->> +	/* First time, setup 2 cyclically linked sets, each containing half
->> +	   the slots allocated for this channel */
->> +	if (edesc->total_processed == 0) {
+> >
+> > I'm just about finished with a 3.6 stable, which I'll finish, add -rt
+> > to it, and then call it "unsupported" after that. Well, I may take bug
+> > fixes if people find any in the near future.
+> >
+> > I'm behind on 3.4-rt, 3.2-rt and of course 3.0-rt. Hopefully, I'll get
+> > them all out this week.
 > 
-> We dont need to check for this case for every DMA_COMPLETE interrupt.
-> May be move the initial setup to another function called from
-> edma_issue_pending()?
+> I expect that the 3.10-rt kernel will replace the older RT kernels.
 
-But how? That would only change the code to (?):
+No, it will just enter the realm of the official stable releases.
 
-        if (edesc->total_processed == 0) {
-		issue_pending();
-	}
-
-Further it maybe appear that this case is uncommon, but it is a very
-common case. Most SG transfers are within the SG limit, though at times
-the else case can execute a lot too.
-
->> +		for (i = 0; i < total_link_set; i++) {
->> +			edma_write_slot(echan->slot[i+1], &edesc->pset[i]);
->> +
->> +			if (i != total_link_set - 1) {
->> +				edma_link(echan->slot[i+1], echan->slot[i+2]);
->> +				dump_pset(echan, echan->slot[i+1],
->> +					  edesc->pset, i);
->> +			}
->> +		}
->> +
->> +		edesc->total_processed += total_link_set;
->> +
->> +		total_left = edesc->pset_nr - edesc->total_processed;
->> +
->> +		total_link_set = total_left > MAX_NR_LS ?
->> +				 MAX_NR_LS : total_left;
->> +
->> +		if (total_link_set) {
->> +			/* Don't setup interrupt for first linked set for cases
->> +			   where total pset_nr is strictly within MAX_NR size */
-> 
-> See Documentation/CodingStyle for multi-line commenting style.
-
-Ok thanks, changed accordingly.
-
->> +			if (total_left > total_link_set)
->> +				edma_enable_interrupt(echan->slot[i]);
->> +
->> +			/* Setup link between linked set 0 to set 1 */
->>  			edma_link(echan->slot[i], echan->slot[i+1]);
->> -		/* Final pset links to the dummy pset */
->> -		else
->> +
->> +			dump_pset(echan, echan->slot[i], edesc->pset, i-1);
->> +
->> +			/* Write out linked set 1 */
->> +			for (; i < total_link_set + MAX_NR_LS; i++) {
->> +				edma_write_slot(echan->slot[i+1],
->> +						&edesc->pset[i]);
->> +
->> +				if (i != total_link_set + MAX_NR_LS - 1) {
->> +					edma_link(echan->slot[i+1],
->> +						  echan->slot[i+2]);
->> +					dump_pset(echan, echan->slot[i+1],
->> +						  edesc->pset, i);
->> +				}
->> +			}
->> +
->> +			edesc->total_processed += total_link_set;
->> +			total_left = edesc->pset_nr - edesc->total_processed;
-> 
-> There is way too much duplication of code here mainly because you
-> decided not to loop twice in the course of setting up the two linked
-> sets. Can you use a loop instead?
-
-I tried to do this in a loop, its not possible without making the code
-more unreadable and introducing more variables.
-
-Further the follow 3 conditions have to be incorporated into the loop
-some how which kind of makes it messy.. right now it is linearly
-determined which case to execute.
-
-/* Setup a link from linked set 1 to set 0 */
-
-/* Setup a link between linked set 1 to dummy */
-
-/* First linked set was enough, simply link to dummy */
-
-Since it is just a couple of lines more, I am more to the favor of
-keeping the code readable than saving a few lines (for a loop of only 2
-iterations) introducing more variables and making it look hackish. There
-is a good chance in future that if implemented in such a way that I have
-to spend quite a bit of time deciphering it.
-
->> +
->> +			if (total_left)
->> +				/* Setup a link from linked set 1 to set 0 */
->> +				edma_link(echan->slot[i], echan->slot[1]);
-> 
-> If you have more SGs to service at the end of setting up the two linked
-> sets, you should stop right there and wait for CPU to recycle the linked
-> sets. Right now you are setup for re-DMAing old data.
-
-The above linking you're quoting is done in advance _but_, before the
-link is traversed, it is _guaranteed_ that the linkset being traversed
-into will be recycled. This is the basis of the whole algorithm and
-making sure that we never stall. There never ever will be a case where
-we re-DMA old data because of the guarantee that the recycling will take
-place before the traversal.
-
-Further FWIW, interrupt takes few 100s microseconds to execute, where as
-DMA is seen to take milliseconds from 1 SG entry to another in my testing.
-
-> You wont hit this issue in testing because you have setup an interrupt
-> for LS0 and that will most likely service before LS1 completes but we
-> cannot rely on that timing.
-
-This goes back to my first patch series where we stall. That doesn't
-make any sense. In this patch series, we don't want DMA to stall at any
-cost.
-
-> Just link to dummy at end of LS1 to stall the DMA and wait for the
-> completion handler to come-in and restart the DMA after recycling LS0.
-
-Nope! Linking to dummy will absorb the events and the events will never
-get triggered again. Trust me I have already done what you are saying
-and it doesn't work.
-
-> I haven't reviewed rest of the patch. Lets make sure we have a common
-> understanding here.
-
-Sure, thanks.
-
--Joel
-
+-- Steve
