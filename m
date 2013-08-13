@@ -1,62 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757897Ab3HMGx4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:53:56 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:39911 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756720Ab3HMGxw convert rfc822-to-8bit (ORCPT
+	id S1757883Ab3HMGye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:54:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60511 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756322Ab3HMGdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:53:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1308130828550.1997@localhost6.localdomain6>
-References: <alpine.DEB.2.02.1308111151210.2072@localhost6.localdomain6>
-	<20130811155640.GA10070@electric-eye.fr.zoreil.com>
-	<alpine.DEB.2.02.1308111811440.2072@localhost6.localdomain6>
-	<20130813052036.GA11640@electric-eye.fr.zoreil.com>
-	<alpine.DEB.2.02.1308130828550.1997@localhost6.localdomain6>
-Date: Tue, 13 Aug 2013 09:53:50 +0300
-Message-ID: <CAJJAcocQ59Kc9a1b=jrNSc1akLLN_74yKANMEmLVmvxoRjX4hw@mail.gmail.com>
-Subject: Re: question about netif_rx
-From: David Shwatrz <dshwatrz@gmail.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Francois Romieu <romieu@fr.zoreil.com>, grant.likely@linaro.org,
-        rob.herring@calxeda.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Aug 2013 02:33:16 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 24/60] tracing: Use flag buffer_disabled for irqsoff tracer
+Date: Mon, 12 Aug 2013 23:33:51 -0700
+Message-Id: <20130813063335.268798611@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
+In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
+References: <20130813063331.950321483@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-Sorry. I still don't understand what checksum has to do with it.
-Does GRO depends on Rx/Tx checksum ? I don't think so.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-In the napi_gro_receive() we check that the device supports
-NETIF_F_GRO, but I don't see that we inspect checksum or that
-NETIF_F_GRO is depends on checksum.
+------------------
 
-Can you please explain how checsum offload is related ?
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-rgs
-David
+commit 10246fa35d4ffdfe472185d4cbf9c2dfd9a9f023 upstream.
 
-On Tue, Aug 13, 2013 at 9:29 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
-> On Tue, 13 Aug 2013, Francois Romieu wrote:
->
->> Julia Lawall <julia.lawall@lip6.fr> :
->> > François Romieu <romieu@fr.zoreil.com> :
->> [...]
->> > > Can you send a netif_receive_skb replacement patch for it ?
->> >
->> > Just to be sure, I just replace netif_rx by netif_receive_skb, nothing
->> > else?
->>
->> Yes. It should imho be fine with a comment incluing your analysis and a
->> few words about the current state of checksum offloading support.
->
-> I wouldn't know what to say about the checksum part.  It is not supported
-> so I should use netif_receive_skb?
->
-> thanks,
-> julia
+If the ring buffer is disabled and the irqsoff tracer records a trace it
+will clear out its buffer and lose the data it had previously recorded.
+
+Currently there's a callback when writing to the tracing_of file, but if
+tracing is disabled via the function tracer trigger, it will not inform
+the irqsoff tracer to stop recording.
+
+By using the "mirror" flag (buffer_disabled) in the trace_array, that keeps
+track of the status of the trace_array's buffer, it gives the irqsoff
+tracer a fast way to know if it should record a new trace or not.
+The flag may be a little behind the real state of the buffer, but it
+should not affect the trace too much. It's more important for the irqsoff
+tracer to be fast.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/trace/trace.c         |  101 +++++++++++++++++++++++++++++--------------
+ kernel/trace/trace_irqsoff.c |    4 -
+ 2 files changed, 72 insertions(+), 33 deletions(-)
+
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -246,9 +246,24 @@ cycle_t ftrace_now(int cpu)
+ 	return ts;
+ }
+ 
++/**
++ * tracing_is_enabled - Show if global_trace has been disabled
++ *
++ * Shows if the global trace has been enabled or not. It uses the
++ * mirror flag "buffer_disabled" to be used in fast paths such as for
++ * the irqsoff tracer. But it may be inaccurate due to races. If you
++ * need to know the accurate state, use tracing_is_on() which is a little
++ * slower, but accurate.
++ */
+ int tracing_is_enabled(void)
+ {
+-	return tracing_is_on();
++	/*
++	 * For quick access (irqsoff uses this in fast path), just
++	 * return the mirror variable of the state of the ring buffer.
++	 * It's a little racy, but we don't really care.
++	 */
++	smp_rmb();
++	return !global_trace.buffer_disabled;
+ }
+ 
+ /*
+@@ -361,6 +376,23 @@ unsigned long trace_flags = TRACE_ITER_P
+ 	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE |
+ 	TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS | TRACE_ITER_FUNCTION;
+ 
++void tracer_tracing_on(struct trace_array *tr)
++{
++	if (tr->trace_buffer.buffer)
++		ring_buffer_record_on(tr->trace_buffer.buffer);
++	/*
++	 * This flag is looked at when buffers haven't been allocated
++	 * yet, or by some tracers (like irqsoff), that just want to
++	 * know if the ring buffer has been disabled, but it can handle
++	 * races of where it gets disabled but we still do a record.
++	 * As the check is in the fast path of the tracers, it is more
++	 * important to be fast than accurate.
++	 */
++	tr->buffer_disabled = 0;
++	/* Make the flag seen by readers */
++	smp_wmb();
++}
++
+ /**
+  * tracing_on - enable tracing buffers
+  *
+@@ -369,15 +401,7 @@ unsigned long trace_flags = TRACE_ITER_P
+  */
+ void tracing_on(void)
+ {
+-	if (global_trace.trace_buffer.buffer)
+-		ring_buffer_record_on(global_trace.trace_buffer.buffer);
+-	/*
+-	 * This flag is only looked at when buffers haven't been
+-	 * allocated yet. We don't really care about the race
+-	 * between setting this flag and actually turning
+-	 * on the buffer.
+-	 */
+-	global_trace.buffer_disabled = 0;
++	tracer_tracing_on(&global_trace);
+ }
+ EXPORT_SYMBOL_GPL(tracing_on);
+ 
+@@ -571,6 +595,23 @@ void tracing_snapshot_alloc(void)
+ EXPORT_SYMBOL_GPL(tracing_snapshot_alloc);
+ #endif /* CONFIG_TRACER_SNAPSHOT */
+ 
++void tracer_tracing_off(struct trace_array *tr)
++{
++	if (tr->trace_buffer.buffer)
++		ring_buffer_record_off(tr->trace_buffer.buffer);
++	/*
++	 * This flag is looked at when buffers haven't been allocated
++	 * yet, or by some tracers (like irqsoff), that just want to
++	 * know if the ring buffer has been disabled, but it can handle
++	 * races of where it gets disabled but we still do a record.
++	 * As the check is in the fast path of the tracers, it is more
++	 * important to be fast than accurate.
++	 */
++	tr->buffer_disabled = 1;
++	/* Make the flag seen by readers */
++	smp_wmb();
++}
++
+ /**
+  * tracing_off - turn off tracing buffers
+  *
+@@ -581,26 +622,29 @@ EXPORT_SYMBOL_GPL(tracing_snapshot_alloc
+  */
+ void tracing_off(void)
+ {
+-	if (global_trace.trace_buffer.buffer)
+-		ring_buffer_record_off(global_trace.trace_buffer.buffer);
+-	/*
+-	 * This flag is only looked at when buffers haven't been
+-	 * allocated yet. We don't really care about the race
+-	 * between setting this flag and actually turning
+-	 * on the buffer.
+-	 */
+-	global_trace.buffer_disabled = 1;
++	tracer_tracing_off(&global_trace);
+ }
+ EXPORT_SYMBOL_GPL(tracing_off);
+ 
+ /**
++ * tracer_tracing_is_on - show real state of ring buffer enabled
++ * @tr : the trace array to know if ring buffer is enabled
++ *
++ * Shows real state of the ring buffer if it is enabled or not.
++ */
++int tracer_tracing_is_on(struct trace_array *tr)
++{
++	if (tr->trace_buffer.buffer)
++		return ring_buffer_record_is_on(tr->trace_buffer.buffer);
++	return !tr->buffer_disabled;
++}
++
++/**
+  * tracing_is_on - show state of ring buffers enabled
+  */
+ int tracing_is_on(void)
+ {
+-	if (global_trace.trace_buffer.buffer)
+-		return ring_buffer_record_is_on(global_trace.trace_buffer.buffer);
+-	return !global_trace.buffer_disabled;
++	return tracer_tracing_is_on(&global_trace);
+ }
+ EXPORT_SYMBOL_GPL(tracing_is_on);
+ 
+@@ -4060,7 +4104,7 @@ static int tracing_wait_pipe(struct file
+ 		 *
+ 		 * iter->pos will be 0 if we haven't read anything.
+ 		 */
+-		if (!tracing_is_enabled() && iter->pos)
++		if (!tracing_is_on() && iter->pos)
+ 			break;
+ 	}
+ 
+@@ -5772,15 +5816,10 @@ rb_simple_read(struct file *filp, char _
+ 	       size_t cnt, loff_t *ppos)
+ {
+ 	struct trace_array *tr = filp->private_data;
+-	struct ring_buffer *buffer = tr->trace_buffer.buffer;
+ 	char buf[64];
+ 	int r;
+ 
+-	if (buffer)
+-		r = ring_buffer_record_is_on(buffer);
+-	else
+-		r = 0;
+-
++	r = tracer_tracing_is_on(tr);
+ 	r = sprintf(buf, "%d\n", r);
+ 
+ 	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
+@@ -5802,11 +5841,11 @@ rb_simple_write(struct file *filp, const
+ 	if (buffer) {
+ 		mutex_lock(&trace_types_lock);
+ 		if (val) {
+-			ring_buffer_record_on(buffer);
++			tracer_tracing_on(tr);
+ 			if (tr->current_trace->start)
+ 				tr->current_trace->start(tr);
+ 		} else {
+-			ring_buffer_record_off(buffer);
++			tracer_tracing_off(tr);
+ 			if (tr->current_trace->stop)
+ 				tr->current_trace->stop(tr);
+ 		}
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -373,7 +373,7 @@ start_critical_timing(unsigned long ip,
+ 	struct trace_array_cpu *data;
+ 	unsigned long flags;
+ 
+-	if (likely(!tracer_enabled))
++	if (!tracer_enabled || !tracing_is_enabled())
+ 		return;
+ 
+ 	cpu = raw_smp_processor_id();
+@@ -416,7 +416,7 @@ stop_critical_timing(unsigned long ip, u
+ 	else
+ 		return;
+ 
+-	if (!tracer_enabled)
++	if (!tracer_enabled || !tracing_is_enabled())
+ 		return;
+ 
+ 	data = per_cpu_ptr(tr->trace_buffer.data, cpu);
+
+
