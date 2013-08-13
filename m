@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757989Ab3HMOqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:46:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44852 "EHLO bear.ext.ti.com"
+	id S1757865Ab3HMOrJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:47:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:10689 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757055Ab3HMOqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:46:07 -0400
-Message-ID: <520A4685.7050503@ti.com>
-Date: Tue, 13 Aug 2013 20:15:25 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756543Ab3HMOrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 10:47:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,869,1367996400"; 
+   d="scan'208";a="380259922"
+Message-ID: <520A46D6.90005@linux.intel.com>
+Date: Tue, 13 Aug 2013 07:46:46 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Benoit Cousson <bcousson@baylibre.com>
-CC: <benoit.cousson@linaro.org>, <tony@atomide.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ian.campbell@citrix.com>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>
-Subject: Re: [PATCH] arm: omap5: dts: split SMPS10 dt node
-References: <1376300221-15172-1-git-send-email-kishon@ti.com> <520A32CF.1010701@baylibre.com>
-In-Reply-To: <520A32CF.1010701@baylibre.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        gcc <gcc@gcc.gnu.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Behan Webster <behanw@converseincode.com>
+Subject: Re: [RFC] gcc feature request: Moving blocks into sections
+References: <1375721715.22073.80.camel@gandalf.local.home> <20130812091707.GB27162@twins.programming.kicks-ass.net> <5208F78A.3000708@linux.intel.com> <20130812160950.GT3008@twins.programming.kicks-ass.net> <52091FB9.4080805@linux.intel.com> <20130813075048.GR27162@twins.programming.kicks-ass.net>
+In-Reply-To: <20130813075048.GR27162@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> On Mon, Aug 12, 2013 at 10:47:37AM -0700, H. Peter Anvin wrote:
+>> Since we really doesn't want to...
 
-On Tuesday 13 August 2013 06:51 PM, Benoit Cousson wrote:
-> Hi Kishon,
-> 
-> On 12/08/2013 11:37, Kishon Vijay Abraham I wrote:
->> SMPS10 has two outputs OUT1 and OUT2. Hence SMPS10 is modeled as
->> two regulators. The dt node is split to reflect it.
-> 
-> Mmm, I'm curious. How is it supposed to work?
-> 
-> Do you have dedicated control on each output?
+Ow.  Can't believe I wrote that.
 
-Yes. It can be controlled by setting different values to the same bit fields.
-You can refer [1] where we actually implement SMPS10 as two different regulators.
+	-hpa
 
-[1] -> http://permalink.gmane.org/gmane.linux.kernel/1542521
-
-Thanks
-Kishon
