@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756983Ab3HMCjo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 22:39:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45448 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756774Ab3HMCjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 22:39:43 -0400
-Date: Mon, 12 Aug 2013 22:39:22 -0400
-From: Dave Jones <davej@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [GIT PULL] tracing: final fixes for events and some
-Message-ID: <20130813023922.GA1042@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-References: <1375712355.22073.45.camel@gandalf.local.home>
- <20130805143257.GA32639@gmail.com>
- <1375714329.22073.63.camel@gandalf.local.home>
- <20130812181325.GA19405@gmail.com>
+	id S1757027Ab3HMCmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 22:42:35 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:38740 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756813Ab3HMCmd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 22:42:33 -0400
+Message-ID: <52099D12.1020605@ozlabs.ru>
+Date: Tue, 13 Aug 2013 12:42:26 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130812181325.GA19405@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Divy Le ray <divy@chelsio.com>
+CC: Jay Fenlason <fenlason@redhat.com>, Santosh Rastapur <santosh@chelsio.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: BUG cxgb3: Check and handle the dma mapping errors
+References: <51FF14F8.7000204@ozlabs.ru> <20130805184107.GA2998@redhat.com> <52027BEF.5040602@chelsio.com> <52032ED4.2030202@ozlabs.ru>
+In-Reply-To: <52032ED4.2030202@ozlabs.ru>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 12, 2013 at 08:13:25PM +0200, Ingo Molnar wrote:
- > > > I see that some of the fixes here fix issues that your earlier 
- > > > post-rc1 rounds of non-regression fixes introduced to begin with. 
- > > > That's really not a good pattern either IMO.
- > > 
- > > Not really. The earlier fixes closed some of the holes but were not good 
- > > enough. They didn't cause more regressions, but the method use to fix 
- > > the regressions it was trying to solve wasn't going to work when we saw 
- > > the extent of the regressions that had to be fixed. Oleg came up with a 
- > > better method, which meant that we had to undo the original fix, for a 
- > > even better fix.
- > 
- > My point is that _neither_ should have gone in after the merge window. 
- > -rc1 and onwards are to fix regressions caused in the merge window, full 
- > stop. Yet there was a steady stream of tracing changes in kernel/ that at 
- > best fixed ancient bugs that are only root triggerable and which nobody 
- > actually triggered all that much. Followed by fixes to the fixes.
+Ping, anyone?
 
-I'm not sure why I got cc'd on this, but for my part, the perf/tracing related bugs
-I've found recently may have been there for ages, but they were triggerable
-as non-root users.
 
-	Dave
+On 08/08/2013 03:38 PM, Alexey Kardashevskiy wrote:
+> On 08/08/2013 02:55 AM, Divy Le ray wrote:
+>> On 08/05/2013 11:41 AM, Jay Fenlason wrote:
+>>> On Mon, Aug 05, 2013 at 12:59:04PM +1000, Alexey Kardashevskiy wrote:
+>>>> Hi!
+>>>>
+>>>> Recently I started getting multiple errors like this:
+>>>>
+>>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>>> c000001fbdaaa882 npages 1
+>>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>>> c000001fbdaaa882 npages 1
+>>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>>> c000001fbdaaa882 npages 1
+>>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>>> c000001fbdaaa882 npages 1
+>>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>>> c000001fbdaaa882 npages 1
+>>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>>> c000001fbdaaa882 npages 1
+>>>> cxgb3 0006:01:00.0: iommu_alloc failed, tbl c000000003067980 vaddr
+>>>> c000001fbdaaa882 npages 1
+>>>> ... and so on
+>>>>
+>>>> This is all happening on a PPC64 "powernv" platform machine. To trigger the
+>>>> error state, it is enough to _flood_ ping CXGB3 card from another machine
+>>>> (which has Emulex 10Gb NIC + Cisco switch). Just do "ping -f 172.20.1.2"
+>>>> and wait 10-15 seconds.
+>>>>
+>>>>
+>>>> The messages are coming from arch/powerpc/kernel/iommu.c and basically
+>>>> mean that the driver requested more pages than the DMA window has which is
+>>>> normally 1GB (there could be another possible source of errors -
+>>>> ppc_md.tce_build callback - but on powernv platform it always succeeds).
+>>>>
+>>>>
+>>>> The patch after which it broke is:
+>>>> commit f83331bab149e29fa2c49cf102c0cd8c3f1ce9f9
+>>>> Author: Santosh Rastapur <santosh@chelsio.com>
+>>>> Date:   Tue May 21 04:21:29 2013 +0000
+>>>> cxgb3: Check and handle the dma mapping errors
+>>>>
+>>>> Any quick ideas? Thanks!
+>>> That patch adds error checking to detect failed dma mapping requests.
+>>> Before it, the code always assumed that dma mapping requests succeded,
+>>> whether they actually do or not, so the fact that the older kernel
+>>> does not log errors only means that the failures are being ignored,
+>>> and any appearance of working is through pure luck.  The machine could
+>>> have just crashed at that point.
+>>>
+>>> What is the observed behavior of the system by the machine initiating
+>>> the ping flood?  Do the older and newer kernels differ in the
+>>> percentage of pings that do not receive replies?  O the newer kernel,
+>>> when the mapping errors are detected, the packet that it is trying to
+>>> transmit is dropped, but I'm not at all sure what happens on the older
+>>> kernel after the dma mapping fails.  As I mentioned earlier, I'm
+>>> surprised it does not crash.  Perhaps the folks from Chelsio have a
+>>> better idea what happens after a dma mapping error is ignored?
+>>
+>> Hi,
+>>
+>> It should definitely not be ignored. It should not happen this reliably
+>> either.
+>> I wonder if we are not hitting a leak of iommu entries.
+> 
+> Yes we do. I did some more tests with socklib from here
+> http://junkcode.samba.org/ftp/unpacked/junkcode/socklib/
+> 
+> The test is basically sock_source sending packets to sock_sink. If block
+> size is >=512 bytes, there is no leak, if I set packet size to <=256 bytes,
+> it starts leaking, smaller block size means faster leak. The type of the
+> other adapter does not really matter, can be the same Emulex adapter.
+> 
+> I am attaching a small patch which I made in order to detect the leak.
+> Without the patch, no leak happens, I double checked.
+> 
+> 
 
+
+-- 
+Alexey
