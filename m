@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757833Ab3HMGtQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:49:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60601 "EHLO
+	id S1757846Ab3HMGti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:49:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756963Ab3HMGdg (ORCPT
+	with ESMTP id S1756933Ab3HMGde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:36 -0400
+	Tue, 13 Aug 2013 02:33:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        shui yangwei <yangweix.shui@intel.com>,
-        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel.daenzer@amd.com>,
-        Imre Deak <imre.deak@intel.com>, Dave Airlie <airlied@redhat.com>
-Subject: [ 42/60] drm: Dont pass negative delta to ktime_sub_ns()
-Date: Mon, 12 Aug 2013 23:34:09 -0700
-Message-Id: <20130813063337.711590647@linuxfoundation.org>
+        Egbert Eich <eich@suse.com>, Dave Airlie <airlied@redhat.com>
+Subject: [ 40/60] drm/mgag200: Invalidate page tables when pinning a BO
+Date: Mon, 12 Aug 2013 23:34:07 -0700
+Message-Id: <20130813063337.543184197@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,43 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michel Dänzer <michel.daenzer@amd.com>
+From: Egbert Eich <eich@suse.com>
 
-commit e91abf80a0998f326107874c88d549f94839f13c upstream.
+commit ecaac1c866bcda4780a963b3d18cd310d971aea3 upstream.
 
-It takes an unsigned value. This happens not to blow up on 64-bit
-architectures, but it does on 32-bit, causing
-drm_calc_vbltimestamp_from_scanoutpos() to calculate totally bogus
-timestamps for vblank events. Which in turn causes e.g. gnome-shell to
-hang after a DPMS off cycle with current xf86-video-ati Git.
+When a BO gets pinned the placement may get changed. If the memory is
+mapped into user space and user space has already accessed the mapped
+range the page tables are set up but now point to the wrong memory.
+Set bo.mdev->dev_mapping in mgag200_bo_create() to make sure that
+ttm_bo_unmap_virtual() called from ttm_bo_handle_move_mem() will take
+care of this.
 
-[airlied: regression introduced in drm: use monotonic time in drm_calc_vbltimestamp_from_scanoutpos]
+v2: Don't call ttm_bo_unmap_virtual() in mgag200_bo_pin(), fix comment.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59339
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59836
-Tested-by: shui yangwei <yangweix.shui@intel.com>
-Signed-off-by: Michel Dänzer <michel.daenzer@amd.com>
-Reviewed-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Egbert Eich <eich@suse.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_irq.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/mgag200/mgag200_ttm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/drm_irq.c
-+++ b/drivers/gpu/drm/drm_irq.c
-@@ -708,7 +708,10 @@ int drm_calc_vbltimestamp_from_scanoutpo
- 	/* Subtract time delta from raw timestamp to get final
- 	 * vblank_time timestamp for end of vblank.
- 	 */
--	etime = ktime_sub_ns(etime, delta_ns);
-+	if (delta_ns < 0)
-+		etime = ktime_add_ns(etime, -delta_ns);
-+	else
-+		etime = ktime_sub_ns(etime, delta_ns);
- 	*vblank_time = ktime_to_timeval(etime);
+--- a/drivers/gpu/drm/mgag200/mgag200_ttm.c
++++ b/drivers/gpu/drm/mgag200/mgag200_ttm.c
+@@ -347,6 +347,7 @@ int mgag200_bo_create(struct drm_device
  
- 	DRM_DEBUG("crtc %d : v %d p(%d,%d)@ %ld.%ld -> %ld.%ld [e %d us, %d rep]\n",
+ 	mgabo->gem.driver_private = NULL;
+ 	mgabo->bo.bdev = &mdev->ttm.bdev;
++	mgabo->bo.bdev->dev_mapping = dev->dev_mapping;
+ 
+ 	mgag200_ttm_placement(mgabo, TTM_PL_FLAG_VRAM | TTM_PL_FLAG_SYSTEM);
+ 
 
 
