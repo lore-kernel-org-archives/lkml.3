@@ -1,133 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab3HMRa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:30:59 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:25330 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757843Ab3HMRa6 (ORCPT
+	id S1759039Ab3HMRaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:30:03 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45603 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758325Ab3HMR3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:30:58 -0400
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-To: <devel@linuxdriverproject.org>
-CC: <dan.carpenter@oracle.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
-Subject: [PATCH 10/10] staging: ozwpan: Separate success & failure case for oz_hcd_pd_arrived()
-Date: Tue, 13 Aug 2013 18:29:26 +0100
-Message-ID: <1376414966-23525-6-git-send-email-rupesh.gujare@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1376414966-23525-1-git-send-email-rupesh.gujare@atmel.com>
-References: <1376414966-23525-1-git-send-email-rupesh.gujare@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.161.30.18]
+	Tue, 13 Aug 2013 13:29:55 -0400
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Sudeep.KarkadaNagesha@arm.com,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: [PATCH v3 0/6] ARM/ARM64 architected timer updates
+Date: Tue, 13 Aug 2013 18:29:38 +0100
+Message-Id: <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 13 Aug 2013 17:29:50.0532 (UTC) FILETIME=[B6FC6840:01CE984A]
+X-MC-Unique: 113081318295300201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7DHViTN000822
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-This patch separates success & failure block along with fixing
-following issues:-
+This patch series adds support to configure the rate and enable the
+event stream for architected timer. The event streams can be used to
+impose a timeout on a WFE, to safeguard against any programming error
+in case an expected event is not generated or even to implement
+wfe-based timeouts for userspace locking implementations.
 
-1. The way oz_hcd_pd_arrived() looks now it's easy to think we free "ep" but
-actually we do this spaghetti thing of setting it to NULL on success.
+Since the timer control register is reset to zero on warm boot, CPU
+PM notifier is added to re-initialize it.
 
-2. It is hard to read it because there are unlocks scattered throughout.
+Changes v2->v3:
+1. Moved ARM and ARM64 changes into separate patches
+2. Added native hwcaps definations(ARM/ARM64) and compat-specific
+   definitions(ARM64) to the users for the event stream feature. 
 
-3. Currently we set "ep" to NULL on the success path and then test it and or
-free it. In current code you have to scroll to the start of the function
-to read code.
+Changes v1->v2:
+1. Saved event stream divider value on cold reset path and re-used it
+   in CPU PM notifier instead of calculating every time.
+2. Rebased on v3.11-rc2(to avoid conflicts with __cpuinit* deletion)
+3. Dropped "ARM/ARM64: arch_timer: remove __cpuinit attribute for
+   arch_counter_set_user_access"(already done as part of __cpuinit*
+   deletion)
 
-Original patch was submitted by Dan here :-
-http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/2013-August/040113.html
+Regards,
+Sudeep
 
-Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
----
- drivers/staging/ozwpan/ozhcd.c |   54 ++++++++++++++++++++--------------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
 
-diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index 0b21c9f..4cd08da 100644
---- a/drivers/staging/ozwpan/ozhcd.c
-+++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -668,50 +668,50 @@ struct oz_port *oz_hcd_pd_arrived(void *hpd)
- 	struct oz_endpoint *ep;
- 
- 	ozhcd = oz_hcd_claim();
--	if (ozhcd == NULL)
-+	if (!ozhcd)
- 		return NULL;
- 	/* Allocate an endpoint object in advance (before holding hcd lock) to
- 	 * use for out endpoint 0.
- 	 */
- 	ep = oz_ep_alloc(0, GFP_ATOMIC);
-+	if (!ep)
-+		goto err_put;
-+
- 	spin_lock_bh(&ozhcd->hcd_lock);
--	if (ozhcd->conn_port >= 0) {
--		spin_unlock_bh(&ozhcd->hcd_lock);
--		oz_dbg(ON, "conn_port >= 0\n");
--		goto out;
--	}
-+	if (ozhcd->conn_port >= 0)
-+		goto err_unlock;
-+
- 	for (i = 0; i < OZ_NB_PORTS; i++) {
- 		struct oz_port *port = &ozhcd->ports[i];
-+
- 		spin_lock(&port->port_lock);
--		if ((port->flags & OZ_PORT_F_PRESENT) == 0) {
-+		if (!(port->flags & OZ_PORT_F_PRESENT)) {
- 			oz_acquire_port(port, hpd);
- 			spin_unlock(&port->port_lock);
- 			break;
- 		}
- 		spin_unlock(&port->port_lock);
- 	}
--	if (i < OZ_NB_PORTS) {
--		oz_dbg(ON, "Setting conn_port = %d\n", i);
--		ozhcd->conn_port = i;
--		/* Attach out endpoint 0.
--		 */
--		ozhcd->ports[i].out_ep[0] = ep;
--		ep = NULL;
--		hport = &ozhcd->ports[i];
--		spin_unlock_bh(&ozhcd->hcd_lock);
--		if (ozhcd->flags & OZ_HDC_F_SUSPENDED) {
--			oz_dbg(ON, "Resuming root hub\n");
--			usb_hcd_resume_root_hub(ozhcd->hcd);
--		}
--		usb_hcd_poll_rh_status(ozhcd->hcd);
--	} else {
--		spin_unlock_bh(&ozhcd->hcd_lock);
--	}
--out:
--	if (ep) /* ep is non-null if not used. */
--		oz_ep_free(NULL, ep);
-+	if (i == OZ_NB_PORTS)
-+		goto err_unlock;
-+
-+	ozhcd->conn_port = i;
-+	hport = &ozhcd->ports[i];
-+	hport->out_ep[0] = ep;
-+	spin_unlock_bh(&ozhcd->hcd_lock);
-+	if (ozhcd->flags & OZ_HDC_F_SUSPENDED)
-+		usb_hcd_resume_root_hub(ozhcd->hcd);
-+	usb_hcd_poll_rh_status(ozhcd->hcd);
- 	oz_hcd_put(ozhcd);
-+
- 	return hport;
-+
-+err_unlock:
-+	spin_unlock_bh(&ozhcd->hcd_lock);
-+	oz_ep_free(NULL, ep);
-+err_put:
-+	oz_hcd_put(ozhcd);
-+	return NULL;
- }
- 
- /*------------------------------------------------------------------------------
+Sudeep KarkadaNagesha (5):
+  ARM/ARM64: arch_timer: add macros for bits in control register
+  ARM: arch_timer: configure and enable event stream
+  ARM64: arch_timer: configure and enable event stream
+  drivers: clocksource: enable hwcaps for event stream on ARM arch timer
+  drivers: clocksource: add CPU PM notifier for ARM architected timer
+
+Will Deacon (1):
+  drivers: clocksource: configure event stream for ARM arch timer
+
+ arch/arm/include/asm/arch_timer.h    | 18 +++++++++++---
+ arch/arm/include/uapi/asm/hwcap.h    |  1 +
+ arch/arm/kernel/setup.c              |  1 +
+ arch/arm64/include/asm/arch_timer.h  | 22 +++++++++++++----
+ arch/arm64/include/asm/hwcap.h       |  4 ++-
+ arch/arm64/include/uapi/asm/hwcap.h  |  1 +
+ arch/arm64/kernel/setup.c            |  1 +
+ drivers/clocksource/arm_arch_timer.c | 48 +++++++++++++++++++++++++++++++++++-
+ include/clocksource/arm_arch_timer.h | 10 ++++++++
+ 9 files changed, 96 insertions(+), 10 deletions(-)
+
 -- 
-1.7.9.5
+1.8.1.2
+
 
