@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757764Ab3HMGmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:42:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60732 "EHLO
+	id S1757790Ab3HMGmz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:42:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757390Ab3HMGec (ORCPT
+	with ESMTP id S1757385Ab3HMGeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:34:32 -0400
+	Tue, 13 Aug 2013 02:34:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mateusz Guzik <mguzik@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 02/12] virtio: console: fix race with port unplug and open/close
-Date: Mon, 12 Aug 2013 23:35:37 -0700
-Message-Id: <20130813063520.471154460@linuxfoundation.org>
+        Curt Brune <curt@cumulusnetworks.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 01/12] hwmon: (adt7470) Fix incorrect return code check
+Date: Mon, 12 Aug 2013 23:35:36 -0700
+Message-Id: <20130813063520.390244478@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063520.285638946@linuxfoundation.org>
 References: <20130813063520.285638946@linuxfoundation.org>
@@ -27,57 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Curt Brune <curt@cumulusnetworks.com>
 
-commit 057b82be3ca3d066478e43b162fc082930a746c9 upstream.
+commit 93d783bcca69bfacc8dc739d8a050498402587b5 upstream.
 
-There's a window between find_port_by_devt() returning a port and us
-taking a kref on the port, where the port could get unplugged.  Fix it
-by taking the reference in find_port_by_devt() itself.
+In adt7470_write_word_data(), which writes two bytes using
+i2c_smbus_write_byte_data(), the return codes are incorrectly AND-ed
+together when they should be OR-ed together.
 
-Problem reported and analyzed by Mateusz Guzik.
+The return code of i2c_smbus_write_byte_data() is zero for success.
 
-Reported-by: Mateusz Guzik <mguzik@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+The upshot is only the first byte was ever written to the hardware.
+The 2nd byte was never written out.
+
+I noticed that trying to set the fan speed limits was not working
+correctly on my system.  Setting the fan speed limits is the only
+code that uses adt7470_write_word_data().  After making the change
+the limit settings work and the alarms work also.
+
+Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/virtio_console.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/hwmon/adt7470.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -241,9 +241,12 @@ static struct port *find_port_by_devt_in
- 	unsigned long flags;
+--- a/drivers/hwmon/adt7470.c
++++ b/drivers/hwmon/adt7470.c
+@@ -215,7 +215,7 @@ static inline int adt7470_write_word_dat
+ 					  u16 value)
+ {
+ 	return i2c_smbus_write_byte_data(client, reg, value & 0xFF)
+-	       && i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
++	       || i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
+ }
  
- 	spin_lock_irqsave(&portdev->ports_lock, flags);
--	list_for_each_entry(port, &portdev->ports, list)
--		if (port->cdev->dev == dev)
-+	list_for_each_entry(port, &portdev->ports, list) {
-+		if (port->cdev->dev == dev) {
-+			kref_get(&port->kref);
- 			goto out;
-+		}
-+	}
- 	port = NULL;
- out:
- 	spin_unlock_irqrestore(&portdev->ports_lock, flags);
-@@ -781,14 +784,10 @@ static int port_fops_open(struct inode *
- 	struct port *port;
- 	int ret;
- 
-+	/* We get the port with a kref here */
- 	port = find_port_by_devt(cdev->dev);
- 	filp->private_data = port;
- 
--	/* Prevent against a port getting hot-unplugged at the same time */
--	spin_lock_irq(&port->portdev->ports_lock);
--	kref_get(&port->kref);
--	spin_unlock_irq(&port->portdev->ports_lock);
--
- 	/*
- 	 * Don't allow opening of console port devices -- that's done
- 	 * via /dev/hvc
+ static void adt7470_init_client(struct i2c_client *client)
 
 
