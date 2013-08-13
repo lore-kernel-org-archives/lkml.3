@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758734Ab3HMRYY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:24:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34784 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757977Ab3HMRYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:24:23 -0400
-Message-ID: <520A6BA2.7060800@zytor.com>
-Date: Tue, 13 Aug 2013 10:23:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S932091Ab3HMRYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:24:53 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:52343 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758623Ab3HMRYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 13:24:51 -0400
+From: Rupesh Gujare <rupesh.gujare@atmel.com>
+To: <devel@linuxdriverproject.org>
+CC: <dan.carpenter@oracle.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
+Subject: [PATCH 00/10] staging: ozwpan: Coding style fixes
+Date: Tue, 13 Aug 2013 18:24:20 +0100
+Message-ID: <1376414670-23257-1-git-send-email-rupesh.gujare@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Nathan Zimmer <nzimmer@sgi.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Robin Holt <holt@sgi.com>,
-        Rob Landley <rob@landley.net>, Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
- embedded in the buddy allocator
-References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com> <1376344480-156708-1-git-send-email-nzimmer@sgi.com> <CA+55aFwTQLexJkf67P0b7Z7cw8fePjdDSdA4SOkM+Jf+kBPYEA@mail.gmail.com>
-In-Reply-To: <CA+55aFwTQLexJkf67P0b7Z7cw8fePjdDSdA4SOkM+Jf+kBPYEA@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 10:09 AM, Linus Torvalds wrote:
-> 
-> I really really dislike this "let's check if memory is initialized at
-> runtime" approach.
-> 
+This patch seriese mostly contains coding style fixes & removes unneeded
+variable initialization.
 
-It does seem to be getting messy, doesn't it...
+Dan Carpenter (1):
+  staging: ozwpan: Separate success & failure case for
+    oz_hcd_pd_arrived()
 
-The one potential serious concern if if that will end up mucking with
-NUMA affinity in a way that has lasting effects past boot.
+Rupesh Gujare (9):
+  staging: ozwpan: Add a blank line between declaraction and code.
+  staging: ozwpan: Add a blank line between functions & declarations.
+  staging: ozwpan: Simply if condition
+  staging: ozwpan: Fix coding style.
+  staging: ozwpan: Remove unnecessary pointer check.
+  staging: ozwpan: Make oz_hcd_pd_arrived() return a struct pointer
+  staging: ozwpan: Make oz_hcd_pd_departed() take a struct pointer.
+  staging: ozwpan: Remove unneeded initializers
+  staging: ozwpan: Swap arguments of oz_ep_alloc() to match kmalloc()
 
-	-hpa
+ drivers/staging/ozwpan/ozcdev.c        |   23 ++++
+ drivers/staging/ozwpan/ozeltbuf.c      |   21 +++-
+ drivers/staging/ozwpan/ozhcd.c         |  197 ++++++++++++++++++++++++--------
+ drivers/staging/ozwpan/ozhcd.h         |    4 +-
+ drivers/staging/ozwpan/ozmain.c        |    3 +
+ drivers/staging/ozwpan/ozpd.c          |   66 ++++++++++-
+ drivers/staging/ozwpan/ozproto.c       |   33 ++++++
+ drivers/staging/ozwpan/ozurbparanoia.c |    4 +
+ drivers/staging/ozwpan/ozusbsvc.c      |   17 +++
+ drivers/staging/ozwpan/ozusbsvc1.c     |   21 ++++
+ 10 files changed, 334 insertions(+), 55 deletions(-)
 
+-- 
+1.7.9.5
 
