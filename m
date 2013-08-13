@@ -1,54 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab3HMFpY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 01:45:24 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:62719 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab3HMFpW convert rfc822-to-8bit (ORCPT
+	id S1755305Ab3HMFpy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 01:45:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60067 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab3HMFpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 01:45:22 -0400
+	Tue, 13 Aug 2013 01:45:53 -0400
+Date: Mon, 12 Aug 2013 22:47:12 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Thomas Backlund <tmb@mageia.org>, Jordi Pujol <jordipujolp@gmail.com>,
+        stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: ZRAM 3.10.6 Buffer I/O error
+Message-ID: <20130813054712.GA9584@kroah.com>
+References: <1998314.O9XRMyhM6u@pcjordi>
+ <52090FD2.9030702@mageia.org>
+ <20130813013900.GC3101@bbox>
+ <20130813035802.GA24637@kroah.com>
+ <20130813043358.GD3101@bbox>
+ <5209BD97.6000605@mageia.org>
+ <20130813051829.GE3101@bbox>
 MIME-Version: 1.0
-In-Reply-To: <20130813052036.GA11640@electric-eye.fr.zoreil.com>
-References: <alpine.DEB.2.02.1308111151210.2072@localhost6.localdomain6>
-	<20130811155640.GA10070@electric-eye.fr.zoreil.com>
-	<alpine.DEB.2.02.1308111811440.2072@localhost6.localdomain6>
-	<20130813052036.GA11640@electric-eye.fr.zoreil.com>
-Date: Tue, 13 Aug 2013 08:45:21 +0300
-Message-ID: <CAJJAcoe+GpRYqHyu1xctRaUnPXf4CP8=PTt=svJzJFtBjfqxrg@mail.gmail.com>
-Subject: Re: question about netif_rx
-From: David Shwatrz <dshwatrz@gmail.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Julia Lawall <julia.lawall@lip6.fr>, grant.likely@linaro.org,
-        rob.herring@calxeda.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813051829.GE3101@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-what is the current state of checksum offloading support has to do
-with it ? maybe you meant current state of NAPI support ?
+On Tue, Aug 13, 2013 at 02:18:29PM +0900, Minchan Kim wrote:
+> On Tue, Aug 13, 2013 at 08:01:11AM +0300, Thomas Backlund wrote:
+> > Minchan Kim skrev 13.8.2013 07:33:
+> > >Hello Greg,
+> > >
+> > >On Mon, Aug 12, 2013 at 08:58:02PM -0700, Greg Kroah-Hartman wrote:
+> > >>On Tue, Aug 13, 2013 at 10:39:00AM +0900, Minchan Kim wrote:
+> > >>>Hello,
+> > >>>
+> > >>>On Mon, Aug 12, 2013 at 07:39:46PM +0300, Thomas Backlund wrote:
+> > >>>>12.08.2013 17:27, Jordi Pujol skrev:
+> > >>>>>Hello,
+> > >>>>>
+> > >>>>>zram shows an error when mounting a swap partition,
+> > >>>>>current version Linux kernel 3.10.6,
+> > >>>>>previous versions worked, I suppose that latest zram patches have some
+> > >>>>>problem,
+> > >>>>>
+> > >>>>>machine is an AMD64 dual core, 4GB RAM
+> > >>>>>
+> > >>>>>+ modprobe -qb zram num_devices=2
+> > >>>>>+ echo 104857600 > /sys/block/zram0/disksize
+> > >>>>>
+> > >>>>># mkswap /dev/zram0
+> > >>>>>Setting up swapspace version 1, size = 102396 KiB
+> > >>>>>no label, UUID=6c249930-2ba0-46cf-a8c6-766481942b7d
+> > >>>>>
+> > >>>>># pager /var/log/dmesg
+> > >>>>>(no more errors shown)
+> > >>>>>
+> > >>>>># swapon /dev/zram0
+> > >>>>>
+> > >>>>># pager /var/log/dmesg
+> > >>>>>...
+> > >>>>>[  309.300479] Buffer I/O error on device zram0, logical block 25599
+> > >>>>>[  309.300491] Buffer I/O error on device zram0, logical block 25599
+> > >>>>>[  309.300514] Buffer I/O error on device zram0, logical block 25599
+> > >>>>>[  345.205887] Adding 102396k swap on /dev/zram0.  Priority:-2 extents:1
+> > >>>>>across:102396k SSFS
+> > >>>>>
+> > >>>>>full log files and the kernel source are stored in the address:
+> > >>>>>
+> > >>>>>http://livenet.selfip.com/ftp/debian/zram_3.10.6_IO_error/
+> > >>>>>
+> > >>>>
+> > >>>>
+> > >>>>I think this one should fix it and belongs in 3.10 stable too:
+> > >>>
+> > >>>Very true. Let's Cc Greg, explicitely.
+> > >>
+> > >>-ENOCONTEXT
+> > >
+> > >https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/drivers/staging/zram?id=75c7caf5a052ffd8db3312fa7864ee2d142890c4
+> > >
+> > >It seems you already merge "zram:allow request end to conincide with disksize" to stable.
+> > >So there is no concern any more.
+> > 
+> > Nope...
+> > 
+> > thats master branch wich tracks upstream tree...
+> > 
+> > it's not in the 3.10 stable as of 3.10.6 (or current stable queue)
+> > 
+> > https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/log/drivers/staging/zram?h=linux-3.10.y
+> 
+> Okay, Then, we should explain it to Greg.
+> 
+> While Jiang was fixing a BUG A with [1], [1] made another BUG B.
+> So, Sergey fixed BUG B with [2]. But unfortunately, [1] was in stable
+> now but [2] wasn't so [2] should go to the stable to fix BUG B.
+> 
+> [1] 12a7ad3b8, zram: avoid access beyond the zram device
+> [2] 75c7caf5a, zram: allow request end to coincide with disksize
 
-regards,
-DS
+Ok, but that's what Thomas's original email to stable@vger.kernel.org
+asked for, to apply the 2nd patch above to the stable tree, which I've
+already done...
 
-On Tue, Aug 13, 2013 at 8:20 AM, Francois Romieu <romieu@fr.zoreil.com> wrote:
-> Julia Lawall <julia.lawall@lip6.fr> :
->> François Romieu <romieu@fr.zoreil.com> :
-> [...]
->> > Can you send a netif_receive_skb replacement patch for it ?
->>
->> Just to be sure, I just replace netif_rx by netif_receive_skb, nothing
->> else?
->
-> Yes. It should imho be fine with a comment incluing your analysis and a
-> few words about the current state of checksum offloading support.
->
-> --
-> Ueimor
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Emailing me directly, with half-of-a-thread causes me nothing but
+confusion, as I'm sure you can imagine.
+
+thanks,
+
+greg k-h
