@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758451Ab3HMRnS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:43:18 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:48373 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758022Ab3HMRnO (ORCPT
+	id S1758887Ab3HMRnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:43:24 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:33574 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758022Ab3HMRnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:43:14 -0400
+	Tue, 13 Aug 2013 13:43:20 -0400
 From: David Herrmann <dh.herrmann@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Airlie <airlied@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH v2 1/4] anon_inodes: allow external inode allocations
-Date: Tue, 13 Aug 2013 19:42:16 +0200
-Message-Id: <1376415739-11685-2-git-send-email-dh.herrmann@gmail.com>
+        linux-kernel@vger.kernel.org, David Herrmann <dh.herrmann@gmail.com>,
+        Rob Clark <robdclark@gmail.com>
+Subject: [PATCH v2 4/4] drm/omap: remove useless if() in evict_entry()
+Date: Tue, 13 Aug 2013 19:42:19 +0200
+Message-Id: <1376415739-11685-5-git-send-email-dh.herrmann@gmail.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1376415739-11685-1-git-send-email-dh.herrmann@gmail.com>
 References: <1373499930-5055-1-git-send-email-dh.herrmann@gmail.com>
@@ -24,110 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DRM core shares a single address_space across all inodes that belong to
-the same DRM device. This allows efficient unmapping of user-space
-mappings during buffer eviction. However, there is no easy way to get a
-shared address_space for DRM devices during initialization. Therefore, we
-currently delay this step until the first ->open() and save the given
-inode for future use.
+anon_inode->i_mapping is always set. This was needed before we introduced
+anon_inodes. We can safely remove it now.
 
-This causes ugly delayed initialization throughout the DRM core. TTM
-devices end up without a dev_mapping pointer and we have to carefully
-respect any underlying filesystem implementation so we don't corrupt the
-inode->i_mapping and inode->i_data fields.
-
-We can avoid this if we were allowed to allocate an anonymous inode for
-each DRM device. We only have to set file->f_mapping during ->open()
-and no longer need to adjust inode mappings. As fs/anon_inodes.c already
-provides a minimal internal FS mount, we extend it to also provide
-anonymous inodes for use in drivers like DRM.
-
+Cc: Rob Clark <robdclark@gmail.com>
 Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
-Wanted-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
- fs/anon_inodes.c            | 36 +++++++++++++++++++++++++++++-------
- include/linux/anon_inodes.h |  1 +
- 2 files changed, 30 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/omapdrm/omap_gem.c | 32 +++++++++++++++-----------------
+ 1 file changed, 15 insertions(+), 17 deletions(-)
 
-diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
-index 47a65df..7d8a80a 100644
---- a/fs/anon_inodes.c
-+++ b/fs/anon_inodes.c
-@@ -25,6 +25,7 @@
- static struct vfsmount *anon_inode_mnt __read_mostly;
- static struct inode *anon_inode_inode;
- static const struct file_operations anon_inode_fops;
-+static struct dentry *anon_inode_root;
- 
- /*
-  * anon_inodefs_dname() is called from d_path().
-@@ -87,19 +88,18 @@ static struct inode *anon_inode_mkinode(struct super_block *s)
- static struct dentry *anon_inodefs_mount(struct file_system_type *fs_type,
- 				int flags, const char *dev_name, void *data)
+diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_gem.c
+index 8219940..0f714a8 100644
+--- a/drivers/gpu/drm/omapdrm/omap_gem.c
++++ b/drivers/gpu/drm/omapdrm/omap_gem.c
+@@ -153,25 +153,23 @@ static struct {
+ static void evict_entry(struct drm_gem_object *obj,
+ 		enum tiler_fmt fmt, struct usergart_entry *entry)
  {
--	struct dentry *root;
--	root = mount_pseudo(fs_type, "anon_inode:", NULL,
-+	anon_inode_root = mount_pseudo(fs_type, "anon_inode:", NULL,
- 			&anon_inodefs_dentry_operations, ANON_INODE_FS_MAGIC);
--	if (!IS_ERR(root)) {
--		struct super_block *s = root->d_sb;
-+	if (!IS_ERR(anon_inode_root)) {
-+		struct super_block *s = anon_inode_root->d_sb;
- 		anon_inode_inode = anon_inode_mkinode(s);
- 		if (IS_ERR(anon_inode_inode)) {
--			dput(root);
-+			dput(anon_inode_root);
- 			deactivate_locked_super(s);
--			root = ERR_CAST(anon_inode_inode);
-+			anon_inode_root = ERR_CAST(anon_inode_inode);
+-	if (obj->dev->anon_inode->i_mapping) {
+-		struct omap_gem_object *omap_obj = to_omap_bo(obj);
+-		int n = usergart[fmt].height;
+-		size_t size = PAGE_SIZE * n;
+-		loff_t off = mmap_offset(obj) +
+-				(entry->obj_pgoff << PAGE_SHIFT);
+-		const int m = 1 + ((omap_obj->width << fmt) / PAGE_SIZE);
+-		if (m > 1) {
+-			int i;
+-			/* if stride > than PAGE_SIZE then sparse mapping: */
+-			for (i = n; i > 0; i--) {
+-				unmap_mapping_range(obj->dev->anon_inode->i_mapping,
+-						off, PAGE_SIZE, 1);
+-				off += PAGE_SIZE * m;
+-			}
+-		} else {
++	struct omap_gem_object *omap_obj = to_omap_bo(obj);
++	int n = usergart[fmt].height;
++	size_t size = PAGE_SIZE * n;
++	loff_t off = mmap_offset(obj) + (entry->obj_pgoff << PAGE_SHIFT);
++	const int m = 1 + ((omap_obj->width << fmt) / PAGE_SIZE);
++
++	if (m > 1) {
++		int i;
++		/* if stride > than PAGE_SIZE then sparse mapping: */
++		for (i = n; i > 0; i--) {
+ 			unmap_mapping_range(obj->dev->anon_inode->i_mapping,
+-					    off, size, 1);
++					    off, PAGE_SIZE, 1);
++			off += PAGE_SIZE * m;
  		}
++	} else {
++		unmap_mapping_range(obj->dev->anon_inode->i_mapping,
++				    off, size, 1);
  	}
--	return root;
-+	return anon_inode_root;
- }
  
- static struct file_system_type anon_inode_fs_type = {
-@@ -219,6 +219,28 @@ err_put_unused_fd:
- }
- EXPORT_SYMBOL_GPL(anon_inode_getfd);
- 
-+/**
-+ * anon_inode_new - create private anonymous inode
-+ *
-+ * Creates a new inode on the anonymous inode FS for driver's use. The inode has
-+ * it's own address_space compared to the shared anon_inode_inode. It can be
-+ * used in situations where user-space mappings have to be shared across
-+ * different files but no backing inode is available.
-+ *
-+ * Call iput(inode) to release the inode.
-+ *
-+ * RETURNS:
-+ * New inode on success, error pointer on failure.
-+ */
-+struct inode *anon_inode_new(void)
-+{
-+	if (IS_ERR(anon_inode_root))
-+		return ERR_CAST(anon_inode_root);
-+
-+	return anon_inode_mkinode(anon_inode_root->d_sb);
-+}
-+EXPORT_SYMBOL_GPL(anon_inode_new);
-+
- static int __init anon_inode_init(void)
- {
- 	int error;
-diff --git a/include/linux/anon_inodes.h b/include/linux/anon_inodes.h
-index 8013a45..ddbd67f 100644
---- a/include/linux/anon_inodes.h
-+++ b/include/linux/anon_inodes.h
-@@ -15,6 +15,7 @@ struct file *anon_inode_getfile(const char *name,
- 				void *priv, int flags);
- int anon_inode_getfd(const char *name, const struct file_operations *fops,
- 		     void *priv, int flags);
-+struct inode *anon_inode_new(void);
- 
- #endif /* _LINUX_ANON_INODES_H */
- 
+ 	entry->obj = NULL;
 -- 
 1.8.3.4
 
