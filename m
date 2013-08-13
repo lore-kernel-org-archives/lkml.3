@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab3HMGhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:37:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60820 "EHLO
+	id S1757698Ab3HMGiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:38:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60816 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757542Ab3HMGex (ORCPT
+	with ESMTP id S1757533Ab3HMGew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:34:53 -0400
+	Tue, 13 Aug 2013 02:34:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Stuart Foster <smf.linux@ntlworld.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 01/17] SCSI: Dont attempt to send extended INQUIRY command if skip_vpd_pages is set
-Date: Mon, 12 Aug 2013 23:35:47 -0700
-Message-Id: <20130813063501.839896135@linuxfoundation.org>
+        Joshua Zhu <zhu.wen-jie@hp.com>,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Vinson Lee <vlee@freedesktop.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [ 17/17] perf tools: Add anonymous huge page recognition
+Date: Mon, 12 Aug 2013 23:36:03 -0700
+Message-Id: <20130813063503.106386760@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063501.728847844@linuxfoundation.org>
 References: <20130813063501.728847844@linuxfoundation.org>
@@ -29,34 +33,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Joshua Zhu <zhu.wen-jie@hp.com>
 
-commit 7562523e84ddc742fe1f9db8bd76b01acca89f6b upstream.
+commit d0528b5d71faf612014dd7672e44225c915344b2 upstream.
 
-If a device has the skip_vpd_pages flag set we should simply fail the
-scsi_get_vpd_page() call.
+Judging anonymous memory's vm_area_struct, perf_mmap_event's filename
+will be set to "//anon" indicating this vma belongs to anonymous
+memory.
 
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Stuart Foster <smf.linux@ntlworld.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Once hugepage is used, vma's vm_file points to hugetlbfs. In this way,
+this vma will not be regarded as anonymous memory by is_anon_memory() in
+perf user space utility.
+
+Signed-off-by: Joshua Zhu <zhu.wen-jie@hp.com>
+Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Joshua Zhu <zhu.wen-jie@hp.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vinson Lee <vlee@freedesktop.org>
+Link: http://lkml.kernel.org/r/1357363797-3550-1-git-send-email-zhu.wen-jie@hp.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi.c |    3 +++
- 1 file changed, 3 insertions(+)
+ tools/perf/util/map.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -1025,6 +1025,9 @@ int scsi_get_vpd_page(struct scsi_device
- {
- 	int i, result;
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -15,7 +15,8 @@ const char *map_type__name[MAP__NR_TYPES
  
-+	if (sdev->skip_vpd_pages)
-+		goto fail;
-+
- 	/* Ask for all the pages supported by this device */
- 	result = scsi_vpd_inquiry(sdev, buf, 0, buf_len);
- 	if (result)
+ static inline int is_anon_memory(const char *filename)
+ {
+-	return strcmp(filename, "//anon") == 0;
++	return !strcmp(filename, "//anon") ||
++	       !strcmp(filename, "/anon_hugepage (deleted)");
+ }
+ 
+ static inline int is_no_dso_memory(const char *filename)
 
 
