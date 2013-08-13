@@ -1,239 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab3HMHFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:05:52 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:61132 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab3HMHFD (ORCPT
+	id S1755904Ab3HMHGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:06:14 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:42523 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab3HMHGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:05:03 -0400
-X-AuditID: 9c93017e-b7c76ae000003897-d2-5209da9cde47
-From: Minchan Kim <minchan@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, k.kozlowski@samsung.com,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
-        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
-        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [RFC 2/3] pinpage control subsystem
-Date: Tue, 13 Aug 2013 16:05:01 +0900
-Message-Id: <1376377502-28207-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1376377502-28207-1-git-send-email-minchan@kernel.org>
-References: <1376377502-28207-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 13 Aug 2013 03:06:12 -0400
+Message-ID: <5209DAF6.9020601@atmel.com>
+Date: Tue, 13 Aug 2013 09:06:30 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: boris brezillon <b.brezillon@overkiz.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] usb: gadget: at91_udc: add usb_clk for transition to
+ common clk framework
+References: <1375337885-2684-1-git-send-email-b.brezillon@overkiz.com> <5208E881.3030205@atmel.com> <520948C3.7060008@overkiz.com>
+In-Reply-To: <520948C3.7060008@overkiz.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/pinpage.h |   39 ++++++++++++++
- mm/Makefile             |    2 +-
- mm/pinpage.c            |  134 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 174 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/pinpage.h
- create mode 100644 mm/pinpage.c
+On 12/08/2013 22:42, boris brezillon :
+> Hello Nicolas,
+>
+> On 12/08/2013 15:52, Nicolas Ferre wrote:
+>> On 01/08/2013 08:18, Boris BREZILLON :
+>>> The AT91 PMC (Power Management Controller) provides an USB clock used by
+>>> USB Full Speed host (ohci) and USB Full Speed device (udc).
+>>> The usb drivers (ohci and udc) must configure this clock to 48Mhz.
+>>> This configuration was formely done in mach-at91/clock.c, but this
+>>> implementation will be removed when moving to common clk framework.
+>>>
+>>> This patch adds support for usb clock retrieval and configuration,
+>>> and is
+>>> backward compatible with the current at91 clk implementation (if usb clk
+>>> is not found, it does not configure/enable it).
+>>>
+>>> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+>>
+>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>
+> Is there a reason you acked this version but not the 3rd one
+> (https://lkml.org/lkml/2013/8/2/102).
 
-diff --git a/include/linux/pinpage.h b/include/linux/pinpage.h
-new file mode 100644
-index 0000000..42fbdc7
---- /dev/null
-+++ b/include/linux/pinpage.h
-@@ -0,0 +1,39 @@
-+#ifndef _LINUX_PINPAGE_H
-+#define _LINUX_PINPAGE_H
-+
-+#include <linux/radix-tree.h>
-+
-+/*
-+ * NOTE : pinpage_system user shouldn't use page->lru and page->flags
-+ * fields.
-+ */
-+struct pinpage_system {
-+	struct radix_tree_root page_tree;
-+	spinlock_t tree_lock;
-+
-+	int (*create_subsys)(struct pinpage_system *psys);
-+	int (*destroy_subsys)(struct pinpage_system *psys);
-+	int (*migrate)(struct pinpage_system *psys, struct page *page,
-+			struct page *newpage);
-+	int (*add_page)(struct pinpage_system *psys, struct page *page,
-+			void *private);
-+	int (*del_page)(struct pinpage_system *psys, struct page *page);
-+	int (*find_page)(struct pinpage_system *psys, struct page *page);
-+
-+	struct list_head list;
-+};
-+
-+extern int general_create_subsys(struct pinpage_system *psys);
-+extern int general_destroy_subsys(struct pinpage_system *psys);
-+extern int general_add_page(struct pinpage_system *psys, struct page *page,
-+			void *private);
-+extern int general_del_page(struct pinpage_system *psys, struct page *page);
-+extern int general_find_page(struct pinpage_system *psys, struct page *page);
-+
-+extern int set_pinpage(struct pinpage_system *psys, struct page *page,
-+		void *private);
-+extern int register_pinpage(struct pinpage_system *psys);
-+extern int migrate_pinpage(struct page *page, struct page *newpage);
-+
-+#endif
-+
-diff --git a/mm/Makefile b/mm/Makefile
-index f008033..bf4a2d9 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -5,7 +5,7 @@
- mmu-y			:= nommu.o
- mmu-$(CONFIG_MMU)	:= fremap.o highmem.o madvise.o memory.o mincore.o \
- 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
--			   vmalloc.o pagewalk.o pgtable-generic.o
-+			   vmalloc.o pagewalk.o pgtable-generic.o pinpage.o
- 
- ifdef CONFIG_CROSS_MEMORY_ATTACH
- mmu-$(CONFIG_MMU)	+= process_vm_access.o
-diff --git a/mm/pinpage.c b/mm/pinpage.c
-new file mode 100644
-index 0000000..0833204
---- /dev/null
-+++ b/mm/pinpage.c
-@@ -0,0 +1,134 @@
-+#include <linux/mm.h>
-+#include <linux/slab.h>
-+#include <linux/pinpage.h>
-+#include <linux/pagemap.h>
-+
-+static DEFINE_SPINLOCK(pinpage_system_lock);
-+static LIST_HEAD(pinpage_system_list);
-+
-+struct pinpage_info {
-+	unsigned long pfn;
-+	void *private;
-+};
-+
-+int general_create_subsys(struct pinpage_system *psys)
-+{
-+	INIT_RADIX_TREE(&psys->page_tree, GFP_KERNEL);
-+	spin_lock_init(&psys->tree_lock);
-+	return 0;
-+}
-+EXPORT_SYMBOL(general_create_subsys);
-+
-+int general_destroy_subsys(struct pinpage_system *psys)
-+{
-+	return 0;
-+}
-+EXPORT_SYMBOL(general_destroy_subsys);
-+
-+int general_add_page(struct pinpage_system *psys, struct page *page,
-+			void *private)
-+{
-+	int ret = -ENOMEM;
-+	unsigned long pfn = page_to_pfn(page);
-+	struct pinpage_info *pinfo = kmalloc(sizeof(pinfo), GFP_KERNEL);
-+	if (!pinfo)
-+		return ret;
-+
-+	pinfo->pfn = pfn;
-+	pinfo->private = private;
-+
-+	spin_lock(&psys->tree_lock);
-+	ret = radix_tree_insert(&psys->page_tree, pfn, pinfo);
-+	spin_unlock(&psys->tree_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(general_add_page);
-+
-+int general_del_page(struct pinpage_system *psys, struct page *page)
-+{
-+	struct pinpage_info *pinfo;
-+	spin_lock(&psys->tree_lock);
-+	pinfo = radix_tree_lookup(&psys->page_tree, page_to_pfn(page));
-+	if (!pinfo) {
-+		spin_unlock(&psys->tree_lock);
-+		return -EINVAL;
-+	}
-+	radix_tree_delete(&psys->page_tree, page_to_pfn(page));
-+	spin_unlock(&psys->tree_lock);
-+	return 0;
-+}
-+EXPORT_SYMBOL(general_del_page);
-+
-+int general_find_page(struct pinpage_system *psys, struct page *page)
-+{
-+	struct pinpage_info *pinfo;
-+	spin_lock(&psys->tree_lock);
-+	pinfo = radix_tree_lookup(&psys->page_tree, page_to_pfn(page));
-+	spin_unlock(&psys->tree_lock);
-+	return pinfo ? 1 : 0;
-+}
-+EXPORT_SYMBOL(general_find_page);
-+
-+int set_pinpage(struct pinpage_system *psys, struct page *page, void *private)
-+{
-+	int ret;
-+	ret = psys->add_page(psys, page, private);
-+	if (!ret) {
-+		lock_page(page);
-+		/* Doesn't allow nesting */
-+		VM_BUG_ON(PagePin(page));
-+		SetPagePin(page);
-+		unlock_page(page);
-+	}
-+	return ret;
-+}
-+EXPORT_SYMBOL(set_pinpage);
-+
-+int clear_pinpage(struct pinpage_system *psys, struct page *page)
-+{
-+	int ret;
-+	ret = psys->del_page(psys, page);
-+	if (!ret) {
-+		lock_page(page);
-+		ClearPagePin(page);
-+		unlock_page(page);
-+	}
-+	return ret;
-+}
-+EXPORT_SYMBOL(clear_pinpage);
-+
-+int register_pinpage(struct pinpage_system *psys)
-+{
-+	/* register pinpage_subsystem to global list */	
-+	spin_lock(&pinpage_system_lock);
-+	list_add(&psys->list, &pinpage_system_list);
-+	spin_unlock(&pinpage_system_lock);
-+	return psys->create_subsys(psys);
-+}
-+EXPORT_SYMBOL(register_pinpage);
-+
-+int unregister_pinpage(struct pinpage_system *psys)
-+{
-+	/* register pinpage_subsystem to global list */	
-+	spin_lock(&pinpage_system_lock);
-+	list_del(&psys->list);
-+	spin_unlock(&pinpage_system_lock);
-+	return psys->destroy_subsys(psys);
-+}
-+EXPORT_SYMBOL(unregister_pinpage);
-+
-+int migrate_pinpage(struct page *page, struct page *newpage)
-+{
-+	int err = 0;
-+	struct pinpage_system *psys;
-+
-+	spin_lock(&pinpage_system_lock);
-+	list_for_each_entry(psys, &pinpage_system_list, list) {
-+		if (psys->find_page(psys, page)) {
-+			err = psys->migrate(psys, page, newpage);
-+			break;
-+		}
-+	}
-+	spin_unlock(&pinpage_system_lock);
-+	return err;
-+}
+No, only flow of emails while getting back online ;-)
+
+Bye,
+
+>>> ---
+>>>    drivers/usb/gadget/at91_udc.c |   17 ++++++++++++++++-
+>>>    drivers/usb/gadget/at91_udc.h |    2 +-
+>>>    2 files changed, 17 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/usb/gadget/at91_udc.c
+>>> b/drivers/usb/gadget/at91_udc.c
+>>> index fce8e4e..ae06585 100644
+>>> --- a/drivers/usb/gadget/at91_udc.c
+>>> +++ b/drivers/usb/gadget/at91_udc.c
+>>> @@ -870,6 +870,11 @@ static void clk_on(struct at91_udc *udc)
+>>>        if (udc->clocked)
+>>>            return;
+>>>        udc->clocked = 1;
+>>> +
+>>> +    if (!IS_ERR(udc->uclk)) {
+>>> +        clk_set_rate(udc->uclk, 48000000);
+>>> +        clk_prepare_enable(udc->uclk);
+>>> +    }
+>>>        clk_prepare_enable(udc->iclk);
+>>>        clk_prepare_enable(udc->fclk);
+>>>    }
+>>> @@ -882,6 +887,8 @@ static void clk_off(struct at91_udc *udc)
+>>>        udc->gadget.speed = USB_SPEED_UNKNOWN;
+>>>        clk_disable_unprepare(udc->fclk);
+>>>        clk_disable_unprepare(udc->iclk);
+>>> +    if (!IS_ERR(udc->uclk))
+>>> +        clk_disable_unprepare(udc->uclk);
+>>>    }
+>>>
+>>>    /*
+>>> @@ -1774,10 +1781,10 @@ static int at91udc_probe(struct
+>>> platform_device *pdev)
+>>>        /* get interface and function clocks */
+>>>        udc->iclk = clk_get(dev, "udc_clk");
+>>>        udc->fclk = clk_get(dev, "udpck");
+>>> +    udc->uclk = clk_get(dev, "usb_clk");
+>>>        if (IS_ERR(udc->iclk) || IS_ERR(udc->fclk)) {
+>>>            DBG("clocks missing\n");
+>>>            retval = -ENODEV;
+>>> -        /* NOTE: we "know" here that refcounts on these are NOPs */
+>>>            goto fail1;
+>>>        }
+>>>
+>>> @@ -1851,6 +1858,12 @@ fail3:
+>>>    fail2:
+>>>        free_irq(udc->udp_irq, udc);
+>>>    fail1:
+>>> +    if (!IS_ERR(udc->uclk))
+>>> +        clk_put(udc->uclk);
+>>> +    if (!IS_ERR(udc->fclk))
+>>> +        clk_put(udc->fclk);
+>>> +    if (!IS_ERR(udc->iclk))
+>>> +        clk_put(udc->iclk);
+>>>        iounmap(udc->udp_baseaddr);
+>>>    fail0a:
+>>>        if (cpu_is_at91rm9200())
+>>> @@ -1894,6 +1907,8 @@ static int __exit at91udc_remove(struct
+>>> platform_device *pdev)
+>>>
+>>>        clk_put(udc->iclk);
+>>>        clk_put(udc->fclk);
+>>> +    if (!IS_ERR(udc->uclk))
+>>> +        clk_put(udc->uclk);
+>>>
+>>>        return 0;
+>>>    }
+>>> diff --git a/drivers/usb/gadget/at91_udc.h
+>>> b/drivers/usb/gadget/at91_udc.h
+>>> index e647d1c..0175246 100644
+>>> --- a/drivers/usb/gadget/at91_udc.h
+>>> +++ b/drivers/usb/gadget/at91_udc.h
+>>> @@ -126,7 +126,7 @@ struct at91_udc {
+>>>        unsigned            active_suspend:1;
+>>>        u8                addr;
+>>>        struct at91_udc_data        board;
+>>> -    struct clk            *iclk, *fclk;
+>>> +    struct clk            *iclk, *fclk, *uclk;
+>>>        struct platform_device        *pdev;
+>>>        struct proc_dir_entry        *pde;
+>>>        void __iomem            *udp_baseaddr;
+>>>
+>>
+>>
+>
+>
+
+
 -- 
-1.7.9.5
-
+Nicolas Ferre
