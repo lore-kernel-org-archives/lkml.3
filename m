@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757644Ab3HML7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 07:59:09 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63101 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757512Ab3HML7H (ORCPT
+	id S1757687Ab3HMMCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 08:02:33 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49392 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757583Ab3HMMCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 07:59:07 -0400
-Message-ID: <520A1F20.60401@metafoo.de>
-Date: Tue, 13 Aug 2013 13:57:20 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Tue, 13 Aug 2013 08:02:31 -0400
+Date: Tue, 13 Aug 2013 13:02:03 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Message-ID: <20130813120203.GW6427@sirena.org.uk>
+References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
+ <1376243970-6489-11-git-send-email-tomasz.figa@gmail.com>
+ <20130812233641.GL6427@sirena.org.uk>
+ <2472314.6b8DcBdcjO@flatron>
 MIME-Version: 1.0
-To: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-CC: Peter Meerwald <pmeerw@pmeerw.net>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, jic23@cam.ac.uk
-Subject: Re: [PATCH v2] iio: add Bosch BMA180 acceleration sensor driver
-References: <1376384956-16720-1-git-send-email-o.v.kravchenko@globallogic.com> <alpine.DEB.2.01.1308131131170.30839@pmeerw.net> <CAGH3drr2p5dD4SXxG67QChVH1wubRCDKWaQPevQKBxej-UqsBA@mail.gmail.com>
-In-Reply-To: <CAGH3drr2p5dD4SXxG67QChVH1wubRCDKWaQPevQKBxej-UqsBA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xQA5JmyoyfznAa64"
+Content-Disposition: inline
+In-Reply-To: <2472314.6b8DcBdcjO@flatron>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 10/18] spi: s3c64xx: Do not require legacy DMA API in
+ case of S3C64XX
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 01:22 PM, Oleksandr Kravchenko wrote:
-> On Tue, Aug 13, 2013 at 1:01 PM, Peter Meerwald <pmeerw@pmeerw.net> wrote:
->>
->>> This patch adds IIO driver for Bosch BMA180 triaxial
->>> acceleration sensor.
->>> http://omapworld.com/BMA180_111_1002839.pdf
->>
->> the DS is preliminary, more up-to-date version available
->>
->> comments inline
->>
->>> ---
->>>   .../devicetree/bindings/iio/accel/bma180.txt       |   35 ++
->>>   drivers/iio/accel/Kconfig                          |   12 +
->>>   drivers/iio/accel/Makefile                         |    2 +
->>>   drivers/iio/accel/bma180.c                         |  635 ++++++++++++++++++++
->>>   4 files changed, 684 insertions(+)
->>>   create mode 100644 Documentation/devicetree/bindings/iio/accel/bma180.txt
->>>   create mode 100644 drivers/iio/accel/bma180.c
->>>
->>> diff --git a/Documentation/devicetree/bindings/iio/accel/bma180.txt b/Documentation/devicetree/bindings/iio/accel/bma180.txt
->>> new file mode 100644
->>> index 0000000..e08780b
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/iio/accel/bma180.txt
->>> @@ -0,0 +1,35 @@
->>> +* Bosch BMA180 triaxial acceleration sensor
->>> +
->>> +http://omapworld.com/BMA180_111_1002839.pdf
->>> +
->>> +Required properties:
->>> +
->>> +  - compatible : should be "bosch,bma180"
->>> +  - reg : the I2C address of the sensor
->>> +
->>> +Optional properties:
->>> +
->>> +  - interrupt-parent : should be the phandle for the interrupt controller
->>> +
->>> +  - interrupts : interrupt mapping for GPIO IRQ, it should by configured with
->>> +             flags IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING
->>> +
->>> +  - bosch,resolution : ADC resolution. Must be 130, 190, 250, 380, 500,
->>> +             990 or 1980 mcg/LSB only
->>
->> what is mcg?
-> mcg is microgram (http://en.wikipedia.org/wiki/Kilogram#SI_multiples)
-> How to call it more correctly?
 
-I would be very surprised if g was gram. g is usually acceleration in this 
-context, 9.81m/s**2
+--xQA5JmyoyfznAa64
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But again same question as before, shouldn't this rather be runtime 
-configurable? Same for bandwidth.
+On Tue, Aug 13, 2013 at 01:49:53AM +0200, Tomasz Figa wrote:
 
-- Lars
+> I've been testing this without any significant patches, like PWM, CCF or=
+=20
+> DT support, just everything from the branch I pointed to and some board-
+> specific patches to help in debugging.
 
-- Lars
+I retested with the SPI patches you sent separately yesterday which
+didn't make a difference for the SPI issue.
+
+> Anyway, this is the exact branch I've been using:
+
+> git://github.com/tom3q/linux.git v3.12-pl080-devel
+
+I can't test this directly as it has the DAPM bugs I fixed yesterday
+in it (those patches will hit -next tomorrow), however it does look like
+there's nothing else relevant in there...
+
+--xQA5JmyoyfznAa64
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSCiA4AAoJELSic+t+oim9ep0QAJWIMmIJR3Y9j/6Ui7SEUO2Z
+WEf3zdq+jDqLw/rUkHYhCKKTxokUsDpuDwuFmc/oc9sMLIU3g7bXrEu1PTTu06HY
+5Gm4aIJ05E9170oS+JsMwuBBAUoIh30v9M2/B3yglACIkHB2QRJB+gPVsWIF4EfU
+xOvDBZ8oOiSAZ4JPichgaUf9IPOtuCic12IFR1Cr68SGNyKr3QvxOBjpvubXe+C8
+yqVOXt6nlABHX8yzzwlqeAGztOmdWMiGpm3WFHM9DkK1PvJl15C4uSrBgBGs5Ptw
+3j4f0qxEl6FDKiSlQ1BIg9HdFcpT+FQ8n60CB2MO78J25zAOeuWj9NGKArLAmdPS
+AGkxAx/e/jASGTuk21Jo3PJfiF0g2dvw9HVdVi75TcT1erWW+gewgqqC6Hqzm4qL
+f25qupR6d6OSHnpzGaBb11wayQjxX7W3IlS3IfddYAxNrSU6fM/+bjVcCgoKrYJ6
+4A75fVv4XpRKY/zOVMjDFO77nZTWPh5Op2S7Ue9V/x1vFOTfa+Vpo7/9eDu5meJO
+RlNkADdo5f9U9koY6PTRyIp7MfFTEx9GUD7oja+iIlwL5GXroSvGcYTYso1ymLqd
+0B7kyMx5+zIEm9gJloP8QOofWQqvJwi2MYF5UCl3kBvyZgNcd4hs0wBzzWACltjY
+/uQzui8buV6Rf5uf4LAI
+=V8HO
+-----END PGP SIGNATURE-----
+
+--xQA5JmyoyfznAa64--
