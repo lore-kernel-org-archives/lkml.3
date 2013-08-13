@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab3HMNdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:33:40 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:60606 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758085Ab3HMNdg (ORCPT
+	id S1758240Ab3HMNdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:33:55 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:36592 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758085Ab3HMNdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:33:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <520A3206.5080505@linutronix.de>
-References: <51F2BE6F.3010008@linutronix.de>
-	<CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
-	<51F2D427.7050106@linutronix.de>
-	<CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
-	<51F2DD90.2030405@linutronix.de>
-	<CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
-	<20130729165329.GA5773@linutronix.de>
-	<CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com>
-	<51F6ABA2.7060102@linutronix.de>
-	<CADYTM3bcCoWKE9eR5Sd9MbaEUr4G=k=r6JKR+8KC=W_YrbMs3g@mail.gmail.com>
-	<20130809160339.GA14829@linutronix.de>
-	<5205516D.1030707@cogentembedded.com>
-	<5209DCB9.8020705@linutronix.de>
-	<CADYTM3a2M-X=eqz0LmSq4T9UF9khsTGB5TTYWWMRZWwkpRuRTQ@mail.gmail.com>
-	<520A3206.5080505@linutronix.de>
-Date: Tue, 13 Aug 2013 08:33:34 -0500
-Message-ID: <CADYTM3YU=xt-YDaoOqothjAv_rdnzRmop10Rf7PSA7POaE5DBQ@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: am335x: Do not remove the session bin
- HOST-only mode
-From: Bin Liu <binmlist@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 Aug 2013 09:33:52 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Steven Miao <realmz6@gmail.com>
+Subject: [PATCH V2 06/35] cpufreq: blackfin: Covert to light weight ->target_index() routine
+Date: Tue, 13 Aug 2013 19:02:19 +0530
+Message-Id: <57b9c4fa9e22a22debe96f00d868745f8fdaa104.1376392602.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
+References: <cover.1376392602.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
+References: <cover.1376392602.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+This patch converts existing .target() to newly defined light weight
+.target_index() routine for this driver.
 
-On Tue, Aug 13, 2013 at 8:17 AM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> On 08/13/2013 03:03 PM, Bin Liu wrote:
->> Sebastian,
->
-> Hi Bin,
->
->>>>> +    if (musb->port_mode == MUSB_PORT_MODE_HOST) {
->>>>> +        val = USBMODE_IDDIG_A;
->>>>> +        val |= USBMODE_ID_MUX_REG;
->>>>
->> I am going to so some tests today for this. I don't object to use the
->> mode register, but am wondering why we have to play with it for
->> host-only mode. The ID pin is grounded for host-only mode, which
->> should cause the same as setting mode register.
->
-> I've been looking at the wiki page and it did not mention the ID pin
-> for the second port. If it is grounded then this piece can be removed
-I thought you have already tried that without setting the mode
-register the session bit cannot stay set.
-I am not sure if anywhere mentioned about the ID pin, but ASAIK all
-the different boards using am335x have ID pin grounded for host port.
+CPUFreq core will call cpufreq_frequency_table_target() before calling this
+routine and will pass index to it.
 
-> and the magic trick is just to skip the try_idle() call.
-Agreed.
+Cc: Steven Miao <realmz6@gmail.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/blackfin-cpufreq.c | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
->
-> I haven't found anything saying that it is required to clear the
-> session bin in host mode, only in OTG. And then, I would assume to
-Agreed.
+diff --git a/drivers/cpufreq/blackfin-cpufreq.c b/drivers/cpufreq/blackfin-cpufreq.c
+index 48888cf..b343c7b 100644
+--- a/drivers/cpufreq/blackfin-cpufreq.c
++++ b/drivers/cpufreq/blackfin-cpufreq.c
+@@ -127,14 +127,11 @@ unsigned long cpu_set_cclk(int cpu, unsigned long new)
+ }
+ #endif
+ 
+-static int bfin_target(struct cpufreq_policy *policy,
+-			unsigned int target_freq, unsigned int relation)
++static int bfin_target(struct cpufreq_policy *policy, unsigned int index)
+ {
+ #ifndef CONFIG_BF60x
+ 	unsigned int plldiv;
+ #endif
+-	unsigned int index;
+-	unsigned long cclk_hz;
+ 	struct cpufreq_freqs freqs;
+ 	static unsigned long lpj_ref;
+ 	static unsigned int  lpj_ref_freq;
+@@ -144,17 +141,11 @@ static int bfin_target(struct cpufreq_policy *policy,
+ 	cycles_t cycles;
+ #endif
+ 
+-	if (cpufreq_frequency_table_target(policy, bfin_freq_table, target_freq,
+-				relation, &index))
+-		return -EINVAL;
+-
+-	cclk_hz = bfin_freq_table[index].frequency;
+-
+ 	freqs.old = bfin_getfreq_khz(0);
+-	freqs.new = cclk_hz;
++	freqs.new = bfin_freq_table[index].frequency;
+ 
+ 	pr_debug("cpufreq: changing cclk to %lu; target = %u, oldfreq = %u\n",
+-			cclk_hz, target_freq, freqs.old);
++			freqs.new, freqs.new, freqs.old);
+ 
+ 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ #ifndef CONFIG_BF60x
+@@ -210,7 +201,7 @@ static int __bfin_cpu_init(struct cpufreq_policy *policy)
+ 
+ static struct cpufreq_driver bfin_driver = {
+ 	.verify = cpufreq_generic_frequency_table_verify,
+-	.target = bfin_target,
++	.target_index = bfin_target,
+ 	.get = bfin_getfreq_khz,
+ 	.init = __bfin_cpu_init,
+ 	.exit = cpufreq_generic_exit,
+-- 
+1.7.12.rc2.18.g61b472e
 
-> receive a session interrupt once we have the proper VBUS level which
-> does not happen.
-The TI 3.2 kernel for am335x sets the session bit in musb_start() for
-host-only mode. Maybe we can do something similar in here? (I noticed
-mush_start() has gone in mainline, but have not got a chance to check
-the details...)
-
->
->> -Bin.
->
-> Sebastian
