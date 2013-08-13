@@ -1,57 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759273Ab3HMUip (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:38:45 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41515 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759255Ab3HMUio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:38:44 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM / QoS: Fix workqueue deadlock when using pm_qos_update_request_timeout()
-Date: Tue, 13 Aug 2013 22:49:09 +0200
-Message-ID: <4423040.Ds5TZlivfo@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130813170146.GC32719@htj.dyndns.org>
-References: <1375992837-1673-1-git-send-email-sboyd@codeaurora.org> <520A62E2.6000309@codeaurora.org> <20130813170146.GC32719@htj.dyndns.org>
+	id S932146Ab3HMUke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:40:34 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:43473 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759160Ab3HMUkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 16:40:32 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1375948794-6286-4-git-send-email-milo.kim@ti.com>
+References: <1375948794-6286-1-git-send-email-milo.kim@ti.com> <1375948794-6286-4-git-send-email-milo.kim@ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 13 Aug 2013 13:40:10 -0700
+Message-ID: <CAK5ve-+e-yTgsqf=Vk3OjmVWUsbj-XypLbr+x+SDJ7s+OWkXEg@mail.gmail.com>
+Subject: Re: [PATCH 03/10] leds: lp5521: restore legacy device attributes
+To: Milo Kim <woogyom.kim@gmail.com>
+Cc: =?ISO-8859-1?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Milo Kim <milo.kim@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 13, 2013 01:01:46 PM Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Aug 13, 2013 at 09:46:26AM -0700, Stephen Boyd wrote:
-> > >> +	if (PM_QOS_DEFAULT_VALUE != req->node.prio)
-> > >> +		pm_qos_update_target(
-> > >> +				pm_qos_array[req->pm_qos_class]->constraints,
-> > >> +				&req->node, PM_QOS_UPDATE_REQ,
-> > >> +				PM_QOS_DEFAULT_VALUE);
-> > > Maybe it'd be cleaner to add a param or internal variant of
-> > > pm_qos_update_request()?
-> > 
-> > Maybe, but I was trying to make a minimal fix here.
-> 
-> Hmmm.... it just looks like things can easily get out of sync with the
-> complex function call.
+On Thu, Aug 8, 2013 at 12:59 AM, Milo Kim <woogyom.kim@gmail.com> wrote:
+> git commit 9ce7cb170f97f83a78dc948bf7d25690f15e1328
+> may cause an application confict, engineN_mode and engineN_load.
+> This interface should be maintained for compatibility.
+>
+> Restored device attributes are 'engineN_mode' and 'engineN_load'.
+> A 'selftest' attribute macro is replaced with LP55xx common macro.
+>
+> Use a mutex in lp5521_update_program_memory()
+> : This function is called when an user-application writes a 'engineN_load' file
+> or pattern data is loaded from generic firmware interface.
+> So, writing program memory should be protected.
+> If an error occurs on accessing this area, just it returns as -EINVAL quickly.
+> This error code is exact same as old driver function, lp5521_do_store_load()
+> because it should be kept for an user-application compatibility.
+> Even the driver is changed, we can use the application without re-compiling
+> sources.
+>
+> 'led_pattern' attribute is not included
+> : engineN_mode and _load were created for custom user-application.
+> 'led_pattern' is an exception. I added this attribute not for custom application
+> but for simple test. Now it is used only in LP5562 driver, not LP5521.
+>
 
-Yes, that's just duplicated code.
+Looks good to me. Thanks,
+-Bryan
 
-> I don't think it'll be too invasive if you introduce an internal variant
-> which doesn't do the canceling.  Rafael, what do you think?
-
-I'd move the part of pm_qos_update_request() below the
-cancel_delayed_work_sync() to a separate static function that'd be
-called from two places.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Signed-off-by: Milo Kim <milo.kim@ti.com>
+> ---
+>  drivers/leds/leds-lp5521.c |  104 ++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 100 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+> index 9e28dd0..c00f922 100644
+> --- a/drivers/leds/leds-lp5521.c
+> +++ b/drivers/leds/leds-lp5521.c
+> @@ -251,10 +251,20 @@ static int lp5521_update_program_memory(struct lp55xx_chip *chip,
+>                 goto err;
+>
+>         program_size = i;
+> -       for (i = 0; i < program_size; i++)
+> -               lp55xx_write(chip, addr[idx] + i, pattern[i]);
+>
+> -       return 0;
+> +       mutex_lock(&chip->lock);
+> +
+> +       for (i = 0; i < program_size; i++) {
+> +               ret = lp55xx_write(chip, addr[idx] + i, pattern[i]);
+> +               if (ret) {
+> +                       mutex_unlock(&chip->lock);
+> +                       return -EINVAL;
+> +               }
+> +       }
+> +
+> +       mutex_unlock(&chip->lock);
+> +
+> +       return size;
+>
+>  err:
+>         dev_err(&chip->cl->dev, "wrong pattern format\n");
+> @@ -365,6 +375,80 @@ static void lp5521_led_brightness_work(struct work_struct *work)
+>         mutex_unlock(&chip->lock);
+>  }
+>
+> +static ssize_t show_engine_mode(struct device *dev,
+> +                               struct device_attribute *attr,
+> +                               char *buf, int nr)
+> +{
+> +       struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
+> +       struct lp55xx_chip *chip = led->chip;
+> +       enum lp55xx_engine_mode mode = chip->engines[nr - 1].mode;
+> +
+> +       switch (mode) {
+> +       case LP55XX_ENGINE_RUN:
+> +               return sprintf(buf, "run\n");
+> +       case LP55XX_ENGINE_LOAD:
+> +               return sprintf(buf, "load\n");
+> +       case LP55XX_ENGINE_DISABLED:
+> +       default:
+> +               return sprintf(buf, "disabled\n");
+> +       }
+> +}
+> +show_mode(1)
+> +show_mode(2)
+> +show_mode(3)
+> +
+> +static ssize_t store_engine_mode(struct device *dev,
+> +                                struct device_attribute *attr,
+> +                                const char *buf, size_t len, int nr)
+> +{
+> +       struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
+> +       struct lp55xx_chip *chip = led->chip;
+> +       struct lp55xx_engine *engine = &chip->engines[nr - 1];
+> +
+> +       mutex_lock(&chip->lock);
+> +
+> +       chip->engine_idx = nr;
+> +
+> +       if (!strncmp(buf, "run", 3)) {
+> +               lp5521_run_engine(chip, true);
+> +               engine->mode = LP55XX_ENGINE_RUN;
+> +       } else if (!strncmp(buf, "load", 4)) {
+> +               lp5521_stop_engine(chip);
+> +               lp5521_load_engine(chip);
+> +               engine->mode = LP55XX_ENGINE_LOAD;
+> +       } else if (!strncmp(buf, "disabled", 8)) {
+> +               lp5521_stop_engine(chip);
+> +               engine->mode = LP55XX_ENGINE_DISABLED;
+> +       }
+> +
+> +       mutex_unlock(&chip->lock);
+> +
+> +       return len;
+> +}
+> +store_mode(1)
+> +store_mode(2)
+> +store_mode(3)
+> +
+> +static ssize_t store_engine_load(struct device *dev,
+> +                            struct device_attribute *attr,
+> +                            const char *buf, size_t len, int nr)
+> +{
+> +       struct lp55xx_led *led = i2c_get_clientdata(to_i2c_client(dev));
+> +       struct lp55xx_chip *chip = led->chip;
+> +
+> +       mutex_lock(&chip->lock);
+> +
+> +       chip->engine_idx = nr;
+> +       lp5521_load_engine(chip);
+> +
+> +       mutex_unlock(&chip->lock);
+> +
+> +       return lp5521_update_program_memory(chip, buf, len);
+> +}
+> +store_load(1)
+> +store_load(2)
+> +store_load(3)
+> +
+>  static ssize_t lp5521_selftest(struct device *dev,
+>                                struct device_attribute *attr,
+>                                char *buf)
+> @@ -381,9 +465,21 @@ static ssize_t lp5521_selftest(struct device *dev,
+>  }
+>
+>  /* device attributes */
+> -static DEVICE_ATTR(selftest, S_IRUGO, lp5521_selftest, NULL);
+> +static LP55XX_DEV_ATTR_RW(engine1_mode, show_engine1_mode, store_engine1_mode);
+> +static LP55XX_DEV_ATTR_RW(engine2_mode, show_engine2_mode, store_engine2_mode);
+> +static LP55XX_DEV_ATTR_RW(engine3_mode, show_engine3_mode, store_engine3_mode);
+> +static LP55XX_DEV_ATTR_WO(engine1_load, store_engine1_load);
+> +static LP55XX_DEV_ATTR_WO(engine2_load, store_engine2_load);
+> +static LP55XX_DEV_ATTR_WO(engine3_load, store_engine3_load);
+> +static LP55XX_DEV_ATTR_RO(selftest, lp5521_selftest);
+>
+>  static struct attribute *lp5521_attributes[] = {
+> +       &dev_attr_engine1_mode.attr,
+> +       &dev_attr_engine2_mode.attr,
+> +       &dev_attr_engine3_mode.attr,
+> +       &dev_attr_engine1_load.attr,
+> +       &dev_attr_engine2_load.attr,
+> +       &dev_attr_engine3_load.attr,
+>         &dev_attr_selftest.attr,
+>         NULL
+>  };
+> --
+> 1.7.9.5
+>
