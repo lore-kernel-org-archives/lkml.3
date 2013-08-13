@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab3HMGem (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:34:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60765 "EHLO
+	id S1757508Ab3HMGet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:34:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60775 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757467Ab3HMGej (ORCPT
+	with ESMTP id S1757467Ab3HMGeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:34:39 -0400
+	Tue, 13 Aug 2013 02:34:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joshua Zhu <zhu.wen-jie@hp.com>,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vinson Lee <vlee@freedesktop.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [ 12/12] perf tools: Add anonymous huge page recognition
-Date: Mon, 12 Aug 2013 23:35:47 -0700
-Message-Id: <20130813063521.259105011@linuxfoundation.org>
+        Piotr Sarna <p.sarna@partner.samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 10/17] ext4: fix mount/remount error messages for incompatible mount options
+Date: Mon, 12 Aug 2013 23:35:56 -0700
+Message-Id: <20130813063502.554030965@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
-In-Reply-To: <20130813063520.285638946@linuxfoundation.org>
-References: <20130813063520.285638946@linuxfoundation.org>
+In-Reply-To: <20130813063501.728847844@linuxfoundation.org>
+References: <20130813063501.728847844@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Joshua Zhu <zhu.wen-jie@hp.com>
+From: Piotr Sarna <p.sarna@partner.samsung.com>
 
-commit d0528b5d71faf612014dd7672e44225c915344b2 upstream.
+commit 6ae6514b33f941d3386da0dfbe2942766eab1577 upstream.
 
-Judging anonymous memory's vm_area_struct, perf_mmap_event's filename
-will be set to "//anon" indicating this vma belongs to anonymous
-memory.
+Commit 5688978 ("ext4: improve handling of conflicting mount options")
+introduced incorrect messages shown while choosing wrong mount options.
 
-Once hugepage is used, vma's vm_file points to hugetlbfs. In this way,
-this vma will not be regarded as anonymous memory by is_anon_memory() in
-perf user space utility.
+First of all, both cases of incorrect mount options,
+"data=journal,delalloc" and "data=journal,dioread_nolock" result in
+the same error message.
 
-Signed-off-by: Joshua Zhu <zhu.wen-jie@hp.com>
-Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Joshua Zhu <zhu.wen-jie@hp.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vinson Lee <vlee@freedesktop.org>
-Link: http://lkml.kernel.org/r/1357363797-3550-1-git-send-email-zhu.wen-jie@hp.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Secondly, the problem above isn't solved for remount option: the
+mismatched parameter is simply ignored.  Moreover, ext4_msg states
+that remount with options "data=journal,delalloc" succeeded, which is
+not true.
+
+To fix it up, I added a simple check after parse_options() call to
+ensure that data=journal and delalloc/dioread_nolock parameters are
+not present at the same time.
+
+Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
+Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/util/map.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ext4/super.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -15,7 +15,8 @@ const char *map_type__name[MAP__NR_TYPES
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3232,7 +3232,7 @@ static int ext4_fill_super(struct super_
+ 		}
+ 		if (test_opt(sb, DIOREAD_NOLOCK)) {
+ 			ext4_msg(sb, KERN_ERR, "can't mount with "
+-				 "both data=journal and delalloc");
++				 "both data=journal and dioread_nolock");
+ 			goto failed_mount;
+ 		}
+ 		if (test_opt(sb, DELALLOC))
+@@ -4397,6 +4397,21 @@ static int ext4_remount(struct super_blo
+ 		goto restore_opts;
+ 	}
  
- static inline int is_anon_memory(const char *filename)
- {
--	return strcmp(filename, "//anon") == 0;
-+	return !strcmp(filename, "//anon") ||
-+	       !strcmp(filename, "/anon_hugepage (deleted)");
- }
++	if (test_opt(sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA) {
++		if (test_opt2(sb, EXPLICIT_DELALLOC)) {
++			ext4_msg(sb, KERN_ERR, "can't mount with "
++				 "both data=journal and delalloc");
++			err = -EINVAL;
++			goto restore_opts;
++		}
++		if (test_opt(sb, DIOREAD_NOLOCK)) {
++			ext4_msg(sb, KERN_ERR, "can't mount with "
++				 "both data=journal and dioread_nolock");
++			err = -EINVAL;
++			goto restore_opts;
++		}
++	}
++
+ 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
+ 		ext4_abort(sb, "Abort forced by user");
  
- void map__init(struct map *self, enum map_type type,
 
 
