@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab3HMGdy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:33:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60678 "EHLO
+	id S1757153Ab3HMGdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:33:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60610 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757277Ab3HMGdu (ORCPT
+	with ESMTP id S1756992Ab3HMGdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:50 -0400
+	Tue, 13 Aug 2013 02:33:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, Zheng Liu <gnehzuil.liu@gmail.com>
-Subject: [ 47/60] ext4: flush the extent status cache during EXT4_IOC_SWAP_BOOT
-Date: Mon, 12 Aug 2013 23:34:14 -0700
-Message-Id: <20130813063338.102801651@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 04/60] powerpc: On POWERNV enable PPC_DENORMALISATION by default
+Date: Mon, 12 Aug 2013 23:33:31 -0700
+Message-Id: <20130813063332.362692757@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -26,37 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Anton Blanchard <anton@samba.org>
 
-commit cde2d7a796f7e895e25b43471ed658079345636d upstream.
+commit 4e90a2a7375e86827541bda9393414c03e7721c6 upstream.
 
-Previously we weren't swapping only some of the extent_status LRU
-fields during the processing of the EXT4_IOC_SWAP_BOOT ioctl.  The
-much safer thing to do is to just completely flush the extent status
-tree when doing the swap.
+We want PPC_DENORMALISATION enabled when POWERNV is enabled,
+so update the Kconfig.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Zheng Liu <gnehzuil.liu@gmail.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ioctl.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/powerpc/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -77,8 +77,10 @@ static void swap_inode_data(struct inode
- 	memswap(ei1->i_data, ei2->i_data, sizeof(ei1->i_data));
- 	memswap(&ei1->i_flags, &ei2->i_flags, sizeof(ei1->i_flags));
- 	memswap(&ei1->i_disksize, &ei2->i_disksize, sizeof(ei1->i_disksize));
--	memswap(&ei1->i_es_tree, &ei2->i_es_tree, sizeof(ei1->i_es_tree));
--	memswap(&ei1->i_es_lru_nr, &ei2->i_es_lru_nr, sizeof(ei1->i_es_lru_nr));
-+	ext4_es_remove_extent(inode1, 0, EXT_MAX_BLOCKS);
-+	ext4_es_remove_extent(inode2, 0, EXT_MAX_BLOCKS);
-+	ext4_es_lru_del(inode1);
-+	ext4_es_lru_del(inode2);
- 
- 	isize = i_size_read(inode1);
- 	i_size_write(inode1, i_size_read(inode2));
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -572,7 +572,7 @@ config SCHED_SMT
+ config PPC_DENORMALISATION
+ 	bool "PowerPC denormalisation exception handling"
+ 	depends on PPC_BOOK3S_64
+-	default "n"
++	default "y" if PPC_POWERNV
+ 	---help---
+ 	  Add support for handling denormalisation of single precision
+ 	  values.  Useful for bare metal only.  If unsure say Y here.
 
 
