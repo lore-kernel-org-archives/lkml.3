@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab3HMIKI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 04:10:08 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:41675 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3HMIKA (ORCPT
+	id S1754500Ab3HMIKS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 04:10:18 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55282 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750929Ab3HMIKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 04:10:00 -0400
-Date: Tue, 13 Aug 2013 10:09:56 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 4/9] PCI: mvebu: add support for reset on GPIO
-Message-ID: <20130813080956.GE9316@ulmo>
-References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1376333215-12885-5-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 13 Aug 2013 04:10:09 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ET9G2ERaRQC6CsezgR7pR
+Date: Tue, 13 Aug 2013 01:10:03 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Nishanth Menon <nm@ti.com>, Sricharan R <r.sricharan@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+Message-ID: <20130813081003.GU7656@atomide.com>
+References: <51E83A4F.5080904@ti.com>
+ <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com>
+ <51ED2385.60108@ti.com>
+ <51ED5C66.1010407@ti.com>
+ <51EFFBE1.4090505@ti.com>
+ <51F0031B.1050307@ti.com>
+ <51F00530.9090703@ti.com>
+ <51F02069.3050207@ti.com>
+ <51F0223E.4050008@ti.com>
+ <51F0240F.3050507@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PPYy/fEw/8QCHSq3"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376333215-12885-5-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51F0240F.3050507@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Santosh Shilimkar <santosh.shilimkar@ti.com> [130724 12:06]:
+> On Wednesday 24 July 2013 02:51 PM, Nishanth Menon wrote:
+> > On 07/24/2013 01:43 PM, Sricharan R wrote:
+> >> On Wednesday 24 July 2013 10:17 PM, Nishanth Menon wrote:
+> >>> On 07/24/2013 11:38 AM, Santosh Shilimkar wrote:
+> >>>> On Wednesday 24 July 2013 12:08 PM, Nishanth Menon wrote:
+> >>>>> That said, maybe a intermediate pinctrl approach might be more pragmatic and less theoretically flexible.
+> >>>>> an option might be to "statically allocate" default number of interrupts to a domain - example:
+> >>>>> * GIC IRQ 72->78 allotted to UARTs
+> >>>>> * pinctrl mapping provided for those but only 6 can be used (rest are marked status="disabled" as default) at any given time (choice of pinctrl option determines GIC interrupt line to use)
+> >>>>> * All modules will have a pinctrl definition to have a mapping - to avoid bootloader overriding default cross bar setting in ways un-expected by kernel.
+> >>>>>
+> >>>>> Does that sound fair trade off?
+> >>>> This sounds better. That way we can get all the devices in the DT at least.
+> >>>
+> >>> Fair enough - if Linus and Tony are still ok with this approach to the problem, seeing a patch series with the effect would be beneficial.
+> >>>
+> >>   Ok, i will use this idea of certain number interrupts to groups.
+> >> Yes on DRA7XX, we have about 160 gic lines and 320 irq crossbar device inputs contending for it.
+> >> 1:2 and fully arbitrary.  But will we be really exhausting them ?
+> >>
+> > Depends on how we allocate :). The default arbitary allocation can be made more logical in your series ofcourse :).
+> > 
+> I would just most logical peripherals rather than providing every single
+> IP connected to cross bar. Otherwise we will end up wth hwmod like
+> scenario where now started removing the unused stuff because of
+> maintenance and loc issues ;-)
 
---PPYy/fEw/8QCHSq3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sorry for the delay on this, I think the best way to set this up
+is as a separate drivers/irqchip controller. Then just map the
+configured interrupts for the board with interrupt-map and
+interrupt-map-mask binding. No need to stuff all the SoC specific
+maps to the .dts, just the ones used for the board.
 
-On Mon, Aug 12, 2013 at 08:46:50PM +0200, Sebastian Hesselbarth wrote:
-> This patch adds a check for DT passed reset-gpios property and deasserts/
-> asserts reset pin on probe/remove with configurable delay. Corresponding
-> binding documentation is also updated.
->=20
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-doc@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  .../devicetree/bindings/pci/mvebu-pci.txt          |    2 ++
->  drivers/pci/host/pci-mvebu.c                       |   33 ++++++++++++++=
-+++++-
->  2 files changed, 34 insertions(+), 1 deletion(-)
->=20
-> diff --git a/Documentation/devicetree/bindings/pci/mvebu-pci.txt b/Docume=
-ntation/devicetree/bindings/pci/mvebu-pci.txt
-> index 638673a..f2fa261 100644
-> --- a/Documentation/devicetree/bindings/pci/mvebu-pci.txt
-> +++ b/Documentation/devicetree/bindings/pci/mvebu-pci.txt
-> @@ -76,6 +76,8 @@ and the following optional properties:
->  - marvell,pcie-lane: the physical PCIe lane number, for ports having
->    multiple lanes. If this property is not found, we assume that the
->    value is 0.
-> +- reset-gpios: optional gpio to PERST#
-> +- reset-delay-ms: delay in ms to wait after reset de-assertion
+Regards,
 
-I remember some recent discussion about this, and we now have this reset
-framework, so perhaps it makes more sense to use the reset binding for
-this? Cc'ing Stephen (as part of the device tree bindings maintainers
-team) who was involved in that recent reset bindings discussion.
-
-Thierry
-
---PPYy/fEw/8QCHSq3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSCenUAAoJEN0jrNd/PrOh0Y0P/R/Hmnc5rssTfrOALDwNF3EB
-cOJoyEc4dYwFbyIAblONfy7x7HtMctmXMl1yFjPNiulimc18RcevGqCYJckxK9tx
-RwWV2kNLvAMiYodOrDfWUTzQ1Z5zzagSI4nhNACGmj/Jt67YwpoFBFaN64FJ45UY
-5XLRdkAeFoBDrfLagtQd3E2SRkhKdidTl1a2p2kBbnjQag9DgEwnQH8an4+KmAfq
-tXY/PBDIWQuVv3t5rTiLkI/vvLIy27F1r6rgluiXOeThGV6ft65C3rhnCTcBIQlM
-FVwb2Afnoa/mSSGHtviegt8zFai3O11PBmqFqFN9G3Hg4TmCLZzd3Kl6YP2LbY3W
-aXc96OjoZI9M6MBSplj6upBgPJAx/v+ZPD3w8k4VSWP8/nXifIusj5r0m8q8zJKx
-/VLejY0ZOnl+M6ybbECa8+l28o9sfhaoF9aXxyQJ1ltbQirSZFEqueqg+AQcweWL
-8xCf0hjbYz2x/XgFNJ0UPa8+RIhYvXGsU7GRve0f+aF8/6/seVrMvMgVCaNKTt5u
-ha7Hn1s00q873zh4cfCQajMxyK0ZNByYvyjTfdw2a3ztdh5dEMnBKICl1WDEJMv3
-jlydbc+ZKpr2kmpC0C0NOWwpIymRgwssnjNFDqWPNnwFZA3Ib+EBYtqGMV55o8vD
-UwYh0x5uVoa8JjTXEPTW
-=69K1
------END PGP SIGNATURE-----
-
---PPYy/fEw/8QCHSq3--
+Tony
+ 
