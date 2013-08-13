@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab3HMJ0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 05:26:19 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:62728 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755939Ab3HMJ0R (ORCPT
+	id S1756613Ab3HMJ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 05:28:24 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:61543 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3HMJ2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 05:26:17 -0400
+	Tue, 13 Aug 2013 05:28:22 -0400
+From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH] nouveau reclocking on nv40 not working since 77145f1cbdf8d28b46ff8070ca749bad821e0774
+Date: Tue, 13 Aug 2013 11:28:01 +0200
+Message-ID: <23735105.M9MNGeX3Gc@pali>
+User-Agent: KMail/4.10.5 (Linux/3.8.0-27-generic; KDE/4.10.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <CALZhoSRszVz9=xm78u5r4ujgShDcajjs=WFOCAqHmzB+VZWBqQ@mail.gmail.com>
-References: <CALZhoSQgw_-UaF0VOMjMqRJC8D4oQTBp4Bv=zJS+x0Wu97f2FQ@mail.gmail.com>
- <20130812144309.GK27162@twins.programming.kicks-ass.net> <CALZhoSRyfE78GbiJqVRvUrbJRq_NhSqYbK8vnxNP8kS9xz9qVQ@mail.gmail.com>
- <20130813073842.GP27162@twins.programming.kicks-ass.net> <CAPM31R+FDXUNb_X9R6O+kqjsAJftEzmyk+Ji=KoAyzEsTDWLew@mail.gmail.com>
- <CALZhoSRszVz9=xm78u5r4ujgShDcajjs=WFOCAqHmzB+VZWBqQ@mail.gmail.com>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 13 Aug 2013 02:25:46 -0700
-Message-ID: <CAPM31R+zi4yO8N-bhHWfmPsSGOV7_tMPrYoJ4q5AqVRA4tBNeQ@mail.gmail.com>
-Subject: Re: false nr_running check in load balance?
-To: Lei Wen <adrian.wenl@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Lei Wen <leiwen@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; boundary="nextPart3925638.NnLKLMlotZ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 1:18 AM, Lei Wen <adrian.wenl@gmail.com> wrote:
-> Hi Paul,
->
-> On Tue, Aug 13, 2013 at 4:08 PM, Paul Turner <pjt@google.com> wrote:
->> On Tue, Aug 13, 2013 at 12:38 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->>> On Tue, Aug 13, 2013 at 12:45:12PM +0800, Lei Wen wrote:
->>>> > Not quite right; I think you need busiest->cfs.h_nr_running.
->>>> > cfs.nr_running is the number of entries running in this 'group'. If
->>>> > you've got nested groups like:
->>>> >
->>>> >  'root'
->>>> >    \
->>>> >    'A'
->>>> >    / \
->>>> >   t1 t2
->>>> >
->>>> > root.nr_running := 1 'A', even though you've got multiple running tasks.
->>>> >
->>>>
->>>> You're absolutely right for this. :)
->>>> I miss it for not considering the group case...
->>>>
->>>> Then do you think it is necessary to do below change in load_balance() code?
->>>>  -       if (busiest->nr_running > 1) {
->>>>  +       if (busiest->cfs.h_nr_running > 1) {
->>>>
->>>
->>> Yes I think that would be fine.
->>
->> If we pivot to use h_nr_running we should probably also update
->> call-sites such as cpu_load_avg_per_task() for consistency.
->
-> I didn't find cpu_load_avg_per_task in the latest linux git...
-> Is it a new patch pending while not being submitted?
 
-Transposition typo: cpu_avg_load_per_task()
-More generally: Most things that examine ->nr_running in the fair
-load-balance path.
+--nextPart3925638.NnLKLMlotZ
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="iso-8859-1"
 
->
-> Thanks,
-> Lei
+Hello,
+
+in commit 77145f1cbdf8d28b46ff8070ca749bad821e0774 was introduced
+error which cause that on my Nvidia 6600GT card reclocking not working
+anymore. There is missing assigment of return value from pll_calc to re=
+t.
+
+After this patch reclocking on my card working fine again. Above broken=
+
+commit was introduced in kernel 3.7, so consider backporting this patch=
+
+to older kernels too.
+
+Signed-off-by: Pali Roh=E1r <pali.rohar@gmail.com>
+
+diff --git a/drivers/gpu/drm/nouveau/nv40_pm.c b/drivers/gpu/drm/nouvea=
+u/nv40_pm.c
+index 3af5bcd..625f80d 100644
+--- a/drivers/gpu/drm/nouveau/nv40_pm.c
++++ b/drivers/gpu/drm/nouveau/nv40_pm.c
+@@ -131,7 +131,7 @@ nv40_calc_pll(struct drm_device *dev, u32 reg, stru=
+ct nvbios_pll *pll,
+ =09if (clk < pll->vco1.max_freq)
+ =09=09pll->vco2.max_freq =3D 0;
+=20
+-=09pclk->pll_calc(pclk, pll, clk, &coef);
++=09ret =3D pclk->pll_calc(pclk, pll, clk, &coef);
+ =09if (ret =3D=3D 0)
+ =09=09return -ERANGE;
+=20
+
+--=20
+Pali Roh=E1r
+pali.rohar@gmail.com
+
+
+--nextPart3925638.NnLKLMlotZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlIJ/CEACgkQi/DJPQPkQ1LFJACglSrBLRcCJ+xl9MHpNKcULMCg
+JJ8An3hYtGg33CzMZelMgZeog3WtWmcS
+=alB4
+-----END PGP SIGNATURE-----
+
+--nextPart3925638.NnLKLMlotZ--
+
