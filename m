@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab3HMGdI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:33:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60440 "EHLO
+	id S1757887Ab3HMG5q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:57:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60458 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755580Ab3HMGdD (ORCPT
+	with ESMTP id S1755502Ab3HMGdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:03 -0400
+	Tue, 13 Aug 2013 02:33:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 10/60] ext4: destroy ext4_es_cachep on module unload
-Date: Mon, 12 Aug 2013 23:33:37 -0700
-Message-Id: <20130813063333.360218865@linuxfoundation.org>
+        Curt Brune <curt@cumulusnetworks.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 15/60] hwmon: (adt7470) Fix incorrect return code check
+Date: Mon, 12 Aug 2013 23:33:42 -0700
+Message-Id: <20130813063334.239558096@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -26,31 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@redhat.com>
+From: Curt Brune <curt@cumulusnetworks.com>
 
-commit dd12ed144e9797094c04736f97aa27d5fe401476 upstream.
+commit 93d783bcca69bfacc8dc739d8a050498402587b5 upstream.
 
-Without this, module can't be reloaded.
+In adt7470_write_word_data(), which writes two bytes using
+i2c_smbus_write_byte_data(), the return codes are incorrectly AND-ed
+together when they should be OR-ed together.
 
-[  500.521980] kmem_cache_sanity_check (ext4_extent_status): Cache name already exists.
+The return code of i2c_smbus_write_byte_data() is zero for success.
 
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+The upshot is only the first byte was ever written to the hardware.
+The 2nd byte was never written out.
+
+I noticed that trying to set the fan speed limits was not working
+correctly on my system.  Setting the fan speed limits is the only
+code that uses adt7470_write_word_data().  After making the change
+the limit settings work and the alarms work also.
+
+Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hwmon/adt7470.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -5400,6 +5400,7 @@ static void __exit ext4_exit_fs(void)
- 	kset_unregister(ext4_kset);
- 	ext4_exit_system_zone();
- 	ext4_exit_pageio();
-+	ext4_exit_es();
+--- a/drivers/hwmon/adt7470.c
++++ b/drivers/hwmon/adt7470.c
+@@ -215,7 +215,7 @@ static inline int adt7470_write_word_dat
+ 					  u16 value)
+ {
+ 	return i2c_smbus_write_byte_data(client, reg, value & 0xFF)
+-	       && i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
++	       || i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
  }
  
- MODULE_AUTHOR("Remy Card, Stephen Tweedie, Andrew Morton, Andreas Dilger, Theodore Ts'o and others");
+ static void adt7470_init_client(struct i2c_client *client)
 
 
