@@ -1,66 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab3HMBEF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 21:04:05 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:48344 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756485Ab3HMBEB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 21:04:01 -0400
-Date: Mon, 12 Aug 2013 21:04:00 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Mark Brown <broonie@kernel.org>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-In-Reply-To: <20130812214017.GH6427@sirena.org.uk>
-Message-ID: <Pine.LNX.4.44L0.1308122100300.26587-100000@netrider.rowland.org>
+	id S1756516Ab3HMBHU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 21:07:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43952 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756326Ab3HMBHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Aug 2013 21:07:19 -0400
+Message-ID: <5209869C.4020407@ti.com>
+Date: Mon, 12 Aug 2013 20:06:36 -0500
+From: Joel Fernandes <joelf@ti.com>
+Reply-To: <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sekhar Nori <nsekhar@ti.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH v3 07/12] dma: edma: Add function to dump a PaRAM set
+ from PaRAM
+References: <1375719297-12871-1-git-send-email-joelf@ti.com> <1375719297-12871-8-git-send-email-joelf@ti.com> <52087824.60002@ti.com>
+In-Reply-To: <52087824.60002@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Aug 2013, Mark Brown wrote:
-
-> On Mon, Aug 12, 2013 at 01:50:07PM -0700, Greg Kroah-Hartman wrote:
-> > On Mon, Aug 12, 2013 at 12:23:44PM +0100, Mark Brown wrote:
+On 08/12/2013 12:52 AM, Sekhar Nori wrote:
+> On Monday 05 August 2013 09:44 PM, Joel Fernandes wrote:
+>> Previously, such a dump function was used but it wasn't reading
+>> from the PaRAM, rather just from a edmacc_param structure, we
+>> add a helpful function for debugging that directly reads from
+>> the PaRAM and gives the current state correctly (including links
+>> and interrupt information).
+>>
+>> Signed-off-by: Joel Fernandes <joelf@ti.com>
 > 
-> > > I don't think they're bus specific - the main issue with a lot of this
-> > > is that they're outside the infrastructure that the bus standardises so
-> > > we should have a general way of understanding this.  There will be bits
-> > > where the bus needs to get involved but the overall pattern is generic.
-> 
-> > The "pattern" is generic, yes, we've been dealing with that for well
-> > over a decade now (pci hotplug controllers are "out of line" and control
-> > when/if a PCI is device is added/removed.)
-> 
-> > I'd argue that each bus needs special logic to handle this, just like
-> > PCI hotplug did it with their hotplug controller logic.  Due to the
-> > nature of this type of thing, it's all out-of-line hardware that is
-> > custom to each device type / bus.
-> 
-> I agree that the bus will need some logic to handle this and I also
-> think Stephen is right that there are going to be some common patterns
-> for some device classes.  However I do think that this is a common
-> problem for pretty much all buses so we should be factoring out as much
-> as possible from the buses so they only have to deal with their bit of
-> things.  Most of the stuff that's worrying me is not anything the bus
-> should have any idea about beyond tunnelling the data to the device.
+> You should convert existing instances of PaRAM set dump to use this new
+> function along with introducing it.
 
-In theory, the matching of device IDs can be done in the driver core, 
-provided the IDs are assigned based on the bus topology (as is the 
-case for USB).  But what should happen when there's a match?
+Well, the old dump callers were thrown out with completely rewritten
+code. This rewritten code already contains the dump calls. Are you
+saying pull out those dump pset calls into a separate patch?
 
-The bus code would need hooks installed wherever the platform wants to 
-do something extra.  This could end up growing to a lot of hooks.  How 
-can the whole thing be done in a reasonable fashion?
+Thanks,
 
-Alan Stern
+-Joel
+
+> Sekhar
+> 
+>> ---
+>>  drivers/dma/edma.c |   31 +++++++++++++++++++++++++++++++
+>>  1 file changed, 31 insertions(+)
+>>
+>> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+>> index 080d669..a242269 100644
+>> --- a/drivers/dma/edma.c
+>> +++ b/drivers/dma/edma.c
+>> @@ -102,6 +102,37 @@ static void edma_desc_free(struct virt_dma_desc *vdesc)
+>>  	kfree(container_of(vdesc, struct edma_desc, vdesc));
+>>  }
+>>  
+>> +static inline void dump_pset(struct edma_chan *echan, int slot,
+>> +		     struct edmacc_param *pset_unused, int pset_idx)
+>> +{
+>> +	struct edmacc_param pset_local, *pset;
+>> +	pset = &pset_local;
+>> +
+>> +	edma_read_slot(slot, pset);
+>> +
+>> +	dev_dbg(echan->vchan.chan.device->dev,
+>> +		"\n pset[%d]:\n"
+>> +		"  chnum\t%d\n"
+>> +		"  slot\t%d\n"
+>> +		"  opt\t%08x\n"
+>> +		"  src\t%08x\n"
+>> +		"  dst\t%08x\n"
+>> +		"  abcnt\t%08x\n"
+>> +		"  ccnt\t%08x\n"
+>> +		"  bidx\t%08x\n"
+>> +		"  cidx\t%08x\n"
+>> +		"  lkrld\t%08x\n",
+>> +		pset_idx, echan->ch_num, slot,
+>> +		pset[0].opt,
+>> +		pset[0].src,
+>> +		pset[0].dst,
+>> +		pset[0].a_b_cnt,
+>> +		pset[0].ccnt,
+>> +		pset[0].src_dst_bidx,
+>> +		pset[0].src_dst_cidx,
+>> +		pset[0].link_bcntrld);
+>> +}
+>> +
+>>  /* Dispatch a queued descriptor to the controller (caller holds lock) */
+>>  static void edma_execute(struct edma_chan *echan)
+>>  {
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
