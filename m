@@ -1,146 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab3HMV3D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 17:29:03 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:44743 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070Ab3HMV3B (ORCPT
+	id S1759376Ab3HMVap (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 17:30:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29561 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759320Ab3HMVak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 17:29:01 -0400
-Date: Wed, 14 Aug 2013 01:28:57 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, xemul@parallels.com, mpm@selenic.com,
-        xiaoguangrong@linux.vnet.ibm.com, mtosatti@redhat.com,
-        kosaki.motohiro@gmail.com, sfr@canb.auug.org.au, peterz@infradead.org,
-        aneesh.kumar@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [patch 2/2] [PATCH] mm: Save soft-dirty bits on file pages
-Message-ID: <20130813212857.GI2869@moon>
-References: <20130730204154.407090410@gmail.com>
- <20130730204654.966378702@gmail.com>
- <20130807132812.60ad4bfe85127794094d385e@linux-foundation.org>
- <20130808145120.GA1775@moon>
- <20130812145720.3b722b066fe1bd77291331e5@linux-foundation.org>
- <CALCETrUXOoKrOAXhvd=GcK3YpBNWr2rk2ArBBgekXDv9yj7sNg@mail.gmail.com>
- <20130813050213.GA2869@moon>
- <520A4D5F.6020401@zytor.com>
- <20130813153703.GE2869@moon>
- <520A622B.7020900@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520A622B.7020900@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Aug 2013 17:30:40 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=mJpPKtiIRDsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=AAnaCIy5bMAA:10 a=TbT2I7Sl6OSbTtfK72QA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130813213039.061000633@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 13 Aug 2013 17:02:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2/3] [PATCH 2/3] module: Add NOARG flag for ops with
+ param_set_bool_enable_only() set function
+References: <20130813210228.989279359@goodmis.org>
+Content-Disposition: inline; filename=0002-module-Add-NOARG-flag-for-ops-with-param_set_bool_en.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 09:43:23AM -0700, H. Peter Anvin wrote:
-> On 08/13/2013 08:37 AM, Cyrill Gorcunov wrote:
-> >>
-> >> Does it actually matter, generated-code-wise, or is the compiler smart
-> >> enough to figure it out?  The reason I'm asking is because it makes the
-> > 
-> > gcc-4.7.2 is smart enough to suppress useless masking (ie ((1u << 31) - 1))
-> > completely but I don't know if this can be assumed for all gcc series.
-> > 
-> 
-> I would be highly surprised if it wasn't the case for any gcc we care about.
+The ops that uses param_set_bool_enable_only() as its set function can
+easily handle being used without an argument. There's no reason to
+fail the loading of the module if it does not have one.
 
-Does below one looks better? (Btw, what about the snippet we have there as well
-
-#if _PAGE_BIT_FILE < _PAGE_BIT_PROTNONE
-#define PTE_FILE_SHIFT2		(_PAGE_BIT_FILE + 1)
-#define PTE_FILE_SHIFT3		(_PAGE_BIT_PROTNONE + 1)
-#else
-#define PTE_FILE_SHIFT2		(_PAGE_BIT_PROTNONE + 1)
-#define PTE_FILE_SHIFT3		(_PAGE_BIT_FILE + 1)
-#endif
-
-where
-
-#define _PAGE_BIT_PROTNONE	_PAGE_BIT_GLOBAL	-> 8
-#define _PAGE_BIT_FILE		_PAGE_BIT_DIRTY		-> 6
-
-so I wonder where the cases on x86 when _PAGE_BIT_FILE > _PAGE_BIT_PROTNONE,
-what i'm missing here?)
-
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/pgtable-2level.h |   37 +++++++++++++++++++---------------
- 1 file changed, 21 insertions(+), 16 deletions(-)
+ kernel/module.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/pgtable-2level.h
-+++ linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-@@ -55,8 +55,11 @@ static inline pmd_t native_pmdp_get_and_
- #define native_pmdp_get_and_clear(xp) native_local_pmdp_get_and_clear(xp)
- #endif
+diff --git a/kernel/module.c b/kernel/module.c
+index 2069158..4eb26b6 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -136,6 +136,7 @@ static int param_set_bool_enable_only(const char *val,
+ }
  
--#define _mfrob(v,r,m,l)		((((v) >> (r)) & (m)) << (l))
--#define __frob(v,r,l)		(((v) >> (r)) << (l))
-+/*
-+ * For readable bitfield manipulations.
-+ */
-+#define PTE_FILE_NOMASK		(-1U)
-+#define __bfop(v,r,m,l)		((((v) >> (r)) & (m)) << (l))
- 
- #ifdef CONFIG_MEM_SOFT_DIRTY
- 
-@@ -83,17 +86,17 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
- 
- #define pte_to_pgoff(pte)							    \
--	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
--	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
--	 _mfrob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3, PTE_FILE_LSHIFT3) + \
--	 __frob((pte).pte_low, PTE_FILE_SHIFT4, PTE_FILE_LSHIFT4))
-+	(__bfop((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
-+	 __bfop((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
-+	 __bfop((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3, PTE_FILE_LSHIFT3) + \
-+	 __bfop((pte).pte_low, PTE_FILE_SHIFT4, PTE_FILE_NOMASK, PTE_FILE_LSHIFT4))
- 
- #define pgoff_to_pte(off)							\
- 	((pte_t) { .pte_low =							\
--	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
--	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
--	_mfrob(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3, PTE_FILE_SHIFT3)	+	\
--	__frob(off, PTE_FILE_LSHIFT4, PTE_FILE_SHIFT4)			+	\
-+	__bfop(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
-+	__bfop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
-+	__bfop(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3, PTE_FILE_SHIFT3)	+	\
-+	__bfop(off, PTE_FILE_LSHIFT4, PTE_FILE_NOMASK, PTE_FILE_SHIFT4)	+	\
- 	_PAGE_FILE })
- 
- #else /* CONFIG_MEM_SOFT_DIRTY */
-@@ -121,19 +124,21 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
- 
- #define pte_to_pgoff(pte)							    \
--	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
--	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
--	 __frob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_LSHIFT3))
-+	(__bfop((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
-+	 __bfop((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
-+	 __bfop((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_NOMASK, PTE_FILE_LSHIFT3))
- 
- #define pgoff_to_pte(off)							\
- 	((pte_t) { .pte_low =							\
--	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
--	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
--	__frob(off, PTE_FILE_LSHIFT3, PTE_FILE_SHIFT3)			+	\
-+	__bfop(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
-+	__bfop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
-+	__bfop(off, PTE_FILE_LSHIFT3, PTE_FILE_NOMASK, PTE_FILE_SHIFT3)	+	\
- 	_PAGE_FILE })
- 
- #endif /* CONFIG_MEM_SOFT_DIRTY */
- 
-+#undef __bfop
-+
- /* Encode and de-code a swap entry */
- #if _PAGE_BIT_FILE < _PAGE_BIT_PROTNONE
- #define SWP_TYPE_BITS (_PAGE_BIT_FILE - _PAGE_BIT_PRESENT - 1)
+ static const struct kernel_param_ops param_ops_bool_enable_only = {
++	.flags = KERNEL_PARAM_FL_NOARG,
+ 	.set = param_set_bool_enable_only,
+ 	.get = param_get_bool,
+ };
+-- 
+1.7.10.4
+
+
