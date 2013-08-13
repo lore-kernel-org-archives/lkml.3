@@ -1,313 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab3HMGaj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:30:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39774 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755845Ab3HMG3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:29:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,867,1367996400"; 
-   d="scan'208";a="345514403"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+	id S1756293Ab3HMGdL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:33:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60446 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755803Ab3HMGdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 02:33:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, eranian@google.com, ak@linux.intel.com,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH 1/3] perf, uncore: add auxiliary pci device support
-Date: Tue, 13 Aug 2013 14:29:40 +0800
-Message-Id: <1376375382-21350-2-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1376375382-21350-1-git-send-email-zheng.z.yan@intel.com>
-References: <1376375382-21350-1-git-send-email-zheng.z.yan@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 12/60] ext4: fix retry handling in ext4_ext_truncate()
+Date: Mon, 12 Aug 2013 23:33:39 -0700
+Message-Id: <20130813063333.750424991@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
+In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
+References: <20130813063331.950321483@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-The QPI uncore boxes have two pairs of MATCH/MASK registers that
-used to filter packet traffic serviced by QPI link layer. These
-registers are in auxiliary PCI devices.
+------------------
 
-This patch changes the meaning of (struct pci_device_id)->driver_data.
-The first 8 bits are device index of the same uncore type, the second
-8 bytes are uncore type index. Auxiliary PCI device's type is defined
-as UNCORE_EXTRA_PCI_DEV(0xff)
+From: Theodore Ts'o <tytso@mit.edu>
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+commit 94eec0fc3520c759831763d866421b4d60b599b4 upstream.
+
+We tested for ENOMEM instead of -ENOMEM.   Oops.
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 111 ++++++++++++++------------
- arch/x86/kernel/cpu/perf_event_intel_uncore.h |   9 +++
- 2 files changed, 68 insertions(+), 52 deletions(-)
+ fs/ext4/extents.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index cad791d..7ce9b35 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -6,6 +6,8 @@ static struct intel_uncore_type **pci_uncores = empty_uncore;
- /* pci bus to socket mapping */
- static int pcibus_to_physid[256] = { [0 ... 255] = -1, };
- 
-+static struct pci_dev *extra_pci_dev[UNCORE_SOCKET_MAX][UNCORE_EXTRA_PCI_DEV_MAX];
-+
- static DEFINE_RAW_SPINLOCK(uncore_box_lock);
- 
- /* mask of cpus that collect uncore events */
-@@ -807,43 +809,43 @@ static struct intel_uncore_type *snbep_pci_uncores[] = {
- static DEFINE_PCI_DEVICE_TABLE(snbep_uncore_pci_ids) = {
- 	{ /* Home Agent */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_HA),
--		.driver_data = SNBEP_PCI_UNCORE_HA,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_HA, 0),
- 	},
- 	{ /* MC Channel 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC0),
--		.driver_data = SNBEP_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_IMC, 0),
- 	},
- 	{ /* MC Channel 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC1),
--		.driver_data = SNBEP_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_IMC, 1),
- 	},
- 	{ /* MC Channel 2 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC2),
--		.driver_data = SNBEP_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_IMC, 2),
- 	},
- 	{ /* MC Channel 3 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_IMC3),
--		.driver_data = SNBEP_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_IMC, 3),
- 	},
- 	{ /* QPI Port 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI0),
--		.driver_data = SNBEP_PCI_UNCORE_QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_QPI, 0),
- 	},
- 	{ /* QPI Port 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_QPI1),
--		.driver_data = SNBEP_PCI_UNCORE_QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_QPI, 1),
- 	},
- 	{ /* R2PCIe */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R2PCIE),
--		.driver_data = SNBEP_PCI_UNCORE_R2PCIE,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_R2PCIE, 0),
- 	},
- 	{ /* R3QPI Link 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI0),
--		.driver_data = SNBEP_PCI_UNCORE_R3QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_R3QPI, 0),
- 	},
- 	{ /* R3QPI Link 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UNC_R3QPI1),
--		.driver_data = SNBEP_PCI_UNCORE_R3QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(SNBEP_PCI_UNCORE_R3QPI, 1),
- 	},
- 	{ /* end: all zeroes */ }
- };
-@@ -1256,71 +1258,71 @@ static struct intel_uncore_type *ivt_pci_uncores[] = {
- static DEFINE_PCI_DEVICE_TABLE(ivt_uncore_pci_ids) = {
- 	{ /* Home Agent 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe30),
--		.driver_data = IVT_PCI_UNCORE_HA,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_HA, 0),
- 	},
- 	{ /* Home Agent 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe38),
--		.driver_data = IVT_PCI_UNCORE_HA,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_HA, 1),
- 	},
- 	{ /* MC0 Channel 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb4),
--		.driver_data = IVT_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 0),
- 	},
- 	{ /* MC0 Channel 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb5),
--		.driver_data = IVT_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 1),
- 	},
- 	{ /* MC0 Channel 3 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb0),
--		.driver_data = IVT_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 2),
- 	},
- 	{ /* MC0 Channel 4 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xeb1),
--		.driver_data = IVT_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 3),
- 	},
- 	{ /* MC1 Channel 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef4),
--		.driver_data = IVT_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 4),
- 	},
- 	{ /* MC1 Channel 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef5),
--		.driver_data = IVT_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 5),
- 	},
- 	{ /* MC1 Channel 3 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef0),
--		.driver_data = IVT_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 6),
- 	},
- 	{ /* MC1 Channel 4 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xef1),
--		.driver_data = IVT_PCI_UNCORE_IMC,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_IMC, 7),
- 	},
- 	{ /* QPI0 Port 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe32),
--		.driver_data = IVT_PCI_UNCORE_QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_QPI, 0),
- 	},
- 	{ /* QPI0 Port 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe33),
--		.driver_data = IVT_PCI_UNCORE_QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_QPI, 1),
- 	},
- 	{ /* QPI1 Port 2 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe3a),
--		.driver_data = IVT_PCI_UNCORE_QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_QPI, 2),
- 	},
- 	{ /* R2PCIe */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe34),
--		.driver_data = IVT_PCI_UNCORE_R2PCIE,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R2PCIE, 0),
- 	},
- 	{ /* R3QPI0 Link 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe36),
--		.driver_data = IVT_PCI_UNCORE_R3QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R3QPI, 0),
- 	},
- 	{ /* R3QPI0 Link 1 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe37),
--		.driver_data = IVT_PCI_UNCORE_R3QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R3QPI, 1),
- 	},
- 	{ /* R3QPI1 Link 2 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0xe3e),
--		.driver_data = IVT_PCI_UNCORE_R3QPI,
-+		.driver_data = UNCORE_PCI_DEV_DATA(IVT_PCI_UNCORE_R3QPI, 2),
- 	},
- 	{ /* end: all zeroes */ }
- };
-@@ -3167,16 +3169,24 @@ static bool pcidrv_registered;
- /*
-  * add a pci uncore device
-  */
--static int uncore_pci_add(struct intel_uncore_type *type, struct pci_dev *pdev)
-+static int uncore_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
- 	struct intel_uncore_pmu *pmu;
- 	struct intel_uncore_box *box;
--	int i, phys_id;
-+	struct intel_uncore_type *type;
-+	int phys_id;
- 
- 	phys_id = pcibus_to_physid[pdev->bus->number];
- 	if (phys_id < 0)
- 		return -ENODEV;
- 
-+	if (UNCORE_PCI_DEV_TYPE(id->driver_data) == UNCORE_EXTRA_PCI_DEV) {
-+		extra_pci_dev[phys_id][UNCORE_PCI_DEV_IDX(id->driver_data)] = pdev;
-+		pci_set_drvdata(pdev, NULL);
-+		return 0;
-+	}
-+
-+	type = pci_uncores[UNCORE_PCI_DEV_TYPE(id->driver_data)];
- 	box = uncore_alloc_box(type, 0);
- 	if (!box)
- 		return -ENOMEM;
-@@ -3185,21 +3195,11 @@ static int uncore_pci_add(struct intel_uncore_type *type, struct pci_dev *pdev)
- 	 * for performance monitoring unit with multiple boxes,
- 	 * each box has a different function id.
- 	 */
--	for (i = 0; i < type->num_boxes; i++) {
--		pmu = &type->pmus[i];
--		if (pmu->func_id == pdev->devfn)
--			break;
--		if (pmu->func_id < 0) {
--			pmu->func_id = pdev->devfn;
--			break;
--		}
--		pmu = NULL;
--	}
--
--	if (!pmu) {
--		kfree(box);
--		return -EINVAL;
--	}
-+	pmu = &type->pmus[UNCORE_PCI_DEV_IDX(id->driver_data)];
-+	if (pmu->func_id < 0)
-+		pmu->func_id = pdev->devfn;
-+	else
-+		WARN_ON_ONCE(pmu->func_id != pdev->devfn);
- 
- 	box->phys_id = phys_id;
- 	box->pci_dev = pdev;
-@@ -3217,9 +3217,22 @@ static int uncore_pci_add(struct intel_uncore_type *type, struct pci_dev *pdev)
- static void uncore_pci_remove(struct pci_dev *pdev)
- {
- 	struct intel_uncore_box *box = pci_get_drvdata(pdev);
--	struct intel_uncore_pmu *pmu = box->pmu;
--	int cpu, phys_id = pcibus_to_physid[pdev->bus->number];
-+	struct intel_uncore_pmu *pmu;
-+	int i, cpu, phys_id = pcibus_to_physid[pdev->bus->number];
- 
-+	box = pci_get_drvdata(pdev);
-+	if (!box) {
-+		for (i = 0; i < UNCORE_EXTRA_PCI_DEV_MAX; i++) {
-+			if (extra_pci_dev[phys_id][i] == pdev) {
-+				extra_pci_dev[phys_id][i] = NULL;
-+				break;
-+			}
-+		}
-+		WARN_ON_ONCE(i >= UNCORE_EXTRA_PCI_DEV_MAX);
-+		return;
-+	}
-+
-+	pmu = box->pmu;
- 	if (WARN_ON_ONCE(phys_id != box->phys_id))
- 		return;
- 
-@@ -3240,12 +3253,6 @@ static void uncore_pci_remove(struct pci_dev *pdev)
- 	kfree(box);
- }
- 
--static int uncore_pci_probe(struct pci_dev *pdev,
--			    const struct pci_device_id *id)
--{
--	return uncore_pci_add(pci_uncores[id->driver_data], pdev);
--}
--
- static int __init uncore_pci_init(void)
- {
- 	int ret;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-index 47b3d00..ede5a8c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
-@@ -12,6 +12,15 @@
- #define UNCORE_PMC_IDX_FIXED		UNCORE_PMC_IDX_MAX_GENERIC
- #define UNCORE_PMC_IDX_MAX		(UNCORE_PMC_IDX_FIXED + 1)
- 
-+#define UNCORE_PCI_DEV_DATA(type, idx)	((type << 8) | idx)
-+#define UNCORE_PCI_DEV_TYPE(data)	((data >> 8) & 0xff)
-+#define UNCORE_PCI_DEV_IDX(data)	(data & 0xff)
-+#define UNCORE_EXTRA_PCI_DEV		0xff
-+#define UNCORE_EXTRA_PCI_DEV_MAX	0
-+
-+/* support up to 8 sockets */
-+#define UNCORE_SOCKET_MAX		8
-+
- #define UNCORE_EVENT_CONSTRAINT(c, n) EVENT_CONSTRAINT(c, n, 0xff)
- 
- /* SNB event control */
--- 
-1.8.1.4
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4389,7 +4389,7 @@ void ext4_ext_truncate(handle_t *handle,
+ retry:
+ 	err = ext4_es_remove_extent(inode, last_block,
+ 				    EXT_MAX_BLOCKS - last_block);
+-	if (err == ENOMEM) {
++	if (err == -ENOMEM) {
+ 		cond_resched();
+ 		congestion_wait(BLK_RW_ASYNC, HZ/50);
+ 		goto retry;
+
 
