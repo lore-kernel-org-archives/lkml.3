@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab3HMNSe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:18:34 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:61529 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757893Ab3HMNSc (ORCPT
+	id S1757962Ab3HMNTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:19:44 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:57368 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757529Ab3HMNTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:18:32 -0400
+	Tue, 13 Aug 2013 09:19:43 -0400
+Date: Tue, 13 Aug 2013 14:18:59 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Roy Franz <roy.franz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, matt.fleming@intel.com,
+        linux@arm.linux.org.uk, leif.lindholm@linaro.org, msalter@redhat.com
+Subject: Re: [PATCH 16/16] Add config EFI_STUB for ARM to Kconfig
+Message-ID: <20130813131857.GE2823@localhost.localdomain>
+References: <1376090777-20090-1-git-send-email-roy.franz@linaro.org>
+ <1376090777-20090-17-git-send-email-roy.franz@linaro.org>
 MIME-Version: 1.0
-Reply-To: konrad@darnok.org
-In-Reply-To: <520A2C52.3000804@citrix.com>
-References: <1376316812-30346-1-git-send-email-lccycc123@gmail.com>
- <1376339161.15390.281.camel@Solace> <520A2C52.3000804@citrix.com>
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Date: Tue, 13 Aug 2013 09:18:11 -0400
-X-Google-Sender-Auth: WtG2xOI6QCydvu7eM8yaOqZNijU
-Message-ID: <CAPbh3ru-gq0oL-MFbXmWDWOLwXVqZSbKUSJbotBJVy7OLYgKbw@mail.gmail.com>
-Subject: Re: [PATCH v1][RFC] drivers/xen, balloon driver numa support in kernel
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: Dario Faggioli <dario.faggioli@citrix.com>,
-        Yechen Li <lccycc123@gmail.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376090777-20090-17-git-send-email-roy.franz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 8:53 AM, David Vrabel <david.vrabel@citrix.com> wrote:
-> On 12/08/13 21:26, Dario Faggioli wrote:
->>
->> Mmm... Is that the case? I tried to apply it there and I have one failed
->> hunk (#12). Anyway, could you please rebase it on the tip of some
->> relevant git tree?
->>
->> Linus' tree would be fine, I guess:
->>
->> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git
->
-> This is the one I use for most of my development work.  I wouldn't use a
-> subsystem specific tree unless there were specific conflicts to resolve
-> before hand.
+On Fri, Aug 09, 2013 at 04:26:17PM -0700, Roy Franz wrote:
+> Signed-off-by: Roy Franz <roy.franz@linaro.org>
+> ---
+>  arch/arm/Kconfig |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 43594d5..8607d03 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1805,6 +1805,17 @@ config UACCESS_WITH_MEMCPY
+>  	  However, if the CPU data cache is using a write-allocate mode,
+>  	  this option is unlikely to provide any performance gain.
+>  
+> +config EFI_STUB
+> +	bool "EFI stub support"
+> +	depends on EFI
 
-Which we do:
+&& !CPU_BIG_ENDIAN, in case you didn't get around to that.
 
-commit cd9151e26d31048b2b5e00fd02e110e07d2200c9
-Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Date:   Sun Aug 4 15:39:40 2013 +0100
-    xen/balloon: set a mapping for ballooned out pages
+Sooner or later, someone may try to fix that, so there should be a
+comment somewhere explaining what is broken for BE.
 
->
-> David
+Either in efi-stub.c or in the commit message accompanying this patch, I
+guess.
+
+Cheers
+---Dave
+
+> +	---help---
+> +	  This kernel feature allows a zImage to be loaded directly
+> +	  by EFI firmware without the use of a bootloader.  A PE/COFF
+> +	  header is added to the zImage in a way that makes the binary
+> +	  both a Linux zImage and an PE/COFF executable that can be
+> +	  executed directly by EFI firmware.
+> +	  See Documentation/efi-stub.txt for more information.
+> +
+>  config SECCOMP
+>  	bool
+>  	prompt "Enable seccomp to safely compute untrusted bytecode"
+> -- 
+> 1.7.10.4
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
