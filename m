@@ -1,74 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab3HMLzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 07:55:09 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:40060 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074Ab3HMLzH (ORCPT
+	id S1757613Ab3HMLzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 07:55:13 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:44434 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757074Ab3HMLzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 07:55:07 -0400
+	Tue, 13 Aug 2013 07:55:10 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com, dsahern@gmail.com
-Subject: [PATCH v1 0/2] perf: add new PERF_RECORD_MMAP2 record type
-Date: Tue, 13 Aug 2013 13:55:55 +0200
-Message-Id: <1376394957-31691-1-git-send-email-eranian@google.com>
+Subject: [PATCH v1 1/2] perf: add attr->mmap2 attribute to an event
+Date: Tue, 13 Aug 2013 13:55:56 +0200
+Message-Id: <1376394957-31691-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376394957-31691-1-git-send-email-eranian@google.com>
+References: <1376394957-31691-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series introduces a new record type for mmaps. This
-new record is called PERF_RECORD_MMAP2. It provides more information
-than the existing PERF_RECORD_MMAP. For each file-backed or
-shared memory segment mapping, the device major, minor and the
-inode numbers are recorded. This triplet may be used to
-disambiguate virtual file-backed mappings between processes.
+Adds a new PERF_RECORD_MMAP2 record type.
 
-The triplet could not be fitted into the existing PERF_RECORD_MMAP
-record without breaking backward compatibility. This is why we
-introduce this new record type.
+Used to request mmap records with more information about
+the mapping, including device major, minor and the inode
+number for mappings associated with files or shared memory
+segments. Works for code and data (with attr->mmap_data set).
 
-To activate this new record type, the mmap2 bit must be set
-in perf_event_attr struct. It supersedes the mmap bit, but is
-distinct from mmap_data. For mmap2 data records, both mmap2 and
-mmap_data must be set. For code, only mmap2 must be set.
-
-The series also provides the perf tool support for this new
-MMAP2 record type. Perf record activates this mode by default.
-The maj, min, ino are not yet exploited by perf report but
-will be in subsequent perf tools.
-
-Patch is relative to tip.git
+Existing PERF_RECORD_MMAP record is unmodified by this patch.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
+ include/uapi/linux/perf_event.h |   22 ++++++++++++++++++++-
+ kernel/events/core.c            |   41 +++++++++++++++++++++++++++++++++++----
+ 2 files changed, 58 insertions(+), 5 deletions(-)
 
-Stephane Eranian (2):
-  perf: add attr->mmap2 attribute to an event
-  perf tools: add attr->mmap2 support
-
- include/uapi/linux/perf_event.h |   22 +++++++++++++++-
- kernel/events/core.c            |   41 ++++++++++++++++++++++++++---
- tools/perf/builtin-annotate.c   |    1 +
- tools/perf/builtin-inject.c     |   15 +++++++++++
- tools/perf/builtin-mem.c        |    1 +
- tools/perf/builtin-report.c     |    1 +
- tools/perf/builtin-script.c     |    1 +
- tools/perf/util/build-id.c      |    1 +
- tools/perf/util/event.c         |   55 ++++++++++++++++++++++++++++++---------
- tools/perf/util/event.h         |   18 +++++++++++++
- tools/perf/util/evsel.c         |    5 ++--
- tools/perf/util/header.c        |    3 +++
- tools/perf/util/machine.c       |   51 +++++++++++++++++++++++++++++++++++-
- tools/perf/util/machine.h       |    1 +
- tools/perf/util/map.c           |    7 ++++-
- tools/perf/util/map.h           |    6 +++--
- tools/perf/util/session.c       |   25 +++++++++++++++++-
- tools/perf/util/tool.h          |    1 +
- 18 files changed, 231 insertions(+), 24 deletions(-)
-
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index d80d223..1eec8f5 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -275,8 +275,9 @@ struct perf_event_attr {
+ 
+ 				exclude_callchain_kernel : 1, /* exclude kernel callchains */
+ 				exclude_callchain_user   : 1, /* exclude user callchains */
++				mmap2          :  1, /* include mmap with inode data     */
+ 
+-				__reserved_1   : 41;
++				__reserved_1   : 40;
+ 
+ 	union {
+ 		__u32		wakeup_events;	  /* wakeup every n events */
+@@ -638,6 +639,25 @@ enum perf_event_type {
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+ 
++	/*
++	 * The MMAP2 records are an augmented version of MMAP, they add
++	 * maj, min, ino numbers to be used to uniquely identify each mapping
++	 *
++	 * struct {
++	 *	struct perf_event_header	header;
++	 *
++	 *	u32				pid, tid;
++	 *	u64				addr;
++	 *	u64				len;
++	 *	u64				pgoff;
++	 *	u32				maj;
++	 *	u32				min;
++	 *	u64				ino;
++	 *	char				filename[];
++	 * };
++	 */
++	PERF_RECORD_MMAP2			= 10,
++
+ 	PERF_RECORD_MAX,			/* non-ABI */
+ };
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index e82e700..838a0bb 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4771,7 +4771,7 @@ perf_event_aux(perf_event_aux_output_cb output, void *data,
+ /*
+  * task tracking -- fork/exit
+  *
+- * enabled by: attr.comm | attr.mmap | attr.mmap_data | attr.task
++ * enabled by: attr.comm | attr.mmap | attr.mmap2 | attr.mmap_data | attr.task
+  */
+ 
+ struct perf_task_event {
+@@ -4791,8 +4791,9 @@ struct perf_task_event {
+ 
+ static int perf_event_task_match(struct perf_event *event)
+ {
+-	return event->attr.comm || event->attr.mmap ||
+-	       event->attr.mmap_data || event->attr.task;
++	return event->attr.comm  || event->attr.mmap ||
++	       event->attr.mmap2 || event->attr.mmap_data ||
++	       event->attr.task;
+ }
+ 
+ static void perf_event_task_output(struct perf_event *event,
+@@ -4987,6 +4988,8 @@ struct perf_mmap_event {
+ 
+ 	const char		*file_name;
+ 	int			file_size;
++	int			maj, min;
++	u64			ino;
+ 
+ 	struct {
+ 		struct perf_event_header	header;
+@@ -5007,7 +5010,7 @@ static int perf_event_mmap_match(struct perf_event *event,
+ 	int executable = vma->vm_flags & VM_EXEC;
+ 
+ 	return (!executable && event->attr.mmap_data) ||
+-	       (executable && event->attr.mmap);
++	       (executable && (event->attr.mmap || event->attr.mmap2));
+ }
+ 
+ static void perf_event_mmap_output(struct perf_event *event,
+@@ -5022,6 +5025,13 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 	if (!perf_event_mmap_match(event, data))
+ 		return;
+ 
++	if (event->attr.mmap2) {
++		mmap_event->event_id.header.type = PERF_RECORD_MMAP2;
++		mmap_event->event_id.header.size += sizeof(mmap_event->maj);
++		mmap_event->event_id.header.size += sizeof(mmap_event->min);
++		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
++	}
++
+ 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
+ 	ret = perf_output_begin(&handle, event,
+ 				mmap_event->event_id.header.size);
+@@ -5032,6 +5042,13 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 	mmap_event->event_id.tid = perf_event_tid(event, current);
+ 
+ 	perf_output_put(&handle, mmap_event->event_id);
++
++	if (event->attr.mmap2) {
++		perf_output_put(&handle, mmap_event->maj);
++		perf_output_put(&handle, mmap_event->min);
++		perf_output_put(&handle, mmap_event->ino);
++	}
++
+ 	__output_copy(&handle, mmap_event->file_name,
+ 				   mmap_event->file_size);
+ 
+@@ -5046,6 +5063,8 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ {
+ 	struct vm_area_struct *vma = mmap_event->vma;
+ 	struct file *file = vma->vm_file;
++	int maj = 0, min = 0;
++	u64 ino = 0;
+ 	unsigned int size;
+ 	char tmp[16];
+ 	char *buf = NULL;
+@@ -5054,6 +5073,8 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 	memset(tmp, 0, sizeof(tmp));
+ 
+ 	if (file) {
++		struct inode *inode;
++		dev_t dev;
+ 		/*
+ 		 * d_path works from the end of the rb backwards, so we
+ 		 * need to add enough zero bytes after the string to handle
+@@ -5069,6 +5090,12 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 			name = strncpy(tmp, "//toolong", sizeof(tmp));
+ 			goto got_name;
+ 		}
++		inode = file_inode(vma->vm_file);
++		dev = inode->i_sb->s_dev;
++		ino = inode->i_ino;
++		maj = MAJOR(dev);
++		min = MINOR(dev);
++
+ 	} else {
+ 		if (arch_vma_name(mmap_event->vma)) {
+ 			name = strncpy(tmp, arch_vma_name(mmap_event->vma),
+@@ -5099,6 +5126,9 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 
+ 	mmap_event->file_name = name;
+ 	mmap_event->file_size = size;
++	mmap_event->maj = maj;
++	mmap_event->min = min;
++	mmap_event->ino = ino;
+ 
+ 	if (!(vma->vm_flags & VM_EXEC))
+ 		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
+@@ -5135,6 +5165,9 @@ void perf_event_mmap(struct vm_area_struct *vma)
+ 			.len    = vma->vm_end - vma->vm_start,
+ 			.pgoff  = (u64)vma->vm_pgoff << PAGE_SHIFT,
+ 		},
++		/* .maj (attr_mmap2 only) */
++		/* .min (attr_mmap2 only) */
++		/* .ino (attr_mmap2 only) */
+ 	};
+ 
+ 	perf_event_mmap_event(&mmap_event);
 -- 
 1.7.9.5
 
