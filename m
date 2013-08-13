@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759140Ab3HMWRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 18:17:08 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:40288 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758658Ab3HMWRH (ORCPT
+	id S1759233Ab3HMWRn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:17:43 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:52659 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830Ab3HMWRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 18:17:07 -0400
-Date: Wed, 14 Aug 2013 00:17:05 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Vince Weaver <vince@deater.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate
- perfgtk executable
-Message-ID: <20130813221705.GC19750@two.firstfloor.org>
-References: <20130805083132.GE26746@gmail.com>
- <20130805083434.GA20606@infradead.org>
- <20130805090857.GA26940@gmail.com>
- <20130806061932.GA20485@infradead.org>
- <20130812181956.GB19405@gmail.com>
- <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
- <20130813104821.GB2170@gmail.com>
- <20130813121141.GB2188@ghostprotocols.net>
- <20130813160043.GB5280@gmail.com>
- <alpine.DEB.2.02.1308131749330.9154@pianoman.cluster.toy>
+	Tue, 13 Aug 2013 18:17:41 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>
+Subject: Re: [GIT PULL v2] msm cleanups for v3.12
+References: <1375909096-22088-1-git-send-email-davidb@codeaurora.org>
+	<1375916792-24408-1-git-send-email-davidb@codeaurora.org>
+Date: Tue, 13 Aug 2013 15:17:37 -0700
+In-Reply-To: <1375916792-24408-1-git-send-email-davidb@codeaurora.org> (David
+	Brown's message of "Wed, 7 Aug 2013 16:06:32 -0700")
+Message-ID: <87eh9xgrr2.fsf@kernel.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308131749330.9154@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 05:57:16PM -0400, Vince Weaver wrote:
-> On Tue, 13 Aug 2013, Ingo Molnar wrote:
-> 
-> > 
-> > that can only be addressed by either extending 'perf test' or by testing 
-> > libpfm et al sooner. The upstream kernel can only address regressions that 
-> > get reported.
-> 
-> Most of the tests in my test-suite are reactive.  Meaning, I wrote them 
-> after an ABI-breaking change was reported elsewhere, and I needed a small 
-> test case for bisection purposes.  Thus they are good for finding if a 
-> corner of the perf ABI re-breaks but they're not great at spotting new 
-> breakages.
+David Brown <davidb@codeaurora.org> writes:
 
-I guess best would be to just run the major other users (PAPI, perf, trinity, 
-numatop, ...?) once around rc1 time.
+> The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
+>
+>   Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-cleanup3-for-3.12
+>
+> for you to fetch changes up to 3294a7e7c3a55bb4eb9d98b0af5643a7ea44afe1:
+>
+>   ARM: msm: Only compile io.c on platforms that use it (2013-08-06 11:18:04 -0700)
+>
+> ----------------------------------------------------------------
+> General cleanups for MSM for 3.12
+>
+> This is a series of cleanups to the MSM code.  These are a healthy
+> start to bringing the MSM code closer to the state of current ARM code
+> and getting more of it ready for conversion to devicetree.
 
-If it's reported at rc1 things can usually be fixed.
+Pulled.
 
-So would just need a easy script to do a quick test of all of these.
+Thanks for the nice cleanups and getting closer to multi-platform
+support.
 
--Andi
+Kevin
