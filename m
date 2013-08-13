@@ -1,82 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab3HMOEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:04:08 -0400
-Received: from dupo.coraid.com ([208.71.232.133]:39578 "EHLO coraid.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755291Ab3HMOEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:04:06 -0400
-Subject: Re: [PATCH 04/22] block: Abstract out bvec iterator
-In-Reply-To: <FEE91CF1-7CDE-45E5-B7BA-DA8522E7DFFE@coraid.com>
-References: <FEE91CF1-7CDE-45E5-B7BA-DA8522E7DFFE@coraid.com> <1375912471-5106-1-git-send-email-kmo@daterainc.com> <1375912471-5106-5-git-send-email-kmo@daterainc.com> <2D8F228B-65AE-4046-A910-6B354AF0058E@coraid.com> <20130809000943.GC15409@kmo-pixel> <F14F555B-1B1C-4E73-8AF8-DE57D77C610D@coraid.com> <20130809010530.GG15409@kmo-pixel>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: "axboe@kernel.dk" <axboe@kernel.dk>, "neilb@suse.de" <neilb@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        ecashin@coraid.com
-From: Ed Cashin <ecashin@coraid.com>
-X-Mailer: nedmail
-Date: Tue, 13 Aug 2013 10:03:04 -0400
-Message-ID: <54e7d248ba68ecf7e7ad4a4180145b72@coraid.com>
+	id S1757109Ab3HMOGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:06:21 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:48374 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab3HMOGT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 10:06:19 -0400
+Message-ID: <520A3D57.1020906@baylibre.com>
+Date: Tue, 13 Aug 2013 16:06:15 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Pavel Machek <pavel@ucw.cz>
+CC: Javier Martinez Canillas <martinez.javier@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Tony Lindgren <tony@atomide.com>,
+        pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH v3] N900: add device tree
+References: <20130614055629.GM8164@atomide.com> <20130614212816.GA31768@atrey.karlin.mff.cuni.cz> <20130617111031.GQ20992@atomide.com> <20130701211753.GC15318@amd.pavel.ucw.cz> <20130704171939.GA27374@blackmetal.musicnaut.iki.fi> <20130704202145.GB10752@amd.pavel.ucw.cz> <20130704203256.GB27374@blackmetal.musicnaut.iki.fi> <20130713121709.GC16473@amd.pavel.ucw.cz> <CAAwP0s18PNn10q5qrzgi4Vz9t31AYuwBSthjE=rSdRb0FG0CFQ@mail.gmail.com> <520A0F5B.5080502@baylibre.com> <20130813133636.GA12364@amd.pavel.ucw.cz>
+In-Reply-To: <20130813133636.GA12364@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 9, 2013, Ed Cashin wrote:
-> On Aug 8, 2013, at 9:05 PM, Kent Overstreet wrote:
-> ...
-> > It's in the for-jens branch now.
-> 
-> 
-> Just examining the patches, I like the way it cleans up the aoe code.  I
-> had a question about a new BUG added by the for-jens branch the
-> read-response handling path of the aoe driver.
+On 13/08/2013 15:36, Pavel Machek wrote:
+> Hi!
+>
+>> I finally got released by the aliens. It took longer than expected
+>> and beside a small scar on the back of my neck, I feel pretty OK.
+>
+> Scars on neck sound scary...
+>
+>> The order should not matter at all in DT, it should be a static
+>> representation of the HW, so there is probably something wrong in
+>> the code that make the device creation order important.
+>
+> I understand that there's something wrong with the code, but it turned
+> out not to be easy to debug. Yes, it will have to be debugged some
+> day, but it happens with old code, too, so it is actually orthogonal
+> to device tree.
+>
+>> Beside my comments and the ones from Javier, it looks good.
+>> If you can repost ASAP, I'll take it right after.
+>> It will be the first one in the list.
+>
+> Thanks, here you go.
 
-The aoe driver in linux-bcache/for-jens commit 4c36c973a8f45 is
-passing my tests.
+Thanks. I've just applied it after adding the prefix "ARM: dts:" to the 
+subject.
 
-Here is a patch against that branch illustrating my suggestion for
-handling bad target responses gracefully.
+Regards,
+Benoit
 
+> 								Pavel
+>
+> ---
+>
+> This adds device tree with neccessary support to boot with functional
+> video (on both emulator and real N900 device).
+>
+> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+>
+> ---
+>
+>  From v1: Aaro wants just GPLv2, so I did that. I re-enabled parts that
+> can be enabled on 3.10, and tested it on that kernel.
+>
+>  From v2: spelling, improved comments. Tested on 3.11-rc (0ed4402).
+>
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index a0f2365..c48b1ef 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -162,6 +162,7 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
+>   	omap3-devkit8000.dtb \
+>   	omap3-beagle-xm.dtb \
+>   	omap3-evm.dtb \
+> +	omap3-n900.dtb \
+>   	omap3-tobi.dtb \
+>   	omap3-igep0020.dtb \
+>   	omap3-igep0030.dtb \
+> diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+> new file mode 100644
+> index 0000000..7ff90f8
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/omap3-n900.dts
+> @@ -0,0 +1,92 @@
+> +/*
+> + * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
+> + * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 (or later) as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +/dts-v1/;
+> +
+> +#include "omap34xx.dtsi"
+> +
+> +/ {
+> +	model = "Nokia N900";
+> +	compatible = "nokia,omap3-n900", "ti,omap3";
+> +
+> +	cpus {
+> +		cpu@0 {
+> +			cpu0-supply = <&vcc>;
+> +		};
+> +	};
+> +
+> +	memory {
+> +		device_type = "memory";
+> +		reg = <0x80000000 0x10000000>; /* 256 MB */
+> +	};
+> +
+> +};
+> +
+> +&i2c1 {
+> +	clock-frequency = <2200000>;
+> +
+> +	twl: twl@48 {
+> +		reg = <0x48>;
+> +		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+> +		interrupt-parent = <&intc>;
+> +	};
+> +};
+> +
+> +#include "twl4030.dtsi"
+> +
+> +&twl_gpio {
+> +	ti,pullups	= <0x0>;
+> +	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
+> +};
+> +
+> +&i2c2 {
+> +	clock-frequency = <400000>;
+> +};
+> +
+> +&i2c3 {
+> +	clock-frequency = <100000>;
+> +};
+> +
+> +&mmc1 {
+> +	status = "disabled";
+> +};
+> +
+> +&mmc2 {
+> +	status = "disabled";
+> +};
+> +
+> +&mmc3 {
+> +	status = "disabled";
+> +};
+> +
+> +&mcspi1 {
+> +	/*
+> +	 * For some reason, touchscreen is necessary for screen to work at
+> +	 * all on real hw. It works well without it on emulator.
+> +	 *
+> +	 * Also... order in the device tree actually matters here.
+> +	 */
+> +	tsc2005@0 {
+> +		compatible = "tsc2005";
+> +		spi-max-frequency = <6000000>;
+> +		reg = <0>;
+> +	};
+> +	mipid@2 {
+> +		compatible = "acx565akm";
+> +		spi-max-frequency = <6000000>;
+> +		reg = <2>;
+> +	};
+> +};
+> +
+> +&usb_otg_hs {
+> +	interface-type = <0>;
+> +	usb-phy = <&usb2_phy>;
+> +	mode = <2>;
+> +	power = <50>;
+> +};
+>
 
-commit 2c39f50b1ee02e2ac07fd072a883a91713da53cc
-Author: Ed Cashin <ecashin@coraid.com>
-Date:   Tue Aug 13 10:50:28 2013 -0400
-
-    aoe: bad AoE responses fail I/O without BUG
-    
-    Instead of having a BUG when the AoE target does something wrong,
-    just fail the I/O and log the problem with rate limiting.
-
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index cacd48e..b9916a6 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -1096,7 +1096,6 @@ bvcpy(struct sk_buff *skb, struct bio *bio, struct bvec_iter iter, long cnt)
- 	int soff = 0;
- 	struct bio_vec bv;
- 
--	BUG_ON(cnt > iter.bi_size);
- 	iter.bi_size = cnt;
- 
- 	__bio_for_each_segment(bv, bio, iter, iter) {
-@@ -1196,6 +1195,14 @@ noskb:		if (buf)
- 			clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
- 			break;
- 		}
-+		if (n > f->iter.bi_size) {
-+			pr_err_ratelimited("%s e%ld.%d.  bytes=%ld need=%u\n",
-+				"aoe: too-large data size in read from",
-+				(long) d->aoemajor, d->aoeminor,
-+				n, f->iter.bi_size);
-+			clear_bit(BIO_UPTODATE, &buf->bio->bi_flags);
-+			break;
-+		}
- 		bvcpy(skb, f->buf->bio, f->iter, n);
- 	case ATA_CMD_PIO_WRITE:
- 	case ATA_CMD_PIO_WRITE_EXT:
