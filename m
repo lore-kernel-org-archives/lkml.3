@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3HMLRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 07:17:31 -0400
-Received: from mout.gmx.net ([212.227.15.19]:50366 "EHLO mout.gmx.net"
+	id S1757553Ab3HMLRo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 07:17:44 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:28224 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757287Ab3HMLR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 07:17:29 -0400
-Message-ID: <520A15B1.2030401@gmx.at>
-Date: Tue, 13 Aug 2013 13:17:05 +0200
-From: Manfred Schlaegl <manfred.schlaegl@gmx.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	id S1757287Ab3HMLRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 07:17:43 -0400
+X-IronPort-AV: E=Sophos;i="4.89,868,1367971200"; 
+   d="scan'208";a="43724009"
+Date: Tue, 13 Aug 2013 12:17:18 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <dcrisan@flexiant.com>, <alex@alex.org.uk>, <ian.campbell@citrix.com>
+Subject: Re: [PATCH v4 2/2] xen/m2p: use GNTTABOP_unmap_and_replace to
+ reinstate the original mapping
+In-Reply-To: <20130809152601.GB5637@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1308131212040.4893@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308041531220.4893@kaball.uk.xensource.com> <1375627181-14948-2-git-send-email-stefano.stabellini@eu.citrix.com> <20130809152601.GB5637@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "Milo(Woogyom) Kim" <milo.kim@ti.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] leds: trigger: ledtrig-backlight: Fix invalid memory access
- in fb_event notification callback
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:64k1gRBuooonsJnHc7mytEQB7SoCdhgYMAVTqz+IlJ+Xku+3JHu
- 9n3umcqUlCXLRxH076TCv/WLo5Yb8IZZf9c3NRXRqWO6jV5+DmwD2ZVH5pqDAbNSyh04TCe
- 1vEPCUmFKTDZXXrqfsjIvtln0DFQMaMklVZzuKefuiEwvIeo08/AFH8cIjLxF8J4YCa61fT
- UYuCK30l48kAW/T0fdGLA==
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fb_notifier_callback is called on any event fired by fb_notifier_call_chain. Events may, or may not contain some data (fb_event.data).
-In case of FB_EVENT_BLANK fb_event.data contains a pointer to an integer holding the blank state. The Problem is, that in ledtrig-backlight.c - fb_notifier_callback the pointer to blank state is
-dereferenced BEFORE the event-type is checked.
-Obviously this leads to problems with other events than FB_EVENT_BLANK, where fb_event.data is undefined or NULL.
-It seems, that this problem existed ever since the driver was added.
+On Fri, 9 Aug 2013, Konrad Rzeszutek Wilk wrote:
+> On Sun, Aug 04, 2013 at 03:39:41PM +0100, Stefano Stabellini wrote:
+> > GNTTABOP_unmap_grant_ref unmaps a grant and replaces it with a 0
+> > mapping instead of reinstating the original mapping.
+> > Doing so separately would be racy.
+> > 
+> > To unmap a grant and reinstate the original mapping atomically we use
+> > GNTTABOP_unmap_and_replace.
+> > GNTTABOP_unmap_and_replace doesn't work with GNTMAP_contains_pte, so
+> > don't use it for kmaps.  GNTTABOP_unmap_and_replace zeroes the mapping
+> > passed in new_addr so we have to reinstate it, however that is a
+> > per-cpu mapping only used for balloon scratch pages, so we can be sure that
+> > it's not going to be accessed while the mapping is not valid.
+> 
+> This looks to be depend on a new structure, which is not in Linux kernel?
+> Are you missing a dependency patch?
 
-Like in drivers/video/backlight/backlight.c line 43 I would suggest to return immediately on events other than FB_EVENT_BLANK.
-
-Signed-off-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
----
-
-Background information:
-I'm currently working on a IMX53(ARM) based hardware and Linux 3.11-rc5 and detected a problem in drivers/leds/trigger/ledtrig-backlight.c
-ledtrig is used on our hardware (besides pwm-backlight) to switch off a gpio-line connected to display-supply enable-line, when the display is blanked.
-On first boot after configuring ledtrig I detected an invalid memory access in ledtrig-backlight.c - fb_notifier_callback. In my special case the segfault was caused by an FB_EVENT_FB_REGISTERED,
-fired with undefined fb_event.data in drivers/video/fbmem.c line 1653.
-
-
-diff --git a/drivers/leds/trigger/ledtrig-backlight.c b/drivers/leds/trigger/ledtrig-backlight.c
-index 3c9c88a..2538dbe 100644
---- a/drivers/leds/trigger/ledtrig-backlight.c
-+++ b/drivers/leds/trigger/ledtrig-backlight.c
-@@ -36,26 +36,28 @@ static int fb_notifier_callback(struct notifier_block *p,
- 					struct bl_trig_notifier, notifier);
- 	struct led_classdev *led = n->led;
- 	struct fb_event *fb_event = data;
--	int *blank = fb_event->data;
--	int new_status = *blank ? BLANK : UNBLANK;
-+	int *blank;
-+	int new_status;
-+
-+	/* If we aren't interested in this event, skip it immediately ... */
-+	if (event != FB_EVENT_BLANK)
-+		return 0;
-
--	switch (event) {
--	case FB_EVENT_BLANK:
--		if (new_status == n->old_status)
--			break;
-+	blank = fb_event->data;
-+	new_status = *blank ? BLANK : UNBLANK;
-
--		if ((n->old_status == UNBLANK) ^ n->invert) {
--			n->brightness = led->brightness;
--			__led_set_brightness(led, LED_OFF);
--		} else {
--			__led_set_brightness(led, n->brightness);
--		}
-+	if (new_status == n->old_status)
-+		return 0;
-
--		n->old_status = new_status;
--
--		break;
-+	if ((n->old_status == UNBLANK) ^ n->invert) {
-+		n->brightness = led->brightness;
-+		__led_set_brightness(led, LED_OFF);
-+	} else {
-+		__led_set_brightness(led, n->brightness);
- 	}
-
-+	n->old_status = new_status;
-+
- 	return 0;
- }
+Nope, GNTTABOP_unmap_and_replace and struct gnttab_unmap_and_replace are
+already present in include/xen/interface/grant_table.h.
 
 
+> Shouldn't we use some logic to figure out which hypercall to use if the
+> hypervisor does not support it?
 
+GNTTABOP_unmap_and_replace is not a new hypercall, it has been supported
+by Xen for a very long time.
 
+In a previous iteration of this patch series, I did introduce a new
+hypercall, but then I dropped it because I figured out that I could
+achieve the same thing with the existing hypercall.
