@@ -1,95 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab3HMRnN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:43:13 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:48539 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819Ab3HMRnM (ORCPT
+	id S1758451Ab3HMRnS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:43:18 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:48373 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758022Ab3HMRnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:43:12 -0400
+	Tue, 13 Aug 2013 13:43:14 -0400
 From: David Herrmann <dh.herrmann@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Airlie <airlied@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Daniel Vetter <daniel.vetter@ffwll.ch>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH v2 0/4] Anonymous Inode Allocations
-Date: Tue, 13 Aug 2013 19:42:15 +0200
-Message-Id: <1376415739-11685-1-git-send-email-dh.herrmann@gmail.com>
+Subject: [PATCH v2 1/4] anon_inodes: allow external inode allocations
+Date: Tue, 13 Aug 2013 19:42:16 +0200
+Message-Id: <1376415739-11685-2-git-send-email-dh.herrmann@gmail.com>
 X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1373499930-5055-1-git-send-email-dh.herrmann@gmail.com>
+In-Reply-To: <1376415739-11685-1-git-send-email-dh.herrmann@gmail.com>
 References: <1373499930-5055-1-git-send-email-dh.herrmann@gmail.com>
+ <1376415739-11685-1-git-send-email-dh.herrmann@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+DRM core shares a single address_space across all inodes that belong to
+the same DRM device. This allows efficient unmapping of user-space
+mappings during buffer eviction. However, there is no easy way to get a
+shared address_space for DRM devices during initialization. Therefore, we
+currently delay this step until the first ->open() and save the given
+inode for future use.
 
-This is v2 of my anon_inodes allocation series. I would really like some
-comments on #1 (and maybe #2) from VFS maintainers/developers so we can continue
-with this work. Patches 1 and 2 are unchanged, I added 3 and 4 to clean up DRM
-delayed initializations based on the new anon_inode.
+This causes ugly delayed initialization throughout the DRM core. TTM
+devices end up without a dev_mapping pointer and we have to carefully
+respect any underlying filesystem implementation so we don't corrupt the
+inode->i_mapping and inode->i_data fields.
 
+We can avoid this if we were allowed to allocate an anonymous inode for
+each DRM device. We only have to set file->f_mapping during ->open()
+and no longer need to adjust inode mappings. As fs/anon_inodes.c already
+provides a minimal internal FS mount, we extend it to also provide
+anonymous inodes for use in drivers like DRM.
 
-This implements anon_inodes_new() to create anonymous inodes. Patch #1
-describes the changes to anon_inodes.c and why DRM could make great use of this.
-Patch #2 converts DRM core to use anon_inodes_new() instead of delayed
-dev_mapping initialization. Patches #3 and #4 simplify the various driver bits
-to drop unused code paths.
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Wanted-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ fs/anon_inodes.c            | 36 +++++++++++++++++++++++++++++-------
+ include/linux/anon_inodes.h |  1 +
+ 2 files changed, 30 insertions(+), 7 deletions(-)
 
-The idea is to get an anonymous backing inode for DRM devices without waiting
-for the first char-dev inode. We use it to unmap userspace mappings via
-unmap_mapping_range() if we have to evict buffers if GTT runs short or if the FW
-framebuffers are destroyed.
-We need the inode only once the first user-space mapping was created. But the
-delayed initialization causes an ugly code base and keeps inodes of char-devs
-around just to preserve the address_space.
-
-We actually only need the address_space, but mm core requires a corresponding
-file* and FS core requires mapping->host to be set (although I am not sure
-whether we can hit those paths with char-devs). So I went with the whole
-anonymous inode approach.
-
-If anyone has an idea how to use an embedded "struct address_space" inside of
-"drm_device" and set "dev_mapping->host" to the shared anon_inode_inode, I'd be
-happy to implement it. However, I didn't succeed and I am actually not sure that
-separate "struct address_space" are actually supported. For instance, DRM core
-uses code like:
-  container_of(dev_mapping, struct inode, i_data)
-which would break in this case.
-
-Cheers
-David
-
-David Herrmann (4):
-  anon_inodes: allow external inode allocations
-  DRM: use anon_inode instead of delayed inode init
-  drm: init TTM dev_mapping in ttm_bo_device_init()
-  drm/omap: remove useless if() in evict_entry()
-
- drivers/gpu/drm/ast/ast_ttm.c          |  4 +++-
- drivers/gpu/drm/cirrus/cirrus_ttm.c    |  4 +++-
- drivers/gpu/drm/drm_drv.c              |  1 -
- drivers/gpu/drm/drm_fops.c             | 24 +++--------------------
- drivers/gpu/drm/drm_stub.c             | 12 +++++++++++-
- drivers/gpu/drm/i915/i915_gem.c        |  3 ++-
- drivers/gpu/drm/mgag200/mgag200_ttm.c  |  4 +++-
- drivers/gpu/drm/nouveau/nouveau_gem.c  |  2 --
- drivers/gpu/drm/nouveau/nouveau_ttm.c  |  4 +++-
- drivers/gpu/drm/omapdrm/omap_gem.c     | 33 +++++++++++++++----------------
- drivers/gpu/drm/qxl/qxl_object.c       |  2 --
- drivers/gpu/drm/qxl/qxl_ttm.c          |  6 +++---
- drivers/gpu/drm/radeon/radeon_object.c |  1 -
- drivers/gpu/drm/radeon/radeon_ttm.c    |  5 +++--
- drivers/gpu/drm/ttm/ttm_bo.c           |  3 ++-
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c    |  5 +++--
- fs/anon_inodes.c                       | 36 +++++++++++++++++++++++++++-------
- include/drm/drmP.h                     |  2 +-
- include/drm/drm_vma_manager.h          |  6 +++---
- include/drm/ttm/ttm_bo_driver.h        |  2 ++
- include/linux/anon_inodes.h            |  1 +
- 21 files changed, 91 insertions(+), 69 deletions(-)
-
+diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+index 47a65df..7d8a80a 100644
+--- a/fs/anon_inodes.c
++++ b/fs/anon_inodes.c
+@@ -25,6 +25,7 @@
+ static struct vfsmount *anon_inode_mnt __read_mostly;
+ static struct inode *anon_inode_inode;
+ static const struct file_operations anon_inode_fops;
++static struct dentry *anon_inode_root;
+ 
+ /*
+  * anon_inodefs_dname() is called from d_path().
+@@ -87,19 +88,18 @@ static struct inode *anon_inode_mkinode(struct super_block *s)
+ static struct dentry *anon_inodefs_mount(struct file_system_type *fs_type,
+ 				int flags, const char *dev_name, void *data)
+ {
+-	struct dentry *root;
+-	root = mount_pseudo(fs_type, "anon_inode:", NULL,
++	anon_inode_root = mount_pseudo(fs_type, "anon_inode:", NULL,
+ 			&anon_inodefs_dentry_operations, ANON_INODE_FS_MAGIC);
+-	if (!IS_ERR(root)) {
+-		struct super_block *s = root->d_sb;
++	if (!IS_ERR(anon_inode_root)) {
++		struct super_block *s = anon_inode_root->d_sb;
+ 		anon_inode_inode = anon_inode_mkinode(s);
+ 		if (IS_ERR(anon_inode_inode)) {
+-			dput(root);
++			dput(anon_inode_root);
+ 			deactivate_locked_super(s);
+-			root = ERR_CAST(anon_inode_inode);
++			anon_inode_root = ERR_CAST(anon_inode_inode);
+ 		}
+ 	}
+-	return root;
++	return anon_inode_root;
+ }
+ 
+ static struct file_system_type anon_inode_fs_type = {
+@@ -219,6 +219,28 @@ err_put_unused_fd:
+ }
+ EXPORT_SYMBOL_GPL(anon_inode_getfd);
+ 
++/**
++ * anon_inode_new - create private anonymous inode
++ *
++ * Creates a new inode on the anonymous inode FS for driver's use. The inode has
++ * it's own address_space compared to the shared anon_inode_inode. It can be
++ * used in situations where user-space mappings have to be shared across
++ * different files but no backing inode is available.
++ *
++ * Call iput(inode) to release the inode.
++ *
++ * RETURNS:
++ * New inode on success, error pointer on failure.
++ */
++struct inode *anon_inode_new(void)
++{
++	if (IS_ERR(anon_inode_root))
++		return ERR_CAST(anon_inode_root);
++
++	return anon_inode_mkinode(anon_inode_root->d_sb);
++}
++EXPORT_SYMBOL_GPL(anon_inode_new);
++
+ static int __init anon_inode_init(void)
+ {
+ 	int error;
+diff --git a/include/linux/anon_inodes.h b/include/linux/anon_inodes.h
+index 8013a45..ddbd67f 100644
+--- a/include/linux/anon_inodes.h
++++ b/include/linux/anon_inodes.h
+@@ -15,6 +15,7 @@ struct file *anon_inode_getfile(const char *name,
+ 				void *priv, int flags);
+ int anon_inode_getfd(const char *name, const struct file_operations *fops,
+ 		     void *priv, int flags);
++struct inode *anon_inode_new(void);
+ 
+ #endif /* _LINUX_ANON_INODES_H */
+ 
 -- 
 1.8.3.4
 
