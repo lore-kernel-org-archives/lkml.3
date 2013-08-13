@@ -1,106 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab3HMUS2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:18:28 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35848 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758898Ab3HMUS0 (ORCPT
+	id S1759095Ab3HMUTl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:19:41 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:59471 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758942Ab3HMUTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:18:26 -0400
-Date: Tue, 13 Aug 2013 21:18:16 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
-        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Padmavathi Venna <padma.v@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
-        Vinod Koul <vinod.koul@intel.com>
-Message-ID: <20130813201816.GG6427@sirena.org.uk>
-References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
- <1376243970-6489-11-git-send-email-tomasz.figa@gmail.com>
- <20130812233641.GL6427@sirena.org.uk>
- <2472314.6b8DcBdcjO@flatron>
- <20130813185547.GD6427@sirena.org.uk>
+	Tue, 13 Aug 2013 16:19:39 -0400
+Date: Tue, 13 Aug 2013 13:19:36 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/17] 3.4.58-stable review
+Message-ID: <20130813201936.GA18358@roeck-us.net>
+References: <20130813063501.728847844@linuxfoundation.org>
+ <520A1D56.2050507@roeck-us.net>
+ <20130813175858.GC7336@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sszduGT9fQUHJP/+"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130813185547.GD6427@sirena.org.uk>
-X-Cookie: Many pages make a thick book.
+In-Reply-To: <20130813175858.GC7336@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 10/18] spi: s3c64xx: Do not require legacy DMA API in
- case of S3C64XX
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 13, 2013 at 10:58:58AM -0700, Greg Kroah-Hartman wrote:
+> On Tue, Aug 13, 2013 at 04:49:42AM -0700, Guenter Roeck wrote:
+> > On 08/12/2013 11:35 PM, Greg Kroah-Hartman wrote:
+> > >This is the start of the stable review cycle for the 3.4.58 release.
+> > >There are 17 patches in this series, all will be posted as a response
+> > >to this one.  If anyone has any issues with these being applied, please
+> > >let me know.
+> > >
+> > >Responses should be made by Thu Aug 15 06:34:52 UTC 2013.
+> > >Anything received after that time might be too late.
+> > >
+> > >The whole patch series can be found in one patch at:
+> > >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.58-rc1.gz
+> > >and the diffstat can be found below.
+> > >
+> > Cross build results:
+> > 	Total builds: 62 Total build errors: 10
+> 
+> As I'm sticking with 3.4 for another year, should I work to fix those
+> build errors?
+> 
+> > qemu:
+> > 	mips, ppc, x86, x86_64 pass (boot to login prompt)
+> > 
+> > Details:
+> > 	http://server.roeck-us.net:8010/waterfall
+> 
+> I tried to find the build errors here, but can't seem to see them.  What
+> should I be looking for?
+> 
+You won't. System isn't set up for it yet, sorry. I keep the logs in /tmp on the
+build servers for the time being, so you'd need a login ;).
 
---sszduGT9fQUHJP/+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I copied the individual log files for the 3.4 build to http://roeck-us.net/linux/logs
+in case you want to browse through it.
 
-On Tue, Aug 13, 2013 at 07:55:47PM +0100, Mark Brown wrote:
+Here is a summary.
 
-> I'm still debugging what's going on here - the basic refcounting all
-> looks OK in the SPI driver, I can see it requesting and releasing with
-> the refcounts all going back to zero in the DMA driver as expected but
-> when we come back to the device later on dmaengine is deciding the
-> device is unavailable quite early on in the process.
+mips/allmodconfig:
+drivers/net/ethernet/3com/3c59x.c: In function 'vortex_init_one':
+drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of function 'pci_iomap' 
 
-The failure is happening because this check is failing:
+We have seen that before in 3.10. Commit 78857614104 (MIPS: Expose
+missing pci_io{map,unmap} declarations) fixes it.
 
-	/* devices with multiple channels need special handling as we need to
-	 * ensure that all channels are either private or public.
-	 */
-	if (dev->chancnt > 1 && !dma_has_cap(DMA_PRIVATE, dev->cap_mask))
-		list_for_each_entry(chan, &dev->channels, device_node) {
-			/* some channels are already publicly allocated */
-			if (chan->client_count) {
+sound/oss/soundcard.c:69:31: error: 'MAX_DMA_CHANNELS' undeclared here (not in a function)
 
-which is happening because dma1chan0 (which is on the same DMA
-controller as the SPI controller) and in fact every other DMA channel
-had references grabbed by the network stack dmaengine helpers which I'd
-enabled in config.  The fact that they do that is unhelpful, it renders
-the API mostly useless, but is nothing to do with this series.
+This requires 
+d4702b189c sound: Fix make allmodconfig on MIPS
+a62ee234a5 sound: Fix make allmodconfig on MIPS correctly
 
-Having tweaked the config everything appears to work so:
+Unfortunately, after applying those patches the build still fails with
 
-Tested-by: Mark Brown <broonie@linaro.org>
+ERROR: "min_low_pfn" [drivers/net/wireless/ath/ath6kl/ath6kl_sdio.ko] undefined!
 
-though the whole thing with the filter function is as I say a bit fun
-=66rom a code review point of view.
+This has been fixed upstream with commit 8b9232141b (MIPS: Rewrite pfn_valid to work
+in modules, too), which applies but results in build failures. There is a patch
+from Ben Hutchings which removes the use of virt_addr_valid() (which causes
+the problem) from the ath6kl driver, but that is not in mainline.
 
---sszduGT9fQUHJP/+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+powerpc/chroma_defconfig:
+arch/powerpc/mm/numa.c: In function 'do_init_bootmem':
+arch/powerpc/mm/numa.c:529:19: error: 'aa.arrays' may be used uninitialized in this function [-Werror=maybe-uninitialized]
+arch/powerpc/mm/numa.c:642:22: note: 'aa.arrays' was declared here
+cc1: all warnings being treated as errors
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+No idea. Code looks all different in 3.10.
 
-iQIcBAEBAgAGBQJSCpSEAAoJELSic+t+oim93gMP/RmqEk398uDLUWt8Spob1X0S
-bHZxV5jrbcp5oxaJDEWJm4ucIs53slqxyhN2f2JznbWbTewGbDF41qGETcRG5fAC
-tnC3JY+xZme+3gHn69YgY2+iNDMgGGWYOVMDo/+V1ywd6ddVcmeuA/WhKpLxZp1S
-PHV2xkfvxBtJEq4NOUA6Zmxz+egZf2mqENg6iCXzmo22qlUR2n+bidbJ/zhy20AM
-8T4EN3y3MhXpbTBikCmKcXeywdr8jTUL7zHdcLAR9+fiSAbj8Z4gVS3IGlqpQySs
-4UGUXiUZC+jXlXfuawNDqQUKv/iThCKuZhQCXmYqzKVlPV1RQ95Saus6+5uXMKOm
-HxvZK9wK+vIOCr4EtkvCXkHGxL3+C5Edr3vAl/vjtBeNEpWfrRkWZLcvc25APzSx
-ckopq9TDWKP/HB5Akpsvjm11UaI0ZXIGtyO071aTZuYBE6SZyV5OY+8a6IaLOw0A
-2g+KO3VjmyHSnlf34RyX5UGJY5kaxSgMbmkNDjHgVZO70vFgi79o7Tx7nxC6Vr1x
-Fx4tqWynBAPATDUClmmMBp1XsCNF5GiM7tfGBJ5GTIdL4vdFtR8UP2SJ/gEfYEmX
-Oan0xinp8F4cUJx/HQoACGqKKEC3nE9OSXsjuDM1btye9d4qPFzP/KeeBA+Kc2II
-sv1ECC8fPyQ/iC19MKaD
-=UYZA
------END PGP SIGNATURE-----
+arm/allmodconfig:
+Error in configuration file after "make allmodconfig". It suggests to run "make
+oldconfig" to update it. I tried that, but it fails as well. Not sure if it is
+worth looking into it.
 
---sszduGT9fQUHJP/+--
+m68k/allmodconfig:
+drivers/hid/hid-microsoft.c: In function 'ms_report_fixup':
+drivers/hid/hid-microsoft.c:52:18: error: macro "memcmp" passed 6 arguments, but takes just 3
+drivers/hid/hid-microsoft.c:51:5: error: 'memcmp' undeclared (first use in this function)
+drivers/hid/hid-microsoft.c:51:5: note: each undeclared identifier is reported only once for each function it appears in
+
+
+microblaze/mmu_defconfig:
+build/scripts/gen_initramfs_list.sh: Cannot open 'rootfs.cpio'
+make[1]: *** [usr/initramfs_data.cpio.gz] Error 1
+make: *** [usr] Error 2
+
+CONFIG_INITRAMFS_SOURCE=rootfs.cpio in the config file probably
+isn't such a good idea.
+
+Upstream commit d0e045401f26 (microblaze: Update microblaze defconfigs)
+addresses this problem, but it can not be applied directly. It defines
+CONFIG_HIGHMEM=y, CONFIG_PCI=y, and CONFIG_PCI_XILINX=y, which do
+not build in 3.4. It builds successfully if I apply d0e045401f26
+and remove those three definitions.
+
+blackfin/defconfig:
+ERROR: "vm_iomap_memory" [drivers/video/fb.ko] undefined!
+make[1]: *** [__modpost] Error 1
+
+sh/defconfig:
+drivers/built-in.o: In function `fb_mmap':
+fbmem.c:(.text+0x5e8): undefined reference to `vm_iomap_memory'
+
+Both look similar and might be easy to fix if someone knows what is wrong.
+
+cris/...:
+In file included from include/linux/page-flags.h:8:0,
+                 from kernel/bounds.c:9:
+include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
+include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
+include/linux/types.h:30:1: error: unknown type name '__kernel_pid_t'
+include/linux/types.h:31:1: error: unknown type name '__kernel_daddr_t'
+include/linux/types.h:33:1: error: unknown type name '__kernel_suseconds_t'
+
+That one might be tricky (or simple if someone knows what is wrong). 
+
+Guenter
