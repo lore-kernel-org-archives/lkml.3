@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757812Ab3HMGs0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:48:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60620 "EHLO
+	id S1757586Ab3HMGsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:48:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60610 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757022Ab3HMGdj (ORCPT
+	with ESMTP id S1756494Ab3HMGdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:39 -0400
+	Tue, 13 Aug 2013 02:33:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Michael Neuling <mikey@neuling.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 06/60] powerpc: Rework setting up H/FSCR bit definitions
-Date: Mon, 12 Aug 2013 23:33:33 -0700
-Message-Id: <20130813063332.659677725@linuxfoundation.org>
+Subject: [ 08/60] powerpc: Save the TAR register earlier
+Date: Mon, 12 Aug 2013 23:33:35 -0700
+Message-Id: <20130813063332.965987608@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -29,63 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Neuling <mikey@neuling.org>
 
-commit 74e400cee6c0266ba2d940ed78d981f1e24a8167 upstream.
+commit c2d52644e2da8a07ecab5ca62dd0bc563089e8dc upstream.
 
-This reworks the Facility Status and Control Regsiter (FSCR) config bit
-definitions so that we can access the bit numbers.  This is needed for a
-subsequent patch to fix the userspace DSCR handling.
+This moves us to save the Target Address Register (TAR) a earlier in
+__switch_to.  It introduces a new function save_tar() to do this.
 
-HFSCR and FSCR bit definitions are the same, so reuse them.
+We need to save the TAR earlier as we will overwrite it in the transactional
+memory reclaim/recheckpoint path.  We are going to do this in a subsequent
+patch which will fix saving the TAR register when it's modified inside a
+transaction.
 
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/reg.h |   31 ++++++++++++++++++++-----------
- 1 file changed, 20 insertions(+), 11 deletions(-)
+ arch/powerpc/include/asm/switch_to.h |    9 +++++++++
+ arch/powerpc/kernel/entry_64.S       |    9 ---------
+ arch/powerpc/kernel/process.c        |   10 ++++++++++
+ 3 files changed, 19 insertions(+), 9 deletions(-)
 
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -254,19 +254,28 @@
- #define SPRN_HRMOR	0x139	/* Real mode offset register */
- #define SPRN_HSRR0	0x13A	/* Hypervisor Save/Restore 0 */
- #define SPRN_HSRR1	0x13B	/* Hypervisor Save/Restore 1 */
-+/* HFSCR and FSCR bit numbers are the same */
-+#define FSCR_TAR_LG	8	/* Enable Target Address Register */
-+#define FSCR_EBB_LG	7	/* Enable Event Based Branching */
-+#define FSCR_TM_LG	5	/* Enable Transactional Memory */
-+#define FSCR_PM_LG	4	/* Enable prob/priv access to PMU SPRs */
-+#define FSCR_BHRB_LG	3	/* Enable Branch History Rolling Buffer*/
-+#define FSCR_DSCR_LG	2	/* Enable Data Stream Control Register */
-+#define FSCR_VECVSX_LG	1	/* Enable VMX/VSX  */
-+#define FSCR_FP_LG	0	/* Enable Floating Point */
- #define SPRN_FSCR	0x099	/* Facility Status & Control Register */
--#define   FSCR_TAR	(1 << (63-55)) /* Enable Target Address Register */
--#define   FSCR_EBB	(1 << (63-56)) /* Enable Event Based Branching */
--#define   FSCR_DSCR	(1 << (63-61)) /* Enable Data Stream Control Register */
-+#define   FSCR_TAR	__MASK(FSCR_TAR_LG)
-+#define   FSCR_EBB	__MASK(FSCR_EBB_LG)
-+#define   FSCR_DSCR	__MASK(FSCR_DSCR_LG)
- #define SPRN_HFSCR	0xbe	/* HV=1 Facility Status & Control Register */
--#define   HFSCR_TAR	(1 << (63-55)) /* Enable Target Address Register */
--#define   HFSCR_EBB	(1 << (63-56)) /* Enable Event Based Branching */
--#define   HFSCR_TM	(1 << (63-58)) /* Enable Transactional Memory */
--#define   HFSCR_PM	(1 << (63-60)) /* Enable prob/priv access to PMU SPRs */
--#define   HFSCR_BHRB	(1 << (63-59)) /* Enable Branch History Rolling Buffer*/
--#define   HFSCR_DSCR	(1 << (63-61)) /* Enable Data Stream Control Register */
--#define   HFSCR_VECVSX	(1 << (63-62)) /* Enable VMX/VSX  */
--#define   HFSCR_FP	(1 << (63-63)) /* Enable Floating Point */
-+#define   HFSCR_TAR	__MASK(FSCR_TAR_LG)
-+#define   HFSCR_EBB	__MASK(FSCR_EBB_LG)
-+#define   HFSCR_TM	__MASK(FSCR_TM_LG)
-+#define   HFSCR_PM	__MASK(FSCR_PM_LG)
-+#define   HFSCR_BHRB	__MASK(FSCR_BHRB_LG)
-+#define   HFSCR_DSCR	__MASK(FSCR_DSCR_LG)
-+#define   HFSCR_VECVSX	__MASK(FSCR_VECVSX_LG)
-+#define   HFSCR_FP	__MASK(FSCR_FP_LG)
- #define SPRN_TAR	0x32f	/* Target Address Register */
- #define SPRN_LPCR	0x13E	/* LPAR Control Register */
- #define   LPCR_VPM0	(1ul << (63-0))
+--- a/arch/powerpc/include/asm/switch_to.h
++++ b/arch/powerpc/include/asm/switch_to.h
+@@ -15,6 +15,15 @@ extern struct task_struct *__switch_to(s
+ struct thread_struct;
+ extern struct task_struct *_switch(struct thread_struct *prev,
+ 				   struct thread_struct *next);
++#ifdef CONFIG_PPC_BOOK3S_64
++static inline void save_tar(struct thread_struct *prev)
++{
++	if (cpu_has_feature(CPU_FTR_ARCH_207S))
++		prev->tar = mfspr(SPRN_TAR);
++}
++#else
++static inline void save_tar(struct thread_struct *prev) {}
++#endif
+ 
+ extern void giveup_fpu(struct task_struct *);
+ extern void load_up_fpu(void);
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -449,15 +449,6 @@ END_FTR_SECTION_IFSET(CPU_FTR_DSCR)
+ 
+ #ifdef CONFIG_PPC_BOOK3S_64
+ BEGIN_FTR_SECTION
+-	/*
+-	 * Back up the TAR across context switches.  Note that the TAR is not
+-	 * available for use in the kernel.  (To provide this, the TAR should
+-	 * be backed up/restored on exception entry/exit instead, and be in
+-	 * pt_regs.  FIXME, this should be in pt_regs anyway (for debug).)
+-	 */
+-	mfspr	r0,SPRN_TAR
+-	std	r0,THREAD_TAR(r3)
+-
+ 	/* Event based branch registers */
+ 	mfspr	r0, SPRN_BESCR
+ 	std	r0, THREAD_BESCR(r3)
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -600,6 +600,16 @@ struct task_struct *__switch_to(struct t
+ 	struct ppc64_tlb_batch *batch;
+ #endif
+ 
++	/* Back up the TAR across context switches.
++	 * Note that the TAR is not available for use in the kernel.  (To
++	 * provide this, the TAR should be backed up/restored on exception
++	 * entry/exit instead, and be in pt_regs.  FIXME, this should be in
++	 * pt_regs anyway (for debug).)
++	 * Save the TAR here before we do treclaim/trecheckpoint as these
++	 * will change the TAR.
++	 */
++	save_tar(&prev->thread);
++
+ 	__switch_to_tm(prev);
+ 
+ #ifdef CONFIG_SMP
 
 
