@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab3HMGOK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:14:10 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52640 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354Ab3HMGOH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:14:07 -0400
-Date: Tue, 13 Aug 2013 16:13:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>
-Subject: linux-next: manual merge of the usb tree with the net-next tree
-Message-Id: <20130813161359.0613bddf9bbf983253333f30@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Aug_2013_16_13_59_+1000_q2NBtoo=EXcmLy5y"
+	id S1755442Ab3HMGPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:15:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:23808 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753187Ab3HMGPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 02:15:50 -0400
+X-IronPort-AV: E=Sophos;i="4.89,866,1367942400"; 
+   d="scan'208";a="8188978"
+Message-ID: <5209CEC1.8070908@cn.fujitsu.com>
+Date: Tue, 13 Aug 2013 14:14:25 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Tang Chen <imtangchen@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com> <20130812145016.GI15892@htj.dyndns.org> <5208FBBC.2080304@zytor.com> <20130812152343.GK15892@htj.dyndns.org> <52090D7F.6060600@gmail.com> <20130812164650.GN15892@htj.dyndns.org>
+In-Reply-To: <20130812164650.GN15892@htj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/13 14:14:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/13 14:14:16,
+	Serialize complete at 2013/08/13 14:14:16
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Aug_2013_16_13_59_+1000_q2NBtoo=EXcmLy5y
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/13/2013 12:46 AM, Tejun Heo wrote:
+......
+>
+> * Adding an option to tell the kernel to try to stay away from
+>    hotpluggable nodes is fine.  I have no problem with that at all.
+>
+> * The patchsets upto this point have been somehow trying to reorder
+>    operations shomehow such that *no* memory allocation happens before
+>    memblock is populated with hotplug information.
+>
+> * However, we already *know* that the memory the kernel image is
+>    occupying won't be removeable.  It's highly likely that the amount
+>    of memory allocation before NUMA / hotplug information is fully
+>    populated is pretty small.  Also, it's highly likely that small
+>    amount of memory right after the kernel image is contained in the
+>    same NUMA node, so if we allocate memory close to the kernel image,
+>    it's likely that we don't contaminate hotpluggable node.  We're
+>    talking about few megs at most right after the kernel image.  I
+>    can't see how that would make any noticeable difference.
+>
+> * Once hotplug information is available, allocation can happen as
+>    usual and the kernel can report the nodes which are actually
+>    hotpluggable - marked as hotpluggable by the firmware&&  didn't get
+>    contaminated during early alloc&&  didn't get overflow allocations
+>    afterwards.  Note that we need such mechanism no matter what as the
+>    kernel image can be loaded into hotpluggable nodes and reporting
+>    that to userland is the only thing the kernel can do for cases like
+>    that short of denying memory unplug on such nodes.
+>
 
-Hi Greg,
+Hi tj, hpa, luck, yinghai,
 
-Today's linux-next merge of the usb tree got a conflict in
-include/linux/usb/usbnet.h between commit a88c32ae15f2 ("USBNET:
-centralize computing of max rx/tx qlen") from the net-next tree and
-commit 638c5115a794 ("USBNET: support DMA SG") from the usb tree.
+So if all of you agree on the idea above from tj, I think
+we can do it in this way. Will update the patches to allocate
+memory near kernel image before SRAT is parsed.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc include/linux/usb/usbnet.h
-index 8fbc008,2b47e63..0000000
---- a/include/linux/usb/usbnet.h
-+++ b/include/linux/usb/usbnet.h
-@@@ -34,7 -34,7 +34,8 @@@ struct usbnet=20
-  	struct mutex		phy_mutex;
-  	unsigned char		suspend_count;
-  	unsigned char		pkt_cnt, pkt_err;
- +	unsigned short		rx_qlen, tx_qlen;
-+ 	unsigned		can_dma_sg:1;
- =20
-  	/* i/o info: pipes etc */
-  	unsigned		in, out;
-
---Signature=_Tue__13_Aug_2013_16_13_59_+1000_q2NBtoo=EXcmLy5y
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSCc6rAAoJEECxmPOUX5FE2ukP/jGIGxaMvyFbQ1WgLw57jIcq
-xM70s2Yp0kK8MOOcfWjUA8f2EV/e2B3vDmNH8bRd9+rpJNqB10JgWNSoQTC6H4Jv
-aQsrD6PpOUWVOfxOanmjBSDOCLriYWyqqIAtvhPaJxLMZc++yQx+mCizfCqz6OJd
-+vw2JkCr1Wghmhs2ZYwgkU3aRjBaZyNf0z8Ex8K0l9rvK3C6FQSftTFZjVq4tYGa
-4uBc9dtV4H8NjqZQsDuntlScqY/LlV5zEvQv5gaFm7DUzCyDpRKgdc6CFCooEfn3
-xkmOArnPdZtXoC95Sy9r4x8onrHUCsAb17mBOxVD2OJ0fB+RsnAPp8thveSOsFRs
-3G7sOnOXjMTIX3wN4yWtMZOppkm/aqWuqLTNlEwjIoyMMWeov4Cvg2XwPdCS2Aum
-aXOHE6Qq6B8rckSPy/V6GKwjlUPd+mFa7s7lD2hdHC7McNTUfRmPcSDKf+c8eiWy
-AfrLrgCtjGI0Xc5t2jYpFovowByrz7C/SZ9o2rhUTcyF/Q2/KX/Q6zzJuLlRiVrn
-PcbFv929l40vSW/D7bu8aHRuMTdhUWdG+VRJqt7/M+Im3RL7fkr1cjYYClIQKh04
-Hr5vZFhoD5beeHs1U3yLSs2164p3uLtBHoMBNoeEw1jycgfNXUhuwJwwogo83eQ2
-tM2tp6+tbtSn61KVjRvq
-=e0S0
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Aug_2013_16_13_59_+1000_q2NBtoo=EXcmLy5y--
+Thanks.
