@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab3HMOkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:40:07 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:53550 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757497Ab3HMOje (ORCPT
+	id S1757814Ab3HMOp3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:45:29 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:59680 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757381Ab3HMOp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:39:34 -0400
-Message-ID: <520A4528.6020609@cogentembedded.com>
-Date: Tue, 13 Aug 2013 18:39:36 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 13 Aug 2013 10:45:27 -0400
 MIME-Version: 1.0
-To: Hayes Wang <hayeswang@realtek.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next 2/3] net/usb/r8152: enable tx checksum
-References: <1376378913-879-1-git-send-email-hayeswang@realtek.com> <1376378913-879-2-git-send-email-hayeswang@realtek.com>
-In-Reply-To: <1376378913-879-2-git-send-email-hayeswang@realtek.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUWPdivbDc=cBUR2BJzKGwWwK-P0OP0CZ5EfCupii7sP_w@mail.gmail.com>
+References: <CA+icZUWmee5nTZCGvFb4vLpna5vUn+RJ-V9pHpKPFaTc96BG5Q@mail.gmail.com>
+	<20130813092554.GA4519@cantiga.alporthouse.com>
+	<CA+icZUUrJt_sJqp0CNMuM_b36tvv_rUskegLY5zcnm0w+JcW5Q@mail.gmail.com>
+	<20130813093920.GB4519@cantiga.alporthouse.com>
+	<CA+icZUVEcCTbBre99FWiDXRAMKcdQxUagXE-2-rO9g=YVUAieQ@mail.gmail.com>
+	<20130813095259.GC4519@cantiga.alporthouse.com>
+	<CA+icZUX6KM3dKrdX3Qkwg-DeBYobjQ+WG6oQEUjJQG3Q=qf+Sg@mail.gmail.com>
+	<CA+icZUWPdivbDc=cBUR2BJzKGwWwK-P0OP0CZ5EfCupii7sP_w@mail.gmail.com>
+Date: Tue, 13 Aug 2013 16:45:25 +0200
+Message-ID: <CA+icZUUKH6Fa8WksqA69FXKUUJmKsNdXv0ZJH50HA2mFavfPCg@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical mode ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "s.dilek" <s.dilek@jpberlin.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 08/13/2013 11:28 AM, Hayes Wang wrote:
-
-> Enable tx checksum.
-
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> ---
->   drivers/net/usb/r8152.c | 63 +++++++++++++++++++++++++++++++++++++++++++++----
->   1 file changed, 58 insertions(+), 5 deletions(-)
-
-> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-> index c6c5aa2..5d9d949 100644
-> --- a/drivers/net/usb/r8152.c
-> +++ b/drivers/net/usb/r8152.c
-[...]
-> @@ -964,6 +971,51 @@ err1:
->   	return -ENOMEM;
->   }
+On Tue, Aug 13, 2013 at 4:07 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Aug 13, 2013 at 11:57 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Tue, Aug 13, 2013 at 11:52 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>>> On Tue, Aug 13, 2013 at 11:47:19AM +0200, Sedat Dilek wrote:
+>>>> On Tue, Aug 13, 2013 at 11:39 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>>>> > On Tue, Aug 13, 2013 at 11:35:53AM +0200, Sedat Dilek wrote:
+>>>> >> After a logout from my "BROKEN" Unity-2D session - the login-screen
+>>>> >> for LightDM seems to be OK.
+>>>> >> Then entering my Unity-2D desktop is OK - no screen corruptions.
+>>>> >
+>>>> > What hardware and display do you have?
+>>>>
+>>>> It's a Samsung ultrabook with SandyBridge CPU.
+>>>>
+>>>> [   333.291] (--) intel(0): Integrated Graphics Chipset: Intel(R) HD
+>>>> Graphics 3000
+>>>
+>>> using LVDS.
+>>>
+>>>> - Sedat -
+>>>>
+>>>> P.S.: I switched to intel-ddx v2-21-14-35-g5840bf in the meantime.
+>>>
+>>> Did that make a difference? It shouldn't if the error is occuring before
+>>> X even starts...
+>>
+>> NO, was just confused not seeing "GT2" (HD-3000 was new to me) in my
+>> Xorg.log :-).
+>>
+>> As said logging out of Unity-2D and entering LightDM greeter - screen is fine.
+>> Starting again a Unity-2D session - no screen corruption, too.
+>>
+>> - Sedat -
 >
-> +static void
-> +r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc, struct sk_buff *skb)
-> +{
-[...]
-> +		if (ip_protocol == IPPROTO_TCP) {
-> +			opts2 |= TCP_CS;
-> +			opts2 |= (skb_transport_offset(skb) & 0x7fff) << 17;
-> +		} else if (ip_protocol == IPPROTO_UDP) {
-> +			opts2 |= UDP_CS;
-> +		} else
-> +			WARN_ON_ONCE(1);
+> Some more testing:
+>
+> [1] With my X stack:
+>
+> FIRST BAD: next-20130812
+> LAST GOOD: next-20130809
+>
+> [2] With Ubuntu's X stack:
+>
+> next-20130813 is OK (Xorg.log attached)
+>
 
-    Stange, why *else if* branch has {} and *else* don't. It should, according 
-to Documentation/CodingStyle.
+drm-intel-nightly is also BAD with my X stack (with Ubuntu's X stack
+no problems).
 
-> +
-> +		desc->opts2 = cpu_to_le32(opts2);
-> +	}
-> +}
-> +
+- Sedat -
 
-WBR, Sergei
-
+> - Sedat -
