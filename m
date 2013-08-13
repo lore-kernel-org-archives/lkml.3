@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758630Ab3HMXzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 19:55:24 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:54638 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756998Ab3HMXzX (ORCPT
+	id S1758534Ab3HMX7z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 19:59:55 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:62092 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756156Ab3HMX7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 19:55:23 -0400
+	Tue, 13 Aug 2013 19:59:54 -0400
+Date: Tue, 13 Aug 2013 19:59:47 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] idr: Document ida tree sections
+Message-ID: <20130813235947.GL28996@mtj.dyndns.org>
+References: <20130807202201.GA28039@mtj.dyndns.org>
+ <20130807205117.GC11612@kmo-pixel>
+ <20130809145756.GL20515@mtj.dyndns.org>
+ <20130813221308.GA11980@kmo-pixel>
+ <20130813221928.GE28996@mtj.dyndns.org>
+ <20130813222759.GA12069@kmo-pixel>
+ <20130813224428.GG28996@mtj.dyndns.org>
+ <20130813225927.GA2000@kmo-pixel>
+ <20130813232211.GI28996@mtj.dyndns.org>
+ <20130813235133.GA3807@kmo-pixel>
 MIME-Version: 1.0
-In-Reply-To: <20130813231020.GA22667@asylum.americas.sgi.com>
-References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
-	<1376344480-156708-1-git-send-email-nzimmer@sgi.com>
-	<CA+55aFwTQLexJkf67P0b7Z7cw8fePjdDSdA4SOkM+Jf+kBPYEA@mail.gmail.com>
-	<520A6DFC.1070201@sgi.com>
-	<CA+55aFwRHdQ_f6ryUU1yWkW1Qz8cG958jLZuyhd_YdOq4-rfRA@mail.gmail.com>
-	<20130813231020.GA22667@asylum.americas.sgi.com>
-Date: Tue, 13 Aug 2013 16:55:21 -0700
-X-Google-Sender-Auth: WPv1Wvv-5BTSGu9X12pvtElDycU
-Message-ID: <CA+55aFyeEK6FfNC-7SjGdYVrjiES0V7JNUG==P5p6iu+UNiAfA@mail.gmail.com>
-Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
- embedded in the buddy allocator
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: Mike Travis <travis@sgi.com>, Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Robin Holt <holt@sgi.com>,
-        Rob Landley <rob@landley.net>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813235133.GA3807@kmo-pixel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 4:10 PM, Nathan Zimmer <nzimmer@sgi.com> wrote:
->
-> The only mm structure we are adding to is a new flag in page->flags.
-> That didn't seem too much.
+Hey, Kent.
 
-I don't agree.
+On Tue, Aug 13, 2013 at 04:51:33PM -0700, Kent Overstreet wrote:
+> Should probably be almost as good, yeah... in theory, but the space
+> efficiency still isn't going to be as good, and it'll probably be more
+> code... and at this point I really just don't want to futz with it more.
+> At this point unless there's something really wrong with this code I
+> just want to move onto something else :P
 
-I see only downsides, and no upsides. Doing the same thing *without*
-the downsides seems straightforward, so I simply see no reason for any
-extra flags or tests at runtime.
+I think it probably would be okay in most cases but don't feel
+confident about acking as it's making trade-offs which are unnecessary
+and unusual.  So, ummm, I really don't know.  Maybe it's better enough
+than what we have now but at the same time if you want to reimplement
+the whole thing you should be persistent / reliable enough to see it
+through this time around too, right?
 
-               Linus
+Thanks.
+
+-- 
+tejun
