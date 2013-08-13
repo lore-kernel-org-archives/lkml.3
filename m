@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613Ab3HMJ2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 05:28:24 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61543 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752135Ab3HMJ2W (ORCPT
+	id S1756475Ab3HMJf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 05:35:57 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:59710 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab3HMJfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 05:28:22 -0400
-From: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>
-Subject: [PATCH] nouveau reclocking on nv40 not working since 77145f1cbdf8d28b46ff8070ca749bad821e0774
-Date: Tue, 13 Aug 2013 11:28:01 +0200
-Message-ID: <23735105.M9MNGeX3Gc@pali>
-User-Agent: KMail/4.10.5 (Linux/3.8.0-27-generic; KDE/4.10.5; x86_64; ; )
+	Tue, 13 Aug 2013 05:35:55 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart3925638.NnLKLMlotZ"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130813092554.GA4519@cantiga.alporthouse.com>
+References: <CA+icZUWmee5nTZCGvFb4vLpna5vUn+RJ-V9pHpKPFaTc96BG5Q@mail.gmail.com>
+	<20130813092554.GA4519@cantiga.alporthouse.com>
+Date: Tue, 13 Aug 2013 11:35:53 +0200
+Message-ID: <CA+icZUUrJt_sJqp0CNMuM_b36tvv_rUskegLY5zcnm0w+JcW5Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical mode ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Cc: "s.dilek" <s.dilek@jpberlin.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 13, 2013 at 11:25 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Tue, Aug 13, 2013 at 11:10:18AM +0200, Sedat Dilek wrote:
+>> Hi,
+>>
+>> with today's next-20130813 I cannot see 1/10 of my desktop-screen's
+>> top, it's simply black.
+>> I can estimate the URL line in Firefox (or open a new tab blindly and
+>> get a known URL from my autocompleted history).
+>
+> Can you attach a photograph?
+>
 
---nextPart3925638.NnLKLMlotZ
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="iso-8859-1"
+It's a black bar on the top of my desktop-screen - approx. 1/10.
 
-Hello,
+It looks like this is also in the VT on bootup before entering LightDM.
 
-in commit 77145f1cbdf8d28b46ff8070ca749bad821e0774 was introduced
-error which cause that on my Nvidia 6600GT card reclocking not working
-anymore. There is missing assigment of return value from pll_calc to re=
-t.
+>> My Xorg stack did not change: libdrm-2.4.46 | mesa-9.16 | intel-ddx-2.4.14.
+>> next-20130808 was OK - no screen corruptions.
+>>
+>> Any idea, hint?
+>
+> Can you please try:
+>
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index af1b2f0..b0f181d 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -1837,7 +1837,7 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
+>                 break;
+>         case I915_TILING_X:
+>                 /* pin() will align the object as required by fence */
+> -               alignment = 0;
+> +               alignment = 256 * 1024;
+>                 break;
+>         case I915_TILING_Y:
+>                 /* Despite that we check this in framebuffer_init userspace can
+>
+> --
 
-After this patch reclocking on my card working fine again. Above broken=
+NO, that did not help.
 
-commit was introduced in kernel 3.7, so consider backporting this patch=
+After a logout from my "BROKEN" Unity-2D session - the login-screen
+for LightDM seems to be OK.
+Then entering my Unity-2D desktop is OK - no screen corruptions.
 
-to older kernels too.
-
-Signed-off-by: Pali Roh=E1r <pali.rohar@gmail.com>
-
-diff --git a/drivers/gpu/drm/nouveau/nv40_pm.c b/drivers/gpu/drm/nouvea=
-u/nv40_pm.c
-index 3af5bcd..625f80d 100644
---- a/drivers/gpu/drm/nouveau/nv40_pm.c
-+++ b/drivers/gpu/drm/nouveau/nv40_pm.c
-@@ -131,7 +131,7 @@ nv40_calc_pll(struct drm_device *dev, u32 reg, stru=
-ct nvbios_pll *pll,
- =09if (clk < pll->vco1.max_freq)
- =09=09pll->vco2.max_freq =3D 0;
-=20
--=09pclk->pll_calc(pclk, pll, clk, &coef);
-+=09ret =3D pclk->pll_calc(pclk, pll, clk, &coef);
- =09if (ret =3D=3D 0)
- =09=09return -ERANGE;
-=20
-
---=20
-Pali Roh=E1r
-pali.rohar@gmail.com
-
-
---nextPart3925638.NnLKLMlotZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlIJ/CEACgkQi/DJPQPkQ1LFJACglSrBLRcCJ+xl9MHpNKcULMCg
-JJ8An3hYtGg33CzMZelMgZeog3WtWmcS
-=alB4
------END PGP SIGNATURE-----
-
---nextPart3925638.NnLKLMlotZ--
-
+- Sedat -
