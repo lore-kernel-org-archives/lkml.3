@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab3HMSmy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 14:42:54 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50433 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758475Ab3HMSmu (ORCPT
+	id S1758459Ab3HMSne (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 14:43:34 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58157 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757276Ab3HMSnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 14:42:50 -0400
-Date: Tue, 13 Aug 2013 11:42:48 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v1 09/14] clk: msm: Add support for MSM8960's global
- clock controller (GCC)
-Message-ID: <20130813184248.GG14845@codeaurora.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
- <1374713022-6049-10-git-send-email-sboyd@codeaurora.org>
- <20130808170015.GE27325@e106331-lin.cambridge.arm.com>
- <20130813050334.GE14845@codeaurora.org>
- <20130813142411.4443.85003@quantum>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813142411.4443.85003@quantum>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 13 Aug 2013 14:43:32 -0400
+Message-ID: <1376419410.3467.67.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: RFC: default CONFIG_EFI_STUB=y
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Date: Tue, 13 Aug 2013 11:43:30 -0700
+In-Reply-To: <520A7B48.3020304@zytor.com>
+References: <52050985.9070107@zytor.com>
+	 <1376062345.2087.16.camel@dabdike.int.hansenpartnership.com>
+	 <52050D03.4030805@zytor.com> <520A7B48.3020304@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13, Mike Turquette wrote:
-> Quoting Stephen Boyd (2013-08-12 22:03:34)
-> > The clock controller is hardware and the number of clock outputs
-> > is fixed. Isn't all hardware fixed until you start talking about
-> > FPGAs? The next minor revision of the clock controller may add
-> > more clocks or remove clocks from that base design, but otherwise
-> > the two are 90% the same and generally software compatible. It
-> > isn't until we start a new generation of chips that we make major
-> > changes to the design. Is that loose enough to qualify?
+On Tue, 2013-08-13 at 11:30 -0700, H. Peter Anvin wrote:
+> On 08/09/2013 08:38 AM, H. Peter Anvin wrote:
+> > On 08/09/2013 08:32 AM, James Bottomley wrote:
+> >> On Fri, 2013-08-09 at 08:23 -0700, H. Peter Anvin wrote:
+> >>> I would like to change the defaults for CONFIG_EFI and CONFIG_EFI_STUB
+> >>> to y.  There is little reason to omit this since EFI now is a
+> >>> significant percentage of all systems.
+> >>
+> >> You didn't actually attach the patch, but I presume this is for 64 bit
+> >> compiles on x86 only?  We still have significant problems getting 64 bit
+> >> EFI to interact with 32 bit kernels, so I don't believe we should enable
+> >> CONFIG_EFI globally for all of x86.
+> >>
 > > 
-> > These bindings attempt to follow the regulator bindings. With
-> > regulators there is a node for each regulator and we describe
-> > physical characteristics of those regulators within the nodes but
-> > we don't describe the software interface (bits, masks, shifts,
-> > etc). I imagine we could extend these clock nodes to describe
-> > physical characteristics such as min/max frequency or if the
-> > bootloader has left the clocks on. Right now we're using the
-> > nodes to describe what types of clocks there are and how the
-> > clock tree is layed out.
+> > Well, it doesn't *solve* the problem with cross-mode, but it should work
+> > as-is for EFI32->32-bit kernel and EFI64->64-bit kernel.  For the
+> > cross-mode kernels they will simply not do anything.
 > > 
-> > Or perhaps you're talking about clock sharing? We share the clock
-> > controller with multiple masters (processors running other OSes)
-> > and the partitioning of the clocks is mostly predefined. We just
-> > won't use some clocks because they're reserved for other
-> > processors. They're still part of the same clock controller
-> > hardware block but we don't want to control them on Linux because
-> > we'll trample over other processors and most likely hang the
-> > system. I wonder how this would work for hexagon and krait both
-> > running linux on the same SoC. If all DT says is that there is a
-> > gcc here at this address how are we supposed to know that we
-> > shouldn't use some clock? 
+> > Either way, nothing bad should come from it.  The worst thing that will
+> > happen is that the kernel says "I don't have any EFI that I recognize."
+> > 
+> > Cross-mode support will always require a secondary bootloader (since as
+> > far as I know there is no concept of "fat binaries" for EFI), but Matt
+> > Fleming is working on genuine cross-mode support for both the boot stub
+> > and (eventually) run time support.
+> > 
 > 
-> Do Krait and Hexagon have the same register map? On the ARM SoCs I am
-> familiar with the masters have differing views of register addresses for
-> the same peripherals and hardware blocks. So you couldn't use the same
-> DTS in a straightforward way if this is true for your system.
-> 
+> James, does this address your concerns?
 
-They both have the same view of the register map.
+You mean for globally enabling CONFIG_EFI on x86?  not really for 32
+bit, you say above it's pretty much unusable; I'd prefer just to enable
+it for 64 bit.  As you said in your original post "since EFI now is a
+significant percentage of all systems" but you actually mean EFI64 ...
+EFI32 is a pretty insignificant percentage of all systems.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Can we actually boot a 32 bit kernel on an EFI64 system?  The last time
+I tried on my Secure Boot SDV it wouldn't work; the problem is getting
+someting in the transfer of control path to boot the processor back to
+32 bit mode.
+
+James
+
+
+
