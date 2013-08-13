@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598Ab3HMQjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:39:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33381 "EHLO
+	id S1758725Ab3HMQjj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:39:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4213 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757055Ab3HMQ0p (ORCPT
+	with ESMTP id S1756886Ab3HMQ0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 12:26:45 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=UQ0q5kBmV54A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=0GyVhTQ0D6AA:10 a=VnNF1IyMAAAA:8 a=omOdbC7AAAAA:8 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=wAwfuhEyL-vLSwEzO4gA:9 a=UTB_XpHje0EA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Tue, 13 Aug 2013 12:26:44 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=IZTfGqntaQoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=FRTM6_3LYoQA:10 a=VnNF1IyMAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=wAwfuhEyL-vLSwEzO4gA:9 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130813155837.694628223@goodmis.org>
+Message-Id: <20130813155837.852231216@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 13 Aug 2013 11:58:21 -0400
+Date: Tue, 13 Aug 2013 11:58:22 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [87/88] mm/memory-hotplug: fix lowmem count overflow when offline pages
+Cc: steve <sanpatr1@in.ibm.com>,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>, <stable@kernel.org>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [88/88] Handle big endianness in NTLM (ntlmv2) authentication
 References: <20130813155654.069291373@goodmis.org>
-Content-Disposition: inline; filename=0087-mm-memory-hotplug-fix-lowmem-count-overflow-when-off.patch
+Content-Disposition: inline; filename=0088-Handle-big-endianness-in-NTLM-ntlmv2-authentication.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,82 +31,85 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+From: Steve French <smfrench@us.ibm.com>
 
-[ Upstream commit cea27eb2a202959783f81254c48c250ddd80e129 ]
+[ Upstream commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 ]
 
-The logic for the memory-remove code fails to correctly account the
-Total High Memory when a memory block which contains High Memory is
-offlined as shown in the example below.  The following patch fixes it.
+This is RH bug 970891
+Uppercasing of username during calculation of ntlmv2 hash fails
+because UniStrupr function does not handle big endian wchars.
 
-Before logic memory remove:
+Also fix a comment in the same code to reflect its correct usage.
 
-MemTotal:        7603740 kB
-MemFree:         6329612 kB
-Buffers:           94352 kB
-Cached:           872008 kB
-SwapCached:            0 kB
-Active:           626932 kB
-Inactive:         519216 kB
-Active(anon):     180776 kB
-Inactive(anon):   222944 kB
-Active(file):     446156 kB
-Inactive(file):   296272 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-HighTotal:       7294672 kB
-HighFree:        5704696 kB
-LowTotal:         309068 kB
-LowFree:          624916 kB
+[To make it easier for stable (rather than require 2nd patch) fixed
+this patch of Shirish's to remove endian warning generated
+by sparse -- steve f.]
 
-After logic memory remove:
-
-MemTotal:        7079452 kB
-MemFree:         5805976 kB
-Buffers:           94372 kB
-Cached:           872000 kB
-SwapCached:            0 kB
-Active:           626936 kB
-Inactive:         519236 kB
-Active(anon):     180780 kB
-Inactive(anon):   222944 kB
-Active(file):     446156 kB
-Inactive(file):   296292 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-HighTotal:       7294672 kB
-HighFree:        5181024 kB
-LowTotal:       4294752076 kB
-LowFree:          624952 kB
-
-[mhocko@suse.cz: fix CONFIG_HIGHMEM=n build]
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: <stable@vger.kernel.org>	[2.6.24+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: steve <sanpatr1@in.ibm.com>
+Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Cc: <stable@kernel.org>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- mm/page_alloc.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/cifs/cifs_unicode.h |    8 ++++----
+ fs/cifs/cifsencrypt.c  |    6 +++---
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d2d8f54..74ebc00 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5936,6 +5936,10 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
- 		list_del(&page->lru);
- 		rmv_page_order(page);
- 		zone->free_area[order].nr_free--;
-+#ifdef CONFIG_HIGHMEM
-+		if (PageHighMem(page))
-+			totalhigh_pages -= 1 << order;
-+#endif
- 		__mod_zone_page_state(zone, NR_FREE_PAGES,
- 				      - (1UL << order));
- 		for (i = 0; i < (1 << order); i++)
+diff --git a/fs/cifs/cifs_unicode.h b/fs/cifs/cifs_unicode.h
+index 4fb0974..fe8d627 100644
+--- a/fs/cifs/cifs_unicode.h
++++ b/fs/cifs/cifs_unicode.h
+@@ -327,14 +327,14 @@ UniToupper(register wchar_t uc)
+ /*
+  * UniStrupr:  Upper case a unicode string
+  */
+-static inline wchar_t *
+-UniStrupr(register wchar_t *upin)
++static inline __le16 *
++UniStrupr(register __le16 *upin)
+ {
+-	register wchar_t *up;
++	register __le16 *up;
+ 
+ 	up = upin;
+ 	while (*up) {		/* For all characters */
+-		*up = UniToupper(*up);
++		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
+ 		up++;
+ 	}
+ 	return upin;		/* Return input pointer */
+diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+index 6a0d741..9caf0c6 100644
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -394,7 +394,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
+ 	int rc = 0;
+ 	int len;
+ 	char nt_hash[CIFS_NTHASH_SIZE];
+-	wchar_t *user;
++	__le16 *user;
+ 	wchar_t *domain;
+ 	wchar_t *server;
+ 
+@@ -419,7 +419,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
+ 		return rc;
+ 	}
+ 
+-	/* convert ses->user_name to unicode and uppercase */
++	/* convert ses->user_name to unicode */
+ 	len = ses->user_name ? strlen(ses->user_name) : 0;
+ 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
+ 	if (user == NULL) {
+@@ -429,7 +429,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
+ 	}
+ 
+ 	if (len) {
+-		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
++		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
+ 		UniStrupr(user);
+ 	} else {
+ 		memset(user, '\0', 2);
 -- 
 1.7.10.4
 
