@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab3HMEtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 00:49:21 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:32897 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab3HMEtT (ORCPT
+	id S1752737Ab3HMEti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 00:49:38 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:50703 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab3HMEte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 00:49:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1391342.M2Jbj3t5qy@vostro.rjw.lan>
-References: <cover.1376329128.git.viresh.kumar@linaro.org>
-	<1391342.M2Jbj3t5qy@vostro.rjw.lan>
-Date: Tue, 13 Aug 2013 10:19:18 +0530
-Message-ID: <CAKohpokOkWMo4UAcpXYzUMBz4rUn3253GFkdi+YtqRbmqFOm3Q@mail.gmail.com>
-Subject: Re: [PATCH 00/31] CPUFreq: Implement light weight ->target(): for 3.13
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        John Crispin <blogic@openwrt.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-cris-kernel@axis.com,
-        Mikael Starvik <starvik@axis.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>, Shawn Guo <shawn.guo@linaro.org>,
-        sparclinux@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Steven Miao <realmz6@gmail.com>, Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 Aug 2013 00:49:34 -0400
+From: Nilanjan Roychowdhury <nilanjan.roychowdhury@gmail.com>
+To: linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: linux-kernel@vger.kernel.org,
+        Nilanjan Roychowdhury <nilanjan.roychowdhury@gmail.com>
+Subject: [PATCH 1/1] Resubmit mtd: mtdoops: fix for a potential memory leak in mtdoops_notify_remove
+Date: Mon, 12 Aug 2013 21:48:35 -0700
+Message-Id: <1376369315-5170-1-git-send-email-nilanjan.roychowdhury@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 August 2013 04:17, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, August 12, 2013 11:18:36 PM Viresh Kumar wrote:
->> Currently prototype of cpufreq_drivers target routines is:
->>
->> int target(struct cpufreq_policy *policy, unsigned int target_freq,
->>       unsigned int relation);
->>
->> And most of the drivers call cpufreq_frequency_table_target() to get a valid
->> index of their frequency table which is closest to the target_freq. And they
->> don't use target_freq and relation after it.
->>
->> So, it makes sense to just do this work in cpufreq core before calling
->> cpufreq_frequency_table_target() and simply pass index instead. But this can be
->> done only with drivers which expose their frequency table with cpufreq core. For
->> others we need to stick with the old prototype of target() until those drivers
->> are converted to expose frequency tables.
->>
->> So, in order not to break those special drivers first patch renames ->target() to
->> ->target_old() and the following patches will define the new prototype and
->> convert existing drivers one by one.
->
-> Super-ugly.
+we are allocating cxt->oops_page_used using vmalloc in mtdoops_notify_add for
+every mtd_info addition but not freeing it in mtdoops_notify_remove. Also care is
+taken so that we do not free the same pointer again in module remove.
 
-Thanks. I expected something similar.. :)
+Signed-off-by: Nilanjan Roychowdhury <nilanjan.roychowdhury@gmail.com>
+---
+ drivers/mtd/mtdoops.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-> Please just keep the old .target() as is, add a new callback and switch the
-> suitable drivers to using it.  You may call the new one .target_index() or
-> something along these lines.
+diff --git a/drivers/mtd/mtdoops.c b/drivers/mtd/mtdoops.c
+index 97bb8f6..4b8b621 100644
+--- a/drivers/mtd/mtdoops.c
++++ b/drivers/mtd/mtdoops.c
+@@ -386,6 +386,8 @@ static void mtdoops_notify_remove(struct mtd_info *mtd)
+ 	cxt->mtd = NULL;
+ 	flush_work(&cxt->work_erase);
+ 	flush_work(&cxt->work_write);
++	vfree(cxt->oops_page_used);
++	cxt->oops_page_used = NULL;
+ }
+ 
+ 
+@@ -439,7 +441,8 @@ static void __exit mtdoops_exit(void)
+ 
+ 	unregister_mtd_user(&mtdoops_notifier);
+ 	vfree(cxt->oops_buf);
+-	vfree(cxt->oops_page_used);
++	if (cxt->oops_page_used)
++		vfree(cxt->oops_page_used);
+ }
+ 
+ 
+-- 
+1.7.9.5
 
-I thought of implementing with this name but then thought maybe earlier name
-is good enough and can be kept and so went for the *Super-ugly* solution..
-
-Will be fixed :)
