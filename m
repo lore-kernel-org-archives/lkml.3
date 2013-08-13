@@ -1,93 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab3HMFwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 01:52:49 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:64378 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818Ab3HMFwr (ORCPT
+	id S1755012Ab3HMGBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:01:43 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:52927 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939Ab3HMGBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 01:52:47 -0400
+	Tue, 13 Aug 2013 02:01:41 -0400
 MIME-Version: 1.0
-Date: Tue, 13 Aug 2013 15:52:46 +1000
-Message-ID: <CAKjOGEpYSOVzV+xF0Cv3CVbEr7u9jkRPjYYEcFnZ25PBWzw4Fg@mail.gmail.com>
-Subject: [RFC][PATCH 1/1] kfifo: add macros for direct buffer read access
-From: Matthew Hollingworth <mdholling@gmail.com>
-To: linux-kernel@vger.kernel.org
+X-Originating-IP: [93.172.174.78]
+In-Reply-To: <9BC13262-0803-4790-B1B5-0B46F7DB8D30@codeaurora.org>
+References: <1375128719-23642-1-git-send-email-galak@codeaurora.org>
+ <E9700EA7-7154-46C5-9258-03F030DF69F6@codeaurora.org> <20130729214035.GC8868@codeaurora.org>
+ <9EB1A821-7137-4812-B58A-20F669BCA7DD@codeaurora.org> <0A09DA0F-86B4-4961-88E2-64FA0A4D380D@codeaurora.org>
+ <CAK=WgbZSJmMz_U56ZsppBrB64XvTHBqJM4L+uFY1kKxhMCCtMQ@mail.gmail.com> <9BC13262-0803-4790-B1B5-0B46F7DB8D30@codeaurora.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 13 Aug 2013 09:01:17 +0300
+Message-ID: <CAK=WgbbdY-uZjiO2KBsYGshagykcL0X8PYEByb9K-Wp5R5g+hQ@mail.gmail.com>
+Subject: Re: [PATCH] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex block
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        devicetree@vger.kernel.org, Jeffrey Hugo <jhugo@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Eric Holmberg <eholmber@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add kfifo_out_prepare and kfifo_out_finish macros. These allow direct
-access to the fifo buffer for reading.
+On Mon, Aug 12, 2013 at 8:24 PM, Kumar Gala <galak@codeaurora.org> wrote:
+> So I think I'd ask you to recommend a name, should we just us 'hwspinlock'.  The general view from ePAPR and dts is the node name should be a bit more generic (like ethernet or pci).  So what would you suggest?
 
-These macros do not make sense for data-record fifos and would not
-apply in that context.
+How about 'hwlock' ?
 
-Equivalent macros could be added for fifo direct write operations.
-
-Signed-off-by: Matthew Hollingworth <mdholling@gmail.com>
----
- include/linux/kfifo.h |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
-
-diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-index 10308c6..24f6024 100644
---- a/include/linux/kfifo.h
-+++ b/include/linux/kfifo.h
-@@ -787,6 +787,54 @@ __kfifo_uint_must_check_helper( \
- }) \
- )
-
-+/**
-+ * kfifo_out_prepare - setup a pointer for direct output buffer access
-+ * @fifo: address of the fifo to be used
-+ * @pbuf: address of buffer pointer to be initialized
-+ *
-+ * This macro sets the provided buffer pointer to the address of the
-+ * current fifo output location.
-+ * It returns the maximum number of contiguous elements which can be read
-+ * out from this location. A zero means there is no data in the fifo.
-+ *
-+ * Note that with only one concurrent reader and one concurrent
-+ * writer, you don't need extra locking to use these macros.
-+ */
-+#define kfifo_out_prepare(fifo, pbuf) \
-+__kfifo_uint_must_check_helper( \
-+({ \
-+	typeof((fifo) + 1) __tmp = (fifo);  \
-+	typeof((*pbuf) + 1) * __pbuf = (pbuf); \
-+	struct __kfifo *__kfifo = &__tmp->kfifo; \
-+	unsigned int size = __kfifo->mask + 1; \
-+	unsigned int off = __kfifo->out & __kfifo->mask; \
-+	*__pbuf = (__is_kfifo_ptr(__tmp) ? \
-+		((typeof(__tmp->type))__kfifo->data) : \
-+		(__tmp->buf)) + off; \
-+	min(size - off, __kfifo->in - __kfifo->out); \
-+}) \
-+)
-+
-+/**
-+ * kfifo_out_finish - finish a direct output buffer access operation
-+ * @fifo: address of the fifo to be used
-+ * @len: number of elements which were read out
-+ *
-+ * This macro finishes a direct output buffer access operation. The out
-+ * counter will be updated by the len parameter. No error checking will
-+ * be done.
-+ *
-+ * Note that with only one concurrent reader and one concurrent
-+ * writer, you don't need extra locking to use these macros.
-+ */
-+#define kfifo_out_finish(fifo, len) \
-+(void)({ \
-+	typeof((fifo) + 1) __tmp = (fifo);  \
-+	struct __kfifo *__kfifo = &__tmp->kfifo; \
-+	unsigned int __len = (len); \
-+	__kfifo->out += __len; \
-+})
-+
- extern int __kfifo_alloc(struct __kfifo *fifo, unsigned int size,
- 	size_t esize, gfp_t gfp_mask);
-
---
+This should be generic enough to cover all instances of hardware locks
+(we already know hwspinlock isn't generic enough, as there are some
+mutex-like hardware locks which doesn't require busy looping).
