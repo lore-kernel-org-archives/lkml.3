@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab3HMQib (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:38:31 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:34078 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758706Ab3HMQiK (ORCPT
+	id S1758863Ab3HMQjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:39:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4213 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757405Ab3HMQ0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 12:38:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130813162916.GD24092@twins.programming.kicks-ass.net>
-References: <20130812115113.GE27162@twins.programming.kicks-ass.net>
-	<CA+55aFznj9WqGa_Qa0B4=5iTio2br54uJG7xkm6otN2sG2P=8w@mail.gmail.com>
-	<20130812175830.GB18691@gmail.com>
-	<CA+55aFw=S4xxdkKpjQdg77CehBBW6S-13N6-7tq4=-nN_cCUKA@mail.gmail.com>
-	<20130813103056.GA2170@gmail.com>
-	<20130813122652.GA24092@twins.programming.kicks-ass.net>
-	<CA+55aFxieQGUkEi9i=LRzVK2DRvavKgF-YEvskvJhF3-5xiU2A@mail.gmail.com>
-	<20130813162916.GD24092@twins.programming.kicks-ass.net>
-Date: Tue, 13 Aug 2013 09:38:09 -0700
-X-Google-Sender-Auth: T37B-FN99pZH_9AbyqwkphX8owA
-Message-ID: <CA+55aFwfqnHQtCVVm8dd8W7pOwrGquyxwJk_0MQo=SxiHaYTeA@mail.gmail.com>
-Subject: Re: [RFC] per-cpu preempt_count
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <bitbucket@online.de>, Peter Anvin <hpa@zytor.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 Aug 2013 12:26:45 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=Fp6U9LUT-VEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=q70m8iuvxNcA:10 a=hD80L64hAAAA:8 a=pGLkceISAAAA:8 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=v3rLFGiuRE8A:10 a=MSl-tDqOz04A:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130813155837.486980920@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 13 Aug 2013 11:58:20 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [86/88] drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
+References: <20130813155654.069291373@goodmis.org>
+Content-Disposition: inline; filename=0086-drivers-dma-pl330.c-fix-locking-in-pl330_free_chan_r.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 9:29 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> The inverted need_resched that gives decl+jnz idea from Ingo should do
-> it though.
+3.6.11.7-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-I agree that that is a good approach.
+------------------
 
-> Not entirely sure I understand your MSB + jns suggestion:
->
->   0x80000002 - 1 = 0x80000001
->
-> Both are very much signed and neither wants to cause a reschedule.
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-The thing is, we don't check the preempt count even currently, so the
-above isn't fatal. The "need preemption" bit being set (or reset with
-the reverse bit meaning) should be the unusual case with preemption
-(you have to hit the race), *and* it should be unusual to have deeply
-nested preemption anyway, so it's fine to test that in the slow path
-(and we do: preempt_schedule() checks the preempt count being zero and
-irqs being disabled, *exactly* because the preemption enable check
-isn't precise).
+[ Upstream commit da331ba8e9c5de72a27e50f71105395bba6eebe0 ]
 
-But avoiding a few sloppy cases is certainly good, even if they are
-unusual, so I do like the reversed bit approach. It also allows us to
-pick any arbitrary bit, although I'm not sure that matters much.
+tasklet_kill() may sleep so call it before taking pch->lock.
 
-               Linus
+Fixes following lockup:
+
+  BUG: scheduling while atomic: cat/2383/0x00000002
+  Modules linked in:
+    unwind_backtrace+0x0/0xfc
+    __schedule_bug+0x4c/0x58
+    __schedule+0x690/0x6e0
+    sys_sched_yield+0x70/0x78
+    tasklet_kill+0x34/0x8c
+    pl330_free_chan_resources+0x24/0x88
+    dma_chan_put+0x4c/0x50
+  [...]
+  BUG: spinlock lockup suspected on CPU#0, swapper/0/0
+   lock: 0xe52aa04c, .magic: dead4ead, .owner: cat/2383, .owner_cpu: 1
+    unwind_backtrace+0x0/0xfc
+    do_raw_spin_lock+0x194/0x204
+    _raw_spin_lock_irqsave+0x20/0x28
+    pl330_tasklet+0x2c/0x5a8
+    tasklet_action+0xfc/0x114
+    __do_softirq+0xe4/0x19c
+    irq_exit+0x98/0x9c
+    handle_IPI+0x124/0x16c
+    gic_handle_irq+0x64/0x68
+    __irq_svc+0x40/0x70
+    cpuidle_wrap_enter+0x4c/0xa0
+    cpuidle_enter_state+0x18/0x68
+    cpuidle_idle_call+0xac/0xe0
+    cpu_idle+0xac/0xf0
+
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/dma/pl330.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index f5843bc..de4ec1a 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2462,10 +2462,10 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&pch->lock, flags);
+-
+ 	tasklet_kill(&pch->task);
+ 
++	spin_lock_irqsave(&pch->lock, flags);
++
+ 	pl330_release_channel(pch->pl330_chid);
+ 	pch->pl330_chid = NULL;
+ 
+-- 
+1.7.10.4
+
+
