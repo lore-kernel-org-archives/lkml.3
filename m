@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549Ab3HMQ4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:56:00 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:62242 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab3HMQz6 (ORCPT
+	id S1758088Ab3HMQ4X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:56:23 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:49088 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757344Ab3HMQ4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 12:55:58 -0400
-Date: Tue, 13 Aug 2013 18:55:52 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
-        konrad.wilk@oracle.com, gleb@redhat.com, pbonzini@redhat.com,
-        gregkh@suse.de, peterz@infradead.org, tglx@linutronix.de,
-        agraf@suse.de, riel@redhat.com, avi.kivity@gmail.com,
-        habanero@linux.vnet.ibm.com, chegu_vinod@hp.com, ouyang@cs.pitt.edu,
-        drjones@redhat.com, attilio.rao@citrix.com, linux-doc@vger.kernel.org,
-        torvalds@linux-foundation.org, kvm@vger.kernel.org,
-        andi@firstfloor.org, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        stefano.stabellini@eu.citrix.com, mtosatti@redhat.com,
-        srivatsa.vaddagiri@gmail.com,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Suzuki Poulose <suzuki@in.ibm.com>
-Subject: Re: [PATCH RESEND V13 14/14] kvm : Paravirtual ticketlocks support
- for linux guests running on KVM hypervisor
-Message-ID: <20130813165552.GA6795@gmail.com>
-References: <y>
- <1376058122-8248-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <1376058122-8248-15-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <20130810193849.GA25260@linux.vnet.ibm.com>
- <520A620B.6070702@zytor.com>
+	Tue, 13 Aug 2013 12:56:19 -0400
+Message-ID: <520A651E.3050604@linux.vnet.ibm.com>
+Date: Tue, 13 Aug 2013 22:25:58 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520A620B.6070702@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+CC: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, bhelgaas@google.com,
+        rostedt@goodmis.org, rjw@sisk.pl, lance.ortiz@hp.com,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Aristeu Rozanski Filho <arozansk@redhat.com>
+Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
+ event
+References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic> <20130812083355.47c1bae8@samsung.com> <20130812123813.GD18018@pd.tnic> <20130812114932.52bb0314@samsung.com> <20130812150424.GH18018@pd.tnic> <20130812142557.2a43f155@samsung.com> <20130812175631.GI18018@pd.tnic> <520A1A2E.9080500@linux.vnet.ibm.com> <20130813092154.1e17385f@concha.lan>
+In-Reply-To: <20130813092154.1e17385f@concha.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081316-1396-0000-0000-00000366719C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/13/2013 05:51 PM, Mauro Carvalho Chehab wrote:
+> Em Tue, 13 Aug 2013 17:06:14 +0530
+> "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> escreveu:
+>
+>> On 08/12/2013 11:26 PM, Borislav Petkov wrote:
+>>> On Mon, Aug 12, 2013 at 02:25:57PM -0300, Mauro Carvalho Chehab wrote:
+>>>> Userspace still needs the EDAC sysfs, in order to identify how the
+>>>> memory is organized, and do the proper memory labels association.
+>>>>
+>>>> What edac_ghes does is to fill those sysfs nodes, and to call the
+>>>> existing tracing to report errors.
+>>
+>> I suppose you're referring to the entries under /sys/devices/system/edac/mc?
+>
+> Yes.
+>
+>>
+>> I'm not sure I understand how this helps. ghes_edac seems to just be
+>> populating this based on dmi, which if I'm not mistaken, can be obtained
+>> in userspace (mcelog as an example).
+>>
+>> Also, on my system, all DIMMs are being reported under mc0. I doubt if
+>> the labels there are accurate.
+>
+> Yes, this is the current status of ghes_edac, where BIOS doesn't provide any
+> reliable way to associate a given APEI report to a physical DIMM slot label.
+>
+> The plan is to add more logic there as BIOSes start to provide some reliable
+> way to do such association. I discussed this subject with a few vendors
+> while I was working at Red Hat.
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> Raghavendra...
-> 
-> Even with this latest patch this branch is broken:
-> 
-> :(.discard+0x6108): multiple definition of `__pcpu_unique_lock_waiting'
-> arch/x86/xen/built-in.o:(.discard+0x23): first defined here
->   CC      drivers/firmware/google/gsmi.o
-> arch/x86/kernel/built-in.o:(.discard+0x6108): multiple definition of
-> `__pcpu_unique_lock_waiting'
-> arch/x86/xen/built-in.o:(.discard+0x23): first defined here
->   CC      sound/core/seq/oss/seq_oss_init.o
-> 
-> This is trivially reproducible by doing a build with "make allyesconfig".
-> 
-> Please fix and *verify* it is fixed before resubmitting.
-> 
-> I will be away so Ingo will have to handle the resubmission.
-
-Would be nice to have a delta fix patch against tip:x86/spinlocks, which 
-I'll then backmerge into that series via rebasing it.
+Hmm... is there anything specific in the APEI report that could help? 
+More importantly, is there a need to do this in-kernel rather than in 
+user-space?
 
 Thanks,
+Naveen
 
-	Ingo
