@@ -1,58 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757657Ab3HMOXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 10:23:42 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:36476 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757092Ab3HMOXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 10:23:41 -0400
-Date: Tue, 13 Aug 2013 10:23:38 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
-        Dave Hansen <dave.hansen@intel.com>, lliubbo@gmail.com,
-        aquini@redhat.com, Rik van Riel <riel@redhat.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: Re: [RFC 0/3] Pin page control subsystem
-Message-ID: <20130813142338.GD13330@kvack.org>
-References: <1376377502-28207-1-git-send-email-minchan@kernel.org> <1376387202.31048.2.camel@AMDC1943>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376387202.31048.2.camel@AMDC1943>
-User-Agent: Mutt/1.4.2.2i
+	id S1757111Ab3HMOYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 10:24:17 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:60900 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757074Ab3HMOYP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 10:24:15 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Stephen Boyd <sboyd@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20130813050334.GE14845@codeaurora.org>
+Cc: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
+ <1374713022-6049-10-git-send-email-sboyd@codeaurora.org>
+ <20130808170015.GE27325@e106331-lin.cambridge.arm.com>
+ <20130813050334.GE14845@codeaurora.org>
+Message-ID: <20130813142411.4443.85003@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH v1 09/14] clk: msm: Add support for MSM8960's global clock
+ controller (GCC)
+Date: Tue, 13 Aug 2013 07:24:11 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 11:46:42AM +0200, Krzysztof Kozlowski wrote:
-> Hi Minchan,
+Quoting Stephen Boyd (2013-08-12 22:03:34)
+> On 08/08, Mark Rutland wrote:
+> > Hi Stephen,
+> > 
+> > On Thu, Jul 25, 2013 at 01:43:37AM +0100, Stephen Boyd wrote:
+> > > Fill in the data and wire up the global clock controller to the
+> > > MSM clock driver. This should allow most non-multimedia device
+> > > drivers to control their clocks on 8960 based platforms.
+> > > 
+> > > Cc: devicetree@vger.kernel.org
+> > > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > > ---
+> > >  .../devicetree/bindings/clock/qcom,gcc.txt         |  55 +++++++
+> > >  drivers/clk/msm/Kconfig                            |  10 ++
+> > >  drivers/clk/msm/Makefile                           |   2 +
+> > >  drivers/clk/msm/core.c                             |   3 +
+> > >  drivers/clk/msm/gcc-8960.c                         | 174 +++++++++++++++++++++
+> > >  drivers/clk/msm/internal.h                         |   2 +
+> > >  6 files changed, 246 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/clock/qcom,gcc.txt
+> > >  create mode 100644 drivers/clk/msm/gcc-8960.c
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/clock/qcom,gcc.txt b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
+> > > new file mode 100644
+> > > index 0000000..2311e1a
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/clock/qcom,gcc.txt
+> > > @@ -0,0 +1,55 @@
+> > > +MSM Global Clock Controller Binding
+> > > +-----------------------------------
+> > > +
+> > > +Required properties :
+> > > +- compatible : shall contain at least "qcom,gcc" and only one of the
+> > > +              following:
+> > > +
+> > > +                       "qcom,gcc-8660"
+> > > +                       "qcom,gcc-8960"
+> > > +
+> > > +- reg : shall contain base register location and length
+> > > +- clocks : shall contain clocks supplied by the clock controller
+> > > +
+> > > +Example:
+> > > +       clock-controller@900000 {
+> > > +               compatible = "qcom,gcc-8960", "qcom,gcc";
+> > > +               reg = <0x900000 0x4000>;
+> > > +
+> > > +               clocks {
+> > > +                       pxo: pxo {
+> > > +                               #clock-cells = <0>;
+> > > +                               compatible = "fixed-clock";
+> > > +                               clock-frequency = <27000000>;
+> > > +                       };
+> > > +
+> > > +                       pll8: pll8 {
+> > > +                               #clock-cells = <0>;
+> > > +                               compatible = "qcom,pll";
+> > > +                               clocks = <&pxo>;
+> > > +                       };
+> > > +
+> > > +                       vpll8: vpll8 {
+> > > +                               #clock-cells = <0>;
+> > > +                               compatible = "qcom,pll-vote";
+> > > +                               clocks = <&pll8>;
+> > > +                       };
+> > > +
+> > > +                       gsbi5_uart_rcg: gsbi5_uart_rcg {
+> > > +                               #clock-cells = <0>;
+> > > +                               compatible = "qcom,p2-mn16-clock";
+> > > +                               clocks = <&pxo>, <&vpll8>;
+> > > +                       };
+> > > +
+> > > +                       gsbi5_uart_clk: gsbi5_uart_cxc {
+> > > +                               #clock-cells = <0>;
+> > > +                               compatible = "qcom,cxc-clock";
+> > > +                               clocks = <&gsbi5_uart_rcg>;
+> > > +                       };
+> > > +
+> > > +                       gsbi5_uart_ahb: gsbi5_uart_ahb {
+> > > +                               #clock-cells = <0>;
+> > > +                               compatible = "qcom,cxc-hg-clock";
+> > > +                       };
+> > > +               };
+> > > +       };
+> > 
+> > I'm slightly confused by this. How is each of the clocks described in
+> > the clocks node related to a portion of the register set?
 > 
-> On wto, 2013-08-13 at 16:04 +0900, Minchan Kim wrote:
-> > patch 2 introduce pinpage control
-> > subsystem. So, subsystems want to control pinpage should implement own
-> > pinpage_xxx functions because each subsystem would have other character
-> > so what kinds of data structure for managing pinpage information depends
-> > on them. Otherwise, they can use general functions defined in pinpage
-> > subsystem. patch 3 hacks migration.c so that migration is
-> > aware of pinpage now and migrate them with pinpage subsystem.
+> The registers to control clocks and determine their state are
+> scattered throughout the registers in the gcc (in this example
+> from 0x900000 to 0x903fff). If you match up gsbi5_uart_rcg with
+> its C struct counterpart you'll notice that there are multiple
+> registers used to configure the clock. It isn't as simple as one
+> reg property per clock even for the case where we're just
+> toggling a bit to turn a clock on and off either. And it isn't as
+> simple as saying the clock has a base register that we can offset
+> from because offsets are almost always different (we've tried
+> to correct this in future chip versions).
 > 
-> I wonder why don't we use page->mapping and a_ops? Is there any
-> disadvantage of such mapping/a_ops?
+> > 
+> > If the set of clocks is fixed, surely the gcc node gives you enough
+> > information alone, and the whole block can be modelled as a single
+> > provider of multiple clock outputs, or it's not fixed, and some linkage
+> > needs to be defined?
+> > 
+> > The code seems to imply the former, unless only a subset of clocks may
+> > be present? In that case, the set of clocks which might be present
+> > should be described in the binding.
+> 
+> The clock controller is hardware and the number of clock outputs
+> is fixed. Isn't all hardware fixed until you start talking about
+> FPGAs? The next minor revision of the clock controller may add
+> more clocks or remove clocks from that base design, but otherwise
+> the two are 90% the same and generally software compatible. It
+> isn't until we start a new generation of chips that we make major
+> changes to the design. Is that loose enough to qualify?
+> 
+> These bindings attempt to follow the regulator bindings. With
+> regulators there is a node for each regulator and we describe
+> physical characteristics of those regulators within the nodes but
+> we don't describe the software interface (bits, masks, shifts,
+> etc). I imagine we could extend these clock nodes to describe
+> physical characteristics such as min/max frequency or if the
+> bootloader has left the clocks on. Right now we're using the
+> nodes to describe what types of clocks there are and how the
+> clock tree is layed out.
+> 
+> Or perhaps you're talking about clock sharing? We share the clock
+> controller with multiple masters (processors running other OSes)
+> and the partitioning of the clocks is mostly predefined. We just
+> won't use some clocks because they're reserved for other
+> processors. They're still part of the same clock controller
+> hardware block but we don't want to control them on Linux because
+> we'll trample over other processors and most likely hang the
+> system. I wonder how this would work for hexagon and krait both
+> running linux on the same SoC. If all DT says is that there is a
+> gcc here at this address how are we supposed to know that we
+> shouldn't use some clock? 
 
-That's what the pending aio patches do, and I think this is a better 
-approach for those use-cases that the technique works for.
+Do Krait and Hexagon have the same register map? On the ARM SoCs I am
+familiar with the masters have differing views of register addresses for
+the same peripherals and hardware blocks. So you couldn't use the same
+DTS in a straightforward way if this is true for your system.
 
-The biggest problem I see with the pinpage approach is that it's based on a
-single page at a time.  I'd venture a guess that many pinned pages are done 
-in groups of pages, not single ones.
+Regards,
+Mike
 
-		-ben
-
-> Best regards,
-> Krzysztof
-
--- 
-"Thought is the essence of where you are now."
+> In fact we have some clocks that are
+> "voteable" in the sense that each master has its own register to
+> vote for a clock to be on or off. The registers are all ORed
+> together by hardware to determine if the clock should be on or
+> not. I should probably rename those clocks to have a _krait or
+> _apps at the end so that it's clear we want to instantiate the
+> krait version of the clock and not the hexagon version. I suppose
+> the other solution there is to say we have gcc-8960-krait and
+> gcc-8960-hexagon so we know which voting registers to use or put
+> an ifdef ARCH_HEXAGON/ARCH_ARM. Is that the right solution?
+> 
+> -- 
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
