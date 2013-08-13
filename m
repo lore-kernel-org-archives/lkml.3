@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab3HMMaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 08:30:23 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:33618 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab3HMMaW (ORCPT
+	id S1757533Ab3HMMcj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 08:32:39 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:56962 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab3HMMch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 08:30:22 -0400
-Message-ID: <520A26DC.9020005@linaro.org>
-Date: Tue, 13 Aug 2013 14:30:20 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 13 Aug 2013 08:32:37 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r7DCWQYV003995, This message is accepted by code: ctloc85258
+From: hayeswang <hayeswang@realtek.com>
+To: "'Oliver Neukum'" <oneukum@suse.de>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+References: <1376378913-879-1-git-send-email-hayeswang@realtek.com> <1376383742.1681.1.camel@linux-fkkt.site>
+Subject: RE: [PATCH net-next 1/3] net/usb/r8152: support aggregation
+Date: Tue, 13 Aug 2013 20:32:26 +0800
+Message-ID: <9E410853D1BD483E9479C175D5E72EB6@realtek.com.tw>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jonas Jensen <jonas.jensen@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] clocksource/clockevents : arch_timer memory mapped
- support
-References: <51FB7196.6060809@linaro.org>
-In-Reply-To: <51FB7196.6060809@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac6YAfgWj6KfSzErT8K+RqPP0MKZ8wAFZiYg
+In-Reply-To: <1376383742.1681.1.camel@linux-fkkt.site>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2013 10:45 AM, Daniel Lezcano wrote:
-> The following changes since commit 07862c1cd6675cde2dd4bd64e64d704ea2185b79:
+ Oliver Neukum [mailto:oneukum@suse.de] 
+> Sent: Tuesday, August 13, 2013 4:49 PM
+> To: Hayeswang
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; 
+> linux-usb@vger.kernel.org
+> Subject: Re: [PATCH net-next 1/3] net/usb/r8152: support aggregation
 > 
->   ARM: clocksource: Add support for MOXA ART SoCs (2013-07-18 15:27:47
-> +0200)
+[...]
+> > +               len_used = 0;
+> > +               rx_desc = agg->head;
+> > +               rx_data = agg->head;
+> > +               smp_wmb();
+> > +               pkt_len = le32_to_cpu(rx_desc->opts1) & RX_LEN_MASK;
+> > +               len_used += sizeof(struct rx_desc) + pkt_len;
+> > +
+> > +               while (urb->actual_length >= len_used) {
+> > +                       if (pkt_len < ETH_ZLEN)
+> > +                               break;
+> > +
+> > +                       pkt_len -= 4; /* CRC */
+> > +                       rx_data += sizeof(struct rx_desc);
+> > +
+> > +                       skb = netdev_alloc_skb_ip_align(netdev,
+> > pkt_len);
+> > +                       if (!skb) {
+> > +                               stats->rx_dropped++;
+> > +                               break;
+> > +                       }
+> > +                       memcpy(skb->data, rx_data, pkt_len);
+> > +                       skb_put(skb, pkt_len);
+> > +                       skb->protocol = eth_type_trans(skb, netdev);
+> > +                       netif_rx(skb);
+> > +                       stats->rx_packets++;
+> > +                       stats->rx_bytes += pkt_len;
+> > +
+> > +                       rx_data = rx_agg_align(rx_data + 
+> pkt_len + 4);
+> > +                       rx_desc = (struct rx_desc *)rx_data;
+> > +                       smp_wmb();
 > 
-> are available in the git repository at:
-> 
->   git://git.linaro.org/people/dlezcano/clockevents.git
-> timers/clockevents-next
-> 
-> for you to fetch changes up to 220069945b298d3998c6598b081c466dca259929:
-> 
->   clocksource: arch_timer: Add support for memory mapped timers
-> (2013-08-01 01:13:37 +0200)
-> ----------------------------------------------------------------
-> 
-> This series contains some trivial fixes for the moxart driver:
-> documentation updates and a missing header file.
-> 
-> It also provides the arch_timer memory mapped support.
+> Against what is the memory barrier?
 
-ping ?
+Excuse me. I don't understand your question. Do you mean the function should not
+be used here?
 
-> ----------------------------------------------------------------
-> Jonas Jensen (3):
->       ARM: clocksource: moxart: documentation: Fix device tree bindings
-> document
->       ARM: clocksource: moxart: Add bitops.h include
->       ARM: clocksource: moxart: documentation: Update device tree
-> bindings document
-> 
-> Stephen Boyd (5):
->       clocksource: arch_timer: Make register accessors less error-prone
->       clocksource: arch_timer: Pass clock event to set_mode callback
->       Documentation: Add memory mapped ARM architected timer binding
->       clocksource: arch_timer: Push the read/write wrappers deeper
->       clocksource: arch_timer: Add support for memory mapped timers
-> 
->  .../devicetree/bindings/arm/arch_timer.txt         |   59 ++-
->  .../bindings/timer/moxa,moxart-timer.txt           |    6 +-
->  arch/arm/include/asm/arch_timer.h                  |   14 +-
->  arch/arm64/include/asm/arch_timer.h                |   23 +-
->  drivers/clocksource/arm_arch_timer.c               |  446
-> +++++++++++++++++---
->  drivers/clocksource/moxart_timer.c                 |    1 +
->  include/clocksource/arm_arch_timer.h               |   10 +-
->  7 files changed, 459 insertions(+), 100 deletions(-)
-> 
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Best Regards,
+Hayes
 
