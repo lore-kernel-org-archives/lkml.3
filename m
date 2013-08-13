@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757792Ab3HMGqm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:46:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60650 "EHLO
+	id S1757807Ab3HMGrD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:47:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60644 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757172Ab3HMGdq (ORCPT
+	with ESMTP id S1757133Ab3HMGdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:46 -0400
+	Tue, 13 Aug 2013 02:33:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, GOTO Masanori <gotom@debian.or.jp>,
-        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 58/60] SCSI: nsp32: use mdelay instead of large udelay constants
-Date: Mon, 12 Aug 2013 23:34:25 -0700
-Message-Id: <20130813063339.026842048@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        Thomas Backlund <tmb@mageia.org>
+Subject: [ 57/60] drm/radeon: always program the MC on startup
+Date: Mon, 12 Aug 2013 23:34:24 -0700
+Message-Id: <20130813063338.948773843@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -29,34 +27,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b497ceb964a80ebada3b9b3cea4261409039e25a upstream.
+commit 6fab3febf6d949b0a12b1e4e73db38e4a177a79e upstream.
 
-ARM cannot handle udelay for more than 2 miliseconds, so we
-should use mdelay instead for those.
+For r6xx+ asics.  This mirrors the behavior of pre-r6xx
+asics.  We need to program the MC even if something
+else in startup() fails.  Failure to do so results in
+an unusable GPU.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: GOTO Masanori <gotom@debian.or.jp>
-Cc: YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Guenter Roeck <linux@roeck-us.net>
+Based on a fix from: Mark Kettenis <kettenis@openbsd.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ rebased for 3.10 and dropped the drivers/gpu/drm/radeon/cik.c
+  bit as it's 3.11 specific code / tmb ]
+Signed-off-by: Thomas Backlund <tmb@mageia.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/nsp32.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/evergreen.c |    3 ++-
+ drivers/gpu/drm/radeon/ni.c        |    3 ++-
+ drivers/gpu/drm/radeon/r600.c      |    3 ++-
+ drivers/gpu/drm/radeon/rv770.c     |    3 ++-
+ drivers/gpu/drm/radeon/si.c        |    3 ++-
+ 5 files changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/nsp32.c
-+++ b/drivers/scsi/nsp32.c
-@@ -2899,7 +2899,7 @@ static void nsp32_do_bus_reset(nsp32_hw_
- 	 * reset SCSI bus
- 	 */
- 	nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
--	udelay(RESET_HOLD_TIME);
-+	mdelay(RESET_HOLD_TIME / 1000);
- 	nsp32_write1(base, SCSI_BUS_CONTROL, 0);
- 	for(i = 0; i < 5; i++) {
- 		intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -4681,6 +4681,8 @@ static int evergreen_startup(struct rade
+ 	/* enable pcie gen2 link */
+ 	evergreen_pcie_gen2_enable(rdev);
+ 
++	evergreen_mc_program(rdev);
++
+ 	if (ASIC_IS_DCE5(rdev)) {
+ 		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw || !rdev->mc_fw) {
+ 			r = ni_init_microcode(rdev);
+@@ -4708,7 +4710,6 @@ static int evergreen_startup(struct rade
+ 	if (r)
+ 		return r;
+ 
+-	evergreen_mc_program(rdev);
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		evergreen_agp_enable(rdev);
+ 	} else {
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -1929,6 +1929,8 @@ static int cayman_startup(struct radeon_
+ 	/* enable pcie gen2 link */
+ 	evergreen_pcie_gen2_enable(rdev);
+ 
++	evergreen_mc_program(rdev);
++
+ 	if (rdev->flags & RADEON_IS_IGP) {
+ 		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+ 			r = ni_init_microcode(rdev);
+@@ -1957,7 +1959,6 @@ static int cayman_startup(struct radeon_
+ 	if (r)
+ 		return r;
+ 
+-	evergreen_mc_program(rdev);
+ 	r = cayman_pcie_gart_enable(rdev);
+ 	if (r)
+ 		return r;
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -3224,6 +3224,8 @@ static int r600_startup(struct radeon_de
+ 	/* enable pcie gen2 link */
+ 	r600_pcie_gen2_enable(rdev);
+ 
++	r600_mc_program(rdev);
++
+ 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+ 		r = r600_init_microcode(rdev);
+ 		if (r) {
+@@ -3236,7 +3238,6 @@ static int r600_startup(struct radeon_de
+ 	if (r)
+ 		return r;
+ 
+-	r600_mc_program(rdev);
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		r600_agp_enable(rdev);
+ 	} else {
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -1829,6 +1829,8 @@ static int rv770_startup(struct radeon_d
+ 	/* enable pcie gen2 link */
+ 	rv770_pcie_gen2_enable(rdev);
+ 
++	rv770_mc_program(rdev);
++
+ 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+ 		r = r600_init_microcode(rdev);
+ 		if (r) {
+@@ -1841,7 +1843,6 @@ static int rv770_startup(struct radeon_d
+ 	if (r)
+ 		return r;
+ 
+-	rv770_mc_program(rdev);
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		rv770_agp_enable(rdev);
+ 	} else {
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -5270,6 +5270,8 @@ static int si_startup(struct radeon_devi
+ 	struct radeon_ring *ring;
+ 	int r;
+ 
++	si_mc_program(rdev);
++
+ 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
+ 	    !rdev->rlc_fw || !rdev->mc_fw) {
+ 		r = si_init_microcode(rdev);
+@@ -5289,7 +5291,6 @@ static int si_startup(struct radeon_devi
+ 	if (r)
+ 		return r;
+ 
+-	si_mc_program(rdev);
+ 	r = si_pcie_gart_enable(rdev);
+ 	if (r)
+ 		return r;
 
 
