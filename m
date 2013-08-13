@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239Ab3HMPjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 11:39:17 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:13579 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758114Ab3HMPjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 11:39:16 -0400
-X-IronPort-AV: E=Sophos;i="4.89,870,1367971200"; 
-   d="scan'208";a="43819622"
-Date: Tue, 13 Aug 2013 16:38:51 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        <dcrisan@flexiant.com>, <alex@alex.org.uk>, <ian.campbell@citrix.com>
-Subject: Re: [PATCH v4 2/2] xen/m2p: use GNTTABOP_unmap_and_replace to
- reinstate the original mapping
-In-Reply-To: <20130813131131.GA6359@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.02.1308131638460.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1308041531220.4893@kaball.uk.xensource.com> <1375627181-14948-2-git-send-email-stefano.stabellini@eu.citrix.com> <20130809152601.GB5637@phenom.dumpdata.com> <alpine.DEB.2.02.1308131212040.4893@kaball.uk.xensource.com>
- <20130813131131.GA6359@phenom.dumpdata.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758286Ab3HMPjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 11:39:48 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:54198 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757741Ab3HMPjr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 11:39:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20130813122652.GA24092@twins.programming.kicks-ass.net>
+References: <20130812115113.GE27162@twins.programming.kicks-ass.net>
+	<CA+55aFznj9WqGa_Qa0B4=5iTio2br54uJG7xkm6otN2sG2P=8w@mail.gmail.com>
+	<20130812175830.GB18691@gmail.com>
+	<CA+55aFw=S4xxdkKpjQdg77CehBBW6S-13N6-7tq4=-nN_cCUKA@mail.gmail.com>
+	<20130813103056.GA2170@gmail.com>
+	<20130813122652.GA24092@twins.programming.kicks-ass.net>
+Date: Tue, 13 Aug 2013 08:39:46 -0700
+X-Google-Sender-Auth: gLdYrWmmpjQ8FwKBfrtLdbdAAfQ
+Message-ID: <CA+55aFxieQGUkEi9i=LRzVK2DRvavKgF-YEvskvJhF3-5xiU2A@mail.gmail.com>
+Subject: Re: [RFC] per-cpu preempt_count
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <bitbucket@online.de>, Peter Anvin <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013, Konrad Rzeszutek Wilk wrote:
-> On Tue, Aug 13, 2013 at 12:17:18PM +0100, Stefano Stabellini wrote:
-> > On Fri, 9 Aug 2013, Konrad Rzeszutek Wilk wrote:
-> > > On Sun, Aug 04, 2013 at 03:39:41PM +0100, Stefano Stabellini wrote:
-> > > > GNTTABOP_unmap_grant_ref unmaps a grant and replaces it with a 0
-> > > > mapping instead of reinstating the original mapping.
-> > > > Doing so separately would be racy.
-> > > > 
-> > > > To unmap a grant and reinstate the original mapping atomically we use
-> > > > GNTTABOP_unmap_and_replace.
-> > > > GNTTABOP_unmap_and_replace doesn't work with GNTMAP_contains_pte, so
-> > > > don't use it for kmaps.  GNTTABOP_unmap_and_replace zeroes the mapping
-> > > > passed in new_addr so we have to reinstate it, however that is a
-> > > > per-cpu mapping only used for balloon scratch pages, so we can be sure that
-> > > > it's not going to be accessed while the mapping is not valid.
-> > > 
-> > > This looks to be depend on a new structure, which is not in Linux kernel?
-> > > Are you missing a dependency patch?
-> > 
-> > Nope, GNTTABOP_unmap_and_replace and struct gnttab_unmap_and_replace are
-> > already present in include/xen/interface/grant_table.h.
-> > 
-> > 
-> > > Shouldn't we use some logic to figure out which hypercall to use if the
-> > > hypervisor does not support it?
-> > 
-> > GNTTABOP_unmap_and_replace is not a new hypercall, it has been supported
-> > by Xen for a very long time.
-> > 
-> > In a previous iteration of this patch series, I did introduce a new
-> > hypercall, but then I dropped it because I figured out that I could
-> > achieve the same thing with the existing hypercall.
-> 
-> OK, Please tack on:
-> 
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> P.S.
-> If you could stick it on devel/for-linus-3.12 that would be super. Thanks!
+On Tue, Aug 13, 2013 at 5:26 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> So we're now down to something like:
+>
+>   decl fs:preempt_count
+>   cmpl PREEMPT_NEED_RESCHED,fs:preempt_count
+>   jnz 1f
 
-done!
+Well, this isn't worth doing unless you can make PREEMPT_NEED_RESCHED
+be the high bit, and we can combine it into just "decl+jns". Otherwise
+we'd be better off with the simpler two separate adjacent variables.
+
+Also, I think your patch is too big, and you should have aim to just
+made the "preempt_count()" helper function mask off PREEMPT_MASK, so
+that you don't change the semantics of that. I realize that there are
+a couple of users that do things like "preempt_count() += x", and you
+probably wanted to keep those working, but I think it is easier (and
+cleaner) to fix those to "preempt_count_update(x)" instead of adding
+all those explicitly PREEMPT_MASK masks.
+
+Hmm?
+
+             Linus
