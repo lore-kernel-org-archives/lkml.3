@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab3HMQEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:04:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10925 "EHLO
+	id S1758663Ab3HMQEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:04:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26202 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758689Ab3HMP6d (ORCPT
+	with ESMTP id S1758692Ab3HMP6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 11:58:33 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=XbSlTk6RBWoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=bCkD6svqTacA:10 a=yC-0_ovQAAAA:8 a=J1Y8HTJGAAAA:8 a=PTHmlhs0BlRbN_MygUMA:9 a=hhvDFVipPpIA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=DirMCcvN7PavkhQg:21 a=5tVpkO42tk3k9MJS:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Tue, 13 Aug 2013 11:58:34 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=S-olR7q8SFQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=AVKxA0uPELEA:10 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130813155828.644305486@goodmis.org>
+Message-Id: <20130813155830.200189355@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 13 Aug 2013 11:57:26 -0400
+Date: Tue, 13 Aug 2013 11:57:36 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [32/88] net: sh_eth: fix incorrect RX length error if R8A7740
+Cc: Vince Weaver <vincent.weaver@maine.edu>, Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [42/88] hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
 References: <20130813155654.069291373@goodmis.org>
-Content-Disposition: inline; filename=0032-net-sh_eth-fix-incorrect-RX-length-error-if-R8A7740.patch
+Content-Disposition: inline; filename=0042-hw_breakpoint-Use-cpu_possible_mask-in-reserve-relea.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,53 +31,58 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-[ Upstream commit dd019897358b815f7828dab90b51d51df4d3658d ]
+[ Upstream commit c790b0ad23f427c7522ffed264706238c57c007e ]
 
-This patch fixes an issue that the driver increments the "RX length error"
-on every buffer in sh_eth_rx() if the R8A7740.
-This patch also adds a description about the Receive Frame Status bits.
+fetch_bp_busy_slots() and toggle_bp_slot() use
+for_each_online_cpu(), this is obviously wrong wrt cpu_up() or
+cpu_down(), we can over/under account the per-cpu numbers.
 
-Signed-off-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+For example:
+
+	# echo 0 >> /sys/devices/system/cpu/cpu1/online
+	# perf record -e mem:0x10 -p 1 &
+	# echo 1 >> /sys/devices/system/cpu/cpu1/online
+	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10 -C1 -a &
+	# taskset -p 0x2 1
+
+triggers the same WARN_ONCE("Can't find any breakpoint slot") in
+arch_install_hw_breakpoint().
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: <stable@vger.kernel.org>
+Link: http://lkml.kernel.org/r/20130620155009.GA6327@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/ethernet/renesas/sh_eth.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ kernel/events/hw_breakpoint.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
-index bad8f2e..cce72da 100644
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
-@@ -1102,16 +1102,23 @@ static int sh_eth_rx(struct net_device *ndev, u32 intr_status)
- 		desc_status = edmac_to_cpu(mdp, rxdesc->status);
- 		pkt_len = rxdesc->frame_length;
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index 9a7b487..4f06bf9 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -147,7 +147,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+ 		return;
+ 	}
  
--#if defined(CONFIG_ARCH_R8A7740)
--		desc_status >>= 16;
--#endif
--
- 		if (--boguscnt < 0)
- 			break;
+-	for_each_online_cpu(cpu) {
++	for_each_possible_cpu(cpu) {
+ 		unsigned int nr;
  
- 		if (!(desc_status & RDFEND))
- 			ndev->stats.rx_length_errors++;
+ 		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
+@@ -233,7 +233,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
+ 	if (cpu >= 0) {
+ 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	} else {
+-		for_each_online_cpu(cpu)
++		for_each_possible_cpu(cpu)
+ 			toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	}
  
-+#if defined(CONFIG_ARCH_R8A7740)
-+		/*
-+		 * In case of almost all GETHER/ETHERs, the Receive Frame State
-+		 * (RFS) bits in the Receive Descriptor 0 are from bit 9 to
-+		 * bit 0. However, in case of the R8A7740's GETHER, the RFS
-+		 * bits are from bit 25 to bit 16. So, the driver needs right
-+		 * shifting by 16.
-+		 */
-+		desc_status >>= 16;
-+#endif
-+
- 		if (desc_status & (RD_RFS1 | RD_RFS2 | RD_RFS3 | RD_RFS4 |
- 				   RD_RFS5 | RD_RFS6 | RD_RFS10)) {
- 			ndev->stats.rx_errors++;
 -- 
 1.7.10.4
 
