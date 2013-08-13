@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758907Ab3HMRY7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:24:59 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:24686 "EHLO
+	id S1758941Ab3HMRZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:25:07 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:52379 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab3HMRY4 (ORCPT
+	with ESMTP id S1758910Ab3HMRZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:24:56 -0400
+	Tue, 13 Aug 2013 13:25:01 -0400
 From: Rupesh Gujare <rupesh.gujare@atmel.com>
 To: <devel@linuxdriverproject.org>
 CC: <dan.carpenter@oracle.com>, <linux-usb@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
-Subject: [PATCH 01/10] staging: ozwpan: Add a blank line between declaraction and code.
-Date: Tue, 13 Aug 2013 18:24:21 +0100
-Message-ID: <1376414670-23257-2-git-send-email-rupesh.gujare@atmel.com>
+Subject: [PATCH 02/10] staging: ozwpan: Add a blank line between functions & declarations.
+Date: Tue, 13 Aug 2013 18:24:22 +0100
+Message-ID: <1376414670-23257-3-git-send-email-rupesh.gujare@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1376414670-23257-1-git-send-email-rupesh.gujare@atmel.com>
 References: <1376414670-23257-1-git-send-email-rupesh.gujare@atmel.com>
@@ -24,765 +24,1537 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds blank line between declaration &
-code for readability.
+This patch adds a blank line between global declarations &
+functions for readability.
 
 Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
 ---
- drivers/staging/ozwpan/ozcdev.c        |    6 ++++++
- drivers/staging/ozwpan/ozeltbuf.c      |    7 +++++++
- drivers/staging/ozwpan/ozhcd.c         |   28 ++++++++++++++++++++++++++++
- drivers/staging/ozwpan/ozpd.c          |   22 ++++++++++++++++++++++
- drivers/staging/ozwpan/ozproto.c       |    7 +++++++
- drivers/staging/ozwpan/ozurbparanoia.c |    2 ++
- drivers/staging/ozwpan/ozusbsvc.c      |    8 ++++++++
- drivers/staging/ozwpan/ozusbsvc1.c     |    9 +++++++++
- 8 files changed, 89 insertions(+)
+ drivers/staging/ozwpan/ozcdev.c        |   17 ++++++++
+ drivers/staging/ozwpan/ozeltbuf.c      |   12 ++++++
+ drivers/staging/ozwpan/ozhcd.c         |   68 ++++++++++++++++++++++++++++++++
+ drivers/staging/ozwpan/ozmain.c        |    3 ++
+ drivers/staging/ozwpan/ozpd.c          |   40 +++++++++++++++++++
+ drivers/staging/ozwpan/ozproto.c       |   26 ++++++++++++
+ drivers/staging/ozwpan/ozurbparanoia.c |    2 +
+ drivers/staging/ozwpan/ozusbsvc.c      |    9 +++++
+ drivers/staging/ozwpan/ozusbsvc1.c     |   12 ++++++
+ 9 files changed, 189 insertions(+)
 
 diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
-index 73b582c..0c79fd0 100644
+index 0c79fd0..01673d4 100644
 --- a/drivers/staging/ozwpan/ozcdev.c
 +++ b/drivers/staging/ozwpan/ozcdev.c
-@@ -49,6 +49,7 @@ static struct class *g_oz_class;
- static struct oz_serial_ctx *oz_cdev_claim_ctx(struct oz_pd *pd)
+@@ -43,6 +43,7 @@ struct oz_serial_ctx {
+  */
+ static struct oz_cdev g_cdev;
+ static struct class *g_oz_class;
++
+ /*------------------------------------------------------------------------------
+  * Context: process and softirq
+  */
+@@ -57,6 +58,7 @@ static struct oz_serial_ctx *oz_cdev_claim_ctx(struct oz_pd *pd)
+ 	spin_unlock_bh(&pd->app_lock[OZ_APPID_SERIAL-1]);
+ 	return ctx;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -67,6 +69,7 @@ static void oz_cdev_release_ctx(struct oz_serial_ctx *ctx)
+ 		kfree(ctx);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -79,6 +82,7 @@ static int oz_cdev_open(struct inode *inode, struct file *filp)
+ 	filp->private_data = dev;
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -86,6 +90,7 @@ static int oz_cdev_release(struct inode *inode, struct file *filp)
  {
- 	struct oz_serial_ctx *ctx;
+ 	return 0;
+ }
 +
- 	spin_lock_bh(&pd->app_lock[OZ_APPID_SERIAL-1]);
- 	ctx = (struct oz_serial_ctx *)pd->app_ctx[OZ_APPID_SERIAL-1];
- 	if (ctx)
-@@ -202,6 +203,7 @@ static int oz_set_active_pd(const u8 *addr)
- 	int rc = 0;
- 	struct oz_pd *pd;
- 	struct oz_pd *old_pd;
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -138,6 +143,7 @@ out2:
+ 	oz_pd_put(pd);
+ 	return count;
+ }
 +
- 	pd = oz_pd_find(addr);
- 	if (pd) {
- 		spin_lock_bh(&g_cdev.lock);
-@@ -234,6 +236,7 @@ static long oz_cdev_ioctl(struct file *filp, unsigned int cmd,
- 			  unsigned long arg)
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -195,6 +201,7 @@ out:
+ 	oz_pd_put(pd);
+ 	return count;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -229,6 +236,7 @@ static int oz_set_active_pd(const u8 *addr)
+ 	}
+ 	return rc;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -296,6 +304,7 @@ static long oz_cdev_ioctl(struct file *filp, unsigned int cmd,
+ 	}
+ 	return rc;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -319,6 +328,7 @@ static unsigned int oz_cdev_poll(struct file *filp, poll_table *wait)
+ 		poll_wait(filp, &dev->rdq, wait);
+ 	return ret;
+ }
++
+ /*------------------------------------------------------------------------------
+  */
+ static const struct file_operations oz_fops = {
+@@ -330,6 +340,7 @@ static const struct file_operations oz_fops = {
+ 	.unlocked_ioctl = oz_cdev_ioctl,
+ 	.poll =		oz_cdev_poll
+ };
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -374,6 +385,7 @@ unregister:
+ 	unregister_chrdev_region(g_cdev.devnum, 1);
+ 	return err;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -387,6 +399,7 @@ int oz_cdev_deregister(void)
+ 	}
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -395,6 +408,7 @@ int oz_cdev_init(void)
+ 	oz_app_enable(OZ_APPID_SERIAL, 1);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -402,6 +416,7 @@ void oz_cdev_term(void)
  {
- 	int rc = 0;
+ 	oz_app_enable(OZ_APPID_SERIAL, 0);
+ }
 +
- 	if (_IOC_TYPE(cmd) != OZ_IOCTL_MAGIC)
- 		return -ENOTTY;
- 	if (_IOC_NR(cmd) > OZ_IOCTL_MAX)
-@@ -300,6 +303,7 @@ static unsigned int oz_cdev_poll(struct file *filp, poll_table *wait)
- {
- 	unsigned int ret = 0;
- 	struct oz_cdev *dev = filp->private_data;
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -439,6 +454,7 @@ int oz_cdev_start(struct oz_pd *pd, int resume)
+ 	oz_dbg(ON, "Serial service started\n");
+ 	return 0;
+ }
 +
- 	oz_dbg(ON, "Poll called wait = %p\n", wait);
- 	spin_lock_bh(&dev->lock);
- 	if (dev->active_pd) {
-@@ -405,6 +409,7 @@ int oz_cdev_start(struct oz_pd *pd, int resume)
- {
- 	struct oz_serial_ctx *ctx;
- 	struct oz_serial_ctx *old_ctx;
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -468,6 +484,7 @@ void oz_cdev_stop(struct oz_pd *pd, int pause)
+ 	}
+ 	oz_dbg(ON, "Serial service stopped\n");
+ }
 +
- 	if (resume) {
- 		oz_dbg(ON, "Serial service resumed\n");
- 		return 0;
-@@ -440,6 +445,7 @@ int oz_cdev_start(struct oz_pd *pd, int resume)
- void oz_cdev_stop(struct oz_pd *pd, int pause)
- {
- 	struct oz_serial_ctx *ctx;
-+
- 	if (pause) {
- 		oz_dbg(ON, "Serial service paused\n");
- 		return;
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
 diff --git a/drivers/staging/ozwpan/ozeltbuf.c b/drivers/staging/ozwpan/ozeltbuf.c
-index 5e98aeb..0b8b468 100644
+index 0b8b468..4844d9f 100644
 --- a/drivers/staging/ozwpan/ozeltbuf.c
 +++ b/drivers/staging/ozwpan/ozeltbuf.c
-@@ -35,6 +35,7 @@ void oz_elt_buf_term(struct oz_elt_buf *buf)
+@@ -28,6 +28,7 @@ int oz_elt_buf_init(struct oz_elt_buf *buf)
+ 	spin_lock_init(&buf->lock);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -60,6 +61,7 @@ void oz_elt_buf_term(struct oz_elt_buf *buf)
+ 	}
+ 	buf->free_elts = 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -93,6 +95,7 @@ struct oz_elt_info *oz_elt_info_alloc(struct oz_elt_buf *buf)
+ 	}
+ 	return ei;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Precondition: oz_elt_buf.lock must be held.
+  * Context: softirq or process
+@@ -111,6 +114,7 @@ void oz_elt_info_free(struct oz_elt_buf *buf, struct oz_elt_info *ei)
+ 		}
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -128,6 +132,7 @@ void oz_elt_info_free_chain(struct oz_elt_buf *buf, struct list_head *list)
+ 	}
+ 	spin_unlock_bh(&buf->lock);
+ }
++
+ /*------------------------------------------------------------------------------
+  */
+ int oz_elt_stream_create(struct oz_elt_buf *buf, u8 id, int max_buf_count)
+@@ -148,6 +153,7 @@ int oz_elt_stream_create(struct oz_elt_buf *buf, u8 id, int max_buf_count)
+ 	spin_unlock_bh(&buf->lock);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  */
+ int oz_elt_stream_delete(struct oz_elt_buf *buf, u8 id)
+@@ -187,12 +193,14 @@ int oz_elt_stream_delete(struct oz_elt_buf *buf, u8 id)
+ 	oz_elt_stream_put(st);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  */
+ void oz_elt_stream_get(struct oz_elt_stream *st)
  {
- 	struct list_head *e;
- 	int i;
+ 	atomic_inc(&st->ref_count);
+ }
 +
- 	/* Free any elements in the order or isoc lists. */
- 	for (i = 0; i < 2; i++) {
- 		struct list_head *list;
-@@ -65,6 +66,7 @@ void oz_elt_buf_term(struct oz_elt_buf *buf)
- struct oz_elt_info *oz_elt_info_alloc(struct oz_elt_buf *buf)
+ /*------------------------------------------------------------------------------
+  */
+ void oz_elt_stream_put(struct oz_elt_stream *st)
+@@ -202,6 +210,7 @@ void oz_elt_stream_put(struct oz_elt_stream *st)
+ 		kfree(st);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Precondition: Element buffer lock must be held.
+  * If this function fails the caller is responsible for deallocating the elt
+@@ -265,6 +274,7 @@ int oz_queue_elt_info(struct oz_elt_buf *buf, u8 isoc, u8 id,
+ 		&buf->isoc_list : &buf->order_list);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  */
+ int oz_select_elts_for_tx(struct oz_elt_buf *buf, u8 isoc, unsigned *len,
+@@ -311,12 +321,14 @@ int oz_select_elts_for_tx(struct oz_elt_buf *buf, u8 isoc, unsigned *len,
+ 	spin_unlock_bh(&buf->lock);
+ 	return count;
+ }
++
+ /*------------------------------------------------------------------------------
+  */
+ int oz_are_elts_available(struct oz_elt_buf *buf)
  {
- 	struct oz_elt_info *ei = NULL;
+ 	return buf->order_list.next != &buf->order_list;
+ }
 +
- 	spin_lock_bh(&buf->lock);
- 	if (buf->free_elts && buf->elt_pool) {
- 		ei = container_of(buf->elt_pool, struct oz_elt_info, link);
-@@ -115,6 +117,7 @@ void oz_elt_info_free(struct oz_elt_buf *buf, struct oz_elt_info *ei)
- void oz_elt_info_free_chain(struct oz_elt_buf *buf, struct list_head *list)
- {
- 	struct list_head *e;
-+
- 	e = list->next;
- 	spin_lock_bh(&buf->lock);
- 	while (e != list) {
-@@ -151,6 +154,7 @@ int oz_elt_stream_delete(struct oz_elt_buf *buf, u8 id)
- {
- 	struct list_head *e;
- 	struct oz_elt_stream *st = NULL;
-+
- 	oz_dbg(ON, "%s: (0x%x)\n", __func__, id);
- 	spin_lock_bh(&buf->lock);
- 	e = buf->stream_list.next;
-@@ -208,6 +212,7 @@ int oz_queue_elt_info(struct oz_elt_buf *buf, u8 isoc, u8 id,
- {
- 	struct oz_elt_stream *st = NULL;
- 	struct list_head *e;
-+
- 	if (id) {
- 		list_for_each(e, &buf->stream_list) {
- 			st = container_of(e, struct oz_elt_stream, link);
-@@ -269,6 +274,7 @@ int oz_select_elts_for_tx(struct oz_elt_buf *buf, u8 isoc, unsigned *len,
- 	struct list_head *e;
- 	struct list_head *el;
- 	struct oz_elt_info *ei;
-+
- 	spin_lock_bh(&buf->lock);
- 	if (isoc)
- 		el = &buf->isoc_list;
-@@ -317,6 +323,7 @@ void oz_trim_elt_pool(struct oz_elt_buf *buf)
- {
- 	struct list_head *free = NULL;
- 	struct list_head *e;
-+
- 	spin_lock_bh(&buf->lock);
- 	while (buf->free_elts > buf->max_free_elts) {
- 		e = buf->elt_pool;
+ /*------------------------------------------------------------------------------
+  */
+ void oz_trim_elt_pool(struct oz_elt_buf *buf)
 diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index f38d036..8ec125c 100644
+index 8ec125c..5a417c8 100644
 --- a/drivers/staging/ozwpan/ozhcd.c
 +++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -238,6 +238,7 @@ static inline struct oz_hcd *oz_hcd_private(struct usb_hcd *hcd)
- static int oz_get_port_from_addr(struct oz_hcd *ozhcd, u8 bus_addr)
+@@ -34,23 +34,29 @@
+ #include "ozusbif.h"
+ #include "ozurbparanoia.h"
+ #include "ozhcd.h"
++
+ /*------------------------------------------------------------------------------
+  * Number of units of buffering to capture for an isochronous IN endpoint before
+  * allowing data to be indicated up.
+  */
+ #define OZ_IN_BUFFERING_UNITS	50
++
+ /* Name of our platform device.
+  */
+ #define OZ_PLAT_DEV_NAME	"ozwpan"
++
+ /* Maximum number of free urb links that can be kept in the pool.
+  */
+ #define OZ_MAX_LINK_POOL_SIZE	16
++
+ /* Get endpoint object from the containing link.
+  */
+ #define ep_from_link(__e) container_of((__e), struct oz_endpoint, link)
++
+ /*EP0 timeout before ep0 request is again added to TX queue. (13*8 = 98mSec)
+  */
+ #define EP0_TIMEOUT_COUNTER 13
++
+ /*------------------------------------------------------------------------------
+  * Used to link urbs together and also store some status information for each
+  * urb.
+@@ -84,6 +90,7 @@ struct oz_endpoint {
+ 	unsigned flags;
+ 	int start_frame;
+ };
++
+ /* Bits in the flags field. */
+ #define OZ_F_EP_BUFFERING	0x1
+ #define OZ_F_EP_HAVE_STREAM	0x2
+@@ -114,6 +121,7 @@ struct oz_port {
+ 	struct list_head isoc_out_ep;
+ 	struct list_head isoc_in_ep;
+ };
++
+ #define OZ_PORT_F_PRESENT	0x1
+ #define OZ_PORT_F_CHANGED	0x2
+ #define OZ_PORT_F_DYING		0x4
+@@ -131,6 +139,7 @@ struct oz_hcd {
+ 	uint flags;
+ 	struct usb_hcd *hcd;
+ };
++
+ /* Bits in flags field.
+  */
+ #define OZ_HDC_F_SUSPENDED	0x1
+@@ -175,6 +184,7 @@ static void oz_process_ep0_urb(struct oz_hcd *ozhcd, struct urb *urb,
+ static struct oz_urb_link *oz_remove_urb(struct oz_endpoint *ep,
+ 		struct urb *urb);
+ static void oz_hcd_clear_orphanage(struct oz_hcd *ozhcd, int status);
++
+ /*------------------------------------------------------------------------------
+  * Static external variables.
+  */
+@@ -220,6 +230,7 @@ static struct platform_driver g_oz_plat_drv = {
+ 		.owner = THIS_MODULE,
+ 	},
+ };
++
+ /*------------------------------------------------------------------------------
+  * Gets our private context area (which is of type struct oz_hcd) from the
+  * usb_hcd structure.
+@@ -229,6 +240,7 @@ static inline struct oz_hcd *oz_hcd_private(struct usb_hcd *hcd)
  {
- 	int i;
+ 	return (struct oz_hcd *)hcd->hcd_priv;
+ }
 +
- 	for (i = 0; i < OZ_NB_PORTS; i++) {
- 		if (ozhcd->ports[i].bus_addr == bus_addr)
- 			return i;
-@@ -252,6 +253,7 @@ static struct oz_urb_link *oz_alloc_urb_link(void)
- {
- 	struct oz_urb_link *urbl = NULL;
- 	unsigned long irq_state;
+ /*------------------------------------------------------------------------------
+  * Searches list of ports to find the index of the one with a specified  USB
+  * bus address. If none of the ports has the bus address then the connection
+@@ -245,6 +257,7 @@ static int oz_get_port_from_addr(struct oz_hcd *ozhcd, u8 bus_addr)
+ 	}
+ 	return ozhcd->conn_port;
+ }
 +
- 	spin_lock_irqsave(&g_link_lock, irq_state);
- 	if (g_link_pool) {
- 		urbl = container_of(g_link_pool, struct oz_urb_link, link);
-@@ -291,6 +293,7 @@ static void oz_empty_link_pool(void)
- {
- 	struct list_head *e;
- 	unsigned long irq_state;
+ /*------------------------------------------------------------------------------
+  * Allocates an urb link, first trying the pool but going to heap if empty.
+  * Context: any
+@@ -265,6 +278,7 @@ static struct oz_urb_link *oz_alloc_urb_link(void)
+ 		urbl = kmalloc(sizeof(struct oz_urb_link), GFP_ATOMIC);
+ 	return urbl;
+ }
 +
- 	spin_lock_irqsave(&g_link_lock, irq_state);
- 	e = g_link_pool;
- 	g_link_pool = NULL;
-@@ -332,6 +335,7 @@ static struct oz_urb_link *oz_uncancel_urb(struct oz_hcd *ozhcd, struct urb *urb
- {
- 	struct oz_urb_link *urbl;
- 	struct list_head *e;
+ /*------------------------------------------------------------------------------
+  * Frees an urb link by putting it in the pool if there is enough space or
+  * deallocating it to heap otherwise.
+@@ -285,6 +299,7 @@ static void oz_free_urb_link(struct oz_urb_link *urbl)
+ 		kfree(urbl);
+ 	}
+ }
 +
- 	list_for_each(e, &ozhcd->urb_cancel_list) {
- 		urbl = container_of(e, struct oz_urb_link, link);
- 		if (urb == urbl->urb) {
-@@ -352,6 +356,7 @@ static void oz_complete_urb(struct usb_hcd *hcd, struct urb *urb,
- 	struct oz_hcd *ozhcd = oz_hcd_private(hcd);
- 	unsigned long irq_state;
- 	struct oz_urb_link *cancel_urbl = NULL;
+ /*------------------------------------------------------------------------------
+  * Deallocates all the urb links in the pool.
+  * Context: unknown
+@@ -306,6 +321,7 @@ static void oz_empty_link_pool(void)
+ 		kfree(urbl);
+ 	}
+ }
 +
- 	spin_lock_irqsave(&g_tasklet_lock, irq_state);
- 	usb_hcd_unlink_urb_from_ep(hcd, urb);
- 	/* Clear hcpriv which will prevent it being put in the cancel list
-@@ -455,6 +460,7 @@ static int oz_enqueue_ep_urb(struct oz_port *port, u8 ep_addr, int in_dir,
- 	struct oz_urb_link *urbl;
- 	struct oz_endpoint *ep;
- 	int err = 0;
+ /*------------------------------------------------------------------------------
+  * Allocates endpoint structure and optionally a buffer. If a buffer is
+  * allocated it immediately follows the endpoint structure.
+@@ -326,6 +342,7 @@ static struct oz_endpoint *oz_ep_alloc(gfp_t mem_flags, int buffer_size)
+ 	}
+ 	return ep;
+ }
 +
- 	if (ep_addr >= OZ_NB_ENDPOINTS) {
- 		oz_dbg(ON, "%s: Invalid endpoint number\n", __func__);
- 		return -EINVAL;
-@@ -525,6 +531,7 @@ static int oz_dequeue_ep_urb(struct oz_port *port, u8 ep_addr, int in_dir,
- {
- 	struct oz_urb_link *urbl = NULL;
- 	struct oz_endpoint *ep;
+ /*------------------------------------------------------------------------------
+  * Pre-condition: Must be called with g_tasklet_lock held and interrupts
+  * disabled.
+@@ -345,6 +362,7 @@ static struct oz_urb_link *oz_uncancel_urb(struct oz_hcd *ozhcd, struct urb *urb
+ 	}
+ 	return NULL;
+ }
 +
- 	spin_lock_bh(&port->ozhcd->hcd_lock);
- 	if (in_dir)
- 		ep = port->in_ep[ep_addr];
-@@ -598,6 +605,7 @@ static void oz_acquire_port(struct oz_port *port, void *hpd)
- static struct oz_hcd *oz_hcd_claim(void)
- {
- 	struct oz_hcd *ozhcd;
+ /*------------------------------------------------------------------------------
+  * This is called when we have finished processing an urb. It unlinks it from
+  * the ep and returns it to the core.
+@@ -388,6 +406,7 @@ static void oz_complete_urb(struct usb_hcd *hcd, struct urb *urb,
+ 	if (cancel_urbl)
+ 		oz_free_urb_link(cancel_urbl);
+ }
 +
- 	spin_lock_bh(&g_hcdlock);
- 	ozhcd = g_ozhcd;
+ /*------------------------------------------------------------------------------
+  * Deallocates an endpoint including deallocating any associated stream and
+  * returning any queued urbs to the core.
+@@ -412,6 +431,7 @@ static void oz_ep_free(struct oz_port *port, struct oz_endpoint *ep)
+ 	oz_dbg(ON, "Freeing endpoint memory\n");
+ 	kfree(ep);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -521,6 +541,7 @@ out:
+ 		oz_free_urb_link(urbl);
+ 	return err;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Removes an urb from the queue in the endpoint.
+  * Returns 0 if it is found and -EIDRM otherwise.
+@@ -553,6 +574,7 @@ static int oz_dequeue_ep_urb(struct oz_port *port, u8 ep_addr, int in_dir,
+ 		oz_free_urb_link(urbl);
+ 	return urbl ? 0 : -EIDRM;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Finds an urb given its request id.
+  * Context: softirq
+@@ -585,6 +607,7 @@ static struct urb *oz_find_urb_by_id(struct oz_port *port, int ep_ix,
+ 		oz_free_urb_link(urbl);
+ 	return urb;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Pre-condition: Port lock must be held.
+  * Context: softirq
+@@ -599,6 +622,7 @@ static void oz_acquire_port(struct oz_port *port, void *hpd)
+ 	oz_usb_get(hpd);
+ 	port->hpd = hpd;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -613,6 +637,7 @@ static struct oz_hcd *oz_hcd_claim(void)
+ 	spin_unlock_bh(&g_hcdlock);
+ 	return ozhcd;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -621,6 +646,7 @@ static inline void oz_hcd_put(struct oz_hcd *ozhcd)
  	if (ozhcd)
-@@ -631,6 +639,7 @@ void *oz_hcd_pd_arrived(void *hpd)
- 	void *hport = NULL;
- 	struct oz_hcd *ozhcd = NULL;
- 	struct oz_endpoint *ep;
+ 		usb_put_hcd(ozhcd->hcd);
+ }
 +
- 	ozhcd = oz_hcd_claim();
- 	if (ozhcd == NULL)
- 		return NULL;
-@@ -742,6 +751,7 @@ void oz_hcd_pd_reset(void *hpd, void *hport)
- 	 */
- 	struct oz_port *port = (struct oz_port *)hport;
- 	struct oz_hcd *ozhcd = port->ozhcd;
+ /*------------------------------------------------------------------------------
+  * This is called by the protocol handler to notify that a PD has arrived.
+  * We allocate a port to associate with the PD and create a structure for
+@@ -686,6 +712,7 @@ out:
+ 	oz_hcd_put(ozhcd);
+ 	return hport;
+ }
 +
- 	oz_dbg(ON, "PD Reset\n");
- 	spin_lock_bh(&port->port_lock);
- 	port->flags |= OZ_PORT_F_CHANGED;
-@@ -846,6 +856,7 @@ static void oz_hcd_complete_set_config(struct oz_port *port, struct urb *urb,
+ /*------------------------------------------------------------------------------
+  * This is called by the protocol handler to notify that the PD has gone away.
+  * We need to deallocate all resources and then request that the root hub is
+@@ -742,6 +769,7 @@ void oz_hcd_pd_departed(void *hport)
+ 	usb_hcd_poll_rh_status(ozhcd->hcd);
+ 	oz_usb_put(hpd);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -761,6 +789,7 @@ void oz_hcd_pd_reset(void *hpd, void *hport)
+ 	oz_clean_endpoints_for_config(ozhcd->hcd, port);
+ 	usb_hcd_poll_rh_status(ozhcd->hcd);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -806,6 +835,7 @@ void oz_hcd_get_desc_cnf(void *hport, u8 req_id, int status, const u8 *desc,
+ 	urb->actual_length = total_size;
+ 	oz_complete_urb(port->ozhcd->hcd, urb, 0);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -869,6 +899,7 @@ static void oz_hcd_complete_set_config(struct oz_port *port, struct urb *urb,
+ 	}
+ 	oz_complete_urb(hcd, urb, rc);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -895,6 +926,7 @@ static void oz_hcd_complete_set_interface(struct oz_port *port, struct urb *urb,
+ 	}
+ 	oz_complete_urb(hcd, urb, rc);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -947,6 +979,7 @@ void oz_hcd_control_cnf(void *hport, u8 req_id, u8 rcode, const u8 *data,
+ 		oz_complete_urb(hcd, urb, 0);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -984,6 +1017,7 @@ static int oz_hcd_buffer_data(struct oz_endpoint *ep, const u8 *data,
+ 	ep->buffered_units++;
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -1030,6 +1064,7 @@ void oz_hcd_data_ind(void *hport, u8 endpoint, const u8 *data, int data_len)
+ done:
+ 	spin_unlock_bh(&ozhcd->hcd_lock);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+@@ -1037,6 +1072,7 @@ static inline int oz_usb_get_frame_number(void)
  {
- 	int rc = 0;
- 	struct usb_hcd *hcd = port->ozhcd->hcd;
+ 	return atomic_inc_return(&g_usb_frame_number);
+ }
 +
- 	if (rcode == 0) {
- 		port->config_num = config_num;
- 		oz_clean_endpoints_for_config(hcd, port);
-@@ -866,6 +877,7 @@ static void oz_hcd_complete_set_interface(struct oz_port *port, struct urb *urb,
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -1197,6 +1233,7 @@ int oz_hcd_heartbeat(void *hport)
+ 	}
+ 	return rc;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -1275,6 +1312,7 @@ static int oz_build_endpoints_for_interface(struct usb_hcd *hcd,
+ 	}
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -1320,6 +1358,7 @@ static void oz_clean_endpoints_for_interface(struct usb_hcd *hcd,
+ 		oz_ep_free(port, ep);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -1355,6 +1394,7 @@ fail:
+ 	oz_clean_endpoints_for_config(hcd, port);
+ 	return -1;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -1376,6 +1416,7 @@ static void oz_clean_endpoints_for_config(struct usb_hcd *hcd,
+ 	port->num_iface = 0;
+ 	spin_unlock_bh(&ozhcd->hcd_lock);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -1391,6 +1432,7 @@ static void *oz_claim_hpd(struct oz_port *port)
+ 	spin_unlock_bh(&ozhcd->hcd_lock);
+ 	return hpd;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -1537,6 +1579,7 @@ out:
+ 		oz_usb_request_heartbeat(port->hpd);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -1571,6 +1614,7 @@ static int oz_urb_process(struct oz_hcd *ozhcd, struct urb *urb)
+ 	}
+ 	return rc;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -1604,6 +1648,7 @@ static void oz_urb_process_tasklet(unsigned long unused)
+ 	spin_unlock_irqrestore(&g_tasklet_lock, irq_state);
+ 	oz_hcd_put(ozhcd);
+ }
++
+ /*------------------------------------------------------------------------------
+  * This function searches for the urb in any of the lists it could be in.
+  * If it is found it is removed from the list and completed. If the urb is
+@@ -1671,6 +1716,7 @@ out2:
+ 		oz_complete_urb(ozhcd->hcd, urb, -EPIPE);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -1698,6 +1744,7 @@ static void oz_urb_cancel_tasklet(unsigned long unused)
+ 	spin_unlock_irqrestore(&g_tasklet_lock, irq_state);
+ 	oz_hcd_put(ozhcd);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+@@ -1714,6 +1761,7 @@ static void oz_hcd_clear_orphanage(struct oz_hcd *ozhcd, int status)
+ 		}
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+@@ -1724,18 +1772,21 @@ static int oz_hcd_start(struct usb_hcd *hcd)
+ 	hcd->uses_new_polling = 1;
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+ static void oz_hcd_stop(struct usb_hcd *hcd)
  {
- 	struct usb_hcd *hcd = port->ozhcd->hcd;
- 	int rc = 0;
+ }
 +
- 	if (rcode == 0) {
- 		struct usb_host_config *config;
- 		struct usb_host_interface *intf;
-@@ -943,6 +955,7 @@ static int oz_hcd_buffer_data(struct oz_endpoint *ep, const u8 *data,
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+ static void oz_hcd_shutdown(struct usb_hcd *hcd)
  {
- 	int space;
- 	int copy_len;
+ }
 +
- 	if (!ep->buffer)
- 		return -1;
- 	space = ep->out_ix-ep->in_ix-1;
-@@ -979,6 +992,7 @@ void oz_hcd_data_ind(void *hport, u8 endpoint, const u8 *data, int data_len)
- 	struct oz_port *port = (struct oz_port *)hport;
- 	struct oz_endpoint *ep;
- 	struct oz_hcd *ozhcd = port->ozhcd;
+ /*------------------------------------------------------------------------------
+  * Called to queue an urb for the device.
+  * This function should return a non-zero error code if it fails the urb but
+@@ -1792,6 +1843,7 @@ static int oz_hcd_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
+ 	atomic_inc(&g_pending_urbs);
+ 	return 0;
+ }
 +
- 	spin_lock_bh(&ozhcd->hcd_lock);
- 	ep = port->in_ep[endpoint & USB_ENDPOINT_NUMBER_MASK];
- 	if (ep == NULL)
-@@ -1038,6 +1052,7 @@ int oz_hcd_heartbeat(void *hport)
- 	struct urb *urb;
- 	struct oz_endpoint *ep;
- 	struct timespec ts, delta;
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -1817,6 +1869,7 @@ static struct oz_urb_link *oz_remove_urb(struct oz_endpoint *ep,
+ 	}
+ 	return NULL;
+ }
 +
- 	getrawmonotonic(&ts);
- 	INIT_LIST_HEAD(&xfr_list);
- 	/* Check the OUT isoc endpoints to see if any URB data can be sent.
-@@ -1193,6 +1208,7 @@ static int oz_build_endpoints_for_interface(struct usb_hcd *hcd,
- 	int i;
- 	int if_ix = intf->desc.bInterfaceNumber;
- 	int request_heartbeat = 0;
+ /*------------------------------------------------------------------------------
+  * Called to dequeue a previously submitted urb for the device.
+  * Context: any
+@@ -1858,6 +1911,7 @@ static int oz_hcd_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
+ 	}
+ 	return rc;
+ }
 +
- 	oz_dbg(ON, "interface[%d] = %p\n", if_ix, intf);
- 	for (i = 0; i < intf->desc.bNumEndpoints; i++) {
- 		struct usb_host_endpoint *hep = &intf->endpoint[i];
-@@ -1314,6 +1330,7 @@ static int oz_build_endpoints_for_config(struct usb_hcd *hcd,
- 	struct oz_hcd *ozhcd = port->ozhcd;
- 	int i;
- 	int num_iface = config->desc.bNumInterfaces;
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+@@ -1865,6 +1919,7 @@ static void oz_hcd_endpoint_disable(struct usb_hcd *hcd,
+ 				struct usb_host_endpoint *ep)
+ {
+ }
 +
- 	if (num_iface) {
- 		struct oz_interface *iface;
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+@@ -1872,6 +1927,7 @@ static void oz_hcd_endpoint_reset(struct usb_hcd *hcd,
+ 				struct usb_host_endpoint *ep)
+ {
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+@@ -1880,6 +1936,7 @@ static int oz_hcd_get_frame_number(struct usb_hcd *hcd)
+ 	oz_dbg(ON, "oz_hcd_get_frame_number\n");
+ 	return oz_usb_get_frame_number();
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  * This is called as a consquence of us calling usb_hcd_poll_rh_status() and we
+@@ -1910,6 +1967,7 @@ static int oz_hcd_hub_status_data(struct usb_hcd *hcd, char *buf)
+ 	else
+ 		return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -1923,6 +1981,7 @@ static void oz_get_hub_descriptor(struct usb_hcd *hcd,
+ 			__constant_cpu_to_le16(0x0001);
+ 	desc->bNbrPorts = OZ_NB_PORTS;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -1998,6 +2057,7 @@ static int oz_set_port_feature(struct usb_hcd *hcd, u16 wvalue, u16 windex)
+ 	oz_dbg(HUB, "Port[%d] status = 0x%x\n", port_id, port->status);
+ 	return err;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -2073,6 +2133,7 @@ static int oz_clear_port_feature(struct usb_hcd *hcd, u16 wvalue, u16 windex)
+ 	       port_id, ozhcd->ports[port_id-1].status);
+ 	return err;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -2090,6 +2151,7 @@ static int oz_get_port_status(struct usb_hcd *hcd, u16 windex, char *buf)
+ 	oz_dbg(HUB, "Port[%d] status = %x\n", windex, status);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -2127,6 +2189,7 @@ static int oz_hcd_hub_control(struct usb_hcd *hcd, u16 req_type, u16 wvalue,
+ 	}
+ 	return err;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -2141,6 +2204,7 @@ static int oz_hcd_bus_suspend(struct usb_hcd *hcd)
+ 	spin_unlock_bh(&ozhcd->hcd_lock);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -2155,6 +2219,7 @@ static int oz_hcd_bus_resume(struct usb_hcd *hcd)
+ 	spin_unlock_bh(&ozhcd->hcd_lock);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  */
+ static void oz_plat_shutdown(struct platform_device *dev)
+@@ -2203,6 +2268,7 @@ static int oz_plat_probe(struct platform_device *dev)
+ 	spin_unlock_bh(&g_hcdlock);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+@@ -2235,6 +2301,7 @@ static int oz_plat_suspend(struct platform_device *dev, pm_message_t msg)
+ 	return 0;
+ }
  
-@@ -1346,6 +1363,7 @@ static void oz_clean_endpoints_for_config(struct usb_hcd *hcd,
- {
- 	struct oz_hcd *ozhcd = port->ozhcd;
- 	int i;
 +
- 	oz_dbg(ON, "Deleting endpoints for configuration\n");
- 	for (i = 0; i < port->num_iface; i++)
- 		oz_clean_endpoints_for_interface(hcd, port, i);
-@@ -1365,6 +1383,7 @@ static void *oz_claim_hpd(struct oz_port *port)
- {
- 	void *hpd = NULL;
- 	struct oz_hcd *ozhcd = port->ozhcd;
+ /*------------------------------------------------------------------------------
+  * Context: unknown
+  */
+@@ -2279,6 +2346,7 @@ error:
+ 	oz_dbg(ON, "oz_hcd_init() failed %d\n", err);
+ 	return err;
+ }
 +
- 	spin_lock_bh(&ozhcd->hcd_lock);
- 	hpd = port->hpd;
- 	if (hpd)
-@@ -1526,6 +1545,7 @@ static int oz_urb_process(struct oz_hcd *ozhcd, struct urb *urb)
- 	int rc = 0;
- 	struct oz_port *port = urb->hcpriv;
- 	u8 ep_addr;
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+diff --git a/drivers/staging/ozwpan/ozmain.c b/drivers/staging/ozwpan/ozmain.c
+index e26d6be..707ab28 100644
+--- a/drivers/staging/ozwpan/ozmain.c
++++ b/drivers/staging/ozwpan/ozmain.c
+@@ -25,6 +25,7 @@ unsigned int oz_dbg_mask = OZ_DEFAULT_DBG_MASK;
+  * netcards. Bindings can be added later using an IOCTL.
+  */
+ static char *g_net_dev = "";
 +
- 	/* When we are paranoid we keep a list of urbs which we check against
- 	 * before handing one back. This is just for debugging during
- 	 * development and should be turned off in the released driver.
-@@ -1560,6 +1580,7 @@ static void oz_urb_process_tasklet(unsigned long unused)
- 	struct urb *urb;
- 	struct oz_hcd *ozhcd = oz_hcd_claim();
- 	int rc = 0;
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -36,6 +37,7 @@ static int __init ozwpan_init(void)
+ 	oz_apps_init();
+ 	return 0;
+ }
 +
- 	if (ozhcd == NULL)
- 		return;
- 	/* This is called from a tasklet so is in softirq context but the urb
-@@ -1599,6 +1620,7 @@ static void oz_urb_cancel(struct oz_port *port, u8 ep_num, struct urb *urb)
- 	struct oz_hcd *ozhcd;
- 	unsigned long irq_state;
- 	u8 ix;
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -45,6 +47,7 @@ static void __exit ozwpan_exit(void)
+ 	oz_apps_term();
+ 	oz_cdev_deregister();
+ }
 +
- 	if (port == NULL) {
- 		oz_dbg(ON, "%s: ERROR: (%p) port is null\n", __func__, urb);
- 		return;
-@@ -1657,6 +1679,7 @@ static void oz_urb_cancel_tasklet(unsigned long unused)
- 	unsigned long irq_state;
- 	struct urb *urb;
- 	struct oz_hcd *ozhcd = oz_hcd_claim();
-+
- 	if (ozhcd == NULL)
- 		return;
- 	spin_lock_irqsave(&g_tasklet_lock, irq_state);
-@@ -1728,6 +1751,7 @@ static int oz_hcd_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
- 	struct oz_port *port;
- 	unsigned long irq_state;
- 	struct oz_urb_link *urbl;
-+
- 	oz_dbg(URB, "%s: (%p)\n",  __func__, urb);
- 	if (unlikely(ozhcd == NULL)) {
- 		oz_dbg(URB, "Refused urb(%p) not ozhcd\n", urb);
-@@ -1776,6 +1800,7 @@ static struct oz_urb_link *oz_remove_urb(struct oz_endpoint *ep,
- {
- 	struct oz_urb_link *urbl = NULL;
- 	struct list_head *e;
-+
- 	if (unlikely(ep == NULL))
- 		return NULL;
- 	list_for_each(e, &ep->urb_list) {
-@@ -1802,6 +1827,7 @@ static int oz_hcd_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
- 	struct oz_urb_link *urbl = NULL;
- 	int rc;
- 	unsigned long irq_state;
-+
- 	oz_dbg(URB, "%s: (%p)\n",  __func__, urb);
- 	urbl = oz_alloc_urb_link();
- 	if (unlikely(urbl == NULL))
-@@ -2054,6 +2080,7 @@ static int oz_get_port_status(struct usb_hcd *hcd, u16 windex, char *buf)
- {
- 	struct oz_hcd *ozhcd;
- 	u32 status = 0;
-+
- 	if ((windex < 1) || (windex > OZ_NB_PORTS))
- 		return -EPIPE;
- 	ozhcd = oz_hcd_private(hcd);
-@@ -2222,6 +2249,7 @@ static int oz_plat_resume(struct platform_device *dev)
- int oz_hcd_init(void)
- {
- 	int err;
-+
- 	if (usb_disabled())
- 		return -ENODEV;
- 	tasklet_init(&g_urb_process_tasklet, oz_urb_process_tasklet, 0);
+ /*------------------------------------------------------------------------------
+  */
+ module_param(g_net_dev, charp, S_IRUGO);
 diff --git a/drivers/staging/ozwpan/ozpd.c b/drivers/staging/ozwpan/ozpd.c
-index 17fd7b2..14fea77 100644
+index 14fea77..95109fd 100644
 --- a/drivers/staging/ozwpan/ozpd.c
 +++ b/drivers/staging/ozwpan/ozpd.c
-@@ -157,6 +157,7 @@ void oz_pd_put(struct oz_pd *pd)
- struct oz_pd *oz_pd_alloc(const u8 *mac_addr)
+@@ -24,6 +24,7 @@
+ /*------------------------------------------------------------------------------
+  */
+ #define OZ_MAX_TX_POOL_SIZE	6
++
+ /*------------------------------------------------------------------------------
+  */
+ static struct oz_tx_frame *oz_tx_frame_alloc(struct oz_pd *pd);
+@@ -40,10 +41,12 @@ static void oz_def_app_term(void);
+ static int oz_def_app_start(struct oz_pd *pd, int resume);
+ static void oz_def_app_stop(struct oz_pd *pd, int pause);
+ static void oz_def_app_rx(struct oz_pd *pd, struct oz_elt *elt);
++
+ /*------------------------------------------------------------------------------
+  * Counts the uncompleted isoc frames submitted to netcard.
+  */
+ static atomic_t g_submitted_isoc = ATOMIC_INIT(0);
++
+ /* Application handler functions.
+  */
+ static const struct oz_app_if g_app_if[OZ_APPID_MAX] = {
+@@ -83,6 +86,7 @@ static const struct oz_app_if g_app_if[OZ_APPID_MAX] = {
+ 	NULL,
+ 	OZ_APPID_SERIAL},
+ };
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -90,12 +94,14 @@ static int oz_def_app_init(void)
  {
- 	struct oz_pd *pd = kzalloc(sizeof(struct oz_pd), GFP_ATOMIC);
+ 	return 0;
+ }
 +
- 	if (pd) {
- 		int i;
- 		atomic_set(&pd->ref_count, 2);
-@@ -196,6 +197,7 @@ void oz_pd_destroy(struct oz_pd *pd)
- 	struct oz_tx_frame *f;
- 	struct oz_isoc_stream *st;
- 	struct oz_farewell *fwell;
-+
- 	oz_pd_dbg(pd, ON, "Destroying PD\n");
- 	if (hrtimer_active(&pd->timeout))
- 		hrtimer_cancel(&pd->timeout);
-@@ -249,6 +251,7 @@ int oz_services_start(struct oz_pd *pd, u16 apps, int resume)
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+ static void oz_def_app_term(void)
  {
- 	const struct oz_app_if *ai;
- 	int rc = 0;
+ }
 +
- 	oz_pd_dbg(pd, ON, "%s: (0x%x) resume(%d)\n", __func__, apps, resume);
- 	for (ai = g_app_if; ai < &g_app_if[OZ_APPID_MAX]; ai++) {
- 		if (apps & (1<<ai->app_id)) {
-@@ -274,6 +277,7 @@ int oz_services_start(struct oz_pd *pd, u16 apps, int resume)
- void oz_services_stop(struct oz_pd *pd, u16 apps, int pause)
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -103,18 +109,21 @@ static int oz_def_app_start(struct oz_pd *pd, int resume)
  {
- 	const struct oz_app_if *ai;
+ 	return 0;
+ }
 +
- 	oz_pd_dbg(pd, ON, "%s: (0x%x) pause(%d)\n", __func__, apps, pause);
- 	for (ai = g_app_if; ai < &g_app_if[OZ_APPID_MAX]; ai++) {
- 		if (apps & (1<<ai->app_id)) {
-@@ -296,6 +300,7 @@ void oz_pd_heartbeat(struct oz_pd *pd, u16 apps)
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+ static void oz_def_app_stop(struct oz_pd *pd, int pause)
  {
- 	const struct oz_app_if *ai;
- 	int more = 0;
+ }
 +
- 	for (ai = g_app_if; ai < &g_app_if[OZ_APPID_MAX]; ai++) {
- 		if (ai->heartbeat && (apps & (1<<ai->app_id))) {
- 			if (ai->heartbeat(pd))
-@@ -316,6 +321,7 @@ void oz_pd_heartbeat(struct oz_pd *pd, u16 apps)
- void oz_pd_stop(struct oz_pd *pd)
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+ static void oz_def_app_rx(struct oz_pd *pd, struct oz_elt *elt)
  {
- 	u16 stop_apps = 0;
+ }
 +
- 	oz_dbg(ON, "oz_pd_stop() State = 0x%x\n", pd->state);
- 	oz_pd_indicate_farewells(pd);
- 	oz_polling_lock_bh();
-@@ -339,6 +345,7 @@ int oz_pd_sleep(struct oz_pd *pd)
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -136,6 +145,7 @@ void oz_pd_set_state(struct oz_pd *pd, unsigned state)
+ 		break;
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -143,6 +153,7 @@ void oz_pd_get(struct oz_pd *pd)
  {
- 	int do_stop = 0;
- 	u16 stop_apps = 0;
+ 	atomic_inc(&pd->ref_count);
+ }
 +
- 	oz_polling_lock_bh();
- 	if (pd->state & (OZ_PD_S_SLEEP | OZ_PD_S_STOPPED)) {
- 		oz_polling_unlock_bh();
-@@ -365,6 +372,7 @@ int oz_pd_sleep(struct oz_pd *pd)
- static struct oz_tx_frame *oz_tx_frame_alloc(struct oz_pd *pd)
- {
- 	struct oz_tx_frame *f = NULL;
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -151,6 +162,7 @@ void oz_pd_put(struct oz_pd *pd)
+ 	if (atomic_dec_and_test(&pd->ref_count))
+ 		oz_pd_destroy(pd);
+ }
 +
- 	spin_lock_bh(&pd->tx_frame_lock);
- 	if (pd->tx_pool) {
- 		f = container_of(pd->tx_pool, struct oz_tx_frame, link);
-@@ -419,6 +427,7 @@ static void oz_tx_frame_free(struct oz_pd *pd, struct oz_tx_frame *f)
- static void oz_set_more_bit(struct sk_buff *skb)
- {
- 	struct oz_hdr *oz_hdr = (struct oz_hdr *)skb_network_header(skb);
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -188,6 +200,7 @@ struct oz_pd *oz_pd_alloc(const u8 *mac_addr)
+ 	}
+ 	return pd;
+ }
 +
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -244,6 +257,7 @@ void oz_pd_destroy(struct oz_pd *pd)
+ 		dev_put(pd->net_dev);
+ 	kfree(pd);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -271,6 +285,7 @@ int oz_services_start(struct oz_pd *pd, u16 apps, int resume)
+ 	}
+ 	return rc;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -293,6 +308,7 @@ void oz_services_stop(struct oz_pd *pd, u16 apps, int pause)
+ 		}
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -315,6 +331,7 @@ void oz_pd_heartbeat(struct oz_pd *pd, u16 apps)
+ 			;
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -338,6 +355,7 @@ void oz_pd_stop(struct oz_pd *pd)
+ 	oz_dbg(ON, "pd ref count = %d\n", atomic_read(&pd->ref_count));
+ 	oz_pd_put(pd);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -366,6 +384,7 @@ int oz_pd_sleep(struct oz_pd *pd)
+ 	}
+ 	return do_stop;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -389,6 +408,7 @@ static struct oz_tx_frame *oz_tx_frame_alloc(struct oz_pd *pd)
+ 	}
+ 	return f;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -406,6 +426,7 @@ static void oz_tx_isoc_free(struct oz_pd *pd, struct oz_tx_frame *f)
+ 	oz_dbg(TX_FRAMES, "Releasing ISOC Frame isoc_nb= %d\n",
+ 	       pd->nb_queued_isoc_frames);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -421,6 +442,7 @@ static void oz_tx_frame_free(struct oz_pd *pd, struct oz_tx_frame *f)
+ 	spin_unlock_bh(&pd->tx_frame_lock);
+ 	kfree(f);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -430,6 +452,7 @@ static void oz_set_more_bit(struct sk_buff *skb)
+ 
  	oz_hdr->control |= OZ_F_MORE_DATA;
  }
- /*------------------------------------------------------------------------------
-@@ -427,6 +436,7 @@ static void oz_set_more_bit(struct sk_buff *skb)
- static void oz_set_last_pkt_nb(struct oz_pd *pd, struct sk_buff *skb)
- {
- 	struct oz_hdr *oz_hdr = (struct oz_hdr *)skb_network_header(skb);
 +
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -439,6 +462,7 @@ static void oz_set_last_pkt_nb(struct oz_pd *pd, struct sk_buff *skb)
+ 
  	oz_hdr->last_pkt_num = pd->trigger_pkt_num & OZ_LAST_PN_MASK;
  }
++
  /*------------------------------------------------------------------------------
-@@ -435,6 +445,7 @@ static void oz_set_last_pkt_nb(struct oz_pd *pd, struct sk_buff *skb)
- int oz_prepare_frame(struct oz_pd *pd, int empty)
+  * Context: softirq
+  */
+@@ -470,6 +494,7 @@ int oz_prepare_frame(struct oz_pd *pd, int empty)
+ 	spin_unlock(&pd->tx_frame_lock);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -515,6 +540,7 @@ fail:
+ 	kfree_skb(skb);
+ 	return NULL;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -538,6 +564,7 @@ static void oz_retire_frame(struct oz_pd *pd, struct oz_tx_frame *f)
+ 	if (pd->elt_buff.free_elts > pd->elt_buff.max_free_elts)
+ 		oz_trim_elt_pool(&pd->elt_buff);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -592,6 +619,7 @@ static int oz_send_next_queued_frame(struct oz_pd *pd, int more_data)
+ 	}
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -630,6 +658,7 @@ void oz_send_queued_frames(struct oz_pd *pd, int backlog)
+ out:	oz_prepare_frame(pd, 1);
+ 	oz_send_next_queued_frame(pd, 0);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -679,6 +708,7 @@ static int oz_send_isoc_frame(struct oz_pd *pd)
+ 	oz_elt_info_free_chain(&pd->elt_buff, &list);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -720,6 +750,7 @@ void oz_retire_tx_frames(struct oz_pd *pd, u8 lpn)
+ 		oz_retire_frame(pd, f);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Precondition: stream_lock must be held.
+  * Context: softirq
+@@ -736,6 +767,7 @@ static struct oz_isoc_stream *pd_stream_find(struct oz_pd *pd, u8 ep_num)
+ 	}
+ 	return NULL;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -755,6 +787,7 @@ int oz_isoc_stream_create(struct oz_pd *pd, u8 ep_num)
+ 	kfree(st);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -763,6 +796,7 @@ static void oz_isoc_stream_free(struct oz_isoc_stream *st)
+ 	kfree_skb(st->skb);
+ 	kfree(st);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -779,6 +813,7 @@ int oz_isoc_stream_delete(struct oz_pd *pd, u8 ep_num)
+ 		oz_isoc_stream_free(st);
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: any
+  */
+@@ -786,6 +821,7 @@ static void oz_isoc_destructor(struct sk_buff *skb)
  {
- 	struct oz_tx_frame *f;
+ 	atomic_dec(&g_submitted_isoc);
+ }
 +
- 	if ((pd->mode & OZ_MODE_MASK) != OZ_MODE_TRIGGERED)
- 		return -1;
- 	if (pd->nb_queued_frames >= OZ_MAX_QUEUED_FRAMES)
-@@ -469,6 +480,7 @@ static struct sk_buff *oz_build_frame(struct oz_pd *pd, struct oz_tx_frame *f)
- 	struct oz_hdr *oz_hdr;
- 	struct oz_elt *elt;
- 	struct list_head *e;
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -907,6 +943,7 @@ out:	kfree_skb(skb);
+ 	}
+ 	return 0;
+ }
 +
- 	/* Allocate skb with enough space for the lower layers as well
- 	 * as the space we need.
- 	 */
-@@ -510,6 +522,7 @@ static void oz_retire_frame(struct oz_pd *pd, struct oz_tx_frame *f)
- {
- 	struct list_head *e;
- 	struct oz_elt_info *ei;
-+
- 	e = f->elt_list.next;
- 	while (e != &f->elt_list) {
- 		ei = container_of(e, struct oz_elt_info, link);
-@@ -533,6 +546,7 @@ static int oz_send_next_queued_frame(struct oz_pd *pd, int more_data)
- 	struct sk_buff *skb;
- 	struct oz_tx_frame *f;
- 	struct list_head *e;
-+
- 	spin_lock(&pd->tx_frame_lock);
- 	e = pd->last_sent_frame->next;
- 	if (e == &pd->tx_queue) {
-@@ -628,6 +642,7 @@ static int oz_send_isoc_frame(struct oz_pd *pd)
- 	struct list_head *e;
- 	struct list_head list;
- 	int total_size = sizeof(struct oz_hdr);
-+
- 	INIT_LIST_HEAD(&list);
- 
- 	oz_select_elts_for_tx(&pd->elt_buff, 1, &total_size,
-@@ -713,6 +728,7 @@ static struct oz_isoc_stream *pd_stream_find(struct oz_pd *pd, u8 ep_num)
- {
- 	struct list_head *e;
- 	struct oz_isoc_stream *st;
-+
- 	list_for_each(e, &pd->stream_list) {
- 		st = container_of(e, struct oz_isoc_stream, link);
- 		if (st->ep_num == ep_num)
-@@ -753,6 +769,7 @@ static void oz_isoc_stream_free(struct oz_isoc_stream *st)
- int oz_isoc_stream_delete(struct oz_pd *pd, u8 ep_num)
- {
- 	struct oz_isoc_stream *st;
-+
- 	spin_lock_bh(&pd->stream_lock);
- 	st = pd_stream_find(pd, ep_num);
- 	if (st)
-@@ -780,6 +797,7 @@ int oz_send_isoc_unit(struct oz_pd *pd, u8 ep_num, const u8 *data, int len)
- 	struct sk_buff *skb = NULL;
- 	struct oz_hdr *oz_hdr = NULL;
- 	int size = 0;
-+
- 	spin_lock_bh(&pd->stream_lock);
- 	st = pd_stream_find(pd, ep_num);
- 	if (st) {
-@@ -895,6 +913,7 @@ out:	kfree_skb(skb);
- void oz_apps_init(void)
- {
- 	int i;
-+
- 	for (i = 0; i < OZ_APPID_MAX; i++)
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -918,6 +955,7 @@ void oz_apps_init(void)
  		if (g_app_if[i].init)
  			g_app_if[i].init();
-@@ -905,6 +924,7 @@ void oz_apps_init(void)
- void oz_apps_term(void)
- {
- 	int i;
+ }
 +
- 	/* Terminate all the apps. */
- 	for (i = 0; i < OZ_APPID_MAX; i++)
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -930,6 +968,7 @@ void oz_apps_term(void)
  		if (g_app_if[i].term)
-@@ -916,6 +936,7 @@ void oz_apps_term(void)
- void oz_handle_app_elt(struct oz_pd *pd, u8 app_id, struct oz_elt *elt)
- {
- 	const struct oz_app_if *ai;
+ 			g_app_if[i].term();
+ }
 +
- 	if (app_id == 0 || app_id > OZ_APPID_MAX)
- 		return;
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -942,6 +981,7 @@ void oz_handle_app_elt(struct oz_pd *pd, u8 app_id, struct oz_elt *elt)
  	ai = &g_app_if[app_id-1];
-@@ -928,6 +949,7 @@ void oz_pd_indicate_farewells(struct oz_pd *pd)
- {
- 	struct oz_farewell *f;
- 	const struct oz_app_if *ai = &g_app_if[OZ_APPID_USB-1];
+ 	ai->rx(pd, elt);
+ }
 +
- 	while (1) {
- 		oz_polling_lock_bh();
- 		if (list_empty(&pd->farewell_list)) {
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
 diff --git a/drivers/staging/ozwpan/ozproto.c b/drivers/staging/ozwpan/ozproto.c
-index 3d1a89f..7072f53 100644
+index 7072f53..8c2200b 100644
 --- a/drivers/staging/ozwpan/ozproto.c
 +++ b/drivers/staging/ozwpan/ozproto.c
-@@ -74,6 +74,7 @@ static void oz_send_conn_rsp(struct oz_pd *pd, u8 status)
- 	struct oz_hdr *oz_hdr;
- 	struct oz_elt *elt;
- 	struct oz_elt_connect_rsp *body;
+@@ -22,6 +22,7 @@
+ #include <asm/unaligned.h>
+ #include <linux/uaccess.h>
+ #include <net/psnap.h>
 +
- 	int sz = sizeof(struct oz_hdr) + sizeof(struct oz_elt) +
- 			sizeof(struct oz_elt_connect_rsp);
- 	skb = alloc_skb(sz + OZ_ALLOCATED_SPACE(dev), GFP_ATOMIC);
-@@ -163,6 +164,7 @@ static struct oz_pd *oz_connect_req(struct oz_pd *cur_pd, struct oz_elt *elt,
- 	u16 new_apps = g_apps;
- 	struct net_device *old_net_dev = NULL;
- 	struct oz_pd *free_pd = NULL;
+ /*------------------------------------------------------------------------------
+  */
+ #define OZ_CF_CONN_SUCCESS	1
+@@ -51,6 +52,7 @@ static struct sk_buff_head g_rx_queue;
+ static u8 g_session_id;
+ static u16 g_apps = 0x1;
+ static int g_processing_rx;
 +
- 	if (cur_pd) {
- 		pd = cur_pd;
- 		spin_lock_bh(&g_polling_lock);
-@@ -291,6 +293,7 @@ static void oz_add_farewell(struct oz_pd *pd, u8 ep_num, u8 index,
- 	struct oz_farewell *f;
- 	struct oz_farewell *f2;
- 	int found = 0;
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -64,6 +66,7 @@ static u8 oz_get_new_session_id(u8 exclude)
+ 	}
+ 	return g_session_id;
+ }
 +
- 	f = kmalloc(sizeof(struct oz_farewell) + len, GFP_ATOMIC);
- 	if (!f)
- 		return;
-@@ -477,6 +480,7 @@ void oz_pd_heartbeat_handler(unsigned long data)
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -109,6 +112,7 @@ static void oz_send_conn_rsp(struct oz_pd *pd, u8 status)
+ 	dev_queue_xmit(skb);
+ 	return;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -134,6 +138,7 @@ static void pd_set_keepalive(struct oz_pd *pd, u8 kalive)
+ 	}
+ 	oz_dbg(ON, "Keepalive = %lu mSec\n", pd->keep_alive);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -150,6 +155,7 @@ static void pd_set_presleep(struct oz_pd *pd, u8 presleep, u8 start_timer)
+ 	}
+ 	oz_dbg(ON, "Presleep time = %lu mSec\n", pd->presleep);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -284,6 +290,7 @@ done:
+ 		oz_pd_destroy(free_pd);
+ 	return pd;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -315,6 +322,7 @@ static void oz_add_farewell(struct oz_pd *pd, u8 ep_num, u8 index,
+ 	if (found)
+ 		kfree(f2);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -436,6 +444,7 @@ done:
+ 		oz_pd_put(pd);
+ 	consume_skb(skb);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -473,6 +482,7 @@ void oz_protocol_term(void)
+ 	spin_unlock_bh(&g_polling_lock);
+ 	oz_dbg(ON, "Protocol stopped\n");
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -489,6 +499,7 @@ void oz_pd_heartbeat_handler(unsigned long data)
+ 		oz_pd_heartbeat(pd, apps);
+ 
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -509,6 +520,7 @@ void oz_pd_timeout_handler(unsigned long data)
+ 		break;
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: Interrupt
+  */
+@@ -522,6 +534,7 @@ enum hrtimer_restart oz_pd_heartbeat_event(struct hrtimer *timer)
+ 	tasklet_schedule(&pd->heartbeat_tasklet);
+ 	return HRTIMER_RESTART;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: Interrupt
+  */
+@@ -533,6 +546,7 @@ enum hrtimer_restart oz_pd_timeout_event(struct hrtimer *timer)
+ 	tasklet_schedule(&pd->timeout_tasklet);
+ 	return HRTIMER_NORESTART;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -563,6 +577,7 @@ void oz_timer_add(struct oz_pd *pd, int type, unsigned long due_time)
+ 	}
+ 	spin_unlock_bh(&g_polling_lock);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -571,6 +586,7 @@ void oz_pd_request_heartbeat(struct oz_pd *pd)
+ 	oz_timer_add(pd, OZ_TIMER_HEARTBEAT, pd->pulse_period > 0 ?
+ 					pd->pulse_period : OZ_QUANTUM);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
+@@ -591,6 +607,7 @@ struct oz_pd *oz_pd_find(const u8 *mac_addr)
+ 	spin_unlock_bh(&g_polling_lock);
+ 	return NULL;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -605,6 +622,7 @@ void oz_app_enable(int app_id, int enable)
+ 		spin_unlock_bh(&g_polling_lock);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -639,6 +657,7 @@ static int oz_pkt_recv(struct sk_buff *skb, struct net_device *dev,
+ 	}
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -672,6 +691,7 @@ void oz_binding_add(const char *net_dev)
+ 		}
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -696,6 +716,7 @@ static void pd_stop_all_for_device(struct net_device *net_dev)
+ 		oz_pd_put(pd);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -724,6 +745,7 @@ void oz_binding_remove(const char *net_dev)
+ 		kfree(binding);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -738,6 +760,7 @@ static char *oz_get_next_device_name(char *s, char *dname, int max_size)
+ 	*dname = 0;
+ 	return s;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -756,6 +779,7 @@ int oz_protocol_init(char *devs)
+ 	}
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: process
+  */
+@@ -775,12 +799,14 @@ int oz_get_pd_list(struct oz_mac_addr *addr, int max_count)
+ 	spin_unlock_bh(&g_polling_lock);
+ 	return count;
+ }
++
+ /*------------------------------------------------------------------------------
+ */
+ void oz_polling_lock_bh(void)
  {
- 	struct oz_pd *pd = (struct oz_pd *)data;
- 	u16 apps = 0;
-+
  	spin_lock_bh(&g_polling_lock);
- 	if (pd->state & OZ_PD_S_CONNECTED)
- 		apps = pd->total_apps;
-@@ -574,6 +578,7 @@ struct oz_pd *oz_pd_find(const u8 *mac_addr)
- {
- 	struct oz_pd *pd;
- 	struct list_head *e;
+ }
 +
- 	spin_lock_bh(&g_polling_lock);
- 	list_for_each(e, &g_pd_list) {
- 		pd = container_of(e, struct oz_pd, link);
-@@ -675,6 +680,7 @@ static void pd_stop_all_for_device(struct net_device *net_dev)
- 	struct list_head h;
- 	struct oz_pd *pd;
- 	struct oz_pd *n;
-+
- 	INIT_LIST_HEAD(&h);
- 	spin_lock_bh(&g_polling_lock);
- 	list_for_each_entry_safe(pd, n, &g_pd_list, link) {
-@@ -758,6 +764,7 @@ int oz_get_pd_list(struct oz_mac_addr *addr, int max_count)
- 	struct oz_pd *pd;
- 	struct list_head *e;
- 	int count = 0;
-+
- 	spin_lock_bh(&g_polling_lock);
- 	list_for_each(e, &g_pd_list) {
- 		if (count >= max_count)
+ /*------------------------------------------------------------------------------
+ */
+ void oz_polling_unlock_bh(void)
 diff --git a/drivers/staging/ozwpan/ozurbparanoia.c b/drivers/staging/ozwpan/ozurbparanoia.c
-index d69e8ab..6aab9a7 100644
+index 6aab9a7..d779877 100644
 --- a/drivers/staging/ozwpan/ozurbparanoia.c
 +++ b/drivers/staging/ozwpan/ozurbparanoia.c
-@@ -21,6 +21,7 @@ DEFINE_SPINLOCK(g_urb_mem_lock);
+@@ -16,6 +16,7 @@
+ struct urb *g_urb_memory[OZ_MAX_URBS];
+ int g_nb_urbs;
+ DEFINE_SPINLOCK(g_urb_mem_lock);
++
+ /*-----------------------------------------------------------------------------
+  */
  void oz_remember_urb(struct urb *urb)
- {
- 	unsigned long irq_state;
+@@ -31,6 +32,7 @@ void oz_remember_urb(struct urb *urb)
+ 	}
+ 	spin_unlock_irqrestore(&g_urb_mem_lock, irq_state);
+ }
 +
- 	spin_lock_irqsave(&g_urb_mem_lock, irq_state);
- 	if (g_nb_urbs < OZ_MAX_URBS) {
- 		g_urb_memory[g_nb_urbs++] = urb;
-@@ -37,6 +38,7 @@ int oz_forget_urb(struct urb *urb)
- 	unsigned long irq_state;
- 	int i;
- 	int rc = -1;
-+
- 	spin_lock_irqsave(&g_urb_mem_lock, irq_state);
- 	for (i = 0; i < g_nb_urbs; i++) {
- 		if (g_urb_memory[i] == urb) {
+ /*------------------------------------------------------------------------------
+  */
+ int oz_forget_urb(struct urb *urb)
 diff --git a/drivers/staging/ozwpan/ozusbsvc.c b/drivers/staging/ozwpan/ozusbsvc.c
-index 732face..ab9db8c 100644
+index ab9db8c..404941d 100644
 --- a/drivers/staging/ozwpan/ozusbsvc.c
 +++ b/drivers/staging/ozwpan/ozusbsvc.c
-@@ -53,6 +53,7 @@ int oz_usb_start(struct oz_pd *pd, int resume)
- 	int rc = 0;
- 	struct oz_usb_ctx *usb_ctx;
- 	struct oz_usb_ctx *old_ctx;
-+
- 	if (resume) {
- 		oz_dbg(ON, "USB service resumed\n");
- 		return 0;
-@@ -114,6 +115,7 @@ int oz_usb_start(struct oz_pd *pd, int resume)
- void oz_usb_stop(struct oz_pd *pd, int pause)
+@@ -36,6 +36,7 @@ int oz_usb_init(void)
  {
- 	struct oz_usb_ctx *usb_ctx;
+ 	return oz_hcd_init();
+ }
 +
- 	if (pause) {
- 		oz_dbg(ON, "USB service paused\n");
- 		return;
-@@ -154,6 +156,7 @@ void oz_usb_stop(struct oz_pd *pd, int pause)
- void oz_usb_get(void *hpd)
+ /*------------------------------------------------------------------------------
+  * This is called once when the driver is unloaded to terminate the USB service.
+  * Context: process
+@@ -44,6 +45,7 @@ void oz_usb_term(void)
  {
- 	struct oz_usb_ctx *usb_ctx = (struct oz_usb_ctx *)hpd;
+ 	oz_hcd_term();
+ }
 +
+ /*------------------------------------------------------------------------------
+  * This is called when the USB service is started or resumed for a PD.
+  * Context: softirq
+@@ -108,6 +110,7 @@ int oz_usb_start(struct oz_pd *pd, int resume)
+ 	oz_usb_put(usb_ctx);
+ 	return rc;
+ }
++
+ /*------------------------------------------------------------------------------
+  * This is called when the USB service is stopped or paused for a PD.
+  * Context: softirq or process
+@@ -148,6 +151,7 @@ void oz_usb_stop(struct oz_pd *pd, int pause)
+ 		oz_usb_put(usb_ctx);
+ 	}
+ }
++
+ /*------------------------------------------------------------------------------
+  * This increments the reference count of the context area for a specific PD.
+  * This ensures this context area does not disappear while still in use.
+@@ -159,6 +163,7 @@ void oz_usb_get(void *hpd)
+ 
  	atomic_inc(&usb_ctx->ref_count);
  }
++
  /*------------------------------------------------------------------------------
-@@ -164,6 +167,7 @@ void oz_usb_get(void *hpd)
- void oz_usb_put(void *hpd)
- {
- 	struct oz_usb_ctx *usb_ctx = (struct oz_usb_ctx *)hpd;
-+
- 	if (atomic_dec_and_test(&usb_ctx->ref_count)) {
- 		oz_dbg(ON, "Dealloc USB context\n");
- 		oz_pd_put(usb_ctx->pd);
-@@ -177,6 +181,7 @@ int oz_usb_heartbeat(struct oz_pd *pd)
- {
- 	struct oz_usb_ctx *usb_ctx;
- 	int rc = 0;
-+
- 	spin_lock_bh(&pd->app_lock[OZ_APPID_USB-1]);
- 	usb_ctx = (struct oz_usb_ctx *)pd->app_ctx[OZ_APPID_USB-1];
- 	if (usb_ctx)
-@@ -200,6 +205,7 @@ int oz_usb_stream_create(void *hpd, u8 ep_num)
- {
- 	struct oz_usb_ctx *usb_ctx = (struct oz_usb_ctx *)hpd;
- 	struct oz_pd *pd = usb_ctx->pd;
-+
- 	oz_dbg(ON, "%s: (0x%x)\n", __func__, ep_num);
- 	if (pd->mode & OZ_F_ISOC_NO_ELTS) {
- 		oz_isoc_stream_create(pd, ep_num);
-@@ -219,6 +225,7 @@ int oz_usb_stream_create(void *hpd, u8 ep_num)
- int oz_usb_stream_delete(void *hpd, u8 ep_num)
- {
- 	struct oz_usb_ctx *usb_ctx = (struct oz_usb_ctx *)hpd;
-+
- 	if (usb_ctx) {
- 		struct oz_pd *pd = usb_ctx->pd;
- 		if (pd) {
-@@ -240,6 +247,7 @@ int oz_usb_stream_delete(void *hpd, u8 ep_num)
- void oz_usb_request_heartbeat(void *hpd)
- {
- 	struct oz_usb_ctx *usb_ctx = (struct oz_usb_ctx *)hpd;
-+
- 	if (usb_ctx && usb_ctx->pd)
- 		oz_pd_request_heartbeat(usb_ctx->pd);
+  * This decrements the reference count of the context area for a specific PD
+  * and destroys the context area if the reference count becomes zero.
+@@ -174,6 +179,7 @@ void oz_usb_put(void *hpd)
+ 		kfree(usb_ctx);
+ 	}
  }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -198,6 +204,7 @@ done:
+ 	oz_usb_put(usb_ctx);
+ 	return rc;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -219,6 +226,7 @@ int oz_usb_stream_create(void *hpd, u8 ep_num)
+ 	}
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -241,6 +249,7 @@ int oz_usb_stream_delete(void *hpd, u8 ep_num)
+ 	}
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq or process
+  */
 diff --git a/drivers/staging/ozwpan/ozusbsvc1.c b/drivers/staging/ozwpan/ozusbsvc1.c
-index 50d21bf..34133ef 100644
+index 34133ef..4ec21b5 100644
 --- a/drivers/staging/ozwpan/ozusbsvc1.c
 +++ b/drivers/staging/ozwpan/ozusbsvc1.c
-@@ -33,6 +33,7 @@ static int oz_usb_submit_elt(struct oz_elt_buf *eb, struct oz_elt_info *ei,
- 	int ret;
- 	struct oz_elt *elt = (struct oz_elt *)ei->data;
- 	struct oz_app_hdr *app_hdr = (struct oz_app_hdr *)(elt+1);
+@@ -21,9 +21,11 @@
+ #include "ozusbif.h"
+ #include "ozhcd.h"
+ #include "ozusbsvc.h"
 +
- 	elt->type = OZ_ELT_APP_DATA;
- 	ei->app_id = OZ_APPID_USB;
- 	ei->length = elt->length + sizeof(struct oz_elt);
-@@ -61,6 +62,7 @@ int oz_usb_get_desc_req(void *hpd, u8 req_id, u8 req_type, u8 desc_type,
- 	struct oz_get_desc_req *body;
- 	struct oz_elt_buf *eb = &pd->elt_buff;
- 	struct oz_elt_info *ei = oz_elt_info_alloc(&pd->elt_buff);
+ /*------------------------------------------------------------------------------
+  */
+ #define MAX_ISOC_FIXED_DATA	(253-sizeof(struct oz_isoc_fixed))
 +
- 	oz_dbg(ON, "    req_type = 0x%x\n", req_type);
- 	oz_dbg(ON, "    desc_type = 0x%x\n", desc_type);
- 	oz_dbg(ON, "    index = 0x%x\n", index);
-@@ -95,6 +97,7 @@ static int oz_usb_set_config_req(void *hpd, u8 req_id, u8 index)
- 	struct oz_elt_buf *eb = &pd->elt_buff;
- 	struct oz_elt_info *ei = oz_elt_info_alloc(&pd->elt_buff);
- 	struct oz_set_config_req *body;
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -50,6 +52,7 @@ static int oz_usb_submit_elt(struct oz_elt_buf *eb, struct oz_elt_info *ei,
+ 	spin_unlock_bh(&eb->lock);
+ 	return ret;
+ }
 +
- 	if (ei == NULL)
- 		return -1;
- 	elt = (struct oz_elt *)ei->data;
-@@ -116,6 +119,7 @@ static int oz_usb_set_interface_req(void *hpd, u8 req_id, u8 index, u8 alt)
- 	struct oz_elt_buf *eb = &pd->elt_buff;
- 	struct oz_elt_info *ei = oz_elt_info_alloc(&pd->elt_buff);
- 	struct oz_set_interface_req *body;
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -86,6 +89,7 @@ int oz_usb_get_desc_req(void *hpd, u8 req_id, u8 req_type, u8 desc_type,
+ 	body->index = index;
+ 	return oz_usb_submit_elt(eb, ei, usb_ctx, 0, 0);
+ }
 +
- 	if (ei == NULL)
- 		return -1;
- 	elt = (struct oz_elt *)ei->data;
-@@ -139,6 +143,7 @@ static int oz_usb_set_clear_feature_req(void *hpd, u8 req_id, u8 type,
- 	struct oz_elt_buf *eb = &pd->elt_buff;
- 	struct oz_elt_info *ei = oz_elt_info_alloc(&pd->elt_buff);
- 	struct oz_feature_req *body;
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -108,6 +112,7 @@ static int oz_usb_set_config_req(void *hpd, u8 req_id, u8 index)
+ 	body->index = index;
+ 	return oz_usb_submit_elt(eb, ei, usb_ctx, 0, 0);
+ }
 +
- 	if (ei == NULL)
- 		return -1;
- 	elt = (struct oz_elt *)ei->data;
-@@ -163,6 +168,7 @@ static int oz_usb_vendor_class_req(void *hpd, u8 req_id, u8 req_type,
- 	struct oz_elt_buf *eb = &pd->elt_buff;
- 	struct oz_elt_info *ei = oz_elt_info_alloc(&pd->elt_buff);
- 	struct oz_vendor_class_req *body;
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -131,6 +136,7 @@ static int oz_usb_set_interface_req(void *hpd, u8 req_id, u8 index, u8 alt)
+ 	body->alternative = alt;
+ 	return oz_usb_submit_elt(eb, ei, usb_ctx, 0, 0);
+ }
 +
- 	if (ei == NULL)
- 		return -1;
- 	elt = (struct oz_elt *)ei->data;
-@@ -188,6 +194,7 @@ int oz_usb_control_req(void *hpd, u8 req_id, struct usb_ctrlrequest *setup,
- 	unsigned windex = le16_to_cpu(setup->wIndex);
- 	unsigned wlength = le16_to_cpu(setup->wLength);
- 	int rc = 0;
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -156,6 +162,7 @@ static int oz_usb_set_clear_feature_req(void *hpd, u8 req_id, u8 type,
+ 	put_unaligned(feature, &body->feature);
+ 	return oz_usb_submit_elt(eb, ei, usb_ctx, 0, 0);
+ }
 +
- 	if ((setup->bRequestType & USB_TYPE_MASK) == USB_TYPE_STANDARD) {
- 		switch (setup->bRequest) {
- 		case USB_REQ_GET_DESCRIPTOR:
-@@ -303,6 +310,7 @@ static void oz_usb_handle_ep_data(struct oz_usb_ctx *usb_ctx,
- 	struct oz_usb_hdr *usb_hdr, int len)
- {
- 	struct oz_data *data_hdr = (struct oz_data *)usb_hdr;
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -184,6 +191,7 @@ static int oz_usb_vendor_class_req(void *hpd, u8 req_id, u8 req_type,
+ 		memcpy(body->data, data, data_len);
+ 	return oz_usb_submit_elt(eb, ei, usb_ctx, 0, 0);
+ }
 +
- 	switch (data_hdr->format) {
- 	case OZ_DATA_F_MULTIPLE_FIXED: {
- 			struct oz_multiple_fixed *body =
-@@ -416,6 +424,7 @@ done:
- void oz_usb_farewell(struct oz_pd *pd, u8 ep_num, u8 *data, u8 len)
- {
- 	struct oz_usb_ctx *usb_ctx;
+ /*------------------------------------------------------------------------------
+  * Context: tasklet
+  */
+@@ -232,6 +240,7 @@ int oz_usb_control_req(void *hpd, u8 req_id, struct usb_ctrlrequest *setup,
+ 	}
+ 	return rc;
+ }
 +
- 	spin_lock_bh(&pd->app_lock[OZ_APPID_USB-1]);
- 	usb_ctx = (struct oz_usb_ctx *)pd->app_ctx[OZ_APPID_USB-1];
- 	if (usb_ctx)
+ /*------------------------------------------------------------------------------
+  * Context: softirq
+  */
+@@ -303,6 +312,7 @@ int oz_usb_send_isoc(void *hpd, u8 ep_num, struct urb *urb)
+ 	}
+ 	return 0;
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq-serialized
+  */
+@@ -346,6 +356,7 @@ static void oz_usb_handle_ep_data(struct oz_usb_ctx *usb_ctx,
+ 	}
+ 
+ }
++
+ /*------------------------------------------------------------------------------
+  * This is called when the PD has received a USB element. The type of element
+  * is determined and is then passed to an appropriate handler function.
+@@ -418,6 +429,7 @@ void oz_usb_rx(struct oz_pd *pd, struct oz_elt *elt)
+ done:
+ 	oz_usb_put(usb_ctx);
+ }
++
+ /*------------------------------------------------------------------------------
+  * Context: softirq, process
+  */
 -- 
 1.7.9.5
 
