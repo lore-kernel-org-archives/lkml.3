@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab3HMEwF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 00:52:05 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48283 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab3HMEwE (ORCPT
+	id S1752791Ab3HMExE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 00:53:04 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:36642
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751457Ab3HMExB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 00:52:04 -0400
-Message-ID: <5209BB6F.2000208@codeaurora.org>
-Date: Mon, 12 Aug 2013 21:51:59 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 13 Aug 2013 00:53:01 -0400
+X-IronPort-AV: E=Sophos;i="4.89,866,1367964000"; 
+   d="scan'208";a="23810548"
+Date: Tue, 13 Aug 2013 06:52:56 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Mark Brown <broonie@kernel.org>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, Eric Miao <eric.y.miao@gmail.com>,
+        robert.jarzmik@free.fr, kernel-janitors@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/16 v2] sound/soc/pxa/mioa701_wm9713.c: Avoid using
+ ARRAY_AND_SIZE(e) as a function argument
+In-Reply-To: <20130812214050.GI6427@sirena.org.uk>
+Message-ID: <alpine.DEB.2.02.1308130652080.1997@localhost6.localdomain6>
+References: <1376340564-7975-1-git-send-email-Julia.Lawall@lip6.fr> <20130812214050.GI6427@sirena.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [ARM ATTEND] catching up on exploit mitigations
-References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
-In-Reply-To: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/30/2013 12:05 PM, Kees Cook wrote:
-> I'd like to propose the topic of catching up to x86 exploit
-> mitigations and security features, and potentially identifying
-> ARM-unique mitigations/features that could be implemented. Several
-> years ago, with Nicolas Pitre doing all the real work, I coordinated
-> getting ARM caught up on things like userspace ASLR and
-> stack-protector. Recently, based on work by Will Drewry, I ported
-> seccomp-bpf to ARM. I'd like to continue this kind of thing, and I
-> think it's overdue to examine this area again. A lot of work has
-> already been done by grsecurity in this area (see
-> http://forums.grsecurity.net/viewtopic.php?f=7&t=3292), so it would be
-> good to start there.
->
-> While it may expose my current ignorance of low level ARM mechanics,
-> I'd like to examine and discuss:
->
-> - RO and W^X kernel page table protections (similar to x86's
-> DEBUG_RODATA and DEBUG_SET_MODULE_RONX; it's not clear to me how much
-> LPAE and PXN is already handling this, if at all)
->
+On Mon, 12 Aug 2013, Mark Brown wrote:
 
-We've had support for RO/NX on our tree for a while. I'm interested in 
-attending the summit to share what we've done and to see how much of it 
-could be mainlined.
+> On Mon, Aug 12, 2013 at 10:49:24PM +0200, Julia Lawall wrote:
+> > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> > 
+> > Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding the
+> > arity of the called function.
+> 
+> What is the difference between this and the patch I applied the other
+> day?
 
-> - something like x86's SMEP and SMAP (to deter kernel exploitation
-> from userspace)
->
-> - vector table protections (needs to be protected like the x86_64
-> vsyscall table, RO, etc)
->
-> - kernel ASLR (I'm close to having this upstreamable for x86)
->
-> - fuzzing (is anyone running trinity or similar on the ARM tree?)
->
-> - any other things ... ?
+Sorry, it should have also removed the local definition of ARRAY_AND_SIZE?  
+I thought that was in the commit message.
 
-I'd add getting something similar to CONFIG_ARCH_RANDOM for ARM. It 
-wouldn't be a direct drop in to x86 but we have some usecases for a 
-framework to hook into the arch_get_random_{int,long}. This is mostly 
-useful for cases where we need random numbers before the kernel's 
-entropy source is completely initialized. The last point is a separate 
-discussion all together.
-
->
-> Thanks,
->
-> -Kees
->
-
-Thanks,
-Laura
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+julia
