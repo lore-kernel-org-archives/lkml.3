@@ -1,118 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab3HMJrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 05:47:23 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49955 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909Ab3HMJrV (ORCPT
+	id S1756848Ab3HMJuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 05:50:52 -0400
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:41635 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755274Ab3HMJuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 05:47:21 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130813093920.GB4519@cantiga.alporthouse.com>
-References: <CA+icZUWmee5nTZCGvFb4vLpna5vUn+RJ-V9pHpKPFaTc96BG5Q@mail.gmail.com>
-	<20130813092554.GA4519@cantiga.alporthouse.com>
-	<CA+icZUUrJt_sJqp0CNMuM_b36tvv_rUskegLY5zcnm0w+JcW5Q@mail.gmail.com>
-	<20130813093920.GB4519@cantiga.alporthouse.com>
-Date: Tue, 13 Aug 2013 11:47:19 +0200
-Message-ID: <CA+icZUVEcCTbBre99FWiDXRAMKcdQxUagXE-2-rO9g=YVUAieQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical mode ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "s.dilek" <s.dilek@jpberlin.de>
-Content-Type: multipart/mixed; boundary=089e01419acc81eefa04e3d1205b
+	Tue, 13 Aug 2013 05:50:50 -0400
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: poeschel@lemonage.de, grant.likely@linaro.org, linus.walleij@linaro.org,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: [PATCH v2] RFC: interrupt consistency check for OF GPIO IRQs
+Date: Tue, 13 Aug 2013 11:46:35 +0200
+Message-Id: <1376387195-27469-1-git-send-email-larsi@wh2.tu-dresden.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e01419acc81eefa04e3d1205b
-Content-Type: text/plain; charset=UTF-8
+From: Linus Walleij <linus.walleij@linaro.org>
 
-On Tue, Aug 13, 2013 at 11:39 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Tue, Aug 13, 2013 at 11:35:53AM +0200, Sedat Dilek wrote:
->> After a logout from my "BROKEN" Unity-2D session - the login-screen
->> for LightDM seems to be OK.
->> Then entering my Unity-2D desktop is OK - no screen corruptions.
->
-> What hardware and display do you have?
+Currently the kernel is ambigously treating GPIOs and interrupts
+from a GPIO controller: GPIOs and interrupts are treated as
+orthogonal. This unfortunately makes it unclear how to actually
+retrieve and request a GPIO line or interrupt from a GPIO
+controller in the device tree probe path.
 
-It's a Samsung ultrabook with SandyBridge CPU.
+In the non-DT probe path it is clear that the GPIO number has to
+be passed to the consuming device, and if it is to be used as
+an interrupt, the consumer shall performa a gpio_to_irq() mapping
+and request the resulting IRQ number.
 
-[   333.291] (--) intel(0): Integrated Graphics Chipset: Intel(R) HD
-Graphics 3000
+In the DT boot path consumers may have been given one or more
+interrupts from the interrupt-controller side of the GPIO chip
+in an abstract way, such that the driver is not aware of the
+fact that a GPIO chip is backing this interrupt, and the GPIO
+side of the same line is never requested with gpio_request().
+A typical case for this is ethernet chips which just take some
+interrupt line which may be a "hard" interrupt line (such as an
+external interrupt line from an SoC) or a cascaded interrupt
+connected to a GPIO line.
 
-xrand output attached.
+This has the following undesired effects:
 
-- Sedat -
+- The GPIOlib subsystem is not aware that the line is in use
+  and willingly lets some other consumer perform gpio_request()
+  on it, leading to a complex resource conflict if it occurs.
 
-P.S.: I switched to intel-ddx v2-21-14-35-g5840bf in the meantime.
+- The GPIO debugfs file claims this GPIO line is "free".
 
---089e01419acc81eefa04e3d1205b
-Content-Type: text/plain; charset=US-ASCII; name="xrandr-verbose.txt"
-Content-Disposition: attachment; filename="xrandr-verbose.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hkaxf6m80
+- The line direction of the interrupt GPIO line is not
+  explicitly set as input, even though it is obvious that such
+  a line need to be set up in this way, often making the system
+  depend on boot-on defaults for this kind of settings.
 
-U2NyZWVuIDA6IG1pbmltdW0gMzIwIHggMjAwLCBjdXJyZW50IDEzNjYgeCA3NjgsIG1heGltdW0g
-ODE5MiB4IDgxOTIKTFZEUzEgY29ubmVjdGVkIDEzNjZ4NzY4KzArMCAoMHg0NSkgbm9ybWFsIChu
-b3JtYWwgbGVmdCBpbnZlcnRlZCByaWdodCB4IGF4aXMgeSBheGlzKSAwbW0geCAwbW0KCUlkZW50
-aWZpZXI6IDB4NDEKCVRpbWVzdGFtcDogIDMzOTU3MQoJU3VicGl4ZWw6ICAgaG9yaXpvbnRhbCBy
-Z2IKCUdhbW1hOiAgICAgIDEuMDoxLjA6MS4wCglCcmlnaHRuZXNzOiAxLjAKCUNsb25lczogICAg
-CglDUlRDOiAgICAgICAwCglDUlRDczogICAgICAwIDEKCVRyYW5zZm9ybTogIDEuMDAwMDAwIDAu
-MDAwMDAwIDAuMDAwMDAwCgkgICAgICAgICAgICAwLjAwMDAwMCAxLjAwMDAwMCAwLjAwMDAwMAoJ
-ICAgICAgICAgICAgMC4wMDAwMDAgMC4wMDAwMDAgMS4wMDAwMDAKCSAgICAgICAgICAgZmlsdGVy
-OiAKCUJBQ0tMSUdIVDogNyAoMHgwMDAwMDAwNykJcmFuZ2U6ICAoMCw3KQoJQmFja2xpZ2h0OiA3
-ICgweDAwMDAwMDA3KQlyYW5nZTogICgwLDcpCglzY2FsaW5nIG1vZGU6CUZ1bGwgYXNwZWN0CgkJ
-c3VwcG9ydGVkOiBOb25lICAgICAgICAgRnVsbCAgICAgICAgIENlbnRlciAgICAgICBGdWxsIGFz
-cGVjdCAKICAxMzY2eDc2OCAoMHg0NSkgICA3MC43TUh6IC1IU3luYyAtVlN5bmMgKmN1cnJlbnQg
-K3ByZWZlcnJlZAogICAgICAgIGg6IHdpZHRoICAxMzY2IHN0YXJ0IDE0MTQgZW5kIDE0NDYgdG90
-YWwgMTQ4NiBza2V3ICAgIDAgY2xvY2sgICA0Ny42S0h6CiAgICAgICAgdjogaGVpZ2h0ICA3Njgg
-c3RhcnQgIDc3MCBlbmQgIDc3NSB0b3RhbCAgNzkyICAgICAgICAgICBjbG9jayAgIDYwLjFIegog
-IDEzNjB4NzY4ICgweDQ2KSAgIDg0LjhNSHogLUhTeW5jICtWU3luYwogICAgICAgIGg6IHdpZHRo
-ICAxMzYwIHN0YXJ0IDE0MzIgZW5kIDE1NjggdG90YWwgMTc3NiBza2V3ICAgIDAgY2xvY2sgICA0
-Ny43S0h6CiAgICAgICAgdjogaGVpZ2h0ICA3Njggc3RhcnQgIDc3MSBlbmQgIDc4MSB0b3RhbCAg
-Nzk4ICAgICAgICAgICBjbG9jayAgIDU5LjhIegogIDEzNjB4NzY4ICgweDQ3KSAgIDcyLjBNSHog
-K0hTeW5jIC1WU3luYwogICAgICAgIGg6IHdpZHRoICAxMzYwIHN0YXJ0IDE0MDggZW5kIDE0NDAg
-dG90YWwgMTUyMCBza2V3ICAgIDAgY2xvY2sgICA0Ny40S0h6CiAgICAgICAgdjogaGVpZ2h0ICA3
-Njggc3RhcnQgIDc3MSBlbmQgIDc4MSB0b3RhbCAgNzkwICAgICAgICAgICBjbG9jayAgIDYwLjBI
-egogIDEwMjR4NzY4ICgweDQ4KSAgIDY1LjBNSHogLUhTeW5jIC1WU3luYwogICAgICAgIGg6IHdp
-ZHRoICAxMDI0IHN0YXJ0IDEwNDggZW5kIDExODQgdG90YWwgMTM0NCBza2V3ICAgIDAgY2xvY2sg
-ICA0OC40S0h6CiAgICAgICAgdjogaGVpZ2h0ICA3Njggc3RhcnQgIDc3MSBlbmQgIDc3NyB0b3Rh
-bCAgODA2ICAgICAgICAgICBjbG9jayAgIDYwLjBIegogIDgwMHg2MDAgKDB4NDkpICAgNDAuME1I
-eiArSFN5bmMgK1ZTeW5jCiAgICAgICAgaDogd2lkdGggICA4MDAgc3RhcnQgIDg0MCBlbmQgIDk2
-OCB0b3RhbCAxMDU2IHNrZXcgICAgMCBjbG9jayAgIDM3LjlLSHoKICAgICAgICB2OiBoZWlnaHQg
-IDYwMCBzdGFydCAgNjAxIGVuZCAgNjA1IHRvdGFsICA2MjggICAgICAgICAgIGNsb2NrICAgNjAu
-M0h6CiAgODAweDYwMCAoMHg0YSkgICAzNi4wTUh6ICtIU3luYyArVlN5bmMKICAgICAgICBoOiB3
-aWR0aCAgIDgwMCBzdGFydCAgODI0IGVuZCAgODk2IHRvdGFsIDEwMjQgc2tldyAgICAwIGNsb2Nr
-ICAgMzUuMktIegogICAgICAgIHY6IGhlaWdodCAgNjAwIHN0YXJ0ICA2MDEgZW5kICA2MDMgdG90
-YWwgIDYyNSAgICAgICAgICAgY2xvY2sgICA1Ni4ySHoKICA2NDB4NDgwICgweDRiKSAgIDI1LjJN
-SHogLUhTeW5jIC1WU3luYwogICAgICAgIGg6IHdpZHRoICAgNjQwIHN0YXJ0ICA2NTYgZW5kICA3
-NTIgdG90YWwgIDgwMCBza2V3ICAgIDAgY2xvY2sgICAzMS41S0h6CiAgICAgICAgdjogaGVpZ2h0
-ICA0ODAgc3RhcnQgIDQ5MCBlbmQgIDQ5MiB0b3RhbCAgNTI1ICAgICAgICAgICBjbG9jayAgIDU5
-LjlIegpWR0ExIGRpc2Nvbm5lY3RlZCAobm9ybWFsIGxlZnQgaW52ZXJ0ZWQgcmlnaHQgeCBheGlz
-IHkgYXhpcykKCUlkZW50aWZpZXI6IDB4NDIKCVRpbWVzdGFtcDogIDMzOTU3MQoJU3VicGl4ZWw6
-ICAgdW5rbm93bgoJQ2xvbmVzOiAgICAKCUNSVENzOiAgICAgIDAgMQoJVHJhbnNmb3JtOiAgMS4w
-MDAwMDAgMC4wMDAwMDAgMC4wMDAwMDAKCSAgICAgICAgICAgIDAuMDAwMDAwIDEuMDAwMDAwIDAu
-MDAwMDAwCgkgICAgICAgICAgICAwLjAwMDAwMCAwLjAwMDAwMCAxLjAwMDAwMAoJICAgICAgICAg
-ICBmaWx0ZXI6IApIRE1JMSBkaXNjb25uZWN0ZWQgKG5vcm1hbCBsZWZ0IGludmVydGVkIHJpZ2h0
-IHggYXhpcyB5IGF4aXMpCglJZGVudGlmaWVyOiAweDQzCglUaW1lc3RhbXA6ICAzMzk1NzEKCVN1
-YnBpeGVsOiAgIHVua25vd24KCUNsb25lczogICAgCglDUlRDczogICAgICAwIDEKCVRyYW5zZm9y
-bTogIDEuMDAwMDAwIDAuMDAwMDAwIDAuMDAwMDAwCgkgICAgICAgICAgICAwLjAwMDAwMCAxLjAw
-MDAwMCAwLjAwMDAwMAoJICAgICAgICAgICAgMC4wMDAwMDAgMC4wMDAwMDAgMS4wMDAwMDAKCSAg
-ICAgICAgICAgZmlsdGVyOiAKCUJyb2FkY2FzdCBSR0I6CUF1dG9tYXRpYwoJCXN1cHBvcnRlZDog
-QXV0b21hdGljICAgIEZ1bGwgICAgICAgICBMaW1pdGVkIDE2OjIKCWF1ZGlvOglhdXRvCgkJc3Vw
-cG9ydGVkOiBmb3JjZS1kdmkgICAgb2ZmICAgICAgICAgIGF1dG8gICAgICAgICBvbiAgICAgICAg
-ICAKRFAxIGRpc2Nvbm5lY3RlZCAobm9ybWFsIGxlZnQgaW52ZXJ0ZWQgcmlnaHQgeCBheGlzIHkg
-YXhpcykKCUlkZW50aWZpZXI6IDB4NDQKCVRpbWVzdGFtcDogIDMzOTU3MQoJU3VicGl4ZWw6ICAg
-dW5rbm93bgoJQ2xvbmVzOiAgICAKCUNSVENzOiAgICAgIDAgMQoJVHJhbnNmb3JtOiAgMS4wMDAw
-MDAgMC4wMDAwMDAgMC4wMDAwMDAKCSAgICAgICAgICAgIDAuMDAwMDAwIDEuMDAwMDAwIDAuMDAw
-MDAwCgkgICAgICAgICAgICAwLjAwMDAwMCAwLjAwMDAwMCAxLjAwMDAwMAoJICAgICAgICAgICBm
-aWx0ZXI6IAoJQnJvYWRjYXN0IFJHQjoJQXV0b21hdGljCgkJc3VwcG9ydGVkOiBBdXRvbWF0aWMg
-ICAgRnVsbCAgICAgICAgIExpbWl0ZWQgMTY6MgoJYXVkaW86CWF1dG8KCQlzdXBwb3J0ZWQ6IGZv
-cmNlLWR2aSAgICBvZmYgICAgICAgICAgYXV0byAgICAgICAgIG9uICAgICAgICAgIAo=
---089e01419acc81eefa04e3d1205b--
+To solve this dilemma, perform an interrupt consistency check
+when adding a GPIO chip: if the chip is both gpio-controller and
+interrupt-controller, walk all children of the device tree,
+check if these in turn reference the interrupt-controller, and
+if they do, loop over the interrupts used by that child and
+perform gpio_reques() and gpio_direction_input() on these,
+making them unreachable from the GPIO side.
+
+Cc: devicetree@vger.kernel.org
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Enric Balletbo i Serra <eballetbo@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Balaji T K <balajitk@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Jon Hunter <jgchunter@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index 665f953..5f6ac79 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -10,7 +10,6 @@
+  * the Free Software Foundation; either version 2 of the License, or
+  * (at your option) any later version.
+  */
+-
+ #include <linux/device.h>
+ #include <linux/errno.h>
+ #include <linux/module.h>
+@@ -19,6 +18,7 @@
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_gpio.h>
++#include <linux/of_irq.h>
+ #include <linux/pinctrl/pinctrl.h>
+ #include <linux/slab.h>
+ 
+@@ -127,6 +127,160 @@ int of_gpio_simple_xlate(struct gpio_chip *gc,
+ EXPORT_SYMBOL(of_gpio_simple_xlate);
+ 
+ /**
++ * of_gpio_scan_nodes_and_x_irq_lines - internal function to recursively scan
++ * the device tree and request or free the GPIOs that are to be use
++ * @node:	node to start the scanning at
++ * @gcn:	device node of the GPIO chip
++ * @gc:		GPIO chip instantiated from same node
++ * @request:	wheter the function should request(1) or free(0) the irq lines
++ *
++ * This is a internal function that calls itself to recursively scan the device
++ * tree. It scans for uses of the device_node gcn as an interrupt-controller.
++ * If it finds some, it requests the corresponding gpio lines that are to be
++ * used as irq lines and sets them as input.
++ * If the request parameter is 0 it frees the gpio lines.
++ * For more information see documentation of of_gpiochip_x_irq_lines function.
++ */
++void of_gpio_scan_nodes_and_x_irq_lines(
++		const struct device_node *const node,
++		struct device_node * const gcn,
++		const struct gpio_chip * const gc, int const request)
++{
++	struct device_node *child;
++	struct device_node *irq_parent;
++	const __be32 *intspec;
++	u32 intlen;
++	u32 offset;
++	int ret;
++	int num_irq;
++	int i;
++
++	if (node == NULL)
++		return;
++
++	for_each_child_of_node(node, child) {
++		of_gpio_scan_nodes_and_x_irq_lines(child, gcn, gc, request);
++		/* Check if we have an IRQ parent, else continue */
++		irq_parent = of_irq_find_parent(child);
++		if (!irq_parent)
++			continue;
++
++		/* Is it so that this very GPIO chip is the parent? */
++		if (irq_parent != gcn) {
++			of_node_put(irq_parent);
++			continue;
++		}
++		of_node_put(irq_parent);
++
++		pr_debug("gpiochip OF: node %s references GPIO interrupt lines\n",
++				child->name);
++
++		/* Get the interrupts property */
++		intspec = of_get_property(child, "interrupts", &intlen);
++		if (intspec == NULL)
++			continue;
++		intlen /= sizeof(*intspec);
++
++		num_irq = of_irq_count(gcn);
++		for (i = 0; i < num_irq; i++) {
++			/*
++			 * The first cell is always the local IRQ number, and
++			 * this corresponds to the GPIO line offset for a GPIO
++			 * chip.
++			 *
++			 * FIXME: take interrupt-cells into account here.
++			 */
++			offset = of_read_number(intspec + i, 1);
++			pr_debug("gpiochip: OF node references offset=%d\n",
++				 offset);
++
++			if (request) {
++				/*
++				 * This child is making a reference to this
++				 * chip through the interrupts property, so
++				 * reserve these GPIO lines and set them as
++				 * input.
++				 */
++				ret = gpio_request(gc->base + offset, "OF IRQ");
++				if (ret)
++					pr_err("gpiolib OF: could not request IRQ GPIO %d (%d)\n",
++					       gc->base + offset, offset);
++				ret = gpio_direction_input(gc->base + offset);
++				if (ret)
++					pr_err("gpiolib OF: could not set IRQ GPIO %d (%d) as input\n",
++					       gc->base + offset, offset);
++			} else {
++				gpio_free(gc->base + offset);
++			}
++		}
++	}
++}
++
++#define of_gpiochip_request_irq_lines(np, gc) \
++	of_gpiochip_x_irq_lines(np, gc, 1)
++
++#define of_gpiochip_free_irq_lines(np, gc) \
++	of_gpiochip_x_irq_lines(np, gc, 0)
++
++/**
++ * of_gpiochip_x_irq_lines - request or free GPIO IRQ lines
++ * @np:		device node of the GPIO chip
++ * @gc:		GPIO chip instantiated from same node
++ * @request:	wheter the function should request(1) or free(0) the irq lines
++ *
++ * This function should not be used directly, use the macros
++ * of_gpiochip_request_irq_lines or of_gpiochip_free_gpio_lines instead.
++ *
++ * For the case of requesting the irq lines (request == 1) this function is
++ * called after instantiating a GPIO chip from a device tree node to assert
++ * that all interrupts derived from the chip are consistently requested as
++ * GPIO lines, if the GPIO chip is BOTH a gpio-controller AND an
++ * interrupt-controller.
++ *
++ * If another node in the device tree is referencing the interrupt-controller
++ * portions of the GPIO chip, such that it is using a GPIO line as some
++ * arbitrary interrupt source, the following holds:
++ *
++ * - That line must NOT be used anywhere else in the device tree as a
++ *   <&gpio N> reference, or GPIO and interrupt usage may conflict.
++ *
++ * Conversely, if a node is using a line as a direct reference to a GPIO line,
++ * no node in the tree may use that line as an interrupt.
++ *
++ * If another node is referencing a GPIO line, and also want to use that line
++ * as an interrupt source, it is necessary for this driver to use the
++ * gpio_to_irq() kernel interface.
++ *
++ * For the case of freeing the irq lines (request == 0) this function simply
++ * uses the same device tree information used to request the irq lines to call
++ * gpiochip_free on that GPIOs.
++ */
++static void of_gpiochip_x_irq_lines(struct device_node *np,
++				    struct gpio_chip *gc, int request)
++{
++	struct device_node *root;
++
++	/*
++	 * If this chip is not tagged as interrupt-controller, there is
++	 * no problem so we just exit.
++	 */
++	if (!of_property_read_bool(np, "interrupt-controller"))
++		return;
++
++	/*
++	 * Proceed to check the consistency of all references to this
++	 * GPIO chip.
++	 */
++	root = of_find_node_by_path("/");
++	if (!root)
++		return;
++
++	of_gpio_scan_nodes_and_x_irq_lines(root, np, gc, request);
++
++	of_node_put(root);
++}
++
++/**
+  * of_mm_gpiochip_add - Add memory mapped GPIO chip (bank)
+  * @np:		device node of the GPIO chip
+  * @mm_gc:	pointer to the of_mm_gpio_chip allocated structure
+@@ -170,6 +324,8 @@ int of_mm_gpiochip_add(struct device_node *np,
+ 	if (ret)
+ 		goto err2;
+ 
++	of_gpiochip_request_irq_lines(np, gc);
++
+ 	return 0;
+ err2:
+ 	iounmap(mm_gc->regs);
+@@ -231,12 +387,14 @@ void of_gpiochip_add(struct gpio_chip *chip)
+ 		chip->of_xlate = of_gpio_simple_xlate;
+ 	}
+ 
++	of_gpiochip_request_irq_lines(chip->of_node, chip);
+ 	of_gpiochip_add_pin_range(chip);
+ 	of_node_get(chip->of_node);
+ }
+ 
+ void of_gpiochip_remove(struct gpio_chip *chip)
+ {
++	of_gpiochip_free_irq_lines(chip->of_node, chip);
+ 	gpiochip_remove_pin_ranges(chip);
+ 
+ 	if (chip->of_node)
+-- 
+1.7.10.4
+
