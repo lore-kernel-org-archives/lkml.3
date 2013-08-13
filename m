@@ -1,144 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758227Ab3HMRPT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:15:19 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:42760 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756363Ab3HMRPQ (ORCPT
+	id S1758456Ab3HMRPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:15:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58317 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758266Ab3HMRPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:15:16 -0400
-Message-ID: <1376414040.10300.398.camel@misato.fc.hp.com>
-Subject: Re: Cannot hot remove a memory device
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        rafael.j.wysocki@intel.com, vasilis.liaskovitis@profitbricks.com,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com
-Date: Tue, 13 Aug 2013 11:14:00 -0600
-In-Reply-To: <2828019.xo6sPxdo6v@vostro.rjw.lan>
-References: <51FA1E41.20304@jp.fujitsu.com>
-	 <2995970.hSi3JdcGZF@vostro.rjw.lan>
-	 <1376355764.10300.383.camel@misato.fc.hp.com>
-	 <2828019.xo6sPxdo6v@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Aug 2013 13:15:33 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [05/88] carl9170: fix frame drop and WARN due to minstrel_ht change
+References: <20130813155654.069291373@goodmis.org>
+	<20130813155824.466423327@goodmis.org>
+Date: Tue, 13 Aug 2013 18:15:28 +0100
+In-Reply-To: <20130813155824.466423327@goodmis.org> (Steven Rostedt's message
+	of "Tue, 13 Aug 2013 11:56:59 -0400")
+Message-ID: <877gfp4imn.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-08-13 at 14:02 +0200, Rafael J. Wysocki wrote:
-> On Monday, August 12, 2013 07:02:44 PM Toshi Kani wrote:
-> > On Tue, 2013-08-13 at 02:45 +0200, Rafael J. Wysocki wrote:
-> > > On Monday, August 12, 2013 02:40:43 PM Toshi Kani wrote:
-> > > > On Sun, 2013-08-11 at 23:13 +0200, Rafael J. Wysocki wrote:
-> > > > > On Thursday, August 08, 2013 04:50:42 PM Toshi Kani wrote:
-> > > > > > On Fri, 2013-08-09 at 00:12 +0200, Rafael J. Wysocki wrote:
-> > > > > > > On Thursday, August 08, 2013 11:15:20 AM Toshi Kani wrote:
-> > > > > > > > On Fri, 2013-08-02 at 18:04 -0600, Toshi Kani wrote:
-> > > > > > > > > On Sat, 2013-08-03 at 01:43 +0200, Rafael J. Wysocki wrote:
-> > > > > > > > > > On Friday, August 02, 2013 03:46:15 PM Toshi Kani wrote:
-> > > > > > > > > > > On Thu, 2013-08-01 at 23:43 +0200, Rafael J. Wysocki wrote:
-> > > > > > > >  :
-> > > > > > > > > > > I think it fails with -EINVAL at the place with dev_warn(dev, "ACPI
-> > > > > > > > > > > handle is already set\n").  When two ACPI memory objects associate with
-> > > > > > > > > > > a same memory block, the bind procedure of the 2nd ACPI memory object
-> > > > > > > > > > > sees that ACPI_HANDLE(dev) is already set to the 1st ACPI memory object.
-> > > > > > > > > > 
-> > > > > > > > > > That sound's plausible, but I wonder how we can fix that?
-> > > > > > > > > > 
-> > > > > > > > > > There's no way for a single physical device to have two different ACPI
-> > > > > > > > > > "companions".  It looks like the memory blocks should be 64 M each in that
-> > > > > > > > > > case.  Or we need to create two child devices for each memory block and
-> > > > > > > > > > associate each of them with an ACPI object.  That would lead to complications
-> > > > > > > > > > in the user space interface, though.
-> > > > > > > > > 
-> > > > > > > > > Right.  Even bigger issue is that I do not think __add_pages() and
-> > > > > > > > > __remove_pages() can add / delete a memory chunk that is less than
-> > > > > > > > > 128MB.  128MB is the granularity of them.  So, we may just have to fail
-> > > > > > > > > this case gracefully.
-> > > > > > > > 
-> > > > > > > > FYI: I have submitted the patch blow to close this part of the issue...
-> > > > > > > > 
-> > > > > > > > https://lkml.org/lkml/2013/8/8/396
-> > > > > > > 
-> > > > > > > That looks good to me, but we'd still need to make it possible to have
-> > > > > > > memory blocks smaller than 128 MB ...
-> > > > > > 
-> > > > > > Do you mean acpi_bind_one() needs to be able to handle such case?  If
-> > > > > > so, it should not be a problem since a memory block device won't be
-> > > > > > created when add_memory() fails with the change above.  So, there is no
-> > > > > > binding to be done.  If you mean add_memory() needs to be able to handle
-> > > > > > a smaller range, that's quite a tough one unless we make the section
-> > > > > > size smaller.
-> > > > > > 
-> > > > > > BTW, when add_memory() fails, the memory hot-add request still succeeds
-> > > > > > with no driver attached.  This seems logical, but the added device is
-> > > > > > useless when no handler is attached.  And it does not allow ejecting the
-> > > > > > device with no handler.  I am not too worry about this since this is a
-> > > > > > rare case, but it reminded me that the framework won't handle rollback.
-> > > > > 
-> > > > > I'm not sure which rollback you mean.  During removal?
-> > > > 
-> > > > I meant rollback during hot-add.  Ideally, a device should be either
-> > > > added in usable state (success) or failed back to the original state
-> > > > (rollback).  Added in un-usable state is not really a success for users,
-> > > > and creates an odd state to deal with.  But it is still a LOT better
-> > > > than crashing the system.  So, I think this outcome is reasonable on
-> > > > this framework because adding rollback at this point will complicate the
-> > > > things unnecessarily.
-> > > > 
-> > > > > There are two slight problems here in my view.  First, even if the device
-> > > > > cannot be ejected directly, it still will be removed when its parent is
-> > > > > ejected, so it may be more consistent to just allow everything to be ejected
-> > > > > regardless of whether or not it has a scan handler.  
-> > > > 
-> > > > Agreed.
-> > > > 
-> > > > > Second, I guess the
-> > > > > removal is undesirable for memory devices for which the registration of the
-> > > > > scan handler failed, so it would be good to fail the "offline" of such devices
-> > > > > regardless of how we get there.  That's why I thought it would be good to have
-> > > > > an "offline disabled" flag in struct acpi_device.
-> > > > 
-> > > > I see.  But when attach() failed, the memory device may not be used by
-> > > > the kernel.  So, I think it should be safe to remove it.
-> > > 
-> > > The failure of .attach() need not mean that the memory is not used by the
-> > > kernel, though, and the ACPI device object is still there and still may
-> > > be involved in some removal scenarios (through its parent).
-> > 
-> > As long as .attach() is failed cleanly, which I think is the case for
-> > the memory handler (if not, we need to fix it), the rest of the kernel
-> > code may not know what this device is.  That is, the ACPI memory handler
-> > is the only one that knows PNP0C80 is a memory device.  So, I do not
-> > think the memory can be used in such case...
-> 
-> Yes, it can, if the kernel discovers it during boot before .attach() is first
-> called.  So say this happens and the ACPI memory device object has a parent
-> with existing _EJ0.
-> 
-> The memory handler's .attach() fails, so the initial acpi_bus_scan() won't walk
-> the namespace below the memory device, but it won't return an error code
-> either (the root device object is always there).  The parent of the failed
-> node is regarded as operational in particular.
-> 
-> Now, acpi_scan_hot_remove() is called for the parent.  Since the memory device
-> object doesn't have "physical" devices associated with it,
-> acpi_bus_offline_companions() will ignore it and acpi_scan_hot_remove() will go
-> for acpi_bus_trim() and straight for _EJ0 for the parent.  Splat!
-> 
-> I agree that this is a corner case, but I wonder if leaving it this way is a
-> good idea. :-)
+Steven Rostedt <rostedt@goodmis.org> writes:
 
-Oh, I see.  In practice, this case is unlikely to happen because
-add_memory() fails with -EEXIST at the beginning during boot-time, and
-is essentially a no-op.  But I agree with your point that such case may
-happen and is safer to not allow ejecting a device with no handler.  A
-system crash is much worse than not being able to eject.       
+> 3.6.11.7-rc1 stable review patch.
+> If anyone has any objections, please let me know.
 
-Thanks,
--Toshi
+Not exactly an objection, but the commit text refers to:
 
+ a0497f9 mac80211/minstrel_ht: add support for using CCK rates
+
+which doesn't seem to exist in 3.6 kernel.  I wonder if this commit is
+actually needed.
+
+Cheers,
+-- 
+Luis
+
+
+>
+> ------------------
+>
+> From: Christian Lamparter <chunkeey@googlemail.com>
+>
+> [ Upstream commit 5f34608fa2acbfef5a06d0072a978c9943c28a2d ]
+>
+> With "mac80211/minstrel_ht: add support for using CCK rates"
+> minstrel_ht selects legacy CCK rates as viable rates for
+> outgoing frames which might be sent as part of an A-MPDU
+> [IEEE80211_TX_CTL_AMPDU is set].
+>
+> This behavior triggered the following WARN_ON in the driver:
+>> WARNING: at carl9170/tx.c:995 carl9170_op_tx+0x1dd/0x6fd
+> The driver assumed that the rate control algorithm made a
+> mistake and dropped the frame.
+>
+> This patch removes the noisy warning altogether and allows
+> said A-MPDU frames with CCK sample and/or fallback rates to
+> be transmitted seamlessly.
+>
+> Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+> Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  drivers/net/wireless/ath/carl9170/tx.c |   69 +++++++++++++-------------------
+>  1 file changed, 28 insertions(+), 41 deletions(-)
+>
+> diff --git a/drivers/net/wireless/ath/carl9170/tx.c b/drivers/net/wireless/ath/carl9170/tx.c
+> index 6a86814..745e9dd 100644
+> --- a/drivers/net/wireless/ath/carl9170/tx.c
+> +++ b/drivers/net/wireless/ath/carl9170/tx.c
+> @@ -387,8 +387,7 @@ static void carl9170_tx_status_process_ampdu(struct ar9170 *ar,
+>  	u8 tid;
+>  
+>  	if (!(txinfo->flags & IEEE80211_TX_CTL_AMPDU) ||
+> -	    txinfo->flags & IEEE80211_TX_CTL_INJECTED ||
+> -	   (!(super->f.mac_control & cpu_to_le16(AR9170_TX_MAC_AGGR))))
+> +	    txinfo->flags & IEEE80211_TX_CTL_INJECTED)
+>  		return;
+>  
+>  	rcu_read_lock();
+> @@ -982,30 +981,6 @@ static int carl9170_tx_prepare(struct ar9170 *ar, struct sk_buff *skb)
+>  
+>  		SET_VAL(CARL9170_TX_SUPER_AMPDU_FACTOR,
+>  			txc->s.ampdu_settings, factor);
+> -
+> -		for (i = 0; i < CARL9170_TX_MAX_RATES; i++) {
+> -			txrate = &info->control.rates[i];
+> -			if (txrate->idx >= 0) {
+> -				txc->s.ri[i] =
+> -					CARL9170_TX_SUPER_RI_AMPDU;
+> -
+> -				if (WARN_ON(!(txrate->flags &
+> -					      IEEE80211_TX_RC_MCS))) {
+> -					/*
+> -					 * Not sure if it's even possible
+> -					 * to aggregate non-ht rates with
+> -					 * this HW.
+> -					 */
+> -					goto err_out;
+> -				}
+> -				continue;
+> -			}
+> -
+> -			txrate->idx = 0;
+> -			txrate->count = ar->hw->max_rate_tries;
+> -		}
+> -
+> -		mac_tmp |= cpu_to_le16(AR9170_TX_MAC_AGGR);
+>  	}
+>  
+>  	/*
+> @@ -1013,11 +988,31 @@ static int carl9170_tx_prepare(struct ar9170 *ar, struct sk_buff *skb)
+>  	 * taken from mac_control. For all fallback rate, the firmware
+>  	 * updates the mac_control flags from the rate info field.
+>  	 */
+> -	for (i = 1; i < CARL9170_TX_MAX_RATES; i++) {
+> +	for (i = 0; i < CARL9170_TX_MAX_RATES; i++) {
+> +		__le32 phy_set;
+>  		txrate = &info->control.rates[i];
+>  		if (txrate->idx < 0)
+>  			break;
+>  
+> +		phy_set = carl9170_tx_physet(ar, info, txrate);
+> +		if (i == 0) {
+> +			/* first rate - part of the hw's frame header */
+> +			txc->f.phy_control = phy_set;
+> +
+> +			if (ampdu && txrate->flags & IEEE80211_TX_RC_MCS)
+> +				mac_tmp |= cpu_to_le16(AR9170_TX_MAC_AGGR);
+> +			if (carl9170_tx_rts_check(ar, txrate, ampdu, no_ack))
+> +				mac_tmp |= cpu_to_le16(AR9170_TX_MAC_PROT_RTS);
+> +			else if (carl9170_tx_cts_check(ar, txrate))
+> +				mac_tmp |= cpu_to_le16(AR9170_TX_MAC_PROT_CTS);
+> +
+> +		} else {
+> +			/* fallback rates are stored in the firmware's
+> +			 * retry rate set array.
+> +			 */
+> +			txc->s.rr[i - 1] = phy_set;
+> +		}
+> +
+>  		SET_VAL(CARL9170_TX_SUPER_RI_TRIES, txc->s.ri[i],
+>  			txrate->count);
+>  
+> @@ -1028,21 +1023,13 @@ static int carl9170_tx_prepare(struct ar9170 *ar, struct sk_buff *skb)
+>  			txc->s.ri[i] |= (AR9170_TX_MAC_PROT_CTS <<
+>  				CARL9170_TX_SUPER_RI_ERP_PROT_S);
+>  
+> -		txc->s.rr[i - 1] = carl9170_tx_physet(ar, info, txrate);
+> +		if (ampdu && (txrate->flags & IEEE80211_TX_RC_MCS))
+> +			txc->s.ri[i] |= CARL9170_TX_SUPER_RI_AMPDU;
+>  	}
+>  
+> -	txrate = &info->control.rates[0];
+> -	SET_VAL(CARL9170_TX_SUPER_RI_TRIES, txc->s.ri[0], txrate->count);
+> -
+> -	if (carl9170_tx_rts_check(ar, txrate, ampdu, no_ack))
+> -		mac_tmp |= cpu_to_le16(AR9170_TX_MAC_PROT_RTS);
+> -	else if (carl9170_tx_cts_check(ar, txrate))
+> -		mac_tmp |= cpu_to_le16(AR9170_TX_MAC_PROT_CTS);
+> -
+>  	txc->s.len = cpu_to_le16(skb->len);
+>  	txc->f.length = cpu_to_le16(len + FCS_LEN);
+>  	txc->f.mac_control = mac_tmp;
+> -	txc->f.phy_control = carl9170_tx_physet(ar, info, txrate);
+>  
+>  	arinfo = (void *)info->rate_driver_data;
+>  	arinfo->timeout = jiffies;
+> @@ -1382,9 +1369,9 @@ static void carl9170_tx(struct ar9170 *ar)
+>  }
+>  
+>  static bool carl9170_tx_ampdu_queue(struct ar9170 *ar,
+> -	struct ieee80211_sta *sta, struct sk_buff *skb)
+> +	struct ieee80211_sta *sta, struct sk_buff *skb,
+> +	struct ieee80211_tx_info *txinfo)
+>  {
+> -	struct _carl9170_tx_superframe *super = (void *) skb->data;
+>  	struct carl9170_sta_info *sta_info;
+>  	struct carl9170_sta_tid *agg;
+>  	struct sk_buff *iter;
+> @@ -1451,7 +1438,7 @@ err_unlock:
+>  
+>  err_unlock_rcu:
+>  	rcu_read_unlock();
+> -	super->f.mac_control &= ~cpu_to_le16(AR9170_TX_MAC_AGGR);
+> +	txinfo->flags &= ~IEEE80211_TX_CTL_AMPDU;
+>  	carl9170_tx_status(ar, skb, false);
+>  	ar->tx_dropped++;
+>  	return false;
+> @@ -1485,7 +1472,7 @@ void carl9170_op_tx(struct ieee80211_hw *hw, struct sk_buff *skb)
+>  	}
+>  
+>  	if (info->flags & IEEE80211_TX_CTL_AMPDU) {
+> -		run = carl9170_tx_ampdu_queue(ar, sta, skb);
+> +		run = carl9170_tx_ampdu_queue(ar, sta, skb, info);
+>  		if (run)
+>  			carl9170_tx_ampdu(ar);
