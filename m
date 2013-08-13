@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab3HMHKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:10:25 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:44652 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751858Ab3HMHKX (ORCPT
+	id S1756142Ab3HMHKi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:10:38 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49906 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755093Ab3HMHKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:10:23 -0400
-From: Xiaoguang Chen <chenxg@marvell.com>
-To: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <viresh.kumar@linaro.org>, <rjw@sisk.pl>, <chenxg.marvell@gmail.com>,
-        <chenxg@marvell.com>
-Subject: [PATCH 1/2] cpufreq: Add governor operation ongoing flag
-Date: Tue, 13 Aug 2013 15:09:25 +0800
-Message-ID: <1376377766-2594-1-git-send-email-chenxg@marvell.com>
-X-Mailer: git-send-email 1.8.0
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 13 Aug 2013 03:10:36 -0400
+Date: Tue, 13 Aug 2013 17:10:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the ptr-ret tree with the staging tree
+Message-Id: <20130813171031.d365f152275f5736803f4413@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Aug_2013_17_10_31_+1000_ohovDC=6.Ja8axCY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__cpufreq_governor operation needs to be executed one by one.
-If one operation is ongoing, the other operation can't be executed.
-If the order is not guaranteed, there may be unexpected behavior.
+--Signature=_Tue__13_Aug_2013_17_10_31_+1000_ohovDC=6.Ja8axCY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- For example, governor is in enable state, and one process
-tries to stop the goveror, but it is scheduled out before policy->
-governor->governor() is executed, but the governor enable flag is
-set to false already. Then one other process tries to start governor,
-It finds enable flag is false, and it can process down to do governor
-start operation, So the governor is started twice.
+Hi Rusty,
 
-Add the governor_ops_ongoing flag to check whether there is governor
-operation ongoing, if so, return -EAGAIN.
+Today's linux-next merge of the ptr-ret tree got a conflict in
+drivers/staging/zcache/zcache-main.c between commit 962564604873
+("staging: zcache: delete it") from the staging tree and commit
+8a1d41cfeaf5 ("staging/zcache: don't use PTR_RET()") from the ptr-ret
+tree.
 
-Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
----
- drivers/cpufreq/cpufreq.c | 9 +++++++++
- include/linux/cpufreq.h   | 1 +
- 2 files changed, 10 insertions(+)
+I fixed it up (the former removes the file, so I did that) and can carry
+the fix as necessary (no action is required).
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index f0a5e2b..dfe0b86 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1652,6 +1652,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 		mutex_unlock(&cpufreq_governor_lock);
- 		return -EBUSY;
- 	}
-+	if (policy->governor_ops_ongoing) {
-+		mutex_unlock(&cpufreq_governor_lock);
-+		return -EAGAIN;
-+	}
-+	policy->governor_ops_ongoing = true;
- 
- 	if (event == CPUFREQ_GOV_STOP)
- 		policy->governor_enabled = false;
-@@ -1684,6 +1689,10 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 	if ((event == CPUFREQ_GOV_STOP) && !ret)
- 		module_put(policy->governor->owner);
- 
-+	mutex_lock(&cpufreq_governor_lock);
-+	policy->governor_ops_ongoing = false;
-+	mutex_unlock(&cpufreq_governor_lock);
-+
- 	return ret;
- }
- 
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 90d5a15..8d3eac2 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -111,6 +111,7 @@ struct cpufreq_policy {
- 	struct cpufreq_governor	*governor; /* see below */
- 	void			*governor_data;
- 	bool			governor_enabled; /* governor start/stop flag */
-+	bool			governor_ops_ongoing;
- 
- 	struct work_struct	update; /* if update_policy() needs to be
- 					 * called, but you're in IRQ context */
--- 
-1.8.0
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__13_Aug_2013_17_10_31_+1000_ohovDC=6.Ja8axCY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSCdvnAAoJEECxmPOUX5FEKp4P/03S2+4fowekGDGx/k6LaYz0
+S1XaWYJu5VmpjAL9quo8PhV3Pv0iM/YXBayOZZVNcSshV0im5J6/yn6wVQDsmv0F
+yqJJwixyPEfedO5PCkD1BkvlsXEGWtwjb2/6UFP2B1YywgI2Gs30aO2UBP+TViqg
+tIjhbUIhzPctcYn/cDC/jrisAMk4yxyi+Wyh41wjXsNiMUQxx0hUcLT4IPHzuPCX
+nnSGRjJ/Vff5JbxE2ENr6KzzSOj4Xpoa5O3uCp1K+EJ9KcoZhQDkJa4GyoUHYGCo
+rN3GoeK5pkwMY8AxOGCze4598ng5+qGPew979CFFWf91dKGwatLaO26TQKkceknp
+zJxBZsmg+maU7yMC7ztloc05pvwOUni3jTD5z1/aBlmNbPT+WM4Kp6+/+Jvug5xv
+g7wAhJypaIjorJ/ISX+3ghsc7xWfxCfjIFGei68zAZ4qRECILh3bj/VWyinHcvvH
+tU6hLRA2to2Tm8Cn3WGoqcXqoiEmZhFpQwQ3LfnoAFHnnsl8zwPHOQX8QzT4yHOT
+RtMI9gAdbDer3HjDHUuMv44ufUOGJmP646zXgqr2HNffQ8VVHOWY5vlVD1eGnAR+
+BUYN09DfbVH6O/PjDbbB2O6PHjktWgb5n8kLeuK0SPk2MMFkNhuY/OM/gSZLN5Ge
+cUW8z9AS+QNLGAQYhyVl
+=cD3a
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__13_Aug_2013_17_10_31_+1000_ohovDC=6.Ja8axCY--
