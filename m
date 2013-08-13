@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456Ab3HMNgo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:36:44 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:39217 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438Ab3HMNgi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:36:38 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH V2 28/35] cpufreq: s3c64xx: Covert to light weight ->target_index() routine
-Date: Tue, 13 Aug 2013 19:02:41 +0530
-Message-Id: <1d6e581b39e323b5b868cddba622e1fe371a8faf.1376392602.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
-References: <cover.1376392602.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
-References: <cover.1376392602.git.viresh.kumar@linaro.org>
+	id S1758507Ab3HMNma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:42:30 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2511 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758443Ab3HMNm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 09:42:28 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <520A3784.2060108@broadcom.com>
+Date: Tue, 13 Aug 2013 15:41:24 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Daniel Wagner" <wagi@monom.org>
+cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: brcsmac kernel panic
+References: <5207BA00.3030709@monom.org> <5208BB2D.2000705@broadcom.com>
+ <52094156.7010905@monom.org>
+In-Reply-To: <52094156.7010905@monom.org>
+X-WSS-ID: 7E14E9CC1R079984936-02-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts existing .target() to newly defined light weight
-.target_index() routine for this driver.
+On 08/12/2013 10:11 PM, Daniel Wagner wrote:
+> Hi Arend,
+>
+> On 08/12/2013 12:38 PM, Arend van Spriel wrote:
+>> On 08/11/2013 06:21 PM, Daniel Wagner wrote:
+>>> I just updated my laptop (MacBook Air 2012) from 3.11-rc3+ to 3.11-rc4+
+>>> and since then brcsmac crashes short after enabling it. Unfortunately, I
+>>> did also change some config flags in the area of cpufreq (enabling
+>>> p-state driver) so the configuration is not exactly the same. Before I
+>>> try to figure out what I have changed, I am posting the picture of the
+>>> crash. Maybe it is something obvious.
+>>>
+>>> v3.11-rc4-197-gd92581f
+>>> http://www.monom.org/misc/brcmsmac/v3.11-rc4.config
+>>> http://www.monom.org/misc/brcmsmac/IMAG0064.jpg
+>>
+>> Thanks, Daniel
+>>
+>> I was looking at this issue two weeks ago and just got back from my
+>> vacation. Can you apply the patch and send me a kernel log?
+>
+> Sure, the patch does the trick, the panic is gone.
 
-CPUFreq core will call cpufreq_frequency_table_target() before calling this
-routine and will pass index to it.
+Unfortunately, it results in a lot of error print and phy tx errors that 
+has been reported by others. I think the two are related, but I have not 
+root caused it yet. Your laptop may be usable now, but wireless 
+performance is probably bad.
 
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/s3c64xx-cpufreq.c | 18 ++++--------------
- 1 file changed, 4 insertions(+), 14 deletions(-)
+Too bad I can not reproduce the issue over here. Are you willing to test 
+some patches when I got a better grasp on the issue?
 
-diff --git a/drivers/cpufreq/s3c64xx-cpufreq.c b/drivers/cpufreq/s3c64xx-cpufreq.c
-index 99fbc49..72f733b 100644
---- a/drivers/cpufreq/s3c64xx-cpufreq.c
-+++ b/drivers/cpufreq/s3c64xx-cpufreq.c
-@@ -63,26 +63,16 @@ static unsigned int s3c64xx_cpufreq_get_speed(unsigned int cpu)
- }
- 
- static int s3c64xx_cpufreq_set_target(struct cpufreq_policy *policy,
--				      unsigned int target_freq,
--				      unsigned int relation)
-+				      unsigned int index)
- {
- 	int ret;
--	unsigned int i;
- 	struct cpufreq_freqs freqs;
- 	struct s3c64xx_dvfs *dvfs;
- 
--	ret = cpufreq_frequency_table_target(policy, s3c64xx_freq_table,
--					     target_freq, relation, &i);
--	if (ret != 0)
--		return ret;
--
- 	freqs.old = clk_get_rate(armclk) / 1000;
--	freqs.new = s3c64xx_freq_table[i].frequency;
-+	freqs.new = s3c64xx_freq_table[index].frequency;
- 	freqs.flags = 0;
--	dvfs = &s3c64xx_dvfs_table[s3c64xx_freq_table[i].driver_data];
--
--	if (freqs.old == freqs.new)
--		return 0;
-+	dvfs = &s3c64xx_dvfs_table[s3c64xx_freq_table[index].driver_data];
- 
- 	pr_debug("Transition %d-%dkHz\n", freqs.old, freqs.new);
- 
-@@ -257,7 +247,7 @@ static int s3c64xx_cpufreq_driver_init(struct cpufreq_policy *policy)
- static struct cpufreq_driver s3c64xx_cpufreq_driver = {
- 	.flags          = 0,
- 	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= s3c64xx_cpufreq_set_target,
-+	.target_index	= s3c64xx_cpufreq_set_target,
- 	.get		= s3c64xx_cpufreq_get_speed,
- 	.init		= s3c64xx_cpufreq_driver_init,
- 	.name		= "s3c",
--- 
-1.7.12.rc2.18.g61b472e
+Regards,
+Arend
+
+>> Sharing pictures, huh. What about this one :-p
+>
+> No no, that isn't me, that is someone else! :P
+>
+> cheers,
+> daniel
+>
+>
+
 
