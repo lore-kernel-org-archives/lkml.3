@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759215Ab3HMUay (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:30:54 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:57222 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759059Ab3HMUaw convert rfc822-to-8bit (ORCPT
+	id S1759225Ab3HMUbi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:31:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40561 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759076Ab3HMUbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:30:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <520A5B01.2010207@tilera.com>
-References: <CAErSpo6SzUF44pk3HVyR5UUN0BJUHUz+Z5egWKCoGG70VuB6wg@mail.gmail.com>
- <520A5B01.2010207@tilera.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 13 Aug 2013 14:30:31 -0600
-Message-ID: <CAErSpo4sFPiuPLboJ_wsg2cketUaciP7EgmufJmuEEryJmDW7Q@mail.gmail.com>
-Subject: Re: [PATCH v2] tile: support LSI MEGARAID SAS HBA hybrid dma_ops
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        adam radford <aradford@gmail.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Aug 2013 16:31:37 -0400
+Date: Tue, 13 Aug 2013 13:31:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] mm: make lru_add_drain_all() selective
+Message-Id: <20130813133135.3b580af557d1457e4ee8331a@linux-foundation.org>
+In-Reply-To: <20130813201958.GA28996@mtj.dyndns.org>
+References: <5202CEAA.9040204@linux.vnet.ibm.com>
+	<201308072335.r77NZZwl022494@farm-0012.internal.tilera.com>
+	<20130812140520.c6a2255d2176a690fadf9ba7@linux-foundation.org>
+	<52099187.80301@tilera.com>
+	<20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org>
+	<20130813201958.GA28996@mtj.dyndns.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc James in case he has opinions on the DMA mask question]
+On Tue, 13 Aug 2013 16:19:58 -0400 Tejun Heo <tj@kernel.org> wrote:
 
-On Tue, Aug 13, 2013 at 10:12 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> (Trimming the quoted material a little to try to keep this email under control.)
->
-> On 8/12/2013 4:42 PM, Bjorn Helgaas wrote:
->> On Mon, Aug 12, 2013 at 1:42 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
->>> On 8/9/2013 6:42 PM, Bjorn Helgaas wrote:
->>>> OK, so physical memory in the [3GB,4GB] range is unreachable via DMA
->>>> as you describe.  And even if DMA *could* reach it, the CPU couldn't
->>>> see it because CPU accesses to that range would go to PCI for the
->>>> memory-mapped BAR space, not to memory.
->>> Right.  Unreachability is only a problem if the DMA window overlaps [3G, 4G], and since the 64-bit DMA window is [1TB,2TB], the whole PA space can be reached by 64-bit capable devices.
->> So the [0-1TB] memory range (including [3GB-4GB]) is reachable by
->> 64-bit DMA to bus addresses [1TB-2TB].  But if the CPU can't see
->> physical memory from [3GB-4GB], how is it useful to DMA there?
->
-> Sorry, looking back I can see that the thread is a little confusing.
-> The CPU can see the whole PA space. The confusion comes from the BAR space
-> in [3GB, 4GB].
->
-> On Tile, we define the CPU memory space as follows:
->
-> [0, 1TB]: PA
-> [1TB + 3GB, 1TB + 4GB]: BAR space for RC port 0, in [3GB, 4GB]
-> [1TB + 3GB + N*4GB, 1TB + (1 + N)*4GB]: BAR space for RC port N, in [3GB, 4GB]
->
-> The mapping from [1TB + 3GB + N*4GB, 1TB + (1 + N)*4GB] to [3GB, 4GB] is done by a
-> hardware PIO region, which generates PCI bus addresses in [3GB, 4GB] for MMIOs to
-> the BAR space.
+> Hello,
+> 
+> On Tue, Aug 13, 2013 at 12:35:12PM -0700, Andrew Morton wrote:
+> > I don't know how lots-of-kmallocs compares with alloc_percpu()
+> > performance-wise.
+> 
+> If this is actually performance sensitive,
 
-OK, I think I get it now.  CPU address space:
-  [0, 1TB]: physical memory
-  [1TB + 3GB, 1TB + 4GB]: translated to bus address [3GB, 4GB] under RC port 0
-  [1TB + 3GB + N*4GB, 1TB + (1 + N)*4GB]: translated to bus address
-[3GB, 4GB] under RC port N
+I've always assumed that it isn't performance-sensitive. 
+schedule_on_each_cpu() has to be slow as a dog.
 
-Bus address space:
-  [0, 3GB]: 32-bit DMA reaches physical memory [0, 3GB]
-  [3GB, 4GB]: 32-bit DMA (peer-to-peer DMA under local RC port, I guess?)
-  [1TB, 2TB]: 64-bit DMA mapped via IOMMU to physical memory [0, 1TB]
+Then again, why does this patchset exist?  It's a performance
+optimisation so presumably someone cares.  But not enough to perform
+actual measurements :(
 
-I guess the problem is that 32-bit DMA can't reach physical memory
-[3GB, 4GB], so you're using bounce buffers so the bus address is in
-[0, 3GB].  That makes sense, and I don't see another possibility other
-than just throwing away the [3GB, 4GB] range by leaving it out of the
-kernel allocator altogether, or using  hardware (which tilegx probably
-doesn't have) to remap it somewhere else.
+> the logical thing to do
+> would be pre-allocating per-cpu buffers instead of depending on
+> dynamic allocation.  Do the invocations need to be stackable?
 
-So it seems like just a question of how you wrap this all up in
-dma_ops, and *that* is all arch stuff that I don't have an opinion on.
+schedule_on_each_cpu() calls should if course happen concurrently, and
+there's the question of whether we wish to permit async
+schedule_on_each_cpu().  Leaving the calling CPU twiddling thumbs until
+everyone has finished is pretty sad if the caller doesn't want that.
 
->>> Unfortunately, the Megaraid driver doesn’t even call pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(32)).
->> If the Megaraid driver needs that call, but it's missing, why wouldn't
->> we just add it?
->
-> The Megaraid driver doesn’t strictly need that call on other platforms, because
-> by default the device coherent_dma_mask is DMA_BIT_MASK(32) and the consistent
-> memory pool doesn’t come from the bounce buffers on most other platforms.
->
-> Of course, for the sake of correctness, this call should be added across all platforms.
-> ...
+> > That being said, the `cpumask_var_t mask' which was added to
+> > lru_add_drain_all() is unneeded - it's just a temporary storage which
+> > can be eliminated by creating a schedule_on_each_cpu_cond() or whatever
+> > which is passed a function pointer of type `bool (*call_needed)(int
+> > cpu, void *data)'.
+> 
+> I'd really like to avoid that.  Decision callbacks tend to get abused
+> quite often and it's rather sad to do that because cpumask cannot be
+> prepared and passed around.  Can't it just preallocate all necessary
+> resources?
 
-> What is unique about Tile is that the PCI drivers must explicitly declare
-> its DMA capability by calling pci_set_dma_mask() and pci_set_consistent_dma_mask().
-
-It looks like the reason you need drivers to explicitly call
-pci_set_dma_mask() and pci_set_consistent_dma_mask() is because you
-have hooks in those functions to tweak the dma_ops, even though the
-mask itself might not be changed.
-
-That doesn't sound like a robust solution: we have well-known defaults
-for the mask sizes, and I don't think it's reasonable to expect
-drivers to explicitly set the mask even if they are happy with the
-defaults (though Documentation/DMA-API-HOWTO.txt does say that being
-explicit is good style).  I'm afraid you'll just keep tripping over
-drivers that don't work on tilegx because they don't set the mask.
-
-Bjorn
+I don't recall seeing such abuse.  It's a very common and powerful
+tool, and not implementing it because some dummy may abuse it weakens
+the API for all non-dummies.  That allocation is simply unneeded.
