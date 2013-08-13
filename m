@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab3HMJ7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 05:59:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60438 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756622Ab3HMJ7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 05:59:13 -0400
-Message-ID: <520A0347.701@ti.com>
-Date: Tue, 13 Aug 2013 15:28:31 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1755871Ab3HMJ77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 05:59:59 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34890 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476Ab3HMJ76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 05:59:58 -0400
+Date: Tue, 13 Aug 2013 11:59:41 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, devicetree@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 4/9] PCI: mvebu: add support for reset on GPIO
+Message-ID: <20130813095941.GB30913@pengutronix.de>
+References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1376333215-12885-5-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20130813080956.GE9316@ulmo>
+ <20130813103030.1e4156a1@skate>
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: <benoit.cousson@linaro.org>, <tony@atomide.com>, <swarren@wwwdotorg.org>,
-        <myungjoo.ham@samsung.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ian.campbell@citrix.com>, <rob@landley.net>, <george.cherian@ti.com>,
-        <gregkh@linuxfoundation.org>, <linux-doc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>
-Subject: Re: [PATCH 1/2] extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
-References: <1376302675-15795-1-git-send-email-kishon@ti.com> <1376372241-15573-1-git-send-email-kishon@ti.com> <520A0257.1080903@samsung.com>
-In-Reply-To: <520A0257.1080903@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813103030.1e4156a1@skate>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:58:38 up 13 days, 19:02, 31 users,  load average: 0.07, 0.08,
+ 0.06
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 August 2013 03:24 PM, Chanwoo Choi wrote:
-> Hi Kishon,
+On Tue, Aug 13, 2013 at 10:30:30AM +0200, Thomas Petazzoni wrote:
+> Dear Thierry Reding,
 > 
-> On 08/13/2013 02:37 PM, Kishon Vijay Abraham I wrote:
->> The Palmas device contains only a USB VID detector, so added a
->> compatible type *ti,palmas-usb-vid*. Dint remove the existing compatible
->> types for backward compatibility.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>  Documentation/devicetree/bindings/extcon/extcon-twl.txt |    3 ++-
->>  drivers/extcon/extcon-palmas.c                          |    1 +
->>  2 files changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/devicetree/bindings/extcon/extcon-twl.txt b/Documentation/devicetree/bindings/extcon/extcon-twl.txt
->> index 58f531a..5be4afc 100644
->> --- a/Documentation/devicetree/bindings/extcon/extcon-twl.txt
->> +++ b/Documentation/devicetree/bindings/extcon/extcon-twl.txt
->> @@ -2,7 +2,8 @@ EXTCON FOR TWL CHIPS
->>  
->>  PALMAS USB COMPARATOR
->>  Required Properties:
->> - - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
->> + - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb" or
->> +   "ti,palmas-usb-vid".
->>   - vbus-supply : phandle to the regulator device tree node.
->>  
->>  Optional Properties:
->> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
->> index b752a0a..4f83fae 100644
->> --- a/drivers/extcon/extcon-palmas.c
->> +++ b/drivers/extcon/extcon-palmas.c
->> @@ -223,6 +223,7 @@ static int palmas_usb_remove(struct platform_device *pdev)
->>  
->>  static struct of_device_id of_palmas_match_tbl[] = {
->>  	{ .compatible = "ti,palmas-usb", },
->> +	{ .compatible = "ti,palmas-usb-vid", },
->>  	{ .compatible = "ti,twl6035-usb", },
->>  	{ /* end */ }
->>  };
->>
+> On Tue, 13 Aug 2013 10:09:56 +0200, Thierry Reding wrote:
 > 
-> This patch has a conflict. You have to always implement patch on extcon branch
-> including latest patch. You need to resend v2 patch based on extcon-next branch.
+> > > +- reset-gpios: optional gpio to PERST#
+> > > +- reset-delay-ms: delay in ms to wait after reset de-assertion
+> > 
+> > I remember some recent discussion about this, and we now have this reset
+> > framework, so perhaps it makes more sense to use the reset binding for
+> > this? Cc'ing Stephen (as part of the device tree bindings maintainers
+> > team) who was involved in that recent reset bindings discussion.
 > 
-> 'extcon-twl.txt' is renamed as 'extcon-palmas.txt' on following patch:
-> http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/commit/?h=extcon-next&id=80d644b297dc26c5126858555044edef76f4ffe8
-> 
-> And, 'vbus-supply' phandle was removed on following patch:
-> http://git.kernel.org/cgit/linux/kernel/git/chanwoo/extcon.git/commit/?h=extcon-next&id=26ece4f0b7d2264282d9077d1843ff1e98189b6c
+> I also thought about this, but the reset framework seems to be designed
+> for "reset controller" IPs, i.e special IPs that are controlling reset
+> signals. Looking at Documentation/devicetree/bindings/reset/reset.txt,
+> I'm not sure to see how this would apply to GPIO-controlled reset
+> signals.
 
-Alright. I'll send the patch shortly.
+Search for:
 
-Thanks
-Kishon
+[PATCH v10] reset: Add driver for gpio-controlled reset pins
+
+Which aims to be a solution for what you need here.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
