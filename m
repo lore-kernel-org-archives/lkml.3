@@ -1,126 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab3HMHd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:33:26 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:48641 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752390Ab3HMHdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:33:23 -0400
-Message-ID: <1376379128.2208.9.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [RFC PATCH v2 1/3] usb: dwc3: msm: Add device tree binding
- information
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com
-Cc: Kumar Gala <galak@codeaurora.org>, rob.herring@calxeda.com,
-        pawel.moll@arm.com, mark.rutland@arm.com, swarren@wwwdotorg.org,
-        ian.campbell@citrix.com, rob@landley.net, gregkh@linuxfoundation.org,
-        grant.likely@linaro.org, idos@codeaurora.org, mgautam@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Tue, 13 Aug 2013 10:32:08 +0300
-In-Reply-To: <20130812180438.GC27954@radagast>
-References: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com>
-	 <1376042027-9798-2-git-send-email-iivanov@mm-sol.com>
-	 <169628C9-00BA-4E58-BF65-7B180E6BE4ED@codeaurora.org>
-	 <20130812180438.GC27954@radagast>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756312Ab3HMHeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:34:22 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:63428 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754868Ab3HMHeV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 03:34:21 -0400
+From: Shyam Kaushik <shyam@zadarastorage.com>
+References: <9a92eee58fefc1b8e3b4771ecf210d29@mail.gmail.com> <20130813073304.GA15495@kroah.com>
+In-Reply-To: <20130813073304.GA15495@kroah.com>
+MIME-Version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: Ac6X9yX3V8+p0ftOSQ2onRtX7uhcCAAADJqA
+Date: Tue, 13 Aug 2013 13:04:21 +0530
+Message-ID: <f94820b47d924f0de5b3a421876d1dce@mail.gmail.com>
+Subject: RE: BUG REPORT - IDR wraps around at 30-bits - works very bad with NFSD/SCTP
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry I added this later, but realized I couldn’t compile.
 
-Hi, 
+Working version of the example is
 
-On Mon, 2013-08-12 at 13:04 -0500, Felipe Balbi wrote: 
-> On Fri, Aug 09, 2013 at 10:31:58AM -0500, Kumar Gala wrote:
-> > 
-> > On Aug 9, 2013, at 4:53 AM, Ivan T. Ivanov wrote:
-> > 
-> > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > > 
-> > > MSM USB3.0 core wrapper consist of USB3.0 IP (SNPS)
-> > 
-> > probably good to spell out Synopsys rather than SNPS
-> 
-> Synopsys (the company) has always used snps in their bindings though.
-> 
-> > > +Required properities :
-> > > +- compatible : sould be "qcom,dwc3-hsphy";
-> > > +- reg : offset and length of the register set in the memory map
-> > > +- clocks : phandles to clock instances of the device tree nodes
-> > > +- clock-names :
-> > > +	"xo" : External reference clock 19 MHz
-> > > +	"sleep_a_clk" : Sleep clock, used when USB3 core goes into low
-> > > +	power mode (U3).
-> > > +<supply-name>-supply : phandle to the regulator device tree node
-> > > +Required "supply-name" are:
-> > > +	"v1p8" : 1.8v supply for HSPHY
-> > > +	"v3p3" : 3.3v supply for HSPHY
-> > > +	"vbus" : vbus supply for host mode
-> > > +	"vddcx" : vdd supply for HS-PHY digital circuit operation
-> 
-> I believe these regulators belong to the PHY, not DWC3. Please write a
-> PHY driver.
-> 
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/version.h>
+#include <linux/idr.h>
 
-There is already usb phy drivers for these?? 
+static int log_idr_entry(int id, void *ptr, void *data)
+{
+        int     *expected_val = (int *)ptr;
 
-[PATCH v2 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers for DWC3 core
+        pr_info("\tIDR Actual ID[%d] %s Expected Value[%d]\n", id, (id ==
+*expected_val)?"==":"!=", *expected_val);
+        return 0;
+}
 
-> > > +Required properities :
-> > > +- compatible : sould be "qcom,dwc3-ssphy";
-> > > +- reg : offset and length of the register set in the memory map
-> > > +- clocks : phandles to clock instances of the device tree nodes
-> > > +- clock-names :
-> > > +	"xo" : External reference clock 19 MHz
-> > > +	"ref_clk" : Reference clock - used in host mode.
-> > > +<supply-name>-supply : phandle to the regulator device tree node
-> > > +Required "supply-name" are:
-> > > +	"v1p8" : 1.8v supply for SS-PHY
-> > > +	"vddcx" : vdd supply for SS-PHY digital circuit operation
-> 
-> likewise, these regulators should be moved to the PHY driver.
-> 
-> > > +Required properties :
-> > > +- compatible : should be "qcom,dwc3"
-> > > +- reg : offset and length of the register set in the memory map
-> > > +	offset and length of the TCSR register for routing USB
-> > > +	signals to either picoPHY0 or picoPHY1.
-> > > +- clocks : phandles to clock instances of the device tree nodes
-> > > +- clock-names :
-> > > +	"core_clk" : Master/Core clock, have to be >= 125 MHz for SS
-> > > +	operation and >= 60MHz for HS operation
-> > > +	"iface_clk" : System bus AXI clock
-> > > +	"sleep_clk" : Sleep clock, used when USB3 core goes into low
-> > > +	power mode (U3).
-> > > +	"utmi_clk" : Generated by HS-PHY. Used to clock the low power
-> > > +	parts of thr HS Link layer.
-> > > +
-> > > +Optional properties :
-> > > +- gdsc-supply : phandle to the globally distributed switch controller
-> > > +  regulator node to the USB controller.
-> > > +
-> > > +Sub nodes:
-> > > +- Sub node for "DWC3 USB3 controller".
-> > > +  This sub node is required property for device node. The properties
-> > > +  of this subnode are specified in dwc3.txt.
-> > 
-> > Is tx-fifo-resize required for qcom,dwc3? if so we should call that
-> > out in the binding.
-> 
-> AFAICT that's only needed for OMAP5 ES1.0. Unless Qualcomm also screwed
-> up default TX FIFO sizes :-p
+static void process_idr_entry(struct idr *stateids, int min_stateid)
+{
+        int             new_stid;
+        int             error;
 
-Or it is intentional? :-) Look at [1] dwc3@f9200000
+        pr_info("\nProcessing for min_stateid[%d]\n", min_stateid);
+        if (!idr_pre_get(stateids, GFP_KERNEL)) {
+                pr_info("Failed to pre-get\n");
+                return;
+        }
 
-Ivan
+        error = idr_get_new_above(stateids, &new_stid, min_stateid,
+&new_stid);
+        if (error) {
+                pr_info("Failed to get new id\n");
+                idr_remove(stateids, new_stid);
+                return;
+        }
 
-[1] https://www.codeaurora.org/cgit/quic/la/kernel/msm/tree/arch/arm/boot/dts/apq8084.dtsi?h=msm-3.4
+        pr_info("Allocated new_stid[%d]\n", new_stid);
 
-> 
+        if (!idr_find(stateids, new_stid))
+                pr_info("BUG: Cant find ID[%d]\n", new_stid);
 
+        pr_info("Dumping entries in IDR\n");
+        idr_for_each(stateids, &log_idr_entry, NULL);
+        idr_remove(stateids, new_stid);
+}
 
+void driver_exit(void)
+{
+}
+
+int driver_init(void)
+{
+        struct idr      stateids;
+
+        idr_init(&stateids);
+        process_idr_entry(&stateids, 0/*min_stateid*/);
+        process_idr_entry(&stateids, 1073741823/*min_stateid*/);
+        process_idr_entry(&stateids, 1073741824/*min_stateid*/);
+        idr_remove_all(&stateids);
+        idr_destroy(&stateids);
+        return 0;
+}
+
+module_init(driver_init);
+module_exit(driver_exit);
+
+-----Original Message-----
+From: Greg KH [mailto:gregkh@linuxfoundation.org]
+Sent: Tuesday, August 13, 2013 1:03 PM
+To: Shyam Kaushik
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: BUG REPORT - IDR wraps around at 30-bits - works very bad
+with NFSD/SCTP
+
+On Tue, Aug 13, 2013 at 12:31:29PM +0530, Shyam Kaushik wrote:
+>         pr_info("%d\n", MAX_INT);
+
+How did this line build, there is no MAX_INT in the kernel tree.
+
+odd.
+
+greg k-h
+
+-----
+No virus found in this message.
+Checked by AVG - www.avg.com
+Version: 2013.0.2904 / Virus Database: 3211/6571 - Release Date: 08/12/13
