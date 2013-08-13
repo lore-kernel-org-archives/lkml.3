@@ -1,70 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759391Ab3HMWe5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 18:34:57 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:41040 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759274Ab3HMWe4 (ORCPT
+	id S1759395Ab3HMWg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:36:27 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:38417 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759250Ab3HMWgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 18:34:56 -0400
-Date: Tue, 13 Aug 2013 18:34:53 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        chris <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH][RFC] tracing: Enable tracepoints via module parameters
-Message-ID: <20130813223453.GB15394@Krystal>
-References: <1299622684.20306.77.camel@gandalf.stny.rr.com> <877hc64klm.fsf@rustcorp.com.au> <20130813111442.632f3421@gandalf.local.home>
+	Tue, 13 Aug 2013 18:36:24 -0400
+Date: Tue, 13 Aug 2013 15:36:22 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/17] 3.4.58-stable review
+Message-ID: <20130813223622.GA12790@roeck-us.net>
+References: <20130813063501.728847844@linuxfoundation.org>
+ <520A1D56.2050507@roeck-us.net>
+ <20130813175858.GC7336@kroah.com>
+ <20130813201936.GA18358@roeck-us.net>
+ <CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130813111442.632f3421@gandalf.local.home>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-[...]
-> But the thing about this that bothers me is that there's no way to say,
-> "Enable all tracepoints in this module on load". I would like a way to
-> do that, but I don't know of a way to do that without modifying the
-> module code. Have any ideas? Basically, I would love to have:
+On Tue, Aug 13, 2013 at 10:49:42PM +0200, Geert Uytterhoeven wrote:
+> On Tue, Aug 13, 2013 at 10:19 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > powerpc/chroma_defconfig:
+> > arch/powerpc/mm/numa.c: In function 'do_init_bootmem':
+> > arch/powerpc/mm/numa.c:529:19: error: 'aa.arrays' may be used uninitialized in this function [-Werror=maybe-uninitialized]
+> > arch/powerpc/mm/numa.c:642:22: note: 'aa.arrays' was declared here
+> > cc1: all warnings being treated as errors
+> >
+> > No idea. Code looks all different in 3.10.
 > 
-> insmod foo tracepoints=all
+> Never seen in my log collection from kissb, which doesn't build
+> chroma_defconfig.
 > 
-> or something and have all tracepoints enabled.
+> > m68k/allmodconfig:
+> > drivers/hid/hid-microsoft.c: In function 'ms_report_fixup':
+> > drivers/hid/hid-microsoft.c:52:18: error: macro "memcmp" passed 6 arguments, but takes just 3
+> > drivers/hid/hid-microsoft.c:51:5: error: 'memcmp' undeclared (first use in this function)
+> > drivers/hid/hid-microsoft.c:51:5: note: each undeclared identifier is reported only once for each function it appears in
+> 
+> Fixed in v3.7-rc6:
+> 
+> commit 6b90466cfec2a2fe027187d675d8d14217c12d82
+> Author: Jiri Slaby <jslaby@suse.cz>
+> Date:   Mon Nov 12 10:16:09 2012 +0100
+> 
+>     HID: microsoft: do not use compound literal - fix build
+> 
+Confirmed. Patching this commit into 3.4 fixes the build for m68k/allmodconfig.
 
-If it can help, here is a very similar scenario: tracepoints in
-lttng-ust (user land) deal with dynamically loaded libraries that are
-loaded at any point during program execution, which is very much similar
-to the kernel module use-case discussed here.
+> > blackfin/defconfig:
+> > ERROR: "vm_iomap_memory" [drivers/video/fb.ko] undefined!
+> > make[1]: *** [__modpost] Error 1
+> >
+> > sh/defconfig:
+> > drivers/built-in.o: In function `fb_mmap':
+> > fbmem.c:(.text+0x5e8): undefined reference to `vm_iomap_memory'
+> >
+> > Both look similar and might be easy to fix if someone knows what is wrong.
+> 
+> Fixed in v3.9:
+> 
+> commit 3c0b9de6d37a481673e81001c57ca0e410c72346
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Sat Apr 27 13:25:38 2013 -0700
+> 
+>     vm: add no-mmu vm_iomap_memory() stub
+> 
+Confirmed. Patching this commit into 3.4 fixes the build for
+both blackbuid/defconfig and sh/defconfig.
 
-The way a user interacts with lttng to enable, e.g. all tracepoints
-within "app_component" would be:
+> > cris/...:
+> > In file included from include/linux/page-flags.h:8:0,
+> >                  from kernel/bounds.c:9:
+> > include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
+> > include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
+> > include/linux/types.h:30:1: error: unknown type name '__kernel_pid_t'
+> > include/linux/types.h:31:1: error: unknown type name '__kernel_daddr_t'
+> > include/linux/types.h:33:1: error: unknown type name '__kernel_suseconds_t'
+> >
+> > That one might be tricky (or simple if someone knows what is wrong).
+> 
+> Fixed in v3.5-rc1:
+> 
+> commit 74f077d2a7651409c44bb323471f219a4b0d2aab
+> Author: Jiri Slaby <jslaby@suse.cz>
+> Date:   Mon Apr 2 13:40:17 2012 +0200
+> 
+>     cris: posix_types.h, include asm-generic/posix_types.h
+> 
+It does fix above error, but then there is another error:
 
-lttng enable-event -u 'app_component:*'
+  AS      arch/cris/arch-v10/lib/checksum.o
+In file included from <command-line>:4:0:
+/home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
+make[1]: *** [arch/cris/arch-v10/lib/checksum.o] Error 1
+make[1]: *** Waiting for unfinished jobs....
+  AS      arch/cris/arch-v10/lib/checksumcopy.o
+In file included from <command-line>:4:0:
+/home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
+make[1]: *** [arch/cris/arch-v10/lib/checksumcopy.o] Error 1
 
-Then, whenever a library containing tracepoints is loaded, the
-tracepoints contained within the library are registered to lttng-ust,
-and it enables all tracepoint matching the user-specified wildcard.
-
-What I like about this approach, if applied to kernel modules, is that
-it does not require users to interact with module load parameters to
-specify which tracepoints should be enabled: this is all done through
-the regular tracer UI, thus greatly improving user experience.
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Guenter
