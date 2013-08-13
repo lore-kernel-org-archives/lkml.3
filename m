@@ -1,147 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab3HMHSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:18:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33286 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab3HMHST (ORCPT
+	id S1756455Ab3HMHTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:19:14 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:14065 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754914Ab3HMHTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:18:19 -0400
-Date: Tue, 13 Aug 2013 00:19:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Shyam Kaushik <shyam@zadarastorage.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: BUG REPORT - IDR wraps around at 30-bits - works very bad with
- NFSD/SCTP
-Message-ID: <20130813071944.GA11270@kroah.com>
-References: <9a92eee58fefc1b8e3b4771ecf210d29@mail.gmail.com>
+	Tue, 13 Aug 2013 03:19:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 13 Aug 2013 00:17:15 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@kernel.org>, <sameo@linux.intel.com>
+CC: <rob.herring@calxeda.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <rob@landley.net>, <lee.jones@linaro.org>, <grant.likely@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gg@slimlogic.co.uk>, <kishon@ti.com>,
+        <j-keerthy@ti.com>, <ian.campbell@citrix.com>, <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 0/3] regulator: palams: add support for external control of rail
+Date: Tue, 13 Aug 2013 13:03:42 +0530
+Message-ID: <1376379225-10604-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <9a92eee58fefc1b8e3b4771ecf210d29@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 12:31:29PM +0530, Shyam Kaushik wrote:
-> Hi Folks,
-> 
-> We are using Ubuntu linux kernel 3.2.0-25-generic & 3.8.13-030813-generic
-> in our environments, but I think this bug is still present in mainline
-> kernel. Clients of IDR rollover at MAX_INT (NFSD & SCTP in kernel do this)
-> & others on MAX_IDR_MASK. This is ideally 2^31. But there is some BUG
-> within IDR that it wraps over at 2^30.
-> 
-> NFSD uses IDR for maintaining its stateids & tracks min_stateid with a
-> static variable which keeps incrementing. So over a period of time NFSD
-> could run into the issue that it allocates an ID with IDR, but IDR cant
-> locate this ID, resulting in NFSD constantly sending BAD_STATEIDS to all
-> its clients.
-> 
-> Following short driver (which closely resembles NFSD usage of IDR) shows
-> the BUG within IDR:
+This series add the enable/disable of the Palmas regulators to be controlled by
+external input signals ENABLE1, ENABLE2 and NSLEEP.
 
-The IDR code was rewritten very recently (3.9 or 3.10), so could you
-test 3.10.6 out and let us know if this is still an issue there?  And if
-so, cc: the idr developers (on cc:) would help out a lot.
+The change is generated on top of
+[PATCH v4] regulator: palmas: model SMPS10 as two regulators
+by Kishone.
 
-Example left below for them...
+I think it should go on regulator tree if it is fine after review.
 
-thanks,
+Laxman Dewangan (3):
+  regulator: palmas: Update the DT binding doc for smps10 out1 and out2
+  mfd: palmas: add support for external control configuration
+  regulator: palmas: add support for external control of rails
 
-greg k-h
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |   12 +-
+ drivers/mfd/palmas.c                               |   97 ++++++++++++++
+ drivers/regulator/palmas-regulator.c               |  139 +++++++++++++++++++-
+ include/linux/mfd/palmas.h                         |   49 +++++++
+ 4 files changed, 287 insertions(+), 10 deletions(-)
 
-> 
-> #include <linux/module.h>
-> #include <linux/init.h>
-> #include <linux/version.h>
-> #include <linux/idr.h>
-> 
-> static int log_idr_entry(int id, void *ptr, void *data)
-> {
->         int     *expected_val = (int *)ptr;
-> 
->         pr_info("\tIDR Actual ID[%d] %s Expected Value[%d]\n", id, (id ==
-> *expected_val)?"==":"!=", *expected_val);
->         return 0;
-> }
-> 
-> static void process_idr_entry(struct idr *stateids, int min_stateid)
-> {
->         int             new_stid;
->         int             error;
-> 
->         pr_info("\nProcessing for min_stateid[%d]\n", min_stateid);
->         if (!idr_pre_get(stateids, GFP_KERNEL)) {
->                 pr_info("Failed to pre-get\n");
->                 return;
->         }
-> 
->         error = idr_get_new_above(stateids, &new_stid, min_stateid,
-> &new_stid);
->         if (error) {
->                 pr_info("Failed to get new id\n");
->                 idr_remove(stateids, new_stid);
->                 return;
->         }
-> 
->         pr_info("Allocated new_stid[%d]\n", new_stid);
-> 
->         if (!idr_find(stateids, new_stid))
->                 pr_info("BUG: Cant find ID[%d]\n", new_stid);
-> 
->         pr_info("Dumping entries in IDR\n");
->         idr_for_each(stateids, &log_idr_entry, NULL);
->         idr_remove(stateids, new_stid);
-> }
-> 
-> void driver_exit(void)
-> {
-> }
-> 
-> int driver_init(void)
-> {
->         struct idr      stateids;
-> 
->         pr_info("%d\n", MAX_INT);
->         idr_init(&stateids);
->         process_idr_entry(&stateids, 0/*min_stateid*/);
->         process_idr_entry(&stateids, 1073741823/*min_stateid*/);
->         process_idr_entry(&stateids, 1073741824/*min_stateid*/);
->         idr_remove_all(&stateids);
->         idr_destroy(&stateids);
->         return 0;
-> }
-> 
-> module_init(driver_init);
-> module_exit(driver_exit);
-> 
-> 
-> Upon loading the driver, the following message shows up
-> [71641.440846] Processing for min_stateid[0]
-> [71641.440857] Allocated new_stid[0]
-> [71641.440859] Dumping entries in IDR
-> [71641.440861]  IDR Actual ID[0] == Expected Value[0]
-> [71641.440864]
-> [71641.440864] Processing for min_stateid[1073741823]
-> [71641.440867] Allocated new_stid[1073741823]
-> [71641.440868] Dumping entries in IDR
-> [71641.440876]  IDR Actual ID[1073741823] == Expected Value[1073741823]
-> [71641.440878]
-> [71641.440878] Processing for min_stateid[1073741824]
-> [71641.440883] Allocated new_stid[1073741824]
-> [71641.440884] BUG: Cant find ID[1073741824]
-> [71641.440886] Dumping entries in IDR
-> [71641.440887]  IDR Actual ID[0] != Expected Value[1073741824]
-> 
-> i.e. when we allocate a stated==1073741824, IDR internally has it as 0.
-> 
-> --Shyam
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
