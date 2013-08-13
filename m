@@ -1,60 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759233Ab3HMWRn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 18:17:43 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:52659 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758830Ab3HMWRl (ORCPT
+	id S932190Ab3HMWSJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:18:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41259 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758937Ab3HMWSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 18:17:41 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>
-Subject: Re: [GIT PULL v2] msm cleanups for v3.12
-References: <1375909096-22088-1-git-send-email-davidb@codeaurora.org>
-	<1375916792-24408-1-git-send-email-davidb@codeaurora.org>
-Date: Tue, 13 Aug 2013 15:17:37 -0700
-In-Reply-To: <1375916792-24408-1-git-send-email-davidb@codeaurora.org> (David
-	Brown's message of "Wed, 7 Aug 2013 16:06:32 -0700")
-Message-ID: <87eh9xgrr2.fsf@kernel.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 13 Aug 2013 18:18:07 -0400
+Date: Tue, 13 Aug 2013 15:18:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] mm: make lru_add_drain_all() selective
+Message-Id: <20130813151805.b1177b60cba5b127b2aa6aee@linux-foundation.org>
+In-Reply-To: <20130813220700.GC28996@mtj.dyndns.org>
+References: <5202CEAA.9040204@linux.vnet.ibm.com>
+	<201308072335.r77NZZwl022494@farm-0012.internal.tilera.com>
+	<20130812140520.c6a2255d2176a690fadf9ba7@linux-foundation.org>
+	<52099187.80301@tilera.com>
+	<20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org>
+	<20130813201958.GA28996@mtj.dyndns.org>
+	<20130813133135.3b580af557d1457e4ee8331a@linux-foundation.org>
+	<20130813210719.GB28996@mtj.dyndns.org>
+	<20130813141621.3f1c3415901d4236942ee736@linux-foundation.org>
+	<20130813220700.GC28996@mtj.dyndns.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Brown <davidb@codeaurora.org> writes:
+On Tue, 13 Aug 2013 18:07:00 -0400 Tejun Heo <tj@kernel.org> wrote:
 
-> The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
->
->   Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-cleanup3-for-3.12
->
-> for you to fetch changes up to 3294a7e7c3a55bb4eb9d98b0af5643a7ea44afe1:
->
->   ARM: msm: Only compile io.c on platforms that use it (2013-08-06 11:18:04 -0700)
->
-> ----------------------------------------------------------------
-> General cleanups for MSM for 3.12
->
-> This is a series of cleanups to the MSM code.  These are a healthy
-> start to bringing the MSM code closer to the state of current ARM code
-> and getting more of it ready for conversion to devicetree.
+> Hello,
+> 
+> On Tue, Aug 13, 2013 at 02:16:21PM -0700, Andrew Morton wrote:
+> > I've yet to see any evidence that callback APIs have been abused and
+> > I've yet to see any reasoning which makes me believe that this one will
+> > be abused.
+> 
+> Well, off the top of my head.
+> 
+> * In general, it's clunkier.  Callbacks become artificial boundaries
+>   across which context has to be carried over explicitly.  It often
+>   involves packing data into a temporary struct.  The artificial
+>   barrier also generally makes the logic more difficult to follow.
+>   This is pretty general problem with callback based interface and why
+>   many programming languages / conventions prefer iterator style
+>   interface over callback based ones.  It makes the code a lot easier
+>   to organize around the looping construct.  Here, it isn't as
+>   pronounced because the thing naturally requires a callback anyway.
+> 
+> * From the API itself, it often isn't clear what restrictions the
+>   context the callback is called under would have.  It sure is partly
+>   documentation problem but is pretty easy to get wrong inadvertantly
+>   as the code evolves and can be difficult to spot as the context
+>   isn't apparent.
+> 
+> Moving away from callbacks started with higher level languages but the
+> kernel sure is on the boat too where possible.  This one is muddier as
+> the interface is async in nature but still it's at least partially
+> applicable.
 
-Pulled.
+I don't buy it.  The callback simply determines whether "we need to
+schuedule work on this cpu".  It's utterly simple.  Nobody will have
+trouble understanding or using such a thing.
 
-Thanks for the nice cleanups and getting closer to multi-platform
-support.
+> > >  It feels a bit silly to me to push the API
+> > > that way when doing so doesn't even solve the allocation problem.
+> > 
+> > It removes the need to perform a cpumask allocation in
+> > lru_add_drain_all().
+> 
+> But that doesn't really solve anything, does it?
 
-Kevin
+It removes one memory allocation and initialisation per call.  It
+removes an entire for_each_online_cpu() loop.
+
+> > >  It doesn't really buy us much while making the interface more complex.
+> > 
+> > It's a superior interface.
+> 
+> It is more flexible but at the same time clunkier.
+
+The callback predicate is a quite natural thing in this case.
+
+>  I wouldn't call it
+> superior and the flexibility doesn't buy us much here.
+
+It buys quite a lot and demonstrates why a callback interface is better.
+
+
+I really don't understand what's going on here.  You're advocating for
+a weaker kernel interface and for inferior kernel runtime behaviour. 
+Forcing callers to communicate their needs via a large,
+dynamically-allocated temporary rather than directly.  And what do we
+get in return for all this?  Some stuff about callbacks which frankly
+has me scratching my head.
+
