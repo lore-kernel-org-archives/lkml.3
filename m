@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab3HMGdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:33:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60610 "EHLO
+	id S1757376Ab3HMGd7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:33:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60701 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756992Ab3HMGdi (ORCPT
+	with ESMTP id S1757324Ab3HMGdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:38 -0400
+	Tue, 13 Aug 2013 02:33:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>, Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 04/60] powerpc: On POWERNV enable PPC_DENORMALISATION by default
-Date: Mon, 12 Aug 2013 23:33:31 -0700
-Message-Id: <20130813063332.362692757@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 52/60] debugfs: debugfs_remove_recursive() must not rely on list_empty(d_subdirs)
+Date: Mon, 12 Aug 2013 23:34:19 -0700
+Message-Id: <20130813063338.520866227@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -27,32 +26,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 4e90a2a7375e86827541bda9393414c03e7721c6 upstream.
+commit 776164c1faac4966ab14418bb0922e1820da1d19 upstream.
 
-We want PPC_DENORMALISATION enabled when POWERNV is enabled,
-so update the Kconfig.
+debugfs_remove_recursive() is wrong,
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+1. it wrongly assumes that !list_empty(d_subdirs) means that this
+   dir should be removed.
+
+   This is not that bad by itself, but:
+
+2. if d_subdirs does not becomes empty after __debugfs_remove()
+   it gives up and silently fails, it doesn't even try to remove
+   other entries.
+
+   However ->d_subdirs can be non-empty because it still has the
+   already deleted !debugfs_positive() entries.
+
+3. simple_release_fs() is called even if __debugfs_remove() fails.
+
+Suppose we have
+
+	dir1/
+		dir2/
+			file2
+		file1
+
+and someone opens dir1/dir2/file2.
+
+Now, debugfs_remove_recursive(dir1/dir2) succeeds, and dir1/dir2 goes
+away.
+
+But debugfs_remove_recursive(dir1) silently fails and doesn't remove
+this directory. Because it tries to delete (the already deleted)
+dir1/dir2/file2 again and then fails due to "Avoid infinite loop"
+logic.
+
+Test-case:
+
+	#!/bin/sh
+
+	cd /sys/kernel/debug/tracing
+	echo 'p:probe/sigprocmask sigprocmask' >> kprobe_events
+	sleep 1000 < events/probe/sigprocmask/id &
+	echo -n >| kprobe_events
+
+	[ -d events/probe ] && echo "ERR!! failed to rm probe"
+
+And after that it is not possible to create another probe entry.
+
+With this patch debugfs_remove_recursive() skips !debugfs_positive()
+files although this is not strictly needed. The most important change
+is that it does not try to make ->d_subdirs empty, it simply scans
+the whole list(s) recursively and removes as much as possible.
+
+Link: http://lkml.kernel.org/r/20130726151256.GC19472@redhat.com
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/debugfs/inode.c |   69 ++++++++++++++++-------------------------------------
+ 1 file changed, 22 insertions(+), 47 deletions(-)
 
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -572,7 +572,7 @@ config SCHED_SMT
- config PPC_DENORMALISATION
- 	bool "PowerPC denormalisation exception handling"
- 	depends on PPC_BOOK3S_64
--	default "n"
-+	default "y" if PPC_POWERNV
- 	---help---
- 	  Add support for handling denormalisation of single precision
- 	  values.  Useful for bare metal only.  If unsure say Y here.
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -533,8 +533,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
+  */
+ void debugfs_remove_recursive(struct dentry *dentry)
+ {
+-	struct dentry *child;
+-	struct dentry *parent;
++	struct dentry *child, *next, *parent;
+ 
+ 	if (IS_ERR_OR_NULL(dentry))
+ 		return;
+@@ -544,61 +543,37 @@ void debugfs_remove_recursive(struct den
+ 		return;
+ 
+ 	parent = dentry;
++ down:
+ 	mutex_lock(&parent->d_inode->i_mutex);
++	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
++		if (!debugfs_positive(child))
++			continue;
+ 
+-	while (1) {
+-		/*
+-		 * When all dentries under "parent" has been removed,
+-		 * walk up the tree until we reach our starting point.
+-		 */
+-		if (list_empty(&parent->d_subdirs)) {
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			if (parent == dentry)
+-				break;
+-			parent = parent->d_parent;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-		}
+-		child = list_entry(parent->d_subdirs.next, struct dentry,
+-				d_u.d_child);
+- next_sibling:
+-
+-		/*
+-		 * If "child" isn't empty, walk down the tree and
+-		 * remove all its descendants first.
+-		 */
++		/* perhaps simple_empty(child) makes more sense */
+ 		if (!list_empty(&child->d_subdirs)) {
+ 			mutex_unlock(&parent->d_inode->i_mutex);
+ 			parent = child;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-			continue;
++			goto down;
+ 		}
+-		__debugfs_remove(child, parent);
+-		if (parent->d_subdirs.next == &child->d_u.d_child) {
+-			/*
+-			 * Try the next sibling.
+-			 */
+-			if (child->d_u.d_child.next != &parent->d_subdirs) {
+-				child = list_entry(child->d_u.d_child.next,
+-						   struct dentry,
+-						   d_u.d_child);
+-				goto next_sibling;
+-			}
+-
+-			/*
+-			 * Avoid infinite loop if we fail to remove
+-			 * one dentry.
+-			 */
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			break;
+-		}
+-		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
++ up:
++		if (!__debugfs_remove(child, parent))
++			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 	}
+ 
+-	parent = dentry->d_parent;
++	mutex_unlock(&parent->d_inode->i_mutex);
++	child = parent;
++	parent = parent->d_parent;
+ 	mutex_lock(&parent->d_inode->i_mutex);
+-	__debugfs_remove(dentry, parent);
++
++	if (child != dentry) {
++		next = list_entry(child->d_u.d_child.next, struct dentry,
++					d_u.d_child);
++		goto up;
++	}
++
++	if (!__debugfs_remove(child, parent))
++		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 	mutex_unlock(&parent->d_inode->i_mutex);
+-	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ }
+ EXPORT_SYMBOL_GPL(debugfs_remove_recursive);
+ 
 
 
