@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757670Ab3HMGhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:37:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60824 "EHLO
+	id S1757664Ab3HMGhr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:37:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60820 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757554Ab3HMGex (ORCPT
+	with ESMTP id S1757542Ab3HMGex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Aug 2013 02:34:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sumit Saxena <sumit.saxena@lsi.com>,
-        Kashyap Desai <kashyap.desai@lsi.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Stuart Foster <smf.linux@ntlworld.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 02/17] SCSI: megaraid_sas: megaraid_sas driver init fails in kdump kernel
-Date: Mon, 12 Aug 2013 23:35:48 -0700
-Message-Id: <20130813063501.934380668@linuxfoundation.org>
+Subject: [ 01/17] SCSI: Dont attempt to send extended INQUIRY command if skip_vpd_pages is set
+Date: Mon, 12 Aug 2013 23:35:47 -0700
+Message-Id: <20130813063501.839896135@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063501.728847844@linuxfoundation.org>
 References: <20130813063501.728847844@linuxfoundation.org>
@@ -28,56 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Sumit.Saxena@lsi.com" <Sumit.Saxena@lsi.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit 6431f5d7c6025f8b007af06ea090de308f7e6881 upstream.
+commit 7562523e84ddc742fe1f9db8bd76b01acca89f6b upstream.
 
-Problem: When Hardware IOMMU is on, megaraid_sas driver initialization fails
-in kdump kernel with LSI MegaRAID controller(device id-0x73).
+If a device has the skip_vpd_pages flag set we should simply fail the
+scsi_get_vpd_page() call.
 
-Actually this issue needs fix in firmware, but for firmware running in field,
-this driver fix is proposed to resolve the issue.  At firmware initialization
-time, if firmware does not come to ready state, driver will reset the adapter
-and retry for firmware transition to ready state unconditionally(not only
-executed for kdump kernel).
-
-Signed-off-by: Sumit Saxena <sumit.saxena@lsi.com>
-Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Stuart Foster <smf.linux@ntlworld.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/scsi/scsi.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -3493,11 +3493,21 @@ static int megasas_init_fw(struct megasa
- 		break;
- 	}
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -1025,6 +1025,9 @@ int scsi_get_vpd_page(struct scsi_device
+ {
+ 	int i, result;
  
--	/*
--	 * We expect the FW state to be READY
--	 */
--	if (megasas_transition_to_ready(instance, 0))
--		goto fail_ready_state;
-+	if (megasas_transition_to_ready(instance, 0)) {
-+		atomic_set(&instance->fw_reset_no_pci_access, 1);
-+		instance->instancet->adp_reset
-+			(instance, instance->reg_set);
-+		atomic_set(&instance->fw_reset_no_pci_access, 0);
-+		dev_info(&instance->pdev->dev,
-+			"megasas: FW restarted successfully from %s!\n",
-+			__func__);
++	if (sdev->skip_vpd_pages)
++		goto fail;
 +
-+		/*waitting for about 30 second before retry*/
-+		ssleep(30);
-+
-+		if (megasas_transition_to_ready(instance, 0))
-+			goto fail_ready_state;
-+	}
- 
- 	/* Check if MSI-X is supported while in ready state */
- 	msix_enable = (instance->instancet->read_fw_status_reg(reg_set) &
+ 	/* Ask for all the pages supported by this device */
+ 	result = scsi_vpd_inquiry(sdev, buf, 0, buf_len);
+ 	if (result)
 
 
