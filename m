@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758816Ab3HMQhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:37:19 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45904 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757589Ab3HMQhQ convert rfc822-to-8bit (ORCPT
+	id S1758737Ab3HMQg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:36:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33381 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755686Ab3HMQ0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 12:37:16 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130813163439.GA8805@cantiga.alporthouse.com>
-References: <20130813092554.GA4519@cantiga.alporthouse.com>
-	<CA+icZUUrJt_sJqp0CNMuM_b36tvv_rUskegLY5zcnm0w+JcW5Q@mail.gmail.com>
-	<20130813093920.GB4519@cantiga.alporthouse.com>
-	<CA+icZUVEcCTbBre99FWiDXRAMKcdQxUagXE-2-rO9g=YVUAieQ@mail.gmail.com>
-	<20130813095259.GC4519@cantiga.alporthouse.com>
-	<CA+icZUX6KM3dKrdX3Qkwg-DeBYobjQ+WG6oQEUjJQG3Q=qf+Sg@mail.gmail.com>
-	<CA+icZUWPdivbDc=cBUR2BJzKGwWwK-P0OP0CZ5EfCupii7sP_w@mail.gmail.com>
-	<CA+icZUUKH6Fa8WksqA69FXKUUJmKsNdXv0ZJH50HA2mFavfPCg@mail.gmail.com>
-	<CA+icZUXC73i4hO7LHDQ=85__JtrZmSMB+KyUnS+G6vRmm_=tkg@mail.gmail.com>
-	<CA+icZUXdS3EuXyGZiS1--rMu6H0ospzCiK_CXgPv8mOk0sMt+Q@mail.gmail.com>
-	<20130813163439.GA8805@cantiga.alporthouse.com>
-Date: Tue, 13 Aug 2013 18:37:15 +0200
-Message-ID: <CA+icZUX8HZD3z-uwTMWX9CoLdYYqyPVuhH-vWGhJuoonvMQTbQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical mode ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "s.dilek" <s.dilek@jpberlin.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Aug 2013 12:26:47 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=-UT6RKgOsmYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=9Vqvd-N0FfIA:10 a=pGLkceISAAAA:8 a=N54-gffFAAAA:8 a=JfrnYn6hAAAA:8 a=rOUgymgbAAAA:8 a=VwQbUJbxAAAA:8 a=n89epd5HrI16DDiEk2AA:9 a=MSl-tDqOz04A:10 a=nAPXUAfsBmEA:10 a=3Rfx1nUSh_UA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130813155836.823075746@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 13 Aug 2013 11:58:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [82/88] timer: Fix jiffies wrap behavior of round_jiffies_common()
+References: <20130813155654.069291373@goodmis.org>
+Content-Disposition: inline; filename=0082-timer-Fix-jiffies-wrap-behavior-of-round_jiffies_com.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 6:34 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Tue, Aug 13, 2013 at 06:23:29PM +0200, Sedat Dilek wrote:
->> On Tue, Aug 13, 2013 at 5:59 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> > I have bisected the issue on Linux v3.11-rc5 + drm-intel-nightly:
->> >
->> > 5456fe3882812aba251886e36fe55bfefb8e8829 is the first bad commit
->> > commit 5456fe3882812aba251886e36fe55bfefb8e8829
->> > Author: Chris Wilson <chris@chris-wilson.co.uk>
->> > Date:   Thu Aug 8 14:41:07 2013 +0100
->> >
->> >     drm/i915: Allocate LLC ringbuffers from stolen
->> >
->> >     As stolen objects now behave identically (wrt to default LLC cacheing)
->> >     as their normal system counterparts, we no longer have to differentiate
->> >     our usage for ringbuffers. So allocate them from stolen on SNB+ as well.
->> >
->> >     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
->> >     Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
->> >     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
->> >
->> > :040000 040000 de063a052f39095f4d2f51b49caef9f827df41e8
->> > 1c819aa5501a9fcc9912a5c7c037c71b9b9e9a6b M      drivers
->> >
->> > See also attached files!
->> >
->>
->> With the attached revert-patch my system is OK (with my customized X stack).
->
-> No indication of a GPU hang? I'm puzzled as to how this ends up with the
-> scanout being misread.
->
-> cat /sys/kernel/debug/dri/0/i915_gem_stolen
-> cat /sys/kernel/debug/dri/0/i915_gem_framebuffer
->
-> would be interesting.
+3.6.11.7-rc1 stable review patch.
+If anyone has any objections, please let me know.
 
-With revert-patch applied:
+------------------
 
-$ sudo cat /sys/kernel/debug/dri/0/i915_gem_stolen
-Stolen:
-   ffff88007f6f5200: p g     4128KiB 77 00 0 0 0 uncached (name: 1)
-(pinned x 1) (display) (ggtt offset: 00072000, size: 00408000)
-(stolen: 00000000) (p mappable)
-Total 1 objects, 4227072 bytes, 4227072 GTT size
+From: Bart Van Assche <bart.vanassche@gmail.com>
 
-$ sudo cat /sys/kernel/debug/dri/0/i915_gem_framebuffer
-fbcon size: 1366 x 768, depth 24, 32 bpp, refcount 2, obj
-ffff88007f6f5200: p g     4128KiB 77 00 0 0 0 uncached (name: 1)
-(pinned x 1) (display) (ggtt offset: 00072000, size: 00408000)
-(stolen: 00000000) (p mappable)
-user size: 1366 x 768, depth 24, 32 bpp, refcount 3, obj
-ffff88007f6f5080: pXg     5120KiB 36 02 124873 124873 0 uncached dirty
-(name: 3) (pinned x 1) (display) (fence: 0) (ggtt offset: 0047a000,
-size: 00500000) (p mappable) (blitter ring)
+[ Upstream commit 9e04d3804d3ac97d8c03a41d78d0f0674b5d01e1 ]
 
-- Sedat -
+Direct compare of jiffies related values does not work in the wrap
+around case. Replace it with time_is_after_jiffies().
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Link: http://lkml.kernel.org/r/519BC066.5080600@acm.org
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/timer.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 4cefc08..118237f 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -146,9 +146,11 @@ static unsigned long round_jiffies_common(unsigned long j, int cpu,
+ 	/* now that we have rounded, subtract the extra skew again */
+ 	j -= cpu * 3;
+ 
+-	if (j <= jiffies) /* rounding ate our timeout entirely; */
+-		return original;
+-	return j;
++	/*
++	 * Make sure j is still in the future. Otherwise return the
++	 * unmodified value.
++	 */
++	return time_is_after_jiffies(j) ? j : original;
+ }
+ 
+ /**
+-- 
+1.7.10.4
+
+
