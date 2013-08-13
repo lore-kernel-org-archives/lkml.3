@@ -1,137 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759320Ab3HMWWm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 18:22:42 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:35461 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759164Ab3HMWWl (ORCPT
+	id S1759301Ab3HMW0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:26:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41283 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758951Ab3HMW0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 18:22:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1376430401-67445-1-git-send-email-linn@hp.com>
-References: <1376348482-1357-1-git-send-email-linn@hp.com>
-	<1376430401-67445-1-git-send-email-linn@hp.com>
-Date: Tue, 13 Aug 2013 15:22:40 -0700
-X-Google-Sender-Auth: 4wbXRT-PabFqBnbwUYp7fguDwjs
-Message-ID: <CAE9FiQUyGH94SAz_g3RqciB275sK_QEHSogiex5O9GNRSaAj1A@mail.gmail.com>
-Subject: Re: [PATCH v3] x86: avoid remapping data in parse_setup_data()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linn Crosetto <linn@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 13 Aug 2013 18:26:23 -0400
+Date: Tue, 13 Aug 2013 15:26:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH v4 2/2] mm: make lru_add_drain_all() selective
+Message-Id: <20130813152622.f15dcaaa672ba182308ce29f@linux-foundation.org>
+In-Reply-To: <520AAF9C.1050702@tilera.com>
+References: <5202CEAA.9040204@linux.vnet.ibm.com>
+	<201308072335.r77NZZwl022494@farm-0012.internal.tilera.com>
+	<20130812140520.c6a2255d2176a690fadf9ba7@linux-foundation.org>
+	<52099187.80301@tilera.com>
+	<20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org>
+	<20130813201958.GA28996@mtj.dyndns.org>
+	<20130813133135.3b580af557d1457e4ee8331a@linux-foundation.org>
+	<520A9E4A.2050203@tilera.com>
+	<20130813141329.c55deccf462f3ad49129bbca@linux-foundation.org>
+	<520AAF9C.1050702@tilera.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 2:46 PM, Linn Crosetto <linn@hp.com> wrote:
-> Type SETUP_PCI, added by setup_efi_pci(), may advertise a ROM size
-> larger than early_memremap() is able to handle, which is currently
-> limited to 256kB. If this occurs it leads to a NULL dereference in
-> parse_setup_data().
->
-> To avoid this, remap the setup_data header and allow parsing functions
-> for individual types to handle their own data remapping.
->
-> Signed-off-by: Linn Crosetto <linn@hp.com>
-> ---
-> v3: Remove data remapping code from parse_setup_data() and add it to
-> parse_e820_ext().
+On Tue, 13 Aug 2013 18:13:48 -0400 Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+> On 8/13/2013 5:13 PM, Andrew Morton wrote:
+> > On Tue, 13 Aug 2013 16:59:54 -0400 Chris Metcalf <cmetcalf@tilera.com> wrote:
+> >
+> >>> Then again, why does this patchset exist?  It's a performance
+> >>> optimisation so presumably someone cares.  But not enough to perform
+> >>> actual measurements :(
+> >> The patchset exists because of the difference between zero overhead on
+> >> cpus that don't have drainable lrus, and non-zero overhead.  This turns
+> >> out to be important on workloads where nohz cores are handling 10 Gb
+> >> traffic in userspace and really, really don't want to be interrupted,
+> >> or they drop packets on the floor.
+> > But what is the effect of the patchset?  Has it been tested against the
+> > problematic workload(s)?
+> 
+> Yes.  The result is that syscalls such as mlockall(), which otherwise interrupt
+> every core, don't interrupt the cores that are running purely in userspace.
+> Since they are purely in userspace they don't have any drainable pagevecs,
+> so the patchset means they don't get interrupted and don't drop packets.
+> 
+> I implemented this against Linux 2.6.38 and our home-grown version of nohz
+> cpusets back in July 2012, and we have been shipping it to customers since then.
 
->
->  arch/x86/include/asm/e820.h |  2 +-
->  arch/x86/kernel/e820.c      |  5 ++++-
->  arch/x86/kernel/setup.c     | 19 ++++++++-----------
->  3 files changed, 13 insertions(+), 13 deletions(-)
->
-> diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-> index cccd07f..779c2ef 100644
-> --- a/arch/x86/include/asm/e820.h
-> +++ b/arch/x86/include/asm/e820.h
-> @@ -29,7 +29,7 @@ extern void e820_setup_gap(void);
->  extern int e820_search_gap(unsigned long *gapstart, unsigned long *gapsize,
->                         unsigned long start_addr, unsigned long long end_addr);
->  struct setup_data;
-> -extern void parse_e820_ext(struct setup_data *data);
-> +extern void parse_e820_ext(u64 phys_addr, u32 data_len);
->
->  #if defined(CONFIG_X86_64) || \
->         (defined(CONFIG_X86_32) && defined(CONFIG_HIBERNATION))
-> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-> index d32abea..174da5f 100644
-> --- a/arch/x86/kernel/e820.c
-> +++ b/arch/x86/kernel/e820.c
-> @@ -658,15 +658,18 @@ __init void e820_setup_gap(void)
->   * boot_params.e820_map, others are passed via SETUP_E820_EXT node of
->   * linked list of struct setup_data, which is parsed here.
->   */
-> -void __init parse_e820_ext(struct setup_data *sdata)
-> +void __init parse_e820_ext(u64 phys_addr, u32 data_len)
->  {
->         int entries;
->         struct e820entry *extmap;
-> +       struct setup_data *sdata;
->
-> +       sdata = early_memremap(phys_addr, data_len);
->         entries = sdata->len / sizeof(struct e820entry);
->         extmap = (struct e820entry *)(sdata->data);
->         __append_e820_map(extmap, entries);
->         sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-> +       early_iounmap(sdata, data_len);
->         printk(KERN_INFO "e820: extended physical RAM map:\n");
->         e820_print_map("extended");
->  }
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index f8ec578..234e1e3 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -426,25 +426,23 @@ static void __init reserve_initrd(void)
->  static void __init parse_setup_data(void)
->  {
->         struct setup_data *data;
-> -       u64 pa_data;
-> +       u64 pa_data, pa_next;
->
->         pa_data = boot_params.hdr.setup_data;
->         while (pa_data) {
-> -               u32 data_len, map_len;
-> +               u32 data_len, map_len, data_type;
->
->                 map_len = max(PAGE_SIZE - (pa_data & ~PAGE_MASK),
->                               (u64)sizeof(struct setup_data));
->                 data = early_memremap(pa_data, map_len);
->                 data_len = data->len + sizeof(struct setup_data);
-> -               if (data_len > map_len) {
-> -                       early_iounmap(data, map_len);
-> -                       data = early_memremap(pa_data, data_len);
-> -                       map_len = data_len;
-> -               }
-> +               data_type = data->type;
-> +               pa_next = data->next;
-> +               early_iounmap(data, map_len);
->
-> -               switch (data->type) {
-> +               switch (data_type) {
->                 case SETUP_E820_EXT:
-> -                       parse_e820_ext(data);
-> +                       parse_e820_ext(pa_data, data_len);
->                         break;
->                 case SETUP_DTB:
->                         add_dtb(pa_data);
-> @@ -452,8 +450,7 @@ static void __init parse_setup_data(void)
->                 default:
->                         break;
->                 }
-> -               pa_data = data->next;
-> -               early_iounmap(data, map_len);
-> +               pa_data = pa_next;
->         }
->  }
+argh.
+
+Those per-cpu LRU pagevecs were a nasty but very effective locking
+amortization hack back in, umm, 2002.  They have caused quite a lot of
+weird corner-case behaviour, resulting in all the lru_add_drain_all()
+calls sprinkled around the place.  I'd like to nuke the whole thing,
+but that would require a fundamental rethnik/rework of all the LRU list
+locking.
+
+According to the 8891d6da17db0f changelog, the lru_add_drain_all() in
+sys_mlock() isn't really required: "it isn't must.  but it reduce the
+failure of moving to unevictable list.  its failure can rescue in
+vmscan later.  but reducing is better."
+
+I suspect we could just kill it.
