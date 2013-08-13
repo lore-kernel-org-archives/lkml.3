@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758905Ab3HMV4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 17:56:08 -0400
-Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:50391 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758094Ab3HMV4H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 17:56:07 -0400
-Date: Tue, 13 Aug 2013 17:57:16 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Ingo Molnar <mingo@kernel.org>
-cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
- executable
-In-Reply-To: <20130813160043.GB5280@gmail.com>
-Message-ID: <alpine.DEB.2.02.1308131749330.9154@pianoman.cluster.toy>
-References: <20130805081641.GA24808@gmail.com> <20130805082320.GA9562@infradead.org> <20130805083132.GE26746@gmail.com> <20130805083434.GA20606@infradead.org> <20130805090857.GA26940@gmail.com> <20130806061932.GA20485@infradead.org> <20130812181956.GB19405@gmail.com>
- <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy> <20130813104821.GB2170@gmail.com> <20130813121141.GB2188@ghostprotocols.net> <20130813160043.GB5280@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758668Ab3HMWCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 18:02:33 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:48829 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754551Ab3HMWCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 18:02:31 -0400
+Date: Tue, 13 Aug 2013 15:02:27 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org
+Subject: [PATCH] ecryptfs: avoid ctx initialization race
+Message-ID: <20130813220227.GA20160@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A02020A.520AAB75.002A,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Aug 2013, Ingo Molnar wrote:
+It might be possible for two callers to race the mutex lock after the
+NULL ctx check. Instead, move the lock above the check so there isn't
+the possibility of leaking a crypto ctx. Additionally, report the full
+algo name when failing.
 
-> 
-> that can only be addressed by either extending 'perf test' or by testing 
-> libpfm et al sooner. The upstream kernel can only address regressions that 
-> get reported.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ fs/ecryptfs/crypto.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-Most of the tests in my test-suite are reactive.  Meaning, I wrote them 
-after an ABI-breaking change was reported elsewhere, and I needed a small 
-test case for bisection purposes.  Thus they are good for finding if a 
-corner of the perf ABI re-breaks but they're not great at spotting new 
-breakages.
+diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
+index d107576..c134346 100644
+--- a/fs/ecryptfs/crypto.c
++++ b/fs/ecryptfs/crypto.c
+@@ -618,27 +618,28 @@ int ecryptfs_init_crypt_ctx(struct ecryptfs_crypt_stat *crypt_stat)
+ 			"key_size_bits = [%zd]\n",
+ 			crypt_stat->cipher, (int)strlen(crypt_stat->cipher),
+ 			crypt_stat->key_size << 3);
++	mutex_lock(&crypt_stat->cs_tfm_mutex);
+ 	if (crypt_stat->tfm) {
+ 		rc = 0;
+-		goto out;
++		goto out_unlock;
+ 	}
+-	mutex_lock(&crypt_stat->cs_tfm_mutex);
+ 	rc = ecryptfs_crypto_api_algify_cipher_name(&full_alg_name,
+ 						    crypt_stat->cipher, "cbc");
+ 	if (rc)
+ 		goto out_unlock;
+ 	crypt_stat->tfm = crypto_alloc_ablkcipher(full_alg_name, 0, 0);
+-	kfree(full_alg_name);
+ 	if (IS_ERR(crypt_stat->tfm)) {
+ 		rc = PTR_ERR(crypt_stat->tfm);
+ 		crypt_stat->tfm = NULL;
+ 		ecryptfs_printk(KERN_ERR, "cryptfs: init_crypt_ctx(): "
+ 				"Error initializing cipher [%s]\n",
+-				crypt_stat->cipher);
+-		goto out_unlock;
++				full_alg_name);
++		goto out_free;
+ 	}
+ 	crypto_ablkcipher_set_flags(crypt_stat->tfm, CRYPTO_TFM_REQ_WEAK_KEY);
+ 	rc = 0;
++out_free:
++	kfree(full_alg_name);
+ out_unlock:
+ 	mutex_unlock(&crypt_stat->cs_tfm_mutex);
+ out:
+-- 
+1.7.9.5
 
-Writing a complete test suite for something as complicated as the 
-perf-event ABI is impractical.  One thing you can do is require anyone 
-submitting new functionality also provide a regression test, but
-I don't see that happening.
 
-Another issue is that despite having some ABI definitions for files in 
-/sys, these are broken with impunity.  And I've yet to have an 
-ABI-breaking changeset reverted based on my bug reports.  So you can see 
-why I'm not really motivated to even bother trying, as it seems like it 
-would be pointless busy work at this point.
-
-It would just be nice if we just straight out say "the ABI is whatever 
-lets the perf tool run.  Anything else is undefined behavior and shouldn't 
-be relied on".
-
-Vince
+-- 
+Kees Cook
+Chrome OS Security
