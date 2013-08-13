@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab3HMGd3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:33:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60550 "EHLO
+	id S1756946Ab3HMGuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:50:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60579 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756642Ab3HMGdX (ORCPT
+	with ESMTP id S1756803Ab3HMGd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:23 -0400
+	Tue, 13 Aug 2013 02:33:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>, Nix <nix@esperi.org.uk>,
-        Jeff Layton <jlayton@redhat.com>
-Subject: [ 31/60] SUNRPC: If the rpcbind channel is disconnected, fail the call to unregister
-Date: Mon, 12 Aug 2013 23:33:58 -0700
-Message-Id: <20130813063336.473512956@linuxfoundation.org>
+        Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 37/60] virtio: console: fix raising SIGIO after port unplug
+Date: Mon, 12 Aug 2013 23:34:04 -0700
+Message-Id: <20130813063337.259285741@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -27,197 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit 786615bc1ce84150ded80daea6bd9f6297f48e73 upstream.
+commit 92d3453815fbe74d539c86b60dab39ecdf01bb99 upstream.
 
-If rpcbind causes our connection to the AF_LOCAL socket to close after
-we've registered a service, then we want to be careful about reconnecting
-since the mount namespace may have changed.
+SIGIO should be sent when a port gets unplugged.  It should only be sent
+to prcesses that have the port opened, and have asked for SIGIO to be
+delivered.  We were clearing out guest_connected before calling
+send_sigio_to_port(), resulting in a sigio not getting sent to
+processes.
 
-By simply refusing to reconnect the AF_LOCAL socket in the case of
-unregister, we avoid the need to somehow save the mount namespace. While
-this may lead to some services not unregistering properly, it should
-be safe.
+Fix by setting guest_connected to false after invoking the sigio
+function.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Nix <nix@esperi.org.uk>
-Cc: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/sunrpc/sched.h |    1 +
- net/sunrpc/clnt.c            |    4 ++++
- net/sunrpc/netns.h           |    1 +
- net/sunrpc/rpcb_clnt.c       |   40 +++++++++++++++++++++++++++-------------
- 4 files changed, 33 insertions(+), 13 deletions(-)
+ drivers/char/virtio_console.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/include/linux/sunrpc/sched.h
-+++ b/include/linux/sunrpc/sched.h
-@@ -130,6 +130,7 @@ struct rpc_task_setup {
- #define RPC_TASK_SOFTCONN	0x0400		/* Fail if can't connect */
- #define RPC_TASK_SENT		0x0800		/* message was sent */
- #define RPC_TASK_TIMEOUT	0x1000		/* fail with ETIMEDOUT on timeout */
-+#define RPC_TASK_NOCONNECT	0x2000		/* return ENOTCONN if not connected */
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1551,12 +1551,14 @@ static void unplug_port(struct port *por
+ 	spin_unlock_irq(&port->portdev->ports_lock);
  
- #define RPC_IS_ASYNC(t)		((t)->tk_flags & RPC_TASK_ASYNC)
- #define RPC_IS_SWAPPER(t)	((t)->tk_flags & RPC_TASK_SWAPPER)
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -1644,6 +1644,10 @@ call_connect(struct rpc_task *task)
- 		task->tk_action = call_connect_status;
- 		if (task->tk_status < 0)
- 			return;
-+		if (task->tk_flags & RPC_TASK_NOCONNECT) {
-+			rpc_exit(task, -ENOTCONN);
-+			return;
-+		}
- 		xprt_connect(task);
- 	}
- }
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -23,6 +23,7 @@ struct sunrpc_net {
- 	struct rpc_clnt *rpcb_local_clnt4;
- 	spinlock_t rpcb_clnt_lock;
- 	unsigned int rpcb_users;
-+	unsigned int rpcb_is_af_local : 1;
+ 	if (port->guest_connected) {
++		/* Let the app know the port is going down. */
++		send_sigio_to_port(port);
++
++		/* Do this after sigio is actually sent */
+ 		port->guest_connected = false;
+ 		port->host_connected = false;
+-		wake_up_interruptible(&port->waitqueue);
  
- 	struct mutex gssp_lock;
- 	wait_queue_head_t gssp_wq;
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -204,13 +204,15 @@ void rpcb_put_local(struct net *net)
- }
- 
- static void rpcb_set_local(struct net *net, struct rpc_clnt *clnt,
--			struct rpc_clnt *clnt4)
-+			struct rpc_clnt *clnt4,
-+			bool is_af_local)
- {
- 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 
- 	/* Protected by rpcb_create_local_mutex */
- 	sn->rpcb_local_clnt = clnt;
- 	sn->rpcb_local_clnt4 = clnt4;
-+	sn->rpcb_is_af_local = is_af_local ? 1 : 0;
- 	smp_wmb(); 
- 	sn->rpcb_users = 1;
- 	dprintk("RPC:       created new rpcb local clients (rpcb_local_clnt: "
-@@ -271,7 +273,7 @@ static int rpcb_create_local_unix(struct
- 		clnt4 = NULL;
+-		/* Let the app know the port is going down. */
+-		send_sigio_to_port(port);
++		wake_up_interruptible(&port->waitqueue);
  	}
  
--	rpcb_set_local(net, clnt, clnt4);
-+	rpcb_set_local(net, clnt, clnt4, true);
- 
- out:
- 	return result;
-@@ -323,7 +325,7 @@ static int rpcb_create_local_net(struct
- 		clnt4 = NULL;
- 	}
- 
--	rpcb_set_local(net, clnt, clnt4);
-+	rpcb_set_local(net, clnt, clnt4, false);
- 
- out:
- 	return result;
-@@ -384,13 +386,16 @@ static struct rpc_clnt *rpcb_create(stru
- 	return rpc_create(&args);
- }
- 
--static int rpcb_register_call(struct rpc_clnt *clnt, struct rpc_message *msg)
-+static int rpcb_register_call(struct sunrpc_net *sn, struct rpc_clnt *clnt, struct rpc_message *msg, bool is_set)
- {
--	int result, error = 0;
-+	int flags = RPC_TASK_NOCONNECT;
-+	int error, result = 0;
- 
-+	if (is_set || !sn->rpcb_is_af_local)
-+		flags = RPC_TASK_SOFTCONN;
- 	msg->rpc_resp = &result;
- 
--	error = rpc_call_sync(clnt, msg, RPC_TASK_SOFTCONN);
-+	error = rpc_call_sync(clnt, msg, flags);
- 	if (error < 0) {
- 		dprintk("RPC:       failed to contact local rpcbind "
- 				"server (errno %d).\n", -error);
-@@ -447,16 +452,19 @@ int rpcb_register(struct net *net, u32 p
- 		.rpc_argp	= &map,
- 	};
- 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
-+	bool is_set = false;
- 
- 	dprintk("RPC:       %sregistering (%u, %u, %d, %u) with local "
- 			"rpcbind\n", (port ? "" : "un"),
- 			prog, vers, prot, port);
- 
- 	msg.rpc_proc = &rpcb_procedures2[RPCBPROC_UNSET];
--	if (port)
-+	if (port != 0) {
- 		msg.rpc_proc = &rpcb_procedures2[RPCBPROC_SET];
-+		is_set = true;
-+	}
- 
--	return rpcb_register_call(sn->rpcb_local_clnt, &msg);
-+	return rpcb_register_call(sn, sn->rpcb_local_clnt, &msg, is_set);
- }
- 
- /*
-@@ -469,6 +477,7 @@ static int rpcb_register_inet4(struct su
- 	const struct sockaddr_in *sin = (const struct sockaddr_in *)sap;
- 	struct rpcbind_args *map = msg->rpc_argp;
- 	unsigned short port = ntohs(sin->sin_port);
-+	bool is_set = false;
- 	int result;
- 
- 	map->r_addr = rpc_sockaddr2uaddr(sap, GFP_KERNEL);
-@@ -479,10 +488,12 @@ static int rpcb_register_inet4(struct su
- 			map->r_addr, map->r_netid);
- 
- 	msg->rpc_proc = &rpcb_procedures4[RPCBPROC_UNSET];
--	if (port)
-+	if (port != 0) {
- 		msg->rpc_proc = &rpcb_procedures4[RPCBPROC_SET];
-+		is_set = true;
-+	}
- 
--	result = rpcb_register_call(sn->rpcb_local_clnt4, msg);
-+	result = rpcb_register_call(sn, sn->rpcb_local_clnt4, msg, is_set);
- 	kfree(map->r_addr);
- 	return result;
- }
-@@ -497,6 +508,7 @@ static int rpcb_register_inet6(struct su
- 	const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sap;
- 	struct rpcbind_args *map = msg->rpc_argp;
- 	unsigned short port = ntohs(sin6->sin6_port);
-+	bool is_set = false;
- 	int result;
- 
- 	map->r_addr = rpc_sockaddr2uaddr(sap, GFP_KERNEL);
-@@ -507,10 +519,12 @@ static int rpcb_register_inet6(struct su
- 			map->r_addr, map->r_netid);
- 
- 	msg->rpc_proc = &rpcb_procedures4[RPCBPROC_UNSET];
--	if (port)
-+	if (port != 0) {
- 		msg->rpc_proc = &rpcb_procedures4[RPCBPROC_SET];
-+		is_set = true;
-+	}
- 
--	result = rpcb_register_call(sn->rpcb_local_clnt4, msg);
-+	result = rpcb_register_call(sn, sn->rpcb_local_clnt4, msg, is_set);
- 	kfree(map->r_addr);
- 	return result;
- }
-@@ -527,7 +541,7 @@ static int rpcb_unregister_all_protofami
- 	map->r_addr = "";
- 	msg->rpc_proc = &rpcb_procedures4[RPCBPROC_UNSET];
- 
--	return rpcb_register_call(sn->rpcb_local_clnt4, msg);
-+	return rpcb_register_call(sn, sn->rpcb_local_clnt4, msg, false);
- }
- 
- /**
+ 	if (is_console_port(port)) {
 
 
