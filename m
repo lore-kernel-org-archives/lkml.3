@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678Ab3HMGgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:36:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60841 "EHLO
+	id S1757694Ab3HMGgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:36:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60836 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757583Ab3HMGe5 (ORCPT
+	with ESMTP id S1757573Ab3HMGe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:34:57 -0400
+	Tue, 13 Aug 2013 02:34:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
+        Mateusz Guzik <mguzik@redhat.com>, Amit Shah <amit.shah@redhat.com>,
         Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 06/17] virtio: console: fix race in port_fops_open() and port unplug
-Date: Mon, 12 Aug 2013 23:35:52 -0700
-Message-Id: <20130813063502.259970498@linuxfoundation.org>
+Subject: [ 05/17] virtio: console: fix race with port unplug and open/close
+Date: Mon, 12 Aug 2013 23:35:51 -0700
+Message-Id: <20130813063502.170974398@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063501.728847844@linuxfoundation.org>
 References: <20130813063501.728847844@linuxfoundation.org>
@@ -29,38 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Amit Shah <amit.shah@redhat.com>
 
-commit 671bdea2b9f210566610603ecbb6584c8a201c8c upstream.
+commit 057b82be3ca3d066478e43b162fc082930a746c9 upstream.
 
-Between open() being called and processed, the port can be unplugged.
-Check if this happened, and bail out.
+There's a window between find_port_by_devt() returning a port and us
+taking a kref on the port, where the port could get unplugged.  Fix it
+by taking the reference in find_port_by_devt() itself.
 
-A simple test script to reproduce this is:
+Problem reported and analyzed by Mateusz Guzik.
 
-while true; do for i in $(seq 1 100); do echo $i > /dev/vport0p3; done; done;
-
-This opens and closes the port a lot of times; unplugging the port while
-this is happening triggers the bug.
-
+Reported-by: Mateusz Guzik <mguzik@redhat.com>
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/virtio_console.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/char/virtio_console.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
 --- a/drivers/char/virtio_console.c
 +++ b/drivers/char/virtio_console.c
-@@ -794,6 +794,10 @@ static int port_fops_open(struct inode *
+@@ -256,9 +256,12 @@ static struct port *find_port_by_devt_in
+ 	unsigned long flags;
  
- 	/* We get the port with a kref here */
- 	port = find_port_by_devt(cdev->dev);
-+	if (!port) {
-+		/* Port was unplugged before we could proceed */
-+		return -ENXIO;
+ 	spin_lock_irqsave(&portdev->ports_lock, flags);
+-	list_for_each_entry(port, &portdev->ports, list)
+-		if (port->cdev->dev == dev)
++	list_for_each_entry(port, &portdev->ports, list) {
++		if (port->cdev->dev == dev) {
++			kref_get(&port->kref);
+ 			goto out;
++		}
 +	}
+ 	port = NULL;
+ out:
+ 	spin_unlock_irqrestore(&portdev->ports_lock, flags);
+@@ -789,14 +792,10 @@ static int port_fops_open(struct inode *
+ 	struct port *port;
+ 	int ret;
+ 
++	/* We get the port with a kref here */
+ 	port = find_port_by_devt(cdev->dev);
  	filp->private_data = port;
  
+-	/* Prevent against a port getting hot-unplugged at the same time */
+-	spin_lock_irq(&port->portdev->ports_lock);
+-	kref_get(&port->kref);
+-	spin_unlock_irq(&port->portdev->ports_lock);
+-
  	/*
+ 	 * Don't allow opening of console port devices -- that's done
+ 	 * via /dev/hvc
 
 
