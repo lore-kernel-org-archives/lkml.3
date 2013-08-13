@@ -1,83 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758624Ab3HMQeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:34:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33381 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757630Ab3HMQ0t (ORCPT
+	id S1758653Ab3HMQfE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:35:04 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:43439 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757630Ab3HMQfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 12:26:49 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=2ET7TFgAcM4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oPBXkIRz290A:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=kJC4T8hCAAAA:8 a=VombwVNeAAAA:8 a=MrTmtc5YAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=dGJ0OcVc7YAA:10 a=Jvc2nfQ_i4UA:10 a=Sz6uTlPSQQkA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130813155835.844535033@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 13 Aug 2013 11:58:11 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Rowe <bart@fathom13.com>, Lv Zheng <lv.zheng@intel.com>,
-        Bob Moore <robert.moore@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [77/88] ACPICA: Do not use extended sleep registers unless HW-reduced bit is
- set
-References: <20130813155654.069291373@goodmis.org>
-Content-Disposition: inline; filename=0077-ACPICA-Do-not-use-extended-sleep-registers-unless-HW.patch
+	Tue, 13 Aug 2013 12:35:00 -0400
+Message-ID: <520A602F.1060003@hurleysoftware.com>
+Date: Tue, 13 Aug 2013 12:34:55 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Peter Wu <lekensteyn@gmail.com>
+CC: Nestor Lopez Casado <nlopezcasad@logitech.com>, jkosina@suse.cz,
+        benjamin.tissoires@gmail.com, adlr@chromium.org,
+        joseph.salisbury@canonical.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/2] Revert "Revert "HID: Fix logitech-dj: missing Unifying
+ device issue""
+References: <1374153691-25100-1-git-send-email-nlopezcasad@logitech.com> <2324751.QaRpZppUQy@al> <520A22DD.3010308@hurleysoftware.com> <1614065.3ZkY1dAtg4@al>
+In-Reply-To: <1614065.3ZkY1dAtg4@al>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.7-rc1 stable review patch.
-If anyone has any objections, please let me know.
+On 08/13/2013 11:42 AM, Peter Wu wrote:
+> On Tuesday 13 August 2013 08:13:17 Peter Hurley wrote:
+>> On 08/12/2013 05:54 PM, Peter Wu wrote:
+>>> On Thursday 18 July 2013 16:28:01 Peter Hurley wrote:
+>>>> Before we revert to using the workaround, I'd like to suggest that
+>>>> this new "hidden" problem may be an interaction with the xhci_hcd host
+>>>> controller driver only.
+>>>>
+>>>> Looking at the related bug, the OP indicates the machine only has
+>>>> USB3 ports. Additionally, comments #7, #100, and #104 of the original
+>>>> bug report add additional information that would seem to confirm
+>>>> this suspicion.
+>>>>
+>>>> Let me add I have this USB device running on the uhci_hcd driver
+>>>> with or without this workaround on v3.10.
+>>>
+>>> This problem does not seem specific to xhci, uhci seems also effected.
+>>
+>> If true, it would certainly help to have a bug report confirming uhci
+>> failure from a bare-metal system which contained:
+>> 1) kernel version
+>> 2) complete dmesg output
+>> 3) lsusb -v output
+>> 4) lsmod output
+>> 5) usbmon capture from a plug attempt
+>
+> I was too fast in drawing a conclusion, besides the kernel I also upgraded
+> some other packages. Today the issue also showed up in 3.9.9 + updated
+> packages.
+>
+> When checking the dmesg, the issue solved by this patch did not occur (the
+> enumeration was successful).
 
-------------------
+Thanks for double-checking.
 
-From: Lv Zheng <lv.zheng@intel.com>
+>>> Today I
+>>> upgraded a system (running Arch Linux) from kernel 3.9.9 to 3.10.5. After
+>>> a
+>>> reboot to 3.10.5, things broke. The setup:
+>>>
+>>> - There are two USB receivers plugged into USB 1.1 ports (different buses
+>>> according to lsusb, uhci), each receiver is paired to a K360 keyboard.
+>>> - One of the receivers are passed to a QEMU guest with -usbdevice
+>>> host:$busid. $devid. This keyboard is working (probably because QEMU
+>>> performed a reset). - Since 3.10.5, the keyboard that is *not* passed to
+>>> the QEMU guest is not functioning on reboot.
+>>>
+>>> After closing the QEMU guest, the USB bus gets reset(?) after which the
+>>> other keyboard suddenly gets detected. I had only booted 3.10.5 twice
+>>> before rolling back to 3.9.9, both boots triggered the issue. Do I need
+>>> to provide a usbmon, lsusb, dmesg and/ or other details from 3.10.5?
+>>
+>> Do both keyboards work on bare metal? Seems like this problem might be
+>> specific to qemu (or kvm) and you may get more insight on those lists.
+>
+> I haven't tested that, the system automatically boots into openbox + QEMU.
+> Previously, both keyboards worked on bare metal, so I think it still works.
+>
+>>> Note that there are other Arch Linux users who have reported issues[1][2]
+>>
+>> Unfortunately, not even one user in the referenced reports identified
+>> the usb hub the receiver was plugged into.
+>
+> I've asked it now.
 
-[ Upstream commit 7cec7048fe22e3e92389da2cd67098f6c4284e7f ]
+Thanks. And if someone has a uhci failure, filing a new bug on
+bugzilla.kernel.org _and_ posting to linux-usb@ and
+linux-input@vger.kernel.org improves the chances of the right
+people seeing the problem. [xhci already has several reports plus I
+subscribed to the kernel bug linked from the ArchLinux bug report.]
 
-Previous implementation incorrectly used the ACPI 5.0 extended
-sleep registers if they were simply populated. This caused
-problems on some non-HW-reduced machines. As per the ACPI spec,
-they should only be used if the HW-reduced bit is set.  Lv Zheng,
-ACPICA BZ 1020.
+>>> since upgrading to 3.10.z. Triggering a re-enumeration by writing the
+>>> magic
+>>> HID++ message[3] makes the paired devices appear again (as reported in
+>>> forums[1], I haven't tried this on the affected UHCI machine).
+>>>
+>>> While the underlying bug is fixed, can this patch be forwarded to stable?
+>>> I see that 3.10.6 has been released, but still without this patch.
+>>
+>> This is still a workaround and not really a fix for the underlying bug.
+>
+> I meant to say, "while the underlying bug is *being* fixed". Anyway, can this
+> patch be applied to 3.10?
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=54181
-References: https://bugs.acpica.org/show_bug.cgi?id=1020
-Reported-by: Daniel Rowe <bart@fathom13.com>
-Bisected-by: Brint E. Kriebel <kernel@bekit.net>
-Cc: 3.4+ <stable@vger.kernel.org>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/acpi/acpica/hwxfsleep.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+That's really Jiri's call. TBH, I can't blame him for wanting to shake this
+out in 3.11 before pushing to stable.
 
-diff --git a/drivers/acpi/acpica/hwxfsleep.c b/drivers/acpi/acpica/hwxfsleep.c
-index 1f165a7..c92753b 100644
---- a/drivers/acpi/acpica/hwxfsleep.c
-+++ b/drivers/acpi/acpica/hwxfsleep.c
-@@ -242,12 +242,14 @@ acpi_hw_sleep_dispatch(u8 sleep_state, u32 function_id)
- 	    &acpi_sleep_dispatch[function_id];
- 
- #if (!ACPI_REDUCED_HARDWARE)
--
- 	/*
- 	 * If the Hardware Reduced flag is set (from the FADT), we must
--	 * use the extended sleep registers
-+	 * use the extended sleep registers (FADT). Note: As per the ACPI
-+	 * specification, these extended registers are to be used for HW-reduced
-+	 * platforms only. They are not general-purpose replacements for the
-+	 * legacy PM register sleep support.
- 	 */
--	if (acpi_gbl_reduced_hardware || acpi_gbl_FADT.sleep_control.address) {
-+	if (acpi_gbl_reduced_hardware) {
- 		status = sleep_functions->extended_function(sleep_state);
- 	} else {
- 		/* Legacy sleep */
--- 
-1.7.10.4
+> Sorry for the confusion with uhci, looking further it seems that the wrong USB
+> receiver is being passed to QEMU. It's not a kernel issue, perhaps I can blame
+> libusbx.
 
+No apologies necessary.
+
+Regards,
+Peter Hurley
 
