@@ -1,171 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757561Ab3HMLMy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 07:12:54 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:35214 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757486Ab3HMLMl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 07:12:41 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <treding@nvidia.com>
-Subject: [RFC 2/3] ARM: Introduce pci_common_exit()
-Date: Tue, 13 Aug 2013 13:12:25 +0200
-Message-Id: <1376392346-14127-3-git-send-email-treding@nvidia.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1376392346-14127-1-git-send-email-treding@nvidia.com>
-References: <1376392346-14127-1-git-send-email-treding@nvidia.com>
+	id S1757513Ab3HMLRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 07:17:31 -0400
+Received: from mout.gmx.net ([212.227.15.19]:50366 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757287Ab3HMLR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 07:17:29 -0400
+Message-ID: <520A15B1.2030401@gmx.at>
+Date: Tue, 13 Aug 2013 13:17:05 +0200
+From: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130704 Icedove/17.0.7
+MIME-Version: 1.0
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "Milo(Woogyom) Kim" <milo.kim@ti.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] leds: trigger: ledtrig-backlight: Fix invalid memory access
+ in fb_event notification callback
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:64k1gRBuooonsJnHc7mytEQB7SoCdhgYMAVTqz+IlJ+Xku+3JHu
+ 9n3umcqUlCXLRxH076TCv/WLo5Yb8IZZf9c3NRXRqWO6jV5+DmwD2ZVH5pqDAbNSyh04TCe
+ 1vEPCUmFKTDZXXrqfsjIvtln0DFQMaMklVZzuKefuiEwvIeo08/AFH8cIjLxF8J4YCa61fT
+ UYuCK30l48kAW/T0fdGLA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support building PCI host drivers as modules, functionality
-is required to undo the steps performed by pci_common_init(). The PCI
-core provides much of the functionality already, so add a function that
-can be called by drivers to wrap the ARM specific bits.
+fb_notifier_callback is called on any event fired by fb_notifier_call_chain. Events may, or may not contain some data (fb_event.data).
+In case of FB_EVENT_BLANK fb_event.data contains a pointer to an integer holding the blank state. The Problem is, that in ledtrig-backlight.c - fb_notifier_callback the pointer to blank state is
+dereferenced BEFORE the event-type is checked.
+Obviously this leads to problems with other events than FB_EVENT_BLANK, where fb_event.data is undefined or NULL.
+It seems, that this problem existed ever since the driver was added.
 
-This patch does a number of things to achieve this: it adds a .nr field
-to struct pci_sys_data to keep track of the controller number that was
-used to initialize it during pci_common_init(). That field is passed to
-the new .teardown() callback during cleanup to undo what .setup() did.
+Like in drivers/video/backlight/backlight.c line 43 I would suggest to return immediately on events other than FB_EVENT_BLANK.
 
-Furthermore the list of pci_sys_data structures setup can optionally be
-returned via the hw_pci structure's .sys field. If a driver initializes
-it, then it is assumed to be an empty list that pci_common_init() will
-append to. Otherwise the old behaviour of keeping a local list only is
-preserved.
-
-If a driver wants to support unloading, then it needs access to this
-list and pass it to pci_common_exit(). This will iterate over the list,
-call the new .teardown() callback and remove the root bus associated
-with each entry.
-
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
 ---
- arch/arm/include/asm/mach/pci.h |  6 ++++++
- arch/arm/kernel/bios32.c        | 29 ++++++++++++++++++++++++++---
- 2 files changed, 32 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
-index 454d642..d6c352a 100644
---- a/arch/arm/include/asm/mach/pci.h
-+++ b/arch/arm/include/asm/mach/pci.h
-@@ -25,6 +25,7 @@ struct hw_pci {
- 	struct pci_ops	*ops;
- 	int		nr_controllers;
- 	void		**private_data;
-+	struct list_head *sys;
- 	int		(*setup)(int nr, struct pci_sys_data *);
- 	struct pci_bus *(*scan)(int nr, struct pci_sys_data *);
- 	void		(*preinit)(void);
-@@ -38,6 +39,7 @@ struct hw_pci {
- 					  resource_size_t align);
- 	void		(*add_bus)(struct pci_bus *bus);
- 	void		(*remove_bus)(struct pci_bus *bus);
-+	void		(*teardown)(int nr, struct pci_sys_data *);
- };
- 
- /*
-@@ -49,6 +51,7 @@ struct pci_sys_data {
- #endif
- 	struct list_head node;
- 	int		busnr;		/* primary bus number			*/
-+	int		nr;		/* controller number			*/
- 	u64		mem_offset;	/* bus->cpu memory mapping offset	*/
- 	unsigned long	io_offset;	/* bus->cpu IO mapping offset		*/
- 	struct pci_bus	*bus;		/* PCI bus				*/
-@@ -67,6 +70,7 @@ struct pci_sys_data {
- 					  resource_size_t align);
- 	void		(*add_bus)(struct pci_bus *bus);
- 	void		(*remove_bus)(struct pci_bus *bus);
-+	void		(*teardown)(int nr, struct pci_sys_data *);
- 	void		*private_data;	/* platform controller private data	*/
- };
- 
-@@ -84,6 +88,8 @@ static inline void pci_common_init(struct hw_pci *hw)
- 	pci_common_init_dev(NULL, hw);
- }
- 
-+void pci_common_exit(struct list_head *head);
+Background information:
+I'm currently working on a IMX53(ARM) based hardware and Linux 3.11-rc5 and detected a problem in drivers/leds/trigger/ledtrig-backlight.c
+ledtrig is used on our hardware (besides pwm-backlight) to switch off a gpio-line connected to display-supply enable-line, when the display is blanked.
+On first boot after configuring ledtrig I detected an invalid memory access in ledtrig-backlight.c - fb_notifier_callback. In my special case the segfault was caused by an FB_EVENT_FB_REGISTERED,
+fired with undefined fb_event.data in drivers/video/fbmem.c line 1653.
+
+
+diff --git a/drivers/leds/trigger/ledtrig-backlight.c b/drivers/leds/trigger/ledtrig-backlight.c
+index 3c9c88a..2538dbe 100644
+--- a/drivers/leds/trigger/ledtrig-backlight.c
++++ b/drivers/leds/trigger/ledtrig-backlight.c
+@@ -36,26 +36,28 @@ static int fb_notifier_callback(struct notifier_block *p,
+ 					struct bl_trig_notifier, notifier);
+ 	struct led_classdev *led = n->led;
+ 	struct fb_event *fb_event = data;
+-	int *blank = fb_event->data;
+-	int new_status = *blank ? BLANK : UNBLANK;
++	int *blank;
++	int new_status;
 +
- /*
-  * Setup early fixed I/O mapping.
-  */
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 1ec9c87..6895520 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -475,11 +475,13 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
- 		sys->domain  = hw->domain;
- #endif
- 		sys->busnr   = busnr;
-+		sys->nr      = nr;
- 		sys->swizzle = hw->swizzle;
- 		sys->map_irq = hw->map_irq;
- 		sys->align_resource = hw->align_resource;
- 		sys->add_bus = hw->add_bus;
- 		sys->remove_bus = hw->remove_bus;
-+		sys->teardown = hw->teardown;
- 		INIT_LIST_HEAD(&sys->resources);
- 
- 		if (hw->private_data)
-@@ -517,18 +519,24 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
- void pci_common_init_dev(struct device *parent, struct hw_pci *hw)
- {
- 	struct pci_sys_data *sys;
--	LIST_HEAD(head);
-+	struct list_head *head;
-+	LIST_HEAD(list);
-+
-+	if (hw->sys)
-+		head = hw->sys;
-+	else
-+		head = &list;
- 
- 	pci_add_flags(PCI_REASSIGN_ALL_RSRC);
- 	if (hw->preinit)
- 		hw->preinit();
--	pcibios_init_hw(parent, hw, &head);
-+	pcibios_init_hw(parent, hw, head);
- 	if (hw->postinit)
- 		hw->postinit();
- 
- 	pci_fixup_irqs(pcibios_swizzle, pcibios_map_irq);
- 
--	list_for_each_entry(sys, &head, node) {
-+	list_for_each_entry(sys, head, node) {
- 		struct pci_bus *bus = sys->bus;
- 
- 		if (!pci_has_flag(PCI_PROBE_ONLY)) {
-@@ -555,6 +563,21 @@ void pci_common_init_dev(struct device *parent, struct hw_pci *hw)
++	/* If we aren't interested in this event, skip it immediately ... */
++	if (event != FB_EVENT_BLANK)
++		return 0;
+
+-	switch (event) {
+-	case FB_EVENT_BLANK:
+-		if (new_status == n->old_status)
+-			break;
++	blank = fb_event->data;
++	new_status = *blank ? BLANK : UNBLANK;
+
+-		if ((n->old_status == UNBLANK) ^ n->invert) {
+-			n->brightness = led->brightness;
+-			__led_set_brightness(led, LED_OFF);
+-		} else {
+-			__led_set_brightness(led, n->brightness);
+-		}
++	if (new_status == n->old_status)
++		return 0;
+
+-		n->old_status = new_status;
+-
+-		break;
++	if ((n->old_status == UNBLANK) ^ n->invert) {
++		n->brightness = led->brightness;
++		__led_set_brightness(led, LED_OFF);
++	} else {
++		__led_set_brightness(led, n->brightness);
  	}
+
++	n->old_status = new_status;
++
+ 	return 0;
  }
- 
-+void pci_common_exit(struct list_head *head)
-+{
-+	struct pci_sys_data *sys, *tmp;
-+
-+	list_for_each_entry_safe(sys, tmp, head, node) {
-+		if (sys->teardown)
-+			sys->teardown(sys->nr, sys);
-+
-+		pci_stop_root_bus(sys->bus);
-+		pci_remove_root_bus(sys->bus);
-+		list_del(&sys->node);
-+		kfree(sys);
-+	}
-+}
-+
- #ifndef CONFIG_PCI_HOST_ITE8152
- void pcibios_set_master(struct pci_dev *dev)
- {
--- 
-1.8.3.4
+
+
+
 
