@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758424Ab3HMNif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:38:35 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:36395 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932551Ab3HMNhR (ORCPT
+	id S932513Ab3HMNg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:36:57 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9071 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932463Ab3HMNgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:37:17 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 33/35] cpufreq: SPEAr: Covert to light weight ->target_index() routine
-Date: Tue, 13 Aug 2013 19:02:46 +0530
-Message-Id: <cd34e048df81f3bf5487d64ceecc6994ebcf469a.1376392602.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
-References: <cover.1376392602.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
-References: <cover.1376392602.git.viresh.kumar@linaro.org>
+	Tue, 13 Aug 2013 09:36:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 13 Aug 2013 06:36:53 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>, <rjw@sisk.pl>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2] irq: enable all irqs unconditionally in irq_resume
+Date: Tue, 13 Aug 2013 19:20:56 +0530
+Message-ID: <1376401856-29605-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts existing .target() to newly defined light weight
-.target_index() routine for this driver.
+When system enters into suspend, it disable all irqs in single
+function call. This disables EARLY_RESUME irqs also along with
+normal irqs.
 
-CPUFreq core will call cpufreq_frequency_table_target() before calling this
-routine and will pass index to it.
+The EARLY_RESUME irqs get enabled in sys_core_ops->resume and
+non-EARLY_RESUME irqs get enabled in normal system resume path.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+When suspend_noirq failed or suspend is aborted for any reason,
+the EARLY_RESUME irqs do not get enabled as sys_core_ops->resume()
+call did not happen. It only enables the non-EARLY_RESUME irqs in normal
+disable for remaining life of system.
+
+Enable all irqs unconditionally in normal irq_resume() regardless of
+EARLY_RESUME irqs have been already enabled or not.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/cpufreq/spear-cpufreq.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+Creating this patch based on disucssion on patch
+ [PATCH] irq: enable suspended EARLY_RESUME irqs forcefully if not resumed
 
-diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
-index d31accc..88aa5cf 100644
---- a/drivers/cpufreq/spear-cpufreq.c
-+++ b/drivers/cpufreq/spear-cpufreq.c
-@@ -105,20 +105,16 @@ static int spear1340_set_cpu_rate(struct clk *sys_pclk, unsigned long newfreq)
- }
+Making simple change as susggested by Thomas.
+
+
+ kernel/irq/pm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
+index cb228bf..abcd6ca 100644
+--- a/kernel/irq/pm.c
++++ b/kernel/irq/pm.c
+@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
+ 		bool is_early = desc->action &&
+ 			desc->action->flags & IRQF_EARLY_RESUME;
  
- static int spear_cpufreq_target(struct cpufreq_policy *policy,
--		unsigned int target_freq, unsigned int relation)
-+		unsigned int index)
- {
- 	struct cpufreq_freqs freqs;
- 	unsigned long newfreq;
- 	struct clk *srcclk;
--	int index, ret, mult = 1;
--
--	if (cpufreq_frequency_table_target(policy, spear_cpufreq.freq_tbl,
--				target_freq, relation, &index))
--		return -EINVAL;
-+	int ret, mult = 1;
+-		if (is_early != want_early)
++		if (!is_early && want_early)
+ 			continue;
  
- 	freqs.old = spear_cpufreq_get(0);
--
- 	newfreq = spear_cpufreq.freq_tbl[index].frequency * 1000;
-+
- 	if (of_machine_is_compatible("st,spear1340")) {
- 		/*
- 		 * SPEAr1340 is special in the sense that due to the possibility
-@@ -191,7 +187,7 @@ static struct cpufreq_driver spear_cpufreq_driver = {
- 	.name		= "cpufreq-spear",
- 	.flags		= CPUFREQ_STICKY,
- 	.verify		= cpufreq_generic_frequency_table_verify,
--	.target		= spear_cpufreq_target,
-+	.target_index	= spear_cpufreq_target,
- 	.get		= spear_cpufreq_get,
- 	.init		= spear_cpufreq_init,
- 	.exit		= cpufreq_generic_exit,
+ 		raw_spin_lock_irqsave(&desc->lock, flags);
 -- 
-1.7.12.rc2.18.g61b472e
+1.7.1.1
 
