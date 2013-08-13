@@ -1,76 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab3HMHUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:20:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58065 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754684Ab3HMHUL (ORCPT
+	id S1756095Ab3HMHVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:21:15 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:64499 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab3HMHVO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 03:20:11 -0400
-Date: Tue, 13 Aug 2013 09:19:59 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 3/9] PCI: mvebu: remove subsys_initcall
-Message-ID: <20130813091959.784b44f0@skate>
-In-Reply-To: <1376333215-12885-4-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1376333215-12885-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1376333215-12885-4-git-send-email-sebastian.hesselbarth@gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Aug 2013 03:21:14 -0400
+From: Shyam Kaushik <shyam@zadarastorage.com>
+References: <9a92eee58fefc1b8e3b4771ecf210d29@mail.gmail.com> <20130813071944.GA11270@kroah.com>
+In-Reply-To: <20130813071944.GA11270@kroah.com>
+MIME-Version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: Ac6X9UkgElbFW1l5THC8NdLdwU7LNgAADQUg
+Date: Tue, 13 Aug 2013 12:51:14 +0530
+Message-ID: <199217e8a2fc33f6aa0ecf764a0104cb@mail.gmail.com>
+Subject: RE: BUG REPORT - IDR wraps around at 30-bits - works very bad with NFSD/SCTP
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sebastian Hesselbarth,
+Hi Greg,
 
-On Mon, 12 Aug 2013 20:46:49 +0200, Sebastian Hesselbarth wrote:
-> This removes the subsys_initcall from the driver and converts it to
-> a normal platform_driver. Also, drvdata is set and a remove functions
-> is added to disable the clock and free resources.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Unfortunately we don’t have a 3.9/3.10 environment here. So if IDR
+developers can try the example code, it should show if the bug is still
+present in there. Thanks.
 
-I'm OK with this, just a comment below.
+--Shyam
 
-> +static int mvebu_pcie_remove(struct platform_device *pdev)
-> +{
-> +	struct mvebu_pcie *pcie = platform_get_drvdata(pdev);
-> +	struct mvebu_pcie_port *port = &pcie->ports[0];
-> +	int i;
-> +
-> +	for (i = 0; i < pcie->nports; i++, port++) {
-> +		clk_disable_unprepare(port->clk);
-> +		kfree(port->name);
-> +	}
-> +
-> +	return 0;
-> +}
+-----Original Message-----
+From: Greg KH [mailto:gregkh@linuxfoundation.org]
+Sent: Tuesday, August 13, 2013 12:50 PM
+To: Shyam Kaushik
+Cc: Tejun Heo; Andrew Morton; linux-kernel@vger.kernel.org
+Subject: Re: BUG REPORT - IDR wraps around at 30-bits - works very bad
+with NFSD/SCTP
 
-I believe the ->remove() part is quite useless. The driver is a 'bool'
-in Kconfig, so it cannot be compiled as a module, and I'm not sure
-there a way to remove the platform device that corresponds to the PCIe
-controller.
+On Tue, Aug 13, 2013 at 12:31:29PM +0530, Shyam Kaushik wrote:
+> Hi Folks,
+>
+> We are using Ubuntu linux kernel 3.2.0-25-generic &
+3.8.13-030813-generic
+> in our environments, but I think this bug is still present in mainline
+> kernel. Clients of IDR rollover at MAX_INT (NFSD & SCTP in kernel do
+this)
+> & others on MAX_IDR_MASK. This is ideally 2^31. But there is some BUG
+> within IDR that it wraps over at 2^30.
+>
+> NFSD uses IDR for maintaining its stateids & tracks min_stateid with a
+> static variable which keeps incrementing. So over a period of time NFSD
+> could run into the issue that it allocates an ID with IDR, but IDR cant
+> locate this ID, resulting in NFSD constantly sending BAD_STATEIDS to all
+> its clients.
+>
+> Following short driver (which closely resembles NFSD usage of IDR) shows
+> the BUG within IDR:
 
-And even if there was, then it would still not work because as far as I
-know, the ARM PCI core doesn't provide functions to 'unregister' PCI
-controllers, so it would keep pointers to functions located in the
-driver, which would cause nasty things when unloading the module.
+The IDR code was rewritten very recently (3.9 or 3.10), so could you
+test 3.10.6 out and let us know if this is still an issue there?  And if
+so, cc: the idr developers (on cc:) would help out a lot.
 
-So the reason why I didn't include a ->remove() hook is simply because
-there was, as of today, no use for it.
+Example left below for them...
 
-Best regards,
+thanks,
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+greg k-h
+
+>
+> #include <linux/module.h>
+> #include <linux/init.h>
+> #include <linux/version.h>
+> #include <linux/idr.h>
+>
+> static int log_idr_entry(int id, void *ptr, void *data)
+> {
+>         int     *expected_val = (int *)ptr;
+>
+>         pr_info("\tIDR Actual ID[%d] %s Expected Value[%d]\n", id, (id
+==
+> *expected_val)?"==":"!=", *expected_val);
+>         return 0;
+> }
+>
+> static void process_idr_entry(struct idr *stateids, int min_stateid)
+> {
+>         int             new_stid;
+>         int             error;
+>
+>         pr_info("\nProcessing for min_stateid[%d]\n", min_stateid);
+>         if (!idr_pre_get(stateids, GFP_KERNEL)) {
+>                 pr_info("Failed to pre-get\n");
+>                 return;
+>         }
+>
+>         error = idr_get_new_above(stateids, &new_stid, min_stateid,
+> &new_stid);
+>         if (error) {
+>                 pr_info("Failed to get new id\n");
+>                 idr_remove(stateids, new_stid);
+>                 return;
+>         }
+>
+>         pr_info("Allocated new_stid[%d]\n", new_stid);
+>
+>         if (!idr_find(stateids, new_stid))
+>                 pr_info("BUG: Cant find ID[%d]\n", new_stid);
+>
+>         pr_info("Dumping entries in IDR\n");
+>         idr_for_each(stateids, &log_idr_entry, NULL);
+>         idr_remove(stateids, new_stid);
+> }
+>
+> void driver_exit(void)
+> {
+> }
+>
+> int driver_init(void)
+> {
+>         struct idr      stateids;
+>
+>         pr_info("%d\n", MAX_INT);
+>         idr_init(&stateids);
+>         process_idr_entry(&stateids, 0/*min_stateid*/);
+>         process_idr_entry(&stateids, 1073741823/*min_stateid*/);
+>         process_idr_entry(&stateids, 1073741824/*min_stateid*/);
+>         idr_remove_all(&stateids);
+>         idr_destroy(&stateids);
+>         return 0;
+> }
+>
+> module_init(driver_init);
+> module_exit(driver_exit);
+>
+>
+> Upon loading the driver, the following message shows up
+> [71641.440846] Processing for min_stateid[0]
+> [71641.440857] Allocated new_stid[0]
+> [71641.440859] Dumping entries in IDR
+> [71641.440861]  IDR Actual ID[0] == Expected Value[0]
+> [71641.440864]
+> [71641.440864] Processing for min_stateid[1073741823]
+> [71641.440867] Allocated new_stid[1073741823]
+> [71641.440868] Dumping entries in IDR
+> [71641.440876]  IDR Actual ID[1073741823] == Expected Value[1073741823]
+> [71641.440878]
+> [71641.440878] Processing for min_stateid[1073741824]
+> [71641.440883] Allocated new_stid[1073741824]
+> [71641.440884] BUG: Cant find ID[1073741824]
+> [71641.440886] Dumping entries in IDR
+> [71641.440887]  IDR Actual ID[0] != Expected Value[1073741824]
+>
+> i.e. when we allocate a stated==1073741824, IDR internally has it as 0.
+>
+> --Shyam
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-----
+No virus found in this message.
+Checked by AVG - www.avg.com
+Version: 2013.0.2904 / Virus Database: 3211/6571 - Release Date: 08/12/13
