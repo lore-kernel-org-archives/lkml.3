@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab3HMDDT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 23:03:19 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:60605 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756352Ab3HMDDS (ORCPT
+	id S1757222Ab3HMDOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 23:14:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16904 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756447Ab3HMDOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 23:03:18 -0400
-Message-ID: <5209A173.3090600@huawei.com>
-Date: Tue, 13 Aug 2013 11:01:07 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, <tglx@linutronix.de>
-CC: <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-kernel@vger.kernel.org>,
-        <x86@kernel.org>, <linux-mm@kvack.org>, <wangchen@cn.fujitsu.com>,
-        Hanjun Guo <guohanjun@huawei.com>
-Subject: [PATCH] mm: remove unnecessary variable idx0 in __early_ioremap()
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 12 Aug 2013 23:14:47 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=RbvQYlb-YjEA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=aGOhDPDwV-YA:10 a=20KFwNOVAAAA:8 a=WqNgNKsRLQQtvLDEnmsA:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Mon, 12 Aug 2013 23:14:43 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [GIT PULL] tracing: final fixes for events and some
+Message-ID: <20130812231443.52563398@gandalf.local.home>
+In-Reply-To: <20130813023922.GA1042@redhat.com>
+References: <1375712355.22073.45.camel@gandalf.local.home>
+	<20130805143257.GA32639@gmail.com>
+	<1375714329.22073.63.camel@gandalf.local.home>
+	<20130812181325.GA19405@gmail.com>
+	<20130813023922.GA1042@redhat.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 8827247ffcc(x86: don't define __this_fixmap_does_not_exist()),
-variable idx0 is no longer needed, so just remove it.
+On Mon, 12 Aug 2013 22:39:22 -0400
+Dave Jones <davej@redhat.com> wrote:
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
----
- arch/x86/mm/ioremap.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 0215e2c..799580c 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -487,7 +487,7 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
- 	unsigned long offset;
- 	resource_size_t last_addr;
- 	unsigned int nrpages;
--	enum fixed_addresses idx0, idx;
-+	enum fixed_addresses idx;
- 	int i, slot;
- 
- 	WARN_ON(system_state != SYSTEM_BOOTING);
-@@ -540,8 +540,7 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
- 	/*
- 	 * Ok, go for it..
- 	 */
--	idx0 = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
--	idx = idx0;
-+	idx = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
- 	while (nrpages > 0) {
- 		early_set_fixmap(idx, phys_addr, prot);
- 		phys_addr += PAGE_SIZE;
--- 
-1.7.1
+> I'm not sure why I got cc'd on this, but for my part, the perf/tracing related bugs
+> I've found recently may have been there for ages, but they were triggerable
+> as non-root users.
+> 
+>
 
+Which bug was able to trigger with non-root? The hash one that you
+reported? That is something with the function tracer. Are you able to
+enable function tracing as non-root?
+
+Or is it because you gave more permissions for non-root to use extra
+perf commands. Because no one but root should be able to enable
+function tracing, as that can add a large overhead to the system.
+
+-- Steve
 
