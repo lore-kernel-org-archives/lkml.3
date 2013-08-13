@@ -1,60 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758479Ab3HMSzs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 14:55:48 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41391 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757720Ab3HMSzq (ORCPT
+	id S1758611Ab3HMSz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 14:55:59 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34631 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758522Ab3HMSzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 14:55:46 -0400
-Date: Tue, 13 Aug 2013 19:55:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Coussno <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Koen Kooi <koen@circuitco.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: Platform device tester - Allow removal
-Message-ID: <20130813185512.GA25647@n2100.arm.linux.org.uk>
-References: <1376386470-27328-1-git-send-email-panto@antoniou-consulting.com> <20130813182012.GE7740@kroah.com> <70F17005-652E-4C04-B6EC-51E16EE237C3@antoniou-consulting.com>
+	Tue, 13 Aug 2013 14:55:55 -0400
+Date: Tue, 13 Aug 2013 19:55:47 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Message-ID: <20130813185547.GD6427@sirena.org.uk>
+References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
+ <1376243970-6489-11-git-send-email-tomasz.figa@gmail.com>
+ <20130812233641.GL6427@sirena.org.uk>
+ <2472314.6b8DcBdcjO@flatron>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NxgoPD33jhlWcjWh"
 Content-Disposition: inline
-In-Reply-To: <70F17005-652E-4C04-B6EC-51E16EE237C3@antoniou-consulting.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <2472314.6b8DcBdcjO@flatron>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 10/18] spi: s3c64xx: Do not require legacy DMA API in
+ case of S3C64XX
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 09:42:27PM +0300, Pantelis Antoniou wrote:
-> But creation just crashes.
-> 
-> > root@beaglebone:/sys/bus/platform/drivers/omap_i2c# echo 4819c000.i2c >bind   
-> > [  145.053929] Unable to handle kernel NULL pointer dereference at virtual address 00000001
-> > [  145.062651] pgd = ca8c0000
-> > [  145.065507] [00000001] *pgd=8f437831, *pte=00000000, *ppte=00000000
-> > [  145.072163] Internal error: Oops: 17 [#1] SMP ARM
-> > [  145.077105] Modules linked in: ipv6 autofs4
-> > [  145.081537] CPU: 0 PID: 301 Comm: sh Not tainted 3.11.0-rc5-00125-g3b988fb #146
-> > [  145.089222] task: cf5b5580 ti: cf464000 task.ti: cf464000
-> > [  145.094918] PC is at omap_i2c_runtime_suspend+0x10/0xb4
-> > [  145.100408] LR is at omap_i2c_runtime_suspend+0x8/0xb4
 
-Well then, what you have here is a bug in the way that OMAP re-uses the
-platform device stuff - and that _does_ need fixing somehow.
+--NxgoPD33jhlWcjWh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The problem is that i2c_dev->regs is NULL at the point where
-pm_runtime_set_autosuspend_delay() is called, which as autosuspend
-is still set from the time that the device was unbound, it means that
-this triggers an immediate suspend.
+On Tue, Aug 13, 2013 at 01:49:53AM +0200, Tomasz Figa wrote:
 
-I suspect that:
+> I've been testing this without any significant patches, like PWM, CCF or=
+=20
+> DT support, just everything from the branch I pointed to and some board-
+> specific patches to help in debugging.
 
-        pm_runtime_set_autosuspend_delay(dev->dev, OMAP_I2C_PM_TIMEOUT);
-        pm_runtime_use_autosuspend(dev->dev);
+Done some more digging.  It's not failing the first time it requests the
+channel, it's failing sometime later on (after we've been running for a
+while but when we've had a substantial idle period).  However it is the
+first time we're actually intending to use the channel, previously to
+this the transfers would always be too small to trigger DMA.  I'm not
+sure that's relevant though as we're not getting far enough to actually
+request the channel.
 
-should be moved later in the probe function, after the switch (scheme)
-block.
+I'm still debugging what's going on here - the basic refcounting all
+looks OK in the SPI driver, I can see it requesting and releasing with
+the refcounts all going back to zero in the DMA driver as expected but
+when we come back to the device later on dmaengine is deciding the
+device is unavailable quite early on in the process.
+
+--NxgoPD33jhlWcjWh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSCoEwAAoJELSic+t+oim9I04QAISKQsBhC5ipSZkwJ1dF2mgp
+N7MbMprH513/7GBkLoSzO5z/SXF0947T+3TBj3jbb1M4zJuVE8KJAnJdCSYNgBFW
++omo3Fw0Dv7UVwJgn76WjMQaUzFkwUivDjrQ+pZtBmXNAgx01qbqpb2sxk/eGmBu
+n/gow7k6ClbgGRypAvUXuGQo5fxfqdzSjHIDS+PQ8MA32R4nJZkd+QCceWLs5I8F
+C6HU63BPbJbroRjnkgJAJsw/pouohPnuXOq/xqqM3sEnqtOq6uN0JFUswhlDNlzU
+tBocIBn/F4Eg3QtfzERSBkAa0qIrepZiGXk93dTzQOvWfoqPmn7EtySmKhjYnc5/
+dBOV3Fo02piZgAazHCYZZF+hQtdKS0rkAs3XO9GjAIseSFluOIOSPcCm+9ifeClJ
+CXf8uB7beMWoSC8/d8O74Vvtj8eLtMTmR1wnH18OaQyjfy5UuYgMu72b2V7sd9aL
+pibKump+AoN2Z+IYQwS7gnaQq5BMBC385GcFOV4VheD1QwZ0W7Tkq6rqnCGoZGrp
+T2WTbf/2bEvRvFEAJImhWRa9SV4ajJvcbh7cTuGfPHtPzqis588Ecpsmxe3jqybV
+Zass86LOrZcg+3ND4i0+Z2wzqmHVWTfyrEehpE631mZOwuwxdVXNGdq0TcXJN94s
+RR/sM72k50bdwMnZeJGn
+=9hBi
+-----END PGP SIGNATURE-----
+
+--NxgoPD33jhlWcjWh--
