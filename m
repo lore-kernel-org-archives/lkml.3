@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758318Ab3HMSwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 14:52:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35612 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757615Ab3HMSwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 14:52:18 -0400
-Message-ID: <520A8054.1030108@zytor.com>
-Date: Tue, 13 Aug 2013 11:52:04 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1758262Ab3HMSxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 14:53:52 -0400
+Received: from s16502780.onlinehome-server.info ([87.106.93.118]:63903 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757602Ab3HMSxu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 14:53:50 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Tue, 13 Aug 2013 19:53:22 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "s.dilek" <s.dilek@jpberlin.de>
+Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical
+ mode ]
+Message-ID: <20130813185322.GA5982@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Sedat Dilek <sedat.dilek@gmail.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Dave Airlie <airlied@gmail.com>,
+	DRI <dri-devel@lists.freedesktop.org>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	"s.dilek" <s.dilek@jpberlin.de>
+References: <CA+icZUUKH6Fa8WksqA69FXKUUJmKsNdXv0ZJH50HA2mFavfPCg@mail.gmail.com>
+ <CA+icZUXC73i4hO7LHDQ=85__JtrZmSMB+KyUnS+G6vRmm_=tkg@mail.gmail.com>
+ <CA+icZUXdS3EuXyGZiS1--rMu6H0ospzCiK_CXgPv8mOk0sMt+Q@mail.gmail.com>
+ <20130813163439.GA8805@cantiga.alporthouse.com>
+ <CA+icZUX8HZD3z-uwTMWX9CoLdYYqyPVuhH-vWGhJuoonvMQTbQ@mail.gmail.com>
+ <CA+icZUU1tbHGVPgjXNvsq-F44O6umbhp_bFcoLE35HZ0zTqo2g@mail.gmail.com>
+ <20130813171324.GB8805@cantiga.alporthouse.com>
+ <CA+icZUWFqpObp_6KzJExPs2pkJOofaKw6CKv8J0=VTfyVy_Uew@mail.gmail.com>
+ <20130813180129.GC8805@cantiga.alporthouse.com>
+ <CA+icZUWcF6bdoD1pSbbtBTAYNMC9237Eas7SemS6kPpnY=c2Sw@mail.gmail.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: RFC: default CONFIG_EFI_STUB=y
-References: <52050985.9070107@zytor.com>  <1376062345.2087.16.camel@dabdike.int.hansenpartnership.com>  <52050D03.4030805@zytor.com> <520A7B48.3020304@zytor.com> <1376419410.3467.67.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1376419410.3467.67.camel@dabdike.int.hansenpartnership.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUWcF6bdoD1pSbbtBTAYNMC9237Eas7SemS6kPpnY=c2Sw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 78.156.73.22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 11:43 AM, James Bottomley wrote:
->> James, does this address your concerns?
-> 
-> You mean for globally enabling CONFIG_EFI on x86?  not really for 32
-> bit, you say above it's pretty much unusable; I'd prefer just to enable
-> it for 64 bit.  As you said in your original post "since EFI now is a
-> significant percentage of all systems" but you actually mean EFI64 ...
-> EFI32 is a pretty insignificant percentage of all systems.
+On Tue, Aug 13, 2013 at 08:40:37PM +0200, Sedat Dilek wrote:
+> On Tue, Aug 13, 2013 at 8:01 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > On Tue, Aug 13, 2013 at 07:53:25PM +0200, Sedat Dilek wrote:
+> >> Files attached.
+> >
+> > Can you also please attach a full dmesg so I can check for anything
+> > unusual?
+> >
 
-For better or worse, there will be more.
+Nothing scarred me on a couple of read throughs.
 
-> Can we actually boot a 32 bit kernel on an EFI64 system?  The last time
-> I tried on my Secure Boot SDV it wouldn't work; the problem is getting
-> someting in the transfer of control path to boot the processor back to
-> 32 bit mode.
+What happens if you try:
 
-We can boot with a bootloader in "skip stub" mode; no runtime services
-yet.  We are working on making it possible to boot via a EFI stub in
-assisted mode (still needing a bootloader, but with the boot stub in the
-kernel.)
+diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
+index 112c5e1..9828d9b 100644
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -284,7 +284,7 @@ i915_gem_object_create_stolen(struct drm_device *dev, u32 size)
+                return NULL;
+ 
+        ret = drm_mm_insert_node(&dev_priv->mm.stolen, stolen, size,
+-                                4096, DRM_MM_SEARCH_DEFAULT);
++                                1024*1024, DRM_MM_SEARCH_DEFAULT);
+        if (ret) {
+                kfree(stolen);
+                return NULL;
 
-Runtime services will be the last piece, obviously, but even that looks
-reasonably doable.
-
-	-hpa
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
