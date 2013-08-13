@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab3HMQg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:36:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32930 "EHLO
+	id S1758715Ab3HMQgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:36:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4213 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757604Ab3HMQ0s (ORCPT
+	with ESMTP id S1757596Ab3HMQ0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Aug 2013 12:26:48 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=10wfW477xM8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=vMInAEXWpJ8A:10 a=yPCof4ZbAAAA:8 a=IXr_WNlcAAAA:8 a=iox4zFpeAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=8GPG1bAHf7UBJ589fJsA:9 a=7DSvI1NPTFQA:10 a=T5ZRoNnfl4MA:10 a=n9GBPR9yFnkA:10 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=9iuELBZXSkgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=pVVF0Xu2FPAA:10 a=hQsyQSgHAAAA:8 a=y5Yq1ZyPAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=BOjyjXOP2wC0AgPAh7oA:9 a=OgBTM579yaoA:10 a=nt6uV6JkblEA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130813155836.005883694@goodmis.org>
+Message-Id: <20130813155836.157539845@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 13 Aug 2013 11:58:12 -0400
+Date: Tue, 13 Aug 2013 11:58:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Junxiao Bi <junxiao.bi@oracle.com>, Jie Liu <jeff.liu@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Sunil Mushran <sunil.mushran@gmail.com>, <stable@kernel.org>,
+Cc: Paul Clements <paul.clements@steeleye.com>, Rob Landley <rob@landley.net>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [78/88] ocfs2: xattr: fix inlined xattr reflink
+Subject: [79/88] nbd: correct disconnect behavior
 References: <20130813155654.069291373@goodmis.org>
-Content-Disposition: inline; filename=0078-ocfs2-xattr-fix-inlined-xattr-reflink.patch
+Content-Disposition: inline; filename=0079-nbd-correct-disconnect-behavior.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,86 +30,76 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Paul Clements <paul.clements@steeleye.com>
 
-[ Upstream commit ef962df057aaafd714f5c22ba3de1be459571fdf ]
+[ Upstream commit c378f70adbc1bbecd9e6db145019f14b2f688c7c ]
 
-Inlined xattr shared free space of inode block with inlined data or data
-extent record, so the size of the later two should be adjusted when
-inlined xattr is enabled.  See ocfs2_xattr_ibody_init().  But this isn't
-done well when reflink.  For inode with inlined data, its max inlined
-data size is adjusted in ocfs2_duplicate_inline_data(), no problem.  But
-for inode with data extent record, its record count isn't adjusted.  Fix
-it, or data extent record and inlined xattr may overwrite each other,
-then cause data corruption or xattr failure.
+Currently, when a disconnect is requested by the user (via NBD_DISCONNECT
+ioctl) the return from NBD_DO_IT is undefined (it is usually one of
+several error codes).  This means that nbd-client does not know if a
+manual disconnect was performed or whether a network error occurred.
+Because of this, nbd-client's persist mode (which tries to reconnect after
+error, but not after manual disconnect) does not always work correctly.
 
-One panic caused by this bug in our test environment is the following:
+This change fixes this by causing NBD_DO_IT to always return 0 if a user
+requests a disconnect.  This means that nbd-client can correctly either
+persist the connection (if an error occurred) or disconnect (if the user
+requested it).
 
-  kernel BUG at fs/ocfs2/xattr.c:1435!
-  invalid opcode: 0000 [#1] SMP
-  Pid: 10871, comm: multi_reflink_t Not tainted 2.6.39-300.17.1.el5uek #1
-  RIP: ocfs2_xa_offset_pointer+0x17/0x20 [ocfs2]
-  RSP: e02b:ffff88007a587948  EFLAGS: 00010283
-  RAX: 0000000000000000 RBX: 0000000000000010 RCX: 00000000000051e4
-  RDX: ffff880057092060 RSI: 0000000000000f80 RDI: ffff88007a587a68
-  RBP: ffff88007a587948 R08: 00000000000062f4 R09: 0000000000000000
-  R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000010
-  R13: ffff88007a587a68 R14: 0000000000000001 R15: ffff88007a587c68
-  FS:  00007fccff7f06e0(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
-  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 00000000015cf000 CR3: 000000007aa76000 CR4: 0000000000000660
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process multi_reflink_t
-  Call Trace:
-    ocfs2_xa_reuse_entry+0x60/0x280 [ocfs2]
-    ocfs2_xa_prepare_entry+0x17e/0x2a0 [ocfs2]
-    ocfs2_xa_set+0xcc/0x250 [ocfs2]
-    ocfs2_xattr_ibody_set+0x98/0x230 [ocfs2]
-    __ocfs2_xattr_set_handle+0x4f/0x700 [ocfs2]
-    ocfs2_xattr_set+0x6c6/0x890 [ocfs2]
-    ocfs2_xattr_user_set+0x46/0x50 [ocfs2]
-    generic_setxattr+0x70/0x90
-    __vfs_setxattr_noperm+0x80/0x1a0
-    vfs_setxattr+0xa9/0xb0
-    setxattr+0xc3/0x120
-    sys_fsetxattr+0xa8/0xd0
-    system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Jie Liu <jeff.liu@oracle.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
-Cc: <stable@kernel.org>
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+Acked-by: Rob Landley <rob@landley.net>
+Cc: <stable@vger.kernel.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/ocfs2/xattr.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/block/nbd.c |    6 ++++++
+ include/linux/nbd.h |    1 +
+ 2 files changed, 7 insertions(+)
 
-diff --git a/fs/ocfs2/xattr.c b/fs/ocfs2/xattr.c
-index 0ba9ea1..8abed46 100644
---- a/fs/ocfs2/xattr.c
-+++ b/fs/ocfs2/xattr.c
-@@ -6499,6 +6499,16 @@ static int ocfs2_reflink_xattr_inline(struct ocfs2_xattr_reflink *args)
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 31e9b4b..aec3470 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -594,6 +594,9 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 		nbd_cmd(&sreq) = NBD_CMD_DISC;
+ 		if (!nbd->sock)
+ 			return -EINVAL;
++
++		nbd->disconnect = 1;
++
+ 		nbd_send_req(nbd, &sreq);
+                 return 0;
+ 	}
+@@ -624,6 +627,7 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 				nbd->sock = SOCKET_I(inode);
+ 				if (max_part > 0)
+ 					bdev->bd_invalidated = 1;
++				nbd->disconnect = 0; /* we're connected now */
+ 				return 0;
+ 			} else {
+ 				fput(file);
+@@ -695,6 +699,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 		set_capacity(nbd->disk, 0);
+ 		if (max_part > 0)
+ 			ioctl_by_bdev(bdev, BLKRRPART, 0);
++		if (nbd->disconnect) /* user requested, ignore socket errors */
++			return 0;
+ 		return nbd->harderror;
  	}
  
- 	new_oi = OCFS2_I(args->new_inode);
-+	/*
-+	 * Adjust extent record count to reserve space for extended attribute.
-+	 * Inline data count had been adjusted in ocfs2_duplicate_inline_data().
-+	 */
-+	if (!(new_oi->ip_dyn_features & OCFS2_INLINE_DATA_FL) &&
-+	    !(ocfs2_inode_is_fast_symlink(args->new_inode))) {
-+		struct ocfs2_extent_list *el = &new_di->id2.i_list;
-+		le16_add_cpu(&el->l_count, -(inline_size /
-+					sizeof(struct ocfs2_extent_rec)));
-+	}
- 	spin_lock(&new_oi->ip_lock);
- 	new_oi->ip_dyn_features |= OCFS2_HAS_XATTR_FL | OCFS2_INLINE_XATTR_FL;
- 	new_di->i_dyn_features = cpu_to_le16(new_oi->ip_dyn_features);
+diff --git a/include/linux/nbd.h b/include/linux/nbd.h
+index d146ca1..e6fe174 100644
+--- a/include/linux/nbd.h
++++ b/include/linux/nbd.h
+@@ -68,6 +68,7 @@ struct nbd_device {
+ 	u64 bytesize;
+ 	pid_t pid; /* pid of nbd-client, if attached */
+ 	int xmit_timeout;
++	int disconnect; /* a disconnect has been requested by user */
+ };
+ 
+ #endif
 -- 
 1.7.10.4
 
