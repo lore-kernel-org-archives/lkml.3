@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513Ab3HMNg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:36:57 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9071 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932463Ab3HMNgx (ORCPT
+	id S932456Ab3HMNgo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:36:44 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39217 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932438Ab3HMNgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:36:53 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 13 Aug 2013 06:36:53 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, <swarren@nvidia.com>, <rjw@sisk.pl>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2] irq: enable all irqs unconditionally in irq_resume
-Date: Tue, 13 Aug 2013 19:20:56 +0530
-Message-ID: <1376401856-29605-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 13 Aug 2013 09:36:38 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH V2 28/35] cpufreq: s3c64xx: Covert to light weight ->target_index() routine
+Date: Tue, 13 Aug 2013 19:02:41 +0530
+Message-Id: <1d6e581b39e323b5b868cddba622e1fe371a8faf.1376392602.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
+References: <cover.1376392602.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1376392602.git.viresh.kumar@linaro.org>
+References: <cover.1376392602.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When system enters into suspend, it disable all irqs in single
-function call. This disables EARLY_RESUME irqs also along with
-normal irqs.
+This patch converts existing .target() to newly defined light weight
+.target_index() routine for this driver.
 
-The EARLY_RESUME irqs get enabled in sys_core_ops->resume and
-non-EARLY_RESUME irqs get enabled in normal system resume path.
+CPUFreq core will call cpufreq_frequency_table_target() before calling this
+routine and will pass index to it.
 
-When suspend_noirq failed or suspend is aborted for any reason,
-the EARLY_RESUME irqs do not get enabled as sys_core_ops->resume()
-call did not happen. It only enables the non-EARLY_RESUME irqs in normal
-disable for remaining life of system.
-
-Enable all irqs unconditionally in normal irq_resume() regardless of
-EARLY_RESUME irqs have been already enabled or not.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Acked-by-and-tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
-Creating this patch based on disucssion on patch
- [PATCH] irq: enable suspended EARLY_RESUME irqs forcefully if not resumed
+ drivers/cpufreq/s3c64xx-cpufreq.c | 18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
-Making simple change as susggested by Thomas.
-
-
- kernel/irq/pm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index cb228bf..abcd6ca 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -50,7 +50,7 @@ static void resume_irqs(bool want_early)
- 		bool is_early = desc->action &&
- 			desc->action->flags & IRQF_EARLY_RESUME;
+diff --git a/drivers/cpufreq/s3c64xx-cpufreq.c b/drivers/cpufreq/s3c64xx-cpufreq.c
+index 99fbc49..72f733b 100644
+--- a/drivers/cpufreq/s3c64xx-cpufreq.c
++++ b/drivers/cpufreq/s3c64xx-cpufreq.c
+@@ -63,26 +63,16 @@ static unsigned int s3c64xx_cpufreq_get_speed(unsigned int cpu)
+ }
  
--		if (is_early != want_early)
-+		if (!is_early && want_early)
- 			continue;
+ static int s3c64xx_cpufreq_set_target(struct cpufreq_policy *policy,
+-				      unsigned int target_freq,
+-				      unsigned int relation)
++				      unsigned int index)
+ {
+ 	int ret;
+-	unsigned int i;
+ 	struct cpufreq_freqs freqs;
+ 	struct s3c64xx_dvfs *dvfs;
  
- 		raw_spin_lock_irqsave(&desc->lock, flags);
+-	ret = cpufreq_frequency_table_target(policy, s3c64xx_freq_table,
+-					     target_freq, relation, &i);
+-	if (ret != 0)
+-		return ret;
+-
+ 	freqs.old = clk_get_rate(armclk) / 1000;
+-	freqs.new = s3c64xx_freq_table[i].frequency;
++	freqs.new = s3c64xx_freq_table[index].frequency;
+ 	freqs.flags = 0;
+-	dvfs = &s3c64xx_dvfs_table[s3c64xx_freq_table[i].driver_data];
+-
+-	if (freqs.old == freqs.new)
+-		return 0;
++	dvfs = &s3c64xx_dvfs_table[s3c64xx_freq_table[index].driver_data];
+ 
+ 	pr_debug("Transition %d-%dkHz\n", freqs.old, freqs.new);
+ 
+@@ -257,7 +247,7 @@ static int s3c64xx_cpufreq_driver_init(struct cpufreq_policy *policy)
+ static struct cpufreq_driver s3c64xx_cpufreq_driver = {
+ 	.flags          = 0,
+ 	.verify		= cpufreq_generic_frequency_table_verify,
+-	.target		= s3c64xx_cpufreq_set_target,
++	.target_index	= s3c64xx_cpufreq_set_target,
+ 	.get		= s3c64xx_cpufreq_get_speed,
+ 	.init		= s3c64xx_cpufreq_driver_init,
+ 	.name		= "s3c",
 -- 
-1.7.1.1
+1.7.12.rc2.18.g61b472e
 
