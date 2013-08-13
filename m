@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab3HMNZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 09:25:47 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:35339 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757753Ab3HMNZp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 09:25:45 -0400
-Message-ID: <520A33D6.5070700@baylibre.com>
-Date: Tue, 13 Aug 2013 15:25:42 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1758032Ab3HMN1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 09:27:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757828Ab3HMN1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 09:27:08 -0400
+Message-ID: <520A3352.5070709@redhat.com>
+Date: Tue, 13 Aug 2013 09:23:30 -0400
+From: Brian Foster <bfoster@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Lars Poeschel <poeschel@lemonage.de>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>,
-        "b-cousson@ti.com" <b-cousson@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: am33xx: Correct gpio #interrupt-cells property
-References: <1375873592-26881-1-git-send-email-larsi@wh2.tu-dresden.de> <20130807145309.GG28558@e106331-lin.cambridge.arm.com> <201308071711.00449.poeschel@lemonage.de>
-In-Reply-To: <201308071711.00449.poeschel@lemonage.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Maxim Patlasov <mpatlasov@parallels.com>
+CC: miklos@szeredi.hu, fuse-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, devel@openvz.org, xemul@parallels.com
+Subject: Re: [PATCH 2/2] fuse: wait for writeback in fuse_file_fallocate()
+References: <20130812163739.10366.64896.stgit@maximpc.sw.ru> <20130812163935.10366.88320.stgit@maximpc.sw.ru> <520A2114.1040203@redhat.com> <520A2D0E.5050103@parallels.com>
+In-Reply-To: <520A2D0E.5050103@parallels.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi lars,
+On 08/13/2013 08:56 AM, Maxim Patlasov wrote:
+> Hi,
+> 
+> 08/13/2013 04:05 PM, Brian Foster пишет:
+>> ...
+>> @@ -2478,8 +2516,11 @@ static long fuse_file_fallocate(struct file
+>> *file, int mode, loff_t offset,
+>>         if (lock_inode) {
+>>           mutex_lock(&inode->i_mutex);
+>> -        if (mode & FALLOC_FL_PUNCH_HOLE)
+>> -            fuse_set_nowrite(inode);
+>> +        if (mode & FALLOC_FL_PUNCH_HOLE) {
+>> +            truncate_pagecache_range(inode, offset,
+>> +                         offset + length - 1);
+>> +            fuse_wait_on_writeback(inode, offset, length);
+>> +        }
+>> If this happens to be the first attempt on an fs that doesn't support
+>> fallocate, we'll return -EOPNOTSUPP after having already punched out the
+>> data in the pagecache.
+> 
+> Yes, this is unpleasant, but it's not critical, imo. We're returning an
+> error code (even though equal to -EOPNOTSUPP) and a sane application
+> should not make any assumption about current state of the punched
+> region. Also, the application intended to discard given region of the
+> file, so why should it pay care for its content afterwards?
+> 
 
-On 07/08/2013 17:11, Lars Poeschel wrote:
-> On Wednesday 07 August 2013 at 16:53:09, Mark Rutland wrote:
->> On Wed, Aug 07, 2013 at 12:06:32PM +0100, Lars Poeschel wrote:
->>> From: Lars Poeschel <poeschel@lemonage.de>
->>>
->>> Following commit ff5c9059 and therefore other omap platforms using
->>> the gpio-omap driver correct the #interrupt-cells property on am33xx
->>> too. The omap gpio binding documentaion also states that
->>> the #interrupt-cells property should be 2.
->>
->> I take it there are no device nodes for which any of these nodes are an
->> interrupt parent (which would need to be updated)?
->
-> As far as I know: No.
->
-> Lars
->
->> If so:
->>
->> Acked-by: Mark Rutland <mark.rutland@arm.com>
->>
->> Thanks,
->> Mark.
->>
->>> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+I agree, though most users probably wouldn't expect that a blatant error
+like EOPNOTSUPP leave the range in a weird state. What's more, it only
+does so if it's the first attempt and behaves more appropriately after
+that.
 
-Thank, applied with Mark and Javier A-By / R-By.
+>> What about replacing the nowrite logic with a
+>> flush (and still followed by your new writeback wait logic) rather than
+>> moving the pagecache truncate?
+> 
+> The "flush" you mentioned should firstly flush page cache.
+> invalidate_inode_pages2_range() seems to be a candidate. We definitely
+> cannot ignore error code from it because it can be fuse_launder_page()
+> who got -ENOMEM from fuse_writepage_locked(). In case of err == -ENOMEM,
+> we could safely fail fallocate, but what should we do if it's -EBUSY?
+> Any ideas?
+> 
 
-Thanks,
-Benoit
+I was referring to something like filemap_write_and_wait_range(), for
+example. Then continue to use truncate_pagecache_range() as we do today.
+Thoughts?
 
+Brian
+
+> Thanks,
+> Maxim
 
