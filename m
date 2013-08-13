@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759082Ab3HMUYb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:24:31 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:59344 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758264Ab3HMUYa (ORCPT
+	id S1759190Ab3HMUYg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:24:36 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:41758 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758264Ab3HMUYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:24:30 -0400
-Message-ID: <520AA40B.9060107@kernel.org>
-Date: Tue, 13 Aug 2013 22:24:27 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 13 Aug 2013 16:24:32 -0400
 MIME-Version: 1.0
-To: Hector Palacios <hector.palacios@digi.com>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        alexandre.belloni@free-electrons.com, lars@metafoo.de,
-        fabio.estevam@freescale.com, marex@denx.de
-Subject: Re: [PATCH v3 1/5] iio: mxs-lradc: change the realbits to 12
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-2-git-send-email-hector.palacios@digi.com>
-In-Reply-To: <1374501843-19651-2-git-send-email-hector.palacios@digi.com>
-X-Enigmail-Version: 1.5.2
+In-Reply-To: <520A83B0.40607@sgi.com>
+References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
+	<1376344480-156708-1-git-send-email-nzimmer@sgi.com>
+	<CA+55aFwTQLexJkf67P0b7Z7cw8fePjdDSdA4SOkM+Jf+kBPYEA@mail.gmail.com>
+	<520A6DFC.1070201@sgi.com>
+	<CA+55aFwRHdQ_f6ryUU1yWkW1Qz8cG958jLZuyhd_YdOq4-rfRA@mail.gmail.com>
+	<520A7514.9020008@sgi.com>
+	<520A83B0.40607@sgi.com>
+Date: Tue, 13 Aug 2013 13:24:31 -0700
+X-Google-Sender-Auth: Ic39Y3GCJG_7cIZOWK3JoYCiHr4
+Message-ID: <CAE9FiQXdHWEF9aTQtTa8AjM8BTUZWg6TSUebqBr9aT8JL58c8A@mail.gmail.com>
+Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
+ embedded in the buddy allocator
+From: Yinghai Lu <yinghai@kernel.org>
+To: Mike Travis <travis@sgi.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nathan Zimmer <nzimmer@sgi.com>, Peter Anvin <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mel Gorman <mgorman@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/13 15:03, Hector Palacios wrote:
-> The LRADC virtual channels have an 18 bit field to store the sum of up
-> to 2^5 accumulated samples. The read_raw function however only operates
-> over a single sample (12 bit resolution).
-> In order to use this field for scaling operations, we need it to be the
-> exact resolution value of the LRADC.
-> Besides, the driver was using an 18 bit mask (LRADC_CH_VALUE_MASK) to
-> report touch coordinates to userland. A 12 bit mask should be used instead
-> or else the touch libraries will expect a coordinates range between 0
-> and 0x3ffff (18 bits), instead of between 0 and 0xfff (12 bits).
-> 
-> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-> Acked-by: Marek Vasut <marex@denx.de>
-> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Applied to the togreg branch of iio.git
+On Tue, Aug 13, 2013 at 12:06 PM, Mike Travis <travis@sgi.com> wrote:
+>
+>
+> On 8/13/2013 11:04 AM, Mike Travis wrote:
+>>
+>>
+>> On 8/13/2013 10:51 AM, Linus Torvalds wrote:
+>>> by the time you can log in. And if it then takes another ten minutes
+>>> until you have the full 16TB initialized, and some things might be a
+>>> tad slower early on, does anybody really care?  The machine will be up
+>>> and running with plenty of memory, even if it may not be *all* the
+>>> memory yet.
+>>
+>> Before the patches adding memory took ~45 mins for 16TB and almost 2 hours
+>> for 32TB.  Adding it late sped up early boot but late insertion was still
+>> very slow, where the full 32TB was still not fully inserted after an hour.
+>> Doing it in parallel along with the memory hotplug lock per node, we got
+>> it down to the 10-15 minute range.
+>>
+>
+> FYI, the system at this time had 128 nodes each with 256GB of memory.
+> About 252GB was inserted into the absent list from nodes 1 .. 126.
+> Memory on nodes 0 and 128 was left fully present.
 
-Thanks,
+Can we have one topic about those boot time issues in this year kernel summit?
 
-Jonathan
-> ---
->  drivers/staging/iio/adc/mxs-lradc.c | 12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/adc/mxs-lradc.c b/drivers/staging/iio/adc/mxs-lradc.c
-> index 9f52a28..56667da 100644
-> --- a/drivers/staging/iio/adc/mxs-lradc.c
-> +++ b/drivers/staging/iio/adc/mxs-lradc.c
-> @@ -225,6 +225,9 @@ struct mxs_lradc {
->  #define	LRADC_CTRL4_LRADCSELECT_MASK(n)		(0xf << ((n) * 4))
->  #define	LRADC_CTRL4_LRADCSELECT_OFFSET(n)	((n) * 4)
->  
-> +#define LRADC_RESOLUTION			12
-> +#define LRADC_SINGLE_SAMPLE_MASK		((1 << LRADC_RESOLUTION) - 1)
-> +
->  /*
->   * Raw I/O operations
->   */
-> @@ -540,9 +543,10 @@ static int mxs_lradc_ts_register(struct mxs_lradc *lradc)
->  	__set_bit(EV_ABS, input->evbit);
->  	__set_bit(EV_KEY, input->evbit);
->  	__set_bit(BTN_TOUCH, input->keybit);
-> -	input_set_abs_params(input, ABS_X, 0, LRADC_CH_VALUE_MASK, 0, 0);
-> -	input_set_abs_params(input, ABS_Y, 0, LRADC_CH_VALUE_MASK, 0, 0);
-> -	input_set_abs_params(input, ABS_PRESSURE, 0, LRADC_CH_VALUE_MASK, 0, 0);
-> +	input_set_abs_params(input, ABS_X, 0, LRADC_SINGLE_SAMPLE_MASK, 0, 0);
-> +	input_set_abs_params(input, ABS_Y, 0, LRADC_SINGLE_SAMPLE_MASK, 0, 0);
-> +	input_set_abs_params(input, ABS_PRESSURE, 0, LRADC_SINGLE_SAMPLE_MASK,
-> +			     0, 0);
->  
->  	lradc->ts_input = input;
->  	input_set_drvdata(input, lradc);
-> @@ -817,7 +821,7 @@ static const struct iio_buffer_setup_ops mxs_lradc_buffer_ops = {
->  	.channel = (idx),					\
->  	.scan_type = {						\
->  		.sign = 'u',					\
-> -		.realbits = 18,					\
-> +		.realbits = LRADC_RESOLUTION,			\
->  		.storagebits = 32,				\
->  	},							\
->  }
-> 
+There will be more 32 sockets x86 systems and will have lots of
+memory, pci chain and cpu cores.
+
+current kernel/smp.c::smp_init(),  we still have
+|        /* FIXME: This should be done in userspace --RR */
+|        for_each_present_cpu(cpu) {
+|                if (num_online_cpus() >= setup_max_cpus)
+|                        break;
+|                if (!cpu_online(cpu))
+|                        cpu_up(cpu);
+|        }
+
+solution would be:
+1. delay some memory, pci chain, or cpus cores.
+2. or parallel initialize them during booting
+3. or parallel add them after booting.
+
+Thanks
+
+Yinghai
