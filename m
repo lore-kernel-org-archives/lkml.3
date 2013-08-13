@@ -1,60 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab3HMJq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 05:46:57 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:26119 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753615Ab3HMJq4 (ORCPT
+	id S1756902Ab3HMJrX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 05:47:23 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49955 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755909Ab3HMJrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 05:46:56 -0400
-X-AuditID: cbfec7f5-b7f5f6d00000105f-7f-520a00849517
-Message-id: <1376387202.31048.2.camel@AMDC1943>
-Subject: Re: [RFC 0/3] Pin page control subsystem
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
-        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
-        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Date: Tue, 13 Aug 2013 11:46:42 +0200
-In-reply-to: <1376377502-28207-1-git-send-email-minchan@kernel.org>
-References: <1376377502-28207-1-git-send-email-minchan@kernel.org>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t/xK7otDFxBBr9v8ljMePiLxaLr3xYW
-	i08vHzBaPG8/wGxxedccNot7a/6zWvyfsZzZYvK7Z4wWy76+Z7f4e2U9i8WhfavYLea1v2R1
-	4PH4f3ASs8fOWXfZPRbvecnksWlVJ5vHpk+T2D0eHNrM4vF+31U2j74tqxg9Np+u9vi8SS6A
-	K4rLJiU1J7MstUjfLoEr4/rFSSwFM1krOo6wNDDOY+li5OCQEDCROLxKtYuRE8gUk7hwbz1b
-	FyMXh5DAUkaJA/t/sYEkhAQ+M0pcOOgAYvMK6EucW9PPBGILCxhK7D35iRXEZhMwlti8fAlY
-	vYiAisSfp/8YQQYxC9xjkjg0YSJYA4uAqsTzI7vBijgFnCW+dPxmgljgJDFh2VF2EJtZQF1i
-	0rxFzBAXKUnsbu+EistLbF7zlhniCEGJH5PvsUxgFJiFpGUWkrJZSMoWMDKvYhRNLU0uKE5K
-	zzXSK07MLS7NS9dLzs/dxAiJoq87GJceszrEKMDBqMTDm/GRI0iINbGsuDL3EKMEB7OSCK/S
-	H84gId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYz1T0t90h3nMjyxLonfobv7cnX2u5+cOXd4We4u
-	OfR0YkJqJ7u4y+VbDHq9SQuf+1uEsEbNYP7b0bHgyLsP7lHyD65wyKr/a/udIW31WyxzGrP3
-	/imLFP3nqoTrO6pP+7/19O69Xms1nYSV7k7aErvTo3Humc+TivYFm378MOuqtgqHQOWilrNK
-	LMUZiYZazEXFiQAqsw20gAIAAA==
+	Tue, 13 Aug 2013 05:47:21 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130813093920.GB4519@cantiga.alporthouse.com>
+References: <CA+icZUWmee5nTZCGvFb4vLpna5vUn+RJ-V9pHpKPFaTc96BG5Q@mail.gmail.com>
+	<20130813092554.GA4519@cantiga.alporthouse.com>
+	<CA+icZUUrJt_sJqp0CNMuM_b36tvv_rUskegLY5zcnm0w+JcW5Q@mail.gmail.com>
+	<20130813093920.GB4519@cantiga.alporthouse.com>
+Date: Tue, 13 Aug 2013 11:47:19 +0200
+Message-ID: <CA+icZUVEcCTbBre99FWiDXRAMKcdQxUagXE-2-rO9g=YVUAieQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical mode ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "s.dilek" <s.dilek@jpberlin.de>
+Content-Type: multipart/mixed; boundary=089e01419acc81eefa04e3d1205b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+--089e01419acc81eefa04e3d1205b
+Content-Type: text/plain; charset=UTF-8
 
-On wto, 2013-08-13 at 16:04 +0900, Minchan Kim wrote:
-> patch 2 introduce pinpage control
-> subsystem. So, subsystems want to control pinpage should implement own
-> pinpage_xxx functions because each subsystem would have other character
-> so what kinds of data structure for managing pinpage information depends
-> on them. Otherwise, they can use general functions defined in pinpage
-> subsystem. patch 3 hacks migration.c so that migration is
-> aware of pinpage now and migrate them with pinpage subsystem.
+On Tue, Aug 13, 2013 at 11:39 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Tue, Aug 13, 2013 at 11:35:53AM +0200, Sedat Dilek wrote:
+>> After a logout from my "BROKEN" Unity-2D session - the login-screen
+>> for LightDM seems to be OK.
+>> Then entering my Unity-2D desktop is OK - no screen corruptions.
+>
+> What hardware and display do you have?
 
-I wonder why don't we use page->mapping and a_ops? Is there any
-disadvantage of such mapping/a_ops?
+It's a Samsung ultrabook with SandyBridge CPU.
 
-Best regards,
-Krzysztof
+[   333.291] (--) intel(0): Integrated Graphics Chipset: Intel(R) HD
+Graphics 3000
 
+xrand output attached.
+
+- Sedat -
+
+P.S.: I switched to intel-ddx v2-21-14-35-g5840bf in the meantime.
+
+--089e01419acc81eefa04e3d1205b
+Content-Type: text/plain; charset=US-ASCII; name="xrandr-verbose.txt"
+Content-Disposition: attachment; filename="xrandr-verbose.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hkaxf6m80
+
+U2NyZWVuIDA6IG1pbmltdW0gMzIwIHggMjAwLCBjdXJyZW50IDEzNjYgeCA3NjgsIG1heGltdW0g
+ODE5MiB4IDgxOTIKTFZEUzEgY29ubmVjdGVkIDEzNjZ4NzY4KzArMCAoMHg0NSkgbm9ybWFsIChu
+b3JtYWwgbGVmdCBpbnZlcnRlZCByaWdodCB4IGF4aXMgeSBheGlzKSAwbW0geCAwbW0KCUlkZW50
+aWZpZXI6IDB4NDEKCVRpbWVzdGFtcDogIDMzOTU3MQoJU3VicGl4ZWw6ICAgaG9yaXpvbnRhbCBy
+Z2IKCUdhbW1hOiAgICAgIDEuMDoxLjA6MS4wCglCcmlnaHRuZXNzOiAxLjAKCUNsb25lczogICAg
+CglDUlRDOiAgICAgICAwCglDUlRDczogICAgICAwIDEKCVRyYW5zZm9ybTogIDEuMDAwMDAwIDAu
+MDAwMDAwIDAuMDAwMDAwCgkgICAgICAgICAgICAwLjAwMDAwMCAxLjAwMDAwMCAwLjAwMDAwMAoJ
+ICAgICAgICAgICAgMC4wMDAwMDAgMC4wMDAwMDAgMS4wMDAwMDAKCSAgICAgICAgICAgZmlsdGVy
+OiAKCUJBQ0tMSUdIVDogNyAoMHgwMDAwMDAwNykJcmFuZ2U6ICAoMCw3KQoJQmFja2xpZ2h0OiA3
+ICgweDAwMDAwMDA3KQlyYW5nZTogICgwLDcpCglzY2FsaW5nIG1vZGU6CUZ1bGwgYXNwZWN0CgkJ
+c3VwcG9ydGVkOiBOb25lICAgICAgICAgRnVsbCAgICAgICAgIENlbnRlciAgICAgICBGdWxsIGFz
+cGVjdCAKICAxMzY2eDc2OCAoMHg0NSkgICA3MC43TUh6IC1IU3luYyAtVlN5bmMgKmN1cnJlbnQg
+K3ByZWZlcnJlZAogICAgICAgIGg6IHdpZHRoICAxMzY2IHN0YXJ0IDE0MTQgZW5kIDE0NDYgdG90
+YWwgMTQ4NiBza2V3ICAgIDAgY2xvY2sgICA0Ny42S0h6CiAgICAgICAgdjogaGVpZ2h0ICA3Njgg
+c3RhcnQgIDc3MCBlbmQgIDc3NSB0b3RhbCAgNzkyICAgICAgICAgICBjbG9jayAgIDYwLjFIegog
+IDEzNjB4NzY4ICgweDQ2KSAgIDg0LjhNSHogLUhTeW5jICtWU3luYwogICAgICAgIGg6IHdpZHRo
+ICAxMzYwIHN0YXJ0IDE0MzIgZW5kIDE1NjggdG90YWwgMTc3NiBza2V3ICAgIDAgY2xvY2sgICA0
+Ny43S0h6CiAgICAgICAgdjogaGVpZ2h0ICA3Njggc3RhcnQgIDc3MSBlbmQgIDc4MSB0b3RhbCAg
+Nzk4ICAgICAgICAgICBjbG9jayAgIDU5LjhIegogIDEzNjB4NzY4ICgweDQ3KSAgIDcyLjBNSHog
+K0hTeW5jIC1WU3luYwogICAgICAgIGg6IHdpZHRoICAxMzYwIHN0YXJ0IDE0MDggZW5kIDE0NDAg
+dG90YWwgMTUyMCBza2V3ICAgIDAgY2xvY2sgICA0Ny40S0h6CiAgICAgICAgdjogaGVpZ2h0ICA3
+Njggc3RhcnQgIDc3MSBlbmQgIDc4MSB0b3RhbCAgNzkwICAgICAgICAgICBjbG9jayAgIDYwLjBI
+egogIDEwMjR4NzY4ICgweDQ4KSAgIDY1LjBNSHogLUhTeW5jIC1WU3luYwogICAgICAgIGg6IHdp
+ZHRoICAxMDI0IHN0YXJ0IDEwNDggZW5kIDExODQgdG90YWwgMTM0NCBza2V3ICAgIDAgY2xvY2sg
+ICA0OC40S0h6CiAgICAgICAgdjogaGVpZ2h0ICA3Njggc3RhcnQgIDc3MSBlbmQgIDc3NyB0b3Rh
+bCAgODA2ICAgICAgICAgICBjbG9jayAgIDYwLjBIegogIDgwMHg2MDAgKDB4NDkpICAgNDAuME1I
+eiArSFN5bmMgK1ZTeW5jCiAgICAgICAgaDogd2lkdGggICA4MDAgc3RhcnQgIDg0MCBlbmQgIDk2
+OCB0b3RhbCAxMDU2IHNrZXcgICAgMCBjbG9jayAgIDM3LjlLSHoKICAgICAgICB2OiBoZWlnaHQg
+IDYwMCBzdGFydCAgNjAxIGVuZCAgNjA1IHRvdGFsICA2MjggICAgICAgICAgIGNsb2NrICAgNjAu
+M0h6CiAgODAweDYwMCAoMHg0YSkgICAzNi4wTUh6ICtIU3luYyArVlN5bmMKICAgICAgICBoOiB3
+aWR0aCAgIDgwMCBzdGFydCAgODI0IGVuZCAgODk2IHRvdGFsIDEwMjQgc2tldyAgICAwIGNsb2Nr
+ICAgMzUuMktIegogICAgICAgIHY6IGhlaWdodCAgNjAwIHN0YXJ0ICA2MDEgZW5kICA2MDMgdG90
+YWwgIDYyNSAgICAgICAgICAgY2xvY2sgICA1Ni4ySHoKICA2NDB4NDgwICgweDRiKSAgIDI1LjJN
+SHogLUhTeW5jIC1WU3luYwogICAgICAgIGg6IHdpZHRoICAgNjQwIHN0YXJ0ICA2NTYgZW5kICA3
+NTIgdG90YWwgIDgwMCBza2V3ICAgIDAgY2xvY2sgICAzMS41S0h6CiAgICAgICAgdjogaGVpZ2h0
+ICA0ODAgc3RhcnQgIDQ5MCBlbmQgIDQ5MiB0b3RhbCAgNTI1ICAgICAgICAgICBjbG9jayAgIDU5
+LjlIegpWR0ExIGRpc2Nvbm5lY3RlZCAobm9ybWFsIGxlZnQgaW52ZXJ0ZWQgcmlnaHQgeCBheGlz
+IHkgYXhpcykKCUlkZW50aWZpZXI6IDB4NDIKCVRpbWVzdGFtcDogIDMzOTU3MQoJU3VicGl4ZWw6
+ICAgdW5rbm93bgoJQ2xvbmVzOiAgICAKCUNSVENzOiAgICAgIDAgMQoJVHJhbnNmb3JtOiAgMS4w
+MDAwMDAgMC4wMDAwMDAgMC4wMDAwMDAKCSAgICAgICAgICAgIDAuMDAwMDAwIDEuMDAwMDAwIDAu
+MDAwMDAwCgkgICAgICAgICAgICAwLjAwMDAwMCAwLjAwMDAwMCAxLjAwMDAwMAoJICAgICAgICAg
+ICBmaWx0ZXI6IApIRE1JMSBkaXNjb25uZWN0ZWQgKG5vcm1hbCBsZWZ0IGludmVydGVkIHJpZ2h0
+IHggYXhpcyB5IGF4aXMpCglJZGVudGlmaWVyOiAweDQzCglUaW1lc3RhbXA6ICAzMzk1NzEKCVN1
+YnBpeGVsOiAgIHVua25vd24KCUNsb25lczogICAgCglDUlRDczogICAgICAwIDEKCVRyYW5zZm9y
+bTogIDEuMDAwMDAwIDAuMDAwMDAwIDAuMDAwMDAwCgkgICAgICAgICAgICAwLjAwMDAwMCAxLjAw
+MDAwMCAwLjAwMDAwMAoJICAgICAgICAgICAgMC4wMDAwMDAgMC4wMDAwMDAgMS4wMDAwMDAKCSAg
+ICAgICAgICAgZmlsdGVyOiAKCUJyb2FkY2FzdCBSR0I6CUF1dG9tYXRpYwoJCXN1cHBvcnRlZDog
+QXV0b21hdGljICAgIEZ1bGwgICAgICAgICBMaW1pdGVkIDE2OjIKCWF1ZGlvOglhdXRvCgkJc3Vw
+cG9ydGVkOiBmb3JjZS1kdmkgICAgb2ZmICAgICAgICAgIGF1dG8gICAgICAgICBvbiAgICAgICAg
+ICAKRFAxIGRpc2Nvbm5lY3RlZCAobm9ybWFsIGxlZnQgaW52ZXJ0ZWQgcmlnaHQgeCBheGlzIHkg
+YXhpcykKCUlkZW50aWZpZXI6IDB4NDQKCVRpbWVzdGFtcDogIDMzOTU3MQoJU3VicGl4ZWw6ICAg
+dW5rbm93bgoJQ2xvbmVzOiAgICAKCUNSVENzOiAgICAgIDAgMQoJVHJhbnNmb3JtOiAgMS4wMDAw
+MDAgMC4wMDAwMDAgMC4wMDAwMDAKCSAgICAgICAgICAgIDAuMDAwMDAwIDEuMDAwMDAwIDAuMDAw
+MDAwCgkgICAgICAgICAgICAwLjAwMDAwMCAwLjAwMDAwMCAxLjAwMDAwMAoJICAgICAgICAgICBm
+aWx0ZXI6IAoJQnJvYWRjYXN0IFJHQjoJQXV0b21hdGljCgkJc3VwcG9ydGVkOiBBdXRvbWF0aWMg
+ICAgRnVsbCAgICAgICAgIExpbWl0ZWQgMTY6MgoJYXVkaW86CWF1dG8KCQlzdXBwb3J0ZWQ6IGZv
+cmNlLWR2aSAgICBvZmYgICAgICAgICAgYXV0byAgICAgICAgIG9uICAgICAgICAgIAo=
+--089e01419acc81eefa04e3d1205b--
