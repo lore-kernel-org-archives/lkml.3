@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757807Ab3HMGrD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:47:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60644 "EHLO
+	id S1757810Ab3HMGrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:47:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60642 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757133Ab3HMGdp (ORCPT
+	with ESMTP id S1757116Ab3HMGdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:45 -0400
+	Tue, 13 Aug 2013 02:33:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Thomas Backlund <tmb@mageia.org>
-Subject: [ 57/60] drm/radeon: always program the MC on startup
-Date: Mon, 12 Aug 2013 23:34:24 -0700
-Message-Id: <20130813063338.948773843@linuxfoundation.org>
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 56/60] drm/radeon: only save UVD bo when we have open handles
+Date: Mon, 12 Aug 2013 23:34:23 -0700
+Message-Id: <20130813063338.873041493@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,124 +30,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Christian König <christian.koenig@amd.com>
 
-commit 6fab3febf6d949b0a12b1e4e73db38e4a177a79e upstream.
+commit 4ad9c1c774c2af152283f510062094e768876f55 upstream.
 
-For r6xx+ asics.  This mirrors the behavior of pre-r6xx
-asics.  We need to program the MC even if something
-else in startup() fails.  Failure to do so results in
-an unusable GPU.
+Otherwise just reinitialize from scratch on resume,
+and so make it more likely to succeed.
 
-Based on a fix from: Mark Kettenis <kettenis@openbsd.org>
+v2: rebased for 3.10-stable tree
+
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Cc: stable@vger.kernel.org
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ rebased for 3.10 and dropped the drivers/gpu/drm/radeon/cik.c
-  bit as it's 3.11 specific code / tmb ]
-Signed-off-by: Thomas Backlund <tmb@mageia.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    3 ++-
- drivers/gpu/drm/radeon/ni.c        |    3 ++-
- drivers/gpu/drm/radeon/r600.c      |    3 ++-
- drivers/gpu/drm/radeon/rv770.c     |    3 ++-
- drivers/gpu/drm/radeon/si.c        |    3 ++-
- 5 files changed, 10 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/radeon/radeon.h       |    2 -
+ drivers/gpu/drm/radeon/radeon_fence.c |    2 -
+ drivers/gpu/drm/radeon/radeon_uvd.c   |   46 ++++++++++++++++++++++++----------
+ drivers/gpu/drm/radeon/rv770.c        |    2 -
+ 4 files changed, 36 insertions(+), 16 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -4681,6 +4681,8 @@ static int evergreen_startup(struct rade
- 	/* enable pcie gen2 link */
- 	evergreen_pcie_gen2_enable(rdev);
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -1146,7 +1146,6 @@ struct radeon_uvd {
+ 	void			*cpu_addr;
+ 	uint64_t		gpu_addr;
+ 	void			*saved_bo;
+-	unsigned		fw_size;
+ 	atomic_t		handles[RADEON_MAX_UVD_HANDLES];
+ 	struct drm_file		*filp[RADEON_MAX_UVD_HANDLES];
+ 	struct delayed_work	idle_work;
+@@ -1686,6 +1685,7 @@ struct radeon_device {
+ 	const struct firmware *rlc_fw;	/* r6/700 RLC firmware */
+ 	const struct firmware *mc_fw;	/* NI MC firmware */
+ 	const struct firmware *ce_fw;	/* SI CE firmware */
++	const struct firmware *uvd_fw;	/* UVD firmware */
+ 	struct r600_blit r600_blit;
+ 	struct r600_vram_scratch vram_scratch;
+ 	int msi_enabled; /* msi enabled */
+--- a/drivers/gpu/drm/radeon/radeon_fence.c
++++ b/drivers/gpu/drm/radeon/radeon_fence.c
+@@ -782,7 +782,7 @@ int radeon_fence_driver_start_ring(struc
  
-+	evergreen_mc_program(rdev);
+ 		} else {
+ 			/* put fence directly behind firmware */
+-			index = ALIGN(rdev->uvd.fw_size, 8);
++			index = ALIGN(rdev->uvd_fw->size, 8);
+ 			rdev->fence_drv[ring].cpu_addr = rdev->uvd.cpu_addr + index;
+ 			rdev->fence_drv[ring].gpu_addr = rdev->uvd.gpu_addr + index;
+ 		}
+--- a/drivers/gpu/drm/radeon/radeon_uvd.c
++++ b/drivers/gpu/drm/radeon/radeon_uvd.c
+@@ -55,7 +55,6 @@ static void radeon_uvd_idle_work_handler
+ int radeon_uvd_init(struct radeon_device *rdev)
+ {
+ 	struct platform_device *pdev;
+-	const struct firmware *fw;
+ 	unsigned long bo_size;
+ 	const char *fw_name;
+ 	int i, r;
+@@ -105,7 +104,7 @@ int radeon_uvd_init(struct radeon_device
+ 		return -EINVAL;
+ 	}
+ 
+-	r = request_firmware(&fw, fw_name, &pdev->dev);
++	r = request_firmware(&rdev->uvd_fw, fw_name, &pdev->dev);
+ 	if (r) {
+ 		dev_err(rdev->dev, "radeon_uvd: Can't load firmware \"%s\"\n",
+ 			fw_name);
+@@ -115,7 +114,7 @@ int radeon_uvd_init(struct radeon_device
+ 
+ 	platform_device_unregister(pdev);
+ 
+-	bo_size = RADEON_GPU_PAGE_ALIGN(fw->size + 8) +
++	bo_size = RADEON_GPU_PAGE_ALIGN(rdev->uvd_fw->size + 8) +
+ 		  RADEON_UVD_STACK_SIZE + RADEON_UVD_HEAP_SIZE;
+ 	r = radeon_bo_create(rdev, bo_size, PAGE_SIZE, true,
+ 			     RADEON_GEM_DOMAIN_VRAM, NULL, &rdev->uvd.vcpu_bo);
+@@ -148,12 +147,6 @@ int radeon_uvd_init(struct radeon_device
+ 
+ 	radeon_bo_unreserve(rdev->uvd.vcpu_bo);
+ 
+-	rdev->uvd.fw_size = fw->size;
+-	memset(rdev->uvd.cpu_addr, 0, bo_size);
+-	memcpy(rdev->uvd.cpu_addr, fw->data, fw->size);
+-
+-	release_firmware(fw);
+-
+ 	for (i = 0; i < RADEON_MAX_UVD_HANDLES; ++i) {
+ 		atomic_set(&rdev->uvd.handles[i], 0);
+ 		rdev->uvd.filp[i] = NULL;
+@@ -177,33 +170,60 @@ void radeon_uvd_fini(struct radeon_devic
+ 	}
+ 
+ 	radeon_bo_unref(&rdev->uvd.vcpu_bo);
 +
- 	if (ASIC_IS_DCE5(rdev)) {
- 		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw || !rdev->mc_fw) {
- 			r = ni_init_microcode(rdev);
-@@ -4708,7 +4710,6 @@ static int evergreen_startup(struct rade
- 	if (r)
- 		return r;
++	release_firmware(rdev->uvd_fw);
+ }
  
--	evergreen_mc_program(rdev);
- 	if (rdev->flags & RADEON_IS_AGP) {
- 		evergreen_agp_enable(rdev);
- 	} else {
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -1929,6 +1929,8 @@ static int cayman_startup(struct radeon_
- 	/* enable pcie gen2 link */
- 	evergreen_pcie_gen2_enable(rdev);
+ int radeon_uvd_suspend(struct radeon_device *rdev)
+ {
+ 	unsigned size;
++	void *ptr;
++	int i;
  
-+	evergreen_mc_program(rdev);
+ 	if (rdev->uvd.vcpu_bo == NULL)
+ 		return 0;
+ 
++	for (i = 0; i < RADEON_MAX_UVD_HANDLES; ++i)
++		if (atomic_read(&rdev->uvd.handles[i]))
++			break;
 +
- 	if (rdev->flags & RADEON_IS_IGP) {
- 		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
- 			r = ni_init_microcode(rdev);
-@@ -1957,7 +1959,6 @@ static int cayman_startup(struct radeon_
- 	if (r)
- 		return r;
- 
--	evergreen_mc_program(rdev);
- 	r = cayman_pcie_gart_enable(rdev);
- 	if (r)
- 		return r;
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -3224,6 +3224,8 @@ static int r600_startup(struct radeon_de
- 	/* enable pcie gen2 link */
- 	r600_pcie_gen2_enable(rdev);
- 
-+	r600_mc_program(rdev);
++	if (i == RADEON_MAX_UVD_HANDLES)
++		return 0;
 +
- 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
- 		r = r600_init_microcode(rdev);
- 		if (r) {
-@@ -3236,7 +3238,6 @@ static int r600_startup(struct radeon_de
- 	if (r)
- 		return r;
+ 	size = radeon_bo_size(rdev->uvd.vcpu_bo);
++	size -= rdev->uvd_fw->size;
++
++	ptr = rdev->uvd.cpu_addr;
++	ptr += rdev->uvd_fw->size;
++
+ 	rdev->uvd.saved_bo = kmalloc(size, GFP_KERNEL);
+-	memcpy(rdev->uvd.saved_bo, rdev->uvd.cpu_addr, size);
++	memcpy(rdev->uvd.saved_bo, ptr, size);
  
--	r600_mc_program(rdev);
- 	if (rdev->flags & RADEON_IS_AGP) {
- 		r600_agp_enable(rdev);
- 	} else {
+ 	return 0;
+ }
+ 
+ int radeon_uvd_resume(struct radeon_device *rdev)
+ {
++	unsigned size;
++	void *ptr;
++
+ 	if (rdev->uvd.vcpu_bo == NULL)
+ 		return -EINVAL;
+ 
++	memcpy(rdev->uvd.cpu_addr, rdev->uvd_fw->data, rdev->uvd_fw->size);
++
++	size = radeon_bo_size(rdev->uvd.vcpu_bo);
++	size -= rdev->uvd_fw->size;
++
++	ptr = rdev->uvd.cpu_addr;
++	ptr += rdev->uvd_fw->size;
++
+ 	if (rdev->uvd.saved_bo != NULL) {
+-		unsigned size = radeon_bo_size(rdev->uvd.vcpu_bo);
+-		memcpy(rdev->uvd.cpu_addr, rdev->uvd.saved_bo, size);
++		memcpy(ptr, rdev->uvd.saved_bo, size);
+ 		kfree(rdev->uvd.saved_bo);
+ 		rdev->uvd.saved_bo = NULL;
+-	}
++	} else
++		memset(ptr, 0, size);
+ 
+ 	return 0;
+ }
 --- a/drivers/gpu/drm/radeon/rv770.c
 +++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -1829,6 +1829,8 @@ static int rv770_startup(struct radeon_d
- 	/* enable pcie gen2 link */
- 	rv770_pcie_gen2_enable(rdev);
+@@ -813,7 +813,7 @@ int rv770_uvd_resume(struct radeon_devic
  
-+	rv770_mc_program(rdev);
-+
- 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
- 		r = r600_init_microcode(rdev);
- 		if (r) {
-@@ -1841,7 +1843,6 @@ static int rv770_startup(struct radeon_d
- 	if (r)
- 		return r;
+ 	/* programm the VCPU memory controller bits 0-27 */
+ 	addr = rdev->uvd.gpu_addr >> 3;
+-	size = RADEON_GPU_PAGE_ALIGN(rdev->uvd.fw_size + 4) >> 3;
++	size = RADEON_GPU_PAGE_ALIGN(rdev->uvd_fw->size + 4) >> 3;
+ 	WREG32(UVD_VCPU_CACHE_OFFSET0, addr);
+ 	WREG32(UVD_VCPU_CACHE_SIZE0, size);
  
--	rv770_mc_program(rdev);
- 	if (rdev->flags & RADEON_IS_AGP) {
- 		rv770_agp_enable(rdev);
- 	} else {
---- a/drivers/gpu/drm/radeon/si.c
-+++ b/drivers/gpu/drm/radeon/si.c
-@@ -5270,6 +5270,8 @@ static int si_startup(struct radeon_devi
- 	struct radeon_ring *ring;
- 	int r;
- 
-+	si_mc_program(rdev);
-+
- 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
- 	    !rdev->rlc_fw || !rdev->mc_fw) {
- 		r = si_init_microcode(rdev);
-@@ -5289,7 +5291,6 @@ static int si_startup(struct radeon_devi
- 	if (r)
- 		return r;
- 
--	si_mc_program(rdev);
- 	r = si_pcie_gart_enable(rdev);
- 	if (r)
- 		return r;
 
 
