@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759044Ab3HMUPO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:15:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40389 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758264Ab3HMUPM (ORCPT
+	id S1759104Ab3HMUP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:15:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43490 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759053Ab3HMUPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:15:12 -0400
-Date: Tue, 13 Aug 2013 13:15:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Cody P Schafer <cody@linux.vnet.ibm.com>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mm: use zone_end_pfn() instead of
- zone_start_pfn+spanned_pages
-Message-Id: <20130813131510.59ef74bce81d9352f8590218@linux-foundation.org>
-In-Reply-To: <52020EE4.1090606@huawei.com>
-References: <52020EE4.1090606@huawei.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 13 Aug 2013 16:15:23 -0400
+Message-ID: <1376424911.11676.1.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH] modpost, tpm_tis: Remove wildcard ACPI and PNP aliases
+From: Ben Hutchings <ben@decadent.org.uk>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: tpmdd-devel@lists.sourceforge.net, Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 13 Aug 2013 22:15:11 +0200
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-27CiI3MAeZDdMwhmhNDC"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 80.83.48.229
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Aug 2013 17:09:56 +0800 Xishi Qiu <qiuxishi@huawei.com> wrote:
 
-> Use "zone_end_pfn()" instead of "zone->zone_start_pfn + zone->spanned_pages".
-> Simplify the code, no functional change.
+--=-27CiI3MAeZDdMwhmhNDC
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This doesn't compile.
+tpm_tis has a 'spare' entry in its device ID table for adding
+user-specified device IDs.  This will be ignored by the driver
+matching logic, but modpost turns it into:
 
-mm/memory_hotplug.c: In function 'shrink_zone_span':
-mm/memory_hotplug.c:518: error: called object 'zone_end_pfn' is not a function
+alias:          acpi*::*
+alias:          pnp:d*
 
->  kernel/power/snapshot.c |   12 ++++++------
->  mm/memory_hotplug.c     |    4 ++--
+This seems to result in the driver being loaded on almost all PCs.
+Change do_pnp_device_entry() to stop if it finds such an entry,
+similarly to do_usb_entry_multi().
 
-It's only two files - did you test it?
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ scripts/mod/file2alias.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-I couldn't see any vaguely acceptable way of renaming the variables to
-fix this, so I did a hack which permits us to keep the current naming.
-Any better ideas?
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index 2370863..7dc7edf 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -535,6 +535,14 @@ static void do_pnp_device_entry(void *symval, unsigned=
+ long size,
+ 		char acpi_id[sizeof(*id)];
+ 		int j;
+=20
++		/*
++		 * Some modules (tpm_tis) have empty slots as
++		 * placeholder for run-time specification that results
++		 * in catch-all alias
++		 */
++		if (!**id)
++			return;
++
+ 		buf_printf(&mod->dev_table_buf,
+ 			   "MODULE_ALIAS(\"pnp:d%s*\");\n", *id);
+=20
 
---- a/mm/memory_hotplug.c~mm-use-zone_end_pfn-instead-of-zone_start_pfnspanned_pages-fix
-+++ a/mm/memory_hotplug.c
-@@ -514,8 +514,9 @@ static int find_biggest_section_pfn(int
- static void shrink_zone_span(struct zone *zone, unsigned long start_pfn,
- 			     unsigned long end_pfn)
- {
--	unsigned long zone_start_pfn =  zone->zone_start_pfn;
--	unsigned long zone_end_pfn = zone_end_pfn(zone);
-+	unsigned long zone_start_pfn = zone->zone_start_pfn;
-+	unsigned long z = zone_end_pfn(zone); /* zone_end_pfn namespace clash */
-+	unsigned long zone_end_pfn = z;
- 	unsigned long pfn;
- 	struct mem_section *ms;
- 	int nid = zone_to_nid(zone);
-_
 
+
+--=-27CiI3MAeZDdMwhmhNDC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIVAwUAUgqTz+e/yOyVhhEJAQpK9Q/9GVan0HoCF/a0WWwMG0sF2B6MkjJxTPEl
+WQ+C35vJqHwASd8uasW1IfWa3AduDlurVjRH+l71okCGfQwiHYzhoYiNeTvvbk9f
+wVCESwgGv/PC6uA7o/swqekt5fFNmJP/B+8p6EvhkNI5VjGJnQY/wE6SspHM+SiV
+BW6D7gFJgep3eGq1BRlgnBC+Mbg5lx43dVwUQsXjDIPtSvt95dQEVWFEgAY2S7jW
+aP509Gr3PIwSu4Kurt3MZHdstoDKuj8+5y1nRsku2LNANXt69q6KXJI6fyASHXaf
+w/1qRBLXt9dd33yiOmo/6wRlXgfS1Ru9xlwVkfW86GX4kQMZmITM3WIxO/4/1nPN
+kLsQtcnR3PJbjrSL6gAhq7iVyM5/L6wt40vkjkWXmD43B7nWJwM5qyadfcxCfjCM
+V++MN0ONXdAHpyXwDTDGh0r5luhKhpJU0vmvu0/su9Qo/qmJ1XNlNqI9gl7gPRMb
+LoSEzKeN966klqcyf0Eh3Ei1GMPR1heQiV6mcxOWZjUUYWIdyrW1ZZXm9tQz2XUN
+7ICo3ciQ8z3E9BCCTwcFrCxtMW+avkvzJpf/NwRhIs98jWp+mFfIcQ3OY4SpUnY5
+cwu6fdmlKPYoTzsmDg9rm8HeXF2blI0opg4OHiHpiScpZ+p9rkj/DKeUTBORg60J
+p1dHkuag6s8=
+=lP8f
+-----END PGP SIGNATURE-----
+
+--=-27CiI3MAeZDdMwhmhNDC--
