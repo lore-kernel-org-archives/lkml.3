@@ -1,91 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759143Ab3HMUQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:16:17 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:53280 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759147Ab3HMUQQ (ORCPT
+	id S932065Ab3HMUS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:18:28 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35848 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758898Ab3HMUS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:16:16 -0400
+	Tue, 13 Aug 2013 16:18:26 -0400
+Date: Tue, 13 Aug 2013 21:18:16 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org, Dan Williams <djbw@fb.com>,
+        Jaroslav Kysela <perex@perex.cz>, Kukjin Kim <kgene.kim@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sangbeom Kim <sbkim73@samsung.com>, Takashi Iwai <tiwai@suse.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Message-ID: <20130813201816.GG6427@sirena.org.uk>
+References: <1376243970-6489-1-git-send-email-tomasz.figa@gmail.com>
+ <1376243970-6489-11-git-send-email-tomasz.figa@gmail.com>
+ <20130812233641.GL6427@sirena.org.uk>
+ <2472314.6b8DcBdcjO@flatron>
+ <20130813185547.GD6427@sirena.org.uk>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130813201042.GA6390@cantiga.alporthouse.com>
-References: <CA+icZUXdS3EuXyGZiS1--rMu6H0ospzCiK_CXgPv8mOk0sMt+Q@mail.gmail.com>
-	<20130813163439.GA8805@cantiga.alporthouse.com>
-	<CA+icZUX8HZD3z-uwTMWX9CoLdYYqyPVuhH-vWGhJuoonvMQTbQ@mail.gmail.com>
-	<CA+icZUU1tbHGVPgjXNvsq-F44O6umbhp_bFcoLE35HZ0zTqo2g@mail.gmail.com>
-	<20130813171324.GB8805@cantiga.alporthouse.com>
-	<CA+icZUWFqpObp_6KzJExPs2pkJOofaKw6CKv8J0=VTfyVy_Uew@mail.gmail.com>
-	<20130813180129.GC8805@cantiga.alporthouse.com>
-	<CA+icZUWcF6bdoD1pSbbtBTAYNMC9237Eas7SemS6kPpnY=c2Sw@mail.gmail.com>
-	<20130813185322.GA5982@cantiga.alporthouse.com>
-	<CA+icZUXwSRPoZ8bQ6xaoNz27fQKPtg3HiZRENQ5UEpHE_kmEag@mail.gmail.com>
-	<20130813201042.GA6390@cantiga.alporthouse.com>
-Date: Tue, 13 Aug 2013 22:16:10 +0200
-Message-ID: <CA+icZUXZveDD2s4++CZtUUx1U5_rpAXGeAw-rBnSfPHNXisR6w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 13 [ screen corruption in graphical mode ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@gmail.com>, DRI <dri-devel@lists.freedesktop.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sszduGT9fQUHJP/+"
+Content-Disposition: inline
+In-Reply-To: <20130813185547.GD6427@sirena.org.uk>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 10/18] spi: s3c64xx: Do not require legacy DMA API in
+ case of S3C64XX
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 10:10 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Tue, Aug 13, 2013 at 09:05:41PM +0200, Sedat Dilek wrote:
->> On Tue, Aug 13, 2013 at 8:53 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->> > On Tue, Aug 13, 2013 at 08:40:37PM +0200, Sedat Dilek wrote:
->> >> On Tue, Aug 13, 2013 at 8:01 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->> >> > On Tue, Aug 13, 2013 at 07:53:25PM +0200, Sedat Dilek wrote:
->> >> >> Files attached.
->> >> >
->> >> > Can you also please attach a full dmesg so I can check for anything
->> >> > unusual?
->> >> >
->> >
->> > Nothing scarred me on a couple of read throughs.
->> >
->> > What happens if you try:
->> >
->> > diff --git a/drivers/gpu/drm/i915/i915_gem_stolen.c b/drivers/gpu/drm/i915/i915_gem_stolen.c
->> > index 112c5e1..9828d9b 100644
->> > --- a/drivers/gpu/drm/i915/i915_gem_stolen.c
->> > +++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
->> > @@ -284,7 +284,7 @@ i915_gem_object_create_stolen(struct drm_device *dev, u32 size)
->> >                 return NULL;
->> >
->> >         ret = drm_mm_insert_node(&dev_priv->mm.stolen, stolen, size,
->> > -                                4096, DRM_MM_SEARCH_DEFAULT);
->> > +                                1024*1024, DRM_MM_SEARCH_DEFAULT);
->> >         if (ret) {
->> >                 kfree(stolen);
->> >                 return NULL;
->> >
->> > --
->>
->> Now, 2/3 till 3/4 of my LightDM greeter screen is a black bar (seen
->> from the top).
->> On the bottom I can read "Ubuntu 12.04 LTS" with the known background.
->> So-to-say 3/4 "blind".
->
-> That implies that the scanout is always reading from the base of stolen.
-> Can you grab intel_reg_dumper so that I can check what values the
-> transcoder is set to?
->
-> At the moment, I am guessing that the display never sees the updated
-> surface offset and so persists with the value programmed by the BIOS -
-> which will be 0 and set to the base of stolen memory in the GTT. A
-> drm.debug=6 dmesg would help here as well.
->
-> If you forced a mode change, I think that too would restore the output.
 
-With which kernel? Vanilla next-20130813? With any of your patches?
+--sszduGT9fQUHJP/+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-- Sedat -
+On Tue, Aug 13, 2013 at 07:55:47PM +0100, Mark Brown wrote:
+
+> I'm still debugging what's going on here - the basic refcounting all
+> looks OK in the SPI driver, I can see it requesting and releasing with
+> the refcounts all going back to zero in the DMA driver as expected but
+> when we come back to the device later on dmaengine is deciding the
+> device is unavailable quite early on in the process.
+
+The failure is happening because this check is failing:
+
+	/* devices with multiple channels need special handling as we need to
+	 * ensure that all channels are either private or public.
+	 */
+	if (dev->chancnt > 1 && !dma_has_cap(DMA_PRIVATE, dev->cap_mask))
+		list_for_each_entry(chan, &dev->channels, device_node) {
+			/* some channels are already publicly allocated */
+			if (chan->client_count) {
+
+which is happening because dma1chan0 (which is on the same DMA
+controller as the SPI controller) and in fact every other DMA channel
+had references grabbed by the network stack dmaengine helpers which I'd
+enabled in config.  The fact that they do that is unhelpful, it renders
+the API mostly useless, but is nothing to do with this series.
+
+Having tweaked the config everything appears to work so:
+
+Tested-by: Mark Brown <broonie@linaro.org>
+
+though the whole thing with the filter function is as I say a bit fun
+=66rom a code review point of view.
+
+--sszduGT9fQUHJP/+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSCpSEAAoJELSic+t+oim93gMP/RmqEk398uDLUWt8Spob1X0S
+bHZxV5jrbcp5oxaJDEWJm4ucIs53slqxyhN2f2JznbWbTewGbDF41qGETcRG5fAC
+tnC3JY+xZme+3gHn69YgY2+iNDMgGGWYOVMDo/+V1ywd6ddVcmeuA/WhKpLxZp1S
+PHV2xkfvxBtJEq4NOUA6Zmxz+egZf2mqENg6iCXzmo22qlUR2n+bidbJ/zhy20AM
+8T4EN3y3MhXpbTBikCmKcXeywdr8jTUL7zHdcLAR9+fiSAbj8Z4gVS3IGlqpQySs
+4UGUXiUZC+jXlXfuawNDqQUKv/iThCKuZhQCXmYqzKVlPV1RQ95Saus6+5uXMKOm
+HxvZK9wK+vIOCr4EtkvCXkHGxL3+C5Edr3vAl/vjtBeNEpWfrRkWZLcvc25APzSx
+ckopq9TDWKP/HB5Akpsvjm11UaI0ZXIGtyO071aTZuYBE6SZyV5OY+8a6IaLOw0A
+2g+KO3VjmyHSnlf34RyX5UGJY5kaxSgMbmkNDjHgVZO70vFgi79o7Tx7nxC6Vr1x
+Fx4tqWynBAPATDUClmmMBp1XsCNF5GiM7tfGBJ5GTIdL4vdFtR8UP2SJ/gEfYEmX
+Oan0xinp8F4cUJx/HQoACGqKKEC3nE9OSXsjuDM1btye9d4qPFzP/KeeBA+Kc2II
+sv1ECC8fPyQ/iC19MKaD
+=UYZA
+-----END PGP SIGNATURE-----
+
+--sszduGT9fQUHJP/+--
