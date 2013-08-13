@@ -1,51 +1,470 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756442Ab3HMHiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 03:38:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47404 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756428Ab3HMHiu (ORCPT
+	id S1756875Ab3HMHix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 03:38:53 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:13100 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862Ab3HMHiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Aug 2013 03:38:50 -0400
-Date: Tue, 13 Aug 2013 09:38:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lei Wen <adrian.wenl@gmail.com>
-Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>, leiwen@marvell.com
-Subject: Re: false nr_running check in load balance?
-Message-ID: <20130813073842.GP27162@twins.programming.kicks-ass.net>
-References: <CALZhoSQgw_-UaF0VOMjMqRJC8D4oQTBp4Bv=zJS+x0Wu97f2FQ@mail.gmail.com>
- <20130812144309.GK27162@twins.programming.kicks-ass.net>
- <CALZhoSRyfE78GbiJqVRvUrbJRq_NhSqYbK8vnxNP8kS9xz9qVQ@mail.gmail.com>
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 13 Aug 2013 00:38:49 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <broonie@kernel.org>, <sameo@linux.intel.com>
+CC: <swarren@wwwdotorg.org>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <rob@landley.net>, <lee.jones@linaro.org>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gg@slimlogic.co.uk>, <kishon@ti.com>, <j-keerthy@ti.com>,
+        <ian.campbell@citrix.com>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 3/3] regulator: palmas: add support for external control of rails
+Date: Tue, 13 Aug 2013 13:23:12 +0530
+Message-ID: <1376380392-19723-4-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1376380392-19723-1-git-send-email-ldewangan@nvidia.com>
+References: <1376380392-19723-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALZhoSRyfE78GbiJqVRvUrbJRq_NhSqYbK8vnxNP8kS9xz9qVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 12:45:12PM +0800, Lei Wen wrote:
-> > Not quite right; I think you need busiest->cfs.h_nr_running.
-> > cfs.nr_running is the number of entries running in this 'group'. If
-> > you've got nested groups like:
-> >
-> >  'root'
-> >    \
-> >    'A'
-> >    / \
-> >   t1 t2
-> >
-> > root.nr_running := 1 'A', even though you've got multiple running tasks.
-> >
-> 
-> You're absolutely right for this. :)
-> I miss it for not considering the group case...
-> 
-> Then do you think it is necessary to do below change in load_balance() code?
->  -       if (busiest->nr_running > 1) {
->  +       if (busiest->cfs.h_nr_running > 1) {
-> 
+Palmas rails like LDOs, SMPSs, REGENs, SYSENs can be enable and disable
+by register programming through I2C communication as well as it can be
+enable/disable with the external control input ENABLE1, ENABLE2 and NSLEEP.
 
-Yes I think that would be fine.
+Add support for configuring these rails to be controlled by external control
+inputs. This is require to configure the rail's control register as well as
+configuration of resource register.
+
+Provide the external input names through parameter "roof-floor". Updated the
+DT binding document to details different value of the roof-floor.
+
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Changes from V1:
+Fix typos: palams ->palmas
+
+ .../devicetree/bindings/regulator/palmas-pmic.txt  |    8 +-
+ drivers/regulator/palmas-regulator.c               |  139 +++++++++++++++++++-
+ 2 files changed, 139 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+index a22e4c7..865c0e0 100644
+--- a/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
++++ b/Documentation/devicetree/bindings/regulator/palmas-pmic.txt
+@@ -30,7 +30,11 @@ Optional nodes:
+ 
+ 	       Optional sub-node properties:
+ 	       ti,warm-reset - maintain voltage during warm reset(boolean)
+-	       ti,roof-floor - control voltage selection by pin(boolean)
++	       ti,roof-floor - control voltage selection by pin. If the
++	       external pin is:
++			ENABLE1 then 0x1,
++			ENABLE2 then 0x2 or
++			NSLEEP then 0x4.
+ 	       ti,mode-sleep - mode to adopt in pmic sleep 0 - off, 1 - auto,
+ 	       2 - eco, 3 - forced pwm
+ 	       ti,smps-range - OTP has the wrong range set for the hardware so override
+@@ -56,7 +60,7 @@ pmic {
+ 			regulator-always-on;
+ 			regulator-boot-on;
+ 			ti,warm-reset;
+-			ti,roof-floor;
++			ti,roof-floor = 0x1; /* ENABLE1 control */
+ 			ti,mode-sleep = <0>;
+ 			ti,smps-range = <1>;
+ 		};
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 488dfe7..3af4001 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -33,6 +33,7 @@ struct regs_info {
+ 	u8	vsel_addr;
+ 	u8	ctrl_addr;
+ 	u8	tstep_addr;
++	int	sleep_id;
+ };
+ 
+ static const struct regs_info palmas_regs_info[] = {
+@@ -42,6 +43,7 @@ static const struct regs_info palmas_regs_info[] = {
+ 		.vsel_addr	= PALMAS_SMPS12_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS12_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS12_TSTEP,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS12,
+ 	},
+ 	{
+ 		.name		= "SMPS123",
+@@ -49,12 +51,14 @@ static const struct regs_info palmas_regs_info[] = {
+ 		.vsel_addr	= PALMAS_SMPS12_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS12_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS12_TSTEP,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS12,
+ 	},
+ 	{
+ 		.name		= "SMPS3",
+ 		.sname		= "smps3-in",
+ 		.vsel_addr	= PALMAS_SMPS3_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS3_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS3,
+ 	},
+ 	{
+ 		.name		= "SMPS45",
+@@ -62,6 +66,7 @@ static const struct regs_info palmas_regs_info[] = {
+ 		.vsel_addr	= PALMAS_SMPS45_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS45_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS45_TSTEP,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS45,
+ 	},
+ 	{
+ 		.name		= "SMPS457",
+@@ -69,6 +74,7 @@ static const struct regs_info palmas_regs_info[] = {
+ 		.vsel_addr	= PALMAS_SMPS45_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS45_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS45_TSTEP,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS45,
+ 	},
+ 	{
+ 		.name		= "SMPS6",
+@@ -76,12 +82,14 @@ static const struct regs_info palmas_regs_info[] = {
+ 		.vsel_addr	= PALMAS_SMPS6_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS6_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS6_TSTEP,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS6,
+ 	},
+ 	{
+ 		.name		= "SMPS7",
+ 		.sname		= "smps7-in",
+ 		.vsel_addr	= PALMAS_SMPS7_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS7_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS7,
+ 	},
+ 	{
+ 		.name		= "SMPS8",
+@@ -89,108 +97,128 @@ static const struct regs_info palmas_regs_info[] = {
+ 		.vsel_addr	= PALMAS_SMPS8_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS8_CTRL,
+ 		.tstep_addr	= PALMAS_SMPS8_TSTEP,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS8,
+ 	},
+ 	{
+ 		.name		= "SMPS9",
+ 		.sname		= "smps9-in",
+ 		.vsel_addr	= PALMAS_SMPS9_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_SMPS9_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS9,
+ 	},
+ 	{
+ 		.name		= "SMPS10_OUT2",
+ 		.sname		= "smps10-in",
+ 		.ctrl_addr	= PALMAS_SMPS10_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS10,
+ 	},
+ 	{
+ 		.name		= "SMPS10_OUT1",
+ 		.sname		= "smps10-out2",
+ 		.ctrl_addr	= PALMAS_SMPS10_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SMPS10,
+ 	},
+ 	{
+ 		.name		= "LDO1",
+ 		.sname		= "ldo1-in",
+ 		.vsel_addr	= PALMAS_LDO1_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO1_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDO1,
+ 	},
+ 	{
+ 		.name		= "LDO2",
+ 		.sname		= "ldo2-in",
+ 		.vsel_addr	= PALMAS_LDO2_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO2_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDO2,
+ 	},
+ 	{
+ 		.name		= "LDO3",
+ 		.sname		= "ldo3-in",
+ 		.vsel_addr	= PALMAS_LDO3_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO3_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDO3,
+ 	},
+ 	{
+ 		.name		= "LDO4",
+ 		.sname		= "ldo4-in",
+ 		.vsel_addr	= PALMAS_LDO4_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO4_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDO4,
+ 	},
+ 	{
+ 		.name		= "LDO5",
+ 		.sname		= "ldo5-in",
+ 		.vsel_addr	= PALMAS_LDO5_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO5_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDO5,
+ 	},
+ 	{
+ 		.name		= "LDO6",
+ 		.sname		= "ldo6-in",
+ 		.vsel_addr	= PALMAS_LDO6_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO6_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDO6,
+ 	},
+ 	{
+ 		.name		= "LDO7",
+ 		.sname		= "ldo7-in",
+ 		.vsel_addr	= PALMAS_LDO7_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO7_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDO7,
+ 	},
+ 	{
+ 		.name		= "LDO8",
+ 		.sname		= "ldo8-in",
+ 		.vsel_addr	= PALMAS_LDO8_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO8_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDO8,
+ 	},
+ 	{
+ 		.name		= "LDO9",
+ 		.sname		= "ldo9-in",
+ 		.vsel_addr	= PALMAS_LDO9_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDO9_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDO9,
+ 	},
+ 	{
+ 		.name		= "LDOLN",
+ 		.sname		= "ldoln-in",
+ 		.vsel_addr	= PALMAS_LDOLN_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDOLN_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDOLN,
+ 	},
+ 	{
+ 		.name		= "LDOUSB",
+ 		.sname		= "ldousb-in",
+ 		.vsel_addr	= PALMAS_LDOUSB_VOLTAGE,
+ 		.ctrl_addr	= PALMAS_LDOUSB_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_LDOUSB,
+ 	},
+ 	{
+ 		.name		= "REGEN1",
+ 		.ctrl_addr	= PALMAS_REGEN1_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_REGEN1,
+ 	},
+ 	{
+ 		.name		= "REGEN2",
+ 		.ctrl_addr	= PALMAS_REGEN2_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_REGEN2,
+ 	},
+ 	{
+ 		.name		= "REGEN3",
+ 		.ctrl_addr	= PALMAS_REGEN3_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_REGEN3,
+ 	},
+ 	{
+ 		.name		= "SYSEN1",
+ 		.ctrl_addr	= PALMAS_SYSEN1_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SYSEN1,
+ 	},
+ 	{
+ 		.name		= "SYSEN2",
+ 		.ctrl_addr	= PALMAS_SYSEN2_CTRL,
++		.sleep_id	= PALMAS_EXTERNAL_REQSTR_ID_SYSEN2,
+ 	},
+ };
+ 
+@@ -484,6 +512,17 @@ static struct regulator_ops palmas_ops_smps = {
+ 	.set_ramp_delay		= palmas_smps_set_ramp_delay,
+ };
+ 
++static struct regulator_ops palmas_ops_ext_control_smps = {
++	.set_mode		= palmas_set_mode_smps,
++	.get_mode		= palmas_get_mode_smps,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	.list_voltage		= palmas_list_voltage_smps,
++	.map_voltage		= palmas_map_voltage_smps,
++	.set_voltage_time_sel	= palma_smps_set_voltage_smps_time_sel,
++	.set_ramp_delay		= palmas_smps_set_ramp_delay,
++};
++
+ static struct regulator_ops palmas_ops_smps10 = {
+ 	.is_enabled		= regulator_is_enabled_regmap,
+ 	.enable			= regulator_enable_regmap,
+@@ -519,12 +558,37 @@ static struct regulator_ops palmas_ops_ldo = {
+ 	.map_voltage		= regulator_map_voltage_linear,
+ };
+ 
++static struct regulator_ops palmas_ops_ext_control_ldo = {
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++};
++
+ static struct regulator_ops palmas_ops_extreg = {
+ 	.is_enabled		= regulator_is_enabled_regmap,
+ 	.enable			= regulator_enable_regmap,
+ 	.disable		= regulator_disable_regmap,
+ };
+ 
++static struct regulator_ops palmas_ops_ext_control_extreg = {
++};
++
++static int palmas_regulator_config_external(struct palmas *palmas, int id,
++		struct palmas_reg_init *reg_init)
++{
++	int sleep_id = palmas_regs_info[id].sleep_id;
++	int ret;
++
++	ret = palmas_ext_control_req_config(palmas, sleep_id,
++					reg_init->roof_floor, true);
++	if (ret < 0)
++		dev_err(palmas->dev,
++			"Ext control config for regulator %d failed %d\n",
++			id, ret);
++	return ret;
++}
++
+ /*
+  * setup the hardware based sleep configuration of the SMPS/LDO regulators
+  * from the platform data. This is different to the software based control
+@@ -583,7 +647,22 @@ static int palmas_smps_init(struct palmas *palmas, int id,
+ 			return ret;
+ 	}
+ 
++	if (reg_init->roof_floor && (id != PALMAS_REG_SMPS10_OUT1) &&
++			(id != PALMAS_REG_SMPS10_OUT2)) {
++		/* Enable externally controlled regulator */
++		addr = palmas_regs_info[id].ctrl_addr;
++		ret = palmas_smps_read(palmas, addr, &reg);
++		if (ret < 0)
++			return ret;
+ 
++		if (!(reg & PALMAS_SMPS12_CTRL_MODE_ACTIVE_MASK)) {
++			reg |= SMPS_CTRL_MODE_ON;
++			ret = palmas_smps_write(palmas, addr, reg);
++			if (ret < 0)
++				return ret;
++		}
++		return palmas_regulator_config_external(palmas, id, reg_init);
++	}
+ 	return 0;
+ }
+ 
+@@ -614,6 +693,20 @@ static int palmas_ldo_init(struct palmas *palmas, int id,
+ 	if (ret)
+ 		return ret;
+ 
++	if (reg_init->roof_floor) {
++		/* Enable externally controlled regulator */
++		addr = palmas_regs_info[id].ctrl_addr;
++		ret = palmas_update_bits(palmas, PALMAS_LDO_BASE,
++				addr, PALMAS_LDO1_CTRL_MODE_ACTIVE,
++				PALMAS_LDO1_CTRL_MODE_ACTIVE);
++		if (ret < 0) {
++			dev_err(palmas->dev,
++				"LDO Register 0x%02x update failed %d\n",
++				addr, ret);
++			return ret;
++		}
++		return palmas_regulator_config_external(palmas, id, reg_init);
++	}
+ 	return 0;
+ }
+ 
+@@ -636,6 +729,21 @@ static int palmas_extreg_init(struct palmas *palmas, int id,
+ 			addr, ret);
+ 		return ret;
+ 	}
++
++	if (reg_init->roof_floor) {
++		/* Enable externally controlled regulator */
++		addr = palmas_regs_info[id].ctrl_addr;
++		ret = palmas_update_bits(palmas, PALMAS_RESOURCE_BASE,
++				addr, PALMAS_REGEN1_CTRL_MODE_ACTIVE,
++				PALMAS_REGEN1_CTRL_MODE_ACTIVE);
++		if (ret < 0) {
++			dev_err(palmas->dev,
++				"Resource Register 0x%02x update failed %d\n",
++				addr, ret);
++			return ret;
++		}
++		return palmas_regulator_config_external(palmas, id, reg_init);
++	}
+ 	return 0;
+ }
+ 
+@@ -746,9 +854,10 @@ static void palmas_dt_to_pdata(struct device *dev,
+ 			of_property_read_bool(palmas_matches[idx].of_node,
+ 					     "ti,warm-reset");
+ 
+-		pdata->reg_init[idx]->roof_floor =
+-			of_property_read_bool(palmas_matches[idx].of_node,
+-					      "ti,roof-floor");
++		ret = of_property_read_u32(palmas_matches[idx].of_node,
++					      "ti,roof-floor", &prop);
++		if (!ret)
++			pdata->reg_init[idx]->roof_floor = prop;
+ 
+ 		ret = of_property_read_u32(palmas_matches[idx].of_node,
+ 				"ti,mode-sleep", &prop);
+@@ -875,6 +984,8 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 			ret = palmas_smps_init(palmas, id, reg_init);
+ 			if (ret)
+ 				goto err_unregister_regulator;
++		} else {
++			reg_init = NULL;
+ 		}
+ 
+ 		/* Register the regulators */
+@@ -919,7 +1030,11 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 			if (reg & PALMAS_SMPS12_VOLTAGE_RANGE)
+ 				pmic->range[id] = 1;
+ 
+-			pmic->desc[id].ops = &palmas_ops_smps;
++			if (reg_init && reg_init->roof_floor)
++				pmic->desc[id].ops =
++						&palmas_ops_ext_control_smps;
++			else
++				pmic->desc[id].ops = &palmas_ops_smps;
+ 			pmic->desc[id].n_voltages = PALMAS_SMPS_NUM_VOLTAGES;
+ 			pmic->desc[id].vsel_reg =
+ 					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
+@@ -962,6 +1077,10 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 
+ 	/* Start this loop from the id left from previous loop */
+ 	for (; id < PALMAS_NUM_REGS; id++) {
++		if (pdata && pdata->reg_init[id])
++			reg_init = pdata->reg_init[id];
++		else
++			reg_init = NULL;
+ 
+ 		/* Miss out regulators which are not available due
+ 		 * to alternate functions.
+@@ -975,7 +1094,11 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 
+ 		if (id < PALMAS_REG_REGEN1) {
+ 			pmic->desc[id].n_voltages = PALMAS_LDO_NUM_VOLTAGES;
+-			pmic->desc[id].ops = &palmas_ops_ldo;
++			if (reg_init && reg_init->roof_floor)
++				pmic->desc[id].ops =
++					&palmas_ops_ext_control_ldo;
++			else
++				pmic->desc[id].ops = &palmas_ops_ldo;
+ 			pmic->desc[id].min_uV = 900000;
+ 			pmic->desc[id].uV_step = 50000;
+ 			pmic->desc[id].linear_min_sel = 1;
+@@ -999,7 +1122,11 @@ static int palmas_regulators_probe(struct platform_device *pdev)
+ 			}
+ 		} else {
+ 			pmic->desc[id].n_voltages = 1;
+-			pmic->desc[id].ops = &palmas_ops_extreg;
++			if (reg_init && reg_init->roof_floor)
++				pmic->desc[id].ops =
++					&palmas_ops_ext_control_extreg;
++			else
++				pmic->desc[id].ops = &palmas_ops_extreg;
+ 			pmic->desc[id].enable_reg =
+ 					PALMAS_BASE_TO_REG(PALMAS_RESOURCE_BASE,
+ 						palmas_regs_info[id].ctrl_addr);
+-- 
+1.7.1.1
+
