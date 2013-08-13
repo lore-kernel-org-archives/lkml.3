@@ -1,86 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759093Ab3HMRcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 13:32:24 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:51236 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759021Ab3HMRcV (ORCPT
+	id S1758994Ab3HMR36 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 13:29:58 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45605 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758837Ab3HMR3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 13:32:21 -0400
-Message-ID: <520A6D98.9060204@linux.vnet.ibm.com>
-Date: Tue, 13 Aug 2013 23:02:08 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, tony.luck@intel.com,
-        bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
-        lance.ortiz@hp.com, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
- event
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic> <20130812083355.47c1bae8@samsung.com> <5208D80D.5030206@linux.vnet.ibm.com> <20130812125343.GE18018@pd.tnic> <520A16BD.30201@linux.vnet.ibm.com> <20130813124258.GC4077@pd.tnic>
-In-Reply-To: <20130813124258.GC4077@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081317-6102-0000-0000-00000402E8E1
+	Tue, 13 Aug 2013 13:29:55 -0400
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Sudeep.KarkadaNagesha@arm.com,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: [PATCH v3 1/6] ARM/ARM64: arch_timer: add macros for bits in control register
+Date: Tue, 13 Aug 2013 18:29:39 +0100
+Message-Id: <1376414984-14182-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 13 Aug 2013 17:29:51.0236 (UTC) FILETIME=[B767D440:01CE984A]
+X-MC-Unique: 113081318295302501
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7DHWg5D000850
 
-On 08/13/2013 06:12 PM, Borislav Petkov wrote:
-> On Tue, Aug 13, 2013 at 04:51:33PM +0530, Naveen N. Rao wrote:
->> You're right - my trace point makes all the data provided by apei
->> as-is to userspace. However, ghes_edac seems to squash some of this
->> data into a string when reporting through mc_event.
->
-> Right, for systems which don't need EDAC to decode to the DIMM or for
-> which there are no EDAC drivers written, they could use a tracepoint
-> which carries APEI info as-is. Others, which need EDAC, should probably
-> use trace_mc_event and disable the APEI tracepoint.
+From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-If I'm not mistaken, even for systems that have EDAC drivers, it looks 
-to me like EDAC can't really decode to the DIMM given what is provided 
-by the bios in the APEI report currently. If and when ghes_edac gains 
-this capability, users will have a choice between raw APEI reports vs. 
-edac processed ones.
+Add macros to describe the bitfields in the ARM architected timer
+control register to make code easy to understand.
 
->
-> I think this should address Tony's concerns...
->
-> Btw, you could call your TP something simpler like
-> trace_ghes_memory_event or so.
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Reviewed-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+---
+ arch/arm/include/asm/arch_timer.h    |  9 +++++++--
+ arch/arm64/include/asm/arch_timer.h  | 12 ++++++++----
+ include/clocksource/arm_arch_timer.h |  8 ++++++++
+ 3 files changed, 23 insertions(+), 6 deletions(-)
 
-I started out with a simpler name, but eventually decided to use the 
-name from the CPER record so it is clear what this event carries. I 
-think this will be better when adding further ghes events for say, 
-processor generic, PCIe and others.
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index e406d57..9ef74da 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -95,8 +95,13 @@ static inline void arch_counter_set_user_access(void)
+ 
+ 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
+ 
+-	/* disable user access to everything */
+-	cntkctl &= ~((3 << 8) | (7 << 0));
++	/* Disable user access to both physical/virtual counters/timers. */
++	/* Also disable virtual event stream */
++	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
++			| ARCH_TIMER_USR_VT_ACCESS_EN
++			| ARCH_TIMER_VIRT_EVT_EN
++			| ARCH_TIMER_USR_VCT_ACCESS_EN
++			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+ 
+ 	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
+ }
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index 98abd47..00b09d0 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -101,12 +101,16 @@ static inline void arch_counter_set_user_access(void)
+ {
+ 	u32 cntkctl;
+ 
+-	/* Disable user access to the timers and the physical counter. */
+ 	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+-	cntkctl &= ~((3 << 8) | (1 << 0));
+ 
+-	/* Enable user access to the virtual counter and frequency. */
+-	cntkctl |= (1 << 1);
++	/* Disable user access to the timers and the physical counter. */
++	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
++			| ARCH_TIMER_USR_VT_ACCESS_EN
++			| ARCH_TIMER_USR_PCT_ACCESS_EN);
++
++	/* Enable user access to the virtual counter. */
++	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
++
+ 	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+ }
+ 
+diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+index c463ce9..551f7e9 100644
+--- a/include/clocksource/arm_arch_timer.h
++++ b/include/clocksource/arm_arch_timer.h
+@@ -29,6 +29,14 @@
+ #define ARCH_TIMER_PHYS_ACCESS		0
+ #define ARCH_TIMER_VIRT_ACCESS		1
+ 
++#define ARCH_TIMER_USR_PCT_ACCESS_EN	(1 << 0) /* physical counter */
++#define ARCH_TIMER_USR_VCT_ACCESS_EN	(1 << 1) /* virtual counter */
++#define ARCH_TIMER_VIRT_EVT_EN		(1 << 2)
++#define ARCH_TIMER_EVT_TRIGGER_SHIFT	(4)
++#define ARCH_TIMER_EVT_TRIGGER_MASK	(0xF << ARCH_TIMER_EVT_TRIGGER_SHIFT)
++#define ARCH_TIMER_USR_VT_ACCESS_EN	(1 << 8) /* virtual timer registers */
++#define ARCH_TIMER_USR_PT_ACCESS_EN	(1 << 9) /* physical timer registers */
++
+ #ifdef CONFIG_ARM_ARCH_TIMER
+ 
+ extern u32 arch_timer_get_rate(void);
+-- 
+1.8.1.2
 
->
-> Btw 2, if GHES can report other types of errors (I'm pretty sure it can)
-> maybe we can use a single tracepoint called trace_ghes_event for any
-> types of errors coming out of it...
-
-Two problems with this:
-- One, the record size will be really big since the cper records for 
-each type of error is large.
-- Two, it may be better to filter events based on the type of error 
-(memory error, processor, pcie, ...) rather than subscribing for all 
-ghes error reports.
-
->
-> Oh, and while at it, we probably need to start thinking of a mechanism
-> to disable all the error printing, i.e. cper_print_mem() and such,
-> if a userspace agent is listening in on the tracepoint and the error
-> information is carried through it to userspace.
-
-Do you mean conditionally print the cper records based on whether the 
-tracepoint is enabled or not? Wouldn't that be confusing if someone is 
-monitoring dmesg as well?
-
-
-Thanks,
-Naveen
 
