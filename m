@@ -1,50 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab3HMC2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Aug 2013 22:28:48 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59711 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756774Ab3HMC2r (ORCPT
+	id S1756882Ab3HMCaR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Aug 2013 22:30:17 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:8986 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756682Ab3HMCaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Aug 2013 22:28:47 -0400
-X-AuditID: 9c930197-b7b44ae00000347f-61-520999dd326c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/3] perf: add a dummy software event to keep tracking
-References: <1375882231-18339-1-git-send-email-adrian.hunter@intel.com>
-Date: Tue, 13 Aug 2013 11:28:45 +0900
-In-Reply-To: <1375882231-18339-1-git-send-email-adrian.hunter@intel.com>
-	(Adrian Hunter's message of "Wed, 7 Aug 2013 16:30:28 +0300")
-Message-ID: <87mwomwcgy.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 12 Aug 2013 22:30:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 12 Aug 2013 19:30:14 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>,
+        Joseph Lo <josephl@nvidia.com>, Jassi Brar <jassisinghbrar@gmail.com>
+CC: <gnurou@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v3 0/5] ARM: tegra: support for Trusted Foundations
+Date: Tue, 13 Aug 2013 11:29:47 +0900
+Message-ID: <1376360992-1508-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.8.3.4
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Adrian,
+This is the long-overdue third version of this series, hopefully addressing the 
+suggestions received in v2.
 
-On Wed,  7 Aug 2013 16:30:28 +0300, Adrian Hunter wrote:
-> Hi
->
-> This is an alternative to the 'keep tracking' flag patch
-> which is here:
->
-> 	http://marc.info/?l=linux-kernel&m=137242545521246&w=2
->
-> perf tools is updated and a test added to demonstrate the
-> new event.
+Since I could confirm that the SMC interface used by Trusted Foundations is not 
+Tegra-specific, I have moved core TF support into arch/arm/firmware as a 
+proposal to consolidate all implementations of Tomasz Figa's firmware interface 
+into that directory.
 
-It looks like a perfect fit for tracking fork/mmap events on
-perf-ftrace. :)
+Changes from v2:
+- Moved core TF support into arch/arm/firmware
+- Added TF version number in DT bindings
+- Cleaned TF registration code
+- Tegra kernel now fails if TF is declared in the device tree but support
+  is not compiled in
+- Tegra kernel now fails if attempt to set CPU reset vector through secure
+  monitor returned an error
+- Moved update to tegra_defconfig into its own patch
 
-Thanks,
-Namhyung
+Alexandre Courbot (5):
+  ARM: add basic Trusted Foundations support
+  ARM: tegra: add support for Trusted Foundations
+  ARM: tegra: split setting of CPU reset handler
+  ARM: tegra: set CPU reset handler with firmware op
+  ARM: tegra: support Trusted Foundations by default
+
+ .../arm/firmware/tl,trusted-foundations.txt        | 16 ++++++
+ Documentation/devicetree/bindings/arm/tegra.txt    |  5 ++
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ arch/arm/Kconfig                                   |  2 +
+ arch/arm/Makefile                                  |  1 +
+ arch/arm/configs/tegra_defconfig                   |  1 +
+ arch/arm/firmware/Kconfig                          | 22 ++++++++
+ arch/arm/firmware/Makefile                         |  1 +
+ arch/arm/firmware/trusted_foundations.c            | 58 ++++++++++++++++++++++
+ arch/arm/include/asm/trusted_foundations.h         | 36 ++++++++++++++
+ arch/arm/mach-tegra/Kconfig                        |  1 +
+ arch/arm/mach-tegra/Makefile                       |  1 +
+ arch/arm/mach-tegra/common.c                       |  2 +
+ arch/arm/mach-tegra/firmware.c                     | 41 +++++++++++++++
+ arch/arm/mach-tegra/firmware.h                     | 19 +++++++
+ arch/arm/mach-tegra/reset.c                        | 40 +++++++++++----
+ 16 files changed, 236 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/firmware/tl,trusted-foundations.txt
+ create mode 100644 arch/arm/firmware/Kconfig
+ create mode 100644 arch/arm/firmware/Makefile
+ create mode 100644 arch/arm/firmware/trusted_foundations.c
+ create mode 100644 arch/arm/include/asm/trusted_foundations.h
+ create mode 100644 arch/arm/mach-tegra/firmware.c
+ create mode 100644 arch/arm/mach-tegra/firmware.h
+
+-- 
+1.8.3.4
+
