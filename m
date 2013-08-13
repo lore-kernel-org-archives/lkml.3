@@ -1,144 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759095Ab3HMUTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 16:19:41 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:59471 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758942Ab3HMUTj (ORCPT
+	id S1759139Ab3HMUUV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 16:20:21 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:45069 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758796Ab3HMUUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 16:19:39 -0400
-Date: Tue, 13 Aug 2013 13:19:36 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/17] 3.4.58-stable review
-Message-ID: <20130813201936.GA18358@roeck-us.net>
-References: <20130813063501.728847844@linuxfoundation.org>
- <520A1D56.2050507@roeck-us.net>
- <20130813175858.GC7336@kroah.com>
+	Tue, 13 Aug 2013 16:20:19 -0400
+Date: Tue, 13 Aug 2013 16:19:58 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] mm: make lru_add_drain_all() selective
+Message-ID: <20130813201958.GA28996@mtj.dyndns.org>
+References: <5202CEAA.9040204@linux.vnet.ibm.com>
+ <201308072335.r77NZZwl022494@farm-0012.internal.tilera.com>
+ <20130812140520.c6a2255d2176a690fadf9ba7@linux-foundation.org>
+ <52099187.80301@tilera.com>
+ <20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130813175858.GC7336@kroah.com>
+In-Reply-To: <20130813123512.3d6865d8bf4689c05d44738c@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 10:58:58AM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Aug 13, 2013 at 04:49:42AM -0700, Guenter Roeck wrote:
-> > On 08/12/2013 11:35 PM, Greg Kroah-Hartman wrote:
-> > >This is the start of the stable review cycle for the 3.4.58 release.
-> > >There are 17 patches in this series, all will be posted as a response
-> > >to this one.  If anyone has any issues with these being applied, please
-> > >let me know.
-> > >
-> > >Responses should be made by Thu Aug 15 06:34:52 UTC 2013.
-> > >Anything received after that time might be too late.
-> > >
-> > >The whole patch series can be found in one patch at:
-> > >	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.58-rc1.gz
-> > >and the diffstat can be found below.
-> > >
-> > Cross build results:
-> > 	Total builds: 62 Total build errors: 10
-> 
-> As I'm sticking with 3.4 for another year, should I work to fix those
-> build errors?
-> 
-> > qemu:
-> > 	mips, ppc, x86, x86_64 pass (boot to login prompt)
-> > 
-> > Details:
-> > 	http://server.roeck-us.net:8010/waterfall
-> 
-> I tried to find the build errors here, but can't seem to see them.  What
-> should I be looking for?
-> 
-You won't. System isn't set up for it yet, sorry. I keep the logs in /tmp on the
-build servers for the time being, so you'd need a login ;).
+Hello,
 
-I copied the individual log files for the 3.4 build to http://roeck-us.net/linux/logs
-in case you want to browse through it.
+On Tue, Aug 13, 2013 at 12:35:12PM -0700, Andrew Morton wrote:
+> I don't know how lots-of-kmallocs compares with alloc_percpu()
+> performance-wise.
 
-Here is a summary.
+If this is actually performance sensitive, the logical thing to do
+would be pre-allocating per-cpu buffers instead of depending on
+dynamic allocation.  Do the invocations need to be stackable?
 
-mips/allmodconfig:
-drivers/net/ethernet/3com/3c59x.c: In function 'vortex_init_one':
-drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of function 'pci_iomap' 
+> That being said, the `cpumask_var_t mask' which was added to
+> lru_add_drain_all() is unneeded - it's just a temporary storage which
+> can be eliminated by creating a schedule_on_each_cpu_cond() or whatever
+> which is passed a function pointer of type `bool (*call_needed)(int
+> cpu, void *data)'.
 
-We have seen that before in 3.10. Commit 78857614104 (MIPS: Expose
-missing pci_io{map,unmap} declarations) fixes it.
+I'd really like to avoid that.  Decision callbacks tend to get abused
+quite often and it's rather sad to do that because cpumask cannot be
+prepared and passed around.  Can't it just preallocate all necessary
+resources?
 
-sound/oss/soundcard.c:69:31: error: 'MAX_DMA_CHANNELS' undeclared here (not in a function)
+Thanks.
 
-This requires 
-d4702b189c sound: Fix make allmodconfig on MIPS
-a62ee234a5 sound: Fix make allmodconfig on MIPS correctly
-
-Unfortunately, after applying those patches the build still fails with
-
-ERROR: "min_low_pfn" [drivers/net/wireless/ath/ath6kl/ath6kl_sdio.ko] undefined!
-
-This has been fixed upstream with commit 8b9232141b (MIPS: Rewrite pfn_valid to work
-in modules, too), which applies but results in build failures. There is a patch
-from Ben Hutchings which removes the use of virt_addr_valid() (which causes
-the problem) from the ath6kl driver, but that is not in mainline.
-
-powerpc/chroma_defconfig:
-arch/powerpc/mm/numa.c: In function 'do_init_bootmem':
-arch/powerpc/mm/numa.c:529:19: error: 'aa.arrays' may be used uninitialized in this function [-Werror=maybe-uninitialized]
-arch/powerpc/mm/numa.c:642:22: note: 'aa.arrays' was declared here
-cc1: all warnings being treated as errors
-
-No idea. Code looks all different in 3.10.
-
-arm/allmodconfig:
-Error in configuration file after "make allmodconfig". It suggests to run "make
-oldconfig" to update it. I tried that, but it fails as well. Not sure if it is
-worth looking into it.
-
-m68k/allmodconfig:
-drivers/hid/hid-microsoft.c: In function 'ms_report_fixup':
-drivers/hid/hid-microsoft.c:52:18: error: macro "memcmp" passed 6 arguments, but takes just 3
-drivers/hid/hid-microsoft.c:51:5: error: 'memcmp' undeclared (first use in this function)
-drivers/hid/hid-microsoft.c:51:5: note: each undeclared identifier is reported only once for each function it appears in
-
-
-microblaze/mmu_defconfig:
-build/scripts/gen_initramfs_list.sh: Cannot open 'rootfs.cpio'
-make[1]: *** [usr/initramfs_data.cpio.gz] Error 1
-make: *** [usr] Error 2
-
-CONFIG_INITRAMFS_SOURCE=rootfs.cpio in the config file probably
-isn't such a good idea.
-
-Upstream commit d0e045401f26 (microblaze: Update microblaze defconfigs)
-addresses this problem, but it can not be applied directly. It defines
-CONFIG_HIGHMEM=y, CONFIG_PCI=y, and CONFIG_PCI_XILINX=y, which do
-not build in 3.4. It builds successfully if I apply d0e045401f26
-and remove those three definitions.
-
-blackfin/defconfig:
-ERROR: "vm_iomap_memory" [drivers/video/fb.ko] undefined!
-make[1]: *** [__modpost] Error 1
-
-sh/defconfig:
-drivers/built-in.o: In function `fb_mmap':
-fbmem.c:(.text+0x5e8): undefined reference to `vm_iomap_memory'
-
-Both look similar and might be easy to fix if someone knows what is wrong.
-
-cris/...:
-In file included from include/linux/page-flags.h:8:0,
-                 from kernel/bounds.c:9:
-include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
-include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
-include/linux/types.h:30:1: error: unknown type name '__kernel_pid_t'
-include/linux/types.h:31:1: error: unknown type name '__kernel_daddr_t'
-include/linux/types.h:33:1: error: unknown type name '__kernel_suseconds_t'
-
-That one might be tricky (or simple if someone knows what is wrong). 
-
-Guenter
+-- 
+tejun
