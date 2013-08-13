@@ -1,138 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab3HMKzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 06:55:38 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:12570 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214Ab3HMKzh (ORCPT
+	id S1757437Ab3HMK6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 06:58:52 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38573 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab3HMK6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 06:55:37 -0400
-Message-ID: <520A10A3.5080303@hp.com>
-Date: Tue, 13 Aug 2013 18:55:31 +0800
-From: Jingbai Ma <jingbai.ma@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	Tue, 13 Aug 2013 06:58:51 -0400
+Date: Tue, 13 Aug 2013 12:58:47 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        holt@sgi.com, rob@landley.net, travis@sgi.com,
+        daniel@numascale-asia.com, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, yinghai@kernel.org, mgorman@suse.de,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
+ embedded in the buddy allocator
+Message-ID: <20130813105847.GC2170@gmail.com>
+References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
+ <1376344480-156708-1-git-send-email-nzimmer@sgi.com>
 MIME-Version: 1.0
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        bhelgaas@google.com, Jingbai Ma <jingbai.ma@hp.com>,
-        "Mitchell, Lisa (MCLinux in Fort Collins)" <lisa.mitchell@hp.com>
-Subject: Re: [Help Test] kdump, x86, acpi: Reproduce CPU0 SMI corruption issue
- after unsetting BSP flag
-References: <5200BFB3.2050202@jp.fujitsu.com>
-In-Reply-To: <5200BFB3.2050202@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376344480-156708-1-git-send-email-nzimmer@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2013 05:19 PM, HATAYAMA Daisuke wrote:
-> Hello,
-> 
-> I've addressing kdump restriction that there's only one cpu available
-> on the kdump 2nd kernel. Now I need to check if the following CPU0 SMI
-> corruption issue fixed in the following commit can again be reproduced
-> by unsetting BSP flag of the boot cpu:
-> 
-> commit 74b5820808215f65b70b05a099d6d3c969b82689
-> Author: Bjorn Helgaas<bjorn.helgaas@hp.com>
-> Date:   Wed Jul 29 15:54:25 2009 -0600
-> 
->      ACPI: bind workqueues to CPU 0 to avoid SMI corruption
-> 
->      On some machines, a software-initiated SMI causes corruption unless the
->      SMI runs on CPU 0.  An SMI can be initiated by any AML, but typically it's
->      done in GPE-related methods that are run via workqueues, so we can avoid
->      the known corruption cases by binding the workqueues to CPU 0.
-> 
->      References:
->          http://bugzilla.kernel.org/show_bug.cgi?id=13751
->          https://bugs.launchpad.net/bugs/157171
->          https://bugs.launchpad.net/bugs/157691
-> 
->      Signed-off-by: Bjorn Helgaas<bjorn.helgaas@hp.com>
->      Signed-off-by: Len Brown<len.brown@intel.com>
-> 
-> The reason is that in the current situation, I have two ideas to deal
-> with the avove kdump restriction:
-> 
->    1) Disable BSP at the 2nd kernel, posted at:
->      [PATCH v1 0/2] x86, apic: Disable BSP if boot cpu is AP
->      https://lkml.org/lkml/2012/10/16/15
-> 
->    2) Unset BSP flag at the 1st kernel, suggested by Eric Biederman
->       during the discussion of the idea 1).
-> 
-> On the idea 1), BSP is disabled on the kdump 2nd kernel. My conclusion
-> is that we have no method to reset BSP, i.e. recover BPS's healthy
-> state, while we can recover AP by means of INIT as described in MP
-> specification.
-> 
-> The idea 2) is simpler. We unset BSP flag of the boot cpu at 1st
-> kernel. The behaviour when receiving INIT depends on whether or not
-> BSP flag is set or not on its MSR; we can set and unset BSP flag of
-> MSR freely at runtime. (I don't mean we should).
-> 
-> So, next thing I should do is to evalute risk of the idea 2). In fact,
-> during the discussion of the idea 1), HPA pointed out that some kind
-> of firmware affects if BSP flag is unset. Also, maybe from the same
-> reason, recently introduced cpu0 hot-plugging feature by Fenghua Yu
-> doesn't appear to unset BSP flag.
-> 
-> The biggest problem next is that I don't have any machines reported in
-> the bugzilla articles; this issue inherently depends on firmware.
-> 
-> So, could anyone help testing the idea 2) above if you have which of
-> the following machines? (or other ones that can lead to the same bug)
-> 
-> - HP Compaq 6910p
-> - HP Compaq 6710b
-> - HP Compaq 6710s
-> - HP Compaq 6510b
-> - HP Compaq 2510p
-> 
-> I prepared a small programs for this test. See the attached file.
-> The steps to try to reproduce the bug is as follows:
-> 
->    1. $ tar xf bsp_flag_modules.tar.gz; cd bsp_flag_modules
->    2. $ make # to build these programs
->    3. $ insmod unsetbspflag.ko # to unset BSP flag of the boot cpu
->    4. $ insmod getcpuinfo.ko # to confirm if BSP flag of the boot cpu has
->                              # been unset.
->       $ dmesg | tail
->    5. Close the lid of the machine.
->    6. Wait some minutes if necessary.
->    7. Open the lid and you can see oops on the screen if bug has
->      successfully been reproduced.
-> 
 
-I couldn't find any model list above, but found one HP EliteBook 6930p.
-I tested this machine with kernel 2.6.30 first. After resuming from
-suspend, system hang.
+* Nathan Zimmer <nzimmer@sgi.com> wrote:
 
-Then, I tested with kernel 3.11.0-rc5, it worked well, could resume from
-suspend without any problem.
+> We are still restricting ourselves ourselves to 2MiB initialization. 
+> This was initially to keep the patch set a little smaller and more 
+> clear. However given how well it is currently performing I don't see a 
+> how much better it could be with to 2GiB chunks.
+> 
+> As far as extra overhead. We incur an extra function call to 
+> ensure_page_is_initialized but that is only really expensive when we 
+> find uninitialized pages, otherwise it is a flag check once every 
+> PTRS_PER_PMD. [...]
 
-Next, I tested your program to clear BSP flag, I found the
-unsetbspflag.ko didn't work everytime, sometimes I have to execute
-insmod/rmmod several times to clear the BSP flag. (I used your
-getcpuinfo.ko to check the BSP flag)
+Mind expanding on this in more detail?
 
-cpu: 0 bios_apic: 0 apic: 0 AP
-cpu: 1 bios_apic: 1 apic: 1 AP
+The main fastpath overhead we are really interested in is the 'memory is 
+already fully ininialized and we reallocate a second time' case - i.e. the 
+*second* (and subsequent), post-initialization allocation of any page 
+range.
 
-I suspended it, and them resumed it. This machine resumed from suspend
-successfully, but the BSP flag has been set back:
+Those allocations are the ones that matter most: they will occur again and 
+again, for the lifetime of the booted up system.
 
-cpu: 0 bios_apic: 0 apic: 0 BSP
-cpu: 1 bios_apic: 1 apic: 1 AP
+What extra overhead is there in that case? Only a flag check that is 
+merged into an existing flag check (in free_pages_check()) and thus is 
+essentially zero overhead? Or is it more involved - if yes, why?
 
-That's all my observation. Hope it's helpful.
+One would naively think that nothing but the flags check is needed in this 
+case: if all 512 pages in an aligned 2MB block is fully initialized, and 
+marked as initialized in all the 512 page heads, then no other runtime 
+check will be needed in the future.
 
--- 
 Thanks,
-Jingbai Ma
+
+	Ingo
