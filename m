@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab3HMGf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:35:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60848 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757485Ab3HMGe7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757592Ab3HMGe7 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 13 Aug 2013 02:34:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60828 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757485Ab3HMGey (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 02:34:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 08/17] virtio: console: fix raising SIGIO after port unplug
-Date: Mon, 12 Aug 2013 23:35:54 -0700
-Message-Id: <20130813063502.413799256@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 03/17] ext4: make sure group number is bumped after a inode allocation race
+Date: Mon, 12 Aug 2013 23:35:49 -0700
+Message-Id: <20130813063502.009053082@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063501.728847844@linuxfoundation.org>
 References: <20130813063501.728847844@linuxfoundation.org>
@@ -27,46 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 92d3453815fbe74d539c86b60dab39ecdf01bb99 upstream.
+commit a34eb503742fd25155fd6cff6163daacead9fbc3 upstream.
 
-SIGIO should be sent when a port gets unplugged.  It should only be sent
-to prcesses that have the port opened, and have asked for SIGIO to be
-delivered.  We were clearing out guest_connected before calling
-send_sigio_to_port(), resulting in a sigio not getting sent to
-processes.
+When we try to allocate an inode, and there is a race between two
+CPU's trying to grab the same inode, _and_ this inode is the last free
+inode in the block group, make sure the group number is bumped before
+we continue searching the rest of the block groups.  Otherwise, we end
+up searching the current block group twice, and we end up skipping
+searching the last block group.  So in the unlikely situation where
+almost all of the inodes are allocated, it's possible that we will
+return ENOSPC even though there might be free inodes in that last
+block group.
 
-Fix by setting guest_connected to false after invoking the sigio
-function.
-
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/virtio_console.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ fs/ext4/ialloc.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1286,12 +1286,14 @@ static void unplug_port(struct port *por
- 	spin_unlock_irq(&port->portdev->ports_lock);
- 
- 	if (port->guest_connected) {
-+		/* Let the app know the port is going down. */
-+		send_sigio_to_port(port);
-+
-+		/* Do this after sigio is actually sent */
- 		port->guest_connected = false;
- 		port->host_connected = false;
--		wake_up_interruptible(&port->waitqueue);
- 
--		/* Let the app know the port is going down. */
--		send_sigio_to_port(port);
-+		wake_up_interruptible(&port->waitqueue);
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -687,11 +687,8 @@ repeat_in_this_group:
+ 		ino = ext4_find_next_zero_bit((unsigned long *)
+ 					      inode_bitmap_bh->b_data,
+ 					      EXT4_INODES_PER_GROUP(sb), ino);
+-		if (ino >= EXT4_INODES_PER_GROUP(sb)) {
+-			if (++group == ngroups)
+-				group = 0;
+-			continue;
+-		}
++		if (ino >= EXT4_INODES_PER_GROUP(sb))
++			goto next_group;
+ 		if (group == 0 && (ino+1) < EXT4_FIRST_INO(sb)) {
+ 			ext4_error(sb, "reserved inode found cleared - "
+ 				   "inode=%lu", ino + 1);
+@@ -709,6 +706,9 @@ repeat_in_this_group:
+ 			goto got; /* we grabbed the inode! */
+ 		if (ino < EXT4_INODES_PER_GROUP(sb))
+ 			goto repeat_in_this_group;
++next_group:
++		if (++group == ngroups)
++			group = 0;
  	}
- 
- 	if (is_console_port(port)) {
+ 	err = -ENOSPC;
+ 	goto out;
 
 
