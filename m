@@ -1,52 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab3HMXGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 19:06:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54167 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752708Ab3HMXGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 19:06:45 -0400
-Message-ID: <520ABBFD.7080004@redhat.com>
-Date: Tue, 13 Aug 2013 19:06:37 -0400
-From: Vlad Yasevich <vyasevic@redhat.com>
-Reply-To: vyasevic@redhat.com
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1758338Ab3HMXG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 19:06:58 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:16717 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758072Ab3HMXG4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 19:06:56 -0400
+Message-ID: <201308132306.r7DN6stA029051@farm-0021.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+In-Reply-To: <520AAF9C.1050702@tilera.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Date: Tue, 13 Aug 2013 18:51:44 -0400
+Subject: [PATCH v7 1/2] workqueue: add schedule_on_each_cpu_cond
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: ast@fiberby.net, stephen@networkplumber.org, netdev@vger.kernel.org,
-        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtnetlink: rtnl_bridge_getlink: Call nlmsg_find_attr()
- with ifinfomsg header
-References: <52090C26.4090001@fiberby.net> <1376325009-8399-1-git-send-email-ast@fiberby.net> <52093E29.5010604@redhat.com> <20130813.155443.1789890841731289313.davem@davemloft.net>
-In-Reply-To: <20130813.155443.1789890841731289313.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 06:54 PM, David Miller wrote:
-> From: Vlad Yasevich <vyasevic@redhat.com>
-> Date: Mon, 12 Aug 2013 15:57:29 -0400
->
->> On 08/12/2013 12:30 PM, Asbjoern Sloth Toennesen wrote:
->>> Fix the iproute2 command `bridge vlan show`, after switching from
->>> rtgenmsg to ifinfomsg.
->>>
->>> Signed-off-by: Asbjoern Sloth Toennesen <ast@fiberby.net>
->>
->>
->> Thanks..  I've still been using an older iproute version and didn't
->> see this.
->>
->>
->> Reviewed-by: Vlad Yasevich <vyasevich@gmail.com>
->
-> What introduced this regression?
->
+This API supports running work on a subset of the online
+cpus determined by a callback function.
 
-ast explained it in his header message (Bridge VLAN kernel/iproute2 
-incompatibility)
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+v7: try a version with callbacks instead of cpu masks.
+Either this or v6 seem like reasonable solutions.
 
--vlad
+v6: add Tejun's Acked-by, and add missing get/put_cpu_online to
+lru_add_drain_all().
+
+v5: provide validity checking on the cpumask for schedule_on_cpu_mask.
+By providing an all-or-nothing EINVAL check, we impose the requirement
+that the calling code actually know clearly what it's trying to do.
+(Note: no change to the mm/swap.c commit)
+
+v4: don't lose possible -ENOMEM in schedule_on_each_cpu()
+(Note: no change to the mm/swap.c commit)
+
+v3: split commit into two, one for workqueue and one for mm, though both
+should probably be taken through -mm.
+
+ include/linux/workqueue.h |  3 +++
+ kernel/workqueue.c        | 54 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 57 insertions(+)
+
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index a0ed78a..c5ee29f 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -17,6 +17,7 @@ struct workqueue_struct;
+ 
+ struct work_struct;
+ typedef void (*work_func_t)(struct work_struct *work);
++typedef bool (*work_cond_func_t)(void *data, int cpu);
+ void delayed_work_timer_fn(unsigned long __data);
+ 
+ /*
+@@ -471,6 +472,8 @@ extern void drain_workqueue(struct workqueue_struct *wq);
+ extern void flush_scheduled_work(void);
+ 
+ extern int schedule_on_each_cpu(work_func_t func);
++extern int schedule_on_each_cpu_cond(work_func_t func, work_cond_func_t cond,
++				     void *data);
+ 
+ int execute_in_process_context(work_func_t fn, struct execute_work *);
+ 
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f02c4a4..5c5b534 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2999,6 +2999,60 @@ int schedule_on_each_cpu(work_func_t func)
+ }
+ 
+ /**
++ * schedule_on_each_cpu_cond - execute a function synchronously on each
++ *   online CPU if requested by a condition callback.
++ * @func: the function to call
++ * @cond: the callback function to determine whether to schedule the work
++ * @data: opaque data passed to the callback function
++ *
++ * schedule_on_each_cpu_cond() calls @cond for each online cpu (in the
++ * context of the current cpu), and for each cpu for which @cond returns
++ * true, it executes @func using the system workqueue.  The function
++ * blocks until all CPUs on which work was scheduled have completed.
++ * schedule_on_each_cpu_cond() is very slow.
++ *
++ * The @cond callback is called in the same context as the original
++ * call to schedule_on_each_cpu_cond().
++ *
++ * RETURNS:
++ * 0 on success, -errno on failure.
++ */
++int schedule_on_each_cpu_cond(work_func_t func,
++			      work_cond_func_t cond, void *data)
++{
++	int cpu;
++	struct work_struct __percpu *works;
++
++	works = alloc_percpu(struct work_struct);
++	if (!works)
++		return -ENOMEM;
++
++	get_online_cpus();
++
++	for_each_online_cpu(cpu) {
++		struct work_struct *work = per_cpu_ptr(works, cpu);
++
++		if (cond(data, cpu)) {
++			INIT_WORK(work, func);
++			schedule_work_on(cpu, work);
++		} else {
++			work->entry.next = NULL;
++		}
++	}
++
++	for_each_online_cpu(cpu) {
++		struct work_struct *work = per_cpu_ptr(works, cpu);
++
++		if (work->entry.next)
++			flush_work(work);
++	}
++
++	put_online_cpus();
++	free_percpu(works);
++	return 0;
++}
++
++/**
+  * flush_scheduled_work - ensure that any scheduled work has run to completion.
+  *
+  * Forces execution of the kernel-global workqueue and blocks until its
+-- 
+1.8.3.1
+
