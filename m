@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757775Ab3HMGpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 02:45:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60675 "EHLO
+	id S1757208Ab3HMGds (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 02:33:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60624 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757257Ab3HMGdu (ORCPT
+	with ESMTP id S1757024Ab3HMGdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 02:33:50 -0400
+	Tue, 13 Aug 2013 02:33:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Piotr Sarna <p.sarna@partner.samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [ 46/60] ext4: fix mount/remount error messages for incompatible mount options
-Date: Mon, 12 Aug 2013 23:34:13 -0700
-Message-Id: <20130813063338.023587841@linuxfoundation.org>
+        Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 07/60] powerpc: Fix context switch DSCR on POWER8
+Date: Mon, 12 Aug 2013 23:33:34 -0700
+Message-Id: <20130813063332.815224050@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.3.825.g36032ce.dirty
 In-Reply-To: <20130813063331.950321483@linuxfoundation.org>
 References: <20130813063331.950321483@linuxfoundation.org>
@@ -29,68 +27,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Piotr Sarna <p.sarna@partner.samsung.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 6ae6514b33f941d3386da0dfbe2942766eab1577 upstream.
+commit 2517617e0de65f8f7cfe75cae745d06b1fa98586 upstream.
 
-Commit 5688978 ("ext4: improve handling of conflicting mount options")
-introduced incorrect messages shown while choosing wrong mount options.
+POWER8 allows the DSCR to be accessed directly from userspace via a new SPR
+number 0x3 (Rather than 0x11.  DSCR SPR number 0x11 is still used on POWER8 but
+like POWER7, is only accessible in HV and OS modes).  Currently, we allow this
+by setting H/FSCR DSCR bit on boot.
 
-First of all, both cases of incorrect mount options,
-"data=journal,delalloc" and "data=journal,dioread_nolock" result in
-the same error message.
+Unfortunately this doesn't work, as the kernel needs to see the DSCR change so
+that it knows to no longer restore the system wide version of DSCR on context
+switch (ie. to set thread.dscr_inherit).
 
-Secondly, the problem above isn't solved for remount option: the
-mismatched parameter is simply ignored.  Moreover, ext4_msg states
-that remount with options "data=journal,delalloc" succeeded, which is
-not true.
+This clears the H/FSCR DSCR bit initially.  If a process then accesses the DSCR
+(via SPR 0x3), it'll trap into the kernel where we set thread.dscr_inherit in
+facility_unavailable_exception().
 
-To fix it up, I added a simple check after parse_options() call to
-ensure that data=journal and delalloc/dioread_nolock parameters are
-not present at the same time.
+We also change _switch() so that we set or clear the H/FSCR DSCR bit based on
+the thread.dscr_inherit.
 
-Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
-Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/super.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/entry_64.S |   27 ++++++++++++++++++-
+ arch/powerpc/kernel/traps.c    |   58 ++++++++++++++++++++++++-----------------
+ 2 files changed, 60 insertions(+), 25 deletions(-)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3445,7 +3445,7 @@ static int ext4_fill_super(struct super_
- 		}
- 		if (test_opt(sb, DIOREAD_NOLOCK)) {
- 			ext4_msg(sb, KERN_ERR, "can't mount with "
--				 "both data=journal and delalloc");
-+				 "both data=journal and dioread_nolock");
- 			goto failed_mount;
- 		}
- 		if (test_opt(sb, DELALLOC))
-@@ -4646,6 +4646,21 @@ static int ext4_remount(struct super_blo
- 		goto restore_opts;
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -584,9 +584,34 @@ BEGIN_FTR_SECTION
+ 	ld	r7,DSCR_DEFAULT@toc(2)
+ 	ld	r0,THREAD_DSCR(r4)
+ 	cmpwi	r6,0
++	li	r8, FSCR_DSCR
+ 	bne	1f
+ 	ld	r0,0(r7)
+-1:	cmpd	r0,r25
++	b	3f
++1:
++  BEGIN_FTR_SECTION_NESTED(70)
++	mfspr	r6, SPRN_FSCR
++	or	r6, r6, r8
++	mtspr	SPRN_FSCR, r6
++    BEGIN_FTR_SECTION_NESTED(69)
++	mfspr	r6, SPRN_HFSCR
++	or	r6, r6, r8
++	mtspr	SPRN_HFSCR, r6
++    END_FTR_SECTION_NESTED(CPU_FTR_HVMODE, CPU_FTR_HVMODE, 69)
++	b	4f
++  END_FTR_SECTION_NESTED(CPU_FTR_ARCH_207S, CPU_FTR_ARCH_207S, 70)
++3:
++  BEGIN_FTR_SECTION_NESTED(70)
++	mfspr	r6, SPRN_FSCR
++	andc	r6, r6, r8
++	mtspr	SPRN_FSCR, r6
++    BEGIN_FTR_SECTION_NESTED(69)
++	mfspr	r6, SPRN_HFSCR
++	andc	r6, r6, r8
++	mtspr	SPRN_HFSCR, r6
++    END_FTR_SECTION_NESTED(CPU_FTR_HVMODE, CPU_FTR_HVMODE, 69)
++  END_FTR_SECTION_NESTED(CPU_FTR_ARCH_207S, CPU_FTR_ARCH_207S, 70)
++4:	cmpd	r0,r25
+ 	beq	2f
+ 	mtspr	SPRN_DSCR,r0
+ 2:
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -44,9 +44,7 @@
+ #include <asm/machdep.h>
+ #include <asm/rtas.h>
+ #include <asm/pmc.h>
+-#ifdef CONFIG_PPC32
+ #include <asm/reg.h>
+-#endif
+ #ifdef CONFIG_PMAC_BACKLIGHT
+ #include <asm/backlight.h>
+ #endif
+@@ -1282,43 +1280,54 @@ void vsx_unavailable_exception(struct pt
+ 	die("Unrecoverable VSX Unavailable Exception", regs, SIGABRT);
+ }
+ 
++#ifdef CONFIG_PPC64
+ void facility_unavailable_exception(struct pt_regs *regs)
+ {
+ 	static char *facility_strings[] = {
+-		"FPU",
+-		"VMX/VSX",
+-		"DSCR",
+-		"PMU SPRs",
+-		"BHRB",
+-		"TM",
+-		"AT",
+-		"EBB",
+-		"TAR",
++		[FSCR_FP_LG] = "FPU",
++		[FSCR_VECVSX_LG] = "VMX/VSX",
++		[FSCR_DSCR_LG] = "DSCR",
++		[FSCR_PM_LG] = "PMU SPRs",
++		[FSCR_BHRB_LG] = "BHRB",
++		[FSCR_TM_LG] = "TM",
++		[FSCR_EBB_LG] = "EBB",
++		[FSCR_TAR_LG] = "TAR",
+ 	};
+-	char *facility, *prefix;
++	char *facility = "unknown";
+ 	u64 value;
++	u8 status;
++	bool hv;
+ 
+-	if (regs->trap == 0xf60) {
+-		value = mfspr(SPRN_FSCR);
+-		prefix = "";
+-	} else {
++	hv = (regs->trap == 0xf80);
++	if (hv)
+ 		value = mfspr(SPRN_HFSCR);
+-		prefix = "Hypervisor ";
++	else
++		value = mfspr(SPRN_FSCR);
++
++	status = value >> 56;
++	if (status == FSCR_DSCR_LG) {
++		/* User is acessing the DSCR.  Set the inherit bit and allow
++		 * the user to set it directly in future by setting via the
++		 * H/FSCR DSCR bit.
++		 */
++		current->thread.dscr_inherit = 1;
++		if (hv)
++			mtspr(SPRN_HFSCR, value | HFSCR_DSCR);
++		else
++			mtspr(SPRN_FSCR,  value | FSCR_DSCR);
++		return;
  	}
  
-+	if (test_opt(sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA) {
-+		if (test_opt2(sb, EXPLICIT_DELALLOC)) {
-+			ext4_msg(sb, KERN_ERR, "can't mount with "
-+				 "both data=journal and delalloc");
-+			err = -EINVAL;
-+			goto restore_opts;
-+		}
-+		if (test_opt(sb, DIOREAD_NOLOCK)) {
-+			ext4_msg(sb, KERN_ERR, "can't mount with "
-+				 "both data=journal and dioread_nolock");
-+			err = -EINVAL;
-+			goto restore_opts;
-+		}
-+	}
-+
- 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
- 		ext4_abort(sb, "Abort forced by user");
+-	value = value >> 56;
++	if ((status < ARRAY_SIZE(facility_strings)) &&
++	    facility_strings[status])
++		facility = facility_strings[status];
+ 
+ 	/* We restore the interrupt state now */
+ 	if (!arch_irq_disabled_regs(regs))
+ 		local_irq_enable();
+ 
+-	if (value < ARRAY_SIZE(facility_strings))
+-		facility = facility_strings[value];
+-	else
+-		facility = "unknown";
+-
+ 	pr_err("%sFacility '%s' unavailable, exception at 0x%lx, MSR=%lx\n",
+-		prefix, facility, regs->nip, regs->msr);
++	       hv ? "Hypervisor " : "", facility, regs->nip, regs->msr);
+ 
+ 	if (user_mode(regs)) {
+ 		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
+@@ -1327,6 +1336,7 @@ void facility_unavailable_exception(stru
+ 
+ 	die("Unexpected facility unavailable exception", regs, SIGABRT);
+ }
++#endif
+ 
+ #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
  
 
 
