@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758408Ab3HMXd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 19:33:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37952 "EHLO mail.zytor.com"
+	id S1758629Ab3HMXev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 19:34:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46736 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753052Ab3HMXd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 19:33:58 -0400
-Message-ID: <520AC1FE.1030600@zytor.com>
-Date: Tue, 13 Aug 2013 16:32:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1756090Ab3HMXeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 19:34:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,873,1367996400"; 
+   d="scan'208";a="386643388"
+Date: Tue, 13 Aug 2013 16:34:49 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com,
+        dsahern@gmail.com
+Subject: Re: [PATCH v1 2/2] perf tools: add attr->mmap2 support
+Message-ID: <20130813233449.GK23412@tassilo.jf.intel.com>
+References: <1376394957-31691-1-git-send-email-eranian@google.com>
+ <1376394957-31691-3-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-To: David Gibson <david@gibson.dropbear.id.au>
-CC: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arend van Spriel <arend@broadcom.com>, Mark Brown <broonie@kernel.org>,
-        Olof Johansson <olof@lixom.net>, mbizon@freebox.fr,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
- interested in device tree janitoring / cleanup?]
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <1999586.84BnWE5EUh@thinkpad> <20130731191209.GA8027@netboy> <1409617.9untvfnOTJ@flatron> <20130731200017.GC8027@netboy> <20130731201457.GA24642@n2100.arm.linux.org.uk> <CAKON4Ow7rE9cDj_tS7kmYN4incM+ay=BK96q-ph2JxYH3xiQzg@mail.gmail.com> <20130731204817.GC24642@n2100.arm.linux.org.uk> <CAKON4Ozfe=endqnXWkcWR2HuJ489Otpcu2QsjB0DNg6jpRgG+Q@mail.gmail.com> <20130802035027.GA19115@voom.redhat.com>
-In-Reply-To: <20130802035027.GA19115@voom.redhat.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376394957-31691-3-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2013 08:50 PM, David Gibson wrote:
-> On Wed, Jul 31, 2013 at 05:26:47PM -0400, jonsmirl@gmail.com
-> wrote:
->> On Wed, Jul 31, 2013 at 4:48 PM, Russell King - ARM Linux 
->> <linux@arm.linux.org.uk> wrote:
->>> On Wed, Jul 31, 2013 at 04:37:36PM -0400, jonsmirl@gmail.com
->> wrote:
-> [snip]
->> Alternatively you may be of the belief that it is impossible to
->> get rid of the board specific code. But x86 doesn't have any of
->> it, why should ARM?
-> 
-> Sure x86 has board specific code.  It's just that x86 basically
-> only has one board - PC.
-> 
+On Tue, Aug 13, 2013 at 01:55:57PM +0200, Stephane Eranian wrote:
+> This patch adds support for the new PERF_RECORD_MMAP2
+> record type exposed by the kernel. This is an extended
+> PERF_RECORD_MMAP record. It adds for each file-backed
+> mapping the device major, minor number and the inode
+> number. This triplet uniquely identifies the source
+> of a file-backed mapping. It can be used to detect
+> identical virtual mappings between processes for instance.
 
-That is one aspect (hardware standardization)... but it is more to it
-than that.
+Can you also add the generation number please?
+That would make it even more unique.
 
-	-hpa
-
+-Andi
