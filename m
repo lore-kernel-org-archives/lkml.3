@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758745Ab3HMQDx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 12:03:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5350 "EHLO
+	id S932392Ab3HMQEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 12:04:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8897 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758697Ab3HMP6f (ORCPT
+	with ESMTP id S1758683Ab3HMP6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 11:58:35 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=dUjdp8jd9uYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=juL0Zm1YKqoA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=5cIBTxRJ4pZzZk2xk6UA:9 a=MSl-tDqOz04A:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Tue, 13 Aug 2013 11:58:32 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=_-nb7Tqe-W0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NHG3QgvAjZoA:10 a=20KFwNOVAAAA:8 a=vmLDa1wCAAAA:8 a=pGLkceISAAAA:8 a=J1Y8HTJGAAAA:8 a=NAlZWt4mY1Lns5A_WukA:9 a=jEp0ucaQiEUA:10 a=gv_BBZfBKR8A:10 a=MSl-tDqOz04A:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130813155830.507002505@goodmis.org>
+Message-Id: <20130813155827.547455216@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 13 Aug 2013 11:57:38 -0400
+Date: Tue, 13 Aug 2013 11:57:19 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Nikolay Martynov <mar.kolya@gmail.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [44/88] iwlwifi: dvm: fix chain noise calibration
+Cc: Daniel Borkmann <dborkman@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [25/88] net: sctp: fix NULL pointer dereference in socket destruction
 References: <20130813155654.069291373@goodmis.org>
-Content-Disposition: inline; filename=0044-iwlwifi-dvm-fix-chain-noise-calibration.patch
+Content-Disposition: inline; filename=0025-net-sctp-fix-NULL-pointer-dereference-in-socket-dest.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,39 +31,98 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nikolay Martynov <mar.kolya@gmail.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit b28b6dfe580ab1ab8bf08b908fd69e299b877103 ]
+[ Upstream commit 1abd165ed757db1afdefaac0a4bc8a70f97d258c ]
 
-First step of chain noise calibration process had disable flag
-check inverted. Chain noise calibration never started because
-of this.
+While stress testing sctp sockets, I hit the following panic:
 
-Tested on intel 5300 with two antennas attached. The driver
-correctly disabled one chain.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+IP: [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+PGD 7cead067 PUD 7ce76067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: sctp(F) libcrc32c(F) [...]
+CPU: 7 PID: 2950 Comm: acc Tainted: GF            3.10.0-rc2+ #1
+Hardware name: Dell Inc. PowerEdge T410/0H19HD, BIOS 1.6.3 02/01/2011
+task: ffff88007ce0e0c0 ti: ffff88007b568000 task.ti: ffff88007b568000
+RIP: 0010:[<ffffffffa0490c4e>]  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+RSP: 0018:ffff88007b569e08  EFLAGS: 00010292
+RAX: 0000000000000000 RBX: ffff88007db78a00 RCX: dead000000200200
+RDX: ffffffffa049fdb0 RSI: ffff8800379baf38 RDI: 0000000000000000
+RBP: ffff88007b569e18 R08: ffff88007c230da0 R09: 0000000000000001
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+R13: ffff880077990d00 R14: 0000000000000084 R15: ffff88007db78a00
+FS:  00007fc18ab61700(0000) GS:ffff88007fc60000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000020 CR3: 000000007cf9d000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ ffff88007b569e38 ffff88007db78a00 ffff88007b569e38 ffffffffa049fded
+ ffffffff81abf0c0 ffff88007db78a00 ffff88007b569e58 ffffffff8145b60e
+ 0000000000000000 0000000000000000 ffff88007b569eb8 ffffffff814df36e
+Call Trace:
+ [<ffffffffa049fded>] sctp_destroy_sock+0x3d/0x80 [sctp]
+ [<ffffffff8145b60e>] sk_common_release+0x1e/0xf0
+ [<ffffffff814df36e>] inet_create+0x2ae/0x350
+ [<ffffffff81455a6f>] __sock_create+0x11f/0x240
+ [<ffffffff81455bf0>] sock_create+0x30/0x40
+ [<ffffffff8145696c>] SyS_socket+0x4c/0xc0
+ [<ffffffff815403be>] ? do_page_fault+0xe/0x10
+ [<ffffffff8153cb32>] ? page_fault+0x22/0x30
+ [<ffffffff81544e02>] system_call_fastpath+0x16/0x1b
+Code: 0c c9 c3 66 2e 0f 1f 84 00 00 00 00 00 e8 fb fe ff ff c9 c3 66 0f
+      1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 <48>
+      8b 47 20 48 89 fb c6 47 1c 01 c6 40 12 07 e8 9e 68 01 00 48
+RIP  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+ RSP <ffff88007b569e08>
+CR2: 0000000000000020
+---[ end trace e0d71ec1108c1dd9 ]---
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Nikolay Martynov <mar.kolya@gmail.com>
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+I did not hit this with the lksctp-tools functional tests, but with a
+small, multi-threaded test program, that heavily allocates, binds,
+listens and waits in accept on sctp sockets, and then randomly kills
+some of them (no need for an actual client in this case to hit this).
+Then, again, allocating, binding, etc, and then killing child processes.
+
+This panic then only occurs when ``echo 1 > /proc/sys/net/sctp/auth_enable''
+is set. The cause for that is actually very simple: in sctp_endpoint_init()
+we enter the path of sctp_auth_init_hmacs(). There, we try to allocate
+our crypto transforms through crypto_alloc_hash(). In our scenario,
+it then can happen that crypto_alloc_hash() fails with -EINTR from
+crypto_larval_wait(), thus we bail out and release the socket via
+sk_common_release(), sctp_destroy_sock() and hit the NULL pointer
+dereference as soon as we try to access members in the endpoint during
+sctp_endpoint_free(), since endpoint at that time is still NULL. Now,
+if we have that case, we do not need to do any cleanup work and just
+leave the destruction handler.
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/iwlwifi/dvm/rxon.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sctp/socket.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/net/wireless/iwlwifi/dvm/rxon.c b/drivers/net/wireless/iwlwifi/dvm/rxon.c
-index 2830ea2..18eaca3 100644
---- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
-@@ -1377,7 +1377,7 @@ static void iwlagn_chain_noise_reset(struct iwl_priv *priv)
- 	struct iwl_chain_noise_data *data = &priv->chain_noise_data;
- 	int ret;
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index d32d86d..211acdc 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -3982,6 +3982,12 @@ SCTP_STATIC void sctp_destroy_sock(struct sock *sk)
  
--	if (!(priv->calib_disabled & IWL_CHAIN_NOISE_CALIB_DISABLED))
-+	if (priv->calib_disabled & IWL_CHAIN_NOISE_CALIB_DISABLED)
- 		return;
- 
- 	if ((data->state == IWL_CHAIN_NOISE_ALIVE) &&
+ 	/* Release our hold on the endpoint. */
+ 	sp = sctp_sk(sk);
++	/* This could happen during socket init, thus we bail out
++	 * early, since the rest of the below is not setup either.
++	 */
++	if (sp->ep == NULL)
++		return;
++
+ 	if (sp->do_auto_asconf) {
+ 		sp->do_auto_asconf = 0;
+ 		list_del(&sp->auto_asconf_list);
 -- 
 1.7.10.4
 
