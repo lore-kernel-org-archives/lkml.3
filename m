@@ -1,83 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab3HNFfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 01:35:31 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:25500 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751488Ab3HNFfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 01:35:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AogHABwWC1J5LCJR/2dsb2JhbABbgwaDNLZ/hTSBJRd0giQBAQUnExwjEAgDFQMJJQ8FDRgDNId+Aw6wBA2IXhaNL4J3BxaDewOVe4FojCuFJ4MtKg
-Date: Wed, 14 Aug 2013 15:35:23 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] xfs: introduce object readahead to log recovery
-Message-ID: <20130814053523.GY12779@dastard>
-References: <1375260165-8773-1-git-send-email-zwu.kernel@gmail.com>
+	id S1752183Ab3HNFn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 01:43:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57833 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751468Ab3HNFnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 01:43:25 -0400
+Date: Wed, 14 Aug 2013 07:43:22 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Message-ID: <20130814054322.GA9158@pd.tnic>
+References: <20130812083355.47c1bae8@samsung.com>
+ <5208D80D.5030206@linux.vnet.ibm.com>
+ <20130812125343.GE18018@pd.tnic>
+ <520A16BD.30201@linux.vnet.ibm.com>
+ <20130813124258.GC4077@pd.tnic>
+ <520A6D98.9060204@linux.vnet.ibm.com>
+ <20130813175809.GE4077@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F31CB8F53@ORSMSX106.amr.corp.intel.com>
+ <20130813181004.GF4077@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F31CB9150@ORSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1375260165-8773-1-git-send-email-zwu.kernel@gmail.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31CB9150@ORSMSX106.amr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 31, 2013 at 04:42:45PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Tue, Aug 13, 2013 at 08:13:56PM +0000, Luck, Tony wrote:
+> Generic tracepoints are architected to be able to fire at very high
+> rates and log huge amounts of information. So we'd need something
+> special to say just log these special tracepoints to network/serial.
+>
+> > Which reminds me, pstore could also be a good thing to use, in addition.
+> > Only put error info there as it is limited anyway.
 > 
->   It can take a long time to run log recovery operation because it is
-> single threaded and is bound by read latency. We can find that it took
-> most of the time to wait for the read IO to occur, so if one object
-> readahead is introduced to log recovery, it will obviously reduce the
-> log recovery time.
-> 
-> Log recovery time stat:
-> 
->           w/o this patch        w/ this patch
-> 
-> real:        0m15.023s             0m7.802s
-> user:        0m0.001s              0m0.001s
-> sys:         0m0.246s              0m0.107s
+> Yes - space is very limited.  I don't know how to assign priority for logging
+> the dmesg data vs. some error logs.
 
-This version works as advertised as well.
+Didn't we say at some point, "log only the panic messsage which kills
+the machine"?
 
-> @@ -3216,6 +3351,18 @@ xlog_recover_commit_trans(
->  			goto out;
->  	}
->  
-> +	if (!list_empty(&ra_list)) {
-> +		error = xlog_recover_items_pass2(log, trans,
-> +				&buffer_list, &ra_list);
-> +		if (error)
-> +			goto out;
-> +
-> +		list_splice_tail_init(&ra_list, &done_list);
-> +	}
-> +
-> +	if (!list_empty(&done_list))
-> +		list_splice_init(&done_list, &trans->r_itemq);
-> +
->  	xlog_recover_free_trans(trans);
+However, we probably could use more the messages before that
+catastrophic event because they could give us hints about what lead to
+the panic but in that case maybe a limited pstore is the wrong logging
+medium.
 
-I think this still leaks the trans structure when an error occurs.
-Indeed, I think this is a pre-existing leak, as the current code
-will skip freeing the trans structure on item recovery failure and
-nothing else frees it.  So it appears to me to be busted before this
-patch is added.
+Actually, I can imagine the full serial/network logs of "special"
+tracepoints + dmesg to be the optimal thing.
 
-Hence on a xlog_recover_items_pass2() error we need to splice the
-ra-list to the done_list and free trans. i.e. the "if (error) goto
-out;" lines in the above hunk do not need to be there, and the
-"out:" label moved to above the call to xlog_recover_free_trans() so
-the main loop does the right thing when an error occurs.
+> If we just "printk()" the most important parts - then that data will
+> automatically flow to the serial console and to pstore.
 
-Cheers,
+Actually, does the pstore act like a circular buffer? Because if it
+contains the last N relevant messages (for an arbitrary definition of
+relevant) before the system dies, then that could more helpful than only
+the error messages.
 
-Dave.
+And with the advent of UEFI, pretty much every system has a pstore. Too
+bad that we have to limit it to 50% of size so that the boxes don't
+brick. :-P
+
+> Then we have multiple paths for the critical bits of the error log
+> - and the tracepoints give us more details for the cases where the
+> machine doesn't spontaneously explode.
+
+Ok, let's sort:
+
+* First we have the not-so-critical hw error messages. We want to carry
+those out-of-band, i.e. not in dmesg so that people don't have to parse
+and collect dmesg but have a specialized solution which gives them
+structured logs and tools can analyze, collect and ... those errors.
+
+* When a critical error happens, the above usage is not necessarily
+advantageous anymore in the sense that, in order to debug what caused
+the machine to crash, we don't simply necessarily want only the crash
+message but also the whole system activity that lead to it.
+
+In which case, we probably actually want to turn off/ignore the error
+logging tracepoints and write *only* to dmesg which goes out over serial
+and to pstore. Right?
+
+Because in such cases I want to have *all* *relevant* messages that lead
+to the explosion + the explosion message itself.
+
+Makes sense? Yes, no? Aspects I've missed?
+
+Thanks.
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
