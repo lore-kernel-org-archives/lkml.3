@@ -1,263 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759454Ab3HNHQz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:16:55 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:45546 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759227Ab3HNHQw (ORCPT
+	id S1759428Ab3HNHRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:17:14 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:40335 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759286Ab3HNHO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:16:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAK5ve-+rJ81pNR6g3gn4N7FG-Xwbbz8=148HS5Z9y1O5iF9M1g@mail.gmail.com>
-References: <1376030744-22645-1-git-send-email-ricardo.ribalda@gmail.com>
- <1376030744-22645-2-git-send-email-ricardo.ribalda@gmail.com>
- <CAPybu_1D0mywdj9xhCRfg95J9SRMGnGeUJ9YG-=QKYgnQhFvdw@mail.gmail.com> <CAK5ve-+rJ81pNR6g3gn4N7FG-Xwbbz8=148HS5Z9y1O5iF9M1g@mail.gmail.com>
+	Wed, 14 Aug 2013 03:14:57 -0400
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Wed, 14 Aug 2013 09:16:30 +0200
-Message-ID: <CAPybu_1xWb8ZO9_JZRhm=HDYMpbyvnE=btDE1OnLEkhK2aamsg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/4] leds-pca9633: Add support for PCA9634
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Peter Meerwald <p.meerwald@bct-electronic.com>,
+To: Bryan Wu <cooloney@gmail.com>,
+        Peter Meerwald <p.meerwald@bct-electronic.com>,
         Richard Purdie <rpurdie@rpsys.net>,
         Linux LED Subsystem <linux-leds@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH v4 2/5] leds-pca9633: Unique naming of the LEDs
+Date: Wed, 14 Aug 2013 09:14:25 +0200
+Message-Id: <1376464470-6845-5-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bryan
+If there is more than one pca963x chips on the system and there are
+some LEDs without platform_data names, the driver wont be able to
+provide unique naming to them.
 
-I have sent a new series (v4). Beware that there is a new patch
-appended to the series, I think I found some problems while dt parsing
+This will cause led_class_dev_register to fail, unregistering all the
+LEDs of the chip.
 
-Best regards!
+This patch adds the i2c address to the name of the unnamed LEDs, making
+them unique.
 
-On Tue, Aug 13, 2013 at 7:12 PM, Bryan Wu <cooloney@gmail.com> wrote:
-> On Tue, Aug 13, 2013 at 7:49 AM, Ricardo Ribalda Delgado
-> <ricardo.ribalda@gmail.com> wrote:
->> Hello Bryan
->>
->> Did you have a chance to look at the new series?
->>
->
-> Sorry for the delay. I have no problem for this series. Could you
-> please rebase to my tree's for-next branch [1]? And post again?
-> Because recently there were several pca9533 driver changes merged,
-> your patches can't be applied cleanly.
->
-> Thanks,
-> -Bryan
->
-> [1]: http://git.kernel.org/cgit/linux/kernel/git/cooloney/linux-leds.git
->>
->> On Fri, Aug 9, 2013 at 8:45 AM, Ricardo Ribalda Delgado
->> <ricardo.ribalda@gmail.com> wrote:
->>> Add support for PCA9634 chip, which belongs to the same family as the
->>> 9633 but with support for 8 outputs instead of 4.
->>>
->>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->>> ---
->>>  drivers/leds/Kconfig        |    7 ++--
->>>  drivers/leds/leds-pca9633.c |   74 +++++++++++++++++++++++++++++++------------
->>>  2 files changed, 58 insertions(+), 23 deletions(-)
->>>
->>> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
->>> index e43402d..023af58 100644
->>> --- a/drivers/leds/Kconfig
->>> +++ b/drivers/leds/Kconfig
->>> @@ -280,12 +280,13 @@ config LEDS_PCA955X
->>>           devices include PCA9550, PCA9551, PCA9552, and PCA9553.
->>>
->>>  config LEDS_PCA9633
->>> -       tristate "LED support for PCA9633 I2C chip"
->>> +       tristate "LED support for PCA963x I2C chip"
->>>         depends on LEDS_CLASS
->>>         depends on I2C
->>>         help
->>> -         This option enables support for LEDs connected to the PCA9633
->>> -         LED driver chip accessed via the I2C bus.
->>> +         This option enables support for LEDs connected to the PCA963x
->>> +         LED driver chip accessed via the I2C bus. Supported
->>> +         devices include PCA9633 and PCA9634
->>>
->>>  config LEDS_WM831X_STATUS
->>>         tristate "LED support for status LEDs on WM831x PMICs"
->>> diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
->>> index 9aae567..070358a 100644
->>> --- a/drivers/leds/leds-pca9633.c
->>> +++ b/drivers/leds/leds-pca9633.c
->>> @@ -1,7 +1,9 @@
->>>  /*
->>>   * Copyright 2011 bct electronic GmbH
->>> + * Copyright 2013 Qtechnology/AS
->>>   *
->>>   * Author: Peter Meerwald <p.meerwald@bct-electronic.com>
->>> + * Author: Ricardo Ribalda <ricardo.ribalda@gmail.com>
->>>   *
->>>   * Based on leds-pca955x.c
->>>   *
->>> @@ -10,6 +12,7 @@
->>>   * directory of this archive for more details.
->>>   *
->>>   * LED driver for the PCA9633 I2C LED driver (7-bit slave address 0x62)
->>> + * LED driver for the PCA9634 I2C LED driver (7-bit slave address set by hw.)
->>>   *
->>>   */
->>>
->>> @@ -33,20 +36,42 @@
->>>  #define PCA9633_MODE1          0x00
->>>  #define PCA9633_MODE2          0x01
->>>  #define PCA9633_PWM_BASE       0x02
->>> -#define PCA9633_LEDOUT         0x08
->>> +
->>> +enum pca9633_type {
->>> +       pca9633,
->>> +       pca9634,
->>> +};
->>> +
->>> +struct pca9633_chipdef {
->>> +       u8                      ledout_base;
->>> +       int                     n_leds;
->>> +};
->>> +
->>> +static struct pca9633_chipdef pca9633_chipdefs[] = {
->>> +       [pca9633] = {
->>> +               .ledout_base    = 0x8,
->>> +               .n_leds         = 4,
->>> +       },
->>> +       [pca9634] = {
->>> +               .ledout_base    = 0xc,
->>> +               .n_leds         = 8,
->>> +       },
->>> +};
->>>
->>>  static const struct i2c_device_id pca9633_id[] = {
->>> -       { "pca9633", 0 },
->>> +       { "pca9633", pca9633 },
->>> +       { "pca9634", pca9634 },
->>>         { }
->>>  };
->>>  MODULE_DEVICE_TABLE(i2c, pca9633_id);
->>>
->>>  struct pca9633_led {
->>>         struct i2c_client *client;
->>> +       struct pca9633_chipdef *chipdef;
->>>         struct work_struct work;
->>>         enum led_brightness brightness;
->>>         struct led_classdev led_cdev;
->>> -       int led_num; /* 0 .. 3 potentially */
->>> +       int led_num; /* 0 .. 7 potentially */
->>>         char name[32];
->>>  };
->>>
->>> @@ -54,24 +79,26 @@ static void pca9633_led_work(struct work_struct *work)
->>>  {
->>>         struct pca9633_led *pca9633 = container_of(work,
->>>                 struct pca9633_led, work);
->>> -       u8 ledout = i2c_smbus_read_byte_data(pca9633->client, PCA9633_LEDOUT);
->>> -       int shift = 2 * pca9633->led_num;
->>> +       u8 ledout_addr = pca9633->chipdef->ledout_base + (pca9633->led_num / 4);
->>> +       u8 ledout;
->>> +       int shift = 2 * (pca9633->led_num % 4);
->>>         u8 mask = 0x3 << shift;
->>>
->>> +       ledout = i2c_smbus_read_byte_data(pca9633->client, ledout_addr);
->>>         switch (pca9633->brightness) {
->>>         case LED_FULL:
->>> -               i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
->>> +               i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
->>>                         (ledout & ~mask) | (PCA9633_LED_ON << shift));
->>>                 break;
->>>         case LED_OFF:
->>> -               i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
->>> +               i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
->>>                         ledout & ~mask);
->>>                 break;
->>>         default:
->>>                 i2c_smbus_write_byte_data(pca9633->client,
->>>                         PCA9633_PWM_BASE + pca9633->led_num,
->>>                         pca9633->brightness);
->>> -               i2c_smbus_write_byte_data(pca9633->client, PCA9633_LEDOUT,
->>> +               i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
->>>                         (ledout & ~mask) | (PCA9633_LED_PWM << shift));
->>>                 break;
->>>         }
->>> @@ -98,26 +125,30 @@ static int pca9633_probe(struct i2c_client *client,
->>>  {
->>>         struct pca9633_led *pca9633;
->>>         struct pca9633_platform_data *pdata;
->>> +       struct pca9633_chipdef *chip;
->>>         int i, err;
->>>
->>> +       chip = &pca9633_chipdefs[id->driver_data];
->>>         pdata = client->dev.platform_data;
->>>
->>> -       if (pdata) {
->>> -               if (pdata->leds.num_leds <= 0 || pdata->leds.num_leds > 4) {
->>> -                       dev_err(&client->dev, "board info must claim at most 4 LEDs");
->>> -                       return -EINVAL;
->>> -               }
->>> +       if (pdata && (pdata->leds.num_leds < 1 ||
->>> +                                pdata->leds.num_leds > chip->n_leds)) {
->>> +               dev_err(&client->dev, "board info must claim 1-%d LEDs",
->>> +                                                               chip->n_leds);
->>> +               return -EINVAL;
->>>         }
->>>
->>> -       pca9633 = devm_kzalloc(&client->dev, 4 * sizeof(*pca9633), GFP_KERNEL);
->>> +       pca9633 = devm_kzalloc(&client->dev, chip->n_leds * sizeof(*pca9633),
->>> +                                                               GFP_KERNEL);
->>>         if (!pca9633)
->>>                 return -ENOMEM;
->>>
->>>         i2c_set_clientdata(client, pca9633);
->>>
->>> -       for (i = 0; i < 4; i++) {
->>> +       for (i = 0; i < chip->n_leds; i++) {
->>>                 pca9633[i].client = client;
->>>                 pca9633[i].led_num = i;
->>> +               pca9633[i].chipdef = chip;
->>>
->>>                 /* Platform data can specify LED names and default triggers */
->>>                 if (pdata && i < pdata->leds.num_leds) {
->>> @@ -151,7 +182,9 @@ static int pca9633_probe(struct i2c_client *client,
->>>                 i2c_smbus_write_byte_data(client, PCA9633_MODE2, 0x01);
->>>
->>>         /* Turn off LEDs */
->>> -       i2c_smbus_write_byte_data(client, PCA9633_LEDOUT, 0x00);
->>> +       i2c_smbus_write_byte_data(client, chip->ledout_base, 0x00);
->>> +       if (chip->n_leds > 4)
->>> +               i2c_smbus_write_byte_data(client, chip->ledout_base + 1, 0x00);
->>>
->>>         return 0;
->>>
->>> @@ -169,10 +202,11 @@ static int pca9633_remove(struct i2c_client *client)
->>>         struct pca9633_led *pca9633 = i2c_get_clientdata(client);
->>>         int i;
->>>
->>> -       for (i = 0; i < 4; i++) {
->>> -               led_classdev_unregister(&pca9633[i].led_cdev);
->>> -               cancel_work_sync(&pca9633[i].work);
->>> -       }
->>> +       for (i = 0; i < pca9633->chipdef->n_leds; i++)
->>> +               if (pca9633[i].client != NULL) {
->>> +                       led_classdev_unregister(&pca9633[i].led_cdev);
->>> +                       cancel_work_sync(&pca9633[i].work);
->>> +               }
->>>
->>>         return 0;
->>>  }
->>> --
->>> 1.7.10.4
->>>
->>
->>
->>
->> --
->> Ricardo Ribalda
+[  555.346827] ------------[ cut here ]------------
+[  555.346844] WARNING: at /build/linux-voe0Su/linux-3.9.8/fs/sysfs/dir.c:536 sysfs_add_one+0x8b/0x9d()
+[  555.346847] Hardware name: QT5022
+[  555.346850] sysfs: cannot create duplicate filename '/class/leds/pca9633:6'
+[  555.346853] Modules linked in: qt5038_platform(O+) leds_pca9633(O) hid_generic ledtrig_default_on rfcomm bnep bluetooth binfmt_misc nfsd auth_rpcgss nfs_acl nfs lockd dns_resolver fscache sunrpc nls_utf8 nls_cp437 vfat fat loop fuse joydev hid_multitouch usbhid hid acpi_cpufreq mperf kvm_amd kvm evdev pn533 nfc arc4 microcode pcspkr efivars k10temp ath9k ath9k_common ath9k_hw ath fglrx(PO) mac80211 cfg80211 video rfkill processor thermal_sys sp5100_tco button i2c_piix4 ext4 crc16 jbd2 mbcache sg sd_mod crc_t10dif ahci libahci igb i2c_algo_bit i2c_core dca ptp pps_core ehci_pci ohci_hcd ehci_hcd libata usbcore usb_common scsi_mod [last unloaded: leds_pca963x]
+[  555.346940] Pid: 4766, comm: insmod Tainted: P        W  O 3.9-1-amd64 #1 Debian 3.9.8-1
+[  555.346943] Call Trace:
+[  555.346956]  [<ffffffff8103d153>] ? warn_slowpath_common+0x76/0x8c
+[  555.346962]  [<ffffffff8103d202>] ? warn_slowpath_fmt+0x47/0x49
+[  555.346968]  [<ffffffff8116005d>] ? sysfs_pathname+0x3b/0x41
+[  555.346973]  [<ffffffff81160767>] ? sysfs_add_one+0x8b/0x9d
+[  555.346978]  [<ffffffff811610a4>] ? sysfs_do_create_link_sd+0xe8/0x174
+[  555.346985]  [<ffffffff81279250>] ? device_add+0x243/0x5ab
+[  555.346991]  [<ffffffff81060a16>] ? complete_all+0x31/0x40
+[  555.346998]  [<ffffffff8104991a>] ? init_timer_key+0xc/0x56
+[  555.347004]  [<ffffffff8127964c>] ? device_create_vargs+0x82/0xb6
+[  555.347009]  [<ffffffff812796af>] ? device_create+0x2f/0x31
+[  555.347014]  [<ffffffff81060add>] ? should_resched+0x5/0x23
+[  555.347021]  [<ffffffff812a3a92>] ? led_classdev_register+0x24/0x103
+[  555.347028]  [<ffffffffa09d01c0>] ? pca9633_probe+0x173/0x239 [leds_pca9633]
+[  555.347035]  [<ffffffff8127b504>] ? __driver_attach+0x73/0x73
+[  555.347049]  [<ffffffffa009dfc9>] ? i2c_device_probe+0x63/0x88 [i2c_core]
+[  555.347057]  [<ffffffff8127b373>] ? driver_probe_device+0x92/0x1b0
+[  555.347064]  [<ffffffff81279c5c>] ? bus_for_each_drv+0x43/0x7d
+[  555.347070]  [<ffffffff8127b2af>] ? device_attach+0x68/0x83
+[  555.347078]  [<ffffffff8127a990>] ? bus_probe_device+0x25/0x8d
+[  555.347083]  [<ffffffff812793f7>] ? device_add+0x3ea/0x5ab
+[  555.347088]  [<ffffffff81060a16>] ? complete_all+0x31/0x40
+[  555.347094]  [<ffffffff8104991a>] ? init_timer_key+0xc/0x56
+[  555.347104]  [<ffffffffa009d3a1>] ? i2c_new_device+0x10d/0x179 [i2c_core]
+[  555.347112]  [<ffffffffa008f036>] ? qt5038_init+0x36/0x1000 [qt5038_platform]
+[  555.347119]  [<ffffffffa008f000>] ? 0xffffffffa008efff
+[  555.347125]  [<ffffffff8100209e>] ? do_one_initcall+0x74/0x128
+[  555.347131]  [<ffffffffa008f000>] ? 0xffffffffa008efff
+[  555.347137]  [<ffffffff810836f5>] ? load_module+0x1af7/0x1dfc
+[  555.347144]  [<ffffffff810801c5>] ? free_notes_attrs+0x3c/0x3c
+[  555.347150]  [<ffffffff81083a98>] ? sys_init_module+0x9e/0xab
+[  555.347157]  [<ffffffff8138be29>] ? system_call_fastpath+0x16/0x1b
+[  555.347161] ---[ end trace ad00b85794e0de4d ]---
+[  555.347448] leds-pca9633: probe of 0-006b failed with error -17
 
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/leds/leds-pca9633.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-
+diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
+index 3833c24..9b7893c 100644
+--- a/drivers/leds/leds-pca9633.c
++++ b/drivers/leds/leds-pca9633.c
+@@ -362,10 +362,12 @@ static int pca9633_probe(struct i2c_client *client,
+ 			if (pdata->leds.leds[i].default_trigger)
+ 				pca9633[i].led_cdev.default_trigger =
+ 					pdata->leds.leds[i].default_trigger;
+-		} else {
+-			snprintf(pca9633[i].name, sizeof(pca9633[i].name),
+-				 "pca9633:%d", i);
+ 		}
++		if (!pdata || i >= pdata->leds.num_leds ||
++						!pdata->leds.leds[i].name)
++			snprintf(pca9633[i].name, sizeof(pca9633[i].name),
++				 "pca9633:%d:%.2x:%d", client->adapter->nr,
++				 client->addr, i);
+ 
+ 		pca9633[i].led_cdev.name = pca9633[i].name;
+ 		pca9633[i].led_cdev.brightness_set = pca9633_led_set;
 -- 
-Ricardo Ribalda
+1.7.10.4
+
