@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759674Ab3HNQGW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:06:22 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:56430 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab3HNQGV (ORCPT
+	id S1760022Ab3HNQGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:06:32 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46753 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759953Ab3HNQG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:06:21 -0400
-X-AuditID: cbfec37b-b7f306d0000047de-20-520baafb232f
-Message-id: <520BAAF0.8000509@samsung.com>
-Date: Wed, 14 Aug 2013 10:06:08 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
-MIME-version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-Cc: alex.williamson@redhat.com, Varun.Sethi@freescale.com, aik@ozlabs.ru,
-        joe@perches.com, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, tony@atomide.com, ohad@wizery.com,
-        andreas.herrmann@calxeda.com, will.deacon@arm.com,
-        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        shuahkhan@gmail.com, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH v2] iommu: Add event tracing feature to iommu
-References: <1375196229-2784-1-git-send-email-shuah.kh@samsung.com>
- <20130814141758.GN28811@8bytes.org>
-In-reply-to: <20130814141758.GN28811@8bytes.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.21.63]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9hX93fq7iDDDY81bLoPV5k8e1/D5vF
-	4iMxFjNfdzNZLNhvbTH7/mMWi87ZG9gtLu+aw2Zx6cACJovfq38wW+zreMBk8fWng8X+K14W
-	M2+tYbF4+fEEiwO/x5OD85g81sxbw+jx7eskFo8Fn6+we/w73M/ksXPWXXaPln232D0m31jO
-	6HHjbjObx5dV15g93u+7yubxeZOcx6dP+9gCeKO4bFJSczLLUov07RK4MubuW8xa8IOr4vSL
-	k4wNjL84uhg5OSQETCS2bJvMBmGLSVy4tx7I5uIQEljGKPH+6jIWCKeXSeLzy5vsIFVCAhsZ
-	JSbO9wGxeQW0JF4dP8EIYrMIqEocnj2ZGcRmE1CX+Px6B1S9nETTktVAcQ4OUYEIiaPLNSFa
-	BSV+TL7HAmKLCChJXP/cygpiMwu8YZLovqAJUi4s4Cgx85IDxJRMiSvNG8GmcwoYSPw/38sC
-	UW4tsXLSNkYIW15i85q3zBD1yhJ/Lp9iAhkjIaAosX211QRGkVlIFs9C0j0LSfcCRuZVjGKl
-	xckFxUnpqRVGesWJucWleel6yfm5mxghkV29g/HuV5tDjAIcjEo8vBs6uIOEWBPLiitzDzFK
-	cDArifCeAQnxpiRWVqUW5ccXleakFh9iZOLglGpgXOlvfkp6HV+uY2WD4cGpDzwVotP5pWfF
-	5K19fTpx+nv9zPVVDWF/e6fs93UIv78oa9LJxWw5CgV1n1kPSoVOUY008Y+wZPaXaTjLMDvF
-	sjBx5+2uzRtUHi6a9+776ktP6rosH3+MSImKmM3k+VpQadqjyXlujzfIHllpWNT3pTrYy3+B
-	/3QzJZbijERDLeai4kQAvUk+I8oCAAA=
+	Wed, 14 Aug 2013 12:06:29 -0400
+Message-ID: <520BAAEF.80100@codeaurora.org>
+Date: Wed, 14 Aug 2013 11:06:07 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: linux-kernel@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com,
+        linux-hexagon@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/2] hexagon: fix return type of ffs()
+References: <1375882959-26853-1-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1375882959-26853-1-git-send-email-akinobu.mita@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
-
-Thanks for the feedback.
-
-On 08/14/2013 08:17 AM, Joerg Roedel wrote:
-> Hi Shuah,
+On 08/07/2013 08:42 AM, Akinobu Mita wrote:
+> The return type of ffs() is 'int' on all architectures except cris and
+> hexagon.  This unifies the return type to 'int'.
 >
-> thanks for doing this. I have a few suggestions for improvements.
+> The problem I'm seeing is that the following line generates a warning
+> on cris and hexagon because of the mismatch between format '%u' and
+> return type of ffs().
 >
-> On Tue, Jul 30, 2013 at 08:57:09AM -0600, Shuah Khan wrote:
->> iommu:add_device_to_group
->> iommu:remove_device_from_group
->> iommu:attach_device_to_domain
->> iommu:detach_device_from_domain
->> iommu:unmap
->> iommu:map
+> 	printk("bits in OOB size: %u\n",	ffs(ns->geom.oobsz) - 1);
 >
-> Please send these events as seperate patches.
-
-Is this what you have in mind or does my original patch set minus the 
-amd_event and drivers/iommu/amd_iommu.c change?
-
-Patch 1:
-drivers/iommu/Makefile
-drivers/iommu/iommu-traces.c
-include/trace/events/iommu.h
-
-One patch for each of the following events?
-
-iommu:add_device_to_group
-iommu:remove_device_from_group
-iommu:attach_device_to_domain
-iommu:detach_device_from_domain
-iommu:unmap
-iommu:map
-
+> But removing this warning by casting to 'int' looks odd, so I suggest
+> unifying the return type of ffs() on all architectures.
 >
->> iommu:amd_event
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: Mikael Starvik <starvik@axis.com>
+> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+> Cc: linux-cris-kernel@axis.com
+> Cc: Richard Kuo <rkuo@codeaurora.org>
+> Cc: linux-hexagon@vger.kernel.org
+> Cc: linux-arch@vger.kernel.org
+> ---
+> This patch is not compile tested yet, because I couldn't find cross
+> compiler for hexagon.
 >
-> This needs some more thought. For now I would prefer an event in the
-> generic report_iommu_fault() routine to report page-faults from all IOMMUs
-> that support this.
+>   arch/hexagon/include/asm/bitops.h | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
+> diff --git a/arch/hexagon/include/asm/bitops.h b/arch/hexagon/include/asm/bitops.h
+> index 9b1e4af..80e34a6 100644
+> --- a/arch/hexagon/include/asm/bitops.h
+> +++ b/arch/hexagon/include/asm/bitops.h
+> @@ -234,7 +234,7 @@ static inline long fls(int x)
+>    * the libc and compiler builtin ffs routines, therefore
+>    * differs in spirit from the above ffz (man ffs).
+>    */
+> -static inline long ffs(int x)
+> +static inline int ffs(int x)
+>   {
+>   	int r;
+>   
 
-I see what you are saying. Adding event to report_iommu_fault() would 
-cover all IOMMUs. I would like to work on adding an event unless you 
-already have it in works.
+For Hexagon:
 
--- Shuah
+Acked-by: Richard Kuo <rkuo@codeaurora.org>
 
+-- 
 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
