@@ -1,167 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab3HNMxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:53:09 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:51400 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932315Ab3HNMxG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:53:06 -0400
-Message-ID: <520B7DAE.3060501@gmail.com>
-Date: Wed, 14 Aug 2013 07:53:02 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S932450Ab3HNMyi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:54:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60659 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932361Ab3HNMyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 08:54:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,876,1367996400"; 
+   d="scan'208";a="380834793"
+Message-ID: <520B7F6D.2000004@intel.com>
+Date: Wed, 14 Aug 2013 16:00:29 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [GIT PULL] DT/core: cpu_ofnode updates for v3.12
-References: <5208E2D3.7060005@arm.com> <3356439.a21MloFP7n@vostro.rjw.lan>  <520A536C.3030600@arm.com> <520A7B00.8060405@arm.com> <1376428024.4255.14.camel@pasglop> <520B5584.7030608@arm.com>
-In-Reply-To: <520B5584.7030608@arm.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V11 09/15] perf: make events stream always parsable
+References: <1376484517-5339-1-git-send-email-adrian.hunter@intel.com> <1376484517-5339-10-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1376484517-5339-10-git-send-email-adrian.hunter@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 05:01 AM, Sudeep KarkadaNagesha wrote:
-> On 13/08/13 22:07, Benjamin Herrenschmidt wrote:
->> On Tue, 2013-08-13 at 19:29 +0100, Sudeep KarkadaNagesha wrote:
->>> I don't understand completely the use of ibm,ppc-interrupt-server#s and
->>> its implications on generic of_get_cpu_node implementation.
->>> I see the PPC specific definition of of_get_cpu_node uses thread id only
->>> in 2 instances. Based on that, I have tried to move all the other
->>> instances to use generic definition.
->>>
->>> Let me know if the idea is correct.
->>
->> No. The device-tree historically only represents cores, not HW threads, so
->> it makes sense to retrieve also the thread number corresponding to the CPU.
->>
-> Ok
+On 14/08/13 15:48, Adrian Hunter wrote:
+> The event stream is not always parsable because the format of a sample
+> is dependent on the sample_type of the selected event.  When there
+> is more than one selected event and the sample_types are not the
+> same then parsing becomes problematic.  A sample can be matched to its
+> selected event using the ID that is allocated when the event is opened.
+> Unfortunately, to get the ID from the sample means first parsing it.
 > 
->> However, the mechanism to represent HW threads in the device-tree is currently
->> somewhat platform specific (the ibm,ppc-interrupt-server#s).
-> I see most of the callers pass NULL to thread id argument except 2
-> instances in entire tree. If that's the case why can't we move to use
-> generic of_get_cpu_node in most of those cases and have PPC specific
-> implementation for the ones using thread id.
+> This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
+> the ID at a fixed position so that the ID can be retrieved without
+> parsing the sample.  For sample events, that is the first position
+> immediately after the header.  For non-sample events, that is the last
+> position.
 > 
->>
->> So what you could do for now is:
->>
->>  - Have a generic version that always returns 0 as the thread, which is weak
-> I would prefer to move to generic of_get_cpu_node where ever possible
-> and rename the function that takes thread id rather than making generic
-> one weak.
+> In this respect parsing samples requires that the sample_type and ID
+> values are recorded.  For example, perf tools records struct perf_event_attr
+> and the IDs within the perf.data file.  Those must be read first
+> before it is possible to parse samples found later in the perf.data file.
 > 
->>
->>  - powerpc keeps its own implementation
-> How about only in cases where it needs thread_id.
-> 
->>
->>  - Start a discussion on the bindings (if not already there) to define threads
->> in a better way at which point the generic function can be updated.
->>
-> I am not sure if we need to define any new bindings. Excerpts from ePAPR
-> (v1.1):
-> "3.7.1 General Properties of CPU nodes
-> The value of "reg" is a <prop-encoded-array> that defines a unique
-> CPU/thread id for the CPU/threads represented by the CPU node.
-> If a CPU supports more than one thread (i.e. multiple streams of
-> execution) the reg property is an array with 1 element per thread. The
-> #address-cells on the /cpus node specifies how many cells each element
-> of the array takes. Software can determine the number of threads by
-> dividing the size of reg by the parent node's #address-cells."
-> 
-> And this is exactly in agreement to what's implemented in the generic
-> of_get_cpu_node:
-> 
-> for_each_child_of_node(cpus, cpun) {
->         if (of_node_cmp(cpun->type, "cpu"))
->                 continue;
->         cell = of_get_property(cpun, "reg", &prop_len);
->         if (!cell) {
->                 pr_warn("%s: missing reg property\n", cpun->full_name);
->                 continue;
->         }
->         prop_len /= sizeof(*cell);
->         while (prop_len) {
->                 hwid = of_read_number(cell, ac);
->                 prop_len -= ac;
->                 if (arch_match_cpu_phys_id(cpu, hwid))
->                         return cpun;
->         }
-> }
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 
-How about something like this:
+Forgot to add Peter's ack which is here:
 
-for_each_child_of_node(cpus, cpun) {
-        if (of_node_cmp(cpun->type, "cpu"))
-                continue;
-
-	if (arch_of_get_cpu_node(cpun, thread))
-		return cpun;
-
-        cell = of_get_property(cpun, "reg", &prop_len);
-        if (!cell) {
-                pr_warn("%s: missing reg property\n", cpun->full_name);
-                continue;
-        }
-        prop_len /= sizeof(*cell);
-        while (prop_len) {
-                hwid = of_read_number(cell, ac);
-                prop_len -= ac;
-                if (arch_match_cpu_phys_id(cpu, hwid))
-       	                return cpun;
-        }
-}
-
-For PPC:
-
-arch_of_get_cpu_node()
-{
-        const u32 *intserv;
-        unsigned int plen, t;
-
-        /* Check for ibm,ppc-interrupt-server#s. */
-        intserv = of_get_property(np, "ibm,ppc-interrupt-server#s",
-                                &plen);
-        if (!intserv)
-		return false;
-
-	hardid = get_hard_smp_processor_id(cpu);
-
-        plen /= sizeof(u32);
-        for (t = 0; t < plen; t++) {
-                 if (hardid == intserv[t]) {
-                         if (thread)
-                                  *thread = t;
-                         return true;
-                 }
-        }
-	return false;
-}
-
-> 
-> Yes this doesn't cover the historical "ibm,ppc-interrupt-server#s", for
-> which we can have PPC specific wrapper above the generic one i.e. get
-> the cpu node and then parse for thread id under custom property.
-> 
-> Let me know your thoughts.
-> 
-> Regards,
-> Sudeep
-> 
-> 
-> 
-
+	http://marc.info/?l=linux-kernel&m=137629757013526&w=2
