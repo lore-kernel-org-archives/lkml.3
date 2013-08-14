@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760195Ab3HNSZZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:25:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34302 "EHLO
+	id S933067Ab3HNS35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:29:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34338 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758610Ab3HNSZY (ORCPT
+	with ESMTP id S1758610Ab3HNSZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:25:24 -0400
+	Wed, 14 Aug 2013 14:25:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/21] perf kvm: Option to print events that exceed a duration
-Date: Wed, 14 Aug 2013 15:24:55 -0300
-Message-Id: <1376504715-28107-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/21] perf sched: Remove sched_process_fork tracepoint
+Date: Wed, 14 Aug 2013 15:25:00 -0300
+Message-Id: <1376504715-28107-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376504715-28107-1-git-send-email-acme@infradead.org>
 References: <1376504715-28107-1-git-send-email-acme@infradead.org>
@@ -30,10 +29,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-This is useful to spot high latency blips. It is normal for HLT reasons
-to have long exit times, so strip those from the duration check.
-
-v2: changed threshold to duration per acme's request
+The PERF_RECORD_FORK event is already collected as part of the use of
+cmd_record and those events are analyzed as part of the libperf
+machinery.  Using the fork tracepoint as well just duplicates the event
+load.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -41,104 +40,135 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1375926999-75129-1-git-send-email-dsahern@gmail.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1375930261-77273-6-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 25 +++++++++++++++++++++----
- tools/perf/perf.h        |  3 +++
- 2 files changed, 24 insertions(+), 4 deletions(-)
+ tools/perf/builtin-sched.c | 60 ++++++++++++++++++++++++----------------------
+ 1 file changed, 31 insertions(+), 29 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 2ceec81..fa2f3d7 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -106,6 +106,7 @@ struct perf_kvm_stat {
- 	u64 total_time;
- 	u64 total_count;
- 	u64 lost_events;
-+	u64 duration;
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 42f4587..f809cc7 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -109,8 +109,9 @@ struct trace_sched_handler {
+ 	int (*wakeup_event)(struct perf_sched *sched, struct perf_evsel *evsel,
+ 			    struct perf_sample *sample, struct machine *machine);
  
- 	const char *pid_str;
- 	struct intlist *pid_list;
-@@ -473,7 +474,7 @@ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
- static bool handle_end_event(struct perf_kvm_stat *kvm,
- 			     struct vcpu_event_record *vcpu_record,
- 			     struct event_key *key,
--			     u64 timestamp)
-+			     struct perf_sample *sample)
+-	int (*fork_event)(struct perf_sched *sched, struct perf_evsel *evsel,
+-			  struct perf_sample *sample);
++	/* PERF_RECORD_FORK event, not sched_process_fork tracepoint */
++	int (*fork_event)(struct perf_sched *sched, union perf_event *event,
++			  struct machine *machine);
+ 
+ 	int (*migrate_task_event)(struct perf_sched *sched,
+ 				  struct perf_evsel *evsel,
+@@ -717,22 +718,29 @@ static int replay_switch_event(struct perf_sched *sched,
+ 	return 0;
+ }
+ 
+-static int replay_fork_event(struct perf_sched *sched, struct perf_evsel *evsel,
+-			     struct perf_sample *sample)
++static int replay_fork_event(struct perf_sched *sched,
++			     union perf_event *event,
++			     struct machine *machine)
  {
- 	struct kvm_event *event;
- 	u64 time_begin, time_diff;
-@@ -510,12 +511,24 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
- 	vcpu_record->start_time = 0;
- 
- 	/* seems to happen once in a while during live mode */
--	if (timestamp < time_begin) {
-+	if (sample->time < time_begin) {
- 		pr_debug("End time before begin time; skipping event.\n");
- 		return true;
- 	}
- 
--	time_diff = timestamp - time_begin;
-+	time_diff = sample->time - time_begin;
+-	const char *parent_comm = perf_evsel__strval(evsel, sample, "parent_comm"),
+-		   *child_comm  = perf_evsel__strval(evsel, sample, "child_comm");
+-	const u32 parent_pid  = perf_evsel__intval(evsel, sample, "parent_pid"),
+-		  child_pid  = perf_evsel__intval(evsel, sample, "child_pid");
++	struct thread *child, *parent;
 +
-+	if (kvm->duration && time_diff > kvm->duration) {
-+		char decode[32];
++	child = machine__findnew_thread(machine, event->fork.tid);
++	parent = machine__findnew_thread(machine, event->fork.ptid);
 +
-+		kvm->events_ops->decode_key(kvm, &event->key, decode);
-+		if (strcmp(decode, "HLT")) {
-+			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
-+				 sample->time, sample->pid, vcpu_record->vcpu_id,
-+				 decode, time_diff/1000);
-+		}
++	if (child == NULL || parent == NULL) {
++		pr_debug("thread does not exist on fork event: child %p, parent %p\n",
++				 child, parent);
++		return 0;
 +	}
-+
- 	return update_kvm_event(event, vcpu, time_diff);
- }
  
-@@ -562,7 +575,7 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
- 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
- 
- 	if (kvm->events_ops->is_end_event(evsel, sample, &key))
--		return handle_end_event(kvm, vcpu_record, &key, sample->time);
-+		return handle_end_event(kvm, vcpu_record, &key, sample);
- 
- 	return true;
- }
-@@ -1429,6 +1442,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
- 			"key for sorting: sample(sort by samples number)"
- 			" time (sort by avg time)"),
-+		OPT_U64(0, "duration", &kvm->duration,
-+		    "show events other than HALT that take longer than duration usecs"),
- 		OPT_END()
- 	};
- 	const char * const live_usage[] = {
-@@ -1467,6 +1482,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
- 			usage_with_options(live_usage, live_options);
+ 	if (verbose) {
+-		printf("sched_fork event %p\n", evsel);
+-		printf("... parent: %s/%d\n", parent_comm, parent_pid);
+-		printf("...  child: %s/%d\n", child_comm, child_pid);
++		printf("fork event\n");
++		printf("... parent: %s/%d\n", parent->comm, parent->tid);
++		printf("...  child: %s/%d\n", child->comm, child->tid);
  	}
  
-+	kvm->duration *= NSEC_PER_USEC;   /* convert usec to nsec */
-+
- 	/*
- 	 * target related setups
- 	 */
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 32bd102..cf20187 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -125,6 +125,9 @@
- #ifndef NSEC_PER_SEC
- # define NSEC_PER_SEC			1000000000ULL
- #endif
-+#ifndef NSEC_PER_USEC
-+# define NSEC_PER_USEC			1000ULL
-+#endif
+-	register_pid(sched, parent_pid, parent_comm);
+-	register_pid(sched, child_pid, child_comm);
++	register_pid(sched, parent->tid, parent->comm);
++	register_pid(sched, child->tid, child->comm);
+ 	return 0;
+ }
  
- static inline unsigned long long rdclock(void)
+@@ -824,14 +832,6 @@ static int thread_atoms_insert(struct perf_sched *sched, struct thread *thread)
+ 	return 0;
+ }
+ 
+-static int latency_fork_event(struct perf_sched *sched __maybe_unused,
+-			      struct perf_evsel *evsel __maybe_unused,
+-			      struct perf_sample *sample __maybe_unused)
+-{
+-	/* should insert the newcomer */
+-	return 0;
+-}
+-
+ static char sched_out_state(u64 prev_state)
  {
+ 	const char *str = TASK_STATE_TO_CHAR_STR;
+@@ -1379,15 +1379,19 @@ static int process_sched_runtime_event(struct perf_tool *tool,
+ 	return 0;
+ }
+ 
+-static int process_sched_fork_event(struct perf_tool *tool,
+-				    struct perf_evsel *evsel,
+-				    struct perf_sample *sample,
+-				    struct machine *machine __maybe_unused)
++static int perf_sched__process_fork_event(struct perf_tool *tool,
++					  union perf_event *event,
++					  struct perf_sample *sample,
++					  struct machine *machine)
+ {
+ 	struct perf_sched *sched = container_of(tool, struct perf_sched, tool);
+ 
++	/* run the fork event through the perf machineruy */
++	perf_event__process_fork(tool, event, sample, machine);
++
++	/* and then run additional processing needed for this command */
+ 	if (sched->tp_handler->fork_event)
+-		return sched->tp_handler->fork_event(sched, evsel, sample);
++		return sched->tp_handler->fork_event(sched, event, machine);
+ 
+ 	return 0;
+ }
+@@ -1437,7 +1441,6 @@ static int perf_sched__read_events(struct perf_sched *sched,
+ 		{ "sched:sched_stat_runtime", process_sched_runtime_event, },
+ 		{ "sched:sched_wakeup",	      process_sched_wakeup_event, },
+ 		{ "sched:sched_wakeup_new",   process_sched_wakeup_event, },
+-		{ "sched:sched_process_fork", process_sched_fork_event, },
+ 		{ "sched:sched_migrate_task", process_sched_migrate_task_event, },
+ 	};
+ 	struct perf_session *session;
+@@ -1652,7 +1655,7 @@ static struct perf_sched sched = {
+ 		.sample		 = perf_sched__process_tracepoint_sample,
+ 		.comm		 = perf_event__process_comm,
+ 		.lost		 = perf_event__process_lost,
+-		.fork		 = perf_event__process_fork,
++		.fork		 = perf_sched__process_fork_event,
+ 		.ordered_samples = true,
+ 	},
+ 	.cmp_pid	      = LIST_HEAD_INIT(sched.cmp_pid),
+@@ -1714,7 +1717,6 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		.wakeup_event	    = latency_wakeup_event,
+ 		.switch_event	    = latency_switch_event,
+ 		.runtime_event	    = latency_runtime_event,
+-		.fork_event	    = latency_fork_event,
+ 		.migrate_task_event = latency_migrate_task_event,
+ 	};
+ 	struct trace_sched_handler map_ops  = {
 -- 
 1.8.1.4
 
