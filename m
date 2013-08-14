@@ -1,113 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760107Ab3HNRhe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 13:37:34 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60634 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758345Ab3HNRhd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 13:37:33 -0400
-Date: Wed, 14 Aug 2013 18:37:10 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Florian Lobmaier <florian.lobmaier@ams.com>
-Cc: linux-kernel@vger.kernel.org, lgirdwood@gmail.com
-Message-ID: <20130814173710.GC2401@sirena.org.uk>
-References: <1376492282-15932-1-git-send-email-florian.lobmaier@ams.com>
+	id S1760122Ab3HNRkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 13:40:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53488 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759971Ab3HNRkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 13:40:43 -0400
+Date: Wed, 14 Aug 2013 19:40:39 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Ben Tebulin <tebulin@googlemail.com>
+Cc: mgorman@suse.de, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert
+ 53a59fc67!
+Message-ID: <20130814174039.GA24033@dhcp22.suse.cz>
+References: <52050382.9060802@gmail.com>
+ <520BB225.8030807@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HG+GLK89HZ1zG0kk"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376492282-15932-1-git-send-email-florian.lobmaier@ams.com>
-X-Cookie: Your present plans will be successful.
+In-Reply-To: <520BB225.8030807@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] added support for ams AS3722 regulator
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[Let's CC some more people]
 
---HG+GLK89HZ1zG0kk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed 14-08-13 18:36:53, Ben Tebulin wrote:
+> Hello Michal, Johannes, Balbir, Kamezawa and Mailing lists!
 
-On Wed, Aug 14, 2013 at 04:58:02PM +0200, Florian Lobmaier wrote:
+Hi,
 
-> +++ b/drivers/regulator/Kconfig
-> @@ -533,5 +533,12 @@ config REGULATOR_AS3711
->  	  This driver provides support for the voltage regulators on the
->  	  AS3711 PMIC
-> =20
-> +config REGULATOR_AS3722
-> +        tristate "ams AS3722 PMIC regulators"
-> +        depends on MFD_AS3722
-> +        help
-> +          This driver provides support for the voltage regulators of the
-> +          ams AS3722 PMIC.
-> +
->  endif
+> Since v3.7.2 on two independent machines a very specific Git repository
+> fails in 9/10 cases on git-fsck due to an SHA1/memory failures. This
+> only occurs on a very specific repository and can be reproduced stably
+> on two independent laptops. Git mailing list ran out of ideas and for me 
+> this looks like some very exotic kernel issue.
+> 
+> After a _very long session of rebooting and bisecting_ the Linux kernel
+> (fortunately I had a SSD and ccache!) I was able to pinpoint the cause
+> to the following patch:
+> 
+> *"mm: limit mmu_gather batching to fix soft lockups on !CONFIG_PREEMPT"*
+>   787f7301074ccd07a3e82236ca41eefd245f4e07 linux stable    [1]
+>   53a59fc67f97374758e63a9c785891ec62324c81 upstream commit [2]
 
-Keep this and the Makefile sorted please.
+Thanks for bisecting this up!
 
-> + * as3722 ldo0 extended input range (0.825-1.25V)  */
-> +static int as3722_ldo0_is_enabled(struct regulator_dev *dev)
-> +{
-> +	u32 val;
-> +	struct as3722 *as3722 =3D rdev_get_drvdata(dev);
-> +
-> +	as3722_reg_read(as3722, AS3722_LDOCONTROL0_REG, &val);
-> +	return (val & AS3722_LDO0_CTRL_MASK) !=3D 0;
-> +}
+I will look into this but I find it really strange. The patch only
+limits the number of batched pages to be freed. This might happen even
+without the patch, albeit less likely, when a new batch cannot be
+allocated.
+That being said, I do not see anything obviously wrong with the patch
+itself. Maybe we are not flushing those pages properly in some corner
+case which doesn't trigger normally. I will have to look at it but I
+really think this just exhibits a subtle bug in batch pages freeing.
 
-These all look like you could use the standard regmap helpers.
+I have no objection to revert the patch for now until we find out what
+is really going on.
 
-> +static int as3722_ldo0_list_voltage(struct regulator_dev *dev,
-> +				    unsigned selector)
-> +{
-> +	if (selector >=3D AS3722_LDO0_VSEL_MAX)
-> +		return -EINVAL;
-> +
-> +	return 800000 + (selector + 1) * 25000;
-> +}
+> More details are available in my previous discussion on the Git mailing:
+> 
+>    http://thread.gmane.org/gmane.comp.version-control.git/231872
+> 
+> Never had any hardware/stability issues _at all_ with these machines. 
+> Only one repo out of 112 is affected. It's a git-svn clone and even 
+> recreated copies out of svn do trigger the same failure.
+> 
+> I was able to bisect this error to this very specific commit. 
+> Furthermore: Reverting this commit in 3.9.11 still solves the error. 
+> 
+> I assume this is a regression of the Linux kernel (not Git) and would 
+> kindly ask you to revert the afore mentioned commits.
+> 
+> Thanks!
+> - Ben
+> 
+> 
+> I'm not subscribed - please CC me.
+> 
+> [1] https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=787f7301074ccd07a3e82236ca41eefd245f4e07
+> [2] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=53a59fc67f97374758e63a9c785891ec62324c81
+> 
 
-This is just a linear mapping, use the standard helpers - the same thing
-applies to most of the driver, it seems like there's standard helpers
-for most of the enable and voltage management.
-
-> +static int __init as3722_regulator_init(void)
-> +{
-> +	return platform_driver_register(&as3722_regulator_driver);
-> +}
-> +
-> +subsys_initcall(as3722_regulator_init);
-
-Modern platforms should just be able to register as a normal driver and
-use deferred probing to sort out the init order.
-
---HG+GLK89HZ1zG0kk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSC8BDAAoJELSic+t+oim9r7AP/1nEXuqUQRgBTQnXIcr6YQcY
-T/O88RJZOvMB3/3KCUPwc/eDeiZ3Jckp/yEfZ04vw5m2AbMEcX839GMH0XVgKU9Y
-ZC9VGbgqYJqJRskHU8/gb+bFGaGmRhF4kjKa/fYn/F1w/n2SkRe8xE6csGNtGh6O
-NEGo7e88KqlciB+6ziAgYgM+X8qyvtQVbWMw6CLh7zu/jKLIMQEiySvV3MG6gge9
-6KCjQdIEp/p5dcfUOZ/PkmQPpYHEck7PeUQWaLV9Yh7Ek4KoCCDtmwllvr3At/wA
-x0ovaO/pZpYmgzJX2Wx/nec4ndXSgx54MloYfvrU+Ab3Ex2BRdtpIvo3XNmOfU39
-1SWM+oeFb+QpiXM9bc884xHlwazqokJJ+gOnzfipt0DmGyXcHWnnLHpXrkfm2cno
-cMGeR+mJTigk1yUbWxLiRM3b5Wft0LXxcGxb2GuzrAX5qLhodbCw/4RDdRziOsMu
-q+/WUn0y9RUJfnb4DWamy3MCvUWuJ5aUEfGfBkHWpw6wKxP5m9wIzaSwvoAK9wrB
-wIXMxVY8X3xiRoCJIWV3iA65AmCnS124rF5o4nzlugi1Fz6hPj4/79ODI32j5sgN
-8+HJFeKppJv9ExM4TKkMkPyNlvqetaMhHiI1BJFH0s9Rv9hzzpqeazRWBi8c0eWK
-4gJ9hUTYBVR7gT+gRZXO
-=Tqlr
------END PGP SIGNATURE-----
-
---HG+GLK89HZ1zG0kk--
+-- 
+Michal Hocko
+SUSE Labs
