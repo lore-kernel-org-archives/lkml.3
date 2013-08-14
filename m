@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599Ab3HNKiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:38:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34620 "EHLO
+	id S932702Ab3HNKih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:38:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34698 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443Ab3HNKiK (ORCPT
+	with ESMTP id S932629Ab3HNKiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:10 -0400
+	Wed, 14 Aug 2013 06:38:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Sachin Kamat <sachin.kamat@linaro.org>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 51/75] ext4: make sure group number is bumped after a inode allocation race
-Date: Wed, 14 Aug 2013 11:36:40 +0100
-Message-Id: <1376476624-10011-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 65/75] ALSA: usb/6fire: Fix potential NULL pointer dereference in comm.c
+Date: Wed, 14 Aug 2013 11:36:54 +0100
+Message-Id: <1376476624-10011-66-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -27,54 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Sachin Kamat <sachin.kamat@linaro.org>
 
-commit a34eb503742fd25155fd6cff6163daacead9fbc3 upstream.
+commit 27b2a22c714303d1920e269a8322ff23107694ee upstream.
 
-When we try to allocate an inode, and there is a race between two
-CPU's trying to grab the same inode, _and_ this inode is the last free
-inode in the block group, make sure the group number is bumped before
-we continue searching the rest of the block groups.  Otherwise, we end
-up searching the current block group twice, and we end up skipping
-searching the last block group.  So in the unlikely situation where
-almost all of the inodes are allocated, it's possible that we will
-return ENOSPC even though there might be free inodes in that last
-block group.
+'rt' was dereferenced before the NULL check.
+Moved the code after the check.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/ialloc.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ sound/usb/6fire/comm.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index b1919af..fa068c0 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -707,11 +707,8 @@ repeat_in_this_group:
- 		ino = ext4_find_next_zero_bit((unsigned long *)
- 					      inode_bitmap_bh->b_data,
- 					      EXT4_INODES_PER_GROUP(sb), ino);
--		if (ino >= EXT4_INODES_PER_GROUP(sb)) {
--			if (++group == ngroups)
--				group = 0;
--			continue;
--		}
-+		if (ino >= EXT4_INODES_PER_GROUP(sb))
-+			goto next_group;
- 		if (group == 0 && (ino+1) < EXT4_FIRST_INO(sb)) {
- 			ext4_error(sb, "reserved inode found cleared - "
- 				   "inode=%lu", ino + 1);
-@@ -729,6 +726,9 @@ repeat_in_this_group:
- 			goto got; /* we grabbed the inode! */
- 		if (ino < EXT4_INODES_PER_GROUP(sb))
- 			goto repeat_in_this_group;
-+next_group:
-+		if (++group == ngroups)
-+			group = 0;
- 	}
- 	err = -ENOSPC;
- 	goto out;
+diff --git a/sound/usb/6fire/comm.c b/sound/usb/6fire/comm.c
+index 6c3d531..1a75c36 100644
+--- a/sound/usb/6fire/comm.c
++++ b/sound/usb/6fire/comm.c
+@@ -129,12 +129,13 @@ int __devinit usb6fire_comm_init(struct sfire_chip *chip)
+ {
+ 	struct comm_runtime *rt = kzalloc(sizeof(struct comm_runtime),
+ 			GFP_KERNEL);
+-	struct urb *urb = &rt->receiver;
++	struct urb *urb;
+ 	int ret;
+ 
+ 	if (!rt)
+ 		return -ENOMEM;
+ 
++	urb = &rt->receiver;
+ 	rt->serial = 1;
+ 	rt->chip = chip;
+ 	usb_init_urb(urb);
 -- 
 1.8.3.2
 
