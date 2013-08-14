@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759929Ab3HNLC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 07:02:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34373 "EHLO
+	id S1759951Ab3HNLCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 07:02:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34372 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759617Ab3HNKhM (ORCPT
+	with ESMTP id S1759610Ab3HNKhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Aug 2013 06:37:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Kazior <michal.kazior@tieto.com>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 01/75] nl80211: fix mgmt tx status and testmode reporting for netns
-Date: Wed, 14 Aug 2013 11:35:50 +0100
-Message-Id: <1376476624-10011-2-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 03/75] mac80211: fix duplicate retransmission detection
+Date: Wed, 14 Aug 2013 11:35:52 +0100
+Message-Id: <1376476624-10011-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -28,55 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Kazior <michal.kazior@tieto.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit a0ec570f4f69c4cb700d743a915096c2c8f56a99 upstream.
+commit 6b0f32745dcfba01d7be33acd1b40306c7a914c6 upstream.
 
-These two events were sent to the default network
-namespace.
+The duplicate retransmission detection code in mac80211
+erroneously attempts to do the check for every frame,
+even frames that don't have a sequence control field or
+that don't use it (QoS-Null frames.)
 
-This caused AP mode in a non-default netns to not
-work correctly. Mgmt tx status was multicasted to
-a different (default) netns instead of the one the
-AP was in.
+This is problematic because it causes the code to access
+data beyond the end of the SKB and depending on the data
+there will drop packets erroneously.
 
-Signed-off-by: Michal Kazior <michal.kazior@tieto.com>
+Correct the code to not do duplicate detection for such
+frames.
+
+I found this error while testing AP powersave, it lead
+to retransmitted PS-Poll frames being dropped entirely
+as the data beyond the end of the SKB was always zero.
+
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/wireless/nl80211.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/mac80211/rx.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index 206465d..ad9a11c 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -5212,12 +5212,14 @@ EXPORT_SYMBOL(cfg80211_testmode_alloc_event_skb);
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 1914a65..d419c47 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -831,8 +831,14 @@ ieee80211_rx_h_check(struct ieee80211_rx_data *rx)
+ 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)rx->skb->data;
+ 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(rx->skb);
  
- void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
- {
-+	struct cfg80211_registered_device *rdev = ((void **)skb->cb)[0];
- 	void *hdr = ((void **)skb->cb)[1];
- 	struct nlattr *data = ((void **)skb->cb)[2];
- 
- 	nla_nest_end(skb, data);
- 	genlmsg_end(skb, hdr);
--	genlmsg_multicast(skb, 0, nl80211_testmode_mcgrp.id, gfp);
-+	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
-+				nl80211_testmode_mcgrp.id, gfp);
- }
- EXPORT_SYMBOL(cfg80211_testmode_event);
- #endif
-@@ -7925,7 +7927,8 @@ void nl80211_send_mgmt_tx_status(struct cfg80211_registered_device *rdev,
- 
- 	genlmsg_end(msg, hdr);
- 
--	genlmsg_multicast(msg, 0, nl80211_mlme_mcgrp.id, gfp);
-+	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
-+				nl80211_mlme_mcgrp.id, gfp);
- 	return;
- 
-  nla_put_failure:
+-	/* Drop duplicate 802.11 retransmissions (IEEE 802.11 Chap. 9.2.9) */
+-	if (rx->sta && !is_multicast_ether_addr(hdr->addr1)) {
++	/*
++	 * Drop duplicate 802.11 retransmissions
++	 * (IEEE 802.11-2012: 9.3.2.10 "Duplicate detection and recovery")
++	 */
++	if (rx->skb->len >= 24 && rx->sta &&
++	    !ieee80211_is_ctl(hdr->frame_control) &&
++	    !ieee80211_is_qos_nullfunc(hdr->frame_control) &&
++	    !is_multicast_ether_addr(hdr->addr1)) {
+ 		if (unlikely(ieee80211_has_retry(hdr->frame_control) &&
+ 			     rx->sta->last_seq_ctrl[rx->seqno_idx] ==
+ 			     hdr->seq_ctrl)) {
 -- 
 1.8.3.2
 
