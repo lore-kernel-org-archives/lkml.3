@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab3HNPTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 11:19:14 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:51893 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751014Ab3HNPTL (ORCPT
+	id S1757894Ab3HNPYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 11:24:11 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:40577 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab3HNPYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 11:19:11 -0400
-X-IronPort-AV: E=Sophos;i="4.89,877,1367964000"; 
-   d="scan'208";a="29366593"
-Date: Wed, 14 Aug 2013 17:18:51 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Rami Rosen <roszenrami@gmail.com>
-cc: Francois Romieu <romieu@fr.zoreil.com>, David Shwatrz <dshwatrz@gmail.com>,
-        Julia Lawall <julia.lawall@lip6.fr>, grant.likely@linaro.org,
-        rob.herring@calxeda.com, Netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Subject: Re: question about netif_rx
-In-Reply-To: <CAKoUAr==Ex=XAJe4=4R+BY5QaNXKMjM4EsHYbppbXOyROi2NAw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1308141713290.2257@hadrien>
-References: <alpine.DEB.2.02.1308111151210.2072@localhost6.localdomain6> <20130811155640.GA10070@electric-eye.fr.zoreil.com> <alpine.DEB.2.02.1308111811440.2072@localhost6.localdomain6> <20130813052036.GA11640@electric-eye.fr.zoreil.com>
- <alpine.DEB.2.02.1308130828550.1997@localhost6.localdomain6> <CAJJAcocQ59Kc9a1b=jrNSc1akLLN_74yKANMEmLVmvxoRjX4hw@mail.gmail.com> <20130813204131.GA4696@electric-eye.fr.zoreil.com> <CAKoUAr==Ex=XAJe4=4R+BY5QaNXKMjM4EsHYbppbXOyROi2NAw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 14 Aug 2013 11:24:09 -0400
+Message-ID: <520BA109.1000501@hp.com>
+Date: Wed, 14 Aug 2013 11:23:53 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ingo Molnar <mingo@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        George Spelvin <linux@horizon.com>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v3 0/3] qrwlock: Introducing a queue read/write lock implementation
+References: <1375315259-29392-1-git-send-email-Waiman.Long@hp.com> <520A811A.7080907@hp.com> <20130814102041.GG10849@gmail.com>
+In-Reply-To: <20130814102041.GG10849@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Aug 2013, Rami Rosen wrote:
+On 08/14/2013 06:20 AM, Ingo Molnar wrote:
+> * Waiman Long<waiman.long@hp.com>  wrote:
+>
+>>
+>> I would like to share with you a rwlock related system crash that I
+>> encountered during my testing with hackbench on an 80-core DL980. The
+>> kernel crash because of a "watchdog detected hard lockup on cpu 79". The
+>> crashing CPU was running "write_lock_irq(&tasklist_lock)" in
+>> forget_original_parent() of the exit code path when I interrupted the
+>> hackbench which was spawning thousands of processes. Apparently, the
+>> remote CPU was not able to get the lock for a sufficient long time due
+>> to the unfairness of the rwlock which I think my version of queue rwlock
+>> will be able to alleviate this issue.
+>>
+>> So far, I was not able to reproduce the crash. I will try to see if I
+>> could more consistently reproduce it.
+> Was it an actual crash/lockup, or a longish hang followed by a lock
+> detector splat followed by the system eventually recovering back to
+> working order?
+>
+> Thanks,
+>
+> 	Ingo
 
-> Hi,
-> BTW, this is not the only NAPI issue here. When looking into cleanup
-> of resources in this driver, a call to netif_napi_del() is missing
-> (though there is a call to  napi_disable(), which is not enough for
-> proper cleanup).
+It was an actual crash initiated by the NMI handler. I think the system 
+was in a halt state after that.
 
-Actually, netif_napi_del seems to be quite underused.  At least
-approximately, I would assume that every file that uses netif_napi_add
-should use netif_napi_del at least once, and possible more times.  But I
-find 118 .c files that use netif_napi_add, and only 35 that use
-netif_napi_del.
-
-Are there some cases where it might not be needed?
-
-julia
+Regards,
+Longman
