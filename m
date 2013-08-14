@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593Ab3HNKvi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:51:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34548 "EHLO
+	id S932703Ab3HNKv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:51:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34531 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932450Ab3HNKhz (ORCPT
+	with ESMTP id S932440Ab3HNKhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:37:55 -0400
+	Wed, 14 Aug 2013 06:37:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matteo Delfino <kendatsuba@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 39/75] Input: elantech - fix for newer hardware versions (v7)
-Date: Wed, 14 Aug 2013 11:36:28 +0100
-Message-Id: <1376476624-10011-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 32/75] powerpc/windfarm: Fix noisy slots-fan on Xserve (rm31)
+Date: Wed, 14 Aug 2013 11:36:21 +0100
+Message-Id: <1376476624-10011-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -29,74 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matteo Delfino <kendatsuba@gmail.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit 9eebed7de660c0b5ab129a9de4f89d20b60de68c upstream.
+commit fe956a1d4081ce1a959f87df397a15e252201f10 upstream.
 
-* Fix version recognition in elantech_set_properties
+slots-fan on G5 Xserve is always running at full speed with windfarm_rm31
+driver, resulting in a very high acoustic noise level. It seems the fan
+parameters are incorrect, and have been copied from the Drive Bay fan
+(RPM, not present on rm31) of the legacy therm_pm72 driver. This patch
+changes the parameters to match the Slots fan (PWM) of therm_pm72. With
+the patch, slots-fan speed drops from 99% to 19% during normal use,
+and slots-temp settle to ~42'C.
 
-  The new hardware reports itself as v7 but the packets'
-  structure is unaltered.
-
-* Fix packet type recognition in elantech_packet_check_v4
-
-  The bitmask used for v6 is too wide, only the last three bits of
-  the third byte in a packet (packet[3] & 0x03) are actually used to
-  distinguish between packet types.
-  Starting from v7, additional information (to be interpreted) is
-  stored in the remaining bits (packets[3] & 0x1c).
-  In addition, the value stored in (packet[0] & 0x0c) is no longer
-  a constant but contains additional information yet to be deciphered.
-  This change should be backwards compatible with v6 hardware.
-
-Additional-author: Giovanni Frigione <gio.frigione@gmail.com>
-Signed-off-by: Matteo Delfino <kendatsuba@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/mouse/elantech.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/macintosh/windfarm_rm31.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 4790110..9e47774 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -694,18 +694,18 @@ static int elantech_packet_check_v3(struct psmouse *psmouse)
- static int elantech_packet_check_v4(struct psmouse *psmouse)
- {
- 	unsigned char *packet = psmouse->packet;
-+	unsigned char packet_type = packet[3] & 0x03;
+diff --git a/drivers/macintosh/windfarm_rm31.c b/drivers/macintosh/windfarm_rm31.c
+index 3eca6d4..e13d9fd 100644
+--- a/drivers/macintosh/windfarm_rm31.c
++++ b/drivers/macintosh/windfarm_rm31.c
+@@ -439,15 +439,15 @@ static void backside_setup_pid(void)
  
--	if ((packet[0] & 0x0c) == 0x04 &&
--	    (packet[3] & 0x1f) == 0x11)
-+	switch (packet_type) {
-+	case 0:
-+		return PACKET_V4_STATUS;
-+
-+	case 1:
- 		return PACKET_V4_HEAD;
+ /* Slots fan */
+ static const struct wf_pid_param slots_param = {
+-	.interval	= 5,
+-	.history_len	= 2,
+-	.gd		= 30 << 20,
+-	.gp		= 5 << 20,
+-	.gr		= 0,
+-	.itarget	= 40 << 16,
+-	.additive	= 1,
+-	.min		= 300,
+-	.max		= 4000,
++	.interval	= 1,
++	.history_len	= 20,
++	.gd		= 0,
++	.gp		= 0,
++	.gr		= 0x00100000,
++	.itarget	= 3200000,
++	.additive	= 0,
++	.min		= 20,
++	.max		= 100,
+ };
  
--	if ((packet[0] & 0x0c) == 0x04 &&
--	    (packet[3] & 0x1f) == 0x12)
-+	case 2:
- 		return PACKET_V4_MOTION;
--
--	if ((packet[0] & 0x0c) == 0x04 &&
--	    (packet[3] & 0x1f) == 0x10)
--		return PACKET_V4_STATUS;
-+	}
- 
- 	return PACKET_UNKNOWN;
- }
-@@ -1282,6 +1282,7 @@ static int elantech_set_properties(struct elantech_data *etd)
- 			etd->hw_version = 3;
- 			break;
- 		case 6:
-+		case 7:
- 			etd->hw_version = 4;
- 			break;
- 		default:
+ static void slots_fan_tick(void)
 -- 
 1.8.3.2
 
