@@ -1,59 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324Ab3HNWPX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:15:23 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50473 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933273Ab3HNWPT (ORCPT
+	id S933362Ab3HNWPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:15:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37955 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933273Ab3HNWPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:15:19 -0400
-Message-ID: <520C0175.4050003@codeaurora.org>
-Date: Wed, 14 Aug 2013 15:15:17 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: behanw@converseincode.com, linux@arm.linux.org.uk, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org, charlebm@gmail.com,
-        mingo@redhat.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: LLVMLinux: Change "extern inline" to "gnu_inline"
- in ARM ftrace.h
-References: <1376516261-2071-1-git-send-email-behanw@converseincode.com> <1376516261-2071-2-git-send-email-behanw@converseincode.com> <1376517370.1949.115.camel@joe-AO722>
-In-Reply-To: <1376517370.1949.115.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Aug 2013 18:15:32 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, DL-MPTFusionLinux@lsi.com, support@lsi.com,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
+Subject: [PATCH] [SCSI] mptfusion: fix compilation warning
+Date: Wed, 14 Aug 2013 23:15:29 +0100
+Message-Id: <1376518529-11411-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/13 14:56, Joe Perches wrote:
-> On Wed, 2013-08-14 at 17:37 -0400, behanw@converseincode.com wrote:
->> From: Mark Charlebois <charlebm@gmail.com>
->>
->> With compilers which follow the C99 standard (like modern versions of gcc and
->> clang), "extern inline" does the wrong thing (emits code for an externally
->> linkable version of the inline function). In this case using the gnu_inline
->> attribute makes inline do the right thing on gcc and on clang.
-> Why not convert these to static inline?
+Function seq_mpt_print_ioc_summary is invoked only from functions that
+depend on CONFIG_PROC_FS.  This commit makes this function also depend
+on this configuration.  Also removes function forward declaration.
 
-In this case we should probably just delete the entire thing and make it
-unconditional in the header. It looks like it compiles with gcc still.
+It fixes the following warning:
 
->
->> diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
-> []
->> @@ -45,7 +45,8 @@ void *return_address(unsigned int);
->>  
->>  #else
->>  
->> -extern inline void *return_address(unsigned int level)
->> +extern inline __attribute__((gnu_inline))
->> +void *return_address(unsigned int level)
->>  {
->>  	return NULL;
->>  }
->
+drivers/message/fusion/mptbase.c:6884:13: warning: 'seq_mpt_print_ioc_summary' defined but not used [-Wunused-function]
+
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/message/fusion/mptbase.c | 65 ++++++++++++++++++++--------------------
+ 1 file changed, 32 insertions(+), 33 deletions(-)
+
+diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
+index 767ff4d..5cbe611 100644
+--- a/drivers/message/fusion/mptbase.c
++++ b/drivers/message/fusion/mptbase.c
+@@ -6637,7 +6637,38 @@ procmpt_destroy(void)
+ /*
+  *	Handles read request from /proc/mpt/summary or /proc/mpt/iocN/summary.
+  */
+-static void seq_mpt_print_ioc_summary(MPT_ADAPTER *ioc, struct seq_file *m, int showlan);
++
++static void seq_mpt_print_ioc_summary(MPT_ADAPTER *ioc, struct seq_file *m, int showlan)
++{
++	char expVer[32];
++
++	mpt_get_fw_exp_ver(expVer, ioc);
++
++	/*
++	 *  Shorter summary of attached ioc's...
++	 */
++	seq_printf(m, "%s: %s, %s%08xh%s, Ports=%d, MaxQ=%d",
++			ioc->name,
++			ioc->prod_name,
++			MPT_FW_REV_MAGIC_ID_STRING,	/* "FwRev=" or somesuch */
++			ioc->facts.FWVersion.Word,
++			expVer,
++			ioc->facts.NumberOfPorts,
++			ioc->req_depth);
++
++	if (showlan && (ioc->pfacts[0].ProtocolFlags & MPI_PORTFACTS_PROTOCOL_LAN)) {
++		u8 *a = (u8*)&ioc->lan_cnfg_page1.HardwareAddressLow;
++		seq_printf(m, ", LanAddr=%02X:%02X:%02X:%02X:%02X:%02X",
++			a[5], a[4], a[3], a[2], a[1], a[0]);
++	}
++
++	seq_printf(m, ", IRQ=%d", ioc->pci_irq);
++
++	if (!ioc->active)
++		seq_printf(m, " (disabled)");
++
++	seq_putc(m, '\n');
++}
+ 
+ static int mpt_summary_proc_show(struct seq_file *m, void *v)
+ {
+@@ -6881,38 +6912,6 @@ mpt_print_ioc_summary(MPT_ADAPTER *ioc, char *buffer, int *size, int len, int sh
+ 	*size = y;
+ }
+ 
+-static void seq_mpt_print_ioc_summary(MPT_ADAPTER *ioc, struct seq_file *m, int showlan)
+-{
+-	char expVer[32];
+-
+-	mpt_get_fw_exp_ver(expVer, ioc);
+-
+-	/*
+-	 *  Shorter summary of attached ioc's...
+-	 */
+-	seq_printf(m, "%s: %s, %s%08xh%s, Ports=%d, MaxQ=%d",
+-			ioc->name,
+-			ioc->prod_name,
+-			MPT_FW_REV_MAGIC_ID_STRING,	/* "FwRev=" or somesuch */
+-			ioc->facts.FWVersion.Word,
+-			expVer,
+-			ioc->facts.NumberOfPorts,
+-			ioc->req_depth);
+-
+-	if (showlan && (ioc->pfacts[0].ProtocolFlags & MPI_PORTFACTS_PROTOCOL_LAN)) {
+-		u8 *a = (u8*)&ioc->lan_cnfg_page1.HardwareAddressLow;
+-		seq_printf(m, ", LanAddr=%02X:%02X:%02X:%02X:%02X:%02X",
+-			a[5], a[4], a[3], a[2], a[1], a[0]);
+-	}
+-
+-	seq_printf(m, ", IRQ=%d", ioc->pci_irq);
+-
+-	if (!ioc->active)
+-		seq_printf(m, " (disabled)");
+-
+-	seq_putc(m, '\n');
+-}
+-
+ /**
+  *	mpt_set_taskmgmt_in_progress_flag - set flags associated with task management
+  *	@ioc: Pointer to MPT_ADAPTER structure
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.3.2
 
