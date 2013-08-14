@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab3HNWWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:22:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33246 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933115Ab3HNWWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:22:45 -0400
-Date: Wed, 14 Aug 2013 23:22:41 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Xishi Qiu <qiuxishi@huawei.com>,
-        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
-Message-ID: <20130814222241.GQ2296@suse.de>
-References: <520B0B75.4030708@huawei.com>
- <20130814085711.GK2296@suse.de>
- <20130814155205.GA2706@gmail.com>
- <20130814132602.814a88e991e29c5b93bbe22c@linux-foundation.org>
+	id S933351Ab3HNWc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:32:59 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:8844 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933126Ab3HNWc5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 18:32:57 -0400
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        "mikem@thumper.usa.hp.com" <mikem@thumper.usa.hp.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        LKML-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "thenzl@redhat.com" <thenzl@redhat.com>,
+        "bubrown@redhat.com" <bubrown@redhat.com>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
+Subject: RE: [PATCH 1/1] cciss: set max scatter gather entries to 32 on P600
+Thread-Topic: [PATCH 1/1] cciss: set max scatter gather entries to 32 on P600
+Thread-Index: AQHOmTUMBJgAlQMRzEuEeNzyVToHo5mVOq6A
+Date: Wed, 14 Aug 2013 21:41:14 +0000
+Message-ID: <48275AD710FCA34184C2B6186B4016B32735BD62@G6W2491.americas.hpqcorp.net>
+References: <20130814205236.GB23042@beardog.cce.hp.com>
+ <1376515627.2028.41.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1376515627.2028.41.camel@dabdike.int.hansenpartnership.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.201.12.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130814132602.814a88e991e29c5b93bbe22c@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 01:26:02PM -0700, Andrew Morton wrote:
-> On Thu, 15 Aug 2013 00:52:29 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> 
-> > On Wed, Aug 14, 2013 at 09:57:11AM +0100, Mel Gorman wrote:
-> > > On Wed, Aug 14, 2013 at 12:45:41PM +0800, Xishi Qiu wrote:
-> > > > A large free page buddy block will continue many times, so if the page 
-> > > > is free, skip the whole page buddy block instead of one page.
-> > > > 
-> > > > Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> > > 
-> > > page_order cannot be used unless zone->lock is held which is not held in
-> > > this path. Acquiring the lock would prevent parallel allocations from the
-> > 
-> > Argh, I missed that.
-> 
-> I missed it as well. And so did Xishi Qiu.
-> 
-> Mel, we have a problem.  What can we do to make this code more
-> maintainable?
 
-I sit in the bad man corner until I write a comment patch :/
 
-page_order already has a comment but obviously the call site on compaction.c
-could do with a hint. As I think the consequences of this race can be
-dealt with I'm hoping Xishi Qiu will take the example I posted, fix it
-if it needs fixing, turn it into a real patch and run it through whatever
-test case led him to find this problem in the first place (HINT HINT). If
-that happens, great!  If not, I might do it myself and failing that, I'll
-post a patch adding a comment explaining why page_order is not used there.
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com] 
+Sent: Wednesday, August 14, 2013 4:27 PM
+To: Miller, Mike (OS Dev); mikem@thumper.usa.hp.com
+Cc: Andrew Morton; Jens Axboe; LKML-scsi; LKML; thenzl@redhat.com; bubrown@redhat.com; scameron@beardog.cce.hp.com
+Subject: Re: [PATCH 1/1] cciss: set max scatter gather entries to 32 on P600
 
--- 
-Mel Gorman
-SUSE Labs
+On Wed, 2013-08-14 at 15:52 -0500, Mike Miller wrote:
+> Patch 1/1
+> 
+> From: Mike Miller <mike.miller@hp.com>
+> 
+> At one time we used to set the maximum number of scatter gather 
+> elements on all Smart Array controllers to 32. At some point in time 
+> the firmware began to write the "appropriate" value for each controller into the config table.
+> The cciss driver would then read that and set h->maxsgentries.
+> 
+>         h->maxsgentries = readl(&(h->cfgtable->MaxSGElements);
+> 
+> On the P600 that value is 544. Under some workloads a significant 
+> performance reduction may result. This patch forces the P600 to use 
+> only 32 scatter gather elements. Other controllers are not affected.
+> 
+> Signed-off-by: Mike Miller <mike.miller@hp.com>
+> Signed-off-by: Dwight (Bud) Brown <bubrown@redhat.com>
+> Signed-off-by: Tomas Henzl <thenzl@redhat.com>
+> Acked-by: Stephen M. Cameron <steve.cameron@hp.com>
+
+I don't quite understand the signoff chain on this patch.  For a one line patch, are you saying it has three authors?
+
+James
+
+The patch origin is unknown. I got it from Tomas and Bud who think it may have originated from HP. I cleaned it up, compile tested it, and sent it on. I'll review my procedures for future patches.
+
+-- mikem
+
+
