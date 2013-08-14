@@ -1,400 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181Ab3HNUKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:10:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47799 "EHLO mx1.redhat.com"
+	id S933167Ab3HNUMf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:12:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:15369 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933005Ab3HNUKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:10:30 -0400
-Subject: [PATCH] vfio-pci: PCI hot reset interface
-To: alex.williamson@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, benh@kernel.crashing.org
-Date: Wed, 14 Aug 2013 14:10:26 -0600
-Message-ID: <20130814200845.21923.64284.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S933005Ab3HNUMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 16:12:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,879,1367996400"; 
+   d="scan'208";a="346454993"
+Subject: Re: [PATCH v2 1/7] Intel MIC Host Driver for X100 family.
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
+        AsiasHeasias@redhat.com, Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>
+In-Reply-To: <20130812230617.GB30952@kroah.com>
+References: <cover.1375927849.git.sudeep.dutt@intel.com>
+	 <a5214cbe041674f0b5dcd7eb9b581b4d7f923947.1375927849.git.sudeep.dutt@intel.com>
+	 <20130812230617.GB30952@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Aug 2013 13:08:34 -0700
+Message-ID: <1376510914.113256.15.camel@blbiskey-desk1.amr.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current VFIO_DEVICE_RESET interface only maps to PCI use cases
-where we can isolate the reset to the individual PCI function.  This
-means the device must support FLR (PCIe or AF), PM reset on D3hot->D0
-transition, device specific reset, or be a singleton device on a bus
-for a secondary bus reset.  FLR does not have widespread support,
-PM reset is not very reliable, and bus topology is dictated by the
-system and device design.  We need to provide a means for a user to
-induce a bus reset in cases where the existing mechanisms are not
-available or not reliable.
+On Mon, 2013-08-12 at 16:06 -0700, Greg Kroah-Hartman wrote:
+> On Wed, Aug 07, 2013 at 08:04:07PM -0700, Sudeep Dutt wrote:
+> > +/**
+> > + * struct mic_device -  MIC device information for each card.
+> > + *
+> > + * @name: Unique name for this MIC device.
+> > + * @mmio: MMIO bar information.
+> > + * @pdev: The PCI device structure.
+> > + * @family: The MIC family to which this device belongs.
+> > + * @ops: MIC HW specific operations.
+> > + * @id: The unique device id for this MIC device.
+> > + * @stepping: Stepping ID.
+> > + * @attr_group: Sysfs attribute group.
+> > + * @sdev: Device for sysfs entries.
+> > + * @aper: Aperture bar information.
+> > + */
+> > +struct mic_device {
+> > +	char name[20];
+> 
+> The name can be in the struct device (it should be the same, right?)
+> 
 
-This device specific extension to VFIO provides the user with this
-ability.  Two new ioctls are introduced:
- - VFIO_DEVICE_PCI_GET_HOT_RESET_INFO
- - VFIO_DEVICE_PCI_HOT_RESET
+The name field is redundant and will be deleted.
 
-The first provides the user with information about the extent of
-devices affected by a hot reset.  This is essentially a list of
-devices and the IOMMU groups they belong to.  The user may then
-initiate a hot reset by calling the second ioctl.  We must be
-careful that the user has ownership of all the affected devices
-found via the first ioctl, so the second ioctl takes a list of file
-descriptors for the VFIO groups affected by the reset.  Each group
-must have IOMMU protection established for the ioctl to succeed.
+> > +	struct mic_mw mmio;
+> > +	struct pci_dev *pdev;
+> 
+> Isn't this just the parent of the device?  Do you really need this?
+> 
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+pdev is redundant as well and will be deleted.
 
-This patch is dependent on v5 "pci: bus and slot reset interfaces" as
-well as "pci: Add probe functions for bus and slot reset".
+> > +	enum mic_hw_family family;
+> > +	struct mic_hw_ops *ops;
+> > +	int id;
+> > +	enum mic_stepping stepping;
+> > +	struct attribute_group attr_group;
+> 
+> Shouldn't this be a pointer to a list of groups?
+> 
 
- drivers/vfio/pci/vfio_pci.c |  272 +++++++++++++++++++++++++++++++++++++++++++
- include/uapi/linux/vfio.h   |   38 ++++++
- 2 files changed, 309 insertions(+), 1 deletion(-)
+We have a single attribute group. However a list of groups is scalable
+and also required by device_create_with_groups(..) so we have changed
+this to a list of groups.
 
-diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-index cef6002..eb69bf3 100644
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -227,6 +227,97 @@ static int vfio_pci_get_irq_count(struct vfio_pci_device *vdev, int irq_type)
- 	return 0;
- }
- 
-+static int vfio_pci_count_devs(struct pci_dev *pdev, void *data)
-+{
-+	(*(int *)data)++;
-+	return 0;
-+}
-+
-+struct vfio_pci_fill_info {
-+	int max;
-+	int cur;
-+	struct vfio_pci_dependent_device *devices;
-+};
-+
-+static int vfio_pci_fill_devs(struct pci_dev *pdev, void *data)
-+{
-+	struct vfio_pci_fill_info *info = data;
-+	struct iommu_group *iommu_group;
-+
-+	if (info->cur == info->max)
-+		return -EAGAIN; /* Something changed, try again */
-+
-+	iommu_group = iommu_group_get(&pdev->dev);
-+	if (!iommu_group)
-+		return -EPERM; /* Cannot reset non-isolated devices */
-+
-+	info->devices[info->cur].group_id = iommu_group_id(iommu_group);
-+	info->devices[info->cur].segment = pci_domain_nr(pdev->bus);
-+	info->devices[info->cur].bus = pdev->bus->number;
-+	info->devices[info->cur].devfn = pdev->devfn;
-+	info->cur++;
-+	iommu_group_put(iommu_group);
-+	return 0;
-+}
-+
-+struct vfio_pci_group {
-+	struct vfio_group *group;
-+	int id;
-+};
-+
-+struct vfio_pci_group_info {
-+	int count;
-+	struct vfio_pci_group *groups;
-+};
-+
-+static int vfio_pci_validate_devs(struct pci_dev *pdev, void *data)
-+{
-+	struct vfio_pci_group_info *info = data;
-+	struct iommu_group *group;
-+	int id, i;
-+
-+	group = iommu_group_get(&pdev->dev);
-+	if (!group)
-+		return -EPERM;
-+
-+	id = iommu_group_id(group);
-+
-+	for (i = 0; i < info->count; i++)
-+		if (info->groups[i].id == id)
-+			break;
-+
-+	iommu_group_put(group);
-+
-+	return (i == info->count) ? -EINVAL : 0;
-+}
-+
-+static int vfio_pci_for_each_slot_or_bus(struct pci_dev *pdev,
-+					 int (*fn)(struct pci_dev *,
-+						   void *data), void *data,
-+					 bool slot)
-+{
-+	struct pci_dev *tmp;
-+	int ret = 0;
-+
-+	list_for_each_entry(tmp, &pdev->bus->devices, bus_list) {
-+		if (slot && tmp->slot != pdev->slot)
-+			continue;
-+
-+		ret = fn(tmp, data);
-+		if (ret)
-+			break;
-+
-+		if (tmp->subordinate) {
-+			ret = vfio_pci_for_each_slot_or_bus(tmp, fn,
-+							    data, false);
-+			if (ret)
-+				break;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
- static long vfio_pci_ioctl(void *device_data,
- 			   unsigned int cmd, unsigned long arg)
- {
-@@ -407,10 +498,189 @@ static long vfio_pci_ioctl(void *device_data,
- 
- 		return ret;
- 
--	} else if (cmd == VFIO_DEVICE_RESET)
-+	} else if (cmd == VFIO_DEVICE_RESET) {
- 		return vdev->reset_works ?
- 			pci_reset_function(vdev->pdev) : -EINVAL;
- 
-+	} else if (cmd == VFIO_DEVICE_GET_PCI_HOT_RESET_INFO) {
-+		struct vfio_pci_hot_reset_info hdr;
-+		struct vfio_pci_fill_info fill = { 0 };
-+		struct vfio_pci_dependent_device *devices = NULL;
-+		bool slot = false;
-+		int ret = 0;
-+
-+		minsz = offsetofend(struct vfio_pci_hot_reset_info, count);
-+
-+		if (copy_from_user(&hdr, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (hdr.argsz < minsz)
-+			return -EINVAL;
-+
-+		hdr.flags = 0;
-+
-+		/* Can we do a slot or bus reset or neither? */
-+		if (!pci_probe_reset_slot(vdev->pdev->slot))
-+			slot = true;
-+		else if (pci_probe_reset_bus(vdev->pdev->bus))
-+			return -ENODEV;
-+
-+		/* How many devices are affected? */
-+		ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
-+						    vfio_pci_count_devs,
-+						    &fill.max, slot);
-+		if (ret)
-+			return ret;
-+
-+		WARN_ON(!fill.max); /* Should always be at least one */
-+
-+		/*
-+		 * If there's enough space, fill it now, otherwise return
-+		 * -ENOSPC and the number of devices affected.
-+		 */
-+		if (hdr.argsz < sizeof(hdr) + (fill.max * sizeof(*devices))) {
-+			ret = -ENOSPC;
-+			hdr.count = fill.max;
-+			goto reset_info_exit;
-+		}
-+
-+		devices = kcalloc(fill.max, sizeof(*devices), GFP_KERNEL);
-+		if (!devices)
-+			return -ENOMEM;
-+
-+		fill.devices = devices;
-+
-+		ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
-+						    vfio_pci_fill_devs,
-+						    &fill, slot);
-+
-+		/*
-+		 * If a device was removed between counting and filling,
-+		 * we may come up short of fill.max.  If a device was
-+		 * added, we'll have a return of -EAGAIN above.
-+		 */
-+		if (!ret)
-+			hdr.count = fill.cur;
-+
-+reset_info_exit:
-+		if (copy_to_user((void __user *)arg, &hdr, minsz))
-+			ret = -EFAULT;
-+
-+		if (!ret) {
-+			if (copy_to_user((void __user *)(arg + minsz), devices,
-+					 hdr.count * sizeof(*devices)))
-+				ret = -EFAULT;
-+		}
-+
-+		kfree(devices);
-+		return ret;
-+
-+	} else if (cmd == VFIO_DEVICE_PCI_HOT_RESET) {
-+		struct vfio_pci_hot_reset hdr;
-+		int32_t *group_fds;
-+		struct vfio_pci_group *groups;
-+		struct vfio_pci_group_info info;
-+		bool slot = false;
-+		int i, count = 0, ret = 0;
-+
-+		minsz = offsetofend(struct vfio_pci_hot_reset, count);
-+
-+		if (copy_from_user(&hdr, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (hdr.argsz < minsz || hdr.flags)
-+			return -EINVAL;
-+
-+		/* Can we do a slot or bus reset or neither? */
-+		if (!pci_probe_reset_slot(vdev->pdev->slot))
-+			slot = true;
-+		else if (pci_probe_reset_bus(vdev->pdev->bus))
-+			return -ENODEV;
-+
-+		/*
-+		 * We can't let userspace give us an arbitrarily large
-+		 * buffer to copy, so verify how many we think there
-+		 * could be.  Note groups can have multiple devices so
-+		 * one group per device is the max.
-+		 */
-+		ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
-+						    vfio_pci_count_devs,
-+						    &count, slot);
-+		if (ret)
-+			return ret;
-+
-+		/* Somewhere between 1 and count is OK */
-+		if (!hdr.count || hdr.count > count)
-+			return -EINVAL;
-+
-+		group_fds = kcalloc(hdr.count, sizeof(*group_fds), GFP_KERNEL);
-+		groups = kcalloc(hdr.count, sizeof(*groups), GFP_KERNEL);
-+		if (!group_fds || !groups) {
-+			kfree(group_fds);
-+			kfree(groups);
-+			return -ENOMEM;
-+		}
-+
-+		if (copy_from_user(group_fds, (void __user *)(arg + minsz),
-+				   hdr.count * sizeof(*group_fds))) {
-+			kfree(group_fds);
-+			kfree(groups);
-+			return -EFAULT;
-+		}
-+
-+		/*
-+		 * For each group_fd, get the group through the vfio external
-+		 * user interface and store the group and iommu ID.  This
-+		 * ensures the group is held across the reset.
-+		 */
-+		for (i = 0; i < hdr.count; i++) {
-+			struct vfio_group *group;
-+			struct fd f = fdget(group_fds[i]);
-+			if (!f.file) {
-+				ret = -EBADF;
-+				break;
-+			}
-+
-+			group = vfio_group_get_external_user(f.file);
-+			fdput(f);
-+			if (IS_ERR(group)) {
-+				ret = PTR_ERR(group);
-+				break;
-+			}
-+
-+			groups[i].group = group;
-+			groups[i].id = vfio_external_user_iommu_id(group);
-+		}
-+
-+		kfree(group_fds);
-+
-+		/* release reference to groups on error */
-+		if (ret)
-+			goto hot_reset_release;
-+
-+		info.count = hdr.count;
-+		info.groups = groups;
-+
-+		/*
-+		 * Test whether all the affected devices are contained
-+		 * by the set of groups provided by the user.
-+		 */
-+		ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
-+						    vfio_pci_validate_devs,
-+						    &info, slot);
-+		if (!ret)
-+			/* User has access, do the reset */
-+			ret = slot ? pci_reset_slot(vdev->pdev->slot) :
-+				     pci_reset_bus(vdev->pdev->bus);
-+
-+hot_reset_release:
-+		for (i--; i >= 0; i--)
-+			vfio_group_put_external_user(groups[i].group);
-+
-+		kfree(groups);
-+		return ret;;
-+	}
-+
- 	return -ENOTTY;
- }
- 
-diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-index 916e444..0fd47f5 100644
---- a/include/uapi/linux/vfio.h
-+++ b/include/uapi/linux/vfio.h
-@@ -324,6 +324,44 @@ enum {
- 	VFIO_PCI_NUM_IRQS
- };
- 
-+/**
-+ * VFIO_DEVICE_GET_PCI_HOT_RESET_INFO - _IORW(VFIO_TYPE, VFIO_BASE + 12,
-+ *					      struct vfio_pci_hot_reset_info)
-+ *
-+ * Return: 0 on success, -errno on failure:
-+ *	-enospc = insufficient buffer, -enodev = unsupported for device.
-+ */
-+struct vfio_pci_dependent_device {
-+	__u32	group_id;
-+	__u16	segment;
-+	__u8	bus;
-+	__u8	devfn; /* Use PCI_SLOT/PCI_FUNC */
-+};
-+
-+struct vfio_pci_hot_reset_info {
-+	__u32	argsz;
-+	__u32	flags;
-+	__u32	count;
-+	struct vfio_pci_dependent_device	devices[];
-+};
-+
-+#define VFIO_DEVICE_GET_PCI_HOT_RESET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
-+
-+/**
-+ * VFIO_DEVICE_PCI_HOT_RESET - _IOW(VFIO_TYPE, VFIO_BASE + 13,
-+ *				    struct vfio_pci_hot_reset)
-+ *
-+ * Return: 0 on success, -errno on failure.
-+ */
-+struct vfio_pci_hot_reset {
-+	__u32	argsz;
-+	__u32	flags;
-+	__u32	count;
-+	__s32	group_fds[];
-+};
-+
-+#define VFIO_DEVICE_PCI_HOT_RESET	_IO(VFIO_TYPE, VFIO_BASE + 13)
-+
- /* -------- API for Type1 VFIO IOMMU -------- */
- 
- /**
+> > +	struct device *sdev;
+> 
+> Shouldn't this be embedded inside here, instead of a pointer?
+> 
+
+We are using device_create(..) (or device_create_with_groups(..) now)
+which returns a pointer to the device.
+
+> > +	struct mic_mw aper;
+> > +};
+> 
+> 
+> > +/**
+> > + * struct mic_info -  Global information about all MIC devices.
+> > + *
+> > + * @next_id: Next available MIC device id.
+> > + * @mic_class: Class of MIC devices for sysfs accessibility.
+> > + * @mdev_id: Base device node number.
+> > + */
+> > +struct mic_info {
+> > +	int next_id;
+> 
+> Please use the idr interface, don't roll your own, odds are you got it
+> wrong, and I don't want to have to debug it :(
+> 
+
+Agreed, the IDA interface works nicely here.
+
+> > +	struct class *mic_class;
+> 
+> Isn't this a global symbol that you have (or static symbol).  There
+> should never be more than one "class" around for these devices.
+> 
+
+There is only one class for these devices stored in g_mic static symbol,
+as you noticed below. We will improve the documentation here but please
+let us know if you were suggesting other changes.
+
+> > +	dev_t mdev_id;
+> > +};
+> > +
+> > +/* g_mic - Global information about all MIC devices. */
+> > +static struct mic_info g_mic;
+> 
+> See, one class :)
+> 
+> > +/**
+> > + * mic_probe - Device Initialization Routine
+> > + *
+> > + * @pdev: PCI device structure
+> > + * @ent: entry in mic_pci_tbl
+> > + *
+> > + * returns 0 on success, < 0 on failure.
+> > + */
+> > +static int __init mic_probe(struct pci_dev *pdev,
+> > +		const struct pci_device_id *ent)
+> > +{
+> > +	int rc;
+> > +	struct mic_device *mdev;
+> > +	char name[20];
+> > +
+> > +	rc = g_mic.next_id++;
+> 
+> No locking, please use the idr interface...
+> 
+
+Agreed, the IDA interface works nicely here.
+
+> > +
+> > +	snprintf(name, sizeof(name), "mic%d", rc);
+> > +	mdev = kzalloc(sizeof(*mdev), GFP_KERNEL);
+> > +	if (!mdev) {
+> > +		rc = -ENOMEM;
+> > +		dev_err(&pdev->dev, "dev kmalloc failed rc %d\n", rc);
+> > +		goto dec_num_dev;
+> > +	}
+> > +	strncpy(mdev->name, name, sizeof(name));
+> > +	mdev->id = rc;
+> > +
+> > +	mic_device_init(mdev, pdev);
+> > +
+> > +	rc = pci_enable_device(pdev);
+> > +	if (rc) {
+> > +		dev_err(&pdev->dev, "failed to enable pci device.\n");
+> > +		goto free_device;
+> > +	}
+> > +
+> > +	pci_set_master(pdev);
+> > +
+> > +	rc = pci_request_regions(pdev, mic_driver_name);
+> > +	if (rc) {
+> > +		dev_err(&pdev->dev, "failed to get pci regions.\n");
+> > +		goto disable_device;
+> > +	}
+> > +
+> > +	rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+> > +	if (rc) {
+> > +		dev_err(&pdev->dev, "Cannot set DMA mask\n");
+> > +		goto release_regions;
+> > +	}
+> > +
+> > +	mdev->mmio.pa = pci_resource_start(pdev, mdev->ops->mmio_bar);
+> > +	mdev->mmio.len = pci_resource_len(pdev, mdev->ops->mmio_bar);
+> > +	mdev->mmio.va = pci_ioremap_bar(pdev, mdev->ops->mmio_bar);
+> > +	if (!mdev->mmio.va) {
+> > +		dev_err(&pdev->dev, "Cannot remap MMIO BAR\n");
+> > +		rc = -EIO;
+> > +		goto release_regions;
+> > +	}
+> > +
+> > +	mdev->aper.pa = pci_resource_start(pdev, mdev->ops->aper_bar);
+> > +	mdev->aper.len = pci_resource_len(pdev, mdev->ops->aper_bar);
+> > +	mdev->aper.va = ioremap_wc(mdev->aper.pa, mdev->aper.len);
+> > +	if (!mdev->aper.va) {
+> > +		dev_err(&pdev->dev, "Cannot remap Aperture BAR\n");
+> > +		rc = -EIO;
+> > +		goto unmap_mmio;
+> > +	}
+> > +
+> > +	mdev->ops->init(mdev);
+> > +
+> > +	pci_set_drvdata(pdev, mdev);
+> > +
+> > +	mdev->sdev = device_create(g_mic.mic_class, &pdev->dev,
+> > +		MKDEV(MAJOR(g_mic.mdev_id), mdev->id), NULL, "%s", mdev->name);
+> > +	if (IS_ERR(mdev->sdev)) {
+> > +		rc = PTR_ERR(mdev->sdev);
+> > +		dev_err(&pdev->dev, "device_create failed rc %d\n", rc);
+> > +		goto unmap_aper;
+> > +	}
+> > +
+> > +	rc = sysfs_create_group(&mdev->sdev->kobj, &mdev->attr_group);
+> 
+> We now have a function you should use instead,
+> device_create_with_groups() that solves the race condition you just
+> caused here by creating and notifying userspace that the device is
+> present, _before_ creating the sysfs files for it.
+> 
+
+We are using device_create_with_groups(..) now and it works nicely here.
+
+> 
+> 
+> > +	if (rc) {
+> > +		dev_err(&pdev->dev, "sysfs_create_group failed rc %d\n", rc);
+> > +		goto destroy_device;
+> > +	}
+> > +	dev_info(&pdev->dev, "Probe successful for %s\n", mdev->name);
+> 
+> Useless noise, remove it.
+> 
+
+Agreed, will remove.
+
+> > +	return 0;
+> > +destroy_device:
+> > +	device_destroy(g_mic.mic_class, MKDEV(MAJOR(g_mic.mdev_id), mdev->id));
+> > +unmap_aper:
+> > +	iounmap(mdev->mmio.va);
+> > +unmap_mmio:
+> > +	iounmap(mdev->aper.va);
+> > +release_regions:
+> > +	pci_release_regions(pdev);
+> > +disable_device:
+> > +	pci_disable_device(pdev);
+> > +free_device:
+> > +	kfree(mdev);
+> > +dec_num_dev:
+> > +	g_mic.next_id--;
+> > +	dev_err(&pdev->dev, "Probe failed rc %d\n", rc);
+> > +	return rc;
+> > +}
+> > +
+> > +/**
+> > + * mic_remove - Device Removal Routine
+> > + * mic_remove is called by the PCI subsystem to alert the driver
+> > + * that it should release a PCI device.
+> > + *
+> > + * @pdev: PCI device structure
+> > + */
+> > +static void mic_remove(struct pci_dev *pdev)
+> > +{
+> > +	struct mic_device *mdev;
+> > +	int id;
+> > +
+> > +	mdev = pci_get_drvdata(pdev);
+> > +	if (!mdev)
+> > +		return;
+> > +
+> > +	id = mdev->id;
+> > +
+> > +	sysfs_remove_group(&mdev->sdev->kobj, &mdev->attr_group);
+> 
+> No need to do this as:
+> 
+> > +	device_destroy(g_mic.mic_class, MKDEV(MAJOR(g_mic.mdev_id), mdev->id));
+> 
+> Will do it for you if you make the changes above.
+> 
+
+Indeed, it cleans up correctly.
+
+We will incorporate all your suggestions for patch 1 (including the
+header file cleanup in the other thread) and post a rev3 once it has
+seen some validation.
+
+Thanks for the review!
+Sudeep Dutt
+
+> thanks,
+> 
+> greg k-h
+
 
