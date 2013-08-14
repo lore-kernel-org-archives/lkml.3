@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab3HNTyQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 15:54:16 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:52302 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932813Ab3HNTyP (ORCPT
+	id S933106Ab3HNTzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 15:55:49 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:49587 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932993Ab3HNTzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 15:54:15 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<520BD9E0.8050304@mit.edu>
-Date: Wed, 14 Aug 2013 12:53:48 -0700
-In-Reply-To: <520BD9E0.8050304@mit.edu> (Andy Lutomirski's message of "Wed, 14
-	Aug 2013 12:26:24 -0700")
-Message-ID: <8761v882wj.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 14 Aug 2013 15:55:47 -0400
+Date: Wed, 14 Aug 2013 15:55:41 -0400
+From: Tejun Heo <tj@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Tang Chen <imtangchen@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+Message-ID: <20130814195541.GH28628@htj.dyndns.org>
+References: <20130812145016.GI15892@htj.dyndns.org>
+ <52090225.6070208@gmail.com>
+ <20130812154623.GL15892@htj.dyndns.org>
+ <52090AF6.6020206@gmail.com>
+ <20130812162247.GM15892@htj.dyndns.org>
+ <520914D5.7080501@gmail.com>
+ <20130812180758.GA8288@mtj.dyndns.org>
+ <520BC950.1030806@gmail.com>
+ <20130814182342.GG28628@htj.dyndns.org>
+ <520BDD2F.2060909@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/TCPcQgSAg/VY+cUH0iXShZ809nZUUF60=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0861]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-Subject: Re: DoS with unprivileged mounts
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520BDD2F.2060909@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
+Hello,
 
-> On 08/14/2013 10:42 AM, Miklos Szeredi wrote:
->> There's a simple and effective way to prevent unlink(2) and rename(2)
->> from operating on any file or directory by simply mounting something
->> on it.  In any mount instance in any namespace.
->> 
->> Was this considered in the unprivileged mount design?
->> 
->> The solution is also theoretically simple: mounts in unpriv namespaces
->> are marked "volatile" and are dissolved on an unlink type operation.
->
-> I'd actually prefer the reverse: unprivileged mounts don't prevent
-> unlink and rename.  If the dentry goes away, then the mount could still
-> exist, sans underlying file.  (This is already supported on network
-> filesystems.)
+On Wed, Aug 14, 2013 at 03:40:31PM -0400, KOSAKI Motohiro wrote:
+> I don't agree it. Please look at other kernel options. A lot of these don't
+> follow you. These behave as direction, not advise.
+> 
+> I mean the fallback should be implemented at turning on default the feature.
 
-Of course we do this in network filesystems by pretending the
-rename/unlink did not actually happen.  The vfs insists that it be lied
-to instead of mirroring what actually happened.
+Yeah, some options are "please try this" and others "do this or fail".
+There's no frigging fundamental rule there.
 
-Again all of this is a question about efficient data structures and not
-really one of semantics.  Can either semantic be implemented in such a
-way that it does not slow down the vfs?
+> I don't read whole discussion and I don't quite understand why no kernel
+> place controlling is relevant. Every unpluggable node is suitable for
+> kernel. If you mean current kernel placement logic don't care plugging,
+> that's a bug.
+> 
+> If we aim to hot remove, we have to have either kernel relocation or
+> hotplug awre kernel placement at boot time.
 
-Eric
+What if all nodes are hot pluggable?  Are we moving the kernel
+dynamically then?
 
+> >Failing to boot is *way* worse reporting mechanism than almost
+> >everything else.  If the sysadmin is willing to risk machines failing
+> >to come up, she would definitely be willing to check whether which
+> >memory areas are actually hotpluggable too, right?
+> 
+> No. see above. Your opinion is not pragmatic useful.
+
+No, what you're saying doesn't make any sense.  There are multiple
+ways to report when something doesn't work.  Failing to boot is *one*
+of them and not a very good one.  Here, for practical reasons, the end
+result may differ depending on the specifics of the configuration, so
+more detailed reporting is necessary anyway, so why do you insist on
+failing the boot?  In what world is it a good thing for the machine to
+fail boot after bios or kernel update?
+
+Thanks.
+
+-- 
+tejun
