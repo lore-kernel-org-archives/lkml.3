@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932990Ab3HNQ5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:57:37 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:58122 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932867Ab3HNQ5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:57:36 -0400
-Date: Wed, 14 Aug 2013 12:57:23 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: Re: [PATCH v7 2/2] mm: make lru_add_drain_all() selective
-Message-ID: <20130814165723.GE28628@htj.dyndns.org>
-References: <520AAF9C.1050702@tilera.com>
- <201308132307.r7DN74M5029053@farm-0021.internal.tilera.com>
- <20130813232904.GJ28996@mtj.dyndns.org>
- <520AC215.4050803@tilera.com>
- <20130813234629.4ce2ec70.akpm@linux-foundation.org>
- <520BAA5B.9070407@tilera.com>
+	id S933002Ab3HNQ66 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:58:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47045 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932885Ab3HNQ64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 12:58:56 -0400
+Message-ID: <520BB71F.6000701@zytor.com>
+Date: Wed, 14 Aug 2013 09:58:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520BAA5B.9070407@tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <bitbucket@online.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/5] preempt_count rework
+References: <20130814131539.790947874@chello.nl> <520B8A81.1080405@zytor.com> <1376494751.7355.28.camel@marge.simpson.net> <20130814160632.GJ24092@twins.programming.kicks-ass.net> <520BACEA.50604@zytor.com> <20130814165227.GA21191@laptop.programming.kicks-ass.net>
+In-Reply-To: <20130814165227.GA21191@laptop.programming.kicks-ass.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Chris.
+On 08/14/2013 09:52 AM, Peter Zijlstra wrote:
+> 
+> Oh curses, this is because lea can't do segment offsets? So there's no
+> sane way to get addresses of per-cpu variables.
+> 
+> Because ideally we'd have something like:
+> 
+>   lea %gs:__percpu_runqueues,%rax
+> 
+> So in this case it makes sense to also store the actual pointer; how
+> unfortunate.
+> 
 
-On Wed, Aug 14, 2013 at 12:03:39PM -0400, Chris Metcalf wrote:
-> Tejun, I don't know if you have a better idea for how to mark a
-> work_struct as being "not used" so we can set and test it here.
-> Is setting entry.next to NULL good?  Should we offer it as an API
-> in the workqueue header?
+Correct; the segment offset is not part of the effective address, even
+in 64-bit mode.
 
-Maybe simply defining a static cpumask would be cleaner?
+	-hpa
 
-> We could wrap the whole thing in a new workqueue API too, of course
-> (schedule_on_each_cpu_cond_sequential??) but it seems better at this
-> point to wait until we find another caller with similar needs, and only
-> then factor the code into a new workqueue API.
-
-We can have e.g. __schedule_on_cpu(fn, pcpu_works) but yeah it seems a
-bit excessive at this point.
-
-Thanks.
-
--- 
-tejun
