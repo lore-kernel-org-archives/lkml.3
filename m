@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759563Ab3HNKBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:01:08 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:47042 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab3HNKBG (ORCPT
+	id S1759633Ab3HNKBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:01:44 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57328 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759542Ab3HNKBm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:01:06 -0400
-Date: Wed, 14 Aug 2013 12:01:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Russell King <rmk@arm.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Linus <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: linux-next: manual merge of the arm-current tree with Linus' tree
-Message-ID: <20130814100101.GC10849@gmail.com>
-References: <20130814111837.9a692a77b35ba8cbb4a9149b@canb.auug.org.au>
+	Wed, 14 Aug 2013 06:01:42 -0400
+Message-ID: <520B5584.7030608@arm.com>
+Date: Wed, 14 Aug 2013 11:01:40 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130814111837.9a692a77b35ba8cbb4a9149b@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [GIT PULL] DT/core: cpu_ofnode updates for v3.12
+References: <5208E2D3.7060005@arm.com> <3356439.a21MloFP7n@vostro.rjw.lan>  <520A536C.3030600@arm.com> <520A7B00.8060405@arm.com> <1376428024.4255.14.camel@pasglop>
+In-Reply-To: <1376428024.4255.14.camel@pasglop>
+X-OriginalArrivalTime: 14 Aug 2013 10:01:38.0333 (UTC) FILETIME=[44663CD0:01CE98D5]
+X-MC-Unique: 113081411014000301
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-
-> Hi Russell,
+On 13/08/13 22:07, Benjamin Herrenschmidt wrote:
+> On Tue, 2013-08-13 at 19:29 +0100, Sudeep KarkadaNagesha wrote:
+>> I don't understand completely the use of ibm,ppc-interrupt-server#s and
+>> its implications on generic of_get_cpu_node implementation.
+>> I see the PPC specific definition of of_get_cpu_node uses thread id only
+>> in 2 instances. Based on that, I have tried to move all the other
+>> instances to use generic definition.
+>>
+>> Let me know if the idea is correct.
 > 
-> Today's linux-next merge of the arm-current tree got a conflict in 
-> arch/arm/kernel/perf_event.c between commit b88a2595b6d8 ("perf/arm: Fix 
-> armpmu_map_hw_event()") from Linus' tree and commit d9f966357b14 ("ARM: 
-> 7810/1: perf: Fix array out of bounds access in armpmu_map_hw_event()") 
-> from the arm-current tree.
+> No. The device-tree historically only represents cores, not HW threads, so
+> it makes sense to retrieve also the thread number corresponding to the CPU.
 > 
-> These are the same patch except for the return code (and the much more 
-> comprehensive commit message in the arm-current tree version).  I fixed 
-> it up (using the arm-current tree version - return -EINVAL instead of 
-> -ENOENT - I have no way to guess which is right) and can carry the fix 
-> as necessary (no action is required).
+Ok
 
--EINVAL would be the better/cleaner one, so when this gets merged upstream 
-we should pick up Russell's version. It does not affect functionality.
+> However, the mechanism to represent HW threads in the device-tree is currently
+> somewhat platform specific (the ibm,ppc-interrupt-server#s).
+I see most of the callers pass NULL to thread id argument except 2
+instances in entire tree. If that's the case why can't we move to use
+generic of_get_cpu_node in most of those cases and have PPC specific
+implementation for the ones using thread id.
 
-Thanks,
+> 
+> So what you could do for now is:
+> 
+>  - Have a generic version that always returns 0 as the thread, which is weak
+I would prefer to move to generic of_get_cpu_node where ever possible
+and rename the function that takes thread id rather than making generic
+one weak.
 
-	Ingo
+> 
+>  - powerpc keeps its own implementation
+How about only in cases where it needs thread_id.
+
+> 
+>  - Start a discussion on the bindings (if not already there) to define threads
+> in a better way at which point the generic function can be updated.
+> 
+I am not sure if we need to define any new bindings. Excerpts from ePAPR
+(v1.1):
+"3.7.1 General Properties of CPU nodes
+The value of "reg" is a <prop-encoded-array> that defines a unique
+CPU/thread id for the CPU/threads represented by the CPU node.
+If a CPU supports more than one thread (i.e. multiple streams of
+execution) the reg property is an array with 1 element per thread. The
+#address-cells on the /cpus node specifies how many cells each element
+of the array takes. Software can determine the number of threads by
+dividing the size of reg by the parent node's #address-cells."
+
+And this is exactly in agreement to what's implemented in the generic
+of_get_cpu_node:
+
+for_each_child_of_node(cpus, cpun) {
+        if (of_node_cmp(cpun->type, "cpu"))
+                continue;
+        cell = of_get_property(cpun, "reg", &prop_len);
+        if (!cell) {
+                pr_warn("%s: missing reg property\n", cpun->full_name);
+                continue;
+        }
+        prop_len /= sizeof(*cell);
+        while (prop_len) {
+                hwid = of_read_number(cell, ac);
+                prop_len -= ac;
+                if (arch_match_cpu_phys_id(cpu, hwid))
+                        return cpun;
+        }
+}
+
+Yes this doesn't cover the historical "ibm,ppc-interrupt-server#s", for
+which we can have PPC specific wrapper above the generic one i.e. get
+the cpu node and then parse for thread id under custom property.
+
+Let me know your thoughts.
+
+Regards,
+Sudeep
+
+
+
