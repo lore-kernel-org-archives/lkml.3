@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab3HNHBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:01:06 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:40732 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162Ab3HNHBD (ORCPT
+	id S1758454Ab3HNHEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:04:37 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:11642
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752942Ab3HNHEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:01:03 -0400
-Date: Wed, 14 Aug 2013 11:00:59 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
-        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH -mm] mm: Unify pte_to_pgoff and pgoff_to_pte helpers
-Message-ID: <20130814070059.GJ2869@moon>
+	Wed, 14 Aug 2013 03:04:34 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dc1h1de2h1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Arpit Goel <B44344@freescale.com>
+To: <linux@arm.linux.org.uk>, <takata@linux-m32r.org>, <philb@gnu.org>,
+        <geert@linux-m68k.org>
+CC: <schwidefsky@de.ibm.com>, <heiko.carstens@de.ibm.com>,
+        <linux390@de.ibm.com>, <davem@davemloft.net>,
+        <rob.herring@calxeda.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
+        <john.stultz@linaro.org>, <jesper.nilsson@axis.com>,
+        <gregkh@linuxfoundation.org>, <sam@ravnborg.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-m32r@ml.linux-m32r.org>, <linux-m32r-ja@ml.linux-m32r.org>,
+        <linux-m68k@vger.kernel.org>, <linux-s390@vger.kernel.org>,
+        <sparclinux@vger.kernel.org>, <mattw@codeaurora.org>, <timur@tabi.org>,
+        <sboyd@codeaurora.org>, <akpm@linux-foundation.org>,
+        Arpit Goel <B44344@freescale.com>
+Subject: [PATCH v2 0/2] Make PPC macro spin_event_timeout() architecture independent
+Date: Wed, 14 Aug 2013 12:33:53 +0530
+Message-ID: <1376463835-13040-1-git-send-email-B44344@freescale.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use unified pte_bfop helper to manipulate bits in pte/pgoff bitfield.
+This patch-set moves USECS_PER_JIFFY to architecture timex.h from architecture
+specific C files. Patch-set further uses this to make PPC macro
+spin_event_timeout() architecture independent. This change enables drivers to
+use spin_event_timeout() even in non-PowerPC based SoC's.
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/pgtable-2level.h |   51 ++++++++++++++++++----------------
- 1 file changed, 27 insertions(+), 24 deletions(-)
+This patchset has been compiled for ARM, PowerPC and x86.
 
-Index: linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/pgtable-2level.h
-+++ linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-@@ -55,8 +55,11 @@ static inline pmd_t native_pmdp_get_and_
- #define native_pmdp_get_and_clear(xp) native_local_pmdp_get_and_clear(xp)
- #endif
- 
--#define _mfrob(v,r,m,l)		((((v) >> (r)) & (m)) << (l))
--#define __frob(v,r,l)		(((v) >> (r)) << (l))
-+/*
-+ * For readable bitfield manipulations.
-+ */
-+#define PTE_FILE_NOMASK		(-1U)
-+#define pte_bfop(v,r,m,l)	((((v) >> (r)) & (m)) << (l))
- 
- #ifdef CONFIG_MEM_SOFT_DIRTY
- 
-@@ -82,18 +85,18 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
- #define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
- 
--#define pte_to_pgoff(pte)							    \
--	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
--	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
--	 _mfrob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3, PTE_FILE_LSHIFT3) + \
--	 __frob((pte).pte_low, PTE_FILE_SHIFT4, PTE_FILE_LSHIFT4))
--
--#define pgoff_to_pte(off)							\
--	((pte_t) { .pte_low =							\
--	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
--	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
--	_mfrob(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3, PTE_FILE_SHIFT3)	+	\
--	__frob(off, PTE_FILE_LSHIFT4, PTE_FILE_SHIFT4)			+	\
-+#define pte_to_pgoff(pte)								  \
-+	(pte_bfop((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)			+ \
-+	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2)	+ \
-+	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3, PTE_FILE_LSHIFT3)	+ \
-+	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT4, PTE_FILE_NOMASK, PTE_FILE_LSHIFT4))
-+
-+#define pgoff_to_pte(off)							  \
-+	((pte_t) { .pte_low =							  \
-+	pte_bfop(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+ \
-+	pte_bfop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+ \
-+	pte_bfop(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3, PTE_FILE_SHIFT3)	+ \
-+	pte_bfop(off, PTE_FILE_LSHIFT4, PTE_FILE_NOMASK, PTE_FILE_SHIFT4)	+ \
- 	_PAGE_FILE })
- 
- #else /* CONFIG_MEM_SOFT_DIRTY */
-@@ -120,16 +123,16 @@ static inline pmd_t native_pmdp_get_and_
- #define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
- #define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
- 
--#define pte_to_pgoff(pte)							    \
--	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
--	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
--	 __frob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_LSHIFT3))
--
--#define pgoff_to_pte(off)							\
--	((pte_t) { .pte_low =							\
--	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
--	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
--	__frob(off, PTE_FILE_LSHIFT3, PTE_FILE_SHIFT3)			+	\
-+#define pte_to_pgoff(pte)								  \
-+	(pte_bfop((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)			+ \
-+	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2)	+ \
-+	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_NOMASK, PTE_FILE_LSHIFT3))
-+
-+#define pgoff_to_pte(off)							  \
-+	((pte_t) { .pte_low =							  \
-+	pte_bfop(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+ \
-+	pte_bfop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+ \
-+	pte_bfop(off, PTE_FILE_LSHIFT3, PTE_FILE_NOMASK, PTE_FILE_SHIFT3)	+ \
- 	_PAGE_FILE })
- 
- #endif /* CONFIG_MEM_SOFT_DIRTY */
+Patch[1/2] : Moves USECS_PER_JIFFY to architecture specific timex.h files from
+	     architecture specific C files.
+
+Patch[2/2] : Converts PPC macro spin_event_timeout() in architecture independent
+	     macro.
+
+Changes in v2:
+	Patch[1/2] Adds USEC_PER_JIFFY to linux/timex.h
+	Patch[2/2] uses usecs_to_jiffies for conversion
+
+Arpit Goel (2):
+  Make USECS_PER_JIFFY available for generic use
+  Convert PowerPC macro spin_event_timeout() to architecture independent
+    macro
+
+ arch/arm/include/asm/timex.h      |  2 ++
+ arch/arm/kernel/time.c            |  3 ---
+ arch/m32r/include/asm/timex.h     |  2 ++
+ arch/m32r/kernel/time.c           |  3 ---
+ arch/m68k/hp300/time.c            |  4 +---
+ arch/m68k/include/asm/timex.h     |  2 ++
+ arch/s390/include/asm/timex.h     |  2 ++
+ arch/s390/kernel/time.c           |  2 --
+ arch/sparc/include/asm/timex_32.h |  2 ++
+ arch/sparc/include/asm/timex_64.h |  2 ++
+ arch/sparc/kernel/pcic.c          |  1 -
+ include/linux/delay.h             | 40 +++++++++++++++++++++++++++++++++++++++
+ include/linux/timex.h             |  5 +++++
+ 13 files changed, 58 insertions(+), 12 deletions(-)
+
+-- 
+1.8.1.4
+
+
