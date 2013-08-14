@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205Ab3HNKgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:36:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54664 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759493Ab3HNKgJ (ORCPT
+	id S1759732Ab3HNKhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:37:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34364 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759592Ab3HNKhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:36:09 -0400
-Message-ID: <520B5D96.9090900@linutronix.de>
-Date: Wed, 14 Aug 2013 12:36:06 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
-MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: George Cherian <george.cherian@ti.com>, linux-usb@vger.kernel.org,
-        balbi@ti.com, linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-omap@vger.kernel.org, kishon@ti.com
-Subject: Re: [PATCH v2 0/4] Add phy support for AM335X platform using Generic
- PHy framework
-References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <20130810115936.GA2365@localhost>
-In-Reply-To: <20130810115936.GA2365@localhost>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 14 Aug 2013 06:37:11 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 02/75] mac80211: fix ethtool stats for non-station interfaces
+Date: Wed, 14 Aug 2013 11:35:51 +0100
+Message-Id: <1376476624-10011-3-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2013 01:59 PM, Ezequiel Garcia wrote:
-> Is there any reason why there's no DT binding patch to this
-> series? (aka Documentation/devicetree/... + sent to devicetree list)
-> 
-> (sorry if this has been already explained somewhere...)
-> 
+3.5.7.19 -stable review patch.  If anyone has any objections, please let me know.
 
-Completely forgot. There are existent documents which need be updated.
-Will do & post.
+------------------
 
-Sebastian
+From: Johannes Berg <johannes@sipsolutions.net>
+
+commit e13bae4f807401729b3f27c7e882a96b8b292809 upstream.
+
+As reported in https://bugzilla.kernel.org/show_bug.cgi?id=60514,
+the station loop never initialises 'sinfo' and therefore adds up
+a stack values, leaking stack information (the number of times it
+adds values is easily obtained another way.)
+
+Fix this by initialising the sinfo for each station to add.
+
+Signed-off-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/mac80211/cfg.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
+index 56386f1..0042e61 100644
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -561,6 +561,8 @@ static void ieee80211_get_et_stats(struct wiphy *wiphy,
+ 			if (sta->sdata->dev != dev)
+ 				continue;
+ 
++			sinfo.filled = 0;
++			sta_set_sinfo(sta, &sinfo);
+ 			i = 0;
+ 			ADD_STA_STATS(sta);
+ 		}
+-- 
+1.8.3.2
+
