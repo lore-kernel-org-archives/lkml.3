@@ -1,49 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932725Ab3HNK5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:57:21 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:43332 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341Ab3HNK5R (ORCPT
+	id S932774Ab3HNK55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:57:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34453 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932313Ab3HNKhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:57:17 -0400
-Message-ID: <520B6282.6030906@linux.vnet.ibm.com>
-Date: Wed, 14 Aug 2013 16:27:06 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>, tony.luck@intel.com,
-        bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
-        lance.ortiz@hp.com, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
- event
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com> <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic> <20130812083355.47c1bae8@samsung.com> <5208D80D.5030206@linux.vnet.ibm.com> <20130812125343.GE18018@pd.tnic> <520A16BD.30201@linux.vnet.ibm.com> <20130813124258.GC4077@pd.tnic> <520A6D98.9060204@linux.vnet.ibm.com> <20130813175809.GE4077@pd.tnic>
-In-Reply-To: <20130813175809.GE4077@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081410-5490-0000-0000-000003FC51C8
+	Wed, 14 Aug 2013 06:37:31 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 15/75] virtio: support unlocked queue poll
+Date: Wed, 14 Aug 2013 11:36:04 +0100
+Message-Id: <1376476624-10011-16-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 11:28 PM, Borislav Petkov wrote:
-> On Tue, Aug 13, 2013 at 11:02:08PM +0530, Naveen N. Rao wrote:
->> If I'm not mistaken, even for systems that have EDAC drivers, it looks
->> to me like EDAC can't really decode to the DIMM given what is provided
->> by the bios in the APEI report currently. If and when ghes_edac gains
->> this capability, users will have a choice between raw APEI reports vs.
->> edac processed ones.
->
-> Which kinda makes that APEI tracepoint not really useful and we can call
-> the one we have already - trace_mc_event - from APEI...
+3.5.7.19 -stable review patch.  If anyone has any objections, please let me know.
 
-This looks like a nice option. Mauro, what do you think?
+------------------
 
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-Thanks,
-Naveen
+commit cc229884d3f77ec3b1240e467e0236c3e0647c0c upstream.
+
+This adds a way to check ring empty state after enable_cb outside any
+locks. Will be used by virtio_net.
+
+Note: there's room for more optimization: caller is likely to have a
+memory barrier already, which means we might be able to get rid of a
+barrier here.  Deferring this optimization until we do some
+benchmarking.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[wg: Backported to 3.2]
+Signed-off-by: Wolfram Gloger <wmglo@dent.med.uni-muenchen.de>
+[bwh: Backported to 3.4: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Luis Henriques<luis.henriques@canonical.com>
+---
+ drivers/virtio/virtio_ring.c | 54 +++++++++++++++++++++++++++++++++++---------
+ include/linux/virtio.h       |  4 ++++
+ 2 files changed, 47 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 52bfd07..c212de7 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -498,16 +498,18 @@ EXPORT_SYMBOL_GPL(virtqueue_disable_cb);
+  * virtqueue_enable_cb - restart callbacks after disable_cb.
+  * @vq: the struct virtqueue we're talking about.
+  *
+- * This re-enables callbacks; it returns "false" if there are pending
+- * buffers in the queue, to detect a possible race between the driver
+- * checking for more work, and enabling callbacks.
++ * This re-enables callbacks; it returns current queue state
++ * in an opaque unsigned value. This value should be later tested by
++ * virtqueue_poll, to detect a possible race between the driver checking for
++ * more work, and enabling callbacks.
+  *
+  * Caller must ensure we don't call this with other virtqueue
+  * operations at the same time (except where noted).
+  */
+-bool virtqueue_enable_cb(struct virtqueue *_vq)
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
+ {
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
++	u16 last_used_idx;
+ 
+ 	START_USE(vq);
+ 
+@@ -517,15 +519,45 @@ bool virtqueue_enable_cb(struct virtqueue *_vq)
+ 	 * either clear the flags bit or point the event index at the next
+ 	 * entry. Always do both to keep code simple. */
+ 	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+-	vring_used_event(&vq->vring) = vq->last_used_idx;
++	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
++	END_USE(vq);
++	return last_used_idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
++
++/**
++ * virtqueue_poll - query pending used buffers
++ * @vq: the struct virtqueue we're talking about.
++ * @last_used_idx: virtqueue state (from call to virtqueue_enable_cb_prepare).
++ *
++ * Returns "true" if there are pending used buffers in the queue.
++ *
++ * This does not need to be serialized.
++ */
++bool virtqueue_poll(struct virtqueue *_vq, unsigned last_used_idx)
++{
++	struct vring_virtqueue *vq = to_vvq(_vq);
++
+ 	virtio_mb(vq);
+-	if (unlikely(more_used(vq))) {
+-		END_USE(vq);
+-		return false;
+-	}
++	return (u16)last_used_idx != vq->vring.used->idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_poll);
+ 
+-	END_USE(vq);
+-	return true;
++/**
++ * virtqueue_enable_cb - restart callbacks after disable_cb.
++ * @vq: the struct virtqueue we're talking about.
++ *
++ * This re-enables callbacks; it returns "false" if there are pending
++ * buffers in the queue, to detect a possible race between the driver
++ * checking for more work, and enabling callbacks.
++ *
++ * Caller must ensure we don't call this with other virtqueue
++ * operations at the same time (except where noted).
++ */
++bool virtqueue_enable_cb(struct virtqueue *_vq)
++{
++	unsigned last_used_idx = virtqueue_enable_cb_prepare(_vq);
++	return !virtqueue_poll(_vq, last_used_idx);
+ }
+ EXPORT_SYMBOL_GPL(virtqueue_enable_cb);
+ 
+diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+index 8efd28a..2b779bf 100644
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -44,6 +44,10 @@ void virtqueue_disable_cb(struct virtqueue *vq);
+ 
+ bool virtqueue_enable_cb(struct virtqueue *vq);
+ 
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
++
++bool virtqueue_poll(struct virtqueue *vq, unsigned);
++
+ bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
+ 
+ void *virtqueue_detach_unused_buf(struct virtqueue *vq);
+-- 
+1.8.3.2
 
