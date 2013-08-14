@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759688Ab3HNLwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 07:52:36 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39640 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab3HNLwe (ORCPT
+	id S932216Ab3HNLxc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 07:53:32 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:46668 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab3HNLxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 07:52:34 -0400
-Date: Wed, 14 Aug 2013 14:52:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] pstore: d_alloc_name() doesn't return an ERR_PTR
-Message-ID: <20130814115218.GC8044@elgon.mountain>
+	Wed, 14 Aug 2013 07:53:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20130814143152.6586492341a573f87c64a5df@canb.auug.org.au>
+References: <20130814143152.6586492341a573f87c64a5df@canb.auug.org.au>
+Date: Wed, 14 Aug 2013 13:53:30 +0200
+Message-ID: <CANq1E4QKtbLoGhgZSPNM2QW_j38FiRjm5wNotZn8fnvouQQDpQ@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the tip tree with the omap_dss2 tree
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-d_alloc_name() returns NULL on error.  Also I changed the error code
-from -ENOSPC to -ENOMEM to reflect that we were short on RAM not disk
-space.
+Hi
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Wed, Aug 14, 2013 at 6:31 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Today's linux-next merge of the tip tree got a conflict in
+> drivers/video/simplefb.c between commit dbb5ff4c2300 ("simplefb: add
+> support for a8b8g8r8 pixel format") from the omap_dss2 tree and commit
+> 5ef76da644bf ("fbdev: simplefb: add init through platform_data") from the
+> tip tree.
+>
+> I fixed it up (I think - see below, please check - I used the latter
+> version of the above file) and can carry the fix as necessary (no action
+> is required).
 
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index 71bf5f4..6a4123d 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -345,9 +345,8 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
- 
- 	mutex_lock(&root->d_inode->i_mutex);
- 
--	rc = -ENOSPC;
- 	dentry = d_alloc_name(root, name);
--	if (IS_ERR(dentry))
-+	if (!dentry)
- 		goto fail_lockedalloc;
- 
- 	memcpy(private->data, data, size);
+Looks good. Thanks!
+David
+
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --git a/include/linux/platform_data/simplefb.h b/include/linux/platform_data/simplefb.h
+> index 53774b0..c395d4c 100644
+> --- a/include/linux/platform_data/simplefb.h
+> +++ b/include/linux/platform_data/simplefb.h
+> @@ -27,6 +27,7 @@
+>         { "a8r8g8b8", 32, {16, 8}, {8, 8}, {0, 8}, {24, 8}, DRM_FORMAT_ARGB8888 }, \
+>         { "x2r10g10b10", 32, {20, 10}, {10, 10}, {0, 10}, {0, 0}, DRM_FORMAT_XRGB2101010 }, \
+>         { "a2r10g10b10", 32, {20, 10}, {10, 10}, {0, 10}, {30, 2}, DRM_FORMAT_ARGB2101010 }, \
+> +       { "a8b8g8r8", 32, {0, 8}, {8, 8}, {16, 8}, {24, 8}, DRM_FORMAT_ABGR8888 }, \
+>  }
+>
+>  /*
