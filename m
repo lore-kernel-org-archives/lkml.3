@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791Ab3HNLBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 07:01:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34394 "EHLO
+	id S932829Ab3HNLBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 07:01:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34389 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759737Ab3HNKhS (ORCPT
+	with ESMTP id S1759734Ab3HNKhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:37:18 -0400
+	Wed, 14 Aug 2013 06:37:16 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Oleksij Rempel <linux@rempel-privat.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 07/75] USB: mos7840: fix device-type detection
-Date: Wed, 14 Aug 2013 11:35:56 +0100
-Message-Id: <1376476624-10011-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 05/75] ath9k_htc: do some initial hardware configuration
+Date: Wed, 14 Aug 2013 11:35:54 +0100
+Message-Id: <1376476624-10011-6-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -28,148 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit 40c24f2893ba0ba7df485871f6aac0c197ceef5b upstream.
+commit dc2a87f519a4d8cb376ab54f22b6b98a943b51ce upstream.
 
-Fix race in device-type detection introduced by commit 0eafe4de ("USB:
-serial: mos7840: add support for MCS7810 devices") which used a static
-variable to hold the device type.
+Currently we configure harwdare and clock, only after
+interface start. In this case, if we reload module or
+reboot PC without configuring adapter, firmware will freeze.
+There is no software way to reset adpter.
 
-Move type detection to probe and use serial data to store the device
-type.
+This patch add initial configuration and set it in
+disabled state, to avoid this freeze. Behaviour of this patch
+should be similar to: ifconfig wlan0 up; ifconfig wlan0 down.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5: adjusted context ]
+Bug: https://github.com/qca/open-ath9k-htc-firmware/issues/1
+Tested-by: Bo Shi <cnshibo@gmail.com>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/mos7840.c | 75 +++++++++++++++++++++-----------------------
- 1 file changed, 35 insertions(+), 40 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index fb0357f..15ae7f5 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -192,8 +192,6 @@ enum mos7840_flag {
- 	MOS7840_FLAG_CTRL_BUSY,
- };
+diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_init.c b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+index 21c280b..29641e7 100644
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
+@@ -824,6 +824,7 @@ static int ath9k_init_device(struct ath9k_htc_priv *priv,
+ 	if (error != 0)
+ 		goto err_rx;
  
--static int device_type;
--
- static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
-@@ -894,18 +892,6 @@ static void mos7840_bulk_out_data_callback(struct urb *urb)
- /************************************************************************/
- /*       D R I V E R  T T Y  I N T E R F A C E  F U N C T I O N S       */
- /************************************************************************/
--#ifdef MCSSerialProbe
--static int mos7840_serial_probe(struct usb_serial *serial,
--				const struct usb_device_id *id)
--{
--
--	/*need to implement the mode_reg reading and updating\
--	   structures usb_serial_ device_type\
--	   (i.e num_ports, num_bulkin,bulkout etc) */
--	/* Also we can update the changes  attach */
--	return 1;
--}
--#endif
- 
- /*****************************************************************************
-  * mos7840_open
-@@ -2416,38 +2402,48 @@ static int mos7810_check(struct usb_serial *serial)
- 	return 0;
- }
- 
--static int mos7840_calc_num_ports(struct usb_serial *serial)
-+static int mos7840_probe(struct usb_serial *serial,
-+				const struct usb_device_id *id)
- {
--	__u16 data = 0x00;
-+	u16 product = serial->dev->descriptor.idProduct;
- 	u8 *buf;
--	int mos7840_num_ports;
-+	int device_type;
-+
-+	if (product == MOSCHIP_DEVICE_ID_7810 ||
-+		product == MOSCHIP_DEVICE_ID_7820) {
-+		device_type = product;
-+		goto out;
-+	}
- 
- 	buf = kzalloc(VENDOR_READ_LENGTH, GFP_KERNEL);
--	if (buf) {
--		usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
- 			MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, buf,
- 			VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
--		data = *buf;
--		kfree(buf);
--	}
- 
--	if (serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7810 ||
--		serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7820) {
--		device_type = serial->dev->descriptor.idProduct;
--	} else {
--		/* For a MCS7840 device GPIO0 must be set to 1 */
--		if ((data & 0x01) == 1)
--			device_type = MOSCHIP_DEVICE_ID_7840;
--		else if (mos7810_check(serial))
--			device_type = MOSCHIP_DEVICE_ID_7810;
--		else
--			device_type = MOSCHIP_DEVICE_ID_7820;
--	}
-+	/* For a MCS7840 device GPIO0 must be set to 1 */
-+	if (buf[0] & 0x01)
-+		device_type = MOSCHIP_DEVICE_ID_7840;
-+	else if (mos7810_check(serial))
-+		device_type = MOSCHIP_DEVICE_ID_7810;
-+	else
-+		device_type = MOSCHIP_DEVICE_ID_7820;
-+
-+	kfree(buf);
-+out:
-+	usb_set_serial_data(serial, (void *)device_type);
-+
-+	return 0;
-+}
-+
-+static int mos7840_calc_num_ports(struct usb_serial *serial)
-+{
-+	int device_type = (int)usb_get_serial_data(serial);
-+	int mos7840_num_ports;
- 
- 	mos7840_num_ports = (device_type >> 4) & 0x000F;
--	serial->num_bulk_in = mos7840_num_ports;
--	serial->num_bulk_out = mos7840_num_ports;
--	serial->num_ports = mos7840_num_ports;
- 
- 	return mos7840_num_ports;
- }
-@@ -2458,6 +2454,7 @@ static int mos7840_calc_num_ports(struct usb_serial *serial)
- 
- static int mos7840_startup(struct usb_serial *serial)
- {
-+	int device_type = (int)usb_get_serial_data(serial);
- 	struct moschip_port *mos7840_port;
- 	struct usb_device *dev;
- 	int i, status;
-@@ -2799,9 +2796,7 @@ static struct usb_serial_driver moschip7840_4port_device = {
- 	.throttle = mos7840_throttle,
- 	.unthrottle = mos7840_unthrottle,
- 	.calc_num_ports = mos7840_calc_num_ports,
--#ifdef MCSSerialProbe
--	.probe = mos7840_serial_probe,
--#endif
-+	.probe = mos7840_probe,
- 	.ioctl = mos7840_ioctl,
- 	.set_termios = mos7840_set_termios,
- 	.break_ctl = mos7840_break,
++	ath9k_hw_disable(priv->ah);
+ #ifdef CONFIG_MAC80211_LEDS
+ 	/* must be initialized before ieee80211_register_hw */
+ 	priv->led_cdev.default_trigger = ieee80211_create_tpt_led_trigger(priv->hw,
 -- 
 1.8.3.2
 
