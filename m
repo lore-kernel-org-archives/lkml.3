@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759898Ab3HNMAl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:00:41 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:58474 "EHLO gloria.sntech.de"
+	id S1759965Ab3HNMBI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:01:08 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:58488 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759061Ab3HNMAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:00:36 -0400
+	id S1759917Ab3HNMBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 08:01:04 -0400
 From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
 To: kgene.kim@samsung.com
-Subject: [PATCH v2 2/4] dmaengine: add driver for Samsung s3c24xx SoCs
-Date: Wed, 14 Aug 2013 14:00:25 +0200
+Subject: [PATCH v2 3/4] ARM: S3C24XX: add platform-devices for new dma driver for s3c2412 and s3c2443
+Date: Wed, 14 Aug 2013 14:00:56 +0200
 User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
 Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
         linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
@@ -21,1396 +21,227 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201308141400.25681.heiko@sntech.de>
+Message-Id: <201308141400.56486.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a new driver to support the s3c24xx dma using the dmaengine
-and makes the old one in mach-s3c24xx obsolete in the long run.
-
-Conceptually the s3c24xx-dma feels like a distant relative of the pl08x
-with numerous virtual channels being mapped to a lot less physical ones.
-The driver therefore borrows a lot from the amba-pl08x driver in this
-regard. Functionality-wise the driver gains a memcpy ability in addition
-to the slave_sg one.
-
-The driver supports both the method for requesting the peripheral used
-by SoCs before the S3C2443 and the different method for S3C2443 and later.
-
-On earlier SoCs the hardware channels usable for specific peripherals is
-constrainted while on later SoCs all channels can be used for any peripheral.
-
-Tested on a s3c2416-based board, memcpy using the dmatest module and
-slave_sg partially using the spi-s3c64xx driver.
+This includes defining the mapping for the request sources.
 
 Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 ---
 changes since v1:
-- address comments from Linus Walleij
-- support sg-lists with more than 1 element
-- add support for earlier s3c24xx SoCs
-- redo the channeldata definitions:
-  - no need for static ids for the virtual channels
-  - provide a way to encode constraints for earlier variants
-  - better base for later dt bindings
+- follow new pdata definition
 
-@LinusW: I didn't keep your ack, due to the bigger changes, but feel free
-   to re-ack if it still looks alright :-)
- 
- drivers/dma/Kconfig                       |   12 +
- drivers/dma/Makefile                      |    1 +
- drivers/dma/s3c24xx-dma.c                 | 1255 +++++++++++++++++++++++++++++
- include/linux/platform_data/dma-s3c24xx.h |   43 +
- 4 files changed, 1311 insertions(+)
- create mode 100644 drivers/dma/s3c24xx-dma.c
- create mode 100644 include/linux/platform_data/dma-s3c24xx.h
+ arch/arm/mach-s3c24xx/common.c        |  106 +++++++++++++++++++++++++++++++++
+ arch/arm/mach-s3c24xx/common.h        |    3 +
+ arch/arm/mach-s3c24xx/mach-jive.c     |    1 +
+ arch/arm/mach-s3c24xx/mach-smdk2413.c |    1 +
+ arch/arm/mach-s3c24xx/mach-smdk2416.c |    1 +
+ arch/arm/mach-s3c24xx/mach-smdk2443.c |    1 +
+ arch/arm/mach-s3c24xx/mach-vstms.c    |    1 +
+ 7 files changed, 114 insertions(+)
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 6825957..27729c8 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -154,6 +154,18 @@ config TEGRA20_APB_DMA
- 	  This DMA controller transfers data from memory to peripheral fifo
- 	  or vice versa. It does not support memory to memory data transfer.
- 
-+config S3C24XX_DMAC
-+	tristate "Samsung S3C24XX DMA support"
-+	depends on ARCH_S3C24XX && !S3C24XX_DMA
-+	select DMA_ENGINE
-+	select DMA_VIRTUAL_CHANNELS
-+	help
-+	  Support for the Samsung S3C24XX DMA controller driver. The
-+	  DMA controller is having multiple DMA channels which can be
-+	  configured for different peripherals like audio, UART, SPI.
-+	  The DMA controller can transfer data from memory to peripheral,
-+	  periphal to memory, periphal to periphal and memory to memory.
-+
- source "drivers/dma/sh/Kconfig"
- 
- config COH901318
-diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index 5e0f2ef..5c1655a 100644
---- a/drivers/dma/Makefile
-+++ b/drivers/dma/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_SIRF_DMA) += sirf-dma.o
- obj-$(CONFIG_TI_EDMA) += edma.o
- obj-$(CONFIG_STE_DMA40) += ste_dma40.o ste_dma40_ll.o
- obj-$(CONFIG_TEGRA20_APB_DMA) += tegra20-apb-dma.o
-+obj-$(CONFIG_S3C24XX_DMAC) += s3c24xx-dma.o
- obj-$(CONFIG_PL330_DMA) += pl330.o
- obj-$(CONFIG_PCH_DMA) += pch_dma.o
- obj-$(CONFIG_AMBA_PL08X) += amba-pl08x.o
-diff --git a/drivers/dma/s3c24xx-dma.c b/drivers/dma/s3c24xx-dma.c
-new file mode 100644
-index 0000000..e4ecd94
---- /dev/null
-+++ b/drivers/dma/s3c24xx-dma.c
-@@ -0,0 +1,1255 @@
-+/*
-+ * S3C24XX DMA handling
-+ *
-+ * Copyright (c) 2013 Heiko Stuebner <heiko@sntech.de>
-+ *
-+ * based on amba-pl08x.c
-+ *
-+ * Copyright (c) 2006 ARM Ltd.
-+ * Copyright (c) 2010 ST-Ericsson SA
-+ *
-+ * Author: Peter Pearse <peter.pearse@arm.com>
-+ * Author: Linus Walleij <linus.walleij@stericsson.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ *
-+ * The DMA controllers in S3C24XX SoCs have a varying number of DMA signals
-+ * that can be routed to any of the 4 to 8 hardware-channels.
-+ *
-+ * Therefore on these DMA controllers the number of channels
-+ * and the number of incoming DMA signals are two totally different things.
-+ * It is usually not possible to theoretically handle all physical signals,
-+ * so a multiplexing scheme with possible denial of use is necessary.
-+ *
-+ * Open items:
-+ * - bursts
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <linux/types.h>
-+#include <linux/dmaengine.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/interrupt.h>
-+#include <linux/clk.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
+diff --git a/arch/arm/mach-s3c24xx/common.c b/arch/arm/mach-s3c24xx/common.c
+index c157103..6e19167 100644
+--- a/arch/arm/mach-s3c24xx/common.c
++++ b/arch/arm/mach-s3c24xx/common.c
+@@ -30,6 +30,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
 +#include <linux/platform_data/dma-s3c24xx.h>
+ 
+ #include <mach/hardware.h>
+ #include <mach/regs-clock.h>
+@@ -43,6 +44,7 @@
+ 
+ #include <mach/regs-gpio.h>
+ #include <plat/regs-serial.h>
++#include <mach/dma.h>
+ 
+ #include <plat/cpu.h>
+ #include <plat/devs.h>
+@@ -302,3 +304,107 @@ void __init_or_cpufreq s3c24xx_setup_clocks(unsigned long fclk,
+ 	clk_p.rate = pclk;
+ 	clk_f.rate = fclk;
+ }
 +
-+#include "dmaengine.h"
-+#include "virt-dma.h"
++#if defined(CONFIG_CPU_S3C2410) || defined(CONFIG_CPU_S3C2412) || \
++    defined(CONFIG_CPU_S3C2440) || defined(CONFIG_CPU_S3C2442)
++static struct resource s3c2410_dma_resource[] = {
++	[0] = DEFINE_RES_MEM(S3C24XX_PA_DMA, S3C24XX_SZ_DMA),
++	[1] = DEFINE_RES_IRQ(IRQ_DMA0),
++	[2] = DEFINE_RES_IRQ(IRQ_DMA1),
++	[3] = DEFINE_RES_IRQ(IRQ_DMA2),
++	[4] = DEFINE_RES_IRQ(IRQ_DMA3),
++};
++#endif
 +
-+#define MAX_DMA_CHANNELS	8
-+
-+#define DISRC			(0x00)
-+#define DISRCC			(0x04)
-+#define DISRCC_INC_INCREMENT	(0 << 0)
-+#define DISRCC_INC_FIXED	(1 << 0)
-+#define DISRCC_LOC_AHB		(0 << 1)
-+#define DISRCC_LOC_APB		(1 << 1)
-+
-+#define DIDST			(0x08)
-+#define DIDSTC			(0x0C)
-+#define DIDSTC_INC_INCREMENT	(0 << 0)
-+#define DIDSTC_INC_FIXED	(1 << 0)
-+#define DIDSTC_LOC_AHB		(0 << 1)
-+#define DIDSTC_LOC_APB		(1 << 1)
-+#define DIDSTC_INT_TC0		(0 << 2)
-+#define DIDSTC_INT_RELOAD	(1 << 2)
-+
-+#define DCON			(0x10)
-+
-+#define DCON_TC_MASK		0xfffff
-+#define DCON_DSZ_BYTE		(0 << 20)
-+#define DCON_DSZ_HALFWORD	(1 << 20)
-+#define DCON_DSZ_WORD		(2 << 20)
-+#define DCON_DSZ_MASK		(3 << 20)
-+#define DCON_DSZ_SHIFT		20
-+#define DCON_AUTORELOAD		(0 << 22)
-+#define DCON_NORELOAD		(1 << 22)
-+#define DCON_HWTRIG		(1 << 23)
-+#define DCON_HWSRC_SHIFT	24
-+#define DCON_SERV_SINGLE	(0 << 27)
-+#define DCON_SERV_WHOLE		(1 << 27)
-+#define DCON_TSZ_UNIT		(0 << 28)
-+#define DCON_TSZ_BURST4		(1 << 28)
-+#define DCON_INT		(1 << 29)
-+#define DCON_SYNC_PCLK		(0 << 30)
-+#define DCON_SYNC_HCLK		(1 << 30)
-+#define DCON_DEMAND		(0 << 31)
-+#define DCON_HANDSHAKE		(1 << 31)
-+
-+#define DSTAT			(0x14)
-+#define DSTAT_STAT_BUSY		(1 << 20)
-+#define DSTAT_CURRTC_MASK	0xfffff
-+
-+#define DMASKTRIG		(0x20)
-+#define DMASKTRIG_STOP		(1 << 2)
-+#define DMASKTRIG_ON		(1 << 1)
-+#define DMASKTRIG_SWTRIG	(1 << 0)
-+
-+#define DMAREQSEL		(0x24)
-+#define DMAREQSEL_HW		(1 << 0)
-+
-+/*
-+ * S3C2410, S3C2440 and S3C2442 SoCs cannot select any physical channel
-+ * for a DMA source. Instead only specific channels are valid.
-+ * All of these SoCs have 4 physical channels and the number of request
-+ * source bits is 3. Additionally we also need 1 bit to mark the channel
-+ * as valid.
-+ * Therefore we separate the chansel element of the channel data into 4
-+ * parts of 4 bits each, to hold the information if the channel is valid
-+ * and the hw request source to use.
-+ *
-+ * Example:
-+ * SDI is valid on channels 0, 2 and 3 - with varying hw request sources.
-+ * For it the chansel field would look like
-+ *
-+ * ((BIT(3) | 1) << 3 * 4) | // channel 3, with request source 1
-+ * ((BIT(3) | 2) << 2 * 4) | // channel 2, with request source 2
-+ * ((BIT(3) | 2) << 0 * 4)   // channel 0, with request source 2
-+ */
-+#define CHANSEL_WIDTH		4
-+#define CHANSEL_VALID		BIT(3)
-+#define CHANSEL_REQ_MASK	7
-+
-+/*
-+ * struct soc_data - vendor-specific config parameters for individual SoCs
-+ * @stride: spacing between the registers of each channel
-+ * @has_reqsel: does the controller use the newer requestselection mechanism
-+ * @has_clocks: are controllable dma-clocks present
-+ */
-+struct soc_data {
-+	int stride;
-+	bool has_reqsel;
-+	bool has_clocks;
++#ifdef CONFIG_CPU_S3C2412
++static struct s3c24xx_dma_channel s3c2412_dma_channels[DMACH_MAX] = {
++	[DMACH_XD0] = { S3C24XX_DMA_AHB, true, 17 },
++	[DMACH_XD1] = { S3C24XX_DMA_AHB, true, 18 },
++	[DMACH_SDI] = { S3C24XX_DMA_APB, false, 10 },
++	[DMACH_SPI0_RX] = { S3C24XX_DMA_APB, true, 1 },
++	[DMACH_SPI0_TX] = { S3C24XX_DMA_APB, true, 0 },
++	[DMACH_SPI1_RX] = { S3C24XX_DMA_APB, true, 3 },
++	[DMACH_SPI1_TX] = { S3C24XX_DMA_APB, true, 2 },
++	[DMACH_UART0] = { S3C24XX_DMA_APB, true, 19 },
++	[DMACH_UART1] = { S3C24XX_DMA_APB, true, 21 },
++	[DMACH_UART2] = { S3C24XX_DMA_APB, true, 23 },
++	[DMACH_UART0_SRC2] = { S3C24XX_DMA_APB, true, 20 },
++	[DMACH_UART1_SRC2] = { S3C24XX_DMA_APB, true, 22 },
++	[DMACH_UART2_SRC2] = { S3C24XX_DMA_APB, true, 24 },
++	[DMACH_TIMER] = { S3C24XX_DMA_APB, true, 9 },
++	[DMACH_I2S_IN] = { S3C24XX_DMA_APB, true, 5 },
++	[DMACH_I2S_OUT] = { S3C24XX_DMA_APB, true, 4 },
++	[DMACH_USB_EP1] = { S3C24XX_DMA_APB, true, 13 },
++	[DMACH_USB_EP2] = { S3C24XX_DMA_APB, true, 14 },
++	[DMACH_USB_EP3] = { S3C24XX_DMA_APB, true, 15 },
++	[DMACH_USB_EP4] = { S3C24XX_DMA_APB, true, 16 },
 +};
 +
-+/*
-+ * enum s3c24xx_dma_chan_state - holds the virtual channel states
-+ * @S3C24XX_DMA_CHAN_IDLE: the channel is idle
-+ * @S3C24XX_DMA_CHAN_RUNNING: the channel has allocated a physical transport
-+ * channel and is running a transfer on it
-+ * @S3C24XX_DMA_CHAN_WAITING: the channel is waiting for a physical transport
-+ * channel to become available (only pertains to memcpy channels)
-+ */
-+enum s3c24xx_dma_chan_state {
-+	S3C24XX_DMA_CHAN_IDLE,
-+	S3C24XX_DMA_CHAN_RUNNING,
-+	S3C24XX_DMA_CHAN_WAITING,
++static struct s3c24xx_dma_platdata s3c2412_dma_platdata = {
++	.num_phy_channels = 4,
++	.channels = s3c2412_dma_channels,
++	.num_channels = DMACH_MAX,
 +};
 +
-+/*
-+ * struct s3c24xx_sg - structure containing data per sg
-+ * @src_addr: src address of sg
-+ * @dst_addr: dst address of sg
-+ * @len: transfer len in bytes
-+ * @node: node for txd's dsg_list
-+ */
-+struct s3c24xx_sg {
-+	dma_addr_t src_addr;
-+	dma_addr_t dst_addr;
-+	size_t len;
-+	struct list_head node;
-+};
-+
-+/*
-+ * struct s3c24xx_txd - wrapper for struct dma_async_tx_descriptor
-+ * @vd: virtual DMA descriptor
-+ * @dsg_list: list of children sg's
-+ * @at: sg currently being transfered
-+ * @width: transfer width
-+ * @disrcc: value for source control register
-+ * @didstc: value for destination control register
-+ * @dcon: base value for dcon register
-+ */
-+struct s3c24xx_txd {
-+	struct virt_dma_desc vd;
-+	struct list_head dsg_list;
-+	struct list_head *at;
-+	u8 width;
-+	u32 disrcc;
-+	u32 didstc;
-+	u32 dcon;
-+};
-+
-+struct s3c24xx_dma_chan;
-+
-+/*
-+ * struct s3c24xx_dma_phy - holder for the physical channels
-+ * @id: physical index to this channel
-+ * @valid: does the channel have all required elements
-+ * @base: virtual memory base (remapped) for the this channel
-+ * @irq: interrupt for this channel
-+ * @clk: clock for this channel
-+ * @lock: a lock to use when altering an instance of this struct
-+ * @serving: virtual channel currently being served by this physicalchannel
-+ * @host: a pointer to the host (internal use)
-+ */
-+struct s3c24xx_dma_phy {
-+	unsigned int			id;
-+	bool				valid;
-+	void __iomem			*base;
-+	unsigned int			irq;
-+	struct clk			*clk;
-+	spinlock_t			lock;
-+	struct s3c24xx_dma_chan		*serving;
-+	struct s3c24xx_dma_engine	*host;
-+};
-+
-+/*
-+ * struct s3c24xx_dma_chan - this structure wraps a DMA ENGINE channel
-+ * @id: the id of the channel
-+ * @name: name of the channel
-+ * @vc: wrappped virtual channel
-+ * @phy: the physical channel utilized by this channel, if there is one
-+ * @runtime_addr: address for RX/TX according to the runtime config
-+ * @at: active transaction on this channel
-+ * @lock: a lock for this channel data
-+ * @host: a pointer to the host (internal use)
-+ * @state: whether the channel is idle, running etc
-+ * @slave: whether this channel is a device (slave) or for memcpy
-+ */
-+struct s3c24xx_dma_chan {
-+	int id;
-+	const char *name;
-+	struct virt_dma_chan vc;
-+	struct s3c24xx_dma_phy *phy;
-+	struct dma_slave_config cfg;
-+	struct s3c24xx_txd *at;
-+	struct s3c24xx_dma_engine *host;
-+	enum s3c24xx_dma_chan_state state;
-+	bool slave;
-+};
-+
-+/*
-+ * struct s3c24xx_dma_engine - the local state holder for the S3C24XX
-+ * @pdev: the corresponding platform device
-+ * @pdata: platform data passed in from the platform/machine
-+ * @base: virtual memory base (remapped)
-+ * @slave: slave engine for this instance
-+ * @memcpy: memcpy engine for this instance
-+ * @phy_chans: array of data for the physical channels
-+ */
-+struct s3c24xx_dma_engine {
-+	struct platform_device			*pdev;
-+	const struct s3c24xx_dma_platdata	*pdata;
-+	struct soc_data				*sdata;
-+	void __iomem				*base;
-+	struct dma_device			slave;
-+	struct dma_device			memcpy;
-+	struct s3c24xx_dma_phy			*phy_chans;
-+};
-+
-+/*
-+ * Physical channel handling
-+ */
-+
-+/*
-+ * Check whether a certain channel is busy or not.
-+ */
-+static int s3c24xx_dma_phy_busy(struct s3c24xx_dma_phy *phy)
-+{
-+	unsigned int val = readl(phy->base + DSTAT);
-+	return val & DSTAT_STAT_BUSY;
-+}
-+
-+/*
-+ * Allocate a physical channel for a virtual channel
-+ *
-+ * Try to locate a physical channel to be used for this transfer. If all
-+ * are taken return NULL and the requester will have to cope by using
-+ * some fallback PIO mode or retrying later.
-+ *
-+ * FIXME: implement phy selection for s3c2410 and s3c2440/s3c2442
-+ * which have additional channel constraints.
-+ */
-+static
-+struct s3c24xx_dma_phy *s3c24xx_dma_get_phy(struct s3c24xx_dma_chan *s3cchan)
-+{
-+	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-+	const struct s3c24xx_dma_platdata *pdata = s3cdma->pdata;
-+	struct s3c24xx_dma_channel *cdata;
-+	struct s3c24xx_dma_phy *phy = NULL;
-+	unsigned long flags;
-+	int i;
-+	int ret;
-+
-+	if (s3cchan->slave)
-+		cdata = &pdata->channels[s3cchan->id];
-+
-+	for (i = 0; i < s3cdma->pdata->num_phy_channels; i++) {
-+		phy = &s3cdma->phy_chans[i];
-+
-+		if (!phy || !phy->valid)
-+			continue;
-+
-+		/* check slave-channel constraints on older variants */
-+		if (s3cchan->slave && !s3cdma->sdata->has_reqsel) {
-+			int phyvalid = (cdata->chansel >> (i * CHANSEL_WIDTH));
-+			if (!(phyvalid & CHANSEL_VALID))
-+				continue;
-+		}
-+
-+		spin_lock_irqsave(&phy->lock, flags);
-+
-+		if (!phy->serving) {
-+			phy->serving = s3cchan;
-+			spin_unlock_irqrestore(&phy->lock, flags);
-+			break;
-+		}
-+
-+		spin_unlock_irqrestore(&phy->lock, flags);
-+	}
-+
-+	/* No physical channel available, cope with it */
-+	if (i == s3cdma->pdata->num_phy_channels) {
-+		dev_warn(&s3cdma->pdev->dev, "no phy channel available\n");
-+		return NULL;
-+	}
-+
-+	/* start the phy clock */
-+	if (s3cdma->sdata->has_clocks) {
-+		ret = clk_enable(phy->clk);
-+		if (ret) {
-+			phy->serving = NULL;
-+			return NULL;
-+		}
-+	}
-+
-+	return phy;
-+}
-+
-+/*
-+ * Mark the physical channel as free.
-+ *
-+ * This drops the link between the physical and virtual channel.
-+ */
-+static inline void s3c24xx_dma_put_phy(struct s3c24xx_dma_phy *phy)
-+{
-+	struct s3c24xx_dma_engine *s3cdma = phy->host;
-+
-+	if (s3cdma->sdata->has_clocks)
-+		clk_disable(phy->clk);
-+	phy->serving = NULL;
-+}
-+
-+/*
-+ * Stops the channel by writing the stop bit.
-+ * This should not be used for an on-going transfer, but as a method of
-+ * shutting down a channel (eg, when it's no longer used) or terminating a
-+ * transfer.
-+ */
-+static void s3c24xx_dma_terminate_phy(struct s3c24xx_dma_phy *phy)
-+{
-+	writel(DMASKTRIG_STOP, phy->base + DMASKTRIG);
-+}
-+
-+/*
-+ * Virtual channel handling
-+ */
-+
-+static inline
-+struct s3c24xx_dma_chan *to_s3c24xx_dma_chan(struct dma_chan *chan)
-+{
-+	return container_of(chan, struct s3c24xx_dma_chan, vc.chan);
-+}
-+
-+static u32 s3c24xx_dma_getbytes_chan(struct s3c24xx_dma_chan *s3cchan)
-+{
-+	struct s3c24xx_dma_phy *phy = s3cchan->phy;
-+	struct s3c24xx_txd *txd = s3cchan->at;
-+	u32 tc = readl(phy->base + DSTAT) & DSTAT_CURRTC_MASK;
-+
-+	return tc * txd->width;
-+}
-+
-+static int s3c24xx_dma_set_runtime_config(struct s3c24xx_dma_chan *s3cchan,
-+				  struct dma_slave_config *config)
-+{
-+	if (!s3cchan->slave)
-+		return -EINVAL;
-+
-+	/* Reject definitely invalid configurations */
-+	if (config->src_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES ||
-+	    config->dst_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES)
-+		return -EINVAL;
-+
-+	s3cchan->cfg = *config;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Transfer handling
-+ */
-+
-+static inline
-+struct s3c24xx_txd *to_s3c24xx_txd(struct dma_async_tx_descriptor *tx)
-+{
-+	return container_of(tx, struct s3c24xx_txd, vd.tx);
-+}
-+
-+static struct s3c24xx_txd *s3c24xx_dma_get_txd(void)
-+{
-+	struct s3c24xx_txd *txd = kzalloc(sizeof(*txd), GFP_NOWAIT);
-+
-+	if (txd) {
-+		INIT_LIST_HEAD(&txd->dsg_list);
-+		txd->dcon = DCON_INT | DCON_NORELOAD;
-+	}
-+
-+	return txd;
-+}
-+
-+static void s3c24xx_dma_free_txd(struct s3c24xx_txd *txd)
-+{
-+	struct s3c24xx_sg *dsg, *_dsg;
-+
-+	list_for_each_entry_safe(dsg, _dsg, &txd->dsg_list, node) {
-+		list_del(&dsg->node);
-+		kfree(dsg);
-+	}
-+
-+	kfree(txd);
-+}
-+
-+static void s3c24xx_dma_start_next_sg(struct s3c24xx_dma_chan *s3cchan,
-+				       struct s3c24xx_txd *txd)
-+{
-+	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-+	struct s3c24xx_dma_phy *phy = s3cchan->phy;
-+	const struct s3c24xx_dma_platdata *pdata = s3cdma->pdata;
-+	struct s3c24xx_sg *dsg = list_entry(txd->at, struct s3c24xx_sg, node);
-+	u32 dcon = txd->dcon;
-+	u32 val;
-+
-+	/* transfer-size and -count from len and width */
-+	switch (txd->width) {
-+	case 1:
-+		dcon |= DCON_DSZ_BYTE | dsg->len;
-+		break;
-+	case 2:
-+		dcon |= DCON_DSZ_HALFWORD | (dsg->len / 2);
-+		break;
-+	case 4:
-+		dcon |= DCON_DSZ_WORD | (dsg->len / 4);
-+		break;
-+	}
-+
-+	if (s3cchan->slave) {
-+		struct s3c24xx_dma_channel *cdata =
-+					&pdata->channels[s3cchan->id];
-+		if (s3cdma->sdata->has_reqsel) {
-+			writel_relaxed((cdata->chansel << 1) | DMAREQSEL_HW,
-+			       phy->base + DMAREQSEL);
-+		} else {
-+			int csel = cdata->chansel >> (phy->id * CHANSEL_WIDTH);
-+			csel &= CHANSEL_REQ_MASK;
-+			dcon |= csel << DCON_HWSRC_SHIFT;
-+			dcon |= DCON_HWTRIG;
-+		}
-+	} else {
-+		if (s3cdma->sdata->has_reqsel)
-+			writel_relaxed(0, phy->base + DMAREQSEL);
-+	}
-+
-+	writel_relaxed(dsg->src_addr, phy->base + DISRC);
-+	writel_relaxed(txd->disrcc, phy->base + DISRCC);
-+	writel_relaxed(dsg->dst_addr, phy->base + DIDST);
-+	writel_relaxed(txd->didstc, phy->base + DIDSTC);
-+	writel_relaxed(dcon, phy->base + DCON);
-+
-+	val = readl_relaxed(phy->base + DMASKTRIG);
-+	val &= ~DMASKTRIG_STOP;
-+	val |= DMASKTRIG_ON;
-+
-+	/* trigger the dma operation for memcpy transfers */
-+	if (!s3cchan->slave)
-+		val |= DMASKTRIG_SWTRIG;
-+
-+	writel(val, phy->base + DMASKTRIG);
-+}
-+
-+/*
-+ * Set the initial DMA register values and start first sg.
-+ */
-+static void s3c24xx_dma_start_next_txd(struct s3c24xx_dma_chan *s3cchan)
-+{
-+	struct s3c24xx_dma_phy *phy = s3cchan->phy;
-+	struct virt_dma_desc *vd = vchan_next_desc(&s3cchan->vc);
-+	struct s3c24xx_txd *txd = to_s3c24xx_txd(&vd->tx);
-+
-+	list_del(&txd->vd.node);
-+
-+	s3cchan->at = txd;
-+
-+	/* Wait for channel inactive */
-+	while (s3c24xx_dma_phy_busy(phy))
-+		cpu_relax();
-+
-+	/* point to the first element of the sg list */
-+	txd->at = txd->dsg_list.next;
-+	s3c24xx_dma_start_next_sg(s3cchan, txd);
-+}
-+
-+static void s3c24xx_dma_free_txd_list(struct s3c24xx_dma_engine *s3cdma,
-+				struct s3c24xx_dma_chan *s3cchan)
-+{
-+	LIST_HEAD(head);
-+
-+	vchan_get_all_descriptors(&s3cchan->vc, &head);
-+	vchan_dma_desc_free_list(&s3cchan->vc, &head);
-+}
-+
-+/*
-+ * Try to allocate a physical channel.  When successful, assign it to
-+ * this virtual channel, and initiate the next descriptor.  The
-+ * virtual channel lock must be held at this point.
-+ */
-+static void s3c24xx_dma_phy_alloc_and_start(struct s3c24xx_dma_chan *s3cchan)
-+{
-+	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-+	struct s3c24xx_dma_phy *phy;
-+
-+	phy = s3c24xx_dma_get_phy(s3cchan);
-+	if (!phy) {
-+		dev_dbg(&s3cdma->pdev->dev, "no physical channel available for xfer on %s\n",
-+			s3cchan->name);
-+		s3cchan->state = S3C24XX_DMA_CHAN_WAITING;
-+		return;
-+	}
-+
-+	dev_dbg(&s3cdma->pdev->dev, "allocated physical channel %d for xfer on %s\n",
-+		phy->id, s3cchan->name);
-+
-+	s3cchan->phy = phy;
-+	s3cchan->state = S3C24XX_DMA_CHAN_RUNNING;
-+
-+	s3c24xx_dma_start_next_txd(s3cchan);
-+}
-+
-+static void s3c24xx_dma_phy_reassign_start(struct s3c24xx_dma_phy *phy,
-+	struct s3c24xx_dma_chan *s3cchan)
-+{
-+	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-+
-+	dev_dbg(&s3cdma->pdev->dev, "reassigned physical channel %d for xfer on %s\n",
-+		phy->id, s3cchan->name);
-+
-+	/*
-+	 * We do this without taking the lock; we're really only concerned
-+	 * about whether this pointer is NULL or not, and we're guaranteed
-+	 * that this will only be called when it _already_ is non-NULL.
-+	 */
-+	phy->serving = s3cchan;
-+	s3cchan->phy = phy;
-+	s3cchan->state = S3C24XX_DMA_CHAN_RUNNING;
-+	s3c24xx_dma_start_next_txd(s3cchan);
-+}
-+
-+/*
-+ * Free a physical DMA channel, potentially reallocating it to another
-+ * virtual channel if we have any pending.
-+ */
-+static void s3c24xx_dma_phy_free(struct s3c24xx_dma_chan *s3cchan)
-+{
-+	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-+	struct s3c24xx_dma_chan *p, *next;
-+
-+retry:
-+	next = NULL;
-+
-+	/* Find a waiting virtual channel for the next transfer. */
-+	list_for_each_entry(p, &s3cdma->memcpy.channels, vc.chan.device_node)
-+		if (p->state == S3C24XX_DMA_CHAN_WAITING) {
-+			next = p;
-+			break;
-+		}
-+
-+	if (!next) {
-+		list_for_each_entry(p, &s3cdma->slave.channels,
-+				    vc.chan.device_node)
-+			if (p->state == S3C24XX_DMA_CHAN_WAITING) {
-+				next = p;
-+				break;
-+			}
-+	}
-+
-+	/* Ensure that the physical channel is stopped */
-+	s3c24xx_dma_terminate_phy(s3cchan->phy);
-+
-+	if (next) {
-+		bool success;
-+
-+		/*
-+		 * Eww.  We know this isn't going to deadlock
-+		 * but lockdep probably doesn't.
-+		 */
-+		spin_lock(&next->vc.lock);
-+		/* Re-check the state now that we have the lock */
-+		success = next->state == S3C24XX_DMA_CHAN_WAITING;
-+		if (success)
-+			s3c24xx_dma_phy_reassign_start(s3cchan->phy, next);
-+		spin_unlock(&next->vc.lock);
-+
-+		/* If the state changed, try to find another channel */
-+		if (!success)
-+			goto retry;
-+	} else {
-+		/* No more jobs, so free up the physical channel */
-+		s3c24xx_dma_put_phy(s3cchan->phy);
-+	}
-+
-+	s3cchan->phy = NULL;
-+	s3cchan->state = S3C24XX_DMA_CHAN_IDLE;
-+}
-+
-+static void s3c24xx_dma_unmap_buffers(struct s3c24xx_txd *txd)
-+{
-+	struct device *dev = txd->vd.tx.chan->device->dev;
-+	struct s3c24xx_sg *dsg;
-+
-+	if (!(txd->vd.tx.flags & DMA_COMPL_SKIP_SRC_UNMAP)) {
-+		if (txd->vd.tx.flags & DMA_COMPL_SRC_UNMAP_SINGLE)
-+			list_for_each_entry(dsg, &txd->dsg_list, node)
-+				dma_unmap_single(dev, dsg->src_addr, dsg->len,
-+						DMA_TO_DEVICE);
-+		else {
-+			list_for_each_entry(dsg, &txd->dsg_list, node)
-+				dma_unmap_page(dev, dsg->src_addr, dsg->len,
-+						DMA_TO_DEVICE);
-+		}
-+	}
-+
-+	if (!(txd->vd.tx.flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
-+		if (txd->vd.tx.flags & DMA_COMPL_DEST_UNMAP_SINGLE)
-+			list_for_each_entry(dsg, &txd->dsg_list, node)
-+				dma_unmap_single(dev, dsg->dst_addr, dsg->len,
-+						DMA_FROM_DEVICE);
-+		else
-+			list_for_each_entry(dsg, &txd->dsg_list, node)
-+				dma_unmap_page(dev, dsg->dst_addr, dsg->len,
-+						DMA_FROM_DEVICE);
-+	}
-+}
-+
-+static void s3c24xx_dma_desc_free(struct virt_dma_desc *vd)
-+{
-+	struct s3c24xx_txd *txd = to_s3c24xx_txd(&vd->tx);
-+	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(vd->tx.chan);
-+
-+	if (!s3cchan->slave)
-+		s3c24xx_dma_unmap_buffers(txd);
-+
-+	s3c24xx_dma_free_txd(txd);
-+}
-+
-+static irqreturn_t s3c24xx_dma_irq(int irq, void *data)
-+{
-+	struct s3c24xx_dma_phy *phy = data;
-+	struct s3c24xx_dma_chan *s3cchan = phy->serving;
-+	struct s3c24xx_txd *txd;
-+
-+	dev_dbg(&phy->host->pdev->dev, "interrupt on channel %d\n", phy->id);
-+
-+	if (!s3cchan) {
-+		dev_err(&phy->host->pdev->dev, "interrupt on unused channel %d\n",
-+			phy->id);
-+		return IRQ_NONE;
-+	}
-+
-+	spin_lock(&s3cchan->vc.lock);
-+	txd = s3cchan->at;
-+	if (txd) {
-+		/* when more sg's are in this txd, start the next one */
-+		if (!list_is_last(txd->at, &txd->dsg_list)) {
-+			txd->at = txd->at->next;
-+			s3c24xx_dma_start_next_sg(s3cchan, txd);
-+		} else {
-+			s3cchan->at = NULL;
-+			vchan_cookie_complete(&txd->vd);
-+
-+			/*
-+			 * And start the next descriptor (if any),
-+			 * otherwise free this channel.
-+			 */
-+			if (vchan_next_desc(&s3cchan->vc))
-+				s3c24xx_dma_start_next_txd(s3cchan);
-+			else
-+				s3c24xx_dma_phy_free(s3cchan);
-+		}
-+	}
-+	spin_unlock(&s3cchan->vc.lock);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/*
-+ * The DMA ENGINE API
-+ */
-+
-+static int s3c24xx_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-+			 unsigned long arg)
-+{
-+	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-+	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-+	unsigned long flags;
-+	int ret = 0;
-+
-+	/* Controls applicable to inactive channels */
-+	if (cmd == DMA_SLAVE_CONFIG)
-+		return s3c24xx_dma_set_runtime_config(s3cchan,
-+					      (struct dma_slave_config *)arg);
-+
-+	/*
-+	 * Anything succeeds on channels with no physical allocation and
-+	 * no queued transfers.
-+	 */
-+	spin_lock_irqsave(&s3cchan->vc.lock, flags);
-+	if (!s3cchan->phy && !s3cchan->at) {
-+		spin_unlock_irqrestore(&s3cchan->vc.lock, flags);
-+		return 0;
-+	}
-+
-+	switch (cmd) {
-+	case DMA_TERMINATE_ALL:
-+		s3cchan->state = S3C24XX_DMA_CHAN_IDLE;
-+
-+		 /* Mark physical channel as free */
-+		if (s3cchan->phy)
-+			s3c24xx_dma_phy_free(s3cchan);
-+
-+		/* Dequeue current job */
-+		if (s3cchan->at) {
-+			s3c24xx_dma_desc_free(&s3cchan->at->vd);
-+			s3cchan->at = NULL;
-+		}
-+
-+		/* Dequeue jobs not yet fired as well */
-+		s3c24xx_dma_free_txd_list(s3cdma, s3cchan);
-+		break;
-+	default:
-+		/* Unknown command */
-+		ret = -ENXIO;
-+		break;
-+	}
-+
-+	spin_unlock_irqrestore(&s3cchan->vc.lock, flags);
-+
-+	return ret;
-+}
-+
-+static int s3c24xx_dma_alloc_chan_resources(struct dma_chan *chan)
-+{
-+	return 0;
-+}
-+
-+static void s3c24xx_dma_free_chan_resources(struct dma_chan *chan)
-+{
-+	/* Ensure all queued descriptors are freed */
-+	vchan_free_chan_resources(to_virt_chan(chan));
-+}
-+
-+static enum dma_status s3c24xx_dma_tx_status(struct dma_chan *chan,
-+		dma_cookie_t cookie, struct dma_tx_state *txstate)
-+{
-+	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-+	struct virt_dma_desc *vd;
-+	unsigned long flags;
-+	enum dma_status ret;
-+	size_t bytes = 0;
-+
-+	ret = dma_cookie_status(chan, cookie, txstate);
-+	if (ret == DMA_SUCCESS)
-+		return ret;
-+
-+	/*
-+	 * There's no point calculating the residue if there's
-+	 * no txstate to store the value.
-+	 */
-+	if (!txstate)
-+		return ret;
-+
-+	spin_lock_irqsave(&s3cchan->vc.lock, flags);
-+	ret = dma_cookie_status(chan, cookie, txstate);
-+	if (ret != DMA_SUCCESS) {
-+		struct s3c24xx_txd *txd;
-+		struct s3c24xx_sg *dsg;
-+
-+		vd = vchan_find_desc(&s3cchan->vc, cookie);
-+		if (vd) {
-+			/* On the issued list, so hasn't been processed yet */
-+			txd = to_s3c24xx_txd(&vd->tx);
-+
-+			list_for_each_entry(dsg, &txd->dsg_list, node)
-+				bytes += dsg->len;
-+		} else {
-+			/*
-+			 * Currently running, so sum over the pending sg's and
-+			 * the currently active one.
-+			 */
-+			txd = s3cchan->at;
-+
-+			dsg = list_entry(txd->at, struct s3c24xx_sg, node);
-+			list_for_each_entry_from(dsg, &txd->dsg_list, node);
-+				bytes += dsg->len;
-+
-+			bytes += s3c24xx_dma_getbytes_chan(s3cchan);
-+		}
-+	}
-+	spin_unlock_irqrestore(&s3cchan->vc.lock, flags);
-+
-+	/*
-+	 * This cookie not complete yet
-+	 * Get number of bytes left in the active transactions and queue
-+	 */
-+	dma_set_residue(txstate, bytes);
-+
-+	/* Whether waiting or running, we're in progress */
-+	return ret;
-+}
-+
-+/*
-+ * Initialize a descriptor to be used by memcpy submit
-+ */
-+static struct dma_async_tx_descriptor *s3c24xx_dma_prep_memcpy(
-+		struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
-+		size_t len, unsigned long flags)
-+{
-+	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-+	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-+	struct s3c24xx_txd *txd;
-+	struct s3c24xx_sg *dsg;
-+
-+	dev_dbg(&s3cdma->pdev->dev, "prepare memcpy of %d bytes from %s\n",
-+			len, s3cchan->name);
-+
-+	if ((len & DCON_TC_MASK) != len) {
-+		dev_err(&s3cdma->pdev->dev, "memcpy size %d to large\n", len);
-+		return NULL;
-+	}
-+
-+	txd = s3c24xx_dma_get_txd();
-+	if (!txd)
-+		return NULL;
-+
-+	dsg = kzalloc(sizeof(struct s3c24xx_sg), GFP_NOWAIT);
-+	if (!dsg) {
-+		s3c24xx_dma_free_txd(txd);
-+		return NULL;
-+	}
-+	list_add_tail(&dsg->node, &txd->dsg_list);
-+
-+	dsg->src_addr = src;
-+	dsg->dst_addr = dest;
-+	dsg->len = len;
-+
-+	txd->width = 1;
-+	txd->disrcc = DISRCC_LOC_AHB | DISRCC_INC_INCREMENT;
-+	txd->didstc = DIDSTC_LOC_AHB | DIDSTC_INC_INCREMENT;
-+	txd->dcon |= DCON_DEMAND | DCON_SYNC_HCLK | DCON_SERV_WHOLE;
-+
-+	return vchan_tx_prep(&s3cchan->vc, &txd->vd, flags);
-+}
-+
-+static struct dma_async_tx_descriptor *s3c24xx_dma_prep_slave_sg(
-+		struct dma_chan *chan, struct scatterlist *sgl,
-+		unsigned int sg_len, enum dma_transfer_direction direction,
-+		unsigned long flags, void *context)
-+{
-+	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-+	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
-+	const struct s3c24xx_dma_platdata *pdata = s3cdma->pdata;
-+	struct s3c24xx_dma_channel *cdata = &pdata->channels[s3cchan->id];
-+	struct s3c24xx_txd *txd;
-+	struct s3c24xx_sg *dsg;
-+	struct scatterlist *sg;
-+	dma_addr_t slave_addr;
-+	u32 hwcfg = 0;
-+	int tmp;
-+
-+	dev_dbg(&s3cdma->pdev->dev, "prepare transaction of %d bytes from %s\n",
-+			sg_dma_len(sgl), s3cchan->name);
-+
-+	txd = s3c24xx_dma_get_txd();
-+	if (!txd)
-+		return NULL;
-+
-+	if (cdata->handshake)
-+		txd->dcon |= DCON_HANDSHAKE;
-+
-+	switch (cdata->bus) {
-+	case S3C24XX_DMA_APB:
-+		txd->dcon |= DCON_SYNC_PCLK;
-+		hwcfg |= DISRCC_LOC_APB;
-+		break;
-+	case S3C24XX_DMA_AHB:
-+		txd->dcon |= DCON_SYNC_HCLK;
-+		hwcfg |= DISRCC_LOC_AHB;
-+		break;
-+	}
-+
-+	/* always assume our peripheral desintation is a fixed
-+	 * address in memory. */
-+	hwcfg |= DISRCC_INC_FIXED;
-+
-+	/* individual dma operations are requested by the slave,
-+	 * so serve only single atomic operations (DCON_SERV_SINGLE).
-+	 */
-+	txd->dcon |= DCON_SERV_SINGLE;
-+
-+	if (direction == DMA_MEM_TO_DEV) {
-+		txd->disrcc = DISRCC_LOC_AHB | DISRCC_INC_INCREMENT;
-+		txd->didstc = hwcfg;
-+		slave_addr = s3cchan->cfg.dst_addr;
-+		txd->width = s3cchan->cfg.dst_addr_width;
-+	} else if (direction == DMA_DEV_TO_MEM) {
-+		txd->disrcc = hwcfg;
-+		txd->didstc = DIDSTC_LOC_AHB | DIDSTC_INC_INCREMENT;
-+		slave_addr = s3cchan->cfg.src_addr;
-+		txd->width = s3cchan->cfg.src_addr_width;
-+	} else {
-+		s3c24xx_dma_free_txd(txd);
-+		dev_err(&s3cdma->pdev->dev,
-+			"direction %d unsupported\n", direction);
-+		return NULL;
-+	}
-+
-+	for_each_sg(sgl, sg, sg_len, tmp) {
-+		dsg = kzalloc(sizeof(struct s3c24xx_sg), GFP_NOWAIT);
-+		if (!dsg) {
-+			s3c24xx_dma_free_txd(txd);
-+			return NULL;
-+		}
-+		list_add_tail(&dsg->node, &txd->dsg_list);
-+
-+		dsg->len = sg_dma_len(sg);
-+		if (direction == DMA_MEM_TO_DEV) {
-+			dsg->src_addr = sg_dma_address(sg);
-+			dsg->dst_addr = slave_addr;
-+		} else { /* DMA_DEV_TO_MEM */
-+			dsg->src_addr = slave_addr;
-+			dsg->dst_addr = sg_dma_address(sg);
-+		}
-+		break;
-+	}
-+
-+	return vchan_tx_prep(&s3cchan->vc, &txd->vd, flags);
-+}
-+
-+/*
-+ * Slave transactions callback to the slave device to allow
-+ * synchronization of slave DMA signals with the DMAC enable
-+ */
-+static void s3c24xx_dma_issue_pending(struct dma_chan *chan)
-+{
-+	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&s3cchan->vc.lock, flags);
-+	if (vchan_issue_pending(&s3cchan->vc)) {
-+		if (!s3cchan->phy && s3cchan->state != S3C24XX_DMA_CHAN_WAITING)
-+			s3c24xx_dma_phy_alloc_and_start(s3cchan);
-+	}
-+	spin_unlock_irqrestore(&s3cchan->vc.lock, flags);
-+}
-+
-+/*
-+ * Bringup and teardown
-+ */
-+
-+/*
-+ * Initialise the DMAC memcpy/slave channels.
-+ * Make a local wrapper to hold required data
-+ */
-+static int s3c24xx_dma_init_virtual_channels(struct s3c24xx_dma_engine *s3cdma,
-+		struct dma_device *dmadev, unsigned int channels, bool slave)
-+{
-+	struct s3c24xx_dma_chan *chan;
-+	int i;
-+
-+	INIT_LIST_HEAD(&dmadev->channels);
-+
-+	/*
-+	 * Register as many many memcpy as we have physical channels,
-+	 * we won't always be able to use all but the code will have
-+	 * to cope with that situation.
-+	 */
-+	for (i = 0; i < channels; i++) {
-+		chan = devm_kzalloc(dmadev->dev, sizeof(*chan), GFP_KERNEL);
-+		if (!chan) {
-+			dev_err(dmadev->dev,
-+				"%s no memory for channel\n", __func__);
-+			return -ENOMEM;
-+		}
-+
-+		chan->id = i;
-+		chan->host = s3cdma;
-+		chan->state = S3C24XX_DMA_CHAN_IDLE;
-+
-+		if (slave) {
-+			chan->slave = true;
-+			chan->name = kasprintf(GFP_KERNEL, "slave%d", i);
-+			if (!chan->name)
-+				return -ENOMEM;
-+		} else {
-+			chan->name = kasprintf(GFP_KERNEL, "memcpy%d", i);
-+			if (!chan->name)
-+				return -ENOMEM;
-+		}
-+		dev_dbg(dmadev->dev,
-+			 "initialize virtual channel \"%s\"\n",
-+			 chan->name);
-+
-+		chan->vc.desc_free = s3c24xx_dma_desc_free;
-+		vchan_init(&chan->vc, dmadev);
-+	}
-+	dev_info(dmadev->dev, "initialized %d virtual %s channels\n",
-+		 i, slave ? "slave" : "memcpy");
-+	return i;
-+}
-+
-+static void s3c24xx_dma_free_virtual_channels(struct dma_device *dmadev)
-+{
-+	struct s3c24xx_dma_chan *chan = NULL;
-+	struct s3c24xx_dma_chan *next;
-+
-+	list_for_each_entry_safe(chan,
-+				 next, &dmadev->channels, vc.chan.device_node)
-+		list_del(&chan->vc.chan.device_node);
-+}
-+
-+/* s3c2412 and s3c2413 have a 0x40 stride and dmareqsel mechanism */
-+static struct soc_data soc_s3c2412 = {
-+	.stride = 0x40,
-+	.has_reqsel = true,
-+	.has_clocks = true,
-+};
-+
-+/* s3c2443 and following have a 0x100 stride and dmareqsel mechanism */
-+static struct soc_data soc_s3c2443 = {
-+	.stride = 0x100,
-+	.has_reqsel = true,
-+	.has_clocks = true,
-+};
-+
-+static struct platform_device_id s3c24xx_dma_driver_ids[] = {
-+	{
-+		.name		= "s3c2412-dma",
-+		.driver_data	= (kernel_ulong_t)&soc_s3c2412,
-+	}, {
-+		.name		= "s3c2443-dma",
-+		.driver_data	= (kernel_ulong_t)&soc_s3c2443,
++struct platform_device s3c2412_device_dma = {
++	.name		= "s3c2412-dma",
++	.id		= 0,
++	.num_resources	= ARRAY_SIZE(s3c2410_dma_resource),
++	.resource	= s3c2410_dma_resource,
++	.dev	= {
++		.platform_data	= &s3c2412_dma_platdata,
 +	},
-+	{ },
++};
++#endif
++
++#if defined(CONFIG_CPUS_3C2443) || defined(CONFIG_CPU_S3C2416)
++static struct resource s3c2443_dma_resource[] = {
++	[0] = DEFINE_RES_MEM(S3C24XX_PA_DMA, S3C24XX_SZ_DMA),
++	[1] = DEFINE_RES_IRQ(IRQ_S3C2443_DMA0),
++	[2] = DEFINE_RES_IRQ(IRQ_S3C2443_DMA1),
++	[3] = DEFINE_RES_IRQ(IRQ_S3C2443_DMA2),
++	[4] = DEFINE_RES_IRQ(IRQ_S3C2443_DMA3),
++	[5] = DEFINE_RES_IRQ(IRQ_S3C2443_DMA4),
++	[6] = DEFINE_RES_IRQ(IRQ_S3C2443_DMA5),
 +};
 +
-+static struct soc_data *s3c24xx_dma_get_soc_data(struct platform_device *pdev)
-+{
-+	return (struct soc_data *)
-+			 platform_get_device_id(pdev)->driver_data;
-+}
++static struct s3c24xx_dma_channel s3c2443_dma_channels[DMACH_MAX] = {
++	[DMACH_XD0] = { S3C24XX_DMA_AHB, true, 17 },
++	[DMACH_XD1] = { S3C24XX_DMA_AHB, true, 18 },
++	[DMACH_SDI] = { S3C24XX_DMA_APB, false, 10 },
++	[DMACH_SPI0_RX] = { S3C24XX_DMA_APB, true, 1 },
++	[DMACH_SPI0_TX] = { S3C24XX_DMA_APB, true, 0 },
++	[DMACH_SPI1_RX] = { S3C24XX_DMA_APB, true, 3 },
++	[DMACH_SPI1_TX] = { S3C24XX_DMA_APB, true, 2 },
++	[DMACH_UART0] = { S3C24XX_DMA_APB, true, 19 },
++	[DMACH_UART1] = { S3C24XX_DMA_APB, true, 21 },
++	[DMACH_UART2] = { S3C24XX_DMA_APB, true, 23 },
++	[DMACH_UART3] = { S3C24XX_DMA_APB, true, 25 },
++	[DMACH_UART0_SRC2] = { S3C24XX_DMA_APB, true, 20 },
++	[DMACH_UART1_SRC2] = { S3C24XX_DMA_APB, true, 22 },
++	[DMACH_UART2_SRC2] = { S3C24XX_DMA_APB, true, 24 },
++	[DMACH_UART3_SRC2] = { S3C24XX_DMA_APB, true, 26 },
++	[DMACH_TIMER] = { S3C24XX_DMA_APB, true, 9 },
++	[DMACH_I2S_IN] = { S3C24XX_DMA_APB, true, 5 },
++	[DMACH_I2S_OUT] = { S3C24XX_DMA_APB, true, 4 },
++	[DMACH_PCM_IN] = { S3C24XX_DMA_APB, true, 28 },
++	[DMACH_PCM_OUT] = { S3C24XX_DMA_APB, true, 27 },
++	[DMACH_MIC_IN] = { S3C24XX_DMA_APB, true, 29 },
++};
 +
-+static int s3c24xx_dma_probe(struct platform_device *pdev)
-+{
-+	const struct s3c24xx_dma_platdata *pdata = dev_get_platdata(&pdev->dev);
-+	struct soc_data *sdata;
-+	struct s3c24xx_dma_engine *s3cdma;
-+	struct resource *res;
-+	int ret;
-+	int i;
++static struct s3c24xx_dma_platdata s3c2443_dma_platdata = {
++	.num_phy_channels = 6,
++	.channels = s3c2443_dma_channels,
++	.num_channels = DMACH_MAX,
++};
 +
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "platform data missing\n");
-+		return -ENODEV;
-+	}
-+
-+	/* Basic sanity check */
-+	if (pdata->num_phy_channels > MAX_DMA_CHANNELS) {
-+		dev_err(&pdev->dev, "to many dma channels %d, max %d\n",
-+			pdata->num_phy_channels, MAX_DMA_CHANNELS);
-+		return -EINVAL;
-+	}
-+
-+	sdata = s3c24xx_dma_get_soc_data(pdev);
-+	if (!sdata)
-+		return -EINVAL;
-+
-+	s3cdma = devm_kzalloc(&pdev->dev, sizeof(*s3cdma), GFP_KERNEL);
-+	if (!s3cdma)
-+		return -ENOMEM;
-+
-+	s3cdma->pdev = pdev;
-+	s3cdma->pdata = pdata;
-+	s3cdma->sdata = sdata;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	s3cdma->base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!s3cdma->base) {
-+		dev_err(&pdev->dev, "could not map dma registers\n");
-+		return -EBUSY;
-+	}
-+
-+	s3cdma->phy_chans = devm_kzalloc(&pdev->dev,
-+					      sizeof(struct s3c24xx_dma_phy) *
-+							pdata->num_phy_channels,
-+					      GFP_KERNEL);
-+	if (!s3cdma->phy_chans)
-+		return -ENOMEM;
-+
-+	/* aquire irqs and clocks for all physical channels */
-+	for (i = 0; i < pdata->num_phy_channels; i++) {
-+		struct s3c24xx_dma_phy *phy = &s3cdma->phy_chans[i];
-+		char clk_name[6];
-+
-+		phy->id = i;
-+		phy->base = s3cdma->base + (i * sdata->stride);
-+		phy->host = s3cdma;
-+
-+		sprintf(clk_name, "dma.%d", i);
-+		phy->clk = devm_clk_get(&pdev->dev, clk_name);
-+		if (IS_ERR(phy->clk) && sdata->has_clocks) {
-+			dev_err(&pdev->dev, "unable to aquire clock for channel %d, error %lu",
-+				i, PTR_ERR(phy->clk));
-+			continue;
-+		}
-+
-+		if (sdata->has_clocks) {
-+			ret = clk_prepare(phy->clk);
-+			if (ret) {
-+				dev_err(&pdev->dev, "clock for phy %d failed, error %d\n",
-+					i, ret);
-+				continue;
-+			}
-+		}
-+
-+		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
-+		if (res)
-+			phy->irq = res->start;
-+		if (!phy->irq) {
-+			dev_err(&pdev->dev, "failed to get irq %d\n", i);
-+			continue;
-+		}
-+
-+		ret = devm_request_irq(&pdev->dev, phy->irq, s3c24xx_dma_irq,
-+				       0, pdev->name, phy);
-+		if (ret) {
-+			dev_err(&pdev->dev, "Unable to request irq for channel %d, error %d\n",
-+				i, ret);
-+			continue;
-+		}
-+
-+		spin_lock_init(&phy->lock);
-+		phy->valid = true;
-+
-+		dev_dbg(&pdev->dev, "physical channel %d is %s\n",
-+			i, s3c24xx_dma_phy_busy(phy) ? "BUSY" : "FREE");
-+	}
-+
-+	/* Initialize memcpy engine */
-+	dma_cap_set(DMA_MEMCPY, s3cdma->memcpy.cap_mask);
-+	dma_cap_set(DMA_PRIVATE, s3cdma->memcpy.cap_mask);
-+	s3cdma->memcpy.dev = &pdev->dev;
-+	s3cdma->memcpy.device_alloc_chan_resources =
-+					s3c24xx_dma_alloc_chan_resources;
-+	s3cdma->memcpy.device_free_chan_resources =
-+					s3c24xx_dma_free_chan_resources;
-+	s3cdma->memcpy.device_prep_dma_memcpy = s3c24xx_dma_prep_memcpy;
-+	s3cdma->memcpy.device_tx_status = s3c24xx_dma_tx_status;
-+	s3cdma->memcpy.device_issue_pending = s3c24xx_dma_issue_pending;
-+	s3cdma->memcpy.device_control = s3c24xx_dma_control;
-+
-+	/* Initialize slave engine for SoC internal dedicated peripherals */
-+	dma_cap_set(DMA_SLAVE, s3cdma->slave.cap_mask);
-+	dma_cap_set(DMA_PRIVATE, s3cdma->slave.cap_mask);
-+	s3cdma->slave.dev = &pdev->dev;
-+	s3cdma->slave.device_alloc_chan_resources =
-+					s3c24xx_dma_alloc_chan_resources;
-+	s3cdma->slave.device_free_chan_resources =
-+					s3c24xx_dma_free_chan_resources;
-+	s3cdma->slave.device_tx_status = s3c24xx_dma_tx_status;
-+	s3cdma->slave.device_issue_pending = s3c24xx_dma_issue_pending;
-+	s3cdma->slave.device_prep_slave_sg = s3c24xx_dma_prep_slave_sg;
-+	s3cdma->slave.device_control = s3c24xx_dma_control;
-+
-+	/* Register as many memcpy channels as there are physical channels */
-+	ret = s3c24xx_dma_init_virtual_channels(s3cdma, &s3cdma->memcpy,
-+						pdata->num_phy_channels, false);
-+	if (ret <= 0) {
-+		dev_warn(&pdev->dev,
-+			 "%s failed to enumerate memcpy channels - %d\n",
-+			 __func__, ret);
-+		goto err_memcpy;
-+	}
-+
-+	/* Register slave channels */
-+	ret = s3c24xx_dma_init_virtual_channels(s3cdma, &s3cdma->slave,
-+				pdata->num_channels, true);
-+	if (ret <= 0) {
-+		dev_warn(&pdev->dev,
-+			"%s failed to enumerate slave channels - %d\n",
-+				__func__, ret);
-+		goto err_slave;
-+	}
-+
-+	ret = dma_async_device_register(&s3cdma->memcpy);
-+	if (ret) {
-+		dev_warn(&pdev->dev,
-+			"%s failed to register memcpy as an async device - %d\n",
-+			__func__, ret);
-+		goto err_memcpy_reg;
-+	}
-+
-+	ret = dma_async_device_register(&s3cdma->slave);
-+	if (ret) {
-+		dev_warn(&pdev->dev,
-+			"%s failed to register slave as an async device - %d\n",
-+			__func__, ret);
-+		goto err_slave_reg;
-+	}
-+
-+	platform_set_drvdata(pdev, s3cdma);
-+	dev_info(&pdev->dev, "Loaded dma driver with %d physical channels\n",
-+		 pdata->num_phy_channels);
-+
-+	return 0;
-+
-+err_slave_reg:
-+	dma_async_device_unregister(&s3cdma->memcpy);
-+err_memcpy_reg:
-+	s3c24xx_dma_free_virtual_channels(&s3cdma->slave);
-+err_slave:
-+	s3c24xx_dma_free_virtual_channels(&s3cdma->memcpy);
-+err_memcpy:
-+
-+	return ret;
-+}
-+
-+static struct platform_driver s3c24xx_dma_driver = {
-+	.driver		= {
-+		.name	= "s3c24xx-dma",
++struct platform_device s3c2443_device_dma = {
++	.name		= "s3c2443-dma",
++	.id		= 0,
++	.num_resources	= ARRAY_SIZE(s3c2443_dma_resource),
++	.resource	= s3c2443_dma_resource,
++	.dev	= {
++		.platform_data	= &s3c2443_dma_platdata,
 +	},
-+	.id_table = s3c24xx_dma_driver_ids,
 +};
++#endif
+diff --git a/arch/arm/mach-s3c24xx/common.h b/arch/arm/mach-s3c24xx/common.h
+index 84b2806..fe07189 100644
+--- a/arch/arm/mach-s3c24xx/common.h
++++ b/arch/arm/mach-s3c24xx/common.h
+@@ -109,4 +109,7 @@ extern void s3c2443_init_irq(void);
+ 
+ extern struct syscore_ops s3c24xx_irq_syscore_ops;
+ 
++extern struct platform_device s3c2412_device_dma;
++extern struct platform_device s3c2443_device_dma;
 +
-+bool s3c24xx_dma_filter(struct dma_chan *chan, void *param)
-+{
-+	struct s3c24xx_dma_chan *s3cchan;
-+
-+	if (chan->device->dev->driver != &s3c24xx_dma_driver.driver)
-+		return false;
-+
-+	s3cchan = to_s3c24xx_dma_chan(chan);
-+
-+	return s3cchan->id == (int)param;
-+}
-+EXPORT_SYMBOL(s3c24xx_dma_filter);
-+
-+static int __init s3c24xx_dma_module_init(void)
-+{
-+	return platform_driver_probe(&s3c24xx_dma_driver, s3c24xx_dma_probe);
-+}
-+subsys_initcall(s3c24xx_dma_module_init);
-diff --git a/include/linux/platform_data/dma-s3c24xx.h b/include/linux/platform_data/dma-s3c24xx.h
-new file mode 100644
-index 0000000..5a0cfff
---- /dev/null
-+++ b/include/linux/platform_data/dma-s3c24xx.h
-@@ -0,0 +1,43 @@
-+/*
-+ * S3C24XX DMA handling
-+ *
-+ * Copyright (c) 2013 Heiko Stuebner <heiko@sntech.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+enum s3c24xx_dma_bus {
-+	S3C24XX_DMA_APB,
-+	S3C24XX_DMA_AHB,
-+};
-+
-+/**
-+ * @bus: on which bus does the peripheral reside - AHB or APB.
-+ * @handshake: is a handshake with the peripheral necessary
-+ * @chansel: channel selection information, depending on variant; reqsel for
-+ *	     s3c2443 and later and channel-selection map for earlier SoCs
-+ *	     see CHANSEL doc in s3c2443-dma.c
-+ */
-+struct s3c24xx_dma_channel {
-+	enum s3c24xx_dma_bus bus;
-+	bool handshake;
-+	u16 chansel;
-+};
-+
-+/**
-+ * struct s3c24xx_dma_platdata - platform specific settings
-+ * @num_phy_channels: number of physical channels
-+ * @channels: array of virtual channel descriptions
-+ * @num_channels: number of virtual channels
-+ */
-+struct s3c24xx_dma_platdata {
-+	int num_phy_channels;
-+	struct s3c24xx_dma_channel *channels;
-+	int num_channels;
-+};
-+
-+struct dma_chan;
-+bool s3c24xx_dma_filter(struct dma_chan *chan, void *param);
+ #endif /* __ARCH_ARM_MACH_S3C24XX_COMMON_H */
+diff --git a/arch/arm/mach-s3c24xx/mach-jive.c b/arch/arm/mach-s3c24xx/mach-jive.c
+index a45fcd8..43c23e2 100644
+--- a/arch/arm/mach-s3c24xx/mach-jive.c
++++ b/arch/arm/mach-s3c24xx/mach-jive.c
+@@ -466,6 +466,7 @@ static struct platform_device *jive_devices[] __initdata = {
+ 	&jive_device_wm8750,
+ 	&s3c_device_nand,
+ 	&s3c_device_usbgadget,
++	&s3c2412_device_dma,
+ };
+ 
+ static struct s3c2410_udc_mach_info jive_udc_cfg __initdata = {
+diff --git a/arch/arm/mach-s3c24xx/mach-smdk2413.c b/arch/arm/mach-s3c24xx/mach-smdk2413.c
+index 8146e92..c9d31ef 100644
+--- a/arch/arm/mach-s3c24xx/mach-smdk2413.c
++++ b/arch/arm/mach-s3c24xx/mach-smdk2413.c
+@@ -89,6 +89,7 @@ static struct platform_device *smdk2413_devices[] __initdata = {
+ 	&s3c_device_i2c0,
+ 	&s3c_device_iis,
+ 	&s3c_device_usbgadget,
++	&s3c2412_device_dma,
+ };
+ 
+ static void __init smdk2413_fixup(struct tag *tags, char **cmdline,
+diff --git a/arch/arm/mach-s3c24xx/mach-smdk2416.c b/arch/arm/mach-s3c24xx/mach-smdk2416.c
+index cb46847..f88e672 100644
+--- a/arch/arm/mach-s3c24xx/mach-smdk2416.c
++++ b/arch/arm/mach-s3c24xx/mach-smdk2416.c
+@@ -215,6 +215,7 @@ static struct platform_device *smdk2416_devices[] __initdata = {
+ 	&s3c_device_hsmmc0,
+ 	&s3c_device_hsmmc1,
+ 	&s3c_device_usb_hsudc,
++	&s3c2443_device_dma,
+ };
+ 
+ static void __init smdk2416_map_io(void)
+diff --git a/arch/arm/mach-s3c24xx/mach-smdk2443.c b/arch/arm/mach-s3c24xx/mach-smdk2443.c
+index 9435c3b..d9933fc 100644
+--- a/arch/arm/mach-s3c24xx/mach-smdk2443.c
++++ b/arch/arm/mach-s3c24xx/mach-smdk2443.c
+@@ -115,6 +115,7 @@ static struct platform_device *smdk2443_devices[] __initdata = {
+ #ifdef CONFIG_SND_SOC_SMDK2443_WM9710
+ 	&s3c_device_ac97,
+ #endif
++	&s3c2443_device_dma,
+ };
+ 
+ static void __init smdk2443_map_io(void)
+diff --git a/arch/arm/mach-s3c24xx/mach-vstms.c b/arch/arm/mach-s3c24xx/mach-vstms.c
+index b665884..f7ec9c5 100644
+--- a/arch/arm/mach-s3c24xx/mach-vstms.c
++++ b/arch/arm/mach-s3c24xx/mach-vstms.c
+@@ -126,6 +126,7 @@ static struct platform_device *vstms_devices[] __initdata = {
+ 	&s3c_device_iis,
+ 	&s3c_device_rtc,
+ 	&s3c_device_nand,
++	&s3c2412_device_dma,
+ };
+ 
+ static void __init vstms_fixup(struct tag *tags, char **cmdline,
 -- 
 1.7.10.4
 
