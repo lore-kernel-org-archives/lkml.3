@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586Ab3HNKsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:48:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34592 "EHLO
+	id S932551Ab3HNKsO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:48:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34607 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932500Ab3HNKiD (ORCPT
+	with ESMTP id S932517Ab3HNKiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:03 -0400
+	Wed, 14 Aug 2013 06:38:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
-        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>,
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Francois Romieu <romieu@fr.zoreil.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 38/75] perf: Fix event group context move
-Date: Wed, 14 Aug 2013 11:36:27 +0100
-Message-Id: <1376476624-10011-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 47/75] 8139cp: Add dma_mapping_error checking
+Date: Wed, 14 Aug 2013 11:36:36 +0100
+Message-Id: <1376476624-10011-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -34,92 +29,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 0231bb5336758426b44ccd798ccd3c5419c95d58 upstream.
+commit cf3c4c03060b688cbc389ebc5065ebcce5653e96 upstream.
 
-When we have group with mixed events (hw/sw) we want to end up
-with group leader being in hw context. So if group leader is
-initialy sw event, we move all the events under hw context.
+Self explanitory dma_mapping_error addition to the 8139 driver, based on this:
+https://bugzilla.redhat.com/show_bug.cgi?id=947250
 
-The move is done for each event by removing it from its context
-and adding it back into proper one. As a part of the removal the
-event is automatically disabled, which is not what we want at
-this stage of creating groups.
+It showed several backtraces arising for dma_map_* usage without checking the
+return code on the mapping.  Add the check and abort the rx/tx operation if its
+failed.  Untested as I have no hardware and the reporter has wandered off, but
+seems pretty straightforward.
 
-The fix is to initialize event state after removal from sw
-context.
-
-This fix resulted from the following discussion:
-
-  http://thread.gmane.org/gmane.linux.kernel.perf.user/1144
-
-Reported-by: Andreas Hollmann <hollmann@in.tum.de>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vince@deater.net>
-Link: http://lkml.kernel.org/r/1359714225-4231-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/events/core.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/realtek/8139cp.c | 48 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 45 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 00aa7e3..dd815c3 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -915,6 +915,15 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
+index d9ef667..bf8eb57 100644
+--- a/drivers/net/ethernet/realtek/8139cp.c
++++ b/drivers/net/ethernet/realtek/8139cp.c
+@@ -478,7 +478,7 @@ rx_status_loop:
+ 
+ 	while (1) {
+ 		u32 status, len;
+-		dma_addr_t mapping;
++		dma_addr_t mapping, new_mapping;
+ 		struct sk_buff *skb, *new_skb;
+ 		struct cp_desc *desc;
+ 		const unsigned buflen = cp->rx_buf_sz;
+@@ -520,6 +520,13 @@ rx_status_loop:
+ 			goto rx_next;
+ 		}
+ 
++		new_mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
++					 PCI_DMA_FROMDEVICE);
++		if (dma_mapping_error(&cp->pdev->dev, new_mapping)) {
++			dev->stats.rx_dropped++;
++			goto rx_next;
++		}
++
+ 		dma_unmap_single(&cp->pdev->dev, mapping,
+ 				 buflen, PCI_DMA_FROMDEVICE);
+ 
+@@ -531,12 +538,11 @@ rx_status_loop:
+ 
+ 		skb_put(skb, len);
+ 
+-		mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
+-					 PCI_DMA_FROMDEVICE);
+ 		cp->rx_skb[rx_tail] = new_skb;
+ 
+ 		cp_rx_skb(cp, skb, desc);
+ 		rx++;
++		mapping = new_mapping;
+ 
+ rx_next:
+ 		cp->rx_ring[rx_tail].opts2 = 0;
+@@ -707,6 +713,22 @@ static inline u32 cp_tx_vlan_tag(struct sk_buff *skb)
+ 		TxVlanTag | swab16(vlan_tx_tag_get(skb)) : 0x00;
  }
  
- /*
-+ * Initialize event state based on the perf_event_attr::disabled.
-+ */
-+static inline void perf_event__state_init(struct perf_event *event)
++static void unwind_tx_frag_mapping(struct cp_private *cp, struct sk_buff *skb,
++				   int first, int entry_last)
 +{
-+	event->state = event->attr.disabled ? PERF_EVENT_STATE_OFF :
-+					      PERF_EVENT_STATE_INACTIVE;
++	int frag, index;
++	struct cp_desc *txd;
++	skb_frag_t *this_frag;
++	for (frag = 0; frag+first < entry_last; frag++) {
++		index = first+frag;
++		cp->tx_skb[index] = NULL;
++		txd = &cp->tx_ring[index];
++		this_frag = &skb_shinfo(skb)->frags[frag];
++		dma_unmap_single(&cp->pdev->dev, le64_to_cpu(txd->addr),
++				 skb_frag_size(this_frag), PCI_DMA_TODEVICE);
++	}
 +}
 +
-+/*
-  * Called at perf_event creation and when events are attached/detached from a
-  * group.
-  */
-@@ -6061,8 +6070,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 	event->overflow_handler	= overflow_handler;
- 	event->overflow_handler_context = context;
+ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
+ 					struct net_device *dev)
+ {
+@@ -740,6 +762,9 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
  
--	if (attr->disabled)
--		event->state = PERF_EVENT_STATE_OFF;
-+	perf_event__state_init(event);
- 
- 	pmu = NULL;
- 
-@@ -6484,9 +6492,17 @@ SYSCALL_DEFINE5(perf_event_open,
- 
- 		mutex_lock(&gctx->mutex);
- 		perf_remove_from_context(group_leader);
+ 		len = skb->len;
+ 		mapping = dma_map_single(&cp->pdev->dev, skb->data, len, PCI_DMA_TODEVICE);
++		if (dma_mapping_error(&cp->pdev->dev, mapping))
++			goto out_dma_error;
 +
-+		/*
-+		 * Removing from the context ends up with disabled
-+		 * event. What we want here is event in the initial
-+		 * startup state, ready to be add into new context.
-+		 */
-+		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
- 			perf_remove_from_context(sibling);
-+			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
- 		mutex_unlock(&gctx->mutex);
+ 		txd->opts2 = opts2;
+ 		txd->addr = cpu_to_le64(mapping);
+ 		wmb();
+@@ -777,6 +802,9 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
+ 		first_len = skb_headlen(skb);
+ 		first_mapping = dma_map_single(&cp->pdev->dev, skb->data,
+ 					       first_len, PCI_DMA_TODEVICE);
++		if (dma_mapping_error(&cp->pdev->dev, first_mapping))
++			goto out_dma_error;
++
+ 		cp->tx_skb[entry] = skb;
+ 		entry = NEXT_TX(entry);
+ 
+@@ -790,6 +818,11 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
+ 			mapping = dma_map_single(&cp->pdev->dev,
+ 						 skb_frag_address(this_frag),
+ 						 len, PCI_DMA_TODEVICE);
++			if (dma_mapping_error(&cp->pdev->dev, mapping)) {
++				unwind_tx_frag_mapping(cp, skb, first_entry, entry);
++				goto out_dma_error;
++			}
++
+ 			eor = (entry == (CP_TX_RING_SIZE - 1)) ? RingEnd : 0;
+ 
+ 			ctrl = eor | len | DescOwn;
+@@ -848,11 +881,16 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
+ 	if (TX_BUFFS_AVAIL(cp) <= (MAX_SKB_FRAGS + 1))
+ 		netif_stop_queue(dev);
+ 
++out_unlock:
+ 	spin_unlock_irqrestore(&cp->lock, intr_flags);
+ 
+ 	cpw8(TxPoll, NormalTxPoll);
+ 
+ 	return NETDEV_TX_OK;
++out_dma_error:
++	kfree_skb(skb);
++	cp->dev->stats.tx_dropped++;
++	goto out_unlock;
+ }
+ 
+ /* Set or clear the multicast filter for this adaptor.
+@@ -1039,6 +1077,10 @@ static int cp_refill_rx(struct cp_private *cp)
+ 
+ 		mapping = dma_map_single(&cp->pdev->dev, skb->data,
+ 					 cp->rx_buf_sz, PCI_DMA_FROMDEVICE);
++		if (dma_mapping_error(&cp->pdev->dev, mapping)) {
++			kfree_skb(skb);
++			goto err_out;
++		}
+ 		cp->rx_skb[i] = skb;
+ 
+ 		cp->rx_ring[i].opts2 = 0;
 -- 
 1.8.3.2
 
