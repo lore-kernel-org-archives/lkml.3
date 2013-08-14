@@ -1,134 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759969Ab3HNQEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:04:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58582 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758765Ab3HNQE3 (ORCPT
+	id S1759674Ab3HNQGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:06:22 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:56430 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab3HNQGV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:04:29 -0400
-Date: Wed, 14 Aug 2013 18:04:16 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/5] preempt_count rework
-Message-ID: <20130814160416.GI24092@twins.programming.kicks-ass.net>
-References: <20130814131539.790947874@chello.nl>
- <520B8A81.1080405@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520B8A81.1080405@zytor.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 14 Aug 2013 12:06:21 -0400
+X-AuditID: cbfec37b-b7f306d0000047de-20-520baafb232f
+Message-id: <520BAAF0.8000509@samsung.com>
+Date: Wed, 14 Aug 2013 10:06:08 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+Cc: alex.williamson@redhat.com, Varun.Sethi@freescale.com, aik@ozlabs.ru,
+        joe@perches.com, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, tony@atomide.com, ohad@wizery.com,
+        andreas.herrmann@calxeda.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        shuahkhan@gmail.com, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH v2] iommu: Add event tracing feature to iommu
+References: <1375196229-2784-1-git-send-email-shuah.kh@samsung.com>
+ <20130814141758.GN28811@8bytes.org>
+In-reply-to: <20130814141758.GN28811@8bytes.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.21.63]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9hX93fq7iDDDY81bLoPV5k8e1/D5vF
+	4iMxFjNfdzNZLNhvbTH7/mMWi87ZG9gtLu+aw2Zx6cACJovfq38wW+zreMBk8fWng8X+K14W
+	M2+tYbF4+fEEiwO/x5OD85g81sxbw+jx7eskFo8Fn6+we/w73M/ksXPWXXaPln232D0m31jO
+	6HHjbjObx5dV15g93u+7yubxeZOcx6dP+9gCeKO4bFJSczLLUov07RK4MubuW8xa8IOr4vSL
+	k4wNjL84uhg5OSQETCS2bJvMBmGLSVy4tx7I5uIQEljGKPH+6jIWCKeXSeLzy5vsIFVCAhsZ
+	JSbO9wGxeQW0JF4dP8EIYrMIqEocnj2ZGcRmE1CX+Px6B1S9nETTktVAcQ4OUYEIiaPLNSFa
+	BSV+TL7HAmKLCChJXP/cygpiMwu8YZLovqAJUi4s4Cgx85IDxJRMiSvNG8GmcwoYSPw/38sC
+	UW4tsXLSNkYIW15i85q3zBD1yhJ/Lp9iAhkjIaAosX211QRGkVlIFs9C0j0LSfcCRuZVjGKl
+	xckFxUnpqRVGesWJucWleel6yfm5mxghkV29g/HuV5tDjAIcjEo8vBs6uIOEWBPLiitzDzFK
+	cDArifCeAQnxpiRWVqUW5ccXleakFh9iZOLglGpgXOlvfkp6HV+uY2WD4cGpDzwVotP5pWfF
+	5K19fTpx+nv9zPVVDWF/e6fs93UIv78oa9LJxWw5CgV1n1kPSoVOUY008Y+wZPaXaTjLMDvF
+	sjBx5+2uzRtUHi6a9+776ktP6rosH3+MSImKmM3k+VpQadqjyXlujzfIHllpWNT3pTrYy3+B
+	/3QzJZbijERDLeai4kQAvUk+I8oCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 06:47:45AM -0700, H. Peter Anvin wrote:
+Hi Joerg,
 
-> I still don't see this using a decrement of the percpu variable
-> anywhere.  The C compiler doesn't know how to generate those, so if I'm
-> not completely wet we will end up relying on sub_preempt_count()...
-> which, because it relies on taking the address of the percpu variable
-> will generate absolutely horrific code.
-> 
-> On x86, you never want to take the address of a percpu variable if you
-> can avoid it, as you end up generating code like:
-> 
-> 	movq %fs:0,%rax
-> 	subl $1,(%rax)
-> 
+Thanks for the feedback.
 
-Urgh,. yes you're right. I keep forgetting GCC doesn't know how to merge
-those :/
+On 08/14/2013 08:17 AM, Joerg Roedel wrote:
+> Hi Shuah,
+>
+> thanks for doing this. I have a few suggestions for improvements.
+>
+> On Tue, Jul 30, 2013 at 08:57:09AM -0600, Shuah Khan wrote:
+>> iommu:add_device_to_group
+>> iommu:remove_device_from_group
+>> iommu:attach_device_to_domain
+>> iommu:detach_device_from_domain
+>> iommu:unmap
+>> iommu:map
+>
+> Please send these events as seperate patches.
 
-OK, so something like the below would cure the worst of that I suppose.
-It compiles but doesn't boot; must've done something wrong.
+Is this what you have in mind or does my original patch set minus the 
+amd_event and drivers/iommu/amd_iommu.c change?
 
-Someone please look at it because my asm-foo blows. I pretty much
-copy/pasted this from asm/percpu.h.
+Patch 1:
+drivers/iommu/Makefile
+drivers/iommu/iommu-traces.c
+include/trace/events/iommu.h
 
----
---- a/arch/x86/include/asm/preempt.h
-+++ b/arch/x86/include/asm/preempt.h
-@@ -20,6 +20,28 @@ static __always_inline int *preempt_coun
- 	return &__raw_get_cpu_var(__preempt_count);
- }
- 
-+#define __preempt_count_add(x) do {		\
-+	asm("addl %1," __percpu_arg(0)		\
-+		: "+m" (__preempt_count) 	\
-+		: "ri" ((int)x) 		\
-+		: "memory"); 			\
-+} while (0)
-+
-+#define __preempt_count_sub(x) do {		\
-+	asm("subl %1," __percpu_arg(0)		\
-+		: "+m" (__preempt_count) 	\
-+		: "ri" ((int)x) 		\
-+		: "memory"); 			\
-+} while (0)
-+
-+#define preempt_enable() do {			\
-+	asm("\nsubl $1," __percpu_arg(0)	\
-+	    "\njnz 1f"				\
-+	    "\ncall preempt_schedule"		\
-+	    "\n1:" : "+m" (__preempt_count)	\
-+		   : : "memory");		\
-+} while (0)
-+
- /*
-  * must be macros to avoid header recursion hell
-  */
---- a/include/asm-generic/preempt.h
-+++ b/include/asm-generic/preempt.h
-@@ -17,6 +17,9 @@ static __always_inline int *preempt_coun
- 	return &current_thread_info()->preempt_count;
- }
- 
-+#define __preempt_count_add(x)	do { current_thread_info()->preempt_count += (x); } while (0)
-+#define __preempt_count_sub(x)  __preempt_count_add(-(x))
-+
- /*
-  * must be macros to avoid header recursion hell
-  */
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -45,8 +45,8 @@ static __always_inline bool test_preempt
-   extern void add_preempt_count(int val);
-   extern void sub_preempt_count(int val);
- #else
--# define add_preempt_count(val)	do { *preempt_count_ptr() += (val); } while (0)
--# define sub_preempt_count(val)	do { *preempt_count_ptr() -= (val); } while (0)
-+# define add_preempt_count(val)	__preempt_count_add(val)
-+# define sub_preempt_count(val)	__preempt_count_sub(val)
- #endif
- 
- #define inc_preempt_count() add_preempt_count(1)
-@@ -101,17 +101,17 @@ do { \
- 
- #define preempt_enable_no_resched()	sched_preempt_enable_no_resched()
- 
-+#ifndef preempt_enable
- #define preempt_enable() \
- do { \
- 	preempt_enable_no_resched(); \
- 	preempt_check_resched(); \
- } while (0)
-+#endif
- 
- /* For debugging and tracer internals only! */
--#define add_preempt_count_notrace(val)			\
--	do { *preempt_count_ptr() += (val); } while (0)
--#define sub_preempt_count_notrace(val)			\
--	do { *preempt_count_ptr() -= (val); } while (0)
-+#define add_preempt_count_notrace(val)	__preempt_count_add(val)
-+#define sub_preempt_count_notrace(val)	__preempt_count_sub(val)
- #define inc_preempt_count_notrace() add_preempt_count_notrace(1)
- #define dec_preempt_count_notrace() sub_preempt_count_notrace(1)
- 
+One patch for each of the following events?
+
+iommu:add_device_to_group
+iommu:remove_device_from_group
+iommu:attach_device_to_domain
+iommu:detach_device_from_domain
+iommu:unmap
+iommu:map
+
+>
+>> iommu:amd_event
+>
+> This needs some more thought. For now I would prefer an event in the
+> generic report_iommu_fault() routine to report page-faults from all IOMMUs
+> that support this.
+>
+
+I see what you are saying. Adding event to report_iommu_fault() would 
+cover all IOMMUs. I would like to work on adding an event unless you 
+already have it in works.
+
+-- Shuah
+
+
+Shuah Khan
+Sr. Linux Kernel Developer
+Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
