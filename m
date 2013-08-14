@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933143Ab3HNNht (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 09:37:49 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:45798 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933083Ab3HNNhV (ORCPT
+	id S932850Ab3HNNfG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 09:35:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54863 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932823Ab3HNNe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 09:37:21 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 37/37] cpufreq: unicore2: don't initialize part of policy that is set by core too
-Date: Wed, 14 Aug 2013 19:02:26 +0530
-Message-Id: <ce31927595d5b585e1df8c84f27212fd9bef6d3a.1376486714.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1376486713.git.viresh.kumar@linaro.org>
-References: <cover.1376486713.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1376486713.git.viresh.kumar@linaro.org>
-References: <cover.1376486713.git.viresh.kumar@linaro.org>
+	Wed, 14 Aug 2013 09:34:59 -0400
+Message-Id: <20130814131539.790947874@chello.nl>
+User-Agent: quilt/0.60-1
+Date: Wed, 14 Aug 2013 15:15:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: [RFC][PATCH 0/5] preempt_count rework
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many common initializations of struct policy are moved to core now and hence
-this driver doesn't need to do it. This patch removes such code.
+These patches optimize preempt_enable by firstly folding the preempt and
+need_resched tests into one -- this should work for all architectures. And
+secondly by providing per-arch preempt_count implementations; with x86 using
+per-cpu preempt_count for fastest access.
 
-Most recent of those changes is to call ->get() in the core after calling
-->init().
+These patches have so far only been compiled for defconfig-x86_64 +
+CONFIG_PREEMPT=y and boot tested with kvm -smp 4 upto wanting to mount root.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+It still needs asm volatile("call preempt_schedule": : :"memory"); as per
+Andi's other patches to avoid the C calling convention cluttering the
+preempt_enable() sites.
+
 ---
- drivers/cpufreq/unicore2-cpufreq.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/cpufreq/unicore2-cpufreq.c b/drivers/cpufreq/unicore2-cpufreq.c
-index b225f04..79ca32e 100644
---- a/drivers/cpufreq/unicore2-cpufreq.c
-+++ b/drivers/cpufreq/unicore2-cpufreq.c
-@@ -68,7 +68,6 @@ static int __init ucv2_cpu_init(struct cpufreq_policy *policy)
- {
- 	if (policy->cpu != 0)
- 		return -EINVAL;
--	policy->cur = ucv2_getspeed(0);
- 	policy->min = policy->cpuinfo.min_freq = 250000;
- 	policy->max = policy->cpuinfo.max_freq = 1000000;
- 	policy->cpuinfo.transition_latency = CPUFREQ_ETERNAL;
--- 
-1.7.12.rc2.18.g61b472e
+ arch/alpha/include/asm/Kbuild      |  1 +
+ arch/arc/include/asm/Kbuild        |  1 +
+ arch/arm/include/asm/Kbuild        |  1 +
+ arch/arm64/include/asm/Kbuild      |  1 +
+ arch/avr32/include/asm/Kbuild      |  1 +
+ arch/blackfin/include/asm/Kbuild   |  1 +
+ arch/c6x/include/asm/Kbuild        |  1 +
+ arch/cris/include/asm/Kbuild       |  1 +
+ arch/frv/include/asm/Kbuild        |  1 +
+ arch/h8300/include/asm/Kbuild      |  1 +
+ arch/hexagon/include/asm/Kbuild    |  1 +
+ arch/ia64/include/asm/Kbuild       |  1 +
+ arch/m32r/include/asm/Kbuild       |  1 +
+ arch/m68k/include/asm/Kbuild       |  1 +
+ arch/metag/include/asm/Kbuild      |  1 +
+ arch/microblaze/include/asm/Kbuild |  1 +
+ arch/mips/include/asm/Kbuild       |  1 +
+ arch/mn10300/include/asm/Kbuild    |  1 +
+ arch/openrisc/include/asm/Kbuild   |  1 +
+ arch/parisc/include/asm/Kbuild     |  1 +
+ arch/powerpc/include/asm/Kbuild    |  1 +
+ arch/s390/include/asm/Kbuild       |  1 +
+ arch/score/include/asm/Kbuild      |  1 +
+ arch/sh/include/asm/Kbuild         |  1 +
+ arch/sparc/include/asm/Kbuild      |  1 +
+ arch/tile/include/asm/Kbuild       |  1 +
+ arch/um/include/asm/Kbuild         |  1 +
+ arch/unicore32/include/asm/Kbuild  |  1 +
+ arch/x86/include/asm/thread_info.h |  5 ++---
+ arch/x86/kernel/asm-offsets.c      |  1 -
+ arch/x86/kernel/cpu/common.c       |  5 +++++
+ arch/x86/kernel/entry_32.S         |  7 ++-----
+ arch/x86/kernel/entry_64.S         |  4 +---
+ arch/x86/kernel/process_32.c       | 10 ++++++++++
+ arch/x86/kernel/process_64.c       | 10 ++++++++++
+ arch/xtensa/include/asm/Kbuild     |  1 +
+ include/linux/preempt.h            | 49 ++++++++++++++++++++++++++++++++++++++-----------
+ include/linux/sched.h              |  2 +-
+ include/linux/thread_info.h        |  1 +
+ include/trace/events/sched.h       |  2 +-
+ init/main.c                        |  2 +-
+ kernel/context_tracking.c          |  3 +--
+ kernel/cpu/idle.c                  | 10 ++++++++++
+ kernel/sched/core.c                | 31 +++++++++++++++++++------------
+ kernel/softirq.c                   |  4 ++--
+ kernel/timer.c                     |  8 ++++----
+ lib/smp_processor_id.c             |  3 +--
+ 47 files changed, 138 insertions(+), 48 deletions(-)
 
