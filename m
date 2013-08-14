@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290Ab3HNWKL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:10:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37931 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933115Ab3HNWKJ (ORCPT
+	id S933328Ab3HNWKb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:10:31 -0400
+Received: from relay64.jhb.wbs.co.za ([41.213.80.64]:50562 "EHLO
+	mail.wbs.co.za" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933298Ab3HNWK3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:10:09 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH] net: rfkill: Do not ignore errors from regulator_enable()
-Date: Wed, 14 Aug 2013 23:10:06 +0100
-Message-Id: <1376518206-10710-1-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 14 Aug 2013 18:10:29 -0400
+X-Greylist: delayed 5068 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Aug 2013 18:10:29 EDT
+Message-Id: <gmGh3RGjORPErue9LWGr4ukBVFUzRb2JgAog8uxm2FWn@duxmachinery.com>
+Mime-Version: 1.0
+From: =?iso-8859-1?Q?David_No=EBl?= <dave@duxmachinery.com>
+To: "linkvoyager.com," <linux-kernel@vger.kernel.org>
+Subject: Product Request {Unit Price and MOQ}
+Date: Wed, 14 Aug 2013 13:45:53 -0700
+X-Bounce-Tracking-Info: <bGlua3ZveWFnZXIuY29tLAkJCWxpbnV4LWtlcm5lbEB2Z2VyLmtlcm5lbC5vcmcJUHJvZHVjdCBSZXF1ZXN0IHtVbml0IFByaWNlIGFuZCBNT1F9CTgJCTE0MTA5CWJvdW5jZQlubwlubw==>
+Content-type: text/plain; charset=iso-8859-1; format=flowed
+Content-transfer-encoding: 8BIT
+X-GeoIP: ZA|South Africa
+X-EximConfig: v2.5 on mail.iburst.co.za
+X-GeoIP: 
+X-EximConfig: v2.5 on mail.wbs.co.za
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function regulator_enable() may return an error that has to be checked.
-This patch changes function rfkill_regulator_set_block() so that it checks
-for the return code.  Also, rfkill_data->reg_enabled is set to 'true' only
-if there is no error.
+Sir/Madam,
+We are interested in the following items:
+http://dux-corporation.trade-e.com/productid=7986570.htm
+Login your valid email address and password to view requested items on DUX website.
+Kindly advice:
 
-This fixes the following compilation warning:
+1. Shippment:
+2. Unit price:
+3. MOQ:
+4. Payment: TT, Western Union, PayPal, Bank
+5. Lead time:
 
-net/rfkill/rfkill-regulator.c:43:20: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
+Your early reply'd be highly appreciated.
 
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/rfkill/rfkill-regulator.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/net/rfkill/rfkill-regulator.c b/net/rfkill/rfkill-regulator.c
-index d11ac79..cf5b145 100644
---- a/net/rfkill/rfkill-regulator.c
-+++ b/net/rfkill/rfkill-regulator.c
-@@ -30,6 +30,7 @@ struct rfkill_regulator_data {
- static int rfkill_regulator_set_block(void *data, bool blocked)
- {
- 	struct rfkill_regulator_data *rfkill_data = data;
-+	int ret = 0;
- 
- 	pr_debug("%s: blocked: %d\n", __func__, blocked);
- 
-@@ -40,15 +41,16 @@ static int rfkill_regulator_set_block(void *data, bool blocked)
- 		}
- 	} else {
- 		if (!rfkill_data->reg_enabled) {
--			regulator_enable(rfkill_data->vcc);
--			rfkill_data->reg_enabled = true;
-+			ret = regulator_enable(rfkill_data->vcc);
-+			if (!ret)
-+				rfkill_data->reg_enabled = true;
- 		}
- 	}
- 
- 	pr_debug("%s: regulator_is_enabled after set_block: %d\n", __func__,
- 		regulator_is_enabled(rfkill_data->vcc));
- 
--	return 0;
-+	return ret;
- }
- 
- static struct rfkill_ops rfkill_regulator_ops = {
--- 
-1.8.3.2
+David Noël 
+DUX Corporation
+615 Lavoisier
+Repentigny, Quebec
+Canada J6A 7N2
+Tel:1.450.581.8341
+Fax:1.450.581.5138
 
