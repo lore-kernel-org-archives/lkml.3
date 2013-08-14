@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab3HNHT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:19:29 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:31684 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757886Ab3HNHT1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:19:27 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1de2h1dfeh1dffh1e23h1fe8h1ff5h1155h)
-From: Arpit Goel <B44344@freescale.com>
-To: <linux@arm.linux.org.uk>, <takata@linux-m32r.org>, <philb@gnu.org>,
-        <geert@linux-m68k.org>
-CC: <schwidefsky@de.ibm.com>, <heiko.carstens@de.ibm.com>,
-        <linux390@de.ibm.com>, <davem@davemloft.net>,
-        <rob.herring@calxeda.com>, <arnd@arndb.de>, <swarren@nvidia.com>,
-        <john.stultz@linaro.org>, <jesper.nilsson@axis.com>,
-        <gregkh@linuxfoundation.org>, <sam@ravnborg.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-m32r@ml.linux-m32r.org>, <linux-m32r-ja@ml.linux-m32r.org>,
-        <linux-m68k@vger.kernel.org>, <linux-s390@vger.kernel.org>,
-        <sparclinux@vger.kernel.org>, <mattw@codeaurora.org>, <timur@tabi.org>,
-        <sboyd@codeaurora.org>, <akpm@linux-foundation.org>,
-        Arpit Goel <B44344@freescale.com>
-Subject: [PATCH v2 2/2] Convert PowerPC macro spin_event_timeout() to architecture independent macro
-Date: Wed, 14 Aug 2013 12:33:55 +0530
-Message-ID: <1376463835-13040-3-git-send-email-B44344@freescale.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1376463835-13040-1-git-send-email-B44344@freescale.com>
-References: <1376463835-13040-1-git-send-email-B44344@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1759402Ab3HNHTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:19:48 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:47669 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758281Ab3HNHTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 03:19:45 -0400
+Message-ID: <1376464710.2208.31.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [RFC PATCH v2 1/3] usb: dwc3: msm: Add device tree binding
+ information
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, ian.campbell@citrix.com, rob@landley.net,
+        gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Wed, 14 Aug 2013 10:18:30 +0300
+In-Reply-To: <520A8FA9.2080603@wwwdotorg.org>
+References: <1376042027-9798-1-git-send-email-iivanov@mm-sol.com>
+	 <1376042027-9798-2-git-send-email-iivanov@mm-sol.com>
+	 <520A8FA9.2080603@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch ports PowerPC implementation of spin_event_timeout() for generic
-use. Architecture specific implementation can be added to asm/delay.h, which
-will override the generic linux implementation.
+Hi,
 
-Signed-off-by: Arpit Goel <B44344@freescale.com>
----
- include/linux/delay.h | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+On Tue, 2013-08-13 at 13:57 -0600, Stephen Warren wrote: 
+> On 08/09/2013 03:53 AM, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > MSM USB3.0 core wrapper consist of USB3.0 IP (SNPS)
+> > and HS, SS PHY's controll and configuration registers.
+> 
+> s/controll/control/
+> 
 
-diff --git a/include/linux/delay.h b/include/linux/delay.h
-index a6ecb34..2ee7fa8 100644
---- a/include/linux/delay.h
-+++ b/include/linux/delay.h
-@@ -52,4 +52,44 @@ static inline void ssleep(unsigned int seconds)
- 	msleep(seconds * 1000);
- }
- 
-+#ifndef spin_event_timeout
-+/**
-+ * spin_event_timeout - spin until a condition gets true or a timeout elapses
-+ * @condition: a C expression to evalate
-+ * @timeout: timeout, in microseconds
-+ * @delay: the number of microseconds to delay between each evaluation of
-+ *         @condition
-+ *
-+ * The process spins until the condition evaluates to true (non-zero) or the
-+ * timeout elapses.  The return value of this macro is the value of
-+ * @condition when the loop terminates. This allows you to determine the cause
-+ * of the loop terminates.  If the return value is zero, then you know a
-+ * timeout has occurred.
-+ *
-+ * This primary purpose of this macro is to poll on a hardware register
-+ * until a status bit changes.  The timeout ensures that the loop still
-+ * terminates even if the bit never changes.  The delay is for devices that
-+ * need a delay in between successive reads.
-+ *
-+ * gcc will optimize out the if-statement if @delay is a constant.
-+ *
-+ * This is copied from PowerPC based spin_event_timeout() implementation
-+ * and modified for generic usecase.
-+ */
-+#define spin_event_timeout(condition, timeout, delay)		\
-+({								\
-+	typeof(condition) __ret;				\
-+	unsigned long __loops = usecs_to_jiffies(timeout);	\
-+	unsigned long __start = jiffies;			\
-+	while (!(__ret = (condition)) &&			\
-+		time_before(jiffies, __start + __loops + 1))	\
-+		if (delay)					\
-+			udelay(delay);				\
-+		else						\
-+			schedule();				\
-+	if (!__ret)						\
-+		__ret = (condition);				\
-+	__ret;							\
-+})
-+#endif
- #endif /* defined(_LINUX_DELAY_H) */
--- 
-1.8.1.4
+Thanks.
+
+> > It could operate in device mode (SS, HS, FS) and host
+> > mode (SS, HS, FS, LS).
+> 
+> > diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
+> 
+> > +MSM SuperSpeed DWC3 USB SoC controller
+> > +
+> > +Required properities :
+> > +- compatible : sould be "qcom,dwc3-hsphy";
+> ...
+> > +Required properities :
+> > +- compatible : sould be "qcom,dwc3-ssphy";
+> 
+> I would expect different compatible values to be documented in different
+> files.
+
+It is easy to see connection between them when they are in
+one file. Drivers are useless without each other. 
+
+> 
+> > +Optional properties :
+> > +- gdsc-supply : phandle to the globally distributed switch controller
+> > +  regulator node to the USB controller.
+> 
+> Which of the 3 compatible values that were described above is that
+> property optional for?
+
+"qcom,dwc3". I will make this more explicit. 
+
+> 
+> > +Sub nodes:
+> > +- Sub node for "DWC3 USB3 controller".
+> > +  This sub node is required property for device node. The properties
+> > +  of this subnode are specified in dwc3.txt.
+> 
+> Why not represent the PHY and USB controller as separate top-level
+> nodes? They can point at each-other with phandles if they need to know
+> each-others' identity.
+
+"qcom,dwc3" (glue layer) driver have to be loaded before "snps,dwc3",
+actual USB3 IP. "qcom,dwc3" provide required clocks and power supplies
+to the USB3 IP core.
+
+Regards,
+Ivan
 
 
