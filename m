@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759974Ab3HNRCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 13:02:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52470 "EHLO
+	id S1760035Ab3HNRDV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 13:03:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52547 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab3HNRCi (ORCPT
+	with ESMTP id S1757424Ab3HNRDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 13:02:38 -0400
-Date: Wed, 14 Aug 2013 10:04:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Xenia Ragiadakou <burzalodowa@gmail.com>,
-        Jason Baron <jbaron@akamai.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Dynamic debug on by default?
-Message-ID: <20130814170410.GA7668@kroah.com>
-References: <20130814164022.GA22934@xanatos>
- <1376499114.1949.81.camel@joe-AO722>
+	Wed, 14 Aug 2013 13:03:18 -0400
+Date: Wed, 14 Aug 2013 10:04:50 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jack Hill <jackhill@jackhill.us>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [ 04/23] SCSI: qla2xxx: Properly set the tagging for commands.
+Message-ID: <20130814170450.GB7668@kroah.com>
+References: <20130802102036.180660415@linuxfoundation.org>
+ <20130802102036.810716252@linuxfoundation.org>
+ <alpine.DEB.2.02.1308141238220.31921@pilot.trilug.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376499114.1949.81.camel@joe-AO722>
+In-Reply-To: <alpine.DEB.2.02.1308141238220.31921@pilot.trilug.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 09:51:54AM -0700, Joe Perches wrote:
-> On Wed, 2013-08-14 at 09:40 -0700, Sarah Sharp wrote:
-> > Hi Xenia,
-> > 
-> > I'm a bit confused.  I thought that debugging messages would be turned
-> > off by default for a module if CONFIG_DYNAMIC_DEBUG was turned on.  When
-> > I tested your patch to remove the CONFIG_USB_XHCI_HCD_DEBUGGING and just
-> > use dev_dbg, the messages from the xHCI driver appeared in dmesg by
-> > default.
-> > 
-> > That generates a lot of log spew.  We can have distros add a boot
-> > parameter option to turn off debug messages, but that boot parameter is
-> > limited to 1023 characters.  I'm concerned that if more drivers add
-> > dynamic debugging, the distros will eventually run out of space in the
-> > dynamic debugging boot parameter.  I know Greg was ripping out debugging
-> > config options in other USB drivers, so this is a bit concerning.
-> > 
-> > Jason, is there a way within the xHCI driver to say that dynamic
-> > debugging should be off by default?  I've looked through the
-> > documentation, and I can't find anything like that documented.
+On Wed, Aug 14, 2013 at 12:40:56PM -0400, Jack Hill wrote:
+> Hi Greg,
 > 
-> #undefine DEBUG
+> Apologies if this question is due to my ignorance of kernel development 
+> practices. Feel free to point me at documentation.
 > 
-> > I've attached my .config file, in case I have something misconfigured.
-> 
-> Because of:
-> 
-> drivers/usb/host/Makefile:ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
+> I noticed that you applied this patch to the 3.10, 3.4, and 3.0 trees. On 
+> kernel.org, it looks like 3.2 is also a longterm kernel. Why was this 
+> patch not applied to that tree?
 
-Yes, that's the problem, I'm trying to get rid of the CONFIG_USB_DEBUG
-flag, and I'm almost there.  There are some host controllers that still
-use it for some things that I have not cleaned up fully yet.
+Possibly because the 3.2-stable maintainer hasn't picked it up yet?
+It's a different developer, give him some time :)
 
 thanks,
 
