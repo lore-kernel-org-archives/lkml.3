@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab3HNKiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:38:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34597 "EHLO
+	id S932536Ab3HNKiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:38:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34606 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932512Ab3HNKiE (ORCPT
+	with ESMTP id S932449Ab3HNKiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:04 -0400
+	Wed, 14 Aug 2013 06:38:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 46/75] net_sched: info leak in atm_tc_dump_class()
-Date: Wed, 14 Aug 2013 11:36:35 +0100
-Message-Id: <1376476624-10011-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 48/75] x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
+Date: Wed, 14 Aug 2013 11:36:37 +0100
+Message-Id: <1376476624-10011-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,32 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: "H.J. Lu" <hjl.tools@gmail.com>
 
-commit 8cb3b9c3642c0263d48f31d525bcee7170eedc20 upstream.
+commit eaa5a990191d204ba0f9d35dbe5505ec2cdd1460 upstream.
 
-The "pvc" struct has a hole after pvc.sap_family which is not cleared.
+GCC will optimize mxcsr_feature_mask_init in arch/x86/kernel/i387.c:
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Reviewed-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = fx_scratch.mxcsr_mask;
+		if (mask == 0)
+			mask = 0x0000ffbf;
+
+to
+
+		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+		asm volatile("fxsave %0" : : "m" (fx_scratch));
+		mask = 0x0000ffbf;
+
+since asm statement doesn’t say it will update fx_scratch.  As the
+result, the DAZ bit will be cleared.  This patch fixes it. This bug
+dates back to at least kernel 2.6.12.
+
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sched/sch_atm.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/i387.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sched/sch_atm.c b/net/sched/sch_atm.c
-index ca8e0a5..1f9c314 100644
---- a/net/sched/sch_atm.c
-+++ b/net/sched/sch_atm.c
-@@ -605,6 +605,7 @@ static int atm_tc_dump_class(struct Qdisc *sch, unsigned long cl,
- 		struct sockaddr_atmpvc pvc;
- 		int state;
- 
-+		memset(&pvc, 0, sizeof(pvc));
- 		pvc.sap_family = AF_ATMPVC;
- 		pvc.sap_addr.itf = flow->vcc->dev ? flow->vcc->dev->number : -1;
- 		pvc.sap_addr.vpi = flow->vcc->vpi;
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index f250431..6c5a7dc 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -132,7 +132,7 @@ static void __cpuinit mxcsr_feature_mask_init(void)
+ 	clts();
+ 	if (cpu_has_fxsr) {
+ 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
+-		asm volatile("fxsave %0" : : "m" (fx_scratch));
++		asm volatile("fxsave %0" : "+m" (fx_scratch));
+ 		mask = fx_scratch.mxcsr_mask;
+ 		if (mask == 0)
+ 			mask = 0x0000ffbf;
 -- 
 1.8.3.2
 
