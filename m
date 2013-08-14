@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932578Ab3HNKiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:38:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34618 "EHLO
+	id S932599Ab3HNKiT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:38:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34620 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932344Ab3HNKiK (ORCPT
+	with ESMTP id S932443Ab3HNKiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Aug 2013 06:38:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrew Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 49/75] tracing: Fix fields of struct trace_iterator that are zeroed by mistake
-Date: Wed, 14 Aug 2013 11:36:38 +0100
-Message-Id: <1376476624-10011-50-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 51/75] ext4: make sure group number is bumped after a inode allocation race
+Date: Wed, 14 Aug 2013 11:36:40 +0100
+Message-Id: <1376476624-10011-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -27,72 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Vagin <avagin@openvz.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit ed5467da0e369e65b247b99eb6403cb79172bcda upstream.
+commit a34eb503742fd25155fd6cff6163daacead9fbc3 upstream.
 
-tracing_read_pipe zeros all fields bellow "seq". The declaration contains
-a comment about that, but it doesn't help.
+When we try to allocate an inode, and there is a race between two
+CPU's trying to grab the same inode, _and_ this inode is the last free
+inode in the block group, make sure the group number is bumped before
+we continue searching the rest of the block groups.  Otherwise, we end
+up searching the current block group twice, and we end up skipping
+searching the last block group.  So in the unlikely situation where
+almost all of the inodes are allocated, it's possible that we will
+return ENOSPC even though there might be free inodes in that last
+block group.
 
-The first field is "snapshot", it's true when current open file is
-snapshot. Looks obvious, that it should not be zeroed.
-
-The second field is "started". It was converted from cpumask_t to
-cpumask_var_t (v2.6.28-4983-g4462344), in other words it was
-converted from cpumask to pointer on cpumask.
-
-Currently the reference on "started" memory is lost after the first read
-from tracing_read_pipe and a proper object will never be freed.
-
-The "started" is never dereferenced for trace_pipe, because trace_pipe
-can't have the TRACE_FILE_ANNOTATE options.
-
-Link: http://lkml.kernel.org/r/1375463803-3085183-1-git-send-email-avagin@openvz.org
-
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[ luis: backported to 3.5:
-  - dropped the 'snapshot' field as it is not present in 3.5 kernel ]
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/ftrace_event.h | 4 +++-
- kernel/trace/trace.c         | 1 +
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ fs/ext4/ialloc.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 176a939..16cad53 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -71,6 +71,8 @@ struct trace_iterator {
- 	/* trace_seq for __print_flags() and __print_symbolic() etc. */
- 	struct trace_seq	tmp_seq;
- 
-+	cpumask_var_t		started;
-+
- 	/* The below is zeroed out in pipe_read */
- 	struct trace_seq	seq;
- 	struct trace_entry	*ent;
-@@ -83,7 +85,7 @@ struct trace_iterator {
- 	loff_t			pos;
- 	long			idx;
- 
--	cpumask_var_t		started;
-+	/* All new field here will be zeroed out in pipe_read */
- };
- 
- 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 8aba3f9..09739c6 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3526,6 +3526,7 @@ waitagain:
- 	memset(&iter->seq, 0,
- 	       sizeof(struct trace_iterator) -
- 	       offsetof(struct trace_iterator, seq));
-+	cpumask_clear(iter->started);
- 	iter->pos = -1;
- 
- 	trace_event_read_lock();
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index b1919af..fa068c0 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -707,11 +707,8 @@ repeat_in_this_group:
+ 		ino = ext4_find_next_zero_bit((unsigned long *)
+ 					      inode_bitmap_bh->b_data,
+ 					      EXT4_INODES_PER_GROUP(sb), ino);
+-		if (ino >= EXT4_INODES_PER_GROUP(sb)) {
+-			if (++group == ngroups)
+-				group = 0;
+-			continue;
+-		}
++		if (ino >= EXT4_INODES_PER_GROUP(sb))
++			goto next_group;
+ 		if (group == 0 && (ino+1) < EXT4_FIRST_INO(sb)) {
+ 			ext4_error(sb, "reserved inode found cleared - "
+ 				   "inode=%lu", ino + 1);
+@@ -729,6 +726,9 @@ repeat_in_this_group:
+ 			goto got; /* we grabbed the inode! */
+ 		if (ino < EXT4_INODES_PER_GROUP(sb))
+ 			goto repeat_in_this_group;
++next_group:
++		if (++group == ngroups)
++			group = 0;
+ 	}
+ 	err = -ENOSPC;
+ 	goto out;
 -- 
 1.8.3.2
 
