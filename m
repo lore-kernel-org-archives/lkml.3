@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab3HNBS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 21:18:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53893 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758288Ab3HNBS5 (ORCPT
+	id S1758784Ab3HNBVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 21:21:53 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:39978 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159Ab3HNBVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 21:18:57 -0400
-Date: Wed, 14 Aug 2013 11:18:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>, Ingo Molnar <mingo@kernel.org>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Linus <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: linux-next: manual merge of the arm-current tree with Linus' tree
-Message-Id: <20130814111837.9a692a77b35ba8cbb4a9149b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__14_Aug_2013_11_18_37_+1000_huD=kGzHHCaJkfm5"
+	Tue, 13 Aug 2013 21:21:51 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-6e-520adbac9ca6
+From: Sangjung Woo <sangjung.woo@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sangjung Woo <sangjung.woo@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
+        Myugnjoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH] drivers/rtc/rtc-max77686.c: Fix wrong register
+Date: Wed, 14 Aug 2013 10:21:41 +0900
+Message-id: <1376443301-969-1-git-send-email-sangjung.woo@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsWyRsSkSHfNba4gg5n7FS3mrF/DZtF59gmz
+	xeVdc9gsbjeuYLNYsKfEgdXjxIzfLB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CVMfvYTPaC
+	r+wVq7qrGxjPs3UxcnJICJhIHLm5mQXCFpO4cG89UJyLQ0hgKaPEtrYN7DBFB1bPZ4dITGeU
+	uD7pGJTTxiTRtv4OM0gVm4CuxJMDl8FsESB71fNdYDazwDxGiY0vPUFsYQF7ibnH9oCtYxFQ
+	ldi0ZSETiM0r4CaxadJtoNUcQNsUJOZMsoFYfJ9NYu5yVohyAYlvkw+xQJTISmw6wAxRIilx
+	cMUNlgmMggsYGVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn525iBAbi6X/P+ncw3j1gfYgxGWjc
+	RGYp0eR8YCDnlcQbGpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiR
+	iYNTqoFxRvy5KDkm7dAL3jekVk6QiDzwzunVZpXKxd+Wb7gj+nwb39HT2lMU/hWzyOionP15
+	i1Grru1ixJyX+eufmxtarHVPtHl5sfzarLa0WDnZmTmlxe83Pymar8r6y+vtG/W783rffRZ+
+	yd7HYHX5A/POKbyfjggU/Dvev6KY++2igAT2WfUVW/sblFiKMxINtZiLihMBW4I3KVoCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jQd01t7mCDKbtlrKYs34Nm0Xn2SfM
+	Fpd3zWGzuN24gs1iwZ4SB1aPEzN+s3j0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
+	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
+	MI0Rur4hQXA9RgZoIGENY8bsYzPZC76yV6zqrm5gPM/WxcjJISFgInFg9Xx2CFtM4sK99UBx
+	Lg4hgemMEtcnHWOHcNqYJNrW32EGqWIT0JV4cuAymC0CZK96vgvMZhaYxyix8aUniC0sYC8x
+	99geFhCbRUBVYtOWhUwgNq+Am8SmSbeBNnAAbVOQmDPJZgIj9wJGhlWMoqkFyQXFSem5RnrF
+	ibnFpXnpesn5uZsYwYH+THoH46oGi0OMAhyMSjy8FnZcQUKsiWXFlbmHGCU4mJVEeL/aAIV4
+	UxIrq1KL8uOLSnNSiw8xJgMtn8gsJZqcD4zCvJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJ
+	pCeWpGanphakFsFsYeLglGpgLAve83r7EssJ7xrMxUtfiq9lFVV+XvnR/831wChnj+BJChL5
+	Kyc+vjn1/DEfjkTuPrZdLhP+vVn4YknwtO1MvJL/3YxmsSwQzNczzT0RdGNVdUj+pvs9x89L
+	iRvs7PBQP+fcdTyh4apKY9qO7yzX2188X8Nw8Ex1b8cujzU6N1skm5VD72XEK7EUZyQaajEX
+	FScCAEsWpM64AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__14_Aug_2013_11_18_37_+1000_huD=kGzHHCaJkfm5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fix to read the wrong register when checking whether the RTC timer has
+reached or not.
 
-Hi Russell,
+Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
+Signed-off-by: Myugnjoo Ham <myungjoo.ham@samsung.com>
+Reviewed-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+---
+ drivers/rtc/rtc-max77686.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Today's linux-next merge of the arm-current tree got a conflict in
-arch/arm/kernel/perf_event.c between commit b88a2595b6d8 ("perf/arm: Fix
-armpmu_map_hw_event()") from Linus' tree and commit d9f966357b14 ("ARM:
-7810/1: perf: Fix array out of bounds access in armpmu_map_hw_event()")
-from the arm-current tree.
+diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
+index 9915cb9..9efe118 100644
+--- a/drivers/rtc/rtc-max77686.c
++++ b/drivers/rtc/rtc-max77686.c
+@@ -240,9 +240,9 @@ static int max77686_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+ 	}
+ 
+ 	alrm->pending = 0;
+-	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS1, &val);
++	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS2, &val);
+ 	if (ret < 0) {
+-		dev_err(info->dev, "%s:%d fail to read status1 reg(%d)\n",
++		dev_err(info->dev, "%s:%d fail to read status2 reg(%d)\n",
+ 				__func__, __LINE__, ret);
+ 		goto out;
+ 	}
+-- 
+1.7.9.5
 
-These are the same patch except for the return code (and the much more
-comprehensive commit message in the arm-current tree version).  I fixed it =
-up
-(using the arm-current tree version - return -EINVAL instead of -ENOENT - I=
- have
-no way to guess which is right) and can carry the fix as necessary (no
-action is required).
-
-P.S. the version in Linus' tree has no Signed-off-by from the author.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__14_Aug_2013_11_18_37_+1000_huD=kGzHHCaJkfm5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJSCtr1AAoJEECxmPOUX5FEY8wP/RsHZGINzj4bSVGiUL/ao3OY
-Rc0SZvHjms5WsWgQDOC/kk6Cvz9DFKYvTJrwKk1GMum32PfZqSJoQ3bSakYG9pXg
-yLXx3oyn+Su20WHXbuDNAv6AkE7NdCYpy0yZs6PSBoa5PeoSxOTdvvd8HS4/KcXP
-8DP1PdQuzye3hRIKY0zEnhXdX64YyH5l95hX6atbrL2hDpXCMDuP1utPKLsJLhEP
-IKnCwOtv2R92a+dwoho7mH+1fSAlpjGGrixpxCdKBP/Fn9uWo5Q9sa8WqcF85NwU
-Tr+odBZJOmInr6ZCJezPX9hpL/t/c8lmT7dk+3pcu1wBzah00NNC9HZUYIFK/OaF
-5YDRTlq7IuFSeaOiqT61XCI5jiyAo5/ZTDbV8xhBfQEqqtEha5WJuzZxNhpqFsGY
-wXz/I7Xv1U4UMx+BfwywuMaYaqOLia5SO4uPJkbN22oFEVy1AmuXr6Z9k8oQ+qm5
-1kPYTrv3CXqNR76oVx85MyuIS0RjxhyVnY6yH0wIMZc/+mFtWCduZ03z/vdlJTTS
-i4A4gsBttgwUBffe/L170okL9lOGje2w7hsk8XTOc0vPlatuCyQMAZDZUhAzMLbE
-YPNak5lo7ew1Dbo6hDZRkFUWCRJSX35CaaLQxnd/r6Vzm8OMXChnBgD2V1tnTL8Z
-8XzCL7jPRzEA7/gpKUjF
-=B+uc
------END PGP SIGNATURE-----
-
---Signature=_Wed__14_Aug_2013_11_18_37_+1000_huD=kGzHHCaJkfm5--
