@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759682Ab3HNJjV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:39:21 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:33677 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759384Ab3HNJid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:38:33 -0400
-X-IronPort-AV: E=Sophos;i="4.89,876,1367942400"; 
-   d="scan'208";a="8200292"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        akpm@linux-foundation.org, liwanp@linux.vnet.ibm.com, tj@kernel.org,
-        zhangyanfei@cn.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] acpi: Print Hot-Pluggable Field in SRAT.
-Date: Wed, 14 Aug 2013 17:37:06 +0800
-Message-Id: <1376473028-29380-2-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1376473028-29380-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1376473028-29380-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/14 17:36:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/14 17:36:57,
-	Serialize complete at 2013/08/14 17:36:57
+	id S1758477Ab3HNJnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:43:53 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:56496 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab3HNJnv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 05:43:51 -0400
+Date: Wed, 14 Aug 2013 11:43:47 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org
+Subject: Re: [PATCH 15/27] drivers/pwm: don't check resource with
+ devm_ioremap_resource
+Message-ID: <20130814094345.GC2084@ulmo>
+References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
+ <1374602524-3398-16-git-send-email-wsa@the-dreams.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/e2eDi0V/xtL+Mc8"
+Content-Disposition: inline
+In-Reply-To: <1374602524-3398-16-git-send-email-wsa@the-dreams.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hot-Pluggable field in SRAT suggests if the memory could be
-hotplugged while the system is running. Print it as well when
-parsing SRAT will help users to know which memory is hotpluggable.
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Acked-by: Tejun Heo <tj@kernel.org>
----
- arch/x86/mm/srat.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+--/e2eDi0V/xtL+Mc8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-index cdd0da9..266ca91 100644
---- a/arch/x86/mm/srat.c
-+++ b/arch/x86/mm/srat.c
-@@ -146,6 +146,7 @@ int __init
- acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- {
- 	u64 start, end;
-+	u32 hotpluggable;
- 	int node, pxm;
- 
- 	if (srat_disabled())
-@@ -154,7 +155,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 		goto out_err_bad_srat;
- 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
- 		goto out_err;
--	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
-+	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
-+	if (hotpluggable && !save_add_info())
- 		goto out_err;
- 
- 	start = ma->base_address;
-@@ -174,9 +176,10 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
- 
- 	node_set(node, numa_nodes_parsed);
- 
--	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
--	       node, pxm,
--	       (unsigned long long) start, (unsigned long long) end - 1);
-+	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]%s\n",
-+		node, pxm,
-+		(unsigned long long) start, (unsigned long long) end - 1,
-+		hotpluggable ? " hotplug" : "");
- 
- 	return 0;
- out_err_bad_srat:
--- 
-1.7.1
+On Tue, Jul 23, 2013 at 08:01:48PM +0200, Wolfram Sang wrote:
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
+>=20
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ---
+> Please apply via the subsystem-tree.
+>=20
+>  drivers/pwm/pwm-lpc32xx.c     |    3 ---
+>  drivers/pwm/pwm-renesas-tpu.c |    5 -----
+>  2 files changed, 8 deletions(-)
 
+Hi Wolfram,
+
+Julia Lawall just sent a more complete version of this which includes an
+additional change to the pwm-spear driver. I've applied her version, I
+hope you don't mind.
+
+Thierry
+
+--/e2eDi0V/xtL+Mc8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSC1FRAAoJEN0jrNd/PrOhEtAP/2IT55gM+Ak1uuUIIyv+UqVM
+i8Qaj0qt85rYKBDGHEPyJ6GXMh9ftHmARpTlU2hp3T299lGVg6s02eeUCKEQhaYO
+yeuC5Ifg999sCbW8GNvuMKEGnSjRfgCsBbgQjezBNyVUcTvgRQ5mJlTP0p/W8LC5
+93aYmlwZbB8UAoOhoB3heQYInJi8HWmxg1hv3XGq3R7Vv+HpZnXy5TKSevNvjLIO
+nQWJb7IM1PDnq9AlRRgsyav3o3YHNu7Ym54as99x6r85YzaDi2Nw4arXcJF9SHGa
+r4cjpuTZ36Cigxz2WeQFrdZA39TXoEh4Q1sOAQSvt6o0BZNAhSdB69ygxea4fI4m
+NhjT+0sk76gLT2fIX43XctNeH7CNuBllNKBqW3D3FG1MNf4SpZNWZ5Sirepgd0xP
+0TYwfpqjchi+M9iwRKf9Cl/50UYbEUXimrnZFmxnaKkfp7xDjHxKWvNsv7nkLPgi
+KIE5+WHx1f95qbfGnDNwcgTxyixDD+lxaT7JElwQ6JAbK7zR5VyD1gtNN1VGwqgp
+4o8AQ1Pa8RrBuxVOraP/sS8CL0FDYouoEKo6USflNroIXtXe5k1pe3X4UrV99eI0
+SyHNIrWccyShx7mFwcK5PxwNPTtk/q/I6UdMW97YY18aBWRQV/Yq5aULNCp6aS0/
+tN/cqXCov/wzdm3ya1lM
+=mUQk
+-----END PGP SIGNATURE-----
+
+--/e2eDi0V/xtL+Mc8--
