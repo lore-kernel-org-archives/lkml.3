@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759788Ab3HNJPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:15:39 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:57962
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932236Ab3HNJLq (ORCPT
+	id S1751486Ab3HNJPh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:15:37 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4384 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932244Ab3HNJLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:11:46 -0400
+	Wed, 14 Aug 2013 05:11:47 -0400
 X-IronPort-AV: E=Sophos;i="4.89,875,1367964000"; 
-   d="scan'208";a="23908327"
+   d="scan'208";a="23908329"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: kernel-janitors@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 16/29] amba: tegra-ahb: simplify use of devm_ioremap_resource
-Date: Wed, 14 Aug 2013 11:11:20 +0200
-Message-Id: <1376471493-22215-17-git-send-email-Julia.Lawall@lip6.fr>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: kernel-janitors@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 18/29] tty: ar933x_uart: simplify use of devm_ioremap_resource
+Date: Wed, 14 Aug 2013 11:11:22 +0200
+Message-Id: <1376471493-22215-19-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -27,6 +27,9 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Remove unneeded error handling on the result of a call to
 platform_get_resource when the value is passed to devm_ioremap_resource.
+
+Move the call to platform_get_resource adjacent to the call to
+devm_ioremap_resource to make the connection between them more clear.
 
 A simplified version of the semantic patch that makes this change is as
 follows: (http://coccinelle.lip6.fr/)
@@ -49,20 +52,32 @@ identifier l;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/amba/tegra-ahb.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/tty/serial/ar933x_uart.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/amba/tegra-ahb.c b/drivers/amba/tegra-ahb.c
-index 1f44e56..558a239 100644
---- a/drivers/amba/tegra-ahb.c
-+++ b/drivers/amba/tegra-ahb.c
-@@ -256,8 +256,6 @@ static int tegra_ahb_probe(struct platform_device *pdev)
- 		return -ENOMEM;
+diff --git a/drivers/tty/serial/ar933x_uart.c b/drivers/tty/serial/ar933x_uart.c
+index 3f5517f..a712a3f 100644
+--- a/drivers/tty/serial/ar933x_uart.c
++++ b/drivers/tty/serial/ar933x_uart.c
+@@ -640,12 +640,6 @@ static int ar933x_uart_probe(struct platform_device *pdev)
+ 	if (id > CONFIG_SERIAL_AR933X_NR_UARTS)
+ 		return -EINVAL;
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENODEV;
- 	ahb->regs = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(ahb->regs))
- 		return PTR_ERR(ahb->regs);
+-	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!mem_res) {
+-		dev_err(&pdev->dev, "no MEM resource\n");
+-		return -EINVAL;
+-	}
+-
+ 	irq_res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (!irq_res) {
+ 		dev_err(&pdev->dev, "no IRQ resource\n");
+@@ -659,6 +653,7 @@ static int ar933x_uart_probe(struct platform_device *pdev)
+ 
+ 	port = &up->port;
+ 
++	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	port->membase = devm_ioremap_resource(&pdev->dev, mem_res);
+ 	if (IS_ERR(port->membase))
+ 		return PTR_ERR(port->membase);
 
