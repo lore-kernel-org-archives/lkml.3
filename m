@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760035Ab3HNRDV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 13:03:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52547 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757424Ab3HNRDS (ORCPT
+	id S932951Ab3HNREJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 13:04:09 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:49811 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932612Ab3HNREH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 13:03:18 -0400
-Date: Wed, 14 Aug 2013 10:04:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jack Hill <jackhill@jackhill.us>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [ 04/23] SCSI: qla2xxx: Properly set the tagging for commands.
-Message-ID: <20130814170450.GB7668@kroah.com>
-References: <20130802102036.180660415@linuxfoundation.org>
- <20130802102036.810716252@linuxfoundation.org>
- <alpine.DEB.2.02.1308141238220.31921@pilot.trilug.org>
+	Wed, 14 Aug 2013 13:04:07 -0400
+X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Aug 2013 13:04:07 EDT
+Date: Wed, 14 Aug 2013 16:58:36 +0000
+From: Christoph Lameter <cl@gentwo.org>
+To: Minchan Kim <minchan@kernel.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, k.kozlowski@samsung.com,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
+        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
+        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC 0/3] Pin page control subsystem
+In-Reply-To: <20130814164705.GD2706@gmail.com>
+Message-ID: <000001407dc3c33b-4139d615-aecc-4745-a9b4-c84949f6a8f4-000000@email.amazonses.com>
+References: <1376377502-28207-1-git-send-email-minchan@kernel.org> <00000140787b6191-ae3f2eb1-515e-48a1-8e64-502772af4700-000000@email.amazonses.com> <20130814001236.GC2271@bbox> <000001407dafbe92-7b2b4006-2225-4f0b-b23b-d66101a995aa-000000@email.amazonses.com>
+ <20130814164705.GD2706@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308141238220.31921@pilot.trilug.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.08.14-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 12:40:56PM -0400, Jack Hill wrote:
-> Hi Greg,
-> 
-> Apologies if this question is due to my ignorance of kernel development 
-> practices. Feel free to point me at documentation.
-> 
-> I noticed that you applied this patch to the 3.10, 3.4, and 3.0 trees. On 
-> kernel.org, it looks like 3.2 is also a longterm kernel. Why was this 
-> patch not applied to that tree?
+On Thu, 15 Aug 2013, Minchan Kim wrote:
 
-Possibly because the 3.2-stable maintainer hasn't picked it up yet?
-It's a different developer, give him some time :)
+> When I look API of mmu_notifier, it has mm_struct so I guess it works
+> for only user process. Right?
 
-thanks,
+Correct. A process must have mapped the pages. If you can get a
+kernel "process" to work then that process could map the pages.
 
-greg k-h
+> If so, I need to register it without user conext because zram, zswap
+> and zcache works for only kernel side.
+
+Hmmm... Ok but that now gets the complexity of page pinnning up to a very
+weird level. Is there some way we can have a common way to deal with the
+various ways that pinning is needed? Just off the top of my head (I may
+miss some use cases) we have
+
+1. mlock from user space
+2. page pinning for reclaim
+3. Page pinning for I/O from device drivers (like f.e. the RDMA subsystem)
+4. Page pinning for low latency operations
+5. Page pinning for migration
+6. Page pinning for the perf buffers.
+7. Page pinning for cross system access (XPMEM, GRU SGI)
+
+Now we have another subsystem wanting different semantics of pinning. Is
+there any way we can come up with a pinning mechanism that fits all use
+cases, that is easyly understandable and maintainable?
+
