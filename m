@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428Ab3HNWvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:51:36 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41675 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933390Ab3HNWvd (ORCPT
+	id S933432Ab3HNW5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:57:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56198 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933374Ab3HNW5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:51:33 -0400
-Date: Wed, 14 Aug 2013 23:45:52 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: behanw@converseincode.com
-Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        charlebm@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: LLVMLinux: Change "extern inline" to "gnu_inline"
-	in ARM ftrace.h
-Message-ID: <20130814224552.GA23006@n2100.arm.linux.org.uk>
-References: <1376516261-2071-1-git-send-email-behanw@converseincode.com> <1376516261-2071-2-git-send-email-behanw@converseincode.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376516261-2071-2-git-send-email-behanw@converseincode.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 14 Aug 2013 18:57:44 -0400
+Date: Wed, 14 Aug 2013 15:57:42 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Caizhiyong <caizhiyong@huawei.com>
+Cc: Karel Zak <kzak@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH] block: add command line partition parser
+Message-Id: <20130814155742.d3cd651e40e552696667e4f2@linux-foundation.org>
+In-Reply-To: <C3050A4DBA34F345975765E43127F10F1C06237C@szxeml512-mbs.china.huawei.com>
+References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
+	<20130805152206.76462cc4a42e51b16a0532f1@linux-foundation.org>
+	<C3050A4DBA34F345975765E43127F10F1C06237C@szxeml512-mbs.china.huawei.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 05:37:41PM -0400, behanw@converseincode.com wrote:
-> From: Mark Charlebois <charlebm@gmail.com>
-> 
-> With compilers which follow the C99 standard (like modern versions of gcc and
-> clang), "extern inline" does the wrong thing (emits code for an externally
-> linkable version of the inline function). In this case using the gnu_inline
-> attribute makes inline do the right thing on gcc and on clang.
-> 
-> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> ---
->  arch/arm/include/asm/ftrace.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
-> index f89515a..fb7fdc4 100644
-> --- a/arch/arm/include/asm/ftrace.h
-> +++ b/arch/arm/include/asm/ftrace.h
-> @@ -45,7 +45,8 @@ void *return_address(unsigned int);
->  
->  #else
->  
-> -extern inline void *return_address(unsigned int level)
-> +extern inline __attribute__((gnu_inline))
-> +void *return_address(unsigned int level)
+On Tue, 13 Aug 2013 06:02:17 +0000 Caizhiyong <caizhiyong@huawei.com> wrote:
 
-Well, that should be static inline, not extern inline in any case.  Does
-clang work if that's static inline?
+> move the command line parser to a separate module, and change it into
+> library-style code.
+> 
+> reference: https://lkml.org/lkml/2013/8/6/550
+
+Well OK.  But to prove the library's usefulness and to generally clean
+up the kernel, someone needs to sign up to the task of converting
+drivers/mtd/cmdlinepart.c to use this code.
+
+I've been hopefully cc'ing various MTD people but am not being
+overwhelmed with waves of enthusiasm ;)
+
+
