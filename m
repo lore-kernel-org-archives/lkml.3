@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933328Ab3HNWKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:10:31 -0400
-Received: from relay64.jhb.wbs.co.za ([41.213.80.64]:50562 "EHLO
-	mail.wbs.co.za" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933298Ab3HNWK3 convert rfc822-to-8bit (ORCPT
+	id S1760266Ab3HNWO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:14:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760170Ab3HNWO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:10:29 -0400
-X-Greylist: delayed 5068 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Aug 2013 18:10:29 EDT
-Message-Id: <gmGh3RGjORPErue9LWGr4ukBVFUzRb2JgAog8uxm2FWn@duxmachinery.com>
+	Wed, 14 Aug 2013 18:14:57 -0400
+Date: Wed, 14 Aug 2013 15:14:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Drake <dsd@laptop.org>
+Cc: dilinger@queued.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] olpc-ec: initialise earlier
+Message-Id: <20130814151454.76650feb7f8095dabb1cf691@linux-foundation.org>
+In-Reply-To: <20130810192215.B83A2FAB04@dev.laptop.org>
+References: <20130810192215.B83A2FAB04@dev.laptop.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-From: =?iso-8859-1?Q?David_No=EBl?= <dave@duxmachinery.com>
-To: "linkvoyager.com," <linux-kernel@vger.kernel.org>
-Subject: Product Request {Unit Price and MOQ}
-Date: Wed, 14 Aug 2013 13:45:53 -0700
-X-Bounce-Tracking-Info: <bGlua3ZveWFnZXIuY29tLAkJCWxpbnV4LWtlcm5lbEB2Z2VyLmtlcm5lbC5vcmcJUHJvZHVjdCBSZXF1ZXN0IHtVbml0IFByaWNlIGFuZCBNT1F9CTgJCTE0MTA5CWJvdW5jZQlubwlubw==>
-Content-type: text/plain; charset=iso-8859-1; format=flowed
-Content-transfer-encoding: 8BIT
-X-GeoIP: ZA|South Africa
-X-EximConfig: v2.5 on mail.iburst.co.za
-X-GeoIP: 
-X-EximConfig: v2.5 on mail.wbs.co.za
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sir/Madam,
-We are interested in the following items:
-http://dux-corporation.trade-e.com/productid=7986570.htm
-Login your valid email address and password to view requested items on DUX website.
-Kindly advice:
+On Sat, 10 Aug 2013 15:22:15 -0400 (EDT) Daniel Drake <dsd@laptop.org> wrote:
 
-1. Shippment:
-2. Unit price:
-3. MOQ:
-4. Payment: TT, Western Union, PayPal, Bank
-5. Lead time:
+> Being a low-level component, various drivers (e.g. olpc-battery) assume that
+> it is ok to communicate with the OLPC Embedded Controller during probe.
+> Therefore the OLPC EC driver must be initialised before other drivers try to
+> use it. This was the case until it was recently moved out of arch/x86 and
+> restructured.
+> 
+> Use arch_initcall so that olpc-ec is readied earlier, matching the
+> previous behaviour. Fixes various drivers such as olpc-battery and
+> olpc-xo1-sci.
+> 
 
-Your early reply'd be highly appreciated.
+You imply that there was a regression, but don't describe the
+user-visible effects of the regression.
 
+You provide hints which would permit me, with sufficient effort, to
+approximately work out which kernel versions were affected by the
+regression and then left it at that.
 
-David Noël 
-DUX Corporation
-615 Lavoisier
-Repentigny, Quebec
-Canada J6A 7N2
-Tel:1.450.581.8341
-Fax:1.450.581.5138
+I need to work out which kernel version(s) need patching, and why. 
+Please, make it easier for me!
 
