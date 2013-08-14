@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760018Ab3HNQP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:15:29 -0400
-Received: from 8bytes.org ([85.214.48.195]:50945 "EHLO mail.8bytes.org"
+	id S1760048Ab3HNQQQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:16:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46619 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757295Ab3HNQP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:15:28 -0400
-Date: Wed, 14 Aug 2013 18:15:22 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>
-Subject: Re: [PATCH 1/3] powerpc: Add iommu domain pointer to device archdata
-Message-ID: <20130814161522.GP28811@8bytes.org>
-References: <1373863857-27239-1-git-send-email-Varun.Sethi@freescale.com>
- <20130814094802.GC4491@8bytes.org>
- <C5ECD7A89D1DC44195F34B25E172658D0A42CDB5@039-SN2MPN1-013.039d.mgd.msft.net>
+	id S1759031Ab3HNQQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 12:16:15 -0400
+Message-ID: <520BACEA.50604@zytor.com>
+Date: Wed, 14 Aug 2013 09:14:34 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D0A42CDB5@039-SN2MPN1-013.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Aug 14 18:15:25 2013
-X-DSPAM-Confidence: 0.9991
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 520bad1d20865595313033
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <bitbucket@online.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/5] preempt_count rework
+References: <20130814131539.790947874@chello.nl> <520B8A81.1080405@zytor.com> <1376494751.7355.28.camel@marge.simpson.net> <20130814160632.GJ24092@twins.programming.kicks-ass.net>
+In-Reply-To: <20130814160632.GJ24092@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 09:56:11AM +0000, Sethi Varun-B16395 wrote:
-> Please find the .config file attached with this mail.
+On 08/14/2013 09:06 AM, Peter Zijlstra wrote:
+> On Wed, Aug 14, 2013 at 05:39:11PM +0200, Mike Galbraith wrote:
+>> On Wed, 2013-08-14 at 06:47 -0700, H. Peter Anvin wrote:
+>>
+>>> On x86, you never want to take the address of a percpu variable if you
+>>> can avoid it, as you end up generating code like:
+>>>
+>>> 	movq %fs:0,%rax
+>>> 	subl $1,(%rax)
+>>
+>> Hmmm..
+>>
+>> #define cpu_rq(cpu)             (&per_cpu(runqueues, (cpu)))
+>> #define this_rq()               (&__get_cpu_var(runqueues))
+>>
+>> ffffffff81438c7f:       48 c7 c3 80 11 01 00    mov    $0x11180,%rbx
+>>         /*
+>>          * this_rq must be evaluated again because prev may have moved
+>>          * CPUs since it called schedule(), thus the 'rq' on its stack
+>>          * frame will be invalid.
+>>          */
+>>         finish_task_switch(this_rq(), prev);
+>> ffffffff81438c86:       e8 25 b4 c0 ff          callq  ffffffff810440b0 <finish_task_switch>
+>>                  * The context switch have flipped the stack from under us
+>>                  * and restored the local variables which were saved when
+>>                  * this task called schedule() in the past. prev == current
+>>                  * is still correct, but it can be moved to another cpu/rq.
+>>                  */
+>>                 cpu = smp_processor_id();
+>> ffffffff81438c8b:       65 8b 04 25 b8 c5 00    mov    %gs:0xc5b8,%eax
+>> ffffffff81438c92:       00
+>>                 rq = cpu_rq(cpu);
+>> ffffffff81438c93:       48 98                   cltq
+>> ffffffff81438c95:       48 03 1c c5 00 f3 bb    add    -0x7e440d00(,%rax,8),%rbx
+>>
+>> ..so could the rq = cpu_rq(cpu) sequence be improved cycle expenditure
+>> wise by squirreling rq pointer away in a percpu this_rq, and replacing
+>> cpu_rq(cpu) above with a __this_cpu_read(this_rq) version of this_rq()?
+> 
+> Well, this_rq() should already get you that. The above code sucks for
+> using cpu_rq() when we know cpu == smp_processor_id().
+> 
 
-Fantastic, thanks. The build works fine, I'll include the driver into my
-next-branch. I also have two minor clean-up patches on-top, just if you
-where wondering.
+Even so, this_rq() uses __get_cpu_var() and takes its address, which
+turns into a sequence like:
 
+	leaq __percpu_runqueues(%rip),%rax
+	addq %gs:this_cpu_off,%rax
 
-	Joerg
+... which is better than the above but still more heavyweight than it
+would be if the pointer was itself a percpu variable.
 
+	-hpa
 
