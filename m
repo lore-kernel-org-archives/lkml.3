@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759911Ab3HNO07 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 10:26:59 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:34655
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756525Ab3HNO05 (ORCPT
+	id S1759981Ab3HNO13 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 10:27:29 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45468 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759901Ab3HNO11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 10:26:57 -0400
-X-IronPort-AV: E=Sophos;i="4.89,877,1367964000"; 
-   d="scan'208";a="23936229"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Francois Romieu <romieu@fr.zoreil.com>, roszenrami@gmail.com,
-        dshwatrz@gmail.com
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com
-Subject: [PATCH] drivers/net/ethernet/via/via-velocity.c: update napi implementation
-Date: Wed, 14 Aug 2013 16:26:53 +0200
-Message-Id: <1376490413-12067-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	Wed, 14 Aug 2013 10:27:27 -0400
+Date: Wed, 14 Aug 2013 10:27:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Mark Brown <broonie@kernel.org>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+In-Reply-To: <20130814113848.GP6427@sirena.org.uk>
+Message-ID: <Pine.LNX.4.44L0.1308141023150.1701-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Wed, 14 Aug 2013, Mark Brown wrote:
 
-Drivers supporting NAPI should use a NAPI-specific function for receiving
-packets.  Hence netif_rx is changed to netif_receive_skb.
+> On Mon, Aug 12, 2013 at 09:04:00PM -0400, Alan Stern wrote:
+> 
+> > The bus code would need hooks installed wherever the platform wants to 
+> > do something extra.  This could end up growing to a lot of hooks.  How 
+> > can the whole thing be done in a reasonable fashion?
+> 
+> I'd expect that we're just looking at hooks around connection and
+> disconnection here here - if we're looking at much more it seems like we
+> must be doing something wrong.
 
-Furthermore netif_napi_del should be used in the probe and remove function
-to clean up the NAPI resource information.
+Connection and disconnection of what?
 
-Thanks to Francois Romieu, David Shwatrz and Rami Rosen for their help on
-this patch.
+In the example mentioned earlier, the GPIOs to power an on-board USB
+hub would have to be initialized when the host controller was started.  
+You wouldn't want to wait for the on-board hub to be detected, because
+without those GPIOs set properly, it never would be discovered on the
+USB bus.  Right?
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Perhaps the platform-level code would need to hook into the places
+where the discoverable bus is registered and unregistered.
 
----
-I still don't understand the reason for choosing netif_receive_skb,
-specifically.  This patch is not tested.
-
- drivers/net/ethernet/via/via-velocity.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
-index ef77631..d022bf9 100644
---- a/drivers/net/ethernet/via/via-velocity.c
-+++ b/drivers/net/ethernet/via/via-velocity.c
-@@ -2100,7 +2100,7 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
- 
- 		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q), vid);
- 	}
--	netif_rx(skb);
-+	netif_receive_skb(skb);
- 
- 	stats->rx_bytes += pkt_len;
- 	stats->rx_packets++;
-@@ -2904,6 +2904,7 @@ out:
- 	return ret;
- 
- err_iounmap:
-+	netif_napi_del(&vptr->napi);
- 	iounmap(regs);
- err_free_dev:
- 	free_netdev(netdev);
-@@ -2924,6 +2925,7 @@ static int velocity_remove(struct device *dev)
- 	struct velocity_info *vptr = netdev_priv(netdev);
- 
- 	unregister_netdev(netdev);
-+	netif_napi_del(&vptr->napi);
- 	iounmap(vptr->mac_regs);
- 	free_netdev(netdev);
- 	velocity_nics--;
+Alan Stern
 
