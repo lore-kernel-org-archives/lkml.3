@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759706Ab3HNJop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:44:45 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:57148 "EHLO extserv.mm-sol.com"
+	id S1759774Ab3HNJsK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:48:10 -0400
+Received: from 8bytes.org ([85.214.48.195]:50130 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752919Ab3HNJol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:44:41 -0400
-Message-ID: <1376473404.2132.10.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [RFC 2/2] usb: dwc3: Add Qualcomm DWC3 glue layer driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com
-Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
-        gregkh@linuxfoundation.org, grant.likely@linaro.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Date: Wed, 14 Aug 2013 12:43:24 +0300
-In-Reply-To: <20130809132349.GC12041@radagast>
-References: <1375789991-30041-1-git-send-email-iivanov@mm-sol.com>
-	 <1375789991-30041-3-git-send-email-iivanov@mm-sol.com>
-	 <20130809132349.GC12041@radagast>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751507Ab3HNJsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 05:48:09 -0400
+Date: Wed, 14 Aug 2013 11:48:03 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: iommu@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        galak@kernel.crashing.org, alex.williamson@redhat.com,
+        stuart.yoder@freescale.com, scottwood@freescale.com
+Subject: Re: [PATCH 1/3] powerpc: Add iommu domain pointer to device archdata
+Message-ID: <20130814094802.GC4491@8bytes.org>
+References: <1373863857-27239-1-git-send-email-Varun.Sethi@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373863857-27239-1-git-send-email-Varun.Sethi@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Aug 14 11:48:07 2013
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 520b525720862074367239
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
-
-On Fri, 2013-08-09 at 16:23 +0300, Felipe Balbi wrote:
-
-<snip>
-
+On Mon, Jul 15, 2013 at 10:20:55AM +0530, Varun Sethi wrote:
+> Add an iommu domain pointer to device (powerpc) archdata.  Devices
+> are attached to iommu domains and this pointer provides a mechanism
+> to correlate between a device and the associated iommu domain.  This
+> field is set when a device is attached to a domain.
 > 
-> > +	/*
-> > +	 * DWC3 Core requires its CORE CLK (aka master / bus clk) to
-> > +	 * run at 125Mhz in SSUSB mode and >60MHZ for HSUSB mode.
-> > +	 */
-> > +	clk_set_rate(mdwc->core_clk, 125000000);
-> 
-> if this is dwc3's core clock, why don't we teach dwc3.ko about this
-> requirement ? Just make sure to have it optional, since x86 and OMAP
-> wouldn't need direct fiddling with the clocks.
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> Acked-by: Kumar Gala <galak@kernel.crashing.org>
+> ---
+> - rebased patch to 3.11-rc1
+>  arch/powerpc/include/asm/device.h |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 
-I believe this is Qualcomm specific requirement. Something is modified
-inside DWC in respect of the clocks. I will like to keep this here, in
-the glue layer driver.
+Okay, I applied these patches to my ppc/pamu branch. But before I merge
+it to my next branch (so that it can go upstream) I want to have a
+compile-test-case first. Can you send me a working .config which
+includes this driver?
 
-Regards,
-Ivan
+Thanks,
+
+	Joerg
 
 
