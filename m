@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951Ab3HNREJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 13:04:09 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:49811 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932612Ab3HNREH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 13:04:07 -0400
-X-Greylist: delayed 329 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Aug 2013 13:04:07 EDT
-Date: Wed, 14 Aug 2013 16:58:36 +0000
-From: Christoph Lameter <cl@gentwo.org>
-To: Minchan Kim <minchan@kernel.org>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, k.kozlowski@samsung.com,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
-        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
-        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC 0/3] Pin page control subsystem
-In-Reply-To: <20130814164705.GD2706@gmail.com>
-Message-ID: <000001407dc3c33b-4139d615-aecc-4745-a9b4-c84949f6a8f4-000000@email.amazonses.com>
-References: <1376377502-28207-1-git-send-email-minchan@kernel.org> <00000140787b6191-ae3f2eb1-515e-48a1-8e64-502772af4700-000000@email.amazonses.com> <20130814001236.GC2271@bbox> <000001407dafbe92-7b2b4006-2225-4f0b-b23b-d66101a995aa-000000@email.amazonses.com>
- <20130814164705.GD2706@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1760128Ab3HNRKS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 13:10:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52045 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760064Ab3HNRKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 13:10:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,878,1367996400"; 
+   d="scan'208";a="362658148"
+Message-ID: <520BB9EF.5020308@linux.intel.com>
+Date: Wed, 14 Aug 2013 10:10:07 -0700
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.08.14-54.240.9.58
+To: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, linux-ext4@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        david@fromorbit.com, Tim Chen <tim.c.chen@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Andy Lutomirski <luto@amacapital.net>
+Subject: page fault scalability (ext3, ext4, xfs)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Aug 2013, Minchan Kim wrote:
+We talked a little about this issue in this thread:
 
-> When I look API of mmu_notifier, it has mm_struct so I guess it works
-> for only user process. Right?
+	http://marc.info/?l=linux-mm&m=137573185419275&w=2
 
-Correct. A process must have mapped the pages. If you can get a
-kernel "process" to work then that process could map the pages.
+but I figured I'd follow up with a full comparison.  ext4 is about 20%
+slower in handling write page faults than ext3.  xfs is about 30% slower
+than ext3.  I'm running on an 8-socket / 80-core / 160-thread system.
+Test case is this:
 
-> If so, I need to register it without user conext because zram, zswap
-> and zcache works for only kernel side.
+	https://github.com/antonblanchard/will-it-scale/blob/master/tests/page_fault3.c
 
-Hmmm... Ok but that now gets the complexity of page pinnning up to a very
-weird level. Is there some way we can have a common way to deal with the
-various ways that pinning is needed? Just off the top of my head (I may
-miss some use cases) we have
+It's a little easier to look at the trends as you grow the number of
+processes:
 
-1. mlock from user space
-2. page pinning for reclaim
-3. Page pinning for I/O from device drivers (like f.e. the RDMA subsystem)
-4. Page pinning for low latency operations
-5. Page pinning for migration
-6. Page pinning for the perf buffers.
-7. Page pinning for cross system access (XPMEM, GRU SGI)
+	http://www.sr71.net/~dave/intel/page-fault-exts/cmp.html?1=ext3&2=ext4&3=xfs&hide=linear,threads,threads_idle,processes_idle&rollPeriod=16
 
-Now we have another subsystem wanting different semantics of pinning. Is
-there any way we can come up with a pinning mechanism that fits all use
-cases, that is easyly understandable and maintainable?
+I recorded and diff'd some perf data (I've still got the raw data if
+anyone wants it), and the main culprit of the ext4/xfs delta looks to be
+spinlock contention (or at least bouncing) in xfs_log_commit_cil().
+This looks to be a known problem:
 
+	http://oss.sgi.com/archives/xfs/2013-07/msg00110.html
+
+Here's a brief snippet of the ext4->xfs 'perf diff'.  Note that things
+like page_fault() go down in the profile because we are doing _fewer_ of
+them, not because it got faster:
+
+> # Baseline    Delta          Shared Object                                          Symbol
+> # ........  .......  .....................  ..............................................
+> #
+>     22.04%   -4.07%  [kernel.kallsyms]      [k] page_fault                                
+>      2.93%  +12.49%  [kernel.kallsyms]      [k] _raw_spin_lock                            
+>      8.21%   -0.58%  page_fault3_processes  [.] testcase                                  
+>      4.87%   -0.34%  [kernel.kallsyms]      [k] __set_page_dirty_buffers                  
+>      4.07%   -0.58%  [kernel.kallsyms]      [k] mem_cgroup_update_page_stat               
+>      4.10%   -0.61%  [kernel.kallsyms]      [k] __block_write_begin                       
+>      3.69%   -0.57%  [kernel.kallsyms]      [k] find_get_page                             
+
+It's a bit of a bummer that things are so much less scalable on the
+newer filesystems.  I expected xfs to do a _lot_ better than it did.
