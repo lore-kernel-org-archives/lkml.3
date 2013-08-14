@@ -1,145 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760200Ab3HNU3Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:29:25 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:65528 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758543Ab3HNU3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:29:24 -0400
-Message-ID: <201308142029.r7EKTMRw023404@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 14 Aug 2013 16:22:18 -0400
-In-Reply-To: <20130814200748.GI28628@htj.dyndns.org>
-Subject: [PATCH v8] mm: make lru_add_drain_all() selective
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1760241Ab3HNUbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:31:08 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:53598 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758543Ab3HNUbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 16:31:06 -0400
+From: Sergei Trofimovich <slyfox@gentoo.org>
+To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Sergei Trofimovich <slyfox@gentoo.org>, Josef Bacik <jbacik@fusionio.com>,
+        Chris Mason <chris.mason@fusionio.com>
+Subject: [PATCH] btrfs: mark some local function as 'static'
+Date: Wed, 14 Aug 2013 23:27:46 +0300
+Message-Id: <1376512066-7284-1-git-send-email-slyfox@gentoo.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change makes lru_add_drain_all() only selectively interrupt
-the cpus that have per-cpu free pages that can be drained.
-
-This is important in nohz mode where calling mlockall(), for
-example, otherwise will interrupt every core unnecessarily.
-
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
+Cc: Josef Bacik <jbacik@fusionio.com>
+Cc: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
 ---
-v8: Here's an actual git patch after Tejun's review.
-Pull everything inline into lru_add_drain_all(), and use
-a mutex plus build-time allocated work_structs to avoid allocation.
+ fs/btrfs/ctree.h       | 2 --
+ fs/btrfs/disk-io.c     | 8 ++++----
+ fs/btrfs/extent_io.c   | 2 +-
+ fs/btrfs/extent_io.h   | 1 -
+ fs/btrfs/root-tree.c   | 4 ++--
+ fs/btrfs/transaction.c | 2 +-
+ fs/btrfs/transaction.h | 2 --
+ 7 files changed, 8 insertions(+), 13 deletions(-)
 
-v7: try a version with callbacks instead of cpu masks.
-Either this or v6 seem like reasonable solutions.
-
-v6: add Tejun's Acked-by, and add missing get/put_cpu_online to
-lru_add_drain_all().
-
-v5: provide validity checking on the cpumask for schedule_on_cpu_mask.
-By providing an all-or-nothing EINVAL check, we impose the requirement
-that the calling code actually know clearly what it's trying to do.
-(Note: no change to the mm/swap.c commit)
-
-v4: don't lose possible -ENOMEM in schedule_on_each_cpu()
-(Note: no change to the mm/swap.c commit)
-
-v3: split commit into two, one for workqueue and one for mm, though both
-should probably be taken through -mm.
-
- include/linux/swap.h |  2 +-
- mm/swap.c            | 44 +++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 40 insertions(+), 6 deletions(-)
-
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index d95cde5..acea8e0 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -247,7 +247,7 @@ extern void activate_page(struct page *);
- extern void mark_page_accessed(struct page *);
- extern void lru_add_drain(void);
- extern void lru_add_drain_cpu(int cpu);
--extern int lru_add_drain_all(void);
-+extern void lru_add_drain_all(void);
- extern void rotate_reclaimable_page(struct page *page);
- extern void deactivate_page(struct page *page);
- extern void swap_setup(void);
-diff --git a/mm/swap.c b/mm/swap.c
-index 4a1d0d2..8d19543 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -405,6 +405,11 @@ static void activate_page_drain(int cpu)
- 		pagevec_lru_move_fn(pvec, __activate_page, NULL);
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index e795bf1..e91ab9e 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -3414,8 +3414,6 @@ int __must_check btrfs_update_root(struct btrfs_trans_handle *trans,
+ 				   struct btrfs_root *root,
+ 				   struct btrfs_key *key,
+ 				   struct btrfs_root_item *item);
+-void btrfs_read_root_item(struct extent_buffer *eb, int slot,
+-			  struct btrfs_root_item *item);
+ int btrfs_find_root(struct btrfs_root *root, struct btrfs_key *search_key,
+ 		    struct btrfs_path *path, struct btrfs_root_item *root_item,
+ 		    struct btrfs_key *root_key);
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 6b092a1..227339d 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1428,8 +1428,8 @@ int btrfs_add_log_tree(struct btrfs_trans_handle *trans,
+ 	return 0;
  }
  
-+static bool need_activate_page_drain(int cpu)
-+{
-+	return pagevec_count(&per_cpu(activate_page_pvecs, cpu)) != 0;
-+}
-+
- void activate_page(struct page *page)
+-struct btrfs_root *btrfs_read_tree_root(struct btrfs_root *tree_root,
+-					struct btrfs_key *key)
++static struct btrfs_root *btrfs_read_tree_root(struct btrfs_root *tree_root,
++					       struct btrfs_key *key)
  {
- 	if (PageLRU(page) && !PageActive(page) && !PageUnevictable(page)) {
-@@ -422,6 +427,11 @@ static inline void activate_page_drain(int cpu)
- {
+ 	struct btrfs_root *root;
+ 	struct btrfs_fs_info *fs_info = tree_root->fs_info;
+@@ -1529,8 +1529,8 @@ fail:
+ 	return ret;
  }
  
-+static bool need_activate_page_drain(int cpu)
-+{
-+	return false;
-+}
-+
- void activate_page(struct page *page)
+-struct btrfs_root *btrfs_lookup_fs_root(struct btrfs_fs_info *fs_info,
+-					u64 root_id)
++static struct btrfs_root *btrfs_lookup_fs_root(struct btrfs_fs_info *fs_info,
++					       u64 root_id)
  {
- 	struct zone *zone = page_zone(page);
-@@ -678,12 +688,36 @@ static void lru_add_drain_per_cpu(struct work_struct *dummy)
- 	lru_add_drain();
- }
+ 	struct btrfs_root *root;
  
--/*
-- * Returns 0 for success
-- */
--int lru_add_drain_all(void)
-+static DEFINE_PER_CPU(struct work_struct, lru_add_drain_work);
-+
-+void lru_add_drain_all(void)
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index fe443fe..045263a 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -1810,7 +1810,7 @@ out:
+  * set the private field for a given byte offset in the tree.  If there isn't
+  * an extent_state there already, this does nothing.
+  */
+-int set_state_private(struct extent_io_tree *tree, u64 start, u64 private)
++static int set_state_private(struct extent_io_tree *tree, u64 start, u64 private)
  {
--	return schedule_on_each_cpu(lru_add_drain_per_cpu);
-+	static DEFINE_MUTEX(lock);
-+	static struct cpumask has_work;
-+	int cpu;
-+
-+	mutex_lock(&lock);
-+	get_online_cpus();
-+	cpumask_clear(&has_work);
-+
-+	for_each_online_cpu(cpu) {
-+		struct work_struct *work = &per_cpu(lru_add_drain_work, cpu);
-+
-+		if (pagevec_count(&per_cpu(lru_add_pvec, cpu)) ||
-+		    pagevec_count(&per_cpu(lru_rotate_pvecs, cpu)) ||
-+		    pagevec_count(&per_cpu(lru_deactivate_pvecs, cpu)) ||
-+		    need_activate_page_drain(cpu)) {
-+			INIT_WORK(work, lru_add_drain_per_cpu);
-+			schedule_work_on(cpu, work);
-+			cpumask_set_cpu(cpu, &has_work);
-+		}
-+	}
-+
-+	for_each_cpu(cpu, &has_work)
-+		flush_work(&per_cpu(lru_add_drain_work, cpu));
-+
-+	put_online_cpus();
-+	mutex_unlock(&lock);
- }
- 
- /*
+ 	struct rb_node *node;
+ 	struct extent_state *state;
+diff --git a/fs/btrfs/extent_io.h b/fs/btrfs/extent_io.h
+index 3b8c4e2..bb1f75d 100644
+--- a/fs/btrfs/extent_io.h
++++ b/fs/btrfs/extent_io.h
+@@ -261,7 +261,6 @@ int extent_readpages(struct extent_io_tree *tree,
+ 		     get_extent_t get_extent);
+ int extent_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+ 		__u64 start, __u64 len, get_extent_t *get_extent);
+-int set_state_private(struct extent_io_tree *tree, u64 start, u64 private);
+ void extent_cache_csums_dio(struct extent_io_tree *tree, u64 start, u32 csums[],
+ 			    int count);
+ void extent_cache_csums(struct extent_io_tree *tree, struct bio *bio,
+diff --git a/fs/btrfs/root-tree.c b/fs/btrfs/root-tree.c
+index ffb1036..92453f0 100644
+--- a/fs/btrfs/root-tree.c
++++ b/fs/btrfs/root-tree.c
+@@ -29,8 +29,8 @@
+  * generation numbers as then we know the root was once mounted with an older
+  * kernel that was not aware of the root item structure change.
+  */
+-void btrfs_read_root_item(struct extent_buffer *eb, int slot,
+-			  struct btrfs_root_item *item)
++static void btrfs_read_root_item(struct extent_buffer *eb, int slot,
++				struct btrfs_root_item *item)
+ {
+ 	uuid_le uuid;
+ 	int len;
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index af1931a..a689247 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -837,7 +837,7 @@ int btrfs_wait_marked_extents(struct btrfs_root *root,
+  * them in one of two extent_io trees.  This is used to make sure all of
+  * those extents are on disk for transaction or log commit
+  */
+-int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
++static int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
+ 				struct extent_io_tree *dirty_pages, int mark)
+ {
+ 	int ret;
+diff --git a/fs/btrfs/transaction.h b/fs/btrfs/transaction.h
+index defbc42..5c2af84 100644
+--- a/fs/btrfs/transaction.h
++++ b/fs/btrfs/transaction.h
+@@ -160,8 +160,6 @@ int btrfs_should_end_transaction(struct btrfs_trans_handle *trans,
+ void btrfs_throttle(struct btrfs_root *root);
+ int btrfs_record_root_in_trans(struct btrfs_trans_handle *trans,
+ 				struct btrfs_root *root);
+-int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
+-				struct extent_io_tree *dirty_pages, int mark);
+ int btrfs_write_marked_extents(struct btrfs_root *root,
+ 				struct extent_io_tree *dirty_pages, int mark);
+ int btrfs_wait_marked_extents(struct btrfs_root *root,
 -- 
-1.8.3.1
+1.8.3.2
 
