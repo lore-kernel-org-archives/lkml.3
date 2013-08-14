@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab3HNXHE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:07:04 -0400
-Received: from imap.thunk.org ([74.207.234.97]:43784 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933235Ab3HNXG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:06:59 -0400
-Date: Wed, 14 Aug 2013 19:06:48 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>, david@fromorbit.com,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-Message-ID: <20130814230648.GD22316@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Hansen <dave.hansen@intel.com>,
-	Dave Hansen <dave.hansen@linux.intel.com>,
-	linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-	linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
-	LKML <linux-kernel@vger.kernel.org>, david@fromorbit.com,
-	Tim Chen <tim.c.chen@linux.intel.com>,
-	Andi Kleen <ak@linux.intel.com>,
-	Andy Lutomirski <luto@amacapital.net>
-References: <520BB9EF.5020308@linux.intel.com>
- <20130814194359.GA22316@thunk.org>
- <520BED7A.4000903@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520BED7A.4000903@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S933433Ab3HNXKN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 19:10:13 -0400
+Received: from smtp81.ord1c.emailsrvr.com ([108.166.43.81]:53572 "EHLO
+	smtp81.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933229Ab3HNXKM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 19:10:12 -0400
+From: Philippe De Swert <philippe.deswert@jollamobile.com>
+To: anton@enomsg.org, dwmw2@infradead.org, linux-kernel@vger.kernel.org
+Cc: Philippe De Swert <philippe.deswert@jollamobile.com>
+Subject: [PATCH] power:power_supply_syfs : Treat PROP_TYPE as a regular attribute first
+Date: Thu, 15 Aug 2013 02:09:58 +0300
+Message-Id: <1376521798-16985-1-git-send-email-philippe.deswert@jollamobile.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 01:50:02PM -0700, Dave Hansen wrote:
-> 
-> Would a plain old fallocate() do the trick, or does it actually need
-> zeros written to it?
+These days we often have USB powered devices. This means that often the
+type is variable. Common examples are smartphones which can be charged
+through a normal USB port on a PC/laptop, a dedicated charger, etc...
+Often those chips also have support for other charger types like a
+mains/DC charger. This means that often there are several psy structures
+in the driver and makes it impossible to stick to just one type.
 
-It would be better to write zeros to it, so we aren't measuring the
-cost of the unwritten->written conversion.
+Userspace sometimes needs to behave differently based on the type of charger
+connected to such devices. This goes from loading gadget drivers to get
+enumerated on a PC/laptop to draw more power, to enabling special charging
+functions for a dedicated charger. Or to just enable userspace to discriminate
+between the two for charging indications/USB cable detection.
 
-We could do a different test where at the end of each while loop, we
-truncate the file and then do an fallocate, at which point we could be
-measuring the scalability of the unwritten->written conversion as well
-as the write page fault.  And that might be a useful thing to do at
-some point.
+Moreover TYPE seems to be the right attribute to use as it has definitions
+already for all the different USB charger types.This patch allows for using the 
+regular get_property function with the TYPE property without breaking current 
+functionality/way of working.
 
-But I'd suggest focusing on just the write page fault first, and then
-once we're sure we've improved the scalability of that micro-operation
-as much as possible, we can expand our scalability testing to include
-either writing into fallocated space, or doing extending writes.
+Signed-off-by: Philippe De Swert <philippe.deswert@jollamobile.com>
+---
+ drivers/power/power_supply_sysfs.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
-Cheers,
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 29178f7..a839c91 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -73,19 +73,20 @@ static ssize_t power_supply_show_property(struct device *dev,
+ 	const ptrdiff_t off = attr - power_supply_attrs;
+ 	union power_supply_propval value;
+ 
+-	if (off == POWER_SUPPLY_PROP_TYPE)
+-		value.intval = psy->type;
+-	else
+-		ret = psy->get_property(psy, off, &value);
++	ret = psy->get_property(psy, off, &value);
+ 
+ 	if (ret < 0) {
+-		if (ret == -ENODATA)
+-			dev_dbg(dev, "driver has no data for `%s' property\n",
+-				attr->attr.name);
+-		else if (ret != -ENODEV)
+-			dev_err(dev, "driver failed to report `%s' property: %zd\n",
+-				attr->attr.name, ret);
+-		return ret;
++		if (off == POWER_SUPPLY_PROP_TYPE)
++			value.intval = psy->type;
++		else {
++			if (ret == -ENODATA)
++				dev_dbg(dev, "driver has no data for `%s' property\n",
++					attr->attr.name);
++			else if (ret != -ENODEV)
++				dev_err(dev, "driver failed to report `%s' property: %zd\n",
++					attr->attr.name, ret);
++			return ret;
++		}
+ 	}
+ 
+ 	if (off == POWER_SUPPLY_PROP_STATUS)
+-- 
+1.8.1.2
 
-						- Ted
