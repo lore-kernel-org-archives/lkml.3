@@ -1,78 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759973Ab3HNOUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 10:20:47 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:61377 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab3HNOUp (ORCPT
+	id S932581Ab3HNOVK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 10:21:10 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37755 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757587Ab3HNOVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 10:20:45 -0400
-Date: Wed, 14 Aug 2013 16:20:41 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Vince Weaver <vince@deater.net>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        peterz@infradead.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
- executable
-Message-ID: <20130814142041.GA16087@gmail.com>
-References: <20130805083434.GA20606@infradead.org>
- <20130805090857.GA26940@gmail.com>
- <20130806061932.GA20485@infradead.org>
- <20130812181956.GB19405@gmail.com>
- <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
- <20130813104821.GB2170@gmail.com>
- <20130813121141.GB2188@ghostprotocols.net>
- <20130813160043.GB5280@gmail.com>
- <alpine.DEB.2.02.1308131749330.9154@pianoman.cluster.toy>
- <20130814141301.GA2138@ghostprotocols.net>
+	Wed, 14 Aug 2013 10:21:04 -0400
+Date: Wed, 14 Aug 2013 09:20:56 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob@landley.net, gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        idos@codeaurora.org, mgautam@codeaurora.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v3 2/3] usb: phy: Add Qualcomm SS-USB and HS-USB drivers
+ for DWC3 core
+Message-ID: <20130814142056.GB2673@joshc>
+References: <1376485183-2664-1-git-send-email-iivanov@mm-sol.com>
+ <1376485183-2664-3-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130814141301.GA2138@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1376485183-2664-3-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-
-> Em Tue, Aug 13, 2013 at 05:57:16PM -0400, Vince Weaver escreveu:
-> > On Tue, 13 Aug 2013, Ingo Molnar wrote:
-> >
-> > > that can only be addressed by either extending 'perf test' or by 
-> > > testing libpfm et al sooner. The upstream kernel can only address 
-> > > regressions that get reported.
->  
-> > Most of the tests in my test-suite are reactive.  Meaning, I wrote 
-> > them after an ABI-breaking change was reported elsewhere, and I needed 
-> > a small test case for bisection purposes.  Thus they are good for 
-> > finding if a corner of the perf ABI re-breaks but they're not great at 
-> > spotting new breakages.
-
-Would be nice to merge those in into 'perf test' - reactive tests are 
-useful as well IMO.
-
-> > Writing a complete test suite for something as complicated as the 
-> > perf-event ABI is impractical.  One thing you can do is require anyone 
-> > submitting new functionality also provide a regression test, but
+On Wed, Aug 14, 2013 at 03:59:42PM +0300, Ivan T. Ivanov wrote:
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 > 
-> Agreed.
+> These drivers handles control and configuration of the HS
+> and SS USB PHY transceivers. They are part of the driver
+> which manage Synopsys DesignWare USB3 controller stack
+> inside Qualcomm SoC's.
 > 
-> > I don't see that happening.
-> 
-> See some of Namhyung, Adrian and Jiri recent patchsets, they came with 
-> 'perf test' regression tests.
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+[..]
+> diff --git a/drivers/usb/phy/phy-msm-dwc3-hs.c b/drivers/usb/phy/phy-msm-dwc3-hs.c
+> new file mode 100644
+> index 0000000..465a8f5
+> --- /dev/null
+> +++ b/drivers/usb/phy/phy-msm-dwc3-hs.c
+[..]
+> +
+> +struct msm_dwc3_hs_phy {
+> +	struct usb_phy		phy;
+> +	void __iomem		*base;
+> +	struct device		*dev;
+> +
+> +	struct clk		*xo_clk;
+> +	struct clk		*sleep_a_clk;
+> +
+> +	struct regulator	*v3p3;
+> +	struct regulator	*v1p8;
+> +	struct regulator	*vddcx;
+> +	struct regulator	*vbus;
+> +};
+> +
+> +#define	phy_to_dwc3_phy(x)	container_of((x), struct msm_dwc3_hs_phy, phy)
+> +
+> +
+> +/**
+> + *
+> + * Write register with debug info.
 
-That's good progress indeed! If we merge in the cases that Vince found 
-then we'd have good practical coverage and we could also start requiring 
-good testcases for every new ABI extension.
+what debug info?
 
-That method distributes the overhead of having to write it to those who 
-want to extend (and, statistically speaking, inadvertantlybreak!) the ABI.
+> + *
+> + * @base - DWC3 base virtual address.
+> + * @offset - register offset.
+> + * @val - value to write.
+> + *
+> + */
+> +static inline void msm_dwc3_hs_write(void *base, u32 offset, u32 val)
 
-Thanks,
+You've dropped __iomem here; have you run through sparse?
 
-	Ingo
+> +{
+> +	iowrite32(val, base + offset);
+> +}
+> +
+> +/**
+> + * Write register and read back masked value to confirm it is written
+> + *
+> + * @base - DWC3 base virtual address.
+> + * @offset - register offset.
+> + * @mask - register bitmask specifying what should be updated
+> + * @val - value to write.
+> + *
+> + */
+> +static inline void msm_dwc3_hs_write_readback(void *base, u32 offset,
+> +					    const u32 mask, u32 val)
+> +{
+
+Same comment here.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
