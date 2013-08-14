@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977Ab3HNSuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:50:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55470 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932840Ab3HNSt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:49:59 -0400
-Date: Wed, 14 Aug 2013 20:49:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Gergely Risko <gergely@risko.hu>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH] mm: memcontrol: fix handling of swapaccount parameter
-Message-ID: <20130814184956.GF24033@dhcp22.suse.cz>
-References: <1376486495-21457-1-git-send-email-gergely@risko.hu>
- <20130814183604.GE24033@dhcp22.suse.cz>
+	id S932937Ab3HNSyk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:54:40 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:34512 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758543Ab3HNSyi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 14:54:38 -0400
+Message-ID: <520BD275.5060004@cogentembedded.com>
+Date: Wed, 14 Aug 2013 22:54:45 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130814183604.GE24033@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Libo Chen <clbchenlibo.chen@huawei.com>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH RESEND 1/8] net: fsl_pq_mdio: use platform_{get,set}_drvdata()
+References: <5208E215.6030007@huawei.com> <520AFBEE.7030903@huawei.com>
+In-Reply-To: <520AFBEE.7030903@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 14-08-13 20:36:04, Michal Hocko wrote:
-> On Wed 14-08-13 15:21:35, Gergely Risko wrote:
-> > Fixed swap accounting option parsing to enable if called without argument.
-> 
-> We used to have [no]swapaccount but that one has been removed by a2c8990a
-> (memsw: remove noswapaccount kernel parameter) so I do not think that
-> swapaccount without any given value makes much sense these days.
+Hello.
 
-Now that I am reading your changelog again it says this is a fix. Have
-you experienced any troubles because of the parameter semantic change?
+On 08/14/2013 07:39 AM, Libo Chen wrote:
 
-> > Signed-off-by: Gergely Risko <gergely@risko.hu>
-> > ---
-> >  mm/memcontrol.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index c290a1c..8ec2507 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -6970,13 +6970,13 @@ struct cgroup_subsys mem_cgroup_subsys = {
-> >  static int __init enable_swap_account(char *s)
-> >  {
-> >  	/* consider enabled if no parameter or 1 is given */
-> > -	if (!strcmp(s, "1"))
-> > +	if (*s++ != '=' || !*s || !strcmp(s, "1"))
-> >  		really_do_swap_account = 1;
-> >  	else if (!strcmp(s, "0"))
-> >  		really_do_swap_account = 0;
-> >  	return 1;
-> >  }
-> > -__setup("swapaccount=", enable_swap_account);
-> > +__setup("swapaccount", enable_swap_account);
-> >  
-> >  static void __init memsw_file_init(void)
-> >  {
-> > -- 
-> > 1.8.3.2
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> We can use the wrapper functions platform_{get,set}_drvdata() instead of
+> dev_{get,set}_drvdata() with &pdev->dev, it is convenient for user.
 
--- 
-Michal Hocko
-SUSE Labs
+> Also, unnecessary dev_set_drvdata() is removed, because the driver core
+> clears the driver data to NULL after device_release or on probe failure.
+
+    You misunderstood. That's a material for 2 separate patch sets (or maybe 
+single patches, since multiple files can be collapsed in a single patch).
+
+> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+
+WBR, Sergei
+
