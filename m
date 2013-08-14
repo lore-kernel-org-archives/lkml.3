@@ -1,41 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933489Ab3HNXFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:05:33 -0400
-Received: from hoabinh.gov.vn ([123.27.62.13]:33226 "EHLO mail.hoabinh.gov.vn"
+	id S933440Ab3HNXGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 19:06:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31772 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933454Ab3HNXFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:05:32 -0400
-X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Aug 2013 19:05:32 EDT
-Date: Thu, 15 Aug 2013 05:55:25 +0700 (ICT)
-From: "PT.AMEEX" <cucmt.hlus@hoabinh.gov.vn>
-Reply-To: "PT.AMEEX@YAHOO.COM" <PT.AMEEX@YAHOO.COM>
-To: cucmt.hlus@hoabinh.gov.vn
-Message-ID: <1407094760.12741376520925021.JavaMail.root@mail.hoabinh.gov.vn>
-Subject: Having gone through your listed product
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S933229Ab3HNXGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 19:06:23 -0400
+Message-ID: <1376521578.13642.65.camel@ul30vt.home>
+Subject: Re: [PATCH] vfio-pci: PCI hot reset interface
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Date: Wed, 14 Aug 2013 17:06:18 -0600
+In-Reply-To: <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
+References: <20130814200845.21923.64284.stgit@bling.home>
+	 <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [114.79.13.188]
-X-Mailer: Zimbra 5.0.18_GA_3011.RHEL5_64 (zclient/5.0.18_GA_3011.RHEL5_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-08-14 at 16:42 -0600, Bjorn Helgaas wrote:
+> [+cc Al, linux-fsdevel for fdget/fdput usage]
+> 
+> On Wed, Aug 14, 2013 at 2:10 PM, Alex Williamson
+> <alex.williamson@redhat.com> wrote:
+> > The current VFIO_DEVICE_RESET interface only maps to PCI use cases
+> > where we can isolate the reset to the individual PCI function.  This
+> > means the device must support FLR (PCIe or AF), PM reset on D3hot->D0
+> > transition, device specific reset, or be a singleton device on a bus
+> > for a secondary bus reset.  FLR does not have widespread support,
+> > PM reset is not very reliable, and bus topology is dictated by the
+> > system and device design.  We need to provide a means for a user to
+> > induce a bus reset in cases where the existing mechanisms are not
+> > available or not reliable.
+> >
+> > This device specific extension to VFIO provides the user with this
+> > ability.  Two new ioctls are introduced:
+> >  - VFIO_DEVICE_PCI_GET_HOT_RESET_INFO
+> >  - VFIO_DEVICE_PCI_HOT_RESET
+> >
+> > The first provides the user with information about the extent of
+> > devices affected by a hot reset.  This is essentially a list of
+> > devices and the IOMMU groups they belong to.  The user may then
+> > initiate a hot reset by calling the second ioctl.  We must be
+> > careful that the user has ownership of all the affected devices
+> > found via the first ioctl, so the second ioctl takes a list of file
+> > descriptors for the VFIO groups affected by the reset.  Each group
+> > must have IOMMU protection established for the ioctl to succeed.
+> >
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >
+> > This patch is dependent on v5 "pci: bus and slot reset interfaces" as
+> > well as "pci: Add probe functions for bus and slot reset".
+> >
+> >  drivers/vfio/pci/vfio_pci.c |  272 +++++++++++++++++++++++++++++++++++++++++++
+> >  include/uapi/linux/vfio.h   |   38 ++++++
+> >  2 files changed, 309 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> > index cef6002..eb69bf3 100644
+> > --- a/drivers/vfio/pci/vfio_pci.c
+> > +++ b/drivers/vfio/pci/vfio_pci.c
+> > @@ -227,6 +227,97 @@ static int vfio_pci_get_irq_count(struct vfio_pci_device *vdev, int irq_type)
+> >         return 0;
+> >  }
+> >
+> > +static int vfio_pci_count_devs(struct pci_dev *pdev, void *data)
+> > +{
+> > +       (*(int *)data)++;
+> > +       return 0;
+> > +}
+> > +
+> > +struct vfio_pci_fill_info {
+> > +       int max;
+> > +       int cur;
+> > +       struct vfio_pci_dependent_device *devices;
+> > +};
+> > +
+> > +static int vfio_pci_fill_devs(struct pci_dev *pdev, void *data)
+> > +{
+> > +       struct vfio_pci_fill_info *info = data;
+> > +       struct iommu_group *iommu_group;
+> > +
+> > +       if (info->cur == info->max)
+> > +               return -EAGAIN; /* Something changed, try again */
+> > +
+> > +       iommu_group = iommu_group_get(&pdev->dev);
+> > +       if (!iommu_group)
+> > +               return -EPERM; /* Cannot reset non-isolated devices */
+> > +
+> > +       info->devices[info->cur].group_id = iommu_group_id(iommu_group);
+> > +       info->devices[info->cur].segment = pci_domain_nr(pdev->bus);
+> > +       info->devices[info->cur].bus = pdev->bus->number;
+> > +       info->devices[info->cur].devfn = pdev->devfn;
+> > +       info->cur++;
+> > +       iommu_group_put(iommu_group);
+> > +       return 0;
+> > +}
+> > +
+> > +struct vfio_pci_group {
+> > +       struct vfio_group *group;
+> > +       int id;
+> > +};
+> > +
+> > +struct vfio_pci_group_info {
+> > +       int count;
+> > +       struct vfio_pci_group *groups;
+> > +};
+> > +
+> > +static int vfio_pci_validate_devs(struct pci_dev *pdev, void *data)
+> > +{
+> > +       struct vfio_pci_group_info *info = data;
+> > +       struct iommu_group *group;
+> > +       int id, i;
+> > +
+> > +       group = iommu_group_get(&pdev->dev);
+> > +       if (!group)
+> > +               return -EPERM;
+> > +
+> > +       id = iommu_group_id(group);
+> > +
+> > +       for (i = 0; i < info->count; i++)
+> > +               if (info->groups[i].id == id)
+> > +                       break;
+> > +
+> > +       iommu_group_put(group);
+> > +
+> > +       return (i == info->count) ? -EINVAL : 0;
+> > +}
+> > +
+> > +static int vfio_pci_for_each_slot_or_bus(struct pci_dev *pdev,
+> > +                                        int (*fn)(struct pci_dev *,
+> > +                                                  void *data), void *data,
+> > +                                        bool slot)
+> > +{
+> > +       struct pci_dev *tmp;
+> > +       int ret = 0;
+> > +
+> > +       list_for_each_entry(tmp, &pdev->bus->devices, bus_list) {
+> > +               if (slot && tmp->slot != pdev->slot)
+> > +                       continue;
+> > +
+> > +               ret = fn(tmp, data);
+> > +               if (ret)
+> > +                       break;
+> > +
+> > +               if (tmp->subordinate) {
+> > +                       ret = vfio_pci_for_each_slot_or_bus(tmp, fn,
+> > +                                                           data, false);
+> > +                       if (ret)
+> > +                               break;
+> > +               }
+> > +       }
+> > +
+> > +       return ret;
+> > +}
+> 
+> vfio_pci_for_each_slot_or_bus() isn't really vfio-specific, is it?
 
+It's not, I originally has callbacks split out as PCI patches but I was
+able to simplify some things in the code by customizing it to my usage,
+so I left it here.
 
-Good Day ,
+> I mean, traversing the PCI hierarchy doesn't require vfio knowledge.  I
+> think this loop (walking the bus->devices list) skips devices on
+> "virtual buses" that may be added for SR-IOV.  I'm not sure that
+> pci_walk_bus() handles that correctly either, but at least if you used
+> that, we could fix the problem in one place.
 
-Having gone through your listed products, 
-we offer great interest to do a purchase agreement with your company. Please get back to us with the following information 
-Please Quote.
-1. Prices FOB 
-2. Payment terms 
-3. Delivery Period 
-5. Specified delivery date assuming from the Date of Order.
- Please your quick reply will be highly appreciated to our private Email(pt.ameex@yahoo.com  )
-Regards,
-Mr.Woody Allen
-Purchasing Operations Manager.
-PT AMEX Corporation
+I didn't know about pci_walk_bus(), I'll look into switching to it.
+Thanks,
+
+Alex
 
