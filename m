@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759478Ab3HNIUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 04:20:04 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:63608 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759459Ab3HNIT6 (ORCPT
+	id S1759525Ab3HNIUV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 04:20:21 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:45401 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759459Ab3HNIUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 04:19:58 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Kyle Evans <kvans32@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: BUG: Again: Fn keys not working on EliteBook 8460p after b253c9d1d858a3f115f791ee4fe2b9399ae7dbbd
-Date: Wed, 14 Aug 2013 10:19:53 +0200
-User-Agent: KMail/1.13.7 (Linux/3.11.0-rc5+synaptics-generic; KDE/4.10.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-References: <201304130331.18301@pali>
-In-Reply-To: <201304130331.18301@pali>
+	Wed, 14 Aug 2013 04:20:14 -0400
+Date: Wed, 14 Aug 2013 12:20:00 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH -mm] mm: Unify pte_to_pgoff and pgoff_to_pte helpers
+Message-ID: <20130814082000.GN2869@moon>
+References: <20130814070059.GJ2869@moon>
+ <520B303D.2090206@zytor.com>
+ <20130814072453.GK2869@moon>
+ <520B3240.6030208@zytor.com>
+ <20130814003336.0fb2a275.akpm@linux-foundation.org>
+ <20130814074333.GM2869@moon>
+ <20130814010856.0098398b.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart18357273.Elkb8AqA6n";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201308141019.53740@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130814010856.0098398b.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart18357273.Elkb8AqA6n
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Aug 14, 2013 at 01:08:56AM -0700, Andrew Morton wrote:
+> > 
+> > > Can it be written in C with types and proper variable names and such
+> > > radical stuff?
+> > 
+> > Could you elaborate? You mean inline helper or macro with type checks?
+> 
+> /*
+>  * description goes here
+>  */
+> static inline pteval_t pte_bfop(pteval_t val, int rightshift, ...)
+> {
+> 	...
+> }
+> 
+> So much better!  We really should only implement code in a macro if it
+> *has* to be done as a macro and I don't think that's the case here?
 
-On Saturday 13 April 2013 03:31:17 Pali Roh=C3=A1r wrote:
-> Hello,
->=20
-> all Fn keys, wifi switch, web and mute buttons not working
-> anymore on my notebook HP EliteBook 8460p. I bisected git
-> commit which broke all above keys:
-> fabf85e3ca15d5b94058f391dac8df870cdd427a
->=20
-> When I reverted that commit after reboot buttons started
-> working again. Can you fix it or revert that broken commit?
-> This is critical problem, which caused my notebook to be
-> unusable...
-
-Hello, same problem happen again on my notebook. Problematic=20
-commit is now: b253c9d1d858a3f115f791ee4fe2b9399ae7dbbd
-hp-wmi: Enable hotkeys on some systems
-
-When I disabled calling function hp_wmi_enable_hotkeys() from=20
-hp_wmi_init() keys started working again after reboot.
-
-This problem is present in 3.11 rc5. Please can you do something=20
-so keys on my notebook will work again and it will not be broken=20
-again in next kernel release? If you need some debug data or=20
-something else, I can help.
-
-In mail from 16.04.2013 you provided similar patch but with
-#define HPWMI_BIOS_QUERY 0x8
-I tested that patch and that does not broke keys.
-
-But commit b253c9d1d858a3f115f791ee4fe2b9399ae7dbbd have
-#define HPWMI_BIOS_QUERY 0x9
-which broke keys again...
-
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart18357273.Elkb8AqA6n
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlILPakACgkQi/DJPQPkQ1ITAACcCdgNkZt/ttqEsGHf46T0MCqT
-quUAnReEAq2t0CQL59hth4F33fU///1l
-=h4+b
------END PGP SIGNATURE-----
-
---nextPart18357273.Elkb8AqA6n--
+Well, I'll have to check if it really doesn't generate additional
+instructions in generated code, since it's hotpath. I'll ping back
+once things are done.
