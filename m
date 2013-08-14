@@ -1,54 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759803Ab3HNMEw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:04:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60660 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab3HNMEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:04:50 -0400
-Message-ID: <520B723D.5020400@ti.com>
-Date: Wed, 14 Aug 2013 17:34:13 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Heiko Schocher <hs@denx.de>
-Subject: Re: [PATCH v3 1/6] ARM: davinci: da8xx: fix clock lookup for mdio
- device
-References: <1371999607-6483-1-git-send-email-prabhakar.csengg@gmail.com> <1371999607-6483-2-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1371999607-6483-2-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1759881Ab3HNMMF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:12:05 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33335 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759738Ab3HNMMB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 08:12:01 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Wilcox <matthew@wil.cx>, Bruce Fields <bfields@fieldses.org>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH v3] locks: close potential race between setlease and open
+Date: Wed, 14 Aug 2013 08:11:50 -0400
+Message-Id: <1376482310-7348-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1373310444-25862-1-git-send-email-jlayton@redhat.com>
+References: <1373310444-25862-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+v2:
+- fix potential double-free of lease if second check finds conflict
+- add smp_mb's to ensure that other CPUs see i_flock changes
 
-On 6/23/2013 8:30 PM, Prabhakar Lad wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-> 
-> This patch removes the clock alias for mdio device and adds a entry
-> in clock lookup table, this entry can now be used by both DT and NON
-> DT case.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: davinci-linux-open-source@linux.davincidsp.com
-> Cc: netdev@vger.kernel.org
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: Heiko Schocher <hs@denx.de>
+v3:
+- remove smp_mb calls. Partial ordering is unlikely to help here.
 
-This patch looks good, except you can do the same thing on all DaVinci
-devices not just on DA8XX. Apart from this patches 1-5 in this series
-look good. If you can spin this fix in short time I can queue 1-5 for
-v3.12 while we wait for you to fix 6/6
+As Al Viro points out, there is an unlikely, but possible race between
+opening a file and setting a lease on it. generic_add_lease is done with
+the i_lock held, but the inode->i_flock check in break_lease is
+lockless. It's possible for another task doing an open to do the entire
+pathwalk and call break_lease between the point where generic_add_lease
+checks for a conflicting open and adds the lease to the list. If this
+occurs, we can end up with a lease set on the file with a conflicting
+open.
 
-Thanks,
-Sekhar
+To guard against that, check again for a conflicting open after adding
+the lease to the i_flock list. If the above race occurs, then we can
+simply unwind the lease setting and return -EAGAIN.
+
+Because we take dentry references and acquire write access on the file
+before calling break_lease, we know that if the i_flock list is empty
+when the open caller goes to check it then the necessary refcounts have
+already been incremented. Thus the additional check for a conflicting
+open will see that there is one and the setlease call will fail.
+
+Cc: Bruce Fields <bfields@fieldses.org>
+Cc: David Howells <dhowells@redhat.com>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 58 insertions(+), 13 deletions(-)
+
+diff --git a/fs/locks.c b/fs/locks.c
+index b27a300..a99adec 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -652,15 +652,18 @@ static void locks_insert_lock(struct file_lock **pos, struct file_lock *fl)
+ 	locks_insert_global_locks(fl);
+ }
+ 
+-/*
+- * Delete a lock and then free it.
+- * Wake up processes that are blocked waiting for this lock,
+- * notify the FS that the lock has been cleared and
+- * finally free the lock.
++/**
++ * locks_delete_lock - Delete a lock and then free it.
++ * @thisfl_p: pointer that points to the fl_next field of the previous
++ * 	      inode->i_flock list entry
++ *
++ * Unlink a lock from all lists and free the namespace reference, but don't
++ * free it yet. Wake up processes that are blocked waiting for this lock and
++ * notify the FS that the lock has been cleared.
+  *
+  * Must be called with the i_lock held!
+  */
+-static void locks_delete_lock(struct file_lock **thisfl_p)
++static void locks_unlink_lock(struct file_lock **thisfl_p)
+ {
+ 	struct file_lock *fl = *thisfl_p;
+ 
+@@ -675,6 +678,18 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
+ 	}
+ 
+ 	locks_wake_up_blocks(fl);
++}
++
++/*
++ * Unlink a lock from all lists and free it.
++ *
++ * Must be called with i_lock held!
++ */
++static void locks_delete_lock(struct file_lock **thisfl_p)
++{
++	struct file_lock *fl = *thisfl_p;
++
++	locks_unlink_lock(thisfl_p);
+ 	locks_free_lock(fl);
+ }
+ 
+@@ -1455,6 +1470,32 @@ int fcntl_getlease(struct file *filp)
+ 	return type;
+ }
+ 
++/**
++ * check_conflicting_open - see if the given dentry points to a file that has
++ * 	an existing open that would conflict with the desired lease.
++ *
++ * @dentry:	dentry to check
++ * @arg:	type of lease that we're trying to acquire
++ *
++ * Check to see if there's an existing open fd on this file that would
++ * conflict with the lease we're trying to set.
++ */
++static int
++check_conflicting_open(const struct dentry *dentry, const long arg)
++{
++	int ret = 0;
++	struct inode *inode = dentry->d_inode;
++
++	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
++		return -EAGAIN;
++
++	if ((arg == F_WRLCK) && ((d_count(dentry) > 1) ||
++	    (atomic_read(&inode->i_count) > 1)))
++		ret = -EAGAIN;
++
++	return ret;
++}
++
+ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
+ {
+ 	struct file_lock *fl, **before, **my_before = NULL, *lease;
+@@ -1464,12 +1505,8 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
+ 
+ 	lease = *flp;
+ 
+-	error = -EAGAIN;
+-	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+-		goto out;
+-	if ((arg == F_WRLCK)
+-	    && ((d_count(dentry) > 1)
+-		|| (atomic_read(&inode->i_count) > 1)))
++	error = check_conflicting_open(dentry, arg);
++	if (error)
+ 		goto out;
+ 
+ 	/*
+@@ -1514,8 +1551,16 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
+ 		goto out;
+ 
+ 	locks_insert_lock(before, lease);
+-	return 0;
+ 
++	/*
++	 * The check in break_lease() is lockless. It's possible for another
++	 * open to race in after we did the earlier check for a conflicting
++	 * open but before the lease was inserted. Check again for a
++	 * conflicting open and cancel the lease if there is one.
++	 */
++	error = check_conflicting_open(dentry, arg);
++	if (error)
++		locks_unlink_lock(flp);
+ out:
+ 	return error;
+ }
+-- 
+1.8.3.1
+
