@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab3HNKjb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:39:31 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41480 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932695Ab3HNKj3 (ORCPT
+	id S932740Ab3HNKjO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:39:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34750 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932697Ab3HNKih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:39:29 -0400
-Date: Wed, 14 Aug 2013 11:38:46 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Jens Axboe <axboe@kernel.dk>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-scsi@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH RFC 00/51] Preview of DMA mask changes
-Message-ID: <20130814103845.GO23006@n2100.arm.linux.org.uk>
-References: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130801213420.GL23006@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 14 Aug 2013 06:38:37 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Backlund <tmb@mageia.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 75/75] zram: allow request end to coincide with disksize
+Date: Wed, 14 Aug 2013 11:37:04 +0100
+Message-Id: <1376476624-10011-76-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 01, 2013 at 10:34:20PM +0100, Russell King - ARM Linux wrote:
-> So, this patch set is a preview of the DMA mask changes which I currently
-> have in my tree.
+3.5.7.19 -stable review patch.  If anyone has any objections, please let me know.
 
-Looking at the comments which this patch set has received, I see very
-little in the way of feedback.  So I think it's time to move to the
-next stage.  I will be re-posting these with a [PATCH] tag, with the
-appropriate CC's, and putting them into linux-next a few days after
-assuming no objections to them are forthcoming.
+------------------
+
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+commit 75c7caf5a052ffd8db3312fa7864ee2d142890c4 upstream.
+
+Pass valid_io_request() checks if request end coincides with disksize
+(end equals bound), only fail if we attempt to read beyond the bound.
+
+mkfs.ext2 produces numerous errors:
+[ 2164.632747] quiet_error: 1 callbacks suppressed
+[ 2164.633260] Buffer I/O error on device zram0, logical block 153599
+[ 2164.633265] lost page write due to I/O error on zram0
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Thomas Backlund <tmb@mageia.org>
+[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/staging/zram/zram_drv.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 1ae0610..2e88a68 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -545,7 +545,7 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
+ 	end = start + (bio->bi_size >> SECTOR_SHIFT);
+ 	bound = zram->disksize >> SECTOR_SHIFT;
+ 	/* out of range range */
+-	if (unlikely(start >= bound || end >= bound || start > end))
++	if (unlikely(start >= bound || end > bound || start > end))
+ 		return 0;
+ 
+ 	/* I/O request is valid */
+-- 
+1.8.3.2
+
