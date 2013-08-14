@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab3HNU4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:56:40 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:57968 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933083Ab3HNU4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:56:39 -0400
-From: Sergei Trofimovich <slyfox@gentoo.org>
-To: linux-kernel@vger.kernel.org
-Cc: Sergei Trofimovich <slyfox@gentoo.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] cleanup: add forward declarations for inplace syscall wrappers
-Date: Wed, 14 Aug 2013 23:53:20 +0300
-Message-Id: <1376513600-6162-1-git-send-email-slyfox@gentoo.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S933277Ab3HNU7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:59:37 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53582 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933004Ab3HNU7f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 16:59:35 -0400
+From: Christian Volkmann <cv@cv-sv.de>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Konstantin Dimitrov <kosio.dimitrov@gmail.com>,
+        Devin Heitmueller <dheitmueller@kernellabs.com>,
+        "Igor M. Liplianin" <liplianin@me.by>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Christian Volkmann <cv@cv-sv.de>
+Subject: [PATCH 1/1] cx23885-dvb: fix ds3000 ts2020 split for TEVII S471
+Date: Wed, 14 Aug 2013 22:58:47 +0200
+Message-Id: <1376513927-6217-1-git-send-email-cv@cv-sv.de>
+X-Mailer: git-send-email 1.8.1.4
+X-Provags-ID: V02:K0:Ovxibc5ciIoPeuktRARzBPvJsjLmWkV/6Ui8zvXxfzW
+ TdgoSFy2acoH08HAFQniDDeNU4zUR7cMQmQJWpT0GAkGz8q95w
+ MG7wSml5XsiplYJCW1Mo8wjAMZh5nFG/Ha6i6Rv6IiSsKtyElN
+ ymJFjYwkrkIiLBQaPDtjf74vOwzWNHMq1TtY/ZbRHh61wI0Haw
+ 5QzU+R7DQEphfzlXqWPHX2kkla7KXF5g6EQCOTWsNPUJ744U74
+ SkYNpMT8ZLQYzQ7ANA25a4ppC7Il1gzSpSTSVzgm1XwRq1a1hx
+ 8sO97ID0eNVuns9GuGpacIuC8X/V8EMfPegTAynkQLaCLm3CPp
+ twqX7f4Ezbh0xm7h6ApYllMmFhTPnIf6WMI0PNgRGAw5NeZOmv
+ ZL3xK8x8R4/in4aEJEUKV0VCicsgKWJSp0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch unclutters -Wmissing-prototypes warning types (enabled at make W=1)
-    linux/include/linux/syscalls.h:190:18: warning: no previous prototype for 'SyS_semctl' [-Wmissing-prototypes]
-      asmlinkage long SyS##name(__MAP(x,__SC_LONG,__VA_ARGS__)) \
-                      ^
-    linux/include/linux/syscalls.h:183:2: note: in expansion of macro '__SYSCALL_DEFINEx'
-      __SYSCALL_DEFINEx(x, sname, __VA_ARGS__)
-      ^
-and adds forward declaration right before definition.
+A split for ds3000/ts2020 code forgot to change the TEVII_S471 code.
+Change the TEVII_S471 according the changes to TEVII_S470.
 
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+Signed-off-by: Christian Volkmann <cv@cv-sv.de>
 ---
- include/linux/compat.h   | 1 +
- include/linux/syscalls.h | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/media/pci/cx23885/cx23885-dvb.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index 7f0c1dd..06e45cd 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -43,6 +43,7 @@
- #define COMPAT_SYSCALL_DEFINEx(x, name, ...)				\
- 	asmlinkage long compat_sys##name(__MAP(x,__SC_DECL,__VA_ARGS__));\
- 	static inline long C_SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__));\
-+	asmlinkage long compat_SyS##name(__MAP(x,__SC_LONG,__VA_ARGS__));\
- 	asmlinkage long compat_SyS##name(__MAP(x,__SC_LONG,__VA_ARGS__))\
- 	{								\
- 		return C_SYSC##name(__MAP(x,__SC_DELOUSE,__VA_ARGS__));	\
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 4147d70..bf1589e 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -186,6 +186,7 @@ extern struct trace_event_functions exit_syscall_print_funcs;
- #define __SYSCALL_DEFINEx(x, name, ...)					\
- 	asmlinkage long sys##name(__MAP(x,__SC_DECL,__VA_ARGS__));	\
- 	static inline long SYSC##name(__MAP(x,__SC_DECL,__VA_ARGS__));	\
-+	asmlinkage long SyS##name(__MAP(x,__SC_LONG,__VA_ARGS__));	\
- 	asmlinkage long SyS##name(__MAP(x,__SC_LONG,__VA_ARGS__))	\
- 	{								\
- 		long ret = SYSC##name(__MAP(x,__SC_CAST,__VA_ARGS__));	\
+diff --git a/drivers/media/pci/cx23885/cx23885-dvb.c b/drivers/media/pci/cx23885/cx23885-dvb.c
+index 9c5ed10..be98c49 100644
+--- a/drivers/media/pci/cx23885/cx23885-dvb.c
++++ b/drivers/media/pci/cx23885/cx23885-dvb.c
+@@ -1038,7 +1038,6 @@ static int dvb_register(struct cx23885_tsport *port)
+ 				&tevii_ts2020_config, &i2c_bus->i2c_adap);
+ 			fe0->dvb.frontend->ops.set_voltage = f300_set_voltage;
+ 		}
+-
+ 		break;
+ 	case CX23885_BOARD_DVBWORLD_2005:
+ 		i2c_bus = &dev->i2c_bus[1];
+@@ -1249,6 +1248,11 @@ static int dvb_register(struct cx23885_tsport *port)
+ 		fe0->dvb.frontend = dvb_attach(ds3000_attach,
+ 					&tevii_ds3000_config,
+ 					&i2c_bus->i2c_adap);
++		if (fe0->dvb.frontend != NULL) {
++			dvb_attach(ts2020_attach, fe0->dvb.frontend,
++				&tevii_ts2020_config, &i2c_bus->i2c_adap);
++			fe0->dvb.frontend->ops.set_voltage = f300_set_voltage;
++		}
+ 		break;
+ 	case CX23885_BOARD_PROF_8000:
+ 		i2c_bus = &dev->i2c_bus[0];
 -- 
-1.8.3.2
+1.8.1.4
 
