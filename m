@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740Ab3HNKjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:39:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34750 "EHLO
+	id S932754Ab3HNKjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:39:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34749 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932697Ab3HNKih (ORCPT
+	with ESMTP id S932695Ab3HNKih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Aug 2013 06:38:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thomas Backlund <tmb@mageia.org>,
+Cc: Chen Gang <gang.chen@asianux.com>, Steve French <smfrench@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 75/75] zram: allow request end to coincide with disksize
-Date: Wed, 14 Aug 2013 11:37:04 +0100
-Message-Id: <1376476624-10011-76-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 58/75] cifs: extend the buffer length enought for sprintf() using
+Date: Wed, 14 Aug 2013 11:36:47 +0100
+Message-Id: <1376476624-10011-59-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -29,40 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+From: Chen Gang <gang.chen@asianux.com>
 
-commit 75c7caf5a052ffd8db3312fa7864ee2d142890c4 upstream.
+commit 057d6332b24a4497c55a761c83c823eed9e3f23b upstream.
 
-Pass valid_io_request() checks if request end coincides with disksize
-(end equals bound), only fail if we attempt to read beyond the bound.
+For cifs_set_cifscreds() in "fs/cifs/connect.c", 'desc' buffer length
+is 'CIFSCREDS_DESC_SIZE' (56 is less than 256), and 'ses->domainName'
+length may be "255 + '\0'".
 
-mkfs.ext2 produces numerous errors:
-[ 2164.632747] quiet_error: 1 callbacks suppressed
-[ 2164.633260] Buffer I/O error on device zram0, logical block 153599
-[ 2164.633265] lost page write due to I/O error on zram0
+The related sprintf() may cause memory overflow, so need extend related
+buffer enough to hold all things.
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Thomas Backlund <tmb@mageia.org>
-[ luis: backported to 3.5: adjusted context ]
+It is also necessary to be sure of 'ses->domainName' must be less than
+256, and define the related macro instead of hard code number '256'.
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Reviewed-by: Scott Lovenberg <scott.lovenberg@gmail.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/zram/zram_drv.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/cifsencrypt.c | 2 +-
+ fs/cifs/cifsglob.h    | 1 +
+ fs/cifs/connect.c     | 7 ++++---
+ fs/cifs/sess.c        | 6 +++---
+ 4 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 1ae0610..2e88a68 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -545,7 +545,7 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
- 	end = start + (bio->bi_size >> SECTOR_SHIFT);
- 	bound = zram->disksize >> SECTOR_SHIFT;
- 	/* out of range range */
--	if (unlikely(start >= bound || end >= bound || start > end))
-+	if (unlikely(start >= bound || end > bound || start > end))
- 		return 0;
+diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+index 6d0c62a..6dd3b61 100644
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -369,7 +369,7 @@ find_domain_name(struct cifs_ses *ses, const struct nls_table *nls_cp)
+ 		if (blobptr + attrsize > blobend)
+ 			break;
+ 		if (type == NTLMSSP_AV_NB_DOMAIN_NAME) {
+-			if (!attrsize)
++			if (!attrsize || attrsize >= CIFS_MAX_DOMAINNAME_LEN)
+ 				break;
+ 			if (!ses->domainName) {
+ 				ses->domainName =
+diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+index d86ba9f..761e13c 100644
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -38,6 +38,7 @@
+ #define MAX_TREE_SIZE (2 + MAX_SERVER_SIZE + 1 + MAX_SHARE_SIZE + 1)
+ #define MAX_SERVER_SIZE 15
+ #define MAX_SHARE_SIZE 80
++#define CIFS_MAX_DOMAINNAME_LEN 256 /* max domain name length */
+ #define MAX_USERNAME_SIZE 256	/* reasonable maximum for current servers */
+ #define MAX_PASSWORD_SIZE 512	/* max for windows seems to be 256 wide chars */
  
- 	/* I/O request is valid */
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 9169ae3..780385f 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -1766,7 +1766,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
+ 			if (string == NULL)
+ 				goto out_nomem;
+ 
+-			if (strnlen(string, 256) == 256) {
++			if (strnlen(string, CIFS_MAX_DOMAINNAME_LEN)
++					== CIFS_MAX_DOMAINNAME_LEN) {
+ 				printk(KERN_WARNING "CIFS: domain name too"
+ 						    " long\n");
+ 				goto cifs_parse_mount_err;
+@@ -2453,8 +2454,8 @@ cifs_put_smb_ses(struct cifs_ses *ses)
+ 
+ #ifdef CONFIG_KEYS
+ 
+-/* strlen("cifs:a:") + INET6_ADDRSTRLEN + 1 */
+-#define CIFSCREDS_DESC_SIZE (7 + INET6_ADDRSTRLEN + 1)
++/* strlen("cifs:a:") + CIFS_MAX_DOMAINNAME_LEN + 1 */
++#define CIFSCREDS_DESC_SIZE (7 + CIFS_MAX_DOMAINNAME_LEN + 1)
+ 
+ /* Populate username and pw fields from keyring if possible */
+ static int
+diff --git a/fs/cifs/sess.c b/fs/cifs/sess.c
+index 551d0c2..de9b1c1 100644
+--- a/fs/cifs/sess.c
++++ b/fs/cifs/sess.c
+@@ -198,7 +198,7 @@ static void unicode_domain_string(char **pbcc_area, struct cifs_ses *ses,
+ 		bytes_ret = 0;
+ 	} else
+ 		bytes_ret = cifs_strtoUTF16((__le16 *) bcc_ptr, ses->domainName,
+-					    256, nls_cp);
++					    CIFS_MAX_DOMAINNAME_LEN, nls_cp);
+ 	bcc_ptr += 2 * bytes_ret;
+ 	bcc_ptr += 2;  /* account for null terminator */
+ 
+@@ -256,8 +256,8 @@ static void ascii_ssetup_strings(char **pbcc_area, struct cifs_ses *ses,
+ 
+ 	/* copy domain */
+ 	if (ses->domainName != NULL) {
+-		strncpy(bcc_ptr, ses->domainName, 256);
+-		bcc_ptr += strnlen(ses->domainName, 256);
++		strncpy(bcc_ptr, ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
++		bcc_ptr += strnlen(ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
+ 	} /* else we will send a null domain name
+ 	     so the server will default to its own domain */
+ 	*bcc_ptr = 0;
 -- 
 1.8.3.2
 
