@@ -1,77 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758784Ab3HNBVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 21:21:53 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:39978 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754159Ab3HNBVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 21:21:51 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-6e-520adbac9ca6
-From: Sangjung Woo <sangjung.woo@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sangjung Woo <sangjung.woo@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
-        Myugnjoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH] drivers/rtc/rtc-max77686.c: Fix wrong register
-Date: Wed, 14 Aug 2013 10:21:41 +0900
-Message-id: <1376443301-969-1-git-send-email-sangjung.woo@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsWyRsSkSHfNba4gg5n7FS3mrF/DZtF59gmz
-	xeVdc9gsbjeuYLNYsKfEgdXjxIzfLB59W1YxenzeJBfAHMVlk5Kak1mWWqRvl8CVMfvYTPaC
-	r+wVq7qrGxjPs3UxcnJICJhIHLm5mQXCFpO4cG89UJyLQ0hgKaPEtrYN7DBFB1bPZ4dITGeU
-	uD7pGJTTxiTRtv4OM0gVm4CuxJMDl8FsESB71fNdYDazwDxGiY0vPUFsYQF7ibnH9oCtYxFQ
-	ldi0ZSETiM0r4CaxadJtoNUcQNsUJOZMsoFYfJ9NYu5yVohyAYlvkw+xQJTISmw6wAxRIilx
-	cMUNlgmMggsYGVYxiqYWJBcUJ6UXGesVJ+YWl+al6yXn525iBAbi6X/P+ncw3j1gfYgxGWjc
-	RGYp0eR8YCDnlcQbGpsZWZiamBobmVuakSasJM6r1mIdKCSQnliSmp2aWpBaFF9UmpNafIiR
-	iYNTqoFxRvy5KDkm7dAL3jekVk6QiDzwzunVZpXKxd+Wb7gj+nwb39HT2lMU/hWzyOionP15
-	i1Grru1ixJyX+eufmxtarHVPtHl5sfzarLa0WDnZmTmlxe83Pymar8r6y+vtG/W783rffRZ+
-	yd7HYHX5A/POKbyfjggU/Dvev6KY++2igAT2WfUVW/sblFiKMxINtZiLihMBW4I3KVoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t9jQd01t7mCDKbtlrKYs34Nm0Xn2SfM
-	Fpd3zWGzuN24gs1iwZ4SB1aPEzN+s3j0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqt
-	kndwvHO8qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0EolhbLEnFKgUEBicbGSvh2mCaEhbroW
-	MI0Rur4hQXA9RgZoIGENY8bsYzPZC76yV6zqrm5gPM/WxcjJISFgInFg9Xx2CFtM4sK99UBx
-	Lg4hgemMEtcnHWOHcNqYJNrW32EGqWIT0JV4cuAymC0CZK96vgvMZhaYxyix8aUniC0sYC8x
-	99geFhCbRUBVYtOWhUwgNq+Am8SmSbeBNnAAbVOQmDPJZgIj9wJGhlWMoqkFyQXFSem5RnrF
-	ibnFpXnpesn5uZsYwYH+THoH46oGi0OMAhyMSjy8FnZcQUKsiWXFlbmHGCU4mJVEeL/aAIV4
-	UxIrq1KL8uOLSnNSiw8xJgMtn8gsJZqcD4zCvJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJ
-	pCeWpGanphakFsFsYeLglGpgLAve83r7EssJ7xrMxUtfiq9lFVV+XvnR/831wChnj+BJChL5
-	Kyc+vjn1/DEfjkTuPrZdLhP+vVn4YknwtO1MvJL/3YxmsSwQzNczzT0RdGNVdUj+pvs9x89L
-	iRvs7PBQP+fcdTyh4apKY9qO7yzX2188X8Nw8Ex1b8cujzU6N1skm5VD72XEK7EUZyQaajEX
-	FScCAEsWpM64AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1758961Ab3HNBic (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 21:38:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:38770 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758708Ab3HNBi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 21:38:28 -0400
+X-IronPort-AV: E=Sophos;i="4.89,874,1367942400"; 
+   d="scan'208";a="8196169"
+Message-ID: <520ADF3F.3050500@cn.fujitsu.com>
+Date: Wed, 14 Aug 2013 09:37:03 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
+        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com
+CC: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part1 0/5] acpica: Split acpi_gbl_root_table_list initialization
+ into two parts.
+References: <1375933176-15003-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1375933176-15003-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/14 09:36:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/14 09:36:53,
+	Serialize complete at 2013/08/14 09:36:53
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix to read the wrong register when checking whether the RTC timer has
-reached or not.
+Hi Bob, Rafael,
 
-Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
-Signed-off-by: Myugnjoo Ham <myungjoo.ham@samsung.com>
-Reviewed-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
----
- drivers/rtc/rtc-max77686.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I think these patches are unnecessary now. mm guys have decided to do
+memory hotplug in another way, an easier way that we don't need to touch
+ACPICA code.
 
-diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
-index 9915cb9..9efe118 100644
---- a/drivers/rtc/rtc-max77686.c
-+++ b/drivers/rtc/rtc-max77686.c
-@@ -240,9 +240,9 @@ static int max77686_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
- 	}
- 
- 	alrm->pending = 0;
--	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS1, &val);
-+	ret = regmap_read(info->max77686->regmap, MAX77686_REG_STATUS2, &val);
- 	if (ret < 0) {
--		dev_err(info->dev, "%s:%d fail to read status1 reg(%d)\n",
-+		dev_err(info->dev, "%s:%d fail to read status2 reg(%d)\n",
- 				__func__, __LINE__, ret);
- 		goto out;
- 	}
--- 
-1.7.9.5
+So please ignore this patch-set.
 
+Thanks for the help and suggestions. :)
+
+
+On 08/08/2013 11:39 AM, Tang Chen wrote:
+> [Problem]
+>
+> The current Linux cannot migrate pages used by the kerenl because
+> of the kernel direct mapping. In Linux kernel space, va = pa + PAGE_OFFSET.
+> When the pa is changed, we cannot simply update the pagetable and
+> keep the va unmodified. So the kernel pages are not migratable.
+>
+> There are also some other issues will cause the kernel pages not migratable.
+> For example, the physical address may be cached somewhere and will be used.
+> It is not to update all the caches.
+>
+> When doing memory hotplug in Linux, we first migrate all the pages in one
+> memory device somewhere else, and then remove the device. But if pages are
+> used by the kernel, they are not migratable. As a result, memory used by
+> the kernel cannot be hot-removed.
+>
+> Modifying the kernel direct mapping mechanism is too difficult to do. And
+> it may cause the kernel performance down and unstable. So we use the following
+> way to do memory hotplug.
+>
+>
+> [What we are doing]
+>
+> In Linux, memory in one numa node is divided into several zones. One of the
+> zones is ZONE_MOVABLE, which the kernel won't use.
+>
+> In order to implement memory hotplug in Linux, we are going to arrange all
+> hotpluggable memory in ZONE_MOVABLE so that the kernel won't use these memory.
+>
+> To do this, we need ACPI's help.
+>
+>
+> [How we do this]
+>
+> In ACPI, SRAT(System Resource Affinity Table) contains NUMA info. The memory
+> affinities in SRAT record every memory range in the system, and also, flags
+> specifying if the memory range is hotpluggable.
+> (Please refer to ACPI spec 5.0 5.2.16)
+>
+> With the help of SRAT, we have to do the following two things to achieve our
+> goal:
+>
+> 1. When doing memory hot-add, allow the users arranging hotpluggable as
+>     ZONE_MOVABLE.
+>     (This has been done by the MOVABLE_NODE functionality in Linux.)
+>
+> 2. when the system is booting, prevent bootmem allocator from allocating
+>     hotpluggable memory for the kernel before the memory initialization
+>     finishes.
+>     (This is what we are going to do. And we need to do some modification in
+>      ACPICA. See below.)
+>
+>
+> [About this patch-set]
+>
+> There is a bootmem allocator named memblock in Linux. memblock starts to work
+> at very early time, and SRAT has not been parsed. So we don't know which memory
+> is hotpluggable. In order to prevent memblock from allocating hotpluggable
+> memory for the kernel, we need to obtain SRAT memory affinity info earlier.
+>
+> In the current Linux kernel, the acpica code iterates acpi_gbl_root_table_list,
+> and install all the acpi tables into it at boot time. Then, it tries to find
+> if there is any override table in global array acpi_tables_addr. If any, reinstall
+> the override table into acpi_gbl_root_table_list.
+>
+> In Linux, global array acpi_tables_addr can be fulfilled by ACPI_INITRD_TABLE_OVERRIDE
+> mechanism, which allows users to specify their own ACPI tables in initrd file, and
+> override the ones from firmware.
+>
+> The whole procedure looks like the following:
+>
+> setup_arch()
+>   |->    ......                                     /* Setup direct mapping pagetables */
+>   |->acpi_initrd_override()                        /* Store all override tables in acpi_tables_addr. */
+>   |...
+>   |->acpi_boot_table_init()
+>      |->acpi_table_init()
+>         |                                                                                  (Linux code)
+> ......................................................................................................
+>         |                                                                                 (ACPICA code)
+>         |->acpi_initialize_tables()
+>            |->acpi_tb_parse_root_table()           /* Parse RSDT or XSDT, find all tables in firmware */
+>               |->for (each item in acpi_gbl_root_table_list)
+>                  |->acpi_tb_install_table()
+>                     |->    ......                   /* Install one single table */
+>                     |->acpi_tb_table_override()    /* Override one single table */
+>
+> It does the table installation and overriding one by one.
+>
+> In order to find SRAT at earlier time, we want to initialize acpi_gbl_root_table_list
+> earlier. But at the same time, keep ACPI_INITRD_TABLE_OVERRIDE procedure works as well.
+>
+> The basic idea is, split the acpi_gbl_root_table_list initialization procedure into
+> two steps:
+> 1. Install all tables from firmware, not one by one.
+> 2. Override any table if necessary, not one by one.
+>
+> After this patch-set, it will work like this:
+>
+> setup_arch()
+>   |->      ......                                   /* Install all tables from firmware (Step 1) */
+>   |->      ......                                   /* Try to find if any override SRAT in initrd file, if yes, use it */
+>   |->      ......                                   /* Use the SRAT from firmware */
+>   |->      ......                                   /* memblock starts to work */
+>   |->      ......
+>   |->acpi_initrd_override()                        /* Initialize acpi_tables_addr with all override table. */
+>   |...
+>   |->      ......                                   /* Do the table override work for all tables (Step 2) */
+>
+>
+> In order to achieve this goal, we have to split all the following functions:
+>
+> ACPICA:
+>      acpi_tb_install_table()
+>      acpi_tb_parse_root_table()
+>      acpi_initialize_tables()
+>
+> Linux acpi:
+>      acpi_table_init()
+>      acpi_boot_table_init()
+>
+> Since ACPICA code is not just used by the Linux, so we should keep the ACPICA
+> side interfaces unmodified, and introduce new functions used in Linux.
+>
+>
+> Tang Chen (5):
+>    acpi, acpica: Split acpi_tb_install_table() into two parts.
+>    acpi, acpica: Call two new functions instead of
+>      acpi_tb_install_table() in acpi_tb_parse_root_table().
+>    acpi, acpica: Split acpi_tb_parse_root_table() into two parts.
+>    acpi, acpica: Call two new functions instead of
+>      acpi_tb_parse_root_table() in acpi_initialize_tables().
+>    acpi, acpica: Split acpi_initialize_tables() into two parts.
+>
+>   drivers/acpi/acpica/actables.h |    2 +
+>   drivers/acpi/acpica/tbutils.c  |  184 +++++++++++++++++++++++++++++++++++-----
+>   drivers/acpi/acpica/tbxface.c  |   69 ++++++++++++++--
+>   3 files changed, 228 insertions(+), 27 deletions(-)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
