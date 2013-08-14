@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab3HNTqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 15:46:05 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:44267 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760184Ab3HNTnl (ORCPT
+	id S933043Ab3HNTqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 15:46:23 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:53905 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932956Ab3HNTqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 15:43:41 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/8] drm/i2c: tda998x: fix npix/nline programming
-Date: Wed, 14 Aug 2013 21:43:28 +0200
-Message-Id: <1376509413-1462-4-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1376509413-1462-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1376509413-1462-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 14 Aug 2013 15:46:20 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Jingbai Ma <jingbai.ma@hp.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, bhelgaas@google.com,
+        "Mitchell\, Lisa \(MCLinux in Fort Collins\)" <lisa.mitchell@hp.com>
+References: <5200BFB3.2050202@jp.fujitsu.com> <520A10A3.5080303@hp.com>
+	<520B4A22.2030800@hp.com>
+Date: Wed, 14 Aug 2013 12:45:54 -0700
+In-Reply-To: <520B4A22.2030800@hp.com> (Jingbai Ma's message of "Wed, 14 Aug
+	2013 17:13:06 +0800")
+Message-ID: <87ob90839p.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+U6pP8Zw/qTa2IKDg36y/mp1Z9laNcNSw=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4304]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Jingbai Ma <jingbai.ma@hp.com>
+X-Spam-Relay-Country: 
+Subject: Re: [Help Test] kdump, x86, acpi: Reproduce CPU0 SMI corruption issue after unsetting BSP flag
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+Jingbai Ma <jingbai.ma@hp.com> writes:
 
-The npix/nline registers are supposed to be programmed with the total
-number of pixels/lines, not the displayed pixels/lines, and not minus
-one either.
+> I found a side effect of unsetting BSP flag.
+> It affected system rebooting, once the BSP flags been removed, and issue
+> reboot command, system will hang after message:
+> Restarting system.
+> And have to do a hardware reset to recover it.
+>
+> I have reproduced this problem on the following systems:
+> HP EliteBook 6930p
+> HP Compaq DC7700
+> HP ProLiant DL980 (4 sockets, 40 cores)
+>
+> I have an idea: To avoid such kind of issue, we can unset BSP flag in
+> the first kernel during crash processing, and restore it in the second
+> kernel in the APs initializing.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Tested-by: Darren Etheridge <detheridge@ti.com>
-Tested-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: David Airlie <airlied@linux.ie>
-Cc: Darren Etheridge <detheridge@ti.com>
-Cc: Rob Clark <robdclark@gmail.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/gpu/drm/i2c/tda998x_drv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The premise was clearing BSP would not be an issue.  If we could
+reliably count on unsetting the BSP during crash processing we could
+just switch to the BSP and be done totally avoid this problem.
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index cb9b13a..a701411 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -587,8 +587,8 @@ tda998x_encoder_mode_set(struct drm_encoder *encoder,
- 		reg_set(encoder, REG_VIP_CNTRL_3, VIP_CNTRL_3_H_TGL);
- 
- 	reg_write(encoder, REG_VIDFORMAT, 0x00);
--	reg_write16(encoder, REG_NPIX_MSB, mode->hdisplay - 1);
--	reg_write16(encoder, REG_NLINE_MSB, mode->vdisplay - 1);
-+	reg_write16(encoder, REG_NPIX_MSB, mode->htotal);
-+	reg_write16(encoder, REG_NLINE_MSB, mode->vtotal);
- 	reg_write16(encoder, REG_VS_LINE_STRT_1_MSB, line_start);
- 	reg_write16(encoder, REG_VS_LINE_END_1_MSB, line_end);
- 	reg_write16(encoder, REG_VS_PIX_STRT_1_MSB, hs_start);
--- 
-1.7.10.4
+Given that there are reald world issues with clearing the BSP flag,
+I believe the alternate suggestion was to simply never attempt to start
+the bootstrap processor during processor bring up.
+
+If as normal we are running on the bootstrap processor everything will
+work the same, but if we are in the kdump scenario we will be short one
+core.  Being short one core seems like a reasonable tradeoff between
+reliability and performance.
+
+Eric
 
