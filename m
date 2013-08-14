@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751148Ab3HNEnT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 00:43:19 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34909 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab3HNEnR (ORCPT
+	id S1751516Ab3HNEqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 00:46:14 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:28521 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab3HNEqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 00:43:17 -0400
-Message-ID: <520B0AB7.1070700@ti.com>
-Date: Wed, 14 Aug 2013 10:12:31 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 14 Aug 2013 00:46:11 -0400
+Message-ID: <520B0B75.4030708@huawei.com>
+Date: Wed, 14 Aug 2013 12:45:41 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-CC: Philip Avinash <avinashphilipk@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 0/4] GPIO DT support for da850
-References: <1371203020-15092-1-git-send-email-avinashphilip@ti.com> <518397C60809E147AF5323E0420B992E3EADAFCF@DBDE04.ent.ti.com> <CA+V-a8sNPMbQjh8uxhQ=aOgo4ZfmaKXoOnRsuurzEeWzBKW8WA@mail.gmail.com>
-In-Reply-To: <CA+V-a8sNPMbQjh8uxhQ=aOgo4ZfmaKXoOnRsuurzEeWzBKW8WA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        <aquini@redhat.com>
+CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Xishi Qiu <qiuxishi@huawei.com>
+Subject: [PATCH] mm: skip the page buddy block instead of one page
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+A large free page buddy block will continue many times, so if the page 
+is free, skip the whole page buddy block instead of one page.
 
-On 8/11/2013 3:04 PM, Prabhakar Lad wrote:
-> Hi Sekhar,
-> 
-> On Fri, Jun 14, 2013 at 3:50 PM, Philip, Avinash <avinashphilip@ti.com> wrote:
->> On Fri, Jun 14, 2013 at 15:13:36, Philip, Avinash wrote:
->>> With conversion of GPIO davinci driver to platform driver, gpio-davinci driver
->>> can support DT boot.
->>> This patch series
->>> - adds dt binding support for gpio-davinci.
->>> - da850 dt support goio.
->>>
->>> This patch series is based on Linux 3.10-rc4 and is availabel at [1].
->>>
->>> 1. https://github.com/avinashphilip/am335x_linux/tree/linux_davinci_v3.10_soc_gpio_v310-rc4
->>
->>
->> This patch series has dependency on [PATCH v2 0/7] Convert GPIO Davinci to platform driver
->>
->> https://lkml.org/lkml/2013/6/14/120
->>
-> What is the status of this patch series is any one taking care of it or
-> else I can take care of review comments and repost them.
+Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+---
+ mm/compaction.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Avinash is not working for TI anymore. It will be great if you can take
-this up.
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 05ccb4c..874bae1 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -520,9 +520,10 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 			goto next_pageblock;
+ 
+ 		/* Skip if free */
+-		if (PageBuddy(page))
++		if (PageBuddy(page)) {
++			low_pfn += (1 << page_order(page)) - 1;
+ 			continue;
+-
++		}
+ 		/*
+ 		 * For async migration, also only scan in MOVABLE blocks. Async
+ 		 * migration is optimistic to see if the minimum amount of work
+-- 
+1.7.1
 
-Thanks,
-Sekhar
