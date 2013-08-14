@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab3HNONL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 10:13:11 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:49157 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759740Ab3HNONI (ORCPT
+	id S932556Ab3HNOPF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 10:15:05 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:52271 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164Ab3HNOPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 10:13:08 -0400
-Date: Wed, 14 Aug 2013 11:13:01 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Vince Weaver <vince@deater.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        peterz@infradead.org
-Subject: Re: [PATCH] RFC: perf, tools: Move gtk browser into separate perfgtk
- executable
-Message-ID: <20130814141301.GA2138@ghostprotocols.net>
-References: <20130805083132.GE26746@gmail.com>
- <20130805083434.GA20606@infradead.org>
- <20130805090857.GA26940@gmail.com>
- <20130806061932.GA20485@infradead.org>
- <20130812181956.GB19405@gmail.com>
- <alpine.DEB.2.02.1308121521170.25956@pianoman.cluster.toy>
- <20130813104821.GB2170@gmail.com>
- <20130813121141.GB2188@ghostprotocols.net>
- <20130813160043.GB5280@gmail.com>
- <alpine.DEB.2.02.1308131749330.9154@pianoman.cluster.toy>
+	Wed, 14 Aug 2013 10:15:03 -0400
+Message-ID: <520B90E1.5000803@gmail.com>
+Date: Wed, 14 Aug 2013 16:14:57 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1308131749330.9154@pianoman.cluster.toy>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8] drm/i2c: tda998x: fix sync generation and calculation
+References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com> <1375741218-10225-7-git-send-email-sebastian.hesselbarth@gmail.com> <20130814124118.GD23840@n2100.arm.linux.org.uk>
+In-Reply-To: <20130814124118.GD23840@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 13, 2013 at 05:57:16PM -0400, Vince Weaver escreveu:
-> On Tue, 13 Aug 2013, Ingo Molnar wrote:
-> > that can only be addressed by either extending 'perf test' or by testing 
-> > libpfm et al sooner. The upstream kernel can only address regressions that 
-> > get reported.
- 
-> Most of the tests in my test-suite are reactive.  Meaning, I wrote them 
-> after an ABI-breaking change was reported elsewhere, and I needed a small 
-> test case for bisection purposes.  Thus they are good for finding if a 
-> corner of the perf ABI re-breaks but they're not great at spotting new 
-> breakages.
- 
-> Writing a complete test suite for something as complicated as the 
-> perf-event ABI is impractical.  One thing you can do is require anyone 
-> submitting new functionality also provide a regression test, but
+On 08/14/13 14:41, Russell King - ARM Linux wrote:
+> On Tue, Aug 06, 2013 at 12:20:16AM +0200, Sebastian Hesselbarth wrote:
+>> +	de_pix_s     = mode->htotal - mode->hdisplay;
+>> +	de_pix_e     = de_pix_s + mode->hdisplay;
+>> +	hs_pix_s     = mode->hsync_start - mode->hdisplay;
+>> +	hs_pix_e     = hs_pix_s + mode->hsync_end - mode->hsync_start;
+>
+> I still think the above is over-complicating the calculation and making it
+> less readable.
 
-Agreed.
+Yeah, you also didn't like it the last time. I must admit, I have
+left it that way because I did all the near-end/far-end scope checks
+on the calculation above and I wasn't that eager to touch them again.
 
-> I don't see that happening.
+But I agree and will revert the lines in question and update the
+others accordingly.
 
-See some of Namhyung, Adrian and Jiri recent patchsets, they came with
-'perf test' regression tests.
- 
-- ARnaldo
+> The values in 'mode' represent this timing representation:
+> 0=hds                                    hde    hss  hse   ht
+> |-----------------------------------------|----->|--->|---->|
+>
+> What we want to do is to rotate that around to this:
+> 0     hss  hse   hds                                       ht=hde
+> |----->|--->|---->|-----------------------------------------|
+>
+>  From that, you can see quite clearly that the end of the displayed line
+> is now at htotal, and the start of the displayed line (hds) is hdisplay
+> clocks before that.  So:
+>
+> 	de_pix_e = mode->htotal;
+> 	de_pix_s = de_pix_e - mode->hdisplay;
+>
+> Everything else (hss, hse) has moved to the left by hdisplay clocks, so:
+>
+> 	hs_pix_s = mode->hsync_start - mode->hdisplay;
+> 	hs_pix_e = mode->hsync_end - mode->hdisplay;
+>
+> That's what you get if you simplify your calculations as well.  If we then
+> go back and look at the original code:
+>
+> -       hs_start   = mode->hsync_start - mode->hdisplay;
+> -       hs_end     = mode->hsync_end - mode->hdisplay;
+> -       de_start   = mode->htotal - mode->hdisplay;
+> -       de_end     = mode->htotal;
+>
+> it's what was originally there, so I don't see any point in touching that
+> calculation.
+>
+> We also have:
+>
+> -       ref_pix = 3 + hs_start;
+> +       ref_pix      = 3 + mode->hsync_start - mode->hdisplay;
+>
+> which we can see is also the same calculation in essence.  I don't think
+> the change helps readability.
+>
+
