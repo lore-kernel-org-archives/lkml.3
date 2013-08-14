@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab3HNUDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:03:42 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:40529 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933017Ab3HNUDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:03:40 -0400
-Message-ID: <520BE280.6010407@ahsoftware.de>
-Date: Wed, 14 Aug 2013 22:03:12 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933120Ab3HNUEs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:04:48 -0400
+Received: from 8bytes.org ([85.214.48.195]:51394 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932923Ab3HNUEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 16:04:47 -0400
+Date: Wed, 14 Aug 2013 22:04:42 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: integrator: Make sure INTEGRATOR_AP depends on PCI
+Message-ID: <20130814200442.GA20372@8bytes.org>
+References: <1376509818-22163-1-git-send-email-joro@8bytes.org>
+ <20130814195701.GY23006@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-CC: rydberg@euromail.se, Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] HID: Use existing parser for pre-scanning the report
- descriptors
-References: <1376405889-12378-1-git-send-email-benjamin.tissoires@redhat.com> <1376405889-12378-2-git-send-email-benjamin.tissoires@redhat.com> <20130813191731.GA8391@polaris.bitmath.org> <520BA464.9060200@redhat.com>
-In-Reply-To: <520BA464.9060200@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130814195701.GY23006@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Aug 14 22:04:43 2013
+X-DSPAM-Confidence: 0.9993
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 520be2db20861516367007
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.08.2013 17:38, schrieb Benjamin Tissoires:
+On Wed, Aug 14, 2013 at 08:57:01PM +0100, Russell King - ARM Linux wrote:
+> On Wed, Aug 14, 2013 at 09:50:18PM +0200, Joerg Roedel wrote:
+> > Add this dependency to the Kconfig file to fix the following
+> > build error when CONFIG_INTEGRATOR_AP is set but CONFIG_PCI
+> > is not:
+> 
+> No, integrator does not require PCI, so this needs to be fixed by other
+> means, such as finding out how the breakage was introduced, and fixing
+> the real cause of this regression.
 
->>>   {
->>>   	if (usage == HID_DG_CONTACTID)
->>> -		hid->group = HID_GROUP_MULTITOUCH;
->>> +		parser->flags |= HID_FLAG_MULTITOUCH;
->>
->> Did you consider reusing the group flags, e.g., parser->groups |= (1
->> << HID_GROUP_MULTITOUCH)? This change could be made regardless of the
->> parser logic.
->
-> If nobody is against changing the values of the different groups across
-> kernel version (which should be harmless), then I fully agree, we can
-> use the group item as a bit field (but we would be able to only have 16
-> different device groups).
+You are right, just found out that this introduces a recursive
+dependency while compiling another config:
 
-Hmm, that might become a problem. E.g. all the HID sensors might be used 
-stand alone (without a sensor-hub, if someone modifies the drivers). But 
-I agree that currently the flags are just confusing and would introduce 
-them only if the number of groups reaches the limit.
+arch/arm/Kconfig:1403:error: recursive dependency detected!
+arch/arm/Kconfig:1403:	symbol PCI depends on MIGHT_HAVE_PCI
+arch/arm/Kconfig:108:	symbol MIGHT_HAVE_PCI is selected by ARCH_INTEGRATOR_AP
+arch/arm/mach-integrator/Kconfig:5:	symbol ARCH_INTEGRATOR_AP depends on PCI
 
+So when integrator does not depend on PCI this diff is more appropriate?
 
->>> -	hid->group = HID_GROUP_GENERIC;
->>> +	parser = vzalloc(sizeof(struct hid_parser));
->>
->> Argh, I realize it is inevitable for this patch, but it still makes my
->> eyes bleed. The parser takes quite a bit of memory...
->
-> Yep, my first attempt was to remove it, then I re-added it with a small
-> tear...
+diff --git a/arch/arm/mach-integrator/pci_v3.h b/arch/arm/mach-integrator/pci_v3.h
+index 755fd29..51738e0 100644
+--- a/arch/arm/mach-integrator/pci_v3.h
++++ b/arch/arm/mach-integrator/pci_v3.h
+@@ -1,2 +1,9 @@
+-/* Simple oneliner include to the PCIv3 early init */
++/* Define PCIv3 early init */
++#ifdef CONFIG_PCI
+ extern int pci_v3_early_init(void);
++#else
++static inline int pci_v3_early_init(void)
++{
++	return 0;
++}
++#endif
 
-So you actually create a new parser and the subject (that existing) of 
-this patch is misleading.
-
-Regards,
-
-Alexander Holler
