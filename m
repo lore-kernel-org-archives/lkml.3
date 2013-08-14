@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab3HNKSW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:18:22 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:62899 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab3HNKSV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:18:21 -0400
-Date: Wed, 14 Aug 2013 12:18:16 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: x86-ml <x86@kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] AMD F15h, model 0x30 stuff for 3.12
-Message-ID: <20130814101816.GF10849@gmail.com>
-References: <20130810184627.GB6189@pd.tnic>
- <20130812200305.GK18018@pd.tnic>
+	id S932171Ab3HNKUR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:20:17 -0400
+Received: from 8bytes.org ([85.214.48.195]:50203 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752985Ab3HNKUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 06:20:15 -0400
+Date: Wed, 14 Aug 2013 12:20:09 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/16] amd_iommu: clean up unnecessary MSI/MSI-X
+ capability find
+Message-ID: <20130814102007.GE4491@8bytes.org>
+References: <1375967556-6248-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130812200305.GK18018@pd.tnic>
+In-Reply-To: <1375967556-6248-1-git-send-email-wangyijing@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Aug 14 12:20:11 2013
+X-DSPAM-Confidence: 0.9991
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 520b59db20861529417601
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 08, 2013 at 09:12:36PM +0800, Yijing Wang wrote:
+> PCI core will initialize device MSI/MSI-X capability in
+> pci_msi_init_pci_dev(). So device driver should use
+> pci_dev->msi_cap/msix_cap to determine whether the device
+> support MSI/MSI-X instead of using
+> pci_find_capability(pci_dev, PCI_CAP_ID_MSI/MSIX).
+> Access to PCIe device config space again will consume more time.
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Cc: Joerg Roedel <joro@8bytes.org>
+> Cc: iommu@lists.linux-foundation.org
+> Cc: linux-kernel@vger.kernel.org
 
-* Borislav Petkov <bp@alien8.de> wrote:
+Applied to x86/amd, thanks.
 
-> Hi guys,
-> 
-> here's the properly based-off version; please pull.
-> 
-> Thanks.
-> 
-> The following changes since commit d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
-> 
->   Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/amd_f15_m30
-> 
-> for you to fetch changes up to a4b4bedce880046feeb5b206392960f395ed02ad:
-> 
->   amd64_edac: Get rid of boot_cpu_data accesses (2013-08-12 16:01:56 +0200)
-> 
-> ----------------------------------------------------------------
-> AMD F15h, model 0x30 and later enablement stuff, more specifically EDAC
-> support.
-> 
-> ----------------------------------------------------------------
-> Aravind Gopalakrishnan (3):
->       pci_ids: Add PCI device ID functions 3 and 4 for newer F15h models.
->       x86, amd_nb: Clarify F15h, model 30h GART and L3 support
->       amd64_edac: Add ECC decoding support for newer F15h models
-> 
-> Borislav Petkov (1):
->       amd64_edac: Get rid of boot_cpu_data accesses
-> 
->  arch/x86/kernel/amd_nb.c  |  13 ++++-
->  drivers/edac/amd64_edac.c | 324 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------
->  drivers/edac/amd64_edac.h |  60 ++++++++++++++++++--
->  include/linux/pci_ids.h   |   2 +
->  4 files changed, 322 insertions(+), 77 deletions(-)
 
-Pulled into tip:x86/ras, thanks!
-
-	Ingo
