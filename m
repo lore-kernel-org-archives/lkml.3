@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab3HNQH5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:07:57 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:39873 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750974Ab3HNQH4 (ORCPT
+	id S1760037Ab3HNQIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:08:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50374 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab3HNQIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:07:56 -0400
-Message-ID: <520BAB57.300@hurleysoftware.com>
-Date: Wed, 14 Aug 2013 12:07:51 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
+	Wed, 14 Aug 2013 12:08:30 -0400
+Message-ID: <520BAB79.3000202@wwwdotorg.org>
+Date: Wed, 14 Aug 2013 10:08:25 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: pty FIONREAD returning zero breaks emacs in 3.11rc3
-References: <20130809211126.GF19750@two.firstfloor.org> <52098F4F.8070508@hurleysoftware.com> <20130813220314.GB19750@two.firstfloor.org>
-In-Reply-To: <20130813220314.GB19750@two.firstfloor.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: benoit.cousson@linaro.org, tony@atomide.com, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com, rob.herring@calxeda.com, pawel.moll@arm.com,
+        mark.rutland@arm.com, ian.campbell@citrix.com, rob@landley.net,
+        george.cherian@ti.com, gregkh@linuxfoundation.org,
+        linux-doc@vger.kernel.org, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, balbi@ti.com
+Subject: Re: [PATCH 1/2] extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
+References: <1376302675-15795-1-git-send-email-kishon@ti.com> <1376372241-15573-1-git-send-email-kishon@ti.com> <520A8555.10401@wwwdotorg.org> <520B14A1.8030809@ti.com>
+In-Reply-To: <520B14A1.8030809@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 06:03 PM, Andi Kleen wrote:
-> On Mon, Aug 12, 2013 at 09:43:43PM -0400, Peter Hurley wrote:
->> On 08/09/2013 05:11 PM, Andi Kleen wrote:
->>>
->>> When I run emacs over ssh terminal (no X) on 3.11-rc3 it often ignores key
->>> strokes.  I first thought the system was busy or so, but when
->>> stracing the emacs it was not blocked.
+On 08/13/2013 11:24 PM, Kishon Vijay Abraham I wrote:
+> Hi,
+> 
+> On Wednesday 14 August 2013 12:43 AM, Stephen Warren wrote:
+>> On 08/12/2013 11:37 PM, Kishon Vijay Abraham I wrote:
+>>> The Palmas device contains only a USB VID detector, so added a
+>>> compatible type *ti,palmas-usb-vid*. Dint remove the existing compatible
 >>
->> Andi,
+>> s/Dint/Didn't/
 >>
->> More information might help me narrow this down since I can't
->> reproduce this.
+>>> diff --git a/Documentation/devicetree/bindings/extcon/extcon-twl.txt b/Documentation/devicetree/bindings/extcon/extcon-twl.txt
 >>
->> Is the ssh session remote?
->
-> Yes.
->
->> Can you reproduce this on a local ssh session?
->
-> Yes.
->
->> What version of emacs is this? Is it the nox flavor?
->
-> emacs-24.3-6.11.x86_64
->
-> It's emacs-gtk
->
->
->> What distribution/version?
->
-> Current Tumbleweed
->
->> What platform?
->
-> x86_64 2S Westmere
-
-Thanks. I'll need to install Tumbleweed to attempt to reproduce this.
-
->>> Here's a typical sequence. select/SIGIO wakes it up, but then
->>> FIONREAD returns 0.
->>>
->>> I'm not fully sure when it started.
+>>>  PALMAS USB COMPARATOR
+>>>  Required Properties:
+>>> - - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
+>>> + - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb" or
+>>> +   "ti,palmas-usb-vid".
 >>
->> In the 3.11 cycle? or could have started back on 3.9 or earlier?
->
-> Ok I tried and it actually happens on 3.9 too. For some reason
-> I didn't notice it earlier (or blamed my bad typing)
-> Haven't tried earlier
+>> So are ti,palmas-usb and ti,twl6035-usb full EHCI controllers then?
+> 
+> No. I thought I shouldn't remove those if someone is already using those
+> compatible value.
 
-Ok. Thanks for testing 3.9 -- that eliminates a lot of possible
-culprits.
-
->>
->> Could you try to reproduce this on linux-next?
->
-> Happens on linux-next too.
->>
->> Would you please attach the full strace of emacs from this session?
->
-> Attached (from a different session)
-
-Can you send me more of the original session?
-
-The session you sent me didn't exhibit the problem of pselect()
-indicating input available but ioctl(FIONREAD) returning 0.
-It may have seemed that input wasn't being read but actually
-emacs was beeping you back for each input (that's what all the
-write('\7') are about in the strace).
-
-Regards,
-Peter Hurley
+Sigh. Perhaps it's best to be consistent with the existing bad naming
+then:-(
 
