@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932878Ab3HNSZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:25:42 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34404 "EHLO
+	id S932982Ab3HNSZs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:25:48 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34406 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758462Ab3HNSZj (ORCPT
+	with ESMTP id S932884Ab3HNSZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:25:39 -0400
+	Wed, 14 Aug 2013 14:25:45 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 18/21] perf tools: Remove filter parameter of thread__find_addr_map()
-Date: Wed, 14 Aug 2013 15:25:12 -0300
-Message-Id: <1376504715-28107-19-git-send-email-acme@infradead.org>
+Subject: [PATCH 16/21] perf tools: Remove filter parameter of perf_event__preprocess_sample()
+Date: Wed, 14 Aug 2013 15:25:10 -0300
+Message-Id: <1376504715-28107-17-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376504715-28107-1-git-send-email-acme@infradead.org>
 References: <1376504715-28107-1-git-send-email-acme@infradead.org>
@@ -32,7 +32,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Adrian Hunter <adrian.hunter@intel.com>
 
 Now that the symbol filter is recorded on the machine there is no need
-to pass it to thread__find_addr_map().  So remove it.
+to pass it to perf_event__preprocess_sample().  So remove it.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -44,150 +44,186 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1375961547-30267-9-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1375961547-30267-7-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-inject.c     | 2 +-
- tools/perf/builtin-script.c     | 4 ++--
- tools/perf/tests/code-reading.c | 2 +-
- tools/perf/util/build-id.c      | 2 +-
- tools/perf/util/event.c         | 9 ++++-----
- tools/perf/util/thread.h        | 2 +-
- tools/perf/util/unwind.c        | 4 ++--
- 7 files changed, 12 insertions(+), 13 deletions(-)
+ tools/perf/builtin-annotate.c | 3 +--
+ tools/perf/builtin-diff.c     | 2 +-
+ tools/perf/builtin-mem.c      | 3 +--
+ tools/perf/builtin-report.c   | 3 +--
+ tools/perf/builtin-script.c   | 2 +-
+ tools/perf/builtin-top.c      | 3 +--
+ tools/perf/tests/hists_link.c | 4 ++--
+ tools/perf/util/event.c       | 8 ++++----
+ tools/perf/util/event.h       | 3 +--
+ tools/perf/util/session.c     | 3 +--
+ 10 files changed, 14 insertions(+), 20 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index f012a98..1d8de2e 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -206,7 +206,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 	}
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 9754cb1..f988d38 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -90,8 +90,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 	struct perf_annotate *ann = container_of(tool, struct perf_annotate, tool);
+ 	struct addr_location al;
  
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      event->ip.ip, &al, NULL);
-+			      event->ip.ip, &al);
+-	if (perf_event__preprocess_sample(event, machine, &al, sample,
+-					  machine->symbol_filter) < 0) {
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+ 		pr_warning("problem processing %d event, skipping it.\n",
+ 			   event->header.type);
+ 		return -1;
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 93de3ac..f28799e 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -319,7 +319,7 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+ {
+ 	struct addr_location al;
  
- 	if (al.map != NULL) {
- 		if (!al.map->dso->hit) {
+-	if (perf_event__preprocess_sample(event, machine, &al, sample, NULL) < 0) {
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+ 		pr_warning("problem processing %d event, skipping it.\n",
+ 			   event->header.type);
+ 		return -1;
+diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
+index f96168c..706a1fa 100644
+--- a/tools/perf/builtin-mem.c
++++ b/tools/perf/builtin-mem.c
+@@ -68,8 +68,7 @@ dump_raw_samples(struct perf_tool *tool,
+ 	struct addr_location al;
+ 	const char *fmt;
+ 
+-	if (perf_event__preprocess_sample(event, machine, &al, sample,
+-				NULL) < 0) {
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+ 		fprintf(stderr, "problem processing %d event, skipping it.\n",
+ 				event->header.type);
+ 		return -1;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index f06a5a2..958a56a 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -304,8 +304,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 	struct addr_location al;
+ 	int ret;
+ 
+-	if (perf_event__preprocess_sample(event, machine, &al, sample,
+-					  machine->symbol_filter) < 0) {
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+ 		fprintf(stderr, "problem processing %d event, skipping it.\n",
+ 			event->header.type);
+ 		return -1;
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index a7d623f..2ad9d5b 100644
+index 33b2d83..a7d623f 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -361,10 +361,10 @@ static void print_sample_addr(union perf_event *event,
+@@ -520,7 +520,7 @@ static int process_sample_event(struct perf_tool *tool __maybe_unused,
+ 		return 0;
+ 	}
+ 
+-	if (perf_event__preprocess_sample(event, machine, &al, sample, 0) < 0) {
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+ 		pr_err("problem processing %d event, skipping it.\n",
+ 		       event->header.type);
+ 		return -1;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index a63ade2..e37521f 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -716,8 +716,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 	if (event->header.misc & PERF_RECORD_MISC_EXACT_IP)
+ 		top->exact_samples++;
+ 
+-	if (perf_event__preprocess_sample(event, machine, &al, sample,
+-					  machine->symbol_filter) < 0 ||
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0 ||
+ 	    al.filtered)
  		return;
  
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      sample->addr, &al, NULL);
-+			      sample->addr, &al);
- 	if (!al.map)
- 		thread__find_addr_map(thread, machine, cpumode, MAP__VARIABLE,
--				      sample->addr, &al, NULL);
-+				      sample->addr, &al);
+diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+index 89085a9..50bfb01 100644
+--- a/tools/perf/tests/hists_link.c
++++ b/tools/perf/tests/hists_link.c
+@@ -220,7 +220,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 			};
  
- 	al.cpu = sample->cpu;
- 	al.sym = NULL;
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index 8e0943b..eec1421 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -147,7 +147,7 @@ static int read_object_code(u64 addr, size_t len, u8 cpumode,
- 	pr_debug("Reading object code for memory address: %#"PRIx64"\n", addr);
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+-							  &sample, 0) < 0)
++							  &sample) < 0)
+ 				goto out;
  
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION, addr,
--			      &al, NULL);
-+			      &al);
- 	if (!al.map || !al.map->dso) {
- 		pr_debug("thread__find_addr_map failed\n");
- 		return -1;
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index 3a0f508..5295625 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -33,7 +33,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 	}
+ 			he = __hists__add_entry(&evsel->hists, &al, NULL, 1, 1);
+@@ -244,7 +244,7 @@ static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
+ 			};
  
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      event->ip.ip, &al, NULL);
-+			      event->ip.ip, &al);
+ 			if (perf_event__preprocess_sample(&event, machine, &al,
+-							  &sample, 0) < 0)
++							  &sample) < 0)
+ 				goto out;
  
- 	if (al.map != NULL)
- 		al.map->dso->hit = 1;
+ 			he = __hists__add_entry(&evsel->hists, &al, NULL, 1, 1);
 diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 9d301c9..49713ae 100644
+index cc7c0c9..f3cf771 100644
 --- a/tools/perf/util/event.c
 +++ b/tools/perf/util/event.c
-@@ -592,7 +592,7 @@ int perf_event__process(struct perf_tool *tool __maybe_unused,
- void thread__find_addr_map(struct thread *self,
- 			   struct machine *machine, u8 cpumode,
- 			   enum map_type type, u64 addr,
--			   struct addr_location *al, symbol_filter_t filter)
-+			   struct addr_location *al)
+@@ -683,8 +683,7 @@ void thread__find_addr_location(struct thread *thread, struct machine *machine,
+ int perf_event__preprocess_sample(const union perf_event *event,
+ 				  struct machine *machine,
+ 				  struct addr_location *al,
+-				  struct perf_sample *sample,
+-				  symbol_filter_t filter)
++				  struct perf_sample *sample)
  {
- 	struct map_groups *mg = &self->mg;
- 	bool load_map = false;
-@@ -663,7 +663,7 @@ try_again:
- 		 * must be done prior to using kernel maps.
- 		 */
- 		if (load_map)
--			map__load(al->map, filter);
-+			map__load(al->map, machine->symbol_filter);
- 		al->addr = al->map->map_ip(al->map, al->addr);
- 	}
- }
-@@ -672,8 +672,7 @@ void thread__find_addr_location(struct thread *thread, struct machine *machine,
- 				u8 cpumode, enum map_type type, u64 addr,
- 				struct addr_location *al)
- {
--	thread__find_addr_map(thread, machine, cpumode, type, addr, al,
--			      machine->symbol_filter);
-+	thread__find_addr_map(thread, machine, cpumode, type, addr, al);
- 	if (al->map != NULL)
- 		al->sym = map__find_symbol(al->map, al->addr,
- 					   machine->symbol_filter);
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread = machine__findnew_thread(machine, event->ip.pid);
 @@ -709,7 +708,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
  		machine__create_kernel_maps(machine);
  
  	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      event->ip.ip, al, machine->symbol_filter);
-+			      event->ip.ip, al);
+-			      event->ip.ip, al, filter);
++			      event->ip.ip, al, machine->symbol_filter);
  	dump_printf(" ...... dso: %s\n",
  		    al->map ? al->map->dso->long_name :
  			al->level == 'H' ? "[hypervisor]" : "<not found>");
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 0ab47d8..13c62c9 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -41,7 +41,7 @@ static inline struct map *thread__find_map(struct thread *self,
+@@ -727,7 +726,8 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 						   dso->long_name)))))
+ 			goto out_filtered;
  
- void thread__find_addr_map(struct thread *thread, struct machine *machine,
- 			   u8 cpumode, enum map_type type, u64 addr,
--			   struct addr_location *al, symbol_filter_t filter);
-+			   struct addr_location *al);
+-		al->sym = map__find_symbol(al->map, al->addr, filter);
++		al->sym = map__find_symbol(al->map, al->addr,
++					   machine->symbol_filter);
+ 	}
  
- void thread__find_addr_location(struct thread *thread, struct machine *machine,
- 				u8 cpumode, enum map_type type, u64 addr,
-diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-index abac3f9..2f891f7 100644
---- a/tools/perf/util/unwind.c
-+++ b/tools/perf/util/unwind.c
-@@ -272,7 +272,7 @@ static struct map *find_map(unw_word_t ip, struct unwind_info *ui)
- 	struct addr_location al;
+ 	if (symbol_conf.sym_list &&
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 6119a64..15db071 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -234,8 +234,7 @@ struct addr_location;
+ int perf_event__preprocess_sample(const union perf_event *self,
+ 				  struct machine *machine,
+ 				  struct addr_location *al,
+-				  struct perf_sample *sample,
+-				  symbol_filter_t filter);
++				  struct perf_sample *sample);
  
- 	thread__find_addr_map(ui->thread, ui->machine, PERF_RECORD_MISC_USER,
--			      MAP__FUNCTION, ip, &al, NULL);
-+			      MAP__FUNCTION, ip, &al);
- 	return al.map;
- }
+ const char *perf_event__name(unsigned int id);
  
-@@ -349,7 +349,7 @@ static int access_dso_mem(struct unwind_info *ui, unw_word_t addr,
- 	ssize_t size;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 4d9028e..de16a77 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1503,8 +1503,7 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
+ 	int print_oneline = print_opts & PRINT_IP_OPT_ONELINE;
+ 	char s = print_oneline ? ' ' : '\t';
  
- 	thread__find_addr_map(ui->thread, ui->machine, PERF_RECORD_MISC_USER,
--			      MAP__FUNCTION, addr, &al, NULL);
-+			      MAP__FUNCTION, addr, &al);
- 	if (!al.map) {
- 		pr_debug("unwind: no map for %lx\n", (unsigned long)addr);
- 		return -1;
+-	if (perf_event__preprocess_sample(event, machine, &al, sample,
+-					  NULL) < 0) {
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+ 		error("problem processing %d event, skipping it.\n",
+ 			event->header.type);
+ 		return;
 -- 
 1.8.1.4
 
