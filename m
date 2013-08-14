@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933057Ab3HNTEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 15:04:23 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:52947 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932946Ab3HNTEV (ORCPT
+	id S933099Ab3HNTEj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 15:04:39 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50167 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932946Ab3HNTEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 15:04:21 -0400
-Message-ID: <520BD4BD.3010300@cogentembedded.com>
-Date: Wed, 14 Aug 2013 23:04:29 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 14 Aug 2013 15:04:36 -0400
+Date: Wed, 14 Aug 2013 20:04:10 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, tobetter@gmail.com, patches@linaro.org
+Message-ID: <20130814190410.GO2401@sirena.org.uk>
+References: <1376476171-19072-1-git-send-email-tushar.behera@linaro.org>
+ <20130814182239.GC23847@kroah.com>
 MIME-Version: 1.0
-To: Fan Du <fan.du@windriver.com>
-CC: tglx@linutronix.de, Steffen Klassert <steffen.klassert@secunet.com>,
-        David Miller <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set
- was called
-References: <1375866296-15079-1-git-send-email-fan.du@windriver.com> <1375866296-15079-2-git-send-email-fan.du@windriver.com> <52021177.6020306@redhat.com> <520213F2.5090401@windriver.com> <520214C6.6000307@redhat.com> <520B4552.2000607@windriver.com>
-In-Reply-To: <520B4552.2000607@windriver.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kPJUzav3owWaKxsz"
+Content-Disposition: inline
+In-Reply-To: <20130814182239.GC23847@kroah.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] usb: misc: usb3503: Force late initialization
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 08/14/2013 12:52 PM, Fan Du wrote:
+--kPJUzav3owWaKxsz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  From e3929d4fdfad5b40fd8cad0e217597670d1aef54 Mon Sep 17 00:00:00 2001
-> From: Fan Du <fan.du@windriver.com>
-> Date: Wed, 14 Aug 2013 16:39:23 +0800
-> Subject: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set was called
+On Wed, Aug 14, 2013 at 11:22:39AM -0700, Greg KH wrote:
+> On Wed, Aug 14, 2013 at 03:59:31PM +0530, Tushar Behera wrote:
 
-    This header is not needed.
+> > Currently there is no other way to ensure that USB3503 chip is probed
+> > after the USB PHY has been initialized, hence the last resort.
 
-> When clock_was_set is called in case of system wall time change
-> or host resume from suspend state, use this notifier for places
-> where interested in this action, e.g Ipsec SA lifetime management.
+> Are you sure that deferred probing doesn't solve this issue?
 
-> Signed-off-by: Fan Du <fan.du@windriver.com>
+In order for deferred probing to help the device would need to acquire
+some resource from the parent USB controller once active, allowing it to
+defer when it fails to get that resource.  Currently there's nothing
+there for that and it's not clear that's sane and sensible (it'd be more
+obvious for it to be a child of the USB controller since that's what it
+really is). =20
 
-> v3:
->    -Beautify notifier with register/unregister API exported for other subsystem.
+We can't just treat it as a PHY (which is the obvious workaroud) since
+we do also need to use the built
+in PHY in the SoC.
 
-[...]
+--kPJUzav3owWaKxsz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-> index d19a5c2..f0404e4 100644
-> --- a/include/linux/hrtimer.h
-> +++ b/include/linux/hrtimer.h
-> @@ -461,4 +461,7 @@ extern u64 ktime_divns(const ktime_t kt, s64 div);
->   /* Show pending timers: */
->   extern void sysrq_timer_list_show(void);
->
-> +extern int register_clock_change_notifier(struct notifier_block *nb);
-> +extern int unregister_clock_change_notifier(struct notifier_block *nb);
-> +
->   #endif
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index 383319b..c6e6405 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -755,6 +755,24 @@ static inline void retrigger_next_event(void *arg) { }
->
->   #endif /* CONFIG_HIGH_RES_TIMERS */
->
-> +static ATOMIC_NOTIFIER_HEAD(clock_change_notifier_list);
-> +static int call_clock_change_notifiers(void)
-> +{
-> +    return atomic_notifier_call_chain(&clock_change_notifier_list, 0, 0);
-> +}
-> +
-> +int register_clock_change_notifier(struct notifier_block *nb)
-> +{
-> +    return atomic_notifier_chain_register(&clock_change_notifier_list, nb);
-> +}
-> +EXPORT_SYMBOL_GPL(register_clock_change_notifier);
-> +
-> +int unregister_clock_change_notifier(struct notifier_block *nb)
-> +{
-> +    return atomic_notifier_chain_unregister(&clock_change_notifier_list, nb);
-> +}
-> +EXPORT_SYMBOL_GPL(unregister_clock_change_notifier);
-> +
->   /*
->    * Clock realtime was set
->    *
-> @@ -773,6 +791,7 @@ void clock_was_set(void)
->       on_each_cpu(retrigger_next_event, NULL, 1);
->   #endif
->       timerfd_clock_was_set();
-> +    call_clock_change_notifiers();
->   }
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-    Your patch seems whitepsace damaged, i.e. a space is added before each 
-line starting with space.
+iQIcBAEBAgAGBQJSC9SnAAoJELSic+t+oim9/ZYP/1NZm8LplajSim/kqVu3zcHy
+TWh3/jHvomcSv7wBo9XBae8/Bs6d9+qNVEnTWPLH+NXjKIIbB08qPwkaPBoFkXdc
+zK25987O+9AWl0ho7jOOW8dm5l6r0ZZrAjV8YkWVWH7FkR2vn//YxQR0xN0oJDO+
+bHJ0ShB4XRoRwTq5WvjjCYgzr4H8OkDIYKv9jXFwhXK4+f4TC/G0v9f/Kf16JiPf
+9g0tgvMsv+GxWhCRgQuBparX3PFLuHB2sElTPb8s2WEPt8PXSGd4oHVi9L8KBoin
+57A7EkRITICETxhSApQtc7Cj1bcRcv33dOn4aXStnNA4c1UmKLVWiVtBRsLtmV8q
+9XvIOl7T6IgWha3av4EENVHFRWCX9HucDm62UyLHWDceDP2bD+G/UtOHs+l4slCb
+mthlpd9rnxCXnKCKLyNxkSVMrjCsqaZKUpTa6N1M75bTsGyxO7y5Zlcsx3HqUlQj
+aXC+IHAvH59LgfWj6F6LfW4EZbv1UEGxtegndWQbrIhPtZOodwuDcYRaH0WIOl3Z
+Fh9uBuVvz0DvSWh69/SFL40pzANcPNz7heGSj3F14y6YTwas2SBXpF/nHN5kayet
+rKhEDcAjCCxlFOKfwelJ7tk72Kd8UB0SzvgoZxaYeiglvqidKAlX86PMPxiO6P34
+vLCXTGfLXH9m+ZD/GH/u
+=mf3C
+-----END PGP SIGNATURE-----
 
-WBR, Sergei
-
+--kPJUzav3owWaKxsz--
