@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758964Ab3HNHHB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:07:01 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:49803 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757219Ab3HNHHA (ORCPT
+	id S1758829Ab3HNHOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:14:45 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:52294 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723Ab3HNHOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:07:00 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-1b-520b2c9203e4
-Date: Wed, 14 Aug 2013 16:07:05 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
+	Wed, 14 Aug 2013 03:14:44 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Bryan Wu <cooloney@gmail.com>,
+        Peter Meerwald <p.meerwald@bct-electronic.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
-Message-ID: <20130814070705.GA21133@bbox>
-References: <520B0B75.4030708@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520B0B75.4030708@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH v4 0/5] PCA9633: Add support to PCA9634 and fix some problems
+Date: Wed, 14 Aug 2013 09:14:21 +0200
+Message-Id: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Wed, Aug 14, 2013 at 12:45:41PM +0800, Xishi Qiu wrote:
-> A large free page buddy block will continue many times, so if the page 
-> is free, skip the whole page buddy block instead of one page.
-> 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+Add Support for the PCA9634 chip. Simimart to the 9633, but with 8 outputs instead of 4.
+Fix bug when 2 chips where present on the system, the ledclass will fail and the chip wont probe.
+Protect ledout register with a mutex to support updates of more than leds at the same time
+Fix device tree parsing
 
+v4: Rebase to latest leds-next and new patch to Fix the dt parsing
 
-Nitpick is it could change nr_scanned's result so that COMPACMIGRATE_SCANNED
-of vmstat could be smaller than old. It means that compaction efficiency would
-pretend to be better than old and if something on userspace have been depends
-on it, it would be broken. But I don't know such usecase so I will pass the
-decision to others. Anyway, I suppose this patch.
-If it's real concern, we can fix it with increasing nr_scanned by page_order.
+v3: Contains feedback from Bryan Wu
+Bryan: Rename pca9633 to pca963x
 
-Thanks.
+v2: Contains feedback from Peter Meerwald
+Peter: Fix typo on commit message. Add bus number to name
 
-Acked-by: Minchan Kim <minchan@kernel.org>
+Ricardo Ribalda Delgado (4):
+  leds-pca9633: Unique naming of the LEDs
+  leds-pca9633: Add mutex to the ledout register
+  leds-pca9633: Rename to leds-pca963x
+  leds-pca963x: Fix device tree parsing
 
-> ---
->  mm/compaction.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 05ccb4c..874bae1 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -520,9 +520,10 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			goto next_pageblock;
->  
->  		/* Skip if free */
-> -		if (PageBuddy(page))
-> +		if (PageBuddy(page)) {
-> +			low_pfn += (1 << page_order(page)) - 1;
->  			continue;
-> -
-> +		}
->  		/*
->  		 * For async migration, also only scan in MOVABLE blocks. Async
->  		 * migration is optimistic to see if the minimum amount of work
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+ drivers/leds/Kconfig                       |    2 +-
+ drivers/leds/Makefile                      |    2 +-
+ drivers/leds/leds-pca9633.c                |  435 --------------------------
+ drivers/leds/leds-pca963x.c                |  460 ++++++++++++++++++++++++++++
+ include/linux/platform_data/leds-pca9633.h |   41 ---
+ include/linux/platform_data/leds-pca963x.h |   42 +++
+ 6 files changed, 504 insertions(+), 478 deletions(-)
+ delete mode 100644 drivers/leds/leds-pca9633.c
+ create mode 100644 drivers/leds/leds-pca963x.c
+ delete mode 100644 include/linux/platform_data/leds-pca9633.h
+ create mode 100644 include/linux/platform_data/leds-pca963x.h
 
 -- 
-Kind regards,
-Minchan Kim
+1.7.10.4
+
