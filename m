@@ -1,117 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759633Ab3HNKBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:01:44 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:57328 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759542Ab3HNKBm convert rfc822-to-8bit (ORCPT
+	id S1759673Ab3HNKCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:02:53 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:57791 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab3HNKCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:01:42 -0400
-Message-ID: <520B5584.7030608@arm.com>
-Date: Wed, 14 Aug 2013 11:01:40 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 14 Aug 2013 06:02:51 -0400
+Date: Wed, 14 Aug 2013 14:02:48 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH -mm] mm: Unify pte_to_pgoff and pgoff_to_pte helpers
+Message-ID: <20130814100248.GO2869@moon>
+References: <20130814070059.GJ2869@moon>
+ <520B303D.2090206@zytor.com>
+ <20130814072453.GK2869@moon>
+ <520B3240.6030208@zytor.com>
+ <20130814003336.0fb2a275.akpm@linux-foundation.org>
+ <20130814074333.GM2869@moon>
+ <20130814010856.0098398b.akpm@linux-foundation.org>
+ <20130814082000.GN2869@moon>
+ <20130814095014.GA10849@gmail.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [GIT PULL] DT/core: cpu_ofnode updates for v3.12
-References: <5208E2D3.7060005@arm.com> <3356439.a21MloFP7n@vostro.rjw.lan>  <520A536C.3030600@arm.com> <520A7B00.8060405@arm.com> <1376428024.4255.14.camel@pasglop>
-In-Reply-To: <1376428024.4255.14.camel@pasglop>
-X-OriginalArrivalTime: 14 Aug 2013 10:01:38.0333 (UTC) FILETIME=[44663CD0:01CE98D5]
-X-MC-Unique: 113081411014000301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130814095014.GA10849@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/08/13 22:07, Benjamin Herrenschmidt wrote:
-> On Tue, 2013-08-13 at 19:29 +0100, Sudeep KarkadaNagesha wrote:
->> I don't understand completely the use of ibm,ppc-interrupt-server#s and
->> its implications on generic of_get_cpu_node implementation.
->> I see the PPC specific definition of of_get_cpu_node uses thread id only
->> in 2 instances. Based on that, I have tried to move all the other
->> instances to use generic definition.
->>
->> Let me know if the idea is correct.
+On Wed, Aug 14, 2013 at 11:50:14AM +0200, Ingo Molnar wrote:
+> > 
+> > Well, I'll have to check if it really doesn't generate additional 
+> > instructions in generated code, since it's hotpath. I'll ping back once 
+> > things are done.
 > 
-> No. The device-tree historically only represents cores, not HW threads, so
-> it makes sense to retrieve also the thread number corresponding to the CPU.
-> 
-Ok
+> An __always_inline should never do that.
 
-> However, the mechanism to represent HW threads in the device-tree is currently
-> somewhat platform specific (the ibm,ppc-interrupt-server#s).
-I see most of the callers pass NULL to thread id argument except 2
-instances in entire tree. If that's the case why can't we move to use
-generic of_get_cpu_node in most of those cases and have PPC specific
-implementation for the ones using thread id.
+Here is the final one, please ping me if something looks not as clean
+as it wanted to be and i'll tune code up, thanks!
 
-> 
-> So what you could do for now is:
-> 
->  - Have a generic version that always returns 0 as the thread, which is weak
-I would prefer to move to generic of_get_cpu_node where ever possible
-and rename the function that takes thread id rather than making generic
-one weak.
+To hpa@: I had to use explicit @mask because it allows to pass -1ul
+mask which is optimized off then by a compiler.
+---
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: [PATCH -mm] mm: Unify pte_to_pgoff and pgoff_to_pte helpers
 
-> 
->  - powerpc keeps its own implementation
-How about only in cases where it needs thread_id.
+Use unified pte_bfop helper to manipulate bits in pte/pgoff bitfield,
+and convert pte_to_pgoff/pgoff_to_pte to inlines.
 
-> 
->  - Start a discussion on the bindings (if not already there) to define threads
-> in a better way at which point the generic function can be updated.
-> 
-I am not sure if we need to define any new bindings. Excerpts from ePAPR
-(v1.1):
-"3.7.1 General Properties of CPU nodes
-The value of "reg" is a <prop-encoded-array> that defines a unique
-CPU/thread id for the CPU/threads represented by the CPU node.
-If a CPU supports more than one thread (i.e. multiple streams of
-execution) the reg property is an array with 1 element per thread. The
-#address-cells on the /cpus node specifies how many cells each element
-of the array takes. Software can determine the number of threads by
-dividing the size of reg by the parent node's #address-cells."
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+---
+ arch/x86/include/asm/pgtable-2level.h |   70 +++++++++++++++++++++-------------
+ 1 file changed, 44 insertions(+), 26 deletions(-)
 
-And this is exactly in agreement to what's implemented in the generic
-of_get_cpu_node:
-
-for_each_child_of_node(cpus, cpun) {
-        if (of_node_cmp(cpun->type, "cpu"))
-                continue;
-        cell = of_get_property(cpun, "reg", &prop_len);
-        if (!cell) {
-                pr_warn("%s: missing reg property\n", cpun->full_name);
-                continue;
-        }
-        prop_len /= sizeof(*cell);
-        while (prop_len) {
-                hwid = of_read_number(cell, ac);
-                prop_len -= ac;
-                if (arch_match_cpu_phys_id(cpu, hwid))
-                        return cpun;
-        }
-}
-
-Yes this doesn't cover the historical "ibm,ppc-interrupt-server#s", for
-which we can have PPC specific wrapper above the generic one i.e. get
-the cpu node and then parse for thread id under custom property.
-
-Let me know your thoughts.
-
-Regards,
-Sudeep
-
-
-
+Index: linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
+===================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/pgtable-2level.h
++++ linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
+@@ -55,8 +55,12 @@ static inline pmd_t native_pmdp_get_and_
+ #define native_pmdp_get_and_clear(xp) native_local_pmdp_get_and_clear(xp)
+ #endif
+ 
+-#define _mfrob(v,r,m,l)		((((v) >> (r)) & (m)) << (l))
+-#define __frob(v,r,l)		(((v) >> (r)) << (l))
++/* Bit manipulation helper on pte/pgoff entry */
++static inline unsigned long pte_bfop(unsigned long value, unsigned int rightshift,
++				     unsigned long mask, unsigned int leftshift)
++{
++	return ((value >> rightshift) & mask) << leftshift;
++}
+ 
+ #ifdef CONFIG_MEM_SOFT_DIRTY
+ 
+@@ -82,19 +86,26 @@ static inline pmd_t native_pmdp_get_and_
+ #define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
+ #define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
+ 
+-#define pte_to_pgoff(pte)							    \
+-	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
+-	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
+-	 _mfrob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3, PTE_FILE_LSHIFT3) + \
+-	 __frob((pte).pte_low, PTE_FILE_SHIFT4, PTE_FILE_LSHIFT4))
+-
+-#define pgoff_to_pte(off)							\
+-	((pte_t) { .pte_low =							\
+-	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
+-	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
+-	_mfrob(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3, PTE_FILE_SHIFT3)	+	\
+-	__frob(off, PTE_FILE_LSHIFT4, PTE_FILE_SHIFT4)			+	\
+-	_PAGE_FILE })
++static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
++{
++	return (pgoff_t)
++		(pte_bfop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		   +
++		 pte_bfop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
++		 pte_bfop(pte.pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3,  PTE_FILE_LSHIFT3) +
++		 pte_bfop(pte.pte_low, PTE_FILE_SHIFT4,           -1UL,  PTE_FILE_LSHIFT4));
++}
++
++static __always_inline pte_t pgoff_to_pte(pgoff_t off)
++{
++	return (pte_t){
++		.pte_low =
++			pte_bfop(off,                0, PTE_FILE_MASK1,  PTE_FILE_SHIFT1) +
++			pte_bfop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2,  PTE_FILE_SHIFT2) +
++			pte_bfop(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3,  PTE_FILE_SHIFT3) +
++			pte_bfop(off, PTE_FILE_LSHIFT4,           -1UL,  PTE_FILE_SHIFT4) +
++			_PAGE_FILE,
++	};
++}
+ 
+ #else /* CONFIG_MEM_SOFT_DIRTY */
+ 
+@@ -120,17 +131,24 @@ static inline pmd_t native_pmdp_get_and_
+ #define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
+ #define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
+ 
+-#define pte_to_pgoff(pte)							    \
+-	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
+-	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
+-	 __frob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_LSHIFT3))
+-
+-#define pgoff_to_pte(off)							\
+-	((pte_t) { .pte_low =							\
+-	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
+-	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
+-	__frob(off, PTE_FILE_LSHIFT3, PTE_FILE_SHIFT3)			+	\
+-	_PAGE_FILE })
++static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
++{
++	return (pgoff_t)
++		(pte_bfop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		   +
++		 pte_bfop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
++		 pte_bfop(pte.pte_low, PTE_FILE_SHIFT3,           -1UL,  PTE_FILE_LSHIFT3));
++}
++
++static __always_inline pte_t pgoff_to_pte(pgoff_t off)
++{
++	return (pte_t){
++		.pte_low =
++			pte_bfop(off,                0, PTE_FILE_MASK1,  PTE_FILE_SHIFT1) +
++			pte_bfop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2,  PTE_FILE_SHIFT2) +
++			pte_bfop(off, PTE_FILE_LSHIFT3,           -1UL,  PTE_FILE_SHIFT3) +
++			_PAGE_FILE,
++	};
++}
+ 
+ #endif /* CONFIG_MEM_SOFT_DIRTY */
+ 
