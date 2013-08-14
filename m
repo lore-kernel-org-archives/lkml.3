@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932307Ab3HNJLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:11:49 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:44583
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932204Ab3HNJLp (ORCPT
+	id S1759716Ab3HNJNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:13:53 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4384 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932277Ab3HNJLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:11:45 -0400
+	Wed, 14 Aug 2013 05:11:48 -0400
 X-IronPort-AV: E=Sophos;i="4.89,875,1367964000"; 
-   d="scan'208";a="23908326"
+   d="scan'208";a="23908333"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Liam Girdwood <lgirdwood@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Stephen Warren <swarren@wwwdotorg.org>, alsa-devel@alsa-project.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/29] ASoC: tegra20-ac97: simplify use of devm_ioremap_resource
-Date: Wed, 14 Aug 2013 11:11:19 +0200
-Message-Id: <1376471493-22215-16-git-send-email-Julia.Lawall@lip6.fr>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: kernel-janitors@vger.kernel.org,
+        =?UTF-8?q?Terje=20Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 22/29] host1x/{dev.c,drm/hdmi.c}: simplify use of devm_ioremap_resource
+Date: Wed, 14 Aug 2013 11:11:26 +0200
+Message-Id: <1376471493-22215-23-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -29,6 +29,9 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Remove unneeded error handling on the result of a call to
 platform_get_resource when the value is passed to devm_ioremap_resource.
+
+Move the call to platform_get_resource adjacent to the call to
+devm_ioremap_resource to make the connection between them more clear.
 
 A simplified version of the semantic patch that makes this change is as
 follows: (http://coccinelle.lip6.fr/)
@@ -51,24 +54,47 @@ identifier l;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- sound/soc/tegra/tegra20_ac97.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/gpu/host1x/dev.c      |    7 +------
+ drivers/gpu/host1x/drm/hdmi.c |    3 ---
+ 2 files changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/sound/soc/tegra/tegra20_ac97.c b/sound/soc/tegra/tegra20_ac97.c
-index 00106b5..ae27bcd 100644
---- a/sound/soc/tegra/tegra20_ac97.c
-+++ b/sound/soc/tegra/tegra20_ac97.c
-@@ -334,12 +334,6 @@ static int tegra20_ac97_platform_probe(struct platform_device *pdev)
- 	}
+diff --git a/drivers/gpu/host1x/dev.c b/drivers/gpu/host1x/dev.c
+index 28e28a2..e615edd 100644
+--- a/drivers/gpu/host1x/dev.c
++++ b/drivers/gpu/host1x/dev.c
+@@ -98,12 +98,6 @@ static int host1x_probe(struct platform_device *pdev)
+ 	if (!id)
+ 		return -EINVAL;
  
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem) {
--		dev_err(&pdev->dev, "No memory resource\n");
--		ret = -ENODEV;
--		goto err_clk_put;
+-	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!regs) {
+-		dev_err(&pdev->dev, "failed to get registers\n");
+-		return -ENXIO;
 -	}
 -
- 	regs = devm_ioremap_resource(&pdev->dev, mem);
- 	if (IS_ERR(regs)) {
- 		ret = PTR_ERR(regs);
+ 	syncpt_irq = platform_get_irq(pdev, 0);
+ 	if (syncpt_irq < 0) {
+ 		dev_err(&pdev->dev, "failed to get IRQ\n");
+@@ -120,6 +114,7 @@ static int host1x_probe(struct platform_device *pdev)
+ 	/* set common host1x device data */
+ 	platform_set_drvdata(pdev, host);
+ 
++	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	host->regs = devm_ioremap_resource(&pdev->dev, regs);
+ 	if (IS_ERR(host->regs))
+ 		return PTR_ERR(host->regs);
+diff --git a/drivers/gpu/host1x/drm/hdmi.c b/drivers/gpu/host1x/drm/hdmi.c
+index 01097da..9ffece6 100644
+--- a/drivers/gpu/host1x/drm/hdmi.c
++++ b/drivers/gpu/host1x/drm/hdmi.c
+@@ -1248,9 +1248,6 @@ static int tegra_hdmi_probe(struct platform_device *pdev)
+ 		return err;
+ 
+ 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!regs)
+-		return -ENXIO;
+-
+ 	hdmi->regs = devm_ioremap_resource(&pdev->dev, regs);
+ 	if (IS_ERR(hdmi->regs))
+ 		return PTR_ERR(hdmi->regs);
 
