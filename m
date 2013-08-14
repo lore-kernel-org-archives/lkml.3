@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759525Ab3HNIUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 04:20:21 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:45401 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759459Ab3HNIUO (ORCPT
+	id S1759514Ab3HNIWH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 04:22:07 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:36504 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759493Ab3HNIWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 04:20:14 -0400
-Date: Wed, 14 Aug 2013 12:20:00 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
-        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH -mm] mm: Unify pte_to_pgoff and pgoff_to_pte helpers
-Message-ID: <20130814082000.GN2869@moon>
-References: <20130814070059.GJ2869@moon>
- <520B303D.2090206@zytor.com>
- <20130814072453.GK2869@moon>
- <520B3240.6030208@zytor.com>
- <20130814003336.0fb2a275.akpm@linux-foundation.org>
- <20130814074333.GM2869@moon>
- <20130814010856.0098398b.akpm@linux-foundation.org>
+	Wed, 14 Aug 2013 04:22:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130814010856.0098398b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFgnuDetTVYayBABNPhME15b+b6qUtJX2hBaJ6y4+gOSgGFwdQ@mail.gmail.com>
+References: <1376377766-2594-1-git-send-email-chenxg@marvell.com>
+	<CAKohpo=QKPvqUcQVsbbSQdWOOi5L-P2CBFzcfMsobs8uGpLkVw@mail.gmail.com>
+	<CAFgnuDes_F7Q5CHbXKC=ndrn9Gr3PJfGj0QvDXA-FuGcq41CHQ@mail.gmail.com>
+	<CAKohponD2LdDsJy=UJCf-1yANjyPjmAyokV5a4HOSJn_DMJVhA@mail.gmail.com>
+	<CAFgnuDetTVYayBABNPhME15b+b6qUtJX2hBaJ6y4+gOSgGFwdQ@mail.gmail.com>
+Date: Wed, 14 Aug 2013 13:52:01 +0530
+Message-ID: <CAKohpoksGB6bBtFF4DaqqLME2kpDve5uMycZDCXahaigdRhwKQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: Add governor operation ongoing flag
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Xiaoguang Chen <chenxg.marvell@gmail.com>
+Cc: Xiaoguang Chen <chenxg@marvell.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 01:08:56AM -0700, Andrew Morton wrote:
-> > 
-> > > Can it be written in C with types and proper variable names and such
-> > > radical stuff?
-> > 
-> > Could you elaborate? You mean inline helper or macro with type checks?
-> 
-> /*
->  * description goes here
->  */
-> static inline pteval_t pte_bfop(pteval_t val, int rightshift, ...)
-> {
-> 	...
-> }
-> 
-> So much better!  We really should only implement code in a macro if it
-> *has* to be done as a macro and I don't think that's the case here?
+On 14 August 2013 13:49, Xiaoguang Chen <chenxg.marvell@gmail.com> wrote:
+> Yes, "START (If STOP passed)", this is important,  we don't have this
+> patch on our code base, So even Process B's STOP failed(as governor
+> enable flag is set to false by process A already ), it can still do
+> START operation, So my problem occurs.
+> My problem is that I see ondemand governor is started twice during
+> frequent governor switch and cpu hotplug stress test.
+>
+> The After seeing your patch for the return value checking, I think my
+> problem should not occur.
+> This issue really botherred me for a long time. :(
 
-Well, I'll have to check if it really doesn't generate additional
-instructions in generated code, since it's hotpath. I'll ping back
-once things are done.
+Exactly, the problem was users of this API were abusing it as they didn't
+cared for its return value. I hope that is fixed widely now and in case
+some places are still left, they should be fixed as well.
+
+--
+viresh
