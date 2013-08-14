@@ -1,184 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440Ab3HNXGZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:06:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31772 "EHLO mx1.redhat.com"
+	id S933476Ab3HNXHE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 19:07:04 -0400
+Received: from imap.thunk.org ([74.207.234.97]:43784 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933229Ab3HNXGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:06:23 -0400
-Message-ID: <1376521578.13642.65.camel@ul30vt.home>
-Subject: Re: [PATCH] vfio-pci: PCI hot reset interface
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Date: Wed, 14 Aug 2013 17:06:18 -0600
-In-Reply-To: <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
-References: <20130814200845.21923.64284.stgit@bling.home>
-	 <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933235Ab3HNXG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 19:06:59 -0400
+Date: Wed, 14 Aug 2013 19:06:48 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Dave Hansen <dave.hansen@linux.intel.com>, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, david@fromorbit.com,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+Message-ID: <20130814230648.GD22316@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Hansen <dave.hansen@intel.com>,
+	Dave Hansen <dave.hansen@linux.intel.com>,
+	linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+	linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
+	LKML <linux-kernel@vger.kernel.org>, david@fromorbit.com,
+	Tim Chen <tim.c.chen@linux.intel.com>,
+	Andi Kleen <ak@linux.intel.com>,
+	Andy Lutomirski <luto@amacapital.net>
+References: <520BB9EF.5020308@linux.intel.com>
+ <20130814194359.GA22316@thunk.org>
+ <520BED7A.4000903@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520BED7A.4000903@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-14 at 16:42 -0600, Bjorn Helgaas wrote:
-> [+cc Al, linux-fsdevel for fdget/fdput usage]
+On Wed, Aug 14, 2013 at 01:50:02PM -0700, Dave Hansen wrote:
 > 
-> On Wed, Aug 14, 2013 at 2:10 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > The current VFIO_DEVICE_RESET interface only maps to PCI use cases
-> > where we can isolate the reset to the individual PCI function.  This
-> > means the device must support FLR (PCIe or AF), PM reset on D3hot->D0
-> > transition, device specific reset, or be a singleton device on a bus
-> > for a secondary bus reset.  FLR does not have widespread support,
-> > PM reset is not very reliable, and bus topology is dictated by the
-> > system and device design.  We need to provide a means for a user to
-> > induce a bus reset in cases where the existing mechanisms are not
-> > available or not reliable.
-> >
-> > This device specific extension to VFIO provides the user with this
-> > ability.  Two new ioctls are introduced:
-> >  - VFIO_DEVICE_PCI_GET_HOT_RESET_INFO
-> >  - VFIO_DEVICE_PCI_HOT_RESET
-> >
-> > The first provides the user with information about the extent of
-> > devices affected by a hot reset.  This is essentially a list of
-> > devices and the IOMMU groups they belong to.  The user may then
-> > initiate a hot reset by calling the second ioctl.  We must be
-> > careful that the user has ownership of all the affected devices
-> > found via the first ioctl, so the second ioctl takes a list of file
-> > descriptors for the VFIO groups affected by the reset.  Each group
-> > must have IOMMU protection established for the ioctl to succeed.
-> >
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> >
-> > This patch is dependent on v5 "pci: bus and slot reset interfaces" as
-> > well as "pci: Add probe functions for bus and slot reset".
-> >
-> >  drivers/vfio/pci/vfio_pci.c |  272 +++++++++++++++++++++++++++++++++++++++++++
-> >  include/uapi/linux/vfio.h   |   38 ++++++
-> >  2 files changed, 309 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-> > index cef6002..eb69bf3 100644
-> > --- a/drivers/vfio/pci/vfio_pci.c
-> > +++ b/drivers/vfio/pci/vfio_pci.c
-> > @@ -227,6 +227,97 @@ static int vfio_pci_get_irq_count(struct vfio_pci_device *vdev, int irq_type)
-> >         return 0;
-> >  }
-> >
-> > +static int vfio_pci_count_devs(struct pci_dev *pdev, void *data)
-> > +{
-> > +       (*(int *)data)++;
-> > +       return 0;
-> > +}
-> > +
-> > +struct vfio_pci_fill_info {
-> > +       int max;
-> > +       int cur;
-> > +       struct vfio_pci_dependent_device *devices;
-> > +};
-> > +
-> > +static int vfio_pci_fill_devs(struct pci_dev *pdev, void *data)
-> > +{
-> > +       struct vfio_pci_fill_info *info = data;
-> > +       struct iommu_group *iommu_group;
-> > +
-> > +       if (info->cur == info->max)
-> > +               return -EAGAIN; /* Something changed, try again */
-> > +
-> > +       iommu_group = iommu_group_get(&pdev->dev);
-> > +       if (!iommu_group)
-> > +               return -EPERM; /* Cannot reset non-isolated devices */
-> > +
-> > +       info->devices[info->cur].group_id = iommu_group_id(iommu_group);
-> > +       info->devices[info->cur].segment = pci_domain_nr(pdev->bus);
-> > +       info->devices[info->cur].bus = pdev->bus->number;
-> > +       info->devices[info->cur].devfn = pdev->devfn;
-> > +       info->cur++;
-> > +       iommu_group_put(iommu_group);
-> > +       return 0;
-> > +}
-> > +
-> > +struct vfio_pci_group {
-> > +       struct vfio_group *group;
-> > +       int id;
-> > +};
-> > +
-> > +struct vfio_pci_group_info {
-> > +       int count;
-> > +       struct vfio_pci_group *groups;
-> > +};
-> > +
-> > +static int vfio_pci_validate_devs(struct pci_dev *pdev, void *data)
-> > +{
-> > +       struct vfio_pci_group_info *info = data;
-> > +       struct iommu_group *group;
-> > +       int id, i;
-> > +
-> > +       group = iommu_group_get(&pdev->dev);
-> > +       if (!group)
-> > +               return -EPERM;
-> > +
-> > +       id = iommu_group_id(group);
-> > +
-> > +       for (i = 0; i < info->count; i++)
-> > +               if (info->groups[i].id == id)
-> > +                       break;
-> > +
-> > +       iommu_group_put(group);
-> > +
-> > +       return (i == info->count) ? -EINVAL : 0;
-> > +}
-> > +
-> > +static int vfio_pci_for_each_slot_or_bus(struct pci_dev *pdev,
-> > +                                        int (*fn)(struct pci_dev *,
-> > +                                                  void *data), void *data,
-> > +                                        bool slot)
-> > +{
-> > +       struct pci_dev *tmp;
-> > +       int ret = 0;
-> > +
-> > +       list_for_each_entry(tmp, &pdev->bus->devices, bus_list) {
-> > +               if (slot && tmp->slot != pdev->slot)
-> > +                       continue;
-> > +
-> > +               ret = fn(tmp, data);
-> > +               if (ret)
-> > +                       break;
-> > +
-> > +               if (tmp->subordinate) {
-> > +                       ret = vfio_pci_for_each_slot_or_bus(tmp, fn,
-> > +                                                           data, false);
-> > +                       if (ret)
-> > +                               break;
-> > +               }
-> > +       }
-> > +
-> > +       return ret;
-> > +}
-> 
-> vfio_pci_for_each_slot_or_bus() isn't really vfio-specific, is it?
+> Would a plain old fallocate() do the trick, or does it actually need
+> zeros written to it?
 
-It's not, I originally has callbacks split out as PCI patches but I was
-able to simplify some things in the code by customizing it to my usage,
-so I left it here.
+It would be better to write zeros to it, so we aren't measuring the
+cost of the unwritten->written conversion.
 
-> I mean, traversing the PCI hierarchy doesn't require vfio knowledge.  I
-> think this loop (walking the bus->devices list) skips devices on
-> "virtual buses" that may be added for SR-IOV.  I'm not sure that
-> pci_walk_bus() handles that correctly either, but at least if you used
-> that, we could fix the problem in one place.
+We could do a different test where at the end of each while loop, we
+truncate the file and then do an fallocate, at which point we could be
+measuring the scalability of the unwritten->written conversion as well
+as the write page fault.  And that might be a useful thing to do at
+some point.
 
-I didn't know about pci_walk_bus(), I'll look into switching to it.
-Thanks,
+But I'd suggest focusing on just the write page fault first, and then
+once we're sure we've improved the scalability of that micro-operation
+as much as possible, we can expand our scalability testing to include
+either writing into fallocated space, or doing extending writes.
 
-Alex
+Cheers,
 
+						- Ted
