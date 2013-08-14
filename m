@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760312Ab3HNTub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 15:50:31 -0400
-Received: from 8bytes.org ([85.214.48.195]:51371 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760261Ab3HNTua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 15:50:30 -0400
-From: Joerg Roedel <joro@8bytes.org>
-To: Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH] ARM: integrator: Make sure INTEGRATOR_AP depends on PCI
-Date: Wed, 14 Aug 2013 21:50:18 +0200
-Message-Id: <1376509818-22163-1-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.7.9.5
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Aug 14 21:50:28 2013
-X-DSPAM-Confidence: 0.9990
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 520bdf8420865169947975
+	id S933060Ab3HNTyQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 15:54:16 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:52302 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932813Ab3HNTyP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 15:54:15 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+	<520BD9E0.8050304@mit.edu>
+Date: Wed, 14 Aug 2013 12:53:48 -0700
+In-Reply-To: <520BD9E0.8050304@mit.edu> (Andy Lutomirski's message of "Wed, 14
+	Aug 2013 12:26:24 -0700")
+Message-ID: <8761v882wj.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/TCPcQgSAg/VY+cUH0iXShZ809nZUUF60=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0861]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
+X-Spam-Relay-Country: 
+Subject: Re: DoS with unprivileged mounts
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add this dependency to the Kconfig file to fix the following
-build error when CONFIG_INTEGRATOR_AP is set but CONFIG_PCI
-is not:
+Andy Lutomirski <luto@amacapital.net> writes:
 
-  LD      init/built-in.o
-arch/arm/mach-integrator/built-in.o: In function `ap_map_io':
-integrator_cp.c:(.init.text+0x570): undefined reference to `pci_v3_early_init'
-make[1]: *** [vmlinux] Error 1
-make: *** [sub-make] Error 2
+> On 08/14/2013 10:42 AM, Miklos Szeredi wrote:
+>> There's a simple and effective way to prevent unlink(2) and rename(2)
+>> from operating on any file or directory by simply mounting something
+>> on it.  In any mount instance in any namespace.
+>> 
+>> Was this considered in the unprivileged mount design?
+>> 
+>> The solution is also theoretically simple: mounts in unpriv namespaces
+>> are marked "volatile" and are dissolved on an unlink type operation.
+>
+> I'd actually prefer the reverse: unprivileged mounts don't prevent
+> unlink and rename.  If the dentry goes away, then the mount could still
+> exist, sans underlying file.  (This is already supported on network
+> filesystems.)
 
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
----
- arch/arm/mach-integrator/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Of course we do this in network filesystems by pretending the
+rename/unlink did not actually happen.  The vfs insists that it be lied
+to instead of mirroring what actually happened.
 
-diff --git a/arch/arm/mach-integrator/Kconfig b/arch/arm/mach-integrator/Kconfig
-index abeff25..be16569 100644
---- a/arch/arm/mach-integrator/Kconfig
-+++ b/arch/arm/mach-integrator/Kconfig
-@@ -9,6 +9,7 @@ config ARCH_INTEGRATOR_AP
- 	select SERIAL_AMBA_PL010
- 	select SERIAL_AMBA_PL010_CONSOLE
- 	select SOC_BUS
-+	depends on PCI
- 	help
- 	  Include support for the ARM(R) Integrator/AP and
- 	  Integrator/PP2 platforms.
--- 
-1.7.9.5
+Again all of this is a question about efficient data structures and not
+really one of semantics.  Can either semantic be implemented in such a
+way that it does not slow down the vfs?
 
+Eric
 
