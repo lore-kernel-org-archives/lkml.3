@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab3HNKhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:37:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34472 "EHLO
+	id S932527Ab3HNKy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:54:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34477 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932355Ab3HNKhh (ORCPT
+	with ESMTP id S932369Ab3HNKhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:37:37 -0400
+	Wed, 14 Aug 2013 06:37:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
+Cc: Kamal Mostafa <kamal@canonical.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 23/75] livelock avoidance in sget()
-Date: Wed, 14 Aug 2013 11:36:12 +0100
-Message-Id: <1376476624-10011-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 24/75] drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
+Date: Wed, 14 Aug 2013 11:36:13 +0100
+Message-Id: <1376476624-10011-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -27,102 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Kamal Mostafa <kamal@canonical.com>
 
-commit acfec9a5a892f98461f52ed5770de99a3e571ae2 upstream.
+commit e85843bec6c2ea7c10ec61238396891cc2b753a9 upstream.
 
-Eric Sandeen has found a nasty livelock in sget() - take a mount(2) about
-to fail.  The superblock is on ->fs_supers, ->s_umount is held exclusive,
-->s_active is 1.  Along comes two more processes, trying to mount the same
-thing; sget() in each is picking that superblock, bumping ->s_count and
-trying to grab ->s_umount.  ->s_active is 3 now.  Original mount(2)
-finally gets to deactivate_locked_super() on failure; ->s_active is 2,
-superblock is still ->fs_supers because shutdown will *not* happen until
-->s_active hits 0.  ->s_umount is dropped and now we have two processes
-chasing each other:
-s_active = 2, A acquired ->s_umount, B blocked
-A sees that the damn thing is stillborn, does deactivate_locked_super()
-s_active = 1, A drops ->s_umount, B gets it
-A restarts the search and finds the same superblock.  And bumps it ->s_active.
-s_active = 2, B holds ->s_umount, A blocked on trying to get it
-... and we are in the earlier situation with A and B switched places.
+BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=47941
+BugLink: https://bugs.launchpad.net/bugs/1163720
+BugLink: https://bugs.launchpad.net/bugs/1162026
 
-The root cause, of course, is that ->s_active should not grow until we'd
-got MS_BORN.  Then failing ->mount() will have deactivate_locked_super()
-shut the damn thing down.  Fortunately, it's easy to do - the key point
-is that grab_super() is called only for superblocks currently on ->fs_supers,
-so it can bump ->s_count and grab ->s_umount first, then check MS_BORN and
-bump ->s_active; we must never increment ->s_count for superblocks past
-->kill_sb(), but grab_super() is never called for those.
+Some machines suffer from non-functional backlight controls if
+BLM_PCH_PWM_ENABLE is set, so provide a quirk to avoid doing so.
+Apply this quirk to Dell XPS 13 models.
 
-The bug is pretty old; we would've caught it by now, if not for accidental
-exclusion between sget() for block filesystems; the things like cgroup or
-e.g. mtd-based filesystems don't have anything of that sort, so they get
-bitten.  The right way to deal with that is obviously to fix sget()...
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Tested-by: Eric Griffith <EGriffith92@gmail.com>
+Tested-by: Kent Baxley <kent.baxley@canonical.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[ kamal: backport to 3.5 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/super.c | 25 ++++++++++---------------
- 1 file changed, 10 insertions(+), 15 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.h      |  1 +
+ drivers/gpu/drm/i915/intel_display.c | 16 ++++++++++++++++
+ drivers/gpu/drm/i915/intel_lvds.c    |  3 ++-
+ 3 files changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index cf00177..3c520a5 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -298,19 +298,19 @@ EXPORT_SYMBOL(deactivate_super);
-  *	and want to turn it into a full-blown active reference.  grab_super()
-  *	is called with sb_lock held and drops it.  Returns 1 in case of
-  *	success, 0 if we had failed (superblock contents was already dead or
-- *	dying when grab_super() had been called).
-+ *	dying when grab_super() had been called).  Note that this is only
-+ *	called for superblocks not in rundown mode (== ones still on ->fs_supers
-+ *	of their type), so increment of ->s_count is OK here.
-  */
- static int grab_super(struct super_block *s) __releases(sb_lock)
- {
--	if (atomic_inc_not_zero(&s->s_active)) {
--		spin_unlock(&sb_lock);
--		return 1;
--	}
--	/* it's going away */
- 	s->s_count++;
- 	spin_unlock(&sb_lock);
--	/* wait for it to die */
- 	down_write(&s->s_umount);
-+	if ((s->s_flags & MS_BORN) && atomic_inc_not_zero(&s->s_active)) {
-+		put_super(s);
-+		return 1;
-+	}
- 	up_write(&s->s_umount);
- 	put_super(s);
- 	return 0;
-@@ -440,11 +440,6 @@ retry:
- 				destroy_super(s);
- 				s = NULL;
- 			}
--			down_write(&old->s_umount);
--			if (unlikely(!(old->s_flags & MS_BORN))) {
--				deactivate_locked_super(old);
--				goto retry;
--			}
- 			return old;
- 		}
- 	}
-@@ -677,10 +672,10 @@ restart:
- 		if (hlist_unhashed(&sb->s_instances))
- 			continue;
- 		if (sb->s_bdev == bdev) {
--			if (grab_super(sb)) /* drops sb_lock */
--				return sb;
--			else
-+			if (!grab_super(sb))
- 				goto restart;
-+			up_write(&sb->s_umount);
-+			return sb;
- 		}
- 	}
- 	spin_unlock(&sb_lock);
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index d85db22..bb95eda 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -329,6 +329,7 @@ enum intel_pch {
+ #define QUIRK_PIPEA_FORCE (1<<0)
+ #define QUIRK_LVDS_SSC_DISABLE (1<<1)
+ #define QUIRK_INVERT_BRIGHTNESS (1<<2)
++#define QUIRK_NO_PCH_PWM_ENABLE (1<<3)
+ 
+ struct intel_fbdev;
+ struct intel_fbc_work;
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 290d89d..05f75ff 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6874,6 +6874,17 @@ static void quirk_invert_brightness(struct drm_device *dev)
+ 	DRM_INFO("applying inverted panel brightness quirk\n");
+ }
+ 
++/*
++ * Some machines (Dell XPS13) suffer broken backlight controls if
++ * BLM_PCH_PWM_ENABLE is set.
++ */
++static void quirk_no_pcm_pwm_enable(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
++	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
++}
++
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+@@ -6949,6 +6960,11 @@ static struct intel_quirk intel_quirks[] = {
+ 
+ 	/* Acer/Packard Bell NCL20 */
+ 	{ 0x2a42, 0x1025, 0x034b, quirk_invert_brightness },
++
++	/* Dell XPS13 HD Sandy Bridge */
++	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
++	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
++	{ 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
+ };
+ 
+ static void intel_init_quirks(struct drm_device *dev)
+diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
+index d18c49a..440ed88 100644
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -1097,7 +1097,8 @@ bool intel_lvds_init(struct drm_device *dev)
+ 		goto failed;
+ 
+ out:
+-	if (HAS_PCH_SPLIT(dev)) {
++	if (HAS_PCH_SPLIT(dev) &&
++	    !(dev_priv->quirks & QUIRK_NO_PCH_PWM_ENABLE)) {
+ 		u32 pwm;
+ 
+ 		pipe = (I915_READ(PCH_LVDS) & LVDS_PIPEB_SELECT) ? 1 : 0;
 -- 
 1.8.3.2
 
