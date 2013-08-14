@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760171Ab3HNTgn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 15:36:43 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:57535 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758765Ab3HNTgl (ORCPT
+	id S1760123Ab3HNTid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 15:38:33 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:37117 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758587Ab3HNTic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 15:36:41 -0400
+	Wed, 14 Aug 2013 15:38:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <e343e827df7be24f11ecdaf849f2874bf1ba4b24.1375964117.git.viresh.kumar@linaro.org>
-References: <cover.1375964117.git.viresh.kumar@linaro.org>
-	<e343e827df7be24f11ecdaf849f2874bf1ba4b24.1375964117.git.viresh.kumar@linaro.org>
-Date: Wed, 14 Aug 2013 21:36:40 +0200
-Message-ID: <CACRpkda29WcHePh00w_7N3B1OtGh=-i=1_PyB4MNhy=YJ-nxyg@mail.gmail.com>
-Subject: Re: [PATCH 11/35] cpufreq: dbx500: use cpufreq_table_validate_and_show()
+In-Reply-To: <62bf3fa5c57dd9155443dedb9116c18e2ac0689e.1374451989.git.joe@perches.com>
+References: <cover.1374451988.git.joe@perches.com>
+	<62bf3fa5c57dd9155443dedb9116c18e2ac0689e.1374451989.git.joe@perches.com>
+Date: Wed, 14 Aug 2013 21:38:31 +0200
+Message-ID: <CACRpkdaQ8tOeH8vemKnecgbSe5FagqYr9ZXDDhuSXWtgq+vyvg@mail.gmail.com>
+Subject: Re: [PATCH 13/18] MAINTAINERS: Update sirf patterns
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>, cpufreq@vger.kernel.org,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Barry Song <21cnbao@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 8, 2013 at 3:48 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+On Mon, Jul 22, 2013 at 2:15 AM, Joe Perches <joe@perches.com> wrote:
 
-> Lets use cpufreq_table_validate_and_show() instead of calling
-> cpufreq_frequency_table_cpuinfo() and cpufreq_frequency_table_get_attr().
+> commit 3370dc916c ("pinctrl:sirf:re-arch and add support for
+> new SiRFatlas6 SoC") moved the files, update the patterns.
 >
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> cc: Barry Song <21cnbao@gmail.com>
+> cc: Linus Walleij <linus.walleij@linaro.org>
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Patch applied with Barry's ACK.
 
 Yours,
 Linus Walleij
