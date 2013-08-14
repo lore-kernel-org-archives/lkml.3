@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759461Ab3HNJcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:32:05 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49372 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab3HNJcD (ORCPT
+	id S1759438Ab3HNJdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:33:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49097 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab3HNJdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:32:03 -0400
-Message-ID: <520B4E71.9000907@ti.com>
-Date: Wed, 14 Aug 2013 12:31:29 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 14 Aug 2013 05:33:43 -0400
+Date: Wed, 14 Aug 2013 11:33:30 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, acme@infradead.org,
+        jolsa@redhat.com, eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/4] perf, x86: Report TSX transaction abort cost as
+ weight
+Message-ID: <20130814093330.GG24092@twins.programming.kicks-ass.net>
+References: <1376010946-28666-1-git-send-email-andi@firstfloor.org>
+ <1376010946-28666-3-git-send-email-andi@firstfloor.org>
+ <20130813112301.GV27162@twins.programming.kicks-ass.net>
+ <20130813143517.GT19750@two.firstfloor.org>
+ <20130813152758.GB24092@twins.programming.kicks-ass.net>
+ <20130813182518.GX19750@two.firstfloor.org>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Benoit Cousson <bcousson@baylibre.com>, <p.zabel@pengutronix.de>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] usb: phy-nop: Use RESET Controller for managing the
- reset line
-References: <1374137590-17865-1-git-send-email-rogerq@ti.com> <1374137590-17865-2-git-send-email-rogerq@ti.com> <20130725172855.GJ25415@radagast>
-In-Reply-To: <20130725172855.GJ25415@radagast>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813182518.GX19750@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-
-On 07/25/2013 08:28 PM, Felipe Balbi wrote:
-> On Thu, Jul 18, 2013 at 11:53:05AM +0300, Roger Quadros wrote:
->> Till now we were modelling the RESET line as a voltage regulator and
->> using the regulator framework to manage it.
->>
->> [1] introduces a GPIO based reset controller driver. We use that
->> to manage the PHY reset line, at least for DT boots. For legacy boots,
->> will still need to use the regulator framework for reset lines.
->>
->> [1] - http://thread.gmane.org/gmane.linux.drivers.devicetree/41348
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
+On Tue, Aug 13, 2013 at 08:25:18PM +0200, Andi Kleen wrote:
+> > Make it a bigger mess: :-)
 > 
-> that's not in mainline yet, right ? Is it guaranteed that it will hit
-> v3.12 merge window ?
+> Ok.  Only the second union is enough, it only needs the flags,
+> not the cycles.
 > 
+> > 
+> > struct hsw_tsx_abort_info {
+> > 	union {
+> > 		u64 value;
+> > 		struct {
+> > 			u32 cycles_last_tx;
+> > 			union {
+> > };
+> > 
+> > Also, I think your patch is 'broken' in that it dumps the reserved bits
+> > out to userspace and this brand spanking new SDM doesn't say they're 0.
+> 
+> Will fix.
+> 
+> > __intel_pmu_pebs_event() isn't getting any prettier with all those
+> > pebs_format tests; but I'm not seeing anything to really fix that.
+> 
+> Ok. Are you merging your patch with these changes (fll, union) 
+> or should I send a new one?
 
-Looks like the gpio reset driver might not make it into 3.12.
-
-Now we have two options. 
-
-1) leave the nop-phy driver as it is
-2) get rid of using regulator framework for reset line and handle the reset
-gpio directly in the nop-phy driver.
-
-Is it already too late to get (2) into 3.12 if I send the patches in a day or 2?
-
-cheers,
--roger
-
+Please send a new one that is actually tested. Mine didn't see a
+compiler up close nor do I have the hardware to verify it actually does
+something sane.
