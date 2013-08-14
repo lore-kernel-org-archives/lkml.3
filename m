@@ -1,76 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab3HNMld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:41:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41526 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202Ab3HNMlb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:41:31 -0400
-Date: Wed, 14 Aug 2013 13:41:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] drm/i2c: tda998x: fix sync generation and
-	calculation
-Message-ID: <20130814124118.GD23840@n2100.arm.linux.org.uk>
-References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com> <1375741218-10225-7-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375741218-10225-7-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S932359Ab3HNMms (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:42:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:33982 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932202Ab3HNMmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 08:42:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,876,1367996400"; 
+   d="scan'208";a="346237348"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH V11 00/15] perf tools: some fixes and tweaks
+Date: Wed, 14 Aug 2013 15:48:22 +0300
+Message-Id: <1376484517-5339-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 12:20:16AM +0200, Sebastian Hesselbarth wrote:
-> +	de_pix_s     = mode->htotal - mode->hdisplay;
-> +	de_pix_e     = de_pix_s + mode->hdisplay;
-> +	hs_pix_s     = mode->hsync_start - mode->hdisplay;
-> +	hs_pix_e     = hs_pix_s + mode->hsync_end - mode->hsync_start;
+Hi
 
-I still think the above is over-complicating the calculation and making it
-less readable.
+Here are some fixes and tweaks to perf tools (version 11).
 
-The values in 'mode' represent this timing representation:
-0=hds                                    hde    hss  hse   ht
-|-----------------------------------------|----->|--->|---->|
+Changes in V11:
+	perf tools: re-implement debug print function for linking python/perf.so
+		New patch split from "perf tools: add debug prints"
+	perf tools: add debug prints
+		Changed to use graph_dotted_line
+		Moved python/link changes to separate patch
+		Added Namhyung's Ack
+	perf tools: change machine__findnew_thread() to set thread pid
+		Added explanation of main thread lookup to commit message
+	perf tools: tidy up sample parsing overflow checking
+		Added Jiri's Ack
+	perf tools: remove unnecessary callchain validation
+		Added Namhyung's Ack
+	perf tools: remove references to struct ip_event
+		Added Namhyung's Ack
+	perf tools: move perf_evlist__config() to a new source file
+		Added Namhyung's Ack
+	perf tools: add missing 'abi' member to 'struct regs_dump'
+		New patch
+	perf tools: expand perf_event__synthesize_sample()
+		Adjusted for new 'abi' member of 'struct regs_dump'
+	perf tools: add a function to calculate sample event size
+		Adjusted for new 'abi' member of 'struct regs_dump'
+	perf tools: add a sample parsing test
+		Adjusted for new 'abi' member of 'struct regs_dump'
 
-What we want to do is to rotate that around to this:
-0     hss  hse   hds                                       ht=hde
-|----->|--->|---->|-----------------------------------------|
+Changes in V10:
+	Re-based on:
+		perf/core branch of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
+		commit 207353be1574027c151609a31167ac5919a056c8: perf tools: Remove filter parameter of thread__find_addr_map()
 
->From that, you can see quite clearly that the end of the displayed line
-is now at htotal, and the start of the displayed line (hds) is hdisplay
-clocks before that.  So:
+	perf tools: add debug prints
+		Changed to use macros
+	perf tools: add pid to struct thread
+		Added David's Ack
+	perf tools: change machine__findnew_thread() to set thread pid
+		Added David's Ack
+	perf tools: remove references to struct ip_event
+		Also remove from hists_link.c
+	perf tools: move struct ip_event
+		Dropped since it is covered by "perf tools: remove references to struct ip_event"
+	perf tools: add a sample parsing test
+		Fix missing sample comparison for PERF_SAMPLE_READ
 
-	de_pix_e = mode->htotal;
-	de_pix_s = de_pix_e - mode->hdisplay;
+Changes in V9:
+	perf: Update perf_event_type documentation
+		Dropped since its been applied
+	perf tools: tidy up sample parsing overflow checking
+		Changed to use a single overflow function
+		Updated for PERF_SAMPLE_READ
+	perf: make events stream always parsable
+		Added more about sample parsing to the commit message
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		When selecting PERF_SAMPLE_IDENTFIER, ensure PERF_SAMPLE_ID
+		is deselected
+	perf tools: expand perf_event__synthesize_sample()
+		Updated for PERF_SAMPLE_READ
+	perf tools: add a function to calculate sample event size
+		Updated for PERF_SAMPLE_READ
+	perf tools: add a sample parsing test
+		Updated for PERF_SAMPLE_READ
 
-Everything else (hss, hse) has moved to the left by hdisplay clocks, so:
+Changes in V8:
+	perf tools: add debug prints
+		Fixed Python link errors
+	perf tools: move perf_evlist__config() to a new source file
+		New Patch to avoid Python link errors
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		Adjustments due to patch above
 
-	hs_pix_s = mode->hsync_start - mode->hdisplay;
-	hs_pix_e = mode->hsync_end - mode->hdisplay;
+Changes in V7:
+	perf: Update perf_event_type documentation
+		Proposed new patch from Peter Zijlstra
+	perf: make events stream always parsable
+		Adjustments due to patch above
+	perf tools: tidy up sample parsing overflow checking
+		Change to a single overflow function
+		Amend comment
+	perf tools: add a function to calculate sample event size
+		New patch
+	perf tools: add a sample parsing test
+		Amended to use sample event size calculation
 
-That's what you get if you simplify your calculations as well.  If we then
-go back and look at the original code:
+Changes in V6:
+	Some checkpatch fixes
 
--       hs_start   = mode->hsync_start - mode->hdisplay;
--       hs_end     = mode->hsync_end - mode->hdisplay;
--       de_start   = mode->htotal - mode->hdisplay;
--       de_end     = mode->htotal;
+	perf: make events stream always parsable
+		Add sample format comments
 
-it's what was originally there, so I don't see any point in touching that
-calculation.
+Changes in V5:
+	Re-based to Arnaldo's tree and dropped already applied patches:
+		perf tools: remove unused parameter
+		perf tools: fix missing tool parameter
+		perf tools: fix missing 'finished_round'
+		perf tools: fix parse_events_terms() segfault on error path
+		perf tools: fix new_term() missing free on error path
+		perf tools: add const specifier to perf_pmu__find name parameter
+		perf tools: tidy duplicated munmap code
+		perf tools: validate perf event header size
 
-We also have:
+	perf tools: add debug prints
+		Changed to perf_event_attr__fprintf()
+	perf tools: add pid to struct thread
+		Always set the pid, even if a pid is already set
+	perf tools: change machine__findnew_thread() to set thread pid
+		Replaces: perf tools: change "machine" functions to set thread pid
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		Only use PERF_SAMPLE_IDENTFIER if sample types are different
+	perf tools: expand perf_event__synthesize_sample()
+		New patch in preparation of a sample parsing test
+	perf tools: add a sample parsing test
+		New patch
 
--       ref_pix = 3 + hs_start;
-+       ref_pix      = 3 + mode->hsync_start - mode->hdisplay;
+Changes in V4:
+	I added kernel support for matching sample types via
+	PERF_SAMPLE_IDENTIFIER.  perf tools support for that required
+	first fixing some other things.
 
-which we can see is also the same calculation in essence.  I don't think
-the change helps readability.
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Dropped - covered by David Ahern
+	perf tools: struct thread has a tid not a pid
+		Added ack by David Ahern
+	perf tools: add pid to struct thread
+		Remove unused function
+	perf tools: fix missing increment in sample parsing
+		New patch
+	perf tools: tidy up sample parsing overflow checking
+		New patch
+	perf tools: remove unnecessary callchain validation
+		New patch
+	perf tools: remove references to struct ip_event
+		New patch
+	perf tools: move struct ip_event
+		New patch
+	perf: make events stream always parsable
+		New patch
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		New patch
+
+Changes in V3:
+	perf tools: add pid to struct thread
+		Split into 2 patches
+	perf tools: fix ppid in thread__fork()
+		Dropped for now
+
+Changes in V2:
+	perf tools: fix missing tool parameter
+		Fixed one extra occurrence
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Made "freeing" code into a new function
+	perf tools: validate perf event header size
+		Corrected byte-swapping
+	perf tools: allow non-matching sample types
+		Added comments
+		Fixed id_pos calculation
+		id_pos/is_pos updated whenever sample_type changes
+		Removed perf_evlist__sample_type()
+		Added __perf_evlist__combined_sample_type()
+		Added perf_evlist__combined_sample_type()
+		Added perf_evlist__make_sample_types_compatible()
+	Added ack's to patches acked by Jiri Olsa
+
+
+Adrian Hunter (15):
+      perf tools: re-implement debug print function for linking python/perf.so
+      perf tools: add debug prints
+      perf tools: allow non-matching sample types
+      perf tools: add pid to struct thread
+      perf tools: change machine__findnew_thread() to set thread pid
+      perf tools: tidy up sample parsing overflow checking
+      perf tools: remove unnecessary callchain validation
+      perf tools: remove references to struct ip_event
+      perf: make events stream always parsable
+      perf tools: move perf_evlist__config() to a new source file
+      perf tools: add support for PERF_SAMPLE_IDENTFIER
+      perf tools: add missing 'abi' member to 'struct regs_dump'
+      perf tools: expand perf_event__synthesize_sample()
+      perf tools: add a function to calculate sample event size
+      perf tools: add a sample parsing test
+
+ include/uapi/linux/perf_event.h   |  27 ++-
+ kernel/events/core.c              |  11 +-
+ tools/perf/Makefile               |   2 +
+ tools/perf/builtin-inject.c       |   8 +-
+ tools/perf/builtin-kmem.c         |   3 +-
+ tools/perf/builtin-kvm.c          |   2 +-
+ tools/perf/builtin-lock.c         |   3 +-
+ tools/perf/builtin-mem.c          |   2 +-
+ tools/perf/builtin-report.c       |   2 +-
+ tools/perf/builtin-sched.c        |  20 +-
+ tools/perf/builtin-script.c       |   3 +-
+ tools/perf/builtin-top.c          |  11 +-
+ tools/perf/builtin-trace.c        |  12 +-
+ tools/perf/tests/builtin-test.c   |   4 +
+ tools/perf/tests/code-reading.c   |   4 +-
+ tools/perf/tests/hists_link.c     |  23 +-
+ tools/perf/tests/mmap-basic.c     |   2 +-
+ tools/perf/tests/sample-parsing.c | 316 +++++++++++++++++++++++++
+ tools/perf/tests/tests.h          |   1 +
+ tools/perf/util/build-id.c        |  11 +-
+ tools/perf/util/callchain.c       |   8 -
+ tools/perf/util/callchain.h       |   5 -
+ tools/perf/util/event.c           |   5 +-
+ tools/perf/util/event.h           |  34 ++-
+ tools/perf/util/evlist.c          | 146 ++++++++++--
+ tools/perf/util/evlist.h          |  10 +-
+ tools/perf/util/evsel.c           | 471 +++++++++++++++++++++++++++++++++-----
+ tools/perf/util/evsel.h           |  13 +-
+ tools/perf/util/machine.c         |  37 ++-
+ tools/perf/util/machine.h         |   3 +-
+ tools/perf/util/python.c          |  20 ++
+ tools/perf/util/record.c          | 111 +++++++++
+ tools/perf/util/session.c         |  32 +--
+ tools/perf/util/thread.c          |   3 +-
+ tools/perf/util/thread.h          |   3 +-
+ 35 files changed, 1176 insertions(+), 192 deletions(-)
+ create mode 100644 tools/perf/tests/sample-parsing.c
+ create mode 100644 tools/perf/util/record.c
+
+
+Regards
+Adrian
