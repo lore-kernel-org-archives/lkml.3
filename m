@@ -1,137 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab3HNKha (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:37:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34426 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759798Ab3HNKhZ (ORCPT
+	id S932797Ab3HNK6q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:58:46 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:47640 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932329Ab3HNK6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:37:25 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 13/75] USB: serial: ftdi_sio: add more RT Systems ftdi devices
-Date: Wed, 14 Aug 2013 11:36:02 +0100
-Message-Id: <1376476624-10011-14-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
-References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Wed, 14 Aug 2013 06:58:43 -0400
+Date: Wed, 14 Aug 2013 12:58:38 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "Samuel Ortiz (sameo@linux.intel.com)" <sameo@linux.intel.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
+Subject: Re: [PATCH v2 4/4] Documentation: dt: bindings: add LP3943 bindings
+Message-ID: <20130814105837.GB14228@ulmo>
+References: <A874F61F95741C4A9BA573A70FE3998F82E849ED@DQHE06.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qlTNgmc+xy1dBmNv"
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E849ED@DQHE06.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.19 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--qlTNgmc+xy1dBmNv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: "Rick Farina (Zero_Chaos)" <zerochaos@gentoo.org>
+On Tue, Jul 30, 2013 at 12:42:29AM +0000, Kim, Milo wrote:
+[...]
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt b/Documentation/devicetree/bindings/gpio/gpio-lp3943.txt
+[...]
+> +Required properties:
+> +  - compatible: "ti,lp3943-gpio"
+> +  - gpio-controller: device node as a GPIO controller
 
-commit fed1f1ed90bce42ea010e2904cbc04e7b8304940 upstream.
+"Marks the device node as a GPIO controller"?
 
-RT Systems makes many usb serial cables based on the ftdi_sio driver for
-programming various amateur radios.  This patch is a full listing of
-their current product offerings and should allow these cables to all
-be recognized.
+> +  - #gpio-cells: Should be two.
 
-Signed-off-by: Rick Farina (Zero_Chaos) <zerochaos@gentoo.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/serial/ftdi_sio.c     | 31 ++++++++++++++++++++++++++++---
- drivers/usb/serial/ftdi_sio_ids.h | 34 +++++++++++++++++++++++++++++-----
- 2 files changed, 57 insertions(+), 8 deletions(-)
+"Should be 2"?
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 3dbec15..c57562a 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -743,9 +743,34 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
- 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
--	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_RTS01_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29A_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29F_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S01_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_29C_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_81B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_82B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5D_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K4Y_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_K5G_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S05_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_60_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_61_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_62_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_63B_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_64_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_65_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_92D_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_W5R_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_A5R_PID) },
-+	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_PW1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
- 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 6dd7925..1b8af46 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -815,11 +815,35 @@
- /*
-  * RT Systems programming cables for various ham radios
-  */
--#define RTSYSTEMS_VID			0x2100	/* Vendor ID */
--#define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
--#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
--#define RTSYSTEMS_RTS01_PID		0x9e57	/* USB-RTS01 Radio Cable */
--
-+#define RTSYSTEMS_VID		0x2100	/* Vendor ID */
-+#define RTSYSTEMS_USB_S03_PID	0x9001	/* RTS-03 USB to Serial Adapter */
-+#define RTSYSTEMS_USB_59_PID	0x9e50	/* USB-59 USB to 8 pin plug */
-+#define RTSYSTEMS_USB_57A_PID	0x9e51	/* USB-57A USB to 4pin 3.5mm plug */
-+#define RTSYSTEMS_USB_57B_PID	0x9e52	/* USB-57B USB to extended 4pin 3.5mm plug */
-+#define RTSYSTEMS_USB_29A_PID	0x9e53	/* USB-29A USB to 3.5mm stereo plug */
-+#define RTSYSTEMS_USB_29B_PID	0x9e54	/* USB-29B USB to 6 pin mini din */
-+#define RTSYSTEMS_USB_29F_PID	0x9e55	/* USB-29F USB to 6 pin modular plug */
-+#define RTSYSTEMS_USB_62B_PID	0x9e56	/* USB-62B USB to 8 pin mini din plug*/
-+#define RTSYSTEMS_USB_S01_PID	0x9e57	/* USB-RTS01 USB to 3.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_63_PID	0x9e58	/* USB-63 USB to 9 pin female*/
-+#define RTSYSTEMS_USB_29C_PID	0x9e59	/* USB-29C USB to 4 pin modular plug*/
-+#define RTSYSTEMS_USB_81B_PID	0x9e5A	/* USB-81 USB to 8 pin mini din plug*/
-+#define RTSYSTEMS_USB_82B_PID	0x9e5B	/* USB-82 USB to 2.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_K5D_PID	0x9e5C	/* USB-K5D USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_K4Y_PID	0x9e5D	/* USB-K4Y USB to 2.5/3.5 mm plugs*/
-+#define RTSYSTEMS_USB_K5G_PID	0x9e5E	/* USB-K5G USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_S05_PID	0x9e5F	/* USB-RTS05 USB to 2.5 mm stereo plug*/
-+#define RTSYSTEMS_USB_60_PID	0x9e60	/* USB-60 USB to 6 pin din*/
-+#define RTSYSTEMS_USB_61_PID	0x9e61	/* USB-61 USB to 6 pin mini din*/
-+#define RTSYSTEMS_USB_62_PID	0x9e62	/* USB-62 USB to 8 pin mini din*/
-+#define RTSYSTEMS_USB_63B_PID	0x9e63	/* USB-63 USB to 9 pin female*/
-+#define RTSYSTEMS_USB_64_PID	0x9e64	/* USB-64 USB to 9 pin male*/
-+#define RTSYSTEMS_USB_65_PID	0x9e65	/* USB-65 USB to 9 pin female null modem*/
-+#define RTSYSTEMS_USB_92_PID	0x9e66	/* USB-92 USB to 12 pin plug*/
-+#define RTSYSTEMS_USB_92D_PID	0x9e67	/* USB-92D USB to 12 pin plug data*/
-+#define RTSYSTEMS_USB_W5R_PID	0x9e68	/* USB-W5R USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_A5R_PID	0x9e69	/* USB-A5R USB to 8 pin modular plug*/
-+#define RTSYSTEMS_USB_PW1_PID	0x9e6A	/* USB-PW1 USB to 8 pin modular plug*/
- 
- /*
-  * Physik Instrumente
--- 
-1.8.3.2
+[...]
+> +		gpios = <&gpioex 9 1>;	/* active-low */
+[...]
+> +		gpios = <&gpioex 10 1>;	/* active-low */
 
+If you use the defines as Lee suggested, then you don't need these
+comments either.
+
+> diff --git a/Documentation/devicetree/bindings/mfd/lp3943.txt b/Documentation/devicetree/bindings/mfd/lp3943.txt
+> new file mode 100644
+> index 0000000..ef62784
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/lp3943.txt
+> @@ -0,0 +1,33 @@
+> +TI/National Semiconductor LP3943 MFD driver
+> +
+> +Required properties:
+> +  - compatible: "ti,lp3943"
+> +  - reg: I2C slave address (u8). 0x60 ~ 0x67
+
+u8 is a Linux specific and implementation detail. I think it's safe to
+assume that everybody knows that I2C slave addresses are 7 bits (and
+you even provide a valid range), so just drop the "(u8)".
+
+> +lp3943@60 {
+> +	compatible = "ti,lp3943";
+> +	reg = <0x60>;
+> +
+> +	gpioex: gpio {
+> +		compatible = "ti,lp3943-gpio";
+> +		gpio-controller;
+> +		#gpio-cells = <2>;
+> +	};
+> +
+> +	pwm3943: pwm {
+> +		compatible = "ti,lp3943-pwm";
+> +		#pwm-cells = <3>;
+> +		ti,pwm0 = < 8 9 10 >;
+
+This should probably be written as "<8 9 10>" for consistency.
+
+> diff --git a/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt b/Documentation/devicetree/bindings/pwm/pwm-lp3943.txt
+[...]
+> +Required properties:
+> +  - compatible: "ti,lp3943-pwm"
+> +  - #pwm-cells: Should be three.
+
+"Should be three"? Although since as I mentioned the chip doesn't
+support polarity inversion, this should now be "2".
+
+> +    1) index of PWM controller
+> +       0 = PWM 0, 1 = PWM 1
+> +    2) PWM signal period in nanoseconds
+> +       min = 6250, max = 1600000
+> +    3) bitmask of optional PWM polarity flags
+> +       0 = normal, 1 = inversed
+
+All of this can probably go away. The new way of doing this is to
+reference the standard bindings document using something like the below:
+
+  - #pwm-cells: Should be 2. See pwm.txt in this directory for a
+                description of the cells format.
+
+Since you have a restriction on the minimum and maximum period lengths,
+you could add something like:
+
+                Note that this hardware limits the period length to the
+                range 6250-1600000.
+
+> +  - ti,pwm0 or ti,pwm1: Output pin number(s) for PWM port 0 or 1.
+
+"PWM port" -> "PWM channel"
+
+> +    0 = invalid
+> +    1 = output 0
+> +    2 = output 1
+> +    .
+> +    .
+> +    16 = output 15
+
+I thought I read that this is now a 1:1 mapping?
+
+> +Example:
+> +PWM 0 is for RGB LED brightness control
+> +PWM 1 is for brightness control of LP8557 backlight device
+> +
+> +&i2c3 {
+> +	lp3943@60 {
+> +		compatible = "ti,lp3943";
+> +		reg = <0x60>;
+> +
+> +		/*
+> +		 * PWM 0 : output 7, 8 and 9
+> +		 * PWM 1 : output 15
+> +		 */
+> +		pwm3943: pwm {
+> +			compatible = "ti,lp3943-pwm";
+> +			#pwm-cells = <3>;
+> +			ti,pwm0 = < 8 9 10 >;
+
+And here as well: "< 8 9 10 >" -> "<8 9 10>".
+
+Thierry
+
+--qlTNgmc+xy1dBmNv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSC2LdAAoJEN0jrNd/PrOhQREQALBcwc3VWnoLmGF99/1x6AjR
+1Z0eBljhKBg70Oes2pXpykGTOqLe0DrksyBqZgNCwJeWYeQ2gZM9SgJV6eFb9uA3
+p+DJpWbVZODSg80tozdyGW9RTIu50j6eORZ05LhStbvg+kLMEYuK/VfT2CKZauIc
+/Y8znzppYGFQpv0tYpdFp3779gwlb8VmcGvqa8s7C/phncgn56MydWsQwAtV2FRA
+CMwPKybF6F8MxoZp3s6LBHFMEbAVGhb1PxNl9P1YVXWsij1VG+1TPWP5SpTjA3y4
+qF1KUw/eja2sMdDJnQ3ma5jpZ94GBbp+nLOjhC7QfVI9D/n1oF6xrnpjfNlExObi
+e9p9h92u5vdEZ2SmIJsnTRuWwF9wlsm/QnHXJFzV7AL8p0swtO6HuwyJAVCc733w
+tpsz2Z6W/K4bgtQx/rFFQabCUp8C9zWIJG/NfXd2EYqh0f70aN76jAqLFv8XKD3j
+Jd1VJ3Y8DBoXXPvnkJFvSYeXP0zb7MgLc/TwbboNMsq8pc6hBSDFQa+9I/zZr0o6
+NXG+IXMKZwwBysq+Th8OMBlc6xRiF976THPtZ6AhRjPP8Xa8GiOlSmzR9uvq7XnL
+zUZdjaFJr04Rm32SuZq2acGveZmtFKM80etYTjAahhIM/KTG4u+CdJM1dFBGybx7
+C45UNzwORLnh/x/OfzuQ
+=5Pgq
+-----END PGP SIGNATURE-----
+
+--qlTNgmc+xy1dBmNv--
