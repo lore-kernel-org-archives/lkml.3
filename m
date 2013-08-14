@@ -1,209 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932742Ab3HNPF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 11:05:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43837 "EHLO arroyo.ext.ti.com"
+	id S932775Ab3HNPJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 11:09:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26444 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932404Ab3HNPFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 11:05:55 -0400
-Message-ID: <520B9C9E.8010002@ti.com>
-Date: Wed, 14 Aug 2013 20:35:02 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S932404Ab3HNPJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 11:09:21 -0400
+Message-ID: <520B9D8A.20308@redhat.com>
+Date: Wed, 14 Aug 2013 17:08:58 +0200
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>, <balbi@ti.com>
-CC: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Tomasz Figa <t.figa@samsung.com>, <linux-fbdev@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
-        <s.nawrocki@samsung.com>, <kgene.kim@samsung.com>,
-        <swarren@nvidia.com>, <jg1.han@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>, <grant.likely@linaro.org>,
-        <linux-media@vger.kernel.org>, <george.cherian@ti.com>,
-        <arnd@arndb.de>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <balajitk@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kyungmin.park@samsung.com>,
-        <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-References: <20130720220006.GA7977@kroah.com> <520A2100.6000709@ti.com> <520AB0F0.8010106@gmail.com> <2128883.KpgODjXPJQ@flatron>
-In-Reply-To: <2128883.KpgODjXPJQ@flatron>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Alexander Holler <holler@ahsoftware.de>
+CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Subject: Re: [PATCH 1/3] HID: Use existing parser for pre-scanning the report
+ descriptors
+References: <1376405889-12378-1-git-send-email-benjamin.tissoires@redhat.com> <1376405889-12378-2-git-send-email-benjamin.tissoires@redhat.com> <520A7CDF.3070808@ahsoftware.de>
+In-Reply-To: <520A7CDF.3070808@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wednesday 14 August 2013 04:34 AM, Tomasz Figa wrote:
-> On Wednesday 14 of August 2013 00:19:28 Sylwester Nawrocki wrote:
->> W dniu 2013-08-13 14:05, Kishon Vijay Abraham I pisze:
->>> On Tuesday 13 August 2013 05:07 PM, Tomasz Figa wrote:
->>>> On Tuesday 13 of August 2013 16:14:44 Kishon Vijay Abraham I wrote:
->>>>> On Wednesday 31 July 2013 11:45 AM, Felipe Balbi wrote:
->>>>>> On Wed, Jul 31, 2013 at 11:14:32AM +0530, Kishon Vijay Abraham I 
-> wrote:
->>>>>>>>>>>> IMHO we need a lookup method for PHYs, just like for clocks,
->>>>>>>>>>>> regulators, PWMs or even i2c busses because there are complex
->>>>>>>>>>>> cases
->>>>>>>>>>>> when passing just a name using platform data will not work. I
->>>>>>>>>>>> would
->>>>>>>>>>>> second what Stephen said [1] and define a structure doing
->>>>>>>>>>>> things
->>>>>>>>>>>> in a
->>>>>>>>>>>> DT-like way.
->>>>>>>>>>>>
->>>>>>>>>>>> Example;
->>>>>>>>>>>>
->>>>>>>>>>>> [platform code]
->>>>>>>>>>>>
->>>>>>>>>>>> static const struct phy_lookup my_phy_lookup[] = {
->>>>>>>>>>>>
->>>>>>>>>>>> 	PHY_LOOKUP("s3c-hsotg.0", "otg", "samsung-usbphy.1",
->>>>>>>>>>>> 	"phy.2"),
->>>>>>>>>>>
->>>>>>>>>>> The only problem here is that if *PLATFORM_DEVID_AUTO* is used
->>>>>>>>>>> while
->>>>>>>>>>> creating the device, the ids in the device name would change
->>>>>>>>>>> and
->>>>>>>>>>> PHY_LOOKUP wont be useful.
->>>>>>>>>>
->>>>>>>>>> I don't think this is a problem. All the existing lookup
->>>>>>>>>> methods
->>>>>>>>>> already
->>>>>>>>>> use ID to identify devices (see regulators, clkdev, PWMs, i2c,
->>>>>>>>>> ...). You
->>>>>>>>>> can simply add a requirement that the ID must be assigned
->>>>>>>>>> manually,
->>>>>>>>>> without using PLATFORM_DEVID_AUTO to use PHY lookup.
->>>>>>>>>
->>>>>>>>> And I'm saying that this idea, of using a specific name and id,
->>>>>>>>> is
->>>>>>>>> frought with fragility and will break in the future in various
->>>>>>>>> ways
->>>>>>>>> when
->>>>>>>>> devices get added to systems, making these strings constantly
->>>>>>>>> have
->>>>>>>>> to be
->>>>>>>>> kept up to date with different board configurations.
->>>>>>>>>
->>>>>>>>> People, NEVER, hardcode something like an id.  The fact that
->>>>>>>>> this
->>>>>>>>> happens today with the clock code, doesn't make it right, it
->>>>>>>>> makes
->>>>>>>>> the
->>>>>>>>> clock code wrong.  Others have already said that this is wrong
->>>>>>>>> there
->>>>>>>>> as
->>>>>>>>> well, as systems change and dynamic ids get used more and more.
->>>>>>>>>
->>>>>>>>> Let's not repeat the same mistakes of the past just because we
->>>>>>>>> refuse to
->>>>>>>>> learn from them...
->>>>>>>>>
->>>>>>>>> So again, the "find a phy by a string" functions should be
->>>>>>>>> removed,
->>>>>>>>> the
->>>>>>>>> device id should be automatically created by the phy core just
->>>>>>>>> to
->>>>>>>>> make
->>>>>>>>> things unique in sysfs, and no driver code should _ever_ be
->>>>>>>>> reliant
->>>>>>>>> on
->>>>>>>>> the number that is being created, and the pointer to the phy
->>>>>>>>> structure
->>>>>>>>> should be used everywhere instead.
->>>>>>>>>
->>>>>>>>> With those types of changes, I will consider merging this
->>>>>>>>> subsystem,
->>>>>>>>> but
->>>>>>>>> without them, sorry, I will not.
->>>>>>>>
->>>>>>>> I'll agree with Greg here, the very fact that we see people
->>>>>>>> trying to
->>>>>>>> add a requirement of *NOT* using PLATFORM_DEVID_AUTO already
->>>>>>>> points
->>>>>>>> to a big problem in the framework.
->>>>>>>>
->>>>>>>> The fact is that if we don't allow PLATFORM_DEVID_AUTO we will
->>>>>>>> end up
->>>>>>>> adding similar infrastructure to the driver themselves to make
->>>>>>>> sure
->>>>>>>> we
->>>>>>>> don't end up with duplicate names in sysfs in case we have
->>>>>>>> multiple
->>>>>>>> instances of the same IP in the SoC (or several of the same PCIe
->>>>>>>> card).
->>>>>>>> I really don't want to go back to that.
->>>>>>>
->>>>>>> If we are using PLATFORM_DEVID_AUTO, then I dont see any way we
->>>>>>> can
->>>>>>> give the correct binding information to the PHY framework. I think
->>>>>>> we
->>>>>>> can drop having this non-dt support in PHY framework? I see only
->>>>>>> one
->>>>>>> platform (OMAP3) going to be needing this non-dt support and we
->>>>>>> can
->>>>>>> use the USB PHY library for it.>
->>>>>>
->>>>>> you shouldn't drop support for non-DT platform, in any case we
->>>>>> lived
->>>>>> without DT (and still do) for years. Gotta find a better way ;-)
->>>>>
->>>>> hmm..
->>>>>
->>>>> how about passing the device names of PHY in platform data of the
->>>>> controller? It should be deterministic as the PHY framework assigns
->>>>> its
->>>>> own id and we *don't* want to add any requirement that the ID must
->>>>> be
->>>>> assigned manually without using PLATFORM_DEVID_AUTO. We can get rid
->>>>> of
->>>>> *phy_init_data* in the v10 patch series.
->>
->> OK, so the PHY device name would have a fixed part, passed as
->> platform data of the controller and a variable part appended
->> by the PHY core, depending on the number of registered PHYs ?
->>
->> Then same PHY names would be passed as the PHY provider driver's
->> platform data ?
->>
->> Then if there are 2 instances of the above (same names in platform
->> data) how would be determined which PHY controller is linked to
->> which PHY supplier ?
->>
->> I guess you want each device instance to have different PHY device
->> names already in platform data ? That might work. We probably will
->> be focused mostly on DT anyway. It seem without DT we are trying
->> to find some layer that would allow us to couple relevant devices
->> and overcome driver core inconvenience that it provides to means
->> to identify specific devices in advance. :) Your proposal sounds
->> reasonable, however I might be missing some details or corner cases.
->>
->>>> What about slightly altering the concept of v9 to pass a pointer to
->>>> struct device instead of device name inside phy_init_data?
->>
->> As Felipe said, we don't want to pass pointers in platform_data
->> to/from random subsystems. We pass data, passing pointers would
->> be a total mess IMHO.
+On 13/08/13 20:37, Alexander Holler wrote:
+> Am 13.08.2013 16:58, schrieb Benjamin Tissoires:
+>> hid_scan_report() implements its own HID report descriptor parsing. It
+>> was
+>> fine until we added the SENSOR_HUB detection. It is going to be even
+>> worse
+>> with the detection of Win 8 certified touchscreen, as this detection
+>> relies on a special feature and on the report_size and report_count
+>> fields.
 > 
-> Well, this is a total mess anyway... I don't really get the point of using 
-> PLATFORM_DEVID_AUTO. The only thing that comes to my mind is that you can 
-> use it if you don't care about the ID and so it can be assigned 
-> automatically.
+> Sorry, but I can't agree with your wording here.
 > 
-> However my understanding of the device ID is that it was supposed to 
-> provide a way to identify multiple instances of identical devices in a 
-> reliable way, to solve problems like the one we are trying to solve 
-> here...
+> If you look at the if expression I've added to support HID sensor hubs,
+> you will notice that the first expression was a test for the usage page
+> of sensor hubs. That wasn't the first test by accident, instead I've
+> choosen the order of those 4 tests very carefully to make the impact on
+> the existing parsing of other HID devices very small. So it might not
+> have be pleasing to your eyes, but it was for sure an appropriate solution.
 > 
-> So maybe let's stop solving an already solved problem and just state that 
-> you need to explicitly assign device ID to use this framework?
+> Anyway, I've tested your patch 1/3 on top of 3.11-rc5 here and the
+> detection of sensor hubs doesn't work anymore with your patch applied.
+> Up to now I only had a quick look at it, but it looks like the test in
+> hid_scan_open_collection() isn't hit for my device.
 
-Felipe,
-Can we have it the way I had in my v10 patch series till we find a better way?
-I think this *non-dt* stuff shouldn't be blocking as most of the users are dt only?
+Ok, I found the culprit (see below). Thanks for providing your report
+descriptors (and sources), I managed to test the detection of your device.
 
-Thanks
-Kishon
+
+> 
+> Another problem is that I don't have any commercial sensor hub and I'm
+> therefor not a very relvant as tester (I've implemented the firmware for
+> my HID (sensor hub) device too). Therefor I've added Srinivas Pandruvada
+> to cc, because he's the only one I know who has HID sensor hubs.
+> 
+> And, as said, I've implemented the other side here too, therefor I've
+> added the descriptor I'm using below.
+> 
+> Regards,
+> 
+> Alexander Holler
+> 
+> 
+> --my-descriptor--
+>     0x05, 0x20, // HID_USAGE_PAGE_SENSOR
+>     0xa1, 0x01, // COLLECTION (Application)
+>         0x09, 0xa0, // HID_USAGE_SENSOR_CATEGORY_TIME
+>         0xa1, 0x00, // COLLECTION (Physical)
+> #ifndef USE_FULL_YEAR
+>             0x75, 0x08, // REPORT_SIZE (8 bits)
+> #endif
+>             0x95, 0x01, // REPORT_COUNT (1)
+>             0x85, HID_REPORT_ID_TIME, // REPORT_ID
+> 
+>             0x0a, 0x21, 0x05, // USAGE (Year)
+> #ifdef USE_FULL_YEAR
+>             0x75, 0x10, // REPORT_SIZE (16 bits)
+> #else
+>             0x15, 0x00, // LOGICAL_MINIMUM (0) (Range is currently not
+> specified in HUTRR39)
+>             0x25, 0x63, // LOGICAL_MAXIMUM (99)
+> #endif
+>             0x65, 0x00, // UNIT (None)
+>             0x81, 0x02, // INPUT (Data,Var,Abs)
+> 
+>             0x0a, 0x22, 0x05, // USAGE (Month)
+> #ifdef USE_FULL_YEAR
+>             0x75, 0x08, // REPORT_SIZE (8 bits)
+> #endif
+>             0x15, 0x01, // LOGICAL_MINIMUM (1)
+>             0x25, 0x0c, // LOGICAL_MAXIMUM (12)
+>             0x65, 0x00, // UNIT (None)
+>             0x81, 0x02, // INPUT (Data,Var,Abs)
+> 
+>             0x0a, 0x23, 0x05, // USAGE (Day)
+>             0x15, 0x01, // LOGICAL_MINIMUM (1)
+>             0x25, 0x1f, // LOGICAL_MAXIMUM (31)
+>             0x65, 0x00, // UNIT (None)
+>             0x81, 0x02, // INPUT (Data,Var,Abs)
+> 
+>             0x0a, 0x24, 0x05, // USAGE (Day of Week)
+>             0x15, 0x00, // LOGICAL_MINIMUM (0)
+>             0x25, 0x06, // LOGICAL_MAXIMUM (6)
+>             0xa1, 0x02, // COLLECTION (Logical)
+>                 0x0a, 0xc0, 0x08, // Day of Week: Sunday
+>                 0x0a, 0xc1, 0x08, // Day of Week: Monday
+>                 0x0a, 0xc2, 0x08, // Day of Week: Tuesday
+>                 0x0a, 0xc3, 0x08, // Day of Week: Wednesday
+>                 0x0a, 0xc4, 0x08, // Day of Week: Thursday
+>                 0x0a, 0xc5, 0x08, // Day of Week: Friday
+>                 0x0a, 0xc6, 0x08, // Day of Week: Saturday
+>                 0x81, 0x02, // INPUT (Const,Arr,Abs)
+>             0xc0, // END_COLLECTION
+> 
+>             0x0a, 0x25, 0x05, // USAGE (Hour)
+>             0x15, 0x00, // LOGICAL_MINIMUM (0)
+>             0x25, 0x17, // LOGICAL_MAXIMUM (23)
+>             0x65, 0x00, // UNIT (None)
+>             0x81, 0x02, // INPUT (Data,Var,Abs)
+> 
+>             0x0a, 0x26, 0x05, // USAGE (Minute)
+>             0x15, 0x00, // LOGICAL_MINIMUM (0)
+>             0x25, 0x3b, // LOGICAL_MAXIMUM (59)
+>             0x65, 0x00, // UNIT (None)
+>             0x81, 0x02, // INPUT (Data,Var,Abs)
+> 
+>             0x0a, 0x27, 0x05, // USAGE (Second)
+>             0x15, 0x00, // LOGICAL_MINIMUM (0)
+>             0x25, 0x3b, // LOGICAL_MAXIMUM (59)
+>             0x65, 0x00, // UNIT (None)
+>             //0x66, 0x10, 0x01, // UNIT (second)
+>             0x81, 0x02, // INPUT (Data,Var,Abs)
+> 
+>             0x0a, 0x28, 0x05, // USAGE (Millisecond)
+>             0x75, 0x10, // REPORT_SIZE (16 bits)
+>             0x65, 0x00, // UNIT (None)
+>             0x81, 0x02, // INPUT (Data,Var,Abs)
+> 
+>         0xc0, // END_COLLECTION
+>     0xc0, // END_COLLECTION
+> --my-descriptor--
+> 
+>>
+>> We can use the existing HID parser in hid-core for hid_scan_report()
+>> by re-using the code from hid_open_report(). hid_parser_global,
+>> hid_parser_local and hid_parser_reserved does not have any side effects.
+>> We just need to reimplement the MAIN_ITEM callback to have a proper
+>> parsing without side effects.
+>>
+>> Instead of directly overwriting the ->group field, this patch introduce
+>> a ->flags field and then decide which group the device belongs to,
+>> depending on the whole parsing (not just the local item). This will be
+>> useful for Win 8 multitouch devices, which are multitouch devices and
+>> Win 8 certified (so 2 flags to check).
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>   drivers/hid/hid-core.c | 131
+>> +++++++++++++++++++++++++++++++++++--------------
+>>   include/linux/hid.h    |   4 ++
+>>   2 files changed, 97 insertions(+), 38 deletions(-)
+>>
+>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>> index 3efe19f..d8cdb0a 100644
+>> --- a/drivers/hid/hid-core.c
+>> +++ b/drivers/hid/hid-core.c
+>> @@ -677,10 +677,49 @@ static u8 *fetch_item(__u8 *start, __u8 *end,
+>> struct hid_item *item)
+>>       return NULL;
+>>   }
+>>
+>> -static void hid_scan_usage(struct hid_device *hid, u32 usage)
+>> +static void hid_scan_input_usage(struct hid_parser *parser, u32 usage)
+>>   {
+>>       if (usage == HID_DG_CONTACTID)
+>> -        hid->group = HID_GROUP_MULTITOUCH;
+>> +        parser->flags |= HID_FLAG_MULTITOUCH;
+>> +}
+>> +
+>> +static void hid_scan_open_collection(struct hid_parser *parser,
+>> unsigned type)
+>> +{
+>> +    if (parser->global.usage_page == HID_UP_SENSOR &&
+
+HID_UP_SENSOR is actually 0x00200000, and parser->global.usage_page
+contains the raw value 0x0020... Moving HID_UP_SENSOR 16 bits to the
+right makes the test working, and your sensor device correctly tagged.
+
+Cheers,
+Benjamin
+
+>> +        type == HID_COLLECTION_PHYSICAL)
+>> +        parser->flags |= HID_FLAG_SENSOR_HUB;
+>> +}
+>> +
+>> +static int hid_scan_main(struct hid_parser *parser, struct hid_item
+>> *item)
+>> +{
+>> +    __u32 data;
+>> +    int i;
+>> +
+>> +    data = item_udata(item);
+>> +
+>> +    switch (item->tag) {
+>> +    case HID_MAIN_ITEM_TAG_BEGIN_COLLECTION:
+>> +        hid_scan_open_collection(parser, data & 0xff);
+>> +        break;
+>> +    case HID_MAIN_ITEM_TAG_END_COLLECTION:
+>> +        break;
+>> +    case HID_MAIN_ITEM_TAG_INPUT:
+>> +        for (i = 0; i < parser->local.usage_index; i++)
+>> +            hid_scan_input_usage(parser, parser->local.usage[i]);
+>> +        break;
+>> +    case HID_MAIN_ITEM_TAG_OUTPUT:
+>> +        break;
+>> +    case HID_MAIN_ITEM_TAG_FEATURE:
+>> +        break;
+>> +    default:
+>> +        hid_err(parser->device, "unknown main item tag 0x%x\n",
+>> +            item->tag);
+>> +    }
+>> +
+>> +    /* Reset the local parser environment */
+>> +    memset(&parser->local, 0, sizeof(parser->local));
+>> +
+>> +    return 0;
+>>   }
+>>
+>>   /*
+>> @@ -690,49 +729,65 @@ static void hid_scan_usage(struct hid_device
+>> *hid, u32 usage)
+>>    */
+>>   static int hid_scan_report(struct hid_device *hid)
+>>   {
+>> -    unsigned int page = 0, delim = 0;
+>> +    struct hid_parser *parser;
+>> +    struct hid_item item;
+>>       __u8 *start = hid->dev_rdesc;
+>>       __u8 *end = start + hid->dev_rsize;
+>> -    unsigned int u, u_min = 0, u_max = 0;
+>> -    struct hid_item item;
+>> +    int ret;
+>> +    static int (*dispatch_type[])(struct hid_parser *parser,
+>> +                      struct hid_item *item) = {
+>> +        hid_scan_main,
+>> +        hid_parser_global,
+>> +        hid_parser_local,
+>> +        hid_parser_reserved
+>> +    };
+>>
+>> -    hid->group = HID_GROUP_GENERIC;
+>> +    parser = vzalloc(sizeof(struct hid_parser));
+>> +    if (!parser)
+>> +        return -ENOMEM;
+>> +
+>> +    parser->device = hid;
+>> +
+>> +    ret = -EINVAL;
+>>       while ((start = fetch_item(start, end, &item)) != NULL) {
+>> -        if (item.format != HID_ITEM_FORMAT_SHORT)
+>> -            return -EINVAL;
+>> -        if (item.type == HID_ITEM_TYPE_GLOBAL) {
+>> -            if (item.tag == HID_GLOBAL_ITEM_TAG_USAGE_PAGE)
+>> -                page = item_udata(&item) << 16;
+>> -        } else if (item.type == HID_ITEM_TYPE_LOCAL) {
+>> -            if (delim > 1)
+>> -                break;
+>> -            u = item_udata(&item);
+>> -            if (item.size <= 2)
+>> -                u += page;
+>> -            switch (item.tag) {
+>> -            case HID_LOCAL_ITEM_TAG_DELIMITER:
+>> -                delim += !!u;
+>> -                break;
+>> -            case HID_LOCAL_ITEM_TAG_USAGE:
+>> -                hid_scan_usage(hid, u);
+>> -                break;
+>> -            case HID_LOCAL_ITEM_TAG_USAGE_MINIMUM:
+>> -                u_min = u;
+>> -                break;
+>> -            case HID_LOCAL_ITEM_TAG_USAGE_MAXIMUM:
+>> -                u_max = u;
+>> -                for (u = u_min; u <= u_max; u++)
+>> -                    hid_scan_usage(hid, u);
+>> -                break;
+>> +
+>> +        if (item.format != HID_ITEM_FORMAT_SHORT) {
+>> +            hid_err(hid, "unexpected long global item\n");
+>> +            goto out;
+>> +        }
+>> +
+>> +        if (dispatch_type[item.type](parser, &item)) {
+>> +            hid_err(hid, "item %u %u %u %u parsing failed\n",
+>> +                item.format, (unsigned)item.size,
+>> +                (unsigned)item.type, (unsigned)item.tag);
+>> +            goto out;
+>> +        }
+>> +
+>> +        if (start == end) {
+>> +            if (parser->local.delimiter_depth) {
+>> +                hid_err(hid, "unbalanced delimiter at end of report
+>> description\n");
+>> +                goto out;
+>>               }
+>> -        } else if (page == HID_UP_SENSOR &&
+>> -            item.type == HID_ITEM_TYPE_MAIN &&
+>> -            item.tag == HID_MAIN_ITEM_TAG_BEGIN_COLLECTION &&
+>> -            (item_udata(&item) & 0xff) == HID_COLLECTION_PHYSICAL)
+>> -            hid->group = HID_GROUP_SENSOR_HUB;
+>> +            ret = 0;
+>> +            goto out;
+>> +        }
+>>       }
+>>
+>> -    return 0;
+>> +    hid_err(hid, "item fetching failed at offset %d\n", (int)(end -
+>> start));
+>> +out:
+>> +    switch (parser->flags) {
+>> +    case HID_FLAG_MULTITOUCH:
+>> +        hid->group = HID_GROUP_MULTITOUCH;
+>> +        break;
+>> +    case HID_FLAG_SENSOR_HUB:
+>> +        hid->group = HID_GROUP_SENSOR_HUB;
+>> +        break;
+>> +    default:
+>> +        hid->group = HID_GROUP_GENERIC;
+>> +    }
+>> +
+>> +    vfree(parser);
+>> +    return ret;
+>>   }
+>>
+>>   /**
+>> diff --git a/include/linux/hid.h b/include/linux/hid.h
+>> index 5a4e789..7d823db 100644
+>> --- a/include/linux/hid.h
+>> +++ b/include/linux/hid.h
+>> @@ -533,6 +533,9 @@ static inline void hid_set_drvdata(struct
+>> hid_device *hdev, void *data)
+>>   #define HID_GLOBAL_STACK_SIZE 4
+>>   #define HID_COLLECTION_STACK_SIZE 4
+>>
+>> +#define HID_FLAG_MULTITOUCH        0x0001
+>> +#define HID_FLAG_SENSOR_HUB        0x0002
+>> +
+>>   struct hid_parser {
+>>       struct hid_global     global;
+>>       struct hid_global     global_stack[HID_GLOBAL_STACK_SIZE];
+>> @@ -541,6 +544,7 @@ struct hid_parser {
+>>       unsigned              collection_stack[HID_COLLECTION_STACK_SIZE];
+>>       unsigned              collection_stack_ptr;
+>>       struct hid_device    *device;
+>> +    unsigned              flags;
+>>   };
+>>
+>>   struct hid_class_descriptor {
+>>
+> 
+
