@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759987Ab3HNOWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 10:22:13 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:63078 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757587Ab3HNOWM (ORCPT
+	id S1759888Ab3HNOZH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 10:25:07 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:45945 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab3HNOZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 10:22:12 -0400
-Date: Wed, 14 Aug 2013 11:22:05 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf tests: Fix compile failure on do_sort_something - v2
-Message-ID: <20130814142205.GB2138@ghostprotocols.net>
-References: <1376454732-83728-1-git-send-email-dsahern@gmail.com>
- <520B6490.9000001@intel.com>
+	Wed, 14 Aug 2013 10:25:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520B6490.9000001@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130814115218.GC8044@elgon.mountain>
+References: <20130814115218.GC8044@elgon.mountain>
+Date: Wed, 14 Aug 2013 07:25:03 -0700
+X-Google-Sender-Auth: A1kSxd7na_PMcAsp7jugSTMzV3Q
+Message-ID: <CAGXu5j+tSY1MPTV383ij6Jgqf+dq+QVDtpcWdXmgNKL8gpc5zQ@mail.gmail.com>
+Subject: Re: [patch] pstore: d_alloc_name() doesn't return an ERR_PTR
+From: Kees Cook <keescook@chromium.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 14, 2013 at 02:05:52PM +0300, Adrian Hunter escreveu:
-> On 14/08/13 07:32, David Ahern wrote:
-> > Commit b55ae0a9 added code-reading.c which fails to compile on Fedora 16
-> > with compiler version:
-> > Signed-off-by: David Ahern <dsahern@gmail.com>
-> > Cc: Adrian Hunter <adrian.hunter@intel.com>
-> > Cc: Jiri Olsa <jolsa@redhat.com>
-> 
-> Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+On Wed, Aug 14, 2013 at 4:52 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> d_alloc_name() returns NULL on error.  Also I changed the error code
+> from -ENOSPC to -ENOMEM to reflect that we were short on RAM not disk
+> space.
+>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Applied
+Thanks for the catch!
+
+Acked-by: Kees Cook <keescook@chromium.org>
+
+-- 
+Kees Cook
+Chrome OS Security
