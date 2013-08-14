@@ -1,80 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760116Ab3HNR5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 13:57:18 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45014 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758480Ab3HNR5P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 13:57:15 -0400
-Message-ID: <520BD308.7030709@kernel.org>
-Date: Wed, 14 Aug 2013 19:57:12 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1758461Ab3HNR6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 13:58:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54108 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758344Ab3HNR6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 13:58:09 -0400
+Date: Wed, 14 Aug 2013 19:58:06 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Ben Tebulin <tebulin@googlemail.com>
+Cc: mgorman@suse.de, hannes@cmpxchg.org, bsingharora@gmail.com,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert
+ 53a59fc67!
+Message-ID: <20130814175806.GC24033@dhcp22.suse.cz>
+References: <52050382.9060802@gmail.com>
+ <520BB225.8030807@gmail.com>
+ <20130814174039.GA24033@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Zubair Lutfullah <zubair.lutfullah@gmail.com>
-CC: jic23@cam.ac.uk, dmitry.torokhov@gmail.com, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bigeasy@linutronix.de, gregkh@linuxfoundation.org, Russ.Dill@ti.com
-Subject: Re: [PATCH 0/4] iio: input: ti_am335x_adc: Add continuous sampling
- support round 5
-References: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com>
-In-Reply-To: <1376424303-22740-1-git-send-email-zubair.lutfullah@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130814174039.GA24033@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll actually look at these later, but please do put a version number
-in your cover letter patch subject.
-[PATCH V5 0/4] is pretty much the convention to reduce the chance of anyone
-looking at the wrong version.
+[Forgot to add Peter]
 
-Thanks,
+On Wed 14-08-13 19:40:39, Michal Hocko wrote:
+> [Let's CC some more people]
+> 
+> On Wed 14-08-13 18:36:53, Ben Tebulin wrote:
+> > Hello Michal, Johannes, Balbir, Kamezawa and Mailing lists!
+> 
+> Hi,
+> 
+> > Since v3.7.2 on two independent machines a very specific Git repository
+> > fails in 9/10 cases on git-fsck due to an SHA1/memory failures. This
+> > only occurs on a very specific repository and can be reproduced stably
+> > on two independent laptops. Git mailing list ran out of ideas and for me 
+> > this looks like some very exotic kernel issue.
+> > 
+> > After a _very long session of rebooting and bisecting_ the Linux kernel
+> > (fortunately I had a SSD and ccache!) I was able to pinpoint the cause
+> > to the following patch:
+> > 
+> > *"mm: limit mmu_gather batching to fix soft lockups on !CONFIG_PREEMPT"*
+> >   787f7301074ccd07a3e82236ca41eefd245f4e07 linux stable    [1]
+> >   53a59fc67f97374758e63a9c785891ec62324c81 upstream commit [2]
+> 
+> Thanks for bisecting this up!
+> 
+> I will look into this but I find it really strange. The patch only
+> limits the number of batched pages to be freed. This might happen even
+> without the patch, albeit less likely, when a new batch cannot be
+> allocated.
+> That being said, I do not see anything obviously wrong with the patch
+> itself. Maybe we are not flushing those pages properly in some corner
+> case which doesn't trigger normally. I will have to look at it but I
+> really think this just exhibits a subtle bug in batch pages freeing.
+> 
+> I have no objection to revert the patch for now until we find out what
+> is really going on.
+> 
+> > More details are available in my previous discussion on the Git mailing:
+> > 
+> >    http://thread.gmane.org/gmane.comp.version-control.git/231872
+> > 
+> > Never had any hardware/stability issues _at all_ with these machines. 
+> > Only one repo out of 112 is affected. It's a git-svn clone and even 
+> > recreated copies out of svn do trigger the same failure.
+> > 
+> > I was able to bisect this error to this very specific commit. 
+> > Furthermore: Reverting this commit in 3.9.11 still solves the error. 
+> > 
+> > I assume this is a regression of the Linux kernel (not Git) and would 
+> > kindly ask you to revert the afore mentioned commits.
+> > 
+> > Thanks!
+> > - Ben
+> > 
+> > 
+> > I'm not subscribed - please CC me.
+> > 
+> > [1] https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=787f7301074ccd07a3e82236ca41eefd245f4e07
+> > [2] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=53a59fc67f97374758e63a9c785891ec62324c81
+> > 
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Jonathan
-
-On 08/13/13 21:04, Zubair Lutfullah wrote:
-> Round 5 updates. Fixed the define order in the header as guided by Lee.
-> 
-> Round 4 updates below.
-> 
-> Note: These apply to the fixes-togreg branch in IIO because of
-> a fix on the adc side in there.
-> 
-> The first few are for input which tweak the TSC driver to
-> allow ADC in continuous mode with irqs to work nicely together.
-> 
-> The last one is for iio which adds continuous mode to the adc side.
-> 
-> Received feedback on previous series.
-> 1. What if IRQs occur together?
-> This is handled now. Even if both assert.
-> They both work.
-> 
-> 2. IIO error handling wrong.
-> Fixed now.
-> 
-> 3. Headers wierd in IIO.
-> Fixed.
-> 
-> Apart from that, found a few bugs in continuous mode
-> here and there. And squashed them into the same patch.
-> 
-> Thanks
-> Zubair Lutfullah
-> 
-> Zubair Lutfullah (4):
->   input: ti_am335x_tsc: correct step mask update after IRQ
->   input: ti_am335x_tsc: Increase sequencer delay time
->   input: ti_am335x_tsc: Enable shared IRQ for TSC, add overrun and
->     underflow checks
->   iio: ti_am335x_adc: Add continuous sampling and trigger support
-> 
->  drivers/iio/adc/ti_am335x_adc.c           |  353 ++++++++++++++++++++++++-----
->  drivers/input/touchscreen/ti_am335x_tsc.c |   45 +++-
->  include/linux/mfd/ti_am335x_tscadc.h      |   14 ++
->  3 files changed, 342 insertions(+), 70 deletions(-)
-> 
+-- 
+Michal Hocko
+SUSE Labs
