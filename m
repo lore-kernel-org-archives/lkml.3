@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604Ab3HNKww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:52:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34519 "EHLO
+	id S932563Ab3HNKxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:53:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34511 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759874Ab3HNKht (ORCPT
+	with ESMTP id S1759738Ab3HNKhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:37:49 -0400
+	Wed, 14 Aug 2013 06:37:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhu Yanhai <gaoyang.zyh@taobao.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Turner <pjt@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Li Zefan <lizefan@huawei.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 22/75] sched: Fix the broken sched_rr_get_interval()
-Date: Wed, 14 Aug 2013 11:36:11 +0100
-Message-Id: <1376476624-10011-23-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 31/75] ARM: allow kuser helpers to be removed from the vector page
+Date: Wed, 14 Aug 2013 11:36:20 +0100
+Message-Id: <1376476624-10011-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -32,55 +27,185 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhu Yanhai <gaoyang.zyh@taobao.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit a59f4e079d19464eebb9b06513a1d4f55fdae5ba upstream.
+commit f6f91b0d9fd971c630cef908dde8fe8795aefbf8 upstream.
 
-The caller of sched_sliced() should pass se.cfs_rq and se as the
-arguments, however in sched_rr_get_interval() we gave it
-rq.cfs_rq and se, which made the following computation obviously
-wrong.
+Provide a kernel configuration option to allow the kernel user helpers
+to be removed from the vector page, thereby preventing their use with
+ROP (return orientated programming) attacks.  This option is only
+visible for CPU architectures which natively support all the operations
+which kernel user helpers would normally provide, and must be enabled
+with caution.
 
-The change was introduced by commit:
-
-  77034937dc45 sched: fix crash in sys_sched_rr_get_interval()
-
-... 5 years ago, while it had been the correct 'cfs_rq_of' before
-the commit. The change seems to be irrelevant to the commit
-msg, which was to return a 0 timeslice for tasks that are on an
-idle runqueue. So I believe that was just a plain typo.
-
-Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1357621012-15039-1-git-send-email-gaoyang.zyh@taobao.com
-[ Since this is an ABI and an old bug, we'll test this via a
-  slow upstream route, to hopefully discover any app breakage. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/entry-armv.S |  3 +++
+ arch/arm/kernel/traps.c      | 23 ++++++++++++++---------
+ arch/arm/mm/Kconfig          | 34 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 51 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c099cc6..eb12b9e 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5250,7 +5250,7 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
- 	 * idle runqueue:
- 	 */
- 	if (rq->cfs.load.weight)
--		rr_interval = NS_TO_JIFFIES(sched_slice(&rq->cfs, se));
-+		rr_interval = NS_TO_JIFFIES(sched_slice(cfs_rq_of(se), se));
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index 4c28aff..5492d72 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -795,6 +795,7 @@ ENDPROC(__switch_to)
+ 	.endr
+ 	.endm
  
- 	return rr_interval;
++#ifdef CONFIG_KUSER_HELPERS
+ 	.align	5
+ 	.globl	__kuser_helper_start
+ __kuser_helper_start:
+@@ -981,6 +982,8 @@ __kuser_helper_version:				@ 0xffff0ffc
+ 	.globl	__kuser_helper_end
+ __kuser_helper_end:
+ 
++#endif
++
+  THUMB(	.thumb	)
+ 
+ /*
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index fef90d2..7f227f7 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -775,23 +775,32 @@ void __init trap_init(void)
+ 	return;
  }
+ 
+-static void __init kuser_get_tls_init(unsigned long vectors)
++#ifdef CONFIG_KUSER_HELPERS
++static void __init kuser_init(void *vectors)
+ {
++	extern char __kuser_helper_start[], __kuser_helper_end[];
++	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
++
++	memcpy(vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
++
+ 	/*
+ 	 * vectors + 0xfe0 = __kuser_get_tls
+ 	 * vectors + 0xfe8 = hardware TLS instruction at 0xffff0fe8
+ 	 */
+ 	if (tls_emu || has_tls_reg)
+-		memcpy((void *)vectors + 0xfe0, (void *)vectors + 0xfe8, 4);
++		memcpy(vectors + 0xfe0, vectors + 0xfe8, 4);
++}
++#else
++static void __init kuser_init(void *vectors)
++{
+ }
++#endif
+ 
+ void __init early_trap_init(void *vectors_base)
+ {
+ 	unsigned long vectors = (unsigned long)vectors_base;
+ 	extern char __stubs_start[], __stubs_end[];
+ 	extern char __vectors_start[], __vectors_end[];
+-	extern char __kuser_helper_start[], __kuser_helper_end[];
+-	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
+ 	unsigned i;
+ 
+ 	vectors_page = vectors_base;
+@@ -812,12 +821,8 @@ void __init early_trap_init(void *vectors_base)
+ 	 */
+ 	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
+ 	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
+-	memcpy((void *)vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
+ 
+-	/*
+-	 * Do processor specific fixups for the kuser helpers
+-	 */
+-	kuser_get_tls_init(vectors);
++	kuser_init(vectors_base);
+ 
+ 	/*
+ 	 * Copy signal return handlers into the vector page, and
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 101b968..8d194df 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -400,24 +400,28 @@ config CPU_32v3
+ 	select TLS_REG_EMUL if SMP || !MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select CPU_USE_DOMAINS if MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v4
+ 	bool
+ 	select TLS_REG_EMUL if SMP || !MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select CPU_USE_DOMAINS if MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v4T
+ 	bool
+ 	select TLS_REG_EMUL if SMP || !MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select CPU_USE_DOMAINS if MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v5
+ 	bool
+ 	select TLS_REG_EMUL if SMP || !MMU
+ 	select NEEDS_SYSCALL_FOR_CMPXCHG if SMP
+ 	select CPU_USE_DOMAINS if MMU
++	select NEED_KUSER_HELPERS
+ 
+ config CPU_32v6
+ 	bool
+@@ -735,6 +739,7 @@ config CPU_BPREDICT_DISABLE
+ 
+ config TLS_REG_EMUL
+ 	bool
++	select NEED_KUSER_HELPERS
+ 	help
+ 	  An SMP system using a pre-ARMv6 processor (there are apparently
+ 	  a few prototypes like that in existence) and therefore access to
+@@ -742,11 +747,40 @@ config TLS_REG_EMUL
+ 
+ config NEEDS_SYSCALL_FOR_CMPXCHG
+ 	bool
++	select NEED_KUSER_HELPERS
+ 	help
+ 	  SMP on a pre-ARMv6 processor?  Well OK then.
+ 	  Forget about fast user space cmpxchg support.
+ 	  It is just not possible.
+ 
++config NEED_KUSER_HELPERS
++	bool
++
++config KUSER_HELPERS
++	bool "Enable kuser helpers in vector page" if !NEED_KUSER_HELPERS
++	default y
++	help
++	  Warning: disabling this option may break user programs.
++
++	  Provide kuser helpers in the vector page.  The kernel provides
++	  helper code to userspace in read only form at a fixed location
++	  in the high vector page to allow userspace to be independent of
++	  the CPU type fitted to the system.  This permits binaries to be
++	  run on ARMv4 through to ARMv7 without modification.
++
++	  However, the fixed address nature of these helpers can be used
++	  by ROP (return orientated programming) authors when creating
++	  exploits.
++
++	  If all of the binaries and libraries which run on your platform
++	  are built specifically for your platform, and make no use of
++	  these helpers, then you can turn this option off.  However,
++	  when such an binary or library is run, it will receive a SIGILL
++	  signal, which will terminate the program.
++
++	  Say N here only if you are absolutely certain that you do not
++	  need these helpers; otherwise, the safe option is to say Y.
++
+ config DMA_CACHE_RWFO
+ 	bool "Enable read/write for ownership DMA cache maintenance"
+ 	depends on CPU_V6K && SMP
 -- 
 1.8.3.2
 
