@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab3HNJX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:23:29 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43762 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759357Ab3HNJX2 (ORCPT
+	id S932314Ab3HNJYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:24:00 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:48960 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab3HNJX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:23:28 -0400
-Message-ID: <520B4C8E.1010808@linaro.org>
-Date: Wed, 14 Aug 2013 11:23:26 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 14 Aug 2013 05:23:58 -0400
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/6] ARM/ARM64: arch_timer: add macros for bits in
- control register
-References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-2-git-send-email-Sudeep.KarkadaNagesha@arm.com> <520B44CF.6040403@linaro.org> <6071c584a32b1a5f80923818a477a719@www.loen.fr>
-In-Reply-To: <6071c584a32b1a5f80923818a477a719@www.loen.fr>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1376471493-22215-4-git-send-email-Julia.Lawall@lip6.fr>
+References: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1376471493-22215-4-git-send-email-Julia.Lawall@lip6.fr>
+Date: Wed, 14 Aug 2013 14:53:57 +0530
+X-Google-Sender-Auth: zHRVOIXzjayB60kzGe8kPtY7tbE
+Message-ID: <CAOh2x=mnyjCC6uqoqOqD=8S0gDQNDytbDd=Eo-sKj8hTq8j_+w@mail.gmail.com>
+Subject: Re: [PATCH 3/29] drivers/gpio: simplify use of devm_ioremap_resource
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Linus Walleij <linus.walleij@linaro.org>, kernel-janitors@vger.kernel.org,
+        linux-gpio@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 11:03 AM, Marc Zyngier wrote:
-> Hi Daniel,
+On Wed, Aug 14, 2013 at 2:41 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> Remove unneeded error handling on the result of a call to
+> platform_get_resource when the value is passed to devm_ioremap_resource.
+>
+> Move the call to platform_get_resource adjacent to the call to
+> devm_ioremap_resource to make the connection between them more clear.
+>
+> A simplified version of the semantic patch that makes this change is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> expression pdev,res,n,e,e1;
+> expression ret != 0;
+> identifier l;
+> @@
+>
+> - res = platform_get_resource(pdev, IORESOURCE_MEM, n);
+>   ... when != res
+> - if (res == NULL) { ... \(goto l;\|return ret;\) }
+>   ... when != res
+> + res = platform_get_resource(pdev, IORESOURCE_MEM, n);
+>   e = devm_ioremap_resource(e1, res);
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> ---
 
-[ ... ]
+>  drivers/gpio/gpio-spear-spics.c |    7 +------
+>  2 files changed, 2 insertions(+), 12 deletions(-)
 
->>> --- a/arch/arm64/include/asm/arch_timer.h
->>> +++ b/arch/arm64/include/asm/arch_timer.h
->>> @@ -101,12 +101,16 @@ static inline void
->>> arch_counter_set_user_access(void)
->>>  {
->>>      u32 cntkctl;
->>>
->>> -    /* Disable user access to the timers and the physical counter. */
->>>      asm volatile("mrs    %0, cntkctl_el1" : "=r" (cntkctl));
->>> -    cntkctl &= ~((3 << 8) | (1 << 0));
->>>
->>> -    /* Enable user access to the virtual counter and frequency. */
->>> -    cntkctl |= (1 << 1);
->>> +    /* Disable user access to the timers and the physical counter. */
->>> +    cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
->>> +            | ARCH_TIMER_USR_VT_ACCESS_EN
->>> +            | ARCH_TIMER_USR_PCT_ACCESS_EN);
->>> +
->>> +    /* Enable user access to the virtual counter. */
->>> +    cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
->>> +
->>>      asm volatile("msr    cntkctl_el1, %0" : : "r" (cntkctl));
->>>  }
->>
->> Before doing those changes, I suggest you kill include/asm/arch_timer.h
->> header file and move the functions directly in the arm_arch_timer.c as
->> they are only used by it.
-> 
-> How do you suggest to proceed? Having #ifdefs in arm_arch_timer.c to
-> cope with the inline assembly functions present in both arm and arm64
-> include files? Doesn't seem much of a progress to me...
+For SPEAr:
 
-I understand, this is arguable.
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> diff --git a/drivers/gpio/gpio-spear-spics.c b/drivers/gpio/gpio-spear-spics.c
+> index 7a4bf7c..e9a0415 100644
+> --- a/drivers/gpio/gpio-spear-spics.c
+> +++ b/drivers/gpio/gpio-spear-spics.c
+> @@ -128,18 +128,13 @@ static int spics_gpio_probe(struct platform_device *pdev)
+>         struct resource *res;
+>         int ret;
+>
+> -       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -       if (!res) {
+> -               dev_err(&pdev->dev, "invalid IORESOURCE_MEM\n");
+> -               return -EBUSY;
+> -       }
+> -
+>         spics = devm_kzalloc(&pdev->dev, sizeof(*spics), GFP_KERNEL);
+>         if (!spics) {
+>                 dev_err(&pdev->dev, "memory allocation fail\n");
+>                 return -ENOMEM;
+>         }
+>
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>         spics->base = devm_ioremap_resource(&pdev->dev, res);
+>         if (IS_ERR(spics->base))
+>                 return PTR_ERR(spics->base);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
