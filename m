@@ -1,139 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760290Ab3HNS1x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:27:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34386 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760269Ab3HNSZd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:25:33 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 00/21] perf/core improvements and fixes
-Date: Wed, 14 Aug 2013 15:24:54 -0300
-Message-Id: <1376504715-28107-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S1760327Ab3HNS2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:28:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54961 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760275Ab3HNS2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 14:28:10 -0400
+Date: Wed, 14 Aug 2013 20:28:04 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Tebulin <tebulin@googlemail.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert
+ 53a59fc67!
+Message-ID: <20130814182756.GD24033@dhcp22.suse.cz>
+References: <52050382.9060802@gmail.com>
+ <520BB225.8030807@gmail.com>
+ <20130814174039.GA24033@dhcp22.suse.cz>
+ <CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+On Wed 14-08-13 11:03:32, Linus Torvalds wrote:
+> On Wed, Aug 14, 2013 at 10:40 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> >>
+> >> After a _very long session of rebooting and bisecting_ the Linux kernel
+> >> (fortunately I had a SSD and ccache!) I was able to pinpoint the cause
+> >> to the following patch:
+> >>
+> >> *"mm: limit mmu_gather batching to fix soft lockups on !CONFIG_PREEMPT"*
+> >>   787f7301074ccd07a3e82236ca41eefd245f4e07 linux stable    [1]
+> >>   53a59fc67f97374758e63a9c785891ec62324c81 upstream commit [2]
+> >
+> > Thanks for bisecting this up!
+> >
+> > I will look into this but I find it really strange.
+> 
+> We had a TLB invalidation bug in the case when we ran out of page
+> slots (and limiting the mmu_gather batching basically forcesd an early
+> case of that).
+> 
+> It was fixed in commit e6c495a96ce02574e765d5140039a64c8d4e8c9e ("mm:
+> fix the TLB range flushed when __tlb_remove_page() runs out of
+> slots"),
 
-Hi Ingo,
+OK that would suggest the issue has been introduced by 597e1c35:
+(mm/mmu_gather: enable tlb flush range in generic mmu_gather) in 3.6
+which is not 3.7 when Ben started seeing the issue but this definitely
+smells like a bug that would be amplified by the bisected patch.
 
-	Please consider pulling,
+Thanks for pointing this out, Linus!
 
-	Flushing it out now before processing another batch.
+> and that doesn't seem to have been marked for stable
+> (probably because the commit message makes everytbody reading it think
+> it's limited to ARC).
+> 
+> Ben, can you try back-porting that commit from mainline and see if
+> that fixes things?
+> 
+>                  Linus
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-- Arnaldo
-
-The following changes since commit 0a3d23a2568ed5e73bd4fb532dc672fa9f03b1f1:
-
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-08-12 10:14:47 +0200)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-
-for you to fetch changes up to 2ae3a312c0ccd8ff615372f00aab1700aac27474:
-
-  perf trace: Allow specifying which syscalls to trace (2013-08-14 11:44:21 -0300)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Allow specifying syscalls in 'perf trace', a la strace.
-
-. Simplify symbol filtering by doing it at machine class level,
-  from Adrian Hunter.
-
-. Add option to 'perf kvm' to print only events that exceed a specified time
-  duration, from David Ahern.
-
-. 'perf sched' improvements, including removing some tracepoints that provide
-  the same information as the PERF_RECORD_{FORK,EXIT} events.
-
-. Improve stack trace printing, from David Ahern.
-
-. Update documentation with live command, from David Ahern
-
-. Fix 'perf test' compile failure on do_sort_something, from David Ahern.
-
-. Improve robustness of topology parsing code, from Stephane Eranian.
-
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-----------------------------------------------------------------
-Adrian Hunter (8):
-      perf machine: Add symbol filter to struct machine
-      perf top: Set the machines symbol filter
-      perf report: Set the machines symbol filter
-      perf mem: Remove unused symbol filter member
-      perf annotate: Set the machines symbol filter
-      perf tools: Remove filter parameter of perf_event__preprocess_sample()
-      perf tools: Remove filter parameter of thread__find_addr_location()
-      perf tools: Remove filter parameter of thread__find_addr_map()
-
-Arnaldo Carvalho de Melo (1):
-      perf trace: Allow specifying which syscalls to trace
-
-David Ahern (11):
-      perf kvm: Option to print events that exceed a duration
-      perf kvm: Update documentation with live command
-      perf sched: Simplify arguments to read_events
-      perf sched: Remove thread lookup in sample handler
-      perf sched: Remove sched_process_exit tracepoint
-      perf sched: Remove sched_process_fork tracepoint
-      perf tool: Simplify options to perf_evsel__print_ip
-      perf evsel: Add option to print stack trace on single line
-      perf evsel: Add option to limit stack depth in callchain dumps
-      perf session: Change perf_session__has_traces to actually check for tracepoints
-      perf tests: Fix compile failure on do_sort_something
-
-Stephane Eranian (1):
-      perf tools: Improve robustness of topology parsing code
-
- tools/perf/Documentation/perf-kvm.txt   | 46 +++++++++++++++-
- tools/perf/Documentation/perf-trace.txt |  4 ++
- tools/perf/builtin-annotate.c           |  5 +-
- tools/perf/builtin-diff.c               |  2 +-
- tools/perf/builtin-inject.c             |  2 +-
- tools/perf/builtin-kvm.c                | 25 +++++++--
- tools/perf/builtin-mem.c                |  4 +-
- tools/perf/builtin-report.c             |  7 ++-
- tools/perf/builtin-sched.c              | 94 ++++++++++++++-------------------
- tools/perf/builtin-script.c             | 35 +++++++++---
- tools/perf/builtin-top.c                |  5 +-
- tools/perf/builtin-trace.c              | 52 +++++++++++++++---
- tools/perf/perf.h                       |  3 ++
- tools/perf/tests/code-reading.c         | 13 +++--
- tools/perf/tests/hists_link.c           |  4 +-
- tools/perf/util/build-id.c              |  2 +-
- tools/perf/util/event.c                 | 20 +++----
- tools/perf/util/event.h                 |  3 +-
- tools/perf/util/header.c                | 11 ++--
- tools/perf/util/machine.c               | 28 ++++++++--
- tools/perf/util/machine.h               |  5 ++
- tools/perf/util/session.c               | 40 +++++++++-----
- tools/perf/util/session.h               |  8 ++-
- tools/perf/util/thread.h                |  5 +-
- tools/perf/util/unwind.c                |  6 +--
- 25 files changed, 294 insertions(+), 135 deletions(-)
+-- 
+Michal Hocko
+SUSE Labs
