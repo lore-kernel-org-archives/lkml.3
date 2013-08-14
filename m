@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365Ab3HNJLz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:11:55 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4384 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932324Ab3HNJLw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932332Ab3HNJLw (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 Aug 2013 05:11:52 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:57951
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932241Ab3HNJLq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 05:11:46 -0400
 X-IronPort-AV: E=Sophos;i="4.89,875,1367964000"; 
-   d="scan'208";a="23908340"
+   d="scan'208";a="23908328"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Felipe Balbi <balbi@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: kernel-janitors@vger.kernel.org, rtc-linux@googlegroups.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 29/29] usb: dwc3: omap: simplify use of devm_ioremap_resource
-Date: Wed, 14 Aug 2013 11:11:33 +0200
-Message-Id: <1376471493-22215-30-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 17/29] drivers/rtc: simplify use of devm_ioremap_resource
+Date: Wed, 14 Aug 2013 11:11:21 +0200
+Message-Id: <1376471493-22215-18-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -29,6 +27,9 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Remove unneeded error handling on the result of a call to
 platform_get_resource when the value is passed to devm_ioremap_resource.
+
+Move the call to platform_get_resource adjacent to the call to
+devm_ioremap_resource to make the connection between them more clear.
 
 A simplified version of the semantic patch that makes this change is as
 follows: (http://coccinelle.lip6.fr/)
@@ -51,23 +52,74 @@ identifier l;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/usb/dwc3/dwc3-omap.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/rtc/rtc-ds1216.c |    4 +---
+ drivers/rtc/rtc-ds1286.c |    4 +---
+ drivers/rtc/rtc-spear.c  |    7 +------
+ 3 files changed, 3 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
-index 7f7ea62..cbcd972 100644
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -432,11 +432,6 @@ static int dwc3_omap_probe(struct platform_device *pdev)
- 	}
+diff --git a/drivers/rtc/rtc-ds1216.c b/drivers/rtc/rtc-ds1216.c
+index 9c04fd2..c948bd3 100644
+--- a/drivers/rtc/rtc-ds1216.c
++++ b/drivers/rtc/rtc-ds1216.c
+@@ -144,15 +144,13 @@ static int __init ds1216_rtc_probe(struct platform_device *pdev)
+ 	struct ds1216_priv *priv;
+ 	u8 dummy[8];
  
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -ENODEV;
+ 	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+ 	platform_set_drvdata(pdev, priv);
+ 
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	priv->ioaddr = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(priv->ioaddr))
+ 		return PTR_ERR(priv->ioaddr);
+diff --git a/drivers/rtc/rtc-ds1286.c b/drivers/rtc/rtc-ds1286.c
+index 50e109b..14c4b24 100644
+--- a/drivers/rtc/rtc-ds1286.c
++++ b/drivers/rtc/rtc-ds1286.c
+@@ -332,13 +332,11 @@ static int ds1286_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	struct ds1286_priv *priv;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -ENODEV;
+ 	priv = devm_kzalloc(&pdev->dev, sizeof(struct ds1286_priv), GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	priv->rtcregs = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(priv->rtcregs))
+ 		return PTR_ERR(priv->rtcregs);
+diff --git a/drivers/rtc/rtc-spear.c b/drivers/rtc/rtc-spear.c
+index c492cf0..6470641 100644
+--- a/drivers/rtc/rtc-spear.c
++++ b/drivers/rtc/rtc-spear.c
+@@ -358,12 +358,6 @@ static int spear_rtc_probe(struct platform_device *pdev)
+ 	int status = 0;
+ 	int irq;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 -	if (!res) {
--		dev_err(dev, "missing memory base resource\n");
--		return -EINVAL;
+-		dev_err(&pdev->dev, "no resource defined\n");
+-		return -EBUSY;
 -	}
 -
- 	base = devm_ioremap_resource(dev, res);
- 	if (IS_ERR(base))
- 		return PTR_ERR(base);
+ 	config = devm_kzalloc(&pdev->dev, sizeof(*config), GFP_KERNEL);
+ 	if (!config) {
+ 		dev_err(&pdev->dev, "out of memory\n");
+@@ -385,6 +379,7 @@ static int spear_rtc_probe(struct platform_device *pdev)
+ 		return status;
+ 	}
+ 
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	config->ioaddr = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(config->ioaddr))
+ 		return PTR_ERR(config->ioaddr);
 
