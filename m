@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab3HNJM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:12:29 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:4384 "EHLO
-	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932204Ab3HNJLu (ORCPT
+	id S932411Ab3HNJM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:12:28 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:57951
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932310Ab3HNJLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Aug 2013 05:11:50 -0400
 X-IronPort-AV: E=Sophos;i="4.89,875,1367964000"; 
-   d="scan'208";a="23908337"
+   d="scan'208";a="23908336"
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+To: Barry Song <baohua.song@csr.com>
+Cc: kernel-janitors@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 26/29] drivers/media/platform/coda.c: simplify use of devm_ioremap_resource
-Date: Wed, 14 Aug 2013 11:11:30 +0200
-Message-Id: <1376471493-22215-27-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 25/29] drivers/spi/spi-sirf.c: simplify use of devm_ioremap_resource
+Date: Wed, 14 Aug 2013 11:11:29 +0200
+Message-Id: <1376471493-22215-26-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -27,6 +28,9 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Remove unneeded error handling on the result of a call to
 platform_get_resource when the value is passed to devm_ioremap_resource.
+
+Move the call to platform_get_resource adjacent to the call to
+devm_ioremap_resource to make the connection between them more clear.
 
 A simplified version of the semantic patch that makes this change is as
 follows: (http://coccinelle.lip6.fr/)
@@ -49,23 +53,32 @@ identifier l;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/media/platform/coda.c |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/spi/spi-sirf.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/media/platform/coda.c b/drivers/media/platform/coda.c
-index 66db0df..1a2192f 100644
---- a/drivers/media/platform/coda.c
-+++ b/drivers/media/platform/coda.c
-@@ -3122,11 +3122,6 @@ static int coda_probe(struct platform_device *pdev)
+diff --git a/drivers/spi/spi-sirf.c b/drivers/spi/spi-sirf.c
+index 62c92c3..546fae2 100644
+--- a/drivers/spi/spi-sirf.c
++++ b/drivers/spi/spi-sirf.c
+@@ -588,12 +588,6 @@ static int spi_sirfsoc_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, master);
+ 	sspi = spi_master_get_devdata(master);
  
- 	/* Get  memory for physical registers */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
--		dev_err(&pdev->dev, "failed to get memory region resource\n");
--		return -ENOENT;
+-	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!mem_res) {
+-		dev_err(&pdev->dev, "Unable to get IO resource\n");
+-		ret = -ENODEV;
+-		goto free_master;
 -	}
--
- 	dev->regs_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(dev->regs_base))
- 		return PTR_ERR(dev->regs_base);
+ 	master->num_chipselect = num_cs;
+ 
+ 	for (i = 0; i < master->num_chipselect; i++) {
+@@ -620,6 +614,7 @@ static int spi_sirfsoc_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	sspi->base = devm_ioremap_resource(&pdev->dev, mem_res);
+ 	if (IS_ERR(sspi->base)) {
+ 		ret = PTR_ERR(sspi->base);
 
