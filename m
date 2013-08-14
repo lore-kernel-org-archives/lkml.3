@@ -1,107 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab3HNMXW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:23:22 -0400
-Received: from mail7.windriver.com ([128.224.252.3]:51273 "EHLO
-	mail7.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759697Ab3HNMXV (ORCPT
+	id S1759875Ab3HNMZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:25:57 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:44154 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759697Ab3HNMZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:23:21 -0400
-X-Greylist: delayed 12612 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Aug 2013 08:23:21 EDT
-Message-ID: <520B4552.2000607@windriver.com>
-Date: Wed, 14 Aug 2013 16:52:34 +0800
-From: Fan Du <fan.du@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: <tglx@linutronix.de>, Steffen Klassert <steffen.klassert@secunet.com>,
-        David Miller <davem@davemloft.net>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-Subject: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set was
- called
-References: <1375866296-15079-1-git-send-email-fan.du@windriver.com> <1375866296-15079-2-git-send-email-fan.du@windriver.com> <52021177.6020306@redhat.com> <520213F2.5090401@windriver.com> <520214C6.6000307@redhat.com>
-In-Reply-To: <520214C6.6000307@redhat.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.162.195]
+	Wed, 14 Aug 2013 08:25:55 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Wilcox <matthew@wil.cx>
+Subject: [PATCH 0/3] locks: trivial locks.c patches
+Date: Wed, 14 Aug 2013 08:25:46 -0400
+Message-Id: <1376483149-7633-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From e3929d4fdfad5b40fd8cad0e217597670d1aef54 Mon Sep 17 00:00:00 2001
-From: Fan Du <fan.du@windriver.com>
-Date: Wed, 14 Aug 2013 16:39:23 +0800
-Subject: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set was called
+A few reasonably trivial patches for locks.c. Al, can you apply these
+for 3.12?
 
-When clock_was_set is called in case of system wall time change
-or host resume from suspend state, use this notifier for places
-where interested in this action, e.g Ipsec SA lifetime management.
+Jeff Layton (3):
+  locks: clean up comment typo
+  locks: remove "inline" qualifier from fl_link manipulation functions
+  locks: add __acquires and __releases annotations to locks_start and
+    locks_stop
 
-Signed-off-by: Fan Du <fan.du@windriver.com>
-
-v3:
-   -Beautify notifier with register/unregister API exported for other subsystem.
-
----
-  include/linux/hrtimer.h |    3 +++
-  kernel/hrtimer.c        |   19 +++++++++++++++++++
-  2 files changed, 22 insertions(+)
-
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index d19a5c2..f0404e4 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -461,4 +461,7 @@ extern u64 ktime_divns(const ktime_t kt, s64 div);
-  /* Show pending timers: */
-  extern void sysrq_timer_list_show(void);
-
-+extern int register_clock_change_notifier(struct notifier_block *nb);
-+extern int unregister_clock_change_notifier(struct notifier_block *nb);
-+
-  #endif
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 383319b..c6e6405 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -755,6 +755,24 @@ static inline void retrigger_next_event(void *arg) { }
-
-  #endif /* CONFIG_HIGH_RES_TIMERS */
-
-+static ATOMIC_NOTIFIER_HEAD(clock_change_notifier_list);
-+static int call_clock_change_notifiers(void)
-+{
-+	return atomic_notifier_call_chain(&clock_change_notifier_list, 0, 0);
-+}
-+
-+int register_clock_change_notifier(struct notifier_block *nb)
-+{
-+	return atomic_notifier_chain_register(&clock_change_notifier_list, nb);
-+}
-+EXPORT_SYMBOL_GPL(register_clock_change_notifier);
-+
-+int unregister_clock_change_notifier(struct notifier_block *nb)
-+{
-+	return atomic_notifier_chain_unregister(&clock_change_notifier_list, nb);
-+}
-+EXPORT_SYMBOL_GPL(unregister_clock_change_notifier);
-+
-  /*
-   * Clock realtime was set
-   *
-@@ -773,6 +791,7 @@ void clock_was_set(void)
-  	on_each_cpu(retrigger_next_event, NULL, 1);
-  #endif
-  	timerfd_clock_was_set();
-+	call_clock_change_notifiers();
-  }
-
-  /*
--- 
-1.7.9.5
-
+ fs/locks.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
 -- 
-浮沉随浪只记今朝笑
+1.8.3.1
 
---fan
