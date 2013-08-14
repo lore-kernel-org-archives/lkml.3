@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760230Ab3HNSZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:25:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34306 "EHLO
+	id S1760195Ab3HNSZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:25:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34302 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760034Ab3HNSZY (ORCPT
+	with ESMTP id S1758610Ab3HNSZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Aug 2013 14:25:24 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -13,11 +13,12 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/21] perf sched: Simplify arguments to read_events
-Date: Wed, 14 Aug 2013 15:24:57 -0300
-Message-Id: <1376504715-28107-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/21] perf kvm: Option to print events that exceed a duration
+Date: Wed, 14 Aug 2013 15:24:55 -0300
+Message-Id: <1376504715-28107-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376504715-28107-1-git-send-email-acme@infradead.org>
 References: <1376504715-28107-1-git-send-email-acme@infradead.org>
@@ -29,8 +30,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-Destroy argument is not necessary. If session is not returned to caller,
-then clean it up.
+This is useful to spot high latency blips. It is normal for HLT reasons
+to have long exit times, so strip those from the duration check.
+
+v2: changed threshold to duration per acme's request
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -38,71 +41,104 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1375930261-77273-3-git-send-email-dsahern@gmail.com
+Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1375926999-75129-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-sched.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ tools/perf/builtin-kvm.c | 25 +++++++++++++++++++++----
+ tools/perf/perf.h        |  3 +++
+ 2 files changed, 24 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 948183a..34ce57d 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1445,7 +1445,7 @@ static int perf_sched__process_tracepoint_sample(struct perf_tool *tool __maybe_
- 	return err;
- }
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 2ceec81..fa2f3d7 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -106,6 +106,7 @@ struct perf_kvm_stat {
+ 	u64 total_time;
+ 	u64 total_count;
+ 	u64 lost_events;
++	u64 duration;
  
--static int perf_sched__read_events(struct perf_sched *sched, bool destroy,
-+static int perf_sched__read_events(struct perf_sched *sched,
- 				   struct perf_session **psession)
+ 	const char *pid_str;
+ 	struct intlist *pid_list;
+@@ -473,7 +474,7 @@ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
+ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 			     struct vcpu_event_record *vcpu_record,
+ 			     struct event_key *key,
+-			     u64 timestamp)
++			     struct perf_sample *sample)
  {
- 	const struct perf_evsel_str_handler handlers[] = {
-@@ -1480,11 +1480,10 @@ static int perf_sched__read_events(struct perf_sched *sched, bool destroy,
- 		sched->nr_lost_chunks = session->stats.nr_events[PERF_RECORD_LOST];
+ 	struct kvm_event *event;
+ 	u64 time_begin, time_diff;
+@@ -510,12 +511,24 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 	vcpu_record->start_time = 0;
+ 
+ 	/* seems to happen once in a while during live mode */
+-	if (timestamp < time_begin) {
++	if (sample->time < time_begin) {
+ 		pr_debug("End time before begin time; skipping event.\n");
+ 		return true;
  	}
  
--	if (destroy)
--		perf_session__delete(session);
--
- 	if (psession)
- 		*psession = session;
-+	else
-+		perf_session__delete(session);
- 
- 	return 0;
- 
-@@ -1529,8 +1528,11 @@ static int perf_sched__lat(struct perf_sched *sched)
- 	struct perf_session *session;
- 
- 	setup_pager();
--	if (perf_sched__read_events(sched, false, &session))
+-	time_diff = timestamp - time_begin;
++	time_diff = sample->time - time_begin;
 +
-+	/* save session -- references to threads are held in work_list */
-+	if (perf_sched__read_events(sched, &session))
- 		return -1;
++	if (kvm->duration && time_diff > kvm->duration) {
++		char decode[32];
 +
- 	perf_sched__sort_lat(sched);
++		kvm->events_ops->decode_key(kvm, &event->key, decode);
++		if (strcmp(decode, "HLT")) {
++			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
++				 sample->time, sample->pid, vcpu_record->vcpu_id,
++				 decode, time_diff/1000);
++		}
++	}
++
+ 	return update_kvm_event(event, vcpu, time_diff);
+ }
  
- 	printf("\n ---------------------------------------------------------------------------------------------------------------\n");
-@@ -1565,7 +1567,7 @@ static int perf_sched__map(struct perf_sched *sched)
- 	sched->max_cpu = sysconf(_SC_NPROCESSORS_CONF);
+@@ -562,7 +575,7 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
+ 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
  
- 	setup_pager();
--	if (perf_sched__read_events(sched, true, NULL))
-+	if (perf_sched__read_events(sched, NULL))
- 		return -1;
- 	print_bad_events(sched);
- 	return 0;
-@@ -1580,7 +1582,7 @@ static int perf_sched__replay(struct perf_sched *sched)
+ 	if (kvm->events_ops->is_end_event(evsel, sample, &key))
+-		return handle_end_event(kvm, vcpu_record, &key, sample->time);
++		return handle_end_event(kvm, vcpu_record, &key, sample);
  
- 	test_calibrations(sched);
+ 	return true;
+ }
+@@ -1429,6 +1442,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
+ 			"key for sorting: sample(sort by samples number)"
+ 			" time (sort by avg time)"),
++		OPT_U64(0, "duration", &kvm->duration,
++		    "show events other than HALT that take longer than duration usecs"),
+ 		OPT_END()
+ 	};
+ 	const char * const live_usage[] = {
+@@ -1467,6 +1482,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 			usage_with_options(live_usage, live_options);
+ 	}
  
--	if (perf_sched__read_events(sched, true, NULL))
-+	if (perf_sched__read_events(sched, NULL))
- 		return -1;
++	kvm->duration *= NSEC_PER_USEC;   /* convert usec to nsec */
++
+ 	/*
+ 	 * target related setups
+ 	 */
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 32bd102..cf20187 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -125,6 +125,9 @@
+ #ifndef NSEC_PER_SEC
+ # define NSEC_PER_SEC			1000000000ULL
+ #endif
++#ifndef NSEC_PER_USEC
++# define NSEC_PER_USEC			1000ULL
++#endif
  
- 	printf("nr_run_events:        %ld\n", sched->nr_run_events);
+ static inline unsigned long long rdclock(void)
+ {
 -- 
 1.8.1.4
 
