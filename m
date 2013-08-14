@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab3HNKlY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:41:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34721 "EHLO
+	id S932649Ab3HNKi3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:38:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34670 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932444Ab3HNKib (ORCPT
+	with ESMTP id S932443Ab3HNKiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:31 -0400
+	Wed, 14 Aug 2013 06:38:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Curt Brune <curt@cumulusnetworks.com>, Guenter Roeck <linux@roeck-us.net>,
+Cc: Sumit Saxena <sumit.saxena@lsi.com>, Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 69/75] hwmon: (adt7470) Fix incorrect return code check
-Date: Wed, 14 Aug 2013 11:36:58 +0100
-Message-Id: <1376476624-10011-70-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 59/75] [SCSI] megaraid_sas: megaraid_sas driver init fails in kdump kernel
+Date: Wed, 14 Aug 2013 11:36:48 +0100
+Message-Id: <1376476624-10011-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Curt Brune <curt@cumulusnetworks.com>
+From: "Sumit.Saxena@lsi.com" <Sumit.Saxena@lsi.com>
 
-commit 93d783bcca69bfacc8dc739d8a050498402587b5 upstream.
+commit 6431f5d7c6025f8b007af06ea090de308f7e6881 upstream.
 
-In adt7470_write_word_data(), which writes two bytes using
-i2c_smbus_write_byte_data(), the return codes are incorrectly AND-ed
-together when they should be OR-ed together.
+Problem: When Hardware IOMMU is on, megaraid_sas driver initialization fails
+in kdump kernel with LSI MegaRAID controller(device id-0x73).
 
-The return code of i2c_smbus_write_byte_data() is zero for success.
+Actually this issue needs fix in firmware, but for firmware running in field,
+this driver fix is proposed to resolve the issue.  At firmware initialization
+time, if firmware does not come to ready state, driver will reset the adapter
+and retry for firmware transition to ready state unconditionally(not only
+executed for kdump kernel).
 
-The upshot is only the first byte was ever written to the hardware.
-The 2nd byte was never written out.
-
-I noticed that trying to set the fan speed limits was not working
-correctly on my system.  Setting the fan speed limits is the only
-code that uses adt7470_write_word_data().  After making the change
-the limit settings work and the alarms work also.
-
-Signed-off-by: Curt Brune <curt@cumulusnetworks.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Sumit Saxena <sumit.saxena@lsi.com>
+Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hwmon/adt7470.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hwmon/adt7470.c b/drivers/hwmon/adt7470.c
-index 54ec890..034085d 100644
---- a/drivers/hwmon/adt7470.c
-+++ b/drivers/hwmon/adt7470.c
-@@ -215,7 +215,7 @@ static inline int adt7470_write_word_data(struct i2c_client *client, u8 reg,
- 					  u16 value)
- {
- 	return i2c_smbus_write_byte_data(client, reg, value & 0xFF)
--	       && i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
-+	       || i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
- }
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index d525297..7593e28 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -3493,11 +3493,21 @@ static int megasas_init_fw(struct megasas_instance *instance)
+ 		break;
+ 	}
  
- static void adt7470_init_client(struct i2c_client *client)
+-	/*
+-	 * We expect the FW state to be READY
+-	 */
+-	if (megasas_transition_to_ready(instance, 0))
+-		goto fail_ready_state;
++	if (megasas_transition_to_ready(instance, 0)) {
++		atomic_set(&instance->fw_reset_no_pci_access, 1);
++		instance->instancet->adp_reset
++			(instance, instance->reg_set);
++		atomic_set(&instance->fw_reset_no_pci_access, 0);
++		dev_info(&instance->pdev->dev,
++			"megasas: FW restarted successfully from %s!\n",
++			__func__);
++
++		/*waitting for about 30 second before retry*/
++		ssleep(30);
++
++		if (megasas_transition_to_ready(instance, 0))
++			goto fail_ready_state;
++	}
+ 
+ 	/* Check if MSI-X is supported while in ready state */
+ 	msix_enable = (instance->instancet->read_fw_status_reg(reg_set) &
 -- 
 1.8.3.2
 
