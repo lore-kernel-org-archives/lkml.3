@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab3HNOlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 10:41:07 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61263 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932383Ab3HNOlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 10:41:05 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520B9700.7010105@roeck-us.net>
-Date: Wed, 14 Aug 2013 07:41:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S932608Ab3HNOmd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 10:42:33 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:52859 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932352Ab3HNOmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 10:42:32 -0400
+Date: Wed, 14 Aug 2013 10:41:46 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Roman Gushchin <klamm@yandex-team.ru>,
+        Ozgun Erdogan <ozgun@citusdata.com>, Metin Doslu <metin@citusdata.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: workingset: keep shadow entries in check
+Message-ID: <20130814144146.GA28858@cmpxchg.org>
+References: <1375829050-12654-1-git-send-email-hannes@cmpxchg.org>
+ <1375829050-12654-10-git-send-email-hannes@cmpxchg.org>
+ <20130811235631.GO19750@two.firstfloor.org>
 MIME-Version: 1.0
-To: Peter Maydell <peter.maydell@linaro.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        qemu-devel@nongnu.org, Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
-References: <52082EF8.10005@roeck-us.net> <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com> <20130812164548.GE23006@n2100.arm.linux.org.uk> <CAFEAcA97PuORg920f-A_8rvCgBq=k5Y=0W6m2Nv8nnzjY19Utg@mail.gmail.com> <20130812200628.GG23006@n2100.arm.linux.org.uk> <CAFEAcA9BA7zfaO1J5zVaEcG-AgOo6dyiew08-o2eObuBe-KWig@mail.gmail.com> <20130812212149.GH23006@n2100.arm.linux.org.uk> <CAFEAcA_0kzS=Z5oTxrr=B74wjf1x=M6dXwH7Fcgf77Pca90Gjw@mail.gmail.com> <20130812221250.GI23006@n2100.arm.linux.org.uk> <20130812230408.GA4420@roeck-us.net> <20130814103346.GN23006@n2100.arm.linux.org.uk> <CAFEAcA8u_c=seOQ+y44H2Vpefyx4EisiZ-ZqBxuPsyoYjCt3vQ@mail.gmail.com>
-In-Reply-To: <CAFEAcA8u_c=seOQ+y44H2Vpefyx4EisiZ-ZqBxuPsyoYjCt3vQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130811235631.GO19750@two.firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 05:44 AM, Peter Maydell wrote:
-> On 14 August 2013 11:33, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Mon, Aug 12, 2013 at 04:04:08PM -0700, Guenter Roeck wrote:
->>> Hacked diff is below. Can I write that up as clean patch and submit it,
->>> or do we need a test on real hardware ?
->>
->> Well, if we want to ensure that it is really correct, the sensible thing
->> to do is to try it on real hardware, otherwise we're risking yet another
->> change to this.
->>
->> Earlier in this thread, some people said that they have the hardware, so
->> it shouldn't be that difficult to get it tested on real stuff.
->
-> Yes, I definitely think we should test on the hardware before we
-> land yet another change to this PCI code that hasn't really been
-> thoroughly tested on anything. I have the board/backplane on my
+Hey Andi!
 
-Agreed.
+On Mon, Aug 12, 2013 at 01:56:31AM +0200, Andi Kleen wrote:
+> 
+> I really like the idea of using the spare slots in the radix tree
+> for something useful. It's amazing we haven't used that before.
+> 
+> I wonder if with some clever encoding even more information could be fit?
 
-> desk but it'll be later in the week before I can do the testing
-> (currently still messing with uboot config to get it to actually
-> boot a kernel).
->
+What do you have in mind?
 
-That would be great. Thanks a lot for your help!
-
-Guenter
-
+> e.g. I assume you don't really need all bits of the refault distance,
+> just a good enough approximation.
+> 
+> -Andi
+> -- 
+> ak@linux.intel.com -- Speaking for myself only.
