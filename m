@@ -1,129 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab3HNPxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 11:53:33 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57093 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759950Ab3HNPxb (ORCPT
+	id S932728Ab3HNPyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 11:54:35 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:61038 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932404Ab3HNPyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 11:53:31 -0400
+	Wed, 14 Aug 2013 11:54:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <1376459736-7384-1-git-send-email-minchan@kernel.org>
-References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
-Date: Wed, 14 Aug 2013 08:53:31 -0700
-Message-ID: <CAA25o9Q1KVHEzdeXJFe9A8K9MULysq_ShWrUBZM4-h=5vmaQ8w@mail.gmail.com>
-Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
-From: Luigi Semenzato <semenzato@google.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Mel Gorman <mgorman@suse.de>
+In-Reply-To: <1376458003-6244-1-git-send-email-sonic.adi@gmail.com>
+References: <1376458003-6244-1-git-send-email-sonic.adi@gmail.com>
+Date: Wed, 14 Aug 2013 17:54:32 +0200
+Message-ID: <CACRpkdZbZF6pHdfgrFqf-Uuoipv=vmK7Y4CCqPjj21QYN-zNfA@mail.gmail.com>
+Subject: Re: [PATCH v4] pinctrl: pinmux: Don't free pins requested by other
+ devices in pinmux_disable_setting.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During earlier discussions of zswap there was a plan to make it work
-with zsmalloc as an option instead of zbud. Does zbud work for
-compression factors better than 2:1?  I have the impression (maybe
-wrong) that it does not.  In our use of zram (Chrome OS) typical
-overall compression ratios are between 2.5:1 and 3:1.  We would hate
-to waste that memory if we switch to zswap.
+On Wed, Aug 14, 2013 at 7:26 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
 
-Thanks!
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> One peripheral may share part of its pins with the 2nd
+> peripheral and the other pins with the 3rd. If it requests all pins
+> when part of them has already be requested and owned by the 2nd
+> peripheral, this request fails and pinmux_disable_setting() is called.
+> The pinmux_disable_setting() frees all pins of the first peripheral
+> without checking if the pin is owned by itself or the 2nd, which
+> results in the malfunction of the 2nd peripheral driver.
+>
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 
+Hm it makes some sense so patch applied.
 
-On Tue, Aug 13, 2013 at 10:55 PM, Minchan Kim <minchan@kernel.org> wrote:
-> It's 6th trial of zram/zsmalloc promotion.
-> [patch 5, zram: promote zram from staging] explains why we need zram.
->
-> Main reason to block promotion is there was no review of zsmalloc part
-> while Jens already acked zram part.
->
-> At that time, zsmalloc was used for zram, zcache and zswap so everybody
-> wanted to make it general and at last, Mel reviewed it.
-> Most of review was related to zswap dumping mechanism which can pageout
-> compressed page into swap in runtime and zswap gives up using zsmalloc
-> and invented a new wheel, zbud. Other reviews were not major.
-> http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
->
-> Zcache don't use zsmalloc either so only zsmalloc user is zram now.
-> So I think there is no concern any more.
->
-> Patch 1 adds new Kconfig for zram to use page table method instead
-> of copy. Andrew suggested it.
->
-> Patch 2 adds lots of commnt for zsmalloc.
->
-> Patch 3 moves zsmalloc under driver/staging/zram because zram is only
-> user for zram now.
->
-> Patch 4 makes unmap_kernel_range exportable function because zsmalloc
-> have used map_vm_area which is already exported function but zsmalloc
-> need to use unmap_kernel_range and it should be built with module.
->
-> Patch 5 moves zram from driver/staging to driver/blocks, finally.
->
-> It touches mm, staging, blocks so I am not sure who is right position
-> maintainer so I will Cc Andrw, Jens and Greg.
->
-> This patch is based on next-20130813.
->
-> Thanks.
->
-> Minchan Kim (4):
->   zsmalloc: add Kconfig for enabling page table method
->   zsmalloc: move it under zram
->   mm: export unmap_kernel_range
->   zram: promote zram from staging
->
-> Nitin Cupta (1):
->   zsmalloc: add more comment
->
->  drivers/block/Kconfig                    |    2 +
->  drivers/block/Makefile                   |    1 +
->  drivers/block/zram/Kconfig               |   37 +
->  drivers/block/zram/Makefile              |    3 +
->  drivers/block/zram/zram.txt              |   71 ++
->  drivers/block/zram/zram_drv.c            |  987 +++++++++++++++++++++++++++
->  drivers/block/zram/zsmalloc.c            | 1084 ++++++++++++++++++++++++++++++
->  drivers/staging/Kconfig                  |    4 -
->  drivers/staging/Makefile                 |    2 -
->  drivers/staging/zram/Kconfig             |   25 -
->  drivers/staging/zram/Makefile            |    3 -
->  drivers/staging/zram/zram.txt            |   77 ---
->  drivers/staging/zram/zram_drv.c          |  984 ---------------------------
->  drivers/staging/zram/zram_drv.h          |  125 ----
->  drivers/staging/zsmalloc/Kconfig         |   10 -
->  drivers/staging/zsmalloc/Makefile        |    3 -
->  drivers/staging/zsmalloc/zsmalloc-main.c | 1063 -----------------------------
->  drivers/staging/zsmalloc/zsmalloc.h      |   43 --
->  include/linux/zram.h                     |  123 ++++
->  include/linux/zsmalloc.h                 |   52 ++
->  mm/vmalloc.c                             |    1 +
->  21 files changed, 2361 insertions(+), 2339 deletions(-)
->  create mode 100644 drivers/block/zram/Kconfig
->  create mode 100644 drivers/block/zram/Makefile
->  create mode 100644 drivers/block/zram/zram.txt
->  create mode 100644 drivers/block/zram/zram_drv.c
->  create mode 100644 drivers/block/zram/zsmalloc.c
->  delete mode 100644 drivers/staging/zram/Kconfig
->  delete mode 100644 drivers/staging/zram/Makefile
->  delete mode 100644 drivers/staging/zram/zram.txt
->  delete mode 100644 drivers/staging/zram/zram_drv.c
->  delete mode 100644 drivers/staging/zram/zram_drv.h
->  delete mode 100644 drivers/staging/zsmalloc/Kconfig
->  delete mode 100644 drivers/staging/zsmalloc/Makefile
->  delete mode 100644 drivers/staging/zsmalloc/zsmalloc-main.c
->  delete mode 100644 drivers/staging/zsmalloc/zsmalloc.h
->  create mode 100644 include/linux/zram.h
->  create mode 100644 include/linux/zsmalloc.h
->
-> --
-> 1.7.9.5
->
+That said I think we currently have drivers where a pin group
+mapped to a certain function in a certain setting  *usually*
+don't overlap with pins in another group used with another
+function, and having it so seems racy, i.e. it will be some
+first-come-first-serve effect.
+
+I will add a warning print.
+
+Yours,
+Linus Walleij
