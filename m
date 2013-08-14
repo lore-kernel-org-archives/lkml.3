@@ -1,100 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759822Ab3HNMUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:20:24 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41513 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab3HNMUX (ORCPT
+	id S932234Ab3HNMXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:23:22 -0400
+Received: from mail7.windriver.com ([128.224.252.3]:51273 "EHLO
+	mail7.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759697Ab3HNMXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:20:23 -0400
-Date: Wed, 14 Aug 2013 13:20:08 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] drm/i2c: tda998x: add video and audio input
-	configuration
-Message-ID: <20130814122008.GC23840@n2100.arm.linux.org.uk>
-References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com> <1375741218-10225-6-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 14 Aug 2013 08:23:21 -0400
+X-Greylist: delayed 12612 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Aug 2013 08:23:21 EDT
+Message-ID: <520B4552.2000607@windriver.com>
+Date: Wed, 14 Aug 2013 16:52:34 +0800
+From: Fan Du <fan.du@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375741218-10225-6-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: <tglx@linutronix.de>, Steffen Klassert <steffen.klassert@secunet.com>,
+        David Miller <davem@davemloft.net>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
+Subject: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set was
+ called
+References: <1375866296-15079-1-git-send-email-fan.du@windriver.com> <1375866296-15079-2-git-send-email-fan.du@windriver.com> <52021177.6020306@redhat.com> <520213F2.5090401@windriver.com> <520214C6.6000307@redhat.com>
+In-Reply-To: <520214C6.6000307@redhat.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [128.224.162.195]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 12:20:15AM +0200, Sebastian Hesselbarth wrote:
-> - also calculate CTS
+ From e3929d4fdfad5b40fd8cad0e217597670d1aef54 Mon Sep 17 00:00:00 2001
+From: Fan Du <fan.du@windriver.com>
+Date: Wed, 14 Aug 2013 16:39:23 +0800
+Subject: [PATCHv3 linux-next] hrtimer: Add notifier when clock_was_set was called
 
-This is wrong...
+When clock_was_set is called in case of system wall time change
+or host resume from suspend state, use this notifier for places
+where interested in this action, e.g Ipsec SA lifetime management.
 
-> +	/*
-> +	 * HDMI 1.3a, 7.2.2 CTS parameter:
-> +	 *  (avg cts) = (fTMDS * N) / (128 * fS)
-> +	 */
-> +	cts = n * mode->clock / p->audio_sample_rate;
-> +	cts *= 1000;
-> +	cts /= 128;
+Signed-off-by: Fan Du <fan.du@windriver.com>
 
-This only works if you can guarantee that the audio and video clocks are
-synchronous - and that you know the audio sample rate.
+v3:
+   -Beautify notifier with register/unregister API exported for other subsystem.
 
-I don't believe the audio and video clocks are synchronous on the cubox,
-and also have no way to communicate the audio sample rate to the TDA998x
-driver at present.
+---
+  include/linux/hrtimer.h |    3 +++
+  kernel/hrtimer.c        |   19 +++++++++++++++++++
+  2 files changed, 22 insertions(+)
 
-So, this calculation serves little purpose and wastes CPU cycles.
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index d19a5c2..f0404e4 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -461,4 +461,7 @@ extern u64 ktime_divns(const ktime_t kt, s64 div);
+  /* Show pending timers: */
+  extern void sysrq_timer_list_show(void);
 
-> +static ssize_t i2c_read_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
-> +{
-> +	struct drm_encoder *encoder = dev_get_drvdata(dev);
-> +	unsigned int page, addr;
-> +	unsigned char val;
-> +
-> +	sscanf(buf, "%x %x", &page, &addr);
-> +
-> +	val = reg_read(encoder, REG(page, addr));
-> +
-> +	printk("i2c read %02x @ page:%02x address:%02x\n", val, page, addr);
-> +	return size;
-> +}
-> +
-> +static ssize_t i2c_write_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
-> +{
-> +	struct drm_encoder *encoder = dev_get_drvdata(dev);
-> +	unsigned int page, addr, mask, val;
-> +	unsigned char rval;
-> +
-> +	sscanf(buf, "%x %x %x %x", &page, &addr, &mask, &val);
-> +
-> +	rval = reg_read(encoder, REG(page, addr));
-> +	rval &= ~mask;
-> +	rval |= val & mask;
-> +	reg_write(encoder, REG(page, addr), rval);
-> +
-> +	printk("i2c write %02x @ page:%02x address:%02x\n", rval, page, addr);
-> +	return size;
-> +}
-> +
-> +static DEVICE_ATTR(i2c_read, S_IWUSR, NULL, i2c_read_store);
-> +static DEVICE_ATTR(i2c_write, S_IWUSR, NULL, i2c_write_store);
-> +
->  static int
->  tda998x_encoder_init(struct i2c_client *client,
->  		    struct drm_device *dev,
-> @@ -817,6 +1111,11 @@ tda998x_encoder_init(struct i2c_client *client,
->  {
->  	struct drm_encoder *encoder = &encoder_slave->base;
->  	struct tda998x_priv *priv;
-> +/* debug */
-> +	device_create_file(&client->dev, &dev_attr_i2c_read);
-> +	device_create_file(&client->dev, &dev_attr_i2c_write);
-> +	dev_set_drvdata(&client->dev, encoder);
-> +/* debug end */
++extern int register_clock_change_notifier(struct notifier_block *nb);
++extern int unregister_clock_change_notifier(struct notifier_block *nb);
++
+  #endif
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 383319b..c6e6405 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -755,6 +755,24 @@ static inline void retrigger_next_event(void *arg) { }
 
-The above should probably be dropped from this patch; that's for debugging
-and is unrelated to the rest of this patch.
+  #endif /* CONFIG_HIGH_RES_TIMERS */
+
++static ATOMIC_NOTIFIER_HEAD(clock_change_notifier_list);
++static int call_clock_change_notifiers(void)
++{
++	return atomic_notifier_call_chain(&clock_change_notifier_list, 0, 0);
++}
++
++int register_clock_change_notifier(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&clock_change_notifier_list, nb);
++}
++EXPORT_SYMBOL_GPL(register_clock_change_notifier);
++
++int unregister_clock_change_notifier(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_unregister(&clock_change_notifier_list, nb);
++}
++EXPORT_SYMBOL_GPL(unregister_clock_change_notifier);
++
+  /*
+   * Clock realtime was set
+   *
+@@ -773,6 +791,7 @@ void clock_was_set(void)
+  	on_each_cpu(retrigger_next_event, NULL, 1);
+  #endif
+  	timerfd_clock_was_set();
++	call_clock_change_notifiers();
+  }
+
+  /*
+-- 
+1.7.9.5
+
+
+-- 
+浮沉随浪只记今朝笑
+
+--fan
