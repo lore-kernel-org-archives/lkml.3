@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933088Ab3HNS37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:29:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34335 "EHLO
+	id S933049Ab3HNS3z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:29:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34341 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760198Ab3HNSZ0 (ORCPT
+	with ESMTP id S1760203Ab3HNSZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Aug 2013 14:25:26 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -13,11 +13,12 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/21] perf evsel: Add option to limit stack depth in callchain dumps
-Date: Wed, 14 Aug 2013 15:25:03 -0300
-Message-Id: <1376504715-28107-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 02/21] perf kvm: Update documentation with live command
+Date: Wed, 14 Aug 2013 15:24:56 -0300
+Message-Id: <1376504715-28107-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376504715-28107-1-git-send-email-acme@infradead.org>
 References: <1376504715-28107-1-git-send-email-acme@infradead.org>
@@ -29,91 +30,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Ahern <dsahern@gmail.com>
 
-Option is used by upcoming timehist command.
+Update perf-kvm documentation with new live subcommand. Add -p/--pid
+option for perf-kvm-stat-report as well.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
+Requested-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1375930261-77273-12-git-send-email-dsahern@gmail.com
+Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1375926999-75129-2-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-script.c | 6 ++++--
- tools/perf/util/session.c   | 6 ++++--
- tools/perf/util/session.h   | 2 +-
- 3 files changed, 9 insertions(+), 5 deletions(-)
+ tools/perf/Documentation/perf-kvm.txt | 46 +++++++++++++++++++++++++++++++++--
+ 1 file changed, 44 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index ee5d6f8..33b2d83 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -402,7 +402,8 @@ static void print_sample_bts(union perf_event *event,
- 		else
- 			printf("\n");
- 		perf_evsel__print_ip(evsel, event, sample, machine,
--				     output[attr->type].print_ip_opts);
-+				     output[attr->type].print_ip_opts,
-+				     PERF_MAX_STACK_DEPTH);
- 	}
+diff --git a/tools/perf/Documentation/perf-kvm.txt b/tools/perf/Documentation/perf-kvm.txt
+index 326f2cb..ac84db2 100644
+--- a/tools/perf/Documentation/perf-kvm.txt
++++ b/tools/perf/Documentation/perf-kvm.txt
+@@ -13,6 +13,7 @@ SYNOPSIS
+ 	{top|record|report|diff|buildid-list}
+ 'perf kvm' [--host] [--guest] [--guestkallsyms=<path> --guestmodules=<path>
+ 	| --guestvmlinux=<path>] {top|record|report|diff|buildid-list|stat}
++'perf kvm stat [record|report|live] [<options>]
  
- 	printf(" => ");
-@@ -444,7 +445,8 @@ static void process_event(union perf_event *event, struct perf_sample *sample,
- 			printf("\n");
+ DESCRIPTION
+ -----------
+@@ -50,6 +51,10 @@ There are a couple of variants of perf kvm:
+   'perf kvm stat report' reports statistical data which includes events
+   handled time, samples, and so on.
  
- 		perf_evsel__print_ip(evsel, event, sample, machine,
--				     output[attr->type].print_ip_opts);
-+				     output[attr->type].print_ip_opts,
-+				     PERF_MAX_STACK_DEPTH);
- 	}
- 
- 	printf("\n");
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 0d895e7..5a89964 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1489,7 +1489,7 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 
- void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 			  struct perf_sample *sample, struct machine *machine,
--			  unsigned int print_opts)
-+			  unsigned int print_opts, unsigned int stack_depth)
- {
- 	struct addr_location al;
- 	struct callchain_cursor_node *node;
-@@ -1517,7 +1517,7 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 		}
- 		callchain_cursor_commit(&callchain_cursor);
- 
--		while (1) {
-+		while (stack_depth) {
- 			node = callchain_cursor_current(&callchain_cursor);
- 			if (!node)
- 				break;
-@@ -1544,6 +1544,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 				printf("\n");
- 
- 			callchain_cursor_advance(&callchain_cursor);
++  'perf kvm stat live' reports statistical data in a live mode (similar to
++  record + report but with statistical data updated live at a given display
++  rate).
 +
-+			stack_depth--;
- 		}
+ OPTIONS
+ -------
+ -i::
+@@ -85,13 +90,50 @@ STAT REPORT OPTIONS
+ --vcpu=<value>::
+        analyze events which occures on this vcpu. (default: all vcpus)
  
- 	} else {
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 7c00ccb..3aa75fb 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -109,7 +109,7 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+---events=<value>::
+-       events to be analyzed. Possible values: vmexit, mmio, ioport.
++--event=<value>::
++       event to be analyzed. Possible values: vmexit, mmio, ioport.
+        (default: vmexit)
+ -k::
+ --key=<value>::
+        Sorting key. Possible values: sample (default, sort by samples
+        number), time (sort by average time).
++-p::
++--pid=::
++    Analyze events only for given process ID(s) (comma separated list).
++
++STAT LIVE OPTIONS
++-----------------
++-d::
++--display::
++        Time in seconds between display updates
++
++-m::
++--mmap-pages=::
++    Number of mmap data pages. Must be a power of two.
++
++-a::
++--all-cpus::
++        System-wide collection from all CPUs.
++
++-p::
++--pid=::
++    Analyze events only for given process ID(s) (comma separated list).
++
++--vcpu=<value>::
++       analyze events which occures on this vcpu. (default: all vcpus)
++
++
++--event=<value>::
++       event to be analyzed. Possible values: vmexit, mmio, ioport.
++       (default: vmexit)
++
++-k::
++--key=<value>::
++       Sorting key. Possible values: sample (default, sort by samples
++       number), time (sort by average time).
++
++--duration=<value>::
++       Show events other than HLT that take longer than duration usecs.
  
- void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 			  struct perf_sample *sample, struct machine *machine,
--			  unsigned int print_opts);
-+			  unsigned int print_opts, unsigned int stack_depth);
- 
- int perf_session__cpu_bitmap(struct perf_session *session,
- 			     const char *cpu_list, unsigned long *cpu_bitmap);
+ SEE ALSO
+ --------
 -- 
 1.8.1.4
 
