@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479Ab3HNKzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:55:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34466 "EHLO
+	id S1759828Ab3HNKhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:37:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34425 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341Ab3HNKhg (ORCPT
+	with ESMTP id S1759797Ab3HNKhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:37:36 -0400
+	Wed, 14 Aug 2013 06:37:25 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jonghwan Choi <jhbird.choi@gmail.com>,
+Cc: Jacob Keller <jacob.e.keller@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 21/75] xen/evtchn: avoid a deadlock when unbinding an event channel
-Date: Wed, 14 Aug 2013 11:36:10 +0100
-Message-Id: <1376476624-10011-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 12/75] ixgbe: Fix Tx Hang issue with lldpad on 82598EB
+Date: Wed, 14 Aug 2013 11:36:01 +0100
+Message-Id: <1376476624-10011-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -29,104 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-commit 179fbd5a45f0d4034cc6fd37b8d367a3b79663c4 upstream.
+commit 1eb9ac14c34a948bf1538bfb9034e8ab29099a64 upstream.
 
-Unbinding an event channel (either with the ioctl or when the evtchn
-device is closed) may deadlock because disable_irq() is called with
-port_user_lock held which is also locked by the interrupt handler.
+This patch fixes an issue with the 82598EB device, where lldpad is causing Tx
+Hangs on the card as soon as it attempts to configure DCB for the device. The
+adapter will continually Tx hang and reset in a loop.
 
-Think of the IOCTL_EVTCHN_UNBIND is being serviced, the routine has
-just taken the lock, and an interrupt happens. The evtchn_interrupt
-is invoked, tries to take the lock and spins forever.
-
-A quick glance at the code shows that the spinlock is a local IRQ
-variant. Unfortunately that does not help as "disable_irq() waits for
-the interrupt handler on all CPUs to stop running.  If the irq occurs
-on another VCPU, it tries to take port_user_lock and can't because
-the unbind ioctl is holding it." (from David). Hence we cannot
-depend on the said spinlock to protect us. We could make it a system
-wide IRQ disable spinlock but there is a better way.
-
-We can piggyback on the fact that the existence of the spinlock is
-to make get_port_user() checks be up-to-date. And we can alter those
-checks to not depend on the spin lock (as it's protected by u->bind_mutex
-in the ioctl) and can remove the unnecessary locking (this is
-IOCTL_EVTCHN_UNBIND) path.
-
-In the interrupt handler we cannot use the mutex, but we do not
-need it.
-
-"The unbind disables the irq before making the port user stale, so when
-you clear it you are guaranteed that the interrupt handler that might
-use that port cannot be running." (from David).
-
-Hence this patch removes the spinlock usage on the teardown path
-and piggybacks on disable_irq happening before we muck with the
-get_port_user() data. This ensures that the interrupt handler will
-never run on stale data.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[v1: Expanded the commit description a bit]
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Tested-by: Jack Morgan <jack.morgan@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/xen/evtchn.c | 21 ++-------------------
- 1 file changed, 2 insertions(+), 19 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
-index b2db77e..82b27d4 100644
---- a/drivers/xen/evtchn.c
-+++ b/drivers/xen/evtchn.c
-@@ -377,18 +377,12 @@ static long evtchn_ioctl(struct file *file,
- 		if (unbind.port >= NR_EVENT_CHANNELS)
- 			break;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
+index 87592b4..b3c05de 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_82598.c
+@@ -108,9 +108,8 @@ s32 ixgbe_dcb_config_tx_desc_arbiter_82598(struct ixgbe_hw *hw,
  
--		spin_lock_irq(&port_user_lock);
--
- 		rc = -ENOTCONN;
--		if (get_port_user(unbind.port) != u) {
--			spin_unlock_irq(&port_user_lock);
-+		if (get_port_user(unbind.port) != u)
- 			break;
--		}
- 
- 		disable_irq(irq_from_evtchn(unbind.port));
- 
--		spin_unlock_irq(&port_user_lock);
--
- 		evtchn_unbind_from_user(u, unbind.port);
- 
- 		rc = 0;
-@@ -488,26 +482,15 @@ static int evtchn_release(struct inode *inode, struct file *filp)
- 	int i;
- 	struct per_user_data *u = filp->private_data;
- 
--	spin_lock_irq(&port_user_lock);
--
--	free_page((unsigned long)u->ring);
--
- 	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
- 		if (get_port_user(i) != u)
- 			continue;
- 
- 		disable_irq(irq_from_evtchn(i));
--	}
--
--	spin_unlock_irq(&port_user_lock);
--
--	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
--		if (get_port_user(i) != u)
--			continue;
--
- 		evtchn_unbind_from_user(get_port_user(i), i);
- 	}
- 
-+	free_page((unsigned long)u->ring);
- 	kfree(u->name);
- 	kfree(u);
+ 	/* Enable arbiter */
+ 	reg &= ~IXGBE_DPMCS_ARBDIS;
+-	/* Enable DFP and Recycle mode */
+-	reg |= (IXGBE_DPMCS_TDPAC | IXGBE_DPMCS_TRM);
+ 	reg |= IXGBE_DPMCS_TSOEF;
++
+ 	/* Configure Max TSO packet size 34KB including payload and headers */
+ 	reg |= (0x4 << IXGBE_DPMCS_MTSOS_SHIFT);
  
 -- 
 1.8.3.2
