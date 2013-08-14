@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab3HNFZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 01:25:40 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37384 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab3HNFZi (ORCPT
+	id S1752070Ab3HNFfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 01:35:31 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:25500 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751488Ab3HNFfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 01:25:38 -0400
-Message-ID: <520B14A1.8030809@ti.com>
-Date: Wed, 14 Aug 2013 10:54:49 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 14 Aug 2013 01:35:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AogHABwWC1J5LCJR/2dsb2JhbABbgwaDNLZ/hTSBJRd0giQBAQUnExwjEAgDFQMJJQ8FDRgDNId+Aw6wBA2IXhaNL4J3BxaDewOVe4FojCuFJ4MtKg
+Date: Wed, 14 Aug 2013 15:35:23 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] xfs: introduce object readahead to log recovery
+Message-ID: <20130814053523.GY12779@dastard>
+References: <1375260165-8773-1-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: <benoit.cousson@linaro.org>, <tony@atomide.com>,
-        <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
-        <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ian.campbell@citrix.com>, <rob@landley.net>,
-        <george.cherian@ti.com>, <gregkh@linuxfoundation.org>,
-        <linux-doc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>
-Subject: Re: [PATCH 1/2] extcon: palmas: Added a new compatible type *ti,palmas-usb-vid*
-References: <1376302675-15795-1-git-send-email-kishon@ti.com> <1376372241-15573-1-git-send-email-kishon@ti.com> <520A8555.10401@wwwdotorg.org>
-In-Reply-To: <520A8555.10401@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375260165-8773-1-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wednesday 14 August 2013 12:43 AM, Stephen Warren wrote:
-> On 08/12/2013 11:37 PM, Kishon Vijay Abraham I wrote:
->> The Palmas device contains only a USB VID detector, so added a
->> compatible type *ti,palmas-usb-vid*. Dint remove the existing compatible
+On Wed, Jul 31, 2013 at 04:42:45PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 > 
-> s/Dint/Didn't/
+>   It can take a long time to run log recovery operation because it is
+> single threaded and is bound by read latency. We can find that it took
+> most of the time to wait for the read IO to occur, so if one object
+> readahead is introduced to log recovery, it will obviously reduce the
+> log recovery time.
 > 
->> diff --git a/Documentation/devicetree/bindings/extcon/extcon-twl.txt b/Documentation/devicetree/bindings/extcon/extcon-twl.txt
+> Log recovery time stat:
 > 
->>  PALMAS USB COMPARATOR
->>  Required Properties:
->> - - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
->> + - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb" or
->> +   "ti,palmas-usb-vid".
+>           w/o this patch        w/ this patch
 > 
-> So are ti,palmas-usb and ti,twl6035-usb full EHCI controllers then?
+> real:        0m15.023s             0m7.802s
+> user:        0m0.001s              0m0.001s
+> sys:         0m0.246s              0m0.107s
 
-No. I thought I shouldn't remove those if someone is already using those
-compatible value.
+This version works as advertised as well.
 
-Thanks
-Kishon
+> @@ -3216,6 +3351,18 @@ xlog_recover_commit_trans(
+>  			goto out;
+>  	}
+>  
+> +	if (!list_empty(&ra_list)) {
+> +		error = xlog_recover_items_pass2(log, trans,
+> +				&buffer_list, &ra_list);
+> +		if (error)
+> +			goto out;
+> +
+> +		list_splice_tail_init(&ra_list, &done_list);
+> +	}
+> +
+> +	if (!list_empty(&done_list))
+> +		list_splice_init(&done_list, &trans->r_itemq);
+> +
+>  	xlog_recover_free_trans(trans);
 
+I think this still leaks the trans structure when an error occurs.
+Indeed, I think this is a pre-existing leak, as the current code
+will skip freeing the trans structure on item recovery failure and
+nothing else frees it.  So it appears to me to be busted before this
+patch is added.
+
+Hence on a xlog_recover_items_pass2() error we need to splice the
+ra-list to the done_list and free trans. i.e. the "if (error) goto
+out;" lines in the above hunk do not need to be there, and the
+"out:" label moved to above the call to xlog_recover_free_trans() so
+the main loop does the right thing when an error occurs.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
