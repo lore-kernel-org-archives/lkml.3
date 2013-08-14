@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab3HNKi3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:38:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34670 "EHLO
+	id S932705Ab3HNKmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:42:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34712 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443Ab3HNKiU (ORCPT
+	with ESMTP id S932647Ab3HNKi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:20 -0400
+	Wed, 14 Aug 2013 06:38:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sumit Saxena <sumit.saxena@lsi.com>, Kashyap Desai <kashyap.desai@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 59/75] [SCSI] megaraid_sas: megaraid_sas driver init fails in kdump kernel
-Date: Wed, 14 Aug 2013 11:36:48 +0100
-Message-Id: <1376476624-10011-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 68/75] ALSA: usb-audio: do not trust too-big wMaxPacketSize values
+Date: Wed, 14 Aug 2013 11:36:57 +0100
+Message-Id: <1376476624-10011-69-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -28,59 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Sumit.Saxena@lsi.com" <Sumit.Saxena@lsi.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 6431f5d7c6025f8b007af06ea090de308f7e6881 upstream.
+commit 57e6dae1087bbaa6b33d3dd8a8e90b63888939a3 upstream.
 
-Problem: When Hardware IOMMU is on, megaraid_sas driver initialization fails
-in kdump kernel with LSI MegaRAID controller(device id-0x73).
+The driver used to assume that the streaming endpoint's wMaxPacketSize
+value would be an indication of how much data the endpoint expects or
+sends, and compute the number of packets per URB using this value.
 
-Actually this issue needs fix in firmware, but for firmware running in field,
-this driver fix is proposed to resolve the issue.  At firmware initialization
-time, if firmware does not come to ready state, driver will reset the adapter
-and retry for firmware transition to ready state unconditionally(not only
-executed for kdump kernel).
+However, the Focusrite Scarlett 2i4 declares a value of 1024 bytes,
+while only about 88 or 44 bytes are be actually used.  This discrepancy
+would result in URBs with far too few packets, which would not work
+correctly on the EHCI driver.
 
-Signed-off-by: Sumit Saxena <sumit.saxena@lsi.com>
-Signed-off-by: Kashyap Desai <kashyap.desai@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+To get correct URBs, use wMaxPacketSize only as an upper limit on the
+packet size.
+
+Reported-by: James Stone <jamesmstone@gmail.com>
+Tested-by: James Stone <jamesmstone@gmail.com>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ sound/usb/endpoint.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index d525297..7593e28 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -3493,11 +3493,21 @@ static int megasas_init_fw(struct megasas_instance *instance)
- 		break;
+diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
+index 060dccb..5fa3bd7 100644
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -582,17 +582,16 @@ static int data_ep_set_params(struct snd_usb_endpoint *ep,
+ 	ep->stride = frame_bits >> 3;
+ 	ep->silence_value = format == SNDRV_PCM_FORMAT_U8 ? 0x80 : 0;
+ 
+-	/* calculate max. frequency */
+-	if (ep->maxpacksize) {
++	/* assume max. frequency is 25% higher than nominal */
++	ep->freqmax = ep->freqn + (ep->freqn >> 2);
++	maxsize = ((ep->freqmax + 0xffff) * (frame_bits >> 3))
++				>> (16 - ep->datainterval);
++	/* but wMaxPacketSize might reduce this */
++	if (ep->maxpacksize && ep->maxpacksize < maxsize) {
+ 		/* whatever fits into a max. size packet */
+ 		maxsize = ep->maxpacksize;
+ 		ep->freqmax = (maxsize / (frame_bits >> 3))
+ 				<< (16 - ep->datainterval);
+-	} else {
+-		/* no max. packet size: just take 25% higher than nominal */
+-		ep->freqmax = ep->freqn + (ep->freqn >> 2);
+-		maxsize = ((ep->freqmax + 0xffff) * (frame_bits >> 3))
+-				>> (16 - ep->datainterval);
  	}
  
--	/*
--	 * We expect the FW state to be READY
--	 */
--	if (megasas_transition_to_ready(instance, 0))
--		goto fail_ready_state;
-+	if (megasas_transition_to_ready(instance, 0)) {
-+		atomic_set(&instance->fw_reset_no_pci_access, 1);
-+		instance->instancet->adp_reset
-+			(instance, instance->reg_set);
-+		atomic_set(&instance->fw_reset_no_pci_access, 0);
-+		dev_info(&instance->pdev->dev,
-+			"megasas: FW restarted successfully from %s!\n",
-+			__func__);
-+
-+		/*waitting for about 30 second before retry*/
-+		ssleep(30);
-+
-+		if (megasas_transition_to_ready(instance, 0))
-+			goto fail_ready_state;
-+	}
- 
- 	/* Check if MSI-X is supported while in ready state */
- 	msix_enable = (instance->instancet->read_fw_status_reg(reg_set) &
+ 	if (ep->fill_max)
 -- 
 1.8.3.2
 
