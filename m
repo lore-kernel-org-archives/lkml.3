@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127Ab3HNUHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:07:53 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:36950 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933022Ab3HNUHw (ORCPT
+	id S933172Ab3HNUJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:09:51 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:5924 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933005Ab3HNUJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:07:52 -0400
-Date: Wed, 14 Aug 2013 16:07:48 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: Re: [PATCH v7 2/2] mm: make lru_add_drain_all() selective
-Message-ID: <20130814200748.GI28628@htj.dyndns.org>
-References: <520AAF9C.1050702@tilera.com>
- <201308132307.r7DN74M5029053@farm-0021.internal.tilera.com>
- <20130813232904.GJ28996@mtj.dyndns.org>
- <520AC215.4050803@tilera.com>
- <20130813234629.4ce2ec70.akpm@linux-foundation.org>
- <520BAA5B.9070407@tilera.com>
- <20130814165723.GE28628@htj.dyndns.org>
- <520BBBE7.7020302@tilera.com>
+	Wed, 14 Aug 2013 16:09:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 14 Aug 2013 13:09:49 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <mturquette@linaro.org>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <swarren@wwwdotorg.org>, <linux-usb@vger.kernel.org>,
+        <pgaikwad@nvidia.com>, <pdeschrijver@nvidia.com>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH RESEND] Clock changes for Tegra30 USB Host support
+Date: Wed, 14 Aug 2013 23:09:38 +0300
+Message-ID: <1376510979-21562-1-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520BBBE7.7020302@tilera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Chris.
+Hi all,
 
-On Wed, Aug 14, 2013 at 01:18:31PM -0400, Chris Metcalf wrote:
-> On 8/14/2013 12:57 PM, Tejun Heo wrote:
-> > Hello, Chris.
-> >
-> > On Wed, Aug 14, 2013 at 12:03:39PM -0400, Chris Metcalf wrote:
-> >> Tejun, I don't know if you have a better idea for how to mark a
-> >> work_struct as being "not used" so we can set and test it here.
-> >> Is setting entry.next to NULL good?  Should we offer it as an API
-> >> in the workqueue header?
-> > Maybe simply defining a static cpumask would be cleaner?
-> 
-> I think you're right, actually.  Andrew, Tejun, how does this look?
+This patch is required for USB support on Tegra30 due to a likely hardware
+bug in the PLL_U oscillator which clocks the USB complex.
 
-Looks good to me.  Please feel free to add
+The other USB patches for Tegra30 and Tegra114 are already on their way
+to 3.12, this is the only one left for Tegra30.
 
- Reviewed-by: Tejun Heo <tj@kernel.org>
+Peter, Prashant, any comments on this patch?
 
-Thanks.
+Tuomas Tynkkynen (1):
+  clk: tegra30: Don't wait for PLL_U lock bit
+
+ drivers/clk/tegra/clk-tegra30.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 -- 
-tejun
+1.8.1.5
+
