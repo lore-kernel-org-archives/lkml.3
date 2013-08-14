@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab3HNUEs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:04:48 -0400
-Received: from 8bytes.org ([85.214.48.195]:51394 "EHLO mail.8bytes.org"
+	id S933152Ab3HNUFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:05:39 -0400
+Received: from www.sr71.net ([198.145.64.142]:42212 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932923Ab3HNUEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:04:47 -0400
-Date: Wed, 14 Aug 2013 22:04:42 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: integrator: Make sure INTEGRATOR_AP depends on PCI
-Message-ID: <20130814200442.GA20372@8bytes.org>
-References: <1376509818-22163-1-git-send-email-joro@8bytes.org>
- <20130814195701.GY23006@n2100.arm.linux.org.uk>
+	id S933005Ab3HNUFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 16:05:38 -0400
+Message-ID: <520BE30D.3070401@sr71.net>
+Date: Wed, 14 Aug 2013 13:05:33 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130814195701.GY23006@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Aug 14 22:04:43 2013
-X-DSPAM-Confidence: 0.9993
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 520be2db20861516367007
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
+References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com> <20130814194348.GB10469@kroah.com>
+In-Reply-To: <20130814194348.GB10469@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 08:57:01PM +0100, Russell King - ARM Linux wrote:
-> On Wed, Aug 14, 2013 at 09:50:18PM +0200, Joerg Roedel wrote:
-> > Add this dependency to the Kconfig file to fix the following
-> > build error when CONFIG_INTEGRATOR_AP is set but CONFIG_PCI
-> > is not:
+On 08/14/2013 12:43 PM, Greg Kroah-Hartman wrote:
+> On Wed, Aug 14, 2013 at 02:31:45PM -0500, Seth Jennings wrote:
+>> ppc64 has a normal memory block size of 256M (however sometimes as low
+>> as 16M depending on the system LMB size), and (I think) x86 is 128M.  With
+>> 1TB of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
+>> entries per block that's around 80k items that need be created at boot
+>> time in sysfs.  Some systems go up to 16TB where the issue is even more
+>> severe.
 > 
-> No, integrator does not require PCI, so this needs to be fixed by other
-> means, such as finding out how the breakage was introduced, and fixing
-> the real cause of this regression.
+> The x86 developers are working with larger memory sizes and they haven't
+> seen the problem in this area, for them it's in other places, as I
+> referred to in my other email.
 
-You are right, just found out that this introduces a recursive
-dependency while compiling another config:
+The SGI guys don't run normal distro kernels and don't turn on memory
+hotplug, so they don't see this.  I do the same in my testing of
+large-memory x86 systems to speed up my boots.  I'll go stick it back in
+there and see if I can generate some numbers for a 1TB machine.
 
-arch/arm/Kconfig:1403:error: recursive dependency detected!
-arch/arm/Kconfig:1403:	symbol PCI depends on MIGHT_HAVE_PCI
-arch/arm/Kconfig:108:	symbol MIGHT_HAVE_PCI is selected by ARCH_INTEGRATOR_AP
-arch/arm/mach-integrator/Kconfig:5:	symbol ARCH_INTEGRATOR_AP depends on PCI
+But, the problem on x86 is at _worst_ 1/8 of the problem on ppc64 since
+the SECTION_SIZE is so 8x bigger by default.
 
-So when integrator does not depend on PCI this diff is more appropriate?
+Also, the cost of creating sections on ppc is *MUCH* higher than x86
+when amortized across the number of pages that you're initializing.  A
+section on ppc64 has to be created for each (2^24/2^16)=256 pages while
+one on x86 is created for each (2^27/2^12)=32768 pages.
 
-diff --git a/arch/arm/mach-integrator/pci_v3.h b/arch/arm/mach-integrator/pci_v3.h
-index 755fd29..51738e0 100644
---- a/arch/arm/mach-integrator/pci_v3.h
-+++ b/arch/arm/mach-integrator/pci_v3.h
-@@ -1,2 +1,9 @@
--/* Simple oneliner include to the PCIv3 early init */
-+/* Define PCIv3 early init */
-+#ifdef CONFIG_PCI
- extern int pci_v3_early_init(void);
-+#else
-+static inline int pci_v3_early_init(void)
-+{
-+	return 0;
-+}
-+#endif
-
+Thus, x86 folks with our small pages and large sections tend to be
+focused on per-page costs.  The ppc folks with their small sections and
+larger pages tend to be focused on the per-section costs.
