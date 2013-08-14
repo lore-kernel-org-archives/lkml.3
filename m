@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab3HNLAw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 07:00:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34404 "EHLO
+	id S932791Ab3HNLBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 07:01:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34394 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759743Ab3HNKhU (ORCPT
+	with ESMTP id S1759737Ab3HNKhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:37:20 -0400
+	Wed, 14 Aug 2013 06:37:18 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
+Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 09/75] serial/mxs-auart: increase time to wait for transmitter to become idle
-Date: Wed, 14 Aug 2013 11:35:58 +0100
-Message-Id: <1376476624-10011-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 07/75] USB: mos7840: fix device-type detection
+Date: Wed, 14 Aug 2013 11:35:56 +0100
+Message-Id: <1376476624-10011-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,75 +28,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 079a036f4283e2b0e5c26080b8c5112bc0cc1831 upstream.
+commit 40c24f2893ba0ba7df485871f6aac0c197ceef5b upstream.
 
-Without this patch the driver waits ~1 ms for the UART to become idle. At
-115200n8 this time is (theoretically) enough to transfer 11.5 characters
-(= 115200 bits/s / (10 Bits/char) * 1ms). As the mxs-auart has a fifo size
-of 16 characters the clock is gated too early. The problem is worse for
-lower baud rates.
+Fix race in device-type detection introduced by commit 0eafe4de ("USB:
+serial: mos7840: add support for MCS7810 devices") which used a static
+variable to hold the device type.
 
-This only happens to really shut down the transmitter in the middle of a
-transfer if /dev/ttyAPPx isn't opened in userspace (e.g. by a getty) but
-was at least once (because the bootloader doesn't disable the transmitter).
+Move type detection to probe and use serial data to store the device
+type.
 
-So increase the timeout to 20 ms which should be enough for 9600n8, too.
-Moreover skip gating the clock if the timeout is elapsed.
-
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/serial/mxs-auart.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ drivers/usb/serial/mos7840.c | 75 +++++++++++++++++++++-----------------------
+ 1 file changed, 35 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
-index 4313f49..64565f8 100644
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -545,7 +545,7 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
- 	struct mxs_auart_port *s;
- 	struct uart_port *port;
- 	unsigned int old_ctrl0, old_ctrl2;
--	unsigned int to = 1000;
-+	unsigned int to = 20000;
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index fb0357f..15ae7f5 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -192,8 +192,6 @@ enum mos7840_flag {
+ 	MOS7840_FLAG_CTRL_BUSY,
+ };
  
- 	if (co->index >	MXS_AUART_PORTS || co->index < 0)
- 		return;
-@@ -566,18 +566,23 @@ auart_console_write(struct console *co, const char *str, unsigned int count)
+-static int device_type;
+-
+ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
+ 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
+@@ -894,18 +892,6 @@ static void mos7840_bulk_out_data_callback(struct urb *urb)
+ /************************************************************************/
+ /*       D R I V E R  T T Y  I N T E R F A C E  F U N C T I O N S       */
+ /************************************************************************/
+-#ifdef MCSSerialProbe
+-static int mos7840_serial_probe(struct usb_serial *serial,
+-				const struct usb_device_id *id)
+-{
+-
+-	/*need to implement the mode_reg reading and updating\
+-	   structures usb_serial_ device_type\
+-	   (i.e num_ports, num_bulkin,bulkout etc) */
+-	/* Also we can update the changes  attach */
+-	return 1;
+-}
+-#endif
  
- 	uart_console_write(port, str, count, mxs_auart_console_putchar);
+ /*****************************************************************************
+  * mos7840_open
+@@ -2416,38 +2402,48 @@ static int mos7810_check(struct usb_serial *serial)
+ 	return 0;
+ }
  
--	/*
--	 * Finally, wait for transmitter to become empty
--	 * and restore the TCR
--	 */
-+	/* Finally, wait for transmitter to become empty ... */
- 	while (readl(port->membase + AUART_STAT) & AUART_STAT_BUSY) {
-+		udelay(1);
- 		if (!to--)
- 			break;
--		udelay(1);
- 	}
- 
--	writel(old_ctrl0, port->membase + AUART_CTRL0);
--	writel(old_ctrl2, port->membase + AUART_CTRL2);
-+	/*
-+	 * ... and restore the TCR if we waited long enough for the transmitter
-+	 * to be idle. This might keep the transmitter enabled although it is
-+	 * unused, but that is better than to disable it while it is still
-+	 * transmitting.
-+	 */
-+	if (!(readl(port->membase + AUART_STAT) & AUART_STAT_BUSY)) {
-+		writel(old_ctrl0, port->membase + AUART_CTRL0);
-+		writel(old_ctrl2, port->membase + AUART_CTRL2);
+-static int mos7840_calc_num_ports(struct usb_serial *serial)
++static int mos7840_probe(struct usb_serial *serial,
++				const struct usb_device_id *id)
+ {
+-	__u16 data = 0x00;
++	u16 product = serial->dev->descriptor.idProduct;
+ 	u8 *buf;
+-	int mos7840_num_ports;
++	int device_type;
++
++	if (product == MOSCHIP_DEVICE_ID_7810 ||
++		product == MOSCHIP_DEVICE_ID_7820) {
++		device_type = product;
++		goto out;
 +	}
  
- 	clk_disable(s->clk);
+ 	buf = kzalloc(VENDOR_READ_LENGTH, GFP_KERNEL);
+-	if (buf) {
+-		usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++	if (!buf)
++		return -ENOMEM;
++
++	usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 			MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, buf,
+ 			VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
+-		data = *buf;
+-		kfree(buf);
+-	}
+ 
+-	if (serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7810 ||
+-		serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7820) {
+-		device_type = serial->dev->descriptor.idProduct;
+-	} else {
+-		/* For a MCS7840 device GPIO0 must be set to 1 */
+-		if ((data & 0x01) == 1)
+-			device_type = MOSCHIP_DEVICE_ID_7840;
+-		else if (mos7810_check(serial))
+-			device_type = MOSCHIP_DEVICE_ID_7810;
+-		else
+-			device_type = MOSCHIP_DEVICE_ID_7820;
+-	}
++	/* For a MCS7840 device GPIO0 must be set to 1 */
++	if (buf[0] & 0x01)
++		device_type = MOSCHIP_DEVICE_ID_7840;
++	else if (mos7810_check(serial))
++		device_type = MOSCHIP_DEVICE_ID_7810;
++	else
++		device_type = MOSCHIP_DEVICE_ID_7820;
++
++	kfree(buf);
++out:
++	usb_set_serial_data(serial, (void *)device_type);
++
++	return 0;
++}
++
++static int mos7840_calc_num_ports(struct usb_serial *serial)
++{
++	int device_type = (int)usb_get_serial_data(serial);
++	int mos7840_num_ports;
+ 
+ 	mos7840_num_ports = (device_type >> 4) & 0x000F;
+-	serial->num_bulk_in = mos7840_num_ports;
+-	serial->num_bulk_out = mos7840_num_ports;
+-	serial->num_ports = mos7840_num_ports;
+ 
+ 	return mos7840_num_ports;
  }
+@@ -2458,6 +2454,7 @@ static int mos7840_calc_num_ports(struct usb_serial *serial)
+ 
+ static int mos7840_startup(struct usb_serial *serial)
+ {
++	int device_type = (int)usb_get_serial_data(serial);
+ 	struct moschip_port *mos7840_port;
+ 	struct usb_device *dev;
+ 	int i, status;
+@@ -2799,9 +2796,7 @@ static struct usb_serial_driver moschip7840_4port_device = {
+ 	.throttle = mos7840_throttle,
+ 	.unthrottle = mos7840_unthrottle,
+ 	.calc_num_ports = mos7840_calc_num_ports,
+-#ifdef MCSSerialProbe
+-	.probe = mos7840_serial_probe,
+-#endif
++	.probe = mos7840_probe,
+ 	.ioctl = mos7840_ioctl,
+ 	.set_termios = mos7840_set_termios,
+ 	.break_ctl = mos7840_break,
 -- 
 1.8.3.2
 
