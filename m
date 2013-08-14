@@ -1,104 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933313Ab3HNVWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 17:22:41 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:36276 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933298Ab3HNVWi (ORCPT
+	id S933322Ab3HNVXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 17:23:13 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:18466 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933203Ab3HNVXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 17:22:38 -0400
+	Wed, 14 Aug 2013 17:23:12 -0400
+Message-ID: <520BF53D.4020304@tilera.com>
+Date: Wed, 14 Aug 2013 17:23:09 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130808200943.2932.42781.stgit@bling.home>
-References: <20130808200444.2932.17381.stgit@bling.home> <20130808200943.2932.42781.stgit@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 14 Aug 2013 15:22:17 -0600
-Message-ID: <CAErSpo4rvankxEA-wQ-yGg2MRVtS49dKctEGdn08GVFt8PdjeQ@mail.gmail.com>
-Subject: Re: [PATCH v5 4/9] pci: Add slot reset option to pci_dev_reset
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        Don Dutile <ddutile@redhat.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: Re: [PATCH v8] mm: make lru_add_drain_all() selective
+References: <20130814200748.GI28628@htj.dyndns.org> <201308142029.r7EKTMRw023404@farm-0002.internal.tilera.com> <20130814141258.6289d9926944245befffa3af@linux-foundation.org>
+In-Reply-To: <20130814141258.6289d9926944245befffa3af@linux-foundation.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 8, 2013 at 2:09 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> If the hotplug controller provides a way to reset a slot, use that
-> before a direct parent bus reset.  Like the bus reset option, this is
-> only available when a single pci_dev occupies the slot.
+On 8/14/2013 5:12 PM, Andrew Morton wrote:
+> On Wed, 14 Aug 2013 16:22:18 -0400 Chris Metcalf <cmetcalf@tilera.com> wrote:
 >
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
->  drivers/pci/pci.c |   34 ++++++++++++++++++++++++++++++++++
->  1 file changed, 34 insertions(+)
+>> This change makes lru_add_drain_all() only selectively interrupt
+>> the cpus that have per-cpu free pages that can be drained.
+>>
+>> This is important in nohz mode where calling mlockall(), for
+>> example, otherwise will interrupt every core unnecessarily.
+> Changelog isn't very informative.  I added this:
 >
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index d468608..9407aab 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -22,6 +22,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/device.h>
->  #include <linux/pm_runtime.h>
-> +#include <linux/pci_hotplug.h>
->  #include <asm-generic/pci-bridge.h>
->  #include <asm/setup.h>
->  #include "pci.h"
-> @@ -3256,6 +3257,35 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
->         return 0;
->  }
+> : This is important on workloads where nohz cores are handling 10 Gb traffic
+> : in userspace.  Those CPUs do not enter the kernel and place pages into LRU
+> : pagevecs and they really, really don't want to be interrupted, or they
+> : drop packets on the floor.
 >
-> +static int pci_reset_hotplug_slot(struct hotplug_slot *hotplug, int probe)
-> +{
-> +       int rc = -ENOTTY;
-> +
-> +       if (!hotplug || !try_module_get(hotplug->ops->owner))
-> +               return rc;
-> +
-> +       if (hotplug->ops->reset_slot)
-> +               rc = hotplug->ops->reset_slot(hotplug, probe);
-> +
-> +       module_put(hotplug->ops->owner);
-> +
-> +       return rc;
-> +}
-> +
-> +static int pci_dev_reset_slot_function(struct pci_dev *dev, int probe)
-> +{
-> +       struct pci_dev *pdev;
-> +
-> +       if (dev->subordinate || !dev->slot)
-> +               return -ENOTTY;
-> +
-> +       list_for_each_entry(pdev, &dev->bus->devices, bus_list)
-> +               if (pdev != dev && pdev->slot == dev->slot)
-> +                       return -ENOTTY;
-> +
-> +       return pci_reset_hotplug_slot(dev->slot->hotplug, probe);
+> to attempt to describe the rationale for the patch.
 
-I don't think this is hotplug-safe.  It looks like pci_bus_sem might
-be the right semaphore to hold while verifying that we won't reset any
-unintended devices.  But I think most users of the bus->devices list
-are unprotected, so there's no point in trying to fix just this one.
+Thanks.  More motivational text is always a good thing.
 
-> +}
-> +
->  static int __pci_dev_reset(struct pci_dev *dev, int probe)
->  {
->         int rc;
-> @@ -3278,6 +3308,10 @@ static int __pci_dev_reset(struct pci_dev *dev, int probe)
->         if (rc != -ENOTTY)
->                 goto done;
->
-> +       rc = pci_dev_reset_slot_function(dev, probe);
-> +       if (rc != -ENOTTY)
-> +               goto done;
-> +
->         rc = pci_parent_bus_reset(dev, probe);
->  done:
->         return rc;
->
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
