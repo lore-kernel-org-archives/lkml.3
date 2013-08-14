@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760354Ab3HNSn0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:43:26 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:34824 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760033Ab3HNSnY (ORCPT
+	id S1760134Ab3HNSrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:47:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58347 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758396Ab3HNSrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:43:24 -0400
+	Wed, 14 Aug 2013 14:47:03 -0400
+Date: Wed, 14 Aug 2013 19:46:43 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20130814184643.GL2401@sirena.org.uk>
+References: <20130814173028.GB2401@sirena.org.uk>
+ <Pine.LNX.4.44L0.1308141410190.1701-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <520BC9A6.608@linutronix.de>
-References: <51F2BE6F.3010008@linutronix.de>
-	<51F2D427.7050106@linutronix.de>
-	<CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
-	<51F2DD90.2030405@linutronix.de>
-	<CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
-	<20130729165329.GA5773@linutronix.de>
-	<CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com>
-	<51F6ABA2.7060102@linutronix.de>
-	<CADYTM3bcCoWKE9eR5Sd9MbaEUr4G=k=r6JKR+8KC=W_YrbMs3g@mail.gmail.com>
-	<20130809160339.GA14829@linutronix.de>
-	<5205516D.1030707@cogentembedded.com>
-	<5209DCB9.8020705@linutronix.de>
-	<CADYTM3a2M-X=eqz0LmSq4T9UF9khsTGB5TTYWWMRZWwkpRuRTQ@mail.gmail.com>
-	<520A3206.5080505@linutronix.de>
-	<CADYTM3YU=xt-YDaoOqothjAv_rdnzRmop10Rf7PSA7POaE5DBQ@mail.gmail.com>
-	<520A3847.4090506@linutronix.de>
-	<CADYTM3YDmBw2Due5boftM_a+U2EcVaw8d9sFo8167Q0v1KSRgQ@mail.gmail.com>
-	<520A414A.1000102@linutronix.de>
-	<CADYTM3Z9AwRz1z2k-Ve4xMoW5i2YRdxk2sJ3Aw-6tjR0oD1y7w@mail.gmail.com>
-	<520BC9A6.608@linutronix.de>
-Date: Wed, 14 Aug 2013 13:43:20 -0500
-Message-ID: <CADYTM3YQjmBmuzfQU3gVtD_1qrE3PG1LjbHn35CsU94ord7D5Q@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: am335x: Do not remove the session bin
- HOST-only mode
-From: Bin Liu <binmlist@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jnYfR+Q8IWTs8BNa"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1308141410190.1701-100000@iolanthe.rowland.org>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
 
-On Wed, Aug 14, 2013 at 1:17 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> So I tried to boot my beagle bone board to figure out if they use the
-> first or the second port in host mode (but it doesn't boot). The tiny
-> micro USB plug is 100% for UART and not wired up to MUSB.
+--jnYfR+Q8IWTs8BNa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I have not run the mainline kernel on beagle bone yet, so I cannot
-comment how it works, and it does not surprise if something is broken
-since this is what you are trying to fix ;)
+On Wed, Aug 14, 2013 at 02:35:07PM -0400, Alan Stern wrote:
+> On Wed, 14 Aug 2013, Mark Brown wrote:
 
-But I just booted my beagle bone with the out-of-box SD card which has
-Angstrom 3.2.34 kernel. The USB0 port is in device mode with
-g_mass_storage.ko loaded, and USB1 is in host-only mode.
+> > What I'm proposing is that we have a way of telling buses that devices
+> > exist via a mechanism other than their actually being visible on the bus
+> > at the current time.  If you're doing that the driver can be running
+> > prior to the hardware being there, just like it does with all the
+> > non-enumerable buses.
 
-> Any comments on that patch? I would remove the ID pin changes and
-> repost if you don't mind.
+> This may work for other buses, but it isn't feasible for USB.  Not only
+> do many of the drivers need to communicate with their device during
+> their probe routine, the subsystem itself needs to communicate with the
+> device before many of the important data structures can be constructed. =
+=20
+> Without these structures, the device can't be bound to a driver.  We=20
+> wouldn't even know which driver to bind it to!
 
-That is okay to me, as long as both USB ports on the GP evm work.
+The identification information for the device would of course have to be
+provided as part of registering that the device was going to appear -
+I'd expect to provide the same information that's read out of the
+hardware during enumeration, with enumeration checking to see if it
+knows about the device already.
 
--Bin.
+> My impression is that much of what you want could be handled by a
+> platform callback invoked when a particular bus -- i.e., one whose
+> upstream controller is a particular platform device -- is registered. =20
+> Is that correct?  For example, in the USB case, the on-board hub's
+> GPIOs could be set when the USB bus is registered (or perhaps when the
+> bus's root hub is registered).
+
+That sort of bodge is probably adequate for basic "power this on" stuff
+but it's not going to scale to a general solution, especially where the
+driver wants to use some of the information at runtime.  Currently
+systems are doing things like bodging callbacks into controller drivers
+which is basically what you're talking about here.
+
+> > It means that there are situations where a driver wants to take the
+> > hardware offline but still offer services to userspace which will
+> > require the hardware to be brought on line again.  The fact that this is
+> > a very generic thing is exactly why I'm raising this as a generic issue.
+
+> This is a separate issue, more or less independent of whether the
+> platform needs to carry out special actions for the device in question. =
+=20
+> If you're suggesting these off-line/on-line transitions are appropriate
+> places for a platform hook, then yes, that makes sense.
+
+I think in the general case it's the same issue - grab all the resources
+and enable them at probe time is the simplest implementation but it's
+not the only one by a long stretch.
+
+--jnYfR+Q8IWTs8BNa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSC9CQAAoJELSic+t+oim9qIkP/3RLlLzJwb8Vwgqgeo/ZTBzY
+8xJSK6J+1KGZ+lizOjie+bmlQcgxgIR/J6EtqStLmMr3c0HpiW8QB2fAMNZIsUDq
+IJm3oYKxBxtd6VzxX66grWYWZKpxs1GUQOF3kBUCDUJGcwNV/a4oMV5cSWXTIrM6
+cWy/EsPt+3QS/FKhM2IctuDd9x0NKgEljLZFCkxHkdAIWbeSw0XFYT0nrp+QVh4O
+H/LizuUb1JoqvRUQ4PSPngFKVcYA368MVPcMJm1jBFhE8w+lGMghzeIuSII/doUy
+1dRywM6gHeUOyExqIxXVt65eNmxHaBjhIdH6KdOlR13tilMT12YEr3j6Zb4R2rqN
+YzDdVTCX3DTF9gBKqPj5DMnR0xXDJj0wsRERlhbTGtBAYpnumB3q8dB12l6FsmC4
+zWHdAGvl/Pp4v1OYul969aAkBLnVEpXDGYCZVGWeZs2rE7Lbx9aVPSJBNoXLj45j
+wwYfE3WVlIt3Rz8dpzHMe40VKdxSC3MlnohiJSXLviGWwoebf6u3wL2O6/HmYD4H
+IzOgTBxqhJQ+jJNKrRuy4wzlXe5NglemMMrztcBgQGGVztJuv/cyblNMtABYCP7C
+Zk7vTFXfa1U6wC/DSyxlDrnXUg1JOMvWNRL56rmcqaIs1bpTkDgQr+nI/WtDFHJi
+L3cVDk/iwef3ug9jLhN3
+=7PJI
+-----END PGP SIGNATURE-----
+
+--jnYfR+Q8IWTs8BNa--
