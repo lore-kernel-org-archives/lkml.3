@@ -1,45 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161Ab3HNT0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 15:26:31 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:63534 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933107Ab3HNT01 (ORCPT
+	id S933013Ab3HNT3L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 15:29:11 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:59258 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932799Ab3HNT3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 15:26:27 -0400
-Message-ID: <520BD9E0.8050304@mit.edu>
-Date: Wed, 14 Aug 2013 12:26:24 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 14 Aug 2013 15:29:09 -0400
 MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: DoS with unprivileged mounts
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-In-Reply-To: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAJAp7OjbJwaH8SFdSwDU4VLwTAY1PfDWy1S+yF05=oPuUApvNA@mail.gmail.com>
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org>
+	<CAJAp7OjbJwaH8SFdSwDU4VLwTAY1PfDWy1S+yF05=oPuUApvNA@mail.gmail.com>
+Date: Wed, 14 Aug 2013 21:29:08 +0200
+Message-ID: <CACRpkdbNpVUV9B1p1Cp5q2vJtQ78zhqsDBss2k28=cxF9Mn7pg@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Bjorn Andersson <bjorn@kryo.se>
+Cc: Hanumant Singh <hanumant@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 10:42 AM, Miklos Szeredi wrote:
-> There's a simple and effective way to prevent unlink(2) and rename(2)
-> from operating on any file or directory by simply mounting something
-> on it.  In any mount instance in any namespace.
-> 
-> Was this considered in the unprivileged mount design?
-> 
-> The solution is also theoretically simple: mounts in unpriv namespaces
-> are marked "volatile" and are dissolved on an unlink type operation.
+On Tue, Jul 30, 2013 at 1:39 AM, Bjorn Andersson <bjorn@kryo.se> wrote:
+> On Wed, Jul 24, 2013 at 1:41 PM, Hanumant Singh <hanumant@codeaurora.org> wrote:
 
-I'd actually prefer the reverse: unprivileged mounts don't prevent
-unlink and rename.  If the dentry goes away, then the mount could still
-exist, sans underlying file.  (This is already supported on network
-filesystems.)
+> As a general note on the patch, the pins and pin groups are defined by
+> the soc, I'm therefore not convinced that these should be configured
+> from the devicetree. It's at least not how it's done in other
+> platforms.
 
---Andy
+Now we are three people sayin the same thing so it should
+be a good hint to the implementer :-)
+
+> After talking to Linus a little bit I concluded that the way the
+> design idea behind pinmux is that you have pins and you have
+> functions;
+> * pins are your 117 gp-pins and with some imagination your sd pins, so
+> that's fine.
+> * the function is some functionality provided by the hard
+> Then you can set up muxes between these two. Therefore I think your
+> use of the word "function" in the patch is what normally is called a
+> mux. It might be worth sorting this out, to make it easier to maintain
+> this code down the road.
+>
+> @Linus, can you please confirm my understanding of the design?
+
+Yes, we have pins in groups which are just group = pin [a, b, ... , n]
+and we have functions which is e.g. "I2C block 1". To push a function
+out on the pins we connect the function with a group of pins.
+
+For a function such as a UART, we connect 2 or 4 pins ... those will
+provide TX+RX or maybe TX+RX+CTS+RTS if we want to be fancy.
+
+So the mapping table combines this group with this function and
+that becomes a setting such as "default" ...
+
+You only have to do it a few times and then you get the hang
+of it :-)
+
+I wish we could have come up with something simpler than
+this but it appears the world is complex, this was the common
+denominator of all the worlds pinmuxes: they enable a group
+of pins for a certain function (an IP core).
+
+>> +static int msm_tlmm_v3_sdc_cfg(uint pin_no, unsigned long *config,
+>> +                                               void __iomem *reg_base,
+>> +                                               bool write)
+>
+> I strongly recommend you split this function into a get_config and
+> set_config. It took me plenty of time to get my head around what
+> you're doing here.
+>
+> I would also suggest that you do:
+>
+> val = readl()
+> switch () {
+>   fix val in various ways
+> }
+> writel(val)
+>
+> Instead of maintaining mask and shift throughout the function.
+
+Agree. And if you want to have performance as well:
+readl_relaxed() ... writel() is preferred. (Not that it matters
+much uless in a critical path.)
+
+>> +       /* Get mask and shft values for this config type */
+>> +       switch (id) {
+>> +       case PIN_CONFIG_BIAS_DISABLE:
+>> +               mask = TLMMV3_GP_PULL_MASK;
+>> +               shft = TLMMV3_GP_PULL_SHFT;
+>> +               data = TLMMV3_NO_PULL;
+>> +               if (!write) {
+>> +                       val >>= shft;
+>> +                       val &= mask;
+>> +                       data = rval_to_pull(val);
+>
+> I assume this should return a "boolean" whether or not this mode is
+> selected; if so you should return 1 here iff (val & 0x3) == 3. I
+> assume the same goes for the sdc config function?
+>
+> @Linus, could you please confirm this interpretation of the get_config
+> for pull config.
+
+On bias disable the argument is ignored so it doesn't matter, it
+should just be set to zero.
+
+Actually the data should be more carefully handled for each
+config option I think.
+
+Yours,
+Linus Walleij
