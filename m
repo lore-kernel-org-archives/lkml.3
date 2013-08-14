@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759575Ab3HNIyk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 04:54:40 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:58358 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759485Ab3HNIyh (ORCPT
+	id S1759589Ab3HNI4o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 04:56:44 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:40211 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759531Ab3HNI4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 04:54:37 -0400
+	Wed, 14 Aug 2013 04:56:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFgnuDe1VwH2_xyyRN382=gGO8N6QKONKpGkLBGK8Hv2Zh1orA@mail.gmail.com>
-References: <1376377766-2594-1-git-send-email-chenxg@marvell.com>
-	<CAKohpo=QKPvqUcQVsbbSQdWOOi5L-P2CBFzcfMsobs8uGpLkVw@mail.gmail.com>
-	<CAFgnuDes_F7Q5CHbXKC=ndrn9Gr3PJfGj0QvDXA-FuGcq41CHQ@mail.gmail.com>
-	<CAKohponD2LdDsJy=UJCf-1yANjyPjmAyokV5a4HOSJn_DMJVhA@mail.gmail.com>
-	<CAFgnuDetTVYayBABNPhME15b+b6qUtJX2hBaJ6y4+gOSgGFwdQ@mail.gmail.com>
-	<CAKohpoksGB6bBtFF4DaqqLME2kpDve5uMycZDCXahaigdRhwKQ@mail.gmail.com>
-	<CAFgnuDe1VwH2_xyyRN382=gGO8N6QKONKpGkLBGK8Hv2Zh1orA@mail.gmail.com>
-Date: Wed, 14 Aug 2013 14:24:36 +0530
-Message-ID: <CAKohpokTA8iUbC8Jhd9Lqd4VbVqiEn-Ntu4jPvYHkbM1MbVM=A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] cpufreq: Add governor operation ongoing flag
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Xiaoguang Chen <chenxg.marvell@gmail.com>
-Cc: Xiaoguang Chen <chenxg@marvell.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAMuHMdXu+j03r_TQWC74e1dZzi6n9DsdBj_gRfrznW-VzzyTHQ@mail.gmail.com>
+References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
+	<alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
+	<20130730171329.GF24583@localhost.localdomain>
+	<Pine.BSM.4.64L.1307301741360.20305@herc.mirbsd.org>
+	<20130730204001.GG24583@localhost.localdomain>
+	<87eha33v9f.fsf@igel.home>
+	<20130809180441.GB12314@lenny.home.zabbo.net>
+	<alpine.DEB.2.02.1308131714130.12565@ayla.of.borg>
+	<CAMuHMdXu+j03r_TQWC74e1dZzi6n9DsdBj_gRfrznW-VzzyTHQ@mail.gmail.com>
+Date: Wed, 14 Aug 2013 10:56:40 +0200
+X-Google-Sender-Auth: h2_Vb0SdSkYM0IGM3Jt-xNgMuMY
+Message-ID: <CAMuHMdV-nBbhKbVSAAwh5M45-7kz4RJRqfHrCfudRA5dE2CKoA@mail.gmail.com>
+Subject: Re: btrfs zero divide
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Zach Brown <zab@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Schwab <schwab@linux-m68k.org>, Josef Bacik <jbacik@fusionio.com>,
+        Thorsten Glaser <tg@mirbsd.de>, Joe Perches <joe@perches.com>,
+        "Debian GNU/Linux m68k" <debian-68k@lists.debian.org>,
+        linux-btrfs@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        scsi <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 August 2013 14:20, Xiaoguang Chen <chenxg.marvell@gmail.com> wrote:
-> Hi, Viresh
-> After checking your patch, I find that __cpufreq_set_policy function
-> doesn't check STOP and EXIT 's return value
-> is it on purpose? if not, I can provide a patch to add it.
+On Wed, Aug 14, 2013 at 10:40 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Tue, Aug 13, 2013 at 6:32 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>> On Fri, 9 Aug 2013, Zach Brown wrote:
+>>> On Fri, Aug 09, 2013 at 02:26:36PM +0200, Andreas Schwab wrote:
+>>> > Josef Bacik <jbacik@fusionio.com> writes:
+>>> >
+>>> > > So stripe_len shouldn't be 0, if it is you have bigger problems :).
+>>> >
+>>> > The bigger problem is that stripe_nr is u64, this is completely bogus.
+>>> > The first operand of do_div must be u32.  This goes through the whole
+>>> > file.
+>>
+>> This was introduced by commit 53b381b3abeb86f12787a6c40fee9b2f71edc23b
+>> ("Btrfs: RAID5 and RAID6"), which changed the divisor from
+>> map->stripe_len (struct map_lookup.stripe_len is int) to a 64-bit
+>> temporary.
+>>
+>>> Definitely.  Can we get some typeof() tricks in the macros to have the
+>>> build fail if (when, evidently) someone gets it wrong?
+>>
+>> Not using typeof, as there are way too many callsites where int is used
+>> instead of u32.
+>>
+>> However, checking that sizeof() equals to 4 seems to work.
+>> Below is a patch for asm-generic, which is untested, but it works when
+>> adding the same checks to arch/m68k/include/asm/div64.h
+>>
+>> This is not something we just want to drop in, as it has the potential of
+>> breaking lots of things (yes, it breaks btrfs :-)
+>
+> Found so far:
+>   - Several calls to sector_div() in blkdev_issue_discard()
+>   - Two calls to do_div() in sd_completed_bytes()
+>
+> Some of these even operate on dividends that never exceed 32-bit, tss...
 
-I thought we probably can't break on these calls here, while we are trying to
-stop existing governor. And so didn't check return values..
+Two more:
+ drivers/md/dm-cache-target.c:too_many_discard_blocks
+ fs/jfs/jfs_dmap.c:dbDiscardAG
 
-If you face some issues with them, you are free to add checks.
+These bring in the 64-bit divisor from somewhere else, so they're less
+trivial to fix.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
