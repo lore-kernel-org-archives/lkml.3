@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759858Ab3HNL11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 07:27:27 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61744 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752157Ab3HNL1Z (ORCPT
+	id S1759922Ab3HNL1r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 07:27:47 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:44981 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759901Ab3HNL1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 07:27:25 -0400
-Date: Wed, 14 Aug 2013 12:27:20 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Hanjun Guo <hanjun.guo@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Naresh Bhat <naresh.bhat@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-Subject: Re: [RFC][PATCH 1/2] ARM64: add cpu topology definition
-Message-ID: <20130814112720.GB43445@MacBook-Pro.local>
-References: <1374921728-9007-1-git-send-email-hanjun.guo@linaro.org>
- <CAKfTPtBpo41LJ3V8TB8YwudwqpURuA2u_Lvu4KYVK=qSs+gFuQ@mail.gmail.com>
- <20130729095400.GB32383@mudshark.cambridge.arm.com>
+	Wed, 14 Aug 2013 07:27:45 -0400
+Date: Wed, 14 Aug 2013 13:27:41 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nathan Zimmer <nzimmer@sgi.com>, Mike Travis <travis@sgi.com>,
+        Peter Anvin <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
+ embedded in the buddy allocator
+Message-ID: <20130814112741.GB13772@gmail.com>
+References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
+ <1376344480-156708-1-git-send-email-nzimmer@sgi.com>
+ <CA+55aFwTQLexJkf67P0b7Z7cw8fePjdDSdA4SOkM+Jf+kBPYEA@mail.gmail.com>
+ <520A6DFC.1070201@sgi.com>
+ <CA+55aFwRHdQ_f6ryUU1yWkW1Qz8cG958jLZuyhd_YdOq4-rfRA@mail.gmail.com>
+ <20130813231020.GA22667@asylum.americas.sgi.com>
+ <CA+55aFyeEK6FfNC-7SjGdYVrjiES0V7JNUG==P5p6iu+UNiAfA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130729095400.GB32383@mudshark.cambridge.arm.com>
+In-Reply-To: <CA+55aFyeEK6FfNC-7SjGdYVrjiES0V7JNUG==P5p6iu+UNiAfA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 10:54:01AM +0100, Will Deacon wrote:
-> On Mon, Jul 29, 2013 at 10:46:06AM +0100, Vincent Guittot wrote:
-> > On 27 July 2013 12:42, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> > > Power aware scheduling needs the cpu topology information to improve the
-> > > cpu scheduler decision making.
-> > 
-> > It's not only power aware scheduling. The scheduler already uses
-> > topology and cache sharing when  CONFIG_SCHED_MC and/or
-> > CONFIG_SCHED_SMT are enable. So you should also add these configs for
-> > arm64 so the scheduler can use it
-> 
-> ... except that the architecture doesn't define what the AFF fields in MPIDR
-> really represent. Using them to make key scheduling decisions relating to
-> cache proximity seems pretty risky to me, especially given the track record
-> we've seen already on AArch32 silicon. It's a convenient register if it
-> contains the data we want it to contain, but we need to force ourselves to
-> come to terms with reality here and simply use it as an identifier for a
-> CPU.
-> 
-> Can't we just use the device-tree to represent this topological data for
-> arm64? Lorenzo has been working on bindings in this area.
 
-Catching up on email after holiday - I agree with Will here, we should
-use DT for representing the topology (or ACPI) and not rely on the MPIDR
-value.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
--- 
-Catalin
+> On Tue, Aug 13, 2013 at 4:10 PM, Nathan Zimmer <nzimmer@sgi.com> wrote:
+> >
+> > The only mm structure we are adding to is a new flag in page->flags. 
+> > That didn't seem too much.
+> 
+> I don't agree.
+> 
+> I see only downsides, and no upsides. Doing the same thing *without* the 
+> downsides seems straightforward, so I simply see no reason for any extra 
+> flags or tests at runtime.
+
+The code as presented clearly looks more involved and neither simple nor 
+zero-cost - I was hoping for a much more simple approach.
+
+I see three solutions:
+
+ - Speed up the synchronous memory init code: live migrate to the node 
+   being set up via set_cpus_allowed(), to make sure the init is always 
+   fast and local.
+
+   Pros: if it solves the problem then mem init is still synchronous, 
+   deterministic and essentially equivalent to what we do today - so 
+   relatively simple and well-tested, with no 'large machine' special
+   path.
+
+   Cons: it might not be enough and we might not have scheduling
+   enabled on the affected nodes yet.
+
+ - Speed up the synchronous memory init code by paralellizing the key, 
+   most expensive initialization portion of setting up the page head 
+   arrays to per node, via SMP function-calls.
+
+   Pros: by far the fastest synchronous option. (It will also test the
+   power budget and the mains fuses right during bootup.)
+
+   Cons: more complex and depends on SMP cross-calls being available at
+   mem init time. Not necessarily hotplug friendly.
+
+ - Avoid the problem by punting to async mem init.
+
+   Pros: it gets us to a minimal working system quickly and leaves the 
+   memory code relatively untouched.
+
+   Disadvantages: makes memory state asynchronous and non-deterministic.
+   Stats either fluctuate shortly after bootup or have to be faked.
+
+Thanks,
+
+	Ingo
