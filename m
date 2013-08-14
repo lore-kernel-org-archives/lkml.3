@@ -1,49 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760236Ab3HNSej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:34:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5091 "EHLO mga02.intel.com"
+	id S933007Ab3HNSen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:34:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:32258 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758617Ab3HNSeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:34:37 -0400
+	id S1760238Ab3HNSel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 14:34:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,878,1367996400"; 
-   d="scan'208";a="387159950"
+   d="scan'208";a="381007893"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
-Cc: peterz@infradead.org, acme@infradead.org, linux-kernel@vger.kernel.org
-Subject: perf, x86: Add parts of the remaining haswell PMU functionality v2
-Date: Wed, 14 Aug 2013 11:34:23 -0700
-Message-Id: <1376505267-8902-1-git-send-email-andi@firstfloor.org>
+Cc: peterz@infradead.org, acme@infradead.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 3/4] perf, x86: Add Haswell TSX event aliases v6
+Date: Wed, 14 Aug 2013 11:34:26 -0700
+Message-Id: <1376505267-8902-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1376505267-8902-1-git-send-email-andi@firstfloor.org>
+References: <1376505267-8902-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[v2: Added Peter's changes to the PEBS handler]
+From: Andi Kleen <ak@linux.intel.com>
 
-Add some more TSX functionality to the basic Haswell PMU.
+Add TSX event aliases, and export them from the kernel to perf.
 
-A lot of the infrastructure needed for these patches has
-been merged earlier, so it is all quite straight forward
-now.
+These are used by perf stat -T and to allow
+more user friendly access to events. The events are designed to
+be fairly generic and may also apply to other architectures
+implementing HTM.  They all cover common situations that
+happens during tuning of transactional code.
 
-- Add the checkpointed counter workaround.
-(Parts of this have been already merged earlier)
-- Add support for reporting PEBS transaction abort cost as weight.
-This is useful to judge the cost of aborts and concentrate
-on expensive ones first.
-(Large parts of this have been already merged earlier,
-this is just adding the final few lines to the PEBS handler)
-- Add TSX event aliases, needed for perf stat -T and general
-usability.
-(Infrastructure also already in)
-- Add perf stat -T support to give a user friendly highlevel
-counting frontend for transaction..
-This version should also be usable for POWER8 eventually.
+For Haswell we have to separate the HLE and RTM events,
+as they are separate in the PMU.
 
-Not included:
+This adds the following events.
 
-Support for transaction flags and TSX LBR flags.
+tx-start	Count start transaction (used by perf stat -T)
+tx-commit	Count commit of transaction
+tx-abort	Count all aborts
+tx-conflict	Count aborts due to conflict with another CPU.
+tx-capacity	Count capacity aborts (transaction too large)
 
--Andi
+Then matching el-* events for HLE
+
+cycles-t	Transactional cycles (used by perf stat -T)
+* also exists on POWER8
+cycles-ct	Transactional cycles commited (used by perf stat -T)
+* according to Michael Ellerman POWER8 has a cycles-transactional-committed,
+* perf stat -T handles both cases
+
+Note for useful abort profiling often precise has to be set,
+as Haswell can only report the point inside the transaction
+with precise=2.
+
+(I had another patchkit to allow exporting precise too, but Vince
+Weaver pointed out it violates the ABI, so dropped now)
+
+For some classes of aborts, like conflicts, this is not needed,
+as it makes more sense to look at the complete critical section.
+
+This gives a clean set of generalized events to examine transaction
+success and aborts. Haswell has additional events for TSX, but those are more
+specialized for very specific situations.
+
+v2: Move to new sysfs infrastructure
+v3: Use own sysfs functions now
+v4: Add tx/el-abort-return for better conflict sampling
+v5: Different white space.
+v6: Cut down events, rewrite description.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 9218025..ca7f02c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2076,7 +2076,34 @@ static __init void intel_nehalem_quirk(void)
+ EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,     "event=0xcd,umask=0x1,ldlat=3");
+ EVENT_ATTR_STR(mem-stores,     mem_st_hsw,     "event=0xd0,umask=0x82")
+ 
++/* Haswell special events */
++EVENT_ATTR_STR(tx-start,        tx_start,       "event=0xc9,umask=0x1");
++EVENT_ATTR_STR(tx-commit,       tx_commit,      "event=0xc9,umask=0x2");
++EVENT_ATTR_STR(tx-abort,        tx_abort,	"event=0xc9,umask=0x4");
++EVENT_ATTR_STR(tx-capacity,     tx_capacity,	"event=0x54,umask=0x2");
++EVENT_ATTR_STR(tx-conflict,     tx_conflict,	"event=0x54,umask=0x1");
++EVENT_ATTR_STR(el-start,        el_start,       "event=0xc8,umask=0x1");
++EVENT_ATTR_STR(el-commit,       el_commit,      "event=0xc8,umask=0x2");
++EVENT_ATTR_STR(el-abort,        el_abort,	"event=0xc8,umask=0x4");
++EVENT_ATTR_STR(el-capacity,     el_capacity,    "event=0x54,umask=0x2");
++EVENT_ATTR_STR(el-conflict,     el_conflict,    "event=0x54,umask=0x1");
++EVENT_ATTR_STR(cycles-t,        cycles_t,       "event=0x3c,in_tx=1");
++EVENT_ATTR_STR(cycles-ct,       cycles_ct,
++					"event=0x3c,in_tx=1,in_tx_cp=1");
++
+ static struct attribute *hsw_events_attrs[] = {
++	EVENT_PTR(tx_start),
++	EVENT_PTR(tx_commit),
++	EVENT_PTR(tx_abort),
++	EVENT_PTR(tx_capacity),
++	EVENT_PTR(tx_conflict),
++	EVENT_PTR(el_start),
++	EVENT_PTR(el_commit),
++	EVENT_PTR(el_abort),
++	EVENT_PTR(el_capacity),
++	EVENT_PTR(el_conflict),
++	EVENT_PTR(cycles_t),
++	EVENT_PTR(cycles_ct),
+ 	EVENT_PTR(mem_ld_hsw),
+ 	EVENT_PTR(mem_st_hsw),
+ 	NULL
+-- 
+1.8.3.1
+
