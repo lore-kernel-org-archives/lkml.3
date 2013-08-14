@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488Ab3HNKiA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:38:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34559 "EHLO
+	id S932465Ab3HNKh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:37:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34536 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932467Ab3HNKh5 (ORCPT
+	with ESMTP id S932449Ab3HNKhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:37:57 -0400
+	Wed, 14 Aug 2013 06:37:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Stanislaw Gruszka <stf_xl@wp.pl>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 40/75] arcnet: cleanup sizeof parameter
-Date: Wed, 14 Aug 2013 11:36:29 +0100
-Message-Id: <1376476624-10011-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 35/75] rt2x00: fix stop queue
+Date: Wed, 14 Aug 2013 11:36:24 +0100
+Message-Id: <1376476624-10011-36-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Stanislaw Gruszka <stf_xl@wp.pl>
 
-commit 087d273caf4f7d3f2159256f255f1f432bc84a5b upstream.
+commit e2288b66fe7ff0288382b2af671b4da558b44472 upstream.
 
-This patch doesn't change the compiled code because ARC_HDR_SIZE is 4
-and sizeof(int) is 4, but the intent was to use the header size and not
-the sizeof the header size.
+Since we clear QUEUE_STARTED in rt2x00queue_stop_queue(), following
+call to rt2x00queue_pause_queue() reduce to noop, i.e we do not
+stop queue in mac80211.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+To fix that introduce rt2x00queue_pause_queue_nocheck() function,
+which will stop queue in mac80211 directly.
+
+Note that rt2x00_start_queue() explicitly set QUEUE_PAUSED bit.
+
+Note also that reordering operations i.e. first call to
+rt2x00queue_pause_queue() and then clear QUEUE_STARTED bit, will race
+with rt2x00queue_unpause_queue(), so calling ieee80211_stop_queue()
+directly is the only available solution to fix the problem without
+major rework.
+
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/arcnet/arcnet.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2x00queue.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/arcnet/arcnet.c b/drivers/net/arcnet/arcnet.c
-index a746ba2..a956053 100644
---- a/drivers/net/arcnet/arcnet.c
-+++ b/drivers/net/arcnet/arcnet.c
-@@ -1007,7 +1007,7 @@ static void arcnet_rx(struct net_device *dev, int bufnum)
+diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
+index 2fd8301..6d0c651 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -877,13 +877,8 @@ void rt2x00queue_index_inc(struct queue_entry *entry, enum queue_index index)
+ 	spin_unlock_irqrestore(&queue->index_lock, irqflags);
+ }
  
- 	soft = &pkt.soft.rfc1201;
+-void rt2x00queue_pause_queue(struct data_queue *queue)
++void rt2x00queue_pause_queue_nocheck(struct data_queue *queue)
+ {
+-	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
+-	    !test_bit(QUEUE_STARTED, &queue->flags) ||
+-	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
+-		return;
+-
+ 	switch (queue->qid) {
+ 	case QID_AC_VO:
+ 	case QID_AC_VI:
+@@ -899,6 +894,15 @@ void rt2x00queue_pause_queue(struct data_queue *queue)
+ 		break;
+ 	}
+ }
++void rt2x00queue_pause_queue(struct data_queue *queue)
++{
++	if (!test_bit(DEVICE_STATE_PRESENT, &queue->rt2x00dev->flags) ||
++	    !test_bit(QUEUE_STARTED, &queue->flags) ||
++	    test_and_set_bit(QUEUE_PAUSED, &queue->flags))
++		return;
++
++	rt2x00queue_pause_queue_nocheck(queue);
++}
+ EXPORT_SYMBOL_GPL(rt2x00queue_pause_queue);
  
--	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, sizeof(ARC_HDR_SIZE));
-+	lp->hw.copy_from_card(dev, bufnum, 0, &pkt, ARC_HDR_SIZE);
- 	if (pkt.hard.offset[0]) {
- 		ofs = pkt.hard.offset[0];
- 		length = 256 - ofs;
+ void rt2x00queue_unpause_queue(struct data_queue *queue)
+@@ -960,7 +964,7 @@ void rt2x00queue_stop_queue(struct data_queue *queue)
+ 		return;
+ 	}
+ 
+-	rt2x00queue_pause_queue(queue);
++	rt2x00queue_pause_queue_nocheck(queue);
+ 
+ 	queue->rt2x00dev->ops->lib->stop_queue(queue);
+ 
 -- 
 1.8.3.2
 
