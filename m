@@ -1,378 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932443Ab3HNMtj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:49:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44907 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932287Ab3HNMth (ORCPT
+	id S932423Ab3HNMxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:53:09 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:51400 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932315Ab3HNMxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:49:37 -0400
-Date: Wed, 14 Aug 2013 05:49:13 -0700
-From: tip-bot for Srivatsa Vaddagiri <tipbot@zytor.com>
-Message-ID: <tip-92b75202e5e8790905f9441ccaea2456cc4621a5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, gleb@redhat.com, raghavendra.kt@linux.vnet.ibm.com,
-        suzuki@in.ibm.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, vatsa@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, gleb@redhat.com,
-        raghavendra.kt@linux.vnet.ibm.com, suzuki@in.ibm.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20130810193849.GA25260@linux.vnet.ibm.com>
-References: <20130810193849.GA25260@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/spinlocks] kvm:
-  Paravirtual ticketlocks support for linux guests running on KVM hypervisor
-Git-Commit-ID: 92b75202e5e8790905f9441ccaea2456cc4621a5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 14 Aug 2013 08:53:06 -0400
+Message-ID: <520B7DAE.3060501@gmail.com>
+Date: Wed, 14 Aug 2013 07:53:02 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [GIT PULL] DT/core: cpu_ofnode updates for v3.12
+References: <5208E2D3.7060005@arm.com> <3356439.a21MloFP7n@vostro.rjw.lan>  <520A536C.3030600@arm.com> <520A7B00.8060405@arm.com> <1376428024.4255.14.camel@pasglop> <520B5584.7030608@arm.com>
+In-Reply-To: <520B5584.7030608@arm.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 14 Aug 2013 05:49:20 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  92b75202e5e8790905f9441ccaea2456cc4621a5
-Gitweb:     http://git.kernel.org/tip/92b75202e5e8790905f9441ccaea2456cc4621a5
-Author:     Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-AuthorDate: Tue, 6 Aug 2013 14:55:41 +0530
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 14 Aug 2013 13:12:35 +0200
+On 08/14/2013 05:01 AM, Sudeep KarkadaNagesha wrote:
+> On 13/08/13 22:07, Benjamin Herrenschmidt wrote:
+>> On Tue, 2013-08-13 at 19:29 +0100, Sudeep KarkadaNagesha wrote:
+>>> I don't understand completely the use of ibm,ppc-interrupt-server#s and
+>>> its implications on generic of_get_cpu_node implementation.
+>>> I see the PPC specific definition of of_get_cpu_node uses thread id only
+>>> in 2 instances. Based on that, I have tried to move all the other
+>>> instances to use generic definition.
+>>>
+>>> Let me know if the idea is correct.
+>>
+>> No. The device-tree historically only represents cores, not HW threads, so
+>> it makes sense to retrieve also the thread number corresponding to the CPU.
+>>
+> Ok
+> 
+>> However, the mechanism to represent HW threads in the device-tree is currently
+>> somewhat platform specific (the ibm,ppc-interrupt-server#s).
+> I see most of the callers pass NULL to thread id argument except 2
+> instances in entire tree. If that's the case why can't we move to use
+> generic of_get_cpu_node in most of those cases and have PPC specific
+> implementation for the ones using thread id.
+> 
+>>
+>> So what you could do for now is:
+>>
+>>  - Have a generic version that always returns 0 as the thread, which is weak
+> I would prefer to move to generic of_get_cpu_node where ever possible
+> and rename the function that takes thread id rather than making generic
+> one weak.
+> 
+>>
+>>  - powerpc keeps its own implementation
+> How about only in cases where it needs thread_id.
+> 
+>>
+>>  - Start a discussion on the bindings (if not already there) to define threads
+>> in a better way at which point the generic function can be updated.
+>>
+> I am not sure if we need to define any new bindings. Excerpts from ePAPR
+> (v1.1):
+> "3.7.1 General Properties of CPU nodes
+> The value of "reg" is a <prop-encoded-array> that defines a unique
+> CPU/thread id for the CPU/threads represented by the CPU node.
+> If a CPU supports more than one thread (i.e. multiple streams of
+> execution) the reg property is an array with 1 element per thread. The
+> #address-cells on the /cpus node specifies how many cells each element
+> of the array takes. Software can determine the number of threads by
+> dividing the size of reg by the parent node's #address-cells."
+> 
+> And this is exactly in agreement to what's implemented in the generic
+> of_get_cpu_node:
+> 
+> for_each_child_of_node(cpus, cpun) {
+>         if (of_node_cmp(cpun->type, "cpu"))
+>                 continue;
+>         cell = of_get_property(cpun, "reg", &prop_len);
+>         if (!cell) {
+>                 pr_warn("%s: missing reg property\n", cpun->full_name);
+>                 continue;
+>         }
+>         prop_len /= sizeof(*cell);
+>         while (prop_len) {
+>                 hwid = of_read_number(cell, ac);
+>                 prop_len -= ac;
+>                 if (arch_match_cpu_phys_id(cpu, hwid))
+>                         return cpun;
+>         }
+> }
 
-kvm: Paravirtual ticketlocks support for linux guests running on KVM hypervisor
+How about something like this:
 
-During smp_boot_cpus  paravirtualied KVM guest detects if the hypervisor has
-required feature (KVM_FEATURE_PV_UNHALT) to support pv-ticketlocks. If so,
-support for pv-ticketlocks is registered via pv_lock_ops.
+for_each_child_of_node(cpus, cpun) {
+        if (of_node_cmp(cpun->type, "cpu"))
+                continue;
 
-Use KVM_HC_KICK_CPU hypercall to wakeup waiting/halted vcpu.
+	if (arch_of_get_cpu_node(cpun, thread))
+		return cpun;
 
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20130810193849.GA25260@linux.vnet.ibm.com
-Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
-[Raghu: check_zero race fix, enum for kvm_contention_stat, jumplabel related changes,
-addition of safe_halt for irq enabled case, bailout spinning in nmi case(Gleb)]
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Acked-by: Gleb Natapov <gleb@redhat.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/kvm_para.h |  14 ++-
- arch/x86/kernel/kvm.c           | 262 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 274 insertions(+), 2 deletions(-)
+        cell = of_get_property(cpun, "reg", &prop_len);
+        if (!cell) {
+                pr_warn("%s: missing reg property\n", cpun->full_name);
+                continue;
+        }
+        prop_len /= sizeof(*cell);
+        while (prop_len) {
+                hwid = of_read_number(cell, ac);
+                prop_len -= ac;
+                if (arch_match_cpu_phys_id(cpu, hwid))
+       	                return cpun;
+        }
+}
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 695399f..427afcb 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -118,10 +118,20 @@ void kvm_async_pf_task_wait(u32 token);
- void kvm_async_pf_task_wake(u32 token);
- u32 kvm_read_and_reset_pf_reason(void);
- extern void kvm_disable_steal_time(void);
--#else
--#define kvm_guest_init() do { } while (0)
-+
-+#ifdef CONFIG_PARAVIRT_SPINLOCKS
-+void __init kvm_spinlock_init(void);
-+#else /* !CONFIG_PARAVIRT_SPINLOCKS */
-+static inline void kvm_spinlock_init(void)
-+{
-+}
-+#endif /* CONFIG_PARAVIRT_SPINLOCKS */
-+
-+#else /* CONFIG_KVM_GUEST */
-+#define kvm_guest_init() do {} while (0)
- #define kvm_async_pf_task_wait(T) do {} while(0)
- #define kvm_async_pf_task_wake(T) do {} while(0)
-+
- static inline u32 kvm_read_and_reset_pf_reason(void)
- {
- 	return 0;
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index a96d32c..b8ef630 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -34,6 +34,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/kprobes.h>
-+#include <linux/debugfs.h>
- #include <asm/timer.h>
- #include <asm/cpu.h>
- #include <asm/traps.h>
-@@ -419,6 +420,7 @@ static void __init kvm_smp_prepare_boot_cpu(void)
- 	WARN_ON(kvm_register_clock("primary cpu clock"));
- 	kvm_guest_cpu_init();
- 	native_smp_prepare_boot_cpu();
-+	kvm_spinlock_init();
- }
- 
- static void kvm_guest_cpu_online(void *dummy)
-@@ -523,3 +525,263 @@ static __init int activate_jump_labels(void)
- 	return 0;
- }
- arch_initcall(activate_jump_labels);
-+
-+#ifdef CONFIG_PARAVIRT_SPINLOCKS
-+
-+/* Kick a cpu by its apicid. Used to wake up a halted vcpu */
-+void kvm_kick_cpu(int cpu)
-+{
-+	int apicid;
-+	unsigned long flags = 0;
-+
-+	apicid = per_cpu(x86_cpu_to_apicid, cpu);
-+	kvm_hypercall2(KVM_HC_KICK_CPU, flags, apicid);
-+}
-+
-+enum kvm_contention_stat {
-+	TAKEN_SLOW,
-+	TAKEN_SLOW_PICKUP,
-+	RELEASED_SLOW,
-+	RELEASED_SLOW_KICKED,
-+	NR_CONTENTION_STATS
-+};
-+
-+#ifdef CONFIG_KVM_DEBUG_FS
-+#define HISTO_BUCKETS	30
-+
-+static struct kvm_spinlock_stats
-+{
-+	u32 contention_stats[NR_CONTENTION_STATS];
-+	u32 histo_spin_blocked[HISTO_BUCKETS+1];
-+	u64 time_blocked;
-+} spinlock_stats;
-+
-+static u8 zero_stats;
-+
-+static inline void check_zero(void)
-+{
-+	u8 ret;
-+	u8 old;
-+
-+	old = ACCESS_ONCE(zero_stats);
-+	if (unlikely(old)) {
-+		ret = cmpxchg(&zero_stats, old, 0);
-+		/* This ensures only one fellow resets the stat */
-+		if (ret == old)
-+			memset(&spinlock_stats, 0, sizeof(spinlock_stats));
-+	}
-+}
-+
-+static inline void add_stats(enum kvm_contention_stat var, u32 val)
-+{
-+	check_zero();
-+	spinlock_stats.contention_stats[var] += val;
-+}
-+
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return sched_clock();
-+}
-+
-+static void __spin_time_accum(u64 delta, u32 *array)
-+{
-+	unsigned index;
-+
-+	index = ilog2(delta);
-+	check_zero();
-+
-+	if (index < HISTO_BUCKETS)
-+		array[index]++;
-+	else
-+		array[HISTO_BUCKETS]++;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+	u32 delta;
-+
-+	delta = sched_clock() - start;
-+	__spin_time_accum(delta, spinlock_stats.histo_spin_blocked);
-+	spinlock_stats.time_blocked += delta;
-+}
-+
-+static struct dentry *d_spin_debug;
-+static struct dentry *d_kvm_debug;
-+
-+struct dentry *kvm_init_debugfs(void)
-+{
-+	d_kvm_debug = debugfs_create_dir("kvm", NULL);
-+	if (!d_kvm_debug)
-+		printk(KERN_WARNING "Could not create 'kvm' debugfs directory\n");
-+
-+	return d_kvm_debug;
-+}
-+
-+static int __init kvm_spinlock_debugfs(void)
-+{
-+	struct dentry *d_kvm;
-+
-+	d_kvm = kvm_init_debugfs();
-+	if (d_kvm == NULL)
-+		return -ENOMEM;
-+
-+	d_spin_debug = debugfs_create_dir("spinlocks", d_kvm);
-+
-+	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
-+
-+	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[TAKEN_SLOW]);
-+	debugfs_create_u32("taken_slow_pickup", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[TAKEN_SLOW_PICKUP]);
-+
-+	debugfs_create_u32("released_slow", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[RELEASED_SLOW]);
-+	debugfs_create_u32("released_slow_kicked", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[RELEASED_SLOW_KICKED]);
-+
-+	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
-+			   &spinlock_stats.time_blocked);
-+
-+	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
-+		     spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
-+
-+	return 0;
-+}
-+fs_initcall(kvm_spinlock_debugfs);
-+#else  /* !CONFIG_KVM_DEBUG_FS */
-+static inline void add_stats(enum kvm_contention_stat var, u32 val)
-+{
-+}
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return 0;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+}
-+#endif  /* CONFIG_KVM_DEBUG_FS */
-+
-+struct kvm_lock_waiting {
-+	struct arch_spinlock *lock;
-+	__ticket_t want;
-+};
-+
-+/* cpus 'waiting' on a spinlock to become available */
-+static cpumask_t waiting_cpus;
-+
-+/* Track spinlock on which a cpu is waiting */
-+static DEFINE_PER_CPU(struct kvm_lock_waiting, klock_waiting);
-+
-+static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-+{
-+	struct kvm_lock_waiting *w;
-+	int cpu;
-+	u64 start;
-+	unsigned long flags;
-+
-+	if (in_nmi())
-+		return;
-+
-+	w = &__get_cpu_var(klock_waiting);
-+	cpu = smp_processor_id();
-+	start = spin_time_start();
-+
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
-+	local_irq_save(flags);
-+
-+	/*
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
-+	w->want = want;
-+	smp_wmb();
-+	w->lock = lock;
-+
-+	add_stats(TAKEN_SLOW, 1);
-+
-+	/*
-+	 * This uses set_bit, which is atomic but we should not rely on its
-+	 * reordering gurantees. So barrier is needed after this call.
-+	 */
-+	cpumask_set_cpu(cpu, &waiting_cpus);
-+
-+	barrier();
-+
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
-+	__ticket_enter_slowpath(lock);
-+
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking.
-+	 */
-+	if (ACCESS_ONCE(lock->tickets.head) == want) {
-+		add_stats(TAKEN_SLOW_PICKUP, 1);
-+		goto out;
-+	}
-+
-+	/*
-+	 * halt until it's our turn and kicked. Note that we do safe halt
-+	 * for irq enabled case to avoid hang when lock info is overwritten
-+	 * in irq spinlock slowpath and no spurious interrupt occur to save us.
-+	 */
-+	if (arch_irqs_disabled_flags(flags))
-+		halt();
-+	else
-+		safe_halt();
-+
-+out:
-+	cpumask_clear_cpu(cpu, &waiting_cpus);
-+	w->lock = NULL;
-+	local_irq_restore(flags);
-+	spin_time_accum_blocked(start);
-+}
-+PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
-+
-+/* Kick vcpu waiting on @lock->head to reach value @ticket */
-+static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
-+{
-+	int cpu;
-+
-+	add_stats(RELEASED_SLOW, 1);
-+	for_each_cpu(cpu, &waiting_cpus) {
-+		const struct kvm_lock_waiting *w = &per_cpu(klock_waiting, cpu);
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == ticket) {
-+			add_stats(RELEASED_SLOW_KICKED, 1);
-+			kvm_kick_cpu(cpu);
-+			break;
-+		}
-+	}
-+}
-+
-+/*
-+ * Setup pv_lock_ops to exploit KVM_FEATURE_PV_UNHALT if present.
-+ */
-+void __init kvm_spinlock_init(void)
-+{
-+	if (!kvm_para_available())
-+		return;
-+	/* Does host kernel support KVM_FEATURE_PV_UNHALT? */
-+	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
-+		return;
-+
-+	printk(KERN_INFO "KVM setup paravirtual spinlock\n");
-+
-+	static_key_slow_inc(&paravirt_ticketlocks_enabled);
-+
-+	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
-+	pv_lock_ops.unlock_kick = kvm_unlock_kick;
-+}
-+#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
+For PPC:
+
+arch_of_get_cpu_node()
+{
+        const u32 *intserv;
+        unsigned int plen, t;
+
+        /* Check for ibm,ppc-interrupt-server#s. */
+        intserv = of_get_property(np, "ibm,ppc-interrupt-server#s",
+                                &plen);
+        if (!intserv)
+		return false;
+
+	hardid = get_hard_smp_processor_id(cpu);
+
+        plen /= sizeof(u32);
+        for (t = 0; t < plen; t++) {
+                 if (hardid == intserv[t]) {
+                         if (thread)
+                                  *thread = t;
+                         return true;
+                 }
+        }
+	return false;
+}
+
+> 
+> Yes this doesn't cover the historical "ibm,ppc-interrupt-server#s", for
+> which we can have PPC specific wrapper above the generic one i.e. get
+> the cpu node and then parse for thread id under custom property.
+> 
+> Let me know your thoughts.
+> 
+> Regards,
+> Sudeep
+> 
+> 
+> 
+
