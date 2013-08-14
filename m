@@ -1,190 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759994Ab3HNP4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 11:56:53 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37112 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab3HNP4v (ORCPT
+	id S1760015Ab3HNP5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 11:57:51 -0400
+Received: from 99-65-72-227.uvs.sntcca.sbcglobal.net ([99.65.72.227]:43731
+	"EHLO stargate3.asicdesigners.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751008Ab3HNP5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 11:56:51 -0400
-Date: Wed, 14 Aug 2013 17:56:47 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [GIT PULL] timers/nohz updates for 3.12
-Message-ID: <20130814155638.GA4506@somewhere>
-References: <1375729264-19845-1-git-send-email-fweisbec@gmail.com>
- <20130812184428.GA19785@gmail.com>
- <20130813000355.GD27436@somewhere>
- <20130813145730.GA4485@gmail.com>
+	Wed, 14 Aug 2013 11:57:49 -0400
+Message-ID: <520BA8E4.3010406@chelsio.com>
+Date: Wed, 14 Aug 2013 08:57:24 -0700
+From: Divy Le ray <divy@chelsio.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813145730.GA4485@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        Jay Fenlason <fenlason@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] Revert "cxgb3: Check and handle the dma mapping errors"
+References: <1376471941-2914-1-git-send-email-aik@ozlabs.ru>
+In-Reply-To: <1376471941-2914-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 04:57:30PM +0200, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > > >  19 files changed, 534 insertions(+), 326 deletions(-)
-> > > 
-> > > When merged to -tip it causes this build error:
-> > > 
-> > >  kernel/time/tick-sched.c:186:3: error: 'have_nohz_full_mask' undeclared (first use in this function)
-> > >  kernel/time/tick-sched.c:345:2: error: 'cpu' undeclared (first use in this function)
-> > > 
-> > > config attached.
-> > > 
-> > > I did what looked like to be an obvious conflict resolution to 
-> > > tick-sched.c (attached), please double check that too.
-> > > 
-> > > While at it, mind rebasing your changes to tip:timers/urgent, which has a 
-> > > few nohz fixes pending as well?
-> > 
-> > Ok I did the rebase on top of tip:timers/urgent and handled the 
-> > conflicts along. The new branch is "timers/nohz-v2".
-> > 
-> > Tell me if anything goes wrong with it.
-> 
-> it produces this splat on bootup with the attached config, on a dual-core 
-> Athlon64 box:
-> 
-> calling  context_tracking_init+0x0/0x3a @ 1
-> initcall context_tracking_init+0x0/0x3a returned 0 after 0 usecs
-> calling  dynamic_debug_init+0x0/0x239 @ 1
-> ------------[ cut here ]------------
-> WARNING: CPU: 0 PID: 1 at kernel/sched/cputime.c:639 get_vtime_delta+0x49/0x5f()
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.11.0-rc5-01689-g7830cba-dirty #226899
-> Hardware name: System manufacturer System Product Name/A8N-E, BIOS ASUS A8N-E ACPI BIOS Revision 1008 08/22/2005
->  0000000000000009 ffff88003fa03ea8 ffffffff81f83f30 0000000000000b63
->  0000000000000000 ffff88003fa03ee8 ffffffff810996a4 0000000000000000
->  ffffffff810bcfb5 ffff88003e33a000 0000000015752a00 0000000000000000
-> Call Trace:
->  <IRQ>  [<ffffffff81f83f30>] dump_stack+0x46/0x58
->  [<ffffffff810996a4>] warn_slowpath_common+0x72/0x8c
->  [<ffffffff810bcfb5>] ? get_vtime_delta+0x49/0x5f
->  [<ffffffff8109976c>] warn_slowpath_null+0x15/0x19
->  [<ffffffff810bcfb5>] get_vtime_delta+0x49/0x5f
->  [<ffffffff810bd213>] __vtime_account_system+0xf/0x37
->  [<ffffffff810bd426>] vtime_account_system+0x21/0x2e
->  [<ffffffff810bd5bf>] vtime_common_account_irq_enter+0x41/0x43
->  [<ffffffff8109ce4a>] irq_enter+0x65/0x7c
->  [<ffffffff810434e2>] smp_apic_timer_interrupt+0x23/0x40
->  [<ffffffff81f9435d>] apic_timer_interrupt+0x6d/0x80
->  <EOI>  [<ffffffff810c42d5>] ? arch_local_irq_restore+0x12/0x19
->  [<ffffffff810c5acb>] vprintk_emit+0x3e2/0x40a
->  [<ffffffff81099995>] ? cpu_maps_update_begin+0x12/0x14
->  [<ffffffff832e9244>] ? ddebug_setup_query+0x4d/0x4d
->  [<ffffffff81f80ddd>] printk+0x5c/0x5e
->  [<ffffffff8135caff>] __dynamic_pr_debug+0x79/0x7b
->  [<ffffffff810c764d>] ? timekeeping_get_ns.constprop.10+0x12/0x38
->  [<ffffffff832db12b>] ? init_hw_breakpoint+0xf7/0xf7
->  [<ffffffff810c7bbb>] ? ktime_get+0x65/0x74
->  [<ffffffff832db12b>] ? init_hw_breakpoint+0xf7/0xf7
->  [<ffffffff832e9244>] ? ddebug_setup_query+0x4d/0x4d
->  [<ffffffff832c4d9d>] do_one_initcall+0x5b/0x12a
->  [<ffffffff832d09a5>] ? native_smp_prepare_cpus+0x300/0x341
->  [<ffffffff832c4ed6>] kernel_init_freeable+0x6a/0x195
->  [<ffffffff81f7c075>] ? rest_init+0xb9/0xb9
->  [<ffffffff81f7c07e>] kernel_init+0x9/0xd1
->  [<ffffffff81f9357c>] ret_from_fork+0x7c/0xb0
->  [<ffffffff81f7c075>] ? rest_init+0xb9/0xb9
-> ---[ end trace 268f4433da36e82f ]---
-> initcall dynamic_debug_init+0x0/0x239 returned 0 after 0 usecs
-> 
-> Thanks,
-> 
-> 	Ingo
+On 08/14/2013 02:19 AM, Alexey Kardashevskiy wrote:
+> This reverts commit f83331bab149e29fa2c49cf102c0cd8c3f1ce9f9.
+>
+> As the tests PPC64 (powernv platform) show, IOMMU pages are leaking
+> when transferring big amount of small packets (<=64 bytes),
+> "ping -f" and waiting for 15 seconds is the simplest way to confirm the bug.
+>
+> Cc: Linus Torvalds<torvalds@linux-foundation.org>
+> Cc: Santosh Rastapur<santosh@chelsio.com>
+> Cc: Jay Fenlason<fenlason@redhat.com>
+> Cc: David S. Miller<davem@davemloft.net>
+> Cc: Divy Le ray<divy@chelsio.com>
+> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
 
-Sorry about that, I missed it. This is because context tracking initialization
-when CONFIG_CONTEXT_TRACKING_FORCE=y is done too late. As a result, the user init
-task can run with context tracking disabled when it is scheduled for the first
-time and then later run with context tracking enabled due to the late initialization.
-And this finally messes up the state of context tracking internal on CPU 0.
+Acked-by: Divy Le Ray <divy@chelsio.com>
 
-Anyway I fixed this by moving the context tracking initialization earlier, before
-irqs are enabled and the user init task is created.
+We are revisiting this patch in the light of the leak, and will repost 
+once fixed.
 
-Please check out the branch "timers/nohz-v3".
+Cheers,
+Divy
 
-Only commit "context_tracking: Ground setup for static key use"
-which is now 65f382fd0c8fa483713c0971de9f1dfb4cf1ad9c has changed to integrate the
-fix.
+> ---
+>   drivers/net/ethernet/chelsio/cxgb3/sge.c | 107 +++++++------------------------
+>   1 file changed, 24 insertions(+), 83 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/chelsio/cxgb3/sge.c b/drivers/net/ethernet/chelsio/cxgb3/sge.c
+> index 687ec4a..9c89dc8 100644
+> --- a/drivers/net/ethernet/chelsio/cxgb3/sge.c
+> +++ b/drivers/net/ethernet/chelsio/cxgb3/sge.c
+> @@ -455,11 +455,6 @@ static int alloc_pg_chunk(struct adapter *adapter, struct sge_fl *q,
+>   		q->pg_chunk.offset = 0;
+>   		mapping = pci_map_page(adapter->pdev, q->pg_chunk.page,
+>   				       0, q->alloc_size, PCI_DMA_FROMDEVICE);
+> -		if (unlikely(pci_dma_mapping_error(adapter->pdev, mapping))) {
+> -			__free_pages(q->pg_chunk.page, order);
+> -			q->pg_chunk.page = NULL;
+> -			return -EIO;
+> -		}
+>   		q->pg_chunk.mapping = mapping;
+>   	}
+>   	sd->pg_chunk = q->pg_chunk;
+> @@ -954,75 +949,40 @@ static inline unsigned int calc_tx_descs(const struct sk_buff *skb)
+>   	return flits_to_desc(flits);
+>   }
+>   
+> -
+> -/*	map_skb - map a packet main body and its page fragments
+> - *	@pdev: the PCI device
+> - *	@skb: the packet
+> - *	@addr: placeholder to save the mapped addresses
+> - *
+> - *	map the main body of an sk_buff and its page fragments, if any.
+> - */
+> -static int map_skb(struct pci_dev *pdev, const struct sk_buff *skb,
+> -		   dma_addr_t *addr)
+> -{
+> -	const skb_frag_t *fp, *end;
+> -	const struct skb_shared_info *si;
+> -
+> -	*addr = pci_map_single(pdev, skb->data, skb_headlen(skb),
+> -			       PCI_DMA_TODEVICE);
+> -	if (pci_dma_mapping_error(pdev, *addr))
+> -		goto out_err;
+> -
+> -	si = skb_shinfo(skb);
+> -	end = &si->frags[si->nr_frags];
+> -
+> -	for (fp = si->frags; fp < end; fp++) {
+> -		*++addr = skb_frag_dma_map(&pdev->dev, fp, 0, skb_frag_size(fp),
+> -					   DMA_TO_DEVICE);
+> -		if (pci_dma_mapping_error(pdev, *addr))
+> -			goto unwind;
+> -	}
+> -	return 0;
+> -
+> -unwind:
+> -	while (fp-- > si->frags)
+> -		dma_unmap_page(&pdev->dev, *--addr, skb_frag_size(fp),
+> -			       DMA_TO_DEVICE);
+> -
+> -	pci_unmap_single(pdev, addr[-1], skb_headlen(skb), PCI_DMA_TODEVICE);
+> -out_err:
+> -	return -ENOMEM;
+> -}
+> -
+>   /**
+> - *	write_sgl - populate a scatter/gather list for a packet
+> + *	make_sgl - populate a scatter/gather list for a packet
+>    *	@skb: the packet
+>    *	@sgp: the SGL to populate
+>    *	@start: start address of skb main body data to include in the SGL
+>    *	@len: length of skb main body data to include in the SGL
+> - *	@addr: the list of the mapped addresses
+> + *	@pdev: the PCI device
+>    *
+> - *	Copies the scatter/gather list for the buffers that make up a packet
+> + *	Generates a scatter/gather list for the buffers that make up a packet
+>    *	and returns the SGL size in 8-byte words.  The caller must size the SGL
+>    *	appropriately.
+>    */
+> -static inline unsigned int write_sgl(const struct sk_buff *skb,
+> +static inline unsigned int make_sgl(const struct sk_buff *skb,
+>   				    struct sg_ent *sgp, unsigned char *start,
+> -				    unsigned int len, const dma_addr_t *addr)
+> +				    unsigned int len, struct pci_dev *pdev)
+>   {
+> -	unsigned int i, j = 0, k = 0, nfrags;
+> +	dma_addr_t mapping;
+> +	unsigned int i, j = 0, nfrags;
+>   
+>   	if (len) {
+> +		mapping = pci_map_single(pdev, start, len, PCI_DMA_TODEVICE);
+>   		sgp->len[0] = cpu_to_be32(len);
+> -		sgp->addr[j++] = cpu_to_be64(addr[k++]);
+> +		sgp->addr[0] = cpu_to_be64(mapping);
+> +		j = 1;
+>   	}
+>   
+>   	nfrags = skb_shinfo(skb)->nr_frags;
+>   	for (i = 0; i < nfrags; i++) {
+>   		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+>   
+> +		mapping = skb_frag_dma_map(&pdev->dev, frag, 0, skb_frag_size(frag),
+> +					   DMA_TO_DEVICE);
+>   		sgp->len[j] = cpu_to_be32(skb_frag_size(frag));
+> -		sgp->addr[j] = cpu_to_be64(addr[k++]);
+> +		sgp->addr[j] = cpu_to_be64(mapping);
+>   		j ^= 1;
+>   		if (j == 0)
+>   			++sgp;
+> @@ -1178,7 +1138,7 @@ static void write_tx_pkt_wr(struct adapter *adap, struct sk_buff *skb,
+>   			    const struct port_info *pi,
+>   			    unsigned int pidx, unsigned int gen,
+>   			    struct sge_txq *q, unsigned int ndesc,
+> -			    unsigned int compl, const dma_addr_t *addr)
+> +			    unsigned int compl)
+>   {
+>   	unsigned int flits, sgl_flits, cntrl, tso_info;
+>   	struct sg_ent *sgp, sgl[MAX_SKB_FRAGS / 2 + 1];
+> @@ -1236,7 +1196,7 @@ static void write_tx_pkt_wr(struct adapter *adap, struct sk_buff *skb,
+>   	}
+>   
+>   	sgp = ndesc == 1 ? (struct sg_ent *)&d->flit[flits] : sgl;
+> -	sgl_flits = write_sgl(skb, sgp, skb->data, skb_headlen(skb), addr);
+> +	sgl_flits = make_sgl(skb, sgp, skb->data, skb_headlen(skb), adap->pdev);
+>   
+>   	write_wr_hdr_sgl(ndesc, skb, d, pidx, q, sgl, flits, sgl_flits, gen,
+>   			 htonl(V_WR_OP(FW_WROPCODE_TUNNEL_TX_PKT) | compl),
+> @@ -1267,7 +1227,6 @@ netdev_tx_t t3_eth_xmit(struct sk_buff *skb, struct net_device *dev)
+>   	struct netdev_queue *txq;
+>   	struct sge_qset *qs;
+>   	struct sge_txq *q;
+> -	dma_addr_t addr[MAX_SKB_FRAGS + 1];
+>   
+>   	/*
+>   	 * The chip min packet length is 9 octets but play safe and reject
+> @@ -1296,11 +1255,6 @@ netdev_tx_t t3_eth_xmit(struct sk_buff *skb, struct net_device *dev)
+>   		return NETDEV_TX_BUSY;
+>   	}
+>   
+> -	if (unlikely(map_skb(adap->pdev, skb, addr) < 0)) {
+> -		dev_kfree_skb(skb);
+> -		return NETDEV_TX_OK;
+> -	}
+> -
+>   	q->in_use += ndesc;
+>   	if (unlikely(credits - ndesc < q->stop_thres)) {
+>   		t3_stop_tx_queue(txq, qs, q);
+> @@ -1358,7 +1312,7 @@ netdev_tx_t t3_eth_xmit(struct sk_buff *skb, struct net_device *dev)
+>   	if (likely(!skb_shared(skb)))
+>   		skb_orphan(skb);
+>   
+> -	write_tx_pkt_wr(adap, skb, pi, pidx, gen, q, ndesc, compl, addr);
+> +	write_tx_pkt_wr(adap, skb, pi, pidx, gen, q, ndesc, compl);
+>   	check_ring_tx_db(adap, q);
+>   	return NETDEV_TX_OK;
+>   }
+> @@ -1623,8 +1577,7 @@ static void setup_deferred_unmapping(struct sk_buff *skb, struct pci_dev *pdev,
+>    */
+>   static void write_ofld_wr(struct adapter *adap, struct sk_buff *skb,
+>   			  struct sge_txq *q, unsigned int pidx,
+> -			  unsigned int gen, unsigned int ndesc,
+> -			  const dma_addr_t *addr)
+> +			  unsigned int gen, unsigned int ndesc)
+>   {
+>   	unsigned int sgl_flits, flits;
+>   	struct work_request_hdr *from;
+> @@ -1645,9 +1598,9 @@ static void write_ofld_wr(struct adapter *adap, struct sk_buff *skb,
+>   
+>   	flits = skb_transport_offset(skb) / 8;
+>   	sgp = ndesc == 1 ? (struct sg_ent *)&d->flit[flits] : sgl;
+> -	sgl_flits = write_sgl(skb, sgp, skb_transport_header(skb),
+> -			     skb_tail_pointer(skb) -
+> -			     skb_transport_header(skb), addr);
+> +	sgl_flits = make_sgl(skb, sgp, skb_transport_header(skb),
+> +			     skb->tail - skb->transport_header,
+> +			     adap->pdev);
+>   	if (need_skb_unmap()) {
+>   		setup_deferred_unmapping(skb, adap->pdev, sgp, sgl_flits);
+>   		skb->destructor = deferred_unmap_destructor;
+> @@ -1705,11 +1658,6 @@ again:	reclaim_completed_tx(adap, q, TX_RECLAIM_CHUNK);
+>   		goto again;
+>   	}
+>   
+> -	if (map_skb(adap->pdev, skb, (dma_addr_t *)skb->head)) {
+> -		spin_unlock(&q->lock);
+> -		return NET_XMIT_SUCCESS;
+> -	}
+> -
+>   	gen = q->gen;
+>   	q->in_use += ndesc;
+>   	pidx = q->pidx;
+> @@ -1720,7 +1668,7 @@ again:	reclaim_completed_tx(adap, q, TX_RECLAIM_CHUNK);
+>   	}
+>   	spin_unlock(&q->lock);
+>   
+> -	write_ofld_wr(adap, skb, q, pidx, gen, ndesc, (dma_addr_t *)skb->head);
+> +	write_ofld_wr(adap, skb, q, pidx, gen, ndesc);
+>   	check_ring_tx_db(adap, q);
+>   	return NET_XMIT_SUCCESS;
+>   }
+> @@ -1738,7 +1686,6 @@ static void restart_offloadq(unsigned long data)
+>   	struct sge_txq *q = &qs->txq[TXQ_OFLD];
+>   	const struct port_info *pi = netdev_priv(qs->netdev);
+>   	struct adapter *adap = pi->adapter;
+> -	unsigned int written = 0;
+>   
+>   	spin_lock(&q->lock);
+>   again:	reclaim_completed_tx(adap, q, TX_RECLAIM_CHUNK);
+> @@ -1758,14 +1705,10 @@ again:	reclaim_completed_tx(adap, q, TX_RECLAIM_CHUNK);
+>   			break;
+>   		}
+>   
+> -		if (map_skb(adap->pdev, skb, (dma_addr_t *)skb->head))
+> -			break;
+> -
+>   		gen = q->gen;
+>   		q->in_use += ndesc;
+>   		pidx = q->pidx;
+>   		q->pidx += ndesc;
+> -		written += ndesc;
+>   		if (q->pidx >= q->size) {
+>   			q->pidx -= q->size;
+>   			q->gen ^= 1;
+> @@ -1773,8 +1716,7 @@ again:	reclaim_completed_tx(adap, q, TX_RECLAIM_CHUNK);
+>   		__skb_unlink(skb, &q->sendq);
+>   		spin_unlock(&q->lock);
+>   
+> -		write_ofld_wr(adap, skb, q, pidx, gen, ndesc,
+> -			     (dma_addr_t *)skb->head);
+> +		write_ofld_wr(adap, skb, q, pidx, gen, ndesc);
+>   		spin_lock(&q->lock);
+>   	}
+>   	spin_unlock(&q->lock);
+> @@ -1784,9 +1726,8 @@ again:	reclaim_completed_tx(adap, q, TX_RECLAIM_CHUNK);
+>   	set_bit(TXQ_LAST_PKT_DB, &q->flags);
+>   #endif
+>   	wmb();
+> -	if (likely(written))
+> -		t3_write_reg(adap, A_SG_KDOORBELL,
+> -			     F_SELEGRCNTX | V_EGRCNTX(q->cntxt_id));
+> +	t3_write_reg(adap, A_SG_KDOORBELL,
+> +		     F_SELEGRCNTX | V_EGRCNTX(q->cntxt_id));
+>   }
+>   
+>   /**
 
-And following is the diff against the previous branch.
-
-Thanks!
-
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index 655356a..1581587 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -63,6 +63,14 @@ static inline void context_tracking_task_switch(struct task_struct *prev,
- 						struct task_struct *next) { }
- #endif /* !CONFIG_CONTEXT_TRACKING */
- 
-+
-+#ifdef CONFIG_CONTEXT_TRACKING_FORCE
-+extern void context_tracking_init(void);
-+#else
-+static inline void context_tracking_init(void) { }
-+#endif /* CONFIG_CONTEXT_TRACKING_FORCE */
-+
-+
- #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- static inline void guest_enter(void)
- {
-diff --git a/init/main.c b/init/main.c
-index d03d2ec..af310af 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -75,6 +75,7 @@
- #include <linux/blkdev.h>
- #include <linux/elevator.h>
- #include <linux/sched_clock.h>
-+#include <linux/context_tracking.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -545,6 +546,7 @@ asmlinkage void __init start_kernel(void)
- 	idr_init_cache();
- 	rcu_init();
- 	tick_nohz_init();
-+	context_tracking_init();
- 	radix_tree_init();
- 	/* init some links before init_ISA_irqs() */
- 	early_irq_init();
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 688efe4..247091b 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -191,14 +191,11 @@ void __context_tracking_task_switch(struct task_struct *prev,
- }
- 
- #ifdef CONFIG_CONTEXT_TRACKING_FORCE
--static int __init context_tracking_init(void)
-+void __init context_tracking_init(void)
- {
- 	int cpu;
- 
- 	for_each_possible_cpu(cpu)
- 		context_tracking_cpu_set(cpu);
--
--	return 0;
- }
--early_initcall(context_tracking_init);
- #endif
