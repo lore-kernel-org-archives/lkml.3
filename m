@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab3HNMce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:32:34 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:37334 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932188Ab3HNMcc (ORCPT
+	id S932316Ab3HNMgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:36:42 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:47421 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759861Ab3HNMgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:32:32 -0400
+	Wed, 14 Aug 2013 08:36:41 -0400
+From: Xiaolong Ye <yexl@marvell.com>
+To: <hjk@hansjkoch.de>, <greg@kroah.com>, <linux-kernel@vger.kernel.org>
+CC: Xiaolong Ye <yexl@marvell.com>
+Subject: [PATCH] uio: add uio_event_sync interface
+Date: Wed, 14 Aug 2013 20:30:23 +0800
+Message-ID: <1376483423-603-2-git-send-email-yexl@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376483423-603-1-git-send-email-yexl@marvell.com>
+References: <1376483423-603-1-git-send-email-yexl@marvell.com>
 MIME-Version: 1.0
-In-Reply-To: <20130814121606.GB23840@n2100.arm.linux.org.uk>
-References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1375741218-10225-2-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20130814121606.GB23840@n2100.arm.linux.org.uk>
-Date: Wed, 14 Aug 2013 08:32:32 -0400
-Message-ID: <CAF6AEGsLLWjNRv4PJwkyWaQ0nTLUfW8ShtcMESoXBVjLSiF7Rw@mail.gmail.com>
-Subject: Re: [PATCH 1/8] drm/i2c: tda998x: fix EDID reading on TDA19988 devices
-From: Rob Clark <robdclark@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 8:16 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Aug 06, 2013 at 12:20:11AM +0200, Sebastian Hesselbarth wrote:
->> From: Russell King <rmk+kernel@arm.linux.org.uk>
->>
->> TDA19988 devices need their RAM enabled in order to read EDID
->> information.  Add support for this.
->>
->> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
->> Tested-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->
-> There was some debate about whether this is needed or not.  It seems that
-> if I don't run the NXP driver, it isn't needed, but if I have run the
-> NXP driver, then yes it is.  As it seems to do no harm, I think it's fine
-> to be submitted.
+This interface is called to sync listener->event_count and device
+event count in multi-instances case.
 
-just fwiw, I had noticed before that (at least on the
-beaglebone-black), nxp doesn't necessarily get reset when doing a warm
-reboot.  So booting a kernel w/ NXP driver, and then rebooting w/
-upstream kernel and tda998x should probably hit this same scenario.
-Better to not assume too much about the state of the tda when the
-driver is loaded, so I think this patch is a good idea.
+Change-Id: Ibb1e4888ce55b4993394b61e4bcd6dce8b8291f0
+Signed-off-by: Xiaolong Ye <yexl@marvell.com>
+---
+ drivers/uio/uio.c          |   12 ++++++++++++
+ include/linux/uio_driver.h |    1 +
+ 2 files changed, 13 insertions(+)
 
-Signed-off-by: Rob Clark <robdclark@gmail.com>
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index ba47563..95d559f 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -408,6 +408,18 @@ void uio_event_notify(struct uio_info *info)
+ EXPORT_SYMBOL_GPL(uio_event_notify);
+ 
+ /**
++ * uio_event_sync - sync listener's event count with UIO device
++ * @listener: uio_listener structure
++ */
++void uio_event_sync(struct uio_listener *listener)
++{
++	struct uio_device *idev = listener->dev;
++
++	listener->event_count = atomic_read(&idev->event);
++}
++EXPORT_SYMBOL_GPL(uio_event_sync);
++
++/**
+  * uio_interrupt - hardware interrupt handler
+  * @irq: IRQ number, can be UIO_IRQ_CYCLIC for cyclic timer
+  * @dev_id: Pointer to the devices uio_device structure
+diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
+index 1ad4724..d10e634 100644
+--- a/include/linux/uio_driver.h
++++ b/include/linux/uio_driver.h
+@@ -108,6 +108,7 @@ extern int __must_check
+ 
+ extern void uio_unregister_device(struct uio_info *info);
+ extern void uio_event_notify(struct uio_info *info);
++extern void uio_event_sync(struct uio_listener *listener);
+ 
+ /* defines for uio_info->irq */
+ #define UIO_IRQ_CUSTOM	-1
+-- 
+1.7.9.5
 
-BR,
--R
