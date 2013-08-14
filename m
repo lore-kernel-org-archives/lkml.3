@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932975Ab3HNQym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:54:42 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:39852 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932884Ab3HNQyk (ORCPT
+	id S932997Ab3HNQzP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:55:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60338 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932951Ab3HNQzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:54:40 -0400
-Date: Wed, 14 Aug 2013 17:54:33 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 1/1] intel_ips: blacklist ASUSTek G60JX laptops
-Message-ID: <20130814165433.GA23188@srcf.ucam.org>
-References: <cover.1376494861.git.joseph.salisbury@canonical.com>
- <d4635f76028172e872cc4be506bad1c11816f75a.1376494861.git.joseph.salisbury@canonical.com>
- <20130814093836.57002b77@jbarnes-desktop>
+	Wed, 14 Aug 2013 12:55:12 -0400
+Date: Wed, 14 Aug 2013 18:55:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Anvin <hpa@zytor.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/5] preempt_count rework
+Message-ID: <20130814165505.GB21191@laptop.programming.kicks-ass.net>
+References: <20130814131539.790947874@chello.nl>
+ <20130814164827.GN23412@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130814093836.57002b77@jbarnes-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20130814164827.GN23412@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 09:38:36AM -0700, Jesse Barnes wrote:
+On Wed, Aug 14, 2013 at 09:48:27AM -0700, Andi Kleen wrote:
 
-> Linus, you may want to pick this up directly, as I'm not sure if
-> Matthew is still looking after the x86 drivers these days.
+> FWIW I removed the user_schedule in v2 because I don't need it anymore.
+> Feel free to pick it up from v1 though.
 
-I am, but I'm not keen on this patch. Which is more likely - that the ME 
-is hung, or that it was never working on this in the first place? Is 
-there really no bit to indicate whether or not the platform supports the 
-feature?
+Ah, I had a quick look through your v2 because I got a link into it from
+Ingo but didn't find it. I'll have to ask Google to locate this v1. I
+suppose that's what's wrong with my last patch. It directly does a call
+preempt_schedule -- which I had hoped would work due to its asmlinkage,
+but apparently there's more to it.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Also, I suppose there's a few volatile thingies missing.
