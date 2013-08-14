@@ -1,124 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759561Ab3HNIu3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 04:50:29 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:47031 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759455Ab3HNIu0 (ORCPT
+	id S1759585Ab3HNIus (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 04:50:48 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:39070 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759419Ab3HNIul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 04:50:26 -0400
-Message-ID: <520B44CF.6040403@linaro.org>
-Date: Wed, 14 Aug 2013 10:50:23 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 14 Aug 2013 04:50:41 -0400
 MIME-Version: 1.0
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v3 1/6] ARM/ARM64: arch_timer: add macros for bits in
- control register
-References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-In-Reply-To: <1376414984-14182-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKohpoksGB6bBtFF4DaqqLME2kpDve5uMycZDCXahaigdRhwKQ@mail.gmail.com>
+References: <1376377766-2594-1-git-send-email-chenxg@marvell.com>
+	<CAKohpo=QKPvqUcQVsbbSQdWOOi5L-P2CBFzcfMsobs8uGpLkVw@mail.gmail.com>
+	<CAFgnuDes_F7Q5CHbXKC=ndrn9Gr3PJfGj0QvDXA-FuGcq41CHQ@mail.gmail.com>
+	<CAKohponD2LdDsJy=UJCf-1yANjyPjmAyokV5a4HOSJn_DMJVhA@mail.gmail.com>
+	<CAFgnuDetTVYayBABNPhME15b+b6qUtJX2hBaJ6y4+gOSgGFwdQ@mail.gmail.com>
+	<CAKohpoksGB6bBtFF4DaqqLME2kpDve5uMycZDCXahaigdRhwKQ@mail.gmail.com>
+Date: Wed, 14 Aug 2013 16:50:39 +0800
+Message-ID: <CAFgnuDe1VwH2_xyyRN382=gGO8N6QKONKpGkLBGK8Hv2Zh1orA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: Add governor operation ongoing flag
+From: Xiaoguang Chen <chenxg.marvell@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Xiaoguang Chen <chenxg@marvell.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 07:29 PM, Sudeep KarkadaNagesha wrote:
-> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> 
-> Add macros to describe the bitfields in the ARM architected timer
-> control register to make code easy to understand.
-> 
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> Reviewed-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> ---
->  arch/arm/include/asm/arch_timer.h    |  9 +++++++--
->  arch/arm64/include/asm/arch_timer.h  | 12 ++++++++----
->  include/clocksource/arm_arch_timer.h |  8 ++++++++
->  3 files changed, 23 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-> index e406d57..9ef74da 100644
-> --- a/arch/arm/include/asm/arch_timer.h
-> +++ b/arch/arm/include/asm/arch_timer.h
-> @@ -95,8 +95,13 @@ static inline void arch_counter_set_user_access(void)
->  
->  	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
->  
-> -	/* disable user access to everything */
-> -	cntkctl &= ~((3 << 8) | (7 << 0));
-> +	/* Disable user access to both physical/virtual counters/timers. */
-> +	/* Also disable virtual event stream */
-> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
-> +			| ARCH_TIMER_USR_VT_ACCESS_EN
-> +			| ARCH_TIMER_VIRT_EVT_EN
-> +			| ARCH_TIMER_USR_VCT_ACCESS_EN
-> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
->  
->  	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
->  }
-> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-> index 98abd47..00b09d0 100644
-> --- a/arch/arm64/include/asm/arch_timer.h
-> +++ b/arch/arm64/include/asm/arch_timer.h
-> @@ -101,12 +101,16 @@ static inline void arch_counter_set_user_access(void)
->  {
->  	u32 cntkctl;
->  
-> -	/* Disable user access to the timers and the physical counter. */
->  	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
-> -	cntkctl &= ~((3 << 8) | (1 << 0));
->  
-> -	/* Enable user access to the virtual counter and frequency. */
-> -	cntkctl |= (1 << 1);
-> +	/* Disable user access to the timers and the physical counter. */
-> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
-> +			| ARCH_TIMER_USR_VT_ACCESS_EN
-> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
-> +
-> +	/* Enable user access to the virtual counter. */
-> +	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
-> +
->  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
->  }
-
-Before doing those changes, I suggest you kill include/asm/arch_timer.h
-header file and move the functions directly in the arm_arch_timer.c as
-they are only used by it.
-
-> diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
-> index c463ce9..551f7e9 100644
-> --- a/include/clocksource/arm_arch_timer.h
-> +++ b/include/clocksource/arm_arch_timer.h
-> @@ -29,6 +29,14 @@
->  #define ARCH_TIMER_PHYS_ACCESS		0
->  #define ARCH_TIMER_VIRT_ACCESS		1
->  
-> +#define ARCH_TIMER_USR_PCT_ACCESS_EN	(1 << 0) /* physical counter */
-> +#define ARCH_TIMER_USR_VCT_ACCESS_EN	(1 << 1) /* virtual counter */
-> +#define ARCH_TIMER_VIRT_EVT_EN		(1 << 2)
-> +#define ARCH_TIMER_EVT_TRIGGER_SHIFT	(4)
-> +#define ARCH_TIMER_EVT_TRIGGER_MASK	(0xF << ARCH_TIMER_EVT_TRIGGER_SHIFT)
-> +#define ARCH_TIMER_USR_VT_ACCESS_EN	(1 << 8) /* virtual timer registers */
-> +#define ARCH_TIMER_USR_PT_ACCESS_EN	(1 << 9) /* physical timer registers */
-> +
->  #ifdef CONFIG_ARM_ARCH_TIMER
->  
->  extern u32 arch_timer_get_rate(void);
-> 
+2013/8/14 Viresh Kumar <viresh.kumar@linaro.org>:
+> On 14 August 2013 13:49, Xiaoguang Chen <chenxg.marvell@gmail.com> wrote:
+>> Yes, "START (If STOP passed)", this is important,  we don't have this
+>> patch on our code base, So even Process B's STOP failed(as governor
+>> enable flag is set to false by process A already ), it can still do
+>> START operation, So my problem occurs.
+>> My problem is that I see ondemand governor is started twice during
+>> frequent governor switch and cpu hotplug stress test.
+>>
+>> The After seeing your patch for the return value checking, I think my
+>> problem should not occur.
+>> This issue really botherred me for a long time. :(
+>
+> Exactly, the problem was users of this API were abusing it as they didn't
+> cared for its return value. I hope that is fixed widely now and in case
+> some places are still left, they should be fixed as well.
+>
+> --
+> viresh
 
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+Hi, Viresh
+After checking your patch, I find that __cpufreq_set_policy function
+doesn't check STOP and EXIT 's return value
+is it on purpose? if not, I can provide a patch to add it.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Thanks
+Xiaoguang
