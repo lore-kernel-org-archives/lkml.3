@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab3HNXlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:41:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56592 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932279Ab3HNXlC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:41:02 -0400
-Date: Wed, 14 Aug 2013 16:41:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: Re: [PATCH 3/9] migrate: add hugepage migration code to
- migrate_pages()
-Message-Id: <20130814164100.e4ba87e694e3c6563c91bf0e@linux-foundation.org>
-In-Reply-To: <1376025702-14818-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1376025702-14818-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933340Ab3HNXlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 19:41:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60989 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932373Ab3HNXlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 19:41:09 -0400
+Message-ID: <520C156D.2090003@ti.com>
+Date: Wed, 14 Aug 2013 18:40:29 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mark Greer <mgreer@animalcreek.com>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: [PATCH 02/10] crypto: omap-aes: Add useful debug macros
+References: <1376521969-16807-1-git-send-email-joelf@ti.com>  <1376521969-16807-3-git-send-email-joelf@ti.com> <1376522998.1949.118.camel@joe-AO722>
+In-Reply-To: <1376522998.1949.118.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Aug 2013 01:21:36 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+On 08/14/2013 06:29 PM, Joe Perches wrote:
+> On Wed, 2013-08-14 at 18:12 -0500, Joel Fernandes wrote:
+>> When DEBUG is enabled, these macros can be used to print variables
+>> in integer and hex format, and clearly display which registers,
+>> offsets and values are being read/written , including printing the
+>> names of the offsets and their values.
+> []
+>> diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+> []
+>> @@ -15,6 +15,14 @@
+>>  
+>>  #define pr_fmt(fmt) "%s: " fmt, __func__
+>>  
+>> +#ifdef DEBUG
+>> +#define prn(num) printk(#num "=%d\n", num)
+>> +#define prx(num) printk(#num "=%x\n", num)
+> 
+> pr_debug?
 
-> +static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
-> +		const nodemask_t *nodes, unsigned long flags,
-> +				    void *private)
-> +{
-> +#ifdef CONFIG_HUGETLB_PAGE
-> +	int nid;
-> +	struct page *page;
-> +
-> +	spin_lock(&vma->vm_mm->page_table_lock);
-> +	page = pte_page(huge_ptep_get((pte_t *)pmd));
-> +	nid = page_to_nid(page);
-> +	if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
-> +		goto unlock;
-> +	/* With MPOL_MF_MOVE, we migrate only unshared hugepage. */
-> +	if (flags & (MPOL_MF_MOVE_ALL) ||
-> +	    (flags & MPOL_MF_MOVE && page_mapcount(page) == 1))
-> +		isolate_huge_page(page, private);
-> +unlock:
-> +	spin_unlock(&vma->vm_mm->page_table_lock);
-> +#else
-> +	BUG();
-> +#endif
-> +}
+Sure, can change that.
 
-The function is poorly named.  What does it "check"?  And it does more
-than checking things - at actually makes alterations!
+>> +#else
+>> +#define prn(num) do { } while (0)
+>> +#define prx(num)  do { } while (0)
+>> +#endif
+> []
+>> @@ -172,13 +180,35 @@ struct omap_aes_dev {
+>>  static LIST_HEAD(dev_list);
+>>  static DEFINE_SPINLOCK(list_lock);
+>>  
+>> +#ifdef DEBUG
+>> +#define omap_aes_read(dd, offset)					\
+>> +	do {								\
+>> +		omap_aes_read_1(dd, offset);				\
+>> +		pr_debug("omap_aes_read(" #offset ")\n");		\
+>> +	} while (0)
+>> +
+>> +static inline u32 omap_aes_read_1(struct omap_aes_dev *dd, u32 offset)
+>> +#else
+>>  static inline u32 omap_aes_read(struct omap_aes_dev *dd, u32 offset)
+>> +#endif
+>>  {
+>>  	return __raw_readl(dd->io_base + offset);
+>>  }
+>>  
+>> +#ifdef DEBUG
+>> +#define omap_aes_write(dd, offset, value)				\
+>> +	do {								\
+>> +		pr_debug("omap_aes_write(" #offset "=%x) value=%d\n",	\
+>> +			 offset, value);				\
+>> +		omap_aes_write_1(dd, offset, value);			\
+>> +	} while (0)
+>> +
+>> +static inline void omap_aes_write_1(struct omap_aes_dev *dd, u32 offset,
+>> +				  u32 value)
+>> +#else
+>>  static inline void omap_aes_write(struct omap_aes_dev *dd, u32 offset,
+>>  				  u32 value)
+>> +#endif
+>>  {
+>>  	__raw_writel(value, dd->io_base + offset);
+>>  }
+> 
+> Umm, yuck?
+> 
+> Is there any real value in read_1 and write_1?
 
-Can we have a better name here please, and some docmentation explaining
-what it does and why it does it?
+Can you be more descriptive? There is a lot of value in them for debug
+to show clearly sequence of read/writes. Moreover, they are no-op'd when
+DEBUG is disabled.
+
+Other than the obvious use, I guess it could be rewritten to be bit
+cleaner. I can do that.
+
+-Joel
 
