@@ -1,215 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933387Ab3HNVYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 17:24:55 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:50508 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933310Ab3HNVYH (ORCPT
+	id S933406Ab3HNVY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 17:24:59 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:53989 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933310Ab3HNVY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 17:24:07 -0400
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>,
-        Peter Meerwald <p.meerwald@bct-electronic.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v5 3/5] leds-pca9633: Add mutex to the ledout register
-Date: Wed, 14 Aug 2013 23:23:49 +0200
-Message-Id: <1376515431-9504-4-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1376515431-9504-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1376515431-9504-1-git-send-email-ricardo.ribalda@gmail.com>
+	Wed, 14 Aug 2013 17:24:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130808200955.2932.30491.stgit@bling.home>
+References: <20130808200444.2932.17381.stgit@bling.home> <20130808200955.2932.30491.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 14 Aug 2013 15:24:35 -0600
+Message-ID: <CAErSpo5DrPB4L8FrK=amZe2nt6=oSntGG_AxugrQ4msa+fziOg@mail.gmail.com>
+Subject: Re: [PATCH v5 6/9] pci: Add slot and bus reset interfaces
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        Don Dutile <ddutile@redhat.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To update an LED a register has to be read, updated and writen. If
-another LED whas been updated at the same time, this could lead into
-wrong updates.
+On Thu, Aug 8, 2013 at 2:09 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> Sometimes pci_reset_function is not sufficient.  We have cases where
+> devices do not support any kind of reset, but there might be multiple
+> functions on the bus preventing pci_reset_function from doing a
+> secondary bus reset.  We also have cases where a device will advertise
+> that it supports a PM reset, but really does nothing on D3hot->D0
+> (graphics cards are notorious for this).  These devices often also
+> have more than one function, so even blacklisting PM reset for them
+> wouldn't allow a secondary bus reset through pci_reset_function.
+>
+> If a driver supports multiple devices it should have the ability to
+> induce a bus reset when it needs to.  This patch provides that ability
+> through pci_reset_slot and pci_reset_bus.  It's the caller's
+> responsibility when using these interfaces to understand that all of
+> the devices in or below the slot (or on or below the bus) will be
+> reset and therefore should be under control of the caller.
 
-This patch adds a common mutex to all the leds of the same chip to
-protect the ledout register.
+How does the caller check or ensure this?  If there's a bridge
+involved, I'm not sure the caller *can* ensure this, because the
+caller can't hold pci_bus_sem or whatever we use to protect hotplug
+changes.
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/leds/leds-pca9633.c |   86 +++++++++++++++++++++++++++----------------
- 1 file changed, 55 insertions(+), 31 deletions(-)
-
-diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
-index 7dd48f8..aaa1c4a 100644
---- a/drivers/leds/leds-pca9633.c
-+++ b/drivers/leds/leds-pca9633.c
-@@ -93,9 +93,17 @@ enum pca9633_cmd {
- 	BLINK_SET,
- };
- 
--struct pca9633_led {
--	struct i2c_client *client;
-+struct pca9633_led;
-+
-+struct pca9633 {
- 	struct pca9633_chipdef *chipdef;
-+	struct mutex mutex;
-+	struct i2c_client *client;
-+	struct pca9633_led *leds;
-+};
-+
-+struct pca9633_led {
-+	struct pca9633 *chip;
- 	struct work_struct work;
- 	enum led_brightness brightness;
- 	struct led_classdev led_cdev;
-@@ -108,52 +116,60 @@ struct pca9633_led {
- 
- static void pca9633_brightness_work(struct pca9633_led *pca9633)
- {
--	u8 ledout_addr = pca9633->chipdef->ledout_base + (pca9633->led_num / 4);
-+	u8 ledout_addr = pca9633->chip->chipdef->ledout_base
-+		+ (pca9633->led_num / 4);
- 	u8 ledout;
- 	int shift = 2 * (pca9633->led_num % 4);
- 	u8 mask = 0x3 << shift;
- 
--	ledout = i2c_smbus_read_byte_data(pca9633->client, ledout_addr);
-+	mutex_lock(&pca9633->chip->mutex);
-+	ledout = i2c_smbus_read_byte_data(pca9633->chip->client, ledout_addr);
- 	switch (pca9633->brightness) {
- 	case LED_FULL:
--		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
-+		i2c_smbus_write_byte_data(pca9633->chip->client, ledout_addr,
- 			(ledout & ~mask) | (PCA9633_LED_ON << shift));
- 		break;
- 	case LED_OFF:
--		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
-+		i2c_smbus_write_byte_data(pca9633->chip->client, ledout_addr,
- 			ledout & ~mask);
- 		break;
- 	default:
--		i2c_smbus_write_byte_data(pca9633->client,
-+		i2c_smbus_write_byte_data(pca9633->chip->client,
- 			PCA9633_PWM_BASE + pca9633->led_num,
- 			pca9633->brightness);
--		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
-+		i2c_smbus_write_byte_data(pca9633->chip->client, ledout_addr,
- 			(ledout & ~mask) | (PCA9633_LED_PWM << shift));
- 		break;
- 	}
-+	mutex_unlock(&pca9633->chip->mutex);
- }
- 
- static void pca9633_blink_work(struct pca9633_led *pca9633)
- {
--	u8 ledout_addr = pca9633->chipdef->ledout_base + (pca9633->led_num / 4);
--	u8 ledout = i2c_smbus_read_byte_data(pca9633->client, ledout_addr);
--	u8 mode2 = i2c_smbus_read_byte_data(pca9633->client, PCA9633_MODE2);
-+	u8 ledout_addr = pca9633->chip->chipdef->ledout_base +
-+		(pca9633->led_num / 4);
-+	u8 ledout;
-+	u8 mode2 = i2c_smbus_read_byte_data(pca9633->chip->client,
-+							PCA9633_MODE2);
- 	int shift = 2 * (pca9633->led_num % 4);
- 	u8 mask = 0x3 << shift;
- 
--	i2c_smbus_write_byte_data(pca9633->client, pca9633->chipdef->grppwm,
--		pca9633->gdc);
-+	i2c_smbus_write_byte_data(pca9633->chip->client,
-+			pca9633->chip->chipdef->grppwm,	pca9633->gdc);
- 
--	i2c_smbus_write_byte_data(pca9633->client, pca9633->chipdef->grpfreq,
--		pca9633->gfrq);
-+	i2c_smbus_write_byte_data(pca9633->chip->client,
-+			pca9633->chip->chipdef->grpfreq, pca9633->gfrq);
- 
- 	if (!(mode2 & PCA9633_MODE2_DMBLNK))
--		i2c_smbus_write_byte_data(pca9633->client, PCA9633_MODE2,
-+		i2c_smbus_write_byte_data(pca9633->chip->client, PCA9633_MODE2,
- 			mode2 | PCA9633_MODE2_DMBLNK);
- 
-+	mutex_lock(&pca9633->chip->mutex);
-+	ledout = i2c_smbus_read_byte_data(pca9633->chip->client, ledout_addr);
- 	if ((ledout & mask) != (PCA9633_LED_GRP_PWM << shift))
--		i2c_smbus_write_byte_data(pca9633->client, ledout_addr,
-+		i2c_smbus_write_byte_data(pca9633->chip->client, ledout_addr,
- 			(ledout & ~mask) | (PCA9633_LED_GRP_PWM << shift));
-+	mutex_unlock(&pca9633->chip->mutex);
- }
- 
- static void pca9633_work(struct work_struct *work)
-@@ -318,6 +334,7 @@ pca9633_dt_init(struct i2c_client *client, struct pca9633_chipdef *chip)
- static int pca9633_probe(struct i2c_client *client,
- 					const struct i2c_device_id *id)
- {
-+	struct pca9633 *pca9633_chip;
- 	struct pca9633_led *pca9633;
- 	struct pca9633_platform_data *pdata;
- 	struct pca9633_chipdef *chip;
-@@ -341,17 +358,30 @@ static int pca9633_probe(struct i2c_client *client,
- 		return -EINVAL;
- 	}
- 
-+	pca9633_chip = devm_kzalloc(&client->dev, sizeof(*pca9633_chip),
-+								GFP_KERNEL);
-+	if (!pca9633_chip)
-+		return -ENOMEM;
- 	pca9633 = devm_kzalloc(&client->dev, chip->n_leds * sizeof(*pca9633),
- 								GFP_KERNEL);
- 	if (!pca9633)
- 		return -ENOMEM;
- 
--	i2c_set_clientdata(client, pca9633);
-+	i2c_set_clientdata(client, pca9633_chip);
-+
-+	mutex_init(&pca9633_chip->mutex);
-+	pca9633_chip->chipdef = chip;
-+	pca9633_chip->client = client;
-+	pca9633_chip->leds = pca9633;
-+
-+	/* Turn off LEDs by default*/
-+	i2c_smbus_write_byte_data(client, chip->ledout_base, 0x00);
-+	if (chip->n_leds > 4)
-+		i2c_smbus_write_byte_data(client, chip->ledout_base + 1, 0x00);
- 
- 	for (i = 0; i < chip->n_leds; i++) {
--		pca9633[i].client = client;
- 		pca9633[i].led_num = i;
--		pca9633[i].chipdef = chip;
-+		pca9633[i].chip = pca9633_chip;
- 
- 		/* Platform data can specify LED names and default triggers */
- 		if (pdata && i < pdata->leds.num_leds) {
-@@ -389,11 +419,6 @@ static int pca9633_probe(struct i2c_client *client,
- 	if (pdata && pdata->outdrv == PCA9633_OPEN_DRAIN)
- 		i2c_smbus_write_byte_data(client, PCA9633_MODE2, 0x01);
- 
--	/* Turn off LEDs */
--	i2c_smbus_write_byte_data(client, chip->ledout_base, 0x00);
--	if (chip->n_leds > 4)
--		i2c_smbus_write_byte_data(client, chip->ledout_base + 1, 0x00);
--
- 	return 0;
- 
- exit:
-@@ -407,14 +432,13 @@ exit:
- 
- static int pca9633_remove(struct i2c_client *client)
- {
--	struct pca9633_led *pca9633 = i2c_get_clientdata(client);
-+	struct pca9633 *pca9633 = i2c_get_clientdata(client);
- 	int i;
- 
--	for (i = 0; i < pca9633->chipdef->n_leds; i++)
--		if (pca9633[i].client != NULL) {
--			led_classdev_unregister(&pca9633[i].led_cdev);
--			cancel_work_sync(&pca9633[i].work);
--		}
-+	for (i = 0; i < pca9633->chipdef->n_leds; i++) {
-+		led_classdev_unregister(&pca9633->leds[i].led_cdev);
-+		cancel_work_sync(&pca9633->leds[i].work);
-+	}
- 
- 	return 0;
- }
--- 
-1.7.10.4
-
+> PCI state
+> of all the affected devices is saved and restored around these resets,
+> but internal state of all of the affected devices is reset (which
+> should be the intention).
+>
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  drivers/pci/pci.c   |  209 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pci.h |    2
+>  2 files changed, 211 insertions(+)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 4a0275c..1dba7dd 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3460,6 +3460,215 @@ int pci_reset_function(struct pci_dev *dev)
+>  }
+>  EXPORT_SYMBOL_GPL(pci_reset_function);
+>
+> +/* Lock devices from the top of the tree down */
+> +static void pci_bus_lock(struct pci_bus *bus)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &bus->devices, bus_list) {
+> +               pci_dev_lock(dev);
+> +               if (dev->subordinate)
+> +                       pci_bus_lock(dev->subordinate);
+> +       }
+> +}
+> +
+> +/* Unlock devices from the bottom of the tree up */
+> +static void pci_bus_unlock(struct pci_bus *bus)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &bus->devices, bus_list) {
+> +               if (dev->subordinate)
+> +                       pci_bus_unlock(dev->subordinate);
+> +               pci_dev_unlock(dev);
+> +       }
+> +}
+> +
+> +/* Lock devices from the top of the tree down */
+> +static void pci_slot_lock(struct pci_slot *slot)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &slot->bus->devices, bus_list) {
+> +               if (!dev->slot || dev->slot != slot)
+> +                       continue;
+> +               pci_dev_lock(dev);
+> +               if (dev->subordinate)
+> +                       pci_bus_lock(dev->subordinate);
+> +       }
+> +}
+> +
+> +/* Unlock devices from the bottom of the tree up */
+> +static void pci_slot_unlock(struct pci_slot *slot)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &slot->bus->devices, bus_list) {
+> +               if (!dev->slot || dev->slot != slot)
+> +                       continue;
+> +               if (dev->subordinate)
+> +                       pci_bus_unlock(dev->subordinate);
+> +               pci_dev_unlock(dev);
+> +       }
+> +}
+> +
+> +/* Save and disable devices from the top of the tree down */
+> +static void pci_bus_save_and_disable(struct pci_bus *bus)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &bus->devices, bus_list) {
+> +               pci_dev_save_and_disable(dev);
+> +               if (dev->subordinate)
+> +                       pci_bus_save_and_disable(dev->subordinate);
+> +       }
+> +}
+> +
+> +/*
+> + * Restore devices from top of the tree down - parent bridges need to be
+> + * restored before we can get to subordinate devices.
+> + */
+> +static void pci_bus_restore(struct pci_bus *bus)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &bus->devices, bus_list) {
+> +               pci_dev_restore(dev);
+> +               if (dev->subordinate)
+> +                       pci_bus_restore(dev->subordinate);
+> +       }
+> +}
+> +
+> +/* Save and disable devices from the top of the tree down */
+> +static void pci_slot_save_and_disable(struct pci_slot *slot)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &slot->bus->devices, bus_list) {
+> +               if (!dev->slot || dev->slot != slot)
+> +                       continue;
+> +               pci_dev_save_and_disable(dev);
+> +               if (dev->subordinate)
+> +                       pci_bus_save_and_disable(dev->subordinate);
+> +       }
+> +}
+> +
+> +/*
+> + * Restore devices from top of the tree down - parent bridges need to be
+> + * restored before we can get to subordinate devices.
+> + */
+> +static void pci_slot_restore(struct pci_slot *slot)
+> +{
+> +       struct pci_dev *dev;
+> +
+> +       list_for_each_entry(dev, &slot->bus->devices, bus_list) {
+> +               if (!dev->slot || dev->slot != slot)
+> +                       continue;
+> +               pci_dev_restore(dev);
+> +               if (dev->subordinate)
+> +                       pci_bus_restore(dev->subordinate);
+> +       }
+> +}
+> +
+> +static int pci_slot_reset(struct pci_slot *slot, int probe)
+> +{
+> +       int rc;
+> +
+> +       if (!slot)
+> +               return -ENOTTY;
+> +
+> +       if (!probe)
+> +               pci_slot_lock(slot);
+> +
+> +       might_sleep();
+> +
+> +       rc = pci_reset_hotplug_slot(slot->hotplug, probe);
+> +
+> +       if (!probe)
+> +               pci_slot_unlock(slot);
+> +
+> +       return rc;
+> +}
+> +
+> +/**
+> + * pci_reset_slot - reset a PCI slot
+> + * @slot: PCI slot to reset
+> + *
+> + * A PCI bus may host multiple slots, each slot may support a reset mechanism
+> + * independent of other slots.  For instance, some slots may support slot power
+> + * control.  In the case of a 1:1 bus to slot architecture, this function may
+> + * wrap the bus reset to avoid spurious slot related events such as hotplug.
+> + * Generally a slot reset should be attempted before a bus reset.  All of the
+> + * function of the slot and any subordinate buses behind the slot are reset
+> + * through this function.  PCI config space of all devices in the slot and
+> + * behind the slot is saved before and restored after reset.
+> + *
+> + * Return 0 on success, non-zero on error.
+> + */
+> +int pci_reset_slot(struct pci_slot *slot)
+> +{
+> +       int rc;
+> +
+> +       rc = pci_slot_reset(slot, 1);
+> +       if (rc)
+> +               return rc;
+> +
+> +       pci_slot_save_and_disable(slot);
+> +
+> +       rc = pci_slot_reset(slot, 0);
+> +
+> +       pci_slot_restore(slot);
+> +
+> +       return rc;
+> +}
+> +EXPORT_SYMBOL_GPL(pci_reset_slot);
+> +
+> +static int pci_bus_reset(struct pci_bus *bus, int probe)
+> +{
+> +       if (!bus->self)
+> +               return -ENOTTY;
+> +
+> +       if (probe)
+> +               return 0;
+> +
+> +       pci_bus_lock(bus);
+> +
+> +       might_sleep();
+> +
+> +       pci_reset_bridge_secondary_bus(bus->self);
+> +
+> +       pci_bus_unlock(bus);
+> +
+> +       return 0;
+> +}
+> +
+> +/**
+> + * pci_reset_bus - reset a PCI bus
+> + * @bus: top level PCI bus to reset
+> + *
+> + * Do a bus reset on the given bus and any subordinate buses, saving
+> + * and restoring state of all devices.
+> + *
+> + * Return 0 on success, non-zero on error.
+> + */
+> +int pci_reset_bus(struct pci_bus *bus)
+> +{
+> +       int rc;
+> +
+> +       rc = pci_bus_reset(bus, 1);
+> +       if (rc)
+> +               return rc;
+> +
+> +       pci_bus_save_and_disable(bus);
+> +
+> +       rc = pci_bus_reset(bus, 0);
+> +
+> +       pci_bus_restore(bus);
+> +
+> +       return rc;
+> +}
+> +EXPORT_SYMBOL_GPL(pci_reset_bus);
+> +
+>  /**
+>   * pcix_get_max_mmrbc - get PCI-X maximum designed memory read byte count
+>   * @dev: PCI device to query
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 35c1bc4..1a8fd34 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -924,6 +924,8 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
+>  int __pci_reset_function(struct pci_dev *dev);
+>  int __pci_reset_function_locked(struct pci_dev *dev);
+>  int pci_reset_function(struct pci_dev *dev);
+> +int pci_reset_slot(struct pci_slot *slot);
+> +int pci_reset_bus(struct pci_bus *bus);
+>  void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
+>  void pci_update_resource(struct pci_dev *dev, int resno);
+>  int __must_check pci_assign_resource(struct pci_dev *dev, int i);
+>
