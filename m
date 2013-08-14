@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932925Ab3HNQon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:44:43 -0400
-Received: from oproxy1-pub.mail.unifiedlayer.com ([66.147.249.253]:56608 "HELO
-	oproxy1-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932908Ab3HNQoj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:44:39 -0400
-Date: Wed, 14 Aug 2013 09:38:36 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH 1/1] intel_ips: blacklist ASUSTek G60JX laptops
-Message-ID: <20130814093836.57002b77@jbarnes-desktop>
-In-Reply-To: <d4635f76028172e872cc4be506bad1c11816f75a.1376494861.git.joseph.salisbury@canonical.com>
-References: <cover.1376494861.git.joseph.salisbury@canonical.com>
-	<d4635f76028172e872cc4be506bad1c11816f75a.1376494861.git.joseph.salisbury@canonical.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S932938Ab3HNQoz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:44:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:51686 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932709Ab3HNQow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 12:44:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,878,1367996400"; 
+   d="scan'208";a="281985068"
+Date: Wed, 14 Aug 2013 09:43:59 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH v1 2/2] perf tools: add attr->mmap2 support
+Message-ID: <20130814164359.GM23412@tassilo.jf.intel.com>
+References: <1376394957-31691-1-git-send-email-eranian@google.com>
+ <1376394957-31691-3-git-send-email-eranian@google.com>
+ <20130813233449.GK23412@tassilo.jf.intel.com>
+ <CABPqkBTJKhFPNgeWcffsYr6pnHKM7OEg-et-rc-SY1J0x_Y9gQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTJKhFPNgeWcffsYr6pnHKM7OEg-et-rc-SY1J0x_Y9gQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Aug 2013 12:22:49 -0400
-Joseph Salisbury <joseph.salisbury@canonical.com> wrote:
+On Wed, Aug 14, 2013 at 12:30:08PM +0200, Stephane Eranian wrote:
+> On Wed, Aug 14, 2013 at 1:34 AM, Andi Kleen <ak@linux.intel.com> wrote:
+> > On Tue, Aug 13, 2013 at 01:55:57PM +0200, Stephane Eranian wrote:
+> >> This patch adds support for the new PERF_RECORD_MMAP2
+> >> record type exposed by the kernel. This is an extended
+> >> PERF_RECORD_MMAP record. It adds for each file-backed
+> >> mapping the device major, minor number and the inode
+> >> number. This triplet uniquely identifies the source
+> >> of a file-backed mapping. It can be used to detect
+> >> identical virtual mappings between processes for instance.
+> >
+> > Can you also add the generation number please?
+> > That would make it even more unique.
+> >
+> I assume you're talkng about inode->i_generation, right?
 
-> BugLink: http://bugs.launchpad.net/bugs/1210848
+Yes.
+
+> I could add that one easily. I am surprised to see:
 > 
-> On an ASUSTek G60JX laptop, the intel_ips driver spams the log with a warning message: "ME failed to update for more than 1s, likely hung".  This ME doesn't support the feature, so requesting it be blacklisted for now.   
-> 
-> Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-> Tested-by: Nick Jenkins <tech.crew.jenkins@gmail.com> 
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> Cc: platform-driver-x86@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: stable@vger.kernel.org
-> ---
->  drivers/platform/x86/intel_ips.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
-> index 18dcb58..6d8c5e0 100644
-> --- a/drivers/platform/x86/intel_ips.c
-> +++ b/drivers/platform/x86/intel_ips.c
-> @@ -1501,6 +1501,14 @@ static const struct dmi_system_id ips_blacklist[] = {
->  			DMI_MATCH(DMI_PRODUCT_NAME, "HP ProBook"),
->  		},
->  	},
-> +	{
-> +		.callback = ips_blacklist_callback,
-> +		.ident = "G60JX",
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "G60JX"),
-> +		},
-> +	},
->  	{ }	/* terminating entry */
->  };
->  
+> mm/shmem.c:
+> static struct inode *shmem_get_inode(struct super_block *sb, const
+> struct inode *dir,
+>                                      umode_t mode, dev_t dev, unsigned
+> long flags)
+> {
+>                 inode->i_generation = get_seconds();
+> }
+> I am assuming that the uniqueness for SHM is coming from the SHMID and therefore
+> a poor quality i_generation is sufficient here.
 
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Yes that's odd. But most file system should have a sensible generation
+number.
 
-Linus, you may want to pick this up directly, as I'm not sure if
-Matthew is still looking after the x86 drivers these days.
+-Andi
 
-Thanks,
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+ak@linux.intel.com -- Speaking for myself only
