@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652Ab3HNQRp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:17:45 -0400
-Received: from mx.mmd.net ([80.83.0.3]:57313 "EHLO mx.mmd.net"
+	id S932769Ab3HNQSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:18:07 -0400
+Received: from 8bytes.org ([85.214.48.195]:50986 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759998Ab3HNQRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:17:42 -0400
-From: tuukka.tikkanen@linaro.org
-To: rjw@sisk.pl, daniel.lezcano@linaro.org, linux-pm@vger.kernel.org
-Cc: private-pmwg@linaro.org, linux-kernel@vger.kernel.org,
-        Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
-Subject: [PATCH 3/8] Cpuidle: Check called function parameter in get_typical_interval()
-Date: Wed, 14 Aug 2013 19:02:36 +0300
-Message-Id: <7b413e8d6d840209125042fc4a534e779d92bc31.1376493949.git.tuukka.tikkanen@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1376487596.git.tuukka.tikkanen@linaro.org>
-References: <cover.1376487596.git.tuukka.tikkanen@linaro.org>
-In-Reply-To: <cover.1376493949.git.tuukka.tikkanen@linaro.org>
-References: <cover.1376493949.git.tuukka.tikkanen@linaro.org>
+	id S932706Ab3HNQSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 12:18:03 -0400
+Date: Wed, 14 Aug 2013 18:17:58 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: alex.williamson@redhat.com, Varun.Sethi@freescale.com, aik@ozlabs.ru,
+        joe@perches.com, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, tony@atomide.com, ohad@wizery.com,
+        andreas.herrmann@calxeda.com, will.deacon@arm.com,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        shuahkhan@gmail.com
+Subject: Re: [PATCH v2] iommu: Add event tracing feature to iommu
+Message-ID: <20130814161758.GQ28811@8bytes.org>
+References: <1375196229-2784-1-git-send-email-shuah.kh@samsung.com>
+ <20130814141758.GN28811@8bytes.org>
+ <520BAAF0.8000509@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520BAAF0.8000509@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Aug 14 18:18:01 2013
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 520badb920862314715082
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+On Wed, Aug 14, 2013 at 10:06:08AM -0600, Shuah Khan wrote:
+> Is this what you have in mind or does my original patch set minus
+> the amd_event and drivers/iommu/amd_iommu.c change?
+> 
+> Patch 1:
+> drivers/iommu/Makefile
+> drivers/iommu/iommu-traces.c
+> include/trace/events/iommu.h
+> 
+> One patch for each of the following events?
+> 
+> iommu:add_device_to_group
+> iommu:remove_device_from_group
+> iommu:attach_device_to_domain
+> iommu:detach_device_from_domain
+> iommu:unmap
+> iommu:map
 
-get_typical_interval() uses int_sqrt() in calculation of standard
-deviation. The formal parameter of int_sqrt() is unsigned long, which
-may on some platforms be smaller than the 64 bit unsigned integer used
-as the actual parameter. The overflow can occur frequently when actual
-idle period lengths are in hundreds of milliseconds.
+Right, please do a seperate patch for each event.
 
-This patch adds a check for such overflow and rejects the candidate
-average when an overflow would occur.
+> I see what you are saying. Adding event to report_iommu_fault()
+> would cover all IOMMUs. I would like to work on adding an event
+> unless you already have it in works.
 
-Signed-off-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
----
- drivers/cpuidle/governors/menu.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+I don't, so feel free to add one too.
 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index b13d57c..c24b10b 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -226,18 +226,26 @@ again:
- 		}
- 	}
- 	do_div(stddev, divisor);
--	stddev = int_sqrt(stddev);
- 	/*
- 	 * The typical interval is obtained when standard deviation is small
- 	 * or standard deviation is small compared to the average interval.
- 	 *
-+	 * int_sqrt() formal parameter type is unsigned long. When the
-+	 * greatest difference to an outlier exceeds ~65 ms * sqrt(divisor)
-+	 * the resulting squared standard deviation exceeds the input domain
-+	 * of int_sqrt on platforms where unsigned long is 32 bits in size.
-+	 * In such case reject the candidate average.
-+	 *
- 	 * Use this result only if there is no timer to wake us up sooner.
- 	 */
--	if (((avg > stddev * 6) && (divisor * 4 >= INTERVALS * 3))
-+	if (likely(stddev <= ULONG_MAX)) {
-+		stddev = int_sqrt(stddev);
-+		if (((avg > stddev * 6) && (divisor * 4 >= INTERVALS * 3))
- 							|| stddev <= 20) {
--		if (data->expected_us > avg)
--			data->predicted_us = avg;
--		return;
-+			if (data->expected_us > avg)
-+				data->predicted_us = avg;
-+			return;
-+		}
- 	}
- 
- 	/*
--- 
-1.7.9.5
+
+	Joerg
+
 
