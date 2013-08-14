@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab3HNM5P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:57:15 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:53051 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932369Ab3HNM5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:57:14 -0400
+	id S932525Ab3HNM7I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:59:08 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:42430 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932369Ab3HNM7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 08:59:07 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/29] drivers/cpuidle/cpuidle-kirkwood.c: simplify use of devm_ioremap_resource
+Date: Wed, 14 Aug 2013 15:09:29 +0200
+Message-ID: <10943702.UYfHQJBDot@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.11.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1376471493-22215-9-git-send-email-Julia.Lawall@lip6.fr>
+References: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr> <1376471493-22215-9-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-In-Reply-To: <20130814124904.GQ23006@n2100.arm.linux.org.uk>
-References: <20130812164548.GE23006@n2100.arm.linux.org.uk>
- <CAFEAcA97PuORg920f-A_8rvCgBq=k5Y=0W6m2Nv8nnzjY19Utg@mail.gmail.com>
- <20130812200628.GG23006@n2100.arm.linux.org.uk> <CAFEAcA9BA7zfaO1J5zVaEcG-AgOo6dyiew08-o2eObuBe-KWig@mail.gmail.com>
- <20130812212149.GH23006@n2100.arm.linux.org.uk> <CAFEAcA_0kzS=Z5oTxrr=B74wjf1x=M6dXwH7Fcgf77Pca90Gjw@mail.gmail.com>
- <20130812221250.GI23006@n2100.arm.linux.org.uk> <20130812230408.GA4420@roeck-us.net>
- <20130814103346.GN23006@n2100.arm.linux.org.uk> <CAFEAcA8u_c=seOQ+y44H2Vpefyx4EisiZ-ZqBxuPsyoYjCt3vQ@mail.gmail.com>
- <20130814124904.GQ23006@n2100.arm.linux.org.uk>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Wed, 14 Aug 2013 13:56:52 +0100
-Message-ID: <CAFEAcA-V=DqomASFDaQhOsnXPePZ3iA7AVV8pSyRkDxbmT4n8A@mail.gmail.com>
-Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        qemu-devel@nongnu.org, Arnd Bergmann <arnd.bergmann@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 August 2013 13:49, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Aug 14, 2013 at 01:44:44PM +0100, Peter Maydell wrote:
->> Yes, I definitely think we should test on the hardware before we
->> land yet another change to this PCI code that hasn't really been
->> thoroughly tested on anything. I have the board/backplane on my
->> desk but it'll be later in the week before I can do the testing
->> (currently still messing with uboot config to get it to actually
->> boot a kernel).
->
-> Realview or Versatile?  I still need to sort out Realview.
+On Wednesday, August 14, 2013 11:11:12 AM Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Remove unneeded error handling on the result of a call to
+> platform_get_resource when the value is passed to devm_ioremap_resource.
+> 
+> A simplified version of the semantic patch that makes this change is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression pdev,res,n,e,e1;
+> expression ret != 0;
+> identifier l;
+> @@
+> 
+> - res = platform_get_resource(pdev, IORESOURCE_MEM, n);
+>   ... when != res
+> - if (res == NULL) { ... \(goto l;\|return ret;\) }
+>   ... when != res
+> + res = platform_get_resource(pdev, IORESOURCE_MEM, n);
+>   e = devm_ioremap_resource(e1, res);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-PB926, so versatile. Let's get that one straightened out first,
-since at the moment the kernel has no realview PCI support at
-all. I should be able to get a PB1176 to go in the backplane
-for testing that, though.
+Queued up for 3.12.
 
--- PMM
+Thanks,
+Rafael
+
+
+> ---
+>  drivers/cpuidle/cpuidle-kirkwood.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
+> index 521b0a7..2237135 100644
+> --- a/drivers/cpuidle/cpuidle-kirkwood.c
+> +++ b/drivers/cpuidle/cpuidle-kirkwood.c
+> @@ -60,9 +60,6 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
+>  	struct resource *res;
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (res == NULL)
+> -		return -EINVAL;
+> -
+>  	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
+>  	if (IS_ERR(ddr_operation_base))
+>  		return PTR_ERR(ddr_operation_base);
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
