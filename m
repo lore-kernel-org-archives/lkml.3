@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab3HNOhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 10:37:47 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:54191 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab3HNOhp (ORCPT
+	id S932588Ab3HNOlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 10:41:07 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61263 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932383Ab3HNOlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 10:37:45 -0400
+	Wed, 14 Aug 2013 10:41:05 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <520B9700.7010105@roeck-us.net>
+Date: Wed, 14 Aug 2013 07:41:04 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20130814143535.GB3263@samfundet.no>
-References: <cover.1376486713.git.viresh.kumar@linaro.org>
-	<6fe9b31a6e199052e0a91b38c8f6d110e9f57b28.1376486713.git.viresh.kumar@linaro.org>
-	<20130814143535.GB3263@samfundet.no>
-Date: Wed, 14 Aug 2013 20:07:44 +0530
-Message-ID: <CAKohpo=n9o+EKkboc1hw7ms_NkNwbsJ4VvEA2cB0R7gUi-U94A@mail.gmail.com>
-Subject: Re: [PATCH 04/37] cpufreq: at32ap: don't initialize part of policy
- that is set by core too
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Maydell <peter.maydell@linaro.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        qemu-devel@nongnu.org, Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
+References: <52082EF8.10005@roeck-us.net> <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com> <20130812164548.GE23006@n2100.arm.linux.org.uk> <CAFEAcA97PuORg920f-A_8rvCgBq=k5Y=0W6m2Nv8nnzjY19Utg@mail.gmail.com> <20130812200628.GG23006@n2100.arm.linux.org.uk> <CAFEAcA9BA7zfaO1J5zVaEcG-AgOo6dyiew08-o2eObuBe-KWig@mail.gmail.com> <20130812212149.GH23006@n2100.arm.linux.org.uk> <CAFEAcA_0kzS=Z5oTxrr=B74wjf1x=M6dXwH7Fcgf77Pca90Gjw@mail.gmail.com> <20130812221250.GI23006@n2100.arm.linux.org.uk> <20130812230408.GA4420@roeck-us.net> <20130814103346.GN23006@n2100.arm.linux.org.uk> <CAFEAcA8u_c=seOQ+y44H2Vpefyx4EisiZ-ZqBxuPsyoYjCt3vQ@mail.gmail.com>
+In-Reply-To: <CAFEAcA8u_c=seOQ+y44H2Vpefyx4EisiZ-ZqBxuPsyoYjCt3vQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 August 2013 20:05, Hans-Christian Egtvedt <egtvedt@samfundet.no> wrote:
-> Around Wed 14 Aug 2013 19:01:53 +0530 or thereabout, Viresh Kumar wrote:
->> Many common initializations of struct policy are moved to core now and hence
->> this driver doesn't need to do it. This patch removes such code.
+On 08/14/2013 05:44 AM, Peter Maydell wrote:
+> On 14 August 2013 11:33, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> On Mon, Aug 12, 2013 at 04:04:08PM -0700, Guenter Roeck wrote:
+>>> Hacked diff is below. Can I write that up as clean patch and submit it,
+>>> or do we need a test on real hardware ?
 >>
->> Most recent of those changes is to call ->get() in the core after calling
->> ->init().
+>> Well, if we want to ensure that it is really correct, the sensible thing
+>> to do is to try it on real hardware, otherwise we're risking yet another
+>> change to this.
+>>
+>> Earlier in this thread, some people said that they have the hardware, so
+>> it shouldn't be that difficult to get it tested on real stuff.
 >
-> It would be easier to review if you add me to CC on the new APIs you
-> implement as well. Now I had to look up what the ->get() call did.
+> Yes, I definitely think we should test on the hardware before we
+> land yet another change to this PCI code that hasn't really been
+> thoroughly tested on anything. I have the board/backplane on my
 
-I know my track record hasn't been impressive on this subject but I am
-sure I am following this since sometime now :)
+Agreed.
 
-https://lkml.org/lkml/2013/8/14/285
+> desk but it'll be later in the week before I can do the testing
+> (currently still messing with uboot config to get it to actually
+> boot a kernel).
+>
+
+That would be great. Thanks a lot for your help!
+
+Guenter
+
