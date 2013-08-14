@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759443Ab3HNHPX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:15:23 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:54551 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759419Ab3HNHPM (ORCPT
+	id S1759449Ab3HNHPx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:15:53 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:52417 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759237Ab3HNHPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:15:12 -0400
+	Wed, 14 Aug 2013 03:15:10 -0400
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: Bryan Wu <cooloney@gmail.com>,
         Peter Meerwald <p.meerwald@bct-electronic.com>,
@@ -14,9 +14,9 @@ To: Bryan Wu <cooloney@gmail.com>,
         Linux LED Subsystem <linux-leds@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v4 5/5] leds-pca963x: Fix device tree parsing
-Date: Wed, 14 Aug 2013 09:14:30 +0200
-Message-Id: <1376464470-6845-10-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH v4 4/4] leds-pca963x: Fix device tree parsing
+Date: Wed, 14 Aug 2013 09:14:29 +0200
+Message-Id: <1376464470-6845-9-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -36,7 +36,7 @@ Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/leds/leds-pca963x.c b/drivers/leds/leds-pca963x.c
-index edd9f45..384a4f9 100644
+index 2bbaff9..9441b19 100644
 --- a/drivers/leds/leds-pca963x.c
 +++ b/drivers/leds/leds-pca963x.c
 @@ -284,13 +284,13 @@ pca963x_dt_init(struct i2c_client *client, struct pca963x_chipdef *chip)
