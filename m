@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759442Ab3HNHiZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:38:25 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:45783 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759173Ab3HNHiX (ORCPT
+	id S1759435Ab3HNHnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:43:37 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:52312 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759199Ab3HNHng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:38:23 -0400
+	Wed, 14 Aug 2013 03:43:36 -0400
+Date: Wed, 14 Aug 2013 11:43:33 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH -mm] mm: Unify pte_to_pgoff and pgoff_to_pte helpers
+Message-ID: <20130814074333.GM2869@moon>
+References: <20130814070059.GJ2869@moon>
+ <520B303D.2090206@zytor.com>
+ <20130814072453.GK2869@moon>
+ <520B3240.6030208@zytor.com>
+ <20130814003336.0fb2a275.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <CAKohponW5GwnrL8EktnWb-U5V=eOFQQkbZrx=QgUpfuci3v-0w@mail.gmail.com>
-References: <1376377766-2594-1-git-send-email-chenxg@marvell.com>
-	<1376377766-2594-2-git-send-email-chenxg@marvell.com>
-	<CAKohponW5GwnrL8EktnWb-U5V=eOFQQkbZrx=QgUpfuci3v-0w@mail.gmail.com>
-Date: Wed, 14 Aug 2013 15:38:21 +0800
-Message-ID: <CAFgnuDeZDo3oA-ZQ2qn6mGXJVQmGwax7g91-d-D6KFrChENfOg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: Only do governor start after successful stop
-From: Xiaoguang Chen <chenxg.marvell@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Xiaoguang Chen <chenxg@marvell.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130814003336.0fb2a275.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/8/14 Viresh Kumar <viresh.kumar@linaro.org>:
-> On 13 August 2013 12:39, Xiaoguang Chen <chenxg@marvell.com> wrote:
->> cpufreq_add_policy_cpu, __cpufreq_remove_dev and __cpufreq_set_policy
->> have operations for governor stop and start.
->> Only do the start operation when the previous stop operation succeeds.
->>
->> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
->> ---
->>  drivers/cpufreq/cpufreq.c | 25 +++++++++++++++----------
->>  1 file changed, 15 insertions(+), 10 deletions(-)
->
-> I hope you have seen this patch, which is already in Rafael's tree?
->
-> https://lkml.org/lkml/2013/8/6/357
+On Wed, Aug 14, 2013 at 12:33:36AM -0700, Andrew Morton wrote:
+> > > B_it_F_ield_OP_eration, Peter I don't mind to use any other
+> > > name, this was just short enough to type.
+> > > 
+> > 
+> > I think it would be useful to have a comment what it means and what
+> > v,r,m,l represent.
 
-ohh, That is exactly what my patch tries to do. Sorry I just checked
-mainline patch. I missed this one. Thank you very much!
+Sure, maybe simply better names as value, rshift, mask, lshift would
+look more understandable. I'll try to use width for mask as well
+(which reminds me BFEXT helpers Andrew mentioned in this thread).
 
-Thanks
-Xiaoguang
+> Can it be written in C with types and proper variable names and such
+> radical stuff?
+
+Could you elaborate? You mean inline helper or macro with type checks?
