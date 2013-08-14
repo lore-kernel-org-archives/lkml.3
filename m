@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab3HNFGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 01:06:46 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:53008 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab3HNFGp (ORCPT
+	id S1752084Ab3HNFVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 01:21:49 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:46776 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab3HNFVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 01:06:45 -0400
+	Wed, 14 Aug 2013 01:21:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <520B0FCF.5080809@huawei.com>
-References: <520B0FCF.5080809@huawei.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 13 Aug 2013 22:06:24 -0700
-Message-ID: <CALCETrUJTMVo4sCiVRHvVocja3Q9_hXPdc1xQ0D+EtPUT_2T7w@mail.gmail.com>
-Subject: Re: [PATCH] userns: initialize the depth of user_namespace chain
-To: Rui Xiang <rui.xiang@huawei.com>
-Cc: linux-kernel@vger.kernel.org, oleg@redhat.com
+In-Reply-To: <1376377766-2594-1-git-send-email-chenxg@marvell.com>
+References: <1376377766-2594-1-git-send-email-chenxg@marvell.com>
+Date: Wed, 14 Aug 2013 10:51:47 +0530
+Message-ID: <CAKohpo=QKPvqUcQVsbbSQdWOOi5L-P2CBFzcfMsobs8uGpLkVw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: Add governor operation ongoing flag
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Xiaoguang Chen <chenxg@marvell.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Xiaoguang Chen <chenxg.marvell@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 10:04 PM, Rui Xiang <rui.xiang@huawei.com> wrote:
-> The level of init_user_ns shoule be 1.
+On 13 August 2013 12:39, Xiaoguang Chen <chenxg@marvell.com> wrote:
+> __cpufreq_governor operation needs to be executed one by one.
+> If one operation is ongoing, the other operation can't be executed.
+> If the order is not guaranteed, there may be unexpected behavior.
 
-What's wrong with zero?
+What order??
 
---Andy
+>  For example, governor is in enable state, and one process
+> tries to stop the goveror, but it is scheduled out before policy->
+> governor->governor() is executed, but the governor enable flag is
+> set to false already. Then one other process tries to start governor,
+> It finds enable flag is false, and it can process down to do governor
+> start operation, So the governor is started twice.
 
->
-> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
-> ---
->  kernel/user.c | 1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/kernel/user.c b/kernel/user.c
-> index 69b4c3d..32da187 100644
-> --- a/kernel/user.c
-> +++ b/kernel/user.c
-> @@ -48,6 +48,7 @@ struct user_namespace init_user_ns = {
->                 },
->         },
->         .count = ATOMIC_INIT(3),
-> +       .level = 1,
->         .owner = GLOBAL_ROOT_UID,
->         .group = GLOBAL_ROOT_GID,
->         .proc_inum = PROC_USER_INIT_INO,
-> --
-> 1.8.2.2
->
+That's not possible. A process will not and should not call START
+before calling STOP. And so the order of calling these routines must
+be forced.
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Hence, we may not need your patch.
