@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932684Ab3HNKig (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:38:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34662 "EHLO
+	id S932746Ab3HNKkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:40:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34731 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932600Ab3HNKiT (ORCPT
+	with ESMTP id S932602Ab3HNKie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:19 -0400
+	Wed, 14 Aug 2013 06:38:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joshua Zhu <zhu.wen-jie@hp.com>,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Vinson Lee <vlee@freedesktop.org>,
+Cc: Julius Werner <jwerner@chromium.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 50/75] perf tools: Add anonymous huge page recognition
-Date: Wed, 14 Aug 2013 11:36:39 +0100
-Message-Id: <1376476624-10011-51-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 72/75] usb: core: don't try to reset_device() a port that got just disconnected
+Date: Wed, 14 Aug 2013 11:37:01 +0100
+Message-Id: <1376476624-10011-73-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -34,50 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joshua Zhu <zhu.wen-jie@hp.com>
+From: Julius Werner <jwerner@chromium.org>
 
-commit d0528b5d71faf612014dd7672e44225c915344b2 upstream.
+commit 481f2d4f89f87a0baa26147f323380e31cfa7c44 upstream.
 
-Judging anonymous memory's vm_area_struct, perf_mmap_event's filename
-will be set to "//anon" indicating this vma belongs to anonymous
-memory.
+The USB hub driver's event handler contains a check to catch SuperSpeed
+devices that transitioned into the SS.Inactive state and tries to fix
+them with a reset. It decides whether to do a plain hub port reset or
+call the usb_reset_device() function based on whether there was a device
+attached to the port.
 
-Once hugepage is used, vma's vm_file points to hugetlbfs. In this way,
-this vma will not be regarded as anonymous memory by is_anon_memory() in
-perf user space utility.
+However, there are device/hub combinations (found with a JetFlash
+Transcend mass storage stick (8564:1000) on the root hub of an Intel
+LynxPoint PCH) which can transition to the SS.Inactive state on
+disconnect (and stay there long enough for the host to notice). In this
+case, above-mentioned reset check will call usb_reset_device() on the
+stale device data structure. The kernel will send pointless LPM control
+messages to the no longer connected device address and can even cause
+several 5 second khubd stalls on some (buggy?) host controllers, before
+finally accepting the device's fate amongst a flurry of error messages.
 
-Signed-off-by: Joshua Zhu <zhu.wen-jie@hp.com>
-Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Joshua Zhu <zhu.wen-jie@hp.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1357363797-3550-1-git-send-email-zhu.wen-jie@hp.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Vinson Lee <vlee@freedesktop.org>
+This patch makes the choice of reset dependent on the port status that
+has just been read from the hub in addition to the existence of an
+in-kernel data structure for the device, and only proceeds with the more
+extensive reset if both are valid.
+
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- tools/perf/util/map.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/core/hub.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index a1f4e36..81072b6 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -15,7 +15,8 @@ const char *map_type__name[MAP__NR_TYPES] = {
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index d5515c0..8deaeb5 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4552,7 +4552,8 @@ static void hub_events(void)
+ 					hub->hdev->children[i - 1];
  
- static inline int is_anon_memory(const char *filename)
- {
--	return strcmp(filename, "//anon") == 0;
-+	return !strcmp(filename, "//anon") ||
-+	       !strcmp(filename, "/anon_hugepage (deleted)");
- }
+ 				dev_dbg(hub_dev, "warm reset port %d\n", i);
+-				if (!udev) {
++				if (!udev || !(portstatus &
++						USB_PORT_STAT_CONNECTION)) {
+ 					status = hub_port_reset(hub, i,
+ 							NULL, HUB_BH_RESET_TIME,
+ 							true);
+@@ -4562,8 +4563,8 @@ static void hub_events(void)
+ 					usb_lock_device(udev);
+ 					status = usb_reset_device(udev);
+ 					usb_unlock_device(udev);
++					connect_change = 0;
+ 				}
+-				connect_change = 0;
+ 			}
  
- static inline int is_no_dso_memory(const char *filename)
+ 			if (connect_change)
 -- 
 1.8.3.2
 
