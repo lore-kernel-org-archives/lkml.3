@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759972Ab3HNPja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 11:39:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60656 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758769Ab3HNPj1 (ORCPT
+	id S1760000Ab3HNPjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 11:39:45 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50597 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758769Ab3HNPjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 11:39:27 -0400
-Message-ID: <1376494751.7355.28.camel@marge.simpson.net>
-Subject: Re: [RFC][PATCH 0/5] preempt_count rework
-From: Mike Galbraith <bitbucket@online.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Date: Wed, 14 Aug 2013 17:39:11 +0200
-In-Reply-To: <520B8A81.1080405@zytor.com>
-References: <20130814131539.790947874@chello.nl>
-	 <520B8A81.1080405@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:eA/oUHYtesKC1XeQdGLHrgzaXA58KObPYuS7p0NZTRC
- w4YV52IYjjuXANTsPrI4FbiKWlkqSy5eKFrBpdqRTwqv2jc9xT
- mSBE1O0Y0Oi3uGM3uoR6BPd9pdfPMrH4NDU7yV8uEF/HWbcIZk
- H8qvX61vSfzNmewvD//trgQho+W2X5343m21YQROLs95idr3d7
- 9S/hyklQTt+piKZNVXLPIKEvg927FSnKe/8S8h975ywM2YZnKT
- Skq84aAyliZzZ5i2dtDzKanDn52YB8mFii1n30HdloJlPCUiey
- 9P4oXyHpA0HwoKukYIoBYA1euczEcyDLNDVuaQM30ArbCucy5W
- Z73qViZdt8kTY6rhRUWq+MzHpwNohtPN4aS8mKKfLjikDZpuHm
- KP8E6B8QhPNvg==
+	Wed, 14 Aug 2013 11:39:42 -0400
+Date: Wed, 14 Aug 2013 16:39:06 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20130814153906.GU6427@sirena.org.uk>
+References: <20130814113848.GP6427@sirena.org.uk>
+ <Pine.LNX.4.44L0.1308141023150.1701-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="853vXHwZJ9DppLtj"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1308141023150.1701-100000@iolanthe.rowland.org>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-14 at 06:47 -0700, H. Peter Anvin wrote:
 
-> On x86, you never want to take the address of a percpu variable if you
-> can avoid it, as you end up generating code like:
-> 
-> 	movq %fs:0,%rax
-> 	subl $1,(%rax)
+--853vXHwZJ9DppLtj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmmm..
+On Wed, Aug 14, 2013 at 10:27:26AM -0400, Alan Stern wrote:
+> On Wed, 14 Aug 2013, Mark Brown wrote:
 
-#define cpu_rq(cpu)             (&per_cpu(runqueues, (cpu)))
-#define this_rq()               (&__get_cpu_var(runqueues))
+> > I'd expect that we're just looking at hooks around connection and
+> > disconnection here here - if we're looking at much more it seems like we
+> > must be doing something wrong.
 
-ffffffff81438c7f:       48 c7 c3 80 11 01 00    mov    $0x11180,%rbx
-        /*
-         * this_rq must be evaluated again because prev may have moved
-         * CPUs since it called schedule(), thus the 'rq' on its stack
-         * frame will be invalid.
-         */
-        finish_task_switch(this_rq(), prev);
-ffffffff81438c86:       e8 25 b4 c0 ff          callq  ffffffff810440b0 <finish_task_switch>
-                 * The context switch have flipped the stack from under us
-                 * and restored the local variables which were saved when
-                 * this task called schedule() in the past. prev == current
-                 * is still correct, but it can be moved to another cpu/rq.
-                 */
-                cpu = smp_processor_id();
-ffffffff81438c8b:       65 8b 04 25 b8 c5 00    mov    %gs:0xc5b8,%eax
-ffffffff81438c92:       00
-                rq = cpu_rq(cpu);
-ffffffff81438c93:       48 98                   cltq
-ffffffff81438c95:       48 03 1c c5 00 f3 bb    add    -0x7e440d00(,%rax,8),%rbx
+> Connection and disconnection of what?
 
-..so could the rq = cpu_rq(cpu) sequence be improved cycle expenditure
-wise by squirreling rq pointer away in a percpu this_rq, and replacing
-cpu_rq(cpu) above with a __this_cpu_read(this_rq) version of this_rq()?
+The device on the bus.
 
--Mike
+> In the example mentioned earlier, the GPIOs to power an on-board USB
+> hub would have to be initialized when the host controller was started. =
+=20
+> You wouldn't want to wait for the on-board hub to be detected, because
+> without those GPIOs set properly, it never would be discovered on the
+> USB bus.  Right?
 
+Yes, so you'd want callbacks when the device actually appears and
+disappears.
+
+> Perhaps the platform-level code would need to hook into the places
+> where the discoverable bus is registered and unregistered.
+
+We'd need some way to get information to the drivers still, and to
+handle drivers that want to stop and start things.
+
+--853vXHwZJ9DppLtj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSC6SXAAoJELSic+t+oim9hDsP/jXZ902addaAU11yHE9ShSZe
+drRBg8OATN22TF6wABNZeFKFS+Uzfhj9eWoW5jza3FRHSeNTzIRsi+4pVmUMFQKQ
+xhQOWFQ3/6gbIuhQPHEt1xLcpKQo5T9cFpE9lH1eNJjF9WUSFY/nvE24WvADLmIj
+jEGCQrgNl73+Lg9Vc//tW8GXLR135iKUNtphkGZ+ZhAW6h84FfkYCqaqx+s4s1tg
+tdrybVsF9MINx86ftwaIMQYxLuMo9lW9mOU2OhxMR3hw4oZblfkIOrVlk8CoOrgt
+jdZdgEFh8O/ApncfKJanB6lDN9hN3UFa2hxrfjCRYm7T7PN0CjRzcSwLnwHn/Fk1
+tlUsR76w0BUn/SzXNv+G75iBKtAoCpe7Wn6hO1eZIHSF6VXeuOE0qF+i4BtNwLjW
+A+Tzca4I4KTIqxYpJMqGGuYki86qNjk6bvtFV7lr0cYhZIYj8lHZzVsVn6gFVPA5
+DyclswuZM3y1/hw0W4Fzj4+RjW8kn52bIb4MTxc86vavvGQzJVKtPDrn8p+FW/+c
+cIkpihGFKuQc5GmCComlo289H2+7xRj0kaQAunfMV8qenZQyoX+vQ3rQ7Au+5Lx/
+G0sSLqtTrfRkk6f1vE8pxrpwL0L89uyP6hwhWRcKjuLFZCaASsGD68VA83cjRjc1
+/gnQFC/HK94PIQ77TppB
+=yW2Q
+-----END PGP SIGNATURE-----
+
+--853vXHwZJ9DppLtj--
