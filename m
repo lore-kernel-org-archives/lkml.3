@@ -1,148 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759583Ab3HNJDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:03:54 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:45759 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759510Ab3HNJDv (ORCPT
+	id S1759594Ab3HNJEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:04:50 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47914 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759510Ab3HNJEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:03:51 -0400
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH v3 1/6] ARM/ARM64: =?UTF-8?Q?arch=5Ftimer=3A=20add=20m?=  =?UTF-8?Q?acros=20for=20bits=20in=20control=20register?=
-X-PHP-Originating-Script: 0:main.inc
+	Wed, 14 Aug 2013 05:04:47 -0400
+Message-ID: <520B482A.9060701@ti.com>
+Date: Wed, 14 Aug 2013 12:04:42 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+To: Benoit Cousson <bcousson@baylibre.com>
+CC: <balbi@ti.com>, <tony@atomide.com>, <kishon@ti.com>,
+        <george.cherian@ti.com>, <dmurphy@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] ARM: dts: omap4: update omap-control-usb nodes
+References: <1375365915-21380-1-git-send-email-rogerq@ti.com> <1375365915-21380-7-git-send-email-rogerq@ti.com> <520B42B8.5080107@baylibre.com>
+In-Reply-To: <520B42B8.5080107@baylibre.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Date: Wed, 14 Aug 2013 10:03:48 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Organization: ARM Ltd
-In-Reply-To: <520B44CF.6040403@linaro.org>
-References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376414984-14182-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <520B44CF.6040403@linaro.org>
-Message-ID: <6071c584a32b1a5f80923818a477a719@www.loen.fr>
-User-Agent: Roundcube Webmail/0.7.2
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: daniel.lezcano@linaro.org, sudeep.karkadanagesha@arm.com, lorenzo.pieralisi@arm.com, catalin.marinas@arm.com, will.deacon@arm.com, linux-kernel@vger.kernel.org, tglx@linutronix.de, linux-arm-kernel@lists.infradead.org
-X-SA-Exim-Mail-From: marc.zyngier@arm.com
-X-SA-Exim-Scanned: No (on cheepnis.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On 08/14/2013 11:41 AM, Benoit Cousson wrote:
+> Hi Roger,
+> 
+> On 01/08/2013 16:05, Roger Quadros wrote:
+>> Split otghs_ctrl and USB2 PHY power down into separate
+>> omap-control-usb nodes. Update ti,mode property.
+> 
+> Nit: I guess you mean ti,type?
 
-On 2013-08-14 09:50, Daniel Lezcano wrote:
-> On 08/13/2013 07:29 PM, Sudeep KarkadaNagesha wrote:
->> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>
->> Add macros to describe the bitfields in the ARM architected timer
->> control register to make code easy to understand.
->>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
->> Reviewed-by: Will Deacon <will.deacon@arm.com>
->> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Right :).
+
+> 
+>> CC: Benoit Cousson <benoit.cousson@linaro.org>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
 >> ---
->>  arch/arm/include/asm/arch_timer.h    |  9 +++++++--
->>  arch/arm64/include/asm/arch_timer.h  | 12 ++++++++----
->>  include/clocksource/arm_arch_timer.h |  8 ++++++++
->>  3 files changed, 23 insertions(+), 6 deletions(-)
+>>   arch/arm/boot/dts/omap4.dtsi |   17 ++++++++++++-----
+>>   1 files changed, 12 insertions(+), 5 deletions(-)
 >>
->> diff --git a/arch/arm/include/asm/arch_timer.h 
->> b/arch/arm/include/asm/arch_timer.h
->> index e406d57..9ef74da 100644
->> --- a/arch/arm/include/asm/arch_timer.h
->> +++ b/arch/arm/include/asm/arch_timer.h
->> @@ -95,8 +95,13 @@ static inline void 
->> arch_counter_set_user_access(void)
->>
->>  	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
->>
->> -	/* disable user access to everything */
->> -	cntkctl &= ~((3 << 8) | (7 << 0));
->> +	/* Disable user access to both physical/virtual counters/timers. 
->> */
->> +	/* Also disable virtual event stream */
->> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
->> +			| ARCH_TIMER_USR_VT_ACCESS_EN
->> +			| ARCH_TIMER_VIRT_EVT_EN
->> +			| ARCH_TIMER_USR_VCT_ACCESS_EN
->> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
->>
->>  	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
->>  }
->> diff --git a/arch/arm64/include/asm/arch_timer.h 
->> b/arch/arm64/include/asm/arch_timer.h
->> index 98abd47..00b09d0 100644
->> --- a/arch/arm64/include/asm/arch_timer.h
->> +++ b/arch/arm64/include/asm/arch_timer.h
->> @@ -101,12 +101,16 @@ static inline void 
->> arch_counter_set_user_access(void)
->>  {
->>  	u32 cntkctl;
->>
->> -	/* Disable user access to the timers and the physical counter. */
->>  	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
->> -	cntkctl &= ~((3 << 8) | (1 << 0));
->>
->> -	/* Enable user access to the virtual counter and frequency. */
->> -	cntkctl |= (1 << 1);
->> +	/* Disable user access to the timers and the physical counter. */
->> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
->> +			| ARCH_TIMER_USR_VT_ACCESS_EN
->> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
->> +
->> +	/* Enable user access to the virtual counter. */
->> +	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
->> +
->>  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
->>  }
->
-> Before doing those changes, I suggest you kill 
-> include/asm/arch_timer.h
-> header file and move the functions directly in the arm_arch_timer.c 
-> as
-> they are only used by it.
+>> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+>> index 22d9f2b..9a6fa27 100644
+>> --- a/arch/arm/boot/dts/omap4.dtsi
+>> +++ b/arch/arm/boot/dts/omap4.dtsi
+>> @@ -519,7 +519,7 @@
+>>   			usb2_phy: usb2phy@4a0ad080 {
+>>   				compatible = "ti,omap-usb2";
+>>   				reg = <0x4a0ad080 0x58>;
+>> -				ctrl-module = <&omap_control_usb>;
+>> +				ctrl-module = <&omap_control_usb2phy>;
+>>   			};
+>>   		};
+>>   
+>> @@ -643,11 +643,17 @@
+>>   			};
+>>   		};
+>>   
+>> -		omap_control_usb: omap-control-usb@4a002300 {
+>> +		omap_control_usb2phy: omap-control-usb@4a002300 {
+>>   			compatible = "ti,omap-control-usb";
+>> -			reg = <0x4a002300 0x4>,
+>> -			      <0x4a00233c 0x4>;
+>> -			reg-names = "control_dev_conf", "otghs_control";
+>> +			reg = <0x4a002300 0x4>;
+>> +			reg-names = "power";
+>> +			ti,type = <2>;
+> 
+> Now that we can use the C preprocessor, it will be nice to use a macro instead of the value.
+> 
+> TYPE1 - if it has otghs_control mailbox register (e.g. on OMAP4)
+> TYPE2 - if it has Power down bit in control_dev_conf register. e.g. USB2 PHY
+> TYPE3 - if it has DPLL and individual Rx & Tx power control. e.g. USB3 PHY or SATA PHY
+> TYPE4 - if it has both power down and power aux registers. e.g. USB2 PHY on DRA7
+> 
+> Well, assuming you can find macro names that can explain a little bit what the type is about :-)
+> 
+> That being said...
+> Do you really need to expose the type here? Maybe with just a set of different compatible string you can figure out in the driver what type we are talking about.
+> It is always better to minimize the amount of information we put in DT as soon as we can infer it from the compatible string.
+> 
+> So instead of using a generic "ti,omap-control-usb" string + "ti,type" you can potentially use several specific strings: ti,omap4-control-usb, ti,dra7-control-usb...
+> Since the DT gurus are recommending to use specific compatible string as much as possible, this is maybe a better approach.
+> 
 
-How do you suggest to proceed? Having #ifdefs in arm_arch_timer.c to 
-cope with the inline assembly functions present in both arm and arm64 
-include files? Doesn't seem much of a progress to me...
+Good point. I'll get rid of the type altogether and use the compatible string instead.
 
->> diff --git a/include/clocksource/arm_arch_timer.h 
->> b/include/clocksource/arm_arch_timer.h
->> index c463ce9..551f7e9 100644
->> --- a/include/clocksource/arm_arch_timer.h
->> +++ b/include/clocksource/arm_arch_timer.h
->> @@ -29,6 +29,14 @@
->>  #define ARCH_TIMER_PHYS_ACCESS		0
->>  #define ARCH_TIMER_VIRT_ACCESS		1
->>
->> +#define ARCH_TIMER_USR_PCT_ACCESS_EN	(1 << 0) /* physical counter 
->> */
->> +#define ARCH_TIMER_USR_VCT_ACCESS_EN	(1 << 1) /* virtual counter */
->> +#define ARCH_TIMER_VIRT_EVT_EN		(1 << 2)
->> +#define ARCH_TIMER_EVT_TRIGGER_SHIFT	(4)
->> +#define ARCH_TIMER_EVT_TRIGGER_MASK	(0xF << 
->> ARCH_TIMER_EVT_TRIGGER_SHIFT)
->> +#define ARCH_TIMER_USR_VT_ACCESS_EN	(1 << 8) /* virtual timer 
->> registers */
->> +#define ARCH_TIMER_USR_PT_ACCESS_EN	(1 << 9) /* physical timer 
->> registers */
->> +
->>  #ifdef CONFIG_ARM_ARCH_TIMER
->>
->>  extern u32 arch_timer_get_rate(void);
->>
-
-         M.
--- 
-Fast, cheap, reliable. Pick two.
+cheers,
+-roger
