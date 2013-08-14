@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759421Ab3HNKRq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:17:46 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:40199 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab3HNKRp (ORCPT
+	id S932149Ab3HNKSW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:18:22 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:62899 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab3HNKSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:17:45 -0400
-Date: Wed, 14 Aug 2013 12:17:41 +0200
+	Wed, 14 Aug 2013 06:18:21 -0400
+Date: Wed, 14 Aug 2013 12:18:16 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Borislav Petkov <bp@alien8.de>
-Cc: x86-ml <x86@kernel.org>, Torsten Kaiser <just.for.lkml@googlemail.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+Cc: x86-ml <x86@kernel.org>,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
         lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] AMD microcode fixes for 3.11
-Message-ID: <20130814101741.GE10849@gmail.com>
-References: <20130812195816.GJ18018@pd.tnic>
+Subject: Re: [GIT PULL] AMD F15h, model 0x30 stuff for 3.12
+Message-ID: <20130814101816.GF10849@gmail.com>
+References: <20130810184627.GB6189@pd.tnic>
+ <20130812200305.GK18018@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130812195816.GJ18018@pd.tnic>
+In-Reply-To: <20130812200305.GK18018@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,7 +31,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 > Hi guys,
 > 
-> the tag message should explain it all so please pull.
+> here's the properly based-off version; please pull.
 > 
 > Thanks.
 > 
@@ -40,35 +41,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > 
 > are available in the git repository at:
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/amd_ucode_fixes
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/amd_f15_m30
 > 
-> for you to fetch changes up to 84516098b58e05821780dc0b89abcee434b4dca5:
+> for you to fetch changes up to a4b4bedce880046feeb5b206392960f395ed02ad:
 > 
->   x86, microcode, AMD: Fix early microcode loading (2013-08-12 18:32:45 +0200)
-> 
-> ----------------------------------------------------------------
-> Those are basically two fixes which correct the AMD early ucode loader
-> from accessing cpu_data too early, i.e. before smp_store_cpu_info()
-> has copied the boot_cpu_data ontop and overwritten an already empty
-> structure (which we shouldn't access that early in the first place
-> anyway).
-> 
-> The second patch is kinda largish for that late in the game but it
-> shouldn't be problematic because we're simply switching from using
-> cpu_data to use the CPU family number directly and thus again, not use
-> uninitialized cpu_data structure.
+>   amd64_edac: Get rid of boot_cpu_data accesses (2013-08-12 16:01:56 +0200)
 > 
 > ----------------------------------------------------------------
-> Torsten Kaiser (2):
->       x86, microcode, AMD: Make cpu_has_amd_erratum() use the correct struct cpuinfo_x86
->       x86, microcode, AMD: Fix early microcode loading
+> AMD F15h, model 0x30 and later enablement stuff, more specifically EDAC
+> support.
 > 
->  arch/x86/include/asm/microcode_amd.h  |  2 +-
->  arch/x86/kernel/cpu/amd.c             | 20 +++++---------------
->  arch/x86/kernel/microcode_amd.c       | 27 +++++++++++++--------------
->  arch/x86/kernel/microcode_amd_early.c | 27 +++++++++++++--------------
->  4 files changed, 32 insertions(+), 44 deletions(-)
+> ----------------------------------------------------------------
+> Aravind Gopalakrishnan (3):
+>       pci_ids: Add PCI device ID functions 3 and 4 for newer F15h models.
+>       x86, amd_nb: Clarify F15h, model 30h GART and L3 support
+>       amd64_edac: Add ECC decoding support for newer F15h models
+> 
+> Borislav Petkov (1):
+>       amd64_edac: Get rid of boot_cpu_data accesses
+> 
+>  arch/x86/kernel/amd_nb.c  |  13 ++++-
+>  drivers/edac/amd64_edac.c | 324 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------
+>  drivers/edac/amd64_edac.h |  60 ++++++++++++++++++--
+>  include/linux/pci_ids.h   |   2 +
+>  4 files changed, 322 insertions(+), 77 deletions(-)
 
-Pulled into x86/urgent, thanks Boris!
+Pulled into tip:x86/ras, thanks!
 
 	Ingo
