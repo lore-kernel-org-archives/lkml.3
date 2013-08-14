@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759324Ab3HNDly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 23:41:54 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:13160 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759088Ab3HNDjv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 23:39:51 -0400
-Message-ID: <520AFBEE.7030903@huawei.com>
-Date: Wed, 14 Aug 2013 11:39:26 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH RESEND 1/8] net: fsl_pq_mdio: use platform_{get,set}_drvdata()
-References: <5208E215.6030007@huawei.com>
-In-Reply-To: <5208E215.6030007@huawei.com>
-X-Forwarded-Message-Id: <5208E215.6030007@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+	id S1759436Ab3HNDpt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 23:45:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:7071 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759341Ab3HNDpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 23:45:47 -0400
+X-IronPort-AV: E=Sophos;i="4.89,874,1367942400"; 
+   d="scan'208";a="8197194"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, yinghai@kernel.org,
+        penberg@kernel.org, jacob.shin@amd.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: Use memblock_set_current_limit() to set limit for memblock.
+Date: Wed, 14 Aug 2013 11:44:04 +0800
+Message-Id: <1376451844-15682-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/14 11:43:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/14 11:43:52,
+	Serialize complete at 2013/08/14 11:43:52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In setup_arch() of x86, it set memblock.current_limit directly.
+We should use memblock_set_current_limit(). If the implementation
+is changed, it is easy to maintain.
 
-We can use the wrapper functions platform_{get,set}_drvdata() instead of
-dev_{get,set}_drvdata() with &pdev->dev, it is convenient for user.
-
-Also, unnecessary dev_set_drvdata() is removed, because the driver core
-clears the driver data to NULL after device_release or on probe failure.
-
-Signed-off-by: Libo Chen <libo.chen@huawei.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- drivers/net/ethernet/freescale/fsl_pq_mdio.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ arch/x86/kernel/setup.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/freescale/fsl_pq_mdio.c b/drivers/net/ethernet/freescale/fsl_pq_mdio.c
-index c93a056..995a3ab 100644
---- a/drivers/net/ethernet/freescale/fsl_pq_mdio.c
-+++ b/drivers/net/ethernet/freescale/fsl_pq_mdio.c
-@@ -409,7 +409,7 @@ static int fsl_pq_mdio_probe(struct platform_device *pdev)
- 	priv->regs = priv->map + data->mii_offset;
-
- 	new_bus->parent = &pdev->dev;
--	dev_set_drvdata(&pdev->dev, new_bus);
-+	platform_set_drvdata(pdev, new_bus);
-
- 	if (data->get_tbipa) {
- 		for_each_child_of_node(np, tbi) {
-@@ -468,7 +468,6 @@ static int fsl_pq_mdio_remove(struct platform_device *pdev)
-
- 	mdiobus_unregister(bus);
-
--	dev_set_drvdata(device, NULL);
-
- 	iounmap(priv->map);
- 	mdiobus_free(bus);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f8ec578..de33798 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1070,7 +1070,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	cleanup_highmap();
+ 
+-	memblock.current_limit = ISA_END_ADDRESS;
++	memblock_set_current_limit(ISA_END_ADDRESS);
+ 	memblock_x86_fill();
+ 
+ 	/*
+@@ -1103,7 +1103,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	setup_real_mode();
+ 
+-	memblock.current_limit = get_max_mapped();
++	memblock_set_current_limit(get_max_mapped());
+ 	dma_contiguous_reserve(0);
+ 
+ 	/*
 -- 
 1.7.1
-
-
-
 
