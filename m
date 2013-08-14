@@ -1,141 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760241Ab3HNUbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:31:08 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:53598 "EHLO smtp.gentoo.org"
+	id S1760261Ab3HNUb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:31:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49338 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758543Ab3HNUbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:31:06 -0400
-From: Sergei Trofimovich <slyfox@gentoo.org>
-To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Sergei Trofimovich <slyfox@gentoo.org>, Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [PATCH] btrfs: mark some local function as 'static'
-Date: Wed, 14 Aug 2013 23:27:46 +0300
-Message-Id: <1376512066-7284-1-git-send-email-slyfox@gentoo.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1760154Ab3HNUb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 16:31:56 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <520BE891.8090004@gmail.com>
+References: <20130812145016.GI15892@htj.dyndns.org> <52090225.6070208@gmail.com> <20130812154623.GL15892@htj.dyndns.org> <52090AF6.6020206@gmail.com> <20130812162247.GM15892@htj.dyndns.org> <520914D5.7080501@gmail.com> <20130812180758.GA8288@mtj.dyndns.org> <520BC950.1030806@gmail.com> <20130814182342.GG28628@htj.dyndns.org> <520BDD2F.2060909@gmail.com> <20130814195541.GH28628@htj.dyndns.org> <520BE891.8090004@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 14 Aug 2013 13:30:38 -0700
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, Tejun Heo <tj@kernel.org>
+CC: Tang Chen <imtangchen@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Message-ID: <5a1b9edd-8232-498a-b94a-72e028772970@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Josef Bacik <jbacik@fusionio.com>
-Cc: Chris Mason <chris.mason@fusionio.com>
-Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
----
- fs/btrfs/ctree.h       | 2 --
- fs/btrfs/disk-io.c     | 8 ++++----
- fs/btrfs/extent_io.c   | 2 +-
- fs/btrfs/extent_io.h   | 1 -
- fs/btrfs/root-tree.c   | 4 ++--
- fs/btrfs/transaction.c | 2 +-
- fs/btrfs/transaction.h | 2 --
- 7 files changed, 8 insertions(+), 13 deletions(-)
+There are systems which can.  They have the ability to remap in hardware.
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index e795bf1..e91ab9e 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -3414,8 +3414,6 @@ int __must_check btrfs_update_root(struct btrfs_trans_handle *trans,
- 				   struct btrfs_root *root,
- 				   struct btrfs_key *key,
- 				   struct btrfs_root_item *item);
--void btrfs_read_root_item(struct extent_buffer *eb, int slot,
--			  struct btrfs_root_item *item);
- int btrfs_find_root(struct btrfs_root *root, struct btrfs_key *search_key,
- 		    struct btrfs_path *path, struct btrfs_root_item *root_item,
- 		    struct btrfs_key *root_key);
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 6b092a1..227339d 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1428,8 +1428,8 @@ int btrfs_add_log_tree(struct btrfs_trans_handle *trans,
- 	return 0;
- }
- 
--struct btrfs_root *btrfs_read_tree_root(struct btrfs_root *tree_root,
--					struct btrfs_key *key)
-+static struct btrfs_root *btrfs_read_tree_root(struct btrfs_root *tree_root,
-+					       struct btrfs_key *key)
- {
- 	struct btrfs_root *root;
- 	struct btrfs_fs_info *fs_info = tree_root->fs_info;
-@@ -1529,8 +1529,8 @@ fail:
- 	return ret;
- }
- 
--struct btrfs_root *btrfs_lookup_fs_root(struct btrfs_fs_info *fs_info,
--					u64 root_id)
-+static struct btrfs_root *btrfs_lookup_fs_root(struct btrfs_fs_info *fs_info,
-+					       u64 root_id)
- {
- 	struct btrfs_root *root;
- 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index fe443fe..045263a 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -1810,7 +1810,7 @@ out:
-  * set the private field for a given byte offset in the tree.  If there isn't
-  * an extent_state there already, this does nothing.
-  */
--int set_state_private(struct extent_io_tree *tree, u64 start, u64 private)
-+static int set_state_private(struct extent_io_tree *tree, u64 start, u64 private)
- {
- 	struct rb_node *node;
- 	struct extent_state *state;
-diff --git a/fs/btrfs/extent_io.h b/fs/btrfs/extent_io.h
-index 3b8c4e2..bb1f75d 100644
---- a/fs/btrfs/extent_io.h
-+++ b/fs/btrfs/extent_io.h
-@@ -261,7 +261,6 @@ int extent_readpages(struct extent_io_tree *tree,
- 		     get_extent_t get_extent);
- int extent_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
- 		__u64 start, __u64 len, get_extent_t *get_extent);
--int set_state_private(struct extent_io_tree *tree, u64 start, u64 private);
- void extent_cache_csums_dio(struct extent_io_tree *tree, u64 start, u32 csums[],
- 			    int count);
- void extent_cache_csums(struct extent_io_tree *tree, struct bio *bio,
-diff --git a/fs/btrfs/root-tree.c b/fs/btrfs/root-tree.c
-index ffb1036..92453f0 100644
---- a/fs/btrfs/root-tree.c
-+++ b/fs/btrfs/root-tree.c
-@@ -29,8 +29,8 @@
-  * generation numbers as then we know the root was once mounted with an older
-  * kernel that was not aware of the root item structure change.
-  */
--void btrfs_read_root_item(struct extent_buffer *eb, int slot,
--			  struct btrfs_root_item *item)
-+static void btrfs_read_root_item(struct extent_buffer *eb, int slot,
-+				struct btrfs_root_item *item)
- {
- 	uuid_le uuid;
- 	int len;
-diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
-index af1931a..a689247 100644
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -837,7 +837,7 @@ int btrfs_wait_marked_extents(struct btrfs_root *root,
-  * them in one of two extent_io trees.  This is used to make sure all of
-  * those extents are on disk for transaction or log commit
-  */
--int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
-+static int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
- 				struct extent_io_tree *dirty_pages, int mark)
- {
- 	int ret;
-diff --git a/fs/btrfs/transaction.h b/fs/btrfs/transaction.h
-index defbc42..5c2af84 100644
---- a/fs/btrfs/transaction.h
-+++ b/fs/btrfs/transaction.h
-@@ -160,8 +160,6 @@ int btrfs_should_end_transaction(struct btrfs_trans_handle *trans,
- void btrfs_throttle(struct btrfs_root *root);
- int btrfs_record_root_in_trans(struct btrfs_trans_handle *trans,
- 				struct btrfs_root *root);
--int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
--				struct extent_io_tree *dirty_pages, int mark);
- int btrfs_write_marked_extents(struct btrfs_root *root,
- 				struct extent_io_tree *dirty_pages, int mark);
- int btrfs_wait_marked_extents(struct btrfs_root *root,
+KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
+>(8/14/13 3:55 PM), Tejun Heo wrote:
+>> Hello,
+>>
+>> On Wed, Aug 14, 2013 at 03:40:31PM -0400, KOSAKI Motohiro wrote:
+>>> I don't agree it. Please look at other kernel options. A lot of
+>these don't
+>>> follow you. These behave as direction, not advise.
+>>>
+>>> I mean the fallback should be implemented at turning on default the
+>feature.
+>>
+>> Yeah, some options are "please try this" and others "do this or
+>fail".
+>> There's no frigging fundamental rule there.
+>
+>In this case, we have zero worth for fallback, right?
+>
+>
+>>> I don't read whole discussion and I don't quite understand why no
+>kernel
+>>> place controlling is relevant. Every unpluggable node is suitable
+>for
+>>> kernel. If you mean current kernel placement logic don't care
+>plugging,
+>>> that's a bug.
+>>>
+>>> If we aim to hot remove, we have to have either kernel relocation or
+>>> hotplug awre kernel placement at boot time.
+>>
+>> What if all nodes are hot pluggable?  Are we moving the kernel
+>> dynamically then?
+>
+>Intel folks already told, we have no such system in practice.
+>
+>
+>>>> Failing to boot is *way* worse reporting mechanism than almost
+>>>> everything else.  If the sysadmin is willing to risk machines
+>failing
+>>>> to come up, she would definitely be willing to check whether which
+>>>> memory areas are actually hotpluggable too, right?
+>>>
+>>> No. see above. Your opinion is not pragmatic useful.
+>>
+>> No, what you're saying doesn't make any sense.  There are multiple
+>> ways to report when something doesn't work.  Failing to boot is *one*
+>> of them and not a very good one.  Here, for practical reasons, the
+>end
+>> result may differ depending on the specifics of the configuration, so
+>> more detailed reporting is necessary anyway, so why do you insist on
+>> failing the boot?  In what world is it a good thing for the machine
+>to
+>> fail boot after bios or kernel update?
+>
+>Because boot failure have no chance to overlook and better way for
+>practice.
+
 -- 
-1.8.3.2
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
