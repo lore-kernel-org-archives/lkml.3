@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab3HNVgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 17:36:45 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:46697 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760012Ab3HNVgm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 17:36:42 -0400
-Date: Wed, 14 Aug 2013 17:36:37 -0400
-From: Tejun Heo <tj@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Tang Chen <imtangchen@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
-Message-ID: <20130814213637.GO28628@htj.dyndns.org>
-References: <20130812162247.GM15892@htj.dyndns.org>
- <520914D5.7080501@gmail.com>
- <20130812180758.GA8288@mtj.dyndns.org>
- <520BC950.1030806@gmail.com>
- <20130814182342.GG28628@htj.dyndns.org>
- <520BDD2F.2060909@gmail.com>
- <20130814195541.GH28628@htj.dyndns.org>
- <520BE891.8090004@gmail.com>
- <20130814203538.GK28628@htj.dyndns.org>
- <520BF3E3.5030006@gmail.com>
+	id S1760398Ab3HNVhW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 17:37:22 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:46396 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760185Ab3HNVhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 17:37:20 -0400
+Date: Wed, 14 Aug 2013 16:37:13 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, brking@linux.vnet.ibm.com
+Subject: [PATCH 5/5] rsxx: Correcting return values during failure scenarios.
+Message-ID: <20130814213713.GF26562@oc6784271780.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <520BF3E3.5030006@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081421-5806-0000-0000-0000226DC3D3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 05:17:23PM -0400, KOSAKI Motohiro wrote:
-> You haven't explain practical benefit of your opinion. As far as users have
-> no benefit, I'm never agree. Sorry.
+From: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
 
-Umm... how about being more robust and actually useable to begin with?
-What's the benefit of panicking?  Are you seriously saying that the
-admin / boot script can use the kernel boot param to tell the kernel
-to enable hotplug but can't check what nodes are hot unpluggable
-afterwards?  The admin *needs* to check which nodes are hotpluggable
-no matter how this part is handled.  How else is it gonna know which
-nodes are hotpluggable?  Magic?
+The rsxx driver is returning the wrong values during
+copy_from_user and copy_to_user. It, also, is not
+setting ENOMEM during a failed workqueue allocation.
 
-There's no such rule as kernel param should make the kernel panic if
-it's not happy, so please take that out of your brain.  It of course
-should be clear what the result of the kernel parameter is and
-panicking is the crudest way to do that which is good enough or even
-desriable in *some* cases.  It is not the required behavior by any
-stretch of imgination, especially when the result of the parameter may
-change due to changing circumstances.  That's an outright idiotic
-thing to do.
+Signed-off-by: Philip J Kelleher <pjk1939@linux.vnet.ibm.com>
+-------------------------------------------------------------------------------
 
--- 
-tejun
+
+diff -uprN -X linux-block-vanilla/Documentation/dontdiff linux-block-vanilla/drivers/block/rsxx/core.c linux-block/drivers/block/rsxx/core.c
+--- linux-block-vanilla/drivers/block/rsxx/core.c	2013-08-12 15:32:49.468858233 -0500
++++ linux-block/drivers/block/rsxx/core.c	2013-08-12 15:33:03.600861005 -0500
+@@ -199,9 +199,8 @@ static ssize_t rsxx_cram_read(struct fil
+ 	if (st)
+ 		return st;
+ 
+-	st = copy_to_user(ubuf, buf, cnt);
+-	if (st)
+-		return st;
++	if (copy_to_user(ubuf, buf, cnt))
++		return -EFAULT;
+ 
+ 	info->offset += cnt;
+ 
+@@ -222,9 +221,8 @@ static ssize_t rsxx_cram_write(struct fi
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
+-	st = copy_from_user(buf, ubuf, cnt);
+-	if (st)
+-		return st;
++	if (copy_from_user(buf, ubuf, cnt))
++		return -EFAULT;
+ 
+ 	info->f_pos = (u32)*ppos + info->offset;
+ 
+@@ -942,6 +940,7 @@ static int rsxx_pci_probe(struct pci_dev
+ 	card->event_wq = create_singlethread_workqueue(DRIVER_NAME"_event");
+ 	if (!card->event_wq) {
+ 		dev_err(CARD_TO_DEV(card), "Failed card event setup.\n");
++		st = -ENOMEM;
+ 		goto failed_event_handler;
+ 	}
+ 
+
