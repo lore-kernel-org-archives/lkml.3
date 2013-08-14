@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932550Ab3HNMnS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:43:18 -0400
+	id S932572Ab3HNMnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:43:24 -0400
 Received: from mga14.intel.com ([143.182.124.37]:33982 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932469Ab3HNMnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:43:12 -0400
+	id S932469Ab3HNMnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 08:43:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,876,1367996400"; 
-   d="scan'208";a="346237503"
+   d="scan'208";a="346237563"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V11 07/15] perf tools: remove unnecessary callchain validation
-Date: Wed, 14 Aug 2013 15:48:29 +0300
-Message-Id: <1376484517-5339-8-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V11 09/15] perf: make events stream always parsable
+Date: Wed, 14 Aug 2013 15:48:31 +0300
+Message-Id: <1376484517-5339-10-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1376484517-5339-1-git-send-email-adrian.hunter@intel.com>
 References: <1376484517-5339-1-git-send-email-adrian.hunter@intel.com>
@@ -28,90 +28,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the sample parsing correctly checks data sizes
-there is no reason for it to be done again for callchains.
+The event stream is not always parsable because the format of a sample
+is dependent on the sample_type of the selected event.  When there
+is more than one selected event and the sample_types are not the
+same then parsing becomes problematic.  A sample can be matched to its
+selected event using the ID that is allocated when the event is opened.
+Unfortunately, to get the ID from the sample means first parsing it.
+
+This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
+the ID at a fixed position so that the ID can be retrieved without
+parsing the sample.  For sample events, that is the first position
+immediately after the header.  For non-sample events, that is the last
+position.
+
+In this respect parsing samples requires that the sample_type and ID
+values are recorded.  For example, perf tools records struct perf_event_attr
+and the IDs within the perf.data file.  Those must be read first
+before it is possible to parse samples found later in the perf.data file.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/callchain.c |  8 --------
- tools/perf/util/callchain.h |  5 -----
- tools/perf/util/session.c   | 20 --------------------
- 3 files changed, 33 deletions(-)
+ include/uapi/linux/perf_event.h | 27 ++++++++++++++++++++-------
+ kernel/events/core.c            | 11 ++++++++++-
+ 2 files changed, 30 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 4fee33b..482f680 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -21,14 +21,6 @@
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 62c25a2..42cb7b6 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -134,8 +134,9 @@ enum perf_event_sample_format {
+ 	PERF_SAMPLE_STACK_USER			= 1U << 13,
+ 	PERF_SAMPLE_WEIGHT			= 1U << 14,
+ 	PERF_SAMPLE_DATA_SRC			= 1U << 15,
++	PERF_SAMPLE_IDENTIFIER			= 1U << 16,
  
- __thread struct callchain_cursor callchain_cursor;
+-	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
++	PERF_SAMPLE_MAX = 1U << 17,		/* non-ABI */
+ };
  
--bool ip_callchain__valid(struct ip_callchain *chain,
--			 const union perf_event *event)
--{
--	unsigned int chain_size = event->header.size;
--	chain_size -= (unsigned long)&event->ip.__more_data - (unsigned long)event;
--	return chain->nr * sizeof(u64) <= chain_size;
--}
--
- #define chain_for_each_child(child, parent)	\
- 	list_for_each_entry(child, &parent->children, siblings)
- 
-diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
-index 812d5a0..2b585bc 100644
---- a/tools/perf/util/callchain.h
-+++ b/tools/perf/util/callchain.h
-@@ -109,11 +109,6 @@ int callchain_append(struct callchain_root *root,
- int callchain_merge(struct callchain_cursor *cursor,
- 		    struct callchain_root *dst, struct callchain_root *src);
- 
--struct ip_callchain;
--union perf_event;
--
--bool ip_callchain__valid(struct ip_callchain *chain,
--			 const union perf_event *event);
  /*
-  * Initialize a cursor before adding entries inside, but keep
-  * the previously allocated entries as a cache.
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index da0a216..1d9ae82 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -997,22 +997,6 @@ static int perf_session_deliver_event(struct perf_session *session,
- 	}
+@@ -492,12 +493,12 @@ enum perf_event_type {
+ 	/*
+ 	 * If perf_event_attr.sample_id_all is set then all event types will
+ 	 * have the sample_type selected fields related to where/when
+-	 * (identity) an event took place (TID, TIME, ID, CPU, STREAM_ID)
+-	 * described in PERF_RECORD_SAMPLE below, it will be stashed just after
+-	 * the perf_event_header and the fields already present for the existing
+-	 * fields, i.e. at the end of the payload. That way a newer perf.data
+-	 * file will be supported by older perf tools, with these new optional
+-	 * fields being ignored.
++	 * (identity) an event took place (TID, TIME, ID, STREAM_ID, CPU,
++	 * IDENTIFIER) described in PERF_RECORD_SAMPLE below, it will be stashed
++	 * just after the perf_event_header and the fields already present for
++	 * the existing fields, i.e. at the end of the payload. That way a newer
++	 * perf.data file will be supported by older perf tools, with these new
++	 * optional fields being ignored.
+ 	 *
+ 	 * struct sample_id {
+ 	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
+@@ -505,7 +506,12 @@ enum perf_event_type {
+ 	 * 	{ u64			id;       } && PERF_SAMPLE_ID
+ 	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
+ 	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
++	 *	{ u64			id;	  } && PERF_SAMPLE_IDENTIFIER
+ 	 * } && perf_event_attr::sample_id_all
++	 *
++	 * Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.  The
++	 * advantage of PERF_SAMPLE_IDENTIFIER is that its position is fixed
++	 * relative to header.size.
+ 	 */
+ 
+ 	/*
+@@ -594,6 +600,13 @@ enum perf_event_type {
+ 	 * struct {
+ 	 *	struct perf_event_header	header;
+ 	 *
++	 *	#
++	 *	# Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.
++	 *	# The advantage of PERF_SAMPLE_IDENTIFIER is that its position
++	 *	# is fixed relative to header.
++	 *	#
++	 *
++	 *	{ u64			id;	  } && PERF_SAMPLE_IDENTIFIER
+ 	 *	{ u64			ip;	  } && PERF_SAMPLE_IP
+ 	 *	{ u32			pid, tid; } && PERF_SAMPLE_TID
+ 	 *	{ u64			time;     } && PERF_SAMPLE_TIME
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index e82e700..776e17d 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1213,6 +1213,9 @@ static void perf_event__id_header_size(struct perf_event *event)
+ 	if (sample_type & PERF_SAMPLE_TIME)
+ 		size += sizeof(data->time);
+ 
++	if (sample_type & PERF_SAMPLE_IDENTIFIER)
++		size += sizeof(data->id);
++
+ 	if (sample_type & PERF_SAMPLE_ID)
+ 		size += sizeof(data->id);
+ 
+@@ -4284,7 +4287,7 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
+ 	if (sample_type & PERF_SAMPLE_TIME)
+ 		data->time = perf_clock();
+ 
+-	if (sample_type & PERF_SAMPLE_ID)
++	if (sample_type & (PERF_SAMPLE_ID | PERF_SAMPLE_IDENTIFIER))
+ 		data->id = primary_event_id(event);
+ 
+ 	if (sample_type & PERF_SAMPLE_STREAM_ID)
+@@ -4323,6 +4326,9 @@ static void __perf_event__output_id_sample(struct perf_output_handle *handle,
+ 
+ 	if (sample_type & PERF_SAMPLE_CPU)
+ 		perf_output_put(handle, data->cpu_entry);
++
++	if (sample_type & PERF_SAMPLE_IDENTIFIER)
++		perf_output_put(handle, data->id);
  }
  
--static int perf_session__preprocess_sample(struct perf_session *session,
--					   union perf_event *event, struct perf_sample *sample)
--{
--	if (event->header.type != PERF_RECORD_SAMPLE ||
--	    !sample->callchain)
--		return 0;
--
--	if (!ip_callchain__valid(sample->callchain, event)) {
--		pr_debug("call-chain problem with event, skipping it.\n");
--		++session->stats.nr_invalid_chains;
--		session->stats.total_invalid_chains += sample->period;
--		return -EINVAL;
--	}
--	return 0;
--}
--
- static int perf_session__process_user_event(struct perf_session *session, union perf_event *event,
- 					    struct perf_tool *tool, u64 file_offset)
- {
-@@ -1075,10 +1059,6 @@ static int perf_session__process_event(struct perf_session *session,
- 	if (ret)
- 		return ret;
+ void perf_event__output_id_sample(struct perf_event *event,
+@@ -4436,6 +4442,9 @@ void perf_output_sample(struct perf_output_handle *handle,
  
--	/* Preprocess sample records - precheck callchains */
--	if (perf_session__preprocess_sample(session, event, &sample))
--		return 0;
--
- 	if (tool->ordered_samples) {
- 		ret = perf_session_queue_event(session, event, &sample,
- 					       file_offset);
+ 	perf_output_put(handle, *header);
+ 
++	if (sample_type & PERF_SAMPLE_IDENTIFIER)
++		perf_output_put(handle, data->id);
++
+ 	if (sample_type & PERF_SAMPLE_IP)
+ 		perf_output_put(handle, data->ip);
+ 
 -- 
 1.7.11.7
 
