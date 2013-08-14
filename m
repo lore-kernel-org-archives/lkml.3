@@ -1,86 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759383Ab3HNHaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:30:07 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60703 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757923Ab3HNHaE (ORCPT
+	id S1759420Ab3HNHaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:30:15 -0400
+Received: from ams-iport-3.cisco.com ([144.254.224.146]:30103 "EHLO
+	ams-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759386Ab3HNHaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:30:04 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+9HPeVpF9yEe/Gvz2JeOa+
-Date: Wed, 14 Aug 2013 00:30:01 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <bcousson@baylibre.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH 12/22] ARM: dts: Remove '0x's from OMAP2420 H4 DTS file
-Message-ID: <20130814073000.GW7656@atomide.com>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
- <1374490361-25769-12-git-send-email-lee.jones@linaro.org>
- <20130813154425.GH15278@lee--X1>
+	Wed, 14 Aug 2013 03:30:08 -0400
+X-IronPort-AV: E=Sophos;i="4.89,871,1367971200"; 
+   d="scan'208";a="16646102"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: Re: [PATCH] v4l2-dev: Fix race condition on __video_register_device
+Date: Wed, 14 Aug 2013 09:29:29 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10-0.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Frank =?utf-8?q?Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1376406247-18757-1-git-send-email-ricardo.ribalda@gmail.com>
+In-Reply-To: <1376406247-18757-1-git-send-email-ricardo.ribalda@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130813154425.GH15278@lee--X1>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308140929.29682.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Lee Jones <lee.jones@linaro.org> [130813 08:51]:
-> Tony, Benoit,
-> 
-> Poke
+On Tue 13 August 2013 17:04:06 Ricardo Ribalda Delgado wrote:
+> When 2 devices are registered at the same time, in Part 2 both will get
+> the same minor number, making Part6 crash, because it cannot create a
+> create a device with a duplicated minor:
 
-Looks like Benoit's new email address is bcousson@baylibre.com.
-Probably best for Benoit to pick these to avoid merge conflicts.
+You would expect that such core code would be bug free by now, but this is
+indeed a race condition.
+
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
 Regards,
 
-Tony
- 
-> On Mon, 22 Jul 2013, Lee Jones wrote:
+	Hans
+
 > 
-> > Cc: Benoît Cousson <b-cousson@ti.com>
-> > Cc: Tony Lindgren <tony@atomide.com>
-> > Cc: linux-omap@vger.kernel.org
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  arch/arm/boot/dts/omap2420-h4.dts | 6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/arch/arm/boot/dts/omap2420-h4.dts b/arch/arm/boot/dts/omap2420-h4.dts
-> > index 224c08f..34cdecb 100644
-> > --- a/arch/arm/boot/dts/omap2420-h4.dts
-> > +++ b/arch/arm/boot/dts/omap2420-h4.dts
-> > @@ -50,15 +50,15 @@
-> >  			label = "bootloader";
-> >  			reg = <0 0x20000>;
-> >  		};
-> > -		partition@0x20000 {
-> > +		partition@20000 {
-> >  			label = "params";
-> >  			reg = <0x20000 0x20000>;
-> >  		};
-> > -		partition@0x40000 {
-> > +		partition@40000 {
-> >  			label = "kernel";
-> >  			reg = <0x40000 0x200000>;
-> >  		};
-> > -		partition@0x240000 {
-> > +		partition@240000 {
-> >  			label = "file-system";
-> >  			reg = <0x240000 0x3dc0000>;
-> >  		};
+> [    7.157648] ------------[ cut here ]------------
+> [    7.157666] WARNING: at fs/sysfs/dir.c:530 sysfs_add_one+0xbd/0xe0()
+> [    7.157669] sysfs: cannot create duplicate filename '/dev/char/81:1'
+> [    7.157672] Modules linked in: qtec_xform(+) qt5023_video(+) videobuf2_vmalloc videobuf2_dma_sg videobuf2_memops videobuf2_core gpio_xilinx(+) qtec_white qtec_cmosis(+) qtec_pcie qt5023
+> [    7.157694] CPU: 0 PID: 120 Comm: systemd-udevd Not tainted 3.10.0-qtec-standard #8
+> [    7.157698] Hardware name: QTechnology QT5022/QT5022, BIOS PM_2.1.0.309 X64 05/23/2013
+> [    7.157702]  0000000000000009 ffff8801788358e8 ffffffff8176c487 ffff880178835928
+> [    7.157707]  ffffffff8106f6f0 ffff880175759770 00000000ffffffef ffff880175759930
+> [    7.157712]  ffff8801788359e8 ffff880178bff000 ffff880175759930 ffff880178835988
+> [    7.157718] Call Trace:
+> [    7.157728]  [<ffffffff8176c487>] dump_stack+0x19/0x1b
+> [    7.157735]  [<ffffffff8106f6f0>] warn_slowpath_common+0x70/0xa0
+> [    7.157740]  [<ffffffff8106f7d6>] warn_slowpath_fmt+0x46/0x50
+> [    7.157746]  [<ffffffff81324b35>] ? strlcat+0x65/0x90
+> [    7.157750]  [<ffffffff811d516d>] sysfs_add_one+0xbd/0xe0
+> [    7.157755]  [<ffffffff811d5c6b>] sysfs_do_create_link_sd+0xdb/0x200
+> [    7.157760]  [<ffffffff811d5db1>] sysfs_create_link+0x21/0x40
+> [    7.157765]  [<ffffffff813e277b>] device_add+0x21b/0x6d0
+> [    7.157772]  [<ffffffff813f2985>] ? pm_runtime_init+0xe5/0xf0
+> [    7.157776]  [<ffffffff813e2c4e>] device_register+0x1e/0x30
+> [    7.157782]  [<ffffffff8153e8c3>] __video_register_device+0x313/0x610
+> [    7.157791]  [<ffffffffa00957c5>] qtec_xform_probe+0x465/0x7a4 [qtec_xform]
+> [    7.157797]  [<ffffffff813e7b13>] platform_drv_probe+0x43/0x80
+> [    7.157802]  [<ffffffff813e531a>] ? driver_sysfs_add+0x7a/0xb0
+> [    7.157807]  [<ffffffff813e584b>] driver_probe_device+0x8b/0x3a0
+> [    7.157812]  [<ffffffff813e5c0b>] __driver_attach+0xab/0xb0
+> [    7.157816]  [<ffffffff813e5b60>] ? driver_probe_device+0x3a0/0x3a0
+> [    7.157820]  [<ffffffff813e37fd>] bus_for_each_dev+0x5d/0xa0
+> [    7.157825]  [<ffffffff813e529e>] driver_attach+0x1e/0x20
+> [    7.157829]  [<ffffffff813e4d3e>] bus_add_driver+0x10e/0x280
+> [    7.157833]  [<ffffffffa0099000>] ? 0xffffffffa0098fff
+> [    7.157837]  [<ffffffffa0099000>] ? 0xffffffffa0098fff
+> [    7.157842]  [<ffffffff813e6317>] driver_register+0x77/0x170
+> [    7.157848]  [<ffffffff81151bcc>] ? __vunmap+0x9c/0x110
+> [    7.157852]  [<ffffffffa0099000>] ? 0xffffffffa0098fff
+> [    7.157857]  [<ffffffff813e7236>] platform_driver_register+0x46/0x50
+> [    7.157863]  [<ffffffffa0099010>] qtec_xform_plat_driver_init+0x10/0x12 [qtec_xform]
+> [    7.157869]  [<ffffffff810002ea>] do_one_initcall+0xea/0x1a0
+> [    7.157875]  [<ffffffff810cf1f1>] load_module+0x1a91/0x2630
+> [    7.157880]  [<ffffffff8133bee0>] ? ddebug_proc_show+0xe0/0xe0
+> [    7.157887]  [<ffffffff817760f2>] ? page_fault+0x22/0x30
+> [    7.157892]  [<ffffffff810cfe7a>] SyS_init_module+0xea/0x140
+> [    7.157898]  [<ffffffff8177e5b9>] tracesys+0xd0/0xd5
+> [    7.157902] ---[ end trace 660cc3a65a4bf01b ]---
+> [    7.157939] __video_register_device: device_register failed
 > 
-> -- 
-> Lee Jones
-> Linaro ST-Ericsson Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> ---
+>  drivers/media/v4l2-core/v4l2-dev.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/media/v4l2-core/v4l2-dev.c b/drivers/media/v4l2-core/v4l2-dev.c
+> index 5923c5d..3f75f99 100644
+> --- a/drivers/media/v4l2-core/v4l2-dev.c
+> +++ b/drivers/media/v4l2-core/v4l2-dev.c
+> @@ -873,6 +873,7 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
+>  
+>  	/* Should not happen since we thought this minor was free */
+>  	WARN_ON(video_device[vdev->minor] != NULL);
+> +	video_device[vdev->minor] = vdev;
+>  	vdev->index = get_index(vdev);
+>  	mutex_unlock(&videodev_lock);
+>  
+> @@ -936,9 +937,6 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
+>  #endif
+>  	/* Part 6: Activate this minor. The char device can now be used. */
+>  	set_bit(V4L2_FL_REGISTERED, &vdev->flags);
+> -	mutex_lock(&videodev_lock);
+> -	video_device[vdev->minor] = vdev;
+> -	mutex_unlock(&videodev_lock);
+>  
+>  	return 0;
+>  
+> @@ -946,6 +944,7 @@ cleanup:
+>  	mutex_lock(&videodev_lock);
+>  	if (vdev->cdev)
+>  		cdev_del(vdev->cdev);
+> +	video_device[vdev->minor] = NULL;
+>  	devnode_clear(vdev);
+>  	mutex_unlock(&videodev_lock);
+>  	/* Mark this video device as never having been registered. */
+> 
