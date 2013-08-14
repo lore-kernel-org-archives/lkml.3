@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759591Ab3HNJgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:36:17 -0400
-Received: from 8bytes.org ([85.214.48.195]:50089 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754972Ab3HNJgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:36:15 -0400
-Date: Wed, 14 Aug 2013 11:36:12 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: WARNING: at drivers/iommu/dmar.c:484 warn_invalid_dmar with
- Intel Motherboard
-Message-ID: <20130814093607.GB4491@8bytes.org>
-References: <20130709202406.GA11867@roeck-us.net>
- <CAErSpo6Ma1TnBP-UGGhWFN1rj48y+yTS=VmVw_s30_FWgjfdpg@mail.gmail.com>
- <20130709223106.GA16429@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130709223106.GA16429@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Aug 14 11:36:14 2013
-X-DSPAM-Confidence: 0.9981
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 520b4f8e20861707060788
+	id S1759588Ab3HNJie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:38:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:24754 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759357Ab3HNJic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 05:38:32 -0400
+X-IronPort-AV: E=Sophos;i="4.89,876,1367942400"; 
+   d="scan'208";a="8200291"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        akpm@linux-foundation.org, liwanp@linux.vnet.ibm.com, tj@kernel.org,
+        zhangyanfei@cn.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] Preparation for arranging hotplug memory in ZONE_MOVABLE.
+Date: Wed, 14 Aug 2013 17:37:05 +0800
+Message-Id: <1376473028-29380-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/14 17:36:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/14 17:36:56,
+	Serialize complete at 2013/08/14 17:36:56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 03:31:06PM -0700, Guenter Roeck wrote:
-> On Tue, Jul 09, 2013 at 03:05:39PM -0600, Bjorn Helgaas wrote:
-> > [+cc Joerg, David, iommu list]
-> > 
-> > On Tue, Jul 9, 2013 at 2:24 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > > I started seeing this problem after updating the BIOS trying fix another issue,
-> > > though I may have missed it earlier.
-> > >
-> > > I understand this is a BIOS bug. Would be great if someone can pass this on
-> > > to Intel BIOS engineers.
-> > 
-> > Maybe.  It'd be nice if Linux handled it better, though.
-> > 
-> If anyone has an idea how to do that, I'll be happy to write a patch.
+These three trivial patches are from patch-set "Arrange hotpluggable memory as ZONE_MOVABLE."
+And they have been acked and reviewed by many people.
 
-I doubt that we can do anything meaningful here. The BIOS is broken in a
-way so that we can't use the IOMMU in Linux. We can patch away the
-WARN_ON and make it a sumple FW_BUG message, but the noise a WARN_ON
-makes maybe help getting this issue fixed.
-
-But I may be convinced otherwise, if people think this WARN_ON is not
-worth it.
+Hope they can be merged first. And the rest patches are coming soon.
 
 
-	Joerg
+Tang Chen (3):
+  acpi: Print Hot-Pluggable Field in SRAT.
+  earlycpio.c: Fix the confusing comment of find_cpio_data().
+  acpi: Kill macro INVALID_TABLE().
 
+ arch/x86/mm/srat.c |   11 +++++++----
+ drivers/acpi/osl.c |   36 ++++++++++++++++++++----------------
+ lib/earlycpio.c    |   27 ++++++++++++++-------------
+ 3 files changed, 41 insertions(+), 33 deletions(-)
 
