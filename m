@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932703Ab3HNKv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:51:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34531 "EHLO
+	id S932638Ab3HNKv5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:51:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34544 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932440Ab3HNKhu (ORCPT
+	with ESMTP id S932377Ab3HNKhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:37:50 -0400
+	Wed, 14 Aug 2013 06:37:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 32/75] powerpc/windfarm: Fix noisy slots-fan on Xserve (rm31)
-Date: Wed, 14 Aug 2013 11:36:21 +0100
-Message-Id: <1376476624-10011-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 37/75] ALSA: compress: fix the return value for SNDRV_COMPRESS_VERSION
+Date: Wed, 14 Aug 2013 11:36:26 +0100
+Message-Id: <1376476624-10011-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
+From: Vinod Koul <vinod.koul@intel.com>
 
-commit fe956a1d4081ce1a959f87df397a15e252201f10 upstream.
+commit a8d30608eaed6cc759b8e2e8a8bbbb42591f797f upstream.
 
-slots-fan on G5 Xserve is always running at full speed with windfarm_rm31
-driver, resulting in a very high acoustic noise level. It seems the fan
-parameters are incorrect, and have been copied from the Drive Bay fan
-(RPM, not present on rm31) of the legacy therm_pm72 driver. This patch
-changes the parameters to match the Slots fan (PWM) of therm_pm72. With
-the patch, slots-fan speed drops from 99% to 19% during normal use,
-and slots-temp settle to ~42'C.
+the return value of SNDRV_COMPRESS_VERSION always return default -ENOTTY as the
+return value was never updated for this call
+assign return value from put_user()
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Haynes <hgeorge@codeaurora.org>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/macintosh/windfarm_rm31.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ sound/core/compress_offload.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/macintosh/windfarm_rm31.c b/drivers/macintosh/windfarm_rm31.c
-index 3eca6d4..e13d9fd 100644
---- a/drivers/macintosh/windfarm_rm31.c
-+++ b/drivers/macintosh/windfarm_rm31.c
-@@ -439,15 +439,15 @@ static void backside_setup_pid(void)
- 
- /* Slots fan */
- static const struct wf_pid_param slots_param = {
--	.interval	= 5,
--	.history_len	= 2,
--	.gd		= 30 << 20,
--	.gp		= 5 << 20,
--	.gr		= 0,
--	.itarget	= 40 << 16,
--	.additive	= 1,
--	.min		= 300,
--	.max		= 4000,
-+	.interval	= 1,
-+	.history_len	= 20,
-+	.gd		= 0,
-+	.gp		= 0,
-+	.gr		= 0x00100000,
-+	.itarget	= 3200000,
-+	.additive	= 0,
-+	.min		= 20,
-+	.max		= 100,
- };
- 
- static void slots_fan_tick(void)
+diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
+index 54b422e..956c75d 100644
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -584,7 +584,7 @@ static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+ 	mutex_lock(&stream->device->lock);
+ 	switch (_IOC_NR(cmd)) {
+ 	case _IOC_NR(SNDRV_COMPRESS_IOCTL_VERSION):
+-		put_user(SNDRV_COMPRESS_VERSION,
++		retval = put_user(SNDRV_COMPRESS_VERSION,
+ 				(int __user *)arg) ? -EFAULT : 0;
+ 		break;
+ 	case _IOC_NR(SNDRV_COMPRESS_GET_CAPS):
 -- 
 1.8.3.2
 
