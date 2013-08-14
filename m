@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933539Ab3HNXNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:13:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39017 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933329Ab3HNXNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:13:44 -0400
+	id S933579Ab3HNXNy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 19:13:54 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36404 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933329Ab3HNXNs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 19:13:48 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>,
@@ -15,78 +16,175 @@ To: Herbert Xu <herbert@gondor.hengli.com.au>,
 CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: [PATCH 00/10] crypto: omap-aes: DMA and PIO mode improvements
-Date: Wed, 14 Aug 2013 18:12:39 -0500
-Message-ID: <1376521969-16807-1-git-send-email-joelf@ti.com>
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH 06/10] crypto: omap-aes: Remove previously used intermediate buffers
+Date: Wed, 14 Aug 2013 18:12:45 -0500
+Message-ID: <1376521969-16807-7-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376521969-16807-1-git-send-email-joelf@ti.com>
+References: <1376521969-16807-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series is a rewrite of the DMA portion of omap-aes driver
-and also adds support for PIO mode. Both these modes, give better
-performance than before.
+Intermdiate buffers were allocated, mapped and used for DMA.
+These are no longer required as we use the SGs from crypto layer
+directly in previous commits in the series. Also along with it,
+remove the logic for copying SGs etc as they are no longer used,
+and all the associated variables in omap_aes_device.
 
-Earlier, only a single SG was used for DMA purpose, and the SG-list
-passed from the crypto layer was being copied and DMA'd one entry at
-a time. This turns out to be quite inefficient, so we replace it with
-much simpler code that directly passes the SG-list from crypto to the
-DMA layer.
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ drivers/crypto/omap-aes.c |   90 ---------------------------------------------
+ 1 file changed, 90 deletions(-)
 
-We also add PIO mode support to the driver, and switch to PIO mode
-whenever the DMA channel allocation is not available. This is only for
-OMAP4 platform will work on any platform on which IRQ information is
-populated.
-
-Tests performed on am33xx and omap4 SoCs , notice the 50% perf improvement
-for large 8K blocks:
-
-Sample run on am33xx (beaglebone):
-With DMA rewrite:
-[   26.410052] test 0 (128 bit key, 16 byte blocks): 4318 operations in 1 seconds (69088 bytes)
-[   27.414314] test 1 (128 bit key, 64 byte blocks): 4360 operations in 1 seconds (279040 bytes)
-[   28.414406] test 2 (128 bit key, 256 byte blocks): 3609 operations in 1 seconds (923904 bytes)
-[   29.414410] test 3 (128 bit key, 1024 byte blocks): 3418 operations in 1 seconds (3500032 bytes)
-[   30.414510] test 4 (128 bit key, 8192 byte blocks): 1766 operations in 1 seconds (14467072 bytes)
-
-Without DMA rewrite:
-[   31.920519] test 0 (128 bit key, 16 byte blocks): 4417 operations in 1 seconds (70672 bytes)
-[   32.925997] test 1 (128 bit key, 64 byte blocks): 4221 operations in 1 seconds (270144 bytes)
-[   33.926194] test 2 (128 bit key, 256 byte blocks): 3528 operations in 1 seconds (903168 bytes)
-[   34.926225] test 3 (128 bit key, 1024 byte blocks): 3281 operations in 1 seconds (3359744 bytes)
-[   35.926385] test 4 (128 bit key, 8192 byte blocks): 1460 operations in 1 seconds (11960320 bytes)
-
-With PIO mode, note the tremndous boost in performance for small blocks there:
-[   27.294905] test 0 (128 bit key, 16 byte blocks): 20585 operations in 1 seconds (329360 bytes)
-[   28.302282] test 1 (128 bit key, 64 byte blocks): 8106 operations in 1 seconds (518784 bytes)
-[   29.302374] test 2 (128 bit key, 256 byte blocks): 2359 operations in 1 seconds (603904 bytes)
-[   30.302575] test 3 (128 bit key, 1024 byte blocks): 605 operations in 1 seconds (619520 bytes)
-[   31.303781] test 4 (128 bit key, 8192 byte blocks): 79 operations in 1 seconds (647168 bytes)
-
-Future work in this direction would be to dynamically change between
-PIO/DMA mode based on the block size.
-
-Joel Fernandes (10):
-  crypto: scatterwalk:  Add support for calculating number of SG
-    elements
-  crypto: omap-aes: Add useful debug macros
-  crypto: omap-aes: Populate number of SG elements
-  crypto: omap-aes: Simplify DMA usage by using direct SGs
-  crypto: omap-aes: Sync SG before DMA operation
-  crypto: omap-aes: Remove previously used intermediate buffers
-  crypto: omap-aes: Add IRQ info and helper macros
-  crypto: omap-aes: PIO mode: Add IRQ handler and walk SGs
-  crypto: omap-aes: PIO mode: platform data for OMAP4 and trigger it
-  crypto: omap-aes: Switch to PIO mode in probe function
-
- crypto/scatterwalk.c         |   22 +++
- drivers/crypto/omap-aes.c    |  400 ++++++++++++++++++++----------------------
- include/crypto/scatterwalk.h |    2 +
- 3 files changed, 217 insertions(+), 207 deletions(-)
-
+diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+index df2f867..71da52b 100644
+--- a/drivers/crypto/omap-aes.c
++++ b/drivers/crypto/omap-aes.c
+@@ -156,25 +156,13 @@ struct omap_aes_dev {
+ 	struct ablkcipher_request	*req;
+ 	size_t				total;
+ 	struct scatterlist		*in_sg;
+-	struct scatterlist		in_sgl;
+-	size_t				in_offset;
+ 	struct scatterlist		*out_sg;
+-	struct scatterlist		out_sgl;
+-	size_t				out_offset;
+-
+-	size_t			buflen;
+-	void			*buf_in;
+-	size_t			dma_size;
+ 	int			dma_in;
+ 	struct dma_chan		*dma_lch_in;
+-	dma_addr_t		dma_addr_in;
+-	void			*buf_out;
+ 	int			dma_out;
+ 	struct dma_chan		*dma_lch_out;
+ 	int			in_sg_len;
+ 	int			out_sg_len;
+-	dma_addr_t		dma_addr_out;
+-
+ 	const struct omap_aes_pdata	*pdata;
+ };
+ 
+@@ -362,33 +350,6 @@ static int omap_aes_dma_init(struct omap_aes_dev *dd)
+ 	dd->dma_lch_out = NULL;
+ 	dd->dma_lch_in = NULL;
+ 
+-	dd->buf_in = (void *)__get_free_pages(GFP_KERNEL, OMAP_AES_CACHE_SIZE);
+-	dd->buf_out = (void *)__get_free_pages(GFP_KERNEL, OMAP_AES_CACHE_SIZE);
+-	dd->buflen = PAGE_SIZE << OMAP_AES_CACHE_SIZE;
+-	dd->buflen &= ~(AES_BLOCK_SIZE - 1);
+-
+-	if (!dd->buf_in || !dd->buf_out) {
+-		dev_err(dd->dev, "unable to alloc pages.\n");
+-		goto err_alloc;
+-	}
+-
+-	/* MAP here */
+-	dd->dma_addr_in = dma_map_single(dd->dev, dd->buf_in, dd->buflen,
+-					 DMA_TO_DEVICE);
+-	if (dma_mapping_error(dd->dev, dd->dma_addr_in)) {
+-		dev_err(dd->dev, "dma %d bytes error\n", dd->buflen);
+-		err = -EINVAL;
+-		goto err_map_in;
+-	}
+-
+-	dd->dma_addr_out = dma_map_single(dd->dev, dd->buf_out, dd->buflen,
+-					  DMA_FROM_DEVICE);
+-	if (dma_mapping_error(dd->dev, dd->dma_addr_out)) {
+-		dev_err(dd->dev, "dma %d bytes error\n", dd->buflen);
+-		err = -EINVAL;
+-		goto err_map_out;
+-	}
+-
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
+ 
+@@ -415,14 +376,6 @@ static int omap_aes_dma_init(struct omap_aes_dev *dd)
+ err_dma_out:
+ 	dma_release_channel(dd->dma_lch_in);
+ err_dma_in:
+-	dma_unmap_single(dd->dev, dd->dma_addr_out, dd->buflen,
+-			 DMA_FROM_DEVICE);
+-err_map_out:
+-	dma_unmap_single(dd->dev, dd->dma_addr_in, dd->buflen, DMA_TO_DEVICE);
+-err_map_in:
+-	free_pages((unsigned long)dd->buf_out, OMAP_AES_CACHE_SIZE);
+-	free_pages((unsigned long)dd->buf_in, OMAP_AES_CACHE_SIZE);
+-err_alloc:
+ 	if (err)
+ 		pr_err("error: %d\n", err);
+ 	return err;
+@@ -432,11 +385,6 @@ static void omap_aes_dma_cleanup(struct omap_aes_dev *dd)
+ {
+ 	dma_release_channel(dd->dma_lch_out);
+ 	dma_release_channel(dd->dma_lch_in);
+-	dma_unmap_single(dd->dev, dd->dma_addr_out, dd->buflen,
+-			 DMA_FROM_DEVICE);
+-	dma_unmap_single(dd->dev, dd->dma_addr_in, dd->buflen, DMA_TO_DEVICE);
+-	free_pages((unsigned long)dd->buf_out, OMAP_AES_CACHE_SIZE);
+-	free_pages((unsigned long)dd->buf_in, OMAP_AES_CACHE_SIZE);
+ }
+ 
+ static void sg_copy_buf(void *buf, struct scatterlist *sg,
+@@ -453,42 +401,6 @@ static void sg_copy_buf(void *buf, struct scatterlist *sg,
+ 	scatterwalk_done(&walk, out, 0);
+ }
+ 
+-static int sg_copy(struct scatterlist **sg, size_t *offset, void *buf,
+-		   size_t buflen, size_t total, int out)
+-{
+-	unsigned int count, off = 0;
+-
+-	while (buflen && total) {
+-		count = min((*sg)->length - *offset, total);
+-		count = min(count, buflen);
+-
+-		if (!count)
+-			return off;
+-
+-		/*
+-		 * buflen and total are AES_BLOCK_SIZE size aligned,
+-		 * so count should be also aligned
+-		 */
+-
+-		sg_copy_buf(buf + off, *sg, *offset, count, out);
+-
+-		off += count;
+-		buflen -= count;
+-		*offset += count;
+-		total -= count;
+-
+-		if (*offset == (*sg)->length) {
+-			*sg = sg_next(*sg);
+-			if (*sg)
+-				*offset = 0;
+-			else
+-				total = 0;
+-		}
+-	}
+-
+-	return off;
+-}
+-
+ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+ 		struct scatterlist *in_sg, struct scatterlist *out_sg,
+ 		int in_sg_len, int out_sg_len)
+@@ -653,9 +565,7 @@ static int omap_aes_handle_queue(struct omap_aes_dev *dd,
+ 	/* assign new request to device */
+ 	dd->req = req;
+ 	dd->total = req->nbytes;
+-	dd->in_offset = 0;
+ 	dd->in_sg = req->src;
+-	dd->out_offset = 0;
+ 	dd->out_sg = req->dst;
+ 
+ 	dd->in_sg_len = scatterwalk_bytes_sglen(dd->in_sg, dd->total);
 -- 
 1.7.9.5
 
