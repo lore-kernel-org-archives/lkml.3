@@ -1,73 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933294Ab3HNVWd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 17:22:33 -0400
-Received: from jenson.atom.hu ([62.112.193.66]:49536 "EHLO jenson.atom.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933191Ab3HNVWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 17:22:32 -0400
-From: Gergely Risko <gergely@risko.hu>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH] mm: memcontrol: fix handling of swapaccount parameter
-References: <1376486495-21457-1-git-send-email-gergely@risko.hu>
-	<20130814183604.GE24033@dhcp22.suse.cz>
-	<20130814184956.GF24033@dhcp22.suse.cz>
-Date: Wed, 14 Aug 2013 23:22:23 +0200
-In-Reply-To: <20130814184956.GF24033@dhcp22.suse.cz> (Michal Hocko's message
-	of "Wed, 14 Aug 2013 20:49:56 +0200")
-Message-ID: <87ioz855o0.fsf@gergely.risko.hu>
-User-Agent: GNU Emacs with Gnus
+	id S933313Ab3HNVWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 17:22:41 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:36276 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933298Ab3HNVWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 17:22:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130808200943.2932.42781.stgit@bling.home>
+References: <20130808200444.2932.17381.stgit@bling.home> <20130808200943.2932.42781.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 14 Aug 2013 15:22:17 -0600
+Message-ID: <CAErSpo4rvankxEA-wQ-yGg2MRVtS49dKctEGdn08GVFt8PdjeQ@mail.gmail.com>
+Subject: Re: [PATCH v5 4/9] pci: Add slot reset option to pci_dev_reset
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        Don Dutile <ddutile@redhat.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Aug 2013 20:49:56 +0200, Michal Hocko <mhocko@suse.cz> writes:
-
-> On Wed 14-08-13 20:36:04, Michal Hocko wrote:
->> On Wed 14-08-13 15:21:35, Gergely Risko wrote:
->> > Fixed swap accounting option parsing to enable if called without argument.
->> 
->> We used to have [no]swapaccount but that one has been removed by a2c8990a
->> (memsw: remove noswapaccount kernel parameter) so I do not think that
->> swapaccount without any given value makes much sense these days.
+On Thu, Aug 8, 2013 at 2:09 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> If the hotplug controller provides a way to reset a slot, use that
+> before a direct parent bus reset.  Like the bus reset option, this is
+> only available when a single pci_dev occupies the slot.
 >
-> Now that I am reading your changelog again it says this is a fix. Have
-> you experienced any troubles because of the parameter semantic change?
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  drivers/pci/pci.c |   34 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index d468608..9407aab 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/device.h>
+>  #include <linux/pm_runtime.h>
+> +#include <linux/pci_hotplug.h>
+>  #include <asm-generic/pci-bridge.h>
+>  #include <asm/setup.h>
+>  #include "pci.h"
+> @@ -3256,6 +3257,35 @@ static int pci_parent_bus_reset(struct pci_dev *dev, int probe)
+>         return 0;
+>  }
+>
+> +static int pci_reset_hotplug_slot(struct hotplug_slot *hotplug, int probe)
+> +{
+> +       int rc = -ENOTTY;
+> +
+> +       if (!hotplug || !try_module_get(hotplug->ops->owner))
+> +               return rc;
+> +
+> +       if (hotplug->ops->reset_slot)
+> +               rc = hotplug->ops->reset_slot(hotplug, probe);
+> +
+> +       module_put(hotplug->ops->owner);
+> +
+> +       return rc;
+> +}
+> +
+> +static int pci_dev_reset_slot_function(struct pci_dev *dev, int probe)
+> +{
+> +       struct pci_dev *pdev;
+> +
+> +       if (dev->subordinate || !dev->slot)
+> +               return -ENOTTY;
+> +
+> +       list_for_each_entry(pdev, &dev->bus->devices, bus_list)
+> +               if (pdev != dev && pdev->slot == dev->slot)
+> +                       return -ENOTTY;
+> +
+> +       return pci_reset_hotplug_slot(dev->slot->hotplug, probe);
 
-Yeah, I experienced trouble, I was new to all of this containers +
-cgroups + namespaces thingies and while trying out stuff it was totally
-impossible for me to enable swap accounting and I didn't understand why.
+I don't think this is hotplug-safe.  It looks like pci_bus_sem might
+be the right semaphore to hold while verifying that we won't reset any
+unintended devices.  But I think most users of the bus->devices list
+are unprotected, so there's no point in trying to fix just this one.
 
-In Debian swap accounting is off by default, even when you
-cgroup_enable=memory.  So you have to explicitly enable swapaccounting.
-
-I've found the following documentation snippets all pointing to enable
-swap accounting by just simply adding "swapaccount" to the kernel
-command line.  They all state that "swapaccount" is enough, no need for
-"swapaccount=1" (actually some of them don't even mention =1 at all):
-  - make menuconfig documentation for swap accounting,
-  - /usr/share/doc/lxc/README.Debian from the lxc package,
-  - Documentation/kernel-parameters.txt:
-	swapaccount[=0|1]
-			[KNL] Enable accounting of swap in memory resource
-			controller if no parameter or 1 is given or disable
-			it if 0 is given (See Documentation/cgroups/memory.txt),
-  - the comment in the source code just above the line ("consider enabled
-    if no parameter or 1 is given").
-
-And of course it's a trivial thing for the user to try swapaccount=1
-when simply swapaccount doesn't work, but it's still a very bad
-experience, because the documentation seems to be clear and every
-command line change requires a reboot.
-
-It's OK for me if we fix the documentation instead of the code.  But
-notice that the code is trivial to fix and the documentation has already
-spread out to various debian packages, internet forums, bug reports,
-etc.  So it seems to be less hassle to actually implement the
-documentation than to document the code.
-
-Gergely
+> +}
+> +
+>  static int __pci_dev_reset(struct pci_dev *dev, int probe)
+>  {
+>         int rc;
+> @@ -3278,6 +3308,10 @@ static int __pci_dev_reset(struct pci_dev *dev, int probe)
+>         if (rc != -ENOTTY)
+>                 goto done;
+>
+> +       rc = pci_dev_reset_slot_function(dev, probe);
+> +       if (rc != -ENOTTY)
+> +               goto done;
+> +
+>         rc = pci_parent_bus_reset(dev, probe);
+>  done:
+>         return rc;
+>
