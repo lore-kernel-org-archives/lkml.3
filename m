@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759516Ab3HNJaO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:30:14 -0400
-Received: from 8bytes.org ([85.214.48.195]:50071 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507Ab3HNJaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:30:12 -0400
-Date: Wed, 14 Aug 2013 11:30:01 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Grant Grundler <grundler@chromium.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu/exynos: remove dead code (set_prefbuf)
-Message-ID: <20130814093000.GA4491@8bytes.org>
-References: <1372781307-7906-1-git-send-email-grundler@chromium.org>
+	id S1759461Ab3HNJcF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:32:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49372 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab3HNJcD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 05:32:03 -0400
+Message-ID: <520B4E71.9000907@ti.com>
+Date: Wed, 14 Aug 2013 12:31:29 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372781307-7906-1-git-send-email-grundler@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Aug 14 11:30:10 2013
-X-DSPAM-Confidence: 0.9992
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 520b4e2220862027911972
+To: <balbi@ti.com>
+CC: Benoit Cousson <bcousson@baylibre.com>, <p.zabel@pengutronix.de>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/6] usb: phy-nop: Use RESET Controller for managing the
+ reset line
+References: <1374137590-17865-1-git-send-email-rogerq@ti.com> <1374137590-17865-2-git-send-email-rogerq@ti.com> <20130725172855.GJ25415@radagast>
+In-Reply-To: <20130725172855.GJ25415@radagast>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 09:08:27AM -0700, Grant Grundler wrote:
-> exynos_sysmmu_set_prefbuf() is not called any where.
+Hi Felipe,
+
+On 07/25/2013 08:28 PM, Felipe Balbi wrote:
+> On Thu, Jul 18, 2013 at 11:53:05AM +0300, Roger Quadros wrote:
+>> Till now we were modelling the RESET line as a voltage regulator and
+>> using the regulator framework to manage it.
+>>
+>> [1] introduces a GPIO based reset controller driver. We use that
+>> to manage the PHY reset line, at least for DT boots. For legacy boots,
+>> will still need to use the regulator framework for reset lines.
+>>
+>> [1] - http://thread.gmane.org/gmane.linux.drivers.devicetree/41348
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
 > 
-> Signed-off-by: Grant Grundler <grundler@chromium.org>
-> ---
->  drivers/iommu/exynos-iommu.c | 44 --------------------------------------------
->  1 file changed, 44 deletions(-)
+> that's not in mainline yet, right ? Is it guaranteed that it will hit
+> v3.12 merge window ?
+> 
 
-Applied to arm/exynos, thanks.
+Looks like the gpio reset driver might not make it into 3.12.
 
+Now we have two options. 
+
+1) leave the nop-phy driver as it is
+2) get rid of using regulator framework for reset line and handle the reset
+gpio directly in the nop-phy driver.
+
+Is it already too late to get (2) into 3.12 if I send the patches in a day or 2?
+
+cheers,
+-roger
 
