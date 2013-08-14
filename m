@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933265Ab3HNWPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:15:12 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:48710 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760170Ab3HNWPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:15:08 -0400
-Date: Wed, 14 Aug 2013 17:15:06 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Travis <travis@sgi.com>, Nathan Zimmer <nzimmer@sgi.com>,
-        Peter Anvin <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Robin Holt <holt@sgi.com>,
-        Rob Landley <rob@landley.net>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
-	embedded in the buddy allocator
-Message-ID: <20130814221505.GA147490@asylum.americas.sgi.com>
-References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com> <1376344480-156708-1-git-send-email-nzimmer@sgi.com> <CA+55aFwTQLexJkf67P0b7Z7cw8fePjdDSdA4SOkM+Jf+kBPYEA@mail.gmail.com> <520A6DFC.1070201@sgi.com> <CA+55aFwRHdQ_f6ryUU1yWkW1Qz8cG958jLZuyhd_YdOq4-rfRA@mail.gmail.com> <20130814110556.GH10849@gmail.com>
+	id S933324Ab3HNWPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:15:23 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50473 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933273Ab3HNWPT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 18:15:19 -0400
+Message-ID: <520C0175.4050003@codeaurora.org>
+Date: Wed, 14 Aug 2013 15:15:17 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130814110556.GH10849@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Joe Perches <joe@perches.com>
+CC: behanw@converseincode.com, linux@arm.linux.org.uk, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, charlebm@gmail.com,
+        mingo@redhat.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: LLVMLinux: Change "extern inline" to "gnu_inline"
+ in ARM ftrace.h
+References: <1376516261-2071-1-git-send-email-behanw@converseincode.com> <1376516261-2071-2-git-send-email-behanw@converseincode.com> <1376517370.1949.115.camel@joe-AO722>
+In-Reply-To: <1376517370.1949.115.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 01:05:56PM +0200, Ingo Molnar wrote:
-> 
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> > [...]
-> > 
-> > Ok, so I don't know all the issues, and in many ways I don't even really 
-> > care. You could do it other ways, I don't think this is a big deal. The 
-> > part I hate is the runtime hook into the core MM page allocation code, 
-> > so I'm just throwing out any random thing that comes to my mind that 
-> > could be used to avoid that part.
-> 
-> So, my hope was that it's possible to have a single, simple, zero-cost 
-> runtime check [zero cost for already initialized pages], because it can be 
-> merged into already existing page flag mask checks present here and 
-> executed for every freshly allocated page:
-> 
-> static inline int check_new_page(struct page *page)
-> {
->         if (unlikely(page_mapcount(page) |
->                 (page->mapping != NULL)  |
->                 (atomic_read(&page->_count) != 0)  |
->                 (page->flags & PAGE_FLAGS_CHECK_AT_PREP) |
->                 (mem_cgroup_bad_page_check(page)))) {
->                 bad_page(page);
->                 return 1;
->         }
->         return 0;
-> }
-> 
-> We already run this for every new page allocated and the initialization 
-> check could hide in PAGE_FLAGS_CHECK_AT_PREP in a zero-cost fashion.
-> 
-> I'd not do any of the ensure_page_is_initialized() or 
-> __expand_page_initialization() complications in this patch-set - each page 
-> head represents itself and gets iterated when check_new_page() is done.
-> 
-> During regular bootup we'd initialize like before, except we don't set up 
-> the page heads but memset() them to zero. With each page head 32 bytes 
-> this would mean 8 GB of page head memory to clear per 1 TB - with 16 TB 
-> that's 128 GB to clear - that ought to be possible to do rather quickly, 
-> perhaps with some smart SMP cross-call approach that makes sure that each 
-> memset is done in a node-local fashion. [*]
-> 
-> Such an approach should IMO be far smaller and less invasive than the 
-> patches presented so far: it should be below 100 lines or so.
-> 
-> I don't know why there's such a big difference between the theory I 
-> outlined and the invasive patch-set implemented so far in practice, 
-> perhaps I'm missing some complication. I was trying to probe that 
-> difference, before giving up on the idea and punting back to the async 
-> hotplug-ish approach which would obviously work well too.
-> 
+On 08/14/13 14:56, Joe Perches wrote:
+> On Wed, 2013-08-14 at 17:37 -0400, behanw@converseincode.com wrote:
+>> From: Mark Charlebois <charlebm@gmail.com>
+>>
+>> With compilers which follow the C99 standard (like modern versions of gcc and
+>> clang), "extern inline" does the wrong thing (emits code for an externally
+>> linkable version of the inline function). In this case using the gnu_inline
+>> attribute makes inline do the right thing on gcc and on clang.
+> Why not convert these to static inline?
 
-The reason, which I failed to mention, is once we pull off a page the lru in
-either __rmqueue_fallback or __rmqueue_smallest the first thing we do with it
-is expand() or sometimes move_freepages().  These then trip over some BUG_ON and
-VM_BUG_ON.
-Those BUG_ONs are what keep causing me to delve into the ensure/expand foolishness.
+In this case we should probably just delete the entire thing and make it
+unconditional in the header. It looks like it compiles with gcc still.
 
-Nate
+>
+>> diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
+> []
+>> @@ -45,7 +45,8 @@ void *return_address(unsigned int);
+>>  
+>>  #else
+>>  
+>> -extern inline void *return_address(unsigned int level)
+>> +extern inline __attribute__((gnu_inline))
+>> +void *return_address(unsigned int level)
+>>  {
+>>  	return NULL;
+>>  }
+>
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
