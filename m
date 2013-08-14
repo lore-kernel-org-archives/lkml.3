@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3HNGqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 02:46:49 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:34492 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab3HNGqr (ORCPT
+	id S1753543Ab3HNGrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 02:47:22 -0400
+Received: from mail.topmatch.bg ([94.155.49.84]:54089 "EHLO
+	client-94-155-49-84.ip.daticum.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752672Ab3HNGrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 02:46:47 -0400
-Message-ID: <520B27C1.4090803@ahsoftware.de>
-Date: Wed, 14 Aug 2013 08:46:25 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 14 Aug 2013 02:47:20 -0400
+X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Aug 2013 02:47:19 EDT
+X-AuthUser: martin@rpasearch.com
+Message-ID: <520B260E.5060307@odesys.com>
+Date: Tue, 13 Aug 2013 23:39:10 -0700
+From: Martin Stoilov <mstoilov@odesys.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-CC: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: Re: [PATCH 1/3] HID: Use existing parser for pre-scanning the report
- descriptors
-References: <1376405889-12378-1-git-send-email-benjamin.tissoires@redhat.com> <1376405889-12378-2-git-send-email-benjamin.tissoires@redhat.com> <520A7CDF.3070808@ahsoftware.de> <CAN+gG=EkGToAGatxqywBatJOjcWUF6=u1SZ86vVmUPnujJMJvw@mail.gmail.com>
-In-Reply-To: <CAN+gG=EkGToAGatxqywBatJOjcWUF6=u1SZ86vVmUPnujJMJvw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: linux-kernel@vger.kernel.org
+Subject: Watchdog detected hard LOCKUP on cpu
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.08.2013 21:15, schrieb Benjamin Tissoires:
-> On Tue, Aug 13, 2013 at 8:37 PM, Alexander Holler <holler@ahsoftware.de> wrote:
+Encountered this while building custom embedded distribution with the yocto project build system.
+This has never happened before for me, but google search showed quite a few similar reports.
 
->>
->> Another problem is that I don't have any commercial sensor hub and I'm
->> therefor not a very relvant as tester (I've implemented the firmware for my
->> HID (sensor hub) device too). Therefor I've added Srinivas Pandruvada to cc,
->> because he's the only one I know who has HID sensor hubs.
->
-> It is not a problem if you don't have a commercial sensor hub :)
-> Thanks for adding Srinivas in CC.
-
-The problem is that this invalidates me as a tester because everything I 
-can test is something untested. As I've written both ends of the pipe, I 
-could have understood something totally wrong but as I've implemented 
-both sides (the device- and the kernel-part) it still might work without 
-problems. Therefor I currently have to bother Srinivas whenever I do 
-changes in the kernel in regard to hid-sensor-hub. ;)
-
->>
->> And, as said, I've implemented the other side here too, therefor I've added
->> the descriptor I'm using below.
->>
->
-> Thanks, this will help me to test against your report descriptors.
-> Can I also ask you to send me some hid-recorder[1] traces of your
-> sensor? With hid-replay, I can then re-inject them in the hid
-> subsystem, and then I include the results in a regression test suite.
-
-Unfortunately hid-record doesn't list my device because it doesn't show 
-up as an hidraw-device.
-
-But maybe you have an Arduino Leonardo or a clone. If so you can get the 
-description and firmware here:
-
-http://ahsoftware.de/dcf77-hid-usb-rtc/
-
-Regards,
-
-Alexander Holler
-
+Aug 13 15:42:12 quadpc kernel: [263676.682558] ------------[ cut here ]------------
+Aug 13 15:42:12 quadpc kernel: [263676.682565] WARNING: at /build/buildd/linux-3.5.0/kernel/watchdog.c:242 watchdog_overflow_callback+0x9a/0xc0()
+Aug 13 15:42:12 quadpc kernel: [263676.682566] Hardware name: System Product Name
+Aug 13 15:42:12 quadpc kernel: [263676.682567] Watchdog detected hard LOCKUP on cpu 2
+Aug 13 15:42:12 quadpc kernel: [263676.682568] Modules linked in: vmnet(O) parport_pc vsock(O) vmci(O) vmmon(O) rfcomm bnep bluetooth ppdev nfsd nfs lockd fscache auth_rpcgss nfs_acl sunrpc snd_hda_codec_hdmi nvidia(PO) coretemp kvm_intel kvm snd_hda_codec_realtek ghash_clmulni_intel aesni_intel cryptd aes_x86_64 snd_hda_intel snd_hda_codec snd_usb_audio eeepc_wmi asus_wmi snd_usbmidi_lib sparse_keymap snd_seq_midi snd_seq_midi_event snd_rawmidi snd_hwdep snd_pcm snd_seq pl2303 usbserial snd_timer microcode snd_seq_device psmouse snd serio_raw joydev soundcore video mac_hid snd_page_alloc wmi lpc_ich mei lp parport hid_generic usbhid hid 3w_sas firewire_ohci firewire_core crc_itu_t e1000e usb_storage [last unloaded: parport_pc]
+Aug 13 15:42:12 quadpc kernel: [263676.682602] Pid: 10516, comm: flush-8:32 Tainted: P           O 3.5.0-37-generic #58-Ubuntu
+Aug 13 15:42:12 quadpc kernel: [263676.682603] Call Trace:
+Aug 13 15:42:12 quadpc kernel: [263676.682604]  <NMI>  [<ffffffff81051bdf>] warn_slowpath_common+0x7f/0xc0
+Aug 13 15:42:12 quadpc kernel: [263676.682611]  [<ffffffff81051cd6>] warn_slowpath_fmt+0x46/0x50
+Aug 13 15:42:12 quadpc kernel: [263676.682613]  [<ffffffff810de930>] ? touch_nmi_watchdog+0x80/0x80
+Aug 13 15:42:12 quadpc kernel: [263676.682615]  [<ffffffff810de9ca>] watchdog_overflow_callback+0x9a/0xc0
+Aug 13 15:42:12 quadpc kernel: [263676.682619]  [<ffffffff8111af9d>] __perf_event_overflow+0x9d/0x230
+Aug 13 15:42:12 quadpc kernel: [263676.682623]  [<ffffffff81024067>] ? x86_perf_event_set_period+0xd7/0x160
+Aug 13 15:42:12 quadpc kernel: [263676.682625]  [<ffffffff8111bab4>] perf_event_overflow+0x14/0x20
+Aug 13 15:42:12 quadpc kernel: [263676.682627]  [<ffffffff81029473>] intel_pmu_handle_irq+0x193/0x310
+Aug 13 15:42:12 quadpc kernel: [263676.682630]  [<ffffffff81684add>] perf_event_nmi_handler+0x1d/0x20
+Aug 13 15:42:12 quadpc kernel: [263676.682632]  [<ffffffff81684289>] nmi_handle.isra.0+0x59/0x80
+Aug 13 15:42:12 quadpc kernel: [263676.682634]  [<ffffffff81684439>] do_nmi+0x189/0x360
+Aug 13 15:42:12 quadpc kernel: [263676.682635]  [<ffffffff816838bc>] end_repeat_nmi+0x1a/0x1e
+Aug 13 15:42:12 quadpc kernel: [263676.682638]  [<ffffffff8103f995>] ? __ticket_spin_lock+0x25/0x30
+Aug 13 15:42:12 quadpc kernel: [263676.682639]  [<ffffffff8103f995>] ? __ticket_spin_lock+0x25/0x30
+Aug 13 15:42:12 quadpc kernel: [263676.682641]  [<ffffffff8103f995>] ? __ticket_spin_lock+0x25/0x30
+Aug 13 15:42:12 quadpc kernel: [263676.682642]  <<EOE>>  [<ffffffff8103fa29>] default_spin_lock_flags+0x9/0x10
+Aug 13 15:42:12 quadpc kernel: [263676.682646]  [<ffffffff8168311e>] _raw_spin_lock_irqsave+0x2e/0x40
+Aug 13 15:42:12 quadpc kernel: [263676.682648]  [<ffffffff8112d24c>] test_set_page_writeback+0x8c/0x180
+Aug 13 15:42:12 quadpc kernel: [263676.682652]  [<ffffffff81224189>] ext4_bio_write_page+0x99/0x460
+Aug 13 15:42:12 quadpc kernel: [263676.682655]  [<ffffffff81126144>] ? find_get_pages+0xc4/0x150
+Aug 13 15:42:12 quadpc kernel: [263676.682657]  [<ffffffff8121fcec>] mpage_da_submit_io+0x4ec/0x5d0
+Aug 13 15:42:12 quadpc kernel: [263676.682660]  [<ffffffff812221e1>] ? mpage_da_map_and_submit+0x2c1/0x4b0
+Aug 13 15:42:12 quadpc kernel: [263676.682662]  [<ffffffff81220edf>] ? ext4_mark_inode_dirty+0x7f/0x1f0
+Aug 13 15:42:12 quadpc kernel: [263676.682664]  [<ffffffff8122203a>] mpage_da_map_and_submit+0x11a/0x4b0
+Aug 13 15:42:12 quadpc kernel: [263676.682667]  [<ffffffff81268e63>] ? jbd2_journal_start+0x13/0x20
+Aug 13 15:42:12 quadpc kernel: [263676.682669]  [<ffffffff81222c73>] ext4_da_writepages+0x363/0x5d0
+Aug 13 15:42:12 quadpc kernel: [263676.682672]  [<ffffffff8112ea1e>] do_writepages+0x1e/0x40
+Aug 13 15:42:12 quadpc kernel: [263676.682674]  [<ffffffff811ab0eb>] __writeback_single_inode.isra.32+0x3b/0x160
+Aug 13 15:42:12 quadpc kernel: [263676.682677]  [<ffffffff8107692e>] ? wake_up_bit+0x2e/0x40
+Aug 13 15:42:12 quadpc kernel: [263676.682679]  [<ffffffff811abf00>] writeback_sb_inodes+0x1a0/0x390
+Aug 13 15:42:12 quadpc kernel: [263676.682681]  [<ffffffff811ac18f>] __writeback_inodes_wb+0x9f/0xd0
+Aug 13 15:42:12 quadpc kernel: [263676.682683]  [<ffffffff811ac403>] wb_writeback+0x243/0x2c0
+Aug 13 15:42:12 quadpc kernel: [263676.682686]  [<ffffffff8119c891>] ? get_nr_inodes+0x51/0x70
+Aug 13 15:42:12 quadpc kernel: [263676.682688]  [<ffffffff811ad88f>] wb_do_writeback+0x1ff/0x210
+Aug 13 15:42:12 quadpc kernel: [263676.682690]  [<ffffffff811ad92b>] bdi_writeback_thread+0x8b/0x210
+Aug 13 15:42:12 quadpc kernel: [263676.682691]  [<ffffffff811ad8a0>] ? wb_do_writeback+0x210/0x210
+Aug 13 15:42:12 quadpc kernel: [263676.682693]  [<ffffffff81076023>] kthread+0x93/0xa0
+Aug 13 15:42:12 quadpc kernel: [263676.682696]  [<ffffffff8168c3a4>] kernel_thread_helper+0x4/0x10
+Aug 13 15:42:12 quadpc kernel: [263676.682698]  [<ffffffff81075f90>] ? kthread_freezable_should_stop+0x70/0x70
+Aug 13 15:42:12 quadpc kernel: [263676.682699]  [<ffffffff8168c3a0>] ? gs_change+0x13/0x13
+Aug 13 15:42:12 quadpc kernel: [263676.682701] ---[ end trace b1822651d1a393e4 ]---
