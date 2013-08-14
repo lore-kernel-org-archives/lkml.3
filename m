@@ -1,54 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760429Ab3HNVha (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 17:37:30 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:59973 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760296Ab3HNVh1 (ORCPT
+	id S1760452Ab3HNVhu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 17:37:50 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:55726 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760403Ab3HNVh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 17:37:27 -0400
-Message-ID: <520BF88C.6060202@linux.vnet.ibm.com>
-Date: Wed, 14 Aug 2013 14:37:16 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 14 Aug 2013 17:37:28 -0400
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Dave Hansen <dave@sr71.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+In-Reply-To: <20130814203546.GA6200@kroah.com>
+References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com>
+	<20130814194348.GB10469@kroah.com>
+	<520BE30D.3070401@sr71.net>
+	<20130814203546.GA6200@kroah.com>
+Date: Wed, 14 Aug 2013 14:37:26 -0700
+X-Google-Sender-Auth: zpbWxTVZYKWv3cZKSbHQQs3oUF0
+Message-ID: <CAE9FiQUz6Ev0nbCoSbH7E=+zeJr6GKwR4B-z8+zJTRDPeF=jeA@mail.gmail.com>
+Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
+From: Yinghai Lu <yinghai@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dave Hansen <dave@sr71.net>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
-References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com> <520BECDF.8060501@sr71.net> <20130814211454.GA17423@variantweb.net>
-In-Reply-To: <20130814211454.GA17423@variantweb.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081421-7606-0000-0000-00000E58F467
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Content-Type: multipart/mixed; boundary=047d7b471da4f1197604e3ef29d7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 02:14 PM, Seth Jennings wrote:
->> >An existing tool would not work
->> >with this patch (plus boot option) since it would not know how to
->> >show/hide things.  It lets_part_  of those existing tools get reused
->> >since they only have to be taught how to show/hide things.
+--047d7b471da4f1197604e3ef29d7
+Content-Type: text/plain; charset=ISO-8859-1
+
+On Wed, Aug 14, 2013 at 1:35 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Aug 14, 2013 at 01:05:33PM -0700, Dave Hansen wrote:
+>> On 08/14/2013 12:43 PM, Greg Kroah-Hartman wrote:
+>> > On Wed, Aug 14, 2013 at 02:31:45PM -0500, Seth Jennings wrote:
+>> >> ppc64 has a normal memory block size of 256M (however sometimes as low
+>> >> as 16M depending on the system LMB size), and (I think) x86 is 128M.  With
+>> >> 1TB of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
+>> >> entries per block that's around 80k items that need be created at boot
+>> >> time in sysfs.  Some systems go up to 16TB where the issue is even more
+>> >> severe.
 >> >
->> >I'd find this really intriguing if you found a way to keep even the old
->> >tools working.  Instead of having an explicit show/hide, why couldn't
->> >you just create the entries on open(), for instance?
-> Nathan and I talked about this and I'm not sure if sysfs would support
-> such a thing, i.e. memory block creation when someone tried to cd into
-> the memory block device config.  I wouldn't know where to start on that.
+>> > The x86 developers are working with larger memory sizes and they haven't
+>> > seen the problem in this area, for them it's in other places, as I
+>> > referred to in my other email.
+>>
+>> The SGI guys don't run normal distro kernels and don't turn on memory
+>> hotplug, so they don't see this.  I do the same in my testing of
+>> large-memory x86 systems to speed up my boots.  I'll go stick it back in
+>> there and see if I can generate some numbers for a 1TB machine.
+>>
+>> But, the problem on x86 is at _worst_ 1/8 of the problem on ppc64 since
+>> the SECTION_SIZE is so 8x bigger by default.
+>>
+>> Also, the cost of creating sections on ppc is *MUCH* higher than x86
+>> when amortized across the number of pages that you're initializing.  A
+>> section on ppc64 has to be created for each (2^24/2^16)=256 pages while
+>> one on x86 is created for each (2^27/2^12)=32768 pages.
+>>
+>> Thus, x86 folks with our small pages and large sections tend to be
+>> focused on per-page costs.  The ppc folks with their small sections and
+>> larger pages tend to be focused on the per-section costs.
 >
+> Ah, thanks for the explaination, now it makes more sense why they are
+> both optimizing in different places.
 
-Also, I'd expect userspace tools might use readdir() to find out what 
-memory blocks a system has (unless they just stat("memory0"), 
-stat("memory1")...). I don't think filesystem tricks (at least within 
-sysfs) are going to let this magically be solved without breaking the 
-userspace API.
+I had one local patch that sent before, it will probe block size for
+generic x86_64.
+set it to 2G looks more reasonable for system with 1T+ ram.
 
+Also can we add block_size in that /sys directly so could generate
+less entries ?
+
+Thanks
+
+Yinghai
+
+--047d7b471da4f1197604e3ef29d7
+Content-Type: application/octet-stream; name="block_size_x86_64.patch"
+Content-Disposition: attachment; filename="block_size_x86_64.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hkd20u9n0
+
+U3ViamVjdDogW1BBVENIIC12Ml0geDg2LCBtbTogUHJvYmUgbWVtb3J5IGJsb2NrIHNpemUgZm9y
+IGdlbmVyaWMgeDg2IDY0Yml0CgpVc3VhbGx5IGlmIHRoZSBzeXN0ZW0gc3VwcG9ydCBtZW1vcnkg
+cmVtYXBwaW5nIHRvIGdldCBiYWNrIG1lbW9yeSBmb3IgbW1pbwpyYW5nZSwgd2Ugd2lsbCBoYXZl
+IDEyOE0gLi4uIDJHIGF0IHRoZSBlbmQuCgpUcnkgdG8gcHJvYmUgdGhhdCBzaXplLgoKU28gd2Ug
+Y2FuIGdldCBsZXNzIGVudHJpZXMgaW4gL3N5cy9kZXZpY2VzL3N5c3RlbS9tZW1vcnkvCgotdjI6
+IGRvbid0IHByb2JlIGl0IGV2ZXJ5IHRpbWUgd2hlbiAvc3lzLy4uL2Jsb2NrX3NpemVfYnl0ZSBp
+cyBzaG93ZWQuLi4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9y
+Zz4KCi0tLQogYXJjaC94ODYvbW0vaW5pdF82NC5jIHwgICAzNCArKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKystLS0tCiAxIGZpbGUgY2hhbmdlZCwgMzAgaW5zZXJ0aW9ucygrKSwgNCBkZWxl
+dGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvbW0vaW5pdF82NC5jCj09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L21tL2luaXRfNjQuYworKysgbGludXgtMi42
+L2FyY2gveDg2L21tL2luaXRfNjQuYwpAQCAtMTI2MywxNyArMTI2Myw0MyBAQCBjb25zdCBjaGFy
+ICphcmNoX3ZtYV9uYW1lKHN0cnVjdCB2bV9hcmVhCiAJcmV0dXJuIE5VTEw7CiB9CiAKLSNpZmRl
+ZiBDT05GSUdfWDg2X1VWCi11bnNpZ25lZCBsb25nIG1lbW9yeV9ibG9ja19zaXplX2J5dGVzKHZv
+aWQpCitzdGF0aWMgdW5zaWduZWQgbG9uZyBwcm9iZV9tZW1vcnlfYmxvY2tfc2l6ZSh2b2lkKQog
+eworCS8qIHN0YXJ0IGZyb20gMmcgKi8KKwl1bnNpZ25lZCBsb25nIGJ6ID0gMVVMPDwzMTsKKwor
+I2lmZGVmIENPTkZJR19YODZfVVYKIAlpZiAoaXNfdXZfc3lzdGVtKCkpIHsKIAkJcHJpbnRrKEtF
+Uk5fSU5GTyAiVVY6IG1lbW9yeSBibG9jayBzaXplIDJHQlxuIik7CiAJCXJldHVybiAyVUwgKiAx
+MDI0ICogMTAyNCAqIDEwMjQ7CiAJfQotCXJldHVybiBNSU5fTUVNT1JZX0JMT0NLX1NJWkU7Ci19
+CiAjZW5kaWYKIAorCS8qIGxlc3MgdGhhbiA2NGcgaW5zdGFsbGVkICovCisJaWYgKChtYXhfcGZu
+IDw8IFBBR0VfU0hJRlQpIDwgKDE2VUwgPDwgMzIpKQorCQlyZXR1cm4gTUlOX01FTU9SWV9CTE9D
+S19TSVpFOworCisJLyogZ2V0IHRoZSB0YWlsIHNpemUgKi8KKwl3aGlsZSAoYnogPiBNSU5fTUVN
+T1JZX0JMT0NLX1NJWkUpIHsKKwkJaWYgKCEoKG1heF9wZm4gPDwgUEFHRV9TSElGVCkgJiAoYnog
+LSAxKSkpCisJCQlicmVhazsKKwkJYnogPj49IDE7CisJfQorCisJcHJpbnRrKEtFUk5fREVCVUcg
+Im1lbW9yeSBibG9jayBzaXplIDogJWxkTUJcbiIsIGJ6ID4+IDIwKTsKKworCXJldHVybiBiejsK
+K30KKworc3RhdGljIHVuc2lnbmVkIGxvbmcgbWVtb3J5X2Jsb2NrX3NpemVfcHJvYmVkOwordW5z
+aWduZWQgbG9uZyBtZW1vcnlfYmxvY2tfc2l6ZV9ieXRlcyh2b2lkKQoreworCWlmICghbWVtb3J5
+X2Jsb2NrX3NpemVfcHJvYmVkKQorCQltZW1vcnlfYmxvY2tfc2l6ZV9wcm9iZWQgPSBwcm9iZV9t
+ZW1vcnlfYmxvY2tfc2l6ZSgpOworCisJcmV0dXJuIG1lbW9yeV9ibG9ja19zaXplX3Byb2JlZDsK
+K30KKwogI2lmZGVmIENPTkZJR19TUEFSU0VNRU1fVk1FTU1BUAogLyoKICAqIEluaXRpYWxpc2Ug
+dGhlIHNwYXJzZW1lbSB2bWVtbWFwIHVzaW5nIGh1Z2UtcGFnZXMgYXQgdGhlIFBNRCBsZXZlbC4K
+--047d7b471da4f1197604e3ef29d7--
