@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab3HNM0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:26:45 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:40168 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759806Ab3HNMZ4 (ORCPT
+	id S1759879Ab3HNMbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:31:33 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:39384 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759661Ab3HNMbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:25:56 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthew Wilcox <matthew@wil.cx>
-Subject: [PATCH 1/3] locks: clean up comment typo
-Date: Wed, 14 Aug 2013 08:25:47 -0400
-Message-Id: <1376483149-7633-2-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1376483149-7633-1-git-send-email-jlayton@redhat.com>
-References: <1376483149-7633-1-git-send-email-jlayton@redhat.com>
+	Wed, 14 Aug 2013 08:31:31 -0400
+From: Xiaolong Ye <yexl@marvell.com>
+To: <hjk@hansjkoch.de>, <greg@kroah.com>, <linux-kernel@vger.kernel.org>
+CC: Xiaolong Ye <yexl@marvell.com>
+Subject: [PATCH] Add uio_sync_event interface to support mulit-instances case in UIO framework
+Date: Wed, 14 Aug 2013 20:30:22 +0800
+Message-ID: <1376483423-603-1-git-send-email-yexl@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/locks.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi, guys,
 
-diff --git a/fs/locks.c b/fs/locks.c
-index a99adec..9f28359 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -581,7 +581,7 @@ static void locks_delete_block(struct file_lock *waiter)
-  * it seems like the reasonable thing to do.
-  *
-  * Must be called with both the i_lock and blocked_lock_lock held. The fl_block
-- * list itself is protected by the file_lock_list, but by ensuring that the
-+ * list itself is protected by the blocked_lock_lock, but by ensuring that the
-  * i_lock is also held on insertions we can avoid taking the blocked_lock_lock
-  * in some cases when we see that the fl_block list is empty.
-  */
+Recently, we have met fake interrupt issue when using UIO as our vpu driver in mulit-instances case,
+the issue can be described as below:
+
+In multi-instances case, we use vpu_lock(semaphore) to implement the mutually exclusive access to the
+device, each instace open uio device once and will be associated with a fd and its own uio_listener,
+we use poll to wait for the hardware interrupt. So let's assume that there are two instances, A and B,
+their uio_listener->event_count and idev->event are all 0 at the beginning, then A get the vpu_lock and start
+to work, it will block at poll()(because listener->event_count == idev->count) until H/W interrupt happens
+(atomic_inc(&idev->event)), after it releases vpu_lock, B will get the lock and start to work, however,
+its poll will return immediately because B's uio_listener->event_count is 0 while idev->event has been 1,
+that's how the fake interrupt happens.
+
+Our proposal:
+Add new uio_sync_event(struct uio_listener *listener) function in uio,c, so that we can call it directly
+when we want to sync the event count.
+
+
+Xiaolong Ye (1):
+  uio: add uio_event_sync interface
+
+ drivers/uio/uio.c          |   12 ++++++++++++
+ include/linux/uio_driver.h |    1 +
+ 2 files changed, 13 insertions(+)
+
 -- 
-1.8.3.1
+1.7.9.5
 
