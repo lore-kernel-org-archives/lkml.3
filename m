@@ -1,126 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760405Ab3HNUkP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:40:15 -0400
-Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:55832 "EHLO
-	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760298Ab3HNUkN (ORCPT
+	id S933155Ab3HNUkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:40:35 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:41001 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932912Ab3HNUke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:40:13 -0400
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
-        devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        rob.herring@calxeda.com, sergei.shtylyov@cogentembedded.com
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH v4 1/3] devicetree: create a separate binding description for sata_highbank
-Date: Wed, 14 Aug 2013 15:40:11 -0500
-Message-Id: <1376512811-25428-1-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
+	Wed, 14 Aug 2013 16:40:34 -0400
+Message-ID: <520BEB31.6090103@linux.vnet.ibm.com>
+Date: Wed, 14 Aug 2013 15:40:17 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Hansen <dave@sr71.net>, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
+References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081420-5564-0000-0000-000009450338
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Calxeda sata_highbank driver has been adding its descriptions to the
-ahci driver. Separate them properly. This patch only affects
-documentation and has no functional component.
+On 08/14/2013 02:31 PM, Seth Jennings wrote:
+> Large memory systems (~1TB or more) experience boot delays on the order
+> of minutes due to the initializing the memory configuration part of
+> sysfs at /sys/devices/system/memory/.
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
----
-Changes from v3
-	Added all optional properties to the example.
-	Expanded the description.
-	Renumbered the patch series since the first two got accepted.
-Changes from v2
-	Fixed some indenting.
-Changes from v1
-	None.
+With the previous work that has been done in the memory sysfs layout
+I think you need machines with 8 or 16+ TB of memory to see boot delays
+that are measured in minutes. The boot delay is there, and with larger
+memory systems in he future it will only get worse.
 
----
- .../devicetree/bindings/ata/ahci-platform.txt      | 18 +++---------
- .../devicetree/bindings/ata/sata_highbank.txt      | 34 ++++++++++++++++++++++
- 2 files changed, 38 insertions(+), 14 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/sata_highbank.txt
+> 
+> ppc64 has a normal memory block size of 256M (however sometimes as low
+> as 16M depending on the system LMB size), and (I think) x86 is 128M.  With
+> 1TB of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
+> entries per block that's around 80k items that need be created at boot
+> time in sysfs.  Some systems go up to 16TB where the issue is even more
+> severe.
+> 
 
-diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-index 3ec0c5c..89de156 100644
---- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-+++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-@@ -4,27 +4,17 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
- Each SATA controller should have its own node.
- 
- Required properties:
--- compatible        : compatible list, contains "calxeda,hb-ahci" or "snps,spear-ahci"
-+- compatible        : compatible list, contains "snps,spear-ahci"
- - interrupts        : <interrupt mapping for SATA IRQ>
- - reg               : <registers mapping>
- 
- Optional properties:
--- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
--			SATA port to a combophy and a lane within that
--			combophy
--- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
--			which indicates that the driver supports SGPIO
--			indicator lights using the indicated GPIOs
--- calxeda,led-order : a u32 array that map port numbers to offsets within the
--			SGPIO bitstream.
- - dma-coherent      : Present if dma operations are coherent
- 
- Example:
-         sata@ffe08000 {
--		compatible = "calxeda,hb-ahci";
--                reg = <0xffe08000 0x1000>;
--                interrupts = <115>;
--		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
--					&combophy0 2 &combophy0 3>;
-+		compatible = "snps,spear-ahci";
-+		reg = <0xffe08000 0x1000>;
-+		interrupts = <115>;
- 
-         };
-diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-new file mode 100644
-index 0000000..e7a6f28
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-@@ -0,0 +1,34 @@
-+* Calxeda AHCI SATA Controller
-+
-+SATA nodes are defined to describe on-chip Serial ATA controllers.
-+The Calxeda SATA controller mostly conforms to the AHCI interface
-+with some special extensions to add functionality.
-+Each SATA controller should have its own node.
-+
-+Required properties:
-+- compatible        : compatible list, contains "calxeda,hb-ahci"
-+- interrupts        : <interrupt mapping for SATA IRQ>
-+- reg               : <registers mapping>
-+
-+Optional properties:
-+- dma-coherent      : Present if dma operations are coherent
-+- calxeda,port-phys : phandle-combophy and lane assignment, which maps each
-+			SATA port to a combophy and a lane within that
-+			combophy
-+- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
-+			which indicates that the driver supports SGPIO
-+			indicator lights using the indicated GPIOs
-+- calxeda,led-order : a u32 array that map port numbers to offsets within the
-+			SGPIO bitstream.
-+
-+Example:
-+        sata@ffe08000 {
-+		compatible = "calxeda,hb-ahci";
-+		reg = <0xffe08000 0x1000>;
-+		interrupts = <115>;
-+		dma-coherent;
-+		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
-+					&combophy0 2 &combophy0 3>;
-+		calxeda,sgpio-gpio =<&gpioh 5 1 &gpioh 6 1 &gpioh 7 1>;
-+		calxeda,led-order = <4 0 1 2 3>;
-+        };
--- 
-1.8.1.2
+It should also be pointed out that the number of sysfs entries created on
+16+ TB system is 100k+. At his scale it is not really human readable to
+list all of the entries. The amount of resources used to create all of the
+uderlying structures for each of the entries starts to add up also.
+
+I think an approach such as this makes the sysfs memory layout more
+human readable and saves on resources.
+
+-Nathan
 
