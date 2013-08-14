@@ -1,75 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131Ab3HNTKh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 15:10:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51005 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933112Ab3HNTKf (ORCPT
+	id S933133Ab3HNTLL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 15:11:11 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:39439 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933065Ab3HNTLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 15:10:35 -0400
-Date: Wed, 14 Aug 2013 20:10:28 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Eric Miao <eric.y.miao@gmail.com>, robert.jarzmik@free.fr,
-        kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20130814191028.GP2401@sirena.org.uk>
-References: <1376340564-7975-1-git-send-email-Julia.Lawall@lip6.fr>
+	Wed, 14 Aug 2013 15:11:09 -0400
+Date: Thu, 15 Aug 2013 04:11:01 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Xishi Qiu <qiuxishi@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
+Message-ID: <20130814191101.GB2753@gmail.com>
+References: <520B0B75.4030708@huawei.com>
+ <20130814085711.GK2296@suse.de>
+ <20130814155205.GA2706@gmail.com>
+ <20130814161642.GM2296@suse.de>
+ <20130814163921.GC2706@gmail.com>
+ <20130814180012.GO2296@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D8QxnvyRlKGQJxl7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376340564-7975-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Cookie: Your present plans will be successful.
+In-Reply-To: <20130814180012.GO2296@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/16 v2] sound/soc/pxa/mioa701_wm9713.c: Avoid using
- ARRAY_AND_SIZE(e) as a function argument
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 14, 2013 at 07:00:12PM +0100, Mel Gorman wrote:
+> On Thu, Aug 15, 2013 at 01:39:21AM +0900, Minchan Kim wrote:
+> > On Wed, Aug 14, 2013 at 05:16:42PM +0100, Mel Gorman wrote:
+> > > On Thu, Aug 15, 2013 at 12:52:29AM +0900, Minchan Kim wrote:
+> > > > Hi Mel,
+> > > > 
+> > > > On Wed, Aug 14, 2013 at 09:57:11AM +0100, Mel Gorman wrote:
+> > > > > On Wed, Aug 14, 2013 at 12:45:41PM +0800, Xishi Qiu wrote:
+> > > > > > A large free page buddy block will continue many times, so if the page 
+> > > > > > is free, skip the whole page buddy block instead of one page.
+> > > > > > 
+> > > > > > Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> > > > > 
+> > > > > page_order cannot be used unless zone->lock is held which is not held in
+> > > > > this path. Acquiring the lock would prevent parallel allocations from the
+> > > > 
+> > > > Argh, I missed that. And it seems you already pointed it out long time ago
+> > > > someone try to do same things if I remember correctly. :(
+> > > 
+> > > It feels familiar but I do not remember why.
+> > > 
+> > > > But let's think about it more.
+> > > > 
+> > > > It's always not right because CMA and memory-hotplug already isolated
+> > > > free pages in the range to MIGRATE_ISOLATE right before starting migration
+> > > > so we could use page_order safely in those contexts even if we don't hold
+> > > > zone->lock.
+> > > >  
+> > > 
+> > > Both of those are teh corner cases. Neither operation happen frequently
+> > > in comparison to something like THP allocations for example. I think an
+> > > optimisation along those lines is marginal at best.
+> > 
+> > In embedded side, we don't use THP yet but uses CMA and memory-hotplug so
+> > your claim isn't the case for the embedded world.
+> 
+> I thought CMA was only used when certain devices require large
+> contiguous ranges of memory. The expectation was that such allocations
+> are relatively rare and the cost savings from this patch would not be
 
---D8QxnvyRlKGQJxl7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It's not true. It depends on user activity.
+For exmaple, if user opens the app like camera frequenlty, CMA allocation can
+happen frequently if we implement image buffer for camera as CMA.
 
-On Mon, Aug 12, 2013 at 10:49:24PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> Replace ARRAY_AND_SIZE(e) in function argument position to avoid hiding t=
-he
-> arity of the called function.
+> measurable. Considering how heavy the memory hotplug operation is I also
+> severely doubt that not being able to skip over PageBuddy pages in
+> compaction is noticable.
+> 
+> > > >  		/* Skip if free */
+> > > > -		if (PageBuddy(page))
+> > > > +		if (PageBuddy(page)) {
+> > > > +			/*
+> > > > +			 * page_order is racy without zone->lock but worst case
+> > > > +			 * by the racing is just skipping pageblock_nr_pages.
+> > > > +			 * but even the race is really unlikely by double
+> > > > +			 * check of PageBuddy.
+> > > > +			 */
+> > > > +			unsigned long order = page_order(page);
+> > > > +			if (PageBuddy(page))
+> > > > +				low_pfn += (1 << order) - 1;
+> > > >  			continue;
+> > > > +		}
+> > > >  
+> > > 
+> > > Even if the page is still page buddy, there is no guarantee that it's
+> > > the same page order as the first read. It could have be currently
+> > > merging with adjacent buddies for example. There is also a really
+> > > small race that a page was freed, allocated with some number stuffed
+> > > into page->private and freed again before the second PageBuddy check.
+> > > It's a bit of a hand grenade. How much of a performance benefit is there
+> > 
+> > 1. Just worst case is skipping pageblock_nr_pages
+> 
+> No, the worst case is that page_order returns a number that is
+> completely garbage and low_pfn goes off the end of the zone
 
-Applied the incremental bit of this, thanks.
+Sigh, I missed low_pfn is return value so you're right but we can simple
+fix it with min(low_pfn, end_pfn).
 
---D8QxnvyRlKGQJxl7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> > 2. Race is really small
+> > 3. Higher order page allocation customer always have graceful fallback.
+> > 
+> > If you really have a concern about that, we can add following.
+> > 
+> > -		if (PageBuddy(page))
+> > +		if (PageBuddy(page)) {
+> > +#ifdef CONFIG_MEMORY_ISOLATION
+> > +			/*
+> > +			 * memory-hotplug and CMA already move free pages to
+> > +			 * MIGRATE_ISOLATE so we can use page_order safely
+> > +			 * without zone->lock.
+> > +			 */
+> > +			if (PageBuddy(page))
+> > +				low_pfn += (1 << page_order(page)) - 1;
+> > +#endif
+> >  			continue;
+> > +		}
+> 
+> How does that help anything? MEMORY_ISOLATION is set in distribution
+> configs and there is no guarantee at all and the same race exists. If it
+> was going to be anything it would be something like this untested hack
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Argh, I sent wrong versoin patch. Here is 4:06 am so maybe I need sleeping. :(
 
-iQIcBAEBAgAGBQJSC9YhAAoJELSic+t+oim9ymEP+wSn7S9g6F/pfcebCIbtMVpb
-VbbfHhzp2OMv+o3ukEblE9BP+HT07QgQomhTBUUFSrhTu9owcDVePbzr6boG5XMh
-UN5AZOvPR0wEMdnYEtOXnJoi1Cr0nDMXigZjg5OHL2jwa7hJiV2hKQCMXQsZqcWY
-nthplxPqPgaot1c4L18LvTfS1hiiH6+mSUv7gDbe+VOQYYTt6uFv4I3JLQL0v3Wg
-qtJL4YsZM7gfMsCwuED8fkLTYJlOBRgYuQrdkgvO667fX7GdZTEJEPeClh1XFRRy
-TBL8Jc35FqvbBIW07xP3++QvagbL5Eh2ohz0LzXftbXpjI5QAvT2sQmjJT3agfRU
-9lgZ3GSGcM/D5oBJxGOdKRLz6Ul0hTHcpHhTfSgyuAosi38h+GhvioIqIPyx48GW
-jOR0+MfSyFsUZUktTVw3H+SRZWhoMVAOYdEyDX/OhfxOHR76sA97yB2qfYNmN/CZ
-XdVGL7HzcqhJkGlGLcyW9sHila6nqdcrhigTnjkvoOqBk09/Q2F28tQVnT30LxO6
-IkydCSjJ0704jD4VAnJG5MFx7mGnlvk3nE/TyX0R7zh7CRwWjR76g8CpHCtNvSNO
-prbAPsFEHWPevoW+O0Cb+oVnH/HSJM7GifBtjHIdILangYPXMDMgojqIsnVAVMCj
-ip/gyyc37ghppezt0S+T
-=55Gx
------END PGP SIGNATURE-----
+> 
+> /*
+>  * It is not safe to call page_order(page) for a PageBuddy page without
+>  * holding the zone lock as the order can change or the page allocated.
+>  * Check PageBuddy after reading page_order to minimise the race. As
+>  * the value could still be stale, make sure that we do not accidentally
+>  * skip past the end of the largest page the buddy allocator handles.
+>  */
+> if (PageBuddy(page)) {
+> 	int nr_pages = (1 << page_order(page)) - 1;
+> 	if (PageBuddy(page)) {
+> 		nr_pages = min(nr_pages, MAX_ORDER_NR_PAGES - 1);
+> 		low_pfn += nr_pages;
+> 		continue;
+> 	}
+> }
 
---D8QxnvyRlKGQJxl7--
+My version is following as
+
+	if (PageBuddy(page)) {
+#ifdef CONFIG_MEMOR_ISOLATION
+		unsigned long order = page_order(page);
+		if (PageBuddy(page)) {
+			low_pfn += (1 << order) - 1;
+			low_pfn = min(low_pfn, end_pfn);
+		}	
+#endif
+		continue;
+	}
+
+
+> 
+> It's still race-prone meaning that it really should be backed by some
+> performance data justifying it.
+
+Okay.
+
+Thanks for the input, Mel!
+> 
+> -- 
+> Mel Gorman
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
