@@ -1,94 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759123Ab3HNAIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 20:08:50 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:47185 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758627Ab3HNAIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 20:08:45 -0400
-X-AuditID: 9c93017d-b7cdfae0000026c0-90-520aca8b6054
-Date: Wed, 14 Aug 2013 09:08:50 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
-        Dave Hansen <dave.hansen@intel.com>, lliubbo@gmail.com,
-        aquini@redhat.com, Rik van Riel <riel@redhat.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: Re: [RFC 0/3] Pin page control subsystem
-Message-ID: <20130814000850.GB2271@bbox>
-References: <1376377502-28207-1-git-send-email-minchan@kernel.org>
- <1376387202.31048.2.camel@AMDC1943>
- <20130813142338.GD13330@kvack.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813142338.GD13330@kvack.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1759188Ab3HNAJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 20:09:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17920 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755272Ab3HNAHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 20:07:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,873,1367996400"; 
+   d="scan'208";a="281605174"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, torvalds@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 4/8] Move might_sleep and friends from kernel.h to sched.h
+Date: Tue, 13 Aug 2013 17:07:12 -0700
+Message-Id: <1376438836-13339-5-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1376438836-13339-1-git-send-email-andi@firstfloor.org>
+References: <1376438836-13339-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Benjamin,
+From: Andi Kleen <ak@linux.intel.com>
 
-On Tue, Aug 13, 2013 at 10:23:38AM -0400, Benjamin LaHaise wrote:
-> On Tue, Aug 13, 2013 at 11:46:42AM +0200, Krzysztof Kozlowski wrote:
-> > Hi Minchan,
-> > 
-> > On wto, 2013-08-13 at 16:04 +0900, Minchan Kim wrote:
-> > > patch 2 introduce pinpage control
-> > > subsystem. So, subsystems want to control pinpage should implement own
-> > > pinpage_xxx functions because each subsystem would have other character
-> > > so what kinds of data structure for managing pinpage information depends
-> > > on them. Otherwise, they can use general functions defined in pinpage
-> > > subsystem. patch 3 hacks migration.c so that migration is
-> > > aware of pinpage now and migrate them with pinpage subsystem.
-> > 
-> > I wonder why don't we use page->mapping and a_ops? Is there any
-> > disadvantage of such mapping/a_ops?
-> 
-> That's what the pending aio patches do, and I think this is a better 
-> approach for those use-cases that the technique works for.
+These are really related to scheduling, so they should be in sched.h
+Users usually will need to schedule anyways.
 
-I saw your implementation roughly and I think it's not a generic solution.
-How could it handle the example mentioned in reply of Krzysztof?
+The advantage of having them there is that we can access some of the
+scheduler inlines to make their fast path more efficient. This will come
+in a followon patch.
 
-> 
-> The biggest problem I see with the pinpage approach is that it's based on a
-> single page at a time.  I'd venture a guess that many pinned pages are done 
-> in groups of pages, not single ones.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/kernel.h | 35 -----------------------------------
+ include/linux/sched.h  | 38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 35 deletions(-)
 
-In case of z* family, most of allocation is single but I agree many GUP users
-would allocate groups of pages. Then, we can cover it by expanding the API
-like this.
-
-int set_pinpage(struct pinpage_system *psys, struct page **pages,
-                unsigned long nr_pages, void **privates);
-
-so we can handle it by batch and the subsystem can manage pinpage_info with
-interval tree rather than radix tree which is default.
-That's why pinpage control subsystem has room for subsystem specific metadata
-handling.
-
-> 
-> 		-ben
-> 
-> > Best regards,
-> > Krzysztof
-> 
-> -- 
-> "Thought is the essence of where you are now."
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 482ad2d..badcc13 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -141,35 +141,6 @@ struct completion;
+ struct pt_regs;
+ struct user;
+ 
+-#ifdef CONFIG_PREEMPT_VOLUNTARY
+-extern int _cond_resched(void);
+-# define might_resched() _cond_resched()
+-#else
+-# define might_resched() do { } while (0)
+-#endif
+-
+-#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+-  void __might_sleep(const char *file, int line, int preempt_offset);
+-/**
+- * might_sleep - annotation for functions that can sleep
+- *
+- * this macro will print a stack trace if it is executed in an atomic
+- * context (spinlock, irq-handler, ...).
+- *
+- * This is a useful debugging help to be able to catch problems early and not
+- * be bitten later when the calling function happens to sleep when it is not
+- * supposed to.
+- */
+-# define might_sleep() \
+-	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
+-#else
+-  static inline void __might_sleep(const char *file, int line,
+-				   int preempt_offset) { }
+-# define might_sleep() do { might_resched(); } while (0)
+-#endif
+-
+-#define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
+-
+ /*
+  * abs() handles unsigned and signed longs, ints, shorts and chars.  For all
+  * input types abs() returns a signed long.
+@@ -193,12 +164,6 @@ extern int _cond_resched(void);
+ 		(__x < 0) ? -__x : __x;		\
+ 	})
+ 
+-#if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
+-void might_fault(void);
+-#else
+-static inline void might_fault(void) { }
+-#endif
+-
+ extern struct atomic_notifier_head panic_notifier_list;
+ extern long (*panic_blink)(int state);
+ __printf(1, 2)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d722490..773f21d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2433,6 +2433,35 @@ extern int __cond_resched_softirq(void);
+ 	__cond_resched_softirq();					\
+ })
+ 
++#ifdef CONFIG_PREEMPT_VOLUNTARY
++extern int _cond_resched(void);
++# define might_resched() _cond_resched()
++#else
++# define might_resched() do { } while (0)
++#endif
++
++#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
++ void __might_sleep(const char *file, int line, int preempt_offset);
++/**
++ * might_sleep - annotation for functions that can sleep
++ *
++ * this macro will print a stack trace if it is executed in an atomic
++ * context (spinlock, irq-handler, ...).
++ *
++ * This is a useful debugging help to be able to catch problems early and not
++ * be bitten later when the calling function happens to sleep when it is not
++ * supposed to.
++ */
++# define might_sleep() \
++	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
++#else
++  static inline void __might_sleep(const char *file, int line,
++				   int preempt_offset) { }
++# define might_sleep() do { might_resched(); } while (0)
++#endif
++
++#define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
++
+ static inline void cond_resched_rcu(void)
+ {
+ #if defined(CONFIG_DEBUG_ATOMIC_SLEEP) || !defined(CONFIG_PREEMPT_RCU)
+@@ -2442,6 +2471,15 @@ static inline void cond_resched_rcu(void)
+ #endif
+ }
+ 
++#ifdef CONFIG_PROVE_LOCKING
++void might_fault(void);
++#else
++static inline void might_fault(void)
++{
++	might_sleep();
++}
++#endif
++
+ /*
+  * Does a critical section need to be broken due to another
+  * task waiting?: (technically does not depend on CONFIG_PREEMPT,
 -- 
-Kind regards,
-Minchan Kim
+1.8.3.1
+
