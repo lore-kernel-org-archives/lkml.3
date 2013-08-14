@@ -1,37 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759960Ab3HNPlC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 11:41:02 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:39342 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758769Ab3HNPlB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 11:41:01 -0400
+	id S1759605Ab3HNPoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 11:44:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46348 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750896Ab3HNPoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 11:44:32 -0400
+Message-ID: <520BA590.2030808@zytor.com>
+Date: Wed, 14 Aug 2013 08:43:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1376370258-3633-1-git-send-email-sonic.adi@gmail.com>
-References: <1376370258-3633-1-git-send-email-sonic.adi@gmail.com>
-Date: Wed, 14 Aug 2013 17:41:00 +0200
-Message-ID: <CACRpkdbmwb4OOiuF606KD+nZbBrRAYmB908BUsHsp1mW_L3XGg@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v2] pinctrl: ADI PIN control driver for the GPIO
- controller on bf54x and bf60x.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Steven Miao <realmz6@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Galbraith <bitbucket@online.de>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/5] preempt_count rework
+References: <20130814131539.790947874@chello.nl>  <520B8A81.1080405@zytor.com> <1376494751.7355.28.camel@marge.simpson.net>
+In-Reply-To: <1376494751.7355.28.camel@marge.simpson.net>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 7:04 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
+On 08/14/2013 08:39 AM, Mike Galbraith wrote:
+> 
+> ..so could the rq = cpu_rq(cpu) sequence be improved cycle expenditure
+> wise by squirreling rq pointer away in a percpu this_rq, and replacing
+> cpu_rq(cpu) above with a __this_cpu_read(this_rq) version of this_rq()?
+> 
 
-> v2-changes:
-> - Remove unlinke() directive.
+Yes.
 
-Fine, but now you also have all my other comments to take care of :-)
+	-hpa
 
-Yours,
-Linus Walleij
+
