@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933335Ab3HNVvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 17:51:37 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:55603 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933258Ab3HNVvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 17:51:36 -0400
-Message-ID: <520BFBE4.4040807@gmail.com>
-Date: Wed, 14 Aug 2013 14:51:32 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S933349Ab3HNVxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 17:53:03 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:34097 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933258Ab3HNVxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 17:53:01 -0400
+Date: Wed, 14 Aug 2013 16:52:53 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave@sr71.net>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
+Message-ID: <20130814215253.GC17423@variantweb.net>
+References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130814194348.GB10469@kroah.com>
+ <520BE30D.3070401@sr71.net>
+ <20130814203546.GA6200@kroah.com>
+ <CAE9FiQUz6Ev0nbCoSbH7E=+zeJr6GKwR4B-z8+zJTRDPeF=jeA@mail.gmail.com>
 MIME-Version: 1.0
-To: behanw@converseincode.com
-CC: linux@arm.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, charlebm@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: LLVMLinux: Change "extern inline" to "gnu_inline"
- in ARM ftrace.h
-References: <1376516261-2071-1-git-send-email-behanw@converseincode.com> <1376516261-2071-2-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1376516261-2071-2-git-send-email-behanw@converseincode.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUz6Ev0nbCoSbH7E=+zeJr6GKwR4B-z8+zJTRDPeF=jeA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081421-5806-0000-0000-0000226DCB14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 02:37 PM, behanw@converseincode.com wrote:
-> From: Mark Charlebois <charlebm@gmail.com>
->
-> With compilers which follow the C99 standard (like modern versions of gcc and
-> clang), "extern inline" does the wrong thing (emits code for an externally
-> linkable version of the inline function). In this case using the gnu_inline
-> attribute makes inline do the right thing on gcc and on clang.
->
-> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> ---
->   arch/arm/include/asm/ftrace.h | 3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
-> index f89515a..fb7fdc4 100644
-> --- a/arch/arm/include/asm/ftrace.h
-> +++ b/arch/arm/include/asm/ftrace.h
-> @@ -45,7 +45,8 @@ void *return_address(unsigned int);
->
->   #else
->
-> -extern inline void *return_address(unsigned int level)
-> +extern inline __attribute__((gnu_inline))
+On Wed, Aug 14, 2013 at 02:37:26PM -0700, Yinghai Lu wrote:
+> On Wed, Aug 14, 2013 at 1:35 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Aug 14, 2013 at 01:05:33PM -0700, Dave Hansen wrote:
+> >> On 08/14/2013 12:43 PM, Greg Kroah-Hartman wrote:
+> >> > On Wed, Aug 14, 2013 at 02:31:45PM -0500, Seth Jennings wrote:
+> >> >> ppc64 has a normal memory block size of 256M (however sometimes as low
+> >> >> as 16M depending on the system LMB size), and (I think) x86 is 128M.  With
+> >> >> 1TB of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
+> >> >> entries per block that's around 80k items that need be created at boot
+> >> >> time in sysfs.  Some systems go up to 16TB where the issue is even more
+> >> >> severe.
+> >> >
+> >> > The x86 developers are working with larger memory sizes and they haven't
+> >> > seen the problem in this area, for them it's in other places, as I
+> >> > referred to in my other email.
+> >>
+> >> The SGI guys don't run normal distro kernels and don't turn on memory
+> >> hotplug, so they don't see this.  I do the same in my testing of
+> >> large-memory x86 systems to speed up my boots.  I'll go stick it back in
+> >> there and see if I can generate some numbers for a 1TB machine.
+> >>
+> >> But, the problem on x86 is at _worst_ 1/8 of the problem on ppc64 since
+> >> the SECTION_SIZE is so 8x bigger by default.
+> >>
+> >> Also, the cost of creating sections on ppc is *MUCH* higher than x86
+> >> when amortized across the number of pages that you're initializing.  A
+> >> section on ppc64 has to be created for each (2^24/2^16)=256 pages while
+> >> one on x86 is created for each (2^27/2^12)=32768 pages.
+> >>
+> >> Thus, x86 folks with our small pages and large sections tend to be
+> >> focused on per-page costs.  The ppc folks with their small sections and
+> >> larger pages tend to be focused on the per-section costs.
+> >
+> > Ah, thanks for the explaination, now it makes more sense why they are
+> > both optimizing in different places.
+> 
+> I had one local patch that sent before, it will probe block size for
+> generic x86_64.
+> set it to 2G looks more reasonable for system with 1T+ ram.
 
-That seems very ugly.
+If I am understanding you correctly, you are suggesting we make the block size
+a boot time tunable.  It can't be a runtime tunable since the memory blocks are
+currently created a boot time.
 
-Is it possible to put something in linux/compiler.h that encapsulates 
-the desired semantics, and then use that instead?
+On ppc64, we can't just just choose a memory block size since it must align
+with the underlying LMB (logical memory block) size, set in the hardware ahead
+of time.
 
-We already define "inline" that way, if you need something else, put it 
-in compiler.h with a nice symbolic name, and then use it.
-
-
-> +void *return_address(unsigned int level)
->   {
->   	return NULL;
->   }
->
+Seth
 
