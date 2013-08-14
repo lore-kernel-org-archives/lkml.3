@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab3HNMq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:46:58 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:35561 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438Ab3HNMq4 (ORCPT
+	id S932403Ab3HNMtV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:49:21 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41539 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932287Ab3HNMtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:46:56 -0400
-Date: Wed, 14 Aug 2013 08:46:47 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen/hvc: If we use xen_raw_printk let it
- also work on HVM guests.
-Message-ID: <20130814124647.GD10764@phenom.dumpdata.com>
-References: <1376060133-6382-1-git-send-email-konrad.wilk@oracle.com>
- <1376425904.9273.25.camel@hastur.hellion.org.uk>
- <20130813205332.GA10243@phenom.dumpdata.com>
- <1376427570.9273.39.camel@hastur.hellion.org.uk>
- <1376432405.9273.54.camel@hastur.hellion.org.uk>
- <20130814001050.GA10492@phenom.dumpdata.com>
- <1376464556.9273.75.camel@hastur.hellion.org.uk>
+	Wed, 14 Aug 2013 08:49:20 -0400
+Date: Wed, 14 Aug 2013 13:49:04 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Peter Maydell <peter.maydell@linaro.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        qemu-devel@nongnu.org, Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
+Message-ID: <20130814124904.GQ23006@n2100.arm.linux.org.uk>
+References: <20130812164548.GE23006@n2100.arm.linux.org.uk> <CAFEAcA97PuORg920f-A_8rvCgBq=k5Y=0W6m2Nv8nnzjY19Utg@mail.gmail.com> <20130812200628.GG23006@n2100.arm.linux.org.uk> <CAFEAcA9BA7zfaO1J5zVaEcG-AgOo6dyiew08-o2eObuBe-KWig@mail.gmail.com> <20130812212149.GH23006@n2100.arm.linux.org.uk> <CAFEAcA_0kzS=Z5oTxrr=B74wjf1x=M6dXwH7Fcgf77Pca90Gjw@mail.gmail.com> <20130812221250.GI23006@n2100.arm.linux.org.uk> <20130812230408.GA4420@roeck-us.net> <20130814103346.GN23006@n2100.arm.linux.org.uk> <CAFEAcA8u_c=seOQ+y44H2Vpefyx4EisiZ-ZqBxuPsyoYjCt3vQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376464556.9273.75.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <CAFEAcA8u_c=seOQ+y44H2Vpefyx4EisiZ-ZqBxuPsyoYjCt3vQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 08:15:56AM +0100, Ian Campbell wrote:
-> On Tue, 2013-08-13 at 20:10 -0400, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Aug 13, 2013 at 11:20:05PM +0100, Ian Campbell wrote:
-> > > On Tue, 2013-08-13 at 21:59 +0100, Ian Campbell wrote:
-> > > 
-> > > > > What it should be is:
-> > > > > > >  
-> > > > > > >  void xen_raw_console_write(const char *str)
-> > > > > > >  {
-> > > > > > > -	dom0_write_console(0, str, strlen(str));
-> > > > > > > +	if (!xen_domain())
-> > > > > > > +		return;
-> > > > > > > +
-> > > > > > > +	if (xen_pv_domain())
-> > > > >             xen_domain()
-> > > > > 
-> > > > > > > +		dom0_write_console(0, str, strlen(str));
-> > > > > > > +	else if (xen_hvm_domain() || xen_cpuid_base()) {
-> > > > >      
-> > > > > 	else if (xen_cpuid_base()) {
-> > > > > 
-> > > > > > > +		/* The hyperpage has not been setup yet. */
-> > > > > > > +		int i, len = strlen(str);
-> > > > > > > +		for (i = 0; i < len; i++)
-> > > > > > > +			 outb(str[i], 0xe9);
-> > > > > > > +	}
-> > > > > > >  }
-> > > > > 
-> > > > > And then that should adhere to what I wrote up.
-> > > > 
-> > > > I think it does too.
-> > > 
-> > > Except as Daniel notes in <520A7145.5010306@tycho.nsa.gov> for unrelated
-> > > reasons:
-> > > 
-> > > >         HVM guests can still use the PV output - they just need to use the console
-> > > >         write hypercall instead of the HVM I/O port. I would think that PVH guests
-> > > >         would default to using the hypercall as it is more efficient (it takes a
-> > > >         string rather than one character per write).
-> > > >         
-> > > >         Actually, checking... the console_io hypercall would need to be added to
-> > > >         the hvm_hypercall{32,64}_table for an HVM guest to be able to use it; they
-> > > >         currently must use the I/O port. I didn't check the PVH patches.
-> > > 
-> > > Or did you actually try this code and it worked?
-> > 
-> > The one I typed up above - no. The one I had sent - yes.
-> > 
-> > But with that above mentioned comment from Daniel I think it is still
-> > worth trying to do dom0_write_console and if the hypercall returns -ENOSYS 
-> > then fall back on 0xe9.
-> > 
-> > And lastly send an patch to make hypercall_io work under HVM.
+On Wed, Aug 14, 2013 at 01:44:44PM +0100, Peter Maydell wrote:
+> On 14 August 2013 11:33, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Mon, Aug 12, 2013 at 04:04:08PM -0700, Guenter Roeck wrote:
+> >> Hacked diff is below. Can I write that up as clean patch and submit it,
+> >> or do we need a test on real hardware ?
+> >
+> > Well, if we want to ensure that it is really correct, the sensible thing
+> > to do is to try it on real hardware, otherwise we're risking yet another
+> > change to this.
+> >
+> > Earlier in this thread, some people said that they have the hardware, so
+> > it shouldn't be that difficult to get it tested on real stuff.
 > 
-> So you didn't try under PVHVM? That's what I was asking when I asked if
-> you tried it, since that is the point of this patch.
+> Yes, I definitely think we should test on the hardware before we
+> land yet another change to this PCI code that hasn't really been
+> thoroughly tested on anything. I have the board/backplane on my
+> desk but it'll be later in the week before I can do the testing
+> (currently still messing with uboot config to get it to actually
+> boot a kernel).
 
-Not the one I typed up above. Just the one I sent. I have a habit of
-sending patches that have been tested first - and I hadn't had the chance
-yet to redo it the way above.
+Realview or Versatile?  I still need to sort out Realview.
 
-> 
-> Ian.
-> 
-> Ian.
-> 
+The alternative is - I have both the Realview EB and Versatile PB926
+here, but no backplane (it wasn't deemed to be necessary for me to
+have such a thing.)  If someone wants to donate a backplane...
