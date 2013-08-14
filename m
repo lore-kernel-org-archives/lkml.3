@@ -1,125 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759623Ab3HNJXG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 05:23:06 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:35801 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759357Ab3HNJXD convert rfc822-to-8bit (ORCPT
+	id S932208Ab3HNJX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:23:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43762 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759357Ab3HNJX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 05:23:03 -0400
-Message-ID: <520B4C76.8020900@arm.com>
-Date: Wed, 14 Aug 2013 10:23:02 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 14 Aug 2013 05:23:28 -0400
+Message-ID: <520B4C8E.1010808@linaro.org>
+Date: Wed, 14 Aug 2013 11:23:26 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Rob Herring <robherring2@gmail.com>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [GIT PULL] DT/core: cpu_ofnode updates for v3.12
-References: <5208E2D3.7060005@arm.com> <520A536C.3030600@arm.com> <CAL_JsqJdGXuTmb2kgBwgmRYGs9f92-dsawDXSXjmJW8cwjFVQQ@mail.gmail.com> <1974929.8mIZF44QnT@vostro.rjw.lan>
-In-Reply-To: <1974929.8mIZF44QnT@vostro.rjw.lan>
-X-OriginalArrivalTime: 14 Aug 2013 09:23:00.0361 (UTC) FILETIME=[DEC7C790:01CE98CF]
-X-MC-Unique: 113081410230100401
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/6] ARM/ARM64: arch_timer: add macros for bits in
+ control register
+References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-2-git-send-email-Sudeep.KarkadaNagesha@arm.com> <520B44CF.6040403@linaro.org> <6071c584a32b1a5f80923818a477a719@www.loen.fr>
+In-Reply-To: <6071c584a32b1a5f80923818a477a719@www.loen.fr>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/08/13 20:45, Rafael J. Wysocki wrote:
-> On Tuesday, August 13, 2013 01:44:23 PM Rob Herring wrote:
->> On Tue, Aug 13, 2013 at 10:40 AM, Sudeep KarkadaNagesha
->> <Sudeep.KarkadaNagesha@arm.com> wrote:
->>> Adding PowerPC list
+On 08/14/2013 11:03 AM, Marc Zyngier wrote:
+> Hi Daniel,
+
+[ ... ]
+
+>>> --- a/arch/arm64/include/asm/arch_timer.h
+>>> +++ b/arch/arm64/include/asm/arch_timer.h
+>>> @@ -101,12 +101,16 @@ static inline void
+>>> arch_counter_set_user_access(void)
+>>>  {
+>>>      u32 cntkctl;
 >>>
->>> On 13/08/13 14:00, Rafael J. Wysocki wrote:
->>>> On Monday, August 12, 2013 02:27:47 PM Sudeep KarkadaNagesha wrote:
->>>>> The following changes since commit
->>>>> d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
->>>>>
->>>>> Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
->>>>>
->>>>> are available in the git repository at:
->>>>>
->>>>> git://linux-arm.org/linux-skn.git cpu_of_node
->>
->> [snip]
->>
->>>> All error/warnings:
->>>>
->>>> warning: (MPC836x_RDK && MTD_NAND_FSL_ELBC && MTD_NAND_FSL_UPM)
->>>> selects FSL_LBC which has unmet direct dependencies (FSL_SOC)
->>>> warning: (MPC836x_RDK && MTD_NAND_FSL_ELBC && MTD_NAND_FSL_UPM)
->>>> selects FSL_LBC which has unmet direct dependencies (FSL_SOC)
->>>> In file included from arch/powerpc/include/asm/kvm_para.h:26:0, from
->>>> include/uapi/linux/kvm_para.h:26, from include/linux/kvm_para.h:4,
->>>> from include/linux/kvm_host.h:30, from
->>>> arch/powerpc/kernel/asm-offsets.c:53:
->>>> include/linux/of.h:269:28: error: conflicting types for
->>>> 'of_get_cpu_node'
->>>> extern struct device_node *of_get_cpu_node(int cpu); ^ In file
->>>> included from include/linux/of.h:139:0, from
->>>> arch/powerpc/include/asm/kvm_para.h:26, from
->>>> include/uapi/linux/kvm_para.h:26, from include/linux/kvm_para.h:4,
->>>> from include/linux/kvm_host.h:30, from
->>>> arch/powerpc/kernel/asm-offsets.c:53:
->>>> arch/powerpc/include/asm/prom.h:47:21: note: previous declaration
->>>> of 'of_get_cpu_node' was here
->>>> struct device_node *of_get_cpu_node(int cpu, unsigned int *thread);
->>>> ^ make[2]: *** [arch/powerpc/kernel/asm-offsets.s] Error 1 make[2]:
->>>> Target `__build' not remade because of errors. make[1]: ***
->>>> [prepare0] Error 2 make[1]: Target `prepare' not remade because of
->>>> errors. make: *** [sub-make] Error 2
->>>>
+>>> -    /* Disable user access to the timers and the physical counter. */
+>>>      asm volatile("mrs    %0, cntkctl_el1" : "=r" (cntkctl));
+>>> -    cntkctl &= ~((3 << 8) | (1 << 0));
 >>>
->>> There seems to be conflict in the new function "of_get_cpu_node" added.
->>> PowerPC also defines the same function name. Further microblaze and
->>> openrisc declares it(can be removed) but doesn't define it.
->>> To fix this:
->>> 1. I can rename the newly added function to something different like
->>>    `of_get_cpunode` or
->>> 2. If of_* namespace should be used by only OF/FDT and not by any
->>>    architecture specific code, then the arch specific version can be
->>>    renamed to some thing like arch_of_get_cpu_node.
->>>    Also most of the calls to arch specific function can be moved to
->>>    generic code.
->>>
->>> Let me know your thoughts.
+>>> -    /* Enable user access to the virtual counter and frequency. */
+>>> -    cntkctl |= (1 << 1);
+>>> +    /* Disable user access to the timers and the physical counter. */
+>>> +    cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
+>>> +            | ARCH_TIMER_USR_VT_ACCESS_EN
+>>> +            | ARCH_TIMER_USR_PCT_ACCESS_EN);
+>>> +
+>>> +    /* Enable user access to the virtual counter. */
+>>> +    cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
+>>> +
+>>>      asm volatile("msr    cntkctl_el1, %0" : : "r" (cntkctl));
+>>>  }
 >>
->> It is up to Rafael if he is willing/able to rebase his tree, but I
->> would drop this series until this is sorted out.
+>> Before doing those changes, I suggest you kill include/asm/arch_timer.h
+>> header file and move the functions directly in the arm_arch_timer.c as
+>> they are only used by it.
 > 
-> Yeah, I've just done that.
-> 
-Thanks Rafael, sorry for the trouble. I didn't expect of_* name-space to
-be used in ARCH specific code.
+> How do you suggest to proceed? Having #ifdefs in arm_arch_timer.c to
+> cope with the inline assembly functions present in both arm and arm64
+> include files? Doesn't seem much of a progress to me...
 
->> I think the new common function should be and can be generalized to work for
->> powerpc.
->> It would need to make reg property optional and pass in the device
->> node to the arch specific function.
->>
->> A short term solution would be just to make the function "#ifndef CONFIG_PPC".
-> 
-> I wouldn't do that, it's almost guaranteed to be messy going forward.
-> 
-> I'd go for 1 above personally.
+I understand, this is arguable.
 
-Even though it's easier approach, I would go for fixing PPC and converge
-at generic of_get_cpu_node implementation if possible.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-Regards,
-Sudeep
-
-
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
