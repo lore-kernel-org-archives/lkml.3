@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258Ab3HNWJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:09:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55844 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933115Ab3HNWJD (ORCPT
+	id S933290Ab3HNWKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:10:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37931 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933115Ab3HNWKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:09:03 -0400
-Date: Wed, 14 Aug 2013 15:09:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        dave@sr71.net, isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] mm/hotplug: Verify hotplug memory range
-Message-Id: <20130814150901.cd430738912a893d74769e1b@linux-foundation.org>
-In-Reply-To: <1376162252-26074-1-git-send-email-toshi.kani@hp.com>
-References: <1376162252-26074-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Aug 2013 18:10:09 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH] net: rfkill: Do not ignore errors from regulator_enable()
+Date: Wed, 14 Aug 2013 23:10:06 +0100
+Message-Id: <1376518206-10710-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Aug 2013 13:17:32 -0600 Toshi Kani <toshi.kani@hp.com> wrote:
+Function regulator_enable() may return an error that has to be checked.
+This patch changes function rfkill_regulator_set_block() so that it checks
+for the return code.  Also, rfkill_data->reg_enabled is set to 'true' only
+if there is no error.
 
-> add_memory() and remove_memory() can only handle a memory range aligned
-> with section.  There are problems when an unaligned range is added and
-> then deleted as follows:
-> 
->  - add_memory() with an unaligned range succeeds, but __add_pages()
->    called from add_memory() adds a whole section of pages even though
->    a given memory range is less than the section size.
->  - remove_memory() to the added unaligned range hits BUG_ON() in
->    __remove_pages().
-> 
-> This patch changes add_memory() and remove_memory() to check if a given
-> memory range is aligned with section at the beginning.  As the result,
-> add_memory() fails with -EINVAL when a given range is unaligned, and
-> does not add such memory range.  This prevents remove_memory() to be
-> called with an unaligned range as well.  Note that remove_memory() has
-> to use BUG_ON() since this function cannot fail.
-> 
-> ...
->
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1069,6 +1069,22 @@ out:
->  	return ret;
->  }
->  
-> +static int check_hotplug_memory_range(u64 start, u64 size)
-> +{
-> +	u64 start_pfn = start >> PAGE_SHIFT;
-> +	u64 nr_pages = size >> PAGE_SHIFT;
-> +
-> +	/* Memory range must be aligned with section */
-> +	if ((start_pfn & ~PAGE_SECTION_MASK) ||
-> +	    (nr_pages % PAGES_PER_SECTION) || (!nr_pages)) {
-> +		pr_err("Section-unaligned hotplug range: start 0x%llx, size 0x%llx\n",
-> +				start, size);
+This fixes the following compilation warning:
 
-Printing a u64 is problematic.  Here you assume that u64 is implemented
-as unsigned long long.  But it can be implemented as unsigned long, by
-architectures which use include/asm-generic/int-l64.h.  Such an
-architecture will generate a compile warning here, but I can't
-immediately find a Kconfig combination which will make that happen.
+net/rfkill/rfkill-regulator.c:43:20: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]
 
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ net/rfkill/rfkill-regulator.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/net/rfkill/rfkill-regulator.c b/net/rfkill/rfkill-regulator.c
+index d11ac79..cf5b145 100644
+--- a/net/rfkill/rfkill-regulator.c
++++ b/net/rfkill/rfkill-regulator.c
+@@ -30,6 +30,7 @@ struct rfkill_regulator_data {
+ static int rfkill_regulator_set_block(void *data, bool blocked)
+ {
+ 	struct rfkill_regulator_data *rfkill_data = data;
++	int ret = 0;
+ 
+ 	pr_debug("%s: blocked: %d\n", __func__, blocked);
+ 
+@@ -40,15 +41,16 @@ static int rfkill_regulator_set_block(void *data, bool blocked)
+ 		}
+ 	} else {
+ 		if (!rfkill_data->reg_enabled) {
+-			regulator_enable(rfkill_data->vcc);
+-			rfkill_data->reg_enabled = true;
++			ret = regulator_enable(rfkill_data->vcc);
++			if (!ret)
++				rfkill_data->reg_enabled = true;
+ 		}
+ 	}
+ 
+ 	pr_debug("%s: regulator_is_enabled after set_block: %d\n", __func__,
+ 		regulator_is_enabled(rfkill_data->vcc));
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static struct rfkill_ops rfkill_regulator_ops = {
+-- 
+1.8.3.2
 
