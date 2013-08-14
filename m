@@ -1,174 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932824Ab3HNLDk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 07:03:40 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:60107
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932787Ab3HNLDi (ORCPT
+	id S1759722Ab3HNLGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 07:06:06 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:60889 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab3HNLGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 07:03:38 -0400
-X-IronPort-AV: E=Sophos;i="4.89,876,1367964000"; 
-   d="scan'208";a="23920207"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 28/29] drivers/input/{keyboard,serio}: simplify use of devm_ioremap_resource
-Date: Wed, 14 Aug 2013 13:03:33 +0200
-Message-Id: <1376478213-24091-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	Wed, 14 Aug 2013 07:06:04 -0400
+Date: Wed, 14 Aug 2013 13:05:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Travis <travis@sgi.com>, Nathan Zimmer <nzimmer@sgi.com>,
+        Peter Anvin <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
+ embedded in the buddy allocator
+Message-ID: <20130814110556.GH10849@gmail.com>
+References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com>
+ <1376344480-156708-1-git-send-email-nzimmer@sgi.com>
+ <CA+55aFwTQLexJkf67P0b7Z7cw8fePjdDSdA4SOkM+Jf+kBPYEA@mail.gmail.com>
+ <520A6DFC.1070201@sgi.com>
+ <CA+55aFwRHdQ_f6ryUU1yWkW1Qz8cG958jLZuyhd_YdOq4-rfRA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwRHdQ_f6ryUU1yWkW1Qz8cG958jLZuyhd_YdOq4-rfRA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Remove unneeded error handling on the result of a call to
-platform_get_resource when the value is passed to devm_ioremap_resource.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Move the call to platform_get_resource adjacent to the call to
-devm_ioremap_resource to make the connection between them more clear.
+> [...]
+> 
+> Ok, so I don't know all the issues, and in many ways I don't even really 
+> care. You could do it other ways, I don't think this is a big deal. The 
+> part I hate is the runtime hook into the core MM page allocation code, 
+> so I'm just throwing out any random thing that comes to my mind that 
+> could be used to avoid that part.
 
-A simplified version of the semantic patch that makes this change is as
-follows: (http://coccinelle.lip6.fr/)
+So, my hope was that it's possible to have a single, simple, zero-cost 
+runtime check [zero cost for already initialized pages], because it can be 
+merged into already existing page flag mask checks present here and 
+executed for every freshly allocated page:
 
-// <smpl>
-@@
-expression pdev,res,n,e,e1;
-expression ret != 0;
-identifier l;
-@@
+static inline int check_new_page(struct page *page)
+{
+        if (unlikely(page_mapcount(page) |
+                (page->mapping != NULL)  |
+                (atomic_read(&page->_count) != 0)  |
+                (page->flags & PAGE_FLAGS_CHECK_AT_PREP) |
+                (mem_cgroup_bad_page_check(page)))) {
+                bad_page(page);
+                return 1;
+        }
+        return 0;
+}
 
-- res = platform_get_resource(pdev, IORESOURCE_MEM, n);
-  ... when != res
-- if (res == NULL) { ... \(goto l;\|return ret;\) }
-  ... when != res
-+ res = platform_get_resource(pdev, IORESOURCE_MEM, n);
-  e = devm_ioremap_resource(e1, res);
-// </smpl>
+We already run this for every new page allocated and the initialization 
+check could hide in PAGE_FLAGS_CHECK_AT_PREP in a zero-cost fashion.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+I'd not do any of the ensure_page_is_initialized() or 
+__expand_page_initialization() complications in this patch-set - each page 
+head represents itself and gets iterated when check_new_page() is done.
 
----
- drivers/input/keyboard/imx_keypad.c     |    7 +------
- drivers/input/keyboard/nspire-keypad.c  |    7 +------
- drivers/input/keyboard/spear-keyboard.c |    7 +------
- drivers/input/serio/arc_ps2.c           |    7 +------
- drivers/input/serio/olpc_apsp.c         |    3 ---
- 5 files changed, 4 insertions(+), 27 deletions(-)
+During regular bootup we'd initialize like before, except we don't set up 
+the page heads but memset() them to zero. With each page head 32 bytes 
+this would mean 8 GB of page head memory to clear per 1 TB - with 16 TB 
+that's 128 GB to clear - that ought to be possible to do rather quickly, 
+perhaps with some smart SMP cross-call approach that makes sure that each 
+memset is done in a node-local fashion. [*]
 
-diff --git a/drivers/input/keyboard/imx_keypad.c b/drivers/input/keyboard/imx_keypad.c
-index 03c8cc5..328cfc1 100644
---- a/drivers/input/keyboard/imx_keypad.c
-+++ b/drivers/input/keyboard/imx_keypad.c
-@@ -442,12 +442,6 @@ static int imx_keypad_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
--		dev_err(&pdev->dev, "no I/O memory defined in platform data\n");
--		return -EINVAL;
--	}
--
- 	input_dev = devm_input_allocate_device(&pdev->dev);
- 	if (!input_dev) {
- 		dev_err(&pdev->dev, "failed to allocate the input device\n");
-@@ -468,6 +462,7 @@ static int imx_keypad_probe(struct platform_device *pdev)
- 	setup_timer(&keypad->check_matrix_timer,
- 		    imx_keypad_check_for_events, (unsigned long) keypad);
- 
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	keypad->mmio_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(keypad->mmio_base))
- 		return PTR_ERR(keypad->mmio_base);
-diff --git a/drivers/input/keyboard/nspire-keypad.c b/drivers/input/keyboard/nspire-keypad.c
-index 20d872d..b3e3eda 100644
---- a/drivers/input/keyboard/nspire-keypad.c
-+++ b/drivers/input/keyboard/nspire-keypad.c
-@@ -171,12 +171,6 @@ static int nspire_keypad_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "missing platform resources\n");
--		return -EINVAL;
--	}
--
- 	keypad = devm_kzalloc(&pdev->dev, sizeof(struct nspire_keypad),
- 			      GFP_KERNEL);
- 	if (!keypad) {
-@@ -208,6 +202,7 @@ static int nspire_keypad_probe(struct platform_device *pdev)
- 		return PTR_ERR(keypad->clk);
- 	}
- 
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	keypad->reg_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(keypad->reg_base))
- 		return PTR_ERR(keypad->reg_base);
-diff --git a/drivers/input/keyboard/spear-keyboard.c b/drivers/input/keyboard/spear-keyboard.c
-index 7111124..85ff530 100644
---- a/drivers/input/keyboard/spear-keyboard.c
-+++ b/drivers/input/keyboard/spear-keyboard.c
-@@ -191,12 +191,6 @@ static int spear_kbd_probe(struct platform_device *pdev)
- 	int irq;
- 	int error;
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "no keyboard resource defined\n");
--		return -EBUSY;
--	}
--
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
- 		dev_err(&pdev->dev, "not able to get irq for the device\n");
-@@ -228,6 +222,7 @@ static int spear_kbd_probe(struct platform_device *pdev)
- 		kbd->suspended_rate = pdata->suspended_rate;
- 	}
- 
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	kbd->io_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(kbd->io_base))
- 		return PTR_ERR(kbd->io_base);
-diff --git a/drivers/input/serio/arc_ps2.c b/drivers/input/serio/arc_ps2.c
-index 3fb7727..8024a6d 100644
---- a/drivers/input/serio/arc_ps2.c
-+++ b/drivers/input/serio/arc_ps2.c
-@@ -189,12 +189,6 @@ static int arc_ps2_probe(struct platform_device *pdev)
- 	int irq;
- 	int error, id, i;
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(&pdev->dev, "no IO memory defined\n");
--		return -EINVAL;
--	}
--
- 	irq = platform_get_irq_byname(pdev, "arc_ps2_irq");
- 	if (irq < 0) {
- 		dev_err(&pdev->dev, "no IRQ defined\n");
-@@ -208,6 +202,7 @@ static int arc_ps2_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	arc_ps2->addr = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(arc_ps2->addr))
- 		return PTR_ERR(arc_ps2->addr);
-diff --git a/drivers/input/serio/olpc_apsp.c b/drivers/input/serio/olpc_apsp.c
-index 818aa46..51b1d40 100644
---- a/drivers/input/serio/olpc_apsp.c
-+++ b/drivers/input/serio/olpc_apsp.c
-@@ -183,9 +183,6 @@ static int olpc_apsp_probe(struct platform_device *pdev)
- 
- 	np = pdev->dev.of_node;
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENOENT;
--
- 	priv->base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(priv->base)) {
- 		dev_err(&pdev->dev, "Failed to map WTM registers\n");
+Such an approach should IMO be far smaller and less invasive than the 
+patches presented so far: it should be below 100 lines or so.
 
+I don't know why there's such a big difference between the theory I 
+outlined and the invasive patch-set implemented so far in practice, 
+perhaps I'm missing some complication. I was trying to probe that 
+difference, before giving up on the idea and punting back to the async 
+hotplug-ish approach which would obviously work well too.
+
+All in one, I think async init just hides the real problem - there's no 
+way memory init should take this long.
+
+Thanks,
+
+	Ingo
+
+[*] alternatively maybe the main performance problem is that node-local 
+    memory is set up on a remote (boot) node? In that case I'd try to
+    optimize it by migrating the memory init code's current node by using
+    set_cpus_allowed() to live migrate from node to node, tracking the 
+    node whose struct page array is being initialized.
