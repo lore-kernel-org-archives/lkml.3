@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760057Ab3HNQQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:16:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47704 "EHLO mx2.suse.de"
+	id S932695Ab3HNQRq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:17:46 -0400
+Received: from mx.mmd.net ([80.83.0.3]:57314 "EHLO mx.mmd.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759031Ab3HNQQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:16:47 -0400
-Date: Wed, 14 Aug 2013 17:16:42 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Xishi Qiu <qiuxishi@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
-Message-ID: <20130814161642.GM2296@suse.de>
-References: <520B0B75.4030708@huawei.com>
- <20130814085711.GK2296@suse.de>
- <20130814155205.GA2706@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130814155205.GA2706@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759999Ab3HNQRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 12:17:42 -0400
+From: tuukka.tikkanen@linaro.org
+To: rjw@sisk.pl, daniel.lezcano@linaro.org, linux-pm@vger.kernel.org
+Cc: private-pmwg@linaro.org, linux-kernel@vger.kernel.org,
+        Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+Subject: [PATCH 7/8] Cpuidle: Add a comment warning about possible overflow
+Date: Wed, 14 Aug 2013 19:02:40 +0300
+Message-Id: <d1fb1c549383befe9e1376d59c0d2ecde8e4ed7c.1376493949.git.tuukka.tikkanen@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1376487596.git.tuukka.tikkanen@linaro.org>
+References: <cover.1376487596.git.tuukka.tikkanen@linaro.org>
+In-Reply-To: <cover.1376493949.git.tuukka.tikkanen@linaro.org>
+References: <cover.1376493949.git.tuukka.tikkanen@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 12:52:29AM +0900, Minchan Kim wrote:
-> Hi Mel,
-> 
-> On Wed, Aug 14, 2013 at 09:57:11AM +0100, Mel Gorman wrote:
-> > On Wed, Aug 14, 2013 at 12:45:41PM +0800, Xishi Qiu wrote:
-> > > A large free page buddy block will continue many times, so if the page 
-> > > is free, skip the whole page buddy block instead of one page.
-> > > 
-> > > Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> > 
-> > page_order cannot be used unless zone->lock is held which is not held in
-> > this path. Acquiring the lock would prevent parallel allocations from the
-> 
-> Argh, I missed that. And it seems you already pointed it out long time ago
-> someone try to do same things if I remember correctly. :(
+From: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
 
-It feels familiar but I do not remember why.
+The menu governor has a number of tunable constants that may be changed
+in the source. If certain combination of values are chosen, an overflow
+is possible when the correction_factor is being recalculated.
 
-> But let's think about it more.
-> 
-> It's always not right because CMA and memory-hotplug already isolated
-> free pages in the range to MIGRATE_ISOLATE right before starting migration
-> so we could use page_order safely in those contexts even if we don't hold
-> zone->lock.
->  
+This patch adds a warning regarding this possibility and describes the
+change needed for fixing the issue. The change should not be permanently
+enabled, as it will hurt performance when it is not needed.
 
-Both of those are teh corner cases. Neither operation happen frequently
-in comparison to something like THP allocations for example. I think an
-optimisation along those lines is marginal at best.
+Signed-off-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+---
+ drivers/cpuidle/governors/menu.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-> In addition, it's likely to have many free pages in case of CMA because CMA
-> makes MIGRATE_CMA fallback of MIGRATE_MOVABLE to minimize number of migrations.
-> Even CMA area was full, it could have many free pages once driver who is
-> CMA area's owner releases the CMA area. So, the bigger CMA space is,
-> the bigger patch's benefit is. And it could help memory-hotplug, too.
-> 
-> Only problem is normal compaction. The worst case is just skipping
-> pageblock_nr_pages, for instace, 4M(of course, it depends on configuration).
-> but we can make the race window very small by dobule checking PageBuddy.
-> Still, it could make the race theoretically but I think it's really really
-> unlikely and still enhance compaction overhead withtout holding the lock.
-> Even if the race happens, normal compaction's customers(ex, THP) doesn't
-> have critical result and just fallback. So I think it isn't not bad tradeoff.
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 05ccb4c..2341d52 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -520,8 +520,18 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			goto next_pageblock;
->  
->  		/* Skip if free */
-> -		if (PageBuddy(page))
-> +		if (PageBuddy(page)) {
-> +			/*
-> +			 * page_order is racy without zone->lock but worst case
-> +			 * by the racing is just skipping pageblock_nr_pages.
-> +			 * but even the race is really unlikely by double
-> +			 * check of PageBuddy.
-> +			 */
-> +			unsigned long order = page_order(page);
-> +			if (PageBuddy(page))
-> +				low_pfn += (1 << order) - 1;
->  			continue;
-> +		}
->  
-
-Even if the page is still page buddy, there is no guarantee that it's
-the same page order as the first read. It could have be currently
-merging with adjacent buddies for example. There is also a really
-small race that a page was freed, allocated with some number stuffed
-into page->private and freed again before the second PageBuddy check.
-It's a bit of a hand grenade. How much of a performance benefit is there
-from this patch?
-
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index 96fd10d..f277c13 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -21,6 +21,15 @@
+ #include <linux/math64.h>
+ #include <linux/module.h>
+ 
++/*
++ * Please note when changing the tuning values:
++ * If (MAX_INTERESTING-1) * RESOLUTION > ULONG_MAX, the result of
++ * a scaling operation multiplication may overflow on 32 bit platforms.
++ * In that case, #define RESOLUTION as ULL to get 64 bit result:
++ * #define RESOLUTION 1024ULL
++ *
++ * The default values do not overflow.
++ */
+ #define BUCKETS 12
+ #define INTERVALS 8
+ #define RESOLUTION 1024
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
