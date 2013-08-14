@@ -1,95 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760144Ab3HNRlB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 13:41:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53498 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760124Ab3HNRk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 13:40:59 -0400
-Date: Wed, 14 Aug 2013 18:40:51 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
-Message-ID: <20130814174050.GN2296@suse.de>
-References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
+	id S1760137Ab3HNRmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 13:42:22 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46399 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758368Ab3HNRmU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 13:42:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1376459736-7384-1-git-send-email-minchan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [86.59.245.170]
+Date: Wed, 14 Aug 2013 19:42:19 +0200
+Message-ID: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+Subject: DoS with unprivileged mounts
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 02:55:31PM +0900, Minchan Kim wrote:
-> It's 6th trial of zram/zsmalloc promotion.
-> [patch 5, zram: promote zram from staging] explains why we need zram.
-> 
-> Main reason to block promotion is there was no review of zsmalloc part
-> while Jens already acked zram part.
-> 
-> At that time, zsmalloc was used for zram, zcache and zswap so everybody
-> wanted to make it general and at last, Mel reviewed it.
-> Most of review was related to zswap dumping mechanism which can pageout
-> compressed page into swap in runtime and zswap gives up using zsmalloc
-> and invented a new wheel, zbud. Other reviews were not major.
-> http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
-> 
+There's a simple and effective way to prevent unlink(2) and rename(2)
+from operating on any file or directory by simply mounting something
+on it.  In any mount instance in any namespace.
 
-zsmalloc has unpredictable performance characteristics when reclaiming
-a single page when it was used to back zswap. I felt the unpredictable
-performance characteristics would make it close to impossible to support
-for normal server workloads. It would appear to work well until there were
-massive stalls and I do not think this was ever properly investigated. At one
-point I would have been happy if zsmalloc could be tuned to store only store
-2 compressed pages  per physical page but cannot remember why that proposal
-was never implemented (or if it was and I missed it or forgot). I expected
-it would change over time but there were no follow-ups that I'm aware of.
+Was this considered in the unprivileged mount design?
 
-I do not believe this is a problem for zram as such because I do not
-think it ever writes back to disk and is immune from the unpredictable
-performance characteristics problem. The problem for zram using zsmalloc
-is OOM killing. If it's used for swap then there is no guarantee that
-killing processes frees memory and that could result in an OOM storm.
-Of course there is no guarantee that memory is freed with zbud either but
-you are guaranteed that freeing 50%+1 of the compressed pages will free a
-single physical page. The characteristics for zsmalloc are much more severe.
-This might be managable in an applicance with very careful control of the
-applications that are running but not for general servers or desktops.
+The solution is also theoretically simple: mounts in unpriv namespaces
+are marked "volatile" and are dissolved on an unlink type operation.
 
-If it's used for something like tmpfs then it becomes much worse. Normal
-tmpfs without swap can lockup if tmpfs is allowed to fill memory. In a
-sane configuration, lockups will be avoided and deleting a tmpfs file is
-guaranteed to free memory. When zram is used to back tmpfs, there is no
-guarantee that any memory is freed due to fragmentation of the compressed
-pages. The only way to recover the memory may be to kill applications
-holding tmpfs files open and then delete them which is fairly drastic
-action in a normal server environment.
+Such volatile mounts would be useful in general too.
 
-These are the sort of reason why I feel that zram has limited cases where
-it is safe to use and zswap has a wider range of applications. At least
-I would be very unhappy to try supporting zram in the field for normal
-servers. zswap should be able to replace the functionality of zram+swap
-by backing zswap with a pseudo block device that rejects all writes. I
-do not know why this never happened but guess the zswap people never were
-interested and the zram people never tried. Why was the pseudo device
-to avoid writebacks never implemented? Why was the underlying allocator
-not made pluggable to optionally use zsmalloc when the user did not care
-that it had terrible writeback characteristics?
-
-zswap cannot replicate zram+tmpfs but I also think that such a configuration
-is a bad idea anyway. As zram is already being deployed then it might get
-promoted anyway but personally I think compressed memory continues to be
-a tragic story.
-
--- 
-Mel Gorman
-SUSE Labs
+Thanks,
+Miklos
