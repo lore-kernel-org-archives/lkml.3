@@ -1,168 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab3HNIlv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 04:41:51 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:43657 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759569Ab3HNIlq convert rfc822-to-8bit (ORCPT
+	id S1759561Ab3HNIu3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 04:50:29 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:47031 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759455Ab3HNIu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 04:41:46 -0400
-Message-ID: <520B42C8.7050102@arm.com>
-Date: Wed, 14 Aug 2013 09:41:44 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 14 Aug 2013 04:50:26 -0400
+Message-ID: <520B44CF.6040403@linaro.org>
+Date: Wed, 14 Aug 2013 10:50:23 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: "monstr@monstr.eu" <monstr@monstr.eu>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [GIT PULL] DT/core: cpu_ofnode updates for v3.12
-References: <5208E2D3.7060005@arm.com> <3356439.a21MloFP7n@vostro.rjw.lan> <520A536C.3030600@arm.com> <520A7CEE.40003@monstr.eu>
-In-Reply-To: <520A7CEE.40003@monstr.eu>
-X-OriginalArrivalTime: 14 Aug 2013 08:41:42.0831 (UTC) FILETIME=[1A0EB3F0:01CE98CA]
-X-MC-Unique: 113081409414302601
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v3 1/6] ARM/ARM64: arch_timer: add macros for bits in
+ control register
+References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+In-Reply-To: <1376414984-14182-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/08/13 19:37, Michal Simek wrote:
-> On 08/13/2013 05:40 PM, Sudeep KarkadaNagesha wrote:
->> Adding PowerPC list
->>
->> On 13/08/13 14:00, Rafael J. Wysocki wrote:
->>> On Monday, August 12, 2013 02:27:47 PM Sudeep KarkadaNagesha wrote:
->>>> The following changes since commit
->>>> d4e4ab86bcba5a72779c43dc1459f71fea3d89c8:
->>>>
->>>> Linux 3.11-rc5 (2013-08-11 18:04:20 -0700)
->>>>
->>>> are available in the git repository at:
->>>>
->>>> git://linux-arm.org/linux-skn.git cpu_of_node
->>>>
->>>> for you to fetch changes up to
->>>> 9e9e26dde91f22635c87d0e45f3938b5ded96f0d:
->>>>
->>>> cpufreq: pmac32-cpufreq: remove device tree parsing for cpu nodes 
->>>> (2013-08-12 10:22:29 +0100)
->>>>
->>>> ---------------------------------------------------------------- 
->>>> Sudeep KarkadaNagesha (16): of: add support for retrieving cpu node
->>>> for a given logical cpu index ARM: DT/kernel: define ARM specific
->>>> arch_match_cpu_phys_id driver/core: cpu: initialize of_node in
->>>> cpu's device struture of/device: add helper to get cpu device node
->>>> from logical cpu index ARM: topology: remove hwid/MPIDR dependency
->>>> from cpu_capacity ARM: mvebu: remove device tree parsing for cpu
->>>> nodes drivers/bus: arm-cci: avoid parsing DT for cpu device nodes 
->>>> cpufreq: imx6q-cpufreq: remove device tree parsing for cpu nodes 
->>>> cpufreq: cpufreq-cpu0: remove device tree parsing for cpu nodes 
->>>> cpufreq: highbank-cpufreq: remove device tree parsing for cpu
->>>> nodes cpufreq: spear-cpufreq: remove device tree parsing for cpu
->>>> nodes cpufreq: kirkwood-cpufreq: remove device tree parsing for cpu
->>>> nodes cpufreq: arm_big_little: remove device tree parsing for cpu
->>>> nodes cpufreq: maple-cpufreq: remove device tree parsing for cpu
->>>> nodes cpufreq: pmac64-cpufreq: remove device tree parsing for cpu
->>>> nodes cpufreq: pmac32-cpufreq: remove device tree parsing for cpu
->>>> nodes
->>>>
->>>> arch/arm/kernel/devtree.c           |  5 +++++ 
->>>> arch/arm/kernel/topology.c          | 61 
->>>> +++++++++++++++++++------------------------------------------ 
->>>> arch/arm/mach-imx/mach-imx6q.c      |  3 +-- 
->>>> arch/arm/mach-mvebu/platsmp.c       | 52 
->>>> ++++++++++++++++++++++++---------------------------- 
->>>> drivers/base/cpu.c                  |  2 ++ drivers/bus/arm-cci.c
->>>> | 28 +++++++--------------------- 
->>>> drivers/cpufreq/arm_big_little_dt.c | 40 
->>>> ++++++++++++++-------------------------- 
->>>> drivers/cpufreq/cpufreq-cpu0.c      | 23 ++++------------------- 
->>>> drivers/cpufreq/highbank-cpufreq.c  | 18 ++++++------------ 
->>>> drivers/cpufreq/imx6q-cpufreq.c     |  4 +--- 
->>>> drivers/cpufreq/kirkwood-cpufreq.c  |  8 +++++--- 
->>>> drivers/cpufreq/maple-cpufreq.c     | 23 +++-------------------- 
->>>> drivers/cpufreq/pmac32-cpufreq.c    |  5 +++-- 
->>>> drivers/cpufreq/pmac64-cpufreq.c    | 47 
->>>> +++++++++++------------------------------------ 
->>>> drivers/cpufreq/spear-cpufreq.c     |  4 ++-- drivers/of/base.c
->>>> | 73 
->>>> +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>>>
->>>>
->> include/linux/cpu.h                 |  1 +
->>>> include/linux/of.h                  |  6 ++++++ 
->>>> include/linux/of_device.h           | 15 +++++++++++++++ 19 files
->>>> changed, 202 insertions(+), 216 deletions(-)
->>>>
->>>>
->>>> PS: This patch series is reviewed and acknowledged @
->>>>
->>>> v1: https://lkml.org/lkml/2013/7/15/128 v2:
->>>> https://lkml.org/lkml/2013/7/17/341 v3:
->>>> https://lkml.org/lkml/2013/7/22/219
->>>
->>> Pulled, thanks!
->>>
->> Hi Rob, Rafael,
->>
->> On 13/08/13 15:16, kbuild test robot wrote:> tree:
->> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
->> bleeding-edge
->>> head:   0d4bcb5dc7d3040c0ce7572ea30ab9e5d9455bfa commit:
->>> 7939ff8d991de2c0b15064e76ee549a6df5ae67f [151/204] of: add
->>> support for retrieving cpu node for a given logical cpu index
->>> config: make ARCH=powerpc allmodconfig
->>>
->>> All error/warnings:
->>>
->>> warning: (MPC836x_RDK && MTD_NAND_FSL_ELBC && MTD_NAND_FSL_UPM)
->>> selects FSL_LBC which has unmet direct dependencies (FSL_SOC)
->>> warning: (MPC836x_RDK && MTD_NAND_FSL_ELBC && MTD_NAND_FSL_UPM)
->>> selects FSL_LBC which has unmet direct dependencies (FSL_SOC)
->>> In file included from arch/powerpc/include/asm/kvm_para.h:26:0, from
->>> include/uapi/linux/kvm_para.h:26, from include/linux/kvm_para.h:4, 
->>> from include/linux/kvm_host.h:30, from
->>> arch/powerpc/kernel/asm-offsets.c:53:
->>> include/linux/of.h:269:28: error: conflicting types for
->>> 'of_get_cpu_node'
->>> extern struct device_node *of_get_cpu_node(int cpu); ^ In file
->>> included from include/linux/of.h:139:0, from
->>> arch/powerpc/include/asm/kvm_para.h:26, from
->>> include/uapi/linux/kvm_para.h:26, from include/linux/kvm_para.h:4, 
->>> from include/linux/kvm_host.h:30, from
->>> arch/powerpc/kernel/asm-offsets.c:53: 
->>> arch/powerpc/include/asm/prom.h:47:21: note: previous declaration
->>> of 'of_get_cpu_node' was here
->>> struct device_node *of_get_cpu_node(int cpu, unsigned int *thread); 
->>> ^ make[2]: *** [arch/powerpc/kernel/asm-offsets.s] Error 1 make[2]:
->>> Target `__build' not remade because of errors. make[1]: ***
->>> [prepare0] Error 2 make[1]: Target `prepare' not remade because of
->>> errors. make: *** [sub-make] Error 2
->>>
->>
->> There seems to be conflict in the new function "of_get_cpu_node" added.
->> PowerPC also defines the same function name. Further microblaze and
->> openrisc declares it(can be removed) but doesn't define it.
+On 08/13/2013 07:29 PM, Sudeep KarkadaNagesha wrote:
+> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 > 
-> Feel free to remove it for Microblaze.
-> There was probably any reason why it was there.
-> Or maybe no reason and it was just there because Microblaze
-> was based on powerpc code.
->
+> Add macros to describe the bitfields in the ARM architected timer
+> control register to make code easy to understand.
+> 
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> Reviewed-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> ---
+>  arch/arm/include/asm/arch_timer.h    |  9 +++++++--
+>  arch/arm64/include/asm/arch_timer.h  | 12 ++++++++----
+>  include/clocksource/arm_arch_timer.h |  8 ++++++++
+>  3 files changed, 23 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+> index e406d57..9ef74da 100644
+> --- a/arch/arm/include/asm/arch_timer.h
+> +++ b/arch/arm/include/asm/arch_timer.h
+> @@ -95,8 +95,13 @@ static inline void arch_counter_set_user_access(void)
+>  
+>  	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
+>  
+> -	/* disable user access to everything */
+> -	cntkctl &= ~((3 << 8) | (7 << 0));
+> +	/* Disable user access to both physical/virtual counters/timers. */
+> +	/* Also disable virtual event stream */
+> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
+> +			| ARCH_TIMER_USR_VT_ACCESS_EN
+> +			| ARCH_TIMER_VIRT_EVT_EN
+> +			| ARCH_TIMER_USR_VCT_ACCESS_EN
+> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+>  
+>  	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
+>  }
+> diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+> index 98abd47..00b09d0 100644
+> --- a/arch/arm64/include/asm/arch_timer.h
+> +++ b/arch/arm64/include/asm/arch_timer.h
+> @@ -101,12 +101,16 @@ static inline void arch_counter_set_user_access(void)
+>  {
+>  	u32 cntkctl;
+>  
+> -	/* Disable user access to the timers and the physical counter. */
+>  	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+> -	cntkctl &= ~((3 << 8) | (1 << 0));
+>  
+> -	/* Enable user access to the virtual counter and frequency. */
+> -	cntkctl |= (1 << 1);
+> +	/* Disable user access to the timers and the physical counter. */
+> +	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
+> +			| ARCH_TIMER_USR_VT_ACCESS_EN
+> +			| ARCH_TIMER_USR_PCT_ACCESS_EN);
+> +
+> +	/* Enable user access to the virtual counter. */
+> +	cntkctl |= ARCH_TIMER_USR_VCT_ACCESS_EN;
+> +
+>  	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+>  }
 
-Thanks Michal, will remove it.
+Before doing those changes, I suggest you kill include/asm/arch_timer.h
+header file and move the functions directly in the arm_arch_timer.c as
+they are only used by it.
 
-Regards,
-Sudeep
+> diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+> index c463ce9..551f7e9 100644
+> --- a/include/clocksource/arm_arch_timer.h
+> +++ b/include/clocksource/arm_arch_timer.h
+> @@ -29,6 +29,14 @@
+>  #define ARCH_TIMER_PHYS_ACCESS		0
+>  #define ARCH_TIMER_VIRT_ACCESS		1
+>  
+> +#define ARCH_TIMER_USR_PCT_ACCESS_EN	(1 << 0) /* physical counter */
+> +#define ARCH_TIMER_USR_VCT_ACCESS_EN	(1 << 1) /* virtual counter */
+> +#define ARCH_TIMER_VIRT_EVT_EN		(1 << 2)
+> +#define ARCH_TIMER_EVT_TRIGGER_SHIFT	(4)
+> +#define ARCH_TIMER_EVT_TRIGGER_MASK	(0xF << ARCH_TIMER_EVT_TRIGGER_SHIFT)
+> +#define ARCH_TIMER_USR_VT_ACCESS_EN	(1 << 8) /* virtual timer registers */
+> +#define ARCH_TIMER_USR_PT_ACCESS_EN	(1 << 9) /* physical timer registers */
+> +
+>  #ifdef CONFIG_ARM_ARCH_TIMER
+>  
+>  extern u32 arch_timer_get_rate(void);
+> 
 
+
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
