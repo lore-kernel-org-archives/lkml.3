@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760188Ab3HNSei (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:34:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5091 "EHLO mga02.intel.com"
+	id S933000Ab3HNShA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:37:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:51381 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758401Ab3HNSeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:34:36 -0400
+	id S1759978Ab3HNSeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 14:34:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,878,1367996400"; 
-   d="scan'208";a="387159951"
+   d="scan'208";a="282038430"
 From: Andi Kleen <andi@firstfloor.org>
 To: mingo@kernel.org
 Cc: peterz@infradead.org, acme@infradead.org, linux-kernel@vger.kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/4] perf, x86: Report TSX transaction abort cost as weight v2
-Date: Wed, 14 Aug 2013 11:34:25 -0700
-Message-Id: <1376505267-8902-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 1/4] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v4
+Date: Wed, 14 Aug 2013 11:34:24 -0700
+Message-Id: <1376505267-8902-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1376505267-8902-1-git-send-email-andi@firstfloor.org>
 References: <1376505267-8902-1-git-send-email-andi@firstfloor.org>
@@ -25,115 +25,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Use the existing weight reporting facility to report the transaction
-abort cost, that is the number of cycles wasted in aborts.
-Haswell reports this in the PEBS record.
+With checkpointed counters there can be a situation where the counter
+is overflowing, aborts the transaction, is set back to a non overflowing
+checkpoint, causes interupt. The interrupt doesn't see the overflow
+because it has been checkpointed.  This is then a spurious PMI, typically with
+a ugly NMI message.  It can also lead to excessive aborts.
 
-This was in fact the original user for weight.
+Avoid this problem by:
+- Using the full counter width for counting counters (earlier patch)
+- Forbid sampling for checkpointed counters. It's not too useful anyways,
+checkpointing is mainly for counting. The check is approximate
+(to still handle KVM), but should catch the majority of cases.
+- On a PMI always set back checkpointed counters to zero.
 
-This is a very useful sort key to concentrate on the most
-costly aborts and a good metric for TSX tuning.
-
-v2: Add Peter's changes with minor modifications. More comments.
+v2: Add unlikely. Add comment
+v3: Allow large sampling periods with CP for KVM
+v4: Use event_is_checkpointed. Use EOPNOTSUPP. (Stephane Eranian)
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 55 +++++++++++++++++++++++--------
- 1 file changed, 42 insertions(+), 13 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c | 39 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 3065c57..ede2e40 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -182,16 +182,29 @@ struct pebs_record_nhm {
-  * Same as pebs_record_nhm, with two additional fields.
-  */
- struct pebs_record_hsw {
--	struct pebs_record_nhm nhm;
--	/*
--	 * Real IP of the event. In the Intel documentation this
--	 * is called eventingrip.
--	 */
--	u64 real_ip;
--	/*
--	 * TSX tuning information field: abort cycles and abort flags.
--	 */
--	u64 tsx_tuning;
-+	u64 flags, ip;
-+	u64 ax, bx, cx, dx;
-+	u64 si, di, bp, sp;
-+	u64 r8,  r9,  r10, r11;
-+	u64 r12, r13, r14, r15;
-+	u64 status, dla, dse, lat;
-+	u64 real_ip; /* the actual eventing ip */
-+	u64 tsx_tuning; /* TSX abort cycles and flags */
-+};
-+
-+union hsw_tsx_tuning {
-+	struct {
-+		u32 cycles_last_block     : 32,
-+		    hle_abort 	          : 1,
-+		    rtm_abort	          : 1,
-+		    instruction_abort     : 1,
-+		    non_instruction_abort : 1,
-+		    retry		  : 1,
-+		    data_conflict	  : 1,
-+		    capacity_writes	  : 1,
-+		    capacity_reads	  : 1;
-+	};
-+	u64	    value;
- };
- 
- void init_debug_store_on_cpu(int cpu)
-@@ -759,16 +772,26 @@ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- 	return 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index a45d8d4..9218025 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1134,6 +1134,11 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ 	__x86_pmu_enable_event(hwc, ARCH_PERFMON_EVENTSEL_ENABLE);
  }
  
-+static inline u64 intel_hsw_weight(struct pebs_record_hsw *pebs)
++static inline bool event_is_checkpointed(struct perf_event *event)
 +{
-+	if (pebs->tsx_tuning) {
-+		union hsw_tsx_tuning tsx = { .value = pebs->tsx_tuning };
-+		return tsx.cycles_last_block;
-+	}
-+	return 0;
++	return (event->hw.config & HSW_IN_TX_CHECKPOINTED) != 0;
 +}
 +
- static void __intel_pmu_pebs_event(struct perf_event *event,
- 				   struct pt_regs *iregs, void *__pebs)
+ /*
+  * Save and restart an expired event. Called by NMI contexts,
+  * so it has to be careful about preempting normal event ops:
+@@ -1141,6 +1146,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ int intel_pmu_save_and_restart(struct perf_event *event)
  {
- 	/*
- 	 * We cast to pebs_record_nhm to get the load latency data
- 	 * if extra_reg MSR_PEBS_LD_LAT_THRESHOLD used
-+	 * We cast to the biggest PEBS record are careful not
-+	 * to access out-of-bounds members.
- 	 */
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
--	struct pebs_record_nhm *pebs = __pebs;
--	struct pebs_record_hsw *pebs_hsw = __pebs;
-+	struct pebs_record_hsw *pebs= __pebs;
- 	struct perf_sample_data data;
- 	struct pt_regs regs;
- 	u64 sample_type;
-@@ -827,7 +850,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	regs.sp = pebs->sp;
+ 	x86_perf_event_update(event);
++	/*
++	 * For a checkpointed counter always reset back to 0.  This
++	 * avoids a situation where the counter overflows, aborts the
++	 * transaction and is then set back to shortly before the
++	 * overflow, and overflows and aborts again.
++	 */
++	if (unlikely(event_is_checkpointed(event))) {
++		/* No race with NMIs because the counter should not be armed */
++		wrmsrl(event->hw.event_base, 0);
++		local64_set(&event->hw.prev_count, 0);
++	}
+ 	return x86_perf_event_set_period(event);
+ }
  
- 	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format >= 2) {
--		regs.ip = pebs_hsw->real_ip;
-+		regs.ip = pebs->real_ip;
- 		regs.flags |= PERF_EFLAGS_EXACT;
- 	} else if (event->attr.precise_ip > 1 && intel_pmu_pebs_fixup_ip(&regs))
- 		regs.flags |= PERF_EFLAGS_EXACT;
-@@ -838,6 +861,12 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 		x86_pmu.intel_cap.pebs_format >= 1)
- 		data.addr = pebs->dla;
+@@ -1224,6 +1240,15 @@ again:
+ 		x86_pmu.drain_pebs(regs);
+ 	}
  
-+	/* Only set the TSX weight when no memory weight was requested. */
-+	if ((event->attr.sample_type & PERF_SAMPLE_WEIGHT) &&
-+	    !fll &&
-+	    (x86_pmu.intel_cap.pebs_format >= 2))
-+		data.weight = intel_hsw_weight(pebs);
++	/*
++	 * To avoid spurious interrupts with perf stat always reset checkpointed
++	 * counters.
++	 *
++	 * XXX move somewhere else.
++	 */
++	if (cpuc->events[2] && event_is_checkpointed(cpuc->events[2]))
++		status |= (1ULL << 2);
 +
- 	if (has_branch_stack(event))
- 		data.br_stack = &cpuc->lbr_stack;
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
+ 
+@@ -1689,6 +1714,20 @@ static int hsw_hw_config(struct perf_event *event)
+ 	      event->attr.precise_ip > 0))
+ 		return -EOPNOTSUPP;
+ 
++	if (event_is_checkpointed(event)) {
++		/*
++		 * Sampling of checkpointed events can cause situations where
++		 * the CPU constantly aborts because of a overflow, which is
++		 * then checkpointed back and ignored. Forbid checkpointing
++		 * for sampling.
++		 *
++		 * But still allow a long sampling period, so that perf stat
++		 * from KVM works.
++		 */
++		if (event->attr.sample_period > 0 &&
++		    event->attr.sample_period < 0x7fffffff)
++			return -EOPNOTSUPP;
++	}
+ 	return 0;
+ }
  
 -- 
 1.8.3.1
