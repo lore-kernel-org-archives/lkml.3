@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab3HNABJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 20:01:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45620 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895Ab3HNABI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 20:01:08 -0400
-Date: Tue, 13 Aug 2013 17:01:05 -0700 (PDT)
-Message-Id: <20130813.170105.601411361110484740.davem@davemloft.net>
-To: Alexey.Brodkin@synopsys.com
-Cc: netdev@vger.kernel.org, Vineet.Gupta1@synopsys.com,
-        Mischa.Jonker@synopsys.com, arnd@arndb.de, grant.likely@linaro.org,
-        rob.herring@calxeda.com, paul.gortmaker@windriver.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ethernet/arc/arc_emac - fix NAPI "work > weight"
- warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1376399076-9320-1-git-send-email-abrodkin@synopsys.com>
-References: <1376399076-9320-1-git-send-email-abrodkin@synopsys.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 13 Aug 2013 17:01:06 -0700 (PDT)
+	id S1758740Ab3HNAHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 20:07:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1248 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751666Ab3HNAHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Aug 2013 20:07:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,873,1367996400"; 
+   d="scan'208";a="362258052"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, torvalds@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 8/8] sched: Inline the need_resched test into the caller for _cond_resched
+Date: Tue, 13 Aug 2013 17:07:16 -0700
+Message-Id: <1376438836-13339-9-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1376438836-13339-1-git-send-email-andi@firstfloor.org>
+References: <1376438836-13339-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Date: Tue, 13 Aug 2013 17:04:36 +0400
+From: Andi Kleen <ak@linux.intel.com>
 
-> Initially I improperly set a boundary for maximum number of input
-> packets to process on NAPI poll ("work") so it might be more than
-> expected amount ("weight").
-> 
-> This was really harmless but seeing WARN_ON_ONCE on every device boot is
-> not nice. So trivial fix ("<" instead of "<=") is here.
-> 
-> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+_cond_resched is very common in kernel calls, e.g. it's used in every user
+access. Usually it does at least two explicit calls just to decide to do
+nothing: _cond_resched and should_resched(). Inline a need_resched()
+into the caller to avoid these calls in the common case of no reschedule
+being needed.
 
-Applied, thanks.
+Previously this would have been very expensive in terms of binary size
+because there were a lot of inlined cond_resched()s in copy_*_user()
+and put/get_user().  But with the newest changes to x86 uaccess.h
+these not inlined anymore, so we can use a slightly bigger, but much
+faster fast path version.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index bb7a08a..9e0efa9 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2435,7 +2435,7 @@ extern int __cond_resched_softirq(void);
+ 
+ #ifdef CONFIG_PREEMPT_VOLUNTARY
+ extern int _cond_resched(void);
+-# define might_resched() _cond_resched()
++# define might_resched() (need_resched() ? _cond_resched() : 0)
+ #else
+ # define might_resched() do { } while (0)
+ #endif
+-- 
+1.8.3.1
+
