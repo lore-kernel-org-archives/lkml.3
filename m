@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760491Ab3HNViN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 17:38:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41533 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760479Ab3HNViJ (ORCPT
+	id S1760513Ab3HNVih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 17:38:37 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:58713 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760464Ab3HNViC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 17:38:09 -0400
-Message-ID: <520BF8BD.7050706@wwwdotorg.org>
-Date: Wed, 14 Aug 2013 15:38:05 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Dave Martin <Dave.Martin@arm.com>,
-        Joseph Lo <josephl@nvidia.com>, Jassi Brar <jassisinghbrar@gmail.com>,
-        gnurou@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/5] ARM: tegra: add support for Trusted Foundations
-References: <1376360992-1508-1-git-send-email-acourbot@nvidia.com> <1376360992-1508-3-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1376360992-1508-3-git-send-email-acourbot@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Aug 2013 17:38:02 -0400
+From: behanw@converseincode.com
+To: linux@arm.linux.org.uk
+Cc: behanw@converseincode.com, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, charlebm@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: LLVMLinux: Change "extern inline" to "gnu_inline" in ARM ftrace.h
+Date: Wed, 14 Aug 2013 17:37:41 -0400
+Message-Id: <1376516261-2071-2-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376516261-2071-1-git-send-email-behanw@converseincode.com>
+References: <1376516261-2071-1-git-send-email-behanw@converseincode.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2013 08:29 PM, Alexandre Courbot wrote:
-> Register the firmware operations for Trusted Foundations if the device
-> tree indicates it is active on the device.
+From: Mark Charlebois <charlebm@gmail.com>
 
-> diff --git a/arch/arm/mach-tegra/firmware.c b/arch/arm/mach-tegra/firmware.c
+With compilers which follow the C99 standard (like modern versions of gcc and
+clang), "extern inline" does the wrong thing (emits code for an externally
+linkable version of the inline function). In this case using the gnu_inline
+attribute makes inline do the right thing on gcc and on clang.
 
-> +void __init tegra_init_firmware(void)
-> +{
-> +	struct device_node *node;
-> +
-> +	if (!of_have_populated_dt())
-> +		return;
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+---
+ arch/arm/include/asm/ftrace.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-That's never false on Tegra, at least upstream.
+diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
+index f89515a..fb7fdc4 100644
+--- a/arch/arm/include/asm/ftrace.h
++++ b/arch/arm/include/asm/ftrace.h
+@@ -45,7 +45,8 @@ void *return_address(unsigned int);
+ 
+ #else
+ 
+-extern inline void *return_address(unsigned int level)
++extern inline __attribute__((gnu_inline))
++void *return_address(unsigned int level)
+ {
+ 	return NULL;
+ }
+-- 
+1.8.1.2
 
-> +	node = of_find_compatible_node(NULL, NULL, "tl,trusted-foundations");
-> +	if (node) {
-> +		const char *tf_version;
-> +		int err;
-> +
-> +		err = of_property_read_string(node, "version", &tf_version);
-> +		if (err != 0) {
-> +			pr_crit("Cannot read Trusted Foundation version: %d\n",
-> +				err);
-> +			BUG();
-> +		} else {
-> +			register_trusted_foundations(tf_version);
-> +		}
-> +	}
-> +}
-
-I think most/all of that function will be common across all SoCs that
-support the TF monitor. I think you want to move the code into
-register_trusted_foundations() (or a function that calls that) in patch 1?
