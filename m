@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933560Ab3HNXNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:13:51 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36402 "EHLO
+	id S933576Ab3HNXOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 19:14:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36406 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933516Ab3HNXNr (ORCPT
+	with ESMTP id S933542Ab3HNXNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:13:47 -0400
+	Wed, 14 Aug 2013 19:13:49 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>,
@@ -18,9 +18,9 @@ CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
         Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 01/10] crypto: scatterwalk:  Add support for calculating number of SG elements
-Date: Wed, 14 Aug 2013 18:12:40 -0500
-Message-ID: <1376521969-16807-2-git-send-email-joelf@ti.com>
+Subject: [PATCH 04/10] crypto: omap-aes: Simplify DMA usage by using direct SGs
+Date: Wed, 14 Aug 2013 18:12:43 -0500
+Message-ID: <1376521969-16807-5-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1376521969-16807-1-git-send-email-joelf@ti.com>
 References: <1376521969-16807-1-git-send-email-joelf@ti.com>
@@ -30,57 +30,250 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Crypto layer only passes nbytes to encrypt but in omap-aes driver we
-need to know number of SG elements to pass to dmaengine slave API.
-We add function for the same to scatterwalk library.
+In early version of this driver, assumptions were made such as
+DMA layer requires contiguous buffers etc. Due to this, new buffers
+were allocated, mapped and used for DMA. These assumptions are no
+longer true and DMAEngine scatter-gather DMA doesn't have such
+requirements. We simply the DMA operations by directly using the
+scatter-gather buffers provided by the crypto layer instead of
+creating our own.
+
+Lot of logic that handled DMA'ing only X number of bytes of the
+total, or as much as fitted into a 3rd party buffer is removed
+and is no longer required.
+
+Also, drastically improves performance (atleast 35% seen with
+encrypting a buffer size of 8K (2800 ops/sec vs 1800 ops/sec).
+Also DMA usage is much more simplified and coherent with rest
+of the code.
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- crypto/scatterwalk.c         |   22 ++++++++++++++++++++++
- include/crypto/scatterwalk.h |    2 ++
- 2 files changed, 24 insertions(+)
+ drivers/crypto/omap-aes.c |  147 ++++++++-------------------------------------
+ 1 file changed, 25 insertions(+), 122 deletions(-)
 
-diff --git a/crypto/scatterwalk.c b/crypto/scatterwalk.c
-index 7281b8a..79ca227 100644
---- a/crypto/scatterwalk.c
-+++ b/crypto/scatterwalk.c
-@@ -124,3 +124,25 @@ void scatterwalk_map_and_copy(void *buf, struct scatterlist *sg,
- 	scatterwalk_done(&walk, out, 0);
+diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
+index b7189a8..9104a7f 100644
+--- a/drivers/crypto/omap-aes.c
++++ b/drivers/crypto/omap-aes.c
+@@ -490,22 +490,14 @@ static int sg_copy(struct scatterlist **sg, size_t *offset, void *buf,
  }
- EXPORT_SYMBOL_GPL(scatterwalk_map_and_copy);
-+
-+int scatterwalk_bytes_sglen(struct scatterlist *sg, int num_bytes)
-+{
-+	int offset = 0, n = 0;
-+
-+	/* num_bytes is too small */
-+	if (num_bytes < sg->length)
-+		return -1;
-+
-+	do {
-+		offset += sg->length;
-+		n++;
-+		sg = scatterwalk_sg_next(sg);
-+
-+		/* num_bytes is too large */
-+		if (unlikely(!sg && (num_bytes < offset)))
-+			return -1;
-+	} while (sg && (num_bytes > offset));
-+
-+	return n;
-+}
-+EXPORT_SYMBOL_GPL(scatterwalk_bytes_sglen);
-diff --git a/include/crypto/scatterwalk.h b/include/crypto/scatterwalk.h
-index 3744d2a..13621cc 100644
---- a/include/crypto/scatterwalk.h
-+++ b/include/crypto/scatterwalk.h
-@@ -113,4 +113,6 @@ void scatterwalk_done(struct scatter_walk *walk, int out, int more);
- void scatterwalk_map_and_copy(void *buf, struct scatterlist *sg,
- 			      unsigned int start, unsigned int nbytes, int out);
  
-+int scatterwalk_bytes_sglen(struct scatterlist *sg, int num_bytes);
-+
- #endif  /* _CRYPTO_SCATTERWALK_H */
+ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+-		struct scatterlist *in_sg, struct scatterlist *out_sg)
++		struct scatterlist *in_sg, struct scatterlist *out_sg,
++		int in_sg_len, int out_sg_len)
+ {
+ 	struct omap_aes_ctx *ctx = crypto_tfm_ctx(tfm);
+ 	struct omap_aes_dev *dd = ctx->dd;
+ 	struct dma_async_tx_descriptor *tx_in, *tx_out;
+ 	struct dma_slave_config cfg;
+-	dma_addr_t dma_addr_in = sg_dma_address(in_sg);
+-	int ret, length = sg_dma_len(in_sg);
+-
+-	pr_debug("len: %d\n", length);
+-
+-	dd->dma_size = length;
+-
+-	if (!(dd->flags & FLAGS_FAST))
+-		dma_sync_single_for_device(dd->dev, dma_addr_in, length,
+-					   DMA_TO_DEVICE);
++	int ret;
+ 
+ 	memset(&cfg, 0, sizeof(cfg));
+ 
+@@ -524,7 +516,7 @@ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+ 		return ret;
+ 	}
+ 
+-	tx_in = dmaengine_prep_slave_sg(dd->dma_lch_in, in_sg, 1,
++	tx_in = dmaengine_prep_slave_sg(dd->dma_lch_in, in_sg, in_sg_len,
+ 					DMA_MEM_TO_DEV,
+ 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 	if (!tx_in) {
+@@ -543,7 +535,7 @@ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+ 		return ret;
+ 	}
+ 
+-	tx_out = dmaengine_prep_slave_sg(dd->dma_lch_out, out_sg, 1,
++	tx_out = dmaengine_prep_slave_sg(dd->dma_lch_out, out_sg, out_sg_len,
+ 					DMA_DEV_TO_MEM,
+ 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 	if (!tx_out) {
+@@ -561,7 +553,7 @@ static int omap_aes_crypt_dma(struct crypto_tfm *tfm,
+ 	dma_async_issue_pending(dd->dma_lch_out);
+ 
+ 	/* start DMA */
+-	dd->pdata->trigger(dd, length);
++	dd->pdata->trigger(dd, dd->total);
+ 
+ 	return 0;
+ }
+@@ -570,93 +562,28 @@ static int omap_aes_crypt_dma_start(struct omap_aes_dev *dd)
+ {
+ 	struct crypto_tfm *tfm = crypto_ablkcipher_tfm(
+ 					crypto_ablkcipher_reqtfm(dd->req));
+-	int err, fast = 0, in, out;
+-	size_t count;
+-	dma_addr_t addr_in, addr_out;
+-	struct scatterlist *in_sg, *out_sg;
+-	int len32;
++	int err;
+ 
+ 	pr_debug("total: %d\n", dd->total);
+ 
+-	if (sg_is_last(dd->in_sg) && sg_is_last(dd->out_sg)) {
+-		/* check for alignment */
+-		in = IS_ALIGNED((u32)dd->in_sg->offset, sizeof(u32));
+-		out = IS_ALIGNED((u32)dd->out_sg->offset, sizeof(u32));
+-
+-		fast = in && out;
++	err = dma_map_sg(dd->dev, dd->in_sg, dd->in_sg_len, DMA_TO_DEVICE);
++	if (!err) {
++		dev_err(dd->dev, "dma_map_sg() error\n");
++		return -EINVAL;
+ 	}
+ 
+-	if (fast)  {
+-		count = min(dd->total, sg_dma_len(dd->in_sg));
+-		count = min(count, sg_dma_len(dd->out_sg));
+-
+-		if (count != dd->total) {
+-			pr_err("request length != buffer length\n");
+-			return -EINVAL;
+-		}
+-
+-		pr_debug("fast\n");
+-
+-		err = dma_map_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+-		if (!err) {
+-			dev_err(dd->dev, "dma_map_sg() error\n");
+-			return -EINVAL;
+-		}
+-
+-		err = dma_map_sg(dd->dev, dd->out_sg, 1, DMA_FROM_DEVICE);
+-		if (!err) {
+-			dev_err(dd->dev, "dma_map_sg() error\n");
+-			dma_unmap_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+-			return -EINVAL;
+-		}
+-
+-		addr_in = sg_dma_address(dd->in_sg);
+-		addr_out = sg_dma_address(dd->out_sg);
+-
+-		in_sg = dd->in_sg;
+-		out_sg = dd->out_sg;
+-
+-		dd->flags |= FLAGS_FAST;
+-
+-	} else {
+-		/* use cache buffers */
+-		count = sg_copy(&dd->in_sg, &dd->in_offset, dd->buf_in,
+-				 dd->buflen, dd->total, 0);
+-
+-		len32 = DIV_ROUND_UP(count, DMA_MIN) * DMA_MIN;
+-
+-		/*
+-		 * The data going into the AES module has been copied
+-		 * to a local buffer and the data coming out will go
+-		 * into a local buffer so set up local SG entries for
+-		 * both.
+-		 */
+-		sg_init_table(&dd->in_sgl, 1);
+-		dd->in_sgl.offset = dd->in_offset;
+-		sg_dma_len(&dd->in_sgl) = len32;
+-		sg_dma_address(&dd->in_sgl) = dd->dma_addr_in;
+-
+-		sg_init_table(&dd->out_sgl, 1);
+-		dd->out_sgl.offset = dd->out_offset;
+-		sg_dma_len(&dd->out_sgl) = len32;
+-		sg_dma_address(&dd->out_sgl) = dd->dma_addr_out;
+-
+-		in_sg = &dd->in_sgl;
+-		out_sg = &dd->out_sgl;
+-
+-		addr_in = dd->dma_addr_in;
+-		addr_out = dd->dma_addr_out;
+-
+-		dd->flags &= ~FLAGS_FAST;
+-
++	err = dma_map_sg(dd->dev, dd->out_sg, dd->out_sg_len, DMA_FROM_DEVICE);
++	if (!err) {
++		dev_err(dd->dev, "dma_map_sg() error\n");
++		return -EINVAL;
+ 	}
+ 
+-	dd->total -= count;
+-
+-	err = omap_aes_crypt_dma(tfm, in_sg, out_sg);
++	err = omap_aes_crypt_dma(tfm, dd->in_sg, dd->out_sg, dd->in_sg_len,
++				 dd->out_sg_len);
+ 	if (err) {
+-		dma_unmap_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+-		dma_unmap_sg(dd->dev, dd->out_sg, 1, DMA_TO_DEVICE);
++		dma_unmap_sg(dd->dev, dd->in_sg, dd->in_sg_len, DMA_TO_DEVICE);
++		dma_unmap_sg(dd->dev, dd->out_sg, dd->out_sg_len,
++			     DMA_FROM_DEVICE);
+ 	}
+ 
+ 	return err;
+@@ -677,7 +604,6 @@ static void omap_aes_finish_req(struct omap_aes_dev *dd, int err)
+ static int omap_aes_crypt_dma_stop(struct omap_aes_dev *dd)
+ {
+ 	int err = 0;
+-	size_t count;
+ 
+ 	pr_debug("total: %d\n", dd->total);
+ 
+@@ -686,21 +612,8 @@ static int omap_aes_crypt_dma_stop(struct omap_aes_dev *dd)
+ 	dmaengine_terminate_all(dd->dma_lch_in);
+ 	dmaengine_terminate_all(dd->dma_lch_out);
+ 
+-	if (dd->flags & FLAGS_FAST) {
+-		dma_unmap_sg(dd->dev, dd->out_sg, 1, DMA_FROM_DEVICE);
+-		dma_unmap_sg(dd->dev, dd->in_sg, 1, DMA_TO_DEVICE);
+-	} else {
+-		dma_sync_single_for_device(dd->dev, dd->dma_addr_out,
+-					   dd->dma_size, DMA_FROM_DEVICE);
+-
+-		/* copy data */
+-		count = sg_copy(&dd->out_sg, &dd->out_offset, dd->buf_out,
+-				 dd->buflen, dd->dma_size, 1);
+-		if (count != dd->dma_size) {
+-			err = -EINVAL;
+-			pr_err("not all data converted: %u\n", count);
+-		}
+-	}
++	dma_unmap_sg(dd->dev, dd->in_sg, dd->in_sg_len, DMA_TO_DEVICE);
++	dma_unmap_sg(dd->dev, dd->out_sg, dd->out_sg_len, DMA_FROM_DEVICE);
+ 
+ 	return err;
+ }
+@@ -770,21 +683,11 @@ static int omap_aes_handle_queue(struct omap_aes_dev *dd,
+ static void omap_aes_done_task(unsigned long data)
+ {
+ 	struct omap_aes_dev *dd = (struct omap_aes_dev *)data;
+-	int err;
+-
+-	pr_debug("enter\n");
+ 
+-	err = omap_aes_crypt_dma_stop(dd);
+-
+-	err = dd->err ? : err;
+-
+-	if (dd->total && !err) {
+-		err = omap_aes_crypt_dma_start(dd);
+-		if (!err)
+-			return; /* DMA started. Not fininishing. */
+-	}
++	pr_debug("enter done_task\n");
+ 
+-	omap_aes_finish_req(dd, err);
++	omap_aes_crypt_dma_stop(dd);
++	omap_aes_finish_req(dd, 0);
+ 	omap_aes_handle_queue(dd, NULL);
+ 
+ 	pr_debug("exit\n");
 -- 
 1.7.9.5
 
