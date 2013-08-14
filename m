@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759923Ab3HNKp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:45:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34652 "EHLO
+	id S1759899Ab3HNKp0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:45:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34659 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932571Ab3HNKiQ (ORCPT
+	with ESMTP id S932344Ab3HNKiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:16 -0400
+	Wed, 14 Aug 2013 06:38:17 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 56/75] virtio: console: return -ENODEV on all read operations after unplug
-Date: Wed, 14 Aug 2013 11:36:45 +0100
-Message-Id: <1376476624-10011-57-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 57/75] regmap: Add missing header for !CONFIG_REGMAP stubs
+Date: Wed, 14 Aug 2013 11:36:46 +0100
+Message-Id: <1376476624-10011-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,52 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
 
-commit 96f97a83910cdb9d89d127c5ee523f8fc040a804 upstream.
+commit 49ccc142f9cbc33fdda18e8fa90c1c5b4a79c0ad upstream.
 
-If a port gets unplugged while a user is blocked on read(), -ENODEV is
-returned.  However, subsequent read()s returned 0, indicating there's no
-host-side connection (but not indicating the device went away).
+regmap.h requires linux/err.h if CONFIG_REGMAP is not defined. Without it I get
+error.
+CC      drivers/media/platform/exynos4-is/fimc-reg.o
+In file included from drivers/media/platform/exynos4-is/fimc-reg.c:14:0:
+include/linux/regmap.h: In function ‘regmap_write’:
+include/linux/regmap.h:525:10: error: ‘EINVAL’ undeclared (first use in this function)
+include/linux/regmap.h:525:10: note: each undeclared identifier is reported only once for each function it appears in
 
-This also happened when a port was unplugged and the user didn't have
-any blocking operation pending.  If the user didn't monitor the SIGIO
-signal, they won't have a chance to find out if the port went away.
-
-Fix by returning -ENODEV on all read()s after the port gets unplugged.
-write() already behaves this way.
-
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/virtio_console.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ include/linux/regmap.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 3bd6d4c..50f0838 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -636,6 +636,10 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 56af22e..adde16f 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -14,6 +14,7 @@
+  */
  
- 	port = filp->private_data;
+ #include <linux/list.h>
++#include <linux/err.h>
  
-+	/* Port is hot-unplugged. */
-+	if (!port->guest_connected)
-+		return -ENODEV;
-+
- 	if (!port_has_data(port)) {
- 		/*
- 		 * If nothing's connected on the host just return 0 in
-@@ -652,7 +656,7 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
- 		if (ret < 0)
- 			return ret;
- 	}
--	/* Port got hot-unplugged. */
-+	/* Port got hot-unplugged while we were waiting above. */
- 	if (!port->guest_connected)
- 		return -ENODEV;
- 	/*
+ struct module;
+ struct device;
 -- 
 1.8.3.2
 
