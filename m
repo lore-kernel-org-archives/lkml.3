@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760073Ab3HNRUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 13:20:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15362 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759287Ab3HNRUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 13:20:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,878,1367996400"; 
-   d="scan'208";a="362662765"
-Date: Wed, 14 Aug 2013 10:20:43 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Joe Perches <joe@perches.com>, Xenia Ragiadakou <burzalodowa@gmail.com>,
-        Jason Baron <jbaron@akamai.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Dynamic debug on by default?
-Message-ID: <20130814172043.GB22934@xanatos>
-References: <20130814164022.GA22934@xanatos>
- <1376499114.1949.81.camel@joe-AO722>
- <20130814170410.GA7668@kroah.com>
+	id S932648Ab3HNRas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 13:30:48 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33057 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759967Ab3HNRaq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 13:30:46 -0400
+Date: Wed, 14 Aug 2013 18:30:28 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20130814173028.GB2401@sirena.org.uk>
+References: <20130814153906.GU6427@sirena.org.uk>
+ <Pine.LNX.4.44L0.1308141209410.1701-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vGgW1X5XWziG23Ko"
 Content-Disposition: inline
-In-Reply-To: <20130814170410.GA7668@kroah.com>
+In-Reply-To: <Pine.LNX.4.44L0.1308141209410.1701-100000@iolanthe.rowland.org>
+X-Cookie: Your present plans will be successful.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 10:04:10AM -0700, Greg KH wrote:
-> On Wed, Aug 14, 2013 at 09:51:54AM -0700, Joe Perches wrote:
-> > On Wed, 2013-08-14 at 09:40 -0700, Sarah Sharp wrote:
-> > > Hi Xenia,
-> > > 
-> > > I'm a bit confused.  I thought that debugging messages would be turned
-> > > off by default for a module if CONFIG_DYNAMIC_DEBUG was turned on.  When
-> > > I tested your patch to remove the CONFIG_USB_XHCI_HCD_DEBUGGING and just
-> > > use dev_dbg, the messages from the xHCI driver appeared in dmesg by
-> > > default.
-> > > 
-> > > That generates a lot of log spew.  We can have distros add a boot
-> > > parameter option to turn off debug messages, but that boot parameter is
-> > > limited to 1023 characters.  I'm concerned that if more drivers add
-> > > dynamic debugging, the distros will eventually run out of space in the
-> > > dynamic debugging boot parameter.  I know Greg was ripping out debugging
-> > > config options in other USB drivers, so this is a bit concerning.
-> > > 
-> > > Jason, is there a way within the xHCI driver to say that dynamic
-> > > debugging should be off by default?  I've looked through the
-> > > documentation, and I can't find anything like that documented.
-> > 
-> > #undefine DEBUG
-> > 
-> > > I've attached my .config file, in case I have something misconfigured.
-> > 
-> > Because of:
-> > 
-> > drivers/usb/host/Makefile:ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
-> 
-> Yes, that's the problem, I'm trying to get rid of the CONFIG_USB_DEBUG
-> flag, and I'm almost there.  There are some host controllers that still
-> use it for some things that I have not cleaned up fully yet.
 
-Do you think those patches will land in 3.12?  If not, I'll add an
-#undefine DEBUG to xhci.h to avoid the log spew.
+--vGgW1X5XWziG23Ko
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Sarah Sharp
+On Wed, Aug 14, 2013 at 12:14:06PM -0400, Alan Stern wrote:
+> On Wed, 14 Aug 2013, Mark Brown wrote:
+
+> > Yes, so you'd want callbacks when the device actually appears and
+> > disappears.
+
+> No, no -- this is exactly the point I was trying to make.  The on-board
+> hub _won't_ appear on the USB bus until the GPIOs are set.  Therefore
+> the callback to set the GPIOs needs to be at a different place, not
+> when the device appears.
+
+What I'm proposing is that we have a way of telling buses that devices
+exist via a mechanism other than their actually being visible on the bus
+at the current time.  If you're doing that the driver can be running
+prior to the hardware being there, just like it does with all the
+non-enumerable buses.
+
+> > > Perhaps the platform-level code would need to hook into the places
+> > > where the discoverable bus is registered and unregistered.
+
+> > We'd need some way to get information to the drivers still, and to
+> > handle drivers that want to stop and start things.
+
+> Um...  What exactly does this mean?  It's so generic, it could apply to
+> anything under drivers/.  After all, what driver doesn't want to stop
+> and start things?
+
+It means that there are situations where a driver wants to take the
+hardware offline but still offer services to userspace which will
+require the hardware to be brought on line again.  The fact that this is
+a very generic thing is exactly why I'm raising this as a generic issue.
+
+--vGgW1X5XWziG23Ko
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSC76xAAoJELSic+t+oim9HQAP/0l6Vhxdy9jeDjPohHWTguIV
+f9MEnTlBPnEcvIIAQI/vUawEa44hyKw0Zrf/yEwQy5L8SBTFM4U+KEE5vNnc5h5N
+pAKjXLYtnWdRP3WfLrI87qiuWEpYhYc/xEDA6beSqNlj+qMaBqy5wa2oGE2cCtzn
+0i2C34PsUFzCmX+m1/+1/cjIK52muAtV1tzCvpIefODZ1RQfZp5fUHx2Lw4KlZac
+8nkjMOnm40TSzTDosvj159F53BLiS/Yi1JrCirBaAVZn70x6JyNswV4tsBlunNxO
+xu0K3mN40FfwCyTExw7l2gidb9H5+RFupImBIaIbZNttTgsLkW3K6MIrPn9MxSDn
+3hUbhmHM6w6G7MUYvQ/w8+XXM4GzsUP6pSeJpd5dzmqQANlrOvKqA1W8CRbCjZGr
+GwWVW9Va7JN8Ojvs2o5JGiru50xCOu2OetnNQ53dWpTz6VRcsyZ8ISzlnAz0FlRw
+VbyhEoPzeWK4yE+AsVXw2lrRxgSXjKsHAM3wDvg+/3BbONzQ59iYAJQxfRTiPg+I
+zoVBzle6G7Fsry6hIUI/reWD0yabhB+i+PyaTl/bXnO4ODGJM0vYnFS6aXzrA1pn
+gAEbrQyDcC+xJvWNOtK2wxntjEwHzArAMPV0xOGSkfLIUeHiV4e6uUq/wAQl0ixc
+tYTCsOt1DyFmIufOtD5j
+=2sdc
+-----END PGP SIGNATURE-----
+
+--vGgW1X5XWziG23Ko--
