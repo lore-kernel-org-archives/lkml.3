@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab3HNU0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:26:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54705 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933148Ab3HNU0E (ORCPT
+	id S933178Ab3HNU1f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:27:35 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:59013 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933026Ab3HNU1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:26:04 -0400
-Date: Wed, 14 Aug 2013 13:26:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>, Xishi Qiu <qiuxishi@huawei.com>,
-        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
-Message-Id: <20130814132602.814a88e991e29c5b93bbe22c@linux-foundation.org>
-In-Reply-To: <20130814155205.GA2706@gmail.com>
-References: <520B0B75.4030708@huawei.com>
-	<20130814085711.GK2296@suse.de>
-	<20130814155205.GA2706@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Aug 2013 16:27:33 -0400
+Date: Wed, 14 Aug 2013 16:27:28 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob.herring@calxeda.com, sergei.shtylyov@cogentembedded.com
+Subject: Re: [PATCH v4 1/3] devicetree: create a separate binding description
+ for sata_highbank
+Message-ID: <20130814202728.GJ28628@htj.dyndns.org>
+References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1376504612-17340-1-git-send-email-mark.langsdorf@calxeda.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376504612-17340-1-git-send-email-mark.langsdorf@calxeda.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Aug 2013 00:52:29 +0900 Minchan Kim <minchan@kernel.org> wrote:
+Hello,
 
-> On Wed, Aug 14, 2013 at 09:57:11AM +0100, Mel Gorman wrote:
-> > On Wed, Aug 14, 2013 at 12:45:41PM +0800, Xishi Qiu wrote:
-> > > A large free page buddy block will continue many times, so if the page 
-> > > is free, skip the whole page buddy block instead of one page.
-> > > 
-> > > Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> > 
-> > page_order cannot be used unless zone->lock is held which is not held in
-> > this path. Acquiring the lock would prevent parallel allocations from the
-> 
-> Argh, I missed that.
+On Wed, Aug 14, 2013 at 01:23:30PM -0500, Mark Langsdorf wrote:
+>  Documentation/devicetree/bindings/ata/sata_highbank.txt | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
 
-I missed it as well. And so did Xishi Qiu.
+Any ideas on how these should be routed?  The above doesn't apply to
+libata or master as the file doesn't exist there yet.
 
-Mel, we have a problem.  What can we do to make this code more
-maintainable?
+Thanks.
+
+-- 
+tejun
