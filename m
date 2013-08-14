@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759799Ab3HNLLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 07:11:10 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:45318 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759534Ab3HNLLJ (ORCPT
+	id S1759864Ab3HNLVG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 07:21:06 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:33563 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759784Ab3HNLVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 07:11:09 -0400
-Date: Wed, 14 Aug 2013 13:11:05 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Youquan Song <youquan.song@linux.intel.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Youquan Song <youquan.song@intel.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
-Message-ID: <20130814111105.GA13772@gmail.com>
-References: <1373592159-459-1-git-send-email-youquan.song@intel.com>
- <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
- <20130724062254.GA16400@redhat.com>
- <CAE9FiQWbVDRpLUCUTF=Jpmm-nn6kgBYFW25PPTEiPK-R-mX0jA@mail.gmail.com>
- <20130729170514.GB30371@linux-youquan.bj.intel.com>
- <20130814184040.GA6726@linux-youquan.bj.intel.com>
+	Wed, 14 Aug 2013 07:21:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130814184040.GA6726@linux-youquan.bj.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1376478213-24091-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1376478213-24091-1-git-send-email-Julia.Lawall@lip6.fr>
+Date: Wed, 14 Aug 2013 16:51:02 +0530
+X-Google-Sender-Auth: u0ImXnZs-96psZBIFBvIJmb2jJ4
+Message-ID: <CAOh2x=muvdm+tSR+ucUWLhb1vOvXB=_+vm_v9fHfa6mHUnhRRw@mail.gmail.com>
+Subject: Re: [PATCH 28/29] drivers/input/{keyboard,serio}: simplify use of devm_ioremap_resource
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        kernel-janitors@vger.kernel.org, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Aug 14, 2013 at 4:33 PM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> Remove unneeded error handling on the result of a call to
+> platform_get_resource when the value is passed to devm_ioremap_resource.
+>
+> Move the call to platform_get_resource adjacent to the call to
+> devm_ioremap_resource to make the connection between them more clear.
+>
+> A simplified version of the semantic patch that makes this change is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> expression pdev,res,n,e,e1;
+> expression ret != 0;
+> identifier l;
+> @@
+>
+> - res = platform_get_resource(pdev, IORESOURCE_MEM, n);
+>   ... when != res
+> - if (res == NULL) { ... \(goto l;\|return ret;\) }
+>   ... when != res
+> + res = platform_get_resource(pdev, IORESOURCE_MEM, n);
+>   e = devm_ioremap_resource(e1, res);
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+> ---
 
-* Youquan Song <youquan.song@linux.intel.com> wrote:
+>  drivers/input/keyboard/spear-keyboard.c |    7 +------
 
-> > In order to make sure the patch without involving unexpected issues beyond
-> > I can understand, I will confirm with our expert about it.
-> > 
-> > so please pend the patch going to mainline. If the patch can move on, I
-> > think I will also provide other patch changing, like direct EOI.
-> 
-> Hi Yinghai and Ingo,
-> 
-> I have confirmed with our experts about it. x2APIC without interrupt
-> remapping is not architecture and no guarantee it will work in future.
-> 
-> What's more, there are some words in SDM3, 
-> 10.12.7 Initialization by System
-> Software Routing of device interrupts to local APIC units operating in
-> x2APIC mode requires use of the interrupt-remapping architecture
-> specified in the Intel Virtualization Technology for Directed I/O,
-> Revision 1.3. Because of this, BIOS must enumerate support for and
-> software must enable this interrupt remapping with Extended Interrupt
-> Mode Enabled before it enabling x2APIC mode in the local APIC units.
-> 
-> Ingo, please drop the patch in -tip tree.
-> 3d1acb49d22fbbae96524040e9e2d4cbbb3adbef "x86/apic: Enable x2APIC
-> physical mode on native hardware too, when there are fewer than 256 
-> CPUs" 
+For SPEAr:
 
-Ok, dropped it - it was still the tail commit.
-
-> Sorry for making fuss here and it is my fault.
-
-No problem - you might want to send another patch adding some comments to 
-the code, explaining why we don't switch to physical mode, quoting from 
-the SDM and so.
-
-Thanks,
-
-	Ingo
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
