@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab3HNQ66 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:58:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47045 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932885Ab3HNQ64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:58:56 -0400
-Message-ID: <520BB71F.6000701@zytor.com>
-Date: Wed, 14 Aug 2013 09:58:07 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1759974Ab3HNRCk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 13:02:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52470 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014Ab3HNRCi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 13:02:38 -0400
+Date: Wed, 14 Aug 2013 10:04:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Xenia Ragiadakou <burzalodowa@gmail.com>,
+        Jason Baron <jbaron@akamai.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Dynamic debug on by default?
+Message-ID: <20130814170410.GA7668@kroah.com>
+References: <20130814164022.GA22934@xanatos>
+ <1376499114.1949.81.camel@joe-AO722>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Mike Galbraith <bitbucket@online.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/5] preempt_count rework
-References: <20130814131539.790947874@chello.nl> <520B8A81.1080405@zytor.com> <1376494751.7355.28.camel@marge.simpson.net> <20130814160632.GJ24092@twins.programming.kicks-ass.net> <520BACEA.50604@zytor.com> <20130814165227.GA21191@laptop.programming.kicks-ass.net>
-In-Reply-To: <20130814165227.GA21191@laptop.programming.kicks-ass.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376499114.1949.81.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 09:52 AM, Peter Zijlstra wrote:
+On Wed, Aug 14, 2013 at 09:51:54AM -0700, Joe Perches wrote:
+> On Wed, 2013-08-14 at 09:40 -0700, Sarah Sharp wrote:
+> > Hi Xenia,
+> > 
+> > I'm a bit confused.  I thought that debugging messages would be turned
+> > off by default for a module if CONFIG_DYNAMIC_DEBUG was turned on.  When
+> > I tested your patch to remove the CONFIG_USB_XHCI_HCD_DEBUGGING and just
+> > use dev_dbg, the messages from the xHCI driver appeared in dmesg by
+> > default.
+> > 
+> > That generates a lot of log spew.  We can have distros add a boot
+> > parameter option to turn off debug messages, but that boot parameter is
+> > limited to 1023 characters.  I'm concerned that if more drivers add
+> > dynamic debugging, the distros will eventually run out of space in the
+> > dynamic debugging boot parameter.  I know Greg was ripping out debugging
+> > config options in other USB drivers, so this is a bit concerning.
+> > 
+> > Jason, is there a way within the xHCI driver to say that dynamic
+> > debugging should be off by default?  I've looked through the
+> > documentation, and I can't find anything like that documented.
 > 
-> Oh curses, this is because lea can't do segment offsets? So there's no
-> sane way to get addresses of per-cpu variables.
+> #undefine DEBUG
 > 
-> Because ideally we'd have something like:
+> > I've attached my .config file, in case I have something misconfigured.
 > 
->   lea %gs:__percpu_runqueues,%rax
+> Because of:
 > 
-> So in this case it makes sense to also store the actual pointer; how
-> unfortunate.
-> 
+> drivers/usb/host/Makefile:ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
 
-Correct; the segment offset is not part of the effective address, even
-in 64-bit mode.
+Yes, that's the problem, I'm trying to get rid of the CONFIG_USB_DEBUG
+flag, and I'm almost there.  There are some host controllers that still
+use it for some things that I have not cleaned up fully yet.
 
-	-hpa
+thanks,
 
+greg k-h
