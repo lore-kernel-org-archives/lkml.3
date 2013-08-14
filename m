@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933395Ab3HNVnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 17:43:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:56786 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933270Ab3HNVno (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 17:43:44 -0400
-Message-ID: <520BFA0C.5070001@wwwdotorg.org>
-Date: Wed, 14 Aug 2013 15:43:40 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
+	id S933355Ab3HNVuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 17:50:06 -0400
+Received: from www.sr71.net ([198.145.64.142]:43351 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933238Ab3HNVuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 17:50:04 -0400
+Message-ID: <520BFB87.6050207@sr71.net>
+Date: Wed, 14 Aug 2013 14:49:59 -0700
+From: Dave Hansen <dave@sr71.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>, Bjorn Helgaas <bhelgaas@google.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <treding@nvidia.com>
-Subject: Re: [RFC 3/3] PCI: tegra: Support driver unbinding
-References: <1376392346-14127-1-git-send-email-treding@nvidia.com> <1376392346-14127-4-git-send-email-treding@nvidia.com>
-In-Reply-To: <1376392346-14127-4-git-send-email-treding@nvidia.com>
-X-Enigmail-Version: 1.4.6
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
+References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com> <520BECDF.8060501@sr71.net> <20130814211454.GA17423@variantweb.net> <520BF88C.6060202@linux.vnet.ibm.com>
+In-Reply-To: <520BF88C.6060202@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 05:12 AM, Thierry Reding wrote:
-> Implement the platform driver's .remove() callback to free all resources
-> allocated during driver setup and call pci_common_exit() to cleanup ARM
-> specific datastructures. Unmap the fixed PCI I/O mapping by calling the
-> new pci_iounmap_io() function in the new .teardown() callback.
-> 
-> Finally, no longer set the .suppress_bind_attrs field to true to allow
-> the driver to unbind from a device.
+On 08/14/2013 02:37 PM, Cody P Schafer wrote:
+> Also, I'd expect userspace tools might use readdir() to find out what
+> memory blocks a system has (unless they just stat("memory0"),
+> stat("memory1")...). I don't think filesystem tricks (at least within
+> sysfs) are going to let this magically be solved without breaking the
+> userspace API.
 
-> +static int tegra_pcie_remove(struct platform_device *pdev)
-> +{
-> +	struct tegra_pcie *pcie = platform_get_drvdata(pdev);
-> +	struct tegra_pcie_bus *bus, *tmp;
-> +	int err;
-> +
-> +	pci_common_exit(&pcie->sys);
-> +
-> +	list_for_each_entry_safe(bus, tmp, &pcie->busses, list) {
-> +		vunmap(bus->area->addr);
-> +		kfree(bus);
-> +	}
-> +
-> +	if (IS_ENABLED(CONFIG_PCI_MSI)) {
-> +		err = tegra_pcie_disable_msi(pcie);
-> +		if (err < 0)
-> +			return err;
-> +	}
+sysfs files are probably a bit too tied to kobjects to make this work
+easily in practice.  It would probably need to be a new filesystem, imnho.
 
-Wouldn't it make sense to do that as early as possible in the function,
-to make sure that no MSI accidentally fires after some of the cleanup
-has already happened?
-
-> +
-> +	err = tegra_pcie_put_resources(pcie);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	return 0;
-> +}
-
+But, there's nothing to keep you from creating dentries for all of the
+memory blocks if someone _does_ a readdir().  It'll suck, of course, but
+it's at least compatible with what's there.  You could also 'chmod -x'
+it to make it more obvious that folks shouldn't be poking around in
+there, although it won't keep them from ls'ing.  If you're concerned
+about resource consumption, we could also just make the directory
+unreadable to everyone but root.
