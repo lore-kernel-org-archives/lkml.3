@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab3HNUuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:50:46 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:35845 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933083Ab3HNUuo (ORCPT
+	id S933245Ab3HNUwp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:52:45 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:17985 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932987Ab3HNUwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:50:44 -0400
-Date: Wed, 14 Aug 2013 16:50:29 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: Re: [PATCH v8] mm: make lru_add_drain_all() selective
-Message-ID: <20130814205029.GN28628@htj.dyndns.org>
-References: <20130814200748.GI28628@htj.dyndns.org>
- <201308142029.r7EKTMRw023404@farm-0002.internal.tilera.com>
- <20130814134430.50cb8d609643620b00ab3705@linux-foundation.org>
-MIME-Version: 1.0
+	Wed, 14 Aug 2013 16:52:44 -0400
+Date: Wed, 14 Aug 2013 15:52:36 -0500
+From: Mike Miller <mike.miller@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>
+Cc: LKML-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, thenzl@redhat.com,
+        bubrown@redhat.com, scameron@beardog.cce.hp.com
+Subject: [PATCH 1/1] cciss: set max scatter gather entries to 32 on P600
+Message-ID: <20130814205236.GB23042@beardog.cce.hp.com>
+Reply-To: mike.miller@hp.com, mikem@thumper.usa.hp.com
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130814134430.50cb8d609643620b00ab3705@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Patch 1/1
 
-On Wed, Aug 14, 2013 at 01:44:30PM -0700, Andrew Morton wrote:
-> > +static bool need_activate_page_drain(int cpu)
-> > +{
-> > +	return pagevec_count(&per_cpu(activate_page_pvecs, cpu)) != 0;
-> > +}
-> 
-> static int need_activate_page_drain(int cpu)
-> {
-> 	return pagevec_count(&per_cpu(activate_page_pvecs, cpu));
-> }
-> 
-> would be shorter and faster.  bool rather sucks that way.  It's a
-> performance-vs-niceness thing.  I guess one has to look at the call
-> frequency when deciding.
+From: Mike Miller <mike.miller@hp.com>
 
-"!= 0" can be dropped but I'm fairly sure the compiler would be able
-to figure out that the type conversion can be skipped.  It's a trivial
-optimization.
+At one time we used to set the maximum number of scatter gather elements on 
+all Smart Array controllers to 32. At some point in time the firmware began 
+to write the "appropriate" value for each controller into the config table. 
+The cciss driver would then read that and set h->maxsgentries.
 
-> > +			schedule_work_on(cpu, work);
-> > +			cpumask_set_cpu(cpu, &has_work);
-> > +		}
-> > +	}
-> > +
-> > +	for_each_cpu(cpu, &has_work)
-> 
-> for_each_online_cpu()?
+        h->maxsgentries = readl(&(h->cfgtable->MaxSGElements);
 
-That would lead to flushing work items which aren't used and may not
-have been initialized yet, no?
+On the P600 that value is 544. Under some workloads a significant 
+performance reduction may result. This patch forces the P600 to use only 32 
+scatter gather elements. Other controllers are not affected.
 
-> > +		flush_work(&per_cpu(lru_add_drain_work, cpu));
-> > +
-> > +	put_online_cpus();
-> > +	mutex_unlock(&lock);
-> >  }
-> 
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Dwight (Bud) Brown <bubrown@redhat.com>
+Signed-off-by: Tomas Henzl <thenzl@redhat.com>
+Acked-by: Stephen M. Cameron <steve.cameron@hp.com>
+---
+ drivers/block/cciss.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Thanks.
-
--- 
-tejun
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 62b6c2c..d2d95ff 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -4258,6 +4258,13 @@ static void cciss_find_board_params(ctlr_info_t *h)
+ 	h->nr_cmds = h->max_commands - 4 - cciss_tape_cmds;
+ 	h->maxsgentries = readl(&(h->cfgtable->MaxSGElements));
+ 	/*
++	 * The P600 may exhibit poor performnace under some workloads
++	 * if we use the value in the configuration table. Limit this
++	 * controller to MAXSGENTRIES (32) instead.
++	 */
++	if (h->board_id == 0x3225103C)
++		h->maxsgentries = MAXSGENTRIES;
++	/*
+ 	 * Limit in-command s/g elements to 32 save dma'able memory.
+ 	 * Howvever spec says if 0, use 31
+ 	 */
