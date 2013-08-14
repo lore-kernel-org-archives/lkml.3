@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932714Ab3HNK40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:56:26 -0400
-Received: from 8bytes.org ([85.214.48.195]:50387 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932385Ab3HNK4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:56:21 -0400
-Date: Wed, 14 Aug 2013 12:56:16 +0200
-From: "'Joerg Roedel'" <joro@8bytes.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Cho KyongHo <pullip.cho@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: Re: [PATCH v9 04/16] iommu/exynos: allocate lv2 page table from own
- slab
-Message-ID: <20130814105615.GG4491@8bytes.org>
-References: <002801ce941a$fb6369e0$f22a3da0$@samsung.com>
- <2544843.sndV7usHTj@amdc1227>
- <20130809145849.790a9800f4f9893b30e54a1c@samsung.com>
- <2101296.S6JDU5igl3@flatron>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2101296.S6JDU5igl3@flatron>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Aug 14 12:56:20 2013
-X-DSPAM-Confidence: 0.9989
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 520b625420861551717623
+	id S932420Ab3HNK4Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:56:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34460 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932338Ab3HNKhd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 06:37:33 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Josef Bacik <jbacik@fusionio.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 20/75] Btrfs: re-add root to dead root list if we stop dropping it
+Date: Wed, 14 Aug 2013 11:36:09 +0100
+Message-Id: <1376476624-10011-21-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 09, 2013 at 09:55:30AM +0200, Tomasz Figa wrote:
-> Oh, this is a valid point, but it was more a nitpick about the coding 
-> style. Single path error handling (with goto) is widely used in the kernel 
-> in cases when more than one thing has to be undone and so I suggested this 
-> method of error handling here as well.
+3.5.7.19 -stable review patch.  If anyone has any objections, please let me know.
 
-I agree with that review from Tomasz, the error-handling should look
-similar to all the other places in the kernel and use goto.
+------------------
 
+From: Josef Bacik <jbacik@fusionio.com>
 
-	Joerg
+commit d29a9f629e009c9b90e5859bce581070fd6247fc upstream.
 
+If we stop dropping a root for whatever reason we need to add it back to the
+dead root list so that we will re-start the dropping next transaction commit.
+The other case this happens is if we recover a drop because we will add a root
+without adding it to the fs radix tree, so we can leak it's root and commit root
+extent buffer, adding this to the dead root list makes this cleanup happen.
+Thanks,
+
+Reported-by: Alex Lyakas <alex.btrfs@zadarastorage.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/btrfs/extent-tree.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index 9b1dc7b..6bb1213 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -6848,6 +6848,7 @@ int btrfs_drop_snapshot(struct btrfs_root *root,
+ 	int err = 0;
+ 	int ret;
+ 	int level;
++	bool root_dropped = false;
+ 
+ 	path = btrfs_alloc_path();
+ 	if (!path) {
+@@ -7018,12 +7019,22 @@ int btrfs_drop_snapshot(struct btrfs_root *root,
+ 		free_extent_buffer(root->commit_root);
+ 		kfree(root);
+ 	}
++	root_dropped = true;
+ out_end_trans:
+ 	btrfs_end_transaction_throttle(trans, tree_root);
+ out_free:
+ 	kfree(wc);
+ 	btrfs_free_path(path);
+ out:
++	/*
++	 * So if we need to stop dropping the snapshot for whatever reason we
++	 * need to make sure to add it back to the dead root list so that we
++	 * keep trying to do the work later.  This also cleans up roots if we
++	 * don't have it in the radix (like when we recover after a power fail
++	 * or unmount) so we don't leak memory.
++	 */
++	if (root_dropped == false)
++		btrfs_add_dead_root(root);
+ 	if (err)
+ 		btrfs_std_error(root->fs_info, err);
+ 	return err;
+-- 
+1.8.3.2
 
