@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551Ab3HNKsO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:48:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34607 "EHLO
+	id S932616Ab3HNKst (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:48:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34584 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932517Ab3HNKiG (ORCPT
+	with ESMTP id S932494Ab3HNKiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:06 -0400
+	Wed, 14 Aug 2013 06:38:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neil Horman <nhorman@tuxdriver.com>,
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
-        Francois Romieu <romieu@fr.zoreil.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 47/75] 8139cp: Add dma_mapping_error checking
-Date: Wed, 14 Aug 2013 11:36:36 +0100
-Message-Id: <1376476624-10011-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 44/75] af_key: more info leaks in pfkey messages
+Date: Wed, 14 Aug 2013 11:36:33 +0100
+Message-Id: <1376476624-10011-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -29,151 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit cf3c4c03060b688cbc389ebc5065ebcce5653e96 upstream.
+commit ff862a4668dd6dba962b1d2d8bd344afa6375683 upstream.
 
-Self explanitory dma_mapping_error addition to the 8139 driver, based on this:
-https://bugzilla.redhat.com/show_bug.cgi?id=947250
+This is inspired by a5cc68f3d6 "af_key: fix info leaks in notify
+messages".  There are some struct members which don't get initialized
+and could disclose small amounts of private information.
 
-It showed several backtraces arising for dma_map_* usage without checking the
-return code on the mapping.  Add the check and abort the rx/tx operation if its
-failed.  Untested as I have no hardware and the reporter has wandered off, but
-seems pretty straightforward.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Francois Romieu <romieu@fr.zoreil.com>
+Acked-by: Mathias Krause <minipli@googlemail.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/realtek/8139cp.c | 48 ++++++++++++++++++++++++++++++++---
- 1 file changed, 45 insertions(+), 3 deletions(-)
+ net/key/af_key.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/ethernet/realtek/8139cp.c b/drivers/net/ethernet/realtek/8139cp.c
-index d9ef667..bf8eb57 100644
---- a/drivers/net/ethernet/realtek/8139cp.c
-+++ b/drivers/net/ethernet/realtek/8139cp.c
-@@ -478,7 +478,7 @@ rx_status_loop:
+diff --git a/net/key/af_key.c b/net/key/af_key.c
+index 7a09bbb..7dcb525 100644
+--- a/net/key/af_key.c
++++ b/net/key/af_key.c
+@@ -2073,6 +2073,7 @@ static int pfkey_xfrm_policy2msg(struct sk_buff *skb, const struct xfrm_policy *
+ 			pol->sadb_x_policy_type = IPSEC_POLICY_NONE;
+ 	}
+ 	pol->sadb_x_policy_dir = dir+1;
++	pol->sadb_x_policy_reserved = 0;
+ 	pol->sadb_x_policy_id = xp->index;
+ 	pol->sadb_x_policy_priority = xp->priority;
  
- 	while (1) {
- 		u32 status, len;
--		dma_addr_t mapping;
-+		dma_addr_t mapping, new_mapping;
- 		struct sk_buff *skb, *new_skb;
- 		struct cp_desc *desc;
- 		const unsigned buflen = cp->rx_buf_sz;
-@@ -520,6 +520,13 @@ rx_status_loop:
- 			goto rx_next;
- 		}
+@@ -3108,7 +3109,9 @@ static int pfkey_send_acquire(struct xfrm_state *x, struct xfrm_tmpl *t, struct
+ 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
+ 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
+ 	pol->sadb_x_policy_dir = dir+1;
++	pol->sadb_x_policy_reserved = 0;
+ 	pol->sadb_x_policy_id = xp->index;
++	pol->sadb_x_policy_priority = xp->priority;
  
-+		new_mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
-+					 PCI_DMA_FROMDEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, new_mapping)) {
-+			dev->stats.rx_dropped++;
-+			goto rx_next;
-+		}
-+
- 		dma_unmap_single(&cp->pdev->dev, mapping,
- 				 buflen, PCI_DMA_FROMDEVICE);
+ 	/* Set sadb_comb's. */
+ 	if (x->id.proto == IPPROTO_AH)
+@@ -3496,6 +3499,7 @@ static int pfkey_send_migrate(const struct xfrm_selector *sel, u8 dir, u8 type,
+ 	pol->sadb_x_policy_exttype = SADB_X_EXT_POLICY;
+ 	pol->sadb_x_policy_type = IPSEC_POLICY_IPSEC;
+ 	pol->sadb_x_policy_dir = dir + 1;
++	pol->sadb_x_policy_reserved = 0;
+ 	pol->sadb_x_policy_id = 0;
+ 	pol->sadb_x_policy_priority = 0;
  
-@@ -531,12 +538,11 @@ rx_status_loop:
- 
- 		skb_put(skb, len);
- 
--		mapping = dma_map_single(&cp->pdev->dev, new_skb->data, buflen,
--					 PCI_DMA_FROMDEVICE);
- 		cp->rx_skb[rx_tail] = new_skb;
- 
- 		cp_rx_skb(cp, skb, desc);
- 		rx++;
-+		mapping = new_mapping;
- 
- rx_next:
- 		cp->rx_ring[rx_tail].opts2 = 0;
-@@ -707,6 +713,22 @@ static inline u32 cp_tx_vlan_tag(struct sk_buff *skb)
- 		TxVlanTag | swab16(vlan_tx_tag_get(skb)) : 0x00;
- }
- 
-+static void unwind_tx_frag_mapping(struct cp_private *cp, struct sk_buff *skb,
-+				   int first, int entry_last)
-+{
-+	int frag, index;
-+	struct cp_desc *txd;
-+	skb_frag_t *this_frag;
-+	for (frag = 0; frag+first < entry_last; frag++) {
-+		index = first+frag;
-+		cp->tx_skb[index] = NULL;
-+		txd = &cp->tx_ring[index];
-+		this_frag = &skb_shinfo(skb)->frags[frag];
-+		dma_unmap_single(&cp->pdev->dev, le64_to_cpu(txd->addr),
-+				 skb_frag_size(this_frag), PCI_DMA_TODEVICE);
-+	}
-+}
-+
- static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 					struct net_device *dev)
- {
-@@ -740,6 +762,9 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 
- 		len = skb->len;
- 		mapping = dma_map_single(&cp->pdev->dev, skb->data, len, PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, mapping))
-+			goto out_dma_error;
-+
- 		txd->opts2 = opts2;
- 		txd->addr = cpu_to_le64(mapping);
- 		wmb();
-@@ -777,6 +802,9 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 		first_len = skb_headlen(skb);
- 		first_mapping = dma_map_single(&cp->pdev->dev, skb->data,
- 					       first_len, PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, first_mapping))
-+			goto out_dma_error;
-+
- 		cp->tx_skb[entry] = skb;
- 		entry = NEXT_TX(entry);
- 
-@@ -790,6 +818,11 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 			mapping = dma_map_single(&cp->pdev->dev,
- 						 skb_frag_address(this_frag),
- 						 len, PCI_DMA_TODEVICE);
-+			if (dma_mapping_error(&cp->pdev->dev, mapping)) {
-+				unwind_tx_frag_mapping(cp, skb, first_entry, entry);
-+				goto out_dma_error;
-+			}
-+
- 			eor = (entry == (CP_TX_RING_SIZE - 1)) ? RingEnd : 0;
- 
- 			ctrl = eor | len | DescOwn;
-@@ -848,11 +881,16 @@ static netdev_tx_t cp_start_xmit (struct sk_buff *skb,
- 	if (TX_BUFFS_AVAIL(cp) <= (MAX_SKB_FRAGS + 1))
- 		netif_stop_queue(dev);
- 
-+out_unlock:
- 	spin_unlock_irqrestore(&cp->lock, intr_flags);
- 
- 	cpw8(TxPoll, NormalTxPoll);
- 
- 	return NETDEV_TX_OK;
-+out_dma_error:
-+	kfree_skb(skb);
-+	cp->dev->stats.tx_dropped++;
-+	goto out_unlock;
- }
- 
- /* Set or clear the multicast filter for this adaptor.
-@@ -1039,6 +1077,10 @@ static int cp_refill_rx(struct cp_private *cp)
- 
- 		mapping = dma_map_single(&cp->pdev->dev, skb->data,
- 					 cp->rx_buf_sz, PCI_DMA_FROMDEVICE);
-+		if (dma_mapping_error(&cp->pdev->dev, mapping)) {
-+			kfree_skb(skb);
-+			goto err_out;
-+		}
- 		cp->rx_skb[i] = skb;
- 
- 		cp->rx_ring[i].opts2 = 0;
 -- 
 1.8.3.2
 
