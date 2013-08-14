@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759475Ab3HNIAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 04:00:36 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:62288 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757923Ab3HNIAe (ORCPT
+	id S1759499Ab3HNIAq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 04:00:46 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:50263 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757923Ab3HNIAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 04:00:34 -0400
-Date: Wed, 14 Aug 2013 09:00:26 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Benoit Cousson <bcousson@baylibre.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 12/22] ARM: dts: Remove '0x's from OMAP2420 H4 DTS file
-Message-ID: <20130814080026.GA4046@lee--X1>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
- <1374490361-25769-12-git-send-email-lee.jones@linaro.org>
- <20130813154425.GH15278@lee--X1>
- <20130814073000.GW7656@atomide.com>
- <520B353F.40106@baylibre.com>
+	Wed, 14 Aug 2013 04:00:39 -0400
+Date: Wed, 14 Aug 2013 10:00:33 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2 05/35] cpufreq: at32ap: Covert to light weight
+ ->target_index() routine
+Message-ID: <20130814080033.GA8540@samfundet.no>
+References: <cover.1376392602.git.viresh.kumar@linaro.org>
+ <1e8023313384685c4f5488b5249423b066e8c133.1376392602.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <520B353F.40106@baylibre.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1e8023313384685c4f5488b5249423b066e8c133.1376392602.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >Looks like Benoit's new email address is bcousson@baylibre.com.
-> >Probably best for Benoit to pick these to avoid merge conflicts.
-
-Ah nice, thanks Tony.
-
-> I've just applied the 7 following patches. Let me know if I missed
-> something.
+Around Tue 13 Aug 2013 19:02:18 +0530 or thereabout, Viresh Kumar wrote:
+> This patch converts existing .target() to newly defined light weight
+> .target_index() routine for this driver.
 > 
-> 6b9fa1b ARM: dts: Remove '0x's from OMAP5 DTS file
-> 79390b8 ARM: dts: Remove '0x's from OMAP4 DTS file
-> dd60fef ARM: dts: Remove '0x's from OMAP3430 SDP DTS file
-> bfef1cb ARM: dts: Remove '0x's from OMAP3 DTS file
-> 5f547ac ARM: dts: Remove '0x's from OMAP3 IGEP0030 DTS file
-> 27939fc ARM: dts: Remove '0x's from OMAP3 IGEP0020 DTS file
-> 62eb4d1 ARM: dts: Remove '0x's from OMAP2420 H4 DTS file
+> CPUFreq core will call cpufreq_frequency_table_target() before calling this
+> routine and will pass index to it.
+> 
+> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Nope, looks good. Thanks Benoit.
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+> ---
+>  drivers/cpufreq/at32ap-cpufreq.c | 23 +++++------------------
+>  1 file changed, 5 insertions(+), 18 deletions(-)
+
+<snipp diff>
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+mvh
+Hans-Christian Egtvedt
