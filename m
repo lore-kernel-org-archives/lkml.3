@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759865Ab3HNKne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:43:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34693 "EHLO
+	id S1759909Ab3HNKoA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:44:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34685 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932620Ab3HNKiY (ORCPT
+	with ESMTP id S932603Ab3HNKiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:24 -0400
+	Wed, 14 Aug 2013 06:38:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 64/75] drm/i915: do not disable backlight on vgaswitcheroo switch off
-Date: Wed, 14 Aug 2013 11:36:53 +0100
-Message-Id: <1376476624-10011-65-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 63/75] drm/ast: invalidate page tables when pinning a BO
+Date: Wed, 14 Aug 2013 11:36:52 +0100
+Message-Id: <1376476624-10011-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -28,63 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 3f577573cd5482a32f85bd131e52f7cb4b9ac518 upstream.
+commit 3ac65259328324de323dc006b52ff7c1a5b18d19 upstream.
 
-On muxed systems, the other vgaswitcheroo client may depend on i915 to
-handle the backlight. We began switching off the backlight since
+same fix as cirrus and mgag200.
 
-commit a261b246ebd552fd5d5a8ed84cc931bb821c427f
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Thu Jul 26 19:21:47 2012 +0200
-
-    drm/i915: disable all crtcs at suspend time
-
-breaking backlight on discreet graphics in (some) muxed systems.
-
-Keep the backlight on when the state is changed through vgaswitcheroo.
-
-Note: The alternative would be to add a quirk table to achieve the same
-based on system identifiers, but AFAICS it would asymptotically approach
-effectively the same as this patch as more IDs are added, but with the
-maintenance burden of the quirk table.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=55311
-Tested-by: Fede <fedevx@yahoo.com>
-Tested-by: Aximab <laurent.debian@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59785
-Tested-by: sfievet <sebastien.fievet@free.fr>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_panel.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/gpu/drm/ast/ast_ttm.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index d5fd67e..192002f 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -285,6 +285,17 @@ void intel_panel_disable_backlight(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
+diff --git a/drivers/gpu/drm/ast/ast_ttm.c b/drivers/gpu/drm/ast/ast_ttm.c
+index 2a6027c..566934c 100644
+--- a/drivers/gpu/drm/ast/ast_ttm.c
++++ b/drivers/gpu/drm/ast/ast_ttm.c
+@@ -348,6 +348,7 @@ int ast_bo_create(struct drm_device *dev, int size, int align,
  
-+	/*
-+	 * Do not disable backlight on the vgaswitcheroo path. When switching
-+	 * away from i915, the other client may depend on i915 to handle the
-+	 * backlight. This will leave the backlight on unnecessarily when
-+	 * another client is not activated.
-+	 */
-+	if (dev->switch_power_state == DRM_SWITCH_POWER_CHANGING) {
-+		DRM_DEBUG_DRIVER("Skipping backlight disable on vga switch\n");
-+		return;
-+	}
-+
- 	dev_priv->backlight_enabled = false;
- 	intel_panel_actually_set_backlight(dev, 0);
- }
+ 	astbo->gem.driver_private = NULL;
+ 	astbo->bo.bdev = &ast->ttm.bdev;
++	astbo->bo.bdev->dev_mapping = dev->dev_mapping;
+ 
+ 	ast_ttm_placement(astbo, TTM_PL_FLAG_VRAM | TTM_PL_FLAG_SYSTEM);
+ 
 -- 
 1.8.3.2
 
