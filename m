@@ -1,105 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759306Ab3HNHO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:14:56 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:54836 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759226Ab3HNHOw (ORCPT
+	id S1759166Ab3HNHSR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:18:17 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:33256 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723Ab3HNHSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:14:52 -0400
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>,
-        Peter Meerwald <p.meerwald@bct-electronic.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v4 1/4] leds-pca9633: Unique naming of the LEDs
-Date: Wed, 14 Aug 2013 09:14:23 +0200
-Message-Id: <1376464470-6845-3-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
+	Wed, 14 Aug 2013 03:18:15 -0400
+From: zwu.kernel@gmail.com
+To: xfs@oss.sgi.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH v4] xfs: introduce object readahead to log recovery
+Date: Wed, 14 Aug 2013 15:16:03 +0800
+Message-Id: <1376464563-27821-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13081407-3620-0000-0000-000003EDCAB1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there is more than one pca963x chips on the system and there are
-some LEDs without platform_data names, the driver wont be able to
-provide unique naming to them.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-This will cause led_class_dev_register to fail, unregistering all the
-LEDs of the chip.
+  It can take a long time to run log recovery operation because it is
+single threaded and is bound by read latency. We can find that it took
+most of the time to wait for the read IO to occur, so if one object
+readahead is introduced to log recovery, it will obviously reduce the
+log recovery time.
 
-This patch adds the i2c address to the name of the unnamed LEDs, making
-them unique.
+Log recovery time stat:
 
-[  555.346827] ------------[ cut here ]------------
-[  555.346844] WARNING: at /build/linux-voe0Su/linux-3.9.8/fs/sysfs/dir.c:536 sysfs_add_one+0x8b/0x9d()
-[  555.346847] Hardware name: QT5022
-[  555.346850] sysfs: cannot create duplicate filename '/class/leds/pca9633:6'
-[  555.346853] Modules linked in: qt5038_platform(O+) leds_pca9633(O) hid_generic ledtrig_default_on rfcomm bnep bluetooth binfmt_misc nfsd auth_rpcgss nfs_acl nfs lockd dns_resolver fscache sunrpc nls_utf8 nls_cp437 vfat fat loop fuse joydev hid_multitouch usbhid hid acpi_cpufreq mperf kvm_amd kvm evdev pn533 nfc arc4 microcode pcspkr efivars k10temp ath9k ath9k_common ath9k_hw ath fglrx(PO) mac80211 cfg80211 video rfkill processor thermal_sys sp5100_tco button i2c_piix4 ext4 crc16 jbd2 mbcache sg sd_mod crc_t10dif ahci libahci igb i2c_algo_bit i2c_core dca ptp pps_core ehci_pci ohci_hcd ehci_hcd libata usbcore usb_common scsi_mod [last unloaded: leds_pca963x]
-[  555.346940] Pid: 4766, comm: insmod Tainted: P        W  O 3.9-1-amd64 #1 Debian 3.9.8-1
-[  555.346943] Call Trace:
-[  555.346956]  [<ffffffff8103d153>] ? warn_slowpath_common+0x76/0x8c
-[  555.346962]  [<ffffffff8103d202>] ? warn_slowpath_fmt+0x47/0x49
-[  555.346968]  [<ffffffff8116005d>] ? sysfs_pathname+0x3b/0x41
-[  555.346973]  [<ffffffff81160767>] ? sysfs_add_one+0x8b/0x9d
-[  555.346978]  [<ffffffff811610a4>] ? sysfs_do_create_link_sd+0xe8/0x174
-[  555.346985]  [<ffffffff81279250>] ? device_add+0x243/0x5ab
-[  555.346991]  [<ffffffff81060a16>] ? complete_all+0x31/0x40
-[  555.346998]  [<ffffffff8104991a>] ? init_timer_key+0xc/0x56
-[  555.347004]  [<ffffffff8127964c>] ? device_create_vargs+0x82/0xb6
-[  555.347009]  [<ffffffff812796af>] ? device_create+0x2f/0x31
-[  555.347014]  [<ffffffff81060add>] ? should_resched+0x5/0x23
-[  555.347021]  [<ffffffff812a3a92>] ? led_classdev_register+0x24/0x103
-[  555.347028]  [<ffffffffa09d01c0>] ? pca9633_probe+0x173/0x239 [leds_pca9633]
-[  555.347035]  [<ffffffff8127b504>] ? __driver_attach+0x73/0x73
-[  555.347049]  [<ffffffffa009dfc9>] ? i2c_device_probe+0x63/0x88 [i2c_core]
-[  555.347057]  [<ffffffff8127b373>] ? driver_probe_device+0x92/0x1b0
-[  555.347064]  [<ffffffff81279c5c>] ? bus_for_each_drv+0x43/0x7d
-[  555.347070]  [<ffffffff8127b2af>] ? device_attach+0x68/0x83
-[  555.347078]  [<ffffffff8127a990>] ? bus_probe_device+0x25/0x8d
-[  555.347083]  [<ffffffff812793f7>] ? device_add+0x3ea/0x5ab
-[  555.347088]  [<ffffffff81060a16>] ? complete_all+0x31/0x40
-[  555.347094]  [<ffffffff8104991a>] ? init_timer_key+0xc/0x56
-[  555.347104]  [<ffffffffa009d3a1>] ? i2c_new_device+0x10d/0x179 [i2c_core]
-[  555.347112]  [<ffffffffa008f036>] ? qt5038_init+0x36/0x1000 [qt5038_platform]
-[  555.347119]  [<ffffffffa008f000>] ? 0xffffffffa008efff
-[  555.347125]  [<ffffffff8100209e>] ? do_one_initcall+0x74/0x128
-[  555.347131]  [<ffffffffa008f000>] ? 0xffffffffa008efff
-[  555.347137]  [<ffffffff810836f5>] ? load_module+0x1af7/0x1dfc
-[  555.347144]  [<ffffffff810801c5>] ? free_notes_attrs+0x3c/0x3c
-[  555.347150]  [<ffffffff81083a98>] ? sys_init_module+0x9e/0xab
-[  555.347157]  [<ffffffff8138be29>] ? system_call_fastpath+0x16/0x1b
-[  555.347161] ---[ end trace ad00b85794e0de4d ]---
-[  555.347448] leds-pca9633: probe of 0-006b failed with error -17
+          w/o this patch        w/ this patch
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+real:        0m15.023s             0m7.802s
+user:        0m0.001s              0m0.001s
+sys:         0m0.246s              0m0.107s
+
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- drivers/leds/leds-pca9633.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ fs/xfs/xfs_log_recover.c | 159 ++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 152 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
-index e59ca0a..7dd48f8 100644
---- a/drivers/leds/leds-pca9633.c
-+++ b/drivers/leds/leds-pca9633.c
-@@ -362,10 +362,12 @@ static int pca9633_probe(struct i2c_client *client,
- 			if (pdata->leds.leds[i].default_trigger)
- 				pca9633[i].led_cdev.default_trigger =
- 					pdata->leds.leds[i].default_trigger;
--		} else {
--			snprintf(pca9633[i].name, sizeof(pca9633[i].name),
--				 "pca9633:%d", i);
- 		}
-+		if (!pdata || i >= pdata->leds.num_leds ||
-+						!pdata->leds.leds[i].name)
-+			snprintf(pca9633[i].name, sizeof(pca9633[i].name),
-+				 "pca9633:%d:%.2x:%d", client->adapter->nr,
-+				 client->addr, i);
+diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
+index 7681b19..5f48a92 100644
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -3116,6 +3116,106 @@ xlog_recover_free_trans(
+ 	kmem_free(trans);
+ }
  
- 		pca9633[i].led_cdev.name = pca9633[i].name;
- 		pca9633[i].led_cdev.brightness_set = pca9633_led_set;
++STATIC void
++xlog_recover_buffer_ra_pass2(
++	struct xlog                     *log,
++	struct xlog_recover_item        *item)
++{
++	struct xfs_buf_log_format	*buf_f = item->ri_buf[0].i_addr;
++	struct xfs_mount		*mp = log->l_mp;
++
++	if (xlog_check_buffer_cancelled(log, buf_f->blf_blkno,
++			buf_f->blf_len, buf_f->blf_flags)) {
++		return;
++	}
++
++	xfs_buf_readahead(mp->m_ddev_targp, buf_f->blf_blkno,
++				buf_f->blf_len, NULL);
++}
++
++STATIC void
++xlog_recover_inode_ra_pass2(
++	struct xlog                     *log,
++	struct xlog_recover_item        *item)
++{
++	struct xfs_inode_log_format	ilf_buf;
++	struct xfs_inode_log_format	*ilfp;
++	struct xfs_mount		*mp = log->l_mp;
++	int			error;
++
++	if (item->ri_buf[0].i_len == sizeof(struct xfs_inode_log_format)) {
++		ilfp = item->ri_buf[0].i_addr;
++	} else {
++		ilfp = &ilf_buf;
++		memset(ilfp, 0, sizeof(*ilfp));
++		error = xfs_inode_item_format_convert(&item->ri_buf[0], ilfp);
++		if (error)
++			return;
++	}
++
++	if (xlog_check_buffer_cancelled(log, ilfp->ilf_blkno, ilfp->ilf_len, 0))
++		return;
++
++	xfs_buf_readahead(mp->m_ddev_targp, ilfp->ilf_blkno,
++				ilfp->ilf_len, &xfs_inode_buf_ops);
++}
++
++STATIC void
++xlog_recover_dquot_ra_pass2(
++	struct xlog			*log,
++	struct xlog_recover_item	*item)
++{
++	struct xfs_mount	*mp = log->l_mp;
++	struct xfs_disk_dquot	*recddq;
++	struct xfs_dq_logformat	*dq_f;
++	uint			type;
++
++
++	if (mp->m_qflags == 0)
++		return;
++
++	recddq = item->ri_buf[1].i_addr;
++	if (recddq == NULL)
++		return;
++	if (item->ri_buf[1].i_len < sizeof(struct xfs_disk_dquot))
++		return;
++
++	type = recddq->d_flags & (XFS_DQ_USER | XFS_DQ_PROJ | XFS_DQ_GROUP);
++	ASSERT(type);
++	if (log->l_quotaoffs_flag & type)
++		return;
++
++	dq_f = item->ri_buf[0].i_addr;
++	ASSERT(dq_f);
++	ASSERT(dq_f->qlf_len == 1);
++
++	xfs_buf_readahead(mp->m_ddev_targp, dq_f->qlf_blkno,
++				dq_f->qlf_len, NULL);
++}
++
++STATIC void
++xlog_recover_ra_pass2(
++	struct xlog			*log,
++	struct xlog_recover_item	*item)
++{
++	switch (ITEM_TYPE(item)) {
++	case XFS_LI_BUF:
++		xlog_recover_buffer_ra_pass2(log, item);
++		break;
++	case XFS_LI_INODE:
++		xlog_recover_inode_ra_pass2(log, item);
++		break;
++	case XFS_LI_DQUOT:
++		xlog_recover_dquot_ra_pass2(log, item);
++		break;
++	case XFS_LI_EFI:
++	case XFS_LI_EFD:
++	case XFS_LI_QUOTAOFF:
++	default:
++		break;
++	}
++}
++
+ STATIC int
+ xlog_recover_commit_pass1(
+ 	struct xlog			*log,
+@@ -3177,6 +3277,26 @@ xlog_recover_commit_pass2(
+ 	}
+ }
+ 
++STATIC int
++xlog_recover_items_pass2(
++	struct xlog                     *log,
++	struct xlog_recover             *trans,
++	struct list_head                *buffer_list,
++	struct list_head                *item_list)
++{
++	struct xlog_recover_item	*item;
++	int				error = 0;
++
++	list_for_each_entry(item, item_list, ri_list) {
++		error = xlog_recover_commit_pass2(log, trans,
++					  buffer_list, item);
++		if (error)
++			return error;
++	}
++
++	return error;
++}
++
+ /*
+  * Perform the transaction.
+  *
+@@ -3189,9 +3309,16 @@ xlog_recover_commit_trans(
+ 	struct xlog_recover	*trans,
+ 	int			pass)
+ {
+-	int			error = 0, error2;
+-	xlog_recover_item_t	*item;
+-	LIST_HEAD		(buffer_list);
++	int				error = 0;
++	int				error2;
++	int				items_queued = 0;
++	struct xlog_recover_item	*item;
++	struct xlog_recover_item	*next;
++	LIST_HEAD			(buffer_list);
++	LIST_HEAD			(ra_list);
++	LIST_HEAD			(done_list);
++
++	#define XLOG_RECOVER_COMMIT_QUEUE_MAX 100
+ 
+ 	hlist_del(&trans->r_list);
+ 
+@@ -3199,14 +3326,22 @@ xlog_recover_commit_trans(
+ 	if (error)
+ 		return error;
+ 
+-	list_for_each_entry(item, &trans->r_itemq, ri_list) {
++	list_for_each_entry_safe(item, next, &trans->r_itemq, ri_list) {
+ 		switch (pass) {
+ 		case XLOG_RECOVER_PASS1:
+ 			error = xlog_recover_commit_pass1(log, trans, item);
+ 			break;
+ 		case XLOG_RECOVER_PASS2:
+-			error = xlog_recover_commit_pass2(log, trans,
+-							  &buffer_list, item);
++			xlog_recover_ra_pass2(log, item);
++			list_move_tail(&item->ri_list, &ra_list);
++			items_queued++;
++			if (items_queued >= XLOG_RECOVER_COMMIT_QUEUE_MAX) {
++				error = xlog_recover_items_pass2(log, trans,
++						&buffer_list, &ra_list);
++				list_splice_tail_init(&ra_list, &done_list);
++				items_queued = 0;
++			}
++
+ 			break;
+ 		default:
+ 			ASSERT(0);
+@@ -3216,9 +3351,19 @@ xlog_recover_commit_trans(
+ 			goto out;
+ 	}
+ 
++out:
++	if (!list_empty(&ra_list)) {
++		if (!error)
++			error = xlog_recover_items_pass2(log, trans,
++					&buffer_list, &ra_list);
++		list_splice_tail_init(&ra_list, &done_list);
++	}
++
++	if (!list_empty(&done_list))
++		list_splice_init(&done_list, &trans->r_itemq);
++
+ 	xlog_recover_free_trans(trans);
+ 
+-out:
+ 	error2 = xfs_buf_delwri_submit(&buffer_list);
+ 	return error ? error : error2;
+ }
 -- 
-1.7.10.4
+1.7.11.7
 
