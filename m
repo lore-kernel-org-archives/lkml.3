@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793Ab3HNSVt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:21:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5321 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759978Ab3HNSVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:21:47 -0400
-Date: Wed, 14 Aug 2013 20:16:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Zach Levis <zach@zachsthings.com>
-Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        dan.carpenter@oracle.com, keescook@chromium.org,
-        cody@linux.vnet.ibm.com, zml@linux.vnet.ibm.com
-Subject: Re: [PATCH v4 2/3] fs/binfmts: Better handling of binfmt loops
-Message-ID: <20130814181604.GA5463@redhat.com>
-References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com> <1376497898-18619-3-git-send-email-zach@zachsthings.com>
+	id S932859Ab3HNSWI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:22:08 -0400
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:32890 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932811Ab3HNSWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 14:22:05 -0400
+Message-ID: <520BCADE.2040109@gmail.com>
+Date: Wed, 14 Aug 2013 14:22:22 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376497898-18619-3-git-send-email-zach@zachsthings.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Tang Chen <imtangchen@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>, robert.moore@intel.com,
+        lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org, tglx@linutronix.de,
+        mingo@elte.hu, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com> <20130812145016.GI15892@htj.dyndns.org> <52090225.6070208@gmail.com> <20130812154623.GL15892@htj.dyndns.org> <52090AF6.6020206@gmail.com> <20130812162247.GM15892@htj.dyndns.org> <520914D5.7080501@gmail.com> <52091A10.4030501@zytor.com>
+In-Reply-To: <52091A10.4030501@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14, Zach Levis wrote:
+(8/12/13 1:23 PM), H. Peter Anvin wrote:
+> On 08/12/2013 10:01 AM, Tang Chen wrote:
+>>>
+>>>> I'm just thinking of a more extreme case. For example, if a machine
+>>>> has only one node hotpluggable, and the kernel resides in that node.
+>>>> Then the system has no hotpluggable node.
+>>>
+>>> Yeah, sure, then there's no way that node can be hotpluggable and the
+>>> right thing to do is booting up the machine and informing the userland
+>>> that memory is not hotpluggable.
+>>>
+>>>> If we can prevent the kernel from using hotpluggable memory, in such
+>>>> a machine, users can still do memory hotplug.
+>>>>
+>>>> I wanted to do it as generic as possible. But yes, finding out the
+>>>> nodes the kernel resides in and make it unhotpluggable can work.
+>>>
+>>> Short of being able to remap memory under the kernel, I don't think
+>>> this can be very generic and as a compromise trying to keep as many
+>>> hotpluggable nodes as possible doesn't sound too bad.
+>>
+>> I think making one of the node hotpluggable is better. But OK, it is
+>> no big deal. There won't be such machine in reality, I think. :)
+>>
 >
-> +static void bprm_close_file(struct linux_binprm *bprm)
-> +{
-> +	if (bprm->mm) {
-> +		acct_arg_size(bprm, 0);
-> +		mmput(bprm->mm);
-> +	}
-> +
-> +	if (bprm->file) {
-> +		allow_write_access(bprm->file);
-> +		fput(bprm->file);
-> +	}
-> +}
+> The user may very well have configured a system with mirrored memory for
+> the kernel node as that will be non-hotpluggable, but not for the
+> others.  One can wonder how much that actually buys in real life, but
+> still...
 
-btw this doesn't look right too. This can be called multiple times
-during the error handling.
-
-Just suppose that search_binary_handler() does this at depth == 0
-when it detects -ELOOP and then open_exec() fails. After that
-we return to do_execve_common() which goes to "out:".
-
-Oleg.
+Note. Such system is much cheaper than full memory mirroring system. That's
+one of reason why server vendors are interesting in hot plugging.
 
