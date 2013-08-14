@@ -1,134 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab3HNOnS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 10:43:18 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:44093 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932510Ab3HNOnQ (ORCPT
+	id S932658Ab3HNOoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 10:44:34 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33690 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932489Ab3HNOoc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 10:43:16 -0400
-Message-ID: <520B9780.5000007@baylibre.com>
-Date: Wed, 14 Aug 2013 16:43:12 +0200
-From: Benoit Cousson <bcousson@baylibre.com>
-Organization: BayLibre
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Luciano Coelho <coelho@ti.com>
-CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        mturquette@linaro.org, mark.rutland@arm.com, balbi@ti.com,
-        grant.likely@linaro.org, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, nm@ti.com, laurent.pinchart@ideasonboard.com
-Subject: Re: [PATCH v3] Documentation: dt: bindings: TI WiLink modules
-References: <1375215668-29171-1-git-send-email-coelho@ti.com>
-In-Reply-To: <1375215668-29171-1-git-send-email-coelho@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Aug 2013 10:44:32 -0400
+Message-ID: <1376491467.18617.41.camel@hornet>
+Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS
+ LRADC
+From: Pawel Moll <pawel.moll@arm.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Hector Palacios <hector.palacios@digi.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        "marex@denx.de" <marex@denx.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Date: Wed, 14 Aug 2013 15:44:27 +0100
+In-Reply-To: <520AA3CD.1040008@kernel.org>
+References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com>
+	 <1374501843-19651-3-git-send-email-hector.palacios@digi.com>
+	 <520AA3CD.1040008@kernel.org>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 14 Aug 2013 14:44:28.0101 (UTC) FILETIME=[C72B5750:01CE98FC]
+X-MC-Unique: 113081415443000101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luca,
+On Tue, 2013-08-13 at 22:23 +0100, Jonathan Cameron wrote:
+> On 07/22/13 15:04, Hector Palacios wrote:
+> > Some LRADC channels have fixed pre-dividers so they can measure
+> > different voltages at full scale. The reference voltage allows to
+> > expose a scaling attribute through the IIO sysfs so that a user can
+> > compute the real voltage out of a measured sample value.
+> > 
+> > diff --git a/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt b/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
+> > index 4688205..6ec485c 100644
+> > --- a/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
+> > +++ b/Documentation/devicetree/bindings/staging/iio/adc/mxs-lradc.txt
+> > @@ -1,9 +1,12 @@
+> >  * Freescale i.MX28 LRADC device driver
+> >  
+> >  Required properties:
+> > -- compatible: Should be "fsl,imx28-lradc"
+> > +- compatible: "fsl,imx28-lradc", "fsl,imx23-lradc"
+> >  - reg: Address and length of the register set for the device
+> >  - interrupts: Should contain the LRADC interrupts
+> > +- fsl,vref: Reference voltage (in mV) for each LRADC channel. This is the
+> > +	    maximum voltage that can be measured at full scale in each channel
+> > +	    considering fixed pre-dividers.
 
-On 30/07/2013 22:21, Luciano Coelho wrote:
-> Add device tree bindings documentation for the TI WiLink modules.
-> Currently only the WLAN part of the WiLink6, WiLink7 and WiLink8
-> modules is supported.
->
-> Signed-off-by: Luciano Coelho <coelho@ti.com>
-> ---
->
-> In v3, use IRQ_TYPE_LEVEL_HIGH in the example, as suggested by Laurent.
->
->   .../devicetree/bindings/net/wireless/ti-wilink.txt | 68 ++++++++++++++++++++++
->   1 file changed, 68 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
->
-> diff --git a/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
-> new file mode 100644
-> index 0000000..aafebb1
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
-> @@ -0,0 +1,68 @@
-> +TI WiLink Wireless Modules Device Tree Bindings
-> +===============================================
-> +
-> +The WiLink modules provide wireless connectivity, such as WLAN,
-> +Bluetooth, FM and NFC.
-> +
-> +There are several different modules available, which can be grouped by
-> +their generation: WiLink6, WiLink7 and WiLink8.  WiLink4 is not
-> +currently supported with device tree.
-> +
-> +Currently, only the WLAN portion of the modules is supported with
-> +device tree.
-> +
-> +Required properties:
-> +--------------------
-> +
-> +- compatible: should be "ti,wilink6", "ti,wilink7" or "ti,wilink8"
-> +- interrupt-parent: the interrupt controller
-> +- interrupts: out-of-band WLAN interrupt
-> +	See the interrupt controller's bindings documentation for
-> +	detailed definition.
-> +
-> +Optional properties:
-> +--------------------
-> +
-> +- clocks: list of clocks needed by the chip as follows:
-> +
-> +  refclock: the internal WLAN reference clock frequency (required for
-> +	WiLink6 and WiLink7; not used for WiLink8).
-> +
-> +  tcxoclock: the internal WLAN TCXO clock frequency (required for
-> +	WiLink7 not used for WiLink6 and WiLink8).
-> +
-> +  The clocks must be defined and named accordingly.  For example:
-> +
-> +  clocks = <&refclock>
-> +  clock-names = "refclock";
-> +
-> +  refclock: refclock {
-> +		     compatible = "ti,wilink-clock";
-> +		     #clock-cells = <0>;
-> +		     clock-frequency = <38400000>;
-> +	};
-> +
-> +  Some modules that contain the WiLink chip provide clocks in the
-> +  module itself.  In this case, we define a "ti,wilink-clock" as shown
-> +  above.  But any other clock could in theory be used, so the proper
-> +  clock definition should be used.
-> +
-> +
-> +Example:
-> +--------
-> +
-> +Example definition that can be used in OMAP4 Panda:
-> +
-> +wlan {
-> +	compatible = "ti,wilink6";
-> +	interrupt-parent = <&gpio2>;
-> +	interrupts = <21 IRQ_TYPE_LEVEL_HIGH>;	/* gpio line 53 */
-> +	clocks = <&refclock>;
-> +	clock-names = "refclock";
-> +
-> +	refclock: refclock {
-> +		compatible = "ti,wilink-clock";
-> +		#clock-cells = <0>;
-> +		clock-frequency = <38400000>;
-> +	};
-> +};
+So, let me try to rephrase what I read above.
 
-Everything looks good beside the location of the wlan node...
+There's an ADC with X channels. And there's a reference voltage source
+(one?). Now, each of the ADC channels have a (different?) voltage
+divider, taking the voltage from the reference source and feeding it to
+the ADC comparator. How much am I wrong?
 
-It should not float at the root of the device tree. It is physically 
-attached to a SDIO bus and thus must be a child of the MMC controller 
-for a proper HW representation. That's moreover the best way to handle 
-properly the dependency between the MMC controller and the wilink driver.
+If I'm not wrong at all, I'd say that the reference source could be
+described as a standard fixed regulator
+(Documentation/devicetree/bindings/regulator/fixed-regulator.txt) and
+the ADC node should have some king of "reference-supply" phandle to the
+regulator node. Now, if the dividers factors are *really* fixed, the
+driver could know about them and calculate the effective reference
+voltage on its own, couldn't it?
 
-Please note that this is easier do say than to do :-)
+Let me repeat the "DT standard disclaimer": the tree, in general, should
+describe the way components are *wired up*, not much more.
 
-Regards,
-Benoit
+Pawel
+
 
