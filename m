@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512Ab3HNXNo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:13:44 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39229 "EHLO arroyo.ext.ti.com"
+	id S933539Ab3HNXNr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 19:13:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39017 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933329Ab3HNXNj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:13:39 -0400
+	id S933329Ab3HNXNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 19:13:44 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>,
@@ -15,158 +15,78 @@ To: Herbert Xu <herbert@gondor.hengli.com.au>,
 CC: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 08/10] crypto: omap-aes: PIO mode: Add IRQ handler and walk SGs
-Date: Wed, 14 Aug 2013 18:12:47 -0500
-Message-ID: <1376521969-16807-9-git-send-email-joelf@ti.com>
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: [PATCH 00/10] crypto: omap-aes: DMA and PIO mode improvements
+Date: Wed, 14 Aug 2013 18:12:39 -0500
+Message-ID: <1376521969-16807-1-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1376521969-16807-1-git-send-email-joelf@ti.com>
-References: <1376521969-16807-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We add an IRQ handler that implements a state-machine for PIO-mode
-and data structures for walking the scatter-gather list. The IRQ handler
-is called in succession both when data is available to read or next
-data can be sent for processing. This process continues till the entire
-in/out SG lists have been walked. Once the SG-list has been completely
-walked, the IRQ handler schedules the done_task tasklet.
+This patch series is a rewrite of the DMA portion of omap-aes driver
+and also adds support for PIO mode. Both these modes, give better
+performance than before.
 
-Also add a useful macro that is used through out the IRQ code for a
-common pattern of calculating how much an SG list has been walked.
-This improves code readability and avoids checkpatch errors.
+Earlier, only a single SG was used for DMA purpose, and the SG-list
+passed from the crypto layer was being copied and DMA'd one entry at
+a time. This turns out to be quite inefficient, so we replace it with
+much simpler code that directly passes the SG-list from crypto to the
+DMA layer.
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- drivers/crypto/omap-aes.c |   90 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 90 insertions(+)
+We also add PIO mode support to the driver, and switch to PIO mode
+whenever the DMA channel allocation is not available. This is only for
+OMAP4 platform will work on any platform on which IRQ information is
+populated.
 
-diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
-index c057eac..891455b 100644
---- a/drivers/crypto/omap-aes.c
-+++ b/drivers/crypto/omap-aes.c
-@@ -46,6 +46,8 @@
- #define DST_MAXBURST			4
- #define DMA_MIN				(DST_MAXBURST * sizeof(u32))
- 
-+#define _calc_walked(inout) (dd->inout##_walk.offset - dd->inout##_sg->offset)
-+
- /* OMAP TRM gives bitfields as start:end, where start is the higher bit
-    number. For example 7:0 */
- #define FLD_MASK(start, end)	(((1 << ((start) - (end) + 1)) - 1) << (end))
-@@ -98,6 +100,8 @@
- #define FLAGS_FAST		BIT(5)
- #define FLAGS_BUSY		BIT(6)
- 
-+#define AES_BLOCK_WORDS		(AES_BLOCK_SIZE >> 2)
-+
- struct omap_aes_ctx {
- 	struct omap_aes_dev *dd;
- 
-@@ -163,6 +167,8 @@ struct omap_aes_dev {
- 	size_t				total;
- 	struct scatterlist		*in_sg;
- 	struct scatterlist		*out_sg;
-+	struct scatter_walk		in_walk;
-+	struct scatter_walk		out_walk;
- 	int			dma_in;
- 	struct dma_chan		*dma_lch_in;
- 	int			dma_out;
-@@ -862,6 +868,90 @@ static const struct omap_aes_pdata omap_aes_pdata_omap4 = {
- 	.minor_shift	= 0,
- };
- 
-+static irqreturn_t omap_aes_irq(int irq, void *dev_id)
-+{
-+	struct omap_aes_dev *dd = dev_id;
-+	u32 status, i;
-+	u32 *src, *dst;
-+
-+	status = omap_aes_read(dd, AES_REG_IRQ_STATUS(dd));
-+	if (status & AES_REG_IRQ_DATA_IN) {
-+		omap_aes_write(dd, AES_REG_IRQ_ENABLE(dd), 0x0);
-+
-+		BUG_ON(!dd->in_sg);
-+
-+		BUG_ON(_calc_walked(in) > dd->in_sg->length);
-+
-+		src = sg_virt(dd->in_sg) + _calc_walked(in);
-+
-+		for (i = 0; i < AES_BLOCK_WORDS; i++) {
-+			omap_aes_write(dd, AES_REG_DATA_N(dd, i), *src);
-+
-+			scatterwalk_advance(&dd->in_walk, 4);
-+			if (dd->in_sg->length == _calc_walked(in)) {
-+				dd->in_sg = scatterwalk_sg_next(dd->in_sg);
-+				if (dd->in_sg) {
-+					scatterwalk_start(&dd->in_walk,
-+							  dd->in_sg);
-+					src = sg_virt(dd->in_sg) +
-+					      _calc_walked(in);
-+				}
-+			} else {
-+				src++;
-+			}
-+		}
-+
-+		/* Clear IRQ status */
-+		status &= ~AES_REG_IRQ_DATA_IN;
-+		omap_aes_write(dd, AES_REG_IRQ_STATUS(dd), status);
-+
-+		/* Enable DATA_OUT interrupt */
-+		omap_aes_write(dd, AES_REG_IRQ_ENABLE(dd), 0x4);
-+
-+	} else if (status & AES_REG_IRQ_DATA_OUT) {
-+		omap_aes_write(dd, AES_REG_IRQ_ENABLE(dd), 0x0);
-+
-+		BUG_ON(!dd->out_sg);
-+
-+		BUG_ON(_calc_walked(out) > dd->out_sg->length);
-+
-+		dst = sg_virt(dd->out_sg) + _calc_walked(out);
-+
-+		for (i = 0; i < AES_BLOCK_WORDS; i++) {
-+			*dst = omap_aes_read(dd, AES_REG_DATA_N(dd, i));
-+			scatterwalk_advance(&dd->out_walk, 4);
-+			if (dd->out_sg->length == _calc_walked(out)) {
-+				dd->out_sg = scatterwalk_sg_next(dd->out_sg);
-+				if (dd->out_sg) {
-+					scatterwalk_start(&dd->out_walk,
-+							  dd->out_sg);
-+					dst = sg_virt(dd->out_sg) +
-+					      _calc_walked(out);
-+				}
-+			} else {
-+				dst++;
-+			}
-+		}
-+
-+		dd->total -= AES_BLOCK_SIZE;
-+
-+		BUG_ON(dd->total < 0);
-+
-+		/* Clear IRQ status */
-+		status &= ~AES_REG_IRQ_DATA_OUT;
-+		omap_aes_write(dd, AES_REG_IRQ_STATUS(dd), status);
-+
-+		if (!dd->total)
-+			/* All bytes read! */
-+			tasklet_schedule(&dd->done_task);
-+		else
-+			/* Enable DATA_IN interrupt for next block */
-+			omap_aes_write(dd, AES_REG_IRQ_ENABLE(dd), 0x2);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
- static const struct of_device_id omap_aes_of_match[] = {
- 	{
- 		.compatible	= "ti,omap2-aes",
+Tests performed on am33xx and omap4 SoCs , notice the 50% perf improvement
+for large 8K blocks:
+
+Sample run on am33xx (beaglebone):
+With DMA rewrite:
+[   26.410052] test 0 (128 bit key, 16 byte blocks): 4318 operations in 1 seconds (69088 bytes)
+[   27.414314] test 1 (128 bit key, 64 byte blocks): 4360 operations in 1 seconds (279040 bytes)
+[   28.414406] test 2 (128 bit key, 256 byte blocks): 3609 operations in 1 seconds (923904 bytes)
+[   29.414410] test 3 (128 bit key, 1024 byte blocks): 3418 operations in 1 seconds (3500032 bytes)
+[   30.414510] test 4 (128 bit key, 8192 byte blocks): 1766 operations in 1 seconds (14467072 bytes)
+
+Without DMA rewrite:
+[   31.920519] test 0 (128 bit key, 16 byte blocks): 4417 operations in 1 seconds (70672 bytes)
+[   32.925997] test 1 (128 bit key, 64 byte blocks): 4221 operations in 1 seconds (270144 bytes)
+[   33.926194] test 2 (128 bit key, 256 byte blocks): 3528 operations in 1 seconds (903168 bytes)
+[   34.926225] test 3 (128 bit key, 1024 byte blocks): 3281 operations in 1 seconds (3359744 bytes)
+[   35.926385] test 4 (128 bit key, 8192 byte blocks): 1460 operations in 1 seconds (11960320 bytes)
+
+With PIO mode, note the tremndous boost in performance for small blocks there:
+[   27.294905] test 0 (128 bit key, 16 byte blocks): 20585 operations in 1 seconds (329360 bytes)
+[   28.302282] test 1 (128 bit key, 64 byte blocks): 8106 operations in 1 seconds (518784 bytes)
+[   29.302374] test 2 (128 bit key, 256 byte blocks): 2359 operations in 1 seconds (603904 bytes)
+[   30.302575] test 3 (128 bit key, 1024 byte blocks): 605 operations in 1 seconds (619520 bytes)
+[   31.303781] test 4 (128 bit key, 8192 byte blocks): 79 operations in 1 seconds (647168 bytes)
+
+Future work in this direction would be to dynamically change between
+PIO/DMA mode based on the block size.
+
+Joel Fernandes (10):
+  crypto: scatterwalk:  Add support for calculating number of SG
+    elements
+  crypto: omap-aes: Add useful debug macros
+  crypto: omap-aes: Populate number of SG elements
+  crypto: omap-aes: Simplify DMA usage by using direct SGs
+  crypto: omap-aes: Sync SG before DMA operation
+  crypto: omap-aes: Remove previously used intermediate buffers
+  crypto: omap-aes: Add IRQ info and helper macros
+  crypto: omap-aes: PIO mode: Add IRQ handler and walk SGs
+  crypto: omap-aes: PIO mode: platform data for OMAP4 and trigger it
+  crypto: omap-aes: Switch to PIO mode in probe function
+
+ crypto/scatterwalk.c         |   22 +++
+ drivers/crypto/omap-aes.c    |  400 ++++++++++++++++++++----------------------
+ include/crypto/scatterwalk.h |    2 +
+ 3 files changed, 217 insertions(+), 207 deletions(-)
+
 -- 
 1.7.9.5
 
