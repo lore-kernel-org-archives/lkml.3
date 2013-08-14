@@ -1,73 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab3HNQo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:44:27 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:8748 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932701Ab3HNQo0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:44:26 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>
-Subject: RE: [PATCH 1/3] powerpc: Add iommu domain pointer to device archdata
-Thread-Topic: [PATCH 1/3] powerpc: Add iommu domain pointer to device
- archdata
-Thread-Index: AQHOgRi4nTlTf9YUUkWja9eSx6cVn5mUpIuAgAABx+CAAGpwAIAACAwA
-Date: Wed, 14 Aug 2013 16:44:18 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D0A42F5C6@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1373863857-27239-1-git-send-email-Varun.Sethi@freescale.com>
- <20130814094802.GC4491@8bytes.org>
- <C5ECD7A89D1DC44195F34B25E172658D0A42CDB5@039-SN2MPN1-013.039d.mgd.msft.net>
- <20130814161522.GP28811@8bytes.org>
-In-Reply-To: <20130814161522.GP28811@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.249.163]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932905Ab3HNQoe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:44:34 -0400
+Received: from mout-xforward.gmx.net ([82.165.159.40]:50708 "EHLO
+	mout-xforward.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932701Ab3HNQo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 12:44:29 -0400
+Message-ID: <520BB3EA.7050909@gmx.de>
+Date: Wed, 14 Aug 2013 18:44:26 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130807 Thunderbird/17.0.8
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Jan Kara <jack@suse.cz>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        linux-ext4@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: Re: Issues with a rather unusual configured NFS server
+References: <52075E01.7030506@gmx.de> <20130812143640.GF4596@quack.suse.cz> <20130813215313.GH17781@fieldses.org>
+In-Reply-To: <20130813215313.GH17781@fieldses.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:AQQC2A1c9c4kp69O2/nOEibp/94e67TEhDtry8Emt28BPAgHfu4
+ sjSwwqiMpdH2JldW8zV5eX+OEZk4yaqAB1KYqPcAFThf53XP+6vCueQE1A87zXQutOmLHHj
+ HO6frg96tmjKcXGLO487WPJz+IXRch0zc5uS1GfBe0T90zQcCu1w85LPrE6X7w8DKQrsh9M
+ s8oIF2Ikc/aoRrqscRK+g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Joerg.
+On 08/13/2013 11:53 PM, J. Bruce Fields wrote:
+> On Mon, Aug 12, 2013 at 04:36:40PM +0200, Jan Kara wrote:
+>> On Sun 11-08-13 11:48:49, Toralf Förster wrote:
+>>> so that the server either crashes (if it is a user mode linux image) or at least its reboot functionality got broken
+>>> - if the NFS server is hammered with scary NFS calls using a fuzzy tool running at a remote NFS client under a non-privileged user id.
+>>>
+>>> It can re reproduced, if
+>>> 	- the NFS share is an EXT3 or EXT4 directory
+>>> 	- and it is created at file located at tempfs and mounted via loop device
+>>> 	- and the NFS server is forced to umount the NFS share
+>>> 	- and the server forced to restart the NSF service afterwards
+>>> 	- and trinity is used
+>>>
+>>> I could find a scenario for an automated bisect. 2 times it brought this commit 
+>>> commit 68a3396178e6688ad7367202cdf0af8ed03c8727
+>>> Author: J. Bruce Fields <bfields@redhat.com>
+>>> Date:   Thu Mar 21 11:21:50 2013 -0400
+>>>
+>>>     nfsd4: shut down more of delegation earlier
+> 
+> Thanks for the report.  I think I see the problem--after this commit
+> nfs4_set_delegation() failures result in nfs4_put_delegation being
+> called, but nfs4_put_delegation doesn't free the nfs4_file that has
+> already been set by alloc_init_deleg().
+> 
+> Let me think about how to fix that....
+> 
+> --b.
+> 
+>>   Added Bruce to CC.
+>>
+>>> to be the one after which the user mode linux server crashes with a back trace like this:
+>>>
+>>>
+>>> $ cat /mnt/ramdisk/bt.v3.11-rc4-172-g8ae3f1d
+>>> [New LWP 14025]
+>>> Core was generated by `/home/tfoerste/devel/linux/linux earlyprintk ubda=/home/tfoerste/virtual/uml/tr'.
+>>> Program terminated with signal 6, Aborted.
+>>> #0  0xb77ef424 in __kernel_vsyscall ()
+>>> #0  0xb77ef424 in __kernel_vsyscall ()
+>>> #1  0x083a33c5 in kill ()
+>>> #2  0x0807163d in uml_abort () at arch/um/os-Linux/util.c:93
+>>> #3  0x08071925 in os_dump_core () at arch/um/os-Linux/util.c:138
+>>> #4  0x080613a7 in panic_exit (self=0x85a1518 <panic_exit_notifier>, unused1=0, unused2=0x85d6ce0 <buf.15904>) at arch/um/kernel/um_arch.c:240
+>>> #5  0x0809a3b8 in notifier_call_chain (nl=0x0, val=0, v=0x85d6ce0 <buf.15904>, nr_to_call=-2, nr_calls=0x0) at kernel/notifier.c:93
+>>> #6  0x0809a503 in __atomic_notifier_call_chain (nr_calls=<optimized out>, nr_to_call=<optimized out>, v=<optimized out>, val=<optimized out>, nh=<optimized out>) at kernel/notifier.c:182
+>>> #7  atomic_notifier_call_chain (nh=0x85d6cc4 <panic_notifier_list>, val=0, v=0x85d6ce0 <buf.15904>) at kernel/notifier.c:191
+>>> #8  0x08400ba8 in panic (fmt=0x0) at kernel/panic.c:128
+>>> #9  0x0818edf4 in ext4_put_super (sb=0x4a042690) at fs/ext4/super.c:818
+>>> #10 0x081010d2 in generic_shutdown_super (sb=0x4a042690) at fs/super.c:418
+>>> #11 0x0810209a in kill_block_super (sb=0x0) at fs/super.c:1028
+>>> #12 0x08100f6a in deactivate_locked_super (s=0x4a042690) at fs/super.c:299
+>>> #13 0x08101001 in deactivate_super (s=0x4a042690) at fs/super.c:324
+>>> #14 0x08118e0c in mntfree (mnt=<optimized out>) at fs/namespace.c:891
+>>> #15 mntput_no_expire (mnt=0x0) at fs/namespace.c:929
+>>> #16 0x0811a2f5 in SYSC_umount (flags=<optimized out>, name=<optimized out>) at fs/namespace.c:1335
+>>> #17 SyS_umount (name=134541632, flags=0) at fs/namespace.c:1305
+>>> #18 0x0811a369 in SYSC_oldumount (name=<optimized out>) at fs/namespace.c:1347
+>>> #19 SyS_oldumount (name=134541632) at fs/namespace.c:1345
+>>> #20 0x080618e2 in handle_syscall (r=0x49e919d4) at arch/um/kernel/skas/syscall.c:35
+>>> #21 0x08073c0d in handle_trap (local_using_sysemu=<optimized out>, regs=<optimized out>, pid=<optimized out>) at arch/um/os-Linux/skas/process.c:198
+>>> #22 userspace (regs=0x49e919d4) at arch/um/os-Linux/skas/process.c:431
+>>> #23 0x0805e65c in fork_handler () at arch/um/kernel/process.c:160
+>>> #24 0x00000000 in ?? ()
+>>>
+>>>
+>>>
+>>> A real system however would not crash bug would give a kernel BUG as reported here:
+>>> http://article.gmane.org/gmane.comp.file-systems.ext4/38915
+>>   We have deleted inodes (regular files) in the orphan list during
+>> ext4_put_super(). My guess is that NFS is still holding some inode
+>> references to these inodes and thus inodes don't get deleted. So ext3/4
+>> would be just a victim here.
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Wednesday, August 14, 2013 9:45 PM
-> To: Sethi Varun-B16395
-> Cc: iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
-> linux-kernel@vger.kernel.org; benh@kernel.crashing.org;
-> galak@kernel.crashing.org; alex.williamson@redhat.com; Yoder Stuart-
-> B08248; Wood Scott-B07421
-> Subject: Re: [PATCH 1/3] powerpc: Add iommu domain pointer to device
-> archdata
-> 
-> On Wed, Aug 14, 2013 at 09:56:11AM +0000, Sethi Varun-B16395 wrote:
-> > Please find the .config file attached with this mail.
-> 
-> Fantastic, thanks. The build works fine, I'll include the driver into my
-> next-branch. I also have two minor clean-up patches on-top, just if you
-> where wondering.
-> 
-> 
-> 	Joerg
-> 
+Just FWIW, EXT2 is not affected.
+
+>>> Furthermore the server won't be able any longer to reboot - it would hang
+>>> infinitely in the reboot phase.  Just the magic sysrq keys still works
+>>> then.
+>>   Well, this is likely because the filesystem cannot be shut down.
+>>
+>> 								Honza
+>> -- 
+>> Jan Kara <jack@suse.cz>
+>> SUSE Labs, CR
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
 
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
