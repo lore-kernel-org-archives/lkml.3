@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab3HNPdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 11:33:33 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:47619 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3HNPdc (ORCPT
+	id S1758975Ab3HNPeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 11:34:31 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:48064 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab3HNPe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 11:33:32 -0400
-Date: Wed, 14 Aug 2013 16:33:25 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Florian Lobmaier <florian.lobmaier@ams.com>
-Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 4/4] added ams AS3722 register include file
-Message-ID: <20130814153325.GG4046@lee--X1>
-References: <1376492098-15672-1-git-send-email-florian.lobmaier@ams.com>
- <1376492098-15672-4-git-send-email-florian.lobmaier@ams.com>
+	Wed, 14 Aug 2013 11:34:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1376492098-15672-4-git-send-email-florian.lobmaier@ams.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1373972146-12133-2-git-send-email-sonic.adi@gmail.com>
+References: <1373972146-12133-1-git-send-email-sonic.adi@gmail.com>
+	<1373972146-12133-2-git-send-email-sonic.adi@gmail.com>
+Date: Wed, 14 Aug 2013 17:34:29 +0200
+Message-ID: <CACRpkdZ5wtNmvQw1pqponows-VPrEN9KBYosTyDJhcrU2+mB9w@mail.gmail.com>
+Subject: Re: [PATCH 2/3] blackfin: gpio: Remove none gpio lib code.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Steven Miao <realmz6@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        buildroot-devel@blackfin.uclinux.org,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ---
->  include/linux/mfd/as3722-reg.h |  495 ++++++++++++++++++++++++++++++++++++++++
+On Tue, Jul 16, 2013 at 12:55 PM, Sonic Zhang <sonic.adi@gmail.com> wrote:
 
-So the way you've split up the patch isn't quite right. It shouldn't
-be split by files, rather by functionality.
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> - Remove non gpio lib code from blackfin architecture.
+> - Limit the lagecy blackfin gpio driver to bf5xx processors only.
+> - Remove unused definition of the pint power functions.
+>
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 
-Quoting from Documentation/SubmittingPatches:
+This seems fine.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-"If your changes produce a lot of deltas, you may want to look into
- splitting them into individual patches which modify things in
- logical stages.  This will facilitate easier reviewing by other
- kernel developers, very important if you want your patch accepted."
-
-Note "logical stages".
-
-So things like:
-
-- Driver introduction including Kconfig and Makefile entries
-- Resource allocation; memory and irqs
-- Everything else, bit by bit
-
-Within reason, the simpler the patches, they more likely they are to
-be reviewed and accepted.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yours,
+Linus Walleij
