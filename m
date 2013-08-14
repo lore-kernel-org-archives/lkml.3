@@ -1,96 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab3HNLD3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 07:03:29 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48816 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759675Ab3HNLD2 convert rfc822-to-8bit (ORCPT
+	id S932824Ab3HNLDk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 07:03:40 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:60107
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932787Ab3HNLDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 07:03:28 -0400
-Message-ID: <520B63FF.3090805@arm.com>
-Date: Wed, 14 Aug 2013 12:03:27 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v3 0/6] ARM/ARM64 architected timer updates
-References: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1376414984-14182-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <520B490A.4090109@linaro.org> <520B4B2E.1040700@arm.com> <520B611D.8060500@linaro.org>
-In-Reply-To: <520B611D.8060500@linaro.org>
-X-OriginalArrivalTime: 14 Aug 2013 11:03:24.0957 (UTC) FILETIME=[E5B82CD0:01CE98DD]
-X-MC-Unique: 113081412032603001
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Aug 2013 07:03:38 -0400
+X-IronPort-AV: E=Sophos;i="4.89,876,1367964000"; 
+   d="scan'208";a="23920207"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 28/29] drivers/input/{keyboard,serio}: simplify use of devm_ioremap_resource
+Date: Wed, 14 Aug 2013 13:03:33 +0200
+Message-Id: <1376478213-24091-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/08/13 11:51, Daniel Lezcano wrote:
-> On 08/14/2013 11:17 AM, Sudeep KarkadaNagesha wrote:
->> On 14/08/13 10:08, Daniel Lezcano wrote:
->>> On 08/13/2013 07:29 PM, Sudeep KarkadaNagesha wrote:
->>>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>>>
->>>> This patch series adds support to configure the rate and enable the
->>>> event stream for architected timer. The event streams can be used to
->>>> impose a timeout on a WFE, to safeguard against any programming error
->>>> in case an expected event is not generated or even to implement
->>>> wfe-based timeouts for userspace locking implementations.
->>>>
->>>> Since the timer control register is reset to zero on warm boot, CPU
->>>> PM notifier is added to re-initialize it.
->>>
->>> It does not apply to my tree.
->>>
->>> Against which tree is this patchset ? Who is supposed to take it ?
->>>
->> As I had mentioned in previous version, because of the conflict, I had
->> to rebase it on 3.11-rc4
-> 
-> 
-> dlezcano@mai:~/Work/src/clockevents$ git show
-> commit c095ba7224d8edc71dcef0d655911399a8bd4a3f
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Sun Aug 4 13:46:46 2013 -0700
-> 
->     Linux 3.11-rc4
-> 
-> diff --git a/Makefile b/Makefile
-> index 95a8e55..f93d4f7 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -1,7 +1,7 @@
->  VERSION = 3
->  PATCHLEVEL = 11
->  SUBLEVEL = 0
-> -EXTRAVERSION = -rc3
-> +EXTRAVERSION = -rc4
->  NAME = Linux for Workgroups
-> 
->  # *DOCUMENTATION*
-> 
-> 
-> dlezcano@mai:~/Work/src/clockevents$ git am -s arch_timer
-> 
-> Applying: ARM/ARM64: arch_timer: add macros for bits in control register
-> Applying: drivers: clocksource: configure event stream for ARM arch timer
-> Applying: ARM: arch_timer: configure and enable event stream
-> Applying: ARM64: arch_timer: configure and enable event stream
-Looks like you are missing a patch here:
-[PATCH v3 5/6] drivers: clocksource: enable hwcaps for event stream on
-ARM arch timer
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> Applying: drivers: clocksource: add CPU PM notifier for ARM architected
-> timer
+Remove unneeded error handling on the result of a call to
+platform_get_resource when the value is passed to devm_ioremap_resource.
 
-Regards,
-Sudeep
+Move the call to platform_get_resource adjacent to the call to
+devm_ioremap_resource to make the connection between them more clear.
 
+A simplified version of the semantic patch that makes this change is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression pdev,res,n,e,e1;
+expression ret != 0;
+identifier l;
+@@
+
+- res = platform_get_resource(pdev, IORESOURCE_MEM, n);
+  ... when != res
+- if (res == NULL) { ... \(goto l;\|return ret;\) }
+  ... when != res
++ res = platform_get_resource(pdev, IORESOURCE_MEM, n);
+  e = devm_ioremap_resource(e1, res);
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/input/keyboard/imx_keypad.c     |    7 +------
+ drivers/input/keyboard/nspire-keypad.c  |    7 +------
+ drivers/input/keyboard/spear-keyboard.c |    7 +------
+ drivers/input/serio/arc_ps2.c           |    7 +------
+ drivers/input/serio/olpc_apsp.c         |    3 ---
+ 5 files changed, 4 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/input/keyboard/imx_keypad.c b/drivers/input/keyboard/imx_keypad.c
+index 03c8cc5..328cfc1 100644
+--- a/drivers/input/keyboard/imx_keypad.c
++++ b/drivers/input/keyboard/imx_keypad.c
+@@ -442,12 +442,6 @@ static int imx_keypad_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "no I/O memory defined in platform data\n");
+-		return -EINVAL;
+-	}
+-
+ 	input_dev = devm_input_allocate_device(&pdev->dev);
+ 	if (!input_dev) {
+ 		dev_err(&pdev->dev, "failed to allocate the input device\n");
+@@ -468,6 +462,7 @@ static int imx_keypad_probe(struct platform_device *pdev)
+ 	setup_timer(&keypad->check_matrix_timer,
+ 		    imx_keypad_check_for_events, (unsigned long) keypad);
+ 
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	keypad->mmio_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(keypad->mmio_base))
+ 		return PTR_ERR(keypad->mmio_base);
+diff --git a/drivers/input/keyboard/nspire-keypad.c b/drivers/input/keyboard/nspire-keypad.c
+index 20d872d..b3e3eda 100644
+--- a/drivers/input/keyboard/nspire-keypad.c
++++ b/drivers/input/keyboard/nspire-keypad.c
+@@ -171,12 +171,6 @@ static int nspire_keypad_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "missing platform resources\n");
+-		return -EINVAL;
+-	}
+-
+ 	keypad = devm_kzalloc(&pdev->dev, sizeof(struct nspire_keypad),
+ 			      GFP_KERNEL);
+ 	if (!keypad) {
+@@ -208,6 +202,7 @@ static int nspire_keypad_probe(struct platform_device *pdev)
+ 		return PTR_ERR(keypad->clk);
+ 	}
+ 
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	keypad->reg_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(keypad->reg_base))
+ 		return PTR_ERR(keypad->reg_base);
+diff --git a/drivers/input/keyboard/spear-keyboard.c b/drivers/input/keyboard/spear-keyboard.c
+index 7111124..85ff530 100644
+--- a/drivers/input/keyboard/spear-keyboard.c
++++ b/drivers/input/keyboard/spear-keyboard.c
+@@ -191,12 +191,6 @@ static int spear_kbd_probe(struct platform_device *pdev)
+ 	int irq;
+ 	int error;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "no keyboard resource defined\n");
+-		return -EBUSY;
+-	}
+-
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+ 		dev_err(&pdev->dev, "not able to get irq for the device\n");
+@@ -228,6 +222,7 @@ static int spear_kbd_probe(struct platform_device *pdev)
+ 		kbd->suspended_rate = pdata->suspended_rate;
+ 	}
+ 
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	kbd->io_base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(kbd->io_base))
+ 		return PTR_ERR(kbd->io_base);
+diff --git a/drivers/input/serio/arc_ps2.c b/drivers/input/serio/arc_ps2.c
+index 3fb7727..8024a6d 100644
+--- a/drivers/input/serio/arc_ps2.c
++++ b/drivers/input/serio/arc_ps2.c
+@@ -189,12 +189,6 @@ static int arc_ps2_probe(struct platform_device *pdev)
+ 	int irq;
+ 	int error, id, i;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "no IO memory defined\n");
+-		return -EINVAL;
+-	}
+-
+ 	irq = platform_get_irq_byname(pdev, "arc_ps2_irq");
+ 	if (irq < 0) {
+ 		dev_err(&pdev->dev, "no IRQ defined\n");
+@@ -208,6 +202,7 @@ static int arc_ps2_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	arc_ps2->addr = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(arc_ps2->addr))
+ 		return PTR_ERR(arc_ps2->addr);
+diff --git a/drivers/input/serio/olpc_apsp.c b/drivers/input/serio/olpc_apsp.c
+index 818aa46..51b1d40 100644
+--- a/drivers/input/serio/olpc_apsp.c
++++ b/drivers/input/serio/olpc_apsp.c
+@@ -183,9 +183,6 @@ static int olpc_apsp_probe(struct platform_device *pdev)
+ 
+ 	np = pdev->dev.of_node;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -ENOENT;
+-
+ 	priv->base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(priv->base)) {
+ 		dev_err(&pdev->dev, "Failed to map WTM registers\n");
 
