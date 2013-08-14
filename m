@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760344Ab3HNUhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:37:16 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:55557 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760178Ab3HNUhO (ORCPT
+	id S1760386Ab3HNUhh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:37:37 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:25675 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760291Ab3HNUhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:37:14 -0400
-Date: Wed, 14 Aug 2013 16:37:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "sergei.shtylyov@cogentembedded.com" 
-	<sergei.shtylyov@cogentembedded.com>
-Subject: Re: [PATCH v4 1/3] devicetree: create a separate binding description
- for sata_highbank
-Message-ID: <20130814203709.GL28628@htj.dyndns.org>
-References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
- <1376504612-17340-1-git-send-email-mark.langsdorf@calxeda.com>
- <20130814202728.GJ28628@htj.dyndns.org>
- <520BEA3B.2040005@calxeda.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520BEA3B.2040005@calxeda.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 Aug 2013 16:37:35 -0400
+From: Mark Rusk <Mark.Rusk@hp.com>
+To: arnd@arndb.de
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        Mark Rusk <Mark.Rusk@hp.com>, Mark Rusk <mark.rusk@hp.com>
+Subject: [PATCH] drivers/misc/hpilo: Correct panic when an AUX iLO is detected 
+Date: Wed, 14 Aug 2013 15:30:01 -0500
+Message-Id: <1376512201-35966-1-git-send-email-Mark.Rusk@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 03:36:11PM -0500, Mark Langsdorf wrote:
-> On 08/14/2013 03:27 PM, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Wed, Aug 14, 2013 at 01:23:30PM -0500, Mark Langsdorf wrote:
-> >>  Documentation/devicetree/bindings/ata/sata_highbank.txt | 6 ++++--
-> >>  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > Any ideas on how these should be routed?  The above doesn't apply to
-> > libata or master as the file doesn't exist there yet.
-> 
-> I accidentally introduced a new commit while cleaning up the patch. The
-> correct patch text should have been as follows. Do you want me to resubmit?
+ Using an uninitialized variable 'devnum' after 'goto out;' was causing
+ panic.  Just go ahead and return, we need to ignore AUX iLO devs.
 
-Can you please just re-send the corrupt patch?
+ Oops: 0002 [#1] SMP
+   .
+   .
+   .
+ RIP  [<ffffffffa033e270>] ilo_probe+0xec/0xe7c [hpilo]
 
-Thanks.
+Signed-off-by: Mark Rusk <mark.rusk@hp.com>
 
+---
+ drivers/misc/hpilo.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
+index 621c7a3..b83e3ca 100644
+--- a/drivers/misc/hpilo.c
++++ b/drivers/misc/hpilo.c
+@@ -759,7 +759,7 @@ static int ilo_probe(struct pci_dev *pdev,
+ 
+ 	/* Ignore subsystem_device = 0x1979 (set by BIOS)  */
+ 	if (pdev->subsystem_device == 0x1979)
+-		goto out;
++		return 0;
+ 
+ 	if (max_ccb > MAX_CCB)
+ 		max_ccb = MAX_CCB;
+@@ -899,7 +899,7 @@ static void __exit ilo_exit(void)
+ 	class_destroy(ilo_class);
+ }
+ 
+-MODULE_VERSION("1.4");
++MODULE_VERSION("1.4.1");
+ MODULE_ALIAS(ILO_NAME);
+ MODULE_DESCRIPTION(ILO_NAME);
+ MODULE_AUTHOR("David Altobelli <david.altobelli@hp.com>");
 -- 
-tejun
+1.7.1
+
