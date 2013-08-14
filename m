@@ -1,58 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab3HNMyi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:54:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60659 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932361Ab3HNMyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:54:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,876,1367996400"; 
-   d="scan'208";a="380834793"
-Message-ID: <520B7F6D.2000004@intel.com>
-Date: Wed, 14 Aug 2013 16:00:29 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S932500Ab3HNMz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:55:29 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:57824 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932361Ab3HNMz0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 08:55:26 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r7ECtOdS004787, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next v2 2/3] net/usb/r8152: enable tx checksum
+Date: Wed, 14 Aug 2013 20:54:39 +0800
+Message-ID: <1376484880-741-2-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1376484880-741-1-git-send-email-hayeswang@realtek.com>
+References: <1376378913-879-1-git-send-email-hayeswang@realtek.com>
+ <1376484880-741-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V11 09/15] perf: make events stream always parsable
-References: <1376484517-5339-1-git-send-email-adrian.hunter@intel.com> <1376484517-5339-10-git-send-email-adrian.hunter@intel.com>
-In-Reply-To: <1376484517-5339-10-git-send-email-adrian.hunter@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/08/13 15:48, Adrian Hunter wrote:
-> The event stream is not always parsable because the format of a sample
-> is dependent on the sample_type of the selected event.  When there
-> is more than one selected event and the sample_types are not the
-> same then parsing becomes problematic.  A sample can be matched to its
-> selected event using the ID that is allocated when the event is opened.
-> Unfortunately, to get the ID from the sample means first parsing it.
-> 
-> This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
-> the ID at a fixed position so that the ID can be retrieved without
-> parsing the sample.  For sample events, that is the first position
-> immediately after the header.  For non-sample events, that is the last
-> position.
-> 
-> In this respect parsing samples requires that the sample_type and ID
-> values are recorded.  For example, perf tools records struct perf_event_attr
-> and the IDs within the perf.data file.  Those must be read first
-> before it is possible to parse samples found later in the perf.data file.
-> 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Enable tx checksum.
 
-Forgot to add Peter's ack which is here:
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 64 +++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 59 insertions(+), 5 deletions(-)
 
-	http://marc.info/?l=linux-kernel&m=137629757013526&w=2
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index abb0b9f..4d938a7 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -20,6 +20,8 @@
+ #include <linux/if_vlan.h>
+ #include <linux/uaccess.h>
+ #include <linux/list.h>
++#include <linux/ip.h>
++#include <linux/ipv6.h>
+ 
+ /* Version Information */
+ #define DRIVER_VERSION "v1.01.0 (2013/08/12)"
+@@ -314,8 +316,13 @@ struct tx_desc {
+ 	u32 opts1;
+ #define TX_FS			(1 << 31) /* First segment of a packet */
+ #define TX_LS			(1 << 30) /* Final segment of a packet */
+-#define TX_LEN_MASK		0xffff
++#define TX_LEN_MASK		0x3ffff
++
+ 	u32 opts2;
++#define UDP_CS			(1 << 31) /* Calculate UDP/IP checksum */
++#define TCP_CS			(1 << 30) /* Calculate TCP/IP checksum */
++#define IPV4_CS			(1 << 29) /* Calculate IPv4 checksum */
++#define IPV6_CS			(1 << 28) /* Calculate IPv6 checksum */
+ };
+ 
+ struct rx_agg {
+@@ -968,6 +975,52 @@ err1:
+ 	return -ENOMEM;
+ }
+ 
++static void
++r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc, struct sk_buff *skb)
++{
++	memset(desc, 0, sizeof(*desc));
++
++	desc->opts1 = cpu_to_le32((skb->len & TX_LEN_MASK) | TX_FS | TX_LS);
++
++	if (skb->ip_summed == CHECKSUM_PARTIAL) {
++		__be16 protocol;
++		u8 ip_protocol;
++		u32 opts2 = 0;
++
++		if (skb->protocol == htons(ETH_P_8021Q))
++			protocol = vlan_eth_hdr(skb)->h_vlan_encapsulated_proto;
++		else
++			protocol = skb->protocol;
++
++		switch (protocol) {
++		case htons(ETH_P_IP):
++			opts2 |= IPV4_CS;
++			ip_protocol = ip_hdr(skb)->protocol;
++			break;
++
++		case htons(ETH_P_IPV6):
++			opts2 |= IPV6_CS;
++			ip_protocol = ipv6_hdr(skb)->nexthdr;
++			break;
++
++		default:
++			ip_protocol = IPPROTO_RAW;
++			break;
++		}
++
++		if (ip_protocol == IPPROTO_TCP) {
++			opts2 |= TCP_CS;
++			opts2 |= (skb_transport_offset(skb) & 0x7fff) << 17;
++		} else if (ip_protocol == IPPROTO_UDP) {
++			opts2 |= UDP_CS;
++		} else {
++			WARN_ON_ONCE(1);
++		}
++
++		desc->opts2 = cpu_to_le32(opts2);
++	}
++}
++
+ static void rx_bottom(struct r8152 *tp)
+ {
+ 	struct net_device_stats *stats;
+@@ -1097,8 +1150,7 @@ next_agg:
+ 		tx_desc = (struct tx_desc *)tx_data;
+ 		tx_data += sizeof(*tx_desc);
+ 
+-		tx_desc->opts1 = cpu_to_le32((skb->len & TX_LEN_MASK) | TX_FS |
+-					     TX_LS);
++		r8152_tx_csum(tp, tx_desc, skb);
+ 		memcpy(tx_data, skb->data, len);
+ 		agg->skb_num++;
+ 		agg->skb_len += len;
+@@ -1256,7 +1308,7 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
+ 	agg->skb_num = agg->skb_len = 0;
+ 
+ 	len = skb->len;
+-	tx_desc->opts1 = cpu_to_le32((skb->len & TX_LEN_MASK) | TX_FS | TX_LS);
++	r8152_tx_csum(tp, tx_desc, skb);
+ 	memcpy(tx_data, skb->data, len);
+ 	dev_kfree_skb_any(skb);
+ 	agg->skb_num++;
+@@ -1977,7 +2029,9 @@ static int rtl8152_probe(struct usb_interface *intf,
+ 	tp->netdev = netdev;
+ 	netdev->netdev_ops = &rtl8152_netdev_ops;
+ 	netdev->watchdog_timeo = RTL8152_TX_TIMEOUT;
+-	netdev->features &= ~NETIF_F_IP_CSUM;
++
++	netdev->features |= NETIF_F_IP_CSUM;
++	netdev->hw_features = NETIF_F_IP_CSUM;
+ 	SET_ETHTOOL_OPS(netdev, &ops);
+ 	tp->speed = 0;
+ 
+-- 
+1.8.3.1
+
