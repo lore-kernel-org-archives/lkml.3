@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123Ab3HNUZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:25:58 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:49481 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760012Ab3HNUZz (ORCPT
+	id S933171Ab3HNU0H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:26:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54705 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933148Ab3HNU0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:25:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <8761v882wj.fsf@xmission.com>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
- <520BD9E0.8050304@mit.edu> <8761v882wj.fsf@xmission.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 14 Aug 2013 13:25:34 -0700
-Message-ID: <CALCETrWnNfQnOKjfXx8hwsVzPfcoUseuY5JD1X7fRSPXOj61MA@mail.gmail.com>
-Subject: Re: DoS with unprivileged mounts
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 14 Aug 2013 16:26:04 -0400
+Date: Wed, 14 Aug 2013 13:26:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>, Xishi Qiu <qiuxishi@huawei.com>,
+        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
+Message-Id: <20130814132602.814a88e991e29c5b93bbe22c@linux-foundation.org>
+In-Reply-To: <20130814155205.GA2706@gmail.com>
+References: <520B0B75.4030708@huawei.com>
+	<20130814085711.GK2296@suse.de>
+	<20130814155205.GA2706@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 12:53 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> On 08/14/2013 10:42 AM, Miklos Szeredi wrote:
->>> There's a simple and effective way to prevent unlink(2) and rename(2)
->>> from operating on any file or directory by simply mounting something
->>> on it.  In any mount instance in any namespace.
->>>
->>> Was this considered in the unprivileged mount design?
->>>
->>> The solution is also theoretically simple: mounts in unpriv namespaces
->>> are marked "volatile" and are dissolved on an unlink type operation.
->>
->> I'd actually prefer the reverse: unprivileged mounts don't prevent
->> unlink and rename.  If the dentry goes away, then the mount could still
->> exist, sans underlying file.  (This is already supported on network
->> filesystems.)
->
-> Of course we do this in network filesystems by pretending the
-> rename/unlink did not actually happen.  The vfs insists that it be lied
-> to instead of mirroring what actually happened.
->
-> Again all of this is a question about efficient data structures and not
-> really one of semantics.  Can either semantic be implemented in such a
-> way that it does not slow down the vfs?
+On Thu, 15 Aug 2013 00:52:29 +0900 Minchan Kim <minchan@kernel.org> wrote:
 
-Given that vfs_unlink has:
+> On Wed, Aug 14, 2013 at 09:57:11AM +0100, Mel Gorman wrote:
+> > On Wed, Aug 14, 2013 at 12:45:41PM +0800, Xishi Qiu wrote:
+> > > A large free page buddy block will continue many times, so if the page 
+> > > is free, skip the whole page buddy block instead of one page.
+> > > 
+> > > Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> > 
+> > page_order cannot be used unless zone->lock is held which is not held in
+> > this path. Acquiring the lock would prevent parallel allocations from the
+> 
+> Argh, I missed that.
 
-	if (d_mountpoint(dentry))
-		error = -EBUSY;
+I missed it as well. And so did Xishi Qiu.
 
-I think it's just a matter of changing / deleting that code.
-
---Andy
+Mel, we have a problem.  What can we do to make this code more
+maintainable?
