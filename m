@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab3HNFWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 01:22:13 -0400
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:41351
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750937Ab3HNFWL (ORCPT
+	id S1752119Ab3HNFXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 01:23:50 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:39355 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab3HNFXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 01:22:11 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h1ee6h1ce5h1fdah201ch2073h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hzz1de098h8275bh1de097hz31h87h2a8h668h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h129fi1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <adi-buildroot-devel@lists.sourceforge.net>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH v4] pinctrl: pinmux: Don't free pins requested by other devices in pinmux_disable_setting.
-Date: Wed, 14 Aug 2013 13:26:43 +0800
-Message-ID: <1376458003-6244-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.8.2.3
+	Wed, 14 Aug 2013 01:23:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <1376377766-2594-2-git-send-email-chenxg@marvell.com>
+References: <1376377766-2594-1-git-send-email-chenxg@marvell.com>
+	<1376377766-2594-2-git-send-email-chenxg@marvell.com>
+Date: Wed, 14 Aug 2013 10:53:48 +0530
+Message-ID: <CAKohponW5GwnrL8EktnWb-U5V=eOFQQkbZrx=QgUpfuci3v-0w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: Only do governor start after successful stop
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Xiaoguang Chen <chenxg@marvell.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Xiaoguang Chen <chenxg.marvell@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On 13 August 2013 12:39, Xiaoguang Chen <chenxg@marvell.com> wrote:
+> cpufreq_add_policy_cpu, __cpufreq_remove_dev and __cpufreq_set_policy
+> have operations for governor stop and start.
+> Only do the start operation when the previous stop operation succeeds.
+>
+> Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
+> ---
+>  drivers/cpufreq/cpufreq.c | 25 +++++++++++++++----------
+>  1 file changed, 15 insertions(+), 10 deletions(-)
 
-One peripheral may share part of its pins with the 2nd
-peripheral and the other pins with the 3rd. If it requests all pins
-when part of them has already be requested and owned by the 2nd
-peripheral, this request fails and pinmux_disable_setting() is called.
-The pinmux_disable_setting() frees all pins of the first peripheral
-without checking if the pin is owned by itself or the 2nd, which
-results in the malfunction of the 2nd peripheral driver.
+I hope you have seen this patch, which is already in Rafael's tree?
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/pinctrl/pinmux.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 88cc509..5f51588 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -482,13 +482,13 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
- 				 pins[i]);
- 			continue;
- 		}
--		desc->mux_setting = NULL;
-+		if (desc->mux_setting == &(setting->data.mux)) {
-+			desc->mux_setting = NULL;
-+			/* And release the pin */
-+			pin_free(pctldev, pins[i], NULL);
-+		}
- 	}
- 
--	/* And release the pins */
--	for (i = 0; i < num_pins; i++)
--		pin_free(pctldev, pins[i], NULL);
--
- 	if (ops->disable)
- 		ops->disable(pctldev, setting->data.mux.func, setting->data.mux.group);
- }
--- 
-1.8.2.3
-
-
+https://lkml.org/lkml/2013/8/6/357
