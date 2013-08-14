@@ -1,46 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750920Ab3HNQEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:04:12 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:33811 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758422Ab3HNQEK (ORCPT
+	id S1759969Ab3HNQEb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:04:31 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58582 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758765Ab3HNQE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:04:10 -0400
-Date: Wed, 14 Aug 2013 17:04:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-media@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH RFC v2 1/2] max77693: added device tree support
-Message-ID: <20130814160402.GH4046@lee--X1>
-References: <1361288177-14452-1-git-send-email-a.hajda@samsung.com>
- <1361288177-14452-2-git-send-email-a.hajda@samsung.com>
- <20130408152122.GU24058@zurbaran>
- <51E64BA8.30205@samsung.com>
- <520BA3C9.8050606@samsung.com>
+	Wed, 14 Aug 2013 12:04:29 -0400
+Date: Wed, 14 Aug 2013 18:04:16 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [RFC][PATCH 0/5] preempt_count rework
+Message-ID: <20130814160416.GI24092@twins.programming.kicks-ass.net>
+References: <20130814131539.790947874@chello.nl>
+ <520B8A81.1080405@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <520BA3C9.8050606@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <520B8A81.1080405@zytor.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have no response from Samuel regarding this patch.
-> Could you take care of it, I can rebase it again if necessary.
+On Wed, Aug 14, 2013 at 06:47:45AM -0700, H. Peter Anvin wrote:
 
-Yes, please rebase onto v3.11-rc5 and resubmit.
+> I still don't see this using a decrement of the percpu variable
+> anywhere.  The C compiler doesn't know how to generate those, so if I'm
+> not completely wet we will end up relying on sub_preempt_count()...
+> which, because it relies on taking the address of the percpu variable
+> will generate absolutely horrific code.
+> 
+> On x86, you never want to take the address of a percpu variable if you
+> can avoid it, as you end up generating code like:
+> 
+> 	movq %fs:0,%rax
+> 	subl $1,(%rax)
+> 
 
-Thanks.
+Urgh,. yes you're right. I keep forgetting GCC doesn't know how to merge
+those :/
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+OK, so something like the below would cure the worst of that I suppose.
+It compiles but doesn't boot; must've done something wrong.
+
+Someone please look at it because my asm-foo blows. I pretty much
+copy/pasted this from asm/percpu.h.
+
+---
+--- a/arch/x86/include/asm/preempt.h
++++ b/arch/x86/include/asm/preempt.h
+@@ -20,6 +20,28 @@ static __always_inline int *preempt_coun
+ 	return &__raw_get_cpu_var(__preempt_count);
+ }
+ 
++#define __preempt_count_add(x) do {		\
++	asm("addl %1," __percpu_arg(0)		\
++		: "+m" (__preempt_count) 	\
++		: "ri" ((int)x) 		\
++		: "memory"); 			\
++} while (0)
++
++#define __preempt_count_sub(x) do {		\
++	asm("subl %1," __percpu_arg(0)		\
++		: "+m" (__preempt_count) 	\
++		: "ri" ((int)x) 		\
++		: "memory"); 			\
++} while (0)
++
++#define preempt_enable() do {			\
++	asm("\nsubl $1," __percpu_arg(0)	\
++	    "\njnz 1f"				\
++	    "\ncall preempt_schedule"		\
++	    "\n1:" : "+m" (__preempt_count)	\
++		   : : "memory");		\
++} while (0)
++
+ /*
+  * must be macros to avoid header recursion hell
+  */
+--- a/include/asm-generic/preempt.h
++++ b/include/asm-generic/preempt.h
+@@ -17,6 +17,9 @@ static __always_inline int *preempt_coun
+ 	return &current_thread_info()->preempt_count;
+ }
+ 
++#define __preempt_count_add(x)	do { current_thread_info()->preempt_count += (x); } while (0)
++#define __preempt_count_sub(x)  __preempt_count_add(-(x))
++
+ /*
+  * must be macros to avoid header recursion hell
+  */
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -45,8 +45,8 @@ static __always_inline bool test_preempt
+   extern void add_preempt_count(int val);
+   extern void sub_preempt_count(int val);
+ #else
+-# define add_preempt_count(val)	do { *preempt_count_ptr() += (val); } while (0)
+-# define sub_preempt_count(val)	do { *preempt_count_ptr() -= (val); } while (0)
++# define add_preempt_count(val)	__preempt_count_add(val)
++# define sub_preempt_count(val)	__preempt_count_sub(val)
+ #endif
+ 
+ #define inc_preempt_count() add_preempt_count(1)
+@@ -101,17 +101,17 @@ do { \
+ 
+ #define preempt_enable_no_resched()	sched_preempt_enable_no_resched()
+ 
++#ifndef preempt_enable
+ #define preempt_enable() \
+ do { \
+ 	preempt_enable_no_resched(); \
+ 	preempt_check_resched(); \
+ } while (0)
++#endif
+ 
+ /* For debugging and tracer internals only! */
+-#define add_preempt_count_notrace(val)			\
+-	do { *preempt_count_ptr() += (val); } while (0)
+-#define sub_preempt_count_notrace(val)			\
+-	do { *preempt_count_ptr() -= (val); } while (0)
++#define add_preempt_count_notrace(val)	__preempt_count_add(val)
++#define sub_preempt_count_notrace(val)	__preempt_count_sub(val)
+ #define inc_preempt_count_notrace() add_preempt_count_notrace(1)
+ #define dec_preempt_count_notrace() sub_preempt_count_notrace(1)
+ 
