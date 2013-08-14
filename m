@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759879Ab3HNMbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:31:33 -0400
-Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:39384 "EHLO
-	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759661Ab3HNMbb (ORCPT
+	id S932310Ab3HNMce (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:32:34 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:37334 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932188Ab3HNMcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:31:31 -0400
-From: Xiaolong Ye <yexl@marvell.com>
-To: <hjk@hansjkoch.de>, <greg@kroah.com>, <linux-kernel@vger.kernel.org>
-CC: Xiaolong Ye <yexl@marvell.com>
-Subject: [PATCH] Add uio_sync_event interface to support mulit-instances case in UIO framework
-Date: Wed, 14 Aug 2013 20:30:22 +0800
-Message-ID: <1376483423-603-1-git-send-email-yexl@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 14 Aug 2013 08:32:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130814121606.GB23840@n2100.arm.linux.org.uk>
+References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1375741218-10225-2-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20130814121606.GB23840@n2100.arm.linux.org.uk>
+Date: Wed, 14 Aug 2013 08:32:32 -0400
+Message-ID: <CAF6AEGsLLWjNRv4PJwkyWaQ0nTLUfW8ShtcMESoXBVjLSiF7Rw@mail.gmail.com>
+Subject: Re: [PATCH 1/8] drm/i2c: tda998x: fix EDID reading on TDA19988 devices
+From: Rob Clark <robdclark@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, guys,
+On Wed, Aug 14, 2013 at 8:16 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Aug 06, 2013 at 12:20:11AM +0200, Sebastian Hesselbarth wrote:
+>> From: Russell King <rmk+kernel@arm.linux.org.uk>
+>>
+>> TDA19988 devices need their RAM enabled in order to read EDID
+>> information.  Add support for this.
+>>
+>> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+>> Tested-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>
+> There was some debate about whether this is needed or not.  It seems that
+> if I don't run the NXP driver, it isn't needed, but if I have run the
+> NXP driver, then yes it is.  As it seems to do no harm, I think it's fine
+> to be submitted.
 
-Recently, we have met fake interrupt issue when using UIO as our vpu driver in mulit-instances case,
-the issue can be described as below:
+just fwiw, I had noticed before that (at least on the
+beaglebone-black), nxp doesn't necessarily get reset when doing a warm
+reboot.  So booting a kernel w/ NXP driver, and then rebooting w/
+upstream kernel and tda998x should probably hit this same scenario.
+Better to not assume too much about the state of the tda when the
+driver is loaded, so I think this patch is a good idea.
 
-In multi-instances case, we use vpu_lock(semaphore) to implement the mutually exclusive access to the
-device, each instace open uio device once and will be associated with a fd and its own uio_listener,
-we use poll to wait for the hardware interrupt. So let's assume that there are two instances, A and B,
-their uio_listener->event_count and idev->event are all 0 at the beginning, then A get the vpu_lock and start
-to work, it will block at poll()(because listener->event_count == idev->count) until H/W interrupt happens
-(atomic_inc(&idev->event)), after it releases vpu_lock, B will get the lock and start to work, however,
-its poll will return immediately because B's uio_listener->event_count is 0 while idev->event has been 1,
-that's how the fake interrupt happens.
+Signed-off-by: Rob Clark <robdclark@gmail.com>
 
-Our proposal:
-Add new uio_sync_event(struct uio_listener *listener) function in uio,c, so that we can call it directly
-when we want to sync the event count.
-
-
-Xiaolong Ye (1):
-  uio: add uio_event_sync interface
-
- drivers/uio/uio.c          |   12 ++++++++++++
- include/linux/uio_driver.h |    1 +
- 2 files changed, 13 insertions(+)
-
--- 
-1.7.9.5
-
+BR,
+-R
