@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab3HNOfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 10:35:30 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41606 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759960Ab3HNOf2 (ORCPT
+	id S932576Ab3HNOfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 10:35:43 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:36000 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932444Ab3HNOfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 10:35:28 -0400
-Date: Wed, 14 Aug 2013 15:35:13 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] drm/i2c: tda998x: fix sync generation and
-	calculation
-Message-ID: <20130814143513.GA31161@n2100.arm.linux.org.uk>
-References: <1375741218-10225-1-git-send-email-sebastian.hesselbarth@gmail.com> <1375741218-10225-7-git-send-email-sebastian.hesselbarth@gmail.com>
+	Wed, 14 Aug 2013 10:35:41 -0400
+Date: Wed, 14 Aug 2013 16:35:35 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/37] cpufreq: at32ap: don't initialize part of policy
+ that is set by core too
+Message-ID: <20130814143535.GB3263@samfundet.no>
+References: <cover.1376486713.git.viresh.kumar@linaro.org>
+ <6fe9b31a6e199052e0a91b38c8f6d110e9f57b28.1376486713.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375741218-10225-7-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <6fe9b31a6e199052e0a91b38c8f6d110e9f57b28.1376486713.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 12:20:16AM +0200, Sebastian Hesselbarth wrote:
-> This fixes the wrong sync generation and sync calculation of TDA998x
-> for HS/VS-based sync detection.
+Around Wed 14 Aug 2013 19:01:53 +0530 or thereabout, Viresh Kumar wrote:
+> Many common initializations of struct policy are moved to core now and hence
+> this driver doesn't need to do it. This patch removes such code.
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Most recent of those changes is to call ->get() in the core after calling
+> ->init().
 
-The plus point with this is that interlaced modes (1080i) do work with
-the TDA998x again, so I think that the vertical calculations are
-probably correct.
+It would be easier to review if you add me to CC on the new APIs you
+implement as well. Now I had to look up what the ->get() call did.
+
+> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/at32ap-cpufreq.c | 12 ++++--------
+>  1 file changed, 4 insertions(+), 8 deletions(-)
+
+Assuming the core get() call replaces the content:
+
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+-- 
+mvh
+Hans-Christian Egtvedt
