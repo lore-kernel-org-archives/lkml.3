@@ -1,159 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab3HNNBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 09:01:20 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:41231 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932282Ab3HNNBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 09:01:15 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com
-Cc: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com, rob@landley.net,
-        gregkh@linuxfoundation.org, grant.likely@linaro.org,
-        idos@codeaurora.org, mgautam@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH v3 1/3] usb: dwc3: msm: Add device tree binding information
-Date: Wed, 14 Aug 2013 15:59:41 +0300
-Message-Id: <1376485183-2664-2-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1376485183-2664-1-git-send-email-iivanov@mm-sol.com>
-References: <1376485183-2664-1-git-send-email-iivanov@mm-sol.com>
+	id S932631Ab3HNNBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 09:01:36 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:65179 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932309Ab3HNNBe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 09:01:34 -0400
+X-IronPort-AV: E=Sophos;i="4.89,876,1367971200"; 
+   d="scan'208";a="42050586"
+Date: Wed, 14 Aug 2013 14:01:33 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH v3 09/10] swiotlb-xen: support autotranslate guests
+In-Reply-To: <20130809154558.GG5637@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1308141348540.4470@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1308051503190.4893@kaball.uk.xensource.com> <1375720256-8014-9-git-send-email-stefano.stabellini@eu.citrix.com> <20130809154558.GG5637@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On Fri, 9 Aug 2013, Konrad Rzeszutek Wilk wrote:
+> > @@ -193,9 +315,10 @@ retry:
+> >  	/*
+> >  	 * Get IO TLB memory from any location.
+> >  	 */
+> > -	if (early)
+> > +	if (early) {
+> >  		xen_io_tlb_start = alloc_bootmem_pages(PAGE_ALIGN(bytes));
+> > -	else {
+> > +		xen_dma_seg = alloc_bootmem(sizeof(struct xen_dma_info) * NR_DMA_SEGS);
+> 
+> So what if the user over-wrote the size of the SWITOLB? Meaning the nslabs is different?
+> Won't that blow up in  xen_swiotlb_fixup if we try to dereference past the array?
 
-MSM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
-(SNPS) and HS, SS PHY's control and configuration registers.
+The definition of NR_DMA_SEGS is:
 
-It could operate in device mode (SS, HS, FS) and host
-mode (SS, HS, FS, LS).
+#define NR_DMA_SEGS  ((xen_io_tlb_nslabs + IO_TLB_SEGSIZE - 1) / IO_TLB_SEGSIZE)
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- .../devicetree/bindings/usb/msm-ssusb.txt          |  108 ++++++++++++++++++++
- 1 file changed, 108 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/usb/msm-ssusb.txt
+xen_io_tlb_nslabs is calculated from io_tlb_nslabs.
 
-diff --git a/Documentation/devicetree/bindings/usb/msm-ssusb.txt b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-new file mode 100644
-index 0000000..43c73d8
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/msm-ssusb.txt
-@@ -0,0 +1,108 @@
-+MSM SuperSpeed DWC3 USB SoC controller
-+
-+
-+DWC3 Highspeed USB PHY
-+======================
-+Required properities :
-+- compatible : sould be "qcom,dwc3-hsphy";
-+- reg : offset and length of the register set in the memory map
-+- clocks : phandles to clock instances of the device tree nodes
-+- clock-names :
-+	"xo" : External reference clock 19 MHz
-+	"sleep_a_clk" : Sleep clock, used when USB3 core goes into low
-+	power mode (U3).
-+<supply-name>-supply : phandle to the regulator device tree node
-+Required "supply-name" are:
-+	"v1p8" : 1.8v supply for HSPHY
-+	"v3p3" : 3.3v supply for HSPHY
-+	"vbus" : vbus supply for host mode
-+	"vddcx" : vdd supply for HS-PHY digital circuit operation
-+
-+DWC3 Superspeed USB PHY
-+=======================
-+Required properities :
-+- compatible : sould be "qcom,dwc3-ssphy";
-+- reg : offset and length of the register set in the memory map
-+- clocks : phandles to clock instances of the device tree nodes
-+- clock-names :
-+	"xo" : External reference clock 19 MHz
-+	"ref_clk" : Reference clock - used in host mode.
-+<supply-name>-supply : phandle to the regulator device tree node
-+Required "supply-name" are:
-+	"v1p8" : 1.8v supply for SS-PHY
-+	"vddcx" : vdd supply for SS-PHY digital circuit operation
-+
-+DWC3 controller wrapper
-+=======================
-+Required properties :
-+- compatible : should be "qcom,dwc3"
-+- reg : offset and length of the register set in the memory map
-+	offset and length of the TCSR register for routing USB
-+	signals to either picoPHY0 or picoPHY1.
-+- clocks : phandles to clock instances of the device tree nodes
-+- clock-names :
-+	"core_clk" : Master/Core clock, have to be >= 125 MHz for SS
-+	operation and >= 60MHz for HS operation
-+	"iface_clk" : System bus AXI clock
-+	"sleep_clk" : Sleep clock, used when USB3 core goes into low
-+	power mode (U3).
-+	"utmi_clk" : Generated by HS-PHY. Used to clock the low power
-+	parts of thr HS Link layer.
-+Optional properties :
-+- gdsc-supply : phandle to the globally distributed switch controller
-+  regulator node to the USB controller.
-+
-+
-+Sub nodes:
-+==========
-+- Sub node for "DWC3 USB3 controller".
-+  This sub node is required property for device node. The properties
-+  of this subnode are specified in dwc3.txt.
-+
-+Example device nodes:
-+
-+	dwc3_hsphy: phy@f92f8800 {
-+		compatible = "qcom,dwc3-hsphy";
-+		reg = <0xf92f8800 0x30>;
-+
-+		clocks = <&cxo>, <&usb2a_phy_sleep_cxc>;
-+		clock-names = "xo", "sleep_a_clk";
-+
-+		vbus-supply = <&supply>;
-+		vddcx-supply = <&supply>;
-+		v1p8-supply = <&supply>;
-+		v3p3-supply = <&supply>;
-+	};
-+
-+	dwc3_ssphy: phy@f92f8830 {
-+		compatible = "qcom,dwc3-ssphy";
-+		reg = <0xf92f8830 0x30>;
-+
-+		clocks = <&cxo>, <&usb30_mock_utmi_cxc>;
-+		clock-names = "xo", "ref_clk";
-+
-+		vddcx-supply = <&supply>;
-+		v1p8-supply = <&supply>;
-+	};
-+
-+	usb@fd4ab000 {
-+		compatible = "qcom,dwc3";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		reg = <0xfd4ab000 0x4>;
-+
-+		clocks = <&usb30_master_cxc>, <&sys_noc_usb3_axi_cxc>,
-+				<&usb30_sleep_cxc>, <&usb30_mock_utmi_cxc>;
-+		clock-names = "core_clk", "iface_clk", "sleep_clk", "utmi_clk";
-+
-+		gdsc-supply = <&supply>;
-+
-+		ranges;
-+		dwc3@f9200000 {
-+			compatible = "snps,dwc3";
-+			reg = <0xf9200000 0xcd00>;
-+			interrupts = <0 131 0>;
-+			usb-phy = <&dwc3_hsphy>, <&dwc3_ssphy>;
-+			tx-fifo-resize;
-+		};
-+	};
--- 
-1.7.9.5
+If the user increases io_tlb_nslabs, then xen_io_tlb_nslabs and
+NR_DMA_SEGS are also going to be bigger.
 
+
+> > @@ -351,14 +477,15 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+> >  	 * we can safely return the device addr and not worry about bounce
+> >  	 * buffering it.
+> >  	 */
+> > -	if (dma_capable(dev, dev_addr, size) &&
+> > +	if (!xen_feature(XENFEAT_auto_translated_physmap) &&
+> > +	    dma_capable(dev, dev_addr, size) &&
+> >  	    !range_straddles_page_boundary(phys, size) && !swiotlb_force)
+> >  		return dev_addr;
+> >  
+> >  	/*
+> >  	 * Oh well, have to allocate and map a bounce buffer.
+> >  	 */
+> > -	map = swiotlb_tbl_map_single(dev, start_dma_addr, phys, size, dir);
+> > +	map = swiotlb_tbl_map_single(dev, xen_dma_seg[0].dma_addr, phys, size, dir);
+> 
+> That [0] really deserves a comment.
+
+xen_dma_seg[0].dma_addr corresponds exactly to start_dma_addr, the first
+machine address of the swiotlb buffer.
+I think that reason why we pass the dma address of the first slab is
+that we want to allocate the bounce buffer from any of the slabs in
+io_tlb_start-io_tlb_end.
