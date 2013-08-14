@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759933Ab3HNKqE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:46:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34649 "EHLO
+	id S932600Ab3HNKqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:46:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34637 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab3HNKiP (ORCPT
+	with ESMTP id S932551Ab3HNKiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:15 -0400
+	Wed, 14 Aug 2013 06:38:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 55/75] virtio: console: fix raising SIGIO after port unplug
-Date: Wed, 14 Aug 2013 11:36:44 +0100
-Message-Id: <1376476624-10011-56-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 52/75] virtio: console: fix race with port unplug and open/close
+Date: Wed, 14 Aug 2013 11:36:41 +0100
+Message-Id: <1376476624-10011-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -29,46 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Amit Shah <amit.shah@redhat.com>
 
-commit 92d3453815fbe74d539c86b60dab39ecdf01bb99 upstream.
+commit 057b82be3ca3d066478e43b162fc082930a746c9 upstream.
 
-SIGIO should be sent when a port gets unplugged.  It should only be sent
-to prcesses that have the port opened, and have asked for SIGIO to be
-delivered.  We were clearing out guest_connected before calling
-send_sigio_to_port(), resulting in a sigio not getting sent to
-processes.
+There's a window between find_port_by_devt() returning a port and us
+taking a kref on the port, where the port could get unplugged.  Fix it
+by taking the reference in find_port_by_devt() itself.
 
-Fix by setting guest_connected to false after invoking the sigio
-function.
+Problem reported and analyzed by Mateusz Guzik.
 
+Reported-by: Mateusz Guzik <mguzik@redhat.com>
 Signed-off-by: Amit Shah <amit.shah@redhat.com>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/virtio_console.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/char/virtio_console.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index e1ab8ad..3bd6d4c 100644
+index 957f293..002357f 100644
 --- a/drivers/char/virtio_console.c
 +++ b/drivers/char/virtio_console.c
-@@ -1289,12 +1289,14 @@ static void unplug_port(struct port *port)
- 	spin_unlock_irq(&port->portdev->ports_lock);
+@@ -257,9 +257,12 @@ static struct port *find_port_by_devt_in_portdev(struct ports_device *portdev,
+ 	unsigned long flags;
  
- 	if (port->guest_connected) {
-+		/* Let the app know the port is going down. */
-+		send_sigio_to_port(port);
-+
-+		/* Do this after sigio is actually sent */
- 		port->guest_connected = false;
- 		port->host_connected = false;
--		wake_up_interruptible(&port->waitqueue);
+ 	spin_lock_irqsave(&portdev->ports_lock, flags);
+-	list_for_each_entry(port, &portdev->ports, list)
+-		if (port->cdev->dev == dev)
++	list_for_each_entry(port, &portdev->ports, list) {
++		if (port->cdev->dev == dev) {
++			kref_get(&port->kref);
+ 			goto out;
++		}
++	}
+ 	port = NULL;
+ out:
+ 	spin_unlock_irqrestore(&portdev->ports_lock, flags);
+@@ -792,14 +795,10 @@ static int port_fops_open(struct inode *inode, struct file *filp)
+ 	struct port *port;
+ 	int ret;
  
--		/* Let the app know the port is going down. */
--		send_sigio_to_port(port);
-+		wake_up_interruptible(&port->waitqueue);
- 	}
++	/* We get the port with a kref here */
+ 	port = find_port_by_devt(cdev->dev);
+ 	filp->private_data = port;
  
- 	if (is_console_port(port)) {
+-	/* Prevent against a port getting hot-unplugged at the same time */
+-	spin_lock_irq(&port->portdev->ports_lock);
+-	kref_get(&port->kref);
+-	spin_unlock_irq(&port->portdev->ports_lock);
+-
+ 	/*
+ 	 * Don't allow opening of console port devices -- that's done
+ 	 * via /dev/hvc
 -- 
 1.8.3.2
 
