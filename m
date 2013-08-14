@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab3HNNei (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 09:34:38 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:39172 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932699Ab3HNNed (ORCPT
+	id S932801Ab3HNNev (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 09:34:51 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:55892 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932775Ab3HNNer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 09:34:33 -0400
+	Wed, 14 Aug 2013 09:34:47 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 13/37] cpufreq: exynos: don't initialize part of policy that is set by core too
-Date: Wed, 14 Aug 2013 19:02:02 +0530
-Message-Id: <b3ef5357898c06aaccb2fcbaee4ef91a3d0fd7bb.1376486713.git.viresh.kumar@linaro.org>
+        Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 15/37] cpufreq: ia64-acpi: don't initialize part of policy that is set by core too
+Date: Wed, 14 Aug 2013 19:02:04 +0530
+Message-Id: <b8550a59e7afde3b3000f757c841b11cf15dc8e1.1376486713.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376486713.git.viresh.kumar@linaro.org>
 References: <cover.1376486713.git.viresh.kumar@linaro.org>
@@ -31,38 +31,24 @@ this driver doesn't need to do it. This patch removes such code.
 Most recent of those changes is to call ->get() in the core after calling
 ->init().
 
-Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/exynos-cpufreq.c     | 2 --
- drivers/cpufreq/exynos5440-cpufreq.c | 1 -
- 2 files changed, 3 deletions(-)
+ drivers/cpufreq/ia64-acpi-cpufreq.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index 79b869b..b1db082 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -226,8 +226,6 @@ static struct notifier_block exynos_cpufreq_nb = {
- 
- static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
- {
--	policy->cur = policy->min = policy->max = exynos_getspeed(policy->cpu);
--
- 	/* set the transition latency value */
- 	policy->cpuinfo.transition_latency = 100000;
- 
-diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
-index 9a5ed485..91a64d6 100644
---- a/drivers/cpufreq/exynos5440-cpufreq.c
-+++ b/drivers/cpufreq/exynos5440-cpufreq.c
-@@ -316,7 +316,6 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 		return ret;
+diff --git a/drivers/cpufreq/ia64-acpi-cpufreq.c b/drivers/cpufreq/ia64-acpi-cpufreq.c
+index 371c63d..4695fa2 100644
+--- a/drivers/cpufreq/ia64-acpi-cpufreq.c
++++ b/drivers/cpufreq/ia64-acpi-cpufreq.c
+@@ -290,7 +290,6 @@ acpi_cpufreq_cpu_init (
+ 			    data->acpi_data.states[i].transition_latency * 1000;
+ 		}
  	}
+-	policy->cur = processor_get_freq(data, policy->cpu);
  
--	policy->cur = dvfs_info->cur_frequency;
- 	policy->cpuinfo.transition_latency = dvfs_info->latency;
- 	cpumask_setall(policy->cpus);
- 
+ 	/* table init */
+ 	for (i = 0; i <= data->acpi_data.state_count; i++)
 -- 
 1.7.12.rc2.18.g61b472e
 
