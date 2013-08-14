@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933355Ab3HNVuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 17:50:06 -0400
-Received: from www.sr71.net ([198.145.64.142]:43351 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933238Ab3HNVuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 17:50:04 -0400
-Message-ID: <520BFB87.6050207@sr71.net>
-Date: Wed, 14 Aug 2013 14:49:59 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S933335Ab3HNVvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 17:51:37 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:55603 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933258Ab3HNVvg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 17:51:36 -0400
+Message-ID: <520BFBE4.4040807@gmail.com>
+Date: Wed, 14 Aug 2013 14:51:32 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
-References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com> <520BECDF.8060501@sr71.net> <20130814211454.GA17423@variantweb.net> <520BF88C.6060202@linux.vnet.ibm.com>
-In-Reply-To: <520BF88C.6060202@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: behanw@converseincode.com
+CC: linux@arm.linux.org.uk, rostedt@goodmis.org, fweisbec@gmail.com,
+        mingo@redhat.com, charlebm@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: LLVMLinux: Change "extern inline" to "gnu_inline"
+ in ARM ftrace.h
+References: <1376516261-2071-1-git-send-email-behanw@converseincode.com> <1376516261-2071-2-git-send-email-behanw@converseincode.com>
+In-Reply-To: <1376516261-2071-2-git-send-email-behanw@converseincode.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 02:37 PM, Cody P Schafer wrote:
-> Also, I'd expect userspace tools might use readdir() to find out what
-> memory blocks a system has (unless they just stat("memory0"),
-> stat("memory1")...). I don't think filesystem tricks (at least within
-> sysfs) are going to let this magically be solved without breaking the
-> userspace API.
+On 08/14/2013 02:37 PM, behanw@converseincode.com wrote:
+> From: Mark Charlebois <charlebm@gmail.com>
+>
+> With compilers which follow the C99 standard (like modern versions of gcc and
+> clang), "extern inline" does the wrong thing (emits code for an externally
+> linkable version of the inline function). In this case using the gnu_inline
+> attribute makes inline do the right thing on gcc and on clang.
+>
+> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> ---
+>   arch/arm/include/asm/ftrace.h | 3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/include/asm/ftrace.h b/arch/arm/include/asm/ftrace.h
+> index f89515a..fb7fdc4 100644
+> --- a/arch/arm/include/asm/ftrace.h
+> +++ b/arch/arm/include/asm/ftrace.h
+> @@ -45,7 +45,8 @@ void *return_address(unsigned int);
+>
+>   #else
+>
+> -extern inline void *return_address(unsigned int level)
+> +extern inline __attribute__((gnu_inline))
 
-sysfs files are probably a bit too tied to kobjects to make this work
-easily in practice.  It would probably need to be a new filesystem, imnho.
+That seems very ugly.
 
-But, there's nothing to keep you from creating dentries for all of the
-memory blocks if someone _does_ a readdir().  It'll suck, of course, but
-it's at least compatible with what's there.  You could also 'chmod -x'
-it to make it more obvious that folks shouldn't be poking around in
-there, although it won't keep them from ls'ing.  If you're concerned
-about resource consumption, we could also just make the directory
-unreadable to everyone but root.
+Is it possible to put something in linux/compiler.h that encapsulates 
+the desired semantics, and then use that instead?
+
+We already define "inline" that way, if you need something else, put it 
+in compiler.h with a nice symbolic name, and then use it.
+
+
+> +void *return_address(unsigned int level)
+>   {
+>   	return NULL;
+>   }
+>
+
