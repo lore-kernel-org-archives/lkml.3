@@ -1,94 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760000Ab3HNPjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 11:39:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50597 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758769Ab3HNPjm (ORCPT
+	id S1759960Ab3HNPlC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 11:41:02 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:39342 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758769Ab3HNPlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 11:39:42 -0400
-Date: Wed, 14 Aug 2013 16:39:06 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20130814153906.GU6427@sirena.org.uk>
-References: <20130814113848.GP6427@sirena.org.uk>
- <Pine.LNX.4.44L0.1308141023150.1701-100000@iolanthe.rowland.org>
+	Wed, 14 Aug 2013 11:41:01 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="853vXHwZJ9DppLtj"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1308141023150.1701-100000@iolanthe.rowland.org>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <1376370258-3633-1-git-send-email-sonic.adi@gmail.com>
+References: <1376370258-3633-1-git-send-email-sonic.adi@gmail.com>
+Date: Wed, 14 Aug 2013 17:41:00 +0200
+Message-ID: <CACRpkdbmwb4OOiuF606KD+nZbBrRAYmB908BUsHsp1mW_L3XGg@mail.gmail.com>
+Subject: Re: [PATCH 1/3 v2] pinctrl: ADI PIN control driver for the GPIO
+ controller on bf54x and bf60x.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Steven Miao <realmz6@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Sonic Zhang <sonic.zhang@analog.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 13, 2013 at 7:04 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
 
---853vXHwZJ9DppLtj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> v2-changes:
+> - Remove unlinke() directive.
 
-On Wed, Aug 14, 2013 at 10:27:26AM -0400, Alan Stern wrote:
-> On Wed, 14 Aug 2013, Mark Brown wrote:
+Fine, but now you also have all my other comments to take care of :-)
 
-> > I'd expect that we're just looking at hooks around connection and
-> > disconnection here here - if we're looking at much more it seems like we
-> > must be doing something wrong.
-
-> Connection and disconnection of what?
-
-The device on the bus.
-
-> In the example mentioned earlier, the GPIOs to power an on-board USB
-> hub would have to be initialized when the host controller was started. =
-=20
-> You wouldn't want to wait for the on-board hub to be detected, because
-> without those GPIOs set properly, it never would be discovered on the
-> USB bus.  Right?
-
-Yes, so you'd want callbacks when the device actually appears and
-disappears.
-
-> Perhaps the platform-level code would need to hook into the places
-> where the discoverable bus is registered and unregistered.
-
-We'd need some way to get information to the drivers still, and to
-handle drivers that want to stop and start things.
-
---853vXHwZJ9DppLtj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSC6SXAAoJELSic+t+oim9hDsP/jXZ902addaAU11yHE9ShSZe
-drRBg8OATN22TF6wABNZeFKFS+Uzfhj9eWoW5jza3FRHSeNTzIRsi+4pVmUMFQKQ
-xhQOWFQ3/6gbIuhQPHEt1xLcpKQo5T9cFpE9lH1eNJjF9WUSFY/nvE24WvADLmIj
-jEGCQrgNl73+Lg9Vc//tW8GXLR135iKUNtphkGZ+ZhAW6h84FfkYCqaqx+s4s1tg
-tdrybVsF9MINx86ftwaIMQYxLuMo9lW9mOU2OhxMR3hw4oZblfkIOrVlk8CoOrgt
-jdZdgEFh8O/ApncfKJanB6lDN9hN3UFa2hxrfjCRYm7T7PN0CjRzcSwLnwHn/Fk1
-tlUsR76w0BUn/SzXNv+G75iBKtAoCpe7Wn6hO1eZIHSF6VXeuOE0qF+i4BtNwLjW
-A+Tzca4I4KTIqxYpJMqGGuYki86qNjk6bvtFV7lr0cYhZIYj8lHZzVsVn6gFVPA5
-DyclswuZM3y1/hw0W4Fzj4+RjW8kn52bIb4MTxc86vavvGQzJVKtPDrn8p+FW/+c
-cIkpihGFKuQc5GmCComlo289H2+7xRj0kaQAunfMV8qenZQyoX+vQ3rQ7Au+5Lx/
-G0sSLqtTrfRkk6f1vE8pxrpwL0L89uyP6hwhWRcKjuLFZCaASsGD68VA83cjRjc1
-/gnQFC/HK94PIQ77TppB
-=yW2Q
------END PGP SIGNATURE-----
-
---853vXHwZJ9DppLtj--
+Yours,
+Linus Walleij
