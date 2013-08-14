@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150Ab3HNTLo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 15:11:44 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:38206 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933065Ab3HNTLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 15:11:41 -0400
-Subject: Re: [PATCH v3 3/3] usb: dwc3: Add Qualcomm DWC3 glue layer driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: balbi@ti.com, rob.herring@calxeda.com, pawel.moll@arm.com,
-        mark.rutland@arm.com, swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        rob@landley.net, gregkh@linuxfoundation.org, grant.likely@linaro.org,
-        idos@codeaurora.org, mgautam@codeaurora.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-msm@vger.kernel.org
-In-Reply-To: <520BAB07.8050203@codeaurora.org>
-References: <1376485183-2664-1-git-send-email-iivanov@mm-sol.com>
-	 <1376485183-2664-4-git-send-email-iivanov@mm-sol.com>
-	 <520BAB07.8050203@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Aug 2013 22:11:39 +0300
-Message-ID: <1376507499.22506.0.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1760109Ab3HNTPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 15:15:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53859 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758396Ab3HNTPO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 15:15:14 -0400
+Date: Wed, 14 Aug 2013 12:15:13 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, tobetter@gmail.com, patches@linaro.org
+Subject: Re: [PATCH] usb: misc: usb3503: Force late initialization
+Message-ID: <20130814191513.GA24873@kroah.com>
+References: <1376476171-19072-1-git-send-email-tushar.behera@linaro.org>
+ <20130814182239.GC23847@kroah.com>
+ <20130814190410.GO2401@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130814190410.GO2401@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-14 at 09:06 -0700, Stephen Boyd wrote:
-> On 08/14/13 05:59, Ivan T. Ivanov wrote:
-> > +}
-> > +
-> > +static const struct of_device_id of_dwc3_matach[] = {
+On Wed, Aug 14, 2013 at 08:04:10PM +0100, Mark Brown wrote:
+> On Wed, Aug 14, 2013 at 11:22:39AM -0700, Greg KH wrote:
+> > On Wed, Aug 14, 2013 at 03:59:31PM +0530, Tushar Behera wrote:
 > 
-> match? Maybe you can make it all one line too { .compatible = "qcom,dwc3" }
+> > > Currently there is no other way to ensure that USB3503 chip is probed
+> > > after the USB PHY has been initialized, hence the last resort.
 > 
+> > Are you sure that deferred probing doesn't solve this issue?
+> 
+> In order for deferred probing to help the device would need to acquire
+> some resource from the parent USB controller once active, allowing it to
+> defer when it fails to get that resource.  Currently there's nothing
+> there for that and it's not clear that's sane and sensible (it'd be more
+> obvious for it to be a child of the USB controller since that's what it
+> really is).
 
-Thanks. Will do.
+Then why not do that?
 
-Ivan
+> We can't just treat it as a PHY (which is the obvious workaroud) since
+> we do also need to use the built
+> in PHY in the SoC.
 
-> > +	{
-> > +		.compatible = "qcom,dwc3",
-> > +	},
-> > +	{ },
-> > +};
-> > +MODULE_DEVICE_TABLE(of, of_dwc3_matach);
-> > +
-> >
+There has to be some type of resource that it can grab, as obviously
+it's failing to work properly unless that resource is present.  Just
+messing with the init order isn't going to solve any problem if the
+driver is built as a module, as nothing guarantees module load order.
 
+So this patch wouldn't really solve the problem, only paper over it for
+one type of configuration (i.e. driver built into the system), right?
 
+thanks,
+
+greg k-h
