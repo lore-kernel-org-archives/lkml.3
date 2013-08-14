@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760342Ab3HNSfA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:35:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53351 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760276Ab3HNSe6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:34:58 -0400
-Date: Wed, 14 Aug 2013 11:34:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Xiaolong Ye <yexl@marvell.com>
-Cc: hjk@hansjkoch.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uio: add uio_event_sync interface
-Message-ID: <20130814183457.GA25715@kroah.com>
-References: <1376483423-603-1-git-send-email-yexl@marvell.com>
- <1376483423-603-2-git-send-email-yexl@marvell.com>
+	id S1760439Ab3HNSgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:36:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55221 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760367Ab3HNSgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 14:36:07 -0400
+Date: Wed, 14 Aug 2013 20:36:04 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Gergely Risko <gergely@risko.hu>
+Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH] mm: memcontrol: fix handling of swapaccount parameter
+Message-ID: <20130814183604.GE24033@dhcp22.suse.cz>
+References: <1376486495-21457-1-git-send-email-gergely@risko.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376483423-603-2-git-send-email-yexl@marvell.com>
+In-Reply-To: <1376486495-21457-1-git-send-email-gergely@risko.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 08:30:23PM +0800, Xiaolong Ye wrote:
-> This interface is called to sync listener->event_count and device
-> event count in multi-instances case.
-> 
-> Change-Id: Ibb1e4888ce55b4993394b61e4bcd6dce8b8291f0
+On Wed 14-08-13 15:21:35, Gergely Risko wrote:
+> Fixed swap accounting option parsing to enable if called without argument.
 
-What is this for?  (hint, it should never be in a kernel patch...)
+We used to have [no]swapaccount but that one has been removed by a2c8990a
+(memsw: remove noswapaccount kernel parameter) so I do not think that
+swapaccount without any given value makes much sense these days.
 
-> Signed-off-by: Xiaolong Ye <yexl@marvell.com>
+> Signed-off-by: Gergely Risko <gergely@risko.hu>
 > ---
->  drivers/uio/uio.c          |   12 ++++++++++++
->  include/linux/uio_driver.h |    1 +
->  2 files changed, 13 insertions(+)
+>  mm/memcontrol.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> index ba47563..95d559f 100644
-> --- a/drivers/uio/uio.c
-> +++ b/drivers/uio/uio.c
-> @@ -408,6 +408,18 @@ void uio_event_notify(struct uio_info *info)
->  EXPORT_SYMBOL_GPL(uio_event_notify);
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c290a1c..8ec2507 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -6970,13 +6970,13 @@ struct cgroup_subsys mem_cgroup_subsys = {
+>  static int __init enable_swap_account(char *s)
+>  {
+>  	/* consider enabled if no parameter or 1 is given */
+> -	if (!strcmp(s, "1"))
+> +	if (*s++ != '=' || !*s || !strcmp(s, "1"))
+>  		really_do_swap_account = 1;
+>  	else if (!strcmp(s, "0"))
+>  		really_do_swap_account = 0;
+>  	return 1;
+>  }
+> -__setup("swapaccount=", enable_swap_account);
+> +__setup("swapaccount", enable_swap_account);
 >  
->  /**
-> + * uio_event_sync - sync listener's event count with UIO device
-> + * @listener: uio_listener structure
-> + */
-> +void uio_event_sync(struct uio_listener *listener)
-> +{
-> +	struct uio_device *idev = listener->dev;
-> +
-> +	listener->event_count = atomic_read(&idev->event);
+>  static void __init memsw_file_init(void)
+>  {
+> -- 
+> 1.8.3.2
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-What prevents that count from changing right after you call this
-function?
-
-> +}
-> +EXPORT_SYMBOL_GPL(uio_event_sync);
-
-You are exporting a symbol, yet never using it, which means I can't
-accept this patch, sorry.
-
-greg k-h
+-- 
+Michal Hocko
+SUSE Labs
