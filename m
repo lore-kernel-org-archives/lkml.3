@@ -1,69 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab3HNOsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 10:48:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45867 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932499Ab3HNOsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 10:48:39 -0400
-Message-ID: <520B985B.3080104@zytor.com>
-Date: Wed, 14 Aug 2013 07:46:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: David Gibson <david@gibson.dropbear.id.au>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Domenico Andreoli <cavokz@gmail.com>, mbizon@freebox.fr,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
- interested in device tree janitoring / cleanup?]
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <1999586.84BnWE5EUh@thinkpad> <20130731191209.GA8027@netboy> <1409617.9untvfnOTJ@flatron> <20130731200017.GC8027@netboy> <20130731201457.GA24642@n2100.arm.linux.org.uk> <CAKON4Ow7rE9cDj_tS7kmYN4incM+ay=BK96q-ph2JxYH3xiQzg@mail.gmail.com> <20130731204817.GC24642@n2100.arm.linux.org.uk> <CAKON4Ozfe=endqnXWkcWR2HuJ489Otpcu2QsjB0DNg6jpRgG+Q@mail.gmail.com> <20130802035027.GA19115@voom.redhat.com> <520AC1FE.1030600@zytor.com> <520AE238.4030304@roeck-us.net>
-In-Reply-To: <520AE238.4030304@roeck-us.net>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932699Ab3HNOtj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 10:49:39 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:63222 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932499Ab3HNOti (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 10:49:38 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH] perf: sample after exit loses thread correlation - v4
+Date: Wed, 14 Aug 2013 08:49:27 -0600
+Message-Id: <1376491767-84171-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2013 06:49 PM, Guenter Roeck wrote:
->
->> That is one aspect (hardware standardization)... but it is more to it
->> than that.
->
-> I have to deal with lots of embedded / non-PC x86 based systems. Worst one
-> I encountered so far was a board where the VGA memory space was re-used
-> for an eeprom. The upcoming next generation hardware I'll have to support
-> is so far off-standard that I'll probably have to define a new platform
-> type (similar to OLPC or CE4100).
-> 
-> No, it is not all PC. Not anymore. Intel has started to sell into
-> the embedded space, where PC compatibility is not a requirement.
-> 
+Occassionally events (e.g., context-switch, sched tracepoints) are losing
+the conversion of sample data associated with a thread. For example:
 
-We try to encourage vendors to do the right thing, where "the right
-thing" means, among other things, not to do gratuitously different
-things.  With increasing amounts of the platform moving into the CPU and
-PCH this is of course also becoming more and more rare.
+$ perf record -e sched:sched_switch -c 1 -a -- sleep 5
+$ perf script
+<selected events shown>
+    ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+    ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+:30482 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
 
-Even on actual PCs we have seen some truly "special" facepalms.  There
-was the Olivetti machine which used the GPIO for "fast A20" to control
-the screen backlight, for example.  That one was fun to deal with.
+The last line lost the conversion from tid to comm. If you look at the events
+(perf script -D) you see why - a SAMPLE event is generated after the EXIT:
 
-	-hpa
+0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+... thread: :30482:30482
+
+When perf processes the EXIT event the thread is moved to the dead_threads
+list. When the SAMPLE event is processed no thread exists for the pid so a new
+one is created by machine__findnew_thread.
+
+This patch address the problem by delaying the move to the dead_threads list
+until the tid is re-used (per Adrian's suggestion).
+
+With this patch we get the previous example shows:
+
+  ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+  ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+  ls 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+
+and
+
+  0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+  0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+  ... thread: ls:30482
+
+v4: per Arnaldo's request add dead flag to thread struct and set when task exits
+
+v3: re-do from a time based check to a delayed move to dead_threads list
+
+v2: Rebased to latest perf/core branch. Changed time comparison to use
+    a macro which explicitly shows the time basis
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/machine.c |   34 ++++++++++++++++++++--------------
+ tools/perf/util/thread.h  |    5 +++++
+ 2 files changed, 25 insertions(+), 14 deletions(-)
+
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 4514e7e..574feb7 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1031,11 +1031,27 @@ out_problem:
+ 	return 0;
+ }
+ 
++static void machine__remove_thread(struct machine *machine, struct thread *th)
++{
++	machine->last_match = NULL;
++	rb_erase(&th->rb_node, &machine->threads);
++	/*
++	 * We may have references to this thread, for instance in some hist_entry
++	 * instances, so just move them to a separate list.
++	 */
++	list_add_tail(&th->node, &machine->dead_threads);
++}
++
+ int machine__process_fork_event(struct machine *machine, union perf_event *event)
+ {
+-	struct thread *thread = machine__findnew_thread(machine, event->fork.tid);
++	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+ 	struct thread *parent = machine__findnew_thread(machine, event->fork.ptid);
+ 
++	/* if a thread currently exists for the thread id remove it */
++	if (thread != NULL)
++		machine__remove_thread(machine, thread);
++
++	thread = machine__findnew_thread(machine, event->fork.tid);
+ 	if (dump_trace)
+ 		perf_event__fprintf_task(event, stdout);
+ 
+@@ -1048,18 +1064,8 @@ int machine__process_fork_event(struct machine *machine, union perf_event *event
+ 	return 0;
+ }
+ 
+-static void machine__remove_thread(struct machine *machine, struct thread *th)
+-{
+-	machine->last_match = NULL;
+-	rb_erase(&th->rb_node, &machine->threads);
+-	/*
+-	 * We may have references to this thread, for instance in some hist_entry
+-	 * instances, so just move them to a separate list.
+-	 */
+-	list_add_tail(&th->node, &machine->dead_threads);
+-}
+-
+-int machine__process_exit_event(struct machine *machine, union perf_event *event)
++int machine__process_exit_event(struct machine *machine __maybe_unused,
++				union perf_event *event)
+ {
+ 	struct thread *thread = machine__find_thread(machine, event->fork.tid);
+ 
+@@ -1067,7 +1073,7 @@ int machine__process_exit_event(struct machine *machine, union perf_event *event
+ 		perf_event__fprintf_task(event, stdout);
+ 
+ 	if (thread != NULL)
+-		machine__remove_thread(machine, thread);
++		thread__exited(thread);
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 13c62c9..32d0601 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -16,6 +16,7 @@ struct thread {
+ 	pid_t			ppid;
+ 	char			shortname[3];
+ 	bool			comm_set;
++	bool			dead; /* if set thread has exited */
+ 	char			*comm;
+ 	int			comm_len;
+ 
+@@ -26,6 +27,10 @@ struct machine;
+ 
+ struct thread *thread__new(pid_t tid);
+ void thread__delete(struct thread *self);
++static inline void thread__exited(struct thread *thread)
++{
++	thread->dead = true;
++}
+ 
+ int thread__set_comm(struct thread *self, const char *comm);
+ int thread__comm_len(struct thread *self);
+-- 
+1.7.10.1
 
