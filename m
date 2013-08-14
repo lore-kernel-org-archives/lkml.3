@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534Ab3HMX7z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 19:59:55 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:62092 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab3HMX7y (ORCPT
+	id S1758796Ab3HNABJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 20:01:09 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45620 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab3HNABI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 19:59:54 -0400
-Date: Tue, 13 Aug 2013 19:59:47 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] idr: Document ida tree sections
-Message-ID: <20130813235947.GL28996@mtj.dyndns.org>
-References: <20130807202201.GA28039@mtj.dyndns.org>
- <20130807205117.GC11612@kmo-pixel>
- <20130809145756.GL20515@mtj.dyndns.org>
- <20130813221308.GA11980@kmo-pixel>
- <20130813221928.GE28996@mtj.dyndns.org>
- <20130813222759.GA12069@kmo-pixel>
- <20130813224428.GG28996@mtj.dyndns.org>
- <20130813225927.GA2000@kmo-pixel>
- <20130813232211.GI28996@mtj.dyndns.org>
- <20130813235133.GA3807@kmo-pixel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813235133.GA3807@kmo-pixel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Aug 2013 20:01:08 -0400
+Date: Tue, 13 Aug 2013 17:01:05 -0700 (PDT)
+Message-Id: <20130813.170105.601411361110484740.davem@davemloft.net>
+To: Alexey.Brodkin@synopsys.com
+Cc: netdev@vger.kernel.org, Vineet.Gupta1@synopsys.com,
+        Mischa.Jonker@synopsys.com, arnd@arndb.de, grant.likely@linaro.org,
+        rob.herring@calxeda.com, paul.gortmaker@windriver.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ethernet/arc/arc_emac - fix NAPI "work > weight"
+ warning
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1376399076-9320-1-git-send-email-abrodkin@synopsys.com>
+References: <1376399076-9320-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 13 Aug 2013 17:01:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Kent.
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Date: Tue, 13 Aug 2013 17:04:36 +0400
 
-On Tue, Aug 13, 2013 at 04:51:33PM -0700, Kent Overstreet wrote:
-> Should probably be almost as good, yeah... in theory, but the space
-> efficiency still isn't going to be as good, and it'll probably be more
-> code... and at this point I really just don't want to futz with it more.
-> At this point unless there's something really wrong with this code I
-> just want to move onto something else :P
+> Initially I improperly set a boundary for maximum number of input
+> packets to process on NAPI poll ("work") so it might be more than
+> expected amount ("weight").
+> 
+> This was really harmless but seeing WARN_ON_ONCE on every device boot is
+> not nice. So trivial fix ("<" instead of "<=") is here.
+> 
+> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
 
-I think it probably would be okay in most cases but don't feel
-confident about acking as it's making trade-offs which are unnecessary
-and unusual.  So, ummm, I really don't know.  Maybe it's better enough
-than what we have now but at the same time if you want to reimplement
-the whole thing you should be persistent / reliable enough to see it
-through this time around too, right?
-
-Thanks.
-
--- 
-tejun
+Applied, thanks.
