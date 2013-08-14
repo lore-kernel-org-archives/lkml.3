@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759371Ab3HNHO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:14:59 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:49225 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759237Ab3HNHOy (ORCPT
+	id S1759404Ab3HNHPG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:15:06 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:51217 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759237Ab3HNHPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:14:54 -0400
+	Wed, 14 Aug 2013 03:15:00 -0400
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: Bryan Wu <cooloney@gmail.com>,
         Peter Meerwald <p.meerwald@bct-electronic.com>,
@@ -14,9 +14,9 @@ To: Bryan Wu <cooloney@gmail.com>,
         Linux LED Subsystem <linux-leds@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v4 2/4] leds-pca9633: Add mutex to the ledout register
-Date: Wed, 14 Aug 2013 09:14:24 +0200
-Message-Id: <1376464470-6845-4-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH v4 3/5] leds-pca9633: Add mutex to the ledout register
+Date: Wed, 14 Aug 2013 09:14:26 +0200
+Message-Id: <1376464470-6845-6-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -37,7 +37,7 @@ Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
  1 file changed, 54 insertions(+), 31 deletions(-)
 
 diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
-index 7dd48f8..6c9622a 100644
+index 9b7893c..097b098 100644
 --- a/drivers/leds/leds-pca9633.c
 +++ b/drivers/leds/leds-pca9633.c
 @@ -93,9 +93,17 @@ enum pca9633_cmd {
@@ -135,7 +135,7 @@ index 7dd48f8..6c9622a 100644
  }
  
  static void pca9633_work(struct work_struct *work)
-@@ -318,6 +333,7 @@ pca9633_dt_init(struct i2c_client *client, struct pca9633_chipdef *chip)
+@@ -318,6 +333,7 @@ pca9633_dt_init(struct i2c_client *client)
  static int pca9633_probe(struct i2c_client *client,
  					const struct i2c_device_id *id)
  {
