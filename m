@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab3HNGmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 02:42:45 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:57317 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751841Ab3HNGmo (ORCPT
+	id S1752947Ab3HNGpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 02:45:16 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:3505 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab3HNGpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 02:42:44 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AogHAJslC1J5LCJR/2dsb2JhbABbgwaDNLZ/hTSBJhd0giQBAQUnExwjEAgDFQMJJQ8FDRgDIROHfgMOsBgNiF4WjS+CdweDG3YDlXuBaIwrhSeDLSo
-Date: Wed, 14 Aug 2013 16:42:39 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: xfstests <xfs@oss.sgi.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] xfs: introduce object readahead to log recovery
-Message-ID: <20130814064239.GE12779@dastard>
-References: <1375260165-8773-1-git-send-email-zwu.kernel@gmail.com>
- <20130814053523.GY12779@dastard>
- <CAEH94LjeZHJ1uv7qCzVywq6rqkjisZ66+Y2+dXG64+Af6PXyEw@mail.gmail.com>
+	Wed, 14 Aug 2013 02:45:15 -0400
+Message-ID: <520B2768.1090001@huawei.com>
+Date: Wed, 14 Aug 2013 14:44:56 +0800
+From: Rui Xiang <rui.xiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAEH94LjeZHJ1uv7qCzVywq6rqkjisZ66+Y2+dXG64+Af6PXyEw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Lutomirski <luto@amacapital.net>
+CC: <linux-kernel@vger.kernel.org>, <oleg@redhat.com>
+Subject: Re: [PATCH] userns: initialize the depth of user_namespace chain
+References: <520B0FCF.5080809@huawei.com> <CALCETrUJTMVo4sCiVRHvVocja3Q9_hXPdc1xQ0D+EtPUT_2T7w@mail.gmail.com>
+In-Reply-To: <CALCETrUJTMVo4sCiVRHvVocja3Q9_hXPdc1xQ0D+EtPUT_2T7w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.188]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 01:59:02PM +0800, Zhi Yong Wu wrote:
-> On Wed, Aug 14, 2013 at 1:35 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Wed, Jul 31, 2013 at 04:42:45PM +0800, zwu.kernel@gmail.com wrote:
-> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> >>
-> >>   It can take a long time to run log recovery operation because it is
-> >> single threaded and is bound by read latency. We can find that it took
-> >> most of the time to wait for the read IO to occur, so if one object
-> >> readahead is introduced to log recovery, it will obviously reduce the
-> >> log recovery time.
-> >>
-> >> Log recovery time stat:
-> >>
-> >>           w/o this patch        w/ this patch
-> >>
-> >> real:        0m15.023s             0m7.802s
-> >> user:        0m0.001s              0m0.001s
-> >> sys:         0m0.246s              0m0.107s
-> >
-> > This version works as advertised as well.
-> >
-> >> @@ -3216,6 +3351,18 @@ xlog_recover_commit_trans(
-> >>                       goto out;
-> >>       }
-> >>
-> >> +     if (!list_empty(&ra_list)) {
-> >> +             error = xlog_recover_items_pass2(log, trans,
-> >> +                             &buffer_list, &ra_list);
-> >> +             if (error)
-> >> +                     goto out;
-> >> +
-> >> +             list_splice_tail_init(&ra_list, &done_list);
-> >> +     }
-> >> +
-> >> +     if (!list_empty(&done_list))
-> >> +             list_splice_init(&done_list, &trans->r_itemq);
-> >> +
-> >>       xlog_recover_free_trans(trans);
-> >
-> > I think this still leaks the trans structure when an error occurs.
-> > Indeed, I think this is a pre-existing leak, as the current code
-> > will skip freeing the trans structure on item recovery failure and
-> > nothing else frees it.  So it appears to me to be busted before this
-> > patch is added.
-> Yes, i also found this and think so.
-> >
-> > Hence on a xlog_recover_items_pass2() error we need to splice the
-> > ra-list to the done_list and free trans. i.e. the "if (error) goto
-> > out;" lines in the above hunk do not need to be there, and the
-> > "out:" label moved to above the call to xlog_recover_free_trans() so
-> > the main loop does the right thing when an error occurs.
-> Do you need to draft one patch to fix trans leaking? or can it be
-> fixed in this patch?
+On 2013/8/14 13:06, Andy Lutomirski wrote:
+> On Tue, Aug 13, 2013 at 10:04 PM, Rui Xiang <rui.xiang@huawei.com> wrote:
+>> The level of init_user_ns shoule be 1.
+> 
+> What's wrong with zero?
+> 
 
-Just fix it in this patch - the above paragraph explains how to fix
-it....
+No problem. It is just consistent with commit 8742f229b63, IMHO.
+but the initialization of level should be necessary.
 
-Cheers,
 
-Dave.
+Thanks.
 
--- 
-Dave Chinner
-david@fromorbit.com
+> --Andy
+> 
+>>
+>> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+>> ---
+>>  kernel/user.c | 1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/kernel/user.c b/kernel/user.c
+>> index 69b4c3d..32da187 100644
+>> --- a/kernel/user.c
+>> +++ b/kernel/user.c
+>> @@ -48,6 +48,7 @@ struct user_namespace init_user_ns = {
+>>                 },
+>>         },
+>>         .count = ATOMIC_INIT(3),
+>> +       .level = 1,
+>>         .owner = GLOBAL_ROOT_UID,
+>>         .group = GLOBAL_ROOT_GID,
+>>         .proc_inum = PROC_USER_INIT_INO,
+>> --
+>> 1.8.2.2
+>>
+> 
+> 
+> 
+
+
