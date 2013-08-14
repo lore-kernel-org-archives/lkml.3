@@ -1,42 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759598Ab3HNI5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 04:57:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56821 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759559Ab3HNI5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 04:57:16 -0400
-Date: Wed, 14 Aug 2013 09:57:11 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, riel@redhat.com,
-        Minchan Kim <minchan@kernel.org>, aquini@redhat.com,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
-Message-ID: <20130814085711.GK2296@suse.de>
-References: <520B0B75.4030708@huawei.com>
+	id S1759572Ab3HNJC5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 05:02:57 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:33273 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759471Ab3HNJCy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 05:02:54 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Martin Peres <martin.peres@labri.fr>
+Subject: Re: nouveau: temperature on nv40 is unavailable since ad40d73ef533ab0ad16b4a1ab2f7870c1f8ab954
+Date: Wed, 14 Aug 2013 11:02:47 +0200
+User-Agent: KMail/1.13.7 (Linux/3.11.0-rc5+synaptics-generic; KDE/4.10.5; x86_64; ; )
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+References: <1836330.fGgIDqPTNA@pali> <3b367f03-0ab0-4b22-893e-3f03f16a496e@gmail.com> <520A3AD0.5000304@labri.fr>
+In-Reply-To: <520A3AD0.5000304@labri.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <520B0B75.4030708@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart3626654.7R56kGWjBR";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201308141102.47960@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 12:45:41PM +0800, Xishi Qiu wrote:
-> A large free page buddy block will continue many times, so if the page 
-> is free, skip the whole page buddy block instead of one page.
-> 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+--nextPart3626654.7R56kGWjBR
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-page_order cannot be used unless zone->lock is held which is not held in
-this path. Acquiring the lock would prevent parallel allocations from the
-buddy allocator (per-cpu allocator would be ok except for refills).  I expect
-it would not be a good tradeoff to acquire the lock just to use page_order.
+On Tuesday 13 August 2013 15:55:28 Martin Peres wrote:
+> On 13/08/2013 09:53, Pali Roh=C3=A1r wrote:
+> > On utorok, 13. augusta 2013 15:32:45 CEST, Martin Peres=20
+wrote:
+> >> On 13/08/2013 09:23, Pali Roh=C3=A1r wrote:
+> >>> On Tuesday 13 August 2013 09:01:19 Martin Peres wrote:
+> >>  ...
+> >>=20
+> >> You can check the temperature by running nvidia-settings.
+> >> If you can't see the temperature in it, then nvidia
+> >> doesn't support it on your card and
+> >> I'm not sure we should :s
+> >>=20
+> >> Thanks for the vbios you sent me in private. For the
+> >> others, the reason why he doesn't have temperature anymore
+> >> is because his vbios lacks sensor calibration values.
+> >=20
+> > In nvidia-settings tab "GPU 0 - (GeForce 6600 GT)" -->
+> > "Thermal Settings" is:
+> >=20
+> > Thermal Sensor Information:
+> > ID: 0
+> > Target: GPU
+> > Provider: GPU Internal
+> > Temperature: 70 C (now)
+> >=20
+> > I looked in Windows program SpeedFan. It found Nvidia PCI
+> > card and reported "GPU Temp" about 68-70 C. So it looks
+> > like both nvidia driver and windows SpeedFan program
+> > reading same values.
+>=20
+> Great, I'll cook you a patch in a bit and you'll see what the
+> temperature is like. It won't be perfectly accurate but there
+> is some kind of default for nvidia cards of this generation.
 
-Nak.
+Ok, send me patch and I can try it if it will work and report=20
+similar values as windows or nvidia driver.
 
--- 
-Mel Gorman
-SUSE Labs
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart3626654.7R56kGWjBR
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlILR7cACgkQi/DJPQPkQ1IrAQCghgvNWKDLBvZ9gKc+pc/9S9kl
+tLsAn025gvL5QE70IOOuM5rEE56m8pqt
+=z1I+
+-----END PGP SIGNATURE-----
+
+--nextPart3626654.7R56kGWjBR--
