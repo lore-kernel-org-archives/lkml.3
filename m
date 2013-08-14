@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162Ab3HNUGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 16:06:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37022 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933022Ab3HNUGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 16:06:08 -0400
-Subject: [PATCH] pci: Add probe functions for bus and slot reset
-To: bhelgaas@google.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 14 Aug 2013 14:06:05 -0600
-Message-ID: <20130814200549.21626.79779.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S933127Ab3HNUHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 16:07:53 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:36950 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933022Ab3HNUHw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 16:07:52 -0400
+Date: Wed, 14 Aug 2013 16:07:48 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: Re: [PATCH v7 2/2] mm: make lru_add_drain_all() selective
+Message-ID: <20130814200748.GI28628@htj.dyndns.org>
+References: <520AAF9C.1050702@tilera.com>
+ <201308132307.r7DN74M5029053@farm-0021.internal.tilera.com>
+ <20130813232904.GJ28996@mtj.dyndns.org>
+ <520AC215.4050803@tilera.com>
+ <20130813234629.4ce2ec70.akpm@linux-foundation.org>
+ <520BAA5B.9070407@tilera.com>
+ <20130814165723.GE28628@htj.dyndns.org>
+ <520BBBE7.7020302@tilera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520BBBE7.7020302@tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users of pci_reset_bus() and pci_reset_slot() need a way to probe
-whether the bus or slot supports reset.  Add trivial helper functions
-and export them as vfio-pci will make use of these.
+Hello, Chris.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+On Wed, Aug 14, 2013 at 01:18:31PM -0400, Chris Metcalf wrote:
+> On 8/14/2013 12:57 PM, Tejun Heo wrote:
+> > Hello, Chris.
+> >
+> > On Wed, Aug 14, 2013 at 12:03:39PM -0400, Chris Metcalf wrote:
+> >> Tejun, I don't know if you have a better idea for how to mark a
+> >> work_struct as being "not used" so we can set and test it here.
+> >> Is setting entry.next to NULL good?  Should we offer it as an API
+> >> in the workqueue header?
+> > Maybe simply defining a static cpumask would be cleaner?
+> 
+> I think you're right, actually.  Andrew, Tejun, how does this look?
 
-This is logically patch 10/9 for v5 pci: bus and slot reset interfaces.
-If there's a need to re-spin anything I'll roll this in.
+Looks good to me.  Please feel free to add
 
- drivers/pci/pci.c   |   24 ++++++++++++++++++++++++
- include/linux/pci.h |    2 ++
- 2 files changed, 26 insertions(+)
+ Reviewed-by: Tejun Heo <tj@kernel.org>
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index ba68451..888d847 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3610,6 +3610,18 @@ static int pci_slot_reset(struct pci_slot *slot, int probe)
- }
- 
- /**
-+ * pci_probe_reset_slot - probe whether a PCI slot can be reset
-+ * @slot: PCI slot to probe
-+ *
-+ * Return 0 if slot can be reset, negative if a slot reset is not supported.
-+ */
-+int pci_probe_reset_slot(struct pci_slot *slot)
-+{
-+	return pci_slot_reset(slot, 1);
-+}
-+EXPORT_SYMBOL_GPL(pci_probe_reset_slot);
-+
-+/**
-  * pci_reset_slot - reset a PCI slot
-  * @slot: PCI slot to reset
-  *
-@@ -3662,6 +3674,18 @@ static int pci_bus_reset(struct pci_bus *bus, int probe)
- }
- 
- /**
-+ * pci_probe_reset_bus - probe whether a PCI bus can be reset
-+ * @bus: PCI bus to probe
-+ *
-+ * Return 0 if bus can be reset, negative if a bus reset is not supported.
-+ */
-+int pci_probe_reset_bus(struct pci_bus *bus)
-+{
-+	return pci_bus_reset(bus, 1);
-+}
-+EXPORT_SYMBOL_GPL(pci_probe_reset_bus);
-+
-+/**
-  * pci_reset_bus - reset a PCI bus
-  * @bus: top level PCI bus to reset
-  *
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 1a8fd34..daf40cd 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -924,7 +924,9 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
- int __pci_reset_function(struct pci_dev *dev);
- int __pci_reset_function_locked(struct pci_dev *dev);
- int pci_reset_function(struct pci_dev *dev);
-+int pci_probe_reset_slot(struct pci_slot *slot);
- int pci_reset_slot(struct pci_slot *slot);
-+int pci_probe_reset_bus(struct pci_bus *bus);
- int pci_reset_bus(struct pci_bus *bus);
- void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
- void pci_update_resource(struct pci_dev *dev, int resno);
+Thanks.
 
+-- 
+tejun
