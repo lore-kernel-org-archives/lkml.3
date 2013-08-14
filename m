@@ -1,108 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab3HNFn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 01:43:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57833 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab3HNFnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 01:43:25 -0400
-Date: Wed, 14 Aug 2013 07:43:22 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
- trace event
-Message-ID: <20130814054322.GA9158@pd.tnic>
-References: <20130812083355.47c1bae8@samsung.com>
- <5208D80D.5030206@linux.vnet.ibm.com>
- <20130812125343.GE18018@pd.tnic>
- <520A16BD.30201@linux.vnet.ibm.com>
- <20130813124258.GC4077@pd.tnic>
- <520A6D98.9060204@linux.vnet.ibm.com>
- <20130813175809.GE4077@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F31CB8F53@ORSMSX106.amr.corp.intel.com>
- <20130813181004.GF4077@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F31CB9150@ORSMSX106.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31CB9150@ORSMSX106.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752248Ab3HNFvM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 01:51:12 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:42882 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884Ab3HNFvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 01:51:10 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-ca-520b1acc4b73
+From: Minchan Kim <minchan@kernel.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Minchan Kim <minchan@kernel.org>
+Subject: [PATCH v6 0/5] zram/zsmalloc promotion
+Date: Wed, 14 Aug 2013 14:51:09 +0900
+Message-Id: <1376459474-6495-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 08:13:56PM +0000, Luck, Tony wrote:
-> Generic tracepoints are architected to be able to fire at very high
-> rates and log huge amounts of information. So we'd need something
-> special to say just log these special tracepoints to network/serial.
->
-> > Which reminds me, pstore could also be a good thing to use, in addition.
-> > Only put error info there as it is limited anyway.
-> 
-> Yes - space is very limited.  I don't know how to assign priority for logging
-> the dmesg data vs. some error logs.
+It's 5th trial of zram/zsmalloc promotion.
+[patch 5, zram: promote zram from staging] explains why we need zram.
 
-Didn't we say at some point, "log only the panic messsage which kills
-the machine"?
+Main reason to block promotion is there was no review of zsmalloc part
+while Jens already acked zram part.
 
-However, we probably could use more the messages before that
-catastrophic event because they could give us hints about what lead to
-the panic but in that case maybe a limited pstore is the wrong logging
-medium.
+At that time, zsmalloc was used for zram, zcache and zswap so everybody
+wanted to make it general and at last, Mel reviewed it.
+Most of review was related to zswap dumping mechanism which can pageout
+compressed page into swap in runtime and zswap gives up using zsmalloc
+and invented a new wheel, zbud. Other reviews were not major.
+http://lkml.indiana.edu/hypermail/linux/kernel/1304.1/04334.html
 
-Actually, I can imagine the full serial/network logs of "special"
-tracepoints + dmesg to be the optimal thing.
+Zcache don't use zsmalloc either so only zsmalloc user is zram now.
+So I think there is no concern any more.
 
-> If we just "printk()" the most important parts - then that data will
-> automatically flow to the serial console and to pstore.
+Patch 1 adds new Kconfig for zram to use page table method instead
+of copy. Andrew suggested it.
 
-Actually, does the pstore act like a circular buffer? Because if it
-contains the last N relevant messages (for an arbitrary definition of
-relevant) before the system dies, then that could more helpful than only
-the error messages.
+Patch 2 adds lots of commnt for zsmalloc.
 
-And with the advent of UEFI, pretty much every system has a pstore. Too
-bad that we have to limit it to 50% of size so that the boxes don't
-brick. :-P
+Patch 3 moves zsmalloc under driver/staging/zram because zram is only
+user for zram now.
 
-> Then we have multiple paths for the critical bits of the error log
-> - and the tracepoints give us more details for the cases where the
-> machine doesn't spontaneously explode.
+Patch 4 makes unmap_kernel_range exportable function because zsmalloc
+have used map_vm_area which is already exported function but zsmalloc
+need to use unmap_kernel_range and it should be built with module.
 
-Ok, let's sort:
+Patch 5 moves zram from driver/staging to driver/blocks, finally.
 
-* First we have the not-so-critical hw error messages. We want to carry
-those out-of-band, i.e. not in dmesg so that people don't have to parse
-and collect dmesg but have a specialized solution which gives them
-structured logs and tools can analyze, collect and ... those errors.
+It touches mm, staging, blocks so I am not sure who is right position
+maintainer so I will Cc Andrw, Jens and Greg.
 
-* When a critical error happens, the above usage is not necessarily
-advantageous anymore in the sense that, in order to debug what caused
-the machine to crash, we don't simply necessarily want only the crash
-message but also the whole system activity that lead to it.
-
-In which case, we probably actually want to turn off/ignore the error
-logging tracepoints and write *only* to dmesg which goes out over serial
-and to pstore. Right?
-
-Because in such cases I want to have *all* *relevant* messages that lead
-to the explosion + the explosion message itself.
-
-Makes sense? Yes, no? Aspects I've missed?
+This patch is based on next-20130813.
 
 Thanks.
 
--- 
-Regards/Gruss,
-    Boris.
+Minchan Kim (4):
+  zsmalloc: add Kconfig for enabling page table method
+  zsmalloc: move it under zram
+  mm: export unmap_kernel_range
+  zram: promote zram from staging
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Nitin Cupta (1):
+  zsmalloc: add more comment
+
+ drivers/block/Kconfig                    |    2 +
+ drivers/block/Makefile                   |    1 +
+ drivers/block/zram/Kconfig               |   37 +
+ drivers/block/zram/Makefile              |    3 +
+ drivers/block/zram/zram.txt              |   71 ++
+ drivers/block/zram/zram_drv.c            |  987 +++++++++++++++++++++++++++
+ drivers/block/zram/zsmalloc.c            | 1084 ++++++++++++++++++++++++++++++
+ drivers/staging/Kconfig                  |    4 -
+ drivers/staging/Makefile                 |    2 -
+ drivers/staging/zram/Kconfig             |   25 -
+ drivers/staging/zram/Makefile            |    3 -
+ drivers/staging/zram/zram.txt            |   77 ---
+ drivers/staging/zram/zram_drv.c          |  984 ---------------------------
+ drivers/staging/zram/zram_drv.h          |  125 ----
+ drivers/staging/zsmalloc/Kconfig         |   10 -
+ drivers/staging/zsmalloc/Makefile        |    3 -
+ drivers/staging/zsmalloc/zsmalloc-main.c | 1063 -----------------------------
+ drivers/staging/zsmalloc/zsmalloc.h      |   43 --
+ include/linux/zram.h                     |  123 ++++
+ include/linux/zsmalloc.h                 |   52 ++
+ mm/vmalloc.c                             |    1 +
+ 21 files changed, 2361 insertions(+), 2339 deletions(-)
+ create mode 100644 drivers/block/zram/Kconfig
+ create mode 100644 drivers/block/zram/Makefile
+ create mode 100644 drivers/block/zram/zram.txt
+ create mode 100644 drivers/block/zram/zram_drv.c
+ create mode 100644 drivers/block/zram/zsmalloc.c
+ delete mode 100644 drivers/staging/zram/Kconfig
+ delete mode 100644 drivers/staging/zram/Makefile
+ delete mode 100644 drivers/staging/zram/zram.txt
+ delete mode 100644 drivers/staging/zram/zram_drv.c
+ delete mode 100644 drivers/staging/zram/zram_drv.h
+ delete mode 100644 drivers/staging/zsmalloc/Kconfig
+ delete mode 100644 drivers/staging/zsmalloc/Makefile
+ delete mode 100644 drivers/staging/zsmalloc/zsmalloc-main.c
+ delete mode 100644 drivers/staging/zsmalloc/zsmalloc.h
+ create mode 100644 include/linux/zram.h
+ create mode 100644 include/linux/zsmalloc.h
+
+-- 
+1.7.9.5
+
