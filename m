@@ -1,48 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760266Ab3HNWO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:14:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55860 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760170Ab3HNWO5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:14:57 -0400
-Date: Wed, 14 Aug 2013 15:14:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Drake <dsd@laptop.org>
-Cc: dilinger@queued.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] olpc-ec: initialise earlier
-Message-Id: <20130814151454.76650feb7f8095dabb1cf691@linux-foundation.org>
-In-Reply-To: <20130810192215.B83A2FAB04@dev.laptop.org>
-References: <20130810192215.B83A2FAB04@dev.laptop.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933265Ab3HNWPM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:15:12 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:48710 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760170Ab3HNWPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 18:15:08 -0400
+Date: Wed, 14 Aug 2013 17:15:06 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Travis <travis@sgi.com>, Nathan Zimmer <nzimmer@sgi.com>,
+        Peter Anvin <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Robin Holt <holt@sgi.com>,
+        Rob Landley <rob@landley.net>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC v3 0/5] Transparent on-demand struct page initialization
+	embedded in the buddy allocator
+Message-ID: <20130814221505.GA147490@asylum.americas.sgi.com>
+References: <1375465467-40488-1-git-send-email-nzimmer@sgi.com> <1376344480-156708-1-git-send-email-nzimmer@sgi.com> <CA+55aFwTQLexJkf67P0b7Z7cw8fePjdDSdA4SOkM+Jf+kBPYEA@mail.gmail.com> <520A6DFC.1070201@sgi.com> <CA+55aFwRHdQ_f6ryUU1yWkW1Qz8cG958jLZuyhd_YdOq4-rfRA@mail.gmail.com> <20130814110556.GH10849@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130814110556.GH10849@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Aug 2013 15:22:15 -0400 (EDT) Daniel Drake <dsd@laptop.org> wrote:
-
-> Being a low-level component, various drivers (e.g. olpc-battery) assume that
-> it is ok to communicate with the OLPC Embedded Controller during probe.
-> Therefore the OLPC EC driver must be initialised before other drivers try to
-> use it. This was the case until it was recently moved out of arch/x86 and
-> restructured.
+On Wed, Aug 14, 2013 at 01:05:56PM +0200, Ingo Molnar wrote:
 > 
-> Use arch_initcall so that olpc-ec is readied earlier, matching the
-> previous behaviour. Fixes various drivers such as olpc-battery and
-> olpc-xo1-sci.
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 
+> > [...]
+> > 
+> > Ok, so I don't know all the issues, and in many ways I don't even really 
+> > care. You could do it other ways, I don't think this is a big deal. The 
+> > part I hate is the runtime hook into the core MM page allocation code, 
+> > so I'm just throwing out any random thing that comes to my mind that 
+> > could be used to avoid that part.
+> 
+> So, my hope was that it's possible to have a single, simple, zero-cost 
+> runtime check [zero cost for already initialized pages], because it can be 
+> merged into already existing page flag mask checks present here and 
+> executed for every freshly allocated page:
+> 
+> static inline int check_new_page(struct page *page)
+> {
+>         if (unlikely(page_mapcount(page) |
+>                 (page->mapping != NULL)  |
+>                 (atomic_read(&page->_count) != 0)  |
+>                 (page->flags & PAGE_FLAGS_CHECK_AT_PREP) |
+>                 (mem_cgroup_bad_page_check(page)))) {
+>                 bad_page(page);
+>                 return 1;
+>         }
+>         return 0;
+> }
+> 
+> We already run this for every new page allocated and the initialization 
+> check could hide in PAGE_FLAGS_CHECK_AT_PREP in a zero-cost fashion.
+> 
+> I'd not do any of the ensure_page_is_initialized() or 
+> __expand_page_initialization() complications in this patch-set - each page 
+> head represents itself and gets iterated when check_new_page() is done.
+> 
+> During regular bootup we'd initialize like before, except we don't set up 
+> the page heads but memset() them to zero. With each page head 32 bytes 
+> this would mean 8 GB of page head memory to clear per 1 TB - with 16 TB 
+> that's 128 GB to clear - that ought to be possible to do rather quickly, 
+> perhaps with some smart SMP cross-call approach that makes sure that each 
+> memset is done in a node-local fashion. [*]
+> 
+> Such an approach should IMO be far smaller and less invasive than the 
+> patches presented so far: it should be below 100 lines or so.
+> 
+> I don't know why there's such a big difference between the theory I 
+> outlined and the invasive patch-set implemented so far in practice, 
+> perhaps I'm missing some complication. I was trying to probe that 
+> difference, before giving up on the idea and punting back to the async 
+> hotplug-ish approach which would obviously work well too.
 > 
 
-You imply that there was a regression, but don't describe the
-user-visible effects of the regression.
+The reason, which I failed to mention, is once we pull off a page the lru in
+either __rmqueue_fallback or __rmqueue_smallest the first thing we do with it
+is expand() or sometimes move_freepages().  These then trip over some BUG_ON and
+VM_BUG_ON.
+Those BUG_ONs are what keep causing me to delve into the ensure/expand foolishness.
 
-You provide hints which would permit me, with sufficient effort, to
-approximately work out which kernel versions were affected by the
-regression and then left it at that.
-
-I need to work out which kernel version(s) need patching, and why. 
-Please, make it easier for me!
+Nate
 
