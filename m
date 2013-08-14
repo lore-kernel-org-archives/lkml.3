@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab3HNHRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 03:17:14 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:40335 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759286Ab3HNHO5 (ORCPT
+	id S1759306Ab3HNHO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:14:56 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:54836 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759226Ab3HNHOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 03:14:57 -0400
+	Wed, 14 Aug 2013 03:14:52 -0400
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: Bryan Wu <cooloney@gmail.com>,
         Peter Meerwald <p.meerwald@bct-electronic.com>,
@@ -14,9 +14,9 @@ To: Bryan Wu <cooloney@gmail.com>,
         Linux LED Subsystem <linux-leds@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v4 2/5] leds-pca9633: Unique naming of the LEDs
-Date: Wed, 14 Aug 2013 09:14:25 +0200
-Message-Id: <1376464470-6845-5-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH v4 1/4] leds-pca9633: Unique naming of the LEDs
+Date: Wed, 14 Aug 2013 09:14:23 +0200
+Message-Id: <1376464470-6845-3-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1376464470-6845-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -81,7 +81,7 @@ Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
  1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/leds/leds-pca9633.c b/drivers/leds/leds-pca9633.c
-index 3833c24..9b7893c 100644
+index e59ca0a..7dd48f8 100644
 --- a/drivers/leds/leds-pca9633.c
 +++ b/drivers/leds/leds-pca9633.c
 @@ -362,10 +362,12 @@ static int pca9633_probe(struct i2c_client *client,
