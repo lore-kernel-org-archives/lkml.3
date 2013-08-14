@@ -1,63 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab3HNG4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 02:56:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7302 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752690Ab3HNG4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 02:56:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,875,1367996400"; 
-   d="scan'208";a="362382083"
-Date: Wed, 14 Aug 2013 14:40:41 -0400
-From: Youquan Song <youquan.song@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>, Yinghai Lu <yinghai@kernel.org>
-Cc: Yinghai Lu <yinghai@kernel.org>, Gleb Natapov <gleb@redhat.com>,
-        Youquan Song <youquan.song@intel.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        youquan.song@linux.intel.com
-Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
-Message-ID: <20130814184040.GA6726@linux-youquan.bj.intel.com>
-References: <1373592159-459-1-git-send-email-youquan.song@intel.com> <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com> <20130724062254.GA16400@redhat.com> <CAE9FiQWbVDRpLUCUTF=Jpmm-nn6kgBYFW25PPTEiPK-R-mX0jA@mail.gmail.com> <20130729170514.GB30371@linux-youquan.bj.intel.com>
+	id S1756443Ab3HNHBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 03:01:06 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:40732 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754162Ab3HNHBD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 03:01:03 -0400
+Date: Wed, 14 Aug 2013 11:00:59 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
+        Pavel Emelyanov <xemul@parallels.com>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH -mm] mm: Unify pte_to_pgoff and pgoff_to_pte helpers
+Message-ID: <20130814070059.GJ2869@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130729170514.GB30371@linux-youquan.bj.intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In order to make sure the patch without involving unexpected issues beyond
-> I can understand, I will confirm with our expert about it.
-> 
-> so please pend the patch going to mainline. If the patch can move on, I
-> think I will also provide other patch changing, like direct EOI.
+Use unified pte_bfop helper to manipulate bits in pte/pgoff bitfield.
 
-Hi Yinghai and Ingo,
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/pgtable-2level.h |   51 ++++++++++++++++++----------------
+ 1 file changed, 27 insertions(+), 24 deletions(-)
 
-I have confirmed with our experts about it. x2APIC without interrupt
-remapping is not architecture and no guarantee it will work in future.
-
-What's more, there are some words in SDM3, 
-10.12.7 Initialization by System
-Software Routing of device interrupts to local APIC units operating in
-x2APIC mode requires use of the interrupt-remapping architecture
-specified in the Intel Virtualization Technology for Directed I/O,
-Revision 1.3. Because of this, BIOS must enumerate support for and
-software must enable this interrupt remapping with Extended Interrupt
-Mode Enabled before it enabling x2APIC mode in the local APIC units.
-
-Ingo, please drop the patch in -tip tree.
-3d1acb49d22fbbae96524040e9e2d4cbbb3adbef "x86/apic: Enable x2APIC
-physical mode on native hardware too, when there are fewer than 256 
-CPUs" 
-
-Sorry for making fuss here and it is my fault. 
-
-Thanks
--Youquan
+Index: linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
+===================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/pgtable-2level.h
++++ linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
+@@ -55,8 +55,11 @@ static inline pmd_t native_pmdp_get_and_
+ #define native_pmdp_get_and_clear(xp) native_local_pmdp_get_and_clear(xp)
+ #endif
+ 
+-#define _mfrob(v,r,m,l)		((((v) >> (r)) & (m)) << (l))
+-#define __frob(v,r,l)		(((v) >> (r)) << (l))
++/*
++ * For readable bitfield manipulations.
++ */
++#define PTE_FILE_NOMASK		(-1U)
++#define pte_bfop(v,r,m,l)	((((v) >> (r)) & (m)) << (l))
+ 
+ #ifdef CONFIG_MEM_SOFT_DIRTY
+ 
+@@ -82,18 +85,18 @@ static inline pmd_t native_pmdp_get_and_
+ #define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
+ #define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
+ 
+-#define pte_to_pgoff(pte)							    \
+-	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
+-	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
+-	 _mfrob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3, PTE_FILE_LSHIFT3) + \
+-	 __frob((pte).pte_low, PTE_FILE_SHIFT4, PTE_FILE_LSHIFT4))
+-
+-#define pgoff_to_pte(off)							\
+-	((pte_t) { .pte_low =							\
+-	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
+-	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
+-	_mfrob(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3, PTE_FILE_SHIFT3)	+	\
+-	__frob(off, PTE_FILE_LSHIFT4, PTE_FILE_SHIFT4)			+	\
++#define pte_to_pgoff(pte)								  \
++	(pte_bfop((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)			+ \
++	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2)	+ \
++	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3, PTE_FILE_LSHIFT3)	+ \
++	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT4, PTE_FILE_NOMASK, PTE_FILE_LSHIFT4))
++
++#define pgoff_to_pte(off)							  \
++	((pte_t) { .pte_low =							  \
++	pte_bfop(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+ \
++	pte_bfop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+ \
++	pte_bfop(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3, PTE_FILE_SHIFT3)	+ \
++	pte_bfop(off, PTE_FILE_LSHIFT4, PTE_FILE_NOMASK, PTE_FILE_SHIFT4)	+ \
+ 	_PAGE_FILE })
+ 
+ #else /* CONFIG_MEM_SOFT_DIRTY */
+@@ -120,16 +123,16 @@ static inline pmd_t native_pmdp_get_and_
+ #define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
+ #define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
+ 
+-#define pte_to_pgoff(pte)							    \
+-	(_mfrob((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)		  + \
+-	 _mfrob((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2) + \
+-	 __frob((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_LSHIFT3))
+-
+-#define pgoff_to_pte(off)							\
+-	((pte_t) { .pte_low =							\
+-	_mfrob(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+	\
+-	_mfrob(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+	\
+-	__frob(off, PTE_FILE_LSHIFT3, PTE_FILE_SHIFT3)			+	\
++#define pte_to_pgoff(pte)								  \
++	(pte_bfop((pte).pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1, 0)			+ \
++	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2, PTE_FILE_LSHIFT2)	+ \
++	 pte_bfop((pte).pte_low, PTE_FILE_SHIFT3, PTE_FILE_NOMASK, PTE_FILE_LSHIFT3))
++
++#define pgoff_to_pte(off)							  \
++	((pte_t) { .pte_low =							  \
++	pte_bfop(off,                0, PTE_FILE_MASK1, PTE_FILE_SHIFT1)	+ \
++	pte_bfop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2, PTE_FILE_SHIFT2)	+ \
++	pte_bfop(off, PTE_FILE_LSHIFT3, PTE_FILE_NOMASK, PTE_FILE_SHIFT3)	+ \
+ 	_PAGE_FILE })
+ 
+ #endif /* CONFIG_MEM_SOFT_DIRTY */
