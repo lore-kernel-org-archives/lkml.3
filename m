@@ -1,263 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933396Ab3HNWlx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:41:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52693 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933149Ab3HNWlv (ORCPT
+	id S933412Ab3HNWmi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:42:38 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:41675 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933235Ab3HNWmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:41:51 -0400
-Message-ID: <520C07AD.9040003@codeaurora.org>
-Date: Wed, 14 Aug 2013 15:41:49 -0700
-From: Rohit Vaswani <rvaswani@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 14 Aug 2013 18:42:35 -0400
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: David Brown <davidb@codeaurora.org>, Rob Herring <rob.herring@calxeda.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Nicolas Pitre <nico@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 3/4] ARM: msm: Add SMP support for 8960
-References: <1375409725-22004-1-git-send-email-rvaswani@codeaurora.org> <1375409725-22004-4-git-send-email-rvaswani@codeaurora.org> <44303FA4-18A4-4DD3-A3BE-27741B7460C4@codeaurora.org>
-In-Reply-To: <44303FA4-18A4-4DD3-A3BE-27741B7460C4@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130814200845.21923.64284.stgit@bling.home>
+References: <20130814200845.21923.64284.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 14 Aug 2013 16:42:14 -0600
+Message-ID: <CAErSpo4zfuaaBSDci4jOu_9RgUfLQNPvKhro1OEh=8AMvAFWYw@mail.gmail.com>
+Subject: Re: [PATCH] vfio-pci: PCI hot reset interface
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/2/2013 8:43 AM, Kumar Gala wrote:
-> On Aug 1, 2013, at 9:15 PM, Rohit Vaswani wrote:
+[+cc Al, linux-fsdevel for fdget/fdput usage]
+
+On Wed, Aug 14, 2013 at 2:10 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> The current VFIO_DEVICE_RESET interface only maps to PCI use cases
+> where we can isolate the reset to the individual PCI function.  This
+> means the device must support FLR (PCIe or AF), PM reset on D3hot->D0
+> transition, device specific reset, or be a singleton device on a bus
+> for a secondary bus reset.  FLR does not have widespread support,
+> PM reset is not very reliable, and bus topology is dictated by the
+> system and device design.  We need to provide a means for a user to
+> induce a bus reset in cases where the existing mechanisms are not
+> available or not reliable.
 >
->> Add the cpus bindings and the Krait release sequence
->> to make SMP work for MSM8960
->>
->> Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
->> ---
->> Documentation/devicetree/bindings/arm/cpus.txt     |  2 +
->> Documentation/devicetree/bindings/arm/msm/kpss.txt | 16 ++++++
->> arch/arm/boot/dts/msm8960-cdp.dts                  | 22 +++++++++
->> arch/arm/mach-msm/platsmp.c                        | 57 ++++++++++++++++++++++
->> arch/arm/mach-msm/scm-boot.h                       |  8 +--
->> 5 files changed, 102 insertions(+), 3 deletions(-)
->> create mode 100644 Documentation/devicetree/bindings/arm/msm/kpss.txt
->>
->> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
->> index 327aad2..1132eac 100644
->> --- a/Documentation/devicetree/bindings/arm/cpus.txt
->> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
->> @@ -45,11 +45,13 @@ For the ARM architecture every CPU node must contain the following properties:
->> 		"marvell,xsc3"
->> 		"marvell,xscale"
->> 		"qcom,scorpion"
->> +		"qcom,krait"
->> - enable-method: Specifies the method used to enable or take the secondary cores
->> 		 out of reset. This allows different reset sequence for
->> 		 different types of cpus.
->> 		 This should be one of:
->> 		 "qcom,scss"
->> +		 "qcom,kpssv1"
->>
->> Example:
->>
->> diff --git a/Documentation/devicetree/bindings/arm/msm/kpss.txt b/Documentation/devicetree/bindings/arm/msm/kpss.txt
->> new file mode 100644
->> index 0000000..7272340
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/arm/msm/kpss.txt
->> @@ -0,0 +1,16 @@
->> +* KPSS - Krait Processor Sub-system
->> +
->> +Properties
->> +
->> +- compatible : Should contain "qcom,kpss".
->> +
->> +- reg: Specifies the base address for the KPSS registers used for
->> +       booting up secondary cores.
->> +
->> +Example:
->> +
->> +	kpss@2088000 {
->> +		compatible = "qcom,kpss";
->> +		reg = <0x02088000 0x1000
->> +			0x02098000 0x2000>;
->> +	};
->> diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
->> index db2060c..8c82d5e 100644
->> --- a/arch/arm/boot/dts/msm8960-cdp.dts
->> +++ b/arch/arm/boot/dts/msm8960-cdp.dts
->> @@ -7,6 +7,22 @@
->> 	compatible = "qcom,msm8960-cdp", "qcom,msm8960";
->> 	interrupt-parent = <&intc>;
->>
->> +	cpus {
->> +		#address-cells = <1>;
->> +		#size-cells = <0>;
->> +		compatible = "qcom,krait";
->> +		device_type = "cpu";
->> +		enable-method = "qcom,kpssv1";
->> +
->> +		cpu@0 {
->> +			reg = <0>;
->> +		};
->> +
->> +		cpu@1 {
->> +			reg = <1>;
->> +		};
->> +	};
->> +
->> 	intc: interrupt-controller@2000000 {
->> 		compatible = "qcom,msm-qgic2";
->> 		interrupt-controller;
->> @@ -37,6 +53,12 @@
->> 		reg = <0xfd510000 0x4000>;
->> 	};
->>
->> +	kpss@2088000 {
->> +		compatible = "qcom,kpss";
->> +		reg = <0x02088000 0x1000
->> +			0x02098000 0x2000>;
->> +	};
->> +
->> 	serial@16440000 {
->> 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
->> 		reg = <0x16440000 0x1000>,
->> diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
->> index 17022e0..82eb079 100644
->> --- a/arch/arm/mach-msm/platsmp.c
->> +++ b/arch/arm/mach-msm/platsmp.c
->> @@ -74,6 +74,56 @@ static int scorpion_release_secondary(void)
->> 	return 0;
->> }
->>
->> +static int msm8960_release_secondary(unsigned int cpu)
->> +{
->> +	void __iomem *reg;
->> +	struct device_node *dn = NULL;
->> +
->> +	if (cpu == 0 || cpu >= num_possible_cpus())
->> +		return -EINVAL;
->> +
->> +	dn = of_find_compatible_node(dn, NULL, "qcom,kpss");
->> +	if (!dn) {
->> +		pr_err("%s : Missing kpss node from device tree\n", __func__);
->> +		return -ENXIO;
->> +	}
->> +
->> +	reg = of_iomap(dn, cpu);
->> +	if (!reg)
->> +		return -ENOMEM;
->> +
->> +	pr_debug("Starting secondary CPU %d\n", cpu);
->> +
->> +	/* Turn on CPU Rail */
->> +	writel_relaxed(0xA4, reg+0x1014);
-> Is there some reason we are using magic numbers for both values and offsets?
-Yes. The names are not defined by hardware spec. Would you prefer having 
-multiple #defines for each value, register ?
+> This device specific extension to VFIO provides the user with this
+> ability.  Two new ioctls are introduced:
+>  - VFIO_DEVICE_PCI_GET_HOT_RESET_INFO
+>  - VFIO_DEVICE_PCI_HOT_RESET
 >
->> +	mb();
->> +	udelay(512);
->> +
->> +	/* Krait bring-up sequence */
->> +	writel_relaxed(0x109, reg+0x04);
->> +	writel_relaxed(0x101, reg+0x04);
->> +	mb();
->> +	ndelay(300);
->> +
->> +	writel_relaxed(0x121, reg+0x04);
->> +	mb();
->> +	udelay(2);
->> +
->> +	writel_relaxed(0x120, reg+0x04);
->> +	mb();
->> +	udelay(2);
->> +
->> +	writel_relaxed(0x100, reg+0x04);
->> +	mb();
->> +	udelay(100);
->> +
->> +	writel_relaxed(0x180, reg+0x04);
->> +	mb();
->> +
->> +	iounmap(reg);
->> +	return 0;
->> +}
->> +
->> static DEFINE_PER_CPU(int, cold_boot_done);
->>
->> static void boot_cold_cpu(unsigned int cpu)
->> @@ -96,6 +146,11 @@ static void boot_cold_cpu(unsigned int cpu)
->> 			scorpion_release_secondary();
->> 			per_cpu(cold_boot_done, cpu) = true;
->> 		}
->> +	} else if (!strcmp(enable_method, "qcom,kpssv1")) {
->> +		if (per_cpu(cold_boot_done, cpu) == false) {
->> +			msm8960_release_secondary(cpu);
-> Is this really msm8960 specific, if so than we should be doing something other than comparing against "qcom,kpssv1" or we should change the function to kpssv1_release_secondary()
-Will do.
+> The first provides the user with information about the extent of
+> devices affected by a hot reset.  This is essentially a list of
+> devices and the IOMMU groups they belong to.  The user may then
+> initiate a hot reset by calling the second ioctl.  We must be
+> careful that the user has ownership of all the affected devices
+> found via the first ioctl, so the second ioctl takes a list of file
+> descriptors for the VFIO groups affected by the reset.  Each group
+> must have IOMMU protection established for the ioctl to succeed.
 >
->> +			per_cpu(cold_boot_done, cpu) = true;
->> +		}
->> 	} else {
->> 		pr_err("%s: Invalid enable-method property: %s\n",
->> 				__func__, enable_method);
->> @@ -151,6 +206,8 @@ static void __init msm_smp_init_cpus(void)
->> static const int cold_boot_flags[] __initconst = {
->> 	0,
->> 	SCM_FLAG_COLDBOOT_CPU1,
->> +	SCM_FLAG_COLDBOOT_CPU2,
->> +	SCM_FLAG_COLDBOOT_CPU3,
->> };
->>
->> static void __init msm_smp_prepare_cpus(unsigned int max_cpus)
->> diff --git a/arch/arm/mach-msm/scm-boot.h b/arch/arm/mach-msm/scm-boot.h
->> index 7be32ff..6aabb24 100644
->> --- a/arch/arm/mach-msm/scm-boot.h
->> +++ b/arch/arm/mach-msm/scm-boot.h
->> @@ -13,9 +13,11 @@
->> #define __MACH_SCM_BOOT_H
->>
->> #define SCM_BOOT_ADDR			0x1
->> -#define SCM_FLAG_COLDBOOT_CPU1		0x1
->> -#define SCM_FLAG_WARMBOOT_CPU1		0x2
->> -#define SCM_FLAG_WARMBOOT_CPU0		0x4
->> +#define SCM_FLAG_COLDBOOT_CPU1		0x01
->> +#define SCM_FLAG_COLDBOOT_CPU2		0x08
->> +#define SCM_FLAG_COLDBOOT_CPU3		0x20
->> +#define SCM_FLAG_WARMBOOT_CPU0		0x04
->> +#define SCM_FLAG_WARMBOOT_CPU1		0x02
->>
->> int scm_set_boot_addr(phys_addr_t addr, int flags);
->>
->> -- 
->> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
->> hosted by The Linux Foundation
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>
+> This patch is dependent on v5 "pci: bus and slot reset interfaces" as
+> well as "pci: Add probe functions for bus and slot reset".
+>
+>  drivers/vfio/pci/vfio_pci.c |  272 +++++++++++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/vfio.h   |   38 ++++++
+>  2 files changed, 309 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> index cef6002..eb69bf3 100644
+> --- a/drivers/vfio/pci/vfio_pci.c
+> +++ b/drivers/vfio/pci/vfio_pci.c
+> @@ -227,6 +227,97 @@ static int vfio_pci_get_irq_count(struct vfio_pci_device *vdev, int irq_type)
+>         return 0;
+>  }
+>
+> +static int vfio_pci_count_devs(struct pci_dev *pdev, void *data)
+> +{
+> +       (*(int *)data)++;
+> +       return 0;
+> +}
+> +
+> +struct vfio_pci_fill_info {
+> +       int max;
+> +       int cur;
+> +       struct vfio_pci_dependent_device *devices;
+> +};
+> +
+> +static int vfio_pci_fill_devs(struct pci_dev *pdev, void *data)
+> +{
+> +       struct vfio_pci_fill_info *info = data;
+> +       struct iommu_group *iommu_group;
+> +
+> +       if (info->cur == info->max)
+> +               return -EAGAIN; /* Something changed, try again */
+> +
+> +       iommu_group = iommu_group_get(&pdev->dev);
+> +       if (!iommu_group)
+> +               return -EPERM; /* Cannot reset non-isolated devices */
+> +
+> +       info->devices[info->cur].group_id = iommu_group_id(iommu_group);
+> +       info->devices[info->cur].segment = pci_domain_nr(pdev->bus);
+> +       info->devices[info->cur].bus = pdev->bus->number;
+> +       info->devices[info->cur].devfn = pdev->devfn;
+> +       info->cur++;
+> +       iommu_group_put(iommu_group);
+> +       return 0;
+> +}
+> +
+> +struct vfio_pci_group {
+> +       struct vfio_group *group;
+> +       int id;
+> +};
+> +
+> +struct vfio_pci_group_info {
+> +       int count;
+> +       struct vfio_pci_group *groups;
+> +};
+> +
+> +static int vfio_pci_validate_devs(struct pci_dev *pdev, void *data)
+> +{
+> +       struct vfio_pci_group_info *info = data;
+> +       struct iommu_group *group;
+> +       int id, i;
+> +
+> +       group = iommu_group_get(&pdev->dev);
+> +       if (!group)
+> +               return -EPERM;
+> +
+> +       id = iommu_group_id(group);
+> +
+> +       for (i = 0; i < info->count; i++)
+> +               if (info->groups[i].id == id)
+> +                       break;
+> +
+> +       iommu_group_put(group);
+> +
+> +       return (i == info->count) ? -EINVAL : 0;
+> +}
+> +
+> +static int vfio_pci_for_each_slot_or_bus(struct pci_dev *pdev,
+> +                                        int (*fn)(struct pci_dev *,
+> +                                                  void *data), void *data,
+> +                                        bool slot)
+> +{
+> +       struct pci_dev *tmp;
+> +       int ret = 0;
+> +
+> +       list_for_each_entry(tmp, &pdev->bus->devices, bus_list) {
+> +               if (slot && tmp->slot != pdev->slot)
+> +                       continue;
+> +
+> +               ret = fn(tmp, data);
+> +               if (ret)
+> +                       break;
+> +
+> +               if (tmp->subordinate) {
+> +                       ret = vfio_pci_for_each_slot_or_bus(tmp, fn,
+> +                                                           data, false);
+> +                       if (ret)
+> +                               break;
+> +               }
+> +       }
+> +
+> +       return ret;
+> +}
+
+vfio_pci_for_each_slot_or_bus() isn't really vfio-specific, is it?  I
+mean, traversing the PCI hierarchy doesn't require vfio knowledge.  I
+think this loop (walking the bus->devices list) skips devices on
+"virtual buses" that may be added for SR-IOV.  I'm not sure that
+pci_walk_bus() handles that correctly either, but at least if you used
+that, we could fix the problem in one place.
+
+> +
+>  static long vfio_pci_ioctl(void *device_data,
+>                            unsigned int cmd, unsigned long arg)
+>  {
+> @@ -407,10 +498,189 @@ static long vfio_pci_ioctl(void *device_data,
+>
+>                 return ret;
+>
+> -       } else if (cmd == VFIO_DEVICE_RESET)
+> +       } else if (cmd == VFIO_DEVICE_RESET) {
+>                 return vdev->reset_works ?
+>                         pci_reset_function(vdev->pdev) : -EINVAL;
+>
+> +       } else if (cmd == VFIO_DEVICE_GET_PCI_HOT_RESET_INFO) {
+> +               struct vfio_pci_hot_reset_info hdr;
+> +               struct vfio_pci_fill_info fill = { 0 };
+> +               struct vfio_pci_dependent_device *devices = NULL;
+> +               bool slot = false;
+> +               int ret = 0;
+> +
+> +               minsz = offsetofend(struct vfio_pci_hot_reset_info, count);
+> +
+> +               if (copy_from_user(&hdr, (void __user *)arg, minsz))
+> +                       return -EFAULT;
+> +
+> +               if (hdr.argsz < minsz)
+> +                       return -EINVAL;
+> +
+> +               hdr.flags = 0;
+> +
+> +               /* Can we do a slot or bus reset or neither? */
+> +               if (!pci_probe_reset_slot(vdev->pdev->slot))
+> +                       slot = true;
+> +               else if (pci_probe_reset_bus(vdev->pdev->bus))
+> +                       return -ENODEV;
+> +
+> +               /* How many devices are affected? */
+> +               ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
+> +                                                   vfio_pci_count_devs,
+> +                                                   &fill.max, slot);
+> +               if (ret)
+> +                       return ret;
+> +
+> +               WARN_ON(!fill.max); /* Should always be at least one */
+> +
+> +               /*
+> +                * If there's enough space, fill it now, otherwise return
+> +                * -ENOSPC and the number of devices affected.
+> +                */
+> +               if (hdr.argsz < sizeof(hdr) + (fill.max * sizeof(*devices))) {
+> +                       ret = -ENOSPC;
+> +                       hdr.count = fill.max;
+> +                       goto reset_info_exit;
+> +               }
+> +
+> +               devices = kcalloc(fill.max, sizeof(*devices), GFP_KERNEL);
+> +               if (!devices)
+> +                       return -ENOMEM;
+> +
+> +               fill.devices = devices;
+> +
+> +               ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
+> +                                                   vfio_pci_fill_devs,
+> +                                                   &fill, slot);
+> +
+> +               /*
+> +                * If a device was removed between counting and filling,
+> +                * we may come up short of fill.max.  If a device was
+> +                * added, we'll have a return of -EAGAIN above.
+> +                */
+> +               if (!ret)
+> +                       hdr.count = fill.cur;
+> +
+> +reset_info_exit:
+> +               if (copy_to_user((void __user *)arg, &hdr, minsz))
+> +                       ret = -EFAULT;
+> +
+> +               if (!ret) {
+> +                       if (copy_to_user((void __user *)(arg + minsz), devices,
+> +                                        hdr.count * sizeof(*devices)))
+> +                               ret = -EFAULT;
+> +               }
+> +
+> +               kfree(devices);
+> +               return ret;
+> +
+> +       } else if (cmd == VFIO_DEVICE_PCI_HOT_RESET) {
+> +               struct vfio_pci_hot_reset hdr;
+> +               int32_t *group_fds;
+> +               struct vfio_pci_group *groups;
+> +               struct vfio_pci_group_info info;
+> +               bool slot = false;
+> +               int i, count = 0, ret = 0;
+> +
+> +               minsz = offsetofend(struct vfio_pci_hot_reset, count);
+> +
+> +               if (copy_from_user(&hdr, (void __user *)arg, minsz))
+> +                       return -EFAULT;
+> +
+> +               if (hdr.argsz < minsz || hdr.flags)
+> +                       return -EINVAL;
+> +
+> +               /* Can we do a slot or bus reset or neither? */
+> +               if (!pci_probe_reset_slot(vdev->pdev->slot))
+> +                       slot = true;
+> +               else if (pci_probe_reset_bus(vdev->pdev->bus))
+> +                       return -ENODEV;
+> +
+> +               /*
+> +                * We can't let userspace give us an arbitrarily large
+> +                * buffer to copy, so verify how many we think there
+> +                * could be.  Note groups can have multiple devices so
+> +                * one group per device is the max.
+> +                */
+> +               ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
+> +                                                   vfio_pci_count_devs,
+> +                                                   &count, slot);
+> +               if (ret)
+> +                       return ret;
+> +
+> +               /* Somewhere between 1 and count is OK */
+> +               if (!hdr.count || hdr.count > count)
+> +                       return -EINVAL;
+> +
+> +               group_fds = kcalloc(hdr.count, sizeof(*group_fds), GFP_KERNEL);
+> +               groups = kcalloc(hdr.count, sizeof(*groups), GFP_KERNEL);
+> +               if (!group_fds || !groups) {
+> +                       kfree(group_fds);
+> +                       kfree(groups);
+> +                       return -ENOMEM;
+> +               }
+> +
+> +               if (copy_from_user(group_fds, (void __user *)(arg + minsz),
+> +                                  hdr.count * sizeof(*group_fds))) {
+> +                       kfree(group_fds);
+> +                       kfree(groups);
+> +                       return -EFAULT;
+> +               }
+> +
+> +               /*
+> +                * For each group_fd, get the group through the vfio external
+> +                * user interface and store the group and iommu ID.  This
+> +                * ensures the group is held across the reset.
+> +                */
+> +               for (i = 0; i < hdr.count; i++) {
+> +                       struct vfio_group *group;
+> +                       struct fd f = fdget(group_fds[i]);
+> +                       if (!f.file) {
+> +                               ret = -EBADF;
+> +                               break;
+> +                       }
+> +
+> +                       group = vfio_group_get_external_user(f.file);
+> +                       fdput(f);
+> +                       if (IS_ERR(group)) {
+> +                               ret = PTR_ERR(group);
+> +                               break;
+> +                       }
+> +
+> +                       groups[i].group = group;
+> +                       groups[i].id = vfio_external_user_iommu_id(group);
+> +               }
+> +
+> +               kfree(group_fds);
+> +
+> +               /* release reference to groups on error */
+> +               if (ret)
+> +                       goto hot_reset_release;
+> +
+> +               info.count = hdr.count;
+> +               info.groups = groups;
+> +
+> +               /*
+> +                * Test whether all the affected devices are contained
+> +                * by the set of groups provided by the user.
+> +                */
+> +               ret = vfio_pci_for_each_slot_or_bus(vdev->pdev,
+> +                                                   vfio_pci_validate_devs,
+> +                                                   &info, slot);
+> +               if (!ret)
+> +                       /* User has access, do the reset */
+> +                       ret = slot ? pci_reset_slot(vdev->pdev->slot) :
+> +                                    pci_reset_bus(vdev->pdev->bus);
+> +
+> +hot_reset_release:
+> +               for (i--; i >= 0; i--)
+> +                       vfio_group_put_external_user(groups[i].group);
+> +
+> +               kfree(groups);
+> +               return ret;;
+> +       }
+> +
+>         return -ENOTTY;
+>  }
+>
+> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+> index 916e444..0fd47f5 100644
+> --- a/include/uapi/linux/vfio.h
+> +++ b/include/uapi/linux/vfio.h
+> @@ -324,6 +324,44 @@ enum {
+>         VFIO_PCI_NUM_IRQS
+>  };
+>
+> +/**
+> + * VFIO_DEVICE_GET_PCI_HOT_RESET_INFO - _IORW(VFIO_TYPE, VFIO_BASE + 12,
+> + *                                           struct vfio_pci_hot_reset_info)
+> + *
+> + * Return: 0 on success, -errno on failure:
+> + *     -enospc = insufficient buffer, -enodev = unsupported for device.
+> + */
+> +struct vfio_pci_dependent_device {
+> +       __u32   group_id;
+> +       __u16   segment;
+> +       __u8    bus;
+> +       __u8    devfn; /* Use PCI_SLOT/PCI_FUNC */
+> +};
+> +
+> +struct vfio_pci_hot_reset_info {
+> +       __u32   argsz;
+> +       __u32   flags;
+> +       __u32   count;
+> +       struct vfio_pci_dependent_device        devices[];
+> +};
+> +
+> +#define VFIO_DEVICE_GET_PCI_HOT_RESET_INFO     _IO(VFIO_TYPE, VFIO_BASE + 12)
+> +
+> +/**
+> + * VFIO_DEVICE_PCI_HOT_RESET - _IOW(VFIO_TYPE, VFIO_BASE + 13,
+> + *                                 struct vfio_pci_hot_reset)
+> + *
+> + * Return: 0 on success, -errno on failure.
+> + */
+> +struct vfio_pci_hot_reset {
+> +       __u32   argsz;
+> +       __u32   flags;
+> +       __u32   count;
+> +       __s32   group_fds[];
+> +};
+> +
+> +#define VFIO_DEVICE_PCI_HOT_RESET      _IO(VFIO_TYPE, VFIO_BASE + 13)
+> +
+>  /* -------- API for Type1 VFIO IOMMU -------- */
+>
+>  /**
+>
 > --
-> Employee of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-Thanks,
-Rohit Vaswani
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, hosted by The Linux Foundation
-
