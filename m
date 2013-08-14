@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760142Ab3HNSVN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:21:13 -0400
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:56251 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758263Ab3HNSVL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 14:21:11 -0400
-Message-ID: <520BCA96.5020106@akamai.com>
-Date: Wed, 14 Aug 2013 14:21:10 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S932793Ab3HNSVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:21:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5321 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759978Ab3HNSVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 14:21:47 -0400
+Date: Wed, 14 Aug 2013 20:16:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Zach Levis <zach@zachsthings.com>
+Cc: akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        dan.carpenter@oracle.com, keescook@chromium.org,
+        cody@linux.vnet.ibm.com, zml@linux.vnet.ibm.com
+Subject: Re: [PATCH v4 2/3] fs/binfmts: Better handling of binfmt loops
+Message-ID: <20130814181604.GA5463@redhat.com>
+References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com> <1376497898-18619-3-git-send-email-zach@zachsthings.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Xenia Ragiadakou <burzalodowa@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Dynamic debug on by default?
-References: <20130814164022.GA22934@xanatos> <1376499114.1949.81.camel@joe-AO722>
-In-Reply-To: <1376499114.1949.81.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376497898-18619-3-git-send-email-zach@zachsthings.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 12:51 PM, Joe Perches wrote:
-> On Wed, 2013-08-14 at 09:40 -0700, Sarah Sharp wrote:
->> Hi Xenia,
->>
->> I'm a bit confused.  I thought that debugging messages would be turned
->> off by default for a module if CONFIG_DYNAMIC_DEBUG was turned on.  When
->> I tested your patch to remove the CONFIG_USB_XHCI_HCD_DEBUGGING and just
->> use dev_dbg, the messages from the xHCI driver appeared in dmesg by
->> default.
->>
->> That generates a lot of log spew.  We can have distros add a boot
->> parameter option to turn off debug messages, but that boot parameter is
->> limited to 1023 characters.  I'm concerned that if more drivers add
->> dynamic debugging, the distros will eventually run out of space in the
->> dynamic debugging boot parameter.  I know Greg was ripping out debugging
->> config options in other USB drivers, so this is a bit concerning.
->>
->> Jason, is there a way within the xHCI driver to say that dynamic
->> debugging should be off by default?  I've looked through the
->> documentation, and I can't find anything like that documented.
-> #undefine DEBUG
+On 08/14, Zach Levis wrote:
 >
->> I've attached my .config file, in case I have something misconfigured.
-> Because of:
->
-> drivers/usb/host/Makefile:ccflags-$(CONFIG_USB_DEBUG) := -DDEBUG
->
-> you probably want to turn this off
->
-> CONFIG_USB_DEBUG=y
->
-> when dynamic_debug is on.
+> +static void bprm_close_file(struct linux_binprm *bprm)
+> +{
+> +	if (bprm->mm) {
+> +		acct_arg_size(bprm, 0);
+> +		mmput(bprm->mm);
+> +	}
+> +
+> +	if (bprm->file) {
+> +		allow_write_access(bprm->file);
+> +		fput(bprm->file);
+> +	}
+> +}
 
-They should also be emitted in the case that dynamic_debug is off, but
-we have set -DDEBUG, right? That was the whole point of enabling them
-for dynamic debug too - to mirror the behavior of !CONFIG_DYNAMIC_DEBUG
-case.
+btw this doesn't look right too. This can be called multiple times
+during the error handling.
 
--Jason
+Just suppose that search_binary_handler() does this at depth == 0
+when it detects -ELOOP and then open_exec() fails. After that
+we return to do_execve_common() which goes to "out:".
 
-
-> CONFIG_DYNAMIC_DEBUG=y
->
-> This will cause all pr_debug/dev_dbg statements to be
-> emitted without specific enabling via the dynamic_debug
-> control file.
->
-> (from include/linux/dynamic_debug.h)
->
-> #if defined DEBUG
-> #define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT
-> #else
-> #define _DPRINTK_FLAGS_DEFAULT 0
-> #endif
->
->
+Oleg.
 
