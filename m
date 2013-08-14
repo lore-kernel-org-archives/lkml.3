@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab3HNKic (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:38:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34680 "EHLO
+	id S932730Ab3HNKlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:41:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34720 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932602Ab3HNKiW (ORCPT
+	with ESMTP id S932443Ab3HNKib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:38:22 -0400
+	Wed, 14 Aug 2013 06:38:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michal Srb <msrb@suse.com>, Dave Airlie <airlied@redhat.com>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 61/75] drm/cirrus: Invalidate page tables when pinning a BO
-Date: Wed, 14 Aug 2013 11:36:50 +0100
-Message-Id: <1376476624-10011-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 70/75] ext4: allow the mount options nodelalloc and data=journal
+Date: Wed, 14 Aug 2013 11:36:59 +0100
+Message-Id: <1376476624-10011-71-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Srb <msrb@suse.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 109a51598869a39fdcec2d49672a9a39b6d89481 upstream.
+commit 59d9fa5c2e9086db11aa287bb4030151d0095a17 upstream.
 
-This is a cirrus version of Egbert Eich's patch for mgag200.
+Commit 26092bf ("ext4: use a table-driven handler for mount options")
+wrongly disallows the specifying the mount options nodelalloc and
+data=journal simultaneously.  This is incorrect; it should have only
+disallowed the combination of delalloc and data=journal
+simultaneously.
 
-Without bo.bdev->dev_mapping set, the ttm_bo_unmap_virtual_locked
-called from ttm_bo_handle_move_mem returns with no effect. If any
-application accessed the memory before it was moved, it will
-access wrong memory next time. This causes crashes when changing
-resolution down.
-
-Signed-off-by: Michal Srb <msrb@suse.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reported-by: Piotr Sarna <p.sarna@partner.samsung.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/cirrus/cirrus_ttm.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/cirrus/cirrus_ttm.c b/drivers/gpu/drm/cirrus/cirrus_ttm.c
-index d4b1b1d..d57bcc8 100644
---- a/drivers/gpu/drm/cirrus/cirrus_ttm.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_ttm.c
-@@ -353,6 +353,7 @@ int cirrus_bo_create(struct drm_device *dev, int size, int align,
- 
- 	cirrusbo->gem.driver_private = NULL;
- 	cirrusbo->bo.bdev = &cirrus->ttm.bdev;
-+	cirrusbo->bo.bdev->dev_mapping = dev->dev_mapping;
- 
- 	cirrus_ttm_placement(cirrusbo, TTM_PL_FLAG_VRAM | TTM_PL_FLAG_SYSTEM);
- 
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 0689c5d..92b883a 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1435,7 +1435,7 @@ static const struct mount_opts {
+ 	{Opt_discard, EXT4_MOUNT_DISCARD, MOPT_SET},
+ 	{Opt_nodiscard, EXT4_MOUNT_DISCARD, MOPT_CLEAR},
+ 	{Opt_delalloc, EXT4_MOUNT_DELALLOC, MOPT_SET | MOPT_EXPLICIT},
+-	{Opt_nodelalloc, EXT4_MOUNT_DELALLOC, MOPT_CLEAR | MOPT_EXPLICIT},
++	{Opt_nodelalloc, EXT4_MOUNT_DELALLOC, MOPT_CLEAR},
+ 	{Opt_journal_checksum, EXT4_MOUNT_JOURNAL_CHECKSUM, MOPT_SET},
+ 	{Opt_journal_async_commit, (EXT4_MOUNT_JOURNAL_ASYNC_COMMIT |
+ 				    EXT4_MOUNT_JOURNAL_CHECKSUM), MOPT_SET},
 -- 
 1.8.3.2
 
