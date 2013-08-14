@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab3HNKkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:40:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34739 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932685Ab3HNKig (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932684Ab3HNKig (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 Aug 2013 06:38:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34662 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932600Ab3HNKiT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 06:38:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+Cc: Joshua Zhu <zhu.wen-jie@hp.com>,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Vinson Lee <vlee@freedesktop.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 73/75] debugfs: debugfs_remove_recursive() must not rely on list_empty(d_subdirs)
-Date: Wed, 14 Aug 2013 11:37:02 +0100
-Message-Id: <1376476624-10011-74-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 50/75] perf tools: Add anonymous huge page recognition
+Date: Wed, 14 Aug 2013 11:36:39 +0100
+Message-Id: <1376476624-10011-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
 References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
@@ -27,168 +34,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Joshua Zhu <zhu.wen-jie@hp.com>
 
-commit 776164c1faac4966ab14418bb0922e1820da1d19 upstream.
+commit d0528b5d71faf612014dd7672e44225c915344b2 upstream.
 
-debugfs_remove_recursive() is wrong,
+Judging anonymous memory's vm_area_struct, perf_mmap_event's filename
+will be set to "//anon" indicating this vma belongs to anonymous
+memory.
 
-1. it wrongly assumes that !list_empty(d_subdirs) means that this
-   dir should be removed.
+Once hugepage is used, vma's vm_file points to hugetlbfs. In this way,
+this vma will not be regarded as anonymous memory by is_anon_memory() in
+perf user space utility.
 
-   This is not that bad by itself, but:
-
-2. if d_subdirs does not becomes empty after __debugfs_remove()
-   it gives up and silently fails, it doesn't even try to remove
-   other entries.
-
-   However ->d_subdirs can be non-empty because it still has the
-   already deleted !debugfs_positive() entries.
-
-3. simple_release_fs() is called even if __debugfs_remove() fails.
-
-Suppose we have
-
-	dir1/
-		dir2/
-			file2
-		file1
-
-and someone opens dir1/dir2/file2.
-
-Now, debugfs_remove_recursive(dir1/dir2) succeeds, and dir1/dir2 goes
-away.
-
-But debugfs_remove_recursive(dir1) silently fails and doesn't remove
-this directory. Because it tries to delete (the already deleted)
-dir1/dir2/file2 again and then fails due to "Avoid infinite loop"
-logic.
-
-Test-case:
-
-	#!/bin/sh
-
-	cd /sys/kernel/debug/tracing
-	echo 'p:probe/sigprocmask sigprocmask' >> kprobe_events
-	sleep 1000 < events/probe/sigprocmask/id &
-	echo -n >| kprobe_events
-
-	[ -d events/probe ] && echo "ERR!! failed to rm probe"
-
-And after that it is not possible to create another probe entry.
-
-With this patch debugfs_remove_recursive() skips !debugfs_positive()
-files although this is not strictly needed. The most important change
-is that it does not try to make ->d_subdirs empty, it simply scans
-the whole list(s) recursively and removes as much as possible.
-
-Link: http://lkml.kernel.org/r/20130726151256.GC19472@redhat.com
-
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Joshua Zhu <zhu.wen-jie@hp.com>
+Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Joshua Zhu <zhu.wen-jie@hp.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1357363797-3550-1-git-send-email-zhu.wen-jie@hp.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Vinson Lee <vlee@freedesktop.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/debugfs/inode.c | 69 +++++++++++++++++-------------------------------------
- 1 file changed, 22 insertions(+), 47 deletions(-)
+ tools/perf/util/map.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index b80bc84..9dc6e76 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -527,8 +527,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
-  */
- void debugfs_remove_recursive(struct dentry *dentry)
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index a1f4e36..81072b6 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -15,7 +15,8 @@ const char *map_type__name[MAP__NR_TYPES] = {
+ 
+ static inline int is_anon_memory(const char *filename)
  {
--	struct dentry *child;
--	struct dentry *parent;
-+	struct dentry *child, *next, *parent;
- 
- 	if (!dentry)
- 		return;
-@@ -538,61 +537,37 @@ void debugfs_remove_recursive(struct dentry *dentry)
- 		return;
- 
- 	parent = dentry;
-+ down:
- 	mutex_lock(&parent->d_inode->i_mutex);
-+	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
-+		if (!debugfs_positive(child))
-+			continue;
- 
--	while (1) {
--		/*
--		 * When all dentries under "parent" has been removed,
--		 * walk up the tree until we reach our starting point.
--		 */
--		if (list_empty(&parent->d_subdirs)) {
--			mutex_unlock(&parent->d_inode->i_mutex);
--			if (parent == dentry)
--				break;
--			parent = parent->d_parent;
--			mutex_lock(&parent->d_inode->i_mutex);
--		}
--		child = list_entry(parent->d_subdirs.next, struct dentry,
--				d_u.d_child);
-- next_sibling:
--
--		/*
--		 * If "child" isn't empty, walk down the tree and
--		 * remove all its descendants first.
--		 */
-+		/* perhaps simple_empty(child) makes more sense */
- 		if (!list_empty(&child->d_subdirs)) {
- 			mutex_unlock(&parent->d_inode->i_mutex);
- 			parent = child;
--			mutex_lock(&parent->d_inode->i_mutex);
--			continue;
-+			goto down;
- 		}
--		__debugfs_remove(child, parent);
--		if (parent->d_subdirs.next == &child->d_u.d_child) {
--			/*
--			 * Try the next sibling.
--			 */
--			if (child->d_u.d_child.next != &parent->d_subdirs) {
--				child = list_entry(child->d_u.d_child.next,
--						   struct dentry,
--						   d_u.d_child);
--				goto next_sibling;
--			}
--
--			/*
--			 * Avoid infinite loop if we fail to remove
--			 * one dentry.
--			 */
--			mutex_unlock(&parent->d_inode->i_mutex);
--			break;
--		}
--		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
-+ up:
-+		if (!__debugfs_remove(child, parent))
-+			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- 	}
- 
--	parent = dentry->d_parent;
-+	mutex_unlock(&parent->d_inode->i_mutex);
-+	child = parent;
-+	parent = parent->d_parent;
- 	mutex_lock(&parent->d_inode->i_mutex);
--	__debugfs_remove(dentry, parent);
-+
-+	if (child != dentry) {
-+		next = list_entry(child->d_u.d_child.next, struct dentry,
-+					d_u.d_child);
-+		goto up;
-+	}
-+
-+	if (!__debugfs_remove(child, parent))
-+		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- 	mutex_unlock(&parent->d_inode->i_mutex);
--	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+-	return strcmp(filename, "//anon") == 0;
++	return !strcmp(filename, "//anon") ||
++	       !strcmp(filename, "/anon_hugepage (deleted)");
  }
- EXPORT_SYMBOL_GPL(debugfs_remove_recursive);
  
+ static inline int is_no_dso_memory(const char *filename)
 -- 
 1.8.3.2
 
