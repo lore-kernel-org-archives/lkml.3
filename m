@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759244Ab3HNC0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 22:26:47 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:57216 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759136Ab3HNC0p (ORCPT
+	id S1759319Ab3HNDDK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 23:03:10 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:60176 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759278Ab3HNDDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 22:26:45 -0400
+	Tue, 13 Aug 2013 23:03:09 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r7E32soZ027291, This message is accepted by code: ctloc85258
+From: hayeswang <hayeswang@realtek.com>
+To: "'David Miller'" <davem@davemloft.net>, <oneukum@suse.de>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+References: <1376383742.1681.1.camel@linux-fkkt.site><9E410853D1BD483E9479C175D5E72EB6@realtek.com.tw><1376407030.3033.13.camel@linux-fkkt.site> <20130813.164118.1992860501009385037.davem@davemloft.net>
+Subject: RE: [PATCH net-next 1/3] net/usb/r8152: support aggregation
+Date: Wed, 14 Aug 2013 11:02:56 +0800
+Message-ID: <20698A1C08B24B92B3CD1D84AC85A175@realtek.com.tw>
 MIME-Version: 1.0
-In-Reply-To: <1437762.edDpfxPldn@vostro.rjw.lan>
-References: <cover.1376392060.git.viresh.kumar@linaro.org>
-	<1437762.edDpfxPldn@vostro.rjw.lan>
-Date: Wed, 14 Aug 2013 07:56:44 +0530
-Message-ID: <CAKohpokOmv+CcL61dzkMgTNxY5rKb4A863CUAX_Jav4KyHF3DA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] cpufreq: sa11x0: cleanups for 3.13
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac6Yfp431iKLtUrXR6GS9RXv0cP1WAAFlfkg
+In-Reply-To: <20130813.164118.1992860501009385037.davem@davemloft.net>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 August 2013 01:31, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, August 13, 2013 07:01:04 PM Viresh Kumar wrote:
+ David Miller [mailto:davem@davemloft.net] 
+> Sent: Wednesday, August 14, 2013 7:41 AM
+> To: oneukum@suse.de
+> Cc: Hayeswang; netdev@vger.kernel.org; 
+> linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org
+> Subject: Re: [PATCH net-next 1/3] net/usb/r8152: support aggregation
+> 
+[...]
+> > I don't understand what problem the function is supposed to 
+> fix. As long
+> > as I don't understand it I cannot say for sure whether it 
+> is correct.
+> > There seems no obvious reason for a memory barrier, but 
+> there may be a
+> > hidden reason I don't see.
+> 
+> Hayes, when Oliver asks you "Against what is the memory 
+> barrier?" he is asking
+> you which memory operations you are trying to order.
+> 
+> You do not explain this in your commit message, nor do you 
+> explain it with a
+> suitable comment.  This is not acceptable.
+> 
+> It is absolutely critical, that any time you add a memory 
+> barrier, you add a
+> comment above the new memory barrier explaining exactly what 
+> the barrier is
+> trying to achieve.
+> 
+> In fact, this is required by our coding standards.
 
-> Are the three patches in this series prerequisite for the big target_index
-> one?  If so, I think they can go into 3.12 actually, if they are ACKed by the
-> appropriate platform maintainers.
+I just want to make sure the rx_desc and rx_data are set correctly before
+they are used. However, I study some examples and information from internet,
+and I think that the memory barries is not necessary here. Therefore, I would
+remove them later.
+ 
+Best Regards,
+Hayes
 
-Yes, but they depend on cpufreq_table_validate_and_show() which
-will also go in 3.13 and so these will be made part of that series in
-future..
