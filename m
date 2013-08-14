@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759876Ab3HNMBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 08:01:32 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:58501 "EHLO gloria.sntech.de"
+	id S1759803Ab3HNMEw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 08:04:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60660 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759573Ab3HNMB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 08:01:29 -0400
-From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
-To: kgene.kim@samsung.com
-Subject: [PATCH v2 4/4] ARM: SAMSUNG: set s3c24xx_dma_filter for s3c64xx-spi0 device
-Date: Wed, 14 Aug 2013 14:01:22 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
-Cc: Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>,
-        linus.walleij@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-References: <201308141359.13872.heiko@sntech.de>
-In-Reply-To: <201308141359.13872.heiko@sntech.de>
+	id S1751468Ab3HNMEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 08:04:50 -0400
+Message-ID: <520B723D.5020400@ti.com>
+Date: Wed, 14 Aug 2013 17:34:13 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        LKML <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        Heiko Schocher <hs@denx.de>
+Subject: Re: [PATCH v3 1/6] ARM: davinci: da8xx: fix clock lookup for mdio
+ device
+References: <1371999607-6483-1-git-send-email-prabhakar.csengg@gmail.com> <1371999607-6483-2-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1371999607-6483-2-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201308141401.22989.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The spi-s3c64xx device is also used on the s3c2416 and s3c2443 SoCs.
-The driver also already uses only generic dma-engine operations.
+Hi Prabhakar,
 
-Therefore add another elif to set the s3c24xx filter.
+On 6/23/2013 8:30 PM, Prabhakar Lad wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> 
+> This patch removes the clock alias for mdio device and adds a entry
+> in clock lookup table, this entry can now be used by both DT and NON
+> DT case.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: davinci-linux-open-source@linux.davincidsp.com
+> Cc: netdev@vger.kernel.org
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> Cc: Heiko Schocher <hs@denx.de>
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- arch/arm/plat-samsung/devs.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+This patch looks good, except you can do the same thing on all DaVinci
+devices not just on DA8XX. Apart from this patches 1-5 in this series
+look good. If you can spin this fix in short time I can queue 1-5 for
+v3.12 while we wait for you to fix 6/6
 
-diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
-index 0f9c3f4..fab458f 100644
---- a/arch/arm/plat-samsung/devs.c
-+++ b/arch/arm/plat-samsung/devs.c
-@@ -32,6 +32,7 @@
- #include <linux/ioport.h>
- #include <linux/platform_data/s3c-hsudc.h>
- #include <linux/platform_data/s3c-hsotg.h>
-+#include <linux/platform_data/dma-s3c24xx.h>
- 
- #include <media/s5p_hdmi.h>
- 
-@@ -1513,8 +1514,10 @@ void __init s3c64xx_spi0_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
- 	pd.num_cs = num_cs;
- 	pd.src_clk_nr = src_clk_nr;
- 	pd.cfg_gpio = (cfg_gpio) ? cfg_gpio : s3c64xx_spi0_cfg_gpio;
--#ifdef CONFIG_PL330_DMA
-+#if defined(CONFIG_PL330_DMA)
- 	pd.filter = pl330_filter;
-+#elif defined(CONFIG_S3C24XX_DMAC)
-+	pd.filter = s3c24xx_dma_filter;
- #endif
- 
- 	s3c_set_platdata(&pd, sizeof(pd), &s3c64xx_device_spi0);
--- 
-1.7.10.4
-
+Thanks,
+Sekhar
