@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760256Ab3HNXc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:32:29 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41368 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755381Ab3HNXc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:32:26 -0400
-Message-ID: <520C1327.8090607@ti.com>
-Date: Wed, 14 Aug 2013 18:30:47 -0500
-From: Joel Fernandes <joelf@ti.com>
-Reply-To: <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mark Greer <mgreer@animalcreek.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: [PATCH 00/10] crypto: omap-aes: DMA and PIO mode improvements
-References: <1376521969-16807-1-git-send-email-joelf@ti.com>
-In-Reply-To: <1376521969-16807-1-git-send-email-joelf@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1760263Ab3HNXfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 19:35:21 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:4439 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758100Ab3HNXfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 19:35:20 -0400
+Message-ID: <1376523242.10300.403.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] mm/hotplug: Verify hotplug memory range
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        dave@sr71.net, isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Date: Wed, 14 Aug 2013 17:34:02 -0600
+In-Reply-To: <20130814150901.cd430738912a893d74769e1b@linux-foundation.org>
+References: <1376162252-26074-1-git-send-email-toshi.kani@hp.com>
+	 <20130814150901.cd430738912a893d74769e1b@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 06:12 PM, Joel Fernandes wrote:
-> This patch series is a rewrite of the DMA portion of omap-aes driver
-> and also adds support for PIO mode. Both these modes, give better
-> performance than before.
+On Wed, 2013-08-14 at 15:09 -0700, Andrew Morton wrote:
+> On Sat, 10 Aug 2013 13:17:32 -0600 Toshi Kani <toshi.kani@hp.com> wrote:
 > 
-> Earlier, only a single SG was used for DMA purpose, and the SG-list
-> passed from the crypto layer was being copied and DMA'd one entry at
-> a time. This turns out to be quite inefficient, so we replace it with
-> much simpler code that directly passes the SG-list from crypto to the
-> DMA layer.
+> > add_memory() and remove_memory() can only handle a memory range aligned
+> > with section.  There are problems when an unaligned range is added and
+> > then deleted as follows:
+> > 
+> >  - add_memory() with an unaligned range succeeds, but __add_pages()
+> >    called from add_memory() adds a whole section of pages even though
+> >    a given memory range is less than the section size.
+> >  - remove_memory() to the added unaligned range hits BUG_ON() in
+> >    __remove_pages().
+> > 
+> > This patch changes add_memory() and remove_memory() to check if a given
+> > memory range is aligned with section at the beginning.  As the result,
+> > add_memory() fails with -EINVAL when a given range is unaligned, and
+> > does not add such memory range.  This prevents remove_memory() to be
+> > called with an unaligned range as well.  Note that remove_memory() has
+> > to use BUG_ON() since this function cannot fail.
+> > 
+> > ...
+> >
+> > --- a/mm/memory_hotplug.c
+> > +++ b/mm/memory_hotplug.c
+> > @@ -1069,6 +1069,22 @@ out:
+> >  	return ret;
+> >  }
+> >  
+> > +static int check_hotplug_memory_range(u64 start, u64 size)
+> > +{
+> > +	u64 start_pfn = start >> PAGE_SHIFT;
+> > +	u64 nr_pages = size >> PAGE_SHIFT;
+> > +
+> > +	/* Memory range must be aligned with section */
+> > +	if ((start_pfn & ~PAGE_SECTION_MASK) ||
+> > +	    (nr_pages % PAGES_PER_SECTION) || (!nr_pages)) {
+> > +		pr_err("Section-unaligned hotplug range: start 0x%llx, size 0x%llx\n",
+> > +				start, size);
 > 
-> We also add PIO mode support to the driver, and switch to PIO mode
-> whenever the DMA channel allocation is not available. This is only for
-> OMAP4 platform will work on any platform on which IRQ information is
-> populated.
-> 
-> Tests performed on am33xx and omap4 SoCs , notice the 50% perf improvement
+> Printing a u64 is problematic.  Here you assume that u64 is implemented
+> as unsigned long long.  But it can be implemented as unsigned long, by
+> architectures which use include/asm-generic/int-l64.h.  Such an
+> architecture will generate a compile warning here, but I can't
+> immediately find a Kconfig combination which will make that happen.
 
-Just correcting, this is more like 35% not 50% when using DMA.
+Oh, I see.  Should I add the casting below and resend it to you?
+
+                (unsigned long long)start, (unsigned long long)size);
 
 Thanks,
-
--Joel
-
-
-
-
-
-> for large 8K blocks:
-> 
-> Sample run on am33xx (beaglebone):
-> With DMA rewrite:
-> [   26.410052] test 0 (128 bit key, 16 byte blocks): 4318 operations in 1 seconds (69088 bytes)
-> [   27.414314] test 1 (128 bit key, 64 byte blocks): 4360 operations in 1 seconds (279040 bytes)
-> [   28.414406] test 2 (128 bit key, 256 byte blocks): 3609 operations in 1 seconds (923904 bytes)
-> [   29.414410] test 3 (128 bit key, 1024 byte blocks): 3418 operations in 1 seconds (3500032 bytes)
-> [   30.414510] test 4 (128 bit key, 8192 byte blocks): 1766 operations in 1 seconds (14467072 bytes)
-> 
-> Without DMA rewrite:
-> [   31.920519] test 0 (128 bit key, 16 byte blocks): 4417 operations in 1 seconds (70672 bytes)
-> [   32.925997] test 1 (128 bit key, 64 byte blocks): 4221 operations in 1 seconds (270144 bytes)
-> [   33.926194] test 2 (128 bit key, 256 byte blocks): 3528 operations in 1 seconds (903168 bytes)
-> [   34.926225] test 3 (128 bit key, 1024 byte blocks): 3281 operations in 1 seconds (3359744 bytes)
-> [   35.926385] test 4 (128 bit key, 8192 byte blocks): 1460 operations in 1 seconds (11960320 bytes)
-> 
-> With PIO mode, note the tremndous boost in performance for small blocks there:
-> [   27.294905] test 0 (128 bit key, 16 byte blocks): 20585 operations in 1 seconds (329360 bytes)
-> [   28.302282] test 1 (128 bit key, 64 byte blocks): 8106 operations in 1 seconds (518784 bytes)
-> [   29.302374] test 2 (128 bit key, 256 byte blocks): 2359 operations in 1 seconds (603904 bytes)
-> [   30.302575] test 3 (128 bit key, 1024 byte blocks): 605 operations in 1 seconds (619520 bytes)
-> [   31.303781] test 4 (128 bit key, 8192 byte blocks): 79 operations in 1 seconds (647168 bytes)
-> 
-> Future work in this direction would be to dynamically change between
-> PIO/DMA mode based on the block size.
-> 
-> Joel Fernandes (10):
->   crypto: scatterwalk:  Add support for calculating number of SG
->     elements
->   crypto: omap-aes: Add useful debug macros
->   crypto: omap-aes: Populate number of SG elements
->   crypto: omap-aes: Simplify DMA usage by using direct SGs
->   crypto: omap-aes: Sync SG before DMA operation
->   crypto: omap-aes: Remove previously used intermediate buffers
->   crypto: omap-aes: Add IRQ info and helper macros
->   crypto: omap-aes: PIO mode: Add IRQ handler and walk SGs
->   crypto: omap-aes: PIO mode: platform data for OMAP4 and trigger it
->   crypto: omap-aes: Switch to PIO mode in probe function
-> 
->  crypto/scatterwalk.c         |   22 +++
->  drivers/crypto/omap-aes.c    |  400 ++++++++++++++++++++----------------------
->  include/crypto/scatterwalk.h |    2 +
->  3 files changed, 217 insertions(+), 207 deletions(-)
-> 
+-Toshi
 
