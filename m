@@ -1,102 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164Ab3HNX4t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:56:49 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:19060 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab3HNX4r (ORCPT
+	id S1757650Ab3HNX7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 19:59:51 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50670 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab3HNX7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:56:47 -0400
-X-AuditID: cbfec372-b7f046d000001821-3c-520c193eae07
-Date: Wed, 14 Aug 2013 20:56:38 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, bhelgaas@google.com,
-        rostedt@goodmis.org, rjw@sisk.pl, lance.ortiz@hp.com,
-        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Aristeu Rozanski Filho <arozansk@redhat.com>
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
- event
-Message-id: <20130814205638.1ebcfd3e@concha.lan>
-In-reply-to: <520A6A30.1030406@linux.vnet.ibm.com>
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
- <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
- <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic>
- <20130812083355.47c1bae8@samsung.com> <5208D80D.5030206@linux.vnet.ibm.com>
- <20130812114404.3bd64fa0@samsung.com> <520A1B5E.8040105@linux.vnet.ibm.com>
- <20130813094147.062317f8@concha.lan> <520A6A30.1030406@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t/hEF07SZ4gg4075C3aTvxms1jSlGHx
-	ecM/NosPfdeYLJbv62e0uLxrDpvF2XnH2Szutzxlt+hf2Mtksa/jAZPFmwv3WBy4Pb639rF4
-	tOy7xe6xYFOpx65tO5k8Fu95yeTx4NBmFo/3+66yeTxa3MLo8XmTXABnFJdNSmpOZllqkb5d
-	AlfGxVff2QvaBCu2zLnN2sC4kbeLkZNDQsBE4taufhYIW0ziwr31bF2MXBxCAksYJS7dnMMI
-	4TQwSWy/O4sNpIpFQFVieds9sA42ASOJV40trCC2iICpxJEV15lAGpgFupkknv+7CdYgLBAm
-	sWdPMxOIzStgILHs9wUwmxOo+c3ZuVAbjjFLfNnQCDSJA+gOJ4mtU30h6gUlfkyGWMYsoCWx
-	eVsTK4QtL7F5zVvmCYwCs5CUzUJSNgtJ2QJG5lWMoqXFyQXFSem5hnrFibnFpXnpesn5uZsY
-	IVFTtIPx2QarQ4wCHIxKPLwRbdxBQqyJZcWVuYcYJTiYlUR4z3QAhXhTEiurUovy44tKc1KL
-	DzEycXBKNTB2zr4mV7I0d8eufMswlrutWWmK5tKHI45Ft/9Sv7o/6U7S4nt6ljf3aT6VMtvz
-	t0z+87epN2J6oq+5iq40rX3zcuq21W/8ivjZ76596Ha6drpnbu6yifWfqpbe1vh6qCXl6Amv
-	SG7WxxP+GS3M+MV794TSVZ51ol9+6PlHzDpZ6vKkYs96r2/hSizFGYmGWsxFxYkAT2c94HgC	AAA=
+	Wed, 14 Aug 2013 19:59:49 -0400
+Date: Thu, 15 Aug 2013 00:59:29 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20130814235929.GT2401@sirena.org.uk>
+References: <20130814184643.GL2401@sirena.org.uk>
+ <Pine.LNX.4.44L0.1308141514440.1701-100000@iolanthe.rowland.org>
+ <A2CA0424C0A6F04399FB9E1CD98E030458DE9E22@US01WEMBX2.internal.synopsys.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/CHBEyLWSSL2QXIQ"
+Content-Disposition: inline
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458DE9E22@US01WEMBX2.internal.synopsys.com>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 13 Aug 2013 22:47:36 +0530
-"Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> escreveu:
 
-> On 08/13/2013 06:11 PM, Mauro Carvalho Chehab wrote:
-> > Em Tue, 13 Aug 2013 17:11:18 +0530
-> > "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> escreveu:
-> >
-> >> On 08/12/2013 08:14 PM, Mauro Carvalho Chehab wrote:
-> >>>> But, this only seems to expose the APEI data as a string
-> >>>> and doesn't look to really make all the fields available to user-space
-> >>>> in a raw manner. Not sure how well this can be utilised by a user-space
-> >>>> tool. Do you have suggestions on how we can do this?
-> >>>
-> >>> There's already an userspace tool that handes it:
-> >>> 	https://git.fedorahosted.org/cgit/rasdaemon.git/
-> >>>
-> >>> What is missing there on the current version is the bits that would allow
-> >>> to translate from APEI way to report an error (memory node, card, module,
-> >>> bank, device) into a DIMM label[1].
-> >>
-> >> If I'm reading this right, all APEI data seems to be squashed into a
-> >> string in mc_event.
-> >
-> > Yes. We had lots of discussion about how to map memory errors over the
-> > last couple years. Basically, it was decided that the information that
-> > could be decoded into a DIMM to be mapped as integers, and all other
-> > driver-specific data to be added as strings.
-> >
-> > On the tests I did, different machines/vendors fill the APEI data on
-> > a different way, with makes harder to associate them to a DIMM.
-> 
-> Ok, so it looks like ghes_edac isn't quite useful yet.
-> 
-> In the meantime, like Boris suggests, I think we can have a different 
-> trace event for raw APEI reports - userspace can use it as it pleases.
+--/CHBEyLWSSL2QXIQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-"In the meantime" is something that worries me the most. Kernel APIs should
-be stable. We cannot randomly change it on each new kernel version.
+On Wed, Aug 14, 2013 at 08:16:56PM +0000, Paul Zimmerman wrote:
 
-Better to spend a little more time discussing than implementing a new trace
-that will be removed on a near future.
-> 
-> Once ghes_edac gets better, users can decide whether they want raw APEI 
-> reports or the EDAC-processed version and choose one or the other trace 
-> event.
-> 
-> Regards,
-> Naveen
-> 
+> Mark's original complaint about USB was this:
+>=20
+> > the device).  The hub needs to be "plugged" into the SoC after the SoC
+> > USB controller has started with some GPIOs so we need to tell the system
+> > that the hub exists and needs to be synchronised with the USB controlle=
+r.
 
+> This sounds to me like the normal discovery mechanism for USB isn't getti=
+ng
+> kicked off because no Connect Status Change is being triggered on the root
+> port when the hub is brought online using the GPIOs. Maybe the port has
+> been runtime suspended because no device was attached originally?
 
--- 
+> So maybe the only thing needed for USB is a way to tell the parent port to
+> frob its port control bits to try to determine if a device is now present.
+> (set Wake on Connect Enable? Do a Port Reset? Cycle the Port Power bit if
+> possible?)
 
-Cheers,
-Mauro
+No, that's not required in this case - the case is the opposite one to
+the one you describe.  Host starting first then hub works fine, if the
+host does go into a low power mode it seems to notice the hub appearing
+just fine.  Hub then host fails for some reason which I don't know.
+
+--/CHBEyLWSSL2QXIQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSDBneAAoJELSic+t+oim9rasP/3tP6EPWBOv8CENfJ2Q4Co/O
+kAmnoODKiwsn6Ha+ifucsHp43f1PomVqjYhW6BDqO3yJApsXqbtQY1kQqjkEAQRm
+YDARUby0AbMQNRK8HnwnXWiDeJV3+1Ze6sI8/aqWnLtUfThjSswqxEQRVy1LgwXN
+6SB1HiQLDDvPvVRIXs84bbvG18KR3VaOmPS+ViqDePKE51jXHFXU5CjlEWzPziGB
+qhG6YWRpIIfxBpYm3mM5Z9Ze9aKo3oKzgP27gVMtRwVTE1Yr0UdbXO7OgO0xNkBk
+btWZfHOSE9i1gQ55maJxUilaRoUOgal2p2LylY2SGdZUx3vVh5ySRNJUPRn/Z5gU
+tghpYe3FejH+ZbYurUsv7teCnsHHWBs2Wme8kFK5QCtM2SORrr0HIgup7w2PvV4L
+kiZlXkJE/HapIrYZs0wAOYO0FE9hXE8RSnChOUMZa+anQcLH/OI3uvagZZjJ0VAh
+upqJpGf6ydwFdABpSDjqdihsDQsfns+IDQO6feHidPPCI7hSyxdAOa4HYQv7UQtV
+w45L6DdudUKW1aXQbu4iiNYL2muCuDwF3dE66Sm4a+ds3QSK6qobLxDPeVQeGZ4L
+5AZbejAvIRGK9r16w1fqBB4PGZes4QlGJKjOAbqR/UlxXkwt42IOujRM7zyMF7E1
+VSCItsT1BKBAc/I6hCY7
+=jJ3E
+-----END PGP SIGNATURE-----
+
+--/CHBEyLWSSL2QXIQ--
