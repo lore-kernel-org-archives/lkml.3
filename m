@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758946Ab3HNAK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Aug 2013 20:10:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50952 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758101Ab3HNAK6 (ORCPT
+	id S1758962Ab3HNAMd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Aug 2013 20:12:33 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46480 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758101Ab3HNAMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Aug 2013 20:10:58 -0400
-Date: Tue, 13 Aug 2013 20:10:50 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen/hvc: If we use xen_raw_printk let it
- also work on HVM guests.
-Message-ID: <20130814001050.GA10492@phenom.dumpdata.com>
-References: <1376060133-6382-1-git-send-email-konrad.wilk@oracle.com>
- <1376425904.9273.25.camel@hastur.hellion.org.uk>
- <20130813205332.GA10243@phenom.dumpdata.com>
- <1376427570.9273.39.camel@hastur.hellion.org.uk>
- <1376432405.9273.54.camel@hastur.hellion.org.uk>
+	Tue, 13 Aug 2013 20:12:31 -0400
+X-AuditID: 9c930179-b7c0bae0000040ac-d8-520acb6e252a
+Date: Wed, 14 Aug 2013 09:12:37 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Christoph Lameter <cl@gentwo.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, k.kozlowski@samsung.com,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
+        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
+        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC 0/3] Pin page control subsystem
+Message-ID: <20130814001236.GC2271@bbox>
+References: <1376377502-28207-1-git-send-email-minchan@kernel.org>
+ <00000140787b6191-ae3f2eb1-515e-48a1-8e64-502772af4700-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376432405.9273.54.camel@hastur.hellion.org.uk>
+In-Reply-To: <00000140787b6191-ae3f2eb1-515e-48a1-8e64-502772af4700-000000@email.amazonses.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 11:20:05PM +0100, Ian Campbell wrote:
-> On Tue, 2013-08-13 at 21:59 +0100, Ian Campbell wrote:
-> 
-> > > What it should be is:
-> > > > >  
-> > > > >  void xen_raw_console_write(const char *str)
-> > > > >  {
-> > > > > -	dom0_write_console(0, str, strlen(str));
-> > > > > +	if (!xen_domain())
-> > > > > +		return;
-> > > > > +
-> > > > > +	if (xen_pv_domain())
-> > >             xen_domain()
-> > > 
-> > > > > +		dom0_write_console(0, str, strlen(str));
-> > > > > +	else if (xen_hvm_domain() || xen_cpuid_base()) {
-> > >      
-> > > 	else if (xen_cpuid_base()) {
-> > > 
-> > > > > +		/* The hyperpage has not been setup yet. */
-> > > > > +		int i, len = strlen(str);
-> > > > > +		for (i = 0; i < len; i++)
-> > > > > +			 outb(str[i], 0xe9);
-> > > > > +	}
-> > > > >  }
-> > > 
-> > > And then that should adhere to what I wrote up.
-> > 
-> > I think it does too.
-> 
-> Except as Daniel notes in <520A7145.5010306@tycho.nsa.gov> for unrelated
-> reasons:
-> 
-> >         HVM guests can still use the PV output - they just need to use the console
-> >         write hypercall instead of the HVM I/O port. I would think that PVH guests
-> >         would default to using the hypercall as it is more efficient (it takes a
-> >         string rather than one character per write).
-> >         
-> >         Actually, checking... the console_io hypercall would need to be added to
-> >         the hvm_hypercall{32,64}_table for an HVM guest to be able to use it; they
-> >         currently must use the I/O port. I didn't check the PVH patches.
-> 
-> Or did you actually try this code and it worked?
+Hello Christoph,
 
-The one I typed up above - no. The one I had sent - yes.
+On Tue, Aug 13, 2013 at 04:21:30PM +0000, Christoph Lameter wrote:
+> On Tue, 13 Aug 2013, Minchan Kim wrote:
+> 
+> > VM sometime want to migrate and/or reclaim pages for CMA, memory-hotplug,
+> > THP and so on but at the moment, it could handle only userspace pages
+> > so if above example subsystem have pinned a some page in a range VM want
+> > to migrate, migration is failed so above exmaple couldn't work well.
+> 
+> Dont we have the mmu_notifiers that could help in that case? You could get
+> a callback which could prepare the pages for migration?
 
-But with that above mentioned comment from Daniel I think it is still
-worth trying to do dom0_write_console and if the hypercall returns -ENOSYS 
-then fall back on 0xe9.
+Now I'm not familiar with mmu_notifier so please could you elaborate it
+a bit for me to dive into that? 
 
-And lastly send an patch to make hypercall_io work under HVM.
+Thanks!
 
 > 
-> Ian.
-> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
