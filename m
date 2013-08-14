@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab3HNS1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 14:27:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34397 "EHLO
+	id S933029Ab3HNS1f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 14:27:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34396 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760279Ab3HNSZf (ORCPT
+	with ESMTP id S1760273Ab3HNSZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Aug 2013 14:25:35 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 14/21] perf mem: Remove unused symbol filter member
-Date: Wed, 14 Aug 2013 15:25:08 -0300
-Message-Id: <1376504715-28107-15-git-send-email-acme@infradead.org>
+Subject: [PATCH 15/21] perf annotate: Set the machines symbol filter
+Date: Wed, 14 Aug 2013 15:25:09 -0300
+Message-Id: <1376504715-28107-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1376504715-28107-1-git-send-email-acme@infradead.org>
 References: <1376504715-28107-1-git-send-email-acme@infradead.org>
@@ -31,7 +31,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Member 'annotate_init' of struct perf_mem is unused.  Remove it.
+Take into use the machines symbol filter member.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -43,33 +43,34 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1375961547-30267-5-git-send-email-adrian.hunter@intel.com
+Link: http://lkml.kernel.org/r/1375961547-30267-6-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-mem.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ tools/perf/builtin-annotate.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index a8ff6d2..f96168c 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -14,7 +14,6 @@ static const char	*mem_operation		= MEM_OPERATION_LOAD;
- struct perf_mem {
- 	struct perf_tool	tool;
- 	char const		*input_name;
--	symbol_filter_t		annotate_init;
- 	bool			hide_unresolved;
- 	bool			dump_raw;
- 	const char		*cpu_list;
-@@ -70,7 +69,7 @@ dump_raw_samples(struct perf_tool *tool,
- 	const char *fmt;
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index db491e9..9754cb1 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -91,7 +91,7 @@ static int process_sample_event(struct perf_tool *tool,
+ 	struct addr_location al;
  
  	if (perf_event__preprocess_sample(event, machine, &al, sample,
--				mem->annotate_init) < 0) {
-+				NULL) < 0) {
- 		fprintf(stderr, "problem processing %d event, skipping it.\n",
- 				event->header.type);
+-					  symbol__annotate_init) < 0) {
++					  machine->symbol_filter) < 0) {
+ 		pr_warning("problem processing %d event, skipping it.\n",
+ 			   event->header.type);
  		return -1;
+@@ -195,6 +195,8 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
++	machines__set_symbol_filter(&session->machines, symbol__annotate_init);
++
+ 	if (ann->cpu_list) {
+ 		ret = perf_session__cpu_bitmap(session, ann->cpu_list,
+ 					       ann->cpu_bitmap);
 -- 
 1.8.1.4
 
