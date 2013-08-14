@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760111Ab3HNQen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:34:43 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40861 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760002Ab3HNQem (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:34:42 -0400
-Message-ID: <520BB19E.8040901@wwwdotorg.org>
-Date: Wed, 14 Aug 2013 10:34:38 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1760125Ab3HNQhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:37:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40785 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760024Ab3HNQhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 12:37:53 -0400
+Date: Wed, 14 Aug 2013 18:36:25 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V11 12/15] perf tools: add missing 'abi' member to
+ 'struct regs_dump'
+Message-ID: <20130814163625.GA1017@krava.brq.redhat.com>
+References: <1376484517-5339-1-git-send-email-adrian.hunter@intel.com>
+ <1376484517-5339-13-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: Re: [PATCH] pinctrl: improve warning messages
-References: <1376497533-32303-1-git-send-email-linus.walleij@linaro.org>
-In-Reply-To: <1376497533-32303-1-git-send-email-linus.walleij@linaro.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376484517-5339-13-git-send-email-adrian.hunter@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 10:25 AM, Linus Walleij wrote:
-> Print out the affected group name on activation of pin mux
-> settings, and warn if you cannot free a pin that should have
-> been part of a certain setting.
+On Wed, Aug 14, 2013 at 03:48:34PM +0300, Adrian Hunter wrote:
+> And store the parsed value there.  Note that the 'abi' is
+> 0 (no registers), 1 (32-bit registers) or 2 (64-bit registers),
+> but the registers are anyway copied one-by-one as 64-bit
+> values onto the event i.e. see 'perf_output_sample_regs()'
+> 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 
-> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-
-> @@ -411,9 +415,14 @@ int pinmux_enable_setting(struct pinctrl_setting const *setting)
->  	for (i = 0; i < num_pins; i++) {
->  		ret = pin_request(pctldev, pins[i], setting->dev_name, NULL);
->  		if (ret) {
-> +			const char *gname;
-> +
-> +			gname = pctlops->get_group_name(pctldev,
-> +						setting->data.mux.group);
->  			dev_err(pctldev->dev,
-> -				"could not request pin %d on device %s\n",
-> -				pins[i], pinctrl_dev_get_name(pctldev));
-> +				"could not request pin %d from group %s on "
-> +				"device %s\n",
-> +				pins[i], gname, pinctrl_dev_get_name(pctldev));
-
-I think it'd be useful to print the pin name rather than pin number here.
-
-> @@ -486,6 +499,16 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
->  			desc->mux_setting = NULL;
->  			/* And release the pin */
->  			pin_free(pctldev, pins[i], NULL);
-> +		} else {
-> +			const char *gname;
-> +
-> +			gname = pctlops->get_group_name(pctldev,
-> +						setting->data.mux.group);
-> +			dev_warn(pctldev->dev,
-> +				 "not freeing pin %d as part of deactivating "
-> +				 "group %s - it is already used for some other "
-> +				 "setting",
-> +				 pins[i], gname);
->  		}
->  	}
-
-I think that will only happen if one of the pinmux_enabling_setting
-prints already happened. Is it worth adding this one?
-
+Acked-by: Jiri Olsa <jolsa@redhat.com>
