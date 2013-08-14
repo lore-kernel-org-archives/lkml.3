@@ -1,121 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933362Ab3HNWPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 18:15:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37955 "EHLO
+	id S933327Ab3HNWSn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 18:18:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37969 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933273Ab3HNWPc (ORCPT
+	with ESMTP id S933115Ab3HNWSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 18:15:32 -0400
+	Wed, 14 Aug 2013 18:18:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, DL-MPTFusionLinux@lsi.com, support@lsi.com,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
-Subject: [PATCH] [SCSI] mptfusion: fix compilation warning
-Date: Wed, 14 Aug 2013 23:15:29 +0100
-Message-Id: <1376518529-11411-1-git-send-email-luis.henriques@canonical.com>
+Cc: linux-serial@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH] serial: pch_uart: fix compilation warning
+Date: Wed, 14 Aug 2013 23:18:37 +0100
+Message-Id: <1376518717-11854-1-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function seq_mpt_print_ioc_summary is invoked only from functions that
-depend on CONFIG_PROC_FS.  This commit makes this function also depend
-on this configuration.  Also removes function forward declaration.
+Function wait_for_xmitr is invoked only on functions that either depend
+on CONFIG_CONSOLE_POLL or CONFIG_SERIAL_PCH_UART_CONSOLE.
 
-It fixes the following warning:
+This patch fixes the following warning:
 
-drivers/message/fusion/mptbase.c:6884:13: warning: 'seq_mpt_print_ioc_summary' defined but not used [-Wunused-function]
+drivers/tty/serial/pch_uart.c:1504:13: warning: ‘wait_for_xmitr’ defined but not used [-Wunused-function]
 
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/message/fusion/mptbase.c | 65 ++++++++++++++++++++--------------------
- 1 file changed, 32 insertions(+), 33 deletions(-)
+ drivers/tty/serial/pch_uart.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
-index 767ff4d..5cbe611 100644
---- a/drivers/message/fusion/mptbase.c
-+++ b/drivers/message/fusion/mptbase.c
-@@ -6637,7 +6637,38 @@ procmpt_destroy(void)
- /*
-  *	Handles read request from /proc/mpt/summary or /proc/mpt/iocN/summary.
-  */
--static void seq_mpt_print_ioc_summary(MPT_ADAPTER *ioc, struct seq_file *m, int showlan);
-+
-+static void seq_mpt_print_ioc_summary(MPT_ADAPTER *ioc, struct seq_file *m, int showlan)
-+{
-+	char expVer[32];
-+
-+	mpt_get_fw_exp_ver(expVer, ioc);
-+
-+	/*
-+	 *  Shorter summary of attached ioc's...
-+	 */
-+	seq_printf(m, "%s: %s, %s%08xh%s, Ports=%d, MaxQ=%d",
-+			ioc->name,
-+			ioc->prod_name,
-+			MPT_FW_REV_MAGIC_ID_STRING,	/* "FwRev=" or somesuch */
-+			ioc->facts.FWVersion.Word,
-+			expVer,
-+			ioc->facts.NumberOfPorts,
-+			ioc->req_depth);
-+
-+	if (showlan && (ioc->pfacts[0].ProtocolFlags & MPI_PORTFACTS_PROTOCOL_LAN)) {
-+		u8 *a = (u8*)&ioc->lan_cnfg_page1.HardwareAddressLow;
-+		seq_printf(m, ", LanAddr=%02X:%02X:%02X:%02X:%02X:%02X",
-+			a[5], a[4], a[3], a[2], a[1], a[0]);
-+	}
-+
-+	seq_printf(m, ", IRQ=%d", ioc->pci_irq);
-+
-+	if (!ioc->active)
-+		seq_printf(m, " (disabled)");
-+
-+	seq_putc(m, '\n');
-+}
- 
- static int mpt_summary_proc_show(struct seq_file *m, void *v)
- {
-@@ -6881,38 +6912,6 @@ mpt_print_ioc_summary(MPT_ADAPTER *ioc, char *buffer, int *size, int len, int sh
- 	*size = y;
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 572d481..1e22a49 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1498,6 +1498,7 @@ static int pch_uart_verify_port(struct uart_port *port,
+ 	return 0;
  }
  
--static void seq_mpt_print_ioc_summary(MPT_ADAPTER *ioc, struct seq_file *m, int showlan)
--{
--	char expVer[32];
--
--	mpt_get_fw_exp_ver(expVer, ioc);
--
--	/*
--	 *  Shorter summary of attached ioc's...
--	 */
--	seq_printf(m, "%s: %s, %s%08xh%s, Ports=%d, MaxQ=%d",
--			ioc->name,
--			ioc->prod_name,
--			MPT_FW_REV_MAGIC_ID_STRING,	/* "FwRev=" or somesuch */
--			ioc->facts.FWVersion.Word,
--			expVer,
--			ioc->facts.NumberOfPorts,
--			ioc->req_depth);
--
--	if (showlan && (ioc->pfacts[0].ProtocolFlags & MPI_PORTFACTS_PROTOCOL_LAN)) {
--		u8 *a = (u8*)&ioc->lan_cnfg_page1.HardwareAddressLow;
--		seq_printf(m, ", LanAddr=%02X:%02X:%02X:%02X:%02X:%02X",
--			a[5], a[4], a[3], a[2], a[1], a[0]);
--	}
--
--	seq_printf(m, ", IRQ=%d", ioc->pci_irq);
--
--	if (!ioc->active)
--		seq_printf(m, " (disabled)");
--
--	seq_putc(m, '\n');
--}
--
- /**
-  *	mpt_set_taskmgmt_in_progress_flag - set flags associated with task management
-  *	@ioc: Pointer to MPT_ADAPTER structure
++#if defined(CONFIG_CONSOLE_POLL) || defined(CONFIG_SERIAL_PCH_UART_CONSOLE)
+ /*
+  *	Wait for transmitter & holding register to empty
+  */
+@@ -1528,6 +1529,7 @@ static void wait_for_xmitr(struct eg20t_port *up, int bits)
+ 		}
+ 	}
+ }
++#endif /* CONFIG_CONSOLE_POLL || CONFIG_SERIAL_PCH_UART_CONSOLE */
+ 
+ #ifdef CONFIG_CONSOLE_POLL
+ /*
 -- 
 1.8.3.2
 
