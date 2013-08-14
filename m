@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759918Ab3HNKou (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 06:44:50 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:56748 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759794Ab3HNKos (ORCPT
+	id S1759923Ab3HNKp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 06:45:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:34652 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932571Ab3HNKiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 06:44:48 -0400
-X-IronPort-AV: E=Sophos;i="4.89,876,1367964000"; 
-   d="scan'208";a="29336924"
-Date: Wed, 14 Aug 2013 12:44:28 +0200 (CEST)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org
-Subject: Re: [PATCH 1/2] arch/x86/crypto/camellia_glue.c: adjust code
- alignment
-In-Reply-To: <20130814104122.GA12970@gondor.apana.org.au>
-Message-ID: <alpine.DEB.2.02.1308141243520.2257@hadrien>
-References: <1376156077-6208-1-git-send-email-Julia.Lawall@lip6.fr> <1376156077-6208-2-git-send-email-Julia.Lawall@lip6.fr> <20130814104122.GA12970@gondor.apana.org.au>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 14 Aug 2013 06:38:16 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 56/75] virtio: console: return -ENODEV on all read operations after unplug
+Date: Wed, 14 Aug 2013 11:36:45 +0100
+Message-Id: <1376476624-10011-57-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+References: <1376476624-10011-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.5.7.19 -stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-On Wed, 14 Aug 2013, Herbert Xu wrote:
+From: Amit Shah <amit.shah@redhat.com>
 
-> On Sat, Aug 10, 2013 at 07:34:36PM +0200, Julia Lawall wrote:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > Adjust alignment in automatically generated code.  If this code
-> > will not be regenerated in the future, it may as well look nice.
-> >
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > ---
-> > This patch was generated from the result of the previous one, which
-> > replaced commas by semicolons.
->
-> Please fold this patch into the original one.
+commit 96f97a83910cdb9d89d127c5ee523f8fc040a804 upstream.
 
-OK, I will do that.  There is a second patch for another camellia file
-that is in the same situation.  I will send new versions of both.
+If a port gets unplugged while a user is blocked on read(), -ENODEV is
+returned.  However, subsequent read()s returned 0, indicating there's no
+host-side connection (but not indicating the device went away).
 
-thanks,
-julia
+This also happened when a port was unplugged and the user didn't have
+any blocking operation pending.  If the user didn't monitor the SIGIO
+signal, they won't have a chance to find out if the port went away.
+
+Fix by returning -ENODEV on all read()s after the port gets unplugged.
+write() already behaves this way.
+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/char/virtio_console.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 3bd6d4c..50f0838 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -636,6 +636,10 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
+ 
+ 	port = filp->private_data;
+ 
++	/* Port is hot-unplugged. */
++	if (!port->guest_connected)
++		return -ENODEV;
++
+ 	if (!port_has_data(port)) {
+ 		/*
+ 		 * If nothing's connected on the host just return 0 in
+@@ -652,7 +656,7 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+-	/* Port got hot-unplugged. */
++	/* Port got hot-unplugged while we were waiting above. */
+ 	if (!port->guest_connected)
+ 		return -ENODEV;
+ 	/*
+-- 
+1.8.3.2
+
