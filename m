@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932827Ab3HNQ2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 12:28:48 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54107 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352Ab3HNQ2p (ORCPT
+	id S932794Ab3HNQ3a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 12:29:30 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:58613 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352Ab3HNQ33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 12:28:45 -0400
-Message-ID: <520BB03A.80908@wwwdotorg.org>
-Date: Wed, 14 Aug 2013 10:28:42 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Wed, 14 Aug 2013 12:29:29 -0400
+Message-ID: <520BB068.3070607@tilera.com>
+Date: Wed, 14 Aug 2013 12:29:28 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Sonic Zhang <sonic.adi@gmail.com>, Grant Likely <grant.likely@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: Re: [PATCH v4] pinctrl: pinmux: Don't free pins requested by other
- devices in pinmux_disable_setting.
-References: <1376458003-6244-1-git-send-email-sonic.adi@gmail.com> <CACRpkdZbZF6pHdfgrFqf-Uuoipv=vmK7Y4CCqPjj21QYN-zNfA@mail.gmail.com> <520BAEA6.2070205@wwwdotorg.org> <CACRpkdbJ4TYQ+X65166enY54w=4OjDrtEc-t4MzWYvBy=jt_jA@mail.gmail.com>
-In-Reply-To: <CACRpkdbJ4TYQ+X65166enY54w=4OjDrtEc-t4MzWYvBy=jt_jA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tile: use asm-generic/bitops/builtin-*.h
+References: <1376485650-5227-1-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1376485650-5227-1-git-send-email-akinobu.mita@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 10:27 AM, Linus Walleij wrote:
-> On Wed, Aug 14, 2013 at 6:21 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 08/14/2013 09:54 AM, Linus Walleij wrote:
->>> On Wed, Aug 14, 2013 at 7:26 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
->>>
->>>> From: Sonic Zhang <sonic.zhang@analog.com>
->>>>
->>>> One peripheral may share part of its pins with the 2nd
->>>> peripheral and the other pins with the 3rd. If it requests all pins
->>>> when part of them has already be requested and owned by the 2nd
->>>> peripheral, this request fails and pinmux_disable_setting() is called.
->>>> The pinmux_disable_setting() frees all pins of the first peripheral
->>>> without checking if the pin is owned by itself or the 2nd, which
->>>> results in the malfunction of the 2nd peripheral driver.
->>>>
->>>> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
->>>
->>> Hm it makes some sense so patch applied.
->>>
->>> That said I think we currently have drivers where a pin group
->>> mapped to a certain function in a certain setting  *usually*
->>> don't overlap with pins in another group used with another
->>> function, and having it so seems racy, i.e. it will be some
->>> first-come-first-serve effect.
->>>
->>> I will add a warning print.
->>
->> Surely there's a warning print already when the enable_setting() fails,
->> so we don't need to do any more warning prints when the free_setting()
->> cleans up after that?
-> 
-> Now I'm confused ... I added debug prints to pinmux_disable_setting()
-> which is where the patch hits? free_setting() is just an empty function
-> body still.
+On 8/14/2013 9:07 AM, Akinobu Mita wrote:
+> The definisions of __ffs(), __fls(), and ffs() for tile are almost same
+> as asm-generic/bitops-*.h.  The only difference is that it is defined
+> as __always_inline or inline.  So this switches to use those headers.
+>
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+>  arch/tile/include/asm/bitops.h | 38 +++-----------------------------------
+>  1 file changed, 3 insertions(+), 35 deletions(-)
 
-I wrote the wrong function name; s/free_setting/disable_setting/ in what
-I wrote.
+Thanks; taken into the tile tree (though I moved the new #includes to the end of the header with the other asm-generic #includes).
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
