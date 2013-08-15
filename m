@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760388Ab3HOGC6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:02:58 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:45043 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760356Ab3HOGC4 (ORCPT
+	id S1760431Ab3HOGDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:03:42 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41770 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359Ab3HOGDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:02:56 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v4 5/5] ARM: davinci: da850: add OF_DEV_AUXDATA entry for eth0.
-Date: Thu, 15 Aug 2013 11:31:37 +0530
-Message-Id: <1376546497-26931-6-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com>
+	Thu, 15 Aug 2013 02:03:39 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] x86, mm: Add comments for step_size shift
+Date: Wed, 14 Aug 2013 23:03:36 -0700
+Message-Id: <1376546616-17489-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+As request by hpa, add comments for why we choose 5 for
+step size shift.
 
-Add OF_DEV_AUXDATA for eth0  driver in da850 board dt
-file to use emac clock.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Tang Chen <tangchen@cn.fujitsu.com>
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- Changes for V2: none
- Changes for V3: none
- Changes for v4: none
+ arch/x86/mm/init.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
- arch/arm/mach-davinci/da8xx-dt.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
-index d172563..caa9202 100644
---- a/arch/arm/mach-davinci/da8xx-dt.c
-+++ b/arch/arm/mach-davinci/da8xx-dt.c
-@@ -44,6 +44,9 @@ static struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("ns16550a", 0x01d0c000, "serial8250.1", NULL),
- 	OF_DEV_AUXDATA("ns16550a", 0x01d0d000, "serial8250.2", NULL),
- 	OF_DEV_AUXDATA("ti,davinci_mdio", 0x01e24000, "davinci_mdio.0", NULL),
-+	OF_DEV_AUXDATA("ti,davinci-dm6467-emac", 0x01e20000, "davinci_emac.1",
-+		       NULL),
-+
- 	{}
- };
+Index: linux-2.6/arch/x86/mm/init.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/init.c
++++ linux-2.6/arch/x86/mm/init.c
+@@ -395,8 +395,23 @@ static unsigned long __init init_range_m
+ 	return mapped_ram_size;
+ }
  
--- 
-1.7.9.5
-
+-/* (PUD_SHIFT-PMD_SHIFT)/2 */
+-#define STEP_SIZE_SHIFT 5
++static unsigned long __init get_new_step_size(unsigned long step_size)
++{
++	/*
++	 * initial mapped size is PMD_SIZE, aka 2M.
++	 * We can not set step_size to be PUD_SIZE aka 1G yet.
++	 * In worse case, when 1G is cross the 1G boundary, and
++	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (aka 2M + 8k)
++	 * to map 1G range with PTE. Use 5 as shift for now.
++	 */
++	unsigned long new_step_size = step_size << 5;
++
++	if (new_step_size > step_size)
++		step_size = new_step_size;
++
++	return  step_size;
++}
++
+ void __init init_mem_mapping(void)
+ {
+ 	unsigned long end, real_end, start, last_start;
+@@ -445,7 +460,7 @@ void __init init_mem_mapping(void)
+ 		min_pfn_mapped = last_start >> PAGE_SHIFT;
+ 		/* only increase step_size after big range get mapped */
+ 		if (new_mapped_ram_size > mapped_ram_size)
+-			step_size <<= STEP_SIZE_SHIFT;
++			step_size = get_new_step_size(step_size);
+ 		mapped_ram_size += new_mapped_ram_size;
+ 	}
+ 
