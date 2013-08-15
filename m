@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758726Ab3HOP4A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 11:56:00 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:51927 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757370Ab3HOPz7 (ORCPT
+	id S1758862Ab3HOQD5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 12:03:57 -0400
+Received: from mail-in-13.arcor-online.net ([151.189.21.53]:45160 "EHLO
+	mail-in-13.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753603Ab3HOQDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 11:55:59 -0400
-Message-ID: <520CFA0D.4090905@itdev.co.uk>
-Date: Thu, 15 Aug 2013 16:55:57 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: rydberg@euromail.se
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: Atmel updates to atmel_mxt_ts touch controller driver - v6
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk> <20130718194739.GA559@polaris.bitmath.org>
-In-Reply-To: <20130718194739.GA559@polaris.bitmath.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 15 Aug 2013 12:03:50 -0400
+X-Greylist: Passed host: 188.104.3.105
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-13.arcor-online.net 016A0EE00E
+X-Greylist: Passed host: 188.104.3.105
+X-Greylist: Passed host: 188.104.3.105
+X-Greylist: Passed host: 188.104.3.105
+Subject: Re: [PATCH 35/36] hid: roccat: convert class code to use bin_attrs
+ in groups
+From: Stefan Achatz <erazor_de@users.sourceforge.net>
+Reply-To: erazor_de@users.sourceforge.net
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Aug 2013 18:03:46 +0200
+Message-ID: <1376582626.2452.26.camel@neuromancer.tessier-ashpool>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rydberg@euromail.se wrote:
-> First: thanks for the patches and you work on this driver.
+Hello Greg,
+looking through the patch I found the following:
 
-Thank you for your time in looking at these changes.
 
-> Now, I don't swear much, but I would like to emphasize line 161 of
-> Documentation/SubmittingPatches:
-> 
-> **Do not send more than 15 patches at once to the vger mailing lists!!!***
-> 
-> One reason that should be obvious by now is that your work will be
-> attended to much quicker. One may think that it is more efficient to
-> send the whole backlog at once, but in fact, the time it takes to get
-> a patchset accepted is inversely proportional to the length of the
-> patchset. So please, keep it small and simple next time,
 
-Apologies. I will split this lot up into several smaller series of patches.
+In hid-roccat-kone.c, PROFILE_ATTR macro:
+The line
+ .private = &profile_numbers[number],
+should read
+ .private = &profile_numbers[number-1],
+
+
+
+Regarding the compiler warning about unused pyra_sysfs_write_settings:
+The attribute is indeed readwrite, but the code to write is not standard
+code. The read function was created with the PYRA_SYSFS_R macro and the
+write function was written manually. Used were both by
+PYRA_BIN_ATTRIBUTE_RW.
+In this case I would keep the PYRA_SYSFS_* macros standalone so that the
+calling code looks like this:
+
+PYRA_SYSFS_W(control, CONTROL);
+PYRA_SYSFS_RW(info, INFO);
+PYRA_SYSFS_RW(profile_settings, PROFILE_SETTINGS);
+PYRA_SYSFS_RW(profile_buttons, PROFILE_BUTTONS);
+PYRA_SYSFS_R(settings, SETTINGS);
+
+PYRA_BIN_ATTRIBUTE_W(control, CONTROL);
+PYRA_BIN_ATTRIBUTE_RW(info, INFO);
+PYRA_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS);
+PYRA_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS);
+PYRA_BIN_ATTRIBUTE_RW(settings, SETTINGS);
+
+
+
+Another thing: Why does nobody (besides me) use the get_maintainer.pl
+script, so I have to search manually for patches regarding my code?
+
+Have a nice day,
+Stefan
+
