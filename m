@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3HOFRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 01:17:39 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:27203 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751851Ab3HOFRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 01:17:37 -0400
-X-IronPort-AV: E=Sophos;i="4.89,882,1367942400"; 
-   d="scan'208";a="8207199"
-Message-ID: <520C63F7.1080505@cn.fujitsu.com>
-Date: Thu, 15 Aug 2013 13:15:35 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl, lenb@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part5 5/7] memblock, mem_hotplug: Make memblock skip hotpluggable
- regions by default.
-References: <1375956979-31877-1-git-send-email-tangchen@cn.fujitsu.com> <1375956979-31877-6-git-send-email-tangchen@cn.fujitsu.com> <1376517265-8yi1139t-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1376517265-8yi1139t-mutt-n-horiguchi@ah.jp.nec.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/15 13:15:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/08/15 13:15:25,
-	Serialize complete at 2013/08/15 13:15:25
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S1753291Ab3HOFqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 01:46:34 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:31893 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359Ab3HOFqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 01:46:33 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Cc: Russ Anderson <rja@sgi.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] memblock, numa: Binary search node id
+Date: Wed, 14 Aug 2013 22:46:29 -0700
+Message-Id: <1376545589-32129-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2013 05:54 AM, Naoya Horiguchi wrote:
-> On Thu, Aug 08, 2013 at 06:16:17PM +0800, Tang Chen wrote:
->> --- a/mm/memblock.c
->> +++ b/mm/memblock.c
-> ...
->> @@ -719,6 +723,10 @@ void __init_memblock __next_free_mem_range_rev(u64 *idx, int nid,
->>   		if (nid != MAX_NUMNODES&&  nid != memblock_get_region_node(m))
->>   			continue;
->>
->> +		/* skip hotpluggable memory regions */
->> +		if (m->flags&  MEMBLOCK_HOTPLUG)
->> +			continue;
->> +
->>   		/* scan areas before each reservation for intersection */
->>   		for ( ; ri>= 0; ri--) {
->>   			struct memblock_region *r =&rsv->regions[ri];
->> -- 
-> 
-> Why don't you add this also in __next_free_mem_range()?
+Current early_pfn_to_nid() on arch that support memblock go
+over memblock.memory one by one, so will take too many try
+near the end.
 
-Hi Naoya,
+We can use existing memblock_search to find the node id for
+given pfn, that could save some time on bigger system that
+have many entries memblock.memory array.
 
-__next_free_mem_range_rev() is for for_each_free_mem_range_reverse(),
-which is
-only called in memblock_find_in_range_node().
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-But I think __next_free_mem_range() is for for_each_free_mem_range,
-which is
-called by many others. These callers could has nothing to do with memory
-hotplug.
-So I didn't add.
+---
+ include/linux/memblock.h |    2 ++
+ mm/memblock.c            |   18 ++++++++++++++++++
+ mm/page_alloc.c          |   19 +++++++++----------
+ 3 files changed, 29 insertions(+), 10 deletions(-)
 
-Maybe adding the check here is not good. I'm trying to find somewhere to
-check MEMBLOCK_HOTPLUG.
-
-Thanks. :)
+Index: linux-2.6/include/linux/memblock.h
+===================================================================
+--- linux-2.6.orig/include/linux/memblock.h
++++ linux-2.6/include/linux/memblock.h
+@@ -60,6 +60,8 @@ int memblock_reserve(phys_addr_t base, p
+ void memblock_trim_memory(phys_addr_t align);
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++int memblock_search_pfn_nid(unsigned long pfn, unsigned long *start_pfn,
++			    unsigned long  *end_pfn);
+ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+ 			  unsigned long *out_end_pfn, int *out_nid);
+ 
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -914,6 +914,24 @@ int __init_memblock memblock_is_memory(p
+ 	return memblock_search(&memblock.memory, addr) != -1;
+ }
+ 
++#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
++int __init_memblock memblock_search_pfn_nid(unsigned long pfn,
++			 unsigned long *start_pfn, unsigned long *end_pfn)
++{
++	struct memblock_type *type = &memblock.memory;
++	int mid = memblock_search(type, (phys_addr_t)pfn << PAGE_SHIFT);
++
++	if (mid == -1)
++		return -1;
++
++	*start_pfn = type->regions[mid].base >> PAGE_SHIFT;
++	*end_pfn = (type->regions[mid].base + type->regions[mid].size)
++			>> PAGE_SHIFT;
++
++	return type->regions[mid].nid;
++}
++#endif
++
+ /**
+  * memblock_is_region_memory - check if a region is a subset of memory
+  * @base: base of region to check
+Index: linux-2.6/mm/page_alloc.c
+===================================================================
+--- linux-2.6.orig/mm/page_alloc.c
++++ linux-2.6/mm/page_alloc.c
+@@ -4186,7 +4186,7 @@ int __meminit init_currently_empty_zone(
+ int __meminit __early_pfn_to_nid(unsigned long pfn)
+ {
+ 	unsigned long start_pfn, end_pfn;
+-	int i, nid;
++	int nid;
+ 	/*
+ 	 * NOTE: The following SMP-unsafe globals are only used early in boot
+ 	 * when the kernel is running single-threaded.
+@@ -4197,15 +4197,14 @@ int __meminit __early_pfn_to_nid(unsigne
+ 	if (last_start_pfn <= pfn && pfn < last_end_pfn)
+ 		return last_nid;
+ 
+-	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid)
+-		if (start_pfn <= pfn && pfn < end_pfn) {
+-			last_start_pfn = start_pfn;
+-			last_end_pfn = end_pfn;
+-			last_nid = nid;
+-			return nid;
+-		}
+-	/* This is a memory hole */
+-	return -1;
++	nid = memblock_search_pfn_nid(pfn, &start_pfn, &end_pfn);
++	if (nid != -1) {
++		last_start_pfn = start_pfn;
++		last_end_pfn = end_pfn;
++		last_nid = nid;
++	}
++
++	return nid;
+ }
+ #endif /* CONFIG_HAVE_ARCH_EARLY_PFN_TO_NID */
+ 
