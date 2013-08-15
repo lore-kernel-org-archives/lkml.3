@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826Ab3HOUu0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 16:50:26 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:51056 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab3HOUuZ (ORCPT
+	id S1752042Ab3HOUup (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 16:50:45 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:51371 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab3HOUuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 16:50:25 -0400
+	Thu, 15 Aug 2013 16:50:44 -0400
+Date: Thu, 15 Aug 2013 13:50:44 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Peter Maydell <peter.maydell@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        QEMU Developers <qemu-devel@nongnu.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
+Message-ID: <20130815205044.GA21599@roeck-us.net>
+References: <5207B3C3.9080508@roeck-us.net>
+ <20130811220450.GY23006@n2100.arm.linux.org.uk>
+ <52082EF8.10005@roeck-us.net>
+ <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com>
+ <20130813034054.GA18218@roeck-us.net>
+ <CAFEAcA_-S8z6ZMr8TMPvkcTyyCSMOj1DExVsY4JDQjRXDU5WGw@mail.gmail.com>
+ <20130815175428.GA18580@roeck-us.net>
+ <CAFEAcA_MyJPwo6Gd_dxeWM5q5-7MYqR6-rrePusFzYaGGckWJQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130814200549.21626.79779.stgit@bling.home>
-References: <20130814200549.21626.79779.stgit@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 15 Aug 2013 14:50:04 -0600
-Message-ID: <CAErSpo6zfR2TQViyKTr9mjWHSnp9Veo9wRN_eQCJU2YtabPRTA@mail.gmail.com>
-Subject: Re: [PATCH] pci: Add probe functions for bus and slot reset
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFEAcA_MyJPwo6Gd_dxeWM5q5-7MYqR6-rrePusFzYaGGckWJQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 2:06 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> Users of pci_reset_bus() and pci_reset_slot() need a way to probe
-> whether the bus or slot supports reset.  Add trivial helper functions
-> and export them as vfio-pci will make use of these.
->
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+On Thu, Aug 15, 2013 at 07:05:22PM +0100, Peter Maydell wrote:
+> On 15 August 2013 18:54, Guenter Roeck <linux@roeck-us.net> wrote:
+> > On Thu, Aug 15, 2013 at 05:45:42PM +0100, Peter Maydell wrote:
+> >> On 13 August 2013 04:40, Guenter Roeck <linux@roeck-us.net> wrote:
+> >> > Patch tested and working with qemu 1.5.2, using the configuration file
+> >> > from the yocto project. Patch applied on top of kernel version 3.11-rc5.
+> >>
+> >> OK, I tested this on PB926+PCI backplane hardware, and it is
+> >> definitely better than current mainline, in that the test USB
+> >> card that I have no longer causes the kernel to generate this sort of
+> >> backtrace:
+> >>
+> > Do you mean my patch fixes the traceback below as a side effect ?
+> > Would be great ... it would be one more reason to get it applied.
+> 
+> Yes, exactly -- the kernel currently has the wrong irq mapping,
+> which causes the traceback (ie h/w asserts irq 93 but the kernel
+> is listening on something else). That the patch fixes this confirms
+> that it is the behaviour of hardware as well as of QEMU.
+> 
+> >> However it still doesn't seem to reliably detect the USB harddisk
+> >> plugged into the card, so I think there may be further issues, possibly
+> >> some subset of those Arnd identified and fixed with this patch:
+> >> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/93397
+> >>
+> > Does it get better if you apply Arnd's patch ?
+> 
+> Arnd's patch is ancient and won't apply as is (due to intervening
+> changes and also because some of the things it fixes were fixed
+> in later patches); I'm currently trying to extract the relevant parts.
+> 
+> If you want you can confirm that I/O port PCI access is broken on
+> QEMU too -- disable CONFIG_SCSI_SYM53C8XX_MMIO so
+> the driver uses PCI IO rather than MMIO and you'll see QEMU's
+> SCSI device doesn't work any more.
+> 
+> >> so I'd like to continue testing.
+> >>
+> >> The other thing this patch should (IMHO) have is the
+> >> line in pci_versatile_setup() which tells QEMU that the
+> >> kernel really does expect hardware-like behaviour:
+> 
+> >> (Without this line QEMU will guess whether the kernel is broken
+> >> or not and will get it right most but not necessarily all of the time.)
+> >>
+> > Might make sense, but I think it should be a separate patch.
+> 
+> It needs to go in the same patch, because a kernel with the fixed
+> irq remapping must also tell QEMU it is fixed; if you split the
+> two then at the point between the two patches the kernel is
+> broken for bisection purposes.
+> 
+Thinking about it - is that really true ? My image with the patch applied
+works just fine under qemu 1.5.2, and unless I am missing something it won't
+work with qemu 1.4 anyway. So what exactly is broken ?
 
-Merged to the PCI "next" branch for v3.12, thanks.
-
-> ---
->
-> This is logically patch 10/9 for v5 pci: bus and slot reset interfaces.
-> If there's a need to re-spin anything I'll roll this in.
->
->  drivers/pci/pci.c   |   24 ++++++++++++++++++++++++
->  include/linux/pci.h |    2 ++
->  2 files changed, 26 insertions(+)
->
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index ba68451..888d847 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -3610,6 +3610,18 @@ static int pci_slot_reset(struct pci_slot *slot, int probe)
->  }
->
->  /**
-> + * pci_probe_reset_slot - probe whether a PCI slot can be reset
-> + * @slot: PCI slot to probe
-> + *
-> + * Return 0 if slot can be reset, negative if a slot reset is not supported.
-> + */
-> +int pci_probe_reset_slot(struct pci_slot *slot)
-> +{
-> +       return pci_slot_reset(slot, 1);
-> +}
-> +EXPORT_SYMBOL_GPL(pci_probe_reset_slot);
-> +
-> +/**
->   * pci_reset_slot - reset a PCI slot
->   * @slot: PCI slot to reset
->   *
-> @@ -3662,6 +3674,18 @@ static int pci_bus_reset(struct pci_bus *bus, int probe)
->  }
->
->  /**
-> + * pci_probe_reset_bus - probe whether a PCI bus can be reset
-> + * @bus: PCI bus to probe
-> + *
-> + * Return 0 if bus can be reset, negative if a bus reset is not supported.
-> + */
-> +int pci_probe_reset_bus(struct pci_bus *bus)
-> +{
-> +       return pci_bus_reset(bus, 1);
-> +}
-> +EXPORT_SYMBOL_GPL(pci_probe_reset_bus);
-> +
-> +/**
->   * pci_reset_bus - reset a PCI bus
->   * @bus: top level PCI bus to reset
->   *
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 1a8fd34..daf40cd 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -924,7 +924,9 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
->  int __pci_reset_function(struct pci_dev *dev);
->  int __pci_reset_function_locked(struct pci_dev *dev);
->  int pci_reset_function(struct pci_dev *dev);
-> +int pci_probe_reset_slot(struct pci_slot *slot);
->  int pci_reset_slot(struct pci_slot *slot);
-> +int pci_probe_reset_bus(struct pci_bus *bus);
->  int pci_reset_bus(struct pci_bus *bus);
->  void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
->  void pci_update_resource(struct pci_dev *dev, int resno);
->
+Thanks,
+Guenter
