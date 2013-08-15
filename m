@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab3HOPOU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 11:14:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38975 "EHLO mx2.suse.de"
+	id S1758568Ab3HOPOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 11:14:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31373 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755151Ab3HOPOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 11:14:19 -0400
-Date: Thu, 15 Aug 2013 17:14:16 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Tebulin <tebulin@googlemail.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert
- 53a59fc67!
-Message-ID: <20130815151416.GF27864@dhcp22.suse.cz>
-References: <520BB225.8030807@gmail.com>
- <20130814174039.GA24033@dhcp22.suse.cz>
- <CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com>
- <20130814182756.GD24033@dhcp22.suse.cz>
- <CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com>
- <520C9E78.2020401@gmail.com>
- <CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com>
- <20130815134031.GC27864@dhcp22.suse.cz>
- <20130815144600.GD27864@dhcp22.suse.cz>
- <20130815145332.GE27864@dhcp22.suse.cz>
+	id S1755151Ab3HOPO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 11:14:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,885,1367996400"; 
+   d="scan'208";a="381430010"
+Message-ID: <520CF04D.7020002@linux.intel.com>
+Date: Thu, 15 Aug 2013 08:14:21 -0700
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130815145332.GE27864@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, david@fromorbit.com,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+References: <520BB9EF.5020308@linux.intel.com> <20130814194359.GA22316@thunk.org> <520BED7A.4000903@intel.com> <20130814230648.GD22316@thunk.org> <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com> <20130815011101.GA3572@thunk.org>
+In-Reply-To: <20130815011101.GA3572@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-08-13 16:53:32, Michal Hocko wrote:
-> On Thu 15-08-13 16:46:00, Michal Hocko wrote:
-> > On Thu 15-08-13 15:40:31, Michal Hocko wrote:
-> > > On Thu 15-08-13 05:02:31, Linus Torvalds wrote:
-> > > > On Thu, Aug 15, 2013 at 2:25 AM, Ben Tebulin <tebulin@googlemail.com> wrote:
-> > > > >
-> > > > > I just cherry-picked e6c495a96ce0 into 3.9.11 and 3.7.10.
-> > > > > Unfortunately this does _not resolve_ my issue (too good to be true) :-(
-> > > > 
-> > > > Ho humm. I've found at least one other bug, but that one only affects
-> > > > hugepages. Do you perhaps have transparent hugepages enabled? But even
-> > > > then it looks quite unlikely.
-> > > 
-> > > __unmap_hugepage_range is hugetlb not THP if you had that one in mind.
-> > > And yes, it doesn't set the range which sounds buggy.
-> > 
-> > Or, did you mean tlb_remove_page called from zap_huge_pmd? That one
-> > should be safe as tlb_remove_pmd_tlb_entry sets need_flush and that
-> > means that the full range is flushed.
-> 
-> Dohh... But we need need_flush_all and that is not set here. So this
-> really looks buggy.
+On 08/14/2013 06:11 PM, Theodore Ts'o wrote:
+> The point is that if the goal is to measure page fault scalability, we
+> shouldn't have this other stuff happening as the same time as the page
+> fault workload.
 
-This is a really dumb attempt to fix this but maybe it is worth trying
-to confirm we are really seeing this problem. It still flushes too much
-potentially but I am not sure how to find out the proper start...
-Will think about it more.
----
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index a92012a..a16f452 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1381,7 +1381,11 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- 			VM_BUG_ON(!PageHead(page));
- 			tlb->mm->nr_ptes--;
- 			spin_unlock(&tlb->mm->page_table_lock);
--			tlb_remove_page(tlb, page);
-+			if (!__tlb_remove_page(tlb, page)) {
-+				tlb->start = 0;
-+				tlb->end = addr + HPAGE_SIZE;
-+				tlb_flush_mmu(tlb);
-+			}
- 		}
- 		pte_free(tlb->mm, pgtable);
- 		ret = 1;
--- 
-Michal Hocko
-SUSE Labs
+will-it-scale does several different tests probing at different parts of
+the fault path:
+
+https://www.sr71.net/~dave/intel/willitscale/systems/bigbox/3.11.0-rc2-dirty/foo.html
+
+It does that both for process and threaded workloads which lets it get
+pretty good coverage of different areas of code.
+
+I only posted data from half of one of these tests here because it was
+the only one that I found that both had noticeable overhead in the
+filesystem code.  It also showed substantial, consistent, and measurable
+deltas between the different filesystems.
