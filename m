@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab3HOIfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 04:35:06 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37829 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab3HOIfC (ORCPT
+	id S1753177Ab3HOIhL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 04:37:11 -0400
+Received: from oproxy14-pub.mail.unifiedlayer.com ([67.222.51.224]:34814 "HELO
+	oproxy14-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751302Ab3HOIhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 04:35:02 -0400
-Date: Thu, 15 Aug 2013 01:35:01 -0700 (PDT)
-Message-Id: <20130815.013501.1955235457701882095.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next v2 3/3] net/usb/r8152: enable interrupt
- transfer
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1376484880-741-3-git-send-email-hayeswang@realtek.com>
-References: <1376378913-879-1-git-send-email-hayeswang@realtek.com>
-	<1376484880-741-1-git-send-email-hayeswang@realtek.com>
-	<1376484880-741-3-git-send-email-hayeswang@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 15 Aug 2013 01:35:02 -0700 (PDT)
+	Thu, 15 Aug 2013 04:37:08 -0400
+From: Tao Ma <tm@tao.ma>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Cong Wang <amwang@redhat.com>, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: [PATCH] bond: Don't set skb->queue_mapping in netpoll.
+Date: Thu, 15 Aug 2013 16:36:48 +0800
+Message-Id: <1376555808-6531-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 42.120.72.201 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Wed, 14 Aug 2013 20:54:40 +0800
+From: Tao Ma <boyu.mt@taobao.com>
 
-> Use the interrupt transfer to replace polling link status.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+When we are using netpoll, we don't go through the normal
+transmit process. In this case, bond_select_queue is not called
+and qdisc_skb_cb(skb)->slave_dev_queue_mapping isn't set.
 
-Applied.
+So when netpoll_send_skb_on_dev calls ndo_start_xmit and we
+enter bond_dev_queue_xmit, we will set skb->queue_mapping to
+an invalid value and in some cases cause the driver panic the
+kernel(We meet with bnx2 panic because of a very large queue_mapping).
+
+This patch skip skb->queue_mapping if we find we are in netpoll.
+
+CC: "David S. Miller" <davem@davemloft.net>
+CC: Cong Wang <amwang@redhat.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ drivers/net/bonding/bond_main.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 07f257d..97b2f52 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -405,12 +405,13 @@ int bond_dev_queue_xmit(struct bonding *bond, struct sk_buff *skb,
+ 
+ 	BUILD_BUG_ON(sizeof(skb->queue_mapping) !=
+ 		     sizeof(qdisc_skb_cb(skb)->slave_dev_queue_mapping));
+-	skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
+ 
+ 	if (unlikely(netpoll_tx_running(bond->dev)))
+ 		bond_netpoll_send_skb(bond_get_slave_by_dev(bond, slave_dev), skb);
+-	else
++	else {
++		skb->queue_mapping = qdisc_skb_cb(skb)->slave_dev_queue_mapping;
+ 		dev_queue_xmit(skb);
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.7.0.4
+
