@@ -1,212 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab3HOVbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 17:31:13 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:52673 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab3HOVbL (ORCPT
+	id S1752614Ab3HOVbi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 17:31:38 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:41270 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab3HOVbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 17:31:11 -0400
-Date: Thu, 15 Aug 2013 14:31:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Bruce Fields <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>
-Subject: Re: memory barriers in flock (Re: [PATCH v3] locks: close potential
- race between setlease and open)
-Message-ID: <20130815213106.GP29406@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130815193203.GT17781@fieldses.org>
- <1373310444-25862-1-git-send-email-jlayton@redhat.com>
- <1376482310-7348-1-git-send-email-jlayton@redhat.com>
- <23198.1376599465@warthog.procyon.org.uk>
+	Thu, 15 Aug 2013 17:31:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <23198.1376599465@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081521-2398-0000-0000-0000018D1403
+In-Reply-To: <20130815212826.GS6023@dastard>
+References: <520BED7A.4000903@intel.com> <20130814230648.GD22316@thunk.org>
+ <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
+ <20130815011101.GA3572@thunk.org> <20130815021028.GM6023@dastard>
+ <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
+ <20130815060149.GP6023@dastard> <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
+ <20130815071141.GQ6023@dastard> <20130815074531.GA2147@quack.suse.cz> <20130815212826.GS6023@dastard>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 15 Aug 2013 14:31:14 -0700
+Message-ID: <CALCETrU=Ag1bvmc=9Wo8K66gOSYtCyncveYEycYdTd_1T9z-JA@mail.gmail.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 09:44:25PM +0100, David Howells wrote:
-> Bruce Fields <bfields@fieldses.org> wrote:
-> 
-> (Adding Paul McKenney who's good at this stuff)
+On Thu, Aug 15, 2013 at 2:28 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Thu, Aug 15, 2013 at 09:45:31AM +0200, Jan Kara wrote:
+>> On Thu 15-08-13 17:11:42, Dave Chinner wrote:
+>> > On Wed, Aug 14, 2013 at 11:14:37PM -0700, Andy Lutomirski wrote:
+>> > > On Wed, Aug 14, 2013 at 11:01 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > > > On Wed, Aug 14, 2013 at 09:32:13PM -0700, Andy Lutomirski wrote:
+>> > > >> On Wed, Aug 14, 2013 at 7:10 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > > >> > On Wed, Aug 14, 2013 at 09:11:01PM -0400, Theodore Ts'o wrote:
+>> > > >> >> On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
+>> > > >> >> > > It would be better to write zeros to it, so we aren't measuring the
+>> > > >> >> > > cost of the unwritten->written conversion.
+>> > > >> >> >
+>> > > >> >> > At the risk of beating a dead horse, how hard would it be to defer
+>> > > >> >> > this part until writeback?
+>> > > >> >>
+>> > > >> >> Part of the work has to be done at write time because we need to
+>> > > >> >> update allocation statistics (i.e., so that we don't have ENOSPC
+>> > > >> >> problems).  The unwritten->written conversion does happen at writeback
+>> > > >> >> (as does the actual block allocation if we are doing delayed
+>> > > >> >> allocation).
+>> > > >> >>
+>> > > >> >> The point is that if the goal is to measure page fault scalability, we
+>> > > >> >> shouldn't have this other stuff happening as the same time as the page
+>> > > >> >> fault workload.
+>> > > >> >
+>> > > >> > Sure, but the real problem is not the block mapping or allocation
+>> > > >> > path - even if the test is changed to take that out of the picture,
+>> > > >> > we still have timestamp updates being done on every single page
+>> > > >> > fault. ext4, XFS and btrfs all do transactional timestamp updates
+>> > > >> > and have nanosecond granularity, so every page fault is resulting in
+>> > > >> > a transaction to update the timestamp of the file being modified.
+>> > > >>
+>> > > >> I have (unmergeable) patches to fix this:
+>> > > >>
+>> > > >> http://comments.gmane.org/gmane.linux.kernel.mm/92476
+>> > > >
+>> > > > The big problem with this approach is that not doing the
+>> > > > timestamp update on page faults is going to break the inode change
+>> > > > version counting because for ext4, btrfs and XFS it takes a
+>> > > > transaction to bump that counter. NFS needs to know the moment a
+>> > > > file is changed in memory, not when it is written to disk. Also, NFS
+>> > > > requires the change to the counter to be persistent over server
+>> > > > failures, so it needs to be changed as part of a transaction....
+>> > >
+>> > > I've been running a kernel that has the file_update_time call
+>> > > commented out for over a year now, and the only problem I've seen is
+>> > > that the timestamp doesn't get updated :)
+>> > >
+>> > > I think I must be misunderstanding you (or vice versa).  I'm currently
+>> >
+>> > Yup, you are.
+>> >
+>> > > redoing the patches, and this time I'll do it for just the mm core and
+>> > > ext4.  The only change I'm proposing to ext4's page_mkwrite is to
+>> > > remove the file_update_time call.
+>> >
+>> > Right. Where does that end up? All the way down in
+>> > ext4_mark_iloc_dirty(), and that does:
+>> >
+>> >         if (IS_I_VERSION(inode))
+>> >             inode_inc_iversion(inode);
+>> >
+>> > The XFS transaction code is the same - deep inside it where an inode
+>> > is marked as dirty in the transaction, it bumps the same counter and
+>> > adds it to the transaction.
+>>   Yeah, I'd just add that ext4 maintains i_version only if it has been
+>> mounted with i_version mount option. But then NFS server would depend on
+>> c/mtime update so it won't help you much - you still should update at least
+>> one of i_version, ctime, mtime on page fault. OTOH if the filesystem isn't
+>> exported, you could avoid this relatively expensive dance and defer things
+>> as Andy suggests.
+>
+> The problem with "not exported, don't update" is that files can be
+> modified on server startup (e.g. after a crash) or in short
+> maintenance periods when the NFS service is down. When the server is
+> started back up, the change number needs to indicate the file has
+> been modified so that clients reconnecting to the server see the
+> change.
+>
+> IOWs, even if the NFS server is not up or the filesystem not
+> exported we still need to update change counts whenever a file
+> changes if we are going to tell the NFS server that we keep them...
 
-Well, I should be able to provide a more refined form of confusion...
+This will keep working as long as the clients are willing to wait for
+writeback (or msync, munmap, or exit) on the server.
 
-> > > v2:
-> > > - fix potential double-free of lease if second check finds conflict
-> > > - add smp_mb's to ensure that other CPUs see i_flock changes
-> > > 
-> > > v3:
-> > > - remove smp_mb calls. Partial ordering is unlikely to help here.
-> > 
-> > Forgive me here, I still don't understand.  So to simplify massively,
-> > the situation looks like:
-> >
-> > 	setlease		open
-> > 	------------		------
-> > 
-> > 	atomic_read		atomic_inc
-> > 	write i_flock		read i_flock
-> > 	atomic_read
-> 
-> Are the three atomic ops reading the same value?  If so, you can have smp_mb()
-> calls here:
-> 
-> 	atomic_read		atomic_inc
-> 				smp_mb()
-> 	write i_flock		read i_flock
-> 	smp_mb()
->  	atomic_read
-
-Yes, you need memory barrier of some form or another.  You can use
-smp_mb__after_atomic_inc() after the atomic_inc, which is lighter
-weight on x86.  Note that atomic_inc() does not return a value, and
-thus does not guarantee ordering of any sort.
-
-> I *think* that memory accesses in one place need to be reverse-ordered wrt to
-> those in the other place, so:
-> 
-> 	atomic_read		atomic_inc
-> 	smp_mb()		smp_mb()
-> 	write i_flock		read i_flock
->  	atomic_read
-> 
-> doesn't achieve anything.
-
-The only thing that this arrangement could achive would be if the
-atomic_ operations are all accessing the same variable, in which case
-if the first CPU's last atomic_read preceded the atomic_inc, then
-we would know that the first CPU's first atomic_inc also preceded
-that same atomic_inc.
-
-Let's add values and look at it a slightly different way:
-
-	CPU 0			CPU 1
-
-	r1 = atomic_read(&x);	atomic_inc(&x);
-	smp_mb();		smp_mb__after_atomic_inc()
-	i_flock = 1;		r3 = i_flock;
-	r2 = atomic_read(&x);
-
-Assume that the initial values of x and i_flock are zero.  (This might not
-make sense in the code, but you can substitute different values without
-changing the way this works.)
-
-Then if r2==0, we know that r1==0 as well.  Of course, if there were other
-atomic_inc(&x) operations in flight, it might be that r1!=r2, but we
-would know that r1 got an earlier value of x than r2.  If x is 64 bits,
-then we know that r1<r2.
-
-But as Dave points out, the placement of the memory barriers prevents
-us from drawing any similar conclusions about the accesses to i_flock.
-
-So let's take a similar look at the initial arrangement:
-
-	CPU 0			CPU 1
-
-	r1 = atomic_read(&x);	atomic_inc(&x);
-	i_flock = 1;		smp_mb__after_atomic_inc()
-	smp_mb();		r3 = i_flock;
-	r2 = atomic_read(&x);
-
-Again, assume that the initial values of x and of i_flock are zero.
-Assume also that this is the only code that executes.  Then if r3==0, we
-know that r2>=1.  In fact, if r3==0, we know that r2==1.  The load from
-i_flock() had to have come before the store, and so the memory barriers
-guarantee that the load into r2 must see the results of the atomic_inc().
-
-Similarly, if r2==0, we know that CPU 0's load into r2 came before
-CPU 1's atomic_inc().  The memory barriers then guarantee that CPU 0's
-store into i_flock precedes CPU 1's load from i_flock, so that r3==1.
-Cache coherence gives us another fact.  Both of CPU 0's atomic_read()s
-do volatile loads from the same variable, so they must happen in order
-(if they were not volatile, the compiler would be within its rights
-to interchange them).  Therefore, because CPU 0's atomic_read() into
-r2 precedes CPU 1's atomic_inc() -- recall that r2==0 -- we know that
-CPU 0's atomic_read() into r1 must also precede CPU 1's atomic_inc(),
-meaning that we know r1==0.
-
-Reasoning about memory barriers takes this same form.  If something after
-memory barrier A can be proven to have happened before something that
-came before memory barrier B, then everything before memory barrier A
-must happen before everything after memory barrier B.  You carry out
-the proof by looking at loads and stores to a given variable.
-
-This is a key point.  Memory barriers do nothing except for conditionally
-enforcing ordering.  They are not guaranteed to commit values to memory,
-to caches, or much of anything else.  Again, if you know that something
-following memory barrier A happened before something preceding memory
-barrier B, then you know that memory access preceding memory barrier A
-will be seen by a corresponding memory access following memory barrier B.
-
-> > And we want to be sure that either the setlease caller sees the result
-> > of the atomic_inc, or the opener sees the result of the write to
-> > i_flock.
-> > 
-> > As an example, suppose the above steps happen in the order:
-> > 
-> > 	atomic_read [A]
-> > 	write i_flock [B]
-> > 	atomic_read [C]
-> > 				atomic_inc [X]
-> > 				read i_flock [Y]
-> 
-> (I've labelled the operations for convenience)
-> 
-> > How do we know that the read of i_flock [Y] at the last step reflects the
-> > latest value of i_flock?  For example, couldn't the write still be stuck in
-> > first CPU's cache?
-> 
-> Putting in memory barriers doesn't help here.  If A, B and C are all performed
-> and committed to memory by the time X happens, then Y will see B, but C will
-> not see X.
-
-Indeed, you don't get both of these at once, except by accident.
-
-> The thing to remember is that smp_mb() is not a commit operation: it doesn't
-> cause a modification to be committed to memory.  The reason you use it is to
-> make sure the CPU actually does preceding memory ops - eg. makes the
-> modification in question - before it goes and does any following memory ops.
-> 
-> Linux requires the system to be cache-coherent, so if the write is actually
-> performed by a CPU then the result will be obtained by any other CPU, no
-> matter whether it's still lingering in the first CPU's caches or whether it's
-> been passed on.
-
-Or some later result, but yes.  Again, these accesses must be volatile
-(as in either atomic_read() or ACCESS_ONCE()), or the compiler is within
-its rights to do all sorts of mischief.
-
-> -*-
-> 
-> However, I could be wrong.  Memory barriers are mind-bending to try and think
-> through, especially when it's the operations being ordered are R-W vs R-W
-> rather than having W-W on at least one side.
-
-There are 16 combinations, all of which do something.  Some cases require
-an external store to prove anything, though.  For example:
-
-	CPU 0: r1 = ACCESS_ONCE(x); smp_mb(); r2 = ACCESS_ONCE(y);
-	CPU 1: r3 = ACCESS_ONCE(y); smp_mb(); r4 = ACCESS_ONCE(x);
-	CPU 2: ACCESS_ONCE(x) = 1;
-	CPU 3: ACCESS_ONCE(y) = 1;
-
-Here, we know that if r2==0&&r3==1, then it is impossible to also have
-r4==0&&r1==1.  Similarly, if r4==0&&r1==1, then it is impossible to also
-have r2==0&&r3==1.  If there were no stores, then of course the reads
-could not tell you anything about the ordering.
-
-> Hopefully Paul will be able to chime in
-
-Careful what you wish for!  ;-)
-
-							Thanx, Paul
-
+--Andy
