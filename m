@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760192Ab3HOUNm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 16:13:42 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:39317 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758434Ab3HOUNk (ORCPT
+	id S1760285Ab3HOURp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 16:17:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21362 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759977Ab3HOURo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 16:13:40 -0400
-Date: Thu, 15 Aug 2013 16:11:23 -0400 (EDT)
-From: Bud Brown <bud.brown@redhat.com>
-Reply-To: Bud Brown <bud.brown@redhat.com>
-To: Tomas Henzl <thenzl@redhat.com>
-Cc: "Mike Miller (OS Dev)" <Mike.Miller@hp.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        mikem@thumper.usa.hp.com, Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, LKML-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, scameron@beardog.cce.hp.com
-Message-ID: <1880433774.1915144.1376597483053.JavaMail.root@redhat.com>
-In-Reply-To: <520CB9C7.30307@redhat.com>
-References: <20130814205236.GB23042@beardog.cce.hp.com> <1376515627.2028.41.camel@dabdike.int.hansenpartnership.com> <48275AD710FCA34184C2B6186B4016B32735BD62@G6W2491.americas.hpqcorp.net> <520CB9C7.30307@redhat.com>
-Subject: Re: [PATCH 1/1] cciss: set max scatter gather entries to 32 on P600
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Thu, 15 Aug 2013 16:17:44 -0400
+Message-ID: <1376597702.24607.42.camel@concerto>
+Subject: Re: [RFC PATCH] Fix aio performance regression for database caused
+ by THP
+From: Khalid Aziz <khalid.aziz@oracle.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: aarcange@redhat.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        mgorman@suse.de, riel@redhat.com, minchan@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Thu, 15 Aug 2013 14:15:02 -0600
+In-Reply-To: <8738qakatu.fsf@tassilo.jf.intel.com>
+References: <1376590389.24607.33.camel@concerto>
+	 <8738qakatu.fsf@tassilo.jf.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF17 (Linux)/8.0.3_GA_5664)
-Thread-Topic: cciss: set max scatter gather entries to 32 on P600
-Thread-Index: JNRiWrfgLbzjSYFK1I94hYfS+Z/VWQ==
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-08-15 at 12:34 -0700, Andi Kleen wrote:
+> Khalid Aziz <khalid.aziz@oracle.com> writes:
+> 
+> > I am working with a tool that simulates oracle database I/O workload.
+> > This tool (orion to be specific -
+> > <http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
+> > allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag. 
+> 
+> Is this tool available for download?
+
+I am not sure if it is available separately. It is part of Oracle 11gR2
+release.
 
 > 
-> >
-> > James
-> >
-> > The patch origin is unknown. I got it from Tomas and Bud who think it may
-> > have originated from HP. I cleaned it up, compile tested it, and sent it
-> > on. I'll review my procedures for future patches.
-> >
-> > -- mikem
-> >
+> I would rather prefer to address the locking overhead in THP too.
+> 
+> The fundamental problem is that we have to touch all the pages?
 
-Patch originated from me, although Tomas did the heavy lifting via kernel bisect
-to localize the specific set of changes causing the performance regression.
-Its modeled on the other P600'ism in the driver.
+Not so much that THP has to touch all the pages, rather it checks the
+head and tail flags multiple times with the assumption they could change
+underneath. Then it executes memory barriers (in compound_trans_head())
+to force any updates to these flags from all cores. It also locks the
+head page (in put_compound_page()) which stops any other thread trying
+to put reference to one of the pages in the compound page. I see a lot
+of cycles being spent in compound_trans_head() and various atomic
+operations in the path added by THP. 
 
-bud
+--
+Khalid
+
 
