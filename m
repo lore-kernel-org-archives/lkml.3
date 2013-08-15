@@ -1,67 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab3HOWSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 18:18:50 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55936 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab3HOWSt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 18:18:49 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520D53CA.6040807@roeck-us.net>
-Date: Thu, 15 Aug 2013 15:18:50 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1752173Ab3HOWVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 18:21:40 -0400
+Received: from iona.labri.fr ([147.210.8.143]:37043 "EHLO iona.labri.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751516Ab3HOWVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 18:21:38 -0400
+Message-ID: <520D547F.2060600@labri.fr>
+Date: Thu, 15 Aug 2013 18:21:51 -0400
+From: Martin Peres <martin.peres@labri.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Peter Maydell <peter.maydell@linaro.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        QEMU Developers <qemu-devel@nongnu.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
-References: <5207B3C3.9080508@roeck-us.net> <20130811220450.GY23006@n2100.arm.linux.org.uk> <52082EF8.10005@roeck-us.net> <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com> <20130813034054.GA18218@roeck-us.net> <CAFEAcA_-S8z6ZMr8TMPvkcTyyCSMOj1DExVsY4JDQjRXDU5WGw@mail.gmail.com> <20130815175428.GA18580@roeck-us.net> <CAFEAcA_MyJPwo6Gd_dxeWM5q5-7MYqR6-rrePusFzYaGGckWJQ@mail.gmail.com> <20130815205044.GA21599@roeck-us.net> <CAFEAcA-ALD+dDWAB+Rd1V+TXQLYGe-qRKC0uFUP0Bt2SGfKDRg@mail.gmail.com>
-In-Reply-To: <CAFEAcA-ALD+dDWAB+Rd1V+TXQLYGe-qRKC0uFUP0Bt2SGfKDRg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: nouveau: temperature on nv40 is unavailable since ad40d73ef533ab0ad16b4a1ab2f7870c1f8ab954
+References: <1836330.fGgIDqPTNA@pali> <201308141102.47960@pali> <520C37DC.90902@labri.fr> <201308150924.49518@pali>
+In-Reply-To: <201308150924.49518@pali>
+Content-Type: multipart/mixed;
+ boundary="------------080801000607090805030108"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2013 02:49 PM, Peter Maydell wrote:
-> On 15 August 2013 21:50, Guenter Roeck <linux@roeck-us.net> wrote:
->> On Thu, Aug 15, 2013 at 07:05:22PM +0100, Peter Maydell wrote:
->>> It needs to go in the same patch, because a kernel with the fixed
->>> irq remapping must also tell QEMU it is fixed; if you split the
->>> two then at the point between the two patches the kernel is
->>> broken for bisection purposes.
->>>
->> Thinking about it - is that really true ? My image with the
->> patch applied works just fine under qemu 1.5.2, and unless
->> I am missing something it won't work with qemu 1.4 anyway.
->> So what exactly is broken ?
+This is a multi-part message in MIME format.
+--------------080801000607090805030108
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+
+On 15/08/2013 03:24, Pali Rohár wrote:
+> On Thursday 15 August 2013 04:07:24 Martin Peres wrote:
+>> On 14/08/2013 05:02, Pali Rohár wrote:
+>>> On Tuesday 13 August 2013 15:55:28 Martin Peres wrote:
+>>>> On 13/08/2013 09:53, Pali Rohár wrote:
+>>>>> On utorok, 13. augusta 2013 15:32:45 CEST, Martin Peres
+>>> wrote:
+>>>>>> On 13/08/2013 09:23, Pali Rohár wrote:
+>>>>>>> On Tuesday 13 August 2013 09:01:19 Martin Peres wrote:
+>>>>>>    ...
+>>>>>>
+>>>>>> You can check the temperature by running nvidia-settings.
+>>>>>> If you can't see the temperature in it, then nvidia
+>>>>>> doesn't support it on your card and
+>>>>>> I'm not sure we should :s
+>>>>>>
+>>>>>> Thanks for the vbios you sent me in private. For the
+>>>>>> others, the reason why he doesn't have temperature
+>>>>>> anymore is because his vbios lacks sensor calibration
+>>>>>> values.
+>>>>> In nvidia-settings tab "GPU 0 - (GeForce 6600 GT)" -->
+>>>>> "Thermal Settings" is:
+>>>>>
+>>>>> Thermal Sensor Information:
+>>>>> ID: 0
+>>>>> Target: GPU
+>>>>> Provider: GPU Internal
+>>>>> Temperature: 70 C (now)
+>>>>>
+>>>>> I looked in Windows program SpeedFan. It found Nvidia PCI
+>>>>> card and reported "GPU Temp" about 68-70 C. So it looks
+>>>>> like both nvidia driver and windows SpeedFan program
+>>>>> reading same values.
+>>>> Great, I'll cook you a patch in a bit and you'll see what
+>>>> the temperature is like. It won't be perfectly accurate
+>>>> but there is some kind of default for nvidia cards of this
+>>>> generation.
+>>> Ok, send me patch and I can try it if it will work and
+>>> report similar values as windows or nvidia driver.
+>> Sorry for the late answer.
+>>
+>> Please test this patch. Be aware that temperature with nouveau
+>> will be higher than with the blob.
+>> I only want to see if nouveau reports a temperature.
+>>
+>> The only way to be sure if the values are good-enough would be
+>> to use the blob and run:
+>> nvapeek 0x15b0
+>> Please send me the result along with the temperature reported
+>> by nvidia at the time of the peek.
+>>
+>> Martin
+>>
+>> PS: This patch has only be compile-tested, I don't have access
+>> to an nv4x right now.
+> Hello,
 >
-> You're OK unless the kernel happens to pick the same interrupt
-> number to write to PCI_INTERRUPT_LINE as one of the previous
-> broken kernel versions did (in which case QEMU will incorrectly
-> assume you're a broken kernel). This can't happen with the way
-> the kernel is currently picking interrupt numbers (ie with a
-> straightforward relationship between h/w irqs and values written),
-> but as I understand from Arnd there is a plan to move to a
-> different approach ("sparse irqs") at which point this won't hold:
-> http://lists.gnu.org/archive/html/qemu-devel/2013-03/msg04579.html
-> So it's better for the kernel to make sure it gets the
-> behaviour it wants rather than getting unpleasant surprises
-> later.
+> now after patch nouveau report temperature:
 >
+> $ sensors
+> ...
+> nouveau-pci-0500
+> Adapter: PCI adapter
+> temp1:        +63.0°C  (high = +95.0°C, hyst =  +3.0°C)
+>                         (crit = +145.0°C, hyst =  +2.0°C)
+>                         (emerg = +135.0°C, hyst =  +5.0°C)
 
-But doesn't that mean that there is _currently_ no problem ? If so,
-we can introduce the additional code when the problem really shows up.
-Being Preemptive is good, but if it is not really needed today
-I would rather have today's problems resolved and bother about tomorrow's
-when they show up.
+Ok, that was expected ;)
+> ...
+>
+> I found that nvidia binary driver has command line utility
+> nvidia-smi which report same temperature as X utility nvidia-
+> settings. So I will use nvidia-smi (if it is OK).
+>
+> And after reboot nvidia report another temperature value:
+>
+> $ nvidia-smi -q -d TEMPERATURE
+> ...
+> GPU 0000:05:00.0
+>      Temperature
+>          Gpu                     : 70 C
+>
+> Immediately I called nvapeek command:
+>
+> $ nvapeek 0x15b0
+> 000015b0: 1000008e
+>
+> So value reported by nouveau is lower than value reported by
+> nvidia binary driver.
+As you didn't run nvapeek 15b0 when running nouveau it is hard to tell 
+if it is due to
+calibration values or because the temperature was lower.
 
-Guenter
+Could you please read the temperature + peek 15b0 when running nouveau?
 
+Anyway, it is weird because I cannot find 70°C with 0x8e as an input 
+temperature and with
+the current default values :o
+> I wait some some and started nvidia-smi and nvapeek again, here
+> are results:
+>
+> $ nvidia-smi -q -d TEMPERATURE
+> ...
+> GPU 0000:05:00.0
+>      Temperature
+>          Gpu                     : 67 C
+>
+> $ nvapeek 0x15b0
+> 000015b0: 1000008e
+>
+> So it looks like that nvapeek returning always same value and
+> does not depends on temperature... It is OK?
+Well, it looks like the temperature reading is very noisy!
+Could you please get the temperature + peek when the card is as hot as 
+possible?
+
+There is a very effective solution to get a GPU hot, use a hair drier. 
+If you could get your
+GPU to at 110°C (or less, if you feel like it is too much), that could 
+help me check the formula
+and default values.
+
+PS: I attached a new version of the patch that should improve the 
+temperature accuracy for
+nv43s. Could you test it and send me your kernel log?
+
+--------------080801000607090805030108
+Content-Type: text/x-patch;
+ name="0001-drm-nv40-therm-set-default-calibration-values-if-nee.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-drm-nv40-therm-set-default-calibration-values-if-nee.pa";
+ filename*1="tch"
+
+>From 8c806fd49d87ecf57e98713537a7d23d1f7712d9 Mon Sep 17 00:00:00 2001
+From: Martin Peres <martin.peres@labri.fr>
+Date: Wed, 14 Aug 2013 22:00:48 -0400
+Subject: [PATCH] drm/nv40/therm: set default calibration values if needed
+
+Some vbios expose a thermal sensor but do not set default
+calibration values. As they are almost always the same, let's
+set some default ones.
+
+v2:
+- the nv43 requires a different offset numerator
+- cosmetic changes
+
+Signed-off-by: Martin Peres <martin.peres@labri.fr>
+---
+ .../drm/nouveau/core/include/subdev/bios/therm.h   |  1 +
+ drivers/gpu/drm/nouveau/core/subdev/bios/therm.c   |  1 +
+ drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c   | 43 +++++++++++++++++++---
+ drivers/gpu/drm/nouveau/core/subdev/therm/temp.c   |  5 +--
+ 4 files changed, 41 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/bios/therm.h b/drivers/gpu/drm/nouveau/core/include/subdev/bios/therm.h
+index 083541d..11b7993 100644
+--- a/drivers/gpu/drm/nouveau/core/include/subdev/bios/therm.h
++++ b/drivers/gpu/drm/nouveau/core/include/subdev/bios/therm.h
+@@ -10,6 +10,7 @@ struct nvbios_therm_threshold {
+ 
+ struct nvbios_therm_sensor {
+ 	/* diode */
++	int has_sensor;
+ 	s16 slope_mult;
+ 	s16 slope_div;
+ 	s16 offset_num;
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bios/therm.c b/drivers/gpu/drm/nouveau/core/subdev/bios/therm.c
+index 22a2057..16b763d 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bios/therm.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bios/therm.c
+@@ -95,6 +95,7 @@ nvbios_therm_sensor_parse(struct nouveau_bios *bios,
+ 			sensor_section++;
+ 			if (sensor_section == 0) {
+ 				offset = ((s8) nv_ro08(bios, entry + 2)) / 2;
++				sensor->has_sensor = 1;
+ 				sensor->offset_constant = offset;
+ 			}
+ 			break;
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c b/drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c
+index 002e51b..72b91d7 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c
+@@ -57,11 +57,47 @@ nv40_sensor_style(struct nouveau_therm *therm)
+ 	}
+ }
+ 
++static void
++nv40_therm_temp_safety_checks(struct nouveau_therm *therm)
++{
++	struct nouveau_therm_priv *priv = (void *)therm;
++	struct nvbios_therm_sensor *sensor = &priv->bios_sensor;
++	enum nv40_sensor_style style = nv40_sensor_style(therm);
++	struct nouveau_device *device = nv_device(therm);
++
++	/* if the slope or the offset is unset, do no use the sensor */
++	if (sensor->has_sensor && (!sensor->slope_div || !sensor->slope_mult ||
++	    !sensor->offset_num || !sensor->offset_den)) {
++
++		nv_info(therm, "Invalid sensor calibration values. "
++		               "Set default calibration values\n");
++
++		if (style == NEW_STYLE) {
++			sensor->slope_div = 10000;
++			sensor->slope_mult = 450;
++			sensor->offset_num = -25000;
++			sensor->offset_den = 100;
++		} else 	if (style == OLD_STYLE) {
++			sensor->slope_div = 1000;
++			sensor->slope_mult = 792;
++			if (device->chipset == 0x43)
++				sensor->offset_num = 1806;
++			else
++				sensor->offset_num = 2306;
++			sensor->offset_den = 100;
++		}
++	}
++}
++
++
+ static int
+ nv40_sensor_setup(struct nouveau_therm *therm)
+ {
+ 	enum nv40_sensor_style style = nv40_sensor_style(therm);
+ 
++	/* set default values for the temperature if needed */
++	nv40_therm_temp_safety_checks(therm);
++
+ 	/* enable ADC readout and disable the ALARM threshold */
+ 	if (style == NEW_STYLE) {
+ 		nv_mask(therm, 0x15b8, 0x80000000, 0);
+@@ -93,11 +129,6 @@ nv40_temp_get(struct nouveau_therm *therm)
+ 	} else
+ 		return -ENODEV;
+ 
+-	/* if the slope or the offset is unset, do no use the sensor */
+-	if (!sensor->slope_div || !sensor->slope_mult ||
+-	    !sensor->offset_num || !sensor->offset_den)
+-	    return -ENODEV;
+-
+ 	core_temp = core_temp * sensor->slope_mult / sensor->slope_div;
+ 	core_temp = core_temp + sensor->offset_num / sensor->offset_den;
+ 	core_temp = core_temp + sensor->offset_constant - 8;
+@@ -171,7 +202,7 @@ nv40_therm_intr(struct nouveau_subdev *subdev)
+ 	struct nouveau_therm *therm = nouveau_therm(subdev);
+ 	uint32_t stat = nv_rd32(therm, 0x1100);
+ 
+-	/* traitement */
++	/* TODO: do something? Need more RE first */
+ 
+ 	/* ack all IRQs */
+ 	nv_wr32(therm, 0x1100, 0x70000);
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/therm/temp.c b/drivers/gpu/drm/nouveau/core/subdev/therm/temp.c
+index dde746c..053034e 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/therm/temp.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/therm/temp.c
+@@ -49,9 +49,8 @@ nouveau_therm_temp_set_defaults(struct nouveau_therm *therm)
+ 	priv->bios_sensor.thrs_shutdown.hysteresis = 5; /*not that it matters */
+ }
+ 
+-
+ static void
+-nouveau_therm_temp_safety_checks(struct nouveau_therm *therm)
++nouveau_therm_sensor_safety_checks(struct nouveau_therm *therm)
+ {
+ 	struct nouveau_therm_priv *priv = (void *)therm;
+ 	struct nvbios_therm_sensor *s = &priv->bios_sensor;
+@@ -239,7 +238,7 @@ nouveau_therm_sensor_ctor(struct nouveau_therm *therm)
+ 	if (nvbios_therm_sensor_parse(bios, NVBIOS_THERM_DOMAIN_CORE,
+ 				      &priv->bios_sensor))
+ 		nv_error(therm, "nvbios_therm_sensor_parse failed\n");
+-	nouveau_therm_temp_safety_checks(therm);
++	nouveau_therm_sensor_safety_checks(therm);
+ 
+ 	return 0;
+ }
+-- 
+1.8.3.4
+
+
+--------------080801000607090805030108--
