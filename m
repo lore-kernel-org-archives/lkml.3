@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560Ab3HOPgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 11:36:06 -0400
-Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:44328 "EHLO
-	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755854Ab3HOPgE (ORCPT
+	id S1757902Ab3HOPgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 11:36:12 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40055 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757637Ab3HOPgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 11:36:04 -0400
-X-Greylist: delayed 1040 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Aug 2013 11:36:04 EDT
-Date: Thu, 15 Aug 2013 15:18:40 +0000
-From: Christoph Lameter <cl@gentwo.org>
-To: Minchan Kim <minchan@kernel.org>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, k.kozlowski@samsung.com,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
-        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
-        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC 0/3] Pin page control subsystem
-In-Reply-To: <20130815044834.GB3139@gmail.com>
-Message-ID: <00000140828ea17e-d69af79a-1d8e-4df2-9513-492df5e00afc-000000@email.amazonses.com>
-References: <1376377502-28207-1-git-send-email-minchan@kernel.org> <00000140787b6191-ae3f2eb1-515e-48a1-8e64-502772af4700-000000@email.amazonses.com> <20130814001236.GC2271@bbox> <000001407dafbe92-7b2b4006-2225-4f0b-b23b-d66101a995aa-000000@email.amazonses.com>
- <20130814164705.GD2706@gmail.com> <000001407dc3c33b-4139d615-aecc-4745-a9b4-c84949f6a8f4-000000@email.amazonses.com> <20130815044834.GB3139@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.08.15-54.240.9.99
+	Thu, 15 Aug 2013 11:36:09 -0400
+From: Pawel Moll <pawel.moll@arm.com>
+To: Anton Vorontsov <anton@enomsg.org>, David Woodhouse <dwmw2@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH] power/reset: Make vexpress driver depend on required infrastructure
+Date: Thu, 15 Aug 2013 16:35:52 +0100
+Message-Id: <1376580952-21677-1-git-send-email-pawel.moll@arm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130815114401.GD23006@n2100.arm.linux.org.uk>
+References: <20130815114401.GD23006@n2100.arm.linux.org.uk>
+X-OriginalArrivalTime: 15 Aug 2013 15:36:05.0771 (UTC) FILETIME=[27F005B0:01CE99CD]
+X-MC-Unique: 113081516360700201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7FFaOHG016579
 
-On Thu, 15 Aug 2013, Minchan Kim wrote:
+ARM Versatile Express reset driver requires platform-specific
+config infrastructure to be present in the kernel. When
+VEXPRESS_CONFIG is not selected, the build will fail like this:
 
-> Now mlock pages could be migrated in case of CMA so I think it's not a
-> big problem to migrate it for other cases.
-> I remember You and Peter argued what's the mlock semainc of pin POV
-> and as I remember correctly, Peter said mlock doesn't mean pin so
-> we could migrate it but you didn't agree. Right?
+drivers/built-in.o: In function `vexpress_reset_do.clone.0':
+iio-trig-interrupt.c:(.text+0x1aff38): undefined reference to `__vexpress_config_func_get'
+iio-trig-interrupt.c:(.text+0x1aff4c): undefined reference to `vexpress_config_write'
 
-mlock means it can be migrated. Pinning is currently done by increasing
-the page count. Migration will be attempted but it will fail since the
-references cannot be all removed. Peter proposed that mlock would work
-like pinning so that a migration of the page would not be attempted.
+Added required dependency to the Kconfig entry.
 
-My concern is not only about migration but about a general way of pinning
-pages. Having mlock and pinning with different semantics is already an
-issue as the conversation with Peter brought out. Now we are
-adding yet another way that pinning is used.
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+---
+ drivers/power/reset/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index ee039dc..26d79df 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -34,7 +34,7 @@ config POWER_RESET_RESTART
+ config POWER_RESET_VEXPRESS
+ 	bool "ARM Versatile Express power-off and reset driver"
+ 	depends on ARM || ARM64
+-	depends on POWER_RESET
++	depends on POWER_RESET && VEXPRESS_CONFIG
+ 	help
+ 	  Power off and reset support for the ARM Ltd. Versatile
+ 	  Express boards.
+-- 
+1.8.1.2
+
+
