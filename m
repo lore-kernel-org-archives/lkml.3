@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab3HONxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 09:53:17 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:42923 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab3HONxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 09:53:16 -0400
-Date: Thu, 15 Aug 2013 15:53:14 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf x86: Make intel_pmu_enable_all to enable only
- active events
-Message-ID: <20130815135314.GE19750@two.firstfloor.org>
-References: <1376411952-16718-1-git-send-email-jolsa@redhat.com>
- <1376411952-16718-2-git-send-email-jolsa@redhat.com>
- <20130815114040.GR24092@twins.programming.kicks-ass.net>
+	id S1757828Ab3HON4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 09:56:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60765 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756602Ab3HON4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 09:56:33 -0400
+Date: Thu, 15 Aug 2013 14:56:27 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Subject: Re: kswapd skips compaction if reclaim order drops to zero?
+Message-ID: <20130815135627.GX2296@suse.de>
+References: <CAJd=RBBF2h_tRpbTV6OkxQOfkvKt=ebn_PbE8+r7JxAuaFZxFQ@mail.gmail.com>
+ <20130815104727.GT2296@suse.de>
+ <20130815134139.GC8437@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20130815114040.GR24092@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130815134139.GC8437@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 15, 2013 at 10:41:39PM +0900, Minchan Kim wrote:
+> Hey Mel,
 > 
-> I think its a NOP; this is the global ctrl register but
-> intel_pmu_disable_event() writes PERFEVTSELx.EN = 0, so even if you
-> enable it in the global mask, the event should still be disabled.
+> On Thu, Aug 15, 2013 at 11:47:27AM +0100, Mel Gorman wrote:
+> > On Thu, Aug 15, 2013 at 06:02:53PM +0800, Hillf Danton wrote:
+> > > If the allocation order is not high, direct compaction does nothing.
+> > > Can we skip compaction here if order drops to zero?
+> > > 
+> > 
+> > If the allocation order is not high then
+> > 
+> > pgdat_needs_compaction == (order > 0) == false == no calling compact_pdatt
+> > 
+> > In the case where order is reset to 0 due to fragmentation then it does
+> > call compact_pgdat but it does no work due to the cc->order check in
+> > __compact_pgdat.
+> > 
+> 
+> I am looking at mmotm-2013-08-07-16-55 but couldn't find cc->order
+> check right before compact_zone in __comact_pgdat.
+> Could you pinpoint code piece?
+> 
 
-Yes the hardware ANDs the various enable bits in the different
-registers.
+Thanks, I screwed up as that check happens too late. However, it still
+ends up not mattering because it does this
 
--andi
+compact_pgdat
+  -> __compact_pgdat
+    -> compact_zone
+      -> compaction_suitable
+
+For order == 0, compaction_suitable will return either COMPACT_SKIPPED
+(if the watermarks are not met) and COMPACT_PARTIAL otherwise. Either
+way, compaction doesn't run.
+
+-- 
+Mel Gorman
+SUSE Labs
