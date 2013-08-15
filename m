@@ -1,84 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758587Ab3HOALy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 20:11:54 -0400
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:53849 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757772Ab3HOALw (ORCPT
+	id S1758388Ab3HOAPD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 20:15:03 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:38296 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab3HOAPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 20:11:52 -0400
+	Wed, 14 Aug 2013 20:15:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130814155742.d3cd651e40e552696667e4f2@linux-foundation.org>
-References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
-	<20130805152206.76462cc4a42e51b16a0532f1@linux-foundation.org>
-	<C3050A4DBA34F345975765E43127F10F1C06237C@szxeml512-mbs.china.huawei.com>
-	<20130814155742.d3cd651e40e552696667e4f2@linux-foundation.org>
-Date: Wed, 14 Aug 2013 17:11:51 -0700
-Message-ID: <CAN8TOE-aGcKQNayzEVQaS1wJ_Uqp3RAZ5pTuVEhaaY9f487-xA@mail.gmail.com>
-Subject: Re: [PATCH] block: add command line partition parser
-From: Brian Norris <computersforpeace@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Caizhiyong <caizhiyong@huawei.com>, Karel Zak <kzak@redhat.com>,
-        linux-mtd@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Huang Shijie <b32955@freescale.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 14 Aug 2013 17:14:40 -0700
+Message-ID: <CALCETrXmy1KwGUNbG0pgsbAt=mk27P3xd0ja4i9sPB6RhbcOeg@mail.gmail.com>
+Subject: mei oopses at startup if it's built-in (3.11-rc5)
+To: Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 3:57 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 13 Aug 2013 06:02:17 +0000 Caizhiyong <caizhiyong@huawei.com> wrote:
->
->> move the command line parser to a separate module, and change it into
->> library-style code.
->>
->> reference: https://lkml.org/lkml/2013/8/6/550
+It blows up early enough that it's awkward to get the whole oops, but
+it's in the probe function.  If it's a module, I get instead:
 
-The most recent patch is an addendum to this linked patch then?
+[   73.401679] mei_me 0000:00:16.0: Device doesn't have valid ME Interface
+[   73.401684] mei_me 0000:00:16.0: initialization failed.
 
-> Well OK.  But to prove the library's usefulness and to generally clean
-> up the kernel, someone needs to sign up to the task of converting
-> drivers/mtd/cmdlinepart.c to use this code.
->
-> I've been hopefully cc'ing various MTD people but am not being
-> overwhelmed with waves of enthusiasm ;)
+Let me know if I should debug further, but this may be obvious.
 
-"I've been" implies that you have done so prior to this email. And
-"people" implies more than one person. I see that you CC'd David
-Woodhouse over a week ago, but he's fairly silent these days on MTD
-things. It's Artem or me who handle most of the day-to-day of MTD. And
-this is the first time I've seen this! (BTW, please include
-linux-mtd@lists.infradead.org for anything involving MTD.)
-
-This seems reasonable, and I'd be willing to work with this proposal.
-
-Caizhiyong, can you submit a clear single patch (or series of
-patches), CC'd to linux-mtd at least? Then we can see about supporting
-it in MTD. It doesn't look too difficult, but I need to check that it
-faithfully mimics the capability we currently rely on. There have been
-previous discussions on changing it, but this was rejected in favor of
-allowing more flexibility. Here's part of one such conversation:
-
-http://lists.infradead.org/pipermail/linux-mtd/2012-August/043599.html
-http://lists.infradead.org/pipermail/linux-mtd/2012-September/043825.html
-http://lists.infradead.org/pipermail/linux-mtd/2012-December/045322.html
-
-So I would recommend:
-(1) consider carefully the implications of your command-line format
-now, rather than later
-(2) if you want MTD to use it, it needs to support the features we use now
-
-Some particular cases to consider: overlapping partitions (how do
-block devices handle overlapping partitions?), out-of-order
-specification, zero sized partitions, mixed syntax (some specified
-with an offset, some not), multiple '-' partitions.
-
-Anyway, if you resend, we can review.
-
-Thanks,
-Brian
+--Andy
