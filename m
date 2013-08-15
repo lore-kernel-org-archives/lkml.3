@@ -1,53 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760504Ab3HOHxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 03:53:42 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:48446 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab3HOHxl (ORCPT
+	id S1760525Ab3HOHy5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 03:54:57 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:63132 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755599Ab3HOHyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 03:53:41 -0400
+	Thu, 15 Aug 2013 03:54:54 -0400
+Message-ID: <520C8947.4020906@ozlabs.ru>
+Date: Thu, 15 Aug 2013 17:54:47 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1376461201-7413-1-git-send-email-sonic.adi@gmail.com>
-References: <1376461201-7413-1-git-send-email-sonic.adi@gmail.com>
-Date: Thu, 15 Aug 2013 09:53:40 +0200
-X-Google-Sender-Auth: gCBibemDFkyvoCSIEZ7zAyqYFIM
-Message-ID: <CAMuHMdX+217ti8ULKhOU35vZjD7bnYL0D4HbpvFG1z93Cc8NJA@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: ADI Linux development mailing lists change
- to the new server.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Graf <agraf@suse.de>
+CC: linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 03/10] KVM: PPC: reserve a capability and ioctl numbers
+ for realmode VFIO
+References: <1375332272-22176-1-git-send-email-aik@ozlabs.ru> <1375332272-22176-4-git-send-email-aik@ozlabs.ru> <ED8250FB-B0A8-4C32-A960-20ADB5742D2B@suse.de> <520C81BE.70002@ozlabs.ru> <552A034A-CD3F-4737-B08A-E892E6420B83@suse.de> <836F3C3A-0031-4A16-B0CE-E6C1BA4925E4@suse.de> <520C8661.2000406@ozlabs.ru> <162759CE-0031-4571-A4A3-3BFE16445066@suse.de>
+In-Reply-To: <162759CE-0031-4571-A4A3-3BFE16445066@suse.de>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 8:20 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
->  ANALOG DEVICES INC ASOC DRIVERS
-> -L:     uclinux-dist-devel@blackfin.uclinux.org
-> +L:     adi-buidroot-devel@lists.sourceforge.net
+On 08/15/2013 05:43 PM, Alexander Graf wrote:
+> 
+> On 15.08.2013, at 09:42, Alexey Kardashevskiy wrote:
+> 
+>> On 08/15/2013 05:25 PM, Alexander Graf wrote:
+>>>
+>>> On 15.08.2013, at 09:24, Alexander Graf wrote:
+>>>
+>>>>
+>>>> On 15.08.2013, at 09:22, Alexey Kardashevskiy wrote:
+>>>>
+>>>>> On 08/15/2013 05:16 PM, Alexander Graf wrote:
+>>>>>>
+>>>>>> On 01.08.2013, at 06:44, Alexey Kardashevskiy wrote:
+>>>>>>
+>>>>>>> This is to reserve a capablity number for upcoming support
+>>>>>>> of VFIO-IOMMU DMA operations in real mode.
+>>>>>>>
+>>>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>>>>>>
+>>>>>>> ---
+>>>>>>> Changes:
+>>>>>>> 2013/07/16:
+>>>>>>> * changed the number
+>>>>>>>
+>>>>>>> 2013/07/11:
+>>>>>>> * changed order in a file, added comment about a gap in ioctl number
+>>>>>>>
+>>>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>>>>>>> ---
+>>>>>>> include/uapi/linux/kvm.h | 4 ++++
+>>>>>>> 1 file changed, 4 insertions(+)
+>>>>>>>
+>>>>>>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+>>>>>>> index 99c2533..53c3f1f 100644
+>>>>>>> --- a/include/uapi/linux/kvm.h
+>>>>>>> +++ b/include/uapi/linux/kvm.h
+>>>>>>> @@ -668,6 +668,7 @@ struct kvm_ppc_smmu_info {
+>>>>>>> #define KVM_CAP_IRQ_XICS 92
+>>>>>>> #define KVM_CAP_ARM_EL1_32BIT 93
+>>>>>>> #define KVM_CAP_SPAPR_MULTITCE 94
+>>>>>>> +#define KVM_CAP_SPAPR_TCE_IOMMU 95
+>>>>>>>
+>>>>>>> #ifdef KVM_CAP_IRQ_ROUTING
+>>>>>>>
+>>>>>>> @@ -933,6 +934,9 @@ struct kvm_s390_ucas_mapping {
+>>>>>>> #define KVM_ARM_SET_DEVICE_ADDR	  _IOW(KVMIO,  0xab, struct kvm_arm_device_addr)
+>>>>>>> /* Available with KVM_CAP_PPC_RTAS */
+>>>>>>> #define KVM_PPC_RTAS_DEFINE_TOKEN _IOW(KVMIO,  0xac, struct kvm_rtas_token_args)
+>>>>>>> +/* 0xad and 0xaf are already taken */
+>>>>>>
+>>>>>> so 0xad and 0xaf are already taken? where?
+>>>>>
+>>>>> Mistype :( s/af/ae/
+>>>>>
+>>>>> They are taken in this file:
+>>>>>
+>>>>> 1016 /* VM is being stopped by host */
+>>>>> 1017 #define KVM_KVMCLOCK_CTRL         _IO(KVMIO,   0xad)
+>>>>> 1018 #define KVM_ARM_VCPU_INIT         _IOW(KVMIO,  0xae, struct kvm_vcpu_init)
+>>>>
+>>>> Could you please make sure that whoever reads the comment in a year still knows where to look? :)
+>>>
+>>> Something like
+>>>
+>>>  /* 0xad is taken by KVM_KVMCLOCK_CTRL */
+>>>  /* 0xaf is taken by KVM_ARM_VCPU_INIT */
+>>
+>>
+>> Missed this mail and reposted without this comment but updated commit
+>> message saying where they are used. Repost again?
+> 
+> The commit message doesn't really help, since you don't see that one when you read the header file later. So yes, please.
 
-adi-buildroot-devel@lists.sourceforge.net, unless you really don't want to
-receive big reports and patches :-)
 
-Typo all over the place.
+Ok. Reposted as "[PATCH v8] KVM: PPC: reserve a capability and ioctl
+numbers for realmode VFIO". Thank you. Sorry for my disturbing ignorance.
 
->  L:     alsa-devel@alsa-project.org (moderated for non-subscribers)
->  W:     http://blackfin.uclinux.org/
->  S:     Supported
-> @@ -1661,56 +1661,54 @@ F:      fs/bfs/
->  F:     include/uapi/linux/bfs_fs.h
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Alexey
