@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760285Ab3HOURp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 16:17:45 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21362 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759977Ab3HOURo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 16:17:44 -0400
-Message-ID: <1376597702.24607.42.camel@concerto>
-Subject: Re: [RFC PATCH] Fix aio performance regression for database caused
- by THP
-From: Khalid Aziz <khalid.aziz@oracle.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: aarcange@redhat.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        mgorman@suse.de, riel@redhat.com, minchan@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 15 Aug 2013 14:15:02 -0600
-In-Reply-To: <8738qakatu.fsf@tassilo.jf.intel.com>
-References: <1376590389.24607.33.camel@concerto>
-	 <8738qakatu.fsf@tassilo.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1760389Ab3HOU1j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 16:27:39 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39239 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760249Ab3HOU1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 16:27:37 -0400
+Message-ID: <520D398D.9040806@ti.com>
+Date: Thu, 15 Aug 2013 16:26:53 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Sricharan R <r.sricharan@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Nishanth Menon <nm@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+References: <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com> <51F0031B.1050307@ti.com> <51F00530.9090703@ti.com> <51F02069.3050207@ti.com> <51F0223E.4050008@ti.com> <51F0240F.3050507@ti.com> <20130813081003.GU7656@atomide.com> <520A02BA.4090805@ti.com> <CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com>
+In-Reply-To: <CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-15 at 12:34 -0700, Andi Kleen wrote:
-> Khalid Aziz <khalid.aziz@oracle.com> writes:
+On Thursday 15 August 2013 04:01 PM, Linus Walleij wrote:
+> On Tue, Aug 13, 2013 at 11:56 AM, Sricharan R <r.sricharan@ti.com> wrote:
 > 
-> > I am working with a tool that simulates oracle database I/O workload.
-> > This tool (orion to be specific -
-> > <http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>)
-> > allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag. 
+>>  Initially irqchip was discussed, but we also have a DMA crossbar
+>>  to map the dma-requests. Since both irq/dma crossbars should be handled,
+>>  pinctrl was suggested as the appropriate place to handle this.
 > 
-> Is this tool available for download?
+> I think it is better to use irqchip.
+>
+Did you happen to read the thread why irqchip is in-appropriate
+for such an IP. As I said earlier, an IRQ-chip always need a
+real IRQ link (even for the chained one) to the primary irqchip.
 
-I am not sure if it is available separately. It is part of Oracle 11gR2
-release.
+This IP is just dummy IP makes the connections for the primary
+irqchip(read GIC). And its use only limited to make the
+connection between the peripheral IRQ event to the GIC IRQ line.
 
+I don't see how you can make this happen with an irqchip
+infrastructure.
+
+If you have a idea to make that work, we can go with that
+since for time being we can ignore the DMA event related need
+of this IP.
+ 
+> For DMA there is already an arbiter mechanism for arbitration of
+> virtual channels over physical channels, this is not much different,
+> the DMA might need some different tweaking but should be solved
+> in that subsystem I think.
+>
+Sure. The IP won't be limited to DMA and IRQ lines but any other events
+like gpio etc in future.
+ 
+> I don't see any way to really abstract this pretty simple crossbar
+> for reuse across subsystems.
 > 
-> I would rather prefer to address the locking overhead in THP too.
-> 
-> The fundamental problem is that we have to touch all the pages?
+This exactly the reason, i am against idea of over-engineering the
+simple IP whose only job is to make the physical wire connection
+in software where as this is generally done in RTL by default on
+most of the SOCs.
 
-Not so much that THP has to touch all the pages, rather it checks the
-head and tail flags multiple times with the assumption they could change
-underneath. Then it executes memory barriers (in compound_trans_head())
-to force any updates to these flags from all cores. It also locks the
-head page (in put_compound_page()) which stops any other thread trying
-to put reference to one of the pages in the compound page. I see a lot
-of cycles being spent in compound_trans_head() and various atomic
-operations in the path added by THP. 
-
---
-Khalid
-
+Regards,
+Santosh
 
