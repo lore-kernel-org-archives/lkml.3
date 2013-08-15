@@ -1,61 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab3HOTbz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 15:31:55 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:47387 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759269Ab3HOTbx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 15:31:53 -0400
-Message-ID: <520D2CAE.3090501@cogentembedded.com>
-Date: Thu, 15 Aug 2013 23:31:58 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1759538Ab3HOTcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 15:32:12 -0400
+Received: from fieldses.org ([174.143.236.118]:56011 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758730Ab3HOTcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 15:32:09 -0400
+Date: Thu, 15 Aug 2013 15:32:03 -0400
+From: Bruce Fields <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH v3] locks: close potential race between setlease and open
+Message-ID: <20130815193203.GT17781@fieldses.org>
+References: <1373310444-25862-1-git-send-email-jlayton@redhat.com>
+ <1376482310-7348-1-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
-To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-CC: Sekhar Nori <nsekhar@ti.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v4 5/5] ARM: davinci: da850: add OF_DEV_AUXDATA entry
- for eth0.
-References: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com> <1376546497-26931-6-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1376546497-26931-6-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376482310-7348-1-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Wed, Aug 14, 2013 at 08:11:50AM -0400, Jeff Layton wrote:
+> v2:
+> - fix potential double-free of lease if second check finds conflict
+> - add smp_mb's to ensure that other CPUs see i_flock changes
+> 
+> v3:
+> - remove smp_mb calls. Partial ordering is unlikely to help here.
 
-On 15-08-2013 10:01, Lad, Prabhakar wrote:
+Forgive me here, I still don't understand.  So to simplify massively,
+the situation looks like:
 
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+	setlease		open
+	------------		------
 
-> Add OF_DEV_AUXDATA for eth0  driver in da850 board dt
-> file to use emac clock.
+	atomic_read		atomic_inc
+	write i_flock		read i_flock
+	atomic_read
 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-[...]
+And we want to be sure that either the setlease caller sees the result
+of the atomic_inc, or the opener sees the result of the write to
+i_flock.
 
-> diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
-> index d172563..caa9202 100644
-> --- a/arch/arm/mach-davinci/da8xx-dt.c
-> +++ b/arch/arm/mach-davinci/da8xx-dt.c
-> @@ -44,6 +44,9 @@ static struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
->   	OF_DEV_AUXDATA("ns16550a", 0x01d0c000, "serial8250.1", NULL),
->   	OF_DEV_AUXDATA("ns16550a", 0x01d0d000, "serial8250.2", NULL),
->   	OF_DEV_AUXDATA("ti,davinci_mdio", 0x01e24000, "davinci_mdio.0", NULL),
-> +	OF_DEV_AUXDATA("ti,davinci-dm6467-emac", 0x01e20000, "davinci_emac.1",
-> +		       NULL),
+As an example, suppose the above steps happen in the order:
+
+	atomic_read
+	write i_flock
+	atomic_read
+				atomic_inc
+				read i_flock
+
+How do we know that the read of i_flock at the last step reflects the
+latest value of i_flock?  For example, couldn't the write still be stuck
+in first CPU's cache?
+
+--b.
+
+> 
+> As Al Viro points out, there is an unlikely, but possible race between
+> opening a file and setting a lease on it. generic_add_lease is done with
+> the i_lock held, but the inode->i_flock check in break_lease is
+> lockless. It's possible for another task doing an open to do the entire
+> pathwalk and call break_lease between the point where generic_add_lease
+> checks for a conflicting open and adds the lease to the list. If this
+> occurs, we can end up with a lease set on the file with a conflicting
+> open.
+> 
+> To guard against that, check again for a conflicting open after adding
+> the lease to the i_flock list. If the above race occurs, then we can
+> simply unwind the lease setting and return -EAGAIN.
+> 
+> Because we take dentry references and acquire write access on the file
+> before calling break_lease, we know that if the i_flock list is empty
+> when the open caller goes to check it then the necessary refcounts have
+> already been incremented. Thus the additional check for a conflicting
+> open will see that there is one and the setlease call will fail.
+> 
+> Cc: Bruce Fields <bfields@fieldses.org>
+> Cc: David Howells <dhowells@redhat.com>
+> Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/locks.c | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++------------
+>  1 file changed, 58 insertions(+), 13 deletions(-)
+> 
+> diff --git a/fs/locks.c b/fs/locks.c
+> index b27a300..a99adec 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -652,15 +652,18 @@ static void locks_insert_lock(struct file_lock **pos, struct file_lock *fl)
+>  	locks_insert_global_locks(fl);
+>  }
+>  
+> -/*
+> - * Delete a lock and then free it.
+> - * Wake up processes that are blocked waiting for this lock,
+> - * notify the FS that the lock has been cleared and
+> - * finally free the lock.
+> +/**
+> + * locks_delete_lock - Delete a lock and then free it.
+> + * @thisfl_p: pointer that points to the fl_next field of the previous
+> + * 	      inode->i_flock list entry
+> + *
+> + * Unlink a lock from all lists and free the namespace reference, but don't
+> + * free it yet. Wake up processes that are blocked waiting for this lock and
+> + * notify the FS that the lock has been cleared.
+>   *
+>   * Must be called with the i_lock held!
+>   */
+> -static void locks_delete_lock(struct file_lock **thisfl_p)
+> +static void locks_unlink_lock(struct file_lock **thisfl_p)
+>  {
+>  	struct file_lock *fl = *thisfl_p;
+>  
+> @@ -675,6 +678,18 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
+>  	}
+>  
+>  	locks_wake_up_blocks(fl);
+> +}
 > +
-
-    Empty line hardly needed here.
-
->   	{}
->   };
-
-WBR, Sergei
-
+> +/*
+> + * Unlink a lock from all lists and free it.
+> + *
+> + * Must be called with i_lock held!
+> + */
+> +static void locks_delete_lock(struct file_lock **thisfl_p)
+> +{
+> +	struct file_lock *fl = *thisfl_p;
+> +
+> +	locks_unlink_lock(thisfl_p);
+>  	locks_free_lock(fl);
+>  }
+>  
+> @@ -1455,6 +1470,32 @@ int fcntl_getlease(struct file *filp)
+>  	return type;
+>  }
+>  
+> +/**
+> + * check_conflicting_open - see if the given dentry points to a file that has
+> + * 	an existing open that would conflict with the desired lease.
+> + *
+> + * @dentry:	dentry to check
+> + * @arg:	type of lease that we're trying to acquire
+> + *
+> + * Check to see if there's an existing open fd on this file that would
+> + * conflict with the lease we're trying to set.
+> + */
+> +static int
+> +check_conflicting_open(const struct dentry *dentry, const long arg)
+> +{
+> +	int ret = 0;
+> +	struct inode *inode = dentry->d_inode;
+> +
+> +	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+> +		return -EAGAIN;
+> +
+> +	if ((arg == F_WRLCK) && ((d_count(dentry) > 1) ||
+> +	    (atomic_read(&inode->i_count) > 1)))
+> +		ret = -EAGAIN;
+> +
+> +	return ret;
+> +}
+> +
+>  static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
+>  {
+>  	struct file_lock *fl, **before, **my_before = NULL, *lease;
+> @@ -1464,12 +1505,8 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
+>  
+>  	lease = *flp;
+>  
+> -	error = -EAGAIN;
+> -	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+> -		goto out;
+> -	if ((arg == F_WRLCK)
+> -	    && ((d_count(dentry) > 1)
+> -		|| (atomic_read(&inode->i_count) > 1)))
+> +	error = check_conflicting_open(dentry, arg);
+> +	if (error)
+>  		goto out;
+>  
+>  	/*
+> @@ -1514,8 +1551,16 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
+>  		goto out;
+>  
+>  	locks_insert_lock(before, lease);
+> -	return 0;
+>  
+> +	/*
+> +	 * The check in break_lease() is lockless. It's possible for another
+> +	 * open to race in after we did the earlier check for a conflicting
+> +	 * open but before the lease was inserted. Check again for a
+> +	 * conflicting open and cancel the lease if there is one.
+> +	 */
+> +	error = check_conflicting_open(dentry, arg);
+> +	if (error)
+> +		locks_unlink_lock(flp);
+>  out:
+>  	return error;
+>  }
+> -- 
+> 1.8.3.1
+> 
