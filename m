@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566Ab3HOVPe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 17:15:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46490 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab3HOVPc (ORCPT
+	id S1751987Ab3HOVQT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 17:16:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42670 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab3HOVQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 17:15:32 -0400
-Message-ID: <520D44C5.6080205@ti.com>
-Date: Thu, 15 Aug 2013 17:14:45 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Sricharan R <r.sricharan@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Nishanth Menon <nm@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-References: <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com> <51F0031B.1050307@ti.com> <51F00530.9090703@ti.com> <51F02069.3050207@ti.com> <51F0223E.4050008@ti.com> <51F0240F.3050507@ti.com> <20130813081003.GU7656@atomide.com> <520A02BA.4090805@ti.com> <CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com> <520D398D.9040806@ti.com> <CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com>
-In-Reply-To: <CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Thu, 15 Aug 2013 17:16:18 -0400
+Date: Thu, 15 Aug 2013 14:16:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: aarcange@redhat.com, hannes@cmpxchg.org, mgorman@suse.de, riel@redhat.com,
+        minchan@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [RFC PATCH] Fix aio performance regression for database caused
+ by THP
+Message-Id: <20130815141616.6cf60a354b9a92214ac0c246@linux-foundation.org>
+In-Reply-To: <1376590389.24607.33.camel@concerto>
+References: <1376590389.24607.33.camel@concerto>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 August 2013 04:51 PM, Linus Walleij wrote:
-> On Thu, Aug 15, 2013 at 10:26 PM, Santosh Shilimkar
-> <santosh.shilimkar@ti.com> wrote:
->> On Thursday 15 August 2013 04:01 PM, Linus Walleij wrote:
->>> On Tue, Aug 13, 2013 at 11:56 AM, Sricharan R <r.sricharan@ti.com> wrote:
->>>
->>>>  Initially irqchip was discussed, but we also have a DMA crossbar
->>>>  to map the dma-requests. Since both irq/dma crossbars should be handled,
->>>>  pinctrl was suggested as the appropriate place to handle this.
->>>
->>> I think it is better to use irqchip.
->>>
->> Did you happen to read the thread why irqchip is in-appropriate
->> for such an IP.
-> 
-> Sorry I don't understand what thread that is... can you point me there?
-> My previous statement on this issue what this:
-> http://marc.info/?l=linux-kernel&m=137442541628641&w=2
-> 
-It was discussed in couple of threads but the main point was the
-need of a link needed for the irqchip.
+On Thu, 15 Aug 2013 12:13:09 -0600 Khalid Aziz <khalid.aziz@oracle.com> wrote:
 
->> As I said earlier, an IRQ-chip always need a
->> real IRQ link (even for the chained one) to the primary irqchip.
->>
->> This IP is just dummy IP makes the connections for the primary
->> irqchip(read GIC). And its use only limited to make the
->> connection between the peripheral IRQ event to the GIC IRQ line.
->>
->> I don't see how you can make this happen with an irqchip
->> infrastructure.
+> I am working with a tool that simulates oracle database I/O workload.
+> This tool (orion to be specific -
+> <http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>) allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag. It then does aio into these pages from flash disks using various common block sizes used by database. I am looking at performance with two of the most common block sizes - 1M and 64K. aio performance with these two block sizes plunged after Transparent HugePages was introduced in the kernel. Here are performance numbers:
 > 
-> I think my post above describes this.
+> 		pre-THP		2.6.39		3.11-rc5
+> 1M read		8384 MB/s	5629 MB/s	6501 MB/s
+> 64K read	7867 MB/s	4576 MB/s	4251 MB/s
 > 
-Sorry for being dumb but I don't think cascaded irqchip examples
-like GPIO and cross-bars are same. If you take an example of
-GPIO irqchip, it always have a physical connection even if it
-is 1 IRQ line for (32 logical/sparse IRQs). That goes with
-other MFD examples too.
+> I have narrowed the performance impact down to the overheads introduced
+> by THP in __get_page_tail() and put_compound_page() routines. perf top
+> shows >40% of cycles being spent in these two routines. Every time
+> direct I/O to hugetlbfs pages starts, kernel calls get_page() to grab a
+> reference to the pages and calls put_page() when I/O completes to put
+> the reference away. THP introduced significant amount of locking
+> overhead to get_page() and put_page() when dealing with compound pages
+> because hugepages can be split underneath get_page() and put_page(). It
+> added this overhead irrespective of whether it is dealing with hugetlbfs
+> pages or transparent hugepages. This resulted in 20%-45% drop in aio
+> performance when using hugetlbfs pages.
+> 
+> Since hugetlbfs pages can not be split, there is no reason to go through
+> all the locking overhead for these pages from what I can see. I added
+> code to __get_page_tail() and put_compound_page() to bypass all the
+> locking code when working with hugetlbfs pages. This improved
+> performance significantly. Performance numbers with this patch:
+> 
+> 		pre-THP		3.11-rc5	3.11-rc5 + Patch
+> 1M read		8384 MB/s	6501 MB/s	8371 MB/s
+> 64K read	7867 MB/s	4251 MB/s	6510 MB/s
+> 
+> Performance with 64K read is still lower than what it was before THP,
+> but still a 53% improvement. It does mean there is more work to be done
+> but I will take a 53% improvement for now.
+> 
+> Please take a look at the following patch and let me know if it looks
+> reasonable.
 
-So may be I am still missing something in your proposal.
+Pretty convincing.
 
->>> I don't see any way to really abstract this pretty simple crossbar
->>> for reuse across subsystems.
->>>
->> This exactly the reason, i am against idea of over-engineering the
->> simple IP whose only job is to make the physical wire connection
->> in software where as this is generally done in RTL by default on
->> most of the SOCs.
-> 
-> Well, it was made accessible by software, and if someone has a
-> usecase that requires this do be done dynamically, i.e. not just
-> being set up by firmware and never touched, and that use case
-> is valid, then I guess we need to do something...
-> 
-> I think it was mentioned in the thread that there is really such
-> a usecase?
-> 
-Actually there is no practical usecase but one but one can manufacture
-it ;-)
+I tagged this for a -stable backport.  To allow time for review and
+testing I'll plan to merge the patch into 3.12-rc1, so it should
+materialize in 3.11.x (and hopefully earlier) stable kernels after that.
 
+To facilitate backporting the patch could have been quite a bit
+smaller, with some simple restructuring.  It applies OK to 3.10, but
+not 3.9.  Hopefully that's good enough...
