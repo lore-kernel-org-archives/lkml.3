@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760139Ab3HOGuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:50:13 -0400
-Received: from mail-ph.de-nserver.de ([85.158.179.214]:33110 "EHLO
-	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331Ab3HOGuL (ORCPT
+	id S1760280Ab3HOGwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:52:34 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:63339 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab3HOGwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:50:11 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Aug 2013 02:50:11 EDT
-X-Fcrdns: No
-Message-ID: <520C788A.1060208@profihost.ag>
-Date: Thu, 15 Aug 2013 08:43:22 +0200
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 15 Aug 2013 02:52:32 -0400
 MIME-Version: 1.0
-To: Kent Overstreet <kmo@daterainc.com>
-CC: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org
-Subject: Re: [GIT PULL] bcache fixes for 3.11
-References: <20130814225904.GA6427@kmo-pixel>
-In-Reply-To: <20130814225904.GA6427@kmo-pixel>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
+ <87a9kkax0j.fsf@xmission.com> <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
+ <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 14 Aug 2013 23:52:11 -0700
+Message-ID: <CALCETrUzJjTDT6mxEoQg=cq9jOvw8mn9dLQ=q=qko+oEwkGsVQ@mail.gmail.com>
+Subject: Re: DoS with unprivileged mounts
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, "Serge E. Hallyn" <serge@hallyn.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-User-Auth: Auth by hostmaster@profihost.com through 85.158.179.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.08.2013 00:59, schrieb Kent Overstreet:
-> Jens, here's the latest bcache fixes. Some urgent stuff in here:
-> 
-> 
-> The following changes since commit 79826c35eb99cd3c0873b8396f45fa26c87fb0b0:
-> 
->   bcache: Allocation kthread fixes (2013-07-12 00:22:49 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
-> 
-> for you to fetch changes up to 0434a516e99ee51ac2d0dfa71b2f56c89ac5db05:
-> 
->   bcache: Fix a flush/fua performance bug (2013-08-14 15:44:51 -0700)
-> 
-> ----------------------------------------------------------------
-> Gabriel de Perthuis (1):
->       bcache: Strip endline when writing the label through sysfs
-> 
-> Geert Uytterhoeven (1):
->       bcache: Correct printf()-style format length modifier
-> 
-> Kent Overstreet (4):
->       bcache: Fix a dumb journal discard bug
->       bcache: Fix for when no journal entries are found
->       bcache: Fix a writeback performance regression
->       bcache: Fix a flush/fua performance bug
-> 
->  drivers/md/bcache/bcache.h    |  7 +++----
->  drivers/md/bcache/btree.c     |  2 +-
->  drivers/md/bcache/journal.c   | 33 ++++++++++++++++++++-------------
->  drivers/md/bcache/sysfs.c     |  9 +++++++--
->  drivers/md/bcache/util.c      | 11 ++++++++++-
->  drivers/md/bcache/util.h      | 12 +++++++++---
->  drivers/md/bcache/writeback.c | 37 ++++++++++++++++++-------------------
->  7 files changed, 68 insertions(+), 43 deletions(-)
-> --
+On Wed, Aug 14, 2013 at 11:45 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Miklos Szeredi <miklos@szeredi.hu> writes:
+>
+>> On Wed, Aug 14, 2013 at 9:32 PM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>
+>>>> The solution is also theoretically simple: mounts in unpriv namespaces
+>>>> are marked "volatile" and are dissolved on an unlink type operation.
+>>>>
+>>>> Such volatile mounts would be useful in general too.
+>>>
+>>> Agreed.
+>>>
+>>> This is a problem that is a general pain with mount namespaces in
+>>> general.
+>>>
+>>> I think the real technical hurdle is finding the mounts t in some random
+>>> mount namespace.  Once we can do that relatively efficiently the rest
+>>> becomes simple.
+>>
+>> We already have a "struct mountpoint" hashed on the dentry.  Chaining
+>> mounts on that mountpoint would be trivial.  And we need a
+>> MNT_VOLATILE flag and that's it.  If we fear that traversing the list
+>> of mounts on the dentry to check for non-volatile ones then we could
+>> also add a separate volatile counter to struct mountpoint and a
+>> matching flag to the dentry.  But I don't think that's really
+>> necessary.
+>
+> *Blink* I had overlooked "struct mountpoint".  That indeed makes things
+> easier.
+>
+> I agree we can chain "struct mount" on "struct mountpoint" and then we
+> would have an efficient implementation, that does not impact the vfs
+> fast path.
+>
+> After that it becomes a question of permissions and semantics.
+>
+> I am in the process of adopting the rule that something that is not
+> visible at the time we copy a set of mounts should not become visible
+> in the child mount namespace.  Grr.  This has been a busy month and
+> despite having been reviewed I haven't gotten around to pushing that
+> patch to linux-next.
+>
+> But MNT_VOLATILE by definition can not reveal anything becasue the
+> underlying mount point is removed, so that all of that weirdness is in
+> propogating mounts between mount namespaces is not relevant here.
+>
+> This is however the propogation of an unmount between mount namespaces.
+>
+> In general we don't even need the MNT_VOLATILE flag we just need the
+> appropriate permission checks.  However we do need something like
+> MNT_VOLATILE to prevent surprises.  MNT_VOLATILE would be used to
+> prevent things like:
+>
+> # mount --bind /  /mnt
+> # rmdir /mnt/usr
+>
+> I think the root user would be rather annoyed if that worked, so it does
+> appear we need something like MNT_VOLATILE.
+>
+> Part of me does prefer the semantics Andy has suggested where instead of
+> unmounting things we have something like a skeleton of the mount tree
+> unioned with dcaches of the filesystems themselves.  With "struct
+> mountpoint" we are amazing close to that already.
 
-As 3.10 is long term stable release. You might need CC the stable list
-for patches which have to go to 3.10 as well.
+Two possible nasty cases:
 
-At least this one should go to 3.10:
-> Gabriel de Perthuis (1):
->       bcache: Strip endline when writing the label through sysfs
+1. mount whatever /tmp/foo/bar; rmdir /tmp/foo/bar; rmdir /tmp/foo
 
-Thanks!
+Presumably ls /tmp shouldn't show foo.  Should cd /tmp/foo/bar work?
+What about umount /tmp/foo/bar?  What about cd /tmp/foo?
 
-Greets,
-Stefan
+2. mount whatever /tmp/foo; rmdir /tmp/foo; mkdir /tmp/foo
 
+Ugh.
+
+--Andy
