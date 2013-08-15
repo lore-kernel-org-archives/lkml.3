@@ -1,296 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759537Ab3HORL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 13:11:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47551 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758246Ab3HORKF (ORCPT
+	id S1759950Ab3HORLd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 13:11:33 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57663 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758246Ab3HORL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 13:10:05 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        microblaze-uclinux@itee.uq.edu.au, linux@openrisc.net,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Sudeep.KarkadaNagesha@arm.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [RFC PATCH 4/4] of: move of_get_cpu_node implementation to DT core library
-Date: Thu, 15 Aug 2013 18:09:40 +0100
-Message-Id: <1376586580-5409-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
- <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 15 Aug 2013 17:10:02.0033 (UTC) FILETIME=[47695A10:01CE99DA]
-X-MC-Unique: 113081518100306901
-Content-Type: text/plain; charset=WINDOWS-1252
+	Thu, 15 Aug 2013 13:11:29 -0400
+Date: Thu, 15 Aug 2013 18:10:48 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20130815171048.GC30073@sirena.org.uk>
+References: <20130814235519.GS2401@sirena.org.uk>
+ <Pine.LNX.4.44L0.1308151013350.1210-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hOcCNbCCxyk/YU74"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1308151013350.1210-100000@iolanthe.rowland.org>
+X-Cookie: There is a fly on your nose.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7FHBxFf017256
-
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-
-This patch moves the generalized implementation of of_get_cpu_node from
-PowerPC to DT core library, thereby adding support for retrieving cpu
-node for a given logical cpu index on any architecture.
-
-The CPU subsystem can now use this function to assign of_node in the
-cpu device while registering CPUs.
-
-It is recommended to use these helper function only in pre-SMP/early
-initialisation stages to retrieve CPU device node pointers in logical
-ordering. Once the cpu devices are registered, it can be retrieved easily
-from cpu device of_node which avoids unnecessary parsing and matching.
-
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
----
- arch/powerpc/include/asm/prom.h |  3 --
- arch/powerpc/kernel/prom.c      | 55 ------------------------
- drivers/of/base.c               | 94 +++++++++++++++++++++++++++++++++++++++++
- include/linux/cpu.h             |  1 +
- include/linux/of.h              |  7 +++
- 5 files changed, 102 insertions(+), 58 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/prom.h b/arch/powerpc/include/asm/prom.h
-index bc2da15..ac204e0 100644
---- a/arch/powerpc/include/asm/prom.h
-+++ b/arch/powerpc/include/asm/prom.h
-@@ -43,9 +43,6 @@ void of_parse_dma_window(struct device_node *dn, const void *dma_window_prop,
- 
- extern void kdump_move_device_tree(void);
- 
--/* CPU OF node matching */
--struct device_node *of_get_cpu_node(int cpu, unsigned int *thread);
--
- /* cache lookup */
- struct device_node *of_find_next_cache_node(struct device_node *np);
- 
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index 594c9f9..1c14cd4 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -870,61 +870,6 @@ bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
- 	return (int)phys_id == get_hard_smp_processor_id(cpu);
- }
- 
--static bool __of_find_n_match_cpu_property(struct device_node *cpun,
--			const char *prop_name, int cpu, unsigned int *thread)
--{
--	const __be32 *cell;
--	int ac, prop_len, tid;
--	u64 hwid;
--
--	ac = of_n_addr_cells(cpun);
--	cell = of_get_property(cpun, prop_name, &prop_len);
--	if (!cell)
--		return false;
--	prop_len /= sizeof(*cell);
--	for (tid = 0; tid < prop_len; tid++) {
--		hwid = of_read_number(cell, ac);
--		if (arch_match_cpu_phys_id(cpu, hwid)) {
--			if (thread)
--				*thread = tid;
--			return true;
--		}
--	}
--	return false;
--}
--
--/* Find the device node for a given logical cpu number, also returns the cpu
-- * local thread number (index in ibm,interrupt-server#s) if relevant and
-- * asked for (non NULL)
-- */
--struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
--{
--	struct device_node *cpun, *cpus;
--
--	cpus = of_find_node_by_path("/cpus");
--	if (!cpus) {
--		pr_warn("Missing cpus node, bailing out\n");
--		return NULL;
--	}
--
--	for_each_child_of_node(cpus, cpun) {
--		if (of_node_cmp(cpun->type, "cpu"))
--			continue;
--
--		/* Check for ibm,ppc-interrupt-server#s. If it doesn't exist
--		 * fallback to "reg" property and assume no threads
--		 */
--		if (__of_find_n_match_cpu_property(cpun,
--				"ibm,ppc-interrupt-server#s", cpu, thread))
--			return cpun;
--
--		if (__of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
--			return cpun;
--	}
--	return NULL;
--}
--EXPORT_SYMBOL(of_get_cpu_node);
--
- #if defined(CONFIG_DEBUG_FS) && defined(DEBUG)
- static struct debugfs_blob_wrapper flat_dt_blob;
- 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 5c54279..d088e45 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -18,6 +18,7 @@
-  *      2 of the License, or (at your option) any later version.
-  */
- #include <linux/ctype.h>
-+#include <linux/cpu.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/spinlock.h>
-@@ -230,6 +231,99 @@ const void *of_get_property(const struct device_node *np, const char *name,
- }
- EXPORT_SYMBOL(of_get_property);
- 
-+/*
-+ * arch_match_cpu_phys_id - Match the given logical CPU and physical id
-+ *
-+ * @cpu: logical index of a cpu
-+ * @phys_id: physical identifier of a cpu
-+ *
-+ * CPU logical to physical index mapping is architecture specific.
-+ * However this __weak function provides a default match of physical
-+ * id to logical cpu index.
-+ *
-+ * Returns true if the physical identifier and the logical index correspond
-+ * to the same cpu, false otherwise.
-+ */
-+bool __weak arch_match_cpu_phys_id(int cpu, u64 phys_id)
-+{
-+	return (u32)phys_id == cpu;
-+}
-+
-+/**
-+ * Checks if the given "prop_name" property holds the physical id of the
-+ * core/thread corresponding to the logical cpu 'cpu'. If 'thread' is not
-+ * NULL, local thread number within the core is returned in it.
-+ */
-+static bool __of_find_n_match_cpu_property(struct device_node *cpun,
-+			const char *prop_name, int cpu, unsigned int *thread)
-+{
-+	const __be32 *cell;
-+	int ac, prop_len, tid;
-+	u64 hwid;
-+
-+	ac = of_n_addr_cells(cpun);
-+	cell = of_get_property(cpun, prop_name, &prop_len);
-+	if (!cell)
-+		return false;
-+	prop_len /= sizeof(*cell);
-+	for (tid = 0; tid < prop_len; tid++) {
-+		hwid = of_read_number(cell, ac);
-+		if (arch_match_cpu_phys_id(cpu, hwid)) {
-+			if (thread)
-+				*thread = tid;
-+			return true;
-+		}
-+	}
-+	return false;
-+}
-+
-+/**
-+ * of_get_cpu_node - Get device node associated with the given logical CPU
-+ *
-+ * @cpu: CPU number(logical index) for which device node is required
-+ * @thread: if not NULL, local thread number within the physical core is
-+ *          returned
-+ *
-+ * The main purpose of this function is to retrieve the device node for the
-+ * given logical CPU index. It should be used to initialize the of_node in
-+ * cpu device. Once of_node in cpu device is populated, all the further
-+ * references can use that instead.
-+ *
-+ * CPU logical to physical index mapping is architecture specific and is built
-+ * before booting secondary cores. This function uses arch_match_cpu_phys_id
-+ * which can be overridden by architecture specific implementation.
-+ *
-+ * Returns a node pointer for the logical cpu if found, else NULL.
-+ */
-+struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
-+{
-+	struct device_node *cpun, *cpus;
-+
-+	cpus = of_find_node_by_path("/cpus");
-+	if (!cpus) {
-+		pr_warn("Missing cpus node, bailing out\n");
-+		return NULL;
-+	}
-+
-+	for_each_child_of_node(cpus, cpun) {
-+		if (of_node_cmp(cpun->type, "cpu"))
-+			continue;
-+#ifdef CONFIG_PPC
-+		/* Check for historical "ibm,ppc-interrupt-server#s" property
-+		 * for thread ids on PowerPC. If it doesn't exist fallback to
-+		 * standard "reg" property.
-+		 */
-+		if (__of_find_n_match_cpu_property(cpun,
-+				"ibm,ppc-interrupt-server#s", cpu, thread))
-+			return cpun;
-+#endif
-+		if (__of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
-+			return cpun;
-+	}
-+	return NULL;
-+}
-+EXPORT_SYMBOL(of_get_cpu_node);
-+
- /** Checks if the given "compat" string matches one of the strings in
-  * the device's "compatible" property
-  */
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index ab0eade..3dfed2b 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -28,6 +28,7 @@ struct cpu {
- extern int register_cpu(struct cpu *cpu, int num);
- extern struct device *get_cpu_device(unsigned cpu);
- extern bool cpu_is_hotpluggable(unsigned cpu);
-+extern bool arch_match_cpu_phys_id(int cpu, u64 phys_id);
- 
- extern int cpu_add_dev_attr(struct device_attribute *attr);
- extern void cpu_remove_dev_attr(struct device_attribute *attr);
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 1fd08ca..c0bb2f1 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -266,6 +266,7 @@ extern int of_device_is_available(const struct device_node *device);
- extern const void *of_get_property(const struct device_node *node,
- 				const char *name,
- 				int *lenp);
-+extern struct device_node *of_get_cpu_node(int cpu, unsigned int *thread);
- #define for_each_property_of_node(dn, pp) \
- 	for (pp = dn->properties; pp != NULL; pp = pp->next)
- 
-@@ -459,6 +460,12 @@ static inline const void *of_get_property(const struct device_node *node,
- 	return NULL;
- }
- 
-+static inline struct device_node *of_get_cpu_node(int cpu,
-+					unsigned int *thread)
-+{
-+	return NULL;
-+}
-+
- static inline int of_property_read_u64(const struct device_node *np,
- 				       const char *propname, u64 *out_value)
- {
--- 
-1.8.1.2
 
 
+--hOcCNbCCxyk/YU74
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Aug 15, 2013 at 10:42:00AM -0400, Alan Stern wrote:
+> On Thu, 15 Aug 2013, Mark Brown wrote:
+
+> So why not bring the device to full power as soon as possible during
+> boot, and have it registered on the bus in the usual way?  Once that's
+> done, the ordinary runtime PM mechanism will allow the device to go
+> back off-line.
+
+That could be done, and is likely to happen anyway as a result of device
+initialisation.  I'm not sure it buys much to force it to happen
+immediately, though.
+
+> > I've also mentioned the devices that need platform data which is a part
+> > of this too; one reason for knowing that the device is there before it
+> > appears is so that we can pass platform data/DT/whatever to it.
+
+> Can you pass this "whatever" data to the device as part of the initial=20
+> bring-it-to-full-power procedure?
+
+It is often going to be required as part of the bring it to full power
+procedure.
+
+> By the way, you mentioned something earlier that some of this platform
+> data might duplicate information that could be discovered through the
+> usual bus probing mechanisms (for example, USB descriptors).  IMO
+> that's a bad idea.  Not only is it wasteful, it also has the potential
+
+If you check the discussion it pretty much consisted of everyone saying
+that duplicating enumerable information was a terrible idea.
+
+> > >      A: Devising a mechanism for platform code to do things involving
+> > > 	devices that are dynamically registered on discoverable buses.
+
+> > If we need random platform code then we're failing, half the point of
+> > things like DT and ACPI is to avoid writing random board code.  we do
+> > want to pass data to devices for their drivers to use but having to have
+> > random bits of per board code would be really sad.
+
+> At the level of abstraction in this discussion, there's no need to=20
+> discriminate between code and data.  Just imagine that I simply wrote=20
+> "platform", meaning platform code and/or data.
+
+There's a big difference between random glue outside the drivers and
+something the drivers know about themselves, it's important to be clear
+on this.  Bodges for this often involve writing a bit of board code that
+the drivers don't know anything about.
+
+> > >      B: Telling the subsystem and driver code for a discoverable bus
+> > > 	that a particular device is present before it has been=20
+> > > 	detected.
+
+> > I think the solutions for these overlap so much they're the same thing.
+> > The situation we're in in in your case B is just the idle case for
+> > condition C - if we know about the device before it's been detected then
+> > if it's been removed we just go back into the situation where we know
+> > about it but it isn't powered.
+
+> I imagine that teaching a subsystem to know about a device before it=20
+> has been detected would require significant changes.  My suggestion --=20
+> powering up the device, detecting it, and then powering it back down --=
+=20
+> fits in very cleanly with existing designs and would require=20
+> comparatively little work.  Case B then becomes unnecessary; all the=20
+> important stuff will be handled under Case C.
+
+To be honest I don't see how that helps much if you're going to handle
+the case where platform data is required to enumerate the device.  You
+need to know about the device prior to enumeration in order to get the
+platform data to the driver when it does enumerate and you can't
+enumerate it until you do that anyway.  A bus could insist on this if it
+needed the information from enumeration for some reason but really it
+seems like an implementation detail.
+
+> There's one important factor to keep in mind: Are devices on the bus
+> physically removable?  If not, the situation is pretty straightforward. =
+=20
+> You just remember that the device used to be present, and reuse the old
+> data structures when it reappears.
+
+Not the ones I'm talking about, though other removable devices may
+possibly be present on the same bus.  My interest is in the case where
+we know the chip is there because we can see it soldered to the board.
+
+--hOcCNbCCxyk/YU74
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSDQuVAAoJELSic+t+oim9GA0QAJO3b97ssUI5FEJeIQ0G+5q/
+RInxbO8Iabigq7VXVV1OJ7TyvMSgN6nuJLl8kSRUUIw6KBh6Pmm+40wwJikT3Bas
+abp+y+LRzhJH3lrvw9WP1ba41sRKKUu2jIT+df8AigWRCXPDpQubZJcZnVl1w213
+pTX2pqH8GxOVlLdY10AzAK5qAhPdwS2WsJSc8g3Pjd+4fnFXMj3TiJcOyzCY26Q+
+NjHtAzqBcgxeTddgQVVYKEEdm/+z1D2YzHnvo7WF0EspFaPse98T3YIlZWduwLXB
+94MqTvZ6LYZrJI/sThzQY9neGkQOQpZtOYNYGaO/m4iKvZn9wPNQ4SvV+WI2ofvH
+NNpXQt/Uuikq2CSHPUcBiv66+ChlHjkWrS0JUOw5BBlj1mAtWdO/L0MWedpcdN0H
+AW6FZkSKEouXEIdr1nxDKzj2M+MMvtBXFXNkIVUfBWmFegcN4ZY6Jwg7vlqOY4rK
+ZD7HVEYSCsHnCQQNJi4bFwgYRBlb3EFOZoWanrxLOKf/0XcB4v6scAFnJ+t1LU9e
+zsZF2ApG+4UoPSAIJULw3TVrjhxRkERRAWcAKm2sAv/njlFNWQKCAxJKoFWN+WQs
+HRRicMZov2Y2nzt2KHbIo4N4wlP6LNeMSNjep1wDVzixCD+SNCM4mSmPc4LxEBYn
+qrz3atwWcOUua0mFeMlg
+=f6FC
+-----END PGP SIGNATURE-----
+
+--hOcCNbCCxyk/YU74--
