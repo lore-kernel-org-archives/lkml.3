@@ -1,79 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab3HOLYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 07:24:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35539 "EHLO mx1.redhat.com"
+	id S1755921Ab3HOLa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 07:30:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51659 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753917Ab3HOLYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 07:24:04 -0400
-Message-ID: <520CB9C7.30307@redhat.com>
-Date: Thu, 15 Aug 2013 13:21:43 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752717Ab3HOLaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 07:30:25 -0400
+Date: Thu, 15 Aug 2013 12:30:19 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Xishi Qiu <qiuxishi@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
+Message-ID: <20130815113019.GV2296@suse.de>
+References: <520B0B75.4030708@huawei.com>
+ <20130814085711.GK2296@suse.de>
+ <20130814155205.GA2706@gmail.com>
+ <20130814161642.GM2296@suse.de>
+ <20130814163921.GC2706@gmail.com>
+ <20130814180012.GO2296@suse.de>
+ <520C3DD2.8010905@huawei.com>
+ <20130815024427.GA2718@gmail.com>
+ <520C4EFF.8040305@huawei.com>
+ <20130815041736.GA2592@gmail.com>
 MIME-Version: 1.0
-To: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        "mikem@thumper.usa.hp.com" <mikem@thumper.usa.hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, LKML-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "bubrown@redhat.com" <bubrown@redhat.com>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
-Subject: Re: [PATCH 1/1] cciss: set max scatter gather entries to 32 on P600
-References: <20130814205236.GB23042@beardog.cce.hp.com> <1376515627.2028.41.camel@dabdike.int.hansenpartnership.com> <48275AD710FCA34184C2B6186B4016B32735BD62@G6W2491.americas.hpqcorp.net>
-In-Reply-To: <48275AD710FCA34184C2B6186B4016B32735BD62@G6W2491.americas.hpqcorp.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130815041736.GA2592@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 11:41 PM, Miller, Mike (OS Dev) wrote:
->
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com] 
-> Sent: Wednesday, August 14, 2013 4:27 PM
-> To: Miller, Mike (OS Dev); mikem@thumper.usa.hp.com
-> Cc: Andrew Morton; Jens Axboe; LKML-scsi; LKML; thenzl@redhat.com; bubrown@redhat.com; scameron@beardog.cce.hp.com
-> Subject: Re: [PATCH 1/1] cciss: set max scatter gather entries to 32 on P600
->
-> On Wed, 2013-08-14 at 15:52 -0500, Mike Miller wrote:
->> Patch 1/1
->>
->> From: Mike Miller <mike.miller@hp.com>
->>
->> At one time we used to set the maximum number of scatter gather 
->> elements on all Smart Array controllers to 32. At some point in time 
->> the firmware began to write the "appropriate" value for each controller into the config table.
->> The cciss driver would then read that and set h->maxsgentries.
->>
->>         h->maxsgentries = readl(&(h->cfgtable->MaxSGElements);
->>
->> On the P600 that value is 544. Under some workloads a significant 
->> performance reduction may result. This patch forces the P600 to use 
->> only 32 scatter gather elements. Other controllers are not affected.
->>
->> Signed-off-by: Mike Miller <mike.miller@hp.com>
->> Signed-off-by: Dwight (Bud) Brown <bubrown@redhat.com>
->> Signed-off-by: Tomas Henzl <thenzl@redhat.com>
->> Acked-by: Stephen M. Cameron <steve.cameron@hp.com>
-> I don't quite understand the signoff chain on this patch.  For a one line patch, are you saying it has three authors?
+On Thu, Aug 15, 2013 at 01:17:55PM +0900, Minchan Kim wrote:
+> Hello,
+> 
 
-It look a bit funny, but from what I know everybody from that list^ was somehow involved in that issue, debugging..testing, etc,
-so seeing the names there is not that bad. But I'm also not the direct author of the patch so feel free to remove my name from the list.
+Well, this thread managed to get out of control for no good reason!
 
-Tomas
+> > > <SNIP>
+> > > So, what's the result by that?
+> > > As I said, it's just skipping (pageblock_nr_pages -1) at worst case
+> > 
+> > Hi Minchan,
+> > I mean if the private is set to a large number, it will skip 2^private 
+> > pages, not (pageblock_nr_pages -1). I find somewhere will use page->private, 
+> > such as fs. Here is the comment about parivate.
+> > /* Mapping-private opaque data:
+> >  * usually used for buffer_heads
+> >  * if PagePrivate set; used for
+> >  * swp_entry_t if PageSwapCache;
+> >  * indicates order in the buddy
+> >  * system if PG_buddy is set.
+> >  */
+> 
+> Please read full thread in detail.
+> 
+> Mel suggested following as
+> 
+> if (PageBuddy(page)) {
+>         int nr_pages = (1 << page_order(page)) - 1;
+>         if (PageBuddy(page)) {
+>                 nr_pages = min(nr_pages, MAX_ORDER_NR_PAGES - 1);
+>                 low_pfn += nr_pages;
+>                 continue;
+>         }
+> }
+> 
+> min(nr_pages, xxx) removes your concern but I think Mel's version
+> isn't right. It should be aligned with pageblock boundary so I 
+> suggested following.
+> 
 
->
-> James
->
-> The patch origin is unknown. I got it from Tomas and Bud who think it may have originated from HP. I cleaned it up, compile tested it, and sent it on. I'll review my procedures for future patches.
->
-> -- mikem
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Why? We're looking for pages to migrate. If the page is free and at the
+maximum order then there is no point searching in the middle of a free
+page.
 
+> if (PageBuddy(page)) {
+> #ifdef CONFIG_MEMORY_ISOLATION
+> 	unsigned long order = page_order(page);
+> 	if (PageBuddy(page)) {
+> 		low_pfn += (1 << order) - 1;
+> 		low_pfn = min(low_pfn, end_pfn);
+> 	}
+> #endif
+> 	continue;
+> }
+> 
+> so worst case is (pageblock_nr_pages - 1).
+
+No it isn't. The worst case it that the whole region being searched is
+skipped. For THP allocations, it would happen to work as being the
+pageblock boundary but it is not required by the API. I expect that
+end_pfn is not necessarily the next pageblock boundary for CMA
+allocations.
+
+-- 
+Mel Gorman
+SUSE Labs
