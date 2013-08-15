@@ -1,634 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab3HOLBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 07:01:32 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:2474 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566Ab3HOLBa convert rfc822-to-8bit (ORCPT
+	id S1755641Ab3HOLJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 07:09:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50109 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195Ab3HOLJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 07:01:30 -0400
-From: Caizhiyong <caizhiyong@huawei.com>
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Karel Zak <kzak@redhat.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>
-Subject: [PATCH] mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Topic: [PATCH] mtd: cmdlinepart: use cmdline partition parser lib
-Thread-Index: Ac6Zpp35Kq/9wx2iTfyvDoN+K+Ysfg==
-Date: Thu, 15 Aug 2013 11:00:27 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C0643A1@szxeml512-mbx.china.huawei.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: H/UL INx5 VfSp WHVM XH5D ZFOJ ZV+L Z2MW oouE qnJb tKBY
- uD8U zdyx 1SnL 4tQS
- AAxLWQ==;7;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGMAbwBtAHAAdQB0AGUAcgBzAGYAbwByAHAAZQBhAGMAZQBAAGcAbQBhAGkAbAAuAGMAbwBtADsAZABlAGQAZQBrAGkAbgBkADEAQABnAG0AYQBpAGwALgBjAG8AbQA7AGsAegBhAGsAQAByAGUAZABoAGEAdAAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAG0AdABkAEAAbABpAHMAdABzAC4AaQBuAGYAcgBhAGQAZQBhAGQALgBvAHIAZwA7AHMAaABtAHUAbABpAGsALgBsAGEAZABrAGEAbgBpAEAAZwBtAGEAaQBsAC4AYwBvAG0A;Sosha1_v1;7;{36C21AC8-BA11-49A7-BBF6-7DD939E05DC4};YwBhAGkAegBoAGkAeQBvAG4AZwBAAGgAdQBhAHcAZQBpAC4AYwBvAG0A;Thu,
- 15 Aug 2013 11:00:13
- GMT;WwBQAEEAVABDAEgAXQAgAG0AdABkADoAIABjAG0AZABsAGkAbgBlAHAAYQByAHQAOgAgAHUAcwBlACAAYwBtAGQAbABpAG4AZQAgAHAAYQByAHQAaQB0AGkAbwBuACAAcABhAHIAcwBlAHIAIABsAGkAYgA=
-x-cr-puzzleid: {36C21AC8-BA11-49A7-BBF6-7DD939E05DC4}
-x-originating-ip: [10.67.223.18]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 15 Aug 2013 07:09:24 -0400
+Date: Thu, 15 Aug 2013 13:09:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH v3 3/3] sched: clean-up struct sd_lb_stat
+Message-ID: <20130815110905.GO24092@twins.programming.kicks-ass.net>
+References: <1375778203-31343-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375778203-31343-4-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375778203-31343-4-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cai Zhiyong <caizhiyong@huawei.com>
+On Tue, Aug 06, 2013 at 05:36:43PM +0900, Joonsoo Kim wrote:
+> There is no reason to maintain separate variables for this_group
+> and busiest_group in sd_lb_stat, except saving some space.
+> But this structure is always allocated in stack, so this saving
+> isn't really benificial.
+> 
+> This patch unify these variables, so IMO, readability may be improved.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-MTD cmdline partition use cmdline partition parser lib
+So I like the idea I had to reformat some of the code and I think we can
+do less memsets. See how the below reduces the sds memset by the two
+sgs. If we never set busiest we'll never look at sds->busiest_stat so we
+don't need to clear that. And if we make the sgs memset in
+update_sd_lb_stats() unconditional we'll cover sds->this_stats while
+reducing complexity.
 
-reference: https://lkml.org/lkml/2013/8/6/550
+Still need to stare at your patches in a little more detail.. its far
+too easy to mess this up :/
 
-Signed-off-by: Cai ZhiYong <caizhiyong@huawei.com>
----
- Documentation/block/cmdline-partition.txt |  93 +++++---
- block/cmdline-parser.c                    |   6 +-
- drivers/mtd/Kconfig                       |   1 +
- drivers/mtd/cmdlinepart.c                 | 360 ++++--------------------------
- 4 files changed, 101 insertions(+), 359 deletions(-)
-
-diff --git a/Documentation/block/cmdline-partition.txt b/Documentation/block/cmdline-partition.txt
-index 651863d..adc5f7a 100644
---- a/Documentation/block/cmdline-partition.txt
-+++ b/Documentation/block/cmdline-partition.txt
-@@ -1,40 +1,59 @@
- Embedded device command line partition
--=====================================================================
--
--Read block device partition table from command line.
--The partition used for fixed block device (eMMC) embedded device.
--It is no MBR, save storage space. Bootloader can be easily accessed
--by absolute address of data on the block device.
--Users can easily change the partition.
--
--The format for the command line is just like mtdparts:
--
--blkdevparts=<blkdev-def>[;<blkdev-def>]
-+Authors: Cai Zhiyong <caizhiyong@huawei.com>
-+
-+The format for the command line is as follows,
-+it is used by MTD device (reference drivers/mtd/cmdlinepart.c) and
-+block device (reference block/partitions/cmdline.c)
-+
-+================================================================================
-+For MTD device:
-+  mtdparts=<mtddef>[;<mtddef]
-+  <mtddef>  := <mtd-id>:<partdef>[,<partdef>]
-+  <partdef> := <size>[@<offset>][<name>][ro][lk]
-+  <mtd-id>  := unique name used in mapping driver/device (mtd->name)
-+  <size>    := standard linux memsize OR "-" to denote all remaining space
-+               size is automatically truncated at end of device
-+               if specified or trucated size is 0 the part is skipped
-+  <offset>  := standard linux memsize
-+               if omitted the part will immediately follow the previous part
-+               or 0 if the first part
-+  <name>    := '(' NAME ')'
-+               NAME will appear in /proc/mtd
-+
-+  <size> and <offset> can be specified such that the parts are out of order
-+  in physical memory and may even overlap.
-+
-+  The parts are assigned MTD numbers in the order they are specified in the
-+  command line regardless of their order in physical memory.
-+
-+  Examples:
-+
-+  1 NOR Flash, with 1 single writable partition:
-+  edb7312-nor:-
-+
-+  1 NOR Flash with 2 partitions, 1 NAND with one
-+  edb7312-nor:256k(ARMboot)ro,-(root);edb7312-nand:-(home)
-+
-+================================================================================
-+For block device:
-+  blkdevparts=<blkdev-def>[;<blkdev-def>]
-   <blkdev-def> := <blkdev-id>:<partdef>[,<partdef>]
--    <partdef> := <size>[@<offset>](part-name)
--
--<blkdev-id>
--    block device disk name, embedded device used fixed block device,
--    it's disk name also fixed. such as: mmcblk0, mmcblk1, mmcblk0boot0.
--
--<size>
--    partition size, in bytes, such as: 512, 1m, 1G.
--
--<offset>
--    partition start address, in bytes.
--
--(part-name)
--    partition name, kernel send uevent with "PARTNAME". application can create
--    a link to block device partition with the name "PARTNAME".
--    user space application can access partition by partition name.
--
--Example:
--    eMMC disk name is "mmcblk0" and "mmcblk0boot0"
--
--  bootargs:
-+  <partdef> := <size>[@<offset>][<name>]
-+  <blkdev-id>
-+       block device disk name, embedded device used fixed block device,
-+       it's disk name also fixed. such as: mmcblk0, mmcblk1, mmcblk0boot0.
-+  <size>    := standard linux memsize OR "-" to denote all remaining space
-+               size is automatically truncated at end of device
-+               if specified or trucated size is 0 the part is skipped
-+  <offset>  := standard linux memsize
-+               if omitted the part will immediately follow the previous part
-+               or 0 if the first part
-+  <name>    := '(' NAME ')'
-+        partition name, kernel send uevent with "PARTNAME". application could
-+        create a link to block device partition with the name "PARTNAME".
-+        user space application can access partition by partition name.
-+
-+  Example:
-+
-+    eMMC disk name is "mmcblk0" and "mmcblk0boot0", bootargs:
-     'blkdevparts=mmcblk0:1G(data0),1G(data1),-;mmcblk0boot0:1m(boot),-(kernel)'
--
--  dmesg:
--    mmcblk0: p1(data0) p2(data1) p3()
--    mmcblk0boot0: p1(boot) p2(kernel)
--
-diff --git a/block/cmdline-parser.c b/block/cmdline-parser.c
-index 18fb435..7ad2bc2 100644
---- a/block/cmdline-parser.c
-+++ b/block/cmdline-parser.c
-@@ -4,8 +4,6 @@
-  * Written by Cai Zhiyong <caizhiyong@huawei.com>
-  *
-  */
--#include <linux/buffer_head.h>
--#include <linux/module.h>
- #include <linux/cmdline-parser.h>
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4567,10 +4567,12 @@ static inline void update_sg_lb_stats(st
+ 	    (max_nr_running - min_nr_running) > 1)
+ 		sgs->group_imb = 1;
  
- static int parse_subpart(struct cmdline_subpart **subpart, char *partdef)
-@@ -158,6 +156,7 @@ void cmdline_parts_free(struct cmdline_parts **parts)
- 		*parts = next_parts;
+-	sgs->group_capacity = DIV_ROUND_CLOSEST(group->sgp->power,
+-						SCHED_POWER_SCALE);
++	sgs->group_capacity = 
++		DIV_ROUND_CLOSEST(group->sgp->power, SCHED_POWER_SCALE);
++
+ 	if (!sgs->group_capacity)
+ 		sgs->group_capacity = fix_small_capacity(env->sd, group);
++
+ 	sgs->group_weight = group->group_weight;
+ 
+ 	if (sgs->group_capacity > sgs->sum_nr_running)
+@@ -4641,16 +4643,14 @@ static inline void update_sd_lb_stats(st
+ 	load_idx = get_sd_load_idx(env->sd, env->idle);
+ 
+ 	do {
++		struct sg_lb_stats *sgs = &tmp_sgs;
+ 		int local_group;
+-		struct sg_lb_stats *sgs;
+ 
+ 		local_group = cpumask_test_cpu(env->dst_cpu, sched_group_cpus(sg));
+ 		if (local_group)
+ 			sgs = &sds->this_stat;
+-		else {
+-			sgs = &tmp_sgs;
+-			memset(sgs, 0, sizeof(*sgs));
+-		}
++
++		memset(sgs, 0, sizeof(*sgs));
+ 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
+ 
+ 		/*
+@@ -4746,13 +4746,14 @@ void fix_small_imbalance(struct lb_env *
+ 	if (!this->sum_nr_running)
+ 		this->load_per_task = cpu_avg_load_per_task(env->dst_cpu);
+ 	else if (busiest->load_per_task > this->load_per_task)
+-			imbn = 1;
++		imbn = 1;
+ 
+-	scaled_busy_load_per_task = (busiest->load_per_task *
+-			SCHED_POWER_SCALE) / sds->busiest->sgp->power;
++	scaled_busy_load_per_task = 
++		(busiest->load_per_task * SCHED_POWER_SCALE) / 
++		sds->busiest->sgp->power;
+ 
+ 	if (busiest->avg_load - this->avg_load + scaled_busy_load_per_task >=
+-		(scaled_busy_load_per_task * imbn)) {
++	    (scaled_busy_load_per_task * imbn)) {
+ 		env->imbalance = busiest->load_per_task;
+ 		return;
  	}
- }
-+EXPORT_SYMBOL(cmdline_parts_free);
+@@ -4772,19 +4773,21 @@ void fix_small_imbalance(struct lb_env *
+ 	/* Amount of load we'd subtract */
+ 	tmp = (busiest->load_per_task * SCHED_POWER_SCALE) /
+ 		sds->busiest->sgp->power;
+-	if (busiest->avg_load > tmp)
++	if (busiest->avg_load > tmp) {
+ 		pwr_move += sds->busiest->sgp->power *
+-			min(busiest->load_per_task,
++			    min(busiest->load_per_task,
+ 				busiest->avg_load - tmp);
++	}
  
- int cmdline_parts_parse(struct cmdline_parts **parts, const char *cmdline)
- {
-@@ -205,6 +204,7 @@ fail:
- 	cmdline_parts_free(parts);
- 	goto done;
- }
-+EXPORT_SYMBOL(cmdline_parts_parse);
- 
- struct cmdline_parts *cmdline_parts_find(struct cmdline_parts *parts,
- 					 const char *bdev)
-@@ -213,6 +213,7 @@ struct cmdline_parts *cmdline_parts_find(struct cmdline_parts *parts,
- 		parts = parts->next_parts;
- 	return parts;
- }
-+EXPORT_SYMBOL(cmdline_parts_find);
- 
- /*
-  *  add_part()
-@@ -247,3 +248,4 @@ void cmdline_parts_set(struct cmdline_parts *parts, sector_t disk_size,
- 			break;
- 	}
- }
-+EXPORT_SYMBOL(cmdline_parts_set);
-diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
-index 5fab4e6e..6f7f9ca 100644
---- a/drivers/mtd/Kconfig
-+++ b/drivers/mtd/Kconfig
-@@ -75,6 +75,7 @@ endif # MTD_REDBOOT_PARTS
- 
- config MTD_CMDLINE_PARTS
- 	tristate "Command line partition table parsing"
-+	select CMDLINE_PARSER
- 	depends on MTD
- 	---help---
- 	  Allow generic configuration of the MTD partition tables via the kernel
-diff --git a/drivers/mtd/cmdlinepart.c b/drivers/mtd/cmdlinepart.c
-index 721caeb..240b4ac 100644
---- a/drivers/mtd/cmdlinepart.c
-+++ b/drivers/mtd/cmdlinepart.c
-@@ -18,34 +18,8 @@
-  * along with this program; if not, write to the Free Software
-  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-  *
-- * The format for the command line is as follows:
-+ * Verbose please reference "Documentation/block/cmdline-partition.txt"
-  *
-- * mtdparts=<mtddef>[;<mtddef]
-- * <mtddef>  := <mtd-id>:<partdef>[,<partdef>]
-- * <partdef> := <size>[@<offset>][<name>][ro][lk]
-- * <mtd-id>  := unique name used in mapping driver/device (mtd->name)
-- * <size>    := standard linux memsize OR "-" to denote all remaining space
-- *              size is automatically truncated at end of device
-- *              if specified or trucated size is 0 the part is skipped
-- * <offset>  := standard linux memsize
-- *              if omitted the part will immediately follow the previous part
-- *              or 0 if the first part
-- * <name>    := '(' NAME ')'
-- *              NAME will appear in /proc/mtd
-- *
-- * <size> and <offset> can be specified such that the parts are out of order
-- * in physical memory and may even overlap.
-- *
-- * The parts are assigned MTD numbers in the order they are specified in the
-- * command line regardless of their order in physical memory.
-- *
-- * Examples:
-- *
-- * 1 NOR Flash, with 1 single writable partition:
-- * edb7312-nor:-
-- *
-- * 1 NOR Flash with 2 partitions, 1 NAND with one
-- * edb7312-nor:256k(ARMboot)ro,-(root);edb7312-nand:-(home)
-  */
- 
- #include <linux/kernel.h>
-@@ -54,249 +28,43 @@
- #include <linux/mtd/partitions.h>
- #include <linux/module.h>
- #include <linux/err.h>
-+#include <linux/cmdline-parser.h>
- 
--/* error message prefix */
--#define ERRP "mtd: "
--
--/* debug macro */
--#if 0
--#define dbg(x) do { printk("DEBUG-CMDLINE-PART: "); printk x; } while(0)
--#else
--#define dbg(x)
--#endif
--
--
--/* special size referring to all the remaining space in a partition */
--#define SIZE_REMAINING ULLONG_MAX
--#define OFFSET_CONTINUOUS ULLONG_MAX
--
--struct cmdline_mtd_partition {
--	struct cmdline_mtd_partition *next;
--	char *mtd_id;
--	int num_parts;
--	struct mtd_partition *parts;
--};
--
--/* mtdpart_setup() parses into here */
--static struct cmdline_mtd_partition *partitions;
--
--/* the command line passed to mtdpart_setup() */
- static char *mtdparts;
--static char *cmdline;
--static int cmdline_parsed;
-+static struct cmdline_parts *mtd_cmdline_parts;
- 
--/*
-- * Parse one partition definition for an MTD. Since there can be many
-- * comma separated partition definitions, this function calls itself
-- * recursively until no more partition definitions are found. Nice side
-- * effect: the memory to keep the mtd_partition structs and the names
-- * is allocated upon the last definition being found. At that point the
-- * syntax has been verified ok.
-- */
--static struct mtd_partition * newpart(char *s,
--				      char **retptr,
--				      int *num_parts,
--				      int this_part,
--				      unsigned char **extra_mem_ptr,
--				      int extra_mem_size)
-+static int add_part(int slot, struct cmdline_subpart *subpart, void *param)
- {
--	struct mtd_partition *parts;
--	unsigned long long size, offset = OFFSET_CONTINUOUS;
--	char *name;
--	int name_len;
--	unsigned char *extra_mem;
--	char delim;
--	unsigned int mask_flags;
--
--	/* fetch the partition size */
--	if (*s == '-') {
--		/* assign all remaining space to this partition */
--		size = SIZE_REMAINING;
--		s++;
--	} else {
--		size = memparse(s, &s);
--		if (size < PAGE_SIZE) {
--			printk(KERN_ERR ERRP "partition size too small (%llx)\n",
--			       size);
--			return ERR_PTR(-EINVAL);
--		}
--	}
--
--	/* fetch partition name and flags */
--	mask_flags = 0; /* this is going to be a regular partition */
--	delim = 0;
--
--	/* check for offset */
--	if (*s == '@') {
--		s++;
--		offset = memparse(s, &s);
--	}
--
--	/* now look for name */
--	if (*s == '(')
--		delim = ')';
--
--	if (delim) {
--		char *p;
-+	struct mtd_partition *mtdpart = &((struct mtd_partition *)param)[slot];
- 
--		name = ++s;
--		p = strchr(name, delim);
--		if (!p) {
--			printk(KERN_ERR ERRP "no closing %c found in partition name\n", delim);
--			return ERR_PTR(-EINVAL);
--		}
--		name_len = p - name;
--		s = p + 1;
--	} else {
--		name = NULL;
--		name_len = 13; /* Partition_000 */
--	}
--
--	/* record name length for memory allocation later */
--	extra_mem_size += name_len + 1;
-+	mtdpart->offset = subpart->from;
-+	mtdpart->size = subpart->size;
-+	mtdpart->name = subpart->name;
-+	mtdpart->mask_flags = 0;
- 
--	/* test for options */
--	if (strncmp(s, "ro", 2) == 0) {
--		mask_flags |= MTD_WRITEABLE;
--		s += 2;
--	}
-+	if (subpart->flags & PF_RDONLY)
-+		mtdpart->mask_flags |= MTD_WRITEABLE;
- 
- 	/* if lk is found do NOT unlock the MTD partition*/
--	if (strncmp(s, "lk", 2) == 0) {
--		mask_flags |= MTD_POWERUP_LOCK;
--		s += 2;
--	}
--
--	/* test if more partitions are following */
--	if (*s == ',') {
--		if (size == SIZE_REMAINING) {
--			printk(KERN_ERR ERRP "no partitions allowed after a fill-up partition\n");
--			return ERR_PTR(-EINVAL);
--		}
--		/* more partitions follow, parse them */
--		parts = newpart(s + 1, &s, num_parts, this_part + 1,
--				&extra_mem, extra_mem_size);
--		if (IS_ERR(parts))
--			return parts;
--	} else {
--		/* this is the last partition: allocate space for all */
--		int alloc_size;
--
--		*num_parts = this_part + 1;
--		alloc_size = *num_parts * sizeof(struct mtd_partition) +
--			     extra_mem_size;
--
--		parts = kzalloc(alloc_size, GFP_KERNEL);
--		if (!parts)
--			return ERR_PTR(-ENOMEM);
--		extra_mem = (unsigned char *)(parts + *num_parts);
--	}
--
--	/* enter this partition (offset will be calculated later if it is zero at this point) */
--	parts[this_part].size = size;
--	parts[this_part].offset = offset;
--	parts[this_part].mask_flags = mask_flags;
--	if (name)
--		strlcpy(extra_mem, name, name_len + 1);
+ 	/* Amount of load we'd add */
+ 	if (busiest->avg_load * sds->busiest->sgp->power <
+-		busiest->load_per_task * SCHED_POWER_SCALE)
++	    busiest->load_per_task * SCHED_POWER_SCALE) {
+ 		tmp = (busiest->avg_load * sds->busiest->sgp->power) /
+ 			sds->this->sgp->power;
 -	else
--		sprintf(extra_mem, "Partition_%03d", this_part);
--	parts[this_part].name = extra_mem;
--	extra_mem += name_len + 1;
-+	if (subpart->flags & PF_POWERUP_LOCK)
-+		mtdpart->mask_flags |= MTD_POWERUP_LOCK;
++	} else {
+ 		tmp = (busiest->load_per_task * SCHED_POWER_SCALE) /
+ 			sds->this->sgp->power;
++	}
+ 	pwr_move += sds->this->sgp->power *
+ 			min(this->load_per_task, this->avg_load + tmp);
+ 	pwr_move /= SCHED_POWER_SCALE;
+@@ -4807,14 +4810,15 @@ static inline void calculate_imbalance(s
  
--	dbg(("partition %d: name <%s>, offset %llx, size %llx, mask flags %x\n",
--	     this_part, parts[this_part].name, parts[this_part].offset,
--	     parts[this_part].size, parts[this_part].mask_flags));
--
--	/* return (updated) pointer to extra_mem memory */
--	if (extra_mem_ptr)
--		*extra_mem_ptr = extra_mem;
--
--	/* return (updated) pointer command line string */
--	*retptr = s;
--
--	/* return partition table */
--	return parts;
-+	return 0;
- }
- 
- /*
-- * Parse the command line.
-+ * This is the handler for our kernel parameter, called from
-+ * main.c::checksetup(). Note that we can not yet kmalloc() anything,
-+ * so we only save the commandline for later processing.
-+ *
-+ * This function needs to be visible for bootloaders.
-  */
--static int mtdpart_setup_real(char *s)
-+static int __init mtdpart_setup(char *s)
- {
--	cmdline_parsed = 1;
--
--	for( ; s != NULL; )
--	{
--		struct cmdline_mtd_partition *this_mtd;
--		struct mtd_partition *parts;
--		int mtd_id_len, num_parts;
--		char *p, *mtd_id;
--
--		mtd_id = s;
--
--		/* fetch <mtd-id> */
--		p = strchr(s, ':');
--		if (!p) {
--			printk(KERN_ERR ERRP "no mtd-id\n");
--			return -EINVAL;
--		}
--		mtd_id_len = p - mtd_id;
--
--		dbg(("parsing <%s>\n", p+1));
--
--		/*
--		 * parse one mtd. have it reserve memory for the
--		 * struct cmdline_mtd_partition and the mtd-id string.
--		 */
--		parts = newpart(p + 1,		/* cmdline */
--				&s,		/* out: updated cmdline ptr */
--				&num_parts,	/* out: number of parts */
--				0,		/* first partition */
--				(unsigned char**)&this_mtd, /* out: extra mem */
--				mtd_id_len + 1 + sizeof(*this_mtd) +
--				sizeof(void*)-1 /*alignment*/);
--		if (IS_ERR(parts)) {
--			/*
--			 * An error occurred. We're either:
--			 * a) out of memory, or
--			 * b) in the middle of the partition spec
--			 * Either way, this mtd is hosed and we're
--			 * unlikely to succeed in parsing any more
--			 */
--			 return PTR_ERR(parts);
--		 }
--
--		/* align this_mtd */
--		this_mtd = (struct cmdline_mtd_partition *)
--				ALIGN((unsigned long)this_mtd, sizeof(void *));
--		/* enter results */
--		this_mtd->parts = parts;
--		this_mtd->num_parts = num_parts;
--		this_mtd->mtd_id = (char*)(this_mtd + 1);
--		strlcpy(this_mtd->mtd_id, mtd_id, mtd_id_len + 1);
--
--		/* link into chain */
--		this_mtd->next = partitions;
--		partitions = this_mtd;
--
--		dbg(("mtdid=<%s> num_parts=<%d>\n",
--		     this_mtd->mtd_id, this_mtd->num_parts));
--
--
--		/* EOS - we're done */
--		if (*s == 0)
--			break;
--
--		/* does another spec follow? */
--		if (*s != ';') {
--			printk(KERN_ERR ERRP "bad character after partition (%c)\n", *s);
--			return -EINVAL;
--		}
--		s++;
--	}
--
--	return 0;
-+	mtdparts = s;
-+	return 1;
- }
-+__setup("mtdparts=", mtdpart_setup);
- 
- /*
-  * Main function to be called from the MTD mapping driver/device to
-@@ -309,82 +77,36 @@ static int parse_cmdline_partitions(struct mtd_info *master,
- 				    struct mtd_partition **pparts,
- 				    struct mtd_part_parser_data *data)
- {
--	unsigned long long offset;
--	int i, err;
--	struct cmdline_mtd_partition *part;
--	const char *mtd_id = master->name;
-+	struct cmdline_parts *parts;
- 
--	/* parse command line */
--	if (!cmdline_parsed) {
--		err = mtdpart_setup_real(cmdline);
--		if (err)
--			return err;
--	}
-+	if (mtdparts) {
-+		if (mtd_cmdline_parts)
-+			cmdline_parts_free(&mtd_cmdline_parts);
-+
-+		if (cmdline_parts_parse(&mtd_cmdline_parts, mtdparts)) {
-+			mtdparts = NULL;
-+			return -EINVAL;
-+		}
- 
--	/*
--	 * Search for the partition definition matching master->name.
--	 * If master->name is not set, stop at first partition definition.
--	 */
--	for (part = partitions; part; part = part->next) {
--		if ((!mtd_id) || (!strcmp(part->mtd_id, mtd_id)))
--			break;
-+		mtdparts = NULL;
+ 	this = &sds->this_stat;
+ 	if (this->sum_nr_running) {
+-		this->load_per_task = this->sum_weighted_load /
+-						this->sum_nr_running;
++		this->load_per_task = 
++			this->sum_weighted_load / this->sum_nr_running;
  	}
  
--	if (!part)
-+	if (!mtd_cmdline_parts)
- 		return 0;
+ 	busiest = &sds->busiest_stat;
+ 	/* busiest must have some tasks */
+-	busiest->load_per_task = busiest->sum_weighted_load /
+-						busiest->sum_nr_running;
++	busiest->load_per_task = 
++		busiest->sum_weighted_load / busiest->sum_nr_running;
++
+ 	if (busiest->group_imb) {
+ 		busiest->load_per_task =
+ 			min(busiest->load_per_task, sds->sd_avg_load);
+@@ -4834,11 +4838,10 @@ static inline void calculate_imbalance(s
+ 		/*
+ 		 * Don't want to pull so many tasks that a group would go idle.
+ 		 */
+-		load_above_capacity = (busiest->sum_nr_running -
+-						busiest->group_capacity);
++		load_above_capacity = 
++			(busiest->sum_nr_running - busiest->group_capacity);
  
--	for (i = 0, offset = 0; i < part->num_parts; i++) {
--		if (part->parts[i].offset == OFFSET_CONTINUOUS)
--			part->parts[i].offset = offset;
--		else
--			offset = part->parts[i].offset;
+ 		load_above_capacity *= (SCHED_LOAD_SCALE * SCHED_POWER_SCALE);
 -
--		if (part->parts[i].size == SIZE_REMAINING)
--			part->parts[i].size = master->size - offset;
--
--		if (offset + part->parts[i].size > master->size) {
--			printk(KERN_WARNING ERRP
--			       "%s: partitioning exceeds flash size, truncating\n",
--			       part->mtd_id);
--			part->parts[i].size = master->size - offset;
--		}
--		offset += part->parts[i].size;
--
--		if (part->parts[i].size == 0) {
--			printk(KERN_WARNING ERRP
--			       "%s: skipping zero sized partition\n",
--			       part->mtd_id);
--			part->num_parts--;
--			memmove(&part->parts[i], &part->parts[i + 1],
--				sizeof(*part->parts) * (part->num_parts - i));
--			i--;
--		}
--	}
-+	parts = cmdline_parts_find(mtd_cmdline_parts, master->name);
-+	if (!parts)
-+		return 0;
+ 		load_above_capacity /= sds->busiest->sgp->power;
+ 	}
  
--	*pparts = kmemdup(part->parts, sizeof(*part->parts) * part->num_parts,
--			  GFP_KERNEL);
-+	*pparts = kzalloc(sizeof(**pparts) * parts->nr_subparts, GFP_KERNEL);
- 	if (!*pparts)
- 		return -ENOMEM;
+@@ -4853,12 +4856,13 @@ static inline void calculate_imbalance(s
+ 	 * with unsigned longs.
+ 	 */
+ 	max_pull = min(busiest->avg_load - sds->sd_avg_load,
+-						load_above_capacity);
++		       load_above_capacity);
  
--	return part->num_parts;
--}
-+	cmdline_parts_set(parts, master->size, 0, add_part, (void *)*pparts);
+ 	/* How much load to actually move to equalise the imbalance */
+-	env->imbalance = min(max_pull * sds->busiest->sgp->power,
+-		(sds->sd_avg_load - this->avg_load) *
+-			sds->this->sgp->power) / SCHED_POWER_SCALE;
++	env->imbalance = min(
++		max_pull * sds->busiest->sgp->power,
++		(sds->sd_avg_load - this->avg_load) * sds->this->sgp->power
++	) / SCHED_POWER_SCALE;
  
+ 	/*
+ 	 * if *imbalance is less than the average load per runnable task
+@@ -4868,7 +4872,6 @@ static inline void calculate_imbalance(s
+ 	 */
+ 	if (env->imbalance < busiest->load_per_task)
+ 		return fix_small_imbalance(env, sds);
 -
--/*
-- * This is the handler for our kernel parameter, called from
-- * main.c::checksetup(). Note that we can not yet kmalloc() anything,
-- * so we only save the commandline for later processing.
-- *
-- * This function needs to be visible for bootloaders.
-- */
--static int __init mtdpart_setup(char *s)
--{
--	cmdline = s;
--	return 1;
-+	return parts->nr_subparts;
  }
  
--__setup("mtdparts=", mtdpart_setup);
--
- static struct mtd_part_parser cmdline_parser = {
- 	.owner = THIS_MODULE,
- 	.parse_fn = parse_cmdline_partitions,
-@@ -393,8 +115,6 @@ static struct mtd_part_parser cmdline_parser = {
- 
- static int __init cmdline_parser_init(void)
+ /******* find_busiest_group() helpers end here *********************/
+@@ -4890,13 +4893,12 @@ static inline void calculate_imbalance(s
+  *		   return the least loaded group whose CPUs can be
+  *		   put to idle by rebalancing its tasks onto our group.
+  */
+-static struct sched_group *
+-find_busiest_group(struct lb_env *env)
++static struct sched_group *find_busiest_group(struct lb_env *env)
  {
--	if (mtdparts)
--		mtdpart_setup(mtdparts);
- 	return register_mtd_parser(&cmdline_parser);
- }
+-	struct sd_lb_stats sds;
+ 	struct sg_lb_stats *this, *busiest;
++	struct sd_lb_stats sds;
  
--- 
-1.8.1.5
-
+-	memset(&sds, 0, sizeof(sds));
++	memset(&sds, 0, sizeof(sds) - 2*sizeof(struct sg_lb_stats));
+ 
+ 	/*
+ 	 * Compute the various statistics relavent for load balancing at
+@@ -4925,8 +4927,8 @@ find_busiest_group(struct lb_env *env)
+ 		goto force_balance;
+ 
+ 	/* SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
+-	if (env->idle == CPU_NEWLY_IDLE &&
+-		this->group_has_capacity && !busiest->group_has_capacity)
++	if (env->idle == CPU_NEWLY_IDLE && this->group_has_capacity && 
++	    !busiest->group_has_capacity)
+ 		goto force_balance;
+ 
+ 	/*
+@@ -4951,7 +4953,7 @@ find_busiest_group(struct lb_env *env)
+ 		 * wrt to idle cpu's, it is balanced.
+ 		 */
+ 		if ((this->idle_cpus <= busiest->idle_cpus + 1) &&
+-			busiest->sum_nr_running <= busiest->group_weight)
++		    busiest->sum_nr_running <= busiest->group_weight)
+ 			goto out_balanced;
+ 	} else {
+ 		/*
