@@ -1,66 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034Ab3HOLJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 07:09:50 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40107 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903Ab3HOLJn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 07:09:43 -0400
-Date: Thu, 15 Aug 2013 12:09:19 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20130815110919.GZ2401@sirena.org.uk>
-References: <1376521502-9370-1-git-send-email-khilman@linaro.org>
+	id S1755542Ab3HOLK0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 07:10:26 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:61175 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753697Ab3HOLKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 07:10:22 -0400
+X-IronPort-AV: E=Sophos;i="4.89,885,1367971200"; 
+   d="scan'208";a="44510739"
+Date: Thu, 15 Aug 2013 12:10:13 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [PATCH v4 0/10] enable swiotlb-xen on arm and arm64
+Message-ID: <alpine.DEB.2.02.1308151200580.4470@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+DRhDX4TDhSuvTBU"
-Content-Disposition: inline
-In-Reply-To: <1376521502-9370-1-git-send-email-khilman@linaro.org>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: Add another missing header for !CONFIG_REGMAP
- stubs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
+this patch series enables xen-swiotlb on arm and arm64.
 
---+DRhDX4TDhSuvTBU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Considering that all guests, including dom0, run on xen on arm with
+second stage translation enabled, it follows that without an IOMMU no
+guests could actually drive the hardware.
 
-On Wed, Aug 14, 2013 at 04:05:02PM -0700, Kevin Hilman wrote:
-> The use of WARN_ON() needs the definitions from bug.h, without it
-> you can get:
+The solution for platforms without an IOMMU is to use swiotlb-xen,
+adapted to autotranslate guests. swiotlb-xen provides a set of dma_ops
+that can be used by Linux to setup a contiguous buffer in stage-2
+addresses and use it for dma operations.
+Basically Linux asks Xen to make a buffer contiguous and gets the
+machine address for it. This buffer is going to be used by lib/swiotlb.c
+to allocate bounce buffers.
 
-Applied, thanks.
 
---+DRhDX4TDhSuvTBU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The first 5 patches lay the groundwork on arm and arm64 to have
+alternative dma_ops and swiotlb.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+The sixth patch moves Xen initialization earlier so that we already know
+whether we are running on Xen at the time of initializing dma_ops on the
+platform.
 
-iQIcBAEBAgAGBQJSDLbcAAoJELSic+t+oim9RdQQAJ0oTPRRe3WsJwoXkhBD8yGf
-vuWmZCDvN2DL73NjEdFJhgUEhqMJGkcdsM0MNf2Y+cpbiumsKq9V60WZoAcNVp0S
-AzXZXPY3mv3ucjl0ZVaEMnkHJTWWeT38f99mYZGHuOfKf/l2ZMwFJ2jayFcOvASE
-NGDoslAy578V+rPj3UuJFbcXPCr9xLQFRB86qSxyqRZseHDfBpSbQU6M8cHSs1UE
-DC5yB8ykWdXXy07UAKlssQAqpLFeGqJ/AGX1FyPjXo1vQ9Y0GOOA0XiCtNq3j6tc
-ZN4d3HwP9a4w5odPZmRAiVMJ95n5piAzYxIngrifRGIuLkVukbmRqx7hd5OOPdVc
-QtEouac7UyB2AaI8cXQsb7+wtTF2BxbTYejsx5K3ogS3iSJlWct0QOJcNQENuqbv
-Byo8/sVSeg0y6zzQ/RsPUyGWwvch/+6NJwXOze0VjTRYGH1lUb/CFdTQ+JExqHIu
-fuze4mU0LM9MaIJRIYkKqHrYWJBIk4xY89o7xQcRdkY1S6/IrohSdF4l+02ZP/tn
-UdQMdD8GvEcUvcvvvmkJK6sNBZ5HoNF9dSMdRB/sR5TuglVoLxF+qWpXNuzIbLOZ
-1NaGQ4DDB9nPn2dkFu4yUn1F/GjbkLEuhUIbZwF5NRMWOrSqyOPdU5gkrvVNhITn
-/n9SJCXZHxu+eXoEK4xx
-=HgpN
------END PGP SIGNATURE-----
+The following patches adapt swiotlb-xen to autotranslate guests (guest
+with second stage translation in hardware) and provide an arm
+implementation of xen_create_contiguous_region.
 
---+DRhDX4TDhSuvTBU--
+
+Feedback is very welcome.
+Cheers,
+
+Stefano
+
+
+Changes in v4:
+- rename XENMEM_get_dma_buf to XENMEM_exchange_and_pin;
+- rename XENMEM_put_dma_buf to XENMEM_unpin;
+- improve the documentation of the new hypercalls;
+- add a note about out.address_bits for XENMEM_exchange;
+- code style fixes;
+- add err_out label in xen_dma_add_entry;
+- remove INVALID_ADDRESS, use DMA_ERROR_CODE instead;
+- add in-code comments regarding the usage of xen_dma_seg[0].dma_addr.
+
+Changes in v3:
+- add a patch to compile SWIOTLB without CONFIG_NEED_SG_DMA_LENGTH;
+- add a patch to compile SWIOTLB_XEN without CONFIG_NEED_SG_DMA_LENGTH;
+- arm/dma_capable: do not treat dma_mask as a limit;
+- arm/dmabounce: keep using arm_dma_ops;
+- add missing __init in xen_early_init declaration;
+- many code style and name changes in swiotlb-xen.c;
+- improve error checks in xen_dma_add_entry;
+- warn on XENMEM_put_dma_buf failures.
+
+Changes in v2:
+- fixed a couple of errors in xen_bus_to_phys, xen_phys_to_bus and
+xen_swiotlb_fixup.
+
+
+
+EUNBONG SONG (1):
+      swiotlb: replace dma_length with sg_dma_len() macro
+
+Stefano Stabellini (9):
+      swiotlb-xen: replace dma_length with sg_dma_len() macro
+      arm: make SWIOTLB available
+      arm: introduce a global dma_ops pointer
+      arm64: do not initialize arm64_swiotlb if dma_ops is already set
+      xen/arm,arm64: move Xen initialization earlier
+      xen: introduce XENMEM_exchange_and_pin and XENMEM_unpin
+      xen: make xen_create_contiguous_region return the dma address
+      swiotlb-xen: support autotranslate guests
+      xen/arm,arm64: enable SWIOTLB_XEN
+
+ arch/arm/Kconfig                      |    7 +
+ arch/arm/include/asm/dma-mapping.h    |   33 ++++++-
+ arch/arm/include/asm/xen/hypervisor.h |    8 ++
+ arch/arm/include/asm/xen/page.h       |    2 +
+ arch/arm/kernel/setup.c               |    2 +
+ arch/arm/mm/dma-mapping.c             |    3 +
+ arch/arm/xen/Makefile                 |    2 +-
+ arch/arm/xen/enlighten.c              |   24 +++-
+ arch/arm/xen/mm.c                     |  117 +++++++++++++++++++
+ arch/arm64/Kconfig                    |    1 +
+ arch/arm64/kernel/setup.c             |    2 +
+ arch/arm64/mm/dma-mapping.c           |    2 +
+ arch/arm64/xen/Makefile               |    2 +-
+ arch/x86/xen/mmu.c                    |    4 +-
+ drivers/xen/Kconfig                   |    1 -
+ drivers/xen/swiotlb-xen.c             |  198 +++++++++++++++++++++++++++++----
+ include/xen/interface/memory.h        |   37 ++++++
+ include/xen/xen-ops.h                 |    3 +-
+ lib/swiotlb.c                         |    8 +-
+ 19 files changed, 418 insertions(+), 38 deletions(-)
+ create mode 100644 arch/arm/xen/mm.c
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git swiotlb-xen-4
