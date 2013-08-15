@@ -1,119 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346Ab3HOAAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 20:00:47 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:16219 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025Ab3HOAAo (ORCPT
+	id S1758393Ab3HOAEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 20:04:24 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:56409 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755381Ab3HOAEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 20:00:44 -0400
-X-AuditID: cbfec373-b7fca6d0000018b9-5d-520c1a2b2a18
-Date: Wed, 14 Aug 2013 21:00:35 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, bhelgaas@google.com,
-        rostedt@goodmis.org, rjw@sisk.pl, lance.ortiz@hp.com,
-        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
- event
-Message-id: <20130814210035.57096048@concha.lan>
-In-reply-to: <520A6D98.9060204@linux.vnet.ibm.com>
-References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
- <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
- <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic>
- <20130812083355.47c1bae8@samsung.com> <5208D80D.5030206@linux.vnet.ibm.com>
- <20130812125343.GE18018@pd.tnic> <520A16BD.30201@linux.vnet.ibm.com>
- <20130813124258.GC4077@pd.tnic> <520A6D98.9060204@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/hYF1tKZ4gg62/tC2WNGVYfN7wj83i
-	Q981Jovl+/oZLS7vmsNmcXbecTaL+y1P2S36F/YyWezreMBk8ebCPRYHLo/vrX0sHi37brF7
-	LNhU6rFr204mj8V7XjJ5PDi0mcXj0eIWRo/Pm+QCOKK4bFJSczLLUov07RK4Mhpvv2It2Cda
-	sWzBBrYGxhsCXYycHBICJhLdN96yQNhiEhfurWfrYuTiEBJYwijRNHMbC4TTwCQxsWcRkMPB
-	wSKgKvFlmQ5IA5uAkcSrxhZWEFtEwFTiyIrrTCD1zAJ3GSVal65jA0kIC4RJ7NnTzARi8woY
-	SLx9NYEdxOYEaj64djLUtl3MEmcbj4EtkBBwktg61ReiXlDix+R7YNcxC2hJbN7WxAphy0ts
-	XvOWeQKjwCwkZbOQlM1CUraAkXkVo2hpcXJBcVJ6rpFecWJucWleul5yfu4mRkh8FO9gfLHB
-	6hCjAAejEg/vhg7uICHWxLLiytxDjBIczEoivGdAQrwpiZVVqUX58UWlOanFhxiZODilGhht
-	fn69tpznyt22L70M+xQnPyj1Xqyymqlo+4Tal+Fav2KWZZi3flmy1ebJ60KVHTUdp9/OTTt9
-	P9FH0q2p5m3U6unF+34tMrgirK8ZHDxDqpJ9UrbEEi529fRtYhlMzdEd994ybLQK0rhofsS5
-	Lb12ccaM3TeyH+wSjQtUDtxy5kfzh8LZl+KUWIozEg21mIuKEwGd3qrrbQIAAA==
+	Wed, 14 Aug 2013 20:04:22 -0400
+Date: Wed, 14 Aug 2013 17:04:27 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] idr: Document ida tree sections
+Message-ID: <20130815000427.GB6427@kmo-pixel>
+References: <20130807205117.GC11612@kmo-pixel>
+ <20130809145756.GL20515@mtj.dyndns.org>
+ <20130813221308.GA11980@kmo-pixel>
+ <20130813221928.GE28996@mtj.dyndns.org>
+ <20130813222759.GA12069@kmo-pixel>
+ <20130813224428.GG28996@mtj.dyndns.org>
+ <20130813225927.GA2000@kmo-pixel>
+ <20130813232211.GI28996@mtj.dyndns.org>
+ <20130813235133.GA3807@kmo-pixel>
+ <20130813235947.GL28996@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130813235947.GL28996@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 13 Aug 2013 23:02:08 +0530
-"Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> escreveu:
+On Tue, Aug 13, 2013 at 07:59:47PM -0400, Tejun Heo wrote:
+> Hey, Kent.
+> 
+> On Tue, Aug 13, 2013 at 04:51:33PM -0700, Kent Overstreet wrote:
+> > Should probably be almost as good, yeah... in theory, but the space
+> > efficiency still isn't going to be as good, and it'll probably be more
+> > code... and at this point I really just don't want to futz with it more.
+> > At this point unless there's something really wrong with this code I
+> > just want to move onto something else :P
+> 
+> I think it probably would be okay in most cases but don't feel
+> confident about acking as it's making trade-offs which are unnecessary
+> and unusual.  So, ummm, I really don't know.  Maybe it's better enough
+> than what we have now but at the same time if you want to reimplement
+> the whole thing you should be persistent / reliable enough to see it
+> through this time around too, right?
 
-> On 08/13/2013 06:12 PM, Borislav Petkov wrote:
-> > On Tue, Aug 13, 2013 at 04:51:33PM +0530, Naveen N. Rao wrote:
-> >> You're right - my trace point makes all the data provided by apei
-> >> as-is to userspace. However, ghes_edac seems to squash some of this
-> >> data into a string when reporting through mc_event.
-> >
-> > Right, for systems which don't need EDAC to decode to the DIMM or for
-> > which there are no EDAC drivers written, they could use a tracepoint
-> > which carries APEI info as-is. Others, which need EDAC, should probably
-> > use trace_mc_event and disable the APEI tracepoint.
-> 
-> If I'm not mistaken, even for systems that have EDAC drivers, it looks 
-> to me like EDAC can't really decode to the DIMM given what is provided 
-> by the bios in the APEI report currently.
+I was just telling you how I felt :) Regardless of that, IMO what I've
+got now is superior to any radix tree based approach for what ida/idr
+are supposed to do. I could of course be wrong, but I'm not convinced...
 
-Yes, the current APEI events, reported via EDAC, can't be decoded currently.
+Re: caching the last allocation with a radix tree based implementation.
+I thought about that more last night, I don't think that would be viable
+for using ida underneath the percpu ida allocator.
 
-> If and when ghes_edac gains 
-> this capability, users will have a choice between raw APEI reports vs. 
-> edac processed ones.
+Reason being percpu ida has to heavily optimize for the case where
+almost all of the id space is allocated, and after awhile the id space
+is going to be fragmented - so caching the last allocated id is going to
+be useless.
 
-An APEI-specific tracing won't fix it, as, AFAIKT, we don't have any way
-to map it, even on userspace.
+This is also why I implemented the ganged allocation bit, to amortize
+the bitmap tree traversal. So we'd lose out on that going back to a
+radix tree, or have to reimplement it (and it'll be slower due to
+pointer chasing).
 
-> 
-> >
-> > I think this should address Tony's concerns...
-> >
-> > Btw, you could call your TP something simpler like
-> > trace_ghes_memory_event or so.
-> 
-> I started out with a simpler name, but eventually decided to use the 
-> name from the CPER record so it is clear what this event carries. I 
-> think this will be better when adding further ghes events for say, 
-> processor generic, PCIe and others.
-> 
-> >
-> > Btw 2, if GHES can report other types of errors (I'm pretty sure it can)
-> > maybe we can use a single tracepoint called trace_ghes_event for any
-> > types of errors coming out of it...
-> 
-> Two problems with this:
-> - One, the record size will be really big since the cper records for 
-> each type of error is large.
-> - Two, it may be better to filter events based on the type of error 
-> (memory error, processor, pcie, ...) rather than subscribing for all 
-> ghes error reports.
-
-I agree: per-type of error events is better than a big generic one.
-> 
-> >
-> > Oh, and while at it, we probably need to start thinking of a mechanism
-> > to disable all the error printing, i.e. cper_print_mem() and such,
-> > if a userspace agent is listening in on the tracepoint and the error
-> > information is carried through it to userspace.
-> 
-> Do you mean conditionally print the cper records based on whether the 
-> tracepoint is enabled or not? Wouldn't that be confusing if someone is 
-> monitoring dmesg as well?
-> 
-> 
-> Thanks,
-> Naveen
-> 
-
-
--- 
-
-Cheers,
-Mauro
+Which is all not the end of the world, but it means that if we punt on
+the ida/idr rewrites for now or change our minds about them - we _do_
+have quite a bit of stuff waiting on the percpu ida allocator, so for
+that to go in separate I'll have to change it back to using a stack of
+integers for the global freelist - which does use significantly more
+memory.
