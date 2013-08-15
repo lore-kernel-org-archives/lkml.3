@@ -1,208 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759538Ab3HOTcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 15:32:12 -0400
-Received: from fieldses.org ([174.143.236.118]:56011 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758730Ab3HOTcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 15:32:09 -0400
-Date: Thu, 15 Aug 2013 15:32:03 -0400
-From: Bruce Fields <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH v3] locks: close potential race between setlease and open
-Message-ID: <20130815193203.GT17781@fieldses.org>
-References: <1373310444-25862-1-git-send-email-jlayton@redhat.com>
- <1376482310-7348-1-git-send-email-jlayton@redhat.com>
+	id S1759315Ab3HOTdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 15:33:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52973 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758130Ab3HOTdD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 15:33:03 -0400
+Date: Thu, 15 Aug 2013 20:32:42 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20130815193242.GF30073@sirena.org.uk>
+References: <20130815171048.GC30073@sirena.org.uk>
+ <Pine.LNX.4.44L0.1308151335310.905-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="z0eOaCaDLjvTGF2l"
 Content-Disposition: inline
-In-Reply-To: <1376482310-7348-1-git-send-email-jlayton@redhat.com>
+In-Reply-To: <Pine.LNX.4.44L0.1308151335310.905-100000@iolanthe.rowland.org>
+X-Cookie: There is a fly on your nose.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 08:11:50AM -0400, Jeff Layton wrote:
-> v2:
-> - fix potential double-free of lease if second check finds conflict
-> - add smp_mb's to ensure that other CPUs see i_flock changes
-> 
-> v3:
-> - remove smp_mb calls. Partial ordering is unlikely to help here.
 
-Forgive me here, I still don't understand.  So to simplify massively,
-the situation looks like:
+--z0eOaCaDLjvTGF2l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	setlease		open
-	------------		------
+On Thu, Aug 15, 2013 at 01:55:18PM -0400, Alan Stern wrote:
+> On Thu, 15 Aug 2013, Mark Brown wrote:
+> > On Thu, Aug 15, 2013 at 10:42:00AM -0400, Alan Stern wrote:
 
-	atomic_read		atomic_inc
-	write i_flock		read i_flock
-	atomic_read
+> > To be honest I don't see how that helps much if you're going to handle
+> > the case where platform data is required to enumerate the device.  You
+> > need to know about the device prior to enumeration in order to get the
+> > platform data to the driver when it does enumerate and you can't
+> > enumerate it until you do that anyway.
 
-And we want to be sure that either the setlease caller sees the result
-of the atomic_inc, or the opener sees the result of the write to
-i_flock.
+> You're a little imprecise here.  Which driver do you mean?  The driver
+> that will ultimately bind to the device, or the driver that will
+> discover and enumerate it (which generally is bound to the device's
+> upstream parent)?  I'll assume the latter.
 
-As an example, suppose the above steps happen in the order:
+The driver that's binding to the device - obviously going through
+teaching all controller drivers about how to start up any random child
+device they might encounter is not going to be a good idea, this should
+be encapsulated in the child driver.
 
-	atomic_read
-	write i_flock
-	atomic_read
-				atomic_inc
-				read i_flock
+> Under what circumstances is platform data required to enumerate a
+> device on a discoverable bus?  We're assuming the platform has already
+> taken care of everything required to make the device appear on the bus
+> in the usual manner (such as bringing it to full power).  Can you give
+> an example where something more is needed?
 
-How do we know that the read of i_flock at the last step reflects the
-latest value of i_flock?  For example, couldn't the write still be stuck
-in first CPU's cache?
+Powering on the device is exactly the sort of thing I'm talking about
+here.  I'm not sure what you think "the platform" is here but it sounds
+awfully like the sort of random board specific bodge code that people
+currently use - something has got to know what's needed to get the
+device up and running and how to do it and the device driver seems like
+the sensible place to do that.
 
---b.
+> (Were you thinking of the case where the device's IRQ signal doesn't go
+> over the bus but uses a different platform mechanism?  I don't quite=20
+> see how this can work.  What about devices on the bus that aren't known=
+=20
+> to the platform beforehand?  How do they send their IRQ signals?)
 
-> 
-> As Al Viro points out, there is an unlikely, but possible race between
-> opening a file and setting a lease on it. generic_add_lease is done with
-> the i_lock held, but the inode->i_flock check in break_lease is
-> lockless. It's possible for another task doing an open to do the entire
-> pathwalk and call break_lease between the point where generic_add_lease
-> checks for a conflicting open and adds the lease to the list. If this
-> occurs, we can end up with a lease set on the file with a conflicting
-> open.
-> 
-> To guard against that, check again for a conflicting open after adding
-> the lease to the i_flock list. If the above race occurs, then we can
-> simply unwind the lease setting and return -EAGAIN.
-> 
-> Because we take dentry references and acquire write access on the file
-> before calling break_lease, we know that if the i_flock list is empty
-> when the open caller goes to check it then the necessary refcounts have
-> already been incremented. Thus the additional check for a conflicting
-> open will see that there is one and the setlease call will fail.
-> 
-> Cc: Bruce Fields <bfields@fieldses.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++------------
->  1 file changed, 58 insertions(+), 13 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index b27a300..a99adec 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -652,15 +652,18 @@ static void locks_insert_lock(struct file_lock **pos, struct file_lock *fl)
->  	locks_insert_global_locks(fl);
->  }
->  
-> -/*
-> - * Delete a lock and then free it.
-> - * Wake up processes that are blocked waiting for this lock,
-> - * notify the FS that the lock has been cleared and
-> - * finally free the lock.
-> +/**
-> + * locks_delete_lock - Delete a lock and then free it.
-> + * @thisfl_p: pointer that points to the fl_next field of the previous
-> + * 	      inode->i_flock list entry
-> + *
-> + * Unlink a lock from all lists and free the namespace reference, but don't
-> + * free it yet. Wake up processes that are blocked waiting for this lock and
-> + * notify the FS that the lock has been cleared.
->   *
->   * Must be called with the i_lock held!
->   */
-> -static void locks_delete_lock(struct file_lock **thisfl_p)
-> +static void locks_unlink_lock(struct file_lock **thisfl_p)
->  {
->  	struct file_lock *fl = *thisfl_p;
->  
-> @@ -675,6 +678,18 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
->  	}
->  
->  	locks_wake_up_blocks(fl);
-> +}
-> +
-> +/*
-> + * Unlink a lock from all lists and free it.
-> + *
-> + * Must be called with i_lock held!
-> + */
-> +static void locks_delete_lock(struct file_lock **thisfl_p)
-> +{
-> +	struct file_lock *fl = *thisfl_p;
-> +
-> +	locks_unlink_lock(thisfl_p);
->  	locks_free_lock(fl);
->  }
->  
-> @@ -1455,6 +1470,32 @@ int fcntl_getlease(struct file *filp)
->  	return type;
->  }
->  
-> +/**
-> + * check_conflicting_open - see if the given dentry points to a file that has
-> + * 	an existing open that would conflict with the desired lease.
-> + *
-> + * @dentry:	dentry to check
-> + * @arg:	type of lease that we're trying to acquire
-> + *
-> + * Check to see if there's an existing open fd on this file that would
-> + * conflict with the lease we're trying to set.
-> + */
-> +static int
-> +check_conflicting_open(const struct dentry *dentry, const long arg)
-> +{
-> +	int ret = 0;
-> +	struct inode *inode = dentry->d_inode;
-> +
-> +	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
-> +		return -EAGAIN;
-> +
-> +	if ((arg == F_WRLCK) && ((d_count(dentry) > 1) ||
-> +	    (atomic_read(&inode->i_count) > 1)))
-> +		ret = -EAGAIN;
-> +
-> +	return ret;
-> +}
-> +
->  static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
->  {
->  	struct file_lock *fl, **before, **my_before = NULL, *lease;
-> @@ -1464,12 +1505,8 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
->  
->  	lease = *flp;
->  
-> -	error = -EAGAIN;
-> -	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
-> -		goto out;
-> -	if ((arg == F_WRLCK)
-> -	    && ((d_count(dentry) > 1)
-> -		|| (atomic_read(&inode->i_count) > 1)))
-> +	error = check_conflicting_open(dentry, arg);
-> +	if (error)
->  		goto out;
->  
->  	/*
-> @@ -1514,8 +1551,16 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
->  		goto out;
->  
->  	locks_insert_lock(before, lease);
-> -	return 0;
->  
-> +	/*
-> +	 * The check in break_lease() is lockless. It's possible for another
-> +	 * open to race in after we did the earlier check for a conflicting
-> +	 * open but before the lease was inserted. Check again for a
-> +	 * conflicting open and cancel the lease if there is one.
-> +	 */
-> +	error = check_conflicting_open(dentry, arg);
-> +	if (error)
-> +		locks_unlink_lock(flp);
->  out:
->  	return error;
->  }
-> -- 
-> 1.8.3.1
-> 
+Either the bus doesn't support anything like interrupts at all or they'd
+use the standard bus mechanisms.  Typical reasons for bypassing the bus
+include things like latency and power, or excessive cost for
+implementation on the device side.
+
+> >  A bus could insist on this if it
+> > needed the information from enumeration for some reason but really it
+> > seems like an implementation detail.
+
+> It isn't an implementation detail.  The "power-up for initial
+> detection" scheme is a general solution to the problem of setting up a
+> complicated communication path between the bus and the platform. =20
+> (I.e., it gives a simple way to avoid the need for this communication,
+> that can be used on any discoverable bus.)  It also is a general=20
+> solution for avoiding the problem of registering a device on a bus=20
+> before that device has been discovered and enumerated.
+
+I think I completely misunderstood what you mean by powering up on
+initial use.  If you're saying that we should have some platform code
+for doing this I don't think that's a scalable solution.
+
+--z0eOaCaDLjvTGF2l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSDSzXAAoJELSic+t+oim9aRYP/1sAWoTB7lqcDyVd7mVYc6SD
+YIMZbLBlphUWJYrGpGpn7/SebMg8HSPY4niX9muKgKY0XlBz9JITJTb8ay1rMPgv
+qcPtiwxvx3BPmO8UOdtJLImtiaHhjlIzyvw2SBc6DWN+oas4UW6dW/ZZU58UolpM
++7eBlaVoCvovOXAbD96oV9zHpwEnbp+s2f0SVgZfHTBwDcDHQX7Un+AgJMpTvgrf
+i9h1EJAM3MOVqw7Ny50DCLYoJdHVqhmSyk11ADgkAwPw1bkHRdHsybX5EXo5Odzv
+6wsInjJbYd0TZfn6HEeaTKFKt8QIWyi8RBDoa+5d0M8hVkYy4217yzB9l89ZfG5P
+0WByFu7fjv/wLGrjgTcZu1kZQoARgtGcHzDweEeaO/2FT2/WsKlnSvTJGambXF0x
+Rg2wNoUv3ndzpr/0fMm6s/Rjj6/ThhSEhoV7Fh9z8VnHcOd6msn6wHEfWIRS4Kl6
+sRbtoSmIILk9EU+TU78GdPk5QQNzrVrHcrrGVpRH8HSATknw21IVRGu6EXRiRato
+/8O/9poADnHq+kEYzxKcb1PyylEttlG5ykHWozEKfV8O07lCMIh0wy1LRFKOadgZ
+ydZ3iqaMjCw57GtpJIZxyNPnmj3z3eA555Iv7AlcLhJuRJ6nnOFeHouS3HbHn19a
+DtAe++pGF9ggeDFKZBcQ
+=SSQc
+-----END PGP SIGNATURE-----
+
+--z0eOaCaDLjvTGF2l--
