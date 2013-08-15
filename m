@@ -1,145 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab3HOKar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 06:30:47 -0400
-Received: from sauhun.de ([89.238.76.85]:39602 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755411Ab3HOKao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 06:30:44 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
-        cocci@systeme.lip6.fr
-Subject: [PATCH] scripts/coccinelle/api: remove devm_request_and_ioremap.cocci
-Date: Thu, 15 Aug 2013 12:30:25 +0200
-Message-Id: <1376562633-16204-1-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755537Ab3HOKfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 06:35:01 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:58854 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab3HOKe6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 06:34:58 -0400
+Date: Thu, 15 Aug 2013 12:34:52 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thierry Reding <treding@nvidia.com>
+Subject: Re: [RFC 3/3] PCI: tegra: Support driver unbinding
+Message-ID: <20130815103452.GA13740@ulmo>
+References: <1376392346-14127-1-git-send-email-treding@nvidia.com>
+ <1376392346-14127-4-git-send-email-treding@nvidia.com>
+ <520BFA0C.5070001@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
+Content-Disposition: inline
+In-Reply-To: <520BFA0C.5070001@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of this function is discouraged in favour of
-devm_ioremap_resource(). Don't advertise it.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
- .../coccinelle/api/devm_request_and_ioremap.cocci  |  105 --------------------
- 1 file changed, 105 deletions(-)
- delete mode 100644 scripts/coccinelle/api/devm_request_and_ioremap.cocci
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/scripts/coccinelle/api/devm_request_and_ioremap.cocci b/scripts/coccinelle/api/devm_request_and_ioremap.cocci
-deleted file mode 100644
-index 562ec88..0000000
---- a/scripts/coccinelle/api/devm_request_and_ioremap.cocci
-+++ /dev/null
-@@ -1,105 +0,0 @@
--/// Reimplement a call to devm_request_mem_region followed by a call to ioremap
--/// or ioremap_nocache by a call to devm_request_and_ioremap.
--/// Devm_request_and_ioremap was introduced in
--/// 72f8c0bfa0de64c68ee59f40eb9b2683bffffbb0.  It makes the code much more
--/// concise.
--///
--///
--// Confidence: High
--// Copyright: (C) 2011 Julia Lawall, INRIA/LIP6.  GPLv2.
--// Copyright: (C) 2011 Gilles Muller, INRIA/LiP6.  GPLv2.
--// URL: http://coccinelle.lip6.fr/
--// Comments:
--// Options: --no-includes --include-headers
--
--virtual patch
--virtual org
--virtual report
--virtual context
--
--@nm@
--expression myname;
--identifier i;
--@@
--
--struct platform_driver i = { .driver = { .name = myname } };
--
--@depends on patch@
--expression dev,res,size;
--@@
--
---if (!devm_request_mem_region(dev, res->start, size,
---                              \(res->name\|dev_name(dev)\))) {
---   ...
---   return ...;
---}
--... when != res->start
--(
---devm_ioremap(dev,res->start,size)
--+devm_request_and_ioremap(dev,res)
--|
---devm_ioremap_nocache(dev,res->start,size)
--+devm_request_and_ioremap(dev,res)
--)
--... when any
--    when != res->start
--
--// this rule is separate from the previous one, because a single file can
--// have multiple values of myname
--@depends on patch@
--expression dev,res,size;
--expression nm.myname;
--@@
--
---if (!devm_request_mem_region(dev, res->start, size,myname)) {
---   ...
---   return ...;
---}
--... when != res->start
--(
---devm_ioremap(dev,res->start,size)
--+devm_request_and_ioremap(dev,res)
--|
---devm_ioremap_nocache(dev,res->start,size)
--+devm_request_and_ioremap(dev,res)
--)
--... when any
--    when != res->start
--
--
--@pb depends on org || report || context@
--expression dev,res,size;
--expression nm.myname;
--position p1,p2;
--@@
--
--*if
--  (!devm_request_mem_region@p1(dev, res->start, size,
--                              \(res->name\|dev_name(dev)\|myname\))) {
--   ...
--   return ...;
--}
--... when != res->start
--(
--*devm_ioremap@p2(dev,res->start,size)
--|
--*devm_ioremap_nocache@p2(dev,res->start,size)
--)
--... when any
--    when != res->start
--
--@script:python depends on org@
--p1 << pb.p1;
--p2 << pb.p2;
--@@
--
--cocci.print_main("INFO: replace by devm_request_and_ioremap",p1)
--cocci.print_secs("",p2)
--
--@script:python depends on report@
--p1 << pb.p1;
--p2 << pb.p2;
--@@
--
--msg = "INFO: devm_request_mem_region followed by ioremap on line %s can be replaced by devm_request_and_ioremap" % (p2[0].line)
--coccilib.report.print_report(p1[0],msg)
--- 
-1.7.10.4
+On Wed, Aug 14, 2013 at 03:43:40PM -0600, Stephen Warren wrote:
+> On 08/13/2013 05:12 AM, Thierry Reding wrote:
+> > Implement the platform driver's .remove() callback to free all resources
+> > allocated during driver setup and call pci_common_exit() to cleanup ARM
+> > specific datastructures. Unmap the fixed PCI I/O mapping by calling the
+> > new pci_iounmap_io() function in the new .teardown() callback.
+> >=20
+> > Finally, no longer set the .suppress_bind_attrs field to true to allow
+> > the driver to unbind from a device.
+>=20
+> > +static int tegra_pcie_remove(struct platform_device *pdev)
+> > +{
+> > +	struct tegra_pcie *pcie =3D platform_get_drvdata(pdev);
+> > +	struct tegra_pcie_bus *bus, *tmp;
+> > +	int err;
+> > +
+> > +	pci_common_exit(&pcie->sys);
+> > +
+> > +	list_for_each_entry_safe(bus, tmp, &pcie->busses, list) {
+> > +		vunmap(bus->area->addr);
+> > +		kfree(bus);
+> > +	}
+> > +
+> > +	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+> > +		err =3D tegra_pcie_disable_msi(pcie);
+> > +		if (err < 0)
+> > +			return err;
+> > +	}
+>=20
+> Wouldn't it make sense to do that as early as possible in the function,
+> to make sure that no MSI accidentally fires after some of the cleanup
+> has already happened?
 
+I don't think that's strictly necessary in this case. After the call to
+pci_common_exit() there are no PCI devices left, there's not even a bus
+left. All MSI users should have cleaned up after themselves.
+
+Given that I thought it more useful to mirror the setup done in .probe()
+to make it clearer what's being undone (and potentially what's missing).
+
+Thierry
+
+--GvXjxJ+pjyke8COw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSDK7MAAoJEN0jrNd/PrOh0m8QALzBtXwsLkiXEr0+v4xvtudS
+1Vnb6gV6JhHl09DNYs3KYcCX8CsFzs7AJ19wgJj6Q++QuHou0m8kSfvHx8r6k8zO
+UApq3rEsi1ujh6+ICS+7smKZCqKrb+m/rDSmJ68EjyA1zqvbgkXloNganOAD5wxM
+o22uq6DZyi+BhE/pX/51bODLrLw3vrUbn6MCgU1XNgK/A0+YlPj30D2NUNofmVtG
+ejnJ5g9UskhwMOzyZoFoyn7eEgCI0nY4OfoPqWakAQJlc3WHEbkp9lhBN3K924/Y
+ZltIcNyb+CmhSfCgCgcx4w99gyt4QRcSlChaVergD28rG2c3mJWyZc4M6UmgFfbT
+ZeVTaAc1cZu6QwGbUqV4sLTj0bRn5k8CvFLEKf+AIxXPZjV2zdmYYWCaI9Z2jfiK
+sdjoZOEbSlHMIuXW2riDYfg2dFA3BVzax8I4Obffsj8iJ222vOTRR05d7+aKNS2w
+Kzdy1uSQvZIoawqXAQTrHUNojgAID3yDUnsQ5w4bwlglUgtBpFPabeOxY9guNqwv
+uXizyXnggK0ZMNhLyn3lP1nDz63Hv7d0dHsMXOltbGLFuYhWeWV8gL1vtWUa/mJN
+OtaSVXNzzjLRNeHS4iL8S59/pWnwQvIK0Dc/m15wrTgaC8v92NsHQHVs3/YFJiKt
+jF72U0N4upufhDkop6SV
+=vhvx
+-----END PGP SIGNATURE-----
+
+--GvXjxJ+pjyke8COw--
