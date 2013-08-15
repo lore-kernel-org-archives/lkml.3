@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760152Ab3HOCKi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 22:10:38 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:64754 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759977Ab3HOCKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 22:10:36 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqIHAAg4DFJ5LCJR/2dsb2JhbABbDoJ4ukyFWoEgF3SCJAEBBScTHDMIAxgJJQ8FJQMhARKID7lGFpBBhBIDl2ORU4JdUCo
-Date: Thu, 15 Aug 2013 12:10:28 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-Message-ID: <20130815021028.GM6023@dastard>
-References: <520BB9EF.5020308@linux.intel.com>
- <20130814194359.GA22316@thunk.org>
- <520BED7A.4000903@intel.com>
- <20130814230648.GD22316@thunk.org>
- <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
- <20130815011101.GA3572@thunk.org>
+	id S1760165Ab3HOCMW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 22:12:22 -0400
+Received: from ozlabs.org ([203.10.76.45]:59669 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759785Ab3HOCMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 22:12:21 -0400
+Date: Thu, 15 Aug 2013 12:12:17 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave@sr71.net>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, linuxppc-dev@ozlabs.org
+Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
+Message-ID: <20130815021217.GA11452@concordia>
+References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130814194348.GB10469@kroah.com>
+ <520BE30D.3070401@sr71.net>
+ <20130814203546.GA6200@kroah.com>
+ <CAE9FiQUz6Ev0nbCoSbH7E=+zeJr6GKwR4B-z8+zJTRDPeF=jeA@mail.gmail.com>
+ <20130814215253.GC17423@variantweb.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130815011101.GA3572@thunk.org>
+In-Reply-To: <20130814215253.GC17423@variantweb.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 09:11:01PM -0400, Theodore Ts'o wrote:
-> On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
-> > > It would be better to write zeros to it, so we aren't measuring the
-> > > cost of the unwritten->written conversion.
+On Wed, Aug 14, 2013 at 04:52:53PM -0500, Seth Jennings wrote:
+> On Wed, Aug 14, 2013 at 02:37:26PM -0700, Yinghai Lu wrote:
+> > On Wed, Aug 14, 2013 at 1:35 PM, Greg Kroah-Hartman
+> > <gregkh@linuxfoundation.org> wrote:
+> > > On Wed, Aug 14, 2013 at 01:05:33PM -0700, Dave Hansen wrote:
+> > >> On 08/14/2013 12:43 PM, Greg Kroah-Hartman wrote:
+> > >> > On Wed, Aug 14, 2013 at 02:31:45PM -0500, Seth Jennings wrote:
+> > >> >> ppc64 has a normal memory block size of 256M (however sometimes as low
+> > >> >> as 16M depending on the system LMB size), and (I think) x86 is 128M.  With
+> > >> >> 1TB of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
+> > >> >> entries per block that's around 80k items that need be created at boot
+> > >> >> time in sysfs.  Some systems go up to 16TB where the issue is even more
+> > >> >> severe.
+> > >> >
+> > >> > The x86 developers are working with larger memory sizes and they haven't
+> > >> > seen the problem in this area, for them it's in other places, as I
+> > >> > referred to in my other email.
+> > >>
+> > >> The SGI guys don't run normal distro kernels and don't turn on memory
+> > >> hotplug, so they don't see this.  I do the same in my testing of
+> > >> large-memory x86 systems to speed up my boots.  I'll go stick it back in
+> > >> there and see if I can generate some numbers for a 1TB machine.
+> > >>
+> > >> But, the problem on x86 is at _worst_ 1/8 of the problem on ppc64 since
+> > >> the SECTION_SIZE is so 8x bigger by default.
+> > >>
+> > >> Also, the cost of creating sections on ppc is *MUCH* higher than x86
+> > >> when amortized across the number of pages that you're initializing.  A
+> > >> section on ppc64 has to be created for each (2^24/2^16)=256 pages while
+> > >> one on x86 is created for each (2^27/2^12)=32768 pages.
+> > >>
+> > >> Thus, x86 folks with our small pages and large sections tend to be
+> > >> focused on per-page costs.  The ppc folks with their small sections and
+> > >> larger pages tend to be focused on the per-section costs.
+> > >
+> > > Ah, thanks for the explaination, now it makes more sense why they are
+> > > both optimizing in different places.
 > > 
-> > At the risk of beating a dead horse, how hard would it be to defer
-> > this part until writeback?
+> > I had one local patch that sent before, it will probe block size for
+> > generic x86_64.
+> > set it to 2G looks more reasonable for system with 1T+ ram.
 > 
-> Part of the work has to be done at write time because we need to
-> update allocation statistics (i.e., so that we don't have ENOSPC
-> problems).  The unwritten->written conversion does happen at writeback
-> (as does the actual block allocation if we are doing delayed
-> allocation).
+> If I am understanding you correctly, you are suggesting we make the block size
+> a boot time tunable.  It can't be a runtime tunable since the memory blocks are
+> currently created a boot time.
 > 
-> The point is that if the goal is to measure page fault scalability, we
-> shouldn't have this other stuff happening as the same time as the page
-> fault workload.
+> On ppc64, we can't just just choose a memory block size since it must align
+> with the underlying LMB (logical memory block) size, set in the hardware ahead
+> of time.
 
-Sure, but the real problem is not the block mapping or allocation
-path - even if the test is changed to take that out of the picture,
-we still have timestamp updates being done on every single page
-fault. ext4, XFS and btrfs all do transactional timestamp updates
-and have nanosecond granularity, so every page fault is resulting in
-a transaction to update the timestamp of the file being modified.
+As long as the Linux block size is a multiple of the LMB size it should
+be possible. You'd just have to plug/unplug multiple LMBs at once.
 
-That's why on XFS the log is showing up in the profiles.
+It would be possible to construct an LMB layout that defeats that, eg.
+every 2nd LMB not present, but I don't think that's actually a concern
+in practice.
 
-So, even if we narrow the test down to just overwriting existing
-blocks, we've still got a filesystem transaction per page fault
-being done. IOWs, it's still just a filesystem overhead test....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+cheers
