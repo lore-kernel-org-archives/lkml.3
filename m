@@ -1,84 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758520Ab3HOQx0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 12:53:26 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:13288 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757304Ab3HOQxY (ORCPT
+	id S1758882Ab3HOQyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 12:54:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43384 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757462Ab3HOQyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 12:53:24 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f5f6d000000ff6-9a-520d078247df
-Message-id: <520D0779.4020903@samsung.com>
-Date: Thu, 15 Aug 2013 19:53:13 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, sarah.a.sharp@linux.intel.com,
-        dmitry.kasatkin@gmail.com, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] dev-core: fix build break when DEBUG is enabled
-References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
- <20130815163705.GA15688@kroah.com>
-In-reply-to: <20130815163705.GA15688@kroah.com>
-Content-transfer-encoding: 8bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t/xq7pN7LxBBot/8Fh8WVpn0bx4PZvF
-	5V1z2CyaT5xitliw8RGjA6vHzll32T3mnQz02D93DbvH501yASxRXDYpqTmZZalF+nYJXBlH
-	T0YVPBao+Ne9j7GBcSJfFyMnh4SAicSSvT0sELaYxIV769m6GLk4hASWMkp8v/UBLMErICjx
-	Y/I9MJtZQF1i0rxFzBBFjUwS+76cY4JwFgJ1TNnADtGhJTHl0AQwm0VAVeL61KtMIDabgJ7E
-	huYfYHFRgQiJlUsesILYIgIaEi+P3gLawAG0oUSi+X0USFhYwENiYec5qGXNjBLLDixkA0lw
-	CuhLXDqyjxHiInmJg1eeg10nBLSre+1aNoh3FCVOTz7HPIFReBaSJ2YheWIWkvYFjMyrGEVT
-	S5MLipPScw31ihNzi0vz0vWS83M3MUKi4csOxsXHrA4xCnAwKvHwRrRxBwmxJpYVV+YeYpTg
-	YFYS4f16jydIiDclsbIqtSg/vqg0J7X4ECMTB6dUA6Pg8akdEWGfwlPSk+f9uaR/xHnTrknc
-	LVPbzWqzpvZFBFjGHn8sEHMkjCtEOHer6sp6k3WB0wSrfvGeqrzOdFFhs7rMie1ZJWYZL7TU
-	wrRVI+yOy/g6bVC8FvaztGGBbLW8gNczvWXml5wUJOPiZdrDes9p/zipKl3buPr4181/tq4N
-	MI/5rMRSnJFoqMVcVJwIAEj51yZkAgAA
+	Thu, 15 Aug 2013 12:54:07 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/17] 3.4.58-stable review
+References: <20130813063501.728847844@linuxfoundation.org>
+	<520A1D56.2050507@roeck-us.net> <20130813175858.GC7336@kroah.com>
+	<20130813201936.GA18358@roeck-us.net>
+	<CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com>
+	<20130813223622.GA12790@roeck-us.net>
+Date: Thu, 15 Aug 2013 17:54:02 +0100
+In-Reply-To: <20130813223622.GA12790@roeck-us.net> (Guenter Roeck's message of
+	"Tue, 13 Aug 2013 15:36:22 -0700")
+Message-ID: <87haeqnbdh.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/08/13 19:37, Greg KH wrote:
-> On Thu, Aug 15, 2013 at 07:04:54PM +0300, Dmitry Kasatkin wrote:
->> When DEBUG is defined, dev_dbg_ratelimited uses dynamic debug data
->> structures even when CONFIG_DYNAMIC_DEBUG is not defined.
->> It leads to build break.
->> For example, when I try to use dev_dbg_ratelimited in USB code and
->> CONFIG_USB_DEBUG is enabled, but CONFIG_DYNAMIC_DEBUG is not, I get:
->>
->>   CC [M]  drivers/usb/host/xhci-ring.o
->>   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_intr_tx’:
->>   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘DEFINE_DYNAMIC_DEBUG_METADATA’ [-Werror=implicit-function-declaration]
->>   drivers/usb/host/xhci-ring.c:3059:3: error: ‘descriptor’ undeclared (first use in this function)
->>   drivers/usb/host/xhci-ring.c:3059:3: note: each undeclared identifier is reported only once for each function it appears in
->>   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘__dynamic_pr_debug’ [-Werror=implicit-function-declaration]
->>   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_isoc_tx_prepare’:
->>   drivers/usb/host/xhci-ring.c:3847:3: error: ‘descriptor’ undeclared (first use in this function)
->>   cc1: some warnings being treated as errors
->>   make[2]: *** [drivers/usb/host/xhci-ring.o] Error 1
->>   make[1]: *** [drivers/usb/host] Error 2
->>   make: *** [drivers/usb/] Error 2
->>
->> This patch separates definition for CONFIG_DYNAMIC_DEBUG and DEBUG cases.
->>
->> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->> Cc: stable@vger.kernel.org
-> How is this a stable issue?  I don't see how the rules listed in
-> Documentation/stable_kernel_rules.txt apply here, what am I missing?
+Guenter Roeck <linux@roeck-us.net> writes:
+
+> On Tue, Aug 13, 2013 at 10:49:42PM +0200, Geert Uytterhoeven wrote:
+>> On Tue, Aug 13, 2013 at 10:19 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> > powerpc/chroma_defconfig:
+>> > arch/powerpc/mm/numa.c: In function 'do_init_bootmem':
+>> > arch/powerpc/mm/numa.c:529:19: error: 'aa.arrays' may be used uninitialized in this function [-Werror=maybe-uninitialized]
+>> > arch/powerpc/mm/numa.c:642:22: note: 'aa.arrays' was declared here
+>> > cc1: all warnings being treated as errors
+>> >
+>> > No idea. Code looks all different in 3.10.
+>> 
+>> Never seen in my log collection from kissb, which doesn't build
+>> chroma_defconfig.
+>> 
+>> > m68k/allmodconfig:
+>> > drivers/hid/hid-microsoft.c: In function 'ms_report_fixup':
+>> > drivers/hid/hid-microsoft.c:52:18: error: macro "memcmp" passed 6 arguments, but takes just 3
+>> > drivers/hid/hid-microsoft.c:51:5: error: 'memcmp' undeclared (first use in this function)
+>> > drivers/hid/hid-microsoft.c:51:5: note: each undeclared identifier is reported only once for each function it appears in
+>> 
+>> Fixed in v3.7-rc6:
+>> 
+>> commit 6b90466cfec2a2fe027187d675d8d14217c12d82
+>> Author: Jiri Slaby <jslaby@suse.cz>
+>> Date:   Mon Nov 12 10:16:09 2012 +0100
+>> 
+>>     HID: microsoft: do not use compound literal - fix build
+>> 
+> Confirmed. Patching this commit into 3.4 fixes the build for m68k/allmodconfig.
 >
-> Not to say your patch isn't correct, just that it's not stable material,
-> right?
->
-> thanks,
->
-> greg k-h
+>> > blackfin/defconfig:
+>> > ERROR: "vm_iomap_memory" [drivers/video/fb.ko] undefined!
+>> > make[1]: *** [__modpost] Error 1
+>> >
+>> > sh/defconfig:
+>> > drivers/built-in.o: In function `fb_mmap':
+>> > fbmem.c:(.text+0x5e8): undefined reference to `vm_iomap_memory'
+>> >
+>> > Both look similar and might be easy to fix if someone knows what is wrong.
+>> 
+>> Fixed in v3.9:
+>> 
+>> commit 3c0b9de6d37a481673e81001c57ca0e410c72346
+>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+>> Date:   Sat Apr 27 13:25:38 2013 -0700
+>> 
+>>     vm: add no-mmu vm_iomap_memory() stub
+>> 
+> Confirmed. Patching this commit into 3.4 fixes the build for
+> both blackbuid/defconfig and sh/defconfig.
 >
 
-There are few drivers which uses dev_dbg_ratelimited().
-In the case someone tries to build kernel with those drivers with DEBUG
-enabled and without CONFIG_DYNAMIC_DEBUG,
-will get the build break. It will happen also on stable kernel.
+It looks like this one could be applied to the 3.5 kernel as well (all
+the others are already there).  Thanks, I'll queue it for the next
+release.
 
-- Dmitry
+Cheers,
+-- 
+Luis
 
+
+>> > cris/...: In file included from include/linux/page-flags.h:8:0,
+>> > from kernel/bounds.c:9: include/linux/types.h:25:1: error:
+>> > unknown type name '__kernel_ino_t' include/linux/types.h:29:1:
+>> > error: unknown type name '__kernel_off_t'
+>> > include/linux/types.h:30:1: error: unknown type name
+>> > '__kernel_pid_t' include/linux/types.h:31:1: error: unknown type
+>> > name '__kernel_daddr_t' include/linux/types.h:33:1: error:
+>> > unknown type name '__kernel_suseconds_t'
+>> >
+>> > That one might be tricky (or simple if someone knows what is wrong).
+>> 
+>> Fixed in v3.5-rc1:
+>> 
+>> commit 74f077d2a7651409c44bb323471f219a4b0d2aab
+>> Author: Jiri Slaby <jslaby@suse.cz>
+>> Date:   Mon Apr 2 13:40:17 2012 +0200
+>> 
+>>     cris: posix_types.h, include asm-generic/posix_types.h
+>> 
+> It does fix above error, but then there is another error:
+>
+>   AS      arch/cris/arch-v10/lib/checksum.o
+> In file included from <command-line>:4:0:
+> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
+> make[1]: *** [arch/cris/arch-v10/lib/checksum.o] Error 1
+> make[1]: *** Waiting for unfinished jobs....
+>   AS      arch/cris/arch-v10/lib/checksumcopy.o
+> In file included from <command-line>:4:0:
+> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
+> make[1]: *** [arch/cris/arch-v10/lib/checksumcopy.o] Error 1
+>
+> Guenter
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
