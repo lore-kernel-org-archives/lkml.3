@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab3HOPNf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 11:13:35 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:44778 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756602Ab3HOPNc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 11:13:32 -0400
-Message-ID: <520CF01D.4020309@arm.com>
-Date: Thu, 15 Aug 2013 16:13:33 +0100
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1758220Ab3HOPOU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 11:14:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38975 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755151Ab3HOPOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 11:14:19 -0400
+Date: Thu, 15 Aug 2013 17:14:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Tebulin <tebulin@googlemail.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert
+ 53a59fc67!
+Message-ID: <20130815151416.GF27864@dhcp22.suse.cz>
+References: <520BB225.8030807@gmail.com>
+ <20130814174039.GA24033@dhcp22.suse.cz>
+ <CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com>
+ <20130814182756.GD24033@dhcp22.suse.cz>
+ <CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com>
+ <520C9E78.2020401@gmail.com>
+ <CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com>
+ <20130815134031.GC27864@dhcp22.suse.cz>
+ <20130815144600.GD27864@dhcp22.suse.cz>
+ <20130815145332.GE27864@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Tomasz Figa <tomasz.figa@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH v3 03/16] driver/core: cpu: initialize of_node in cpu's
- device struture
-References: <1374069984-20567-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374492747-13879-4-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1804645.BcbkbcfKAA@flatron>
-In-Reply-To: <1804645.BcbkbcfKAA@flatron>
-X-OriginalArrivalTime: 15 Aug 2013 15:13:27.0953 (UTC) FILETIME=[FE9D7010:01CE99C9]
-X-MC-Unique: 113081516133008801
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130815145332.GE27864@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/08/13 12:35, Tomasz Figa wrote:
-> Hi Sudeep,
+On Thu 15-08-13 16:53:32, Michal Hocko wrote:
+> On Thu 15-08-13 16:46:00, Michal Hocko wrote:
+> > On Thu 15-08-13 15:40:31, Michal Hocko wrote:
+> > > On Thu 15-08-13 05:02:31, Linus Torvalds wrote:
+> > > > On Thu, Aug 15, 2013 at 2:25 AM, Ben Tebulin <tebulin@googlemail.com> wrote:
+> > > > >
+> > > > > I just cherry-picked e6c495a96ce0 into 3.9.11 and 3.7.10.
+> > > > > Unfortunately this does _not resolve_ my issue (too good to be true) :-(
+> > > > 
+> > > > Ho humm. I've found at least one other bug, but that one only affects
+> > > > hugepages. Do you perhaps have transparent hugepages enabled? But even
+> > > > then it looks quite unlikely.
+> > > 
+> > > __unmap_hugepage_range is hugetlb not THP if you had that one in mind.
+> > > And yes, it doesn't set the range which sounds buggy.
+> > 
+> > Or, did you mean tlb_remove_page called from zap_huge_pmd? That one
+> > should be safe as tlb_remove_pmd_tlb_entry sets need_flush and that
+> > means that the full range is flushed.
 > 
-> On Monday 22 of July 2013 12:32:14 Sudeep KarkadaNagesha wrote:
->> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>
->> CPUs are also registered as devices but the of_node in these cpu
->> devices are not initialized. Currently different drivers requiring
->> to access cpu device node are parsing the nodes themselves and
->> initialising the of_node in cpu device.
->>
->> The of_node in all the cpu devices needs to be initialized properly
->> and at one place. The best place to update this is CPU subsystem
->> driver when registering the cpu devices.
->>
->> The OF/DT core library now provides of_get_cpu_node to retrieve a cpu
->> device node for a given logical index by abstracting the architecture
->> specific details.
->>
->> This patch uses of_get_cpu_node to assign of_node when registering the
->> cpu devices.
->>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Acked-by: Rob Herring <rob.herring@calxeda.com>
->> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->> ---
->>  drivers/base/cpu.c | 2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
->> index 4c358bc..ea51c6d 100644
->> --- a/drivers/base/cpu.c
->> +++ b/drivers/base/cpu.c
->> @@ -14,6 +14,7 @@
->>  #include <linux/slab.h>
->>  #include <linux/percpu.h>
->>  #include <linux/acpi.h>
->> +#include <linux/of.h>
->>
->>  #include "base.h"
->>
->> @@ -289,6 +290,7 @@ int register_cpu(struct cpu *cpu, int num)
->>  	cpu->dev.release = cpu_device_release;
->>  	cpu->dev.offline_disabled = !cpu->hotpluggable;
->>  	cpu->dev.offline = !cpu_online(num);
->> +	cpu->dev.of_node = of_get_cpu_node(num);
-> 
-> Aha, so this would be the only place where of_get_cpu_node() gets called, 
-> so the parsing would be done only once and then any code that needs CPU DT 
-> node would just simply grab it from CPU dev. Fair enough.
-> 
-> Not sure if this makes the need for such helper to be globally available 
-> in of/base.c, but I guess this won't hurt.
-> 
-Ah, you found it out yourself. Sorry responded to your earlier mail.
-Yes but there may be uses cases which need cpu of_node before CPUs get
-registered. I believe PATCH 4-6 in the series is good examples as why we
-need this helper to be global.
+> Dohh... But we need need_flush_all and that is not set here. So this
+> really looks buggy.
 
-Move over now we need to extend support to PowerPC where DT is scanned
-needlessly always to fetch cpu of_node. Of course they need to fix it,
-use cpu->of_node instead.
-
-Regards,
-Sudeep
-
-
+This is a really dumb attempt to fix this but maybe it is worth trying
+to confirm we are really seeing this problem. It still flushes too much
+potentially but I am not sure how to find out the proper start...
+Will think about it more.
+---
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index a92012a..a16f452 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1381,7 +1381,11 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+ 			VM_BUG_ON(!PageHead(page));
+ 			tlb->mm->nr_ptes--;
+ 			spin_unlock(&tlb->mm->page_table_lock);
+-			tlb_remove_page(tlb, page);
++			if (!__tlb_remove_page(tlb, page)) {
++				tlb->start = 0;
++				tlb->end = addr + HPAGE_SIZE;
++				tlb_flush_mmu(tlb);
++			}
+ 		}
+ 		pte_free(tlb->mm, pgtable);
+ 		ret = 1;
+-- 
+Michal Hocko
+SUSE Labs
