@@ -1,130 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab3HOV2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 17:28:35 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:39905 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751535Ab3HOV2d (ORCPT
+	id S1752427Ab3HOV2m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 17:28:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51297 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302Ab3HOV2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 17:28:33 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnEEAAFHDVJ5LCJRgWdsb2JhbABbgzuDALcshTmBIRcOAQEWJiiCJAEBBScTHCMQCAMOCgklDwUlAyETiA8NuiUWkDoHhBIDl2OBLpNSKg
-Date: Fri, 16 Aug 2013 07:28:26 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-Message-ID: <20130815212826.GS6023@dastard>
-References: <520BED7A.4000903@intel.com>
- <20130814230648.GD22316@thunk.org>
- <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
- <20130815011101.GA3572@thunk.org>
- <20130815021028.GM6023@dastard>
- <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
- <20130815060149.GP6023@dastard>
- <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
- <20130815071141.GQ6023@dastard>
- <20130815074531.GA2147@quack.suse.cz>
+	Thu, 15 Aug 2013 17:28:39 -0400
+Message-ID: <520D4805.8070007@codeaurora.org>
+Date: Thu, 15 Aug 2013 14:28:37 -0700
+From: Hanumant Singh <hanumant@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130815074531.GA2147@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Bjorn Andersson <bjorn@kryo.se>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CAJAp7OjbJwaH8SFdSwDU4VLwTAY1PfDWy1S+yF05=oPuUApvNA@mail.gmail.com> <CACRpkdbNpVUV9B1p1Cp5q2vJtQ78zhqsDBss2k28=cxF9Mn7pg@mail.gmail.com> <520D1363.3090708@codeaurora.org> <CACRpkdYVQ-Yk_b0cW0-sB6eGkpkgfFsnd3NXQmCYCuiLmm5qww@mail.gmail.com>
+In-Reply-To: <CACRpkdYVQ-Yk_b0cW0-sB6eGkpkgfFsnd3NXQmCYCuiLmm5qww@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 09:45:31AM +0200, Jan Kara wrote:
-> On Thu 15-08-13 17:11:42, Dave Chinner wrote:
-> > On Wed, Aug 14, 2013 at 11:14:37PM -0700, Andy Lutomirski wrote:
-> > > On Wed, Aug 14, 2013 at 11:01 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > > > On Wed, Aug 14, 2013 at 09:32:13PM -0700, Andy Lutomirski wrote:
-> > > >> On Wed, Aug 14, 2013 at 7:10 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > > >> > On Wed, Aug 14, 2013 at 09:11:01PM -0400, Theodore Ts'o wrote:
-> > > >> >> On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
-> > > >> >> > > It would be better to write zeros to it, so we aren't measuring the
-> > > >> >> > > cost of the unwritten->written conversion.
-> > > >> >> >
-> > > >> >> > At the risk of beating a dead horse, how hard would it be to defer
-> > > >> >> > this part until writeback?
-> > > >> >>
-> > > >> >> Part of the work has to be done at write time because we need to
-> > > >> >> update allocation statistics (i.e., so that we don't have ENOSPC
-> > > >> >> problems).  The unwritten->written conversion does happen at writeback
-> > > >> >> (as does the actual block allocation if we are doing delayed
-> > > >> >> allocation).
-> > > >> >>
-> > > >> >> The point is that if the goal is to measure page fault scalability, we
-> > > >> >> shouldn't have this other stuff happening as the same time as the page
-> > > >> >> fault workload.
-> > > >> >
-> > > >> > Sure, but the real problem is not the block mapping or allocation
-> > > >> > path - even if the test is changed to take that out of the picture,
-> > > >> > we still have timestamp updates being done on every single page
-> > > >> > fault. ext4, XFS and btrfs all do transactional timestamp updates
-> > > >> > and have nanosecond granularity, so every page fault is resulting in
-> > > >> > a transaction to update the timestamp of the file being modified.
-> > > >>
-> > > >> I have (unmergeable) patches to fix this:
-> > > >>
-> > > >> http://comments.gmane.org/gmane.linux.kernel.mm/92476
-> > > >
-> > > > The big problem with this approach is that not doing the
-> > > > timestamp update on page faults is going to break the inode change
-> > > > version counting because for ext4, btrfs and XFS it takes a
-> > > > transaction to bump that counter. NFS needs to know the moment a
-> > > > file is changed in memory, not when it is written to disk. Also, NFS
-> > > > requires the change to the counter to be persistent over server
-> > > > failures, so it needs to be changed as part of a transaction....
-> > > 
-> > > I've been running a kernel that has the file_update_time call
-> > > commented out for over a year now, and the only problem I've seen is
-> > > that the timestamp doesn't get updated :)
-> > > 
-> > > I think I must be misunderstanding you (or vice versa).  I'm currently
-> > 
-> > Yup, you are.
-> > 
-> > > redoing the patches, and this time I'll do it for just the mm core and
-> > > ext4.  The only change I'm proposing to ext4's page_mkwrite is to
-> > > remove the file_update_time call.
-> > 
-> > Right. Where does that end up? All the way down in
-> > ext4_mark_iloc_dirty(), and that does:
-> > 
-> >         if (IS_I_VERSION(inode))
-> > 		inode_inc_iversion(inode);
-> > 
-> > The XFS transaction code is the same - deep inside it where an inode
-> > is marked as dirty in the transaction, it bumps the same counter and
-> > adds it to the transaction.
->   Yeah, I'd just add that ext4 maintains i_version only if it has been
-> mounted with i_version mount option. But then NFS server would depend on
-> c/mtime update so it won't help you much - you still should update at least
-> one of i_version, ctime, mtime on page fault. OTOH if the filesystem isn't
-> exported, you could avoid this relatively expensive dance and defer things
-> as Andy suggests.
+On 8/15/2013 1:47 PM, Linus Walleij wrote:
+> On Thu, Aug 15, 2013 at 7:44 PM, Hanumant Singh <hanumant@codeaurora.org> wrote:
+>
+>> Ok i can switch to using pin groups defined in per soc files.
+>> But in our case we have one soc going into different types of boards.
+>> (atleast 3). In each of the boards the same external devices end up using
+>> different pins. For ex camera on board 1 uses different pin group
+>> then the same camera on board 2. Both having the same SOC.
+>> So in this case the design would be to have all possible pin groups
+>> for different boards enumerated in the same soc-pinctrl.c file?
+>
+> Sorry I don't get this at all.
+>
+> What pin groups and functions that exist on a SoC is what you put into
+> a SoC driver. Because this is a hardware characteristic.
+>
+> How these are combined on a board into different states is what you put
+> into the device tree. (Or platform data.)
+>
 
-The problem with "not exported, don't update" is that files can be
-modified on server startup (e.g. after a crash) or in short
-maintenance periods when the NFS service is down. When the server is
-started back up, the change number needs to indicate the file has
-been modified so that clients reconnecting to the server see the
-change.
+For example lets say for a given SOC A it goes into boards 1, 2, and 3.
+Each of the boards has a display panel. The display panel uses two pins
+1) a reset pin 2) an interrupt pin.
 
-IOWs, even if the NFS server is not up or the filesystem not
-exported we still need to update change counts whenever a file
-changes if we are going to tell the NFS server that we keep them...
+In the combination of SOC A + board 1
+  - Display panel reset = pin no 5.
+  - Display panel interrupt = pin no 9.
 
-Cheers,
+In combination of SOC A + board 2
+  - Display panel reset = pin no 4.
+  - Display panel interrupt = pin no 9.
 
-Dave.
+In combination of SOC A + board 3
+  - Display panel reset = pin no 7.
+  - Display panel interrupt = pin no 2.
+
+The pin groupings to be used by the display panel can be {5,9}, {4,9}, 
+or {7,2}
+These different pin groups and their function setting will be present in 
+soc-pinctrl.c. The function setting is the same on all 3 cases.
+
+The DT entry will correspond to the different states of these pins for 
+the different boards.
+
+Is this understanding correct?
+
+
+>> Also in this implementation I will have.
+>> 1) pinctrl-msm.c => DT parsing and interface to framework.
+>> 2) pinctrl-msm-tlmm<version>.c => Register programming and pin types
+>> supported by a particular TLMM pinmux version.
+>> 3) pinctrl-<soc>.c => All the pins/pin groups supported by a given SOC.
+>
+> Seems OK.
+>
+>> As I
+>> mentioned we will have a bloat of these, since we have entire families of
+>> SOC using a given TLMM version but with unique pin groupings.
+>
+> Bring 'em on. But is that really different groups you are talking about,
+> and not just combinations of groups with functions for a certain board
+> as I describe above?
+>
+> If you have many SoC subdrivers, consider creating a subdir as some
+> drivers already have.
+
+Actually the SOC files, as I see it, will only contain the different pin 
+groupings and the function setting for a given soc. The real driver 
+implementation will be in 1) and 2) (the device being the TLMM pinmux 
+version 3). I will currently refrain from creating a special msm 
+directory. Maybe that can be a step 2) once we start adding more SOC's?
+I will be starting the patch with msm8974 SOC only.
+
+Thanks
+Hanumant
+
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-- 
