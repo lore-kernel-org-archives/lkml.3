@@ -1,114 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab3HOVnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 17:43:32 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:58055 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab3HOVna (ORCPT
+	id S1752524Ab3HOVt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 17:49:26 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:53050 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab3HOVtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 17:43:30 -0400
+	Thu, 15 Aug 2013 17:49:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130815213725.GT6023@dastard>
-References: <520BED7A.4000903@intel.com> <20130814230648.GD22316@thunk.org>
- <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
- <20130815011101.GA3572@thunk.org> <20130815021028.GM6023@dastard>
- <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
- <20130815060149.GP6023@dastard> <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
- <20130815071141.GQ6023@dastard> <CALCETrWyKSMDkgSbg20iWBRfHk0-oU+6A3X9xAEMg3vO=G_gDg@mail.gmail.com>
- <20130815213725.GT6023@dastard>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 15 Aug 2013 14:43:09 -0700
-Message-ID: <CALCETrV7F-47_nRx1AVFqeF8sNoREutbo3kf78ddBLvKKmFCzg@mail.gmail.com>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-To: Dave Chinner <david@fromorbit.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130815205044.GA21599@roeck-us.net>
+References: <5207B3C3.9080508@roeck-us.net> <20130811220450.GY23006@n2100.arm.linux.org.uk>
+ <52082EF8.10005@roeck-us.net> <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com>
+ <20130813034054.GA18218@roeck-us.net> <CAFEAcA_-S8z6ZMr8TMPvkcTyyCSMOj1DExVsY4JDQjRXDU5WGw@mail.gmail.com>
+ <20130815175428.GA18580@roeck-us.net> <CAFEAcA_MyJPwo6Gd_dxeWM5q5-7MYqR6-rrePusFzYaGGckWJQ@mail.gmail.com>
+ <20130815205044.GA21599@roeck-us.net>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Thu, 15 Aug 2013 22:49:05 +0100
+Message-ID: <CAFEAcA-ALD+dDWAB+Rd1V+TXQLYGe-qRKC0uFUP0Bt2SGfKDRg@mail.gmail.com>
+Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        QEMU Developers <qemu-devel@nongnu.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 2:37 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Aug 15, 2013 at 08:17:18AM -0700, Andy Lutomirski wrote:
->> I didn't think of that at all.
+On 15 August 2013 21:50, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Thu, Aug 15, 2013 at 07:05:22PM +0100, Peter Maydell wrote:
+>> It needs to go in the same patch, because a kernel with the fixed
+>> irq remapping must also tell QEMU it is fixed; if you split the
+>> two then at the point between the two patches the kernel is
+>> broken for bisection purposes.
 >>
->> If userspace does:
->>
->> ptr = mmap(...);
->> ptr[0] = 1;
->> sleep(1);
->> ptr[0] = 2;
->> sleep(1);
->> munmap();
->>
->> Then current kernels will mark the inode changed on (only) the ptr[0]
->> = 1 line.  My patches will instead mark the inode changed when munmap
->> is called (or after ptr[0] = 2 if writepages gets called for any
->> reason).
->>
->> I'm not sure which is better.  POSIX actually requires my behavior
->> (which is most irrelevant).
->
-> Not by my reading of it. Posix states that c/mtime needs to be
-> updated between the first access and the next msync() call. We
-> update mtime on the first access, and so therefore we conform to the
-> posix requirement....
+> Thinking about it - is that really true ? My image with the
+> patch applied works just fine under qemu 1.5.2, and unless
+> I am missing something it won't work with qemu 1.4 anyway.
+> So what exactly is broken ?
 
-It says "between a write reference to the mapped region and the next
-call to msync()."  Most write references don't cause page faults.
+You're OK unless the kernel happens to pick the same interrupt
+number to write to PCI_INTERRUPT_LINE as one of the previous
+broken kernel versions did (in which case QEMU will incorrectly
+assume you're a broken kernel). This can't happen with the way
+the kernel is currently picking interrupt numbers (ie with a
+straightforward relationship between h/w irqs and values written),
+but as I understand from Arnd there is a plan to move to a
+different approach ("sparse irqs") at which point this won't hold:
+http://lists.gnu.org/archive/html/qemu-devel/2013-03/msg04579.html
+So it's better for the kernel to make sure it gets the
+behaviour it wants rather than getting unpleasant surprises
+later.
 
->
->> My behavior also means that, if an NFS
->> client reads and caches the file between the two writes, then it will
->> eventually find out that the data is stale.
->
-> "eventually" is very different behaviour to the current behaviour.
->
-> My understanding is that NFS v4 delegations require the underlying
-> filesystem to bump the version count on *any* modification made to
-> the file so that delegations can be recalled appropriately. So not
-> informing the filesystem that the file data has been changed is
-> going to cause problems.
-
-We don't do that right now (and we can't without utterly destroying
-performance) because we don't trap on every modification.  See
-below...
-
->
->> The current behavior, on
->> the other hand, means that a single pass of mmapped writes through the
->> file will update the times much faster.
->>
->> I could arrange for the first page fault to *also* update times when
->> the FS is exported or if a particular mount option is set.  (The ext4
->> change to request the new behavior is all of four lines, and it's easy
->> to adjust.)
->
-> What does "first page fault" mean?
-
-The first write to the page triggers a page fault and marks the page
-writable.  The second write to the page (assuming no writeback happens
-in the mean time) does not trigger a page fault or notify the kernel
-in any way.
-
-
-In current kernels, this chain of events won't work:
-
- - Server goes down
- - Server comes up
- - Userspace on server calls mmap and writes something
- - Client reconnects and invalidates its cache
- - Userspace on server writes something else *to the same page*
-
-The client will never notice the second write, because it won't update
-any inode state.  With my patches, the client will as soon as the
-server starts writeback.
-
-So I think that there are cases where my changes make things better
-and cases where they make things worse.
-
---Andy
+-- PMM
