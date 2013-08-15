@@ -1,138 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab3HOW0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 18:26:33 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:43456 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab3HOW0a (ORCPT
+	id S1752789Ab3HOW06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 18:26:58 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:58212 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751486Ab3HOW05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 18:26:30 -0400
+	Thu, 15 Aug 2013 18:26:57 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnEEAAxVDVJ5LCJRgWdsb2JhbABbhju3LIU5gSIXDgEBFiYogiQBAQUnExwjEAgDDgoJJQ8FJQMhExuHdLorFo54gUIHhBIDl2OKJ4pZKoEtAR4G
+Date: Fri, 16 Aug 2013 08:26:50 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Ben Myers <bpm@sgi.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Jeff Liu <jeff.liu@oracle.com>,
+        Alex Elder <elder@kernel.org>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [patch] xfs: check for underflow in xfs_iformat_fork()
+Message-ID: <20130815222650.GX6023@dastard>
+References: <20130815055338.GC23580@elgon.mountain>
+ <520CA923.4060409@oracle.com>
+ <20130815143706.GI7153@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <20130815221807.GW6023@dastard>
-References: <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
- <20130815011101.GA3572@thunk.org> <20130815021028.GM6023@dastard>
- <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
- <20130815060149.GP6023@dastard> <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
- <20130815071141.GQ6023@dastard> <CALCETrWyKSMDkgSbg20iWBRfHk0-oU+6A3X9xAEMg3vO=G_gDg@mail.gmail.com>
- <20130815213725.GT6023@dastard> <CALCETrV7F-47_nRx1AVFqeF8sNoREutbo3kf78ddBLvKKmFCzg@mail.gmail.com>
- <20130815221807.GW6023@dastard>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 15 Aug 2013 15:26:09 -0700
-Message-ID: <CALCETrVgSsJD8L5kDUp8JAhhjEoAZYCfOfAE7Mx-=2pbFnPESQ@mail.gmail.com>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-To: Dave Chinner <david@fromorbit.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130815143706.GI7153@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 3:18 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Aug 15, 2013 at 02:43:09PM -0700, Andy Lutomirski wrote:
->> On Thu, Aug 15, 2013 at 2:37 PM, Dave Chinner
->> <david@fromorbit.com> wrote:
->> > On Thu, Aug 15, 2013 at 08:17:18AM -0700, Andy Lutomirski wrote:
->> >> My behavior also means that, if an NFS
->> >> client reads and caches the file between the two writes, then it will
->> >> eventually find out that the data is stale.
->> >
->> > "eventually" is very different behaviour to the current behaviour.
->> >
->> > My understanding is that NFS v4 delegations require the underlying
->> > filesystem to bump the version count on *any* modification made to
->> > the file so that delegations can be recalled appropriately. So not
->> > informing the filesystem that the file data has been changed is
->> > going to cause problems.
->>
->> We don't do that right now (and we can't without utterly destroying
->> performance) because we don't trap on every modification.  See
->> below...
->
-> We don't trap every mmap modification. We trap every modification
-> that the filesystem is informed about. That includes a c/mtime
-> update on every write page fault. It's as fine grained as we can get
-> without introducing serious performance killing overhead.
->
-> And nobody has made any compelling argument that what we do now is
-> problematic - all we've got is a microbenchmark doesn't quite scale
-> linearly because filesystem updates through a global filesystem
-> structure (the journal) don't scale linearly.
+On Thu, Aug 15, 2013 at 09:37:06AM -0500, Ben Myers wrote:
+> Hey Dan & Jeff,
+> 
+> On Thu, Aug 15, 2013 at 06:10:43PM +0800, Jeff Liu wrote:
+> > On 08/15/2013 01:53 PM, Dan Carpenter wrote:
+> > 
+> > > The "di_size" variable comes from the disk and it's a signed 64 bit.
+> > > We check the upper limit but we should check for negative numbers as
+> > > well.
+> > > 
+> > > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > > 
+> > > diff --git a/fs/xfs/xfs_inode_fork.c b/fs/xfs/xfs_inode_fork.c
+> > > index 123971b..849fc70 100644
+> > > --- a/fs/xfs/xfs_inode_fork.c
+> > > +++ b/fs/xfs/xfs_inode_fork.c
+> > > @@ -167,7 +167,8 @@ xfs_iformat_fork(
+> > >  			}
+> > >  
+> > >  			di_size = be64_to_cpu(dip->di_size);
+> > > -			if (unlikely(di_size > XFS_DFORK_DSIZE(dip, ip->i_mount))) {
+> > > +			if (unlikely(di_size < 0 ||
+> > 
+> > But the di_size is initialized to ZERO while allocating a new inode on disk.
+> > I wonder if that is better to ASSERT in this case because the current check
+> > is used to make sure that the item is inlined, or we don't need it at all.
+> 
+> Hmm.  Dan's additional check looks good to me.  In this case I'd say the forced
+> shutdown is more appropriate than an assert, because here we're reading the
+> inode from disk, as opposed to looking at a structure that is already incore
+> which we think we've initialized.  We want to handle unexpected inputs from
+> disk without crashing even if we are CONFIG_XFS_DEBUG.
 
-I don't personally care about scaling.  I care about sleeping in write
-faults, and starting journal transactions sleeps, and this is an
-absolute show-stopper for me.  (It's a real-time latency problem, not
-a throughput or scalability thing.)
+There are lots of places where we only check di_size to be greater
+than some value, and don't check for it being less than zero. Hence
+I think that a better solution might be to di_size unsigned as that
+will catch "negative" sizes for all types of situations.
 
->
->> >> The current behavior, on
->> >> the other hand, means that a single pass of mmapped writes through the
->> >> file will update the times much faster.
->> >>
->> >> I could arrange for the first page fault to *also* update times when
->> >> the FS is exported or if a particular mount option is set.  (The ext4
->> >> change to request the new behavior is all of four lines, and it's easy
->> >> to adjust.)
->> >
->> > What does "first page fault" mean?
->>
->> The first write to the page triggers a page fault and marks the page
->> writable.  The second write to the page (assuming no writeback happens
->> in the mean time) does not trigger a page fault or notify the kernel
->> in any way.
->
-> IIUC, you are saying is that you'll maintain the current behaviour
-> (i.e. clean->dirty does a timestamp update) if the filesystem
-> requires it? So the default behaviour of any filesystem that
-> supports NFSv4 is going to behave as it does now?
->
-> If that's the case, why bother changing anything as nfsv4 is the
-> default version that the kernel uses? (I'm playing devil's advocate
-> here).
+We've got the same problem in the userspace code as well and so
+treating the size as unsigned will stop such validation problems
+everywhere....
 
-Because the performance sucks right now.  I'd like to fix it without
-breaking things, and I think I can fix it while actually improving the
-semantics.
+Cheers,
 
->
->> In current kernels, this chain of events won't work:
->>
->>  - Server goes down
->>  - Server comes up
->>  - Userspace on server calls mmap and writes something
->>  - Client reconnects and invalidates its cache
->>  - Userspace on server writes something else *to the same page*
->>
->> The client will never notice the second write, because it won't update
->> any inode state.
->
-> That's wrong. The server wrote the dirty page before the client
-> reconnected, therefore it got marked clean.
-
-Why would it write the dirty page?  Is the client's NFSv4 request
-forcing the server to scan for dirty ptes or pages?  If so, can you
-point me to that code?  I can probably make it work deterministically.
-
-> The second write to the
-> server page marks it dirty again, causing page_mkwrite to be
-> called, thereby updating the timestamp/i_version field. So, the NFS
-> client will notice the second change on the server, and it will
-> notice it immediately after the second access has occurred, not some
-> time later when:
->
->> With my patches, the client will as soon as the
->> server starts writeback.
->
-> Your patches introduce a 30+ second window where a file can be dirty
-> on the server but the NFS server doesn't know about it and can't
-> tell the clients about it because i_version doesn't get bumped until
-> writeback.....
-
-I claim that there's an infinite window right now, and that 30 seconds
-is therefore an improvement.
-
---Andy
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
