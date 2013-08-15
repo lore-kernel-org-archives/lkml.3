@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759352Ab3HORzb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 13:55:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41730 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759135Ab3HORz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 13:55:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,886,1367996400"; 
-   d="scan'208";a="363217762"
-Message-ID: <520D160A.10405@intel.com>
-Date: Thu, 15 Aug 2013 10:55:22 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] mm/pgtable: Fix continue to preallocate pmds even
- if failure occurrence
-References: <1376526703-2081-1-git-send-email-liwanp@linux.vnet.ibm.com>
-In-Reply-To: <1376526703-2081-1-git-send-email-liwanp@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759310Ab3HOR74 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 13:59:56 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:43279 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753467Ab3HOR7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 13:59:55 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: joro@8bytes.org, alex.williamson@redhat.com, Varun.Sethi@freescale.com,
+        aik@ozlabs.ru, joe@perches.com, rostedt@goodmis.org,
+        fweisbec@gmail.com, mingo@redhat.com, tony@atomide.com,
+        ohad@wizery.com, andreas.herrmann@calxeda.com, will.deacon@arm.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, shuahkhan@gmail.com
+Subject: [PATCH 0/7] iommu: Add event tracing feature to iommu 
+Date: Thu, 15 Aug 2013 11:59:22 -0600
+Message-Id: <cover.1376587770.git.shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 05:31 PM, Wanpeng Li wrote:
-> preallocate_pmds will continue to preallocate pmds even if failure 
-> occurrence, and then free all the preallocate pmds if there is 
-> failure, this patch fix it by stop preallocate if failure occurrence
-> and go to free path.
+This patch set adds tracing feature to iommu driver to report various
+iommu events. Classes iommu_group, iommu_device, and iommu_map_unmap
+are defined.
 
-I guess there are a billion ways to do this, but I'm not sure we even
-need 'failed':
+iommu_group class events can be enabled to trigger when devices get added
+to and removed from an iommu group. Trace information includes iommu group
+id and device name.
 
---- arch/x86/mm/pgtable.c.orig	2013-08-15 10:52:15.145615027 -0700
-+++ arch/x86/mm/pgtable.c	2013-08-15 10:52:47.509614081 -0700
-@@ -196,21 +196,18 @@
- static int preallocate_pmds(pmd_t *pmds[])
- {
- 	int i;
--	bool failed = false;
+iommu:add_device_to_group
+iommu:remove_device_from_group
 
- 	for(i = 0; i < PREALLOCATED_PMDS; i++) {
- 		pmd_t *pmd = (pmd_t *)__get_free_page(PGALLOC_GFP);
- 		if (pmd == NULL)
--			failed = true;
-+			goto err;
- 		pmds[i] = pmd;
- 	}
+iommu_device class events can be enabled to trigger when devices are attached
+to and detached from a domain. Trace information includes device name.
 
--	if (failed) {
--		free_pmds(pmds);
--		return -ENOMEM;
--	}
--
- 	return 0;
-+err:
-+	free_pmds(pmds);
-+	return -ENOMEM;
- }
+iommu:attach_device_to_domain
+iommu:detach_device_from_domain
 
-I don't have a problem with what you have, though.  It's better than
-what was there, so:
+iommu_map_unmap class events can be enabled to trigger when iommu map and
+unmap iommu ops complete. Trace information includes iova, physical address
+(map event only), and size.
 
-Reviewed-by: Dave Hansen <dave.hansen@linux.intel.com>
+iommu:map
+iommu:unmap
+
+In addition to defining the new traces, iommu driver is changed to call trace
+events.
+
+Changes since the last patch set:
+- Addressed feedback: removed iommu_amd_event class.
+- Generated patch with the new trace event defines.
+- Generated individual patches for each trace event call in iommu driver
+
+Shuah Khan (7):
+  iommu: Add event tracing feature to iommu
+  iommu: Change iommu driver to call add_device_to_group trace event
+  iommu: Change iommu driver to call remove_device_to_group trace event
+  iommu: Change iommu driver to call attach_device_to_domain trace
+    event
+  iommu: Change iommu driver to call detach_device_to_domain trace
+    event
+  iommu: Change iommu driver to call map trace event
+  iommu: Change iommu driver to call unmap trace event
+
+ drivers/iommu/Makefile       |    1 +
+ drivers/iommu/iommu-traces.c |   24 ++++++++
+ drivers/iommu/iommu.c        |   15 ++++-
+ include/trace/events/iommu.h |  129 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 168 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/iommu/iommu-traces.c
+ create mode 100644 include/trace/events/iommu.h
+
+-- 
+1.7.10.4
+
