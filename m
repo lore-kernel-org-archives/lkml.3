@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758862Ab3HOQD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 12:03:57 -0400
-Received: from mail-in-13.arcor-online.net ([151.189.21.53]:45160 "EHLO
-	mail-in-13.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753603Ab3HOQDu (ORCPT
+	id S1758954Ab3HOQFN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 12:05:13 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:12350 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756994Ab3HOQFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 12:03:50 -0400
-X-Greylist: Passed host: 188.104.3.105
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-13.arcor-online.net 016A0EE00E
-X-Greylist: Passed host: 188.104.3.105
-X-Greylist: Passed host: 188.104.3.105
-X-Greylist: Passed host: 188.104.3.105
-Subject: Re: [PATCH 35/36] hid: roccat: convert class code to use bin_attrs
- in groups
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Aug 2013 18:03:46 +0200
-Message-ID: <1376582626.2452.26.camel@neuromancer.tessier-ashpool>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Aug 2013 12:05:10 -0400
+X-AuditID: cbfec7f5-b7f5f6d00000105f-0c-520cfc3356d8
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        sarah.a.sharp@linux.intel.com
+Cc: dmitry.kasatkin@gmail.com
+Subject: [PATCH 2/2] xhci:prevent "callbacks suppressed" when debug is not
+ enabled
+Date: Thu, 15 Aug 2013 19:04:55 +0300
+Message-id: <70b3564625bbda6247cc5627041344fef8a762ae.1376582695.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.8.1.2
+In-reply-to: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
+References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
+In-reply-to: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
+References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xy7rGf3iCDP60a1t8WVpn0bx4PZvF
+	5V1z2CyaT5xidmDx2DnrLrvHvJOBHvvnrmH3+LxJLoAlissmJTUnsyy1SN8ugStjyfIFbAXz
+	uCvOdCY3ME7n7GLk4JAQMJHoajXuYuQEMsUkLtxbzwZiCwksZZS40WzXxcgFZHcySfS/b2YB
+	SbAJ6ElsaP7BDmKLCMRKPDq/hBHEZhaQlehesRSsWVggRGLBr01g9SwCqhLb310Ci/MKxEkc
+	PrCFDWKZgsTPyyfAbE6BeIk7HddZIRbHSXyZeIAVl/gERv4FjAyrGEVTS5MLipPSc430ihNz
+	i0vz0vWS83M3MUKC6usOxqXHrA4xCnAwKvHwRrRxBwmxJpYVV+YeYpTgYFYS4f16jydIiDcl
+	sbIqtSg/vqg0J7X4ECMTB6dUA+M55vgp66tOSSd+uVL5LGHpEcV5ukXtnxWn8mcGvWxWOcmk
+	2fA/tNTeyIn34X2dkHLmi8W3Z/i83zg1Q9vtA7Nv1D2x+uOX3E5Olv/+2c2tiPWQ0Wu3w7+2
+	/OvlCDYtDZRJ8vnVH7c2RvLG/kNqM9dEu9apKfMGynp73bmws81zWqHLM4vZ85VYijMSDbWY
+	i4oTAddaNqMIAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
-looking through the patch I found the following:
+When debug is not enabled and dev_dbg() will expand to nothing,
+log might be flooded with "callbacks suppressed". If it was not
+done on purpose, better to use dev_dbg_ratelimited() instead.
 
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+---
+ drivers/usb/host/xhci-ring.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-
-In hid-roccat-kone.c, PROFILE_ATTR macro:
-The line
- .private = &profile_numbers[number],
-should read
- .private = &profile_numbers[number-1],
-
-
-
-Regarding the compiler warning about unused pyra_sysfs_write_settings:
-The attribute is indeed readwrite, but the code to write is not standard
-code. The read function was created with the PYRA_SYSFS_R macro and the
-write function was written manually. Used were both by
-PYRA_BIN_ATTRIBUTE_RW.
-In this case I would keep the PYRA_SYSFS_* macros standalone so that the
-calling code looks like this:
-
-PYRA_SYSFS_W(control, CONTROL);
-PYRA_SYSFS_RW(info, INFO);
-PYRA_SYSFS_RW(profile_settings, PROFILE_SETTINGS);
-PYRA_SYSFS_RW(profile_buttons, PROFILE_BUTTONS);
-PYRA_SYSFS_R(settings, SETTINGS);
-
-PYRA_BIN_ATTRIBUTE_W(control, CONTROL);
-PYRA_BIN_ATTRIBUTE_RW(info, INFO);
-PYRA_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS);
-PYRA_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS);
-PYRA_BIN_ATTRIBUTE_RW(settings, SETTINGS);
-
-
-
-Another thing: Why does nobody (besides me) use the get_maintainer.pl
-script, so I have to search manually for patches regarding my code?
-
-Have a nice day,
-Stefan
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 5b08cd8..5298232 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3060,8 +3060,7 @@ int xhci_queue_intr_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 	 * to set the polling interval (once the API is added).
+ 	 */
+ 	if (xhci_interval != ep_interval) {
+-		if (printk_ratelimit())
+-			dev_dbg(&urb->dev->dev, "Driver uses different interval"
++		dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
+ 					" (%d microframe%s) than xHCI "
+ 					"(%d microframe%s)\n",
+ 					ep_interval,
+@@ -3849,8 +3848,7 @@ int xhci_queue_isoc_tx_prepare(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 	 * to set the polling interval (once the API is added).
+ 	 */
+ 	if (xhci_interval != ep_interval) {
+-		if (printk_ratelimit())
+-			dev_dbg(&urb->dev->dev, "Driver uses different interval"
++		dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
+ 					" (%d microframe%s) than xHCI "
+ 					"(%d microframe%s)\n",
+ 					ep_interval,
+-- 
+1.8.1.2
 
