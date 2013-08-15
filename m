@@ -1,175 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759902Ab3HOTtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 15:49:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59198 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758572Ab3HOTtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 15:49:45 -0400
-Date: Thu, 15 Aug 2013 12:48:57 -0700
-From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-12473965c38a527a0c6f7a38d23edce60957f873@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, rostedt@goodmis.org, dsahern@gmail.com,
-        tglx@linutronix.de, oleg@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, rostedt@goodmis.org, dsahern@gmail.com,
-        tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20130806160844.GA2739@redhat.com>
-References: <20130806160844.GA2739@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing/perf: Reimplement TP_perf_assign() logic
-Git-Commit-ID: 12473965c38a527a0c6f7a38d23edce60957f873
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+	id S1760067Ab3HOTt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 15:49:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758658Ab3HOTtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 15:49:55 -0400
+Date: Thu, 15 Aug 2013 15:48:27 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Message-ID: <1376596107-sa83ezpo-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130815123903.2425f4375ad8554b980d586f@linux-foundation.org>
+References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130814164052.2ccdd5bdf7ab56deeba88e68@linux-foundation.org>
+ <1376547820-91ccjgp3-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130815123903.2425f4375ad8554b980d586f@linux-foundation.org>
+Subject: Re: [PATCH v5 0/9] extend hugepage migration
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 15 Aug 2013 12:49:04 -0700 (PDT)
+X-Mutt-References: <20130815123903.2425f4375ad8554b980d586f@linux-foundation.org>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  12473965c38a527a0c6f7a38d23edce60957f873
-Gitweb:     http://git.kernel.org/tip/12473965c38a527a0c6f7a38d23edce60957f873
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Tue, 6 Aug 2013 18:08:44 +0200
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 13 Aug 2013 21:05:57 -0400
+On Thu, Aug 15, 2013 at 12:39:03PM -0700, Andrew Morton wrote:
+> On Thu, 15 Aug 2013 02:23:40 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> >
+> > ...
+> >
+> > > mm-prepare-to-remove-proc-sys-vm-hugepages_treat_as_movable.patch had a
+> > > conflict with
+> > > http://ozlabs.org/~akpm/mmots/broken-out/mm-hugetlb-move-up-the-code-which-check-availability-of-free-huge-page.patch
+> > > which I resolved in the obvious manner.  Please check that from a
+> > > runtime perspective.
+> > 
+> > As replied to the mm-commits notification ("Subject: + mm-prepare-to-remove-
+> > proc-sys-vm-hugepages_treat_as_movable.patch added to -mm tree",)
+> 
+> I can't find that email anywhere :(
 
-tracing/perf: Reimplement TP_perf_assign() logic
+I meant this one:
+http://marc.info/?l=linux-mm&m=137653062031460&w=2
 
-The next patch tries to avoid the costly perf_trace_buf_* calls
-when possible but there is a problem. We can only do this if
-__task == NULL, perf_tp_event(task != NULL) has the additional
-code for this case.
+> > I want to replace that patch with another one ("Subject: [PATCH] hugetlb:
+> > make htlb_alloc_mask dependent on migration support").
+> 
+> Can you please formally resend this?
 
-Unfortunately, TP_perf_assign/__perf_xxx which changes the default
-values of __count/__task variables for perf_trace_buf_submit() is
-called "too late", after we already did perf_trace_buf_prepare(),
-and the optimization above can't work.
+Attached it.
 
-So this patch simply embeds __perf_xxx() into TP_ARGS(), this way
-DECLARE_EVENT_CLASS() can use the result of assignments hidden in
-"args" right after ftrace_get_offsets_##call() which is mostly
-trivial. This allows us to have the fast-path "__task != NULL"
-check at the start, see the next patch.
-
-Link: http://lkml.kernel.org/r/20130806160844.GA2739@redhat.com
-
-Tested-by: David Ahern <dsahern@gmail.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Thanks,
+Naoya
 ---
- include/trace/events/sched.h | 16 +++-------------
- include/trace/ftrace.h       | 19 +++++++++++--------
- 2 files changed, 14 insertions(+), 21 deletions(-)
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Mon, 12 Aug 2013 11:49:37 -0400
+Subject: [PATCH] hugetlb: make htlb_alloc_mask dependent on migration support
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 249c024..2e7d994 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -57,7 +57,7 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
+Now hugepage migration is enabled, although restricted on pmd-based hugepages
+for now (due to lack of testing.) So we should allocate migratable hugepages
+from ZONE_MOVABLE if possible.
+
+This patch makes GFP flags in hugepage allocation dependent on migration
+support, not only the value of hugepages_treat_as_movable.
+It provides no change on the behavior for architectures which do not support
+hugepage migration,
+
+ChangeLog v5:
+ - choose GFP flags in accordance with mobility of hugepage
+ - keep hugepages_treat_as_movable
+
+ChangeLog v3:
+ - use WARN_ON_ONCE
+
+ChangeLog v2:
+ - shift to noop function instead of completely removing the parameter
+ - rename patch title
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ Documentation/sysctl/vm.txt | 30 +++++++++++++++++++-----------
+ kernel/sysctl.c             |  2 +-
+ mm/hugetlb.c                | 32 ++++++++++++++------------------
+ 3 files changed, 34 insertions(+), 30 deletions(-)
+
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index 36ecc26..79a797e 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -200,17 +200,25 @@ fragmentation index is <= extfrag_threshold. The default value is 500.
  
- 	TP_PROTO(struct task_struct *p, int success),
+ hugepages_treat_as_movable
  
--	TP_ARGS(p, success),
-+	TP_ARGS(__perf_task(p), success),
- 
- 	TP_STRUCT__entry(
- 		__array(	char,	comm,	TASK_COMM_LEN	)
-@@ -73,9 +73,6 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- 		__entry->prio		= p->prio;
- 		__entry->success	= success;
- 		__entry->target_cpu	= task_cpu(p);
--	)
--	TP_perf_assign(
--		__perf_task(p);
- 	),
- 
- 	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
-@@ -313,7 +310,7 @@ DECLARE_EVENT_CLASS(sched_stat_template,
- 
- 	TP_PROTO(struct task_struct *tsk, u64 delay),
- 
--	TP_ARGS(tsk, delay),
-+	TP_ARGS(__perf_task(tsk), __perf_count(delay)),
- 
- 	TP_STRUCT__entry(
- 		__array( char,	comm,	TASK_COMM_LEN	)
-@@ -325,10 +322,6 @@ DECLARE_EVENT_CLASS(sched_stat_template,
- 		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
- 		__entry->pid	= tsk->pid;
- 		__entry->delay	= delay;
--	)
--	TP_perf_assign(
--		__perf_count(delay);
--		__perf_task(tsk);
- 	),
- 
- 	TP_printk("comm=%s pid=%d delay=%Lu [ns]",
-@@ -376,7 +369,7 @@ DECLARE_EVENT_CLASS(sched_stat_runtime,
- 
- 	TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
- 
--	TP_ARGS(tsk, runtime, vruntime),
-+	TP_ARGS(tsk, __perf_count(runtime), vruntime),
- 
- 	TP_STRUCT__entry(
- 		__array( char,	comm,	TASK_COMM_LEN	)
-@@ -390,9 +383,6 @@ DECLARE_EVENT_CLASS(sched_stat_runtime,
- 		__entry->pid		= tsk->pid;
- 		__entry->runtime	= runtime;
- 		__entry->vruntime	= vruntime;
--	)
--	TP_perf_assign(
--		__perf_count(runtime);
- 	),
- 
- 	TP_printk("comm=%s pid=%d runtime=%Lu [ns] vruntime=%Lu [ns]",
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 618af05..4163d93 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -507,8 +507,14 @@ static inline notrace int ftrace_get_offsets_##call(			\
- #undef TP_fast_assign
- #define TP_fast_assign(args...) args
- 
--#undef TP_perf_assign
--#define TP_perf_assign(args...)
-+#undef __perf_addr
-+#define __perf_addr(a)	(a)
-+
-+#undef __perf_count
-+#define __perf_count(c)	(c)
-+
-+#undef __perf_task
-+#define __perf_task(t)	(t)
- 
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
-@@ -636,16 +642,13 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- #define __get_str(field) (char *)__get_dynamic_array(field)
- 
- #undef __perf_addr
--#define __perf_addr(a) __addr = (a)
-+#define __perf_addr(a)	(__addr = (a))
- 
- #undef __perf_count
--#define __perf_count(c) __count = (c)
-+#define __perf_count(c)	(__count = (c))
- 
- #undef __perf_task
--#define __perf_task(t) __task = (t)
+-This parameter is only useful when kernelcore= is specified at boot time to
+-create ZONE_MOVABLE for pages that may be reclaimed or migrated. Huge pages
+-are not movable so are not normally allocated from ZONE_MOVABLE. A non-zero
+-value written to hugepages_treat_as_movable allows huge pages to be allocated
+-from ZONE_MOVABLE.
 -
--#undef TP_perf_assign
--#define TP_perf_assign(args...) args
-+#define __perf_task(t)	(__task = (t))
+-Once enabled, the ZONE_MOVABLE is treated as an area of memory the huge
+-pages pool can easily grow or shrink within. Assuming that applications are
+-not running that mlock() a lot of memory, it is likely the huge pages pool
+-can grow to the size of ZONE_MOVABLE by repeatedly entering the desired value
+-into nr_hugepages and triggering page reclaim.
++This parameter controls whether we can allocate hugepages from ZONE_MOVABLE
++or not. If set to non-zero, hugepages can be allocated from ZONE_MOVABLE.
++ZONE_MOVABLE is created when kernel boot parameter kernelcore= is specified,
++so this parameter has no effect if used without kernelcore=.
++
++Hugepage migration is now available in some situations which depend on the
++architecture and/or the hugepage size. If a hugepage supports migration,
++allocation from ZONE_MOVABLE is always enabled for the hugepage regardless
++of the value of this parameter.
++IOW, this parameter affects only non-migratable hugepages.
++
++Assuming that hugepages are not migratable in your system, one usecase of
++this parameter is that users can make hugepage pool more extensible by
++enabling the allocation from ZONE_MOVABLE. This is because on ZONE_MOVABLE
++page reclaim/migration/compaction work more and you can get contiguous
++memory more likely. Note that using ZONE_MOVABLE for non-migratable
++hugepages can do harm to other features like memory hotremove (because
++memory hotremove expects that memory blocks on ZONE_MOVABLE are always
++removable,) so it's a trade-off responsible for the users.
  
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+ ==============================================================
+ 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index ac09d98..b4b32f5 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1225,7 +1225,7 @@ static struct ctl_table vm_table[] = {
+ 		.data		= &hugepages_treat_as_movable,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= hugetlb_treat_movable_handler,
++		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
+ 		.procname	= "nr_overcommit_hugepages",
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 3121915..364f745 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -34,7 +34,6 @@
+ #include "internal.h"
+ 
+ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+-static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
+ unsigned long hugepages_treat_as_movable;
+ 
+ int hugetlb_max_hstate __read_mostly;
+@@ -535,6 +534,15 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
+ 	return page;
+ }
+ 
++/* Movability of hugepages depends on migration support. */
++static inline int htlb_alloc_mask(struct hstate *h)
++{
++	if (hugepages_treat_as_movable || hugepage_migration_support(h))
++		return GFP_HIGHUSER_MOVABLE;
++	else
++		return GFP_HIGHUSER;
++}
++
+ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 				struct vm_area_struct *vma,
+ 				unsigned long address, int avoid_reserve)
+@@ -550,7 +558,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ retry_cpuset:
+ 	cpuset_mems_cookie = get_mems_allowed();
+ 	zonelist = huge_zonelist(vma, address,
+-					htlb_alloc_mask, &mpol, &nodemask);
++					htlb_alloc_mask(h), &mpol, &nodemask);
+ 	/*
+ 	 * A child process with MAP_PRIVATE mappings created by their parent
+ 	 * have no page reserves. This check ensures that reservations are
+@@ -566,7 +574,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 						MAX_NR_ZONES - 1, nodemask) {
+-		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
++		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask(h))) {
+ 			page = dequeue_huge_page_node(h, zone_to_nid(zone));
+ 			if (page) {
+ 				if (!avoid_reserve)
+@@ -723,7 +731,7 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ 		return NULL;
+ 
+ 	page = alloc_pages_exact_node(nid,
+-		htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
++		htlb_alloc_mask(h)|__GFP_COMP|__GFP_THISNODE|
+ 						__GFP_REPEAT|__GFP_NOWARN,
+ 		huge_page_order(h));
+ 	if (page) {
+@@ -948,12 +956,12 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+ 	spin_unlock(&hugetlb_lock);
+ 
+ 	if (nid == NUMA_NO_NODE)
+-		page = alloc_pages(htlb_alloc_mask|__GFP_COMP|
++		page = alloc_pages(htlb_alloc_mask(h)|__GFP_COMP|
+ 				   __GFP_REPEAT|__GFP_NOWARN,
+ 				   huge_page_order(h));
+ 	else
+ 		page = alloc_pages_exact_node(nid,
+-			htlb_alloc_mask|__GFP_COMP|__GFP_THISNODE|
++			htlb_alloc_mask(h)|__GFP_COMP|__GFP_THISNODE|
+ 			__GFP_REPEAT|__GFP_NOWARN, huge_page_order(h));
+ 
+ 	if (page && arch_prepare_hugepage(page)) {
+@@ -2128,18 +2136,6 @@ int hugetlb_mempolicy_sysctl_handler(struct ctl_table *table, int write,
+ }
+ #endif /* CONFIG_NUMA */
+ 
+-int hugetlb_treat_movable_handler(struct ctl_table *table, int write,
+-			void __user *buffer,
+-			size_t *length, loff_t *ppos)
+-{
+-	proc_dointvec(table, write, buffer, length, ppos);
+-	if (hugepages_treat_as_movable)
+-		htlb_alloc_mask = GFP_HIGHUSER_MOVABLE;
+-	else
+-		htlb_alloc_mask = GFP_HIGHUSER;
+-	return 0;
+-}
+-
+ int hugetlb_overcommit_handler(struct ctl_table *table, int write,
+ 			void __user *buffer,
+ 			size_t *length, loff_t *ppos)
+-- 
+1.8.3.1
