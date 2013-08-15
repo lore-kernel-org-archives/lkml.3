@@ -1,164 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760210Ab3HOCEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 22:04:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30182 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759031Ab3HOCDh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 22:03:37 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=kDmDN97bTA8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=QDFsRHsHNQsA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=FGoTIqphnN9v52ywFmgA:9 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130815020335.143019582@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 14 Aug 2013 22:01:06 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH tip/perf/core 2/3] tracing/perf: Reimplement TP_perf_assign() logic
-References: <20130815020104.813498803@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-perf-Reimplement-TP_perf_assign-logic.patch
+	id S1760102Ab3HOCHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 22:07:19 -0400
+Received: from iona.labri.fr ([147.210.8.143]:48688 "EHLO iona.labri.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758582Ab3HOCHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 22:07:16 -0400
+Message-ID: <520C37DC.90902@labri.fr>
+Date: Wed, 14 Aug 2013 22:07:24 -0400
+From: Martin Peres <martin.peres@labri.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130806 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: nouveau: temperature on nv40 is unavailable since ad40d73ef533ab0ad16b4a1ab2f7870c1f8ab954
+References: <1836330.fGgIDqPTNA@pali> <3b367f03-0ab0-4b22-893e-3f03f16a496e@gmail.com> <520A3AD0.5000304@labri.fr> <201308141102.47960@pali>
+In-Reply-To: <201308141102.47960@pali>
+Content-Type: multipart/mixed;
+ boundary="------------010006070107000509040505"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+This is a multi-part message in MIME format.
+--------------010006070107000509040505
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-The next patch tries to avoid the costly perf_trace_buf_* calls
-when possible but there is a problem. We can only do this if
-__task == NULL, perf_tp_event(task != NULL) has the additional
-code for this case.
+On 14/08/2013 05:02, Pali Rohár wrote:
+> On Tuesday 13 August 2013 15:55:28 Martin Peres wrote:
+>> On 13/08/2013 09:53, Pali Rohár wrote:
+>>> On utorok, 13. augusta 2013 15:32:45 CEST, Martin Peres
+> wrote:
+>>>> On 13/08/2013 09:23, Pali Rohár wrote:
+>>>>> On Tuesday 13 August 2013 09:01:19 Martin Peres wrote:
+>>>>   ...
+>>>>
+>>>> You can check the temperature by running nvidia-settings.
+>>>> If you can't see the temperature in it, then nvidia
+>>>> doesn't support it on your card and
+>>>> I'm not sure we should :s
+>>>>
+>>>> Thanks for the vbios you sent me in private. For the
+>>>> others, the reason why he doesn't have temperature anymore
+>>>> is because his vbios lacks sensor calibration values.
+>>> In nvidia-settings tab "GPU 0 - (GeForce 6600 GT)" -->
+>>> "Thermal Settings" is:
+>>>
+>>> Thermal Sensor Information:
+>>> ID: 0
+>>> Target: GPU
+>>> Provider: GPU Internal
+>>> Temperature: 70 C (now)
+>>>
+>>> I looked in Windows program SpeedFan. It found Nvidia PCI
+>>> card and reported "GPU Temp" about 68-70 C. So it looks
+>>> like both nvidia driver and windows SpeedFan program
+>>> reading same values.
+>> Great, I'll cook you a patch in a bit and you'll see what the
+>> temperature is like. It won't be perfectly accurate but there
+>> is some kind of default for nvidia cards of this generation.
+> Ok, send me patch and I can try it if it will work and report
+> similar values as windows or nvidia driver.
+>
+Sorry for the late answer.
 
-Unfortunately, TP_perf_assign/__perf_xxx which changes the default
-values of __count/__task variables for perf_trace_buf_submit() is
-called "too late", after we already did perf_trace_buf_prepare(),
-and the optimization above can't work.
+Please test this patch. Be aware that temperature with nouveau will be 
+higher than with the blob.
+I only want to see if nouveau reports a temperature.
 
-So this patch simply embeds __perf_xxx() into TP_ARGS(), this way
-DECLARE_EVENT_CLASS() can use the result of assignments hidden in
-"args" right after ftrace_get_offsets_##call() which is mostly
-trivial. This allows us to have the fast-path "__task != NULL"
-check at the start, see the next patch.
+The only way to be sure if the values are good-enough would be to use 
+the blob and run:
+nvapeek 0x15b0
+Please send me the result along with the temperature reported by nvidia 
+at the time of the peek.
 
-Link: http://lkml.kernel.org/r/20130806160844.GA2739@redhat.com
+Martin
 
-Tested-by: David Ahern <dsahern@gmail.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+PS: This patch has only be compile-tested, I don't have access to an 
+nv4x right now.
+
+--------------010006070107000509040505
+Content-Type: text/x-patch;
+ name="0001-drm-nv40-therm-set-default-calibration-values-if-nee.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-drm-nv40-therm-set-default-calibration-values-if-nee.pa";
+ filename*1="tch"
+
+>From abe97f1e5de0b7ae5114802fcbc99d6e3408cd00 Mon Sep 17 00:00:00 2001
+From: Martin Peres <martin.peres@labri.fr>
+Date: Wed, 14 Aug 2013 22:00:48 -0400
+Subject: [PATCH] drm/nv40/therm: set default calibration values if needed
+
+Some vbios expose a thermal sensor but do not set default
+calibration values. As they are almost always the same, let's
+set some default ones.
+
+Signed-off-by: Martin Peres <martin.peres@labri.fr>
 ---
- include/trace/events/sched.h |   16 +++-------------
- include/trace/ftrace.h       |   19 +++++++++++--------
- 2 files changed, 14 insertions(+), 21 deletions(-)
+ .../drm/nouveau/core/include/subdev/bios/therm.h   |  1 +
+ drivers/gpu/drm/nouveau/core/subdev/bios/therm.c   |  1 +
+ drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c   | 36 ++++++++++++++++++----
+ drivers/gpu/drm/nouveau/core/subdev/therm/temp.c   |  5 ++-
+ 4 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 249c024..2e7d994 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -57,7 +57,7 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
+diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/bios/therm.h b/drivers/gpu/drm/nouveau/core/include/subdev/bios/therm.h
+index 083541d..11b7993 100644
+--- a/drivers/gpu/drm/nouveau/core/include/subdev/bios/therm.h
++++ b/drivers/gpu/drm/nouveau/core/include/subdev/bios/therm.h
+@@ -10,6 +10,7 @@ struct nvbios_therm_threshold {
  
- 	TP_PROTO(struct task_struct *p, int success),
+ struct nvbios_therm_sensor {
+ 	/* diode */
++	int has_sensor;
+ 	s16 slope_mult;
+ 	s16 slope_div;
+ 	s16 offset_num;
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bios/therm.c b/drivers/gpu/drm/nouveau/core/subdev/bios/therm.c
+index 22a2057..16b763d 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bios/therm.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bios/therm.c
+@@ -95,6 +95,7 @@ nvbios_therm_sensor_parse(struct nouveau_bios *bios,
+ 			sensor_section++;
+ 			if (sensor_section == 0) {
+ 				offset = ((s8) nv_ro08(bios, entry + 2)) / 2;
++				sensor->has_sensor = 1;
+ 				sensor->offset_constant = offset;
+ 			}
+ 			break;
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c b/drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c
+index 002e51b..5312bbd 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/therm/nv40.c
+@@ -93,11 +93,6 @@ nv40_temp_get(struct nouveau_therm *therm)
+ 	} else
+ 		return -ENODEV;
  
--	TP_ARGS(p, success),
-+	TP_ARGS(__perf_task(p), success),
- 
- 	TP_STRUCT__entry(
- 		__array(	char,	comm,	TASK_COMM_LEN	)
-@@ -73,9 +73,6 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- 		__entry->prio		= p->prio;
- 		__entry->success	= success;
- 		__entry->target_cpu	= task_cpu(p);
--	)
--	TP_perf_assign(
--		__perf_task(p);
- 	),
- 
- 	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
-@@ -313,7 +310,7 @@ DECLARE_EVENT_CLASS(sched_stat_template,
- 
- 	TP_PROTO(struct task_struct *tsk, u64 delay),
- 
--	TP_ARGS(tsk, delay),
-+	TP_ARGS(__perf_task(tsk), __perf_count(delay)),
- 
- 	TP_STRUCT__entry(
- 		__array( char,	comm,	TASK_COMM_LEN	)
-@@ -325,10 +322,6 @@ DECLARE_EVENT_CLASS(sched_stat_template,
- 		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
- 		__entry->pid	= tsk->pid;
- 		__entry->delay	= delay;
--	)
--	TP_perf_assign(
--		__perf_count(delay);
--		__perf_task(tsk);
- 	),
- 
- 	TP_printk("comm=%s pid=%d delay=%Lu [ns]",
-@@ -376,7 +369,7 @@ DECLARE_EVENT_CLASS(sched_stat_runtime,
- 
- 	TP_PROTO(struct task_struct *tsk, u64 runtime, u64 vruntime),
- 
--	TP_ARGS(tsk, runtime, vruntime),
-+	TP_ARGS(tsk, __perf_count(runtime), vruntime),
- 
- 	TP_STRUCT__entry(
- 		__array( char,	comm,	TASK_COMM_LEN	)
-@@ -390,9 +383,6 @@ DECLARE_EVENT_CLASS(sched_stat_runtime,
- 		__entry->pid		= tsk->pid;
- 		__entry->runtime	= runtime;
- 		__entry->vruntime	= vruntime;
--	)
--	TP_perf_assign(
--		__perf_count(runtime);
- 	),
- 
- 	TP_printk("comm=%s pid=%d runtime=%Lu [ns] vruntime=%Lu [ns]",
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 618af05..4163d93 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -507,8 +507,14 @@ static inline notrace int ftrace_get_offsets_##call(			\
- #undef TP_fast_assign
- #define TP_fast_assign(args...) args
- 
--#undef TP_perf_assign
--#define TP_perf_assign(args...)
-+#undef __perf_addr
-+#define __perf_addr(a)	(a)
-+
-+#undef __perf_count
-+#define __perf_count(c)	(c)
-+
-+#undef __perf_task
-+#define __perf_task(t)	(t)
- 
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
-@@ -636,16 +642,13 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- #define __get_str(field) (char *)__get_dynamic_array(field)
- 
- #undef __perf_addr
--#define __perf_addr(a) __addr = (a)
-+#define __perf_addr(a)	(__addr = (a))
- 
- #undef __perf_count
--#define __perf_count(c) __count = (c)
-+#define __perf_count(c)	(__count = (c))
- 
- #undef __perf_task
--#define __perf_task(t) __task = (t)
+-	/* if the slope or the offset is unset, do no use the sensor */
+-	if (!sensor->slope_div || !sensor->slope_mult ||
+-	    !sensor->offset_num || !sensor->offset_den)
+-	    return -ENODEV;
 -
--#undef TP_perf_assign
--#define TP_perf_assign(args...) args
-+#define __perf_task(t)	(__task = (t))
+ 	core_temp = core_temp * sensor->slope_mult / sensor->slope_div;
+ 	core_temp = core_temp + sensor->offset_num / sensor->offset_den;
+ 	core_temp = core_temp + sensor->offset_constant - 8;
+@@ -171,7 +166,7 @@ nv40_therm_intr(struct nouveau_subdev *subdev)
+ 	struct nouveau_therm *therm = nouveau_therm(subdev);
+ 	uint32_t stat = nv_rd32(therm, 0x1100);
  
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+-	/* traitement */
++	/* TODO: do something? Need more RE first */
+ 
+ 	/* ack all IRQs */
+ 	nv_wr32(therm, 0x1100, 0x70000);
+@@ -202,11 +197,40 @@ nv40_therm_ctor(struct nouveau_object *parent,
+ 	return nouveau_therm_preinit(&priv->base.base);
+ }
+ 
++static void
++nv40_therm_temp_safety_checks(struct nouveau_therm *therm)
++{
++	struct nouveau_therm_priv *priv = (void *)therm;
++	struct nvbios_therm_sensor *sensor = &priv->bios_sensor;
++	enum nv40_sensor_style style = nv40_sensor_style(therm);
++
++	/* if the slope or the offset is unset, do no use the sensor */
++	if (sensor->has_sensor && (!sensor->slope_div || !sensor->slope_mult ||
++	    !sensor->offset_num || !sensor->offset_den)) {
++
++		nv_info(therm, "Invalid sensor calibration values. "
++		               "Set default calibration values\n");
++
++		if (style == NEW_STYLE) {
++			sensor->slope_div = 10000;
++			sensor->slope_mult = 450;
++			sensor->offset_num = -25000;
++			sensor->offset_den = 100;
++		} else 	if (style == OLD_STYLE) {
++			sensor->slope_div = 1000;
++			sensor->slope_mult = 792;
++			sensor->offset_num = 2306;
++			sensor->offset_den = 100;
++		}
++	}
++}
++
+ static int
+ nv40_therm_init(struct nouveau_object *object)
+ {
+ 	struct nouveau_therm *therm = (void *)object;
+ 
++	nv40_therm_temp_safety_checks(therm);
+ 	nv40_sensor_setup(therm);
+ 
+ 	return _nouveau_therm_init(object);
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/therm/temp.c b/drivers/gpu/drm/nouveau/core/subdev/therm/temp.c
+index dde746c..053034e 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/therm/temp.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/therm/temp.c
+@@ -49,9 +49,8 @@ nouveau_therm_temp_set_defaults(struct nouveau_therm *therm)
+ 	priv->bios_sensor.thrs_shutdown.hysteresis = 5; /*not that it matters */
+ }
+ 
+-
+ static void
+-nouveau_therm_temp_safety_checks(struct nouveau_therm *therm)
++nouveau_therm_sensor_safety_checks(struct nouveau_therm *therm)
+ {
+ 	struct nouveau_therm_priv *priv = (void *)therm;
+ 	struct nvbios_therm_sensor *s = &priv->bios_sensor;
+@@ -239,7 +238,7 @@ nouveau_therm_sensor_ctor(struct nouveau_therm *therm)
+ 	if (nvbios_therm_sensor_parse(bios, NVBIOS_THERM_DOMAIN_CORE,
+ 				      &priv->bios_sensor))
+ 		nv_error(therm, "nvbios_therm_sensor_parse failed\n");
+-	nouveau_therm_temp_safety_checks(therm);
++	nouveau_therm_sensor_safety_checks(therm);
+ 
+ 	return 0;
+ }
 -- 
-1.7.10.4
+1.8.3.4
 
 
+--------------010006070107000509040505--
