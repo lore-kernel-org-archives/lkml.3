@@ -1,102 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760028Ab3HOCoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 22:44:39 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:36766 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758380Ab3HOCoi (ORCPT
+	id S1760133Ab3HOC5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 22:57:31 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:37948 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759962Ab3HOC53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 22:44:38 -0400
-Date: Thu, 15 Aug 2013 11:44:27 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
-Message-ID: <20130815024427.GA2718@gmail.com>
-References: <520B0B75.4030708@huawei.com>
- <20130814085711.GK2296@suse.de>
- <20130814155205.GA2706@gmail.com>
- <20130814161642.GM2296@suse.de>
- <20130814163921.GC2706@gmail.com>
- <20130814180012.GO2296@suse.de>
- <520C3DD2.8010905@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520C3DD2.8010905@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 Aug 2013 22:57:29 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] KVM: PPC: move iommu_add_device earlier
+Date: Thu, 15 Aug 2013 12:57:19 +1000
+Message-Id: <1376535439-12838-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Xishi,
+The current implementation of IOMMU on sPAPR does not use iommu_ops
+and therefore does not call IOMMU API's bus_set_iommu() which
+1) sets iommu_ops for a bus
+2) registers a bus notifier
+Instead, PCI devices are added to IOMMU groups from
+subsys_initcall_sync(tce_iommu_init) which does basically the same
+thing without using iommu_ops callbacks.
 
-On Thu, Aug 15, 2013 at 10:32:50AM +0800, Xishi Qiu wrote:
-> On 2013/8/15 2:00, Mel Gorman wrote:
-> 
-> >>> Even if the page is still page buddy, there is no guarantee that it's
-> >>> the same page order as the first read. It could have be currently
-> >>> merging with adjacent buddies for example. There is also a really
-> >>> small race that a page was freed, allocated with some number stuffed
-> >>> into page->private and freed again before the second PageBuddy check.
-> >>> It's a bit of a hand grenade. How much of a performance benefit is there
-> >>
-> >> 1. Just worst case is skipping pageblock_nr_pages
-> > 
-> > No, the worst case is that page_order returns a number that is
-> > completely garbage and low_pfn goes off the end of the zone
-> > 
-> >> 2. Race is really small
-> >> 3. Higher order page allocation customer always have graceful fallback.
-> >>
-> 
-> Hi Minchan, 
-> I think in this case, we may get the wrong value from page_order(page).
-> 
-> 1. page is in page buddy
-> 
-> > if (PageBuddy(page)) {
-> 
-> 2. someone allocated the page, and set page->private to another value
-> 
-> > 	int nr_pages = (1 << page_order(page)) - 1;
-> 
-> 3. someone freed the page
-> 
-> > 	if (PageBuddy(page)) {
-> 
-> 4. we will skip wrong pages
+However Freescale PAMU driver (https://lkml.org/lkml/2013/7/1/158)
+implements iommu_ops and when tce_iommu_init is called, every PCI device
+is already added to some group so there is a conflict.
 
-So, what's the result by that?
-As I said, it's just skipping (pageblock_nr_pages -1) at worst case
-and the case you mentioned is right academically and I and Mel
-already pointed out that. But how often could that happen in real
-practice? I believe such is REALLY REALLY rare.
-So, as Mel said, if you have some workloads to see the benefit
-from this patch, I think we could accept the patch.
-Could you try and respin with the number?
-I guess big contigous memory range or memory-hotplug which are
-full of free pages in embedded CPU which is rather slower than server
-or desktop side could have benefit.
+This patch does 2 things:
+1. removes the loop in which PCI devices were added to groups and
+adds devices as soon as they get the iommu_table pointer assigned to them.
+For this, the set_iommu_table_base_and_group() function is introduced.
+2. moves a bus notifier to powernv code (for hotplug) in order to avoid
+conflict with the notifier from the Freescale driver.
 
-Thanks.
+iommu_add_device() and iommu_del_device() are public now.
 
-> 
-> > 		nr_pages = min(nr_pages, MAX_ORDER_NR_PAGES - 1);
-> > 		low_pfn += nr_pages;
-> > 		continue;
-> > 	}
-> > }
-> > 
-> > It's still race-prone meaning that it really should be backed by some
-> > performance data justifying it.
-> > 
-> 
-> 
-> 
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+---
 
+Changes:
+v2:
+* added a helper - set_iommu_table_base_and_group - which does
+set_iommu_table_base() and iommu_add_device()
+
+---
+ arch/powerpc/include/asm/iommu.h            |  9 +++++++
+ arch/powerpc/kernel/iommu.c                 | 41 +++--------------------------
+ arch/powerpc/platforms/powernv/pci-ioda.c   |  8 +++---
+ arch/powerpc/platforms/powernv/pci-p5ioc2.c |  2 +-
+ arch/powerpc/platforms/powernv/pci.c        | 32 +++++++++++++++++++++-
+ arch/powerpc/platforms/pseries/iommu.c      |  8 +++---
+ 6 files changed, 54 insertions(+), 46 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
+index c34656a..19ad77f 100644
+--- a/arch/powerpc/include/asm/iommu.h
++++ b/arch/powerpc/include/asm/iommu.h
+@@ -103,6 +103,15 @@ extern struct iommu_table *iommu_init_table(struct iommu_table * tbl,
+ 					    int nid);
+ extern void iommu_register_group(struct iommu_table *tbl,
+ 				 int pci_domain_number, unsigned long pe_num);
++extern int iommu_add_device(struct device *dev);
++extern void iommu_del_device(struct device *dev);
++
++static inline void set_iommu_table_base_and_group(struct device *dev,
++						  void *base)
++{
++	set_iommu_table_base(dev, base);
++	iommu_add_device(dev);
++}
+ 
+ extern int iommu_map_sg(struct device *dev, struct iommu_table *tbl,
+ 			struct scatterlist *sglist, int nelems,
+diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+index b20ff17..15f8ca8 100644
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -1105,7 +1105,7 @@ void iommu_release_ownership(struct iommu_table *tbl)
+ }
+ EXPORT_SYMBOL_GPL(iommu_release_ownership);
+ 
+-static int iommu_add_device(struct device *dev)
++int iommu_add_device(struct device *dev)
+ {
+ 	struct iommu_table *tbl;
+ 	int ret = 0;
+@@ -1134,46 +1134,13 @@ static int iommu_add_device(struct device *dev)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(iommu_add_device);
+ 
+-static void iommu_del_device(struct device *dev)
++void iommu_del_device(struct device *dev)
+ {
+ 	iommu_group_remove_device(dev);
+ }
+-
+-static int iommu_bus_notifier(struct notifier_block *nb,
+-			      unsigned long action, void *data)
+-{
+-	struct device *dev = data;
+-
+-	switch (action) {
+-	case BUS_NOTIFY_ADD_DEVICE:
+-		return iommu_add_device(dev);
+-	case BUS_NOTIFY_DEL_DEVICE:
+-		iommu_del_device(dev);
+-		return 0;
+-	default:
+-		return 0;
+-	}
+-}
+-
+-static struct notifier_block tce_iommu_bus_nb = {
+-	.notifier_call = iommu_bus_notifier,
+-};
+-
+-static int __init tce_iommu_init(void)
+-{
+-	struct pci_dev *pdev = NULL;
+-
+-	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
+-
+-	for_each_pci_dev(pdev)
+-		iommu_add_device(&pdev->dev);
+-
+-	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
+-	return 0;
+-}
+-
+-subsys_initcall_sync(tce_iommu_init);
++EXPORT_SYMBOL_GPL(iommu_del_device);
+ 
+ #else
+ 
+diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
+index d8140b1..756bb58 100644
+--- a/arch/powerpc/platforms/powernv/pci-ioda.c
++++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+@@ -440,7 +440,7 @@ static void pnv_pci_ioda_dma_dev_setup(struct pnv_phb *phb, struct pci_dev *pdev
+ 		return;
+ 
+ 	pe = &phb->ioda.pe_array[pdn->pe_number];
+-	set_iommu_table_base(&pdev->dev, &pe->tce32_table);
++	set_iommu_table_base_and_group(&pdev->dev, &pe->tce32_table);
+ }
+ 
+ static void pnv_ioda_setup_bus_dma(struct pnv_ioda_pe *pe, struct pci_bus *bus)
+@@ -448,7 +448,7 @@ static void pnv_ioda_setup_bus_dma(struct pnv_ioda_pe *pe, struct pci_bus *bus)
+ 	struct pci_dev *dev;
+ 
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+-		set_iommu_table_base(&dev->dev, &pe->tce32_table);
++		set_iommu_table_base_and_group(&dev->dev, &pe->tce32_table);
+ 		if (dev->subordinate)
+ 			pnv_ioda_setup_bus_dma(pe, dev->subordinate);
+ 	}
+@@ -611,7 +611,7 @@ static void pnv_pci_ioda_setup_dma_pe(struct pnv_phb *phb,
+ 	iommu_register_group(tbl, pci_domain_nr(pe->pbus), pe->pe_number);
+ 
+ 	if (pe->pdev)
+-		set_iommu_table_base(&pe->pdev->dev, tbl);
++		set_iommu_table_base_and_group(&pe->pdev->dev, tbl);
+ 	else
+ 		pnv_ioda_setup_bus_dma(pe, pe->pbus);
+ 
+@@ -687,7 +687,7 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
+ 	iommu_init_table(tbl, phb->hose->node);
+ 
+ 	if (pe->pdev)
+-		set_iommu_table_base(&pe->pdev->dev, tbl);
++		set_iommu_table_base_and_group(&pe->pdev->dev, tbl);
+ 	else
+ 		pnv_ioda_setup_bus_dma(pe, pe->pbus);
+ 
+diff --git a/arch/powerpc/platforms/powernv/pci-p5ioc2.c b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
+index b68db63..ede341b 100644
+--- a/arch/powerpc/platforms/powernv/pci-p5ioc2.c
++++ b/arch/powerpc/platforms/powernv/pci-p5ioc2.c
+@@ -92,7 +92,7 @@ static void pnv_pci_p5ioc2_dma_dev_setup(struct pnv_phb *phb,
+ 				pci_domain_nr(phb->hose->bus), phb->opal_id);
+ 	}
+ 
+-	set_iommu_table_base(&pdev->dev, &phb->p5ioc2.iommu_table);
++	set_iommu_table_base_and_group(&pdev->dev, &phb->p5ioc2.iommu_table);
+ }
+ 
+ static void __init pnv_pci_init_p5ioc2_phb(struct device_node *np, u64 hub_id,
+diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
+index a28d3b5..d69161f 100644
+--- a/arch/powerpc/platforms/powernv/pci.c
++++ b/arch/powerpc/platforms/powernv/pci.c
+@@ -504,7 +504,7 @@ static void pnv_pci_dma_fallback_setup(struct pci_controller *hose,
+ 		pdn->iommu_table = pnv_pci_setup_bml_iommu(hose);
+ 	if (!pdn->iommu_table)
+ 		return;
+-	set_iommu_table_base(&pdev->dev, pdn->iommu_table);
++	set_iommu_table_base_and_group(&pdev->dev, pdn->iommu_table);
+ }
+ 
+ static void pnv_pci_dma_dev_setup(struct pci_dev *pdev)
+@@ -623,3 +623,33 @@ void __init pnv_pci_init(void)
+ 	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
+ #endif
+ }
++
++static int tce_iommu_bus_notifier(struct notifier_block *nb,
++		unsigned long action, void *data)
++{
++	struct device *dev = data;
++
++	switch (action) {
++	case BUS_NOTIFY_ADD_DEVICE:
++		return iommu_add_device(dev);
++	case BUS_NOTIFY_DEL_DEVICE:
++		iommu_del_device(dev);
++		return 0;
++	default:
++		return 0;
++	}
++}
++
++static struct notifier_block tce_iommu_bus_nb = {
++	.notifier_call = tce_iommu_bus_notifier,
++};
++
++static int __init tce_iommu_bus_notifier_init(void)
++{
++	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
++
++	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
++	return 0;
++}
++
++subsys_initcall_sync(tce_iommu_bus_notifier_init);
+diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
+index 23fc1dc..884ae71 100644
+--- a/arch/powerpc/platforms/pseries/iommu.c
++++ b/arch/powerpc/platforms/pseries/iommu.c
+@@ -687,7 +687,8 @@ static void pci_dma_dev_setup_pSeries(struct pci_dev *dev)
+ 		iommu_table_setparms(phb, dn, tbl);
+ 		PCI_DN(dn)->iommu_table = iommu_init_table(tbl, phb->node);
+ 		iommu_register_group(tbl, pci_domain_nr(phb->bus), 0);
+-		set_iommu_table_base(&dev->dev, PCI_DN(dn)->iommu_table);
++		set_iommu_table_base_and_group(&dev->dev,
++					       PCI_DN(dn)->iommu_table);
+ 		return;
+ 	}
+ 
+@@ -699,7 +700,8 @@ static void pci_dma_dev_setup_pSeries(struct pci_dev *dev)
+ 		dn = dn->parent;
+ 
+ 	if (dn && PCI_DN(dn))
+-		set_iommu_table_base(&dev->dev, PCI_DN(dn)->iommu_table);
++		set_iommu_table_base_and_group(&dev->dev,
++					       PCI_DN(dn)->iommu_table);
+ 	else
+ 		printk(KERN_WARNING "iommu: Device %s has no iommu table\n",
+ 		       pci_name(dev));
+@@ -1193,7 +1195,7 @@ static void pci_dma_dev_setup_pSeriesLP(struct pci_dev *dev)
+ 		pr_debug("  found DMA window, table: %p\n", pci->iommu_table);
+ 	}
+ 
+-	set_iommu_table_base(&dev->dev, pci->iommu_table);
++	set_iommu_table_base_and_group(&dev->dev, pci->iommu_table);
+ }
+ 
+ static int dma_set_mask_pSeriesLP(struct device *dev, u64 dma_mask)
 -- 
-Kind regards,
-Minchan Kim
+1.8.3.2
+
