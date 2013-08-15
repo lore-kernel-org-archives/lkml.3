@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017Ab3HONNB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 09:13:01 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:41515 "EHLO smtp3-g21.free.fr"
+	id S1757665Ab3HONMj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 09:12:39 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:34012 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248Ab3HONM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 09:12:59 -0400
+	id S1757471Ab3HONMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 09:12:37 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 07/10] file: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Thu, 15 Aug 2013 15:10:57 +0200
-Message-Id: <720e16d629d7f5979f9d8a31eef4e80a1420c9ce.1376327678.git.ydroneaud@opteya.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Erik Gilling <konkers@android.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Colin Cross <ccross@google.com>
+Subject: [PATCH v2 04/10] android/sync: use get_unused_fd_flags(O_CLOEXEC) instead of get_unused_fd()
+Date: Thu, 15 Aug 2013 15:10:54 +0200
+Message-Id: <a62f8c4d9c9f85d26517370ac01dbcce51361a06.1376327678.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1376327678.git.ydroneaud@opteya.com>
 References: <cover.1376327678.git.ydroneaud@opteya.com>
@@ -36,32 +38,32 @@ In a further patch, get_unused_fd() will be removed so that
 new code start using anon_inode_getfd() or get_unused_fd_flags()
 with correct flags.
 
-This patch replaces calls to get_unused_fd() with equivalent call to
-get_unused_fd_flags(0) to preserve current behavor for existing code.
-
-The hard coded flag value (0) should be reviewed on a per-subsystem basis,
-and, if possible, set to O_CLOEXEC.
+This patch replaces calls to get_unused_fd() with call to
+get_unused_fd_flags(O_CLOEXEC) following advice from Erik Gilling.
 
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Erik Gilling <konkers@android.com>
+Cc: Colin Cross <ccross@google.com>
+Link: http://lkml.kernel.org/r/CACSP8SjXGMk2_kX_+RgzqqQwqKernvF1Wt3K5tw991W5dfAnCA@mail.gmail.com
 Link: http://lkml.kernel.org/r/cover.1376327678.git.ydroneaud@opteya.com
 
 ---
- fs/file.c | 2 +-
+ drivers/staging/android/sync.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 4a78f98..1420d28 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -897,7 +897,7 @@ SYSCALL_DEFINE1(dup, unsigned int, fildes)
- 	struct file *file = fget_raw(fildes);
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index 2996077..38e5d3b 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -697,7 +697,7 @@ static long sync_fence_ioctl_wait(struct sync_fence *fence, unsigned long arg)
  
- 	if (file) {
--		ret = get_unused_fd();
-+		ret = get_unused_fd_flags(0);
- 		if (ret >= 0)
- 			fd_install(ret, file);
- 		else
+ static long sync_fence_ioctl_merge(struct sync_fence *fence, unsigned long arg)
+ {
+-	int fd = get_unused_fd();
++	int fd = get_unused_fd_flags(O_CLOEXEC);
+ 	int err;
+ 	struct sync_fence *fence2, *fence3;
+ 	struct sync_merge_data data;
 -- 
 1.8.3.1
 
