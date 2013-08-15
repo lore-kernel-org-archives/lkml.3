@@ -1,112 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab3HOKyN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 06:54:13 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:63923 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab3HOKyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 06:54:11 -0400
-Date: Thu, 15 Aug 2013 12:54:05 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [PATCH 2/2] ARM: dts: USB for Tegra114 Dalmore
-Message-ID: <20130815105404.GA14301@ulmo>
-References: <1375292543-7896-1-git-send-email-ttynkkynen@nvidia.com>
- <1375292543-7896-3-git-send-email-ttynkkynen@nvidia.com>
- <51F9550F.3080503@cogentembedded.com>
- <51F9660C.6090604@iki.fi>
- <51F96B48.10209@cogentembedded.com>
- <51F98A78.9060309@wwwdotorg.org>
- <51F98D92.3010607@cogentembedded.com>
- <51F99DE4.7010503@wwwdotorg.org>
+	id S1755048Ab3HOKzh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 06:55:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5499 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754124Ab3HOKzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 06:55:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,885,1367996400"; 
+   d="scan'208";a="387526820"
+Date: Thu, 15 Aug 2013 11:55:33 +0100
+From: Damien Lespiau <damien.lespiau@intel.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: [Intel-gfx] [PATCH] i915: Add a Kconfig option to turn on
+ i915.preliminary_hw_support by default
+Message-ID: <20130815105533.GA4490@strange.amr.corp.intel.com>
+References: <20130813232130.GA20895@jtriplet-mobl1>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51F99DE4.7010503@wwwdotorg.org>
+In-Reply-To: <20130813232130.GA20895@jtriplet-mobl1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 13, 2013 at 04:23:17PM -0700, Josh Triplett wrote:
+> When building kernels for a preliminary hardware target, having to add a
+> kernel command-line option can prove inconvenient.  Add a Kconfig option
+> that changes the default of this option to 1.
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+FWIW, I like it (and had something similar in mind for this on other
+little parameters/debug features). 
 
-On Wed, Jul 31, 2013 at 05:29:40PM -0600, Stephen Warren wrote:
-> On 07/31/2013 04:20 PM, Sergei Shtylyov wrote:
-> > On 08/01/2013 02:06 AM, Stephen Warren wrote:
-> ...
-> >>>     That's really horrible design.
-> >>
-> >> Yup. Both USB PHY and EHCI controller registers really are interleaved
-> >> in one range.
-> >=20
-> >    But the standard EHCI register space has no holes IIRC, so they can't
-> > be really that much interleaved as you're describing (unless you have
-> > some non-standard registers of course)...
->=20
-> Yes, there are certainly non-standard registers.
->=20
-> ...
-> >>>     Don't they cause numerous resource conflicts while device nodes
-> >>> being
-> >>> instantiated as the platform devices?
-> >=20
-> >> No; the driver knows that the HW is screwy and there's lots of
-> >> register-range sharing going on, so it simply maps the registers, rath=
-er
-> >> than reserving the physical address range and mapping it.
-> >=20
-> >    Yes, it's clear that the driver should take special measures, I was
-> > asking about the platform device creation phase. What do you see in
-> > /proc/iomem?
->=20
-> The drivers don't request the memory region since doing so would cause
-> conflicts. Hence, the regions don't show up in /proc/iomem.
->=20
-> This actually isn't that uncommon for DT-based drivers anyway; many use
-> e.g. of_iomap() which IIRC just looks up the resource and maps it
-> without registering the usage.
+Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
 
-Not being uncommon isn't a good argument. The problem with doing this is
-that it sets a bad example and makes it easier for others to do the same
-thing. I can see that for some drivers providing a proper abstraction or
-encapsulation might be more complicated than necessary. But I've also
-seen this kind of shortcut taken quite often lately and especially often
-in DT-based drivers.
+It doesn't apply cleanly to drm-intel/drm-intel-nightly which is the
+preferred branch to base patches on. Daniel might fix this himself as
+this is rather trivial to solve.
 
-Am I the only one concerned about this development?
+-- 
+Damien
 
-Thierry
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSDLNMAAoJEN0jrNd/PrOhhwAQAK9AjWRaNcZLykAhkqcaoG/f
-v3zxgb4k04AIhaYBtzFd6Hbtke+gDZpgCIsRBeitAGPTNxMpu5FcJgyH7iaWr7hw
-+E0yV7LvEgoGCt4sTnTA9N0TPGrURV4Zt/9+7nrBphBtadA7QBxq8bmIDEDJ/kak
-FlyWDSJIqXQyxzT9vUx6OR4PXjvVqeqykxEhCJi/i09P9WuyFtEEi/KVVIO473mh
-FL2gxoU3BWCHcvSY/lt2rnPGAQuzqHWYX2HuPiBbiMeDz6fbHl2NlGybIPnHUcjw
-e7SSJ22fV9JaSPOh0O0rGZrmukkJ8B6wNXZhDsmW3rOtT01339WNeJtl0iit2dVz
-OqJbGBlJvV+elLa/1ih1g3NLF2J4RT5P421+feCn3QmAMHVA/WZXrhNCR9gQUUOP
-3Fnnt6qECL3VmOa/nBFtMj71XJIwsyhFTEceyjp5rxLXKWRtpblIGzrwqYVYYLNF
-lRsbhlruWDwRQPtiOaDD+7y4xl/tRJ0giDPLsmFIy290O75kB5Jb8R6ZtQqK0Vkj
-FaF9j5Ok61vxkD7T4LjpMseQflAVwPHUhgEeSbx2ol3NWzerheMUwTejsXe67reN
-Xbqj9BCLyMu/j4T5WNSVmb1j+QvYmvwwwe/hmmJ645+3Fb4ZACDJOYpp3Q/nGvQe
-ypSSJzepvIXh6p9WrBB5
-=E9Ke
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+> 
+> I dropped the indication of the default in the module parameter
+> documentation, but I could also change it to show the default for the
+> current kernel via ifdef.
+> 
+>  drivers/gpu/drm/Kconfig         | 9 +++++++++
+>  drivers/gpu/drm/i915/i915_drv.c | 4 ++--
+>  2 files changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+> index a7c54c8..35d57ed 100644
+> --- a/drivers/gpu/drm/Kconfig
+> +++ b/drivers/gpu/drm/Kconfig
+> @@ -168,6 +168,15 @@ config DRM_I915_KMS
+>  	  the driver to bind to PCI devices, which precludes loading things
+>  	  like intelfb.
+>  
+> +config DRM_I915_PRELIMINARY_HW_SUPPORT
+> +	bool "Enable preliminary support for prerelease Intel hardware by default"
+> +	depends on DRM_I915
+> +	help
+> +	  Choose this option if you have prerelease Intel hardware and want the
+> +	  i915 driver to support it by default.  You can enable such support at
+> +	  runtime with the module option i915.preliminary_hw_support=1; this
+> +	  option changes the default for that module option.
+> +
+>  config DRM_MGA
+>  	tristate "Matrox g200/g400"
+>  	depends on DRM && PCI
+> diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+> index 45b3c03..594e06c 100644
+> --- a/drivers/gpu/drm/i915/i915_drv.c
+> +++ b/drivers/gpu/drm/i915/i915_drv.c
+> @@ -118,10 +118,10 @@ module_param_named(i915_enable_ppgtt, i915_enable_ppgtt, int, 0600);
+>  MODULE_PARM_DESC(i915_enable_ppgtt,
+>  		"Enable PPGTT (default: true)");
+>  
+> -unsigned int i915_preliminary_hw_support __read_mostly = 0;
+> +unsigned int i915_preliminary_hw_support __read_mostly = IS_ENABLED(CONFIG_DRM_I915_PRELIMINARY_HW_SUPPORT);
+>  module_param_named(preliminary_hw_support, i915_preliminary_hw_support, int, 0600);
+>  MODULE_PARM_DESC(preliminary_hw_support,
+> -		"Enable preliminary hardware support. (default: false)");
+> +		"Enable preliminary hardware support.");
+>  
+>  int i915_disable_power_well __read_mostly = 1;
+>  module_param_named(disable_power_well, i915_disable_power_well, int, 0600);
+> -- 
+> 1.8.4.rc2
+> 
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
