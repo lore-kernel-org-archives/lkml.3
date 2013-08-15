@@ -1,137 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3HOFAX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 01:00:23 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:45750 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131Ab3HOFAQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 01:00:16 -0400
-Date: Wed, 14 Aug 2013 22:00:07 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Caizhiyong <caizhiyong@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Karel Zak <kzak@redhat.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Huang Shijie <b32955@freescale.com>
-Subject: Re: [PATCH] block: add command line partition parser
-Message-ID: <20130815050007.GA23474@brian-ubuntu>
-References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
- <20130805152206.76462cc4a42e51b16a0532f1@linux-foundation.org>
- <C3050A4DBA34F345975765E43127F10F1C06237C@szxeml512-mbs.china.huawei.com>
- <20130814155742.d3cd651e40e552696667e4f2@linux-foundation.org>
- <CAN8TOE-aGcKQNayzEVQaS1wJ_Uqp3RAZ5pTuVEhaaY9f487-xA@mail.gmail.com>
- <C3050A4DBA34F345975765E43127F10F1C063B36@szxeml512-mbx.china.huawei.com>
+	id S1753131Ab3HOFCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 01:02:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52358 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751174Ab3HOFCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 01:02:47 -0400
+Date: Thu, 15 Aug 2013 08:04:15 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 10/13] x86: Move cond resched for copy_{from,to}_user
+ into low level code 64bit
+Message-ID: <20130815050415.GA2025@redhat.com>
+References: <1376089460-5459-1-git-send-email-andi@firstfloor.org>
+ <1376089460-5459-11-git-send-email-andi@firstfloor.org>
+ <CA+55aFyN2Cnt=uQOnXszwDA971o=xEwO=yFSgL-RH9vRjMsBbg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <C3050A4DBA34F345975765E43127F10F1C063B36@szxeml512-mbx.china.huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyN2Cnt=uQOnXszwDA971o=xEwO=yFSgL-RH9vRjMsBbg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 03:38:47AM +0000, Caizhiyong wrote:
-> > -----Original Message-----
-> > From: Brian Norris [mailto:computersforpeace@gmail.com]
-> > Sent: Thursday, August 15, 2013 8:12 AM
-> > To: Andrew Morton
-> > Cc: Caizhiyong; Karel Zak; linux-mtd@lists.infradead.org;
-> > linux-kernel@vger.kernel.org; Wanglin (Albert); Artem Bityutskiy; Shmulik Ladkani;
-> > Huang Shijie
-> > Subject: Re: [PATCH] block: add command line partition parser
-> > 
-> > On Wed, Aug 14, 2013 at 3:57 PM, Andrew Morton
-> > <akpm@linux-foundation.org> wrote:
-> > > On Tue, 13 Aug 2013 06:02:17 +0000 Caizhiyong <caizhiyong@huawei.com> wrote:
-> > >
-> > >> move the command line parser to a separate module, and change it into
-> > >> library-style code.
-> > >>
-> > >> reference: https://lkml.org/lkml/2013/8/6/550
-> > 
-> > The most recent patch is an addendum to this linked patch then?
-> > 
-> > > Well OK.  But to prove the library's usefulness and to generally clean
-> > > up the kernel, someone needs to sign up to the task of converting
-> > > drivers/mtd/cmdlinepart.c to use this code.
-> > >
-> > > I've been hopefully cc'ing various MTD people but am not being
-> > > overwhelmed with waves of enthusiasm ;)
-> > 
-> > "I've been" implies that you have done so prior to this email. And
-> > "people" implies more than one person. I see that you CC'd David
-> > Woodhouse over a week ago, but he's fairly silent these days on MTD
-> > things. It's Artem or me who handle most of the day-to-day of MTD. And
-> > this is the first time I've seen this! (BTW, please include
-> > linux-mtd@lists.infradead.org for anything involving MTD.)
-> > 
-> > This seems reasonable, and I'd be willing to work with this proposal.
-> > 
-> > Caizhiyong, can you submit a clear single patch (or series of
-> > patches), CC'd to linux-mtd at least? Then we can see about supporting
-> > it in MTD. It doesn't look too difficult, but I need to check that it
-> > faithfully mimics the capability we currently rely on. There have been
-> > previous discussions on changing it, but this was rejected in favor of
-> > allowing more flexibility. Here's part of one such conversation:
-> > 
-> > http://lists.infradead.org/pipermail/linux-mtd/2012-August/043599.html
-> > http://lists.infradead.org/pipermail/linux-mtd/2012-September/043825.html
-> > http://lists.infradead.org/pipermail/linux-mtd/2012-December/045322.html
-> > 
-> > So I would recommend:
-> > (1) consider carefully the implications of your command-line format
-> > now, rather than later
-> > (2) if you want MTD to use it, it needs to support the features we use now
+On Sat, Aug 10, 2013 at 08:42:58AM -0700, Linus Torvalds wrote:
+> On Fri, Aug 9, 2013 at 4:04 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> >
+> > Move the cond_resched() check for CONFIG_PREEMPT_VOLUNTARY into
+> > the low level copy_*_user code. This avoids some code bloat and
+> > makes check much more efficient by avoiding unnecessary function calls.
 > 
-> It is fully functional reference MTD, :-).
-
-I realize that. I just want to be clear that we have to reconcile (1)
-and (2). IOW, if block device requirements stray too far from MTD
-requirements, then we might as well drop the idea of integration now.
-But if they agree, then we can move forward.
-
-> > Some particular cases to consider: overlapping partitions (how do
-> > block devices handle overlapping partitions?), out-of-order
-> > specification, zero sized partitions, mixed syntax (some specified
-> > with an offset, some not), multiple '-' partitions.
+> May I suggest going one step further, and just removing the
+> cond_resched() _entirely_, leaving just the debug test?
 > 
-> I think the 'offset' just is used to hide some MTD space.
-
-No, it specifies offset as a distance from the beginning of the flash,
-so partitions can be numbered out of order. This is intentionally
-utilized by some users, for example, to ensure that a particular
-partition is always /dev/mtd0, even if it is not the first partition
-physically.
-
-> There are two way:
-> 1) redefine the 'offset' as a gap between forward partition and next partition.
-> 2) add code forbid command line partitions overlapping and out-of-order.
+> There really is zero reason for doing a cond_resched() for user
+> accesses. If they take a page fault, then yes, by all means do that
+> (and maybe we should add one to the page fault trap if we don't have
+> it already), but without a page fault they really aren't that
+> expensive.
 > 
-> I recommend 1), it seems to solve those problem(overlapping and out-of-order), but it will affect habit.
+> We do many more expensive things without any cond_resched(), and doing
+> that cond_resched() really doesn't make much sense *unless* there's a
+> big expensive loop involved.
+> 
+> Most of this series looks fine, but I really think that we
+> could/should just take that extra step, and say "no, user accesses
+> don't imply that we need to check for scheduling".
+> 
+>                     Linus
 
-The linked discussion is where MTD settled on retaining old practice. I
-brought it up not so that we change it here, but so that you would
-understand what you are agreeing to if you adopt a common MTD and block
-device parsing infrastructure.
+In fact we are doing exactly this since 3.11-rc1.
 
-[Note that I am much less familiar with block device mechanics than with
-MTD.] Are any of the problem areas I mentioned actually forbidden on
-block devices? I know, for instance, that an MBR partition table can
-specify partitions out of order. And I've googled around and seen some
-posts about people (unintentionally) ending up with overlapping hard
-disk partitions.
-
-So from my primitive knowledge, it sounds like a block devices parser
-could agree with the same principle put forward by Shmulik in that
-second URL:
-
- "So far, mtdparts commandline parsing has been very lenient and liberal.
-  I think we should keep this approach; give the user the flexibility,
-  he'll be responsible to provide meaningful cmdline parts for his
-  system."
-
-Brian
+-- 
+MST
