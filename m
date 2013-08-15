@@ -1,54 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab3HOFAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 01:00:04 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:36622 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab3HOFAA (ORCPT
+	id S1753229Ab3HOFAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 01:00:23 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:45750 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab3HOFAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 01:00:00 -0400
+	Thu, 15 Aug 2013 01:00:16 -0400
+Date: Wed, 14 Aug 2013 22:00:07 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Caizhiyong <caizhiyong@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Karel Zak <kzak@redhat.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Huang Shijie <b32955@freescale.com>
+Subject: Re: [PATCH] block: add command line partition parser
+Message-ID: <20130815050007.GA23474@brian-ubuntu>
+References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
+ <20130805152206.76462cc4a42e51b16a0532f1@linux-foundation.org>
+ <C3050A4DBA34F345975765E43127F10F1C06237C@szxeml512-mbs.china.huawei.com>
+ <20130814155742.d3cd651e40e552696667e4f2@linux-foundation.org>
+ <CAN8TOE-aGcKQNayzEVQaS1wJ_Uqp3RAZ5pTuVEhaaY9f487-xA@mail.gmail.com>
+ <C3050A4DBA34F345975765E43127F10F1C063B36@szxeml512-mbx.china.huawei.com>
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <87a9kkax0j.fsf@xmission.com>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-Date: Thu, 15 Aug 2013 06:59:59 +0200
-Message-ID: <CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-Subject: Re: DoS with unprivileged mounts
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C3050A4DBA34F345975765E43127F10F1C063B36@szxeml512-mbx.china.huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 9:32 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
+On Thu, Aug 15, 2013 at 03:38:47AM +0000, Caizhiyong wrote:
+> > -----Original Message-----
+> > From: Brian Norris [mailto:computersforpeace@gmail.com]
+> > Sent: Thursday, August 15, 2013 8:12 AM
+> > To: Andrew Morton
+> > Cc: Caizhiyong; Karel Zak; linux-mtd@lists.infradead.org;
+> > linux-kernel@vger.kernel.org; Wanglin (Albert); Artem Bityutskiy; Shmulik Ladkani;
+> > Huang Shijie
+> > Subject: Re: [PATCH] block: add command line partition parser
+> > 
+> > On Wed, Aug 14, 2013 at 3:57 PM, Andrew Morton
+> > <akpm@linux-foundation.org> wrote:
+> > > On Tue, 13 Aug 2013 06:02:17 +0000 Caizhiyong <caizhiyong@huawei.com> wrote:
+> > >
+> > >> move the command line parser to a separate module, and change it into
+> > >> library-style code.
+> > >>
+> > >> reference: https://lkml.org/lkml/2013/8/6/550
+> > 
+> > The most recent patch is an addendum to this linked patch then?
+> > 
+> > > Well OK.  But to prove the library's usefulness and to generally clean
+> > > up the kernel, someone needs to sign up to the task of converting
+> > > drivers/mtd/cmdlinepart.c to use this code.
+> > >
+> > > I've been hopefully cc'ing various MTD people but am not being
+> > > overwhelmed with waves of enthusiasm ;)
+> > 
+> > "I've been" implies that you have done so prior to this email. And
+> > "people" implies more than one person. I see that you CC'd David
+> > Woodhouse over a week ago, but he's fairly silent these days on MTD
+> > things. It's Artem or me who handle most of the day-to-day of MTD. And
+> > this is the first time I've seen this! (BTW, please include
+> > linux-mtd@lists.infradead.org for anything involving MTD.)
+> > 
+> > This seems reasonable, and I'd be willing to work with this proposal.
+> > 
+> > Caizhiyong, can you submit a clear single patch (or series of
+> > patches), CC'd to linux-mtd at least? Then we can see about supporting
+> > it in MTD. It doesn't look too difficult, but I need to check that it
+> > faithfully mimics the capability we currently rely on. There have been
+> > previous discussions on changing it, but this was rejected in favor of
+> > allowing more flexibility. Here's part of one such conversation:
+> > 
+> > http://lists.infradead.org/pipermail/linux-mtd/2012-August/043599.html
+> > http://lists.infradead.org/pipermail/linux-mtd/2012-September/043825.html
+> > http://lists.infradead.org/pipermail/linux-mtd/2012-December/045322.html
+> > 
+> > So I would recommend:
+> > (1) consider carefully the implications of your command-line format
+> > now, rather than later
+> > (2) if you want MTD to use it, it needs to support the features we use now
+> 
+> It is fully functional reference MTD, :-).
 
->> The solution is also theoretically simple: mounts in unpriv namespaces
->> are marked "volatile" and are dissolved on an unlink type operation.
->>
->> Such volatile mounts would be useful in general too.
->
-> Agreed.
->
-> This is a problem that is a general pain with mount namespaces in
-> general.
->
-> I think the real technical hurdle is finding the mounts t in some random
-> mount namespace.  Once we can do that relatively efficiently the rest
-> becomes simple.
+I realize that. I just want to be clear that we have to reconcile (1)
+and (2). IOW, if block device requirements stray too far from MTD
+requirements, then we might as well drop the idea of integration now.
+But if they agree, then we can move forward.
 
-We already have a "struct mountpoint" hashed on the dentry.  Chaining
-mounts on that mountpoint would be trivial.  And we need a
-MNT_VOLATILE flag and that's it.  If we fear that traversing the list
-of mounts on the dentry to check for non-volatile ones then we could
-also add a separate volatile counter to struct mountpoint and a
-matching flag to the dentry.  But I don't think that's really
-necessary.
+> > Some particular cases to consider: overlapping partitions (how do
+> > block devices handle overlapping partitions?), out-of-order
+> > specification, zero sized partitions, mixed syntax (some specified
+> > with an offset, some not), multiple '-' partitions.
+> 
+> I think the 'offset' just is used to hide some MTD space.
 
-Thanks,
-Miklos
+No, it specifies offset as a distance from the beginning of the flash,
+so partitions can be numbered out of order. This is intentionally
+utilized by some users, for example, to ensure that a particular
+partition is always /dev/mtd0, even if it is not the first partition
+physically.
+
+> There are two way:
+> 1) redefine the 'offset' as a gap between forward partition and next partition.
+> 2) add code forbid command line partitions overlapping and out-of-order.
+> 
+> I recommend 1), it seems to solve those problem(overlapping and out-of-order), but it will affect habit.
+
+The linked discussion is where MTD settled on retaining old practice. I
+brought it up not so that we change it here, but so that you would
+understand what you are agreeing to if you adopt a common MTD and block
+device parsing infrastructure.
+
+[Note that I am much less familiar with block device mechanics than with
+MTD.] Are any of the problem areas I mentioned actually forbidden on
+block devices? I know, for instance, that an MBR partition table can
+specify partitions out of order. And I've googled around and seen some
+posts about people (unintentionally) ending up with overlapping hard
+disk partitions.
+
+So from my primitive knowledge, it sounds like a block devices parser
+could agree with the same principle put forward by Shmulik in that
+second URL:
+
+ "So far, mtdparts commandline parsing has been very lenient and liberal.
+  I think we should keep this approach; give the user the flexibility,
+  he'll be responsible to provide meaningful cmdline parts for his
+  system."
+
+Brian
