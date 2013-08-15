@@ -1,59 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab3HOUl3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 16:41:29 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:40048 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab3HOUl1 (ORCPT
+	id S1751397Ab3HOUmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 16:42:05 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42383 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751079Ab3HOUmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 16:41:27 -0400
+	Thu, 15 Aug 2013 16:42:03 -0400
+Date: Thu, 15 Aug 2013 16:42:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Mark Brown <broonie@kernel.org>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+In-Reply-To: <20130815193242.GF30073@sirena.org.uk>
+Message-ID: <Pine.LNX.4.44L0.1308151616440.905-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20130815174626.GA10874@redhat.com>
-References: <20130815174626.GA10874@redhat.com>
-Date: Fri, 16 Aug 2013 04:41:26 +0800
-Message-ID: <CAFeW=paTeaNsvK7ai-PPs6+MVW3LbaPaW9et_eu3XuGPpMqnuw@mail.gmail.com>
-Subject: Re: [PATCH] macvtap: fix up direction in comment on offloading
-From: Amos Kong <kongjianjun@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>, Eric Dumazet <edumazet@google.com>,
-        Vlad Yasevich <vyasevic@redhat.com>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 1:46 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> It speaks about receiving frames, so while
-> it says GSO, it really means GRO.
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/net/macvtap.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index a98fb0e..a98ed9f 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -1047,7 +1047,7 @@ static int set_offload(struct macvtap_queue *q, unsigned long arg)
->          * accept TSO frames and turning it off means that user space
->          * does not support TSO.
->          * For macvtap, we have to invert it to mean the same thing.
-> -        * When user space turns off TSO, we turn off GSO/LRO so that
-> +        * When user space turns off TSO, we turn off GRO/LRO so that
+On Thu, 15 Aug 2013, Mark Brown wrote:
 
-Right fix.
+> On Thu, Aug 15, 2013 at 01:55:18PM -0400, Alan Stern wrote:
+> > On Thu, 15 Aug 2013, Mark Brown wrote:
+> > > On Thu, Aug 15, 2013 at 10:42:00AM -0400, Alan Stern wrote:
+> 
+> > > To be honest I don't see how that helps much if you're going to handle
+> > > the case where platform data is required to enumerate the device.  You
+> > > need to know about the device prior to enumeration in order to get the
+> > > platform data to the driver when it does enumerate and you can't
+> > > enumerate it until you do that anyway.
+> 
+> > You're a little imprecise here.  Which driver do you mean?  The driver
+> > that will ultimately bind to the device, or the driver that will
+> > discover and enumerate it (which generally is bound to the device's
+> > upstream parent)?  I'll assume the latter.
+> 
+> The driver that's binding to the device - obviously going through
+> teaching all controller drivers about how to start up any random child
+> device they might encounter is not going to be a good idea, this should
+> be encapsulated in the child driver.
 
-Reviewed-by: Amos Kong <kongjianjun@gmail.com>
+Okay.  Here's a restatement of what you wrote above:
 
->          * user-space will not receive TSO frames.
->          */
->         if (feature_mask & (NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_UFO))
-> --
-> MST
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	In the case where platform data is required to enumerate the
+	device, you need to know about the device prior to enumeration.
+
+Obviously true.
+
+	You need to get the platform data to the driver when it does
+	enumerate.
+
+Not necessarily; see below.
+
+> > Under what circumstances is platform data required to enumerate a
+> > device on a discoverable bus?  We're assuming the platform has already
+> > taken care of everything required to make the device appear on the bus
+> > in the usual manner (such as bringing it to full power).  Can you give
+> > an example where something more is needed?
+> 
+> Powering on the device is exactly the sort of thing I'm talking about
+> here.
+
+So something needs to power-on the device.  But what?  The driver that
+enumerates it, or some other part of the kernel?
+
+If some other part of the kernel takes care of this then you _don't_
+have to get the platform data to the driver when it enumerates.
+
+>  I'm not sure what you think "the platform" is here but it sounds
+> awfully like the sort of random board specific bodge code that people
+> currently use - something has got to know what's needed to get the
+> device up and running and how to do it and the device driver seems like
+> the sensible place to do that.
+
+Just the reverse.  The driver should deal with things it knows about:  
+how to discover and enumerate devices on its bus.  It should not
+contain anything platform-specific.  Adding this in would be a
+logistical nightmare -- you'd have to stuff power-on procedures for all
+sorts of different platforms into this one poor driver!
+
+> I think I completely misunderstood what you mean by powering up on
+> initial use.  If you're saying that we should have some platform code
+> for doing this I don't think that's a scalable solution.
+
+How can it be avoided?  The powering-up operation is platform-specific.  
+By definition, whatever code carries out the operation is platform
+code.
+
+Alan Stern
+
