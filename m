@@ -1,34 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab3HOWHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 18:07:53 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41336 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab3HOWHw (ORCPT
+	id S1752148Ab3HOWSS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 18:18:18 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:51912 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751637Ab3HOWSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 18:07:52 -0400
-Message-ID: <520D5135.7020503@wwwdotorg.org>
-Date: Thu, 15 Aug 2013 16:07:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 15 Aug 2013 18:18:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnEEAPBSDVJ5LCJRgWdsb2JhbABbhju3LIU5gSIXDgEBFiYogiQBAQQBJxMcIwULCAMOCgklDwUlAyETiAoFuiwWkDoHhBIDl2OVACo
+Date: Fri, 16 Aug 2013 08:18:07 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+Message-ID: <20130815221807.GW6023@dastard>
+References: <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
+ <20130815011101.GA3572@thunk.org>
+ <20130815021028.GM6023@dastard>
+ <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
+ <20130815060149.GP6023@dastard>
+ <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
+ <20130815071141.GQ6023@dastard>
+ <CALCETrWyKSMDkgSbg20iWBRfHk0-oU+6A3X9xAEMg3vO=G_gDg@mail.gmail.com>
+ <20130815213725.GT6023@dastard>
+ <CALCETrV7F-47_nRx1AVFqeF8sNoREutbo3kf78ddBLvKKmFCzg@mail.gmail.com>
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: kernel-janitors@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/29] tegra: simplify use of devm_ioremap_resource
-References: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr> <1376471493-22215-7-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1376471493-22215-7-git-send-email-Julia.Lawall@lip6.fr>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrV7F-47_nRx1AVFqeF8sNoREutbo3kf78ddBLvKKmFCzg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 03:11 AM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, Aug 15, 2013 at 02:43:09PM -0700, Andy Lutomirski wrote:
+> On Thu, Aug 15, 2013 at 2:37 PM, Dave Chinner
+> <david@fromorbit.com> wrote:
+> > On Thu, Aug 15, 2013 at 08:17:18AM -0700, Andy Lutomirski wrote:
+> >> My behavior also means that, if an NFS
+> >> client reads and caches the file between the two writes, then it will
+> >> eventually find out that the data is stale.
+> >
+> > "eventually" is very different behaviour to the current behaviour.
+> >
+> > My understanding is that NFS v4 delegations require the underlying
+> > filesystem to bump the version count on *any* modification made to
+> > the file so that delegations can be recalled appropriately. So not
+> > informing the filesystem that the file data has been changed is
+> > going to cause problems.
 > 
-> Remove unneeded error handling on the result of a call to
-> platform_get_resource when the value is passed to devm_ioremap_resource.
+> We don't do that right now (and we can't without utterly destroying
+> performance) because we don't trap on every modification.  See
+> below...
 
-I have applied this to Tegra's for-3.12/cleanup branch.
+We don't trap every mmap modification. We trap every modification
+that the filesystem is informed about. That includes a c/mtime
+update on every write page fault. It's as fine grained as we can get
+without introducing serious performance killing overhead.
+
+And nobody has made any compelling argument that what we do now is
+problematic - all we've got is a microbenchmark doesn't quite scale
+linearly because filesystem updates through a global filesystem
+structure (the journal) don't scale linearly.
+
+> >> The current behavior, on
+> >> the other hand, means that a single pass of mmapped writes through the
+> >> file will update the times much faster.
+> >>
+> >> I could arrange for the first page fault to *also* update times when
+> >> the FS is exported or if a particular mount option is set.  (The ext4
+> >> change to request the new behavior is all of four lines, and it's easy
+> >> to adjust.)
+> >
+> > What does "first page fault" mean?
+> 
+> The first write to the page triggers a page fault and marks the page
+> writable.  The second write to the page (assuming no writeback happens
+> in the mean time) does not trigger a page fault or notify the kernel
+> in any way.
+
+IIUC, you are saying is that you'll maintain the current behaviour
+(i.e. clean->dirty does a timestamp update) if the filesystem
+requires it? So the default behaviour of any filesystem that
+supports NFSv4 is going to behave as it does now?
+
+If that's the case, why bother changing anything as nfsv4 is the
+default version that the kernel uses? (I'm playing devil's advocate
+here).
+
+> In current kernels, this chain of events won't work:
+> 
+>  - Server goes down
+>  - Server comes up
+>  - Userspace on server calls mmap and writes something
+>  - Client reconnects and invalidates its cache
+>  - Userspace on server writes something else *to the same page*
+>
+> The client will never notice the second write, because it won't update
+> any inode state. 
+
+That's wrong. The server wrote the dirty page before the client
+reconnected, therefore it got marked clean. The second write to the
+server page marks it dirty again, causing page_mkwrite to be
+called, thereby updating the timestamp/i_version field. So, the NFS
+client will notice the second change on the server, and it will
+notice it immediately after the second access has occurred, not some
+time later when:
+
+> With my patches, the client will as soon as the
+> server starts writeback.
+
+Your patches introduce a 30+ second window where a file can be dirty
+on the server but the NFS server doesn't know about it and can't
+tell the clients about it because i_version doesn't get bumped until
+writeback.....
+
+> So I think that there are cases where my changes make things better
+> and cases where they make things worse.
+
+Right, and the issue is that there are important use cases that we
+have to support in default configurations that it makes things
+worse.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
