@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758501Ab3HOTUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 15:20:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:26040 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755215Ab3HOTUb convert rfc822-to-8bit (ORCPT
+	id S1758691Ab3HOTWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 15:22:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12458 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757086Ab3HOTWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 15:20:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,887,1367996400"; 
-   d="scan'208";a="386931194"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Borislav Petkov <bp@alien8.de>
-CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
- trace event
-Thread-Topic: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
- trace event
-Thread-Index: AQHOlGVcQB6qi1wV3Ei8qYoYEneewpmMKjwAgAMKHwCAArfagIAAEviAgAADVICAAXiUgIAAFsAAgABQygCAAAdFgIABHLEAgADg8ICAAJtwgIAAP5iAgAAFPwCAAAgqgP//3xVA
-Date: Thu, 15 Aug 2013 19:20:29 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CBD184@ORSMSX106.amr.corp.intel.com>
-References: <5208D80D.5030206@linux.vnet.ibm.com>
- <20130812125343.GE18018@pd.tnic> <520A16BD.30201@linux.vnet.ibm.com>
- <20130813124258.GC4077@pd.tnic> <520A6D98.9060204@linux.vnet.ibm.com>
- <20130813175809.GE4077@pd.tnic> <520B6282.6030906@linux.vnet.ibm.com>
- <20130814212211.544ee6a4@concha.lan> <20130815093831.GA27616@pd.tnic>
- <20130815102607.7168a930@samsung.com> <20130815134454.GF27616@pd.tnic>
- <20130815111407.4080a744@samsung.com>
-In-Reply-To: <20130815111407.4080a744@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 15 Aug 2013 15:22:13 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F0my4ousGMIA:10 a=7Vahp7kjsuqt3vje45cA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Date: Thu, 15 Aug 2013 15:22:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.6-rt3
+Message-ID: <20130815152210.5ed93696@gandalf.local.home>
+In-Reply-To: <520D212F.7030400@localhost>
+References: <20130812163413.GI23040@linutronix.de>
+	<520D212F.7030400@localhost>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> AFAIKT, APEI doesn't provide the silkscreen label. Some code (or some
-> datasheet) is needed to translate between what APEI provides into the
-> silkscreen label.
+On Thu, 15 Aug 2013 11:42:55 -0700
+Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU> wrote:
 
-In theory it could. The ACPI generic error structure used to report includes
-a 20-byte free format field which a BIOS could use to describe the location
-of the error.  Haven't seen anyone do this yet - and our internal BIOS people
-looked at me like I was crazy to suggest such a thing.  But I still entertain
-hopes that some OEM will do the right thing and raise the bar of usefulness.
+> On 08/12/2013 09:34 AM, Sebastian Andrzej Siewior wrote:
+> > Dear RT folks!
+> >
+> > I'm pleased to announce the v3.10.6-rt3 patch set.
+> 
+> I'm getting this when trying to build:
+> 
+> drivers/md/bcache/request.c: In function 'cached_dev_write_complete':
+> drivers/md/bcache/request.c:1008:2: error: implicit declaration of 
+> function 'up_read_non_owner' [-Werror=implicit-function-declaration]
+>    up_read_non_owner(&dc->writeback_lock);
+>    ^
+> drivers/md/bcache/request.c: In function 'request_write':
+> drivers/md/bcache/request.c:1034:2: error: implicit declaration of 
+> function 'down_read_non_owner' [-Werror=implicit-function-declaration]
+>    down_read_non_owner(&dc->writeback_lock);
+>    ^
+> cc1: some warnings being treated as errors
+> 
 
--Tony
+Can you send us your config.
+
+Thanks,
+
+-- Steve
