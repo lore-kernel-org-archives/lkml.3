@@ -1,188 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab3HORya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 13:54:30 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:60456 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab3HORy3 (ORCPT
+	id S1758375Ab3HORzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 13:55:22 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42298 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753338Ab3HORzU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 13:54:29 -0400
-Date: Thu, 15 Aug 2013 10:54:28 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Peter Maydell <peter.maydell@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        QEMU Developers <qemu-devel@nongnu.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
-Message-ID: <20130815175428.GA18580@roeck-us.net>
-References: <5207B3C3.9080508@roeck-us.net>
- <20130811220450.GY23006@n2100.arm.linux.org.uk>
- <52082EF8.10005@roeck-us.net>
- <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com>
- <20130813034054.GA18218@roeck-us.net>
- <CAFEAcA_-S8z6ZMr8TMPvkcTyyCSMOj1DExVsY4JDQjRXDU5WGw@mail.gmail.com>
+	Thu, 15 Aug 2013 13:55:20 -0400
+Date: Thu, 15 Aug 2013 13:55:18 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Mark Brown <broonie@kernel.org>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Non-enumerable devices on USB and other enumerable buses
+In-Reply-To: <20130815171048.GC30073@sirena.org.uk>
+Message-ID: <Pine.LNX.4.44L0.1308151335310.905-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFEAcA_-S8z6ZMr8TMPvkcTyyCSMOj1DExVsY4JDQjRXDU5WGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 05:45:42PM +0100, Peter Maydell wrote:
-> On 13 August 2013 04:40, Guenter Roeck <linux@roeck-us.net> wrote:
-> > Patch tested and working with qemu 1.5.2, using the configuration file
-> > from the yocto project. Patch applied on top of kernel version 3.11-rc5.
-> 
-> OK, I tested this on PB926+PCI backplane hardware, and it is
-> definitely better than current mainline, in that the test USB
-> card that I have no longer causes the kernel to generate this sort of
-> backtrace:
-> 
-Do you mean my patch fixes the traceback below as a side effect ?
-Would be great ... it would be one more reason to get it applied.
+On Thu, 15 Aug 2013, Mark Brown wrote:
 
-> ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-> ehci-pci: EHCI PCI platform driver
-> ehci-pci 0000:00:1e.2: EHCI Host Controller
-> ehci-pci 0000:00:1e.2: new USB bus registered, assigned bus number 1
-> ehci-pci 0000:00:1e.2: irq 91, io mem 0x50002000
-> ehci-pci 0000:00:1e.2: USB 2.0 started, EHCI 1.00
-> usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
-> usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
-> usb usb1: Product: EHCI Host Controller
-> usb usb1: Manufacturer: Linux 3.10.0+ ehci_hcd
-> usb usb1: SerialNumber: 0000:00:1e.2
-> hub 1-0:1.0: USB hub found
-> hub 1-0:1.0: 3 ports detected
-> ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-> ohci-pci: OHCI PCI platform driver
-> ohci-pci 0000:00:1e.0: OHCI PCI host controller
-> ohci-pci 0000:00:1e.0: new USB bus registered, assigned bus number 2
-> irq 93: nobody cared (try booting with the "irqpoll" option)
-> CPU: 0 PID: 1 Comm: swapper Not tainted 3.10.0+ #9
-> [<c00187d4>] (unwind_backtrace+0x0/0xf0) from [<c0015b48>]
-> (show_stack+0x10/0x14)
-> [<c0015b48>] (show_stack+0x10/0x14) from [<c0054cac>]
-> (__report_bad_irq+0x24/0xb8)
-> [<c0054cac>] (__report_bad_irq+0x24/0xb8) from [<c005511c>]
-> (note_interrupt+0x1cc/0x230)
-> [<c005511c>] (note_interrupt+0x1cc/0x230) from [<c005363c>]
-> (handle_irq_event_percpu+0xac/0x1c4)
-> [<c005363c>] (handle_irq_event_percpu+0xac/0x1c4) from [<c005377c>]
-> (handle_irq_event+0x28/0x38)
-> [<c005377c>] (handle_irq_event+0x28/0x38) from [<c00558c8>]
-> (handle_level_irq+0x80/0xd4)
-> [<c00558c8>] (handle_level_irq+0x80/0xd4) from [<c0052fb4>]
-> (generic_handle_irq+0x2c/0x40)
-> [<c0052fb4>] (generic_handle_irq+0x2c/0x40) from [<c016bf38>]
-> (fpga_irq_handle+0x3c/0x50)
-> [<c016bf38>] (fpga_irq_handle+0x3c/0x50) from [<c0052fb4>]
-> (generic_handle_irq+0x2c/0x40)
-> [<c0052fb4>] (generic_handle_irq+0x2c/0x40) from [<c0013e8c>]
-> (handle_IRQ+0x30/0x84)
-> [<c0013e8c>] (handle_IRQ+0x30/0x84) from [<c0008750>] (vic_handle_irq+0x5c/0x9c)
-> [<c0008750>] (vic_handle_irq+0x5c/0x9c) from [<c00165c0>] (__irq_svc+0x40/0x4c)
-> Exception stack(0xc7829cc8 to 0xc7829d10)
-> 9cc0:                   00000001 0000000a 00000100 20000013 00000002 00000024
-> 9ce0: c7828000 c0476980 3fb96c1c c0443950 c04693c0 00000001 c0456a50 c7829d10
-> 9d00: c0025f38 c0025fa8 20000013 ffffffff
-> [<c00165c0>] (__irq_svc+0x40/0x4c) from [<c0025fa8>] (__do_softirq+0x80/0x1b4)
-> [<c0025fa8>] (__do_softirq+0x80/0x1b4) from [<c00263a4>] (irq_exit+0x54/0x90)
-> [<c00263a4>] (irq_exit+0x54/0x90) from [<c0013e90>] (handle_IRQ+0x34/0x84)
-> [<c0013e90>] (handle_IRQ+0x34/0x84) from [<c0008750>] (vic_handle_irq+0x5c/0x9c)
-> [<c0008750>] (vic_handle_irq+0x5c/0x9c) from [<c00165c0>] (__irq_svc+0x40/0x4c)
-> Exception stack(0xc7829d80 to 0xc7829dc8)
-> 9d80: 00000000 0000005d 20000000 00000000 c79bb7e0 c0446990 60000013 c79c0000
-> 9da0: 0000005d 00000000 c04469c4 00000001 00000000 c7829dc8 c00555c8 c0054460
-> 9dc0: 40000013 ffffffff
-> [<c00165c0>] (__irq_svc+0x40/0x4c) from [<c0054460>] (__setup_irq+0x1f4/0x3f0)
-> [<c0054460>] (__setup_irq+0x1f4/0x3f0) from [<c00548ac>]
-> (request_threaded_irq+0xb4/0x138)
-> [<c00548ac>] (request_threaded_irq+0xb4/0x138) from [<c01fa7a8>]
-> (usb_add_hcd+0x4f0/0x6f0)
-> [<c01fa7a8>] (usb_add_hcd+0x4f0/0x6f0) from [<c0206bdc>]
-> (usb_hcd_pci_probe+0x200/0x36c)
-> [<c0206bdc>] (usb_hcd_pci_probe+0x200/0x36c) from [<c017467c>]
-> (pci_device_probe+0x68/0x90)
-> [<c017467c>] (pci_device_probe+0x68/0x90) from [<c01b3a80>]
-> (driver_probe_device+0x78/0x200)
-> [<c01b3a80>] (driver_probe_device+0x78/0x200) from [<c01b3c94>]
-> (__driver_attach+0x8c/0x90)
-> [<c01b3c94>] (__driver_attach+0x8c/0x90) from [<c01b2288>]
-> (bus_for_each_dev+0x58/0x88)
-> [<c01b2288>] (bus_for_each_dev+0x58/0x88) from [<c01b29e8>]
-> (bus_add_driver+0xd8/0x220)
-> [<c01b29e8>] (bus_add_driver+0xd8/0x220) from [<c01b4258>]
-> (driver_register+0x78/0x144)
-> [<c01b4258>] (driver_register+0x78/0x144) from [<c0410820>]
-> (do_one_initcall+0x94/0x154)
-> [<c0410820>] (do_one_initcall+0x94/0x154) from [<c04109cc>]
-> (kernel_init_freeable+0xec/0x1b0)
-> [<c04109cc>] (kernel_init_freeable+0xec/0x1b0) from [<c0323104>]
-> (kernel_init+0x8/0xe4)
-> [<c0323104>] (kernel_init+0x8/0xe4) from [<c00130b0>] (ret_from_fork+0x14/0x24)
-> handlers:
-> [<c01f7e48>] usb_hcd_irq
-> Disabling IRQ #93
+> On Thu, Aug 15, 2013 at 10:42:00AM -0400, Alan Stern wrote:
+> > On Thu, 15 Aug 2013, Mark Brown wrote:
 > 
-> However it still doesn't seem to reliably detect the USB harddisk
-> plugged into the card, so I think there may be further issues, possibly
-> some subset of those Arnd identified and fixed with this patch:
-> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/93397
+> > So why not bring the device to full power as soon as possible during
+> > boot, and have it registered on the bus in the usual way?  Once that's
+> > done, the ordinary runtime PM mechanism will allow the device to go
+> > back off-line.
 > 
-Does it get better if you apply Arnd's patch ?
+> That could be done, and is likely to happen anyway as a result of device
+> initialisation.  I'm not sure it buys much to force it to happen
+> immediately, though.
 
-> so I'd like to continue testing.
-> 
-> The other thing this patch should (IMHO) have is the
-> line in pci_versatile_setup() which tells QEMU that the
-> kernel really does expect hardware-like behaviour:
-> 
-> --- a/arch/arm/mach-versatile/pci.c
-> +++ b/arch/arm/mach-versatile/pci.c
-> @@ -295,6 +295,19 @@ int __init pci_versatile_setup(int nr, struct
-> pci_sys_data *sys)
->         __raw_writel(PHYS_OFFSET, local_pci_cfg_base + PCI_BASE_ADDRESS_2);
-> 
->         /*
-> +        * For many years the kernel and QEMU were symbiotically buggy
-> +        * in that they both assumed the same broken IRQ mapping.
-> +        * QEMU therefore attempts to auto-detect old broken kernels
-> +        * so that they still work on newer QEMU as they did on old
-> +        * QEMU. Since we now use the correct (ie matching-hardware)
-> +        * IRQ mapping we write a definitely different value to a
-> +        * PCI_INTERRUPT_LINE register to tell QEMU that we expect
-> +        * real hardware behaviour and it need not be backwards
-> +        * compatible for us. This write is harmless on real hardware.
-> +        */
-> +       __raw_writel(0, VERSATILE_PCI_VIRT_BASE+PCI_INTERRUPT_LINE);
-> +
-> +       /*
->          * Do not to map Versatile FPGA PCI device into memory space
->          */
->         pci_slot_ignore |= (1 << myslot);
-> 
-> I appreciate that QEMU-specific code in the kernel is a bit ugly, but
-> (a) 99.9% of the people running this code are going to be running it on QEMU
-> (b) the bugs in this area have been extremely long-standing in both
-> the kernel and QEMU and so there are a lot of legacy kernel images
-> out there that worked just fine with QEMU
-> (c) it's rather less code than I have in QEMU as the QEMU-side part
-> of this backwards-compatibility autodetection.
-> 
-> (Without this line QEMU will guess whether the kernel is broken
-> or not and will get it right most but not necessarily all of the time.)
-> 
-Might make sense, but I think it should be a separate patch.
+Not necessarily immediately, then.  Let's say at the time when you
+would have wanted to tell the bus about the device's existence, even
+though it hadn't yet been detected.
 
-If I understand correctly, my patch fixes the SCSI problem.
-Is that correct ? If so, can we get it applied to mainline ?
+> There's a big difference between random glue outside the drivers and
+> something the drivers know about themselves, it's important to be clear
+> on this.  Bodges for this often involve writing a bit of board code that
+> the drivers don't know anything about.
 
-Thanks,
-Guenter
+Of course.  Glue outside of drivers is very significant, whether that 
+glue takes the form of code or data.
+
+> > I imagine that teaching a subsystem to know about a device before it 
+> > has been detected would require significant changes.  My suggestion -- 
+> > powering up the device, detecting it, and then powering it back down -- 
+> > fits in very cleanly with existing designs and would require 
+> > comparatively little work.  Case B then becomes unnecessary; all the 
+> > important stuff will be handled under Case C.
+> 
+> To be honest I don't see how that helps much if you're going to handle
+> the case where platform data is required to enumerate the device.  You
+> need to know about the device prior to enumeration in order to get the
+> platform data to the driver when it does enumerate and you can't
+> enumerate it until you do that anyway.
+
+You're a little imprecise here.  Which driver do you mean?  The driver
+that will ultimately bind to the device, or the driver that will
+discover and enumerate it (which generally is bound to the device's
+upstream parent)?  I'll assume the latter.
+
+Under what circumstances is platform data required to enumerate a
+device on a discoverable bus?  We're assuming the platform has already
+taken care of everything required to make the device appear on the bus
+in the usual manner (such as bringing it to full power).  Can you give
+an example where something more is needed?
+
+(Were you thinking of the case where the device's IRQ signal doesn't go
+over the bus but uses a different platform mechanism?  I don't quite 
+see how this can work.  What about devices on the bus that aren't known 
+to the platform beforehand?  How do they send their IRQ signals?)
+
+>  A bus could insist on this if it
+> needed the information from enumeration for some reason but really it
+> seems like an implementation detail.
+
+It isn't an implementation detail.  The "power-up for initial
+detection" scheme is a general solution to the problem of setting up a
+complicated communication path between the bus and the platform.  
+(I.e., it gives a simple way to avoid the need for this communication,
+that can be used on any discoverable bus.)  It also is a general 
+solution for avoiding the problem of registering a device on a bus 
+before that device has been discovered and enumerated.
+
+Alan Stern
+
