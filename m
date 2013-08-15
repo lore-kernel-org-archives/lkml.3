@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab3HOKSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 06:18:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49133 "EHLO
+	id S1754962Ab3HOK0i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 06:26:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49432 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283Ab3HOKSa (ORCPT
+	with ESMTP id S1752579Ab3HOK0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 06:18:30 -0400
-Date: Thu, 15 Aug 2013 12:18:19 +0200
+	Thu, 15 Aug 2013 06:26:37 -0400
+Date: Thu, 15 Aug 2013 12:26:20 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@kernel.org, acme@infradead.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/4] perf, tools: Add perf stat --transaction v3
-Message-ID: <20130815101819.GM24092@twins.programming.kicks-ass.net>
-References: <1376505267-8902-1-git-send-email-andi@firstfloor.org>
- <1376505267-8902-5-git-send-email-andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ak@linux.intel.com,
+        acme@redhat.com, jolsa@redhat.com, namhyung.kim@lge.com,
+        dsahern@gmail.com
+Subject: Re: [PATCH v1 1/2] perf: add attr->mmap2 attribute to an event
+Message-ID: <20130815102620.GN24092@twins.programming.kicks-ass.net>
+References: <1376394957-31691-1-git-send-email-eranian@google.com>
+ <1376394957-31691-2-git-send-email-eranian@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1376505267-8902-5-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1376394957-31691-2-git-send-email-eranian@google.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 11:34:27AM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Add support to perf stat to print the basic transactional execution statistics:
-> Total cycles, Cycles in Transaction, Cycles in aborted transsactions
-> using the in_tx and in_tx_checkpoint qualifiers.
-> Transaction Starts and Elision Starts, to compute the average transaction length.
-> 
-> This is a reasonable overview over the success of the transactions.
-> 
-> Enable with a new --transaction / -T option.
-> 
-> This requires measuring these events in a group, since they depend on each
-> other.
-> 
-> This is implemented by using TM sysfs events exported by the kernel
-> 
-> v2: Only print the extended statistics when the option is enabled.
-> This avoids negative output when the user specifies the -T events
-> in separate groups.
-> v3: Port to latest tree
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  tools/perf/Documentation/perf-stat.txt |   5 ++
->  tools/perf/builtin-stat.c              | 132 ++++++++++++++++++++++++++++++++-
->  tools/perf/util/evsel.h                |   6 ++
->  tools/perf/util/pmu.c                  |  16 ++++
->  tools/perf/util/pmu.h                  |   1 +
->  5 files changed, 157 insertions(+), 3 deletions(-)
+On Tue, Aug 13, 2013 at 01:55:56PM +0200, Stephane Eranian wrote:
 
-Arnaldo, ACK on this?
+> @@ -638,6 +639,25 @@ enum perf_event_type {
+>  	 */
+>  	PERF_RECORD_SAMPLE			= 9,
+>  
+> +	/*
+> +	 * The MMAP2 records are an augmented version of MMAP, they add
+> +	 * maj, min, ino numbers to be used to uniquely identify each mapping
+> +	 *
+> +	 * struct {
+> +	 *	struct perf_event_header	header;
+> +	 *
+> +	 *	u32				pid, tid;
+> +	 *	u64				addr;
+> +	 *	u64				len;
+> +	 *	u64				pgoff;
+> +	 *	u32				maj;
+> +	 *	u32				min;
+> +	 *	u64				ino;
+> +	 *	char				filename[];
+
+Did you forget the sample_id stuff?
+
+		struct sample_id		sample_id;
+
+> +	 * };
+> +	 */
+> +	PERF_RECORD_MMAP2			= 10,
+> +
+>  	PERF_RECORD_MAX,			/* non-ABI */
+>  };
