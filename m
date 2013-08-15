@@ -1,150 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759950Ab3HORLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 13:11:33 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57663 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758246Ab3HORL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 13:11:29 -0400
-Date: Thu, 15 Aug 2013 18:10:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
+	id S1759329Ab3HORNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 13:13:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48358 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758114Ab3HORM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 13:12:58 -0400
+Date: Thu, 15 Aug 2013 18:12:50 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan@kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20130815171048.GC30073@sirena.org.uk>
-References: <20130814235519.GS2401@sirena.org.uk>
- <Pine.LNX.4.44L0.1308151013350.1210-100000@iolanthe.rowland.org>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
+Message-ID: <20130815171250.GA2296@suse.de>
+References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
+ <20130814174050.GN2296@suse.de>
+ <20130814185820.GA2753@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hOcCNbCCxyk/YU74"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1308151013350.1210-100000@iolanthe.rowland.org>
-X-Cookie: There is a fly on your nose.
+In-Reply-To: <20130814185820.GA2753@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 15, 2013 at 03:58:20AM +0900, Minchan Kim wrote:
+> > <SNIP>
+> >
+> > I do not believe this is a problem for zram as such because I do not
+> > think it ever writes back to disk and is immune from the unpredictable
+> > performance characteristics problem. The problem for zram using zsmalloc
+> > is OOM killing. If it's used for swap then there is no guarantee that
+> > killing processes frees memory and that could result in an OOM storm.
+> > Of course there is no guarantee that memory is freed with zbud either but
+> > you are guaranteed that freeing 50%+1 of the compressed pages will free a
+> > single physical page. The characteristics for zsmalloc are much more severe.
+> > This might be managable in an applicance with very careful control of the
+> > applications that are running but not for general servers or desktops.
+> 
+> Fair enough but let's think of current usecase for zram.
+> As I said in description, most of user for zram are embedded products.
+> So, most of them has no swap storage and hate OOM kill because OOM is
+> already very very slow path so system slow response is really thing
+> we want to avoid. We prefer early process kill to slow response.
+> That's why custom low memory killer/notifier is popular in embedded side.
+> so actually, OOM storm problem shouldn't be a big problem under
+> well-control limited system. 
+> 
 
---hOcCNbCCxyk/YU74
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Which zswap could also do if
 
-On Thu, Aug 15, 2013 at 10:42:00AM -0400, Alan Stern wrote:
-> On Thu, 15 Aug 2013, Mark Brown wrote:
+a) it had a pseudo block device that failed all writes
+b) zsmalloc was pluggable
 
-> So why not bring the device to full power as soon as possible during
-> boot, and have it registered on the bus in the usual way?  Once that's
-> done, the ordinary runtime PM mechanism will allow the device to go
-> back off-line.
+I recognise this sucks because zram is already in the field but if zram
+is promoted then zram and zswap will continue to diverge further with no
+reconcilation in sight.
 
-That could be done, and is likely to happen anyway as a result of device
-initialisation.  I'm not sure it buys much to force it to happen
-immediately, though.
+Part of the point of using zswap was that potentially zcache could be
+implemented on top of it and so all file cache could be stored compressed
+in memory. AFAIK, it's not possible to do the same thing for zram because
+of the lack of writeback capabilities. Maybe it could be done if zram
+could be configured to write to an underlying storage device but it may
+be very clumsy to configure. I don't know as I never investigated it and
+to be honest, I'm struggling to remember how I got involved anywhere near
+zswap/zcache/zram/zwtf in the first place.
 
-> > I've also mentioned the devices that need platform data which is a part
-> > of this too; one reason for knowing that the device is there before it
-> > appears is so that we can pass platform data/DT/whatever to it.
+> > If it's used for something like tmpfs then it becomes much worse. Normal
+> > tmpfs without swap can lockup if tmpfs is allowed to fill memory. In a
+> > sane configuration, lockups will be avoided and deleting a tmpfs file is
+> > guaranteed to free memory. When zram is used to back tmpfs, there is no
+> > guarantee that any memory is freed due to fragmentation of the compressed
+> > pages. The only way to recover the memory may be to kill applications
+> > holding tmpfs files open and then delete them which is fairly drastic
+> > action in a normal server environment.
+> 
+> Indeed.
+> Actually, I had a plan to support zsmalloc compaction. The zsmalloc exposes
+> handle instead of pure pointer so it could migrate some zpages to somewhere
+> to pack in. Then, it could help above problem and OOM storm problem.
+> Anyway, it's a totally new feature and requires many changes and experiement.
+> Although we don't have such feature, zram is still good for many people.
+> 
 
-> Can you pass this "whatever" data to the device as part of the initial=20
-> bring-it-to-full-power procedure?
+And is zsmalloc was pluggable for zswap then it would also benefit.
 
-It is often going to be required as part of the bring it to full power
-procedure.
+> > These are the sort of reason why I feel that zram has limited cases where
+> > it is safe to use and zswap has a wider range of applications. At least
+> > I would be very unhappy to try supporting zram in the field for normal
+> > servers. zswap should be able to replace the functionality of zram+swap
+> > by backing zswap with a pseudo block device that rejects all writes. I
+> 
+> One of difference between zswap and zram is asynchronous I/O support.
 
-> By the way, you mentioned something earlier that some of this platform
-> data might duplicate information that could be discovered through the
-> usual bus probing mechanisms (for example, USB descriptors).  IMO
-> that's a bad idea.  Not only is it wasteful, it also has the potential
+As zram is not writing to disk, how compelling is asynchronous IO? If
+zswap was backed by the pseudo device is there a measurable bottleneck?
 
-If you check the discussion it pretty much consisted of everyone saying
-that duplicating enumerable information was a terrible idea.
+> I guess frontswap is synchronous by semantic while zram could support
+> asynchronous I/O.
+> 
+> > do not know why this never happened but guess the zswap people never were
+> > interested and the zram people never tried. Why was the pseudo device
+> > to avoid writebacks never implemented? Why was the underlying allocator
+> > not made pluggable to optionally use zsmalloc when the user did not care
+> > that it had terrible writeback characteristics?
+> 
+> I remember you suggested to make zsmalloc with pluggable for zswap.
+> But I don't know why zswap people didn't implement it.
+> 
+> > 
+> > zswap cannot replicate zram+tmpfs but I also think that such a configuration
+> > is a bad idea anyway. As zram is already being deployed then it might get
+> 
+> It seems your big concern of zsmalloc is fragmentaion so if zsmalloc can
+> support compaction, it would mitigate the concern.
+> 
 
-> > >      A: Devising a mechanism for platform code to do things involving
-> > > 	devices that are dynamically registered on discoverable buses.
+Even if it supported zsmalloc I would still wonder why zswap is not using
+it as a pluggable option :(
 
-> > If we need random platform code then we're failing, half the point of
-> > things like DT and ACPI is to avoid writing random board code.  we do
-> > want to pass data to devices for their drivers to use but having to have
-> > random bits of per board code would be really sad.
+> > promoted anyway but personally I think compressed memory continues to be
+> 
+> I admit zram might have limitations but it has helped lots of people.
+> It's not an imaginary scenario.
+> 
 
-> At the level of abstraction in this discussion, there's no need to=20
-> discriminate between code and data.  Just imagine that I simply wrote=20
-> "platform", meaning platform code and/or data.
+I know.
 
-There's a big difference between random glue outside the drivers and
-something the drivers know about themselves, it's important to be clear
-on this.  Bodges for this often involve writing a bit of board code that
-the drivers don't know anything about.
+> Please, let's not do get out of zram from kernel tree and stall it on staging
+> forever with preventing new features. 
+> Please, let's promote, expose it to more potential users, receive more
+> complains from them, recruit more contributors and let's enhance.
+> 
 
-> > >      B: Telling the subsystem and driver code for a discoverable bus
-> > > 	that a particular device is present before it has been=20
-> > > 	detected.
+As this is already used heavily in the field and I am not responsible
+for maintaining it I am not going to object to it being promoted. I can
+always push that it be disabled in distribution configs as it is not
+suitable for general workloads for reason already discussed.
 
-> > I think the solutions for these overlap so much they're the same thing.
-> > The situation we're in in in your case B is just the idle case for
-> > condition C - if we know about the device before it's been detected then
-> > if it's been removed we just go back into the situation where we know
-> > about it but it isn't powered.
+However, I believe that the promotion will lead to zram and zswap diverging
+further from each other, both implementing similar functionality and
+ultimately cause greater maintenance headaches. There is a path that makes
+zswap a functional replacement for zram and I've seen no good reason why
+that path was not taken. Zram cannot be a functional replacment for zswap
+as there is no obvious sane way writeback could be implemented. Continuing
+to diverge will ultimately bite someone in the ass.
 
-> I imagine that teaching a subsystem to know about a device before it=20
-> has been detected would require significant changes.  My suggestion --=20
-> powering up the device, detecting it, and then powering it back down --=
-=20
-> fits in very cleanly with existing designs and would require=20
-> comparatively little work.  Case B then becomes unnecessary; all the=20
-> important stuff will be handled under Case C.
-
-To be honest I don't see how that helps much if you're going to handle
-the case where platform data is required to enumerate the device.  You
-need to know about the device prior to enumeration in order to get the
-platform data to the driver when it does enumerate and you can't
-enumerate it until you do that anyway.  A bus could insist on this if it
-needed the information from enumeration for some reason but really it
-seems like an implementation detail.
-
-> There's one important factor to keep in mind: Are devices on the bus
-> physically removable?  If not, the situation is pretty straightforward. =
-=20
-> You just remember that the device used to be present, and reuse the old
-> data structures when it reappears.
-
-Not the ones I'm talking about, though other removable devices may
-possibly be present on the same bus.  My interest is in the case where
-we know the chip is there because we can see it soldered to the board.
-
---hOcCNbCCxyk/YU74
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSDQuVAAoJELSic+t+oim9GA0QAJO3b97ssUI5FEJeIQ0G+5q/
-RInxbO8Iabigq7VXVV1OJ7TyvMSgN6nuJLl8kSRUUIw6KBh6Pmm+40wwJikT3Bas
-abp+y+LRzhJH3lrvw9WP1ba41sRKKUu2jIT+df8AigWRCXPDpQubZJcZnVl1w213
-pTX2pqH8GxOVlLdY10AzAK5qAhPdwS2WsJSc8g3Pjd+4fnFXMj3TiJcOyzCY26Q+
-NjHtAzqBcgxeTddgQVVYKEEdm/+z1D2YzHnvo7WF0EspFaPse98T3YIlZWduwLXB
-94MqTvZ6LYZrJI/sThzQY9neGkQOQpZtOYNYGaO/m4iKvZn9wPNQ4SvV+WI2ofvH
-NNpXQt/Uuikq2CSHPUcBiv66+ChlHjkWrS0JUOw5BBlj1mAtWdO/L0MWedpcdN0H
-AW6FZkSKEouXEIdr1nxDKzj2M+MMvtBXFXNkIVUfBWmFegcN4ZY6Jwg7vlqOY4rK
-ZD7HVEYSCsHnCQQNJi4bFwgYRBlb3EFOZoWanrxLOKf/0XcB4v6scAFnJ+t1LU9e
-zsZF2ApG+4UoPSAIJULw3TVrjhxRkERRAWcAKm2sAv/njlFNWQKCAxJKoFWN+WQs
-HRRicMZov2Y2nzt2KHbIo4N4wlP6LNeMSNjep1wDVzixCD+SNCM4mSmPc4LxEBYn
-qrz3atwWcOUua0mFeMlg
-=f6FC
------END PGP SIGNATURE-----
-
---hOcCNbCCxyk/YU74--
+-- 
+Mel Gorman
+SUSE Labs
