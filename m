@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759863Ab3HOBI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 21:08:58 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:45192 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804Ab3HOBIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 21:08:31 -0400
-Message-ID: <520C2A06.5020007@gmail.com>
-Date: Wed, 14 Aug 2013 21:08:22 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1758619Ab3HOBLN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 21:11:13 -0400
+Received: from imap.thunk.org ([74.207.234.97]:43828 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755381Ab3HOBLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 21:11:10 -0400
+Date: Wed, 14 Aug 2013 21:11:01 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Dave Hansen <dave.hansen@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+        linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, david@fromorbit.com,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+Message-ID: <20130815011101.GA3572@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Dave Hansen <dave.hansen@intel.com>,
+	Dave Hansen <dave.hansen@linux.intel.com>,
+	linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+	linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
+	LKML <linux-kernel@vger.kernel.org>, david@fromorbit.com,
+	Tim Chen <tim.c.chen@linux.intel.com>,
+	Andi Kleen <ak@linux.intel.com>
+References: <520BB9EF.5020308@linux.intel.com>
+ <20130814194359.GA22316@thunk.org>
+ <520BED7A.4000903@intel.com>
+ <20130814230648.GD22316@thunk.org>
+ <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Tang Chen <imtangchen@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
-References: <20130812162247.GM15892@htj.dyndns.org> <520914D5.7080501@gmail.com> <20130812180758.GA8288@mtj.dyndns.org> <520BC950.1030806@gmail.com> <20130814182342.GG28628@htj.dyndns.org> <520BDD2F.2060909@gmail.com> <20130814195541.GH28628@htj.dyndns.org> <520BE891.8090004@gmail.com> <20130814203538.GK28628@htj.dyndns.org> <520BF3E3.5030006@gmail.com> <20130814213637.GO28628@htj.dyndns.org>
-In-Reply-To: <20130814213637.GO28628@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(8/14/13 5:36 PM), Tejun Heo wrote:
-> On Wed, Aug 14, 2013 at 05:17:23PM -0400, KOSAKI Motohiro wrote:
->> You haven't explain practical benefit of your opinion. As far as users have
->> no benefit, I'm never agree. Sorry.
+On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
+> > It would be better to write zeros to it, so we aren't measuring the
+> > cost of the unwritten->written conversion.
 > 
-> Umm... how about being more robust and actually useable to begin with?
-> What's the benefit of panicking?  Are you seriously saying that the
-> admin / boot script can use the kernel boot param to tell the kernel
-> to enable hotplug but can't check what nodes are hot unpluggable
-> afterwards?  The admin *needs* to check which nodes are hotpluggable
-> no matter how this part is handled.  How else is it gonna know which
-> nodes are hotpluggable?  Magic?
-> 
-> There's no such rule as kernel param should make the kernel panic if
-> it's not happy, so please take that out of your brain.  It of course
-> should be clear what the result of the kernel parameter is and
-> panicking is the crudest way to do that which is good enough or even
-> desriable in *some* cases.  It is not the required behavior by any
-> stretch of imgination, especially when the result of the parameter may
-> change due to changing circumstances.  That's an outright idiotic
-> thing to do.
+> At the risk of beating a dead horse, how hard would it be to defer
+> this part until writeback?
 
-Sigh, I'd like to point a link of past discussion. But I can't find it now.
-Let's summarize past discussion as far as possible.
+Part of the work has to be done at write time because we need to
+update allocation statistics (i.e., so that we don't have ENOSPC
+problems).  The unwritten->written conversion does happen at writeback
+(as does the actual block allocation if we are doing delayed
+allocation).
 
-Firstly, technically you can't implement correct fallback. You used a term
-"when can't allocate memory", but it's not so simple. Think following scenario,
-memory is enough for kernel image, but kernel will load memory hogging drivers.
-The system will crash after boot within 1 min. Then, MM subsystem don't believe
-a fallback. Bogus and misguided fallback give a user false relief and they don't
-notice their mistake quickly. The answer is, there is the fundamental rule.
-We always said, "measure your system carefully, and setting option carefully too".
-I have no seen any reason to make exception in this case.
+The point is that if the goal is to measure page fault scalability, we
+shouldn't have this other stuff happening as the same time as the page
+fault workload.
 
-Secondly, memory hotplug is now maintained I and kamezawa-san. Then, I much likely
-have a chance to get a hotplug related bug report. For protecting my life, I don't
-want get a false bug claim. Then, I wouldn't like to aim incomplete fallback. When
-an admin makes mistake, they should shoot their foot, not me!
-
-Thirdly, I haven't insist to aim verbose and kind messages as last breath. It much
-likely help users. 
-
-Last, we are now discussing hotplug feature. Then, we can assume hotpluggable machine.
-They have a hotplug interface in farmware by definition. So, you need to aim a magic.
-
-
-
+						- Ted
