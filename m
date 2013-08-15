@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab3HOJZT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 05:25:19 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:41719 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab3HOJZR (ORCPT
+	id S1754595Ab3HOJ2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 05:28:10 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:11262 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752776Ab3HOJ2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 05:25:17 -0400
-Message-ID: <520C9E78.2020401@gmail.com>
-Date: Thu, 15 Aug 2013 11:25:12 +0200
-From: Ben Tebulin <tebulin@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 15 Aug 2013 05:28:08 -0400
+Message-ID: <520C9F0C.6040303@huawei.com>
+Date: Thu, 15 Aug 2013 17:27:40 +0800
+From: Libo Chen <clbchenlibo.chen@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>
-CC: Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert
- 53a59fc67!
-References: <52050382.9060802@gmail.com> <520BB225.8030807@gmail.com> <20130814174039.GA24033@dhcp22.suse.cz> <CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com> <20130814182756.GD24033@dhcp22.suse.cz> <CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com>
-In-Reply-To: <CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH RESEND 1/8] net: fsl_pq_mdio: use platform_{get,set}_drvdata()
+References: <5208E215.6030007@huawei.com> <520AFBEE.7030903@huawei.com> <520BD275.5060004@cogentembedded.com>
+In-Reply-To: <520BD275.5060004@cogentembedded.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.158]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.08.2013 20:35, schrieb Linus Torvalds:
-> Yes, the bug was originally introduced in 597e1c35, but in practice it
-> never happened, [...]
+On 2013/8/15 2:54, Sergei Shtylyov wrote:
+> Hello.
 > 
-> NOTE! I still absolutely want Ben to actually test that fix (ie
-> backport commit e6c495a96ce0 to his tree), because without testing
-> this is all just theoretical, and there might be other things hiding
-> here.[..]
+> On 08/14/2013 07:39 AM, Libo Chen wrote:
+> 
+>> We can use the wrapper functions platform_{get,set}_drvdata() instead of
+>> dev_{get,set}_drvdata() with &pdev->dev, it is convenient for user.
+> 
+>> Also, unnecessary dev_set_drvdata() is removed, because the driver core
+>> clears the driver data to NULL after device_release or on probe failure.
+> 
+>    You misunderstood. That's a material for 2 separate patch sets (or maybe single patches, since multiple files can be collapsed in a single patch).
+> 
 
-I just cherry-picked e6c495a96ce0 into 3.9.11 and 3.7.10.
-Unfortunately this does _not resolve_ my issue (too good to be true) :-(
+ okay, thanks.
+
+
+Libo
+
+>> Signed-off-by: Libo Chen <libo.chen@huawei.com>
+> 
+> WBR, Sergei
+> 
+> 
+> 
+
+
