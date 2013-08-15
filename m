@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757990Ab3HOOKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 10:10:14 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:48825 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756772Ab3HOOKM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 10:10:12 -0400
-Date: Thu, 15 Aug 2013 23:10:04 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Hillf Danton <dhillf@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: kswapd skips compaction if reclaim order drops to zero?
-Message-ID: <20130815141004.GD8437@gmail.com>
-References: <CAJd=RBBF2h_tRpbTV6OkxQOfkvKt=ebn_PbE8+r7JxAuaFZxFQ@mail.gmail.com>
- <20130815104727.GT2296@suse.de>
- <20130815134139.GC8437@gmail.com>
- <20130815135627.GX2296@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130815135627.GX2296@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758092Ab3HOOKz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 10:10:55 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:59861 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756772Ab3HOOKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 10:10:54 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 09/10] events: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Thu, 15 Aug 2013 15:10:59 +0200
+Message-Id: <8135b089ce3453ba567598f340aa8d246e4a3def.1376327678.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <cover.1376327678.git.ydroneaud@opteya.com>
+References: <cover.1376327678.git.ydroneaud@opteya.com>
+In-Reply-To: <cover.1376327678.git.ydroneaud@opteya.com>
+References: <cover.1376327678.git.ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 02:56:27PM +0100, Mel Gorman wrote:
-> On Thu, Aug 15, 2013 at 10:41:39PM +0900, Minchan Kim wrote:
-> > Hey Mel,
-> > 
-> > On Thu, Aug 15, 2013 at 11:47:27AM +0100, Mel Gorman wrote:
-> > > On Thu, Aug 15, 2013 at 06:02:53PM +0800, Hillf Danton wrote:
-> > > > If the allocation order is not high, direct compaction does nothing.
-> > > > Can we skip compaction here if order drops to zero?
-> > > > 
-> > > 
-> > > If the allocation order is not high then
-> > > 
-> > > pgdat_needs_compaction == (order > 0) == false == no calling compact_pdatt
-> > > 
-> > > In the case where order is reset to 0 due to fragmentation then it does
-> > > call compact_pgdat but it does no work due to the cc->order check in
-> > > __compact_pgdat.
-> > > 
-> > 
-> > I am looking at mmotm-2013-08-07-16-55 but couldn't find cc->order
-> > check right before compact_zone in __comact_pgdat.
-> > Could you pinpoint code piece?
-> > 
-> 
-> Thanks, I screwed up as that check happens too late. However, it still
-> ends up not mattering because it does this
-> 
-> compact_pgdat
->   -> __compact_pgdat
->     -> compact_zone
->       -> compaction_suitable
-> 
-> For order == 0, compaction_suitable will return either COMPACT_SKIPPED
-> (if the watermarks are not met) and COMPACT_PARTIAL otherwise. Either
-> way, compaction doesn't run.
+Macro get_unused_fd() is used to allocate a file descriptor with
+default flags. Those default flags (0) can be "unsafe":
+O_CLOEXEC must be used by default to not leak file descriptor
+across exec().
 
-In compaction_suitable, it could pass first zone_watermark_ok
-but failed second zone_watermark_ok while fragindex is -1000
-so compaction could run.
+Instead of macro get_unused_fd(), functions anon_inode_getfd()
+or get_unused_fd_flags() should be used with flags given by userspace.
+If not possible, flags should be set to O_CLOEXEC to provide userspace
+with a default safe behavor.
 
-And we shouldn't depend on such coincidence.
+In a further patch, get_unused_fd() will be removed so that
+new code start using anon_inode_getfd() or get_unused_fd_flags()
+with correct flags.
 
+This patch replaces calls to get_unused_fd() with equivalent call to
+get_unused_fd_flags(0) to preserve current behavor for existing code.
 
-> 
-> -- 
-> Mel Gorman
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+The hard coded flag value (0) should be reviewed on a per-subsystem basis,
+and, if possible, set to O_CLOEXEC.
 
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Link: http://lkml.kernel.org/r/cover.1376327678.git.ydroneaud@opteya.com
+
+---
+ kernel/events/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index f25ce6d..a224a14 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6891,7 +6891,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 	if ((flags & PERF_FLAG_PID_CGROUP) && (pid == -1 || cpu == -1))
+ 		return -EINVAL;
+ 
+-	event_fd = get_unused_fd();
++	event_fd = get_unused_fd_flags(0);
+ 	if (event_fd < 0)
+ 		return event_fd;
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.8.3.1
+
