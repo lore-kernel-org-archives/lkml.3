@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab3HOL72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 07:59:28 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:40852 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab3HOL7Z (ORCPT
+	id S1755294Ab3HOMCe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 08:02:34 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:50439 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab3HOMCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 07:59:25 -0400
-Date: Thu, 15 Aug 2013 13:59:32 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Christopher James Halse Rogers 
-	<christopher.halse.rogers@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        robclark@gmail.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH] dma-buf: Expose buffer size to userspace
-Message-ID: <20130815115932.GC776@phenom.ffwll.local>
-Mail-Followup-To: Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>,
-	linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-	robclark@gmail.com, linux-media@vger.kernel.org
-References: <1375683720-4748-1-git-send-email-christopher.halse.rogers@canonical.com>
+	Thu, 15 Aug 2013 08:02:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375683720-4748-1-git-send-email-christopher.halse.rogers@canonical.com>
-X-Operating-System: Linux phenom 3.11.0-rc2+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <520C9E78.2020401@gmail.com>
+References: <52050382.9060802@gmail.com>
+	<520BB225.8030807@gmail.com>
+	<20130814174039.GA24033@dhcp22.suse.cz>
+	<CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com>
+	<20130814182756.GD24033@dhcp22.suse.cz>
+	<CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com>
+	<520C9E78.2020401@gmail.com>
+Date: Thu, 15 Aug 2013 05:02:31 -0700
+X-Google-Sender-Auth: yJIgt62XR_1HYWjodHy1FU8q8RM
+Message-ID: <CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com>
+Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert 53a59fc67!
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ben Tebulin <tebulin@googlemail.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 05, 2013 at 04:22:00PM +1000, Christopher James Halse Rogers wrote:
-> Each dma-buf has an associated size and it's reasonable for userspace
-> to want to know what it is.
-> 
-> Since userspace already has an fd, expose the size using the
-> size = lseek(fd, SEEK_END, 0); lseek(fd, SEEK_CUR, 0);
-> idiom.
-> 
-> Signed-off-by: Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>
+On Thu, Aug 15, 2013 at 2:25 AM, Ben Tebulin <tebulin@googlemail.com> wrote:
+>
+> I just cherry-picked e6c495a96ce0 into 3.9.11 and 3.7.10.
+> Unfortunately this does _not resolve_ my issue (too good to be true) :-(
 
-Yeah, loosk good to me and rather useful, so (with the dma-buf docs
-improved as suggested below):
+Ho humm. I've found at least one other bug, but that one only affects
+hugepages. Do you perhaps have transparent hugepages enabled? But even
+then it looks quite unlikely.
 
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+I'll think about this some more. I'm not happy with how that
+particular whole TLB flushing hack was done, but I need to sleep on
+this.
 
-I've also written some small prime tests in igt, so also:
-
-Tested-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-> ---
-> 
-> I've run into a point in the radeon DRM userspace where I need the
-> size of a dma-buf. I could add a radeon-specific mechanism to get that,
-> but this seems like something that would be more generally useful.
-> 
-> I'm not entirely sure about supporting both SEEK_END and SEEK_CUR; this
-> is somewhat of an abuse of lseek, as seeking obviously doesn't make sense.
-> It's the obivous idiom for getting the size of what's on the other end of a
-> file descriptor, though.
-> 
-> I didn't notice anywhere to document this; Documentation/dma-buf-api didn't
-> seem like the right place. Is there somewhere I've overlooked?
-
-I think adding a section about various other userspace interfaces exposed
-below the mmap support section would be good. Feel free to squash in the
-belo diff for v2.
-
-Cheers, Daniel
-
-diff --git a/Documentation/dma-buf-sharing.txt b/Documentation/dma-buf-sharing.txt
-index 0b23261..b3a8aa2 100644
---- a/Documentation/dma-buf-sharing.txt
-+++ b/Documentation/dma-buf-sharing.txt
-@@ -407,6 +407,18 @@ Being able to mmap an export dma-buf buffer object has 2 main use-cases:
-    interesting ways depending upong the exporter (if userspace starts depending
-    upon this implicit synchronization).
- 
-+Other Interfaces Exposed to Userspace on the dma-buf FD
-+------------------------------------------------------
-+
-+- Since kernel 3.12 the dma-buf FD supports the llseek system call, but only
-+  with offset=0 and whence=SEEK_END|SEEK_SET. SEEK_SET is supported to allowe
-+  the usual size discover pattern size = SEEK_END(0); SEEK_SET(0). Every other
-+  llseek operation will report -EINVAL.
-+
-+  If llseek on dma-buf FDs isn't support the kernel will report -ESPIPE for all
-+  cases. Userspace can use this to detect support for discovering the dma-buf
-+  size using llsee.
-+
- Miscellaneous notes
- -------------------
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+              Linus
