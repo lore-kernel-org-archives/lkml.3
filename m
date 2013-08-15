@@ -1,102 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758094Ab3HOPMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 11:12:14 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55047 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756994Ab3HOPMM (ORCPT
+	id S1758072Ab3HOPNf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 11:13:35 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:44778 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756602Ab3HOPNc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 11:12:12 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520CEFCA.8070309@roeck-us.net>
-Date: Thu, 15 Aug 2013 08:12:10 -0700
-From: Guenter Roeck <linux@roeck-us.net>
+	Thu, 15 Aug 2013 11:13:32 -0400
+Message-ID: <520CF01D.4020309@arm.com>
+Date: Thu, 15 Aug 2013 16:13:33 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+To: Tomasz Figa <tomasz.figa@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/17] 3.4.58-stable review
-References: <20130813063501.728847844@linuxfoundation.org> <520A1D56.2050507@roeck-us.net> <20130813175858.GC7336@kroah.com> <20130813201936.GA18358@roeck-us.net> <CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com> <20130813223622.GA12790@roeck-us.net> <CAMuHMdVsR3Af+ccWMq6aU99UUAtCXyf8Ss0fbSYw7tR_w2mwkA@mail.gmail.com> <520B5873.6010708@roeck-us.net> <20130815063648.GE25754@kroah.com>
-In-Reply-To: <20130815063648.GE25754@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v3 03/16] driver/core: cpu: initialize of_node in cpu's
+ device struture
+References: <1374069984-20567-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1374492747-13879-4-git-send-email-Sudeep.KarkadaNagesha@arm.com> <1804645.BcbkbcfKAA@flatron>
+In-Reply-To: <1804645.BcbkbcfKAA@flatron>
+X-OriginalArrivalTime: 15 Aug 2013 15:13:27.0953 (UTC) FILETIME=[FE9D7010:01CE99C9]
+X-MC-Unique: 113081516133008801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 11:36 PM, Greg Kroah-Hartman wrote:
-> On Wed, Aug 14, 2013 at 03:14:11AM -0700, Guenter Roeck wrote:
->> On 08/14/2013 01:26 AM, Geert Uytterhoeven wrote:
->>> On Wed, Aug 14, 2013 at 12:36 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>>>> cris/...:
->>>>>> In file included from include/linux/page-flags.h:8:0,
->>>>>>                    from kernel/bounds.c:9:
->>>>>> include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
->>>>>> include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
->>>>>> include/linux/types.h:30:1: error: unknown type name '__kernel_pid_t'
->>>>>> include/linux/types.h:31:1: error: unknown type name '__kernel_daddr_t'
->>>>>> include/linux/types.h:33:1: error: unknown type name '__kernel_suseconds_t'
->>>>>>
->>>>>> That one might be tricky (or simple if someone knows what is wrong).
->>>>>
->>>>> Fixed in v3.5-rc1:
->>>>>
->>>>> commit 74f077d2a7651409c44bb323471f219a4b0d2aab
->>>>> Author: Jiri Slaby <jslaby@suse.cz>
->>>>> Date:   Mon Apr 2 13:40:17 2012 +0200
->>>>>
->>>>>       cris: posix_types.h, include asm-generic/posix_types.h
->>>>>
->>>> It does fix above error, but then there is another error:
->>>>
->>>>     AS      arch/cris/arch-v10/lib/checksum.o
->>>> In file included from <command-line>:4:0:
->>>> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
->>>> make[1]: *** [arch/cris/arch-v10/lib/checksum.o] Error 1
->>>> make[1]: *** Waiting for unfinished jobs....
->>>>     AS      arch/cris/arch-v10/lib/checksumcopy.o
->>>> In file included from <command-line>:4:0:
->>>> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
->>>> make[1]: *** [arch/cris/arch-v10/lib/checksumcopy.o] Error 1
->>>
->>> commit 7b91747d42a1012e3781dd09fa638d113809e3fd
->>> Author: Paul Gortmaker <paul.gortmaker@windriver.com>
->>> Date:   Wed Apr 18 21:58:43 2012 +0200
->>>
->>>       cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
->>>
+On 15/08/13 12:35, Tomasz Figa wrote:
+> Hi Sudeep,
+> 
+> On Monday 22 of July 2013 12:32:14 Sudeep KarkadaNagesha wrote:
+>> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 >>
->> Great, thanks for tracking this down.
+>> CPUs are also registered as devices but the of_node in these cpu
+>> devices are not initialized. Currently different drivers requiring
+>> to access cpu device node are parsing the nodes themselves and
+>> initialising the of_node in cpu device.
 >>
->> With both patches applied, we are almost there. Next error:
+>> The of_node in all the cpu devices needs to be initialized properly
+>> and at one place. The best place to update this is CPU subsystem
+>> driver when registering the cpu devices.
 >>
->> kernel/built-in.o: In function `core_kernel_data':
->> (.text+0x12e38): undefined reference to `_sdata'
->> make: *** [vmlinux] Error 1
+>> The OF/DT core library now provides of_get_cpu_node to retrieve a cpu
+>> device node for a given logical index by abstracting the architecture
+>> specific details.
 >>
->> This has been fixed with commit 473e162e (CRIS: Add _sdata to vmlinux.lds.S).
+>> This patch uses of_get_cpu_node to assign of_node when registering the
+>> cpu devices.
 >>
->> So, in summary, we have
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Acked-by: Rob Herring <rob.herring@calxeda.com>
+>> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+>> ---
+>>  drivers/base/cpu.c | 2 ++
+>>  1 file changed, 2 insertions(+)
 >>
->> 473e162e CRIS: Add _sdata to vmlinux.lds.S
->> 69349c2d cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
->> 7b91747d cris: posix_types.h, include asm-generic/posix_types.h
+>> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+>> index 4c358bc..ea51c6d 100644
+>> --- a/drivers/base/cpu.c
+>> +++ b/drivers/base/cpu.c
+>> @@ -14,6 +14,7 @@
+>>  #include <linux/slab.h>
+>>  #include <linux/percpu.h>
+>>  #include <linux/acpi.h>
+>> +#include <linux/of.h>
 >>
->> With those three patches applied, cris targets build in 3.4.y.
->
-> Wonderful, I've now applied all of these.
->
-> Anything else I'm missing for 3.4?
->
-One more patch to apply to 3.4:
+>>  #include "base.h"
+>>
+>> @@ -289,6 +290,7 @@ int register_cpu(struct cpu *cpu, int num)
+>>  	cpu->dev.release = cpu_device_release;
+>>  	cpu->dev.offline_disabled = !cpu->hotpluggable;
+>>  	cpu->dev.offline = !cpu_online(num);
+>> +	cpu->dev.of_node = of_get_cpu_node(num);
+> 
+> Aha, so this would be the only place where of_get_cpu_node() gets called, 
+> so the parsing would be done only once and then any code that needs CPU DT 
+> node would just simply grab it from CPU dev. Fair enough.
+> 
+> Not sure if this makes the need for such helper to be globally available 
+> in of/base.c, but I guess this won't hurt.
+> 
+Ah, you found it out yourself. Sorry responded to your earlier mail.
+Yes but there may be uses cases which need cpu of_node before CPUs get
+registered. I believe PATCH 4-6 in the series is good examples as why we
+need this helper to be global.
 
-aa709f3bc powerpc/numa: Avoid stupid uninitialized warning from gcc
+Move over now we need to extend support to PowerPC where DT is scanned
+needlessly always to fetch cpu of_node. Of course they need to fix it,
+use cpu->of_node instead.
 
-This fixes the powerpc:chroma_defconfig build.
+Regards,
+Sudeep
 
-Guenter
 
