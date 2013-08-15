@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759457Ab3HOSEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 14:04:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:48460 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753382Ab3HOSEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 14:04:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,886,1367996400"; 
-   d="scan'208";a="387730945"
-Message-ID: <520D1806.5040309@intel.com>
-Date: Thu, 15 Aug 2013 11:03:50 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1759498Ab3HOSFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 14:05:46 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:65259 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753334Ab3HOSFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 14:05:45 -0400
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm/sparse: introduce alloc_usemap_and_memmap
-References: <1376526703-2081-1-git-send-email-liwanp@linux.vnet.ibm.com> <1376526703-2081-2-git-send-email-liwanp@linux.vnet.ibm.com>
-In-Reply-To: <1376526703-2081-2-git-send-email-liwanp@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130815175428.GA18580@roeck-us.net>
+References: <5207B3C3.9080508@roeck-us.net> <20130811220450.GY23006@n2100.arm.linux.org.uk>
+ <52082EF8.10005@roeck-us.net> <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com>
+ <20130813034054.GA18218@roeck-us.net> <CAFEAcA_-S8z6ZMr8TMPvkcTyyCSMOj1DExVsY4JDQjRXDU5WGw@mail.gmail.com>
+ <20130815175428.GA18580@roeck-us.net>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Thu, 15 Aug 2013 19:05:22 +0100
+Message-ID: <CAFEAcA_MyJPwo6Gd_dxeWM5q5-7MYqR6-rrePusFzYaGGckWJQ@mail.gmail.com>
+Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        QEMU Developers <qemu-devel@nongnu.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 05:31 PM, Wanpeng Li wrote:
-> After commit 9bdac91424075("sparsemem: Put mem map for one node together."),
-> vmemmap for one node will be allocated together, its logic is similiar as 
-> memory allocation for pageblock flags. This patch introduce alloc_usemap_and_memmap
-> to extract the same logic of memory alloction for pageblock flags and vmemmap.
+On 15 August 2013 18:54, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Thu, Aug 15, 2013 at 05:45:42PM +0100, Peter Maydell wrote:
+>> On 13 August 2013 04:40, Guenter Roeck <linux@roeck-us.net> wrote:
+>> > Patch tested and working with qemu 1.5.2, using the configuration file
+>> > from the yocto project. Patch applied on top of kernel version 3.11-rc5.
+>>
+>> OK, I tested this on PB926+PCI backplane hardware, and it is
+>> definitely better than current mainline, in that the test USB
+>> card that I have no longer causes the kernel to generate this sort of
+>> backtrace:
+>>
+> Do you mean my patch fixes the traceback below as a side effect ?
+> Would be great ... it would be one more reason to get it applied.
 
-Shame on whoever copy-n-pasted that in the first place.
+Yes, exactly -- the kernel currently has the wrong irq mapping,
+which causes the traceback (ie h/w asserts irq 93 but the kernel
+is listening on something else). That the patch fixes this confirms
+that it is the behaviour of hardware as well as of QEMU.
 
-> -
-> -	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
-> -		struct mem_section *ms;
-> -
-> -		if (!present_section_nr(pnum))
-> -			continue;
-> -		ms = __nr_to_section(pnum);
-> -		nodeid_begin = sparse_early_nid(ms);
-> -		pnum_begin = pnum;
-> -		break;
-> -	}
-> -	usemap_count = 1;
-> -	for (pnum = pnum_begin + 1; pnum < NR_MEM_SECTIONS; pnum++) {
-> -		struct mem_section *ms;
-> -		int nodeid;
-> -
-> -		if (!present_section_nr(pnum))
-> -			continue;
-> -		ms = __nr_to_section(pnum);
-> -		nodeid = sparse_early_nid(ms);
-> -		if (nodeid == nodeid_begin) {
-> -			usemap_count++;
-> -			continue;
-> -		}
-> -		/* ok, we need to take cake of from pnum_begin to pnum - 1*/
-> -		sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, pnum,
-> -						 usemap_count, nodeid_begin);
-> -		/* new start, update count etc*/
-> -		nodeid_begin = nodeid;
-> -		pnum_begin = pnum;
-> -		usemap_count = 1;
-> -	}
-> -	/* ok, last chunk */
-> -	sparse_early_usemaps_alloc_node(usemap_map, pnum_begin, NR_MEM_SECTIONS,
-> -					 usemap_count, nodeid_begin);
-> +	alloc_usemap_and_memmap(usemap_map, true);
-...
-> +	alloc_usemap_and_memmap((unsigned long **)map_map, false);
->  #endif
+>> However it still doesn't seem to reliably detect the USB harddisk
+>> plugged into the card, so I think there may be further issues, possibly
+>> some subset of those Arnd identified and fixed with this patch:
+>> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/93397
+>>
+> Does it get better if you apply Arnd's patch ?
 
-Why does alloc_usemap_and_memmap() take an 'unsigned long **'?
-'unsigned long' is for the usemap and 'struct page' is for the memmap.
-It's misleading to have it take an 'unsigned long **' and then just cast
-it over to a 'struct page **' internally.
+Arnd's patch is ancient and won't apply as is (due to intervening
+changes and also because some of the things it fixes were fixed
+in later patches); I'm currently trying to extract the relevant parts.
 
-Also, what's the point of having a function that returns something in a
-double-pointer, but that doesn't use its return value?
+If you want you can confirm that I/O port PCI access is broken on
+QEMU too -- disable CONFIG_SCSI_SYM53C8XX_MMIO so
+the driver uses PCI IO rather than MMIO and you'll see QEMU's
+SCSI device doesn't work any more.
 
-alloc_usemap_and_memmap() also needs a comment about what it's doing
-with that pointer and its other argument.
+>> so I'd like to continue testing.
+>>
+>> The other thing this patch should (IMHO) have is the
+>> line in pci_versatile_setup() which tells QEMU that the
+>> kernel really does expect hardware-like behaviour:
 
+>> (Without this line QEMU will guess whether the kernel is broken
+>> or not and will get it right most but not necessarily all of the time.)
+>>
+> Might make sense, but I think it should be a separate patch.
 
+It needs to go in the same patch, because a kernel with the fixed
+irq remapping must also tell QEMU it is fixed; if you split the
+two then at the point between the two patches the kernel is
+broken for bisection purposes.
+
+> If I understand correctly, my patch fixes the SCSI problem.
+> Is that correct ? If so, can we get it applied to mainline ?
+
+I'd rather get to a point where I have the hardware definitely
+completely working first. There's no real hurry, this has been
+broken for months and months.
+
+-- PMM
