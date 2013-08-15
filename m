@@ -1,61 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab3HOI3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 04:29:12 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:58104 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056Ab3HOI3H (ORCPT
+	id S1757858Ab3HOI3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 04:29:55 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:13362
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756027Ab3HOI3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 04:29:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMuHMdX+217ti8ULKhOU35vZjD7bnYL0D4HbpvFG1z93Cc8NJA@mail.gmail.com>
-References: <1376461201-7413-1-git-send-email-sonic.adi@gmail.com>
-	<CAMuHMdX+217ti8ULKhOU35vZjD7bnYL0D4HbpvFG1z93Cc8NJA@mail.gmail.com>
-Date: Thu, 15 Aug 2013 16:29:05 +0800
-Message-ID: <CAJxxZ0OJXYLRkdjS=2GxVuXt3wr1-WSBf77K4hBpa_keAWecgw@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: ADI Linux development mailing lists change
- to the new server.
+	Thu, 15 Aug 2013 04:29:50 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-SpamScore: 16
+X-BigFish: VS16(z4d03rzzz1f42h1ee6h1ce5h1fdah201ch2073h1202h1fd0h1e76h1d1ah1cabh1d2ah1fc6hz8dhz8275ch1de098h17326ah1de096h1954cbh8275bh8275dh1de097hz31h87h2a8h668h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h15a8h162dh1631h1758h17eeh1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h1570m129fi1155h)
+X-FB-DOMAIN-IP-MATCH: fail
 From: Sonic Zhang <sonic.adi@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
+To: Steven Miao <realmz6@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        <adi-buildroot-devel@lists.sourceforge.net>,
         Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: [PATCH v2] MAINTAINERS: ADI Linux development mailing lists change to the new server.
+Date: Thu, 15 Aug 2013 16:34:45 +0800
+Message-ID: <1376555685-8262-1-git-send-email-sonic.adi@gmail.com>
+X-Mailer: git-send-email 1.8.2.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-Thanks.
+Update Blackfin arch branch maintainer's email as well.
 
-Sonic
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ MAINTAINERS | 42 ++++++++++++++++++++----------------------
+ 1 file changed, 20 insertions(+), 22 deletions(-)
 
-On Thu, Aug 15, 2013 at 3:53 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Wed, Aug 14, 2013 at 8:20 AM, Sonic Zhang <sonic.adi@gmail.com> wrote:
->>  ANALOG DEVICES INC ASOC DRIVERS
->> -L:     uclinux-dist-devel@blackfin.uclinux.org
->> +L:     adi-buidroot-devel@lists.sourceforge.net
->
-> adi-buildroot-devel@lists.sourceforge.net, unless you really don't want to
-> receive big reports and patches :-)
->
-> Typo all over the place.
->
->>  L:     alsa-devel@alsa-project.org (moderated for non-subscribers)
->>  W:     http://blackfin.uclinux.org/
->>  S:     Supported
->> @@ -1661,56 +1661,54 @@ F:      fs/bfs/
->>  F:     include/uapi/linux/bfs_fs.h
->
-> Gr{oetje,eeting}s,
->
->                         Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
+diff --git a/MAINTAINERS b/MAINTAINERS
+index bf61e04..e5229d6 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -288,36 +288,36 @@ F:	sound/pci/ad1889.*
+ 
+ AD525X ANALOG DEVICES DIGITAL POTENTIOMETERS DRIVER
+ M:	Michael Hennerich <michael.hennerich@analog.com>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ W:	http://wiki.analog.com/AD5254
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	drivers/misc/ad525x_dpot.c
+ 
+ AD5398 CURRENT REGULATOR DRIVER (AD5398/AD5821)
+ M:	Michael Hennerich <michael.hennerich@analog.com>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ W:	http://wiki.analog.com/AD5398
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	drivers/regulator/ad5398.c
+ 
+ AD714X CAPACITANCE TOUCH SENSOR DRIVER (AD7142/3/7/8/7A)
+ M:	Michael Hennerich <michael.hennerich@analog.com>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ W:	http://wiki.analog.com/AD7142
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	drivers/input/misc/ad714x.c
+ 
+ AD7877 TOUCHSCREEN DRIVER
+ M:	Michael Hennerich <michael.hennerich@analog.com>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ W:	http://wiki.analog.com/AD7877
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	drivers/input/touchscreen/ad7877.c
+ 
+ AD7879 TOUCHSCREEN DRIVER (AD7879/AD7889)
+ M:	Michael Hennerich <michael.hennerich@analog.com>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ W:	http://wiki.analog.com/AD7879
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	drivers/input/touchscreen/ad7879.c
+ 
+@@ -353,8 +353,8 @@ F:	include/media/adp1653.h
+ 
+ ADP5520 BACKLIGHT DRIVER WITH IO EXPANDER (ADP5520/ADP5501)
+ M:	Michael Hennerich <michael.hennerich@analog.com>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ W:	http://wiki.analog.com/ADP5520
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	drivers/mfd/adp5520.c
+ F:	drivers/video/backlight/adp5520_bl.c
+@@ -364,16 +364,16 @@ F:	drivers/input/keyboard/adp5520-keys.c
+ 
+ ADP5588 QWERTY KEYPAD AND IO EXPANDER DRIVER (ADP5588/ADP5587)
+ M:	Michael Hennerich <michael.hennerich@analog.com>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ W:	http://wiki.analog.com/ADP5588
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	drivers/input/keyboard/adp5588-keys.c
+ F:	drivers/gpio/gpio-adp5588.c
+ 
+ ADP8860 BACKLIGHT DRIVER (ADP8860/ADP8861/ADP8863)
+ M:	Michael Hennerich <michael.hennerich@analog.com>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ W:	http://wiki.analog.com/ADP8860
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	drivers/video/backlight/adp8860_bl.c
+ 
+@@ -399,8 +399,8 @@ F:	drivers/hwmon/adt7475.c
+ 
+ ADXL34X THREE-AXIS DIGITAL ACCELEROMETER DRIVER (ADXL345/ADXL346)
+ M:	Michael Hennerich <michael.hennerich@analog.com>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ W:	http://wiki.analog.com/ADXL345
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	drivers/input/misc/adxl34x.c
+ 
+@@ -588,9 +588,9 @@ F:	drivers/media/i2c/adv7604*
+ 
+ ANALOG DEVICES INC ASOC CODEC DRIVERS
+ M:	Lars-Peter Clausen <lars@metafoo.de>
+-L:	device-drivers-devel@blackfin.uclinux.org
+ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
+ W:	http://wiki.analog.com/
++W:	http://ez.analog.com/community/linux-device-drivers
+ S:	Supported
+ F:	sound/soc/codecs/adau*
+ F:	sound/soc/codecs/adav*
+@@ -599,7 +599,7 @@ F:	sound/soc/codecs/ssm*
+ F:	sound/soc/codecs/sigmadsp.*
+ 
+ ANALOG DEVICES INC ASOC DRIVERS
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++L:	adi-buildroot-devel@lists.sourceforge.net
+ L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
+ W:	http://blackfin.uclinux.org/
+ S:	Supported
+@@ -1661,56 +1661,54 @@ F:	fs/bfs/
+ F:	include/uapi/linux/bfs_fs.h
+ 
+ BLACKFIN ARCHITECTURE
+-M:	Mike Frysinger <vapier@gentoo.org>
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++M:	Steven Miao <realmz6@gmail.com>
++L:	adi-buildroot-devel@lists.sourceforge.net
+ W:	http://blackfin.uclinux.org
+ S:	Supported
+ F:	arch/blackfin/
+ 
+ BLACKFIN EMAC DRIVER
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++L:	adi-buildroot-devel@lists.sourceforge.net
+ W:	http://blackfin.uclinux.org
+ S:	Supported
+ F:	drivers/net/ethernet/adi/
+ 
+ BLACKFIN RTC DRIVER
+-M:	Mike Frysinger <vapier.adi@gmail.com>
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++L:	adi-buildroot-devel@lists.sourceforge.net
+ W:	http://blackfin.uclinux.org
+ S:	Supported
+ F:	drivers/rtc/rtc-bfin.c
+ 
+ BLACKFIN SDH DRIVER
+ M:	Sonic Zhang <sonic.zhang@analog.com>
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++L:	adi-buildroot-devel@lists.sourceforge.net
+ W:	http://blackfin.uclinux.org
+ S:	Supported
+ F:	drivers/mmc/host/bfin_sdh.c
+ 
+ BLACKFIN SERIAL DRIVER
+ M:	Sonic Zhang <sonic.zhang@analog.com>
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++L:	adi-buildroot-devel@lists.sourceforge.net
+ W:	http://blackfin.uclinux.org
+ S:	Supported
+ F:	drivers/tty/serial/bfin_uart.c
+ 
+ BLACKFIN WATCHDOG DRIVER
+-M:	Mike Frysinger <vapier.adi@gmail.com>
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++L:	adi-buildroot-devel@lists.sourceforge.net
+ W:	http://blackfin.uclinux.org
+ S:	Supported
+ F:	drivers/watchdog/bfin_wdt.c
+ 
+ BLACKFIN I2C TWI DRIVER
+ M:	Sonic Zhang <sonic.zhang@analog.com>
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++L:	adi-buildroot-devel@lists.sourceforge.net
+ W:	http://blackfin.uclinux.org/
+ S:	Supported
+ F:	drivers/i2c/busses/i2c-bfin-twi.c
+ 
+ BLACKFIN MEDIA DRIVER
+ M:	Scott Jiang <scott.jiang.linux@gmail.com>
+-L:	uclinux-dist-devel@blackfin.uclinux.org
++L:	adi-buildroot-devel@lists.sourceforge.net
+ W:	http://blackfin.uclinux.org/
+ S:	Supported
+ F:	drivers/media/platform/blackfin/
+-- 
+1.8.2.3
+
+
