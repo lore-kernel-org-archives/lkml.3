@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab3HOVR4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 17:17:56 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:59120 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab3HOVRo (ORCPT
+	id S1752248Ab3HOVRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 17:17:43 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:35389 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab3HOVRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 17:17:44 -0400
+	Thu, 15 Aug 2013 17:17:41 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Sam Ravnborg <sam@ravnborg.org>, Kevin Hilman <khilman@linaro.org>,
-        sedat.dilek@gmail.com, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH 4/4] modules: do not depend on kconfig to set 'modules' option to symbol MODULES
-Date: Thu, 15 Aug 2013 23:17:33 +0200
-Message-Id: <11097a0367e48954ecf616f9b0df48d86835dd0d.1376600922.git.yann.morin.1998@free.fr>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        "Yann E. MORIN" <yann.morin.1998@free.fr>
+Subject: [PATCH 1/4] kconfig: switch to "long long" for sanity
+Date: Thu, 15 Aug 2013 23:17:30 +0200
+Message-Id: <129784abc982ccac43322c2f175f3ca735c2ca73.1376600922.git.yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <cover.1376600922.git.yann.morin.1998@free.fr>
 References: <cover.1376600922.git.yann.morin.1998@free.fr>
@@ -25,56 +23,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+From: Kees Cook <keescook@chromium.org>
 
-Currently, the MODULES symbol is special-cased in different places in the
-kconfig language. For example, if no symbol is defined to enable tristates,
-then kconfig looks up for a symbol named 'MODULES', and forces the 'modules'
-option onto that symbol.
+Instead of using "long" for kconfig "hex" and "range" values, which may
+change in size depending on the host architecture, use "long long". This
+will allow values greater than INT_MAX on 32-bit hosts when cross
+compiling.
 
-This causes problems as such:
-  - since MODULES is special-cased, reading the configuration with
-    KCONFIG_ALLCONFIG set will forcibly set MODULES to be 'valid' (ie.
-    it has a valid value), when no such value was previously set. So
-    MODULES defaults to 'n' unless it is present in KCONFIG_ALLCONFIG
-  - other third-party projects may decide that 'MODULES' plays a different
-    role for them
-
-This has been exposed by cset #cfa98f2e:
-    kconfig: do not override symbols already set
-and reported by Stephen in:
-    http://marc.info/?l=linux-next&m=137592137915234&w=2
-
-As suggested by Sam, we explicitly define the MODULES symbol to be the
-tristate-enabler. This will allow us to drop special-casing of MODULES
-in the kconfig language, later.
-
-(Note: this patch is not a fix to Stephen's issue, just a first step).
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: yann.morin.1998@free.fr
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: sedat.dilek@gmail.com
-Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
 ---
- init/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ scripts/kconfig/symbol.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 247084b..4d55e81 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1666,6 +1666,7 @@ config BASE_SMALL
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index a76b8fd..c9a6775 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -136,7 +136,7 @@ static struct property *sym_get_range_prop(struct symbol *sym)
+ 	return NULL;
+ }
  
- menuconfig MODULES
- 	bool "Enable loadable module support"
-+	option modules
- 	help
- 	  Kernel modules are small pieces of compiled code which can
- 	  be inserted in the running kernel, rather than being
+-static long sym_get_range_val(struct symbol *sym, int base)
++static long long sym_get_range_val(struct symbol *sym, int base)
+ {
+ 	sym_calc_value(sym);
+ 	switch (sym->type) {
+@@ -149,13 +149,14 @@ static long sym_get_range_val(struct symbol *sym, int base)
+ 	default:
+ 		break;
+ 	}
+-	return strtol(sym->curr.val, NULL, base);
++	return strtoll(sym->curr.val, NULL, base);
+ }
+ 
+ static void sym_validate_range(struct symbol *sym)
+ {
+ 	struct property *prop;
+-	long base, val, val2;
++	int base;
++	long long val, val2;
+ 	char str[64];
+ 
+ 	switch (sym->type) {
+@@ -171,7 +172,7 @@ static void sym_validate_range(struct symbol *sym)
+ 	prop = sym_get_range_prop(sym);
+ 	if (!prop)
+ 		return;
+-	val = strtol(sym->curr.val, NULL, base);
++	val = strtoll(sym->curr.val, NULL, base);
+ 	val2 = sym_get_range_val(prop->expr->left.sym, base);
+ 	if (val >= val2) {
+ 		val2 = sym_get_range_val(prop->expr->right.sym, base);
+@@ -179,9 +180,9 @@ static void sym_validate_range(struct symbol *sym)
+ 			return;
+ 	}
+ 	if (sym->type == S_INT)
+-		sprintf(str, "%ld", val2);
++		sprintf(str, "%lld", val2);
+ 	else
+-		sprintf(str, "0x%lx", val2);
++		sprintf(str, "0x%llx", val2);
+ 	sym->curr.val = strdup(str);
+ }
+ 
+@@ -594,7 +595,7 @@ bool sym_string_valid(struct symbol *sym, const char *str)
+ bool sym_string_within_range(struct symbol *sym, const char *str)
+ {
+ 	struct property *prop;
+-	long val;
++	long long val;
+ 
+ 	switch (sym->type) {
+ 	case S_STRING:
+@@ -605,7 +606,7 @@ bool sym_string_within_range(struct symbol *sym, const char *str)
+ 		prop = sym_get_range_prop(sym);
+ 		if (!prop)
+ 			return true;
+-		val = strtol(str, NULL, 10);
++		val = strtoll(str, NULL, 10);
+ 		return val >= sym_get_range_val(prop->expr->left.sym, 10) &&
+ 		       val <= sym_get_range_val(prop->expr->right.sym, 10);
+ 	case S_HEX:
+@@ -614,7 +615,7 @@ bool sym_string_within_range(struct symbol *sym, const char *str)
+ 		prop = sym_get_range_prop(sym);
+ 		if (!prop)
+ 			return true;
+-		val = strtol(str, NULL, 16);
++		val = strtoll(str, NULL, 16);
+ 		return val >= sym_get_range_val(prop->expr->left.sym, 16) &&
+ 		       val <= sym_get_range_val(prop->expr->right.sym, 16);
+ 	case S_BOOLEAN:
 -- 
 1.8.1.2
 
