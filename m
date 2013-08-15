@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab3HOPee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 11:34:34 -0400
-Received: from swan.laptop.org ([18.85.2.166]:39692 "EHLO swan.laptop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab3HOPed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 11:34:33 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, dilinger@queued.net
-Subject: [PATCH v2] olpc-ec: initialise earlier
-Message-Id: <20130815153548.64219FAB06@dev.laptop.org>
-Date: Thu, 15 Aug 2013 11:35:47 -0400 (EDT)
+	id S1757560Ab3HOPgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 11:36:06 -0400
+Received: from a9-99.smtp-out.amazonses.com ([54.240.9.99]:44328 "EHLO
+	a9-99.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755854Ab3HOPgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 11:36:04 -0400
+X-Greylist: delayed 1040 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Aug 2013 11:36:04 EDT
+Date: Thu, 15 Aug 2013 15:18:40 +0000
+From: Christoph Lameter <cl@gentwo.org>
+To: Minchan Kim <minchan@kernel.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, k.kozlowski@samsung.com,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, guz.fnst@cn.fujitsu.com,
+        Benjamin LaHaise <bcrl@kvack.org>, Dave Hansen <dave.hansen@intel.com>,
+        lliubbo@gmail.com, aquini@redhat.com, Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC 0/3] Pin page control subsystem
+In-Reply-To: <20130815044834.GB3139@gmail.com>
+Message-ID: <00000140828ea17e-d69af79a-1d8e-4df2-9513-492df5e00afc-000000@email.amazonses.com>
+References: <1376377502-28207-1-git-send-email-minchan@kernel.org> <00000140787b6191-ae3f2eb1-515e-48a1-8e64-502772af4700-000000@email.amazonses.com> <20130814001236.GC2271@bbox> <000001407dafbe92-7b2b4006-2225-4f0b-b23b-d66101a995aa-000000@email.amazonses.com>
+ <20130814164705.GD2706@gmail.com> <000001407dc3c33b-4139d615-aecc-4745-a9b4-c84949f6a8f4-000000@email.amazonses.com> <20130815044834.GB3139@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.08.15-54.240.9.99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Being a low-level component, various drivers (e.g. olpc-battery) assume that
-it is ok to communicate with the OLPC Embedded Controller during probe.
-Therefore the OLPC EC driver must be initialised before other drivers try to
-use it. This was the case until it was recently moved out of arch/x86 and
-restructured (around commits ac2504151f5af27bbf0c0362b7da5951e05dfc43 and
-85f90cf6ca569b19cee212844b543a7355b77163).
+On Thu, 15 Aug 2013, Minchan Kim wrote:
 
-Use arch_initcall so that olpc-ec is readied earlier, matching the
-previous behaviour.
+> Now mlock pages could be migrated in case of CMA so I think it's not a
+> big problem to migrate it for other cases.
+> I remember You and Peter argued what's the mlock semainc of pin POV
+> and as I remember correctly, Peter said mlock doesn't mean pin so
+> we could migrate it but you didn't agree. Right?
 
-Fixes a regression introduced in Linux-3.6 where various drivers such as
-olpc-battery and olpc-xo1-sci failed to load due to an inability to
-communicate with the EC. The user-visible effect was a lack of battery
-monitoring, missing ebook/lid switch input devices, etc.
+mlock means it can be migrated. Pinning is currently done by increasing
+the page count. Migration will be attempted but it will fail since the
+references cannot be all removed. Peter proposed that mlock would work
+like pinning so that a migration of the page would not be attempted.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- drivers/platform/olpc/olpc-ec.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-v2: more informative commit message, thanks Andrew Morton
-
-diff --git a/drivers/platform/olpc/olpc-ec.c b/drivers/platform/olpc/olpc-ec.c
-index 0f9f859..f911952 100644
---- a/drivers/platform/olpc/olpc-ec.c
-+++ b/drivers/platform/olpc/olpc-ec.c
-@@ -330,7 +330,7 @@ static int __init olpc_ec_init_module(void)
- 	return platform_driver_register(&olpc_ec_plat_driver);
- }
- 
--module_init(olpc_ec_init_module);
-+arch_initcall(olpc_ec_init_module);
- 
- MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
- MODULE_LICENSE("GPL");
--- 
-1.8.3.1
-
+My concern is not only about migration but about a general way of pinning
+pages. Having mlock and pinning with different semantics is already an
+issue as the conversation with Peter brought out. Now we are
+adding yet another way that pinning is used.
