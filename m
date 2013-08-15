@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab3HOPZl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 11:25:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40078 "EHLO mx2.suse.de"
+	id S1756951Ab3HOPee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 11:34:34 -0400
+Received: from swan.laptop.org ([18.85.2.166]:39692 "EHLO swan.laptop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab3HOPZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 11:25:40 -0400
-Message-ID: <520CF2EF.8080000@suse.cz>
-Date: Thu, 15 Aug 2013 17:25:35 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <nicolas.palix@imag.fr>, cocci@systeme.lip6.fr,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/coccinelle/misc/warn.cocci: use WARN
-References: <1376313683-32276-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1376313683-32276-1-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1752860Ab3HOPed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 11:34:33 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, dilinger@queued.net
+Subject: [PATCH v2] olpc-ec: initialise earlier
+Message-Id: <20130815153548.64219FAB06@dev.laptop.org>
+Date: Thu, 15 Aug 2013 11:35:47 -0400 (EDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.8.2013 15:21, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> Use WARN(1,...) rather than printk followed by WARN(1).
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  scripts/coccinelle/misc/warn.cocci |  109 +++++++++++++++++++++++++++++++++++++
->  1 file changed, 109 insertions(+)
+Being a low-level component, various drivers (e.g. olpc-battery) assume that
+it is ok to communicate with the OLPC Embedded Controller during probe.
+Therefore the OLPC EC driver must be initialised before other drivers try to
+use it. This was the case until it was recently moved out of arch/x86 and
+restructured (around commits ac2504151f5af27bbf0c0362b7da5951e05dfc43 and
+85f90cf6ca569b19cee212844b543a7355b77163).
 
-Hi Julia,
+Use arch_initcall so that olpc-ec is readied earlier, matching the
+previous behaviour.
 
-this has been in mainline since v3.8-rc1 as commit ad99ac2.
+Fixes a regression introduced in Linux-3.6 where various drivers such as
+olpc-battery and olpc-xo1-sci failed to load due to an inability to
+communicate with the EC. The user-visible effect was a lack of battery
+monitoring, missing ebook/lid switch input devices, etc.
 
-Michal
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ drivers/platform/olpc/olpc-ec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+v2: more informative commit message, thanks Andrew Morton
+
+diff --git a/drivers/platform/olpc/olpc-ec.c b/drivers/platform/olpc/olpc-ec.c
+index 0f9f859..f911952 100644
+--- a/drivers/platform/olpc/olpc-ec.c
++++ b/drivers/platform/olpc/olpc-ec.c
+@@ -330,7 +330,7 @@ static int __init olpc_ec_init_module(void)
+ 	return platform_driver_register(&olpc_ec_plat_driver);
+ }
+ 
+-module_init(olpc_ec_init_module);
++arch_initcall(olpc_ec_init_module);
+ 
+ MODULE_AUTHOR("Andres Salomon <dilinger@queued.net>");
+ MODULE_LICENSE("GPL");
+-- 
+1.8.3.1
+
