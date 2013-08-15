@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759685Ab3HOSQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 14:16:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:2252 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759418Ab3HOSQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 14:16:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,886,1367996400"; 
-   d="scan'208";a="346910022"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Aristeu Rozanski Filho" <arozansk@redhat.com>
-Subject: RE: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
- trace event
-Thread-Topic: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
- trace event
-Thread-Index: AQHOlGVcQB6qi1wV3Ei8qYoYEneewpmMKjwAgAMKHwCAArfagIAAEviAgAAiKACAAV9FAIAAEOaAgABNEAD//407sIABmBcAgADhpgCAAKPcAIAAO3WAgAAErgD//9MiAA==
-Date: Thu, 15 Aug 2013 18:16:48 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CBCE72@ORSMSX106.amr.corp.intel.com>
-References: <5208D80D.5030206@linux.vnet.ibm.com>
- <20130812114404.3bd64fa0@samsung.com> <520A1B5E.8040105@linux.vnet.ibm.com>
- <20130813094147.062317f8@concha.lan> <520A6A30.1030406@linux.vnet.ibm.com>
- <3908561D78D1C84285E8C5FCA982C28F31CB8DB5@ORSMSX106.amr.corp.intel.com>
- <520B603E.3040002@linux.vnet.ibm.com> <20130814211504.393cf138@concha.lan>
- <20130815100132.GC27616@pd.tnic> <20130815103421.178a5224@samsung.com>
- <20130815135106.GG27616@pd.tnic>
-In-Reply-To: <20130815135106.GG27616@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1757696Ab3HOSY0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 14:24:26 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:40901 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab3HOSYZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 14:24:25 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130815173953.GU24092@twins.programming.kicks-ass.net>
+References: <CALZhoSQgw_-UaF0VOMjMqRJC8D4oQTBp4Bv=zJS+x0Wu97f2FQ@mail.gmail.com>
+ <20130812144309.GK27162@twins.programming.kicks-ass.net> <CALZhoSRyfE78GbiJqVRvUrbJRq_NhSqYbK8vnxNP8kS9xz9qVQ@mail.gmail.com>
+ <20130813073842.GP27162@twins.programming.kicks-ass.net> <CAPM31R+FDXUNb_X9R6O+kqjsAJftEzmyk+Ji=KoAyzEsTDWLew@mail.gmail.com>
+ <20130815173953.GU24092@twins.programming.kicks-ass.net>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 15 Aug 2013 11:23:53 -0700
+Message-ID: <CAPM31RLqDC4HpkhV_E83Ny3m6MpGdOjuUswEQTdy58AtVP3z_w@mail.gmail.com>
+Subject: Re: false nr_running check in load balance?
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lei Wen <adrian.wenl@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Lei Wen <leiwen@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7FIGvHg017578
 
-> * We parse some APEI table and disable those MCA banks which the BIOS
-> wants to handle first.
+On Thu, Aug 15, 2013 at 10:39 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Aug 13, 2013 at 01:08:17AM -0700, Paul Turner wrote:
+>> On Tue, Aug 13, 2013 at 12:38 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, Aug 13, 2013 at 12:45:12PM +0800, Lei Wen wrote:
+>> >> > Not quite right; I think you need busiest->cfs.h_nr_running.
+>> >> > cfs.nr_running is the number of entries running in this 'group'. If
+>> >> > you've got nested groups like:
+>> >> >
+>> >> >  'root'
+>> >> >    \
+>> >> >    'A'
+>> >> >    / \
+>> >> >   t1 t2
+>> >> >
+>> >> > root.nr_running := 1 'A', even though you've got multiple running tasks.
+>
+> One thing though; doesn't h_nr_running over count the number of tasks?
+> That is, doesn't it count the runnable entities so the above case would
+> give root.h_nr_running := 3, where we would only have 2 runnable tasks.
+>
+> Double check this and be careful when doing the conversion.
 
-We have no idea which errors the BIOS has chosen for itself.  We just know which
-bank numbers ... and Intel processors change mappings of which errors are logged
-in which banks in every new processor tock (and sometimes tick).  Some banks
-are documented in processor datasheet. most are not. Most common case might
-well be memory ... but it could be cache, or I/O, or ...
+This should be ok: it's accounted like rq->nr_running, not cfs_rq->nr_running.
+Specifically: both only account tasks; group-entities do not contribute.
 
-So this doesn't help Mauro figure out whether to allow loading of an
-EDAC driver that will peek and poke at chipset specific registers in
-possibly racy ways with BIOS code doing the same thing.
-
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The fact that this distinction exists, despite the very similar names
+is unfortunate.
+We could consider renaming to h_nr_{running_,}tasks for clarity.
+The same applies to rq->nr_running, although that would involve more churn.
