@@ -1,56 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab3HOWj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 18:39:59 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46844 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab3HOWj5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 18:39:57 -0400
-Date: Thu, 15 Aug 2013 15:39:56 -0700 (PDT)
-Message-Id: <20130815.153956.753981075193965537.davem@davemloft.net>
-To: kongjianjun@gmail.com
-Cc: mst@redhat.com, linux-kernel@vger.kernel.org, jasowang@redhat.com,
-        edumazet@google.com, vyasevic@redhat.com, netdev@vger.kernel.org
-Subject: Re: [PATCH] macvtap: fix up direction in comment on offloading
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAFeW=paTeaNsvK7ai-PPs6+MVW3LbaPaW9et_eu3XuGPpMqnuw@mail.gmail.com>
-References: <20130815174626.GA10874@redhat.com>
-	<CAFeW=paTeaNsvK7ai-PPs6+MVW3LbaPaW9et_eu3XuGPpMqnuw@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752336Ab3HOWnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 18:43:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63863 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751637Ab3HOWno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 18:43:44 -0400
+Subject: [PATCH] i915: Update VGA arbiter support for newer devices
+To: intel-gfx@lists.freedesktop.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: airlied@redhat.com, linux-kernel@vger.kernel.org,
+        ville.syrjala@linux.intel.com
+Date: Thu, 15 Aug 2013 16:43:42 -0600
+Message-ID: <20130815223917.27890.28003.stgit@bling.home>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 15 Aug 2013 15:39:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Amos Kong <kongjianjun@gmail.com>
-Date: Fri, 16 Aug 2013 04:41:26 +0800
+This is intended to add VGA arbiter support for Intel HD graphics on
+Core processors.  The old GMCH registers no longer exist, so even
+though it appears that i915 participates in VGA arbitration, it doesn't
+work.  On Intel HD graphics we already attempt to disable VGA regions
+of the device.  This makes registering as a VGA client unnecessary since
+we don't intend to operate differently depending on how many VGA devices
+are present.  We can disable VGA memory regions by clearing a memory
+enable bit in the VGA MSR.  That only leaves VGA IO, which we update
+the VGA arbiter to know that we don't participate in VGA memory
+arbitration.  We also add a hook on unload to re-enable memory and
+reinstate VGA memory arbitration.
 
-> On Fri, Aug 16, 2013 at 1:46 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
->> It speaks about receiving frames, so while
->> it says GSO, it really means GRO.
->>
->> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->> ---
->>  drivers/net/macvtap.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
->> index a98fb0e..a98ed9f 100644
->> --- a/drivers/net/macvtap.c
->> +++ b/drivers/net/macvtap.c
->> @@ -1047,7 +1047,7 @@ static int set_offload(struct macvtap_queue *q, unsigned long arg)
->>          * accept TSO frames and turning it off means that user space
->>          * does not support TSO.
->>          * For macvtap, we have to invert it to mean the same thing.
->> -        * When user space turns off TSO, we turn off GSO/LRO so that
->> +        * When user space turns off TSO, we turn off GRO/LRO so that
-> 
-> Right fix.
-> 
-> Reviewed-by: Amos Kong <kongjianjun@gmail.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-Applied, thanks.
+This patch depends on series "vgaarb: Fixes for partial VGA opt-out".
+
+Is HAS_PCH_SPLIT() the right test to identify newer graphics devices?
+
+I've tried not to disturb the old code since I can't test it, but
+welcome feedback whether we should just remove it.  I also don't know
+what most of i915_disable_vga() is doing and whether it's still
+relevant.
+
+ drivers/gpu/drm/i915/i915_dma.c      |    9 ++++++---
+ drivers/gpu/drm/i915/intel_display.c |   26 ++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index f466980..d9cf216 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1287,9 +1287,12 @@ static int i915_load_modeset_init(struct drm_device *dev)
+ 	 * then we do not take part in VGA arbitration and the
+ 	 * vga_client_register() fails with -ENODEV.
+ 	 */
+-	ret = vga_client_register(dev->pdev, dev, NULL, i915_vga_set_decode);
+-	if (ret && ret != -ENODEV)
+-		goto out;
++	if (!HAS_PCH_SPLIT(dev)) {
++		ret = vga_client_register(dev->pdev, dev, NULL,
++					  i915_vga_set_decode);
++		if (ret && ret != -ENODEV)
++			goto out;
++	}
+ 
+ 	intel_register_dsm_handler();
+ 
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 5fb3058..759ad7e 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -9519,6 +9519,16 @@ static void i915_disable_vga(struct drm_device *dev)
+ 	outb(SR01, VGA_SR_INDEX);
+ 	sr1 = inb(VGA_SR_DATA);
+ 	outb(sr1 | 1<<5, VGA_SR_DATA);
++
++	/* Disable VGA memory on Intel HD */
++	if (HAS_PCH_SPLIT(dev)) {
++		I915_WRITE8(VGA_MSR_WRITE,
++			    I915_READ8(VGA_MSR_READ) & ~VGA_MSR_MEM_EN);
++		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_IO |
++						   VGA_RSRC_NORMAL_IO |
++						   VGA_RSRC_NORMAL_MEM);
++	}
++
+ 	vga_put(dev->pdev, VGA_RSRC_LEGACY_IO);
+ 	udelay(300);
+ 
+@@ -9526,6 +9536,20 @@ static void i915_disable_vga(struct drm_device *dev)
+ 	POSTING_READ(vga_reg);
+ }
+ 
++static void i915_enable_vga(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++
++	/* Disable VGA memory on Intel HD */
++	if (HAS_PCH_SPLIT(dev)) {
++		I915_WRITE8(VGA_MSR_WRITE,
++			    I915_READ8(VGA_MSR_READ) | VGA_MSR_MEM_EN);
++		vga_set_legacy_decoding(dev->pdev, VGA_RSRC_LEGACY_MASK |
++						   VGA_RSRC_NORMAL_IO |
++						   VGA_RSRC_NORMAL_MEM);
++	}
++}
++
+ void intel_modeset_init_hw(struct drm_device *dev)
+ {
+ 	intel_init_power_well(dev);
+@@ -9983,6 +10007,8 @@ void intel_modeset_cleanup(struct drm_device *dev)
+ 
+ 	intel_disable_fbc(dev);
+ 
++	i915_enable_vga(dev);
++
+ 	intel_disable_gt_powersave(dev);
+ 
+ 	ironlake_teardown_rc6(dev);
+
