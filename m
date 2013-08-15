@@ -1,115 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760494Ab3HOIAj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 04:00:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44795 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757858Ab3HOH40 convert rfc822-to-8bit (ORCPT
+	id S1754741Ab3HOHzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 03:55:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53832 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab3HOHze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 03:56:26 -0400
-Subject: Re: [PATCH 03/10] KVM: PPC: reserve a capability and ioctl numbers for realmode VFIO
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=US-ASCII
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <520C8947.4020906@ozlabs.ru>
-Date: Thu, 15 Aug 2013 09:56:22 +0200
-Cc: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <D1E3B326-464D-4AC0-B4AA-015AB529AFD2@suse.de>
-References: <1375332272-22176-1-git-send-email-aik@ozlabs.ru> <1375332272-22176-4-git-send-email-aik@ozlabs.ru> <ED8250FB-B0A8-4C32-A960-20ADB5742D2B@suse.de> <520C81BE.70002@ozlabs.ru> <552A034A-CD3F-4737-B08A-E892E6420B83@suse.de> <836F3C3A-0031-4A16-B0CE-E6C1BA4925E4@suse.de> <520C8661.2000406@ozlabs.ru> <162759CE-0031-4571-A4A3-3BFE16445066@suse.de> <520C8947.4020906@ozlabs.ru>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-X-Mailer: Apple Mail (2.1278)
+	Thu, 15 Aug 2013 03:55:34 -0400
+Date: Thu, 15 Aug 2013 00:54:46 -0700
+From: tip-bot for David Ahern <tipbot@zytor.com>
+Message-ID: <tip-70f7b4a7f3f9a46807b644aa0fcfa7daa0d553e4@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, namhyung@kernel.org,
+        runzhen@linux.vnet.ibm.com, jolsa@redhat.com, fweisbec@gmail.com,
+        xiaoguangrong@linux.vnet.ibm.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, namhyung@kernel.org,
+        jolsa@redhat.com, runzhen@linux.vnet.ibm.com, fweisbec@gmail.com,
+        xiaoguangrong@linux.vnet.ibm.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
+References: <1375926999-75129-1-git-send-email-dsahern@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf kvm:
+  Option to print events that exceed a duration
+Git-Commit-ID: 70f7b4a7f3f9a46807b644aa0fcfa7daa0d553e4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 15 Aug 2013 00:54:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  70f7b4a7f3f9a46807b644aa0fcfa7daa0d553e4
+Gitweb:     http://git.kernel.org/tip/70f7b4a7f3f9a46807b644aa0fcfa7daa0d553e4
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Wed, 7 Aug 2013 21:56:38 -0400
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 12 Aug 2013 10:31:04 -0300
 
-On 15.08.2013, at 09:54, Alexey Kardashevskiy wrote:
+perf kvm: Option to print events that exceed a duration
 
-> On 08/15/2013 05:43 PM, Alexander Graf wrote:
->> 
->> On 15.08.2013, at 09:42, Alexey Kardashevskiy wrote:
->> 
->>> On 08/15/2013 05:25 PM, Alexander Graf wrote:
->>>> 
->>>> On 15.08.2013, at 09:24, Alexander Graf wrote:
->>>> 
->>>>> 
->>>>> On 15.08.2013, at 09:22, Alexey Kardashevskiy wrote:
->>>>> 
->>>>>> On 08/15/2013 05:16 PM, Alexander Graf wrote:
->>>>>>> 
->>>>>>> On 01.08.2013, at 06:44, Alexey Kardashevskiy wrote:
->>>>>>> 
->>>>>>>> This is to reserve a capablity number for upcoming support
->>>>>>>> of VFIO-IOMMU DMA operations in real mode.
->>>>>>>> 
->>>>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>>>>>>> 
->>>>>>>> ---
->>>>>>>> Changes:
->>>>>>>> 2013/07/16:
->>>>>>>> * changed the number
->>>>>>>> 
->>>>>>>> 2013/07/11:
->>>>>>>> * changed order in a file, added comment about a gap in ioctl number
->>>>>>>> 
->>>>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>>>>>>> ---
->>>>>>>> include/uapi/linux/kvm.h | 4 ++++
->>>>>>>> 1 file changed, 4 insertions(+)
->>>>>>>> 
->>>>>>>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
->>>>>>>> index 99c2533..53c3f1f 100644
->>>>>>>> --- a/include/uapi/linux/kvm.h
->>>>>>>> +++ b/include/uapi/linux/kvm.h
->>>>>>>> @@ -668,6 +668,7 @@ struct kvm_ppc_smmu_info {
->>>>>>>> #define KVM_CAP_IRQ_XICS 92
->>>>>>>> #define KVM_CAP_ARM_EL1_32BIT 93
->>>>>>>> #define KVM_CAP_SPAPR_MULTITCE 94
->>>>>>>> +#define KVM_CAP_SPAPR_TCE_IOMMU 95
->>>>>>>> 
->>>>>>>> #ifdef KVM_CAP_IRQ_ROUTING
->>>>>>>> 
->>>>>>>> @@ -933,6 +934,9 @@ struct kvm_s390_ucas_mapping {
->>>>>>>> #define KVM_ARM_SET_DEVICE_ADDR	  _IOW(KVMIO,  0xab, struct kvm_arm_device_addr)
->>>>>>>> /* Available with KVM_CAP_PPC_RTAS */
->>>>>>>> #define KVM_PPC_RTAS_DEFINE_TOKEN _IOW(KVMIO,  0xac, struct kvm_rtas_token_args)
->>>>>>>> +/* 0xad and 0xaf are already taken */
->>>>>>> 
->>>>>>> so 0xad and 0xaf are already taken? where?
->>>>>> 
->>>>>> Mistype :( s/af/ae/
->>>>>> 
->>>>>> They are taken in this file:
->>>>>> 
->>>>>> 1016 /* VM is being stopped by host */
->>>>>> 1017 #define KVM_KVMCLOCK_CTRL         _IO(KVMIO,   0xad)
->>>>>> 1018 #define KVM_ARM_VCPU_INIT         _IOW(KVMIO,  0xae, struct kvm_vcpu_init)
->>>>> 
->>>>> Could you please make sure that whoever reads the comment in a year still knows where to look? :)
->>>> 
->>>> Something like
->>>> 
->>>> /* 0xad is taken by KVM_KVMCLOCK_CTRL */
->>>> /* 0xaf is taken by KVM_ARM_VCPU_INIT */
->>> 
->>> 
->>> Missed this mail and reposted without this comment but updated commit
->>> message saying where they are used. Repost again?
->> 
->> The commit message doesn't really help, since you don't see that one when you read the header file later. So yes, please.
-> 
-> 
-> Ok. Reposted as "[PATCH v8] KVM: PPC: reserve a capability and ioctl
-> numbers for realmode VFIO". Thank you. Sorry for my disturbing ignorance.
+This is useful to spot high latency blips. It is normal for HLT reasons
+to have long exit times, so strip those from the duration check.
 
-In this case it's just sloppyness which disturbs be a lot less, as I'm sloppy myself :).
+v2: changed threshold to duration per acme's request
 
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1375926999-75129-1-git-send-email-dsahern@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-kvm.c | 25 +++++++++++++++++++++----
+ tools/perf/perf.h        |  3 +++
+ 2 files changed, 24 insertions(+), 4 deletions(-)
 
-Alex
-
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 2ceec81..fa2f3d7 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -106,6 +106,7 @@ struct perf_kvm_stat {
+ 	u64 total_time;
+ 	u64 total_count;
+ 	u64 lost_events;
++	u64 duration;
+ 
+ 	const char *pid_str;
+ 	struct intlist *pid_list;
+@@ -473,7 +474,7 @@ static bool update_kvm_event(struct kvm_event *event, int vcpu_id,
+ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 			     struct vcpu_event_record *vcpu_record,
+ 			     struct event_key *key,
+-			     u64 timestamp)
++			     struct perf_sample *sample)
+ {
+ 	struct kvm_event *event;
+ 	u64 time_begin, time_diff;
+@@ -510,12 +511,24 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
+ 	vcpu_record->start_time = 0;
+ 
+ 	/* seems to happen once in a while during live mode */
+-	if (timestamp < time_begin) {
++	if (sample->time < time_begin) {
+ 		pr_debug("End time before begin time; skipping event.\n");
+ 		return true;
+ 	}
+ 
+-	time_diff = timestamp - time_begin;
++	time_diff = sample->time - time_begin;
++
++	if (kvm->duration && time_diff > kvm->duration) {
++		char decode[32];
++
++		kvm->events_ops->decode_key(kvm, &event->key, decode);
++		if (strcmp(decode, "HLT")) {
++			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
++				 sample->time, sample->pid, vcpu_record->vcpu_id,
++				 decode, time_diff/1000);
++		}
++	}
++
+ 	return update_kvm_event(event, vcpu, time_diff);
+ }
+ 
+@@ -562,7 +575,7 @@ static bool handle_kvm_event(struct perf_kvm_stat *kvm,
+ 		return handle_begin_event(kvm, vcpu_record, &key, sample->time);
+ 
+ 	if (kvm->events_ops->is_end_event(evsel, sample, &key))
+-		return handle_end_event(kvm, vcpu_record, &key, sample->time);
++		return handle_end_event(kvm, vcpu_record, &key, sample);
+ 
+ 	return true;
+ }
+@@ -1429,6 +1442,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 		OPT_STRING('k', "key", &kvm->sort_key, "sort-key",
+ 			"key for sorting: sample(sort by samples number)"
+ 			" time (sort by avg time)"),
++		OPT_U64(0, "duration", &kvm->duration,
++		    "show events other than HALT that take longer than duration usecs"),
+ 		OPT_END()
+ 	};
+ 	const char * const live_usage[] = {
+@@ -1467,6 +1482,8 @@ static int kvm_events_live(struct perf_kvm_stat *kvm,
+ 			usage_with_options(live_usage, live_options);
+ 	}
+ 
++	kvm->duration *= NSEC_PER_USEC;   /* convert usec to nsec */
++
+ 	/*
+ 	 * target related setups
+ 	 */
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 32bd102..cf20187 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -125,6 +125,9 @@
+ #ifndef NSEC_PER_SEC
+ # define NSEC_PER_SEC			1000000000ULL
+ #endif
++#ifndef NSEC_PER_USEC
++# define NSEC_PER_USEC			1000ULL
++#endif
+ 
+ static inline unsigned long long rdclock(void)
+ {
