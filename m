@@ -1,158 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759329Ab3HORNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 13:13:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48358 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758114Ab3HORM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 13:12:58 -0400
-Date: Thu, 15 Aug 2013 18:12:50 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Luigi Semenzato <semenzato@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v6 0/5] zram/zsmalloc promotion
-Message-ID: <20130815171250.GA2296@suse.de>
-References: <1376459736-7384-1-git-send-email-minchan@kernel.org>
- <20130814174050.GN2296@suse.de>
- <20130814185820.GA2753@gmail.com>
+	id S1758915Ab3HOR3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 13:29:50 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:41341 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757521Ab3HOR3q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 13:29:46 -0400
+Message-ID: <520D0FFA.1060508@arm.com>
+Date: Thu, 15 Aug 2013 18:29:30 +0100
+From: Jonathan Austin <jonathan.austin@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130814185820.GA2753@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?QW5kcsOpIEhlbnRzY2hlbA==?= <nerv@dawncrow.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: arm: Only load TLS values when needed
+References: <51E42E11.1010903@dawncrow.de> <51E5836B.1010904@arm.com> <51E59E8F.1060501@dawncrow.de> <51E67B98.9040101@arm.com> <51E6F532.1030004@dawncrow.de> <520B8F37.4040609@dawncrow.de> <520BAE58.3060600@arm.com> <520BF4E1.8040708@dawncrow.de>
+In-Reply-To: <520BF4E1.8040708@dawncrow.de>
+X-OriginalArrivalTime: 15 Aug 2013 17:29:41.0187 (UTC) FILETIME=[063DF930:01CE99DD]
+X-MC-Unique: 113081518294400201
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 03:58:20AM +0900, Minchan Kim wrote:
-> > <SNIP>
-> >
-> > I do not believe this is a problem for zram as such because I do not
-> > think it ever writes back to disk and is immune from the unpredictable
-> > performance characteristics problem. The problem for zram using zsmalloc
-> > is OOM killing. If it's used for swap then there is no guarantee that
-> > killing processes frees memory and that could result in an OOM storm.
-> > Of course there is no guarantee that memory is freed with zbud either but
-> > you are guaranteed that freeing 50%+1 of the compressed pages will free a
-> > single physical page. The characteristics for zsmalloc are much more severe.
-> > This might be managable in an applicance with very careful control of the
-> > applications that are running but not for general servers or desktops.
-> 
-> Fair enough but let's think of current usecase for zram.
-> As I said in description, most of user for zram are embedded products.
-> So, most of them has no swap storage and hate OOM kill because OOM is
-> already very very slow path so system slow response is really thing
-> we want to avoid. We prefer early process kill to slow response.
-> That's why custom low memory killer/notifier is popular in embedded side.
-> so actually, OOM storm problem shouldn't be a big problem under
-> well-control limited system. 
-> 
+Hi André
 
-Which zswap could also do if
+(I've put RMK and LAKML back on Cc: they got dropped somewhere along the 
+way)
 
-a) it had a pseudo block device that failed all writes
-b) zsmalloc was pluggable
+On 14/08/13 22:21, André Hentschel wrote:
+>>>>> [...]
+>>>>>>> Now we've only got one instruction between the store and the load
+>>>>>>> and risk stalling the pipeline...
+>>>>>>>
+>>>>>>> Dave M cautiously says "The ancient advice was that one instruction
+>>>>>>> was enough" but this is very core dependent... I wonder if anyone
+>>>>>>> has a good idea about whether this is an issue here...?
+>>>>>>
+>>>>>> We could use a ldrd at the top, that'd be nearly what we have right
+>>>>>> now, don't we?
+>>>>>
+>>>>> Yea, that'd be good - as far as I can see from an 1136 TRM, the ldrd *may* be two cycles (depending on alignment of the words) but the ldr and ldrne will always be two cycles. Ahhh, the joys of modifying the fast path ;)
+>>
+>> Was expecting to see something that reflected this discussion,
+>
+> Ah ok, i misunderstood that, sry.
+> Something like that?
+>
+> From: André Hentschel <nerv@dawncrow.de>
+>
+> This patch intents to reduce loading instructions when the resulting value is not used.
+> It's a follow up on a4780adeefd042482f624f5e0d577bf9cdcbb760
+>
 
-I recognise this sucks because zram is already in the field but if zram
-is promoted then zram and zswap will continue to diverge further with no
-reconcilation in sight.
+You caught me just before running away for a week of holiday, but I've 
+managed to squeeze in a bit of testing - hope this helps - I'll try to 
+be clear about what I have/haven't tested so you can judge for yourself 
+how much weight to give this.
 
-Part of the point of using zswap was that potentially zcache could be
-implemented on top of it and so all file cache could be stored compressed
-in memory. AFAIK, it's not possible to do the same thing for zram because
-of the lack of writeback capabilities. Maybe it could be done if zram
-could be configured to write to an underlying storage device but it may
-be very clumsy to configure. I don't know as I never investigated it and
-to be honest, I'm struggling to remember how I got involved anywhere near
-zswap/zcache/zram/zwtf in the first place.
+What I've tested:
 
-> > If it's used for something like tmpfs then it becomes much worse. Normal
-> > tmpfs without swap can lockup if tmpfs is allowed to fill memory. In a
-> > sane configuration, lockups will be avoided and deleting a tmpfs file is
-> > guaranteed to free memory. When zram is used to back tmpfs, there is no
-> > guarantee that any memory is freed due to fragmentation of the compressed
-> > pages. The only way to recover the memory may be to kill applications
-> > holding tmpfs files open and then delete them which is fairly drastic
-> > action in a normal server environment.
-> 
-> Indeed.
-> Actually, I had a plan to support zsmalloc compaction. The zsmalloc exposes
-> handle instead of pure pointer so it could migrate some zpages to somewhere
-> to pack in. Then, it could help above problem and OOM storm problem.
-> Anyway, it's a totally new feature and requires many changes and experiement.
-> Although we don't have such feature, zram is still good for many people.
-> 
+* Apply your code to 3.11-rc5
+* Boot on Integrator CP (1176 r1p0) and run a full Debian Wheezy init
 
-And is zsmalloc was pluggable for zswap then it would also benefit.
+--> It works!
 
-> > These are the sort of reason why I feel that zram has limited cases where
-> > it is safe to use and zswap has a wider range of applications. At least
-> > I would be very unhappy to try supporting zram in the field for normal
-> > servers. zswap should be able to replace the functionality of zram+swap
-> > by backing zswap with a pseudo block device that rejects all writes. I
-> 
-> One of difference between zswap and zram is asynchronous I/O support.
+I also applied the following diff and rebuilt to check that we were 
+really testing the V6 NOT V6K path here:
 
-As zram is not writing to disk, how compelling is asynchronous IO? If
-zswap was backed by the pseudo device is there a measurable bottleneck?
+diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
+index 31743f7..71dfe82 100644
+--- a/arch/arm/include/asm/tls.h
++++ b/arch/arm/include/asm/tls.h
+@@ -43,6 +43,7 @@
+  #define switch_tls     switch_tls_v6
+  #elif defined(CONFIG_CPU_32v6K)
+  #define tls_emu                0
++#error
+  #define has_tls_reg            1
+  #define switch_tls     switch_tls_v6k
+  #else
 
-> I guess frontswap is synchronous by semantic while zram could support
-> asynchronous I/O.
-> 
-> > do not know why this never happened but guess the zswap people never were
-> > interested and the zram people never tried. Why was the pseudo device
-> > to avoid writebacks never implemented? Why was the underlying allocator
-> > not made pluggable to optionally use zsmalloc when the user did not care
-> > that it had terrible writeback characteristics?
-> 
-> I remember you suggested to make zsmalloc with pluggable for zswap.
-> But I don't know why zswap people didn't implement it.
-> 
-> > 
-> > zswap cannot replicate zram+tmpfs but I also think that such a configuration
-> > is a bad idea anyway. As zram is already being deployed then it might get
-> 
-> It seems your big concern of zsmalloc is fragmentaion so if zsmalloc can
-> support compaction, it would mitigate the concern.
-> 
+What I've *not* tested:
+* As this CPU does not have the tls register, I haven't run any tests 
+that try to read/write it, but we wouldn't expect that to work, right?
+* Haven't tried a V7 platform, as I understand you've already done that.
+* Haven't verified it still builds for v4 (which was the problem for 
+ldrd in the past and now we've put it back, so that's important)
+* Performance impact
 
-Even if it supported zsmalloc I would still wonder why zswap is not using
-it as a pluggable option :(
+I think it'd be good if you can verify the bottom two points - 
+especially the ldrd one: perhaps Russell can tell you which platform it 
+broke on before?
 
-> > promoted anyway but personally I think compressed memory continues to be
-> 
-> I admit zram might have limitations but it has helped lots of people.
-> It's not an imaginary scenario.
-> 
+So, that's a
+Tested-by: Jonathan Austin <jonathan.austin@arm.com>
 
-I know.
+If you want it :)
+Hope that helps,
 
-> Please, let's not do get out of zram from kernel tree and stall it on staging
-> forever with preventing new features. 
-> Please, let's promote, expose it to more potential users, receive more
-> complains from them, recruit more contributors and let's enhance.
-> 
+Jonny
 
-As this is already used heavily in the field and I am not responsible
-for maintaining it I am not going to object to it being promoted. I can
-always push that it be disabled in distribution configs as it is not
-suitable for general workloads for reason already discussed.
+> Signed-off-by: André Hentschel <nerv@dawncrow.de>
+>
+> ---
+> This patch is against 28fbc8b6a29c849a3f03a6b05010d4b584055665
+>
+> diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
+> index 83259b8..31743f7 100644
+> --- a/arch/arm/include/asm/tls.h
+> +++ b/arch/arm/include/asm/tls.h
+> @@ -3,29 +3,31 @@
+>
+>   #ifdef __ASSEMBLY__
+>   #include <asm/asm-offsets.h>
+> -	.macro switch_tls_none, base, tp, tpuser, tmp1, tmp2
+> +	.macro switch_tls_none, prev, next, tp, tpuser, tmp1, tmp2
+>   	.endm
+>
+> -	.macro switch_tls_v6k, base, tp, tpuser, tmp1, tmp2
+> +	.macro switch_tls_v6k, prev, next, tp, tpuser, tmp1, tmp2
+> +	ldrd	\tp, \tpuser, [\next, #TI_TP_VALUE]	@ get the next TLS and user r/w register
+>   	mrc	p15, 0, \tmp2, c13, c0, 2	@ get the user r/w register
+>   	mcr	p15, 0, \tp, c13, c0, 3		@ set TLS register
+>   	mcr	p15, 0, \tpuser, c13, c0, 2	@ and the user r/w register
+> -	str	\tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+> +	str	\tmp2, [\prev, #TI_TP_VALUE + 4] @ save it
+>   	.endm
+>
+> -	.macro switch_tls_v6, base, tp, tpuser, tmp1, tmp2
+> +	.macro switch_tls_v6, prev, next, tp, tpuser, tmp1, tmp2
+> +	ldrd	\tp, \tpuser, [\next, #TI_TP_VALUE]
+>   	ldr	\tmp1, =elf_hwcap
+>   	ldr	\tmp1, [\tmp1, #0]
+>   	mov	\tmp2, #0xffff0fff
+>   	tst	\tmp1, #HWCAP_TLS		@ hardware TLS available?
+>   	streq	\tp, [\tmp2, #-15]		@ set TLS value at 0xffff0ff0
+> -	mrcne	p15, 0, \tmp2, c13, c0, 2	@ get the user r/w register
+> +	mrcne	p15, 0, \tmp2, c13, c0, 2	@ get the previous user r/w register
+>   	mcrne	p15, 0, \tp, c13, c0, 3		@ yes, set TLS register
+>   	mcrne	p15, 0, \tpuser, c13, c0, 2	@ set user r/w register
+> -	strne	\tmp2, [\base, #TI_TP_VALUE + 4] @ save it
+> +	strne	\tmp2, [\prev, #TI_TP_VALUE + 4] @ save it
+>   	.endm
+>
+> -	.macro switch_tls_software, base, tp, tpuser, tmp1, tmp2
+> +	.macro switch_tls_software, prev, next, tp, tpuser, tmp1, tmp2
+>   	mov	\tmp1, #0xffff0fff
+>   	str	\tp, [\tmp1, #-15]		@ set TLS value at 0xffff0ff0
+>   	.endm
+> diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+> index d40d0ef..11112de 100644
+> --- a/arch/arm/kernel/entry-armv.S
+> +++ b/arch/arm/kernel/entry-armv.S
+> @@ -689,12 +689,10 @@ ENTRY(__switch_to)
+>    THUMB(	stmia	ip!, {r4 - sl, fp}	   )	@ Store most regs on stack
+>    THUMB(	str	sp, [ip], #4		   )
+>    THUMB(	str	lr, [ip], #4		   )
+> -	ldr	r4, [r2, #TI_TP_VALUE]
+> -	ldr	r5, [r2, #TI_TP_VALUE + 4]
+>   #ifdef CONFIG_CPU_USE_DOMAINS
+>   	ldr	r6, [r2, #TI_CPU_DOMAIN]
+>   #endif
+> -	switch_tls r1, r4, r5, r3, r7
+> +	switch_tls r1, r2, r4, r5, r3, r7
+>   #if defined(CONFIG_CC_STACKPROTECTOR) && !defined(CONFIG_SMP)
+>   	ldr	r7, [r2, #TI_TASK]
+>   	ldr	r8, =__stack_chk_guard
+>
+>
+>
 
-However, I believe that the promotion will lead to zram and zswap diverging
-further from each other, both implementing similar functionality and
-ultimately cause greater maintenance headaches. There is a path that makes
-zswap a functional replacement for zram and I've seen no good reason why
-that path was not taken. Zram cannot be a functional replacment for zswap
-as there is no obvious sane way writeback could be implemented. Continuing
-to diverge will ultimately bite someone in the ass.
 
--- 
-Mel Gorman
-SUSE Labs
