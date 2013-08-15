@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab3HOLJv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 07:09:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:42177 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755918Ab3HOLJo (ORCPT
+	id S1756034Ab3HOLJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 07:09:50 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40107 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755903Ab3HOLJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 07:09:44 -0400
-Message-ID: <520CB6F5.1040309@free-electrons.com>
-Date: Thu, 15 Aug 2013 13:09:41 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 15 Aug 2013 07:09:43 -0400
+Date: Thu, 15 Aug 2013 12:09:19 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20130815110919.GZ2401@sirena.org.uk>
+References: <1376521502-9370-1-git-send-email-khilman@linaro.org>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, marex@denx.de
-Subject: Re: [PATCH] i2c: mxs: Better error handling
-References: <1372841962-26310-1-git-send-email-alexandre.belloni@free-electrons.com> <20130815100331.GD2987@katana>
-In-Reply-To: <20130815100331.GD2987@katana>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+DRhDX4TDhSuvTBU"
+Content-Disposition: inline
+In-Reply-To: <1376521502-9370-1-git-send-email-khilman@linaro.org>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: Add another missing header for !CONFIG_REGMAP
+ stubs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+--+DRhDX4TDhSuvTBU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Hi Wolfram,
+On Wed, Aug 14, 2013 at 04:05:02PM -0700, Kevin Hilman wrote:
+> The use of WARN_ON() needs the definitions from bug.h, without it
+> you can get:
 
-On 15/08/2013 12:03, Wolfram Sang wrote:
-> On Wed, Jul 03, 2013 at 10:59:22AM +0200, Alexandre Belloni wrote:
->> This patch fixes two error handling cases in mxs_i2c_xfer_msg():
->>
->>  - in PIO mode, mxs_i2c_pio_setup_xfer() may return an error but
-i2c->cmd_err
->>  will not be set so mxs_i2c_xfer_msg() fails silently.
->>
->>  - in DMA mode, mxs_i2c_dma_setup_xfer() may return an error and have
->>  i2c->cmd_err set to -ENXIO. In that case, we want to go through the
->>  MXS_I2C_CTRL1_CLR_GOT_A_NAK before returning.
->
-> A short explanation why we want that would be perfect.
->
->>
->> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->
-> I'd like to postpone this until I applied Marek's PIO rework. Could you
-> respin after that?
->
+Applied, thanks.
 
-Actually, this patch won't be needed after Marek's PIO rework. You can
-drop it now.
+--+DRhDX4TDhSuvTBU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-- -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBCAAGBQJSDLb1AAoJEKbNnwlvZCyzBOoQAL5NbGfmv2toVVcOHIkGpe0X
-L+4NqviBObeP2Kh/JWPm8zfuLhIHTU+MNGxFpL5JLzGh+5NVqEA5M7bQjwxmZxPS
-OCEgzKwMzrTbxM3mOAxALO3LtEOUa6xBzzcKbaeWq48m2yA2KRt9niEqvN+cAHVl
-rqFyrcv54AUOfdMS923bBNqMpTdpCmdy164msFV+yQqljd4Igg0T54KqmHmw2+4m
-asfJtDAa674sGizZdB0bSZTo0pGhD2TJEdqU17rsDa/PruFgI8/lw4LOXtpL017M
-zwx7miO6gkUymEiyOtfufOBkEUSfPmOPd/BcasgAs8loo01IPttn2vMWAV+Pku+D
-XzbvFvSrlHiMQze6GCejv3W5dMySyDMnWma5ZGJ9DXkzE677UK7i7ehZSxn4huVn
-w5JNgXfCsOexjTRmtoUad652kQl/GKDL5DdJr75wcZzp/6RfyGz3fu4mfUYiqFue
-vW/Xbkswc334v2ueuQsdzlEEFfGaiddlsyHHfEEOsdO7djoGRXBoUxI+S1bDFdLO
-WXCLRO11Ju0IXiTQ9uBBSibP0nSmu9W6/s1Ufp1F3OWqAj+H7CEZpqjg4hQkMIh+
-997svOMknIuJzLhvBQbGj8FJ1FQhNDRaF49tFrpBhZaXp3a+a1rS31kZaoTx2etT
-35VZG9zLAOGkfCPU3JEu
-=bjCC
+iQIcBAEBAgAGBQJSDLbcAAoJELSic+t+oim9RdQQAJ0oTPRRe3WsJwoXkhBD8yGf
+vuWmZCDvN2DL73NjEdFJhgUEhqMJGkcdsM0MNf2Y+cpbiumsKq9V60WZoAcNVp0S
+AzXZXPY3mv3ucjl0ZVaEMnkHJTWWeT38f99mYZGHuOfKf/l2ZMwFJ2jayFcOvASE
+NGDoslAy578V+rPj3UuJFbcXPCr9xLQFRB86qSxyqRZseHDfBpSbQU6M8cHSs1UE
+DC5yB8ykWdXXy07UAKlssQAqpLFeGqJ/AGX1FyPjXo1vQ9Y0GOOA0XiCtNq3j6tc
+ZN4d3HwP9a4w5odPZmRAiVMJ95n5piAzYxIngrifRGIuLkVukbmRqx7hd5OOPdVc
+QtEouac7UyB2AaI8cXQsb7+wtTF2BxbTYejsx5K3ogS3iSJlWct0QOJcNQENuqbv
+Byo8/sVSeg0y6zzQ/RsPUyGWwvch/+6NJwXOze0VjTRYGH1lUb/CFdTQ+JExqHIu
+fuze4mU0LM9MaIJRIYkKqHrYWJBIk4xY89o7xQcRdkY1S6/IrohSdF4l+02ZP/tn
+UdQMdD8GvEcUvcvvvmkJK6sNBZ5HoNF9dSMdRB/sR5TuglVoLxF+qWpXNuzIbLOZ
+1NaGQ4DDB9nPn2dkFu4yUn1F/GjbkLEuhUIbZwF5NRMWOrSqyOPdU5gkrvVNhITn
+/n9SJCXZHxu+eXoEK4xx
+=HgpN
 -----END PGP SIGNATURE-----
 
+--+DRhDX4TDhSuvTBU--
