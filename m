@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758888Ab3HOQFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 12:05:11 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:12350 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab3HOQFJ (ORCPT
+	id S1758942Ab3HOQKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 12:10:01 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:58893 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758801Ab3HOQJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 12:05:09 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f5f6d00000105f-0a-520cfc33da49
-Content-transfer-encoding: 8BIT
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        sarah.a.sharp@linux.intel.com
-Cc: dmitry.kasatkin@gmail.com, stable@vger.kernel.org
-Subject: [PATCH 1/2] dev-core: fix build break when DEBUG is enabled
-Date: Thu, 15 Aug 2013 19:04:54 +0300
-Message-id: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t/xy7rGf3iCDLZcZrf4srTOonnxejaL
-	y7vmsFk0nzjFbLFg4yNGB1aPnbPusnvMOxnosX/uGnaPz5vkAliiuGxSUnMyy1KL9O0SuDLa
-	zlxmLbgiXvF9zx+2Bsb9wl2MnBwSAiYSh1duZYOwxSQu3FsPZHNxCAksZZTYP+8YE0iCV0BQ
-	4sfkeyxdjBwczALyEkcuZYOEmQXUJSbNW8QMUd/JJNH/vpkFJMEmoCexofkHO4gtIhAr8ej8
-	EkaIBlOJXf93s4LYwgIuEr2tl8DiLAKqEo93tEHtipN4dvooC8RBChI/L59gm8DINwvJGbMQ
-	zpiF5IwFjMyrGEVTS5MLipPSc430ihNzi0vz0vWS83M3MUIC8usOxqXHrA4xCnAwKvHwRrRx
-	BwmxJpYVV+YeYpTgYFYS4f16jydIiDclsbIqtSg/vqg0J7X4ECMTB6dUA6Pt/J4mQ50SFtef
-	L3PvTXlS0yZ6ZLXRAfVLLa8k7FkKs5f8E5Yt5XPteh28aMk0lqxZjmdXLJGcLnx4aXHhA/cp
-	E7n5r1a/7PDY8f7bbcGOR681lhioph8rVJrHV/nqk5VVPPvnHxV+7CsZdjwLW2+7a5nIXqGP
-	abmzZ8YeCvi49KmllEB/S6wSS3FGoqEWc1FxIgBcCxEQJgIAAA==
+	Thu, 15 Aug 2013 12:09:58 -0400
+Message-ID: <520CFD52.4060103@baylibre.com>
+Date: Thu, 15 Aug 2013 18:09:54 +0200
+From: Benoit Cousson <bcousson@baylibre.com>
+Organization: BayLibre
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>, mark.rutland@arm.com,
+        devicetree@vger.kernel.org, george.cherian@ti.com,
+        linux@arm.linux.org.uk, ian.campbell@citrix.com, pawel.moll@arm.com,
+        linux-doc@vger.kernel.org, tony@atomide.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, cw00.choi@samsung.com,
+        myungjoo.ham@samsung.com, balbi@ti.com, rob@landley.net,
+        benoit.cousson@linaro.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] extcon: palmas: Added a new compatible type *ti,
+ palmas-usb-vid*
+References: <1376302675-15795-1-git-send-email-kishon@ti.com> <1376372241-15573-1-git-send-email-kishon@ti.com> <520A8555.10401@wwwdotorg.org> <520B14A1.8030809@ti.com>
+In-Reply-To: <520B14A1.8030809@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When DEBUG is defined, dev_dbg_ratelimited uses dynamic debug data
-structures even when CONFIG_DYNAMIC_DEBUG is not defined.
-It leads to build break.
-For example, when I try to use dev_dbg_ratelimited in USB code and
-CONFIG_USB_DEBUG is enabled, but CONFIG_DYNAMIC_DEBUG is not, I get:
+Hi Kishon,
 
-  CC [M]  drivers/usb/host/xhci-ring.o
-  drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_intr_tx’:
-  drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘DEFINE_DYNAMIC_DEBUG_METADATA’ [-Werror=implicit-function-declaration]
-  drivers/usb/host/xhci-ring.c:3059:3: error: ‘descriptor’ undeclared (first use in this function)
-  drivers/usb/host/xhci-ring.c:3059:3: note: each undeclared identifier is reported only once for each function it appears in
-  drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘__dynamic_pr_debug’ [-Werror=implicit-function-declaration]
-  drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_isoc_tx_prepare’:
-  drivers/usb/host/xhci-ring.c:3847:3: error: ‘descriptor’ undeclared (first use in this function)
-  cc1: some warnings being treated as errors
-  make[2]: *** [drivers/usb/host/xhci-ring.o] Error 1
-  make[1]: *** [drivers/usb/host] Error 2
-  make: *** [drivers/usb/] Error 2
+On 14/08/2013 07:24, Kishon Vijay Abraham I wrote:
+> Hi,
+>
+> On Wednesday 14 August 2013 12:43 AM, Stephen Warren wrote:
+>> On 08/12/2013 11:37 PM, Kishon Vijay Abraham I wrote:
+>>> The Palmas device contains only a USB VID detector, so added a
+>>> compatible type *ti,palmas-usb-vid*. Dint remove the existing compatible
+>>
+>> s/Dint/Didn't/
+>>
+>>> diff --git a/Documentation/devicetree/bindings/extcon/extcon-twl.txt b/Documentation/devicetree/bindings/extcon/extcon-twl.txt
+>>
+>>>   PALMAS USB COMPARATOR
+>>>   Required Properties:
+>>> - - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb"
+>>> + - compatible : Should be "ti,palmas-usb" or "ti,twl6035-usb" or
+>>> +   "ti,palmas-usb-vid".
+>>
+>> So are ti,palmas-usb and ti,twl6035-usb full EHCI controllers then?
+>
+> No. I thought I shouldn't remove those if someone is already using those
+> compatible value.
 
-This patch separates definition for CONFIG_DYNAMIC_DEBUG and DEBUG cases.
+Well, I think we still have a short period of time where we can clean 
+some badly defined bindings before it is really too late.
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: stable@vger.kernel.org
----
- include/linux/device.h | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+Both kernel and DTS are still in sync for the moment, so changing both 
+at the same time should be safe.
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 22b546a..d336beb 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -1099,17 +1099,28 @@ do {									\
- 	dev_level_ratelimited(dev_notice, dev, fmt, ##__VA_ARGS__)
- #define dev_info_ratelimited(dev, fmt, ...)				\
- 	dev_level_ratelimited(dev_info, dev, fmt, ##__VA_ARGS__)
--#if defined(CONFIG_DYNAMIC_DEBUG) || defined(DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- #define dev_dbg_ratelimited(dev, fmt, ...)				\
- do {									\
- 	static DEFINE_RATELIMIT_STATE(_rs,				\
- 				      DEFAULT_RATELIMIT_INTERVAL,	\
- 				      DEFAULT_RATELIMIT_BURST);		\
- 	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);			\
-+	/* descriptor check is first to prevent flooding with		\
-+	   "callbacks suppressed" */					\
- 	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT) &&	\
- 	    __ratelimit(&_rs))						\
--		__dynamic_pr_debug(&descriptor, pr_fmt(fmt),		\
--				   ##__VA_ARGS__);			\
-+		__dynamic_dev_dbg(&descriptor, dev, fmt,		\
-+				  ##__VA_ARGS__);			\
-+} while (0)
-+#elif defined(DEBUG)
-+#define dev_dbg_ratelimited(dev, fmt, ...)				\
-+do {									\
-+	static DEFINE_RATELIMIT_STATE(_rs,				\
-+				      DEFAULT_RATELIMIT_INTERVAL,	\
-+				      DEFAULT_RATELIMIT_BURST);		\
-+	if (__ratelimit(&_rs))						\
-+		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
- } while (0)
- #else
- #define dev_dbg_ratelimited(dev, fmt, ...)			\
--- 
-1.8.1.2
-
+Regards,
+Benoit
