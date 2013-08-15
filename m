@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab3HOGCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:02:01 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:3277 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753337Ab3HOGB7 (ORCPT
+	id S1760101Ab3HOGCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:02:10 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:40260 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753334Ab3HOGCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:01:59 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnsFAPZtDFJ5LCJRgWdsb2JhbABbgzu6FYVagR4XDgEBFiYogiQBAQIDJxMcIxAIAw4KCSUPBSUDIROIDw25cRaQOgeEEgOXY4Euk1Iq
-Date: Thu, 15 Aug 2013 16:01:49 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-Message-ID: <20130815060149.GP6023@dastard>
-References: <520BB9EF.5020308@linux.intel.com>
- <20130814194359.GA22316@thunk.org>
- <520BED7A.4000903@intel.com>
- <20130814230648.GD22316@thunk.org>
- <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
- <20130815011101.GA3572@thunk.org>
- <20130815021028.GM6023@dastard>
- <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 Aug 2013 02:02:05 -0400
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v4 0/5] ARM: davinci: da850: add ethernet driver DT support
+Date: Thu, 15 Aug 2013 11:31:32 +0530
+Message-Id: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 09:32:13PM -0700, Andy Lutomirski wrote:
-> On Wed, Aug 14, 2013 at 7:10 PM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Wed, Aug 14, 2013 at 09:11:01PM -0400, Theodore Ts'o wrote:
-> >> On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
-> >> > > It would be better to write zeros to it, so we aren't measuring the
-> >> > > cost of the unwritten->written conversion.
-> >> >
-> >> > At the risk of beating a dead horse, how hard would it be to defer
-> >> > this part until writeback?
-> >>
-> >> Part of the work has to be done at write time because we need to
-> >> update allocation statistics (i.e., so that we don't have ENOSPC
-> >> problems).  The unwritten->written conversion does happen at writeback
-> >> (as does the actual block allocation if we are doing delayed
-> >> allocation).
-> >>
-> >> The point is that if the goal is to measure page fault scalability, we
-> >> shouldn't have this other stuff happening as the same time as the page
-> >> fault workload.
-> >
-> > Sure, but the real problem is not the block mapping or allocation
-> > path - even if the test is changed to take that out of the picture,
-> > we still have timestamp updates being done on every single page
-> > fault. ext4, XFS and btrfs all do transactional timestamp updates
-> > and have nanosecond granularity, so every page fault is resulting in
-> > a transaction to update the timestamp of the file being modified.
-> 
-> I have (unmergeable) patches to fix this:
-> 
-> http://comments.gmane.org/gmane.linux.kernel.mm/92476
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-The big problem with this approach is that not doing the
-timestamp update on page faults is going to break the inode change
-version counting because for ext4, btrfs and XFS it takes a
-transaction to bump that counter. NFS needs to know the moment a
-file is changed in memory, not when it is written to disk. Also, NFS
-requires the change to the counter to be persistent over server
-failures, so it needs to be changed as part of a transaction....
+This patch set enables Ethernet support through device tree model.
+This patch set enables mii interface only and is being tested to boot via
+rootfs. The rmii phy is present on the i2c gpio expander chip (UI board)
+for which yet support needs to be added, once the DT support for the chip
+is enabled, enabling rmii will be subsequnet patch.
 
-IOWs, fixing the "filesystems need a transaction on each page_mkwrite
-call" problem isn't as simple as changing how timestamps are
-updated.
+Changes for v2:
+1: Enabled mdio device.
+2: Fixed clock lookup.
 
-Cheers,
+Changes for v3:
+1: Fixed review comments pointed out by Sekhar.
 
-Dave.
+Changes for v4:
+1: Fixed review comments pointed out by Sekhar.
+2: Dropped patch v3 6/6 (https://patchwork.kernel.org/patch/2768361/)
+   Which depends on adding GPIO DT node, will address it once GPIO support is added.
+3: Rebased the patches on [1]
+
+[1] https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.12/soc
+
+Lad, Prabhakar (5):
+  ARM: davinci: fix clock lookup for mdio device
+  ARM: davinci: da850: add DT node for mdio device
+  ARM: davinci: da850: add OF_DEV_AUXDATA entry for mdio.
+  ARM: davinci: da850: add DT node for eth0.
+  ARM: davinci: da850: add OF_DEV_AUXDATA entry for eth0.
+
+ arch/arm/boot/dts/da850-evm.dts       |   11 +++++++++
+ arch/arm/boot/dts/da850.dtsi          |   43 +++++++++++++++++++++++++++++++++
+ arch/arm/mach-davinci/da830.c         |    1 +
+ arch/arm/mach-davinci/da850.c         |    1 +
+ arch/arm/mach-davinci/da8xx-dt.c      |    4 +++
+ arch/arm/mach-davinci/devices-da8xx.c |    8 ++----
+ arch/arm/mach-davinci/dm365.c         |    3 +--
+ arch/arm/mach-davinci/dm644x.c        |    3 +--
+ arch/arm/mach-davinci/dm646x.c        |    3 +--
+ 9 files changed, 65 insertions(+), 12 deletions(-)
+
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
