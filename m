@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760101Ab3HOGCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:02:10 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:40260 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334Ab3HOGCF (ORCPT
+	id S1760198Ab3HOGCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:02:16 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:34040 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753334Ab3HOGCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:02:05 -0400
+	Thu, 15 Aug 2013 02:02:13 -0400
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: Sekhar Nori <nsekhar@ti.com>
 Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
@@ -14,55 +14,146 @@ Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         devicetree-discuss@lists.ozlabs.org,
         linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v4 0/5] ARM: davinci: da850: add ethernet driver DT support
-Date: Thu, 15 Aug 2013 11:31:32 +0530
-Message-Id: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v4 1/5] ARM: davinci: fix clock lookup for mdio device
+Date: Thu, 15 Aug 2013 11:31:33 +0530
+Message-Id: <1376546497-26931-2-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-This patch set enables Ethernet support through device tree model.
-This patch set enables mii interface only and is being tested to boot via
-rootfs. The rmii phy is present on the i2c gpio expander chip (UI board)
-for which yet support needs to be added, once the DT support for the chip
-is enabled, enabling rmii will be subsequnet patch.
+This patch removes the clock alias for mdio device and adds a entry
+in clock lookup table, this entry can now be used by both DT and NON
+DT case.
 
-Changes for v2:
-1: Enabled mdio device.
-2: Fixed clock lookup.
-
-Changes for v3:
-1: Fixed review comments pointed out by Sekhar.
-
-Changes for v4:
-1: Fixed review comments pointed out by Sekhar.
-2: Dropped patch v3 6/6 (https://patchwork.kernel.org/patch/2768361/)
-   Which depends on adding GPIO DT node, will address it once GPIO support is added.
-3: Rebased the patches on [1]
-
-[1] https://git.kernel.org/cgit/linux/kernel/git/nsekhar/linux-davinci.git/log/?h=v3.12/soc
-
-Lad, Prabhakar (5):
-  ARM: davinci: fix clock lookup for mdio device
-  ARM: davinci: da850: add DT node for mdio device
-  ARM: davinci: da850: add OF_DEV_AUXDATA entry for mdio.
-  ARM: davinci: da850: add DT node for eth0.
-  ARM: davinci: da850: add OF_DEV_AUXDATA entry for eth0.
-
- arch/arm/boot/dts/da850-evm.dts       |   11 +++++++++
- arch/arm/boot/dts/da850.dtsi          |   43 +++++++++++++++++++++++++++++++++
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ changes for v2: None
+ 
+ Changes for v3: 
+  a> added clock lookup entry for davinci_mdio in da830 file.
+ 
+ Changes for v4:
+ a> added clock lookup entry for all davinci devices.
+ 
  arch/arm/mach-davinci/da830.c         |    1 +
  arch/arm/mach-davinci/da850.c         |    1 +
- arch/arm/mach-davinci/da8xx-dt.c      |    4 +++
- arch/arm/mach-davinci/devices-da8xx.c |    8 ++----
+ arch/arm/mach-davinci/devices-da8xx.c |    8 ++------
  arch/arm/mach-davinci/dm365.c         |    3 +--
  arch/arm/mach-davinci/dm644x.c        |    3 +--
  arch/arm/mach-davinci/dm646x.c        |    3 +--
- 9 files changed, 65 insertions(+), 12 deletions(-)
+ 6 files changed, 7 insertions(+), 12 deletions(-)
 
+diff --git a/arch/arm/mach-davinci/da830.c b/arch/arm/mach-davinci/da830.c
+index 111613b..d6c746e 100644
+--- a/arch/arm/mach-davinci/da830.c
++++ b/arch/arm/mach-davinci/da830.c
+@@ -417,6 +417,7 @@ static struct clk_lookup da830_clks[] = {
+ 	CLK(NULL,		"aintc",	&aintc_clk),
+ 	CLK(NULL,		"secu_mgr",	&secu_mgr_clk),
+ 	CLK("davinci_emac.1",	NULL,		&emac_clk),
++	CLK("davinci_mdio.0",   "fck",          &emac_clk),
+ 	CLK(NULL,		"gpio",		&gpio_clk),
+ 	CLK("i2c_davinci.2",	NULL,		&i2c1_clk),
+ 	CLK(NULL,		"usb11",	&usb11_clk),
+diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
+index 5ef37f9..f56e5fb 100644
+--- a/arch/arm/mach-davinci/da850.c
++++ b/arch/arm/mach-davinci/da850.c
+@@ -461,6 +461,7 @@ static struct clk_lookup da850_clks[] = {
+ 	CLK(NULL,		"arm",		&arm_clk),
+ 	CLK(NULL,		"rmii",		&rmii_clk),
+ 	CLK("davinci_emac.1",	NULL,		&emac_clk),
++	CLK("davinci_mdio.0",	"fck",		&emac_clk),
+ 	CLK("davinci-mcasp.0",	NULL,		&mcasp_clk),
+ 	CLK("da8xx_lcdc.0",	"fck",		&lcdc_clk),
+ 	CLK("da830-mmc.0",	NULL,		&mmcsd0_clk),
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index 280f67d..a408b30 100644
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -481,12 +481,8 @@ int __init da8xx_register_emac(void)
+ 	ret = platform_device_register(&da8xx_mdio_device);
+ 	if (ret < 0)
+ 		return ret;
+-	ret = platform_device_register(&da8xx_emac_device);
+-	if (ret < 0)
+-		return ret;
+-	ret = clk_add_alias(NULL, dev_name(&da8xx_mdio_device.dev),
+-			    NULL, &da8xx_emac_device.dev);
+-	return ret;
++
++	return platform_device_register(&da8xx_emac_device);
+ }
+ 
+ static struct resource da830_mcasp1_resources[] = {
+diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+index 3a039bc..278080d 100644
+--- a/arch/arm/mach-davinci/dm365.c
++++ b/arch/arm/mach-davinci/dm365.c
+@@ -477,6 +477,7 @@ static struct clk_lookup dm365_clks[] = {
+ 	CLK(NULL, "timer3", &timer3_clk),
+ 	CLK(NULL, "usb", &usb_clk),
+ 	CLK("davinci_emac.1", NULL, &emac_clk),
++	CLK("davinci_mdio.0", "fck", &emac_clk),
+ 	CLK("davinci_voicecodec", NULL, &voicecodec_clk),
+ 	CLK("davinci-mcbsp", NULL, &asp0_clk),
+ 	CLK(NULL, "rto", &rto_clk),
+@@ -1422,8 +1423,6 @@ static int __init dm365_init_devices(void)
+ 
+ 	platform_device_register(&dm365_mdio_device);
+ 	platform_device_register(&dm365_emac_device);
+-	clk_add_alias(NULL, dev_name(&dm365_mdio_device.dev),
+-		      NULL, &dm365_emac_device.dev);
+ 
+ 	return 0;
+ }
+diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
+index 23de0de..4f74682 100644
+--- a/arch/arm/mach-davinci/dm644x.c
++++ b/arch/arm/mach-davinci/dm644x.c
+@@ -307,6 +307,7 @@ static struct clk_lookup dm644x_clks[] = {
+ 	CLK("serial8250.1", NULL, &uart1_clk),
+ 	CLK("serial8250.2", NULL, &uart2_clk),
+ 	CLK("davinci_emac.1", NULL, &emac_clk),
++	CLK("davinci_mdio.0", "fck", &emac_clk),
+ 	CLK("i2c_davinci.1", NULL, &i2c_clk),
+ 	CLK("palm_bk3710", NULL, &ide_clk),
+ 	CLK("davinci-mcbsp", NULL, &asp_clk),
+@@ -950,8 +951,6 @@ static int __init dm644x_init_devices(void)
+ 
+ 	platform_device_register(&dm644x_mdio_device);
+ 	platform_device_register(&dm644x_emac_device);
+-	clk_add_alias(NULL, dev_name(&dm644x_mdio_device.dev),
+-		      NULL, &dm644x_emac_device.dev);
+ 
+ 	return 0;
+ }
+diff --git a/arch/arm/mach-davinci/dm646x.c b/arch/arm/mach-davinci/dm646x.c
+index 4b25804..68f8d1f 100644
+--- a/arch/arm/mach-davinci/dm646x.c
++++ b/arch/arm/mach-davinci/dm646x.c
+@@ -351,6 +351,7 @@ static struct clk_lookup dm646x_clks[] = {
+ 	CLK("davinci-mcasp.1", NULL, &mcasp1_clk),
+ 	CLK(NULL, "aemif", &aemif_clk),
+ 	CLK("davinci_emac.1", NULL, &emac_clk),
++	CLK("davinci_mdio.0", "fck", &emac_clk),
+ 	CLK(NULL, "pwm0", &pwm0_clk),
+ 	CLK(NULL, "pwm1", &pwm1_clk),
+ 	CLK(NULL, "timer0", &timer0_clk),
+@@ -940,8 +941,6 @@ static int __init dm646x_init_devices(void)
+ 
+ 	platform_device_register(&dm646x_mdio_device);
+ 	platform_device_register(&dm646x_emac_device);
+-	clk_add_alias(NULL, dev_name(&dm646x_mdio_device.dev),
+-		      NULL, &dm646x_emac_device.dev);
+ 
+ 	return 0;
+ }
 -- 
 1.7.9.5
 
