@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab3HOQfd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 12:35:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38980 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086Ab3HOQfb (ORCPT
+	id S1758555Ab3HOQhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 12:37:00 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:22059 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757086Ab3HOQg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 12:35:31 -0400
-Date: Thu, 15 Aug 2013 09:37:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: linux-kernel@vger.kernel.org, sarah.a.sharp@linux.intel.com,
-        dmitry.kasatkin@gmail.com, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] dev-core: fix build break when DEBUG is enabled
-Message-ID: <20130815163705.GA15688@kroah.com>
-References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 Aug 2013 12:36:58 -0400
+Message-ID: <1376584540.10300.416.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] mm/hotplug: Remove stop_machine() from
+ try_offline_node()
+From: Toshi Kani <toshi.kani@hp.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        tangchen@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        liwanp@linux.vnet.ibm.com
+Date: Thu, 15 Aug 2013 10:35:40 -0600
+In-Reply-To: <520C2D04.8060408@gmail.com>
+References: <1376336071-9128-1-git-send-email-toshi.kani@hp.com>
+	 <520C2D04.8060408@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 07:04:54PM +0300, Dmitry Kasatkin wrote:
-> When DEBUG is defined, dev_dbg_ratelimited uses dynamic debug data
-> structures even when CONFIG_DYNAMIC_DEBUG is not defined.
-> It leads to build break.
-> For example, when I try to use dev_dbg_ratelimited in USB code and
-> CONFIG_USB_DEBUG is enabled, but CONFIG_DYNAMIC_DEBUG is not, I get:
+On Wed, 2013-08-14 at 21:21 -0400, KOSAKI Motohiro wrote:
+> (8/12/13 3:34 PM), Toshi Kani wrote:
+> > lock_device_hotplug() serializes hotplug & online/offline operations.
+> > The lock is held in common sysfs online/offline interfaces and ACPI
+> > hotplug code paths.
+> > 
+> > try_offline_node() off-lines a node if all memory sections and cpus
+> > are removed on the node.  It is called from acpi_processor_remove()
+> > and acpi_memory_remove_memory()->remove_memory() paths, both of which
+> > are in the ACPI hotplug code.
+> > 
+> > try_offline_node() calls stop_machine() to stop all cpus while checking
+> > all cpu status with the assumption that the caller is not protected from
+> > CPU hotplug or CPU online/offline operations.  However, the caller is
+> > always serialized with lock_device_hotplug().  Also, the code needs to
+> > be properly serialized with a lock, not by stopping all cpus at a random
+> > place with stop_machine().
+> > 
+> > This patch removes the use of stop_machine() in try_offline_node() and
+> > adds comments to try_offline_node() and remove_memory() that
+> > lock_device_hotplug() is required.
 > 
->   CC [M]  drivers/usb/host/xhci-ring.o
->   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_intr_tx’:
->   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘DEFINE_DYNAMIC_DEBUG_METADATA’ [-Werror=implicit-function-declaration]
->   drivers/usb/host/xhci-ring.c:3059:3: error: ‘descriptor’ undeclared (first use in this function)
->   drivers/usb/host/xhci-ring.c:3059:3: note: each undeclared identifier is reported only once for each function it appears in
->   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘__dynamic_pr_debug’ [-Werror=implicit-function-declaration]
->   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_isoc_tx_prepare’:
->   drivers/usb/host/xhci-ring.c:3847:3: error: ‘descriptor’ undeclared (first use in this function)
->   cc1: some warnings being treated as errors
->   make[2]: *** [drivers/usb/host/xhci-ring.o] Error 1
->   make[1]: *** [drivers/usb/host] Error 2
->   make: *** [drivers/usb/] Error 2
-> 
-> This patch separates definition for CONFIG_DYNAMIC_DEBUG and DEBUG cases.
-> 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> Cc: stable@vger.kernel.org
+> This patch need more verbose explanation. check_cpu_on_node() traverse cpus
+> and cpu hotplug seems to use cpu_hotplug_driver_lock() instead of lock_device_hotplug().
 
-How is this a stable issue?  I don't see how the rules listed in
-Documentation/stable_kernel_rules.txt apply here, what am I missing?
+As described: 
 
-Not to say your patch isn't correct, just that it's not stable material,
-right?
+| lock_device_hotplug() serializes hotplug & online/offline operations.
+| The lock is held in common sysfs online/offline interfaces and ACPI
+| hotplug code paths.
 
-thanks,
+And here are their code paths.
 
-greg k-h
+- CPU & Mem online/offline via sysfs online
+	store_online()->lock_device_hotplug()
+
+- Mem online via sysfs state:
+	store_mem_state()->lock_device_hotplug()
+
+- ACPI CPU & Mem hot-add:
+	acpi_scan_bus_device_check()->lock_device_hotplug()
+
+- ACPI CPU & Mem hot-delete:
+	acpi_scan_hot_remove()->lock_device_hotplug()
+
+> That said, the race is not happen against another memeory happen. It's likely happen
+> another cpu hotplug. So commenting remove_memory() doesn't make much sense.
+
+This lock scheme protects from both CPU and memory hotplug, and requires
+the caller to call lock_device_hotplug().
+
+Thanks,
+-Toshi
+
+
