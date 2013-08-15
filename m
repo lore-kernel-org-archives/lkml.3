@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758592Ab3HOT3v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 15:29:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41136 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab3HOT3u (ORCPT
+	id S1758971Ab3HOTaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 15:30:21 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:52035 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756994Ab3HOTaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 15:29:50 -0400
-Date: Thu, 15 Aug 2013 12:29:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Matt Domsch <Matt_Domsch@dell.com>,
-        Jim Hull <jim.hull@hp.com>, Karel Zak <kzak@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] partitions/efi: detect hybrid mbrs
-Message-Id: <20130815122949.aff0bc4821e4adaec8eb359b@linux-foundation.org>
-In-Reply-To: <1376585982.2152.2.camel@buesod1.americas.hpqcorp.net>
-References: <1375766476-4204-1-git-send-email-davidlohr@hp.com>
-	<20130806141603.948961cecfc9426aeee7c083@linux-foundation.org>
-	<1376585982.2152.2.camel@buesod1.americas.hpqcorp.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 15 Aug 2013 15:30:19 -0400
+Message-ID: <520D2C50.4040902@cogentembedded.com>
+Date: Thu, 15 Aug 2013 23:30:24 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+CC: Sekhar Nori <nsekhar@ti.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v4 4/5] ARM: davinci: da850: add DT node for eth0.
+References: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com> <1376546497-26931-5-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1376546497-26931-5-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Aug 2013 09:59:42 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+Hello.
 
-> On Tue, 2013-08-06 at 14:16 -0700, Andrew Morton wrote:
-> > On Mon,  5 Aug 2013 22:21:08 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > 
-> > > This patchset teaches the kernel about hybrid master boot records (MBRs), one of
-> > > the most common issues with GUID partition tables, as a workaround to layout
-> > > disk partitions to be compatible with both EFI and legacy MBR based systems.
-> > > Except for adding more pmbr checks, to better comply with the UEFI/GPT specs, the
-> > > functionality is left unchanged - we only inform (through debug) the user about
-> > > the used MBR scheme. While it is true that these restrictions can be bypassed when
-> > > forcing gpt, this is not the correct or default way of doing things, complicating
-> > > users furthermore. More details are in the individual patches.
-> > 
-> > Patches look nice, although I'll cheerily admit to not having a clue
-> > what they do.  What is a "hybrid MBR" anyway?
-> > 
-> > Someone's editor seems to replace tabs with spaces so the patches
-> > generate quite a checkpatch storm.  Please use checkpatch.
-> > 
-> 
-> Andrew, any chance of getting this in for 3.12?
+On 15-08-2013 10:01, Lad, Prabhakar wrote:
 
-gee, I didn't review the patches because I simply have no useful
-knowledge in the area.  I can check the whitespace and code comments,
-but that has the downside of creating the false impression that someone
-actually reviewed the code :(
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-I'm struggling to think who might be better situated.  Matt Fleming or
-Matt Domsch, maybe?
+> Add eth0 device tree node information and pinmux for mii to da850 by
+> providing interrupt details and local mac address of eth0.
+
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+[...]
+
+> @@ -226,6 +242,20 @@
+>   			#size-cells = <0>;
+>   			reg = <0x224000 0x1000>;
+>   		};
+> +		eth0: emac@1e20000 {
+
+    According to the ePAPR spec[1] section 2.2.2, the node should be named 
+"ethernet".
+
+[1] http://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.0.pdf
+
+WBR, Sergei
 
