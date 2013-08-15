@@ -1,111 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760525Ab3HOHy5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 03:54:57 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:63132 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755599Ab3HOHyy (ORCPT
+	id S1752822Ab3HOHzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 03:55:14 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:55585 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760538Ab3HOHzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 03:54:54 -0400
-Message-ID: <520C8947.4020906@ozlabs.ru>
-Date: Thu, 15 Aug 2013 17:54:47 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 15 Aug 2013 03:55:09 -0400
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, kvm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 03/10] KVM: PPC: reserve a capability and ioctl numbers
- for realmode VFIO
-References: <1375332272-22176-1-git-send-email-aik@ozlabs.ru> <1375332272-22176-4-git-send-email-aik@ozlabs.ru> <ED8250FB-B0A8-4C32-A960-20ADB5742D2B@suse.de> <520C81BE.70002@ozlabs.ru> <552A034A-CD3F-4737-B08A-E892E6420B83@suse.de> <836F3C3A-0031-4A16-B0CE-E6C1BA4925E4@suse.de> <520C8661.2000406@ozlabs.ru> <162759CE-0031-4571-A4A3-3BFE16445066@suse.de>
-In-Reply-To: <162759CE-0031-4571-A4A3-3BFE16445066@suse.de>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <520C86BD.2020903@roeck-us.net>
+References: <20130813063501.728847844@linuxfoundation.org>
+	<520A1D56.2050507@roeck-us.net>
+	<20130813175858.GC7336@kroah.com>
+	<20130813201936.GA18358@roeck-us.net>
+	<20130815063158.GB25754@kroah.com>
+	<520C86BD.2020903@roeck-us.net>
+Date: Thu, 15 Aug 2013 09:55:07 +0200
+X-Google-Sender-Auth: A9v9jNUB_G31rd-Lw_XLqzWlBwo
+Message-ID: <CAMuHMdU+EOC_etihOzUC6N0cqc2qHaGm3_L+gyTRxESCGhOzEg@mail.gmail.com>
+Subject: Re: [ 00/17] 3.4.58-stable review
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2013 05:43 PM, Alexander Graf wrote:
-> 
-> On 15.08.2013, at 09:42, Alexey Kardashevskiy wrote:
-> 
->> On 08/15/2013 05:25 PM, Alexander Graf wrote:
->>>
->>> On 15.08.2013, at 09:24, Alexander Graf wrote:
->>>
->>>>
->>>> On 15.08.2013, at 09:22, Alexey Kardashevskiy wrote:
->>>>
->>>>> On 08/15/2013 05:16 PM, Alexander Graf wrote:
->>>>>>
->>>>>> On 01.08.2013, at 06:44, Alexey Kardashevskiy wrote:
->>>>>>
->>>>>>> This is to reserve a capablity number for upcoming support
->>>>>>> of VFIO-IOMMU DMA operations in real mode.
->>>>>>>
->>>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>>>>>>
->>>>>>> ---
->>>>>>> Changes:
->>>>>>> 2013/07/16:
->>>>>>> * changed the number
->>>>>>>
->>>>>>> 2013/07/11:
->>>>>>> * changed order in a file, added comment about a gap in ioctl number
->>>>>>>
->>>>>>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>>>>>> ---
->>>>>>> include/uapi/linux/kvm.h | 4 ++++
->>>>>>> 1 file changed, 4 insertions(+)
->>>>>>>
->>>>>>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
->>>>>>> index 99c2533..53c3f1f 100644
->>>>>>> --- a/include/uapi/linux/kvm.h
->>>>>>> +++ b/include/uapi/linux/kvm.h
->>>>>>> @@ -668,6 +668,7 @@ struct kvm_ppc_smmu_info {
->>>>>>> #define KVM_CAP_IRQ_XICS 92
->>>>>>> #define KVM_CAP_ARM_EL1_32BIT 93
->>>>>>> #define KVM_CAP_SPAPR_MULTITCE 94
->>>>>>> +#define KVM_CAP_SPAPR_TCE_IOMMU 95
->>>>>>>
->>>>>>> #ifdef KVM_CAP_IRQ_ROUTING
->>>>>>>
->>>>>>> @@ -933,6 +934,9 @@ struct kvm_s390_ucas_mapping {
->>>>>>> #define KVM_ARM_SET_DEVICE_ADDR	  _IOW(KVMIO,  0xab, struct kvm_arm_device_addr)
->>>>>>> /* Available with KVM_CAP_PPC_RTAS */
->>>>>>> #define KVM_PPC_RTAS_DEFINE_TOKEN _IOW(KVMIO,  0xac, struct kvm_rtas_token_args)
->>>>>>> +/* 0xad and 0xaf are already taken */
->>>>>>
->>>>>> so 0xad and 0xaf are already taken? where?
->>>>>
->>>>> Mistype :( s/af/ae/
->>>>>
->>>>> They are taken in this file:
->>>>>
->>>>> 1016 /* VM is being stopped by host */
->>>>> 1017 #define KVM_KVMCLOCK_CTRL         _IO(KVMIO,   0xad)
->>>>> 1018 #define KVM_ARM_VCPU_INIT         _IOW(KVMIO,  0xae, struct kvm_vcpu_init)
->>>>
->>>> Could you please make sure that whoever reads the comment in a year still knows where to look? :)
->>>
->>> Something like
->>>
->>>  /* 0xad is taken by KVM_KVMCLOCK_CTRL */
->>>  /* 0xaf is taken by KVM_ARM_VCPU_INIT */
->>
->>
->> Missed this mail and reposted without this comment but updated commit
->> message saying where they are used. Repost again?
-> 
-> The commit message doesn't really help, since you don't see that one when you read the header file later. So yes, please.
+On Thu, Aug 15, 2013 at 9:43 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> I screwed up my stable repo clone again :(, so the full build will take a
+> bit.
+>
+> mips builds on on 3.4 with all patches applied now fail with:
+> arch/mips/include/asm/page.h: Assembler messages:
+> arch/mips/include/asm/page.h:178: Error: Unrecognized opcode `static inline
+> int pfn_valid(unsigned long pfn)'
+> arch/mips/include/asm/page.h:179: Error: junk at end of line, first
+> unrecognized character is `{'
+> arch/mips/include/asm/page.h:181: Error: Unrecognized opcode `extern
+> unsigned long max_mapnr'
+> arch/mips/include/asm/page.h:183: Error: Unrecognized opcode `return
+> pfn>=ARCH_PFN_OFFSET&&pfn<max_mapnr'
+> arch/mips/include/asm/page.h:184: Error: junk at end of line, first
+> unrecognized character is `}'
+>
+> This is the error I referred to above. Reverting above pfn rework patch
+> fixes that problem,
+> so you might want to remove that patch from the patch queue for now.
 
+Perhaps this one got applied too soon?
 
-Ok. Reposted as "[PATCH v8] KVM: PPC: reserve a capability and ioctl
-numbers for realmode VFIO". Thank you. Sorry for my disturbing ignorance.
+ commit 730b8dfe016dd1e91f73d8d3e6724da91397171c
+Author: Ralf Baechle <ralf@linux-mips.org>
+Date:   Fri Dec 28 15:18:02 2012 +0100
 
+    MIPS: page.h: Remove now unnecessary #ifndef __ASSEMBLY__ wrapper.
 
--- 
-Alexey
+    Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
