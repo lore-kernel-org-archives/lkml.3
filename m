@@ -1,115 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3HOKOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 06:14:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58513 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753319Ab3HOKOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 06:14:35 -0400
-Date: Thu, 15 Aug 2013 12:14:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
- trace event
-Message-ID: <20130815101432.GE27616@pd.tnic>
-References: <20130812125343.GE18018@pd.tnic>
- <520A16BD.30201@linux.vnet.ibm.com>
- <20130813124258.GC4077@pd.tnic>
- <520A6D98.9060204@linux.vnet.ibm.com>
- <20130813175809.GE4077@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F31CB8F53@ORSMSX106.amr.corp.intel.com>
- <20130813181004.GF4077@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F31CB9150@ORSMSX106.amr.corp.intel.com>
- <20130814054322.GA9158@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F31CBAAFA@ORSMSX106.amr.corp.intel.com>
+	id S1755640Ab3HOKPA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 06:15:00 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52776 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319Ab3HOKO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 06:14:58 -0400
+Date: Thu, 15 Aug 2013 12:14:55 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sudeep Dutt <sudeep.dutt@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
+        Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+Subject: Re: [PATCH 0/5] Enable Drivers for Intel MIC X100 Coprocessors.
+Message-ID: <20130815101455.GA25528@amd.pavel.ucw.cz>
+References: <cover.1374717252.git.sudeep.dutt@intel.com>
+ <20130813124311.GA18426@amd.pavel.ucw.cz>
+ <1376511850.113256.29.camel@blbiskey-desk1.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31CBAAFA@ORSMSX106.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1376511850.113256.29.camel@blbiskey-desk1.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 06:38:09PM +0000, Luck, Tony wrote:
-> We've wandered around different strategies here. We definitely
-> want the panic log. Some people want all other "kernel exit" logs
-> (shutdown, reboot, kexec). When there is enough space in the pstore
-> backend we might also want the "oops" that preceeded the panic. (Of
-> course when the oops happens we don't know the future, so have to
-> save it just in case ... then if more "oops" happen we have to decide
-> whether to keep the old oops log, or save the newer one).
+Hi!
 
-Ok, dmesg over serial and *only* oops+panic in pstore. Right.
+> > > Since it is a PCIe card, it does not have the ability to host hardware
+> > > devices for networking, storage and console. We provide these devices
+> > > on X100 coprocessors thus enabling a self-bootable equivalent environment
+> > > for applications. A key benefit of our solution is that it leverages
+> > > the standard virtio framework for network, disk and console devices,
+> > > though in our case the virtio framework is used across a PCIe bus.
+> > 
+> > Interesting...
+> > 
+> > >  Documentation/mic/mic_overview.txt   |   48 +
+> > >  Documentation/mic/mpssd/.gitignore   |    1 +
+> > >  Documentation/mic/mpssd/Makefile     |   20 +
+> > >  Documentation/mic/mpssd/micctrl      |  157 +++
+> > >  Documentation/mic/mpssd/mpss         |  246 +++++
+> > >  Documentation/mic/mpssd/mpssd.c      | 1732 ++++++++++++++++++++++++++++++++++
+> > >  Documentation/mic/mpssd/mpssd.h      |  105 +++
+> > >  Documentation/mic/mpssd/sysfs.c      |  108 +++
+> > >  drivers/misc/Kconfig                 |    1 +
+> > >  drivers/misc/Makefile                |    1 +
+> > >  drivers/misc/mic/Kconfig             |   56 ++
+> > >  drivers/misc/mic/Makefile            |    6 +
+> > >  drivers/misc/mic/card/Makefile       |   11 +
+> > >  drivers/misc/mic/card/mic_common.h   |   43 +
+> > >  drivers/misc/mic/card/mic_debugfs.c  |  139 +++
+> > >  drivers/misc/mic/card/mic_debugfs.h  |   40 +
+> > >  drivers/misc/mic/card/mic_device.c   |  311 ++++++
+> > >  drivers/misc/mic/card/mic_device.h   |  106 +++
+> > >  drivers/misc/mic/card/mic_virtio.c   |  643 +++++++++++++
+> > >  drivers/misc/mic/card/mic_virtio.h   |   79 ++
+> > >  drivers/misc/mic/card/mic_x100.c     |  253 +++++
+> > >  drivers/misc/mic/card/mic_x100.h     |   53 ++
+> > >  drivers/misc/mic/common/mic_device.h |   85 ++
+> > >  drivers/misc/mic/host/Makefile       |   13 +
+> > >  drivers/misc/mic/host/mic_boot.c     |  181 ++++
+> > 
+> > So... there are basically separate computers running on PCIe card
+> > plugged into host computer, right?
+> > 
+> 
+> They are PCIe form factor Coprocessors plugged into the host.
+> 
+> > Maybe we should have something more promintent than drivers/misc for
+> > this, then? Like drivers/multicomputer?
+> > 
+> 
+> multicomputer" is an interesting name for these kind of devices but has
+> several issues:
+> a) The definition I found for multicomputer online was "A computer made
+> up of several computers. The term generally refers to an architecture in
+> which each processor has its own memory rather than multiple processors
+> with a shared memory. A multicore computer, although it sounds similar,
+> would not be a multicomputer because the multiple cores share a common
+> memory." Intel MIC X100 devices typically have upto 244 CPUs (61 cores)
+> on the card sharing common card memory so multicomputer would not be
+> accurate based on this definition.
 
-> Yes - longer logs are better. Sad that the pstore backend devices are
-> measured in kilobytes :-)
+Well... you have your "host" computer, and than (potentially several)
+Intel MIC devices, which are basically separate computers. So X100 is
+not a multicomputer, but machine with several X100 cards certainly is
+multicomputer.
 
-Right, so good ole serial again to the rescue! There's no room for full
-dmesg in nvram because it needs space for the UEFI GUI and some other
-crap :-)
+> b) X100 MIC devices have always been referred to Coprocessors and never
+> as multicomputers in product specifications @
+> http://software.intel.com/en-us/mic-developer
 
-> No - write speed for the persistent storage backing pstore (flash)
-> means we don't log as we go. We wait for a panic and then our
-> registered function gets called so we can snapshot what is in the
-> console log at that point. We also don't want to wear out the flash
-> which may be soldered to the motherboard.
+Coprocessor sounds like i487, but why not.
 
-I suspected as much. So we can forget about using *only* pstore for hw
-errors logging. It would be cool to do so but the technology simply
-doesn't give it.
+> c) multicomputer is a very long path name.
 
-> Agreed - we shouldn't clutter logs with details of corrected errors.
-> At most we should have a rate-limited log showing the count of
-> corrected errors so that someone who just watches dmesg knows they
-> should go dig deeper if they see some big number of corrected errors.
+Agreed it is long. drivers/coproc? 
 
-/me nods.
+[I guess we'll get similar hardware from different vendors in
+future. It would make sense having it at common place.]
 
-> Yes. There are people looking at various "flight recorder" modes for
-> tracing that keep logs of normal events in a circular buffer in RAM
-> ... if these exist they should be saved at crash time (and they are in
-> the kexec/kdump path, but I don’t know if anyone does anything in
-> the non-kdump case).
-
-Right, the cheapest solution is serial. Simply log everything to serial
-because we can. But this is the key thing I wanted to emphasize:
-
-For severe hardware errors we don't want to use any tracepoint -
-actually it is even a bad thing to do so because they would get lost in
-some side channels which, during a critical situation, might not get
-written to anything/survive the crash, etc.
-
-So what I'm saying is, we basically want severe hardware errors to land
-to good old dmesg and to all consoles. No fancy TP stuff for them.
-
-> Tracepoints for errors that are going to lead to system crash would
-> only be useful together with a flight recorder to make sure they get
-> saved. I think tracepoints for corrected errors are better than dmesg
-> logs.
-
-Yes, exactly.
-
-> In a perfect world yes - I don't know that we can achieve perfection
-> - but we can iterate through good, better, even better. The really
-> hard part of this is figuring out what is *relevant* to save before a
-> particular crash happens.
-
-Well, if I have serial connected to the box, it will contain basically
-everything the machine said, no?
+								Pavel
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
