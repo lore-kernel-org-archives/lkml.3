@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab3HOJ3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 05:29:07 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:52199 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753053Ab3HOJ3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 05:29:04 -0400
+	id S1754935Ab3HOJim (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 05:38:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60560 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab3HOJij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 05:38:39 -0400
+Date: Thu, 15 Aug 2013 11:38:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>, tony.luck@intel.com,
+        bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
+        lance.ortiz@hp.com, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Message-ID: <20130815093831.GA27616@pd.tnic>
+References: <20130810180322.GC4155@pd.tnic>
+ <20130812083355.47c1bae8@samsung.com>
+ <5208D80D.5030206@linux.vnet.ibm.com>
+ <20130812125343.GE18018@pd.tnic>
+ <520A16BD.30201@linux.vnet.ibm.com>
+ <20130813124258.GC4077@pd.tnic>
+ <520A6D98.9060204@linux.vnet.ibm.com>
+ <20130813175809.GE4077@pd.tnic>
+ <520B6282.6030906@linux.vnet.ibm.com>
+ <20130814212211.544ee6a4@concha.lan>
 MIME-Version: 1.0
-X-Originating-IP: [86.59.245.170]
-In-Reply-To: <8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-References: <CAJfpegsxgnSRUW-E5HM3uT5QfGyUtn_v=i4Ppkkkutp34287AA@mail.gmail.com>
-	<87a9kkax0j.fsf@xmission.com>
-	<CAJfpeguv+7giYNpAuXE9Ja_9BEwB0-fZBVgRSeVqpzSXgQYZ6Q@mail.gmail.com>
-	<8761v7h2pt.fsf@tw-ebiederman.twitter.com>
-Date: Thu, 15 Aug 2013 11:29:01 +0200
-Message-ID: <CAJfpegtT7y-1HhbEVAMKkdQugTG_w7G_epGtQHGvQLpcZB5FVA@mail.gmail.com>
-Subject: Re: DoS with unprivileged mounts
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130814212211.544ee6a4@concha.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 8:45 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Part of me does prefer the semantics Andy has suggested where instead of
-> unmounting things we have something like a skeleton of the mount tree
-> unioned with dcaches of the filesystems themselves.  With "struct
-> mountpoint" we are amazing close to that already.
->
-> A mount skeleton would allow us to always remove and rename directories
-> and files without really caring, about what mounts were present.
-> Probably with just a quick lookup to see if we need to set
-> DCACHE_MOUNTED.
+On Wed, Aug 14, 2013 at 09:22:11PM -0300, Mauro Carvalho Chehab wrote:
+> 	1) EDAC core needs to know that it should reject "hardware first"
+> drivers.
 
-Yes, we could have a separate dentry tree just for anchoring mounts
-and we could make a union with the real dentry tree.  But implementing
-that in a low overhead manner is not trivial.  Anchoring mounts on
-real dentries is *rather* convenient.   And yes, we only actually need
-the skeleton dentries when the real ones disappear, but that doesn't
-make the implementation any simpler.
+-ENOPARSE. What do you mean?
 
-> The big practical problem I can see with MNT_VOLATILE is mount points in
-> shared directories like /tmp but without the sticky set.  At which point
-> it would be possible to delete another users mount points.  Perhaps we
-> need restrictions on where a user can mount.
+>  3) If BIOS vendors add later some solution to enumerate the DIMMS
+> per memory controller, channel, socket with APEI, the addition to the
+> existing driver would be trivial.
 
-I think if user X mounts something on /tmp/foo owned by user Y and
-user Y removes /tmp/foo then that shouldn't really surprise user X.  I
-don't see this an issue.
+Actually, with BIOS vendors wanting to do firmware-first strategy with
+DRAM errors, they must have a pretty good and intimate picture of the
+memory topology at hand. So it is only a logical consequence for them,
+when reporting a memory error to the OS to tell us the silkscreen label
+too, while at it.
 
-Thanks,
-Miklos
+And if they do that, we don't need the additional layer - just a
+tracepoint from APEI and a userspace script.
+
+It's a whole another question if they don't do that.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
