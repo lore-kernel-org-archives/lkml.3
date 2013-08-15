@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab3HOUsz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 16:48:55 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41678 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab3HOUsw (ORCPT
+	id S1752023Ab3HOUtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 16:49:03 -0400
+Received: from titanium.nobletdesign.com ([64.34.172.148]:53441 "EHLO
+	titanium.nobletdesign.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793Ab3HOUtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 16:48:52 -0400
+	Thu, 15 Aug 2013 16:49:00 -0400
+X-Greylist: delayed 1309 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Aug 2013 16:49:00 EDT
+Message-ID: <520D399B.6020607@gnat.ca>
+Date: Thu, 15 Aug 2013 14:27:07 -0600
+From: "Nathanael D. Noblet" <nathanael@gnat.ca>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130808200444.2932.17381.stgit@bling.home>
-References: <20130808200444.2932.17381.stgit@bling.home>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 15 Aug 2013 14:48:31 -0600
-Message-ID: <CAErSpo6v2sKuHnLweh_o1GtV+A-3ckoMG10rhOEwMXHLMTMsgg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/9] pci: bus and slot reset interfaces
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        Don Dutile <ddutile@redhat.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Kailang Yang <kailang@realtek.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: RealTek Inverted Mic Patch
+Content-Type: multipart/mixed;
+ boundary="------------080508000103060603000502"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 8, 2013 at 2:09 PM, Alex Williamson
-<alex.williamson@redhat.com> wrote:
-> v5: Increase length of time we assert reset in the final common
->     secondary bus reset function to 2ms and document that this is
->     to ensure that reset on the bus is seen for at least a full
->     1ms (per converstation with Alex Duyck)
->
-> Thanks,
-> Alex
->
-> This series adds PCI bus and slot reset interfaces to the already
-> existing function reset interface.  I need this for two reasons, the
-> first is that not all devices support function level reset.  Even
-> some of those that we detect as supporting a PM reset on D3hot->D0
-> transition actually don't do any reset.  Others have no reset
-> capability at all.  We currently implement a secondary bus reset
-> escalation from the function reset path, but only when there is a
-> single devfn on the bus.  Drivers like vfio can have ownership of
-> all of the devices on a bus and should therefore have a path to
-> initiate a secondary bus reset with multiple devices.  This is
-> particularly required for use of GPUs by userspace, where none of
-> the predominant GPUs implement a useful function level reset.
->
-> The second reason is that even the current function reset escalating
-> to a secondary bus reset can cause problems with hotplug controllers.
-> If a root port supports PCIe HP with suprise removal, a bus reset
-> can trigger a presence detection change, which results in an attempt
-> to remove the struct device.  By having a slot reset interface, we
-> can involve the hotplug controllers to allow for a controlled bus
-> reset and avoid this spurious removal attempt.
->
-> ---
->
-> Alex Williamson (9):
->       pci: Create pci_reset_bridge_secondary_bus()
->       pci: Add hotplug_slot_ops.reset_slot()
->       pci: Implement reset_slot for pciehp
->       pci: Add slot reset option to pci_dev_reset
->       pci: Split out pci_dev lock/unlock and save/restore
->       pci: Add slot and bus reset interfaces
->       pci: Wake-up devices before save for reset
->       pci: Tune secondary bus reset timing
->       pci: Remove aer_do_secondary_bus_reset()
->
->
->  drivers/pci/hotplug/pciehp.h       |    1
->  drivers/pci/hotplug/pciehp_core.c  |   12 +
->  drivers/pci/hotplug/pciehp_hpc.c   |   31 +++
->  drivers/pci/pci.c                  |  349 +++++++++++++++++++++++++++++++++---
->  drivers/pci/pcie/aer/aerdrv.c      |    2
->  drivers/pci/pcie/aer/aerdrv.h      |    1
->  drivers/pci/pcie/aer/aerdrv_core.c |   35 ----
->  include/linux/pci.h                |    3
->  include/linux/pci_hotplug.h        |    4
->  9 files changed, 376 insertions(+), 62 deletions(-)
+This is a multi-part message in MIME format.
+--------------080508000103060603000502
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Merged to the PCI "next" branch for v3.12, thanks!
+Hello,
+
+   I have hardware that suffers from an internal phase inverted mic that 
+isn't properly detected. Below is a patch that fixes the issue for my 
+particular hardware.
+
+Pre patch alsa-info:
+
+http://www.alsa-project.org/db/?f=a922c77ddf473a8f478ec334fa9dca684f213b59
+
+Post patch alsa-info:
+http://www.alsa-project.org/db/?f=14cd25b323d3bbb02fabbac78e62851569893c3f
+
+Incase you care. The patch is small. I don't know if you need any kind 
+of signed off/written by etc for something so small. In any case there 
+is no intellectual property in this at all. Feel free to do as you wish 
+with it. However including it in the kernel would make my life easier.
+
+Thanks,
+-- 
+Nathanael d. Noblet
+t 403.875.4613
+
+--------------080508000103060603000502
+Content-Type: text/x-patch;
+ name="alsa-realtek-inverted-mic.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="alsa-realtek-inverted-mic.patch"
+
+--- a/sound/pci/hda/patch_realtek.c.org	2013-08-15 13:17:49.804492932 -0600
++++ b/sound/pci/hda/patch_realtek.c	2013-08-15 13:18:40.582364931 -0600
+@@ -4208,6 +4208,7 @@
+ 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
+ 	SND_PCI_QUIRK(0x19da, 0xa130, "Zotac Z68", ALC662_FIXUP_ZOTAC_Z68),
+ 	SND_PCI_QUIRK(0x1b35, 0x2206, "CZC P10T", ALC662_FIXUP_CZC_P10T),
++    SND_PCI_QUIRK(0x1025, 0x034a, "Gateway LT27", ALC662_FIXUP_INV_DMIC),
+ 
+ #if 0
+ 	/* Below is a quirk table taken from the old code.
+
+--------------080508000103060603000502--
