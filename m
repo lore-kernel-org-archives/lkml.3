@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564Ab3HOOc6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 10:32:58 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:52513 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757786Ab3HOOcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 10:32:11 -0400
-From: Georgi Djakov <gdjakov@mm-sol.com>
-To: cjb@laptop.org
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Georgi Djakov <gdjakov@mm-sol.com>,
-        Krishna Konda <kkonda@codeaurora.org>
-Subject: [PATCH 4/5] mmc: sdhci: add quirk for max_discard calculation
-Date: Thu, 15 Aug 2013 17:32:19 +0300
-Message-Id: <1376577140-2652-5-git-send-email-gdjakov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1376577140-2652-1-git-send-email-gdjakov@mm-sol.com>
-References: <1376577140-2652-1-git-send-email-gdjakov@mm-sol.com>
+	id S1758029Ab3HOOeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 10:34:09 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62353 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757038Ab3HOOeG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 10:34:06 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <520CE6DF.80009@roeck-us.net>
+Date: Thu, 15 Aug 2013 07:34:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Max Filippov <jcmvbkbc@gmail.com>
+CC: tony@bakeyournoodle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Linux kernel cross-compilers
+References: <520C9A39.3030808@roeck-us.net> <CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com> <520CDF92.8090804@roeck-us.net> <CAMo8BfLzmFROWkmH5Wzjf5HNhkuxvc83ieCbEwdfoeR2msZwbQ@mail.gmail.com>
+In-Reply-To: <CAMo8BfLzmFROWkmH5Wzjf5HNhkuxvc83ieCbEwdfoeR2msZwbQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SDHCI driver by default specifies a parameter that causes the core
-layer to calculate a max discard value which will be set on the mmc queue.
-Unfortunately the value calculated because of this would be very small
-compared to what comes in by default. As a result of this, any secure
-discard kind of operations are very slow.
+On 08/15/2013 07:22 AM, Max Filippov wrote:
+> On Thu, Aug 15, 2013 at 6:02 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On 08/15/2013 02:46 AM, Max Filippov wrote:
+>>>
+>>> Hi Guenter,
+>>>
+>>> On Thu, Aug 15, 2013 at 1:07 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>
+>>>> Also, the xtensa compiler fails for me with an odd error message on one
+>>>> of
+>>>> my servers.
+>>>
+>>>
+>>> What is the message?
+>>>
+>> It complains about being unable to change the byte order in an object file.
+>>
+>> Actually, the message is from the linker, but I have no idea what is causing
+>> it.
+>
+> I've seen such message when I attempted to link a kernel, parts of which
+> were by mistake compiled for different xtensa core variants. Clean rebuild
+> fixed that.
+>
 
-Add quirk so that the SDHCI host can use the default max_discard value.
+"clean -f -q -d -x" did not help in my case. It can't get much cleaner than that.
 
-CC: Krishna Konda <kkonda@codeaurora.org>
-Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
----
- drivers/mmc/host/sdhci.c  |    3 ++-
- include/linux/mmc/sdhci.h |    4 ++++
- 2 files changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 39544b4..e21bb6f 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2957,7 +2957,8 @@ int sdhci_add_host(struct sdhci_host *host)
- 	if (host->quirks & SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK)
- 		host->timeout_clk = mmc->f_max / 1000;
- 
--	mmc->max_discard_to = (1 << 27) / host->timeout_clk;
-+	if (!(host->quirks2 & SDHCI_QUIRK2_USE_MAX_DISCARD_SIZE))
-+		mmc->max_discard_to = (1 << 27) / host->timeout_clk;
- 
- 	mmc->caps |= MMC_CAP_SDIO_IRQ | MMC_CAP_ERASE | MMC_CAP_CMD23;
- 
-diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-index 603ef9d..f42f6dd 100644
---- a/include/linux/mmc/sdhci.h
-+++ b/include/linux/mmc/sdhci.h
-@@ -104,6 +104,10 @@ struct sdhci_host {
- #define SDHCI_QUIRK2_SLOW_INT_CLR			(1<<7)
- /* Ignore CMD CRC errors for tuning commands */
- #define SDHCI_QUIRK2_IGNORE_CMDCRC_FOR_TUNING		(1<<8)
-+/* Dont use the max_discard_to so that the maximum discard unit gets picked by
-+ * the mmc queue. Otherwise, it takes a long time for secure discard kind of
-+ * operations to complete. */
-+#define SDHCI_QUIRK2_USE_MAX_DISCARD_SIZE		(1<<9)
- 
- 	int irq;		/* Device IRQ */
- 	void __iomem *ioaddr;	/* Mapped address */
--- 
-1.7.9.5
+Guenter
 
