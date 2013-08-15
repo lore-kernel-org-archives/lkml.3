@@ -1,82 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760054Ab3HORKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 13:10:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39306 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759849Ab3HORKQ (ORCPT
+	id S1759810Ab3HORKL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 13:10:11 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:47495 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759223Ab3HORKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 13:10:16 -0400
-Date: Thu, 15 Aug 2013 10:11:51 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: linux-kernel@vger.kernel.org, sarah.a.sharp@linux.intel.com,
-        dmitry.kasatkin@gmail.com, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] dev-core: fix build break when DEBUG is enabled
-Message-ID: <20130815171151.GA30547@kroah.com>
-References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
- <20130815163705.GA15688@kroah.com>
- <520D0779.4020903@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <520D0779.4020903@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 Aug 2013 13:10:04 -0400
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        microblaze-uclinux@itee.uq.edu.au, linux@openrisc.net,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Sudeep.KarkadaNagesha@arm.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: [RFC PATCH 3/4] powerpc: refactor of_get_cpu_node to support other architectures
+Date: Thu, 15 Aug 2013 18:09:39 +0100
+Message-Id: <1376586580-5409-4-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+References: <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1376586580-5409-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 15 Aug 2013 17:10:01.0267 (UTC) FILETIME=[46F47830:01CE99DA]
+X-MC-Unique: 113081518100200501
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r7FHAbFw017223
 
-On Thu, Aug 15, 2013 at 07:53:13PM +0300, Dmitry Kasatkin wrote:
-> On 15/08/13 19:37, Greg KH wrote:
-> > On Thu, Aug 15, 2013 at 07:04:54PM +0300, Dmitry Kasatkin wrote:
-> >> When DEBUG is defined, dev_dbg_ratelimited uses dynamic debug data
-> >> structures even when CONFIG_DYNAMIC_DEBUG is not defined.
-> >> It leads to build break.
-> >> For example, when I try to use dev_dbg_ratelimited in USB code and
-> >> CONFIG_USB_DEBUG is enabled, but CONFIG_DYNAMIC_DEBUG is not, I get:
-> >>
-> >>   CC [M]  drivers/usb/host/xhci-ring.o
-> >>   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_intr_tx’:
-> >>   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘DEFINE_DYNAMIC_DEBUG_METADATA’ [-Werror=implicit-function-declaration]
-> >>   drivers/usb/host/xhci-ring.c:3059:3: error: ‘descriptor’ undeclared (first use in this function)
-> >>   drivers/usb/host/xhci-ring.c:3059:3: note: each undeclared identifier is reported only once for each function it appears in
-> >>   drivers/usb/host/xhci-ring.c:3059:3: error: implicit declaration of function ‘__dynamic_pr_debug’ [-Werror=implicit-function-declaration]
-> >>   drivers/usb/host/xhci-ring.c: In function ‘xhci_queue_isoc_tx_prepare’:
-> >>   drivers/usb/host/xhci-ring.c:3847:3: error: ‘descriptor’ undeclared (first use in this function)
-> >>   cc1: some warnings being treated as errors
-> >>   make[2]: *** [drivers/usb/host/xhci-ring.o] Error 1
-> >>   make[1]: *** [drivers/usb/host] Error 2
-> >>   make: *** [drivers/usb/] Error 2
-> >>
-> >> This patch separates definition for CONFIG_DYNAMIC_DEBUG and DEBUG cases.
-> >>
-> >> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> >> Cc: stable@vger.kernel.org
-> > How is this a stable issue?  I don't see how the rules listed in
-> > Documentation/stable_kernel_rules.txt apply here, what am I missing?
-> >
-> > Not to say your patch isn't correct, just that it's not stable material,
-> > right?
-> >
-> > thanks,
-> >
-> > greg k-h
-> >
-> 
-> There are few drivers which uses dev_dbg_ratelimited().
-> In the case someone tries to build kernel with those drivers with DEBUG
-> enabled and without CONFIG_DYNAMIC_DEBUG,
-> will get the build break. It will happen also on stable kernel.
+From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-Do you have specific examples of this happening?  Given that this code
-has been this way for a very long time now, and Randy's excellent
-'random .config bot' normally catches this type of thing, I think the
-applicability to a stable release is pretty low.
+Currently different drivers requiring to access cpu device node are
+parsing the device tree themselves. Since the ordering in the DT need
+not match the logical cpu ordering, the parsing logic needs to consider
+that. However, this has resulted in lots of code duplication and in some
+cases even incorrect logic.
 
-Please read that Documentation file again about "actual" issues, not
-just theoretical ones.
+It's better to consolidate them by adding support for getting cpu
+device node for a given logical cpu index in DT core library. However
+logical to physical index mapping can be architecture specific.
 
-thanks,
+PowerPC has it's own implementation to get the cpu node for a given
+logical index.
 
-greg k-h
+This patch refactors the current implementation of of_get_cpu_node.
+This in preparation to move the implementation to DT core library.
+It separates out the logical to physical mapping so that a default
+matching of the physical id to the logical cpu index can be added
+when moved to common code. Architecture specific code can override it.
+
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+---
+ arch/powerpc/kernel/prom.c | 70 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 43 insertions(+), 27 deletions(-)
+
+diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+index eb23ac9..594c9f9 100644
+--- a/arch/powerpc/kernel/prom.c
++++ b/arch/powerpc/kernel/prom.c
+@@ -865,45 +865,61 @@ static int __init prom_reconfig_setup(void)
+ __initcall(prom_reconfig_setup);
+ #endif
+ 
++bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
++{
++	return (int)phys_id == get_hard_smp_processor_id(cpu);
++}
++
++static bool __of_find_n_match_cpu_property(struct device_node *cpun,
++			const char *prop_name, int cpu, unsigned int *thread)
++{
++	const __be32 *cell;
++	int ac, prop_len, tid;
++	u64 hwid;
++
++	ac = of_n_addr_cells(cpun);
++	cell = of_get_property(cpun, prop_name, &prop_len);
++	if (!cell)
++		return false;
++	prop_len /= sizeof(*cell);
++	for (tid = 0; tid < prop_len; tid++) {
++		hwid = of_read_number(cell, ac);
++		if (arch_match_cpu_phys_id(cpu, hwid)) {
++			if (thread)
++				*thread = tid;
++			return true;
++		}
++	}
++	return false;
++}
++
+ /* Find the device node for a given logical cpu number, also returns the cpu
+  * local thread number (index in ibm,interrupt-server#s) if relevant and
+  * asked for (non NULL)
+  */
+ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
+ {
+-	int hardid;
+-	struct device_node *np;
++	struct device_node *cpun, *cpus;
+ 
+-	hardid = get_hard_smp_processor_id(cpu);
++	cpus = of_find_node_by_path("/cpus");
++	if (!cpus) {
++		pr_warn("Missing cpus node, bailing out\n");
++		return NULL;
++	}
+ 
+-	for_each_node_by_type(np, "cpu") {
+-		const u32 *intserv;
+-		unsigned int plen, t;
++	for_each_child_of_node(cpus, cpun) {
++		if (of_node_cmp(cpun->type, "cpu"))
++			continue;
+ 
+ 		/* Check for ibm,ppc-interrupt-server#s. If it doesn't exist
+ 		 * fallback to "reg" property and assume no threads
+ 		 */
+-		intserv = of_get_property(np, "ibm,ppc-interrupt-server#s",
+-				&plen);
+-		if (intserv == NULL) {
+-			const u32 *reg = of_get_property(np, "reg", NULL);
+-			if (reg == NULL)
+-				continue;
+-			if (*reg == hardid) {
+-				if (thread)
+-					*thread = 0;
+-				return np;
+-			}
+-		} else {
+-			plen /= sizeof(u32);
+-			for (t = 0; t < plen; t++) {
+-				if (hardid == intserv[t]) {
+-					if (thread)
+-						*thread = t;
+-					return np;
+-				}
+-			}
+-		}
++		if (__of_find_n_match_cpu_property(cpun,
++				"ibm,ppc-interrupt-server#s", cpu, thread))
++			return cpun;
++
++		if (__of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
++			return cpun;
+ 	}
+ 	return NULL;
+ }
+-- 
+1.8.1.2
+
+
