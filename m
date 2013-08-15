@@ -1,147 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760282Ab3HOGYN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:24:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54162 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab3HOGYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:24:12 -0400
-Date: Thu, 15 Aug 2013 02:23:40 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Message-ID: <1376547820-91ccjgp3-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130814164052.2ccdd5bdf7ab56deeba88e68@linux-foundation.org>
-References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130814164052.2ccdd5bdf7ab56deeba88e68@linux-foundation.org>
-Subject: Re: [PATCH v5 0/9] extend hugepage migration
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1760167Ab3HOG3E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:29:04 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:39506 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753442Ab3HOG3B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 02:29:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.02.1308142316220.31947@nftneq.ynat.uz>
+References: <520BB9EF.5020308@linux.intel.com> <20130814194359.GA22316@thunk.org>
+ <520BED7A.4000903@intel.com> <20130814230648.GD22316@thunk.org>
+ <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
+ <20130815011101.GA3572@thunk.org> <20130815021028.GM6023@dastard>
+ <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
+ <20130815060149.GP6023@dastard> <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
+ <alpine.DEB.2.02.1308142316220.31947@nftneq.ynat.uz>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 14 Aug 2013 23:28:40 -0700
+Message-ID: <CALCETrUeodAKHAhqrSkd+bUn_qF=twRPraKrsfOmcg6Bp7VsvQ@mail.gmail.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+To: David Lang <david@lang.hm>
+Cc: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 04:40:52PM -0700, Andrew Morton wrote:
-> On Fri,  9 Aug 2013 01:21:33 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-> 
-> > Here is the 5th version of hugepage migration patchset.
-> > Changes in this version are as follows:
-> >  - removed putback_active_hugepages() as a cleanup (1/9)
-> >  - added code to check movability of a given hugepage (8/9)
-> >  - set GFP MOVABLE flag depending on the movability of hugepage (9/9).
-> > 
-> > I feel that 8/9 and 9/9 contain some new things, so need reviews on them.
-> > 
-> > TODOs: (likely to be done after this work)
-> >  - split page table lock for pmd/pud based hugepage (maybe applicable to thp)
-> >  - improve alloc_migrate_target (especially in node choice)
-> >  - using page walker in check_range
-> 
-> This is a pretty large and complex patchset.  I skimmed the patches
-> (and have one trivial comment) then queued them up for a bit of
-> testing.  I've asked Mel if he can find time to review the changes
-> (please).
-> 
-> btw, it would be helpful if this [patch 0/n] had a decent overview of
-> the patch series - what are the objectives, how were they achieved,
-> what value they have to our users, testing results, etc.
+On Wed, Aug 14, 2013 at 11:18 PM, David Lang <david@lang.hm> wrote:
+> On Wed, 14 Aug 2013, Andy Lutomirski wrote:
+>
+>>> The big problem with this approach is that not doing the
+>>> timestamp update on page faults is going to break the inode change
+>>> version counting because for ext4, btrfs and XFS it takes a
+>>> transaction to bump that counter. NFS needs to know the moment a
+>>> file is changed in memory, not when it is written to disk. Also, NFS
+>>> requires the change to the counter to be persistent over server
+>>> failures, so it needs to be changed as part of a transaction....
+>>
+>>
+>> NFS can do whatever it wants, although I suspect that even NFS can get
+>> away with deferring cmtime updates.
+>
+>
+> NFS already has to do syncs to make sure the data is safe on disk, have a
+> flag that NFS can use to make the ctime safe, everyone else can get the
+> performance improvement and NFS can have it's slow-but-safe approach.
+>
 
-Here is the general description:
----
-Currently hugepage migration is available only for soft offlining, but
-it's also useful for some other users of page migration (clearly because
-users of hugepage can enjoy the benefit of mempolicy and memory hotplug.)
-So this patchset tries to extend such users to support hugepage migration.
+I don't see the current code that updates times for NFS.  I'm not
+planning on making any changes that'll affect NFS at all (i.e. I don't
+think any flag will be needed), but I'd be more confident if I
+understand why it worked in the first place.
 
-The target of this patchset is to enable hugepage migration for NUMA
-related system calls (migrate_pages(2), move_pages(2), and mbind(2)),
-and memory hotplug.
-This patchset does not add hugepage migration for memory compaction,
-because users of memory compaction mainly expect to construct thp by
-arranging raw pages, and there's little or no need to compact hugepages.
-CMA, another user of page migration, can have benefit from hugepage
-migration, but is not enabled to support it for now (just because of
-lack of testing and expertise in CMA.)
+(For filesystems that provide page_mkwrite, there hasn't been a
+file_update_time call in the core code for several kernel versions.)
 
-Hugepage migration of non pmd-based hugepage (for example 1GB hugepage in
-x86_64, or hugepages in architectures like ia64) is not enabled for now
-(again, because of lack of testing.)
----
-
-As for how these are achived, I extended the API (migrate_pages()) to
-handle hugepage (with patch 1 and 2) and adjusted code of each caller
-to check and collect movable hugepages (with patch 3-7). Remaining 2
-patches are kind of miscellaneous ones to avoid unexpected behavior.
-Patch 8 is about making sure that we only migrate pmd-based hugepages.
-And patch 9 is about choosing appropriate zone for hugepage allocation.
-
-My test is mainly functional one, simply kicking hugepage migration via
-each entry point and confirm that migration is done correctly. Test code
-is available here:
-  git://github.com/Naoya-Horiguchi/test_hugepage_migration_extension.git
-
-And I always run libhugetlbfs test when changing hugetlbfs's code.
-With this patchset, no regression was found in the test.
-
-> mm-prepare-to-remove-proc-sys-vm-hugepages_treat_as_movable.patch had a
-> conflict with
-> http://ozlabs.org/~akpm/mmots/broken-out/mm-hugetlb-move-up-the-code-which-check-availability-of-free-huge-page.patch
-> which I resolved in the obvious manner.  Please check that from a
-> runtime perspective.
-
-As replied to the mm-commits notification ("Subject: + mm-prepare-to-remove-
-proc-sys-vm-hugepages_treat_as_movable.patch added to -mm tree",)
-I want to replace that patch with another one ("Subject: [PATCH] hugetlb:
-make htlb_alloc_mask dependent on migration support").
-With the new patch, the conflict with the Joonsoo's patch changes a little
-bit (only difference of htlb_alloc_mask and htlb_alloc_mask(h).)
-And I confirmed that the conflict had no harm on runtime behavior (passed
-my testing.)
-
----
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 364f745..510b232 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -555,10 +555,6 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
- 	struct zoneref *z;
- 	unsigned int cpuset_mems_cookie;
- 
--retry_cpuset:
--	cpuset_mems_cookie = get_mems_allowed();
--	zonelist = huge_zonelist(vma, address,
--					htlb_alloc_mask(h), &mpol, &nodemask);
- 	/*
- 	 * A child process with MAP_PRIVATE mappings created by their parent
- 	 * have no page reserves. This check ensures that reservations are
-@@ -572,6 +568,11 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
- 	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
- 		goto err;
- 
-+retry_cpuset:
-+	cpuset_mems_cookie = get_mems_allowed();
-+	zonelist = huge_zonelist(vma, address,
-+					htlb_alloc_mask(h), &mpol, &nodemask);
-+
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 						MAX_NR_ZONES - 1, nodemask) {
- 		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask(h))) {
-@@ -590,7 +591,6 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
- 	return page;
- 
- err:
--	mpol_cond_put(mpol);
- 	return NULL;
- }
+--Andy
