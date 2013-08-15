@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760204Ab3HOGSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:18:24 -0400
-Received: from mail.lang.hm ([64.81.33.126]:44364 "EHLO bifrost.lang.hm"
+	id S1760217Ab3HOGUE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:20:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3650 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752763Ab3HOGSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:18:22 -0400
-Date: Wed, 14 Aug 2013 23:18:01 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Andy Lutomirski <luto@amacapital.net>
-cc: Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-In-Reply-To: <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1308142316220.31947@nftneq.ynat.uz>
-References: <520BB9EF.5020308@linux.intel.com> <20130814194359.GA22316@thunk.org> <520BED7A.4000903@intel.com> <20130814230648.GD22316@thunk.org> <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com> <20130815011101.GA3572@thunk.org>
- <20130815021028.GM6023@dastard> <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com> <20130815060149.GP6023@dastard> <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1753331Ab3HOGUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 02:20:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,883,1367996400"; 
+   d="scan'208";a="362939165"
+Message-ID: <1376547666.2335.104.camel@rzhang-lenovo>
+Subject: Re: [RFC PATCH 1/4] thermal: hwmon: move hwmon support to single
+ file
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, durgadoss.r@intel.com, amit.daniel@samsung.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 15 Aug 2013 14:21:06 +0800
+In-Reply-To: <1373378414-28086-2-git-send-email-eduardo.valentin@ti.com>
+References: <1373378414-28086-1-git-send-email-eduardo.valentin@ti.com>
+	 <1373378414-28086-2-git-send-email-eduardo.valentin@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Aug 2013, Andy Lutomirski wrote:
+Hi, Eduardo,
 
->> The big problem with this approach is that not doing the
->> timestamp update on page faults is going to break the inode change
->> version counting because for ext4, btrfs and XFS it takes a
->> transaction to bump that counter. NFS needs to know the moment a
->> file is changed in memory, not when it is written to disk. Also, NFS
->> requires the change to the counter to be persistent over server
->> failures, so it needs to be changed as part of a transaction....
->
-> NFS can do whatever it wants, although I suspect that even NFS can get
-> away with deferring cmtime updates.
+thanks for the patch, just one minor comments.
 
-NFS already has to do syncs to make sure the data is safe on disk, have a flag 
-that NFS can use to make the ctime safe, everyone else can get the performance 
-improvement and NFS can have it's slow-but-safe approach.
+On 二, 2013-07-09 at 10:00 -0400, Eduardo Valentin wrote:
+> diff --git a/drivers/thermal/thermal_hwmon.h b/drivers/thermal/thermal_hwmon.h
+> new file mode 100644
+> index 0000000..c798fdb
+> --- /dev/null
+> +++ b/drivers/thermal/thermal_hwmon.h
+> @@ -0,0 +1,49 @@
+> +/*
+> + *  thermal_hwmon.h - Generic Thermal Management hwmon support.
+> + *
+> + *  Code based on Intel thermal_core.c. Copyrights of the original code:
+> + *  Copyright (C) 2008 Intel Corp
+> + *  Copyright (C) 2008 Zhang Rui <rui.zhang@intel.com>
+> + *  Copyright (C) 2008 Sujith Thomas <sujith.thomas@intel.com>
+> + *
+> + *  Copyright (C) 2013 Texas Instruments
+> + *  Copyright (C) 2013 Eduardo Valentin <eduardo.valentin@ti.com>
+> + *  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; version 2 of the License.
+> + *
+> + *  This program is distributed in the hope that it will be useful, but
+> + *  WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + *  General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License along
+> + *  with this program; if not, write to the Free Software Foundation, Inc.,
+> + *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+> + *
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> + */
+> +#ifndef __THERMAL_HWMON_H__
+> +#define __THERMAL_HWMON_H__
+> +
+> +#include <linux/thermal.h>
+> +
+> +#ifdef CONFIG_THERMAL_HWMON
+> +int thermal_add_hwmon_sysfs(struct thermal_zone_device *tz);
+> +void thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz);
+> +#else
+> +static int
+> +thermal_add_hwmon_sysfs(struct thermal_zone_device *tz)
+> +{
+> +	return 0;
+> +}
+> +
+> +static void
+> +thermal_remove_hwmon_sysfs(struct thermal_zone_device *tz)
+> +{
+> +}
+> +#endif
+> +
 
-David Lang
+I'd prefer use "inline" here.
+
+thanks,
+rui
+
+> +#endif /* __THERMAL_HWMON_H__ */
+
+
