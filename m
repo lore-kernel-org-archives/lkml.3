@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757799Ab3HONvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 09:51:21 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46798 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756951Ab3HONvS (ORCPT
+	id S1757628Ab3HONxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 09:53:17 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:42923 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821Ab3HONxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 09:51:18 -0400
-Date: Thu, 15 Aug 2013 09:51:04 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Chuck Anderson <chuck.anderson@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] xen/smp: initialize IPI vectors before
- marking CPU online
-Message-ID: <20130815135103.GI3545@konrad-lan.dumpdata.com>
-References: <1376512905-8101-1-git-send-email-konrad.wilk@oracle.com>
- <520CD660.7060504@citrix.com>
+	Thu, 15 Aug 2013 09:53:16 -0400
+Date: Thu, 15 Aug 2013 15:53:14 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf x86: Make intel_pmu_enable_all to enable only
+ active events
+Message-ID: <20130815135314.GE19750@two.firstfloor.org>
+References: <1376411952-16718-1-git-send-email-jolsa@redhat.com>
+ <1376411952-16718-2-git-send-email-jolsa@redhat.com>
+ <20130815114040.GR24092@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <520CD660.7060504@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20130815114040.GR24092@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 02:23:44PM +0100, David Vrabel wrote:
-> On 14/08/13 21:41, Konrad Rzeszutek Wilk wrote:
-> > From: Chuck Anderson <chuck.anderson@oracle.com>
-> > 
-> > An older PVHVM guest (v3.0 based) crashed during vCPU hot-plug with:
-> > 
-> > 	kernel BUG at drivers/xen/events.c:1328!
 > 
-> The commit message is perhaps a little wordy but this is better than
-> being too short so.
+> I think its a NOP; this is the global ctrl register but
+> intel_pmu_disable_event() writes PERFEVTSELx.EN = 0, so even if you
+> enable it in the global mask, the event should still be disabled.
 
-Ah, I like long commit messages. They make interesting reading!
+Yes the hardware ANDs the various enable bits in the different
+registers.
 
-> 
-> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-
-Thank you.
-> 
-> David
+-andi
