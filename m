@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758464Ab3HOQL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 12:11:59 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45268 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756829Ab3HOQL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 12:11:56 -0400
-Date: Thu, 15 Aug 2013 18:11:53 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>, tony.luck@intel.com,
-        bhelgaas@google.com, rostedt@goodmis.org, rjw@sisk.pl,
-        lance.ortiz@hp.com, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
- trace event
-Message-ID: <20130815161153.GI27616@pd.tnic>
-References: <520A16BD.30201@linux.vnet.ibm.com>
- <20130813124258.GC4077@pd.tnic>
- <520A6D98.9060204@linux.vnet.ibm.com>
- <20130813175809.GE4077@pd.tnic>
- <520B6282.6030906@linux.vnet.ibm.com>
- <20130814212211.544ee6a4@concha.lan>
- <20130815093831.GA27616@pd.tnic>
- <20130815102607.7168a930@samsung.com>
- <20130815134454.GF27616@pd.tnic>
- <20130815111407.4080a744@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130815111407.4080a744@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758823Ab3HOQRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 12:17:12 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43550 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756721Ab3HOQRK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 12:17:10 -0400
+Date: Thu, 15 Aug 2013 18:16:51 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-pci@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Thierry Reding <thierry.reding@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 0/5] ARM: dove: DT PCIe support
+Message-ID: <20130815181651.2f336cff@skate>
+In-Reply-To: <1376396724-32048-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1376396724-32048-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 11:14:07AM -0300, Mauro Carvalho Chehab wrote:
-> I don't see why should we have those two alternatives, as, at worse
-> case (e. g. if ghes_edac can't enrich the APEI data with labels),
-> they'll basically provide the very same data to userspace, and the
-> EDAC extra overhead is small, on its error report logic.
+Dear Sebastian Hesselbarth,
 
-Well, a couple of reasons.
+On Tue, 13 Aug 2013 14:25:19 +0200, Sebastian Hesselbarth wrote:
+> This patch set adds support for the PCIe controllers found on Marvell
+> Dove SoCs. It depends on mvebu-pci patches sent by Thomas Petazzoni.
+> The ARM Dove related patches have already been taken by Jason Cooper
+> and have been removed from v2 of this patch set. Changelog is added
+> to the individual patch emails.
+> 
+> Patches 1 and 2 fix some minor issues with pci-mvebu by moving
+> clk_prepare_enable before accessing any controller registers and
+> counting sucessfully registered ports only.
+> 
+> Patch 3 converts pci-mvebu from subsys_initcall registration to
+> normal platform driver registration to allow it to fail with
+> EPROBE_DEFER later.
+> 
+> Patch 4 adds DT parsing for reset (PERST#) GPIO pins and delay to
+> wait for PCIe devices after reset de-assertion.
+> 
+> Patch 5 finally adds a compatible to pci-mvebu for Dove SoCs.
+> 
+> [Patch 6-9 have already been taken by Jason Cooper]
+> 
+> Sebastian Hesselbarth (5):
+>   PCI: mvebu: move clock enable before register access
+>   PCI: mvebu: increment nports only for registered ports
+>   PCI: mvebu: remove subsys_initcall
+>   PCI: mvebu: add support for reset on GPIO
+>   PCI: mvebu: add support for Marvell Dove SoCs
 
-The first and foremost one is having another layer which needs
-registration, etc. because ghes_edac pulls the whole edac core stuff
-with it. The thinner we are, the less overhead we cause. And this is
-a must for RAS.
+I've just seen that Jason Cooper has already sent the PR for this code,
+but anyway, I just tested mvebu/for-next on my Armada XP GP board, and
+the PCIe + MSI continues to work nicely, even with your code
+integrated. So:
 
-Actually, this is a must for all kernel code - the faster we can get
-done and the thinner we are, the better. We absolutely definitely don't
-want to have a useless layer in the error reporting path just because it
-is easier.
+Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-This short path will pay out later in error storms and other
-resources-constrained situations.
+Thanks,
 
-Furthermore, dealing with another edac driver is not trivial for
-distros, like going around and telling people that all of a sudden
-they need to enable ghes_edac. This is tangential to the issue which
-Naveen raised that on some machines, you want not only ghes_edac but the
-platform-specific one. Which doesn't work currently and we don't have a
-clear solution on how to get it working yet.
-
-Finally, userspace doesn't care where it gets its TP data from as long
-as it is there.
-
-> The risk of doing the very same thing on two different places is that
-> the logic to encapsulate APEI data into trace_mc_event() would be on
-> two separate places. It risks that someone would change one of the
-> drivers and forget to apply the very same change on the other, causing
-> parse errors on userspace, depending on the source.
-
-We'll make sure that doesn't happen.
-
+Thomas
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
