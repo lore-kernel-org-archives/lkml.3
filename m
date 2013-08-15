@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760196Ab3HODi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 23:38:59 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:21123 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759662Ab3HODi6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 23:38:58 -0400
-From: Caizhiyong <caizhiyong@huawei.com>
-To: Brian Norris <computersforpeace@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Karel Zak <kzak@redhat.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
-        Huang Shijie <b32955@freescale.com>
-Subject: RE: [PATCH] block: add command line partition parser
-Thread-Topic: [PATCH] block: add command line partition parser
-Thread-Index: AQHOl+qqJeZC0CvH906unOBo+NYxZJmUzWsAgAAUuICAAKUVMA==
-Date: Thu, 15 Aug 2013 03:38:47 +0000
-Message-ID: <C3050A4DBA34F345975765E43127F10F1C063B36@szxeml512-mbx.china.huawei.com>
-References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
-	<20130805152206.76462cc4a42e51b16a0532f1@linux-foundation.org>
-	<C3050A4DBA34F345975765E43127F10F1C06237C@szxeml512-mbs.china.huawei.com>
-	<20130814155742.d3cd651e40e552696667e4f2@linux-foundation.org>
- <CAN8TOE-aGcKQNayzEVQaS1wJ_Uqp3RAZ5pTuVEhaaY9f487-xA@mail.gmail.com>
-In-Reply-To: <CAN8TOE-aGcKQNayzEVQaS1wJ_Uqp3RAZ5pTuVEhaaY9f487-xA@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.67.223.18]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760252Ab3HODjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 23:39:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31015 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1760198Ab3HODje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 23:39:34 -0400
+X-IronPort-AV: E=Sophos;i="4.89,881,1367942400"; 
+   d="scan'208";a="8206498"
+Message-ID: <520C4D24.40701@cn.fujitsu.com>
+Date: Thu, 15 Aug 2013 11:38:12 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+To: Tejun Heo <tj@kernel.org>
+CC: mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        liwanp@linux.vnet.ibm.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] memblock cleanup: Remove unnecessary check in memblock_find_in_range_node()
+References: <1376536999-4562-1-git-send-email-tangchen@cn.fujitsu.com> <20130815032746.GC4439@htj.dyndns.org>
+In-Reply-To: <20130815032746.GC4439@htj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/15 11:37:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/15 11:37:57,
+	Serialize complete at 2013/08/15 11:37:57
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Brian Norris [mailto:computersforpeace@gmail.com]
-> Sent: Thursday, August 15, 2013 8:12 AM
-> To: Andrew Morton
-> Cc: Caizhiyong; Karel Zak; linux-mtd@lists.infradead.org;
-> linux-kernel@vger.kernel.org; Wanglin (Albert); Artem Bityutskiy; Shmulik Ladkani;
-> Huang Shijie
-> Subject: Re: [PATCH] block: add command line partition parser
-> 
-> On Wed, Aug 14, 2013 at 3:57 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Tue, 13 Aug 2013 06:02:17 +0000 Caizhiyong <caizhiyong@huawei.com> wrote:
-> >
-> >> move the command line parser to a separate module, and change it into
-> >> library-style code.
-> >>
-> >> reference: https://lkml.org/lkml/2013/8/6/550
-> 
-> The most recent patch is an addendum to this linked patch then?
-> 
-> > Well OK.  But to prove the library's usefulness and to generally clean
-> > up the kernel, someone needs to sign up to the task of converting
-> > drivers/mtd/cmdlinepart.c to use this code.
-> >
-> > I've been hopefully cc'ing various MTD people but am not being
-> > overwhelmed with waves of enthusiasm ;)
-> 
-> "I've been" implies that you have done so prior to this email. And
-> "people" implies more than one person. I see that you CC'd David
-> Woodhouse over a week ago, but he's fairly silent these days on MTD
-> things. It's Artem or me who handle most of the day-to-day of MTD. And
-> this is the first time I've seen this! (BTW, please include
-> linux-mtd@lists.infradead.org for anything involving MTD.)
-> 
-> This seems reasonable, and I'd be willing to work with this proposal.
-> 
-> Caizhiyong, can you submit a clear single patch (or series of
-> patches), CC'd to linux-mtd at least? Then we can see about supporting
-> it in MTD. It doesn't look too difficult, but I need to check that it
-> faithfully mimics the capability we currently rely on. There have been
-> previous discussions on changing it, but this was rejected in favor of
-> allowing more flexibility. Here's part of one such conversation:
-> 
-> http://lists.infradead.org/pipermail/linux-mtd/2012-August/043599.html
-> http://lists.infradead.org/pipermail/linux-mtd/2012-September/043825.html
-> http://lists.infradead.org/pipermail/linux-mtd/2012-December/045322.html
-> 
-> So I would recommend:
-> (1) consider carefully the implications of your command-line format
-> now, rather than later
-> (2) if you want MTD to use it, it needs to support the features we use now
+On 08/15/2013 11:27 AM, Tejun Heo wrote:
+> Hello, Tang.
+>
+> On Thu, Aug 15, 2013 at 11:23:19AM +0800, Tang Chen wrote:
+>> Furthermore, we don't need to check "if (this_end<  size)" actually. Without
+>> this confusing check, we only waste some loops. So this patch removes the
+>> check.
+>>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> ---
+>>   mm/memblock.c |    3 ---
+>>   1 files changed, 0 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/mm/memblock.c b/mm/memblock.c
+>> index a847bfe..e0c626e 100644
+>> --- a/mm/memblock.c
+>> +++ b/mm/memblock.c
+>> @@ -114,9 +114,6 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>>   		this_start = clamp(this_start, start, end);
+>>   		this_end = clamp(this_end, start, end);
+>>
+>> -		if (this_end<  size)
+>> -			continue;
+>> -
+>>   		cand = round_down(this_end - size, align);
+>>   		if (cand>= this_start)
+>>   			return cand;
+>
+> Hmmm... maybe I'm missing something but are you sure?  "this_end -
+> size" can underflow and "cand>= this_start" will be true incorrectly.
+>
 
-It is fully functional reference MTD, :-).
+Oh, you are right... Please ignore this. I didn't read it carefully.
 
-> 
-> Some particular cases to consider: overlapping partitions (how do
-> block devices handle overlapping partitions?), out-of-order
-> specification, zero sized partitions, mixed syntax (some specified
-> with an offset, some not), multiple '-' partitions.
+Thanks.
 
-I think the 'offset' just is used to hide some MTD space.
-There are two way:
-1) redefine the 'offset' as a gap between forward partition and next partition.
-2) add code forbid command line partitions overlapping and out-of-order.
-
-I recommend 1), it seems to solve those problem(overlapping and out-of-order), but it will affect habit.
-
-> 
-> Anyway, if you resend, we can review.
-> 
-> Thanks,
-> Brian
