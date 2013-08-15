@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170Ab3HOORC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 10:17:02 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:60628 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757431Ab3HOORA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 10:17:00 -0400
-Date: Thu, 15 Aug 2013 23:16:53 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Xishi Qiu <qiuxishi@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        riel@redhat.com, aquini@redhat.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
-Message-ID: <20130815141652.GE8437@gmail.com>
-References: <20130814161642.GM2296@suse.de>
- <20130814163921.GC2706@gmail.com>
- <20130814180012.GO2296@suse.de>
- <520C3DD2.8010905@huawei.com>
- <20130815024427.GA2718@gmail.com>
- <520C4EFF.8040305@huawei.com>
- <20130815041736.GA2592@gmail.com>
- <20130815113019.GV2296@suse.de>
- <20130815131935.GA8437@gmail.com>
- <20130815134209.GW2296@suse.de>
+	id S1757976Ab3HOOTB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 10:19:01 -0400
+Received: from sauhun.de ([89.238.76.85]:44797 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755797Ab3HOOTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 10:19:00 -0400
+Date: Thu, 15 Aug 2013 16:18:58 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>, kernel-janitors@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 23/29] drivers/i2c/busses/i2c-ocores.c: simplify use of
+ devm_ioremap_resource
+Message-ID: <20130815141858.GM17155@katana>
+References: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1376471493-22215-24-git-send-email-Julia.Lawall@lip6.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oiL9LJXJsdjS5rzq"
 Content-Disposition: inline
-In-Reply-To: <20130815134209.GW2296@suse.de>
+In-Reply-To: <1376471493-22215-24-git-send-email-Julia.Lawall@lip6.fr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 02:42:09PM +0100, Mel Gorman wrote:
-> On Thu, Aug 15, 2013 at 10:19:35PM +0900, Minchan Kim wrote:
-> > > 
-> > > Why? We're looking for pages to migrate. If the page is free and at the
-> > > maximum order then there is no point searching in the middle of a free
-> > > page.
-> > 
-> > isolate_migratepages_range API works with [low_pfn, end_pfn)
-> > and we can't guarantee page_order in normal compaction path
-> > so I'd like to limit the skipping by end_pfn conservatively.
-> > 
-> 
-> Fine
-> 
-> s/MAX_ORDER_NR_PAGES/pageblock_nr_pages/
-> 
-> and take the min of it and
-> 
-> low_pfn = min(low_pfn, end_pfn - 1)
 
-True. That was really what I suggested to Xishi.
-Only thing we need it is just number to justify for proving the benefit.
+--oiL9LJXJsdjS5rzq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+On Wed, Aug 14, 2013 at 11:11:27AM +0200, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>=20
+> Remove unneeded error handling on the result of a call to
+> platform_get_resource when the value is passed to devm_ioremap_resource.
+>=20
+> Move the call to platform_get_resource adjacent to the call to
+> devm_ioremap_resource to make the connection between them more clear.
+>=20
+> A simplified version of the semantic patch that makes this change is as
+> follows: (http://coccinelle.lip6.fr/)
+>=20
+> // <smpl>
+> @@
+> expression pdev,res,n,e,e1;
+> expression ret !=3D 0;
+> identifier l;
+> @@
+>=20
+> - res =3D platform_get_resource(pdev, IORESOURCE_MEM, n);
+>   ... when !=3D res
+> - if (res =3D=3D NULL) { ... \(goto l;\|return ret;\) }
+>   ... when !=3D res
+> + res =3D platform_get_resource(pdev, IORESOURCE_MEM, n);
+>   e =3D devm_ioremap_resource(e1, res);
+> // </smpl>
+>=20
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
--- 
-Kind regards,
-Minchan Kim
+Applied to for-next, thanks!
+
+
+--oiL9LJXJsdjS5rzq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSDONSAAoJEBQN5MwUoCm2f2QP/3b/muogXYR6bmM/kN7nK5I2
+SCEcRiQ+whckMtGORckIOFopERCqtc/mB0sWiSOmZYbA4BsU17yj75lUCd7QB7Nq
+zU/x2NgDGf4+5cINbhDxeUv+gCKhbcMB2BeW2GW/Z/rYIEFWki7+boqmXV1y2NtS
+BF0rDiFCF3uzEiFAggc4luBNXRDawhAF9N6Q6B1m6p4F/omh1ecGTy/3pUwyipQt
+mLnPYZH2DJB5TQdscZflf9+vudiwY86VssbhUa4+c1XgEMks/a60pOMNtwCXBxRz
+qOUa1HsT/wzCued9zE4h2xO4FxeKWyO5khDXLgK29VyEZnPKXqXhL4MzO4vV7xY0
+5nlnkq+n2Dpm+SXqMiyiHNuIaAGxeGcpd7BH5BCKAs+RZc5E82wY1+JTOiLqe1WR
+/9B/U0X32XKWxfq9cD7dLBOUyXn9r8BiNosLhCVdvx7sB5WpYk4pC3ABqWrDLDIC
+6IJ8oREuyd+YIpLFVQdIVrMsPqv2vmbWkVxR7jfs3NAK2PfVc2B1n/EBtUUFylDn
+Bi9MaunDvbl8XKR47x4KYC6z1o/JUBIrQsrDLfGthcCXdc1h1uUVZNGP/oWR9+F0
+kqQPua4WZUMNTRzUsWjWN0jEcstpmCl3CiF03riZKHB0dbBThk5VMGa0jMs6M96P
+lqpC6T8MxKs6KvtIa1OY
+=meFS
+-----END PGP SIGNATURE-----
+
+--oiL9LJXJsdjS5rzq--
