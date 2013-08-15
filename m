@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759557Ab3HOAcB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 20:32:01 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:53135 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab3HOAb7 (ORCPT
+	id S1759940Ab3HOAcF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 20:32:05 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40497 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759105Ab3HOAcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 20:31:59 -0400
+	Wed, 14 Aug 2013 20:32:02 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@linux.intel.com>,
@@ -18,52 +18,42 @@ Cc: Rik van Riel <riel@redhat.com>, Dave Hansen <dave.hansen@linux.intel.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Jiri Kosina <jkosina@suse.cz>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 3/4] mm/writeback: make writeback_inodes_wb static
-Date: Thu, 15 Aug 2013 08:31:42 +0800
-Message-Id: <1376526703-2081-3-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 1/4] mm/pgtable: Fix continue to preallocate pmds even if failure occurrence
+Date: Thu, 15 Aug 2013 08:31:40 +0800
+Message-Id: <1376526703-2081-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1376526703-2081-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1376526703-2081-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081500-8256-0000-0000-000008CC46CB
+x-cbid: 13081500-2674-0000-0000-00000A3DC181
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's not used globally and could be static.
+preallocate_pmds will continue to preallocate pmds even if failure 
+occurrence, and then free all the preallocate pmds if there is 
+failure, this patch fix it by stop preallocate if failure occurrence
+and go to free path.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- fs/fs-writeback.c         | 2 +-
- include/linux/writeback.h | 2 --
- 2 files changed, 1 insertion(+), 3 deletions(-)
+ arch/x86/mm/pgtable.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 68851ff..a75951c 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -723,7 +723,7 @@ static long __writeback_inodes_wb(struct bdi_writeback *wb,
- 	return wrote;
- }
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index dfa537a..ad3397a 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -200,8 +200,10 @@ static int preallocate_pmds(pmd_t *pmds[])
  
--long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
-+static long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
- 				enum wb_reason reason)
- {
- 	struct wb_writeback_work work = {
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index 4e198ca..021b8a3 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -98,8 +98,6 @@ int try_to_writeback_inodes_sb(struct super_block *, enum wb_reason reason);
- int try_to_writeback_inodes_sb_nr(struct super_block *, unsigned long nr,
- 				  enum wb_reason reason);
- void sync_inodes_sb(struct super_block *);
--long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
--				enum wb_reason reason);
- void wakeup_flusher_threads(long nr_pages, enum wb_reason reason);
- void inode_wait_for_writeback(struct inode *inode);
+ 	for(i = 0; i < PREALLOCATED_PMDS; i++) {
+ 		pmd_t *pmd = (pmd_t *)__get_free_page(PGALLOC_GFP);
+-		if (pmd == NULL)
++		if (pmd == NULL) {
+ 			failed = true;
++			break;
++		}
+ 		pmds[i] = pmd;
+ 	}
  
 -- 
 1.8.1.2
