@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab3HOLSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 07:18:36 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:30968 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab3HOLSf (ORCPT
+	id S1756035Ab3HOLUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 07:20:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50547 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754009Ab3HOLUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 07:18:35 -0400
-Message-ID: <520CB8E3.4050202@huawei.com>
-Date: Thu, 15 Aug 2013 19:17:55 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 15 Aug 2013 07:20:23 -0400
+Date: Thu, 15 Aug 2013 13:19:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH v3 2/3] sched: factor out code to should_we_balance()
+Message-ID: <20130815111959.GQ24092@twins.programming.kicks-ass.net>
+References: <1375778203-31343-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375778203-31343-3-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>, <riel@redhat.com>,
-        <aquini@redhat.com>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Xishi Qiu <qiuxishi@huawei.com>
-Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
-References: <20130814155205.GA2706@gmail.com> <20130814161642.GM2296@suse.de> <20130814163921.GC2706@gmail.com> <20130814180012.GO2296@suse.de> <520C3DD2.8010905@huawei.com> <20130815024427.GA2718@gmail.com> <520C4EFF.8040305@huawei.com> <20130815041736.GA2592@gmail.com> <20130815042434.GA3139@gmail.com> <520C8707.4000100@huawei.com> <20130815095102.GA4449@hacker.(null)>
-In-Reply-To: <20130815095102.GA4449@hacker.(null)>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375778203-31343-3-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/15 17:51, Wanpeng Li wrote:
+On Tue, Aug 06, 2013 at 05:36:42PM +0900, Joonsoo Kim wrote:
 
-> On Thu, Aug 15, 2013 at 03:45:11PM +0800, Xishi Qiu wrote:
->> On 2013/8/15 12:24, Minchan Kim wrote:
->>
->>>> Please read full thread in detail.
->>>>
->>>> Mel suggested following as
->>>>
->>>> if (PageBuddy(page)) {
->>>>         int nr_pages = (1 << page_order(page)) - 1;
->>>>         if (PageBuddy(page)) {
->>>>                 nr_pages = min(nr_pages, MAX_ORDER_NR_PAGES - 1);
->>>>                 low_pfn += nr_pages;
->>>>                 continue;
->>>>         }
->>>> }
->>>>
->>>> min(nr_pages, xxx) removes your concern but I think Mel's version
->>>> isn't right. It should be aligned with pageblock boundary so I 
->>>> suggested following.
->>>>
->>>> if (PageBuddy(page)) {
->>>> #ifdef CONFIG_MEMORY_ISOLATION
->>>> 	unsigned long order = page_order(page);
->>>> 	if (PageBuddy(page)) {
->>>> 		low_pfn += (1 << order) - 1;
->>>> 		low_pfn = min(low_pfn, end_pfn);
->>>> 	}
->>>> #endif
->>>> 	continue;
->>>> }
->>>>
->>
->> Hi Minchan,
->>
->> I understand now, but why use "end_pfn" here? 
->> Maybe like this:
->>
->> if (PageBuddy(page)) {
->> 	/*
->> 	 * page_order is racy without zone->lock but worst case
->> 	 * by the racing is just skipping pageblock_nr_pages.
->> 	 */
->> 	unsigned long nr_pages = 1 << page_order(page);
->> 	if (likely(PageBuddy(page))) {
->> 		nr_pages = min(nr_pages, MAX_ORDER_NR_PAGES);
-> 
-> How much sense it make? nr_pages is still equal to itself since nr_pages can't 
-> larger than MAX_ORDER_NR_PAGES.
->
+Another one of these patches I should stare in more detail at..
 
-Hi Wanpeng,
+>  static int load_balance(int this_cpu, struct rq *this_rq,
+>  			struct sched_domain *sd, enum cpu_idle_type idle,
+> -			int *balance)
+> +			int *should_balance)
+>  {
+>  	int ld_moved, cur_ld_moved, active_balance = 0;
+>  	struct sched_group *group;
+> @@ -5073,12 +5070,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+>  
+>  	schedstat_inc(sd, lb_count[idle]);
+>  
+> -redo:
+> -	group = find_busiest_group(&env, balance);
+> -
+> -	if (*balance == 0)
+> +	if (!should_we_balance(&env)) {
+> +		*should_balance = 0;
+>  		goto out_balanced;
+> +	} else
+> +		*should_balance = 1;
 
-Mel pointed "page_order cannot be used unless zone->lock is held".
-"Even if the page is still page buddy, there is no guarantee that it's
-the same page order as the first read. It could have be currently merging 
-with adjacent buddies for example."
-
-If someone use the page during the double PageBuddy check, the value
-of private may be wrong. In my opinion, just keep the code unchanged.
-
-Thanks,
-Xishi Qiu
-
->>
->> 		/* Align with pageblock boundary */
->> 		if ((low_pfn & (pageblock_nr_pages - 1)) + nr_pages >
->> 		    pageblock_nr_pages)
->> 			low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
->> 		else
->> 			low_pfn += nr_pages - 1;
->> 	}
->> 	continue;
->> }
->>
->> Thanks,
->> Xishi Qiu
->>
-
-
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5120,11 +5120,8 @@ static int load_balance(int this_cpu, st
+ 
+ 	schedstat_inc(sd, lb_count[idle]);
+ 
+-	if (!should_we_balance(&env)) {
+-		*should_balance = 0;
++	if (!(*should_balance = should_we_balance(&env)))
+ 		goto out_balanced;
+-	} else
+-		*should_balance = 1;
+ 
+ redo:
+ 	group = find_busiest_group(&env);
 
