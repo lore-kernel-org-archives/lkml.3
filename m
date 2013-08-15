@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760315Ab3HOHn6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 03:43:58 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52776 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757159Ab3HOHn4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 03:43:56 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520C86BD.2020903@roeck-us.net>
-Date: Thu, 15 Aug 2013 00:43:57 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1756274Ab3HOHph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 03:45:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44398 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750938Ab3HOHpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 03:45:35 -0400
+Date: Thu, 15 Aug 2013 09:45:31 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+Message-ID: <20130815074531.GA2147@quack.suse.cz>
+References: <20130814194359.GA22316@thunk.org>
+ <520BED7A.4000903@intel.com>
+ <20130814230648.GD22316@thunk.org>
+ <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
+ <20130815011101.GA3572@thunk.org>
+ <20130815021028.GM6023@dastard>
+ <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
+ <20130815060149.GP6023@dastard>
+ <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
+ <20130815071141.GQ6023@dastard>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/17] 3.4.58-stable review
-References: <20130813063501.728847844@linuxfoundation.org> <520A1D56.2050507@roeck-us.net> <20130813175858.GC7336@kroah.com> <20130813201936.GA18358@roeck-us.net> <20130815063158.GB25754@kroah.com>
-In-Reply-To: <20130815063158.GB25754@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130815071141.GQ6023@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 11:31 PM, Greg Kroah-Hartman wrote:
-> On Tue, Aug 13, 2013 at 01:19:36PM -0700, Guenter Roeck wrote:
->> I copied the individual log files for the 3.4 build to http://roeck-us.net/linux/logs
->> in case you want to browse through it.
->>
->> Here is a summary.
->>
->> mips/allmodconfig:
->> drivers/net/ethernet/3com/3c59x.c: In function 'vortex_init_one':
->> drivers/net/ethernet/3com/3c59x.c:1031:2: error: implicit declaration of function 'pci_iomap'
->>
->> We have seen that before in 3.10. Commit 78857614104 (MIPS: Expose
->> missing pci_io{map,unmap} declarations) fixes it.
->
-> Now applied.
->
->> sound/oss/soundcard.c:69:31: error: 'MAX_DMA_CHANNELS' undeclared here (not in a function)
->>
->> This requires
->> d4702b189c sound: Fix make allmodconfig on MIPS
->> a62ee234a5 sound: Fix make allmodconfig on MIPS correctly
->
-> Now applied.
->
->> Unfortunately, after applying those patches the build still fails with
->>
->> ERROR: "min_low_pfn" [drivers/net/wireless/ath/ath6kl/ath6kl_sdio.ko] undefined!
->>
->> This has been fixed upstream with commit 8b9232141b (MIPS: Rewrite pfn_valid to work
->> in modules, too), which applies but results in build failures.
->
-> What failures?  I've applied this now, as it makes sense.
->
->> There is a patch from Ben Hutchings which removes the use of
->> virt_addr_valid() (which causes the problem) from the ath6kl driver,
->> but that is not in mainline.
->
-> Ok, I think I'll stop there for MIPS, that's a good start...
->
+On Thu 15-08-13 17:11:42, Dave Chinner wrote:
+> On Wed, Aug 14, 2013 at 11:14:37PM -0700, Andy Lutomirski wrote:
+> > On Wed, Aug 14, 2013 at 11:01 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > > On Wed, Aug 14, 2013 at 09:32:13PM -0700, Andy Lutomirski wrote:
+> > >> On Wed, Aug 14, 2013 at 7:10 PM, Dave Chinner <david@fromorbit.com> wrote:
+> > >> > On Wed, Aug 14, 2013 at 09:11:01PM -0400, Theodore Ts'o wrote:
+> > >> >> On Wed, Aug 14, 2013 at 04:38:12PM -0700, Andy Lutomirski wrote:
+> > >> >> > > It would be better to write zeros to it, so we aren't measuring the
+> > >> >> > > cost of the unwritten->written conversion.
+> > >> >> >
+> > >> >> > At the risk of beating a dead horse, how hard would it be to defer
+> > >> >> > this part until writeback?
+> > >> >>
+> > >> >> Part of the work has to be done at write time because we need to
+> > >> >> update allocation statistics (i.e., so that we don't have ENOSPC
+> > >> >> problems).  The unwritten->written conversion does happen at writeback
+> > >> >> (as does the actual block allocation if we are doing delayed
+> > >> >> allocation).
+> > >> >>
+> > >> >> The point is that if the goal is to measure page fault scalability, we
+> > >> >> shouldn't have this other stuff happening as the same time as the page
+> > >> >> fault workload.
+> > >> >
+> > >> > Sure, but the real problem is not the block mapping or allocation
+> > >> > path - even if the test is changed to take that out of the picture,
+> > >> > we still have timestamp updates being done on every single page
+> > >> > fault. ext4, XFS and btrfs all do transactional timestamp updates
+> > >> > and have nanosecond granularity, so every page fault is resulting in
+> > >> > a transaction to update the timestamp of the file being modified.
+> > >>
+> > >> I have (unmergeable) patches to fix this:
+> > >>
+> > >> http://comments.gmane.org/gmane.linux.kernel.mm/92476
+> > >
+> > > The big problem with this approach is that not doing the
+> > > timestamp update on page faults is going to break the inode change
+> > > version counting because for ext4, btrfs and XFS it takes a
+> > > transaction to bump that counter. NFS needs to know the moment a
+> > > file is changed in memory, not when it is written to disk. Also, NFS
+> > > requires the change to the counter to be persistent over server
+> > > failures, so it needs to be changed as part of a transaction....
+> > 
+> > I've been running a kernel that has the file_update_time call
+> > commented out for over a year now, and the only problem I've seen is
+> > that the timestamp doesn't get updated :)
+> > 
+> > I think I must be misunderstanding you (or vice versa).  I'm currently
+> 
+> Yup, you are.
+> 
+> > redoing the patches, and this time I'll do it for just the mm core and
+> > ext4.  The only change I'm proposing to ext4's page_mkwrite is to
+> > remove the file_update_time call.
+> 
+> Right. Where does that end up? All the way down in
+> ext4_mark_iloc_dirty(), and that does:
+> 
+>         if (IS_I_VERSION(inode))
+> 		inode_inc_iversion(inode);
+> 
+> The XFS transaction code is the same - deep inside it where an inode
+> is marked as dirty in the transaction, it bumps the same counter and
+> adds it to the transaction.
+  Yeah, I'd just add that ext4 maintains i_version only if it has been
+mounted with i_version mount option. But then NFS server would depend on
+c/mtime update so it won't help you much - you still should update at least
+one of i_version, ctime, mtime on page fault. OTOH if the filesystem isn't
+exported, you could avoid this relatively expensive dance and defer things
+as Andy suggests.
 
-I screwed up my stable repo clone again :(, so the full build will take a bit.
-
-mips builds on on 3.4 with all patches applied now fail with:
-arch/mips/include/asm/page.h: Assembler messages:
-arch/mips/include/asm/page.h:178: Error: Unrecognized opcode `static inline int pfn_valid(unsigned long pfn)'
-arch/mips/include/asm/page.h:179: Error: junk at end of line, first unrecognized character is `{'
-arch/mips/include/asm/page.h:181: Error: Unrecognized opcode `extern unsigned long max_mapnr'
-arch/mips/include/asm/page.h:183: Error: Unrecognized opcode `return pfn>=ARCH_PFN_OFFSET&&pfn<max_mapnr'
-arch/mips/include/asm/page.h:184: Error: junk at end of line, first unrecognized character is `}'
-
-This is the error I referred to above. Reverting above pfn rework patch fixes that problem,
-so you might want to remove that patch from the patch queue for now.
-
-Guenter
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
