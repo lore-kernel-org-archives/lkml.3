@@ -1,136 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab3HOWSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 18:18:18 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:51912 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751637Ab3HOWSQ (ORCPT
+	id S1752343Ab3HOWSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 18:18:50 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55936 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab3HOWSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 18:18:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnEEAPBSDVJ5LCJRgWdsb2JhbABbhju3LIU5gSIXDgEBFiYogiQBAQQBJxMcIwULCAMOCgklDwUlAyETiAoFuiwWkDoHhBIDl2OVACo
-Date: Fri, 16 Aug 2013 08:18:07 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Dave Hansen <dave.hansen@intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>, xfs@oss.sgi.com,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-Message-ID: <20130815221807.GW6023@dastard>
-References: <CALCETrVaRQ3WQ5++Uu_0JTaVnjUugAaAhqQK__7r5YWvLxpAhw@mail.gmail.com>
- <20130815011101.GA3572@thunk.org>
- <20130815021028.GM6023@dastard>
- <CALCETrUfuzgG9U=+eSzCGvbCx-ZskWw+MhQ-qmEyWZK=XWNVmg@mail.gmail.com>
- <20130815060149.GP6023@dastard>
- <CALCETrUF+dGhE3qv4LoYmc7A=a+ry93u-d-GgHSAwHXvYN+VNw@mail.gmail.com>
- <20130815071141.GQ6023@dastard>
- <CALCETrWyKSMDkgSbg20iWBRfHk0-oU+6A3X9xAEMg3vO=G_gDg@mail.gmail.com>
- <20130815213725.GT6023@dastard>
- <CALCETrV7F-47_nRx1AVFqeF8sNoREutbo3kf78ddBLvKKmFCzg@mail.gmail.com>
+	Thu, 15 Aug 2013 18:18:49 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <520D53CA.6040807@roeck-us.net>
+Date: Thu, 15 Aug 2013 15:18:50 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrV7F-47_nRx1AVFqeF8sNoREutbo3kf78ddBLvKKmFCzg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Maydell <peter.maydell@linaro.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        QEMU Developers <qemu-devel@nongnu.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>
+Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
+References: <5207B3C3.9080508@roeck-us.net> <20130811220450.GY23006@n2100.arm.linux.org.uk> <52082EF8.10005@roeck-us.net> <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com> <20130813034054.GA18218@roeck-us.net> <CAFEAcA_-S8z6ZMr8TMPvkcTyyCSMOj1DExVsY4JDQjRXDU5WGw@mail.gmail.com> <20130815175428.GA18580@roeck-us.net> <CAFEAcA_MyJPwo6Gd_dxeWM5q5-7MYqR6-rrePusFzYaGGckWJQ@mail.gmail.com> <20130815205044.GA21599@roeck-us.net> <CAFEAcA-ALD+dDWAB+Rd1V+TXQLYGe-qRKC0uFUP0Bt2SGfKDRg@mail.gmail.com>
+In-Reply-To: <CAFEAcA-ALD+dDWAB+Rd1V+TXQLYGe-qRKC0uFUP0Bt2SGfKDRg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 02:43:09PM -0700, Andy Lutomirski wrote:
-> On Thu, Aug 15, 2013 at 2:37 PM, Dave Chinner
-> <david@fromorbit.com> wrote:
-> > On Thu, Aug 15, 2013 at 08:17:18AM -0700, Andy Lutomirski wrote:
-> >> My behavior also means that, if an NFS
-> >> client reads and caches the file between the two writes, then it will
-> >> eventually find out that the data is stale.
-> >
-> > "eventually" is very different behaviour to the current behaviour.
-> >
-> > My understanding is that NFS v4 delegations require the underlying
-> > filesystem to bump the version count on *any* modification made to
-> > the file so that delegations can be recalled appropriately. So not
-> > informing the filesystem that the file data has been changed is
-> > going to cause problems.
-> 
-> We don't do that right now (and we can't without utterly destroying
-> performance) because we don't trap on every modification.  See
-> below...
-
-We don't trap every mmap modification. We trap every modification
-that the filesystem is informed about. That includes a c/mtime
-update on every write page fault. It's as fine grained as we can get
-without introducing serious performance killing overhead.
-
-And nobody has made any compelling argument that what we do now is
-problematic - all we've got is a microbenchmark doesn't quite scale
-linearly because filesystem updates through a global filesystem
-structure (the journal) don't scale linearly.
-
-> >> The current behavior, on
-> >> the other hand, means that a single pass of mmapped writes through the
-> >> file will update the times much faster.
-> >>
-> >> I could arrange for the first page fault to *also* update times when
-> >> the FS is exported or if a particular mount option is set.  (The ext4
-> >> change to request the new behavior is all of four lines, and it's easy
-> >> to adjust.)
-> >
-> > What does "first page fault" mean?
-> 
-> The first write to the page triggers a page fault and marks the page
-> writable.  The second write to the page (assuming no writeback happens
-> in the mean time) does not trigger a page fault or notify the kernel
-> in any way.
-
-IIUC, you are saying is that you'll maintain the current behaviour
-(i.e. clean->dirty does a timestamp update) if the filesystem
-requires it? So the default behaviour of any filesystem that
-supports NFSv4 is going to behave as it does now?
-
-If that's the case, why bother changing anything as nfsv4 is the
-default version that the kernel uses? (I'm playing devil's advocate
-here).
-
-> In current kernels, this chain of events won't work:
-> 
->  - Server goes down
->  - Server comes up
->  - Userspace on server calls mmap and writes something
->  - Client reconnects and invalidates its cache
->  - Userspace on server writes something else *to the same page*
+On 08/15/2013 02:49 PM, Peter Maydell wrote:
+> On 15 August 2013 21:50, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On Thu, Aug 15, 2013 at 07:05:22PM +0100, Peter Maydell wrote:
+>>> It needs to go in the same patch, because a kernel with the fixed
+>>> irq remapping must also tell QEMU it is fixed; if you split the
+>>> two then at the point between the two patches the kernel is
+>>> broken for bisection purposes.
+>>>
+>> Thinking about it - is that really true ? My image with the
+>> patch applied works just fine under qemu 1.5.2, and unless
+>> I am missing something it won't work with qemu 1.4 anyway.
+>> So what exactly is broken ?
 >
-> The client will never notice the second write, because it won't update
-> any inode state. 
+> You're OK unless the kernel happens to pick the same interrupt
+> number to write to PCI_INTERRUPT_LINE as one of the previous
+> broken kernel versions did (in which case QEMU will incorrectly
+> assume you're a broken kernel). This can't happen with the way
+> the kernel is currently picking interrupt numbers (ie with a
+> straightforward relationship between h/w irqs and values written),
+> but as I understand from Arnd there is a plan to move to a
+> different approach ("sparse irqs") at which point this won't hold:
+> http://lists.gnu.org/archive/html/qemu-devel/2013-03/msg04579.html
+> So it's better for the kernel to make sure it gets the
+> behaviour it wants rather than getting unpleasant surprises
+> later.
+>
 
-That's wrong. The server wrote the dirty page before the client
-reconnected, therefore it got marked clean. The second write to the
-server page marks it dirty again, causing page_mkwrite to be
-called, thereby updating the timestamp/i_version field. So, the NFS
-client will notice the second change on the server, and it will
-notice it immediately after the second access has occurred, not some
-time later when:
+But doesn't that mean that there is _currently_ no problem ? If so,
+we can introduce the additional code when the problem really shows up.
+Being Preemptive is good, but if it is not really needed today
+I would rather have today's problems resolved and bother about tomorrow's
+when they show up.
 
-> With my patches, the client will as soon as the
-> server starts writeback.
+Guenter
 
-Your patches introduce a 30+ second window where a file can be dirty
-on the server but the NFS server doesn't know about it and can't
-tell the clients about it because i_version doesn't get bumped until
-writeback.....
-
-> So I think that there are cases where my changes make things better
-> and cases where they make things worse.
-
-Right, and the issue is that there are important use cases that we
-have to support in default configurations that it makes things
-worse.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
