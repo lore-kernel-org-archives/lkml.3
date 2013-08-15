@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029Ab3HOOeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 10:34:09 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62353 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757038Ab3HOOeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 10:34:06 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520CE6DF.80009@roeck-us.net>
-Date: Thu, 15 Aug 2013 07:34:07 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1758117Ab3HOOhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 10:37:10 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:59809 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757257Ab3HOOhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 10:37:08 -0400
+Date: Thu, 15 Aug 2013 09:37:06 -0500
+From: Ben Myers <bpm@sgi.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>, Jeff Liu <jeff.liu@oracle.com>
+Cc: Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] xfs: check for underflow in xfs_iformat_fork()
+Message-ID: <20130815143706.GI7153@sgi.com>
+References: <20130815055338.GC23580@elgon.mountain>
+ <520CA923.4060409@oracle.com>
 MIME-Version: 1.0
-To: Max Filippov <jcmvbkbc@gmail.com>
-CC: tony@bakeyournoodle.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Linux kernel cross-compilers
-References: <520C9A39.3030808@roeck-us.net> <CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com> <520CDF92.8090804@roeck-us.net> <CAMo8BfLzmFROWkmH5Wzjf5HNhkuxvc83ieCbEwdfoeR2msZwbQ@mail.gmail.com>
-In-Reply-To: <CAMo8BfLzmFROWkmH5Wzjf5HNhkuxvc83ieCbEwdfoeR2msZwbQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520CA923.4060409@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2013 07:22 AM, Max Filippov wrote:
-> On Thu, Aug 15, 2013 at 6:02 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> On 08/15/2013 02:46 AM, Max Filippov wrote:
->>>
->>> Hi Guenter,
->>>
->>> On Thu, Aug 15, 2013 at 1:07 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>>
->>>> Also, the xtensa compiler fails for me with an odd error message on one
->>>> of
->>>> my servers.
->>>
->>>
->>> What is the message?
->>>
->> It complains about being unable to change the byte order in an object file.
->>
->> Actually, the message is from the linker, but I have no idea what is causing
->> it.
->
-> I've seen such message when I attempted to link a kernel, parts of which
-> were by mistake compiled for different xtensa core variants. Clean rebuild
-> fixed that.
->
+Hey Dan & Jeff,
 
-"clean -f -q -d -x" did not help in my case. It can't get much cleaner than that.
+On Thu, Aug 15, 2013 at 06:10:43PM +0800, Jeff Liu wrote:
+> On 08/15/2013 01:53 PM, Dan Carpenter wrote:
+> 
+> > The "di_size" variable comes from the disk and it's a signed 64 bit.
+> > We check the upper limit but we should check for negative numbers as
+> > well.
+> > 
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > 
+> > diff --git a/fs/xfs/xfs_inode_fork.c b/fs/xfs/xfs_inode_fork.c
+> > index 123971b..849fc70 100644
+> > --- a/fs/xfs/xfs_inode_fork.c
+> > +++ b/fs/xfs/xfs_inode_fork.c
+> > @@ -167,7 +167,8 @@ xfs_iformat_fork(
+> >  			}
+> >  
+> >  			di_size = be64_to_cpu(dip->di_size);
+> > -			if (unlikely(di_size > XFS_DFORK_DSIZE(dip, ip->i_mount))) {
+> > +			if (unlikely(di_size < 0 ||
+> 
+> But the di_size is initialized to ZERO while allocating a new inode on disk.
+> I wonder if that is better to ASSERT in this case because the current check
+> is used to make sure that the item is inlined, or we don't need it at all.
 
-Guenter
+Hmm.  Dan's additional check looks good to me.  In this case I'd say the forced
+shutdown is more appropriate than an assert, because here we're reading the
+inode from disk, as opposed to looking at a structure that is already incore
+which we think we've initialized.  We want to handle unexpected inputs from
+disk without crashing even if we are CONFIG_XFS_DEBUG.
 
+How did you come across this one?
+
+Reviewed-by: Ben Myers <bpm@sgi.com>
+
+Regards,
+Ben
