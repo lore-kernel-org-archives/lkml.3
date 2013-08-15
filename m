@@ -1,69 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759943Ab3HOBCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 21:02:19 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:53511 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754447Ab3HOBCS (ORCPT
+	id S1758419Ab3HOBIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 21:08:32 -0400
+Received: from m59-178.qiye.163.com ([123.58.178.59]:39163 "EHLO
+	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755381Ab3HOBIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 21:02:18 -0400
-Message-ID: <520C2835.6050001@linaro.org>
-Date: Thu, 15 Aug 2013 09:00:37 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Will Deacon <will.deacon@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Naresh Bhat <naresh.bhat@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-Subject: Re: [RFC][PATCH 1/2] ARM64: add cpu topology definition
-References: <1374921728-9007-1-git-send-email-hanjun.guo@linaro.org> <CAKfTPtBpo41LJ3V8TB8YwudwqpURuA2u_Lvu4KYVK=qSs+gFuQ@mail.gmail.com> <20130729095400.GB32383@mudshark.cambridge.arm.com> <20130814112720.GB43445@MacBook-Pro.local>
-In-Reply-To: <20130814112720.GB43445@MacBook-Pro.local>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Aug 2013 21:08:20 -0400
+From: Li Wang <liwang@ubuntukylin.com>
+To: ceph-devel@vger.kernel.org
+Cc: Sage Weil <sage@inktank.com>, linux-kernel@vger.kernel.org,
+        Li Wang <liwang@ubuntukylin.com>,
+        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+Subject: [PATCH v4] Ceph: Punch hole support for kernel client
+Date: Thu, 15 Aug 2013 09:07:50 +0800
+Message-Id: <1376528870-3918-1-git-send-email-liwang@ubuntukylin.com>
+X-Mailer: git-send-email 1.7.9.5
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUpMVUNJQkJCQkJJSExLTUtOTldZCQ4XHghZQVkoKz0kKzooKCQyNSQz
+	Pjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQ1NCQyNSQzPjo*PilBSVVLQDg0LjUv
+	KSIkODVBS1VLQCk#PDI0NSQ6KDI6QUtVS0ArKTQtMjU4PiQzLjU6NUFLVUtAPyI1OjYyOCQyKyQ1
+	NCQyNSQzPjo*PilBS1VLQCk#OjckMiskMjUkKTk3JDI1JDM#Oj8#KUFKSVVLQDYuNy8yJCk4Ky8k
+	PzI9PT4pPjUvJDI1JDM#Oj8#KUFJVUtAMiskLzQ*OiIkODUvJEskSktLQUtVS0AyKyRKJDM0Likk
+	ODUvJEskSktLQUtVS0AyKyRKJDYyNS4vPiQ4NS8kSyRKS0FLVUtAMiskSEskNjI1Li8#JDg1LyRL
+	JE5LQUtVS0AyKyROJDYyNS4vPiQ4NS8kSyRKS0FLVUtAKC45JD5BSlVOTkA9NSQoLjkkPjUsNCk*
+	KCQzNzEkSktLSUtKQUtVSUNZBg++
+X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSExNTklDQ0JMTUxJVTMWGhIX
+	VRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHgY+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-8-14 19:27, Catalin Marinas wrote:
-> On Mon, Jul 29, 2013 at 10:54:01AM +0100, Will Deacon wrote:
->> On Mon, Jul 29, 2013 at 10:46:06AM +0100, Vincent Guittot wrote:
->>> On 27 July 2013 12:42, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->>>> Power aware scheduling needs the cpu topology information to improve the
->>>> cpu scheduler decision making.
->>>
->>> It's not only power aware scheduling. The scheduler already uses
->>> topology and cache sharing when  CONFIG_SCHED_MC and/or
->>> CONFIG_SCHED_SMT are enable. So you should also add these configs for
->>> arm64 so the scheduler can use it
->>
->> ... except that the architecture doesn't define what the AFF fields in MPIDR
->> really represent. Using them to make key scheduling decisions relating to
->> cache proximity seems pretty risky to me, especially given the track record
->> we've seen already on AArch32 silicon. It's a convenient register if it
->> contains the data we want it to contain, but we need to force ourselves to
->> come to terms with reality here and simply use it as an identifier for a
->> CPU.
->>
->> Can't we just use the device-tree to represent this topological data for
->> arm64? Lorenzo has been working on bindings in this area.
-> 
-> Catching up on email after holiday - I agree with Will here, we should
-> use DT for representing the topology (or ACPI) and not rely on the MPIDR
-> value.
-> 
+This patch implements fallocate and punch hole support for Ceph kernel client.
 
-Ok, I'm working on the ACPI part now, Thanks for your comments.
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+---
+Passed the fsx test from xfstests.
 
-Regards
-Hanjun
+Truncate rather than delete the first object. Thanks go to Sage and Zheng for the explanation.
+---
+ fs/ceph/file.c        |  193 +++++++++++++++++++++++++++++++++++++++++++++++++
+ net/ceph/osd_client.c |   11 ++-
+ 2 files changed, 202 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 2ddf061..04201fb 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -8,6 +8,7 @@
+ #include <linux/namei.h>
+ #include <linux/writeback.h>
+ #include <linux/aio.h>
++#include <linux/falloc.h>
+ 
+ #include "super.h"
+ #include "mds_client.h"
+@@ -871,6 +872,197 @@ out:
+ 	return offset;
+ }
+ 
++static inline void ceph_zero_partial_page(
++	struct inode *inode, loff_t offset, unsigned size)
++{
++	struct page *page;
++	pgoff_t index = offset >> PAGE_CACHE_SHIFT;
++
++	page = find_lock_page(inode->i_mapping, index);
++	if (page) {
++		wait_on_page_writeback(page);
++		zero_user(page, offset & (PAGE_CACHE_SIZE - 1), size);
++		unlock_page(page);
++		page_cache_release(page);
++	}
++}
++
++static void ceph_zero_pagecache_range(struct inode *inode, loff_t offset,
++				      loff_t length)
++{
++	loff_t nearly = round_up(offset, PAGE_CACHE_SIZE);
++	if (offset < nearly) {
++		loff_t size = nearly - offset;
++		if (length < size)
++			size = length;
++		ceph_zero_partial_page(inode, offset, size);
++		offset += size;
++		length -= size;
++	}
++	if (length >= PAGE_CACHE_SIZE) {
++		loff_t size = round_down(length, PAGE_CACHE_SIZE);
++		truncate_pagecache_range(inode, offset, offset + size - 1);
++		offset += size;
++		length -= size;
++	}
++	if (length)
++		ceph_zero_partial_page(inode, offset, length);
++}
++
++static int ceph_zero_partial_object(struct inode *inode,
++				    loff_t offset, loff_t *length)
++{
++	struct ceph_inode_info *ci = ceph_inode(inode);
++	struct ceph_fs_client *fsc = ceph_inode_to_client(inode);
++	struct ceph_osd_request *req;
++	int ret = 0;
++	loff_t zero = 0;
++	int op;
++
++	if (!length) {
++		op = offset ? CEPH_OSD_OP_DELETE : CEPH_OSD_OP_TRUNCATE;
++		length = &zero;
++	} else {
++		op = CEPH_OSD_OP_ZERO;
++	}
++
++	req = ceph_osdc_new_request(&fsc->client->osdc, &ci->i_layout,
++					ceph_vino(inode),
++					offset, length,
++					1, op,
++					CEPH_OSD_FLAG_WRITE |
++					CEPH_OSD_FLAG_ONDISK,
++					NULL, 0, 0, false);
++	if (IS_ERR(req)) {
++		ret = PTR_ERR(req);
++		goto out;
++	}
++
++	ceph_osdc_build_request(req, offset, NULL, ceph_vino(inode).snap,
++				&inode->i_mtime);
++
++	ret = ceph_osdc_start_request(&fsc->client->osdc, req, false);
++	if (!ret)
++		ret = ceph_osdc_wait_request(&fsc->client->osdc, req);
++	ceph_osdc_put_request(req);
++
++out:
++	return ret;
++}
++
++static int ceph_zero_objects(struct inode *inode, loff_t offset, loff_t length)
++{
++	int ret = 0;
++	struct ceph_inode_info *ci = ceph_inode(inode);
++	__s32 stripe_unit = ceph_file_layout_su(ci->i_layout);
++	__s32 stripe_count = ceph_file_layout_stripe_count(ci->i_layout);
++	__s32 object_size = ceph_file_layout_object_size(ci->i_layout);
++	loff_t object_set_size = (loff_t)object_size * stripe_count;
++
++	loff_t nearly = (offset + object_set_size - 1)
++			/ object_set_size * object_set_size;
++	while (length && offset < nearly) {
++		loff_t size = length;
++		ret = ceph_zero_partial_object(inode, offset, &size);
++		if (ret < 0)
++			return ret;
++		offset += size;
++		length -= size;
++	}
++	while (length >= object_set_size) {
++		int i;
++		loff_t pos = offset;
++		for (i = 0; i < stripe_count; ++i) {
++			ret = ceph_zero_partial_object(inode, pos, NULL);
++			if (ret < 0)
++				return ret;
++			pos += stripe_unit;
++		}
++		offset += object_set_size;
++		length -= object_set_size;
++	}
++	while (length) {
++		loff_t size = length;
++		ret = ceph_zero_partial_object(inode, offset, &size);
++		if (ret < 0)
++			return ret;
++		offset += size;
++		length -= size;
++	}
++	return ret;
++}
++
++static long ceph_fallocate(struct file *file, int mode,
++				loff_t offset, loff_t length)
++{
++	struct ceph_file_info *fi = file->private_data;
++	struct inode *inode = file->f_dentry->d_inode;
++	struct ceph_inode_info *ci = ceph_inode(inode);
++	struct ceph_osd_client *osdc =
++		&ceph_inode_to_client(inode)->client->osdc;
++	int want, got = 0;
++	int dirty;
++	int ret = 0;
++	loff_t endoff = 0;
++	loff_t size;
++
++	if (!S_ISREG(inode->i_mode))
++		return -EOPNOTSUPP;
++
++	if (IS_SWAPFILE(inode))
++		return -ETXTBSY;
++
++	mutex_lock(&inode->i_mutex);
++
++	if (ceph_snap(inode) != CEPH_NOSNAP) {
++		ret = -EROFS;
++		goto unlock;
++	}
++
++	if (ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL) &&
++		!(mode & FALLOC_FL_PUNCH_HOLE)) {
++		ret = -ENOSPC;
++		goto unlock;
++	}
++
++	size = i_size_read(inode);
++	if (!(mode & FALLOC_FL_KEEP_SIZE))
++		endoff = offset + length;
++
++	if (fi->fmode & CEPH_FILE_MODE_LAZY)
++		want = CEPH_CAP_FILE_BUFFER | CEPH_CAP_FILE_LAZYIO;
++	else
++		want = CEPH_CAP_FILE_BUFFER;
++
++	ret = ceph_get_caps(ci, CEPH_CAP_FILE_WR, want, &got, endoff);
++	if (ret < 0)
++		goto unlock;
++
++	if (mode & FALLOC_FL_PUNCH_HOLE) {
++		if (offset < size)
++			ceph_zero_pagecache_range(inode, offset, length);
++		ret = ceph_zero_objects(inode, offset, length);
++	} else if (endoff > size) {
++		truncate_pagecache_range(inode, size, -1);
++		if (ceph_inode_set_size(inode, endoff))
++			ceph_check_caps(ceph_inode(inode),
++				CHECK_CAPS_AUTHONLY, NULL);
++	}
++
++	if (!ret) {
++		spin_lock(&ci->i_ceph_lock);
++		dirty = __ceph_mark_dirty_caps(ci, CEPH_CAP_FILE_WR);
++		spin_unlock(&ci->i_ceph_lock);
++		if (dirty)
++			__mark_inode_dirty(inode, dirty);
++	}
++
++	ceph_put_cap_refs(ci, got);
++unlock:
++	mutex_unlock(&inode->i_mutex);
++	return ret;
++}
++
+ const struct file_operations ceph_file_fops = {
+ 	.open = ceph_open,
+ 	.release = ceph_release,
+@@ -887,5 +1079,6 @@ const struct file_operations ceph_file_fops = {
+ 	.splice_write = generic_file_splice_write,
+ 	.unlocked_ioctl = ceph_ioctl,
+ 	.compat_ioctl	= ceph_ioctl,
++	.fallocate	= ceph_fallocate,
+ };
+ 
+diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+index dd47889..c1d15ab 100644
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -503,7 +503,9 @@ void osd_req_op_extent_init(struct ceph_osd_request *osd_req,
+ 	struct ceph_osd_req_op *op = _osd_req_op_init(osd_req, which, opcode);
+ 	size_t payload_len = 0;
+ 
+-	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE);
++	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE &&
++	       opcode != CEPH_OSD_OP_DELETE && opcode != CEPH_OSD_OP_ZERO &&
++	       opcode != CEPH_OSD_OP_TRUNCATE);
+ 
+ 	op->extent.offset = offset;
+ 	op->extent.length = length;
+@@ -631,6 +633,9 @@ static u64 osd_req_encode_op(struct ceph_osd_request *req,
+ 		break;
+ 	case CEPH_OSD_OP_READ:
+ 	case CEPH_OSD_OP_WRITE:
++	case CEPH_OSD_OP_ZERO:
++	case CEPH_OSD_OP_DELETE:
++	case CEPH_OSD_OP_TRUNCATE:
+ 		if (src->op == CEPH_OSD_OP_WRITE)
+ 			request_data_len = src->extent.length;
+ 		dst->extent.offset = cpu_to_le64(src->extent.offset);
+@@ -715,7 +720,9 @@ struct ceph_osd_request *ceph_osdc_new_request(struct ceph_osd_client *osdc,
+ 	u64 object_base;
+ 	int r;
+ 
+-	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE);
++	BUG_ON(opcode != CEPH_OSD_OP_READ && opcode != CEPH_OSD_OP_WRITE &&
++	       opcode != CEPH_OSD_OP_DELETE && opcode != CEPH_OSD_OP_ZERO &&
++	       opcode != CEPH_OSD_OP_TRUNCATE);
+ 
+ 	req = ceph_osdc_alloc_request(osdc, snapc, num_ops, use_mempool,
+ 					GFP_NOFS);
+-- 
+1.7.9.5
+
