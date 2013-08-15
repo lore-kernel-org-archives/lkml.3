@@ -1,138 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760380Ab3HOHrT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 03:47:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44474 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750938Ab3HOHrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 03:47:16 -0400
-Date: Thu, 15 Aug 2013 09:47:14 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Gergely Risko <gergely@risko.hu>
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: memcontrol: fix handling of swapaccount parameter
-Message-ID: <20130815074714.GA27864@dhcp22.suse.cz>
-References: <1376486495-21457-1-git-send-email-gergely@risko.hu>
- <20130814183604.GE24033@dhcp22.suse.cz>
- <20130814184956.GF24033@dhcp22.suse.cz>
- <87ioz855o0.fsf@gergely.risko.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ioz855o0.fsf@gergely.risko.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760370Ab3HOHtg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 03:49:36 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:46839 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755469Ab3HOHtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 03:49:35 -0400
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Gleb Natapov <gleb@redhat.com>,
+        kvm@vger.kernel.org, Alexander Graf <agraf@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v8] KVM: PPC: reserve a capability and ioctl numbers for realmode VFIO
+Date: Thu, 15 Aug 2013 17:49:26 +1000
+Message-Id: <1376552966-8529-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Let's CC Andrew]
+This is to reserve a capablity number for upcoming support
+of VFIO-IOMMU DMA operations in real mode.
 
-On Wed 14-08-13 23:22:23, Gergely Risko wrote:
-> On Wed, 14 Aug 2013 20:49:56 +0200, Michal Hocko <mhocko@suse.cz> writes:
-> 
-> > On Wed 14-08-13 20:36:04, Michal Hocko wrote:
-> >> On Wed 14-08-13 15:21:35, Gergely Risko wrote:
-> >> > Fixed swap accounting option parsing to enable if called without argument.
-> >> 
-> >> We used to have [no]swapaccount but that one has been removed by a2c8990a
-> >> (memsw: remove noswapaccount kernel parameter) so I do not think that
-> >> swapaccount without any given value makes much sense these days.
-> >
-> > Now that I am reading your changelog again it says this is a fix. Have
-> > you experienced any troubles because of the parameter semantic change?
-> 
-> Yeah, I experienced trouble, I was new to all of this containers +
-> cgroups + namespaces thingies and while trying out stuff it was totally
-> impossible for me to enable swap accounting and I didn't understand why.
-> 
-> In Debian swap accounting is off by default, even when you
-> cgroup_enable=memory.  So you have to explicitly enable swapaccounting.
-> 
-> I've found the following documentation snippets all pointing to enable
-> swap accounting by just simply adding "swapaccount" to the kernel
-> command line.  They all state that "swapaccount" is enough, no need for
-> "swapaccount=1" (actually some of them don't even mention =1 at all):
->   - make menuconfig documentation for swap accounting,
->   - /usr/share/doc/lxc/README.Debian from the lxc package,
+The last ioctl in the group which KVM_CREATE_SPAPR_TCE_IOMMU is added to
+is 0xac, the next two numbers are taken - 0xad for KVM_KVMCLOCK_CTRL and
+0xae for KVM_ARM_VCPU_INIT. So the KVM_CREATE_SPAPR_TCE_IOMMU ioclt gets
+0xaf.
 
-I've submitted a report with patch
-(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=719774)
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 
->   - Documentation/kernel-parameters.txt:
-> 	swapaccount[=0|1]
-> 			[KNL] Enable accounting of swap in memory resource
-> 			controller if no parameter or 1 is given or disable
-> 			it if 0 is given (See Documentation/cgroups/memory.txt),
->   - the comment in the source code just above the line ("consider enabled
->     if no parameter or 1 is given").
-
-Ohh, I have totally missed those left-overs. I would rather fix the doc
-than reintroduce the handling without any value.
 ---
->From 7daf56dd94f7436acf956375e4be6c1482094251 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 15 Aug 2013 09:40:31 +0200
-Subject: [PATCH] memcg: get rid of swapaccount leftovers
+Changes:
+2013/08/15 v8:
+* fixed comment again
 
-swapaccount kernel parameter without any values has been removed by
-a2c8990a (memsw: remove noswapaccount kernel parameter) but it seems
-that we didn't get rid of all the left overs.
+2013/08/15:
+* fixed mistype in comments
+* fixed commit message which says what uses ioctls 0xad and 0xae
 
-Make sure that menuconfig help text and kernel-parameters.txt are clear
-about value for the paramter and remove the stalled comment which is not
-very much useful on its own.
+2013/07/16:
+* changed the number
 
-Reported-by: Gergely Risko <gergely@risko.hu>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
+2013/07/11:
+* changed order in a file, added comment about a gap in ioctl number
 ---
- Documentation/kernel-parameters.txt |    2 +-
- init/Kconfig                        |    2 +-
- mm/memcontrol.c                     |    1 -
- 3 files changed, 2 insertions(+), 3 deletions(-)
+ include/uapi/linux/kvm.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 2fe6e76..6a95a03 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2941,7 +2941,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			improve throughput, but will also increase the
- 			amount of memory reserved for use by the client.
+diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+index 99c2533..bd94127 100644
+--- a/include/uapi/linux/kvm.h
++++ b/include/uapi/linux/kvm.h
+@@ -668,6 +668,7 @@ struct kvm_ppc_smmu_info {
+ #define KVM_CAP_IRQ_XICS 92
+ #define KVM_CAP_ARM_EL1_32BIT 93
+ #define KVM_CAP_SPAPR_MULTITCE 94
++#define KVM_CAP_SPAPR_TCE_IOMMU 95
  
--	swapaccount[=0|1]
-+	swapaccount=[0|1]
- 			[KNL] Enable accounting of swap in memory resource
- 			controller if no parameter or 1 is given or disable
- 			it if 0 is given (See Documentation/cgroups/memory.txt)
-diff --git a/init/Kconfig b/init/Kconfig
-index 2bee57c..49cd8af 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -915,7 +915,7 @@ config MEMCG_SWAP_ENABLED
- 	  Memory Resource Controller Swap Extension comes with its price in
- 	  a bigger memory consumption. General purpose distribution kernels
- 	  which want to enable the feature but keep it disabled by default
--	  and let the user enable it by swapaccount boot command line
-+	  and let the user enable it by swapaccount=1 boot command line
- 	  parameter should have this option unselected.
- 	  For those who want to have the feature enabled by default should
- 	  select this option (if, for some reason, they need to disable it
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b73988a..61e9827 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6785,7 +6785,6 @@ struct cgroup_subsys mem_cgroup_subsys = {
- #ifdef CONFIG_MEMCG_SWAP
- static int __init enable_swap_account(char *s)
- {
--	/* consider enabled if no parameter or 1 is given */
- 	if (!strcmp(s, "1"))
- 		really_do_swap_account = 1;
- 	else if (!strcmp(s, "0"))
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
+@@ -933,6 +934,11 @@ struct kvm_s390_ucas_mapping {
+ #define KVM_ARM_SET_DEVICE_ADDR	  _IOW(KVMIO,  0xab, struct kvm_arm_device_addr)
+ /* Available with KVM_CAP_PPC_RTAS */
+ #define KVM_PPC_RTAS_DEFINE_TOKEN _IOW(KVMIO,  0xac, struct kvm_rtas_token_args)
++/* 0xad is taken by KVM_KVMCLOCK_CTRL */
++/* 0xae is taken by KVM_ARM_VCPU_INIT */
++/* Available with KVM_CAP_SPAPR_TCE_IOMMU */
++#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xaf, \
++					struct kvm_create_spapr_tce_iommu)
+ 
+ /* ioctl for vm fd */
+ #define KVM_CREATE_DEVICE	  _IOWR(KVMIO,  0xe0, struct kvm_create_device)
 -- 
-1.7.10.4
+1.8.3.2
 
--- 
-Michal Hocko
-SUSE Labs
