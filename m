@@ -1,184 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760120Ab3HOGXc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:23:32 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:47456 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331Ab3HOGX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:23:29 -0400
-X-AuditID: cbfec7f5-b7f5f6d00000105f-a0-520c73de3eda
-Message-id: <520C73D6.3010904@samsung.com>
-Date: Thu, 15 Aug 2013 09:23:18 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: joelf@ti.com
-Cc: Joe Perches <joe@perches.com>, Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mark Greer <mgreer@animalcreek.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: [PATCH 02/10] crypto: omap-aes: Add useful debug macros
-References: <1376521969-16807-1-git-send-email-joelf@ti.com>
- <1376521969-16807-3-git-send-email-joelf@ti.com>
- <1376522998.1949.118.camel@joe-AO722> <520C156D.2090003@ti.com>
- <1376527636.1949.120.camel@joe-AO722> <520C472D.8000904@ti.com>
-In-reply-to: <520C472D.8000904@ti.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42I5/e/4Nd17xTxBBn++GVvMOd/CYrFvI6/F
-	7PuPWSw+7pzOarHp8TVWi/v3fjJZXN41h81i9pJ+FosVHV8YLR5sZrJ41r+H0eJ13xpmi/1X
-	vBx4PfoeP2f2+PZ1EovHlpU3mTy+vZf12Lyk3uPLqmvMHsdvbGfy+LxJLoAjissmJTUnsyy1
-	SN8ugStjxuxeloIm1Yrjm5YwNzBuke5i5OSQEDCROP/pEwuELSZx4d56ti5GLg4hgaWMEo+6
-	tzKBJIQEGpkkvp2IhkgsZJTYu/IuG0iCV0BLomvrUUYQm0VAVeLiwS6wSWwCehIbmn+wg9ii
-	AhESK5c8YIWoF5T4MfkeWI2IgIDEtXM/mUGGMgvMZZGYevkuUAMHh7CAi8Scx7wQyz4zSvxs
-	OQi2gFNATeLRtaPMIDazgI7E/tZpbBC2vMTmNW+ZIS5Vleheu5YN4h1FidOTzzFPYBSehWT3
-	LCTts5C0L2BkXsUomlqaXFCclJ5rpFecmFtcmpeul5yfu4kREoFfdzAuPWZ1iFGAg1GJhzei
-	jTtIiDWxrLgy9xCjBAezkgjvf2+eICHelMTKqtSi/Pii0pzU4kOMTBycUg2MJp25Ed/fLT2/
-	onvj32cupidEGnl5vpw4EBeh71r768OTVlOxyzcuxu/KSLJVU9v6eo43R3D76eqpFyPDQ90X
-	n/qcqCHEsu7G2+UOW61rxJ9/PBe63rmhreG7btLrWedjDpkvCrn8Y4XZlp5KkdSFAU9nf9h2
-	76b/OdOax4tdj+vssGjyzE06pMRSnJFoqMVcVJwIAOM2sTqeAgAA
+	id S1760282Ab3HOGYN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:24:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54162 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753381Ab3HOGYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 02:24:12 -0400
+Date: Thu, 15 Aug 2013 02:23:40 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Message-ID: <1376547820-91ccjgp3-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130814164052.2ccdd5bdf7ab56deeba88e68@linux-foundation.org>
+References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130814164052.2ccdd5bdf7ab56deeba88e68@linux-foundation.org>
+Subject: Re: [PATCH v5 0/9] extend hugepage migration
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/08/13 06:12, Joel Fernandes wrote:
-> On 08/14/2013 07:47 PM, Joe Perches wrote:
->> On Wed, 2013-08-14 at 18:40 -0500, Joel Fernandes wrote:
->>> On 08/14/2013 06:29 PM, Joe Perches wrote:
->>>> On Wed, 2013-08-14 at 18:12 -0500, Joel Fernandes wrote:
->>>>> When DEBUG is enabled, these macros can be used to print variables
->>>>> in integer and hex format, and clearly display which registers,
->>>>> offsets and values are being read/written , including printing the
->>>>> names of the offsets and their values.
->>>> []
->>>>> diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
->>>> []
->>>>> @@ -15,6 +15,14 @@
->>>>>  
->>>>>  #define pr_fmt(fmt) "%s: " fmt, __func__
->>>>>  
->>>>> +#ifdef DEBUG
->>>>> +#define prn(num) printk(#num "=%d\n", num)
->>>>> +#define prx(num) printk(#num "=%x\n", num)
->>>> pr_debug?
->>> Sure, can change that.
->>>
->>>>> +#else
->>>>> +#define prn(num) do { } while (0)
->>>>> +#define prx(num)  do { } while (0)
->>>>> +#endif
->>>> []
->>>>> @@ -172,13 +180,35 @@ struct omap_aes_dev {
->>>>>  static LIST_HEAD(dev_list);
->>>>>  static DEFINE_SPINLOCK(list_lock);
->>>>>  
->>>>> +#ifdef DEBUG
->>>>> +#define omap_aes_read(dd, offset)					\
->>>>> +	do {								\
->>>>> +		omap_aes_read_1(dd, offset);				\
->>>>> +		pr_debug("omap_aes_read(" #offset ")\n");		\
->>>>> +	} while (0)
->>>>> +
->>>>> +static inline u32 omap_aes_read_1(struct omap_aes_dev *dd, u32 offset)
->>>>> +#else
->>>>>  static inline u32 omap_aes_read(struct omap_aes_dev *dd, u32 offset)
->>>>> +#endif
->>>>>  {
->>>>>  	return __raw_readl(dd->io_base + offset);
->>>>>  }
->>>>>  
->>>>> +#ifdef DEBUG
->>>>> +#define omap_aes_write(dd, offset, value)				\
->>>>> +	do {								\
->>>>> +		pr_debug("omap_aes_write(" #offset "=%x) value=%d\n",	\
->>>>> +			 offset, value);				\
->>>>> +		omap_aes_write_1(dd, offset, value);			\
->>>>> +	} while (0)
->>>>> +
->>>>> +static inline void omap_aes_write_1(struct omap_aes_dev *dd, u32 offset,
->>>>> +				  u32 value)
->>>>> +#else
->>>>>  static inline void omap_aes_write(struct omap_aes_dev *dd, u32 offset,
->>>>>  				  u32 value)
->>>>> +#endif
->>>>>  {
->>>>>  	__raw_writel(value, dd->io_base + offset);
->>>>>  }
->>>> Umm, yuck?
->>>>
->>>> Is there any real value in read_1 and write_1?
->>> Can you be more descriptive? There is a lot of value in them for debug
->>> to show clearly sequence of read/writes. Moreover, they are no-op'd when
->>> DEBUG is disabled.
->> pr_debug is no-op'd when DEBUG is not #defined.
->> so just use a single
->>
->> omap_aes_write(...)
->> {
->> 	pr_debug(...)
->> 	__raw_writel(...);
->> }
-> Actually this doesn't work, as the pr_debug cannot print the name of the
-> offset as my original patch set does using "#offset".
->
-> There are many places where named offsets are used to pass to
-> read/write, and this macro helps to visually see which offset is being
-> written to by name.
->
-> So the original patch would stand in its current form except for a small
-> rewrite of the write debug part of it as follows to be cleaner getting
-> rid of the _1. For the read , we still need it as we need to return the
-> value from a function which cannot be done in a macro.
->
-> So the new patch would look something like this:
->
-> #ifdef DEBUG
-> #define omap_aes_read(dd, offset)                                      \
->                 omap_aes_read_1(dd, offset);                           \
->                 pr_debug("omap_aes_read(" #offset ")\n");
-> static inline u32 omap_aes_read_1(struct omap_aes_dev *dd, u32 offset)
-> #else
-> static inline u32 omap_aes_read(struct omap_aes_dev *dd, u32 offset)
-> #endif
-> {
->         return __raw_readl(dd->io_base + offset);
-> }
+On Wed, Aug 14, 2013 at 04:40:52PM -0700, Andrew Morton wrote:
+> On Fri,  9 Aug 2013 01:21:33 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > Here is the 5th version of hugepage migration patchset.
+> > Changes in this version are as follows:
+> >  - removed putback_active_hugepages() as a cleanup (1/9)
+> >  - added code to check movability of a given hugepage (8/9)
+> >  - set GFP MOVABLE flag depending on the movability of hugepage (9/9).
+> > 
+> > I feel that 8/9 and 9/9 contain some new things, so need reviews on them.
+> > 
+> > TODOs: (likely to be done after this work)
+> >  - split page table lock for pmd/pud based hugepage (maybe applicable to thp)
+> >  - improve alloc_migrate_target (especially in node choice)
+> >  - using page walker in check_range
+> 
+> This is a pretty large and complex patchset.  I skimmed the patches
+> (and have one trivial comment) then queued them up for a bit of
+> testing.  I've asked Mel if he can find time to review the changes
+> (please).
+> 
+> btw, it would be helpful if this [patch 0/n] had a decent overview of
+> the patch series - what are the objectives, how were they achieved,
+> what value they have to our users, testing results, etc.
 
-Bellow version "write" looks much more readable - never re-define
-function signature by macro.
-Above should be similar as well...
+Here is the general description:
+---
+Currently hugepage migration is available only for soft offlining, but
+it's also useful for some other users of page migration (clearly because
+users of hugepage can enjoy the benefit of mempolicy and memory hotplug.)
+So this patchset tries to extend such users to support hugepage migration.
 
-> #ifdef DEBUG
-> #define omap_aes_write(dd, offset, value)                              \
->         do {                                                           \
->                 pr_debug("omap_aes_write(" #offset "=%x) value=%d\n",  \
->                          offset, value);                               \
->                 __raw_writel(value, dd->io_base + offset);             \
->         } while (0)
-> #else
-> static inline void omap_aes_write(struct omap_aes_dev *dd, u32 offset,
->                                   u32 value)
-> {
->         __raw_writel(value, dd->io_base + offset);
-> }
-> #endif
+The target of this patchset is to enable hugepage migration for NUMA
+related system calls (migrate_pages(2), move_pages(2), and mbind(2)),
+and memory hotplug.
+This patchset does not add hugepage migration for memory compaction,
+because users of memory compaction mainly expect to construct thp by
+arranging raw pages, and there's little or no need to compact hugepages.
+CMA, another user of page migration, can have benefit from hugepage
+migration, but is not enabled to support it for now (just because of
+lack of testing and expertise in CMA.)
 
->
->
-> Thanks,
->
-> -Joel
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Hugepage migration of non pmd-based hugepage (for example 1GB hugepage in
+x86_64, or hugepages in architectures like ia64) is not enabled for now
+(again, because of lack of testing.)
+---
 
+As for how these are achived, I extended the API (migrate_pages()) to
+handle hugepage (with patch 1 and 2) and adjusted code of each caller
+to check and collect movable hugepages (with patch 3-7). Remaining 2
+patches are kind of miscellaneous ones to avoid unexpected behavior.
+Patch 8 is about making sure that we only migrate pmd-based hugepages.
+And patch 9 is about choosing appropriate zone for hugepage allocation.
+
+My test is mainly functional one, simply kicking hugepage migration via
+each entry point and confirm that migration is done correctly. Test code
+is available here:
+  git://github.com/Naoya-Horiguchi/test_hugepage_migration_extension.git
+
+And I always run libhugetlbfs test when changing hugetlbfs's code.
+With this patchset, no regression was found in the test.
+
+> mm-prepare-to-remove-proc-sys-vm-hugepages_treat_as_movable.patch had a
+> conflict with
+> http://ozlabs.org/~akpm/mmots/broken-out/mm-hugetlb-move-up-the-code-which-check-availability-of-free-huge-page.patch
+> which I resolved in the obvious manner.  Please check that from a
+> runtime perspective.
+
+As replied to the mm-commits notification ("Subject: + mm-prepare-to-remove-
+proc-sys-vm-hugepages_treat_as_movable.patch added to -mm tree",)
+I want to replace that patch with another one ("Subject: [PATCH] hugetlb:
+make htlb_alloc_mask dependent on migration support").
+With the new patch, the conflict with the Joonsoo's patch changes a little
+bit (only difference of htlb_alloc_mask and htlb_alloc_mask(h).)
+And I confirmed that the conflict had no harm on runtime behavior (passed
+my testing.)
+
+---
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 364f745..510b232 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -555,10 +555,6 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	struct zoneref *z;
+ 	unsigned int cpuset_mems_cookie;
+ 
+-retry_cpuset:
+-	cpuset_mems_cookie = get_mems_allowed();
+-	zonelist = huge_zonelist(vma, address,
+-					htlb_alloc_mask(h), &mpol, &nodemask);
+ 	/*
+ 	 * A child process with MAP_PRIVATE mappings created by their parent
+ 	 * have no page reserves. This check ensures that reservations are
+@@ -572,6 +568,11 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
+ 		goto err;
+ 
++retry_cpuset:
++	cpuset_mems_cookie = get_mems_allowed();
++	zonelist = huge_zonelist(vma, address,
++					htlb_alloc_mask(h), &mpol, &nodemask);
++
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 						MAX_NR_ZONES - 1, nodemask) {
+ 		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask(h))) {
+@@ -590,7 +591,6 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	return page;
+ 
+ err:
+-	mpol_cond_put(mpol);
+ 	return NULL;
+ }
