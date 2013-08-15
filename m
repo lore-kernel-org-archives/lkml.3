@@ -1,102 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab3HOKzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 06:55:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5499 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754124Ab3HOKzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 06:55:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,885,1367996400"; 
-   d="scan'208";a="387526820"
-Date: Thu, 15 Aug 2013 11:55:33 +0100
-From: Damien Lespiau <damien.lespiau@intel.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [Intel-gfx] [PATCH] i915: Add a Kconfig option to turn on
- i915.preliminary_hw_support by default
-Message-ID: <20130815105533.GA4490@strange.amr.corp.intel.com>
-References: <20130813232130.GA20895@jtriplet-mobl1>
+	id S1755853Ab3HOK6R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 06:58:17 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:24064
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755378Ab3HOK6O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 06:58:14 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h1155h)
+From: Dong Aisheng <b29396@freescale.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH 2/3] of: add update device node status via cmdline feature
+Date: Thu, 15 Aug 2013 18:55:32 +0800
+Message-ID: <1376564133-11286-3-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1376564133-11286-1-git-send-email-b29396@freescale.com>
+References: <1376564133-11286-1-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130813232130.GA20895@jtriplet-mobl1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 13, 2013 at 04:23:17PM -0700, Josh Triplett wrote:
-> When building kernels for a preliminary hardware target, having to add a
-> kernel command-line option can prove inconvenient.  Add a Kconfig option
-> that changes the default of this option to 1.
+Some boards may have a lot of pin conflicts between different devices,
+only one of them can be enabled to run at one time.
+Instead of changing dts manually or adding a lot dts files according to
+different device availability, we provide feature to dynamically update the
+device node status via command line, then those devices involved with
+pin conflict can be enabled or disabled dynamically.
 
-FWIW, I like it (and had something similar in mind for this on other
-little parameters/debug features). 
+Signed-off-by: Dong Aisheng <b29396@freescale.com>
+---
+ Documentation/kernel-parameters.txt |    9 +++++
+ drivers/of/fdt.c                    |   69 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 78 insertions(+), 0 deletions(-)
 
-Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
-
-It doesn't apply cleanly to drm-intel/drm-intel-nightly which is the
-preferred branch to base patches on. Daniel might fix this himself as
-this is rather trivial to solve.
-
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 15356ac..65f3be2 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -128,6 +128,7 @@ In addition, the following text indicates that the option:
+ 	BUGS=	Relates to possible processor bugs on the said processor.
+ 	KNL	Is a kernel start-up parameter.
+ 	BOOT	Is a boot loader parameter.
++	FDT	Is a flattened device tree paramter.
+ 
+ Parameters denoted with BOOT are actually interpreted by the boot
+ loader, and have no meaning to the kernel directly.
+@@ -895,6 +896,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			General fault injection mechanism.
+ 			Format: <interval>,<probability>,<space>,<times>
+ 			See also Documentation/fault-injection/.
++	fdt.enable=
++	fdt.disable=
++			[KNL,FDT]
++			update device tree node status before populating devices
++			Format: fdt.<enable|disable>=<path>[,<path>]
++			enable    := update the device node to a enabled state
++			disable   := update the device node to a disabled state
++			<path>    := node path or node full name in device tree
+ 
+ 	floppy=		[HW]
+ 			See Documentation/blockdev/floppy.txt.
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 6bb7cf2..423624b 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -25,6 +25,11 @@
+ 
+ #include <asm/page.h>
+ 
++static char *enable;
++module_param(enable, charp, 0444);
++static char *disable;
++module_param(disable, charp, 0444);
++
+ char *of_fdt_get_string(struct boot_param_header *blob, u32 offset)
+ {
+ 	return ((char *)blob) +
+@@ -713,4 +718,68 @@ void __init unflatten_device_tree(void)
+ 	of_alias_scan(early_init_dt_alloc_memory_arch);
+ }
+ 
++/*
++ * The format for the command line is as follows:
++ *
++ * fdt.<enable|disable>=<path>[,<path>]
++ * enable    := update the device node to a enabled state
++ * disable   := update the device node to a disabled state
++ * <path>    := node path or node full name in device tree
++ *
++ * e.g:
++ *	fdt.enable=/soc/aips-bus@02100000/i2c@021a8000,/soc/aips-bus@02100000/weim@021b8000
++ *	fdt.disable=/soc/aips-bus@02100000/weim@021b8000
++ */
++static int __init __of_flat_parse_param(char *s, bool enable)
++{
++	char path[256], *p;
++
++	if (!s)
++		return 0;
++
++	p = s;
++	while (*s != '\0') {
++		p = strchr(s, ',');
++		if (p != NULL) {
++			BUG_ON((p - s) >= 256);
++			strncpy(path, s, p - s);
++			path[p - s] = '\0';
++			if (enable)
++				of_node_status_enable_by_path(path);
++			else
++				of_node_status_disable_by_path(path);
++			/* search for next node */
++			s = p + 1;
++		} else {
++			/* last node */
++			if (enable)
++				of_node_status_enable_by_path(s);
++			else
++				of_node_status_disable_by_path(s);
++			break;
++		}
++	}
++
++	return 0;
++}
++
++static inline void __init of_flat_parse_param(void)
++{
++	__of_flat_parse_param(enable, 1);
++	__of_flat_parse_param(disable, 0);
++}
++
++/*
++ * handle device node status update
++ */
++static int __init of_flat_late_init(void)
++{
++	of_flat_parse_param();
++
++	return 0;
++}
++
++/* we use postcore_init to run before mach code populate platform devices */
++postcore_initcall(of_flat_late_init);
++
+ #endif /* CONFIG_OF_EARLY_FLATTREE */
 -- 
-Damien
+1.7.1
 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> ---
-> 
-> I dropped the indication of the default in the module parameter
-> documentation, but I could also change it to show the default for the
-> current kernel via ifdef.
-> 
->  drivers/gpu/drm/Kconfig         | 9 +++++++++
->  drivers/gpu/drm/i915/i915_drv.c | 4 ++--
->  2 files changed, 11 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-> index a7c54c8..35d57ed 100644
-> --- a/drivers/gpu/drm/Kconfig
-> +++ b/drivers/gpu/drm/Kconfig
-> @@ -168,6 +168,15 @@ config DRM_I915_KMS
->  	  the driver to bind to PCI devices, which precludes loading things
->  	  like intelfb.
->  
-> +config DRM_I915_PRELIMINARY_HW_SUPPORT
-> +	bool "Enable preliminary support for prerelease Intel hardware by default"
-> +	depends on DRM_I915
-> +	help
-> +	  Choose this option if you have prerelease Intel hardware and want the
-> +	  i915 driver to support it by default.  You can enable such support at
-> +	  runtime with the module option i915.preliminary_hw_support=1; this
-> +	  option changes the default for that module option.
-> +
->  config DRM_MGA
->  	tristate "Matrox g200/g400"
->  	depends on DRM && PCI
-> diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-> index 45b3c03..594e06c 100644
-> --- a/drivers/gpu/drm/i915/i915_drv.c
-> +++ b/drivers/gpu/drm/i915/i915_drv.c
-> @@ -118,10 +118,10 @@ module_param_named(i915_enable_ppgtt, i915_enable_ppgtt, int, 0600);
->  MODULE_PARM_DESC(i915_enable_ppgtt,
->  		"Enable PPGTT (default: true)");
->  
-> -unsigned int i915_preliminary_hw_support __read_mostly = 0;
-> +unsigned int i915_preliminary_hw_support __read_mostly = IS_ENABLED(CONFIG_DRM_I915_PRELIMINARY_HW_SUPPORT);
->  module_param_named(preliminary_hw_support, i915_preliminary_hw_support, int, 0600);
->  MODULE_PARM_DESC(preliminary_hw_support,
-> -		"Enable preliminary hardware support. (default: false)");
-> +		"Enable preliminary hardware support.");
->  
->  int i915_disable_power_well __read_mostly = 1;
->  module_param_named(disable_power_well, i915_disable_power_well, int, 0600);
-> -- 
-> 1.8.4.rc2
-> 
-> _______________________________________________
-> Intel-gfx mailing list
-> Intel-gfx@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
+
