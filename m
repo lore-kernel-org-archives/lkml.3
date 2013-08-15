@@ -1,162 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab3HOFON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 01:14:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53483 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab3HOFOK (ORCPT
+	id S1753203Ab3HOFPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 01:15:36 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:48058 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab3HOFPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 01:14:10 -0400
-Message-ID: <520C472D.8000904@ti.com>
-Date: Wed, 14 Aug 2013 22:12:45 -0500
-From: Joel Fernandes <joelf@ti.com>
-Reply-To: <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mark Greer <mgreer@animalcreek.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+	Thu, 15 Aug 2013 01:15:34 -0400
+Date: Thu, 15 Aug 2013 06:15:09 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: [PATCH 02/10] crypto: omap-aes: Add useful debug macros
-References: <1376521969-16807-1-git-send-email-joelf@ti.com>  <1376521969-16807-3-git-send-email-joelf@ti.com>  <1376522998.1949.118.camel@joe-AO722> <520C156D.2090003@ti.com> <1376527636.1949.120.camel@joe-AO722>
-In-Reply-To: <1376527636.1949.120.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: RFC: default CONFIG_EFI_STUB=y
+Message-ID: <20130815051509.GB1933@srcf.ucam.org>
+References: <52050985.9070107@zytor.com>
+ <1376062345.2087.16.camel@dabdike.int.hansenpartnership.com>
+ <52050D03.4030805@zytor.com>
+ <520A7B48.3020304@zytor.com>
+ <1376419410.3467.67.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376419410.3467.67.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 07:47 PM, Joe Perches wrote:
-> On Wed, 2013-08-14 at 18:40 -0500, Joel Fernandes wrote:
->> On 08/14/2013 06:29 PM, Joe Perches wrote:
->>> On Wed, 2013-08-14 at 18:12 -0500, Joel Fernandes wrote:
->>>> When DEBUG is enabled, these macros can be used to print variables
->>>> in integer and hex format, and clearly display which registers,
->>>> offsets and values are being read/written , including printing the
->>>> names of the offsets and their values.
->>> []
->>>> diff --git a/drivers/crypto/omap-aes.c b/drivers/crypto/omap-aes.c
->>> []
->>>> @@ -15,6 +15,14 @@
->>>>  
->>>>  #define pr_fmt(fmt) "%s: " fmt, __func__
->>>>  
->>>> +#ifdef DEBUG
->>>> +#define prn(num) printk(#num "=%d\n", num)
->>>> +#define prx(num) printk(#num "=%x\n", num)
->>>
->>> pr_debug?
->>
->> Sure, can change that.
->>
->>>> +#else
->>>> +#define prn(num) do { } while (0)
->>>> +#define prx(num)  do { } while (0)
->>>> +#endif
->>> []
->>>> @@ -172,13 +180,35 @@ struct omap_aes_dev {
->>>>  static LIST_HEAD(dev_list);
->>>>  static DEFINE_SPINLOCK(list_lock);
->>>>  
->>>> +#ifdef DEBUG
->>>> +#define omap_aes_read(dd, offset)					\
->>>> +	do {								\
->>>> +		omap_aes_read_1(dd, offset);				\
->>>> +		pr_debug("omap_aes_read(" #offset ")\n");		\
->>>> +	} while (0)
->>>> +
->>>> +static inline u32 omap_aes_read_1(struct omap_aes_dev *dd, u32 offset)
->>>> +#else
->>>>  static inline u32 omap_aes_read(struct omap_aes_dev *dd, u32 offset)
->>>> +#endif
->>>>  {
->>>>  	return __raw_readl(dd->io_base + offset);
->>>>  }
->>>>  
->>>> +#ifdef DEBUG
->>>> +#define omap_aes_write(dd, offset, value)				\
->>>> +	do {								\
->>>> +		pr_debug("omap_aes_write(" #offset "=%x) value=%d\n",	\
->>>> +			 offset, value);				\
->>>> +		omap_aes_write_1(dd, offset, value);			\
->>>> +	} while (0)
->>>> +
->>>> +static inline void omap_aes_write_1(struct omap_aes_dev *dd, u32 offset,
->>>> +				  u32 value)
->>>> +#else
->>>>  static inline void omap_aes_write(struct omap_aes_dev *dd, u32 offset,
->>>>  				  u32 value)
->>>> +#endif
->>>>  {
->>>>  	__raw_writel(value, dd->io_base + offset);
->>>>  }
->>>
->>> Umm, yuck?
->>>
->>> Is there any real value in read_1 and write_1?
->>
->> Can you be more descriptive? There is a lot of value in them for debug
->> to show clearly sequence of read/writes. Moreover, they are no-op'd when
->> DEBUG is disabled.
-> 
-> pr_debug is no-op'd when DEBUG is not #defined.
-> so just use a single
-> 
-> omap_aes_write(...)
-> {
-> 	pr_debug(...)
-> 	__raw_writel(...);
-> }
+On Tue, Aug 13, 2013 at 11:43:30AM -0700, James Bottomley wrote:
 
-Actually this doesn't work, as the pr_debug cannot print the name of the
-offset as my original patch set does using "#offset".
+> Can we actually boot a 32 bit kernel on an EFI64 system?  The last time
+> I tried on my Secure Boot SDV it wouldn't work; the problem is getting
+> someting in the transfer of control path to boot the processor back to
+> 32 bit mode.
 
-There are many places where named offsets are used to pass to
-read/write, and this macro helps to visually see which offset is being
-written to by name.
+In theory, as long as you jump to the 32-bit entry point having already 
+set the cpu to that mode. The linux command in grub2 ought to do that.
 
-So the original patch would stand in its current form except for a small
-rewrite of the write debug part of it as follows to be cleaner getting
-rid of the _1. For the read , we still need it as we need to return the
-value from a function which cannot be done in a macro.
-
-So the new patch would look something like this:
-
-#ifdef DEBUG
-#define omap_aes_read(dd, offset)                                      \
-                omap_aes_read_1(dd, offset);                           \
-                pr_debug("omap_aes_read(" #offset ")\n");
-static inline u32 omap_aes_read_1(struct omap_aes_dev *dd, u32 offset)
-#else
-static inline u32 omap_aes_read(struct omap_aes_dev *dd, u32 offset)
-#endif
-{
-        return __raw_readl(dd->io_base + offset);
-}
-
-#ifdef DEBUG
-#define omap_aes_write(dd, offset, value)                              \
-        do {                                                           \
-                pr_debug("omap_aes_write(" #offset "=%x) value=%d\n",  \
-                         offset, value);                               \
-                __raw_writel(value, dd->io_base + offset);             \
-        } while (0)
-#else
-static inline void omap_aes_write(struct omap_aes_dev *dd, u32 offset,
-                                  u32 value)
-{
-        __raw_writel(value, dd->io_base + offset);
-}
-#endif
-
-
-
-Thanks,
-
--Joel
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
