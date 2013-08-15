@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759609Ab3HOTff (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 15:35:35 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:45665 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758923Ab3HOTfe (ORCPT
+	id S1759280Ab3HOTjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 15:39:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41244 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758434Ab3HOTjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 15:35:34 -0400
-From: Jens Frederich <jfrederich@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: dsd@laptop.org, jon.nettleton@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Jens Frederich <jfrederich@gmail.com>
-Subject: [PATCH 3/3] Staging: olpc_dcon: more big endian conformity
-Date: Thu, 15 Aug 2013 21:35:24 +0200
-Message-Id: <1376595324-7866-1-git-send-email-jfrederich@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 15 Aug 2013 15:39:04 -0400
+Date: Thu, 15 Aug 2013 12:39:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: Re: [PATCH v5 0/9] extend hugepage migration
+Message-Id: <20130815123903.2425f4375ad8554b980d586f@linux-foundation.org>
+In-Reply-To: <1376547820-91ccjgp3-mutt-n-horiguchi@ah.jp.nec.com>
+References: <1376025702-14818-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20130814164052.2ccdd5bdf7ab56deeba88e68@linux-foundation.org>
+	<1376547820-91ccjgp3-mutt-n-horiguchi@ah.jp.nec.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using an int which is casted to unsigned char as inbuf is messy.
-The code won't work on big endian systems.  The patch should fix
-this.
+On Thu, 15 Aug 2013 02:23:40 -0400 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-Signed-off-by: Jens Frederich <jfrederich@gmail.com>
+>
+> ...
+>
+> > mm-prepare-to-remove-proc-sys-vm-hugepages_treat_as_movable.patch had a
+> > conflict with
+> > http://ozlabs.org/~akpm/mmots/broken-out/mm-hugetlb-move-up-the-code-which-check-availability-of-free-huge-page.patch
+> > which I resolved in the obvious manner.  Please check that from a
+> > runtime perspective.
+> 
+> As replied to the mm-commits notification ("Subject: + mm-prepare-to-remove-
+> proc-sys-vm-hugepages_treat_as_movable.patch added to -mm tree",)
 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-index 5ca4fa4..198595e 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -122,12 +122,13 @@ err:
- static int dcon_bus_stabilize(struct dcon_priv *dcon, int is_powered_down)
- {
- 	unsigned long timeout;
-+	u8 pm;
- 	int x;
- 
- power_up:
- 	if (is_powered_down) {
--		x = 1;
--		x = olpc_ec_cmd(EC_DCON_POWER_MODE, (u8 *)&x, 1, NULL, 0);
-+		pm = 1;
-+		x = olpc_ec_cmd(EC_DCON_POWER_MODE, &pm, 1, NULL, 0);
- 		if (x) {
- 			pr_warn("unable to force dcon to power up: %d!\n", x);
- 			return x;
-@@ -144,8 +145,8 @@ power_up:
- 	if (x < 0) {
- 		pr_err("unable to stabilize dcon's smbus, reasserting power and praying.\n");
- 		BUG_ON(olpc_board_at_least(olpc_board(0xc2)));
--		x = 0;
--		olpc_ec_cmd(EC_DCON_POWER_MODE, (u8 *)&x, 1, NULL, 0);
-+		pm = 0;
-+		olpc_ec_cmd(EC_DCON_POWER_MODE, &pm, 1, NULL, 0);
- 		msleep(100);
- 		is_powered_down = 1;
- 		goto power_up;	/* argh, stupid hardware.. */
-@@ -208,8 +209,8 @@ static void dcon_sleep(struct dcon_priv *dcon, bool sleep)
- 		return;
- 
- 	if (sleep) {
--		x = 0;
--		x = olpc_ec_cmd(EC_DCON_POWER_MODE, (u8 *)&x, 1, NULL, 0);
-+		u8 pm = 0;
-+		x = olpc_ec_cmd(EC_DCON_POWER_MODE, &pm, 1, NULL, 0);
- 		if (x)
- 			pr_warn("unable to force dcon to power down: %d!\n", x);
- 		else
--- 
-1.7.9.5
+I can't find that email anywhere :(
+
+> I want to replace that patch with another one ("Subject: [PATCH] hugetlb:
+> make htlb_alloc_mask dependent on migration support").
+
+Can you please formally resend this?
+
 
