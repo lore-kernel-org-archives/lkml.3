@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab3HOOqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 10:46:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36591 "EHLO mx2.suse.de"
+	id S1758236Ab3HOOxf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 10:53:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37169 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757843Ab3HOOqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 10:46:04 -0400
-Date: Thu, 15 Aug 2013 16:46:00 +0200
+	id S1756305Ab3HOOxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 10:53:34 -0400
+Date: Thu, 15 Aug 2013 16:53:32 +0200
 From: Michal Hocko <mhocko@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Ben Tebulin <tebulin@googlemail.com>, Mel Gorman <mgorman@suse.de>,
@@ -19,7 +19,7 @@ Cc: Ben Tebulin <tebulin@googlemail.com>, Mel Gorman <mgorman@suse.de>,
         Peter Zijlstra <peterz@infradead.org>
 Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert
  53a59fc67!
-Message-ID: <20130815144600.GD27864@dhcp22.suse.cz>
+Message-ID: <20130815145332.GE27864@dhcp22.suse.cz>
 References: <52050382.9060802@gmail.com>
  <520BB225.8030807@gmail.com>
  <20130814174039.GA24033@dhcp22.suse.cz>
@@ -29,32 +29,37 @@ References: <52050382.9060802@gmail.com>
  <520C9E78.2020401@gmail.com>
  <CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com>
  <20130815134031.GC27864@dhcp22.suse.cz>
+ <20130815144600.GD27864@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130815134031.GC27864@dhcp22.suse.cz>
+In-Reply-To: <20130815144600.GD27864@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-08-13 15:40:31, Michal Hocko wrote:
-> On Thu 15-08-13 05:02:31, Linus Torvalds wrote:
-> > On Thu, Aug 15, 2013 at 2:25 AM, Ben Tebulin <tebulin@googlemail.com> wrote:
-> > >
-> > > I just cherry-picked e6c495a96ce0 into 3.9.11 and 3.7.10.
-> > > Unfortunately this does _not resolve_ my issue (too good to be true) :-(
+On Thu 15-08-13 16:46:00, Michal Hocko wrote:
+> On Thu 15-08-13 15:40:31, Michal Hocko wrote:
+> > On Thu 15-08-13 05:02:31, Linus Torvalds wrote:
+> > > On Thu, Aug 15, 2013 at 2:25 AM, Ben Tebulin <tebulin@googlemail.com> wrote:
+> > > >
+> > > > I just cherry-picked e6c495a96ce0 into 3.9.11 and 3.7.10.
+> > > > Unfortunately this does _not resolve_ my issue (too good to be true) :-(
+> > > 
+> > > Ho humm. I've found at least one other bug, but that one only affects
+> > > hugepages. Do you perhaps have transparent hugepages enabled? But even
+> > > then it looks quite unlikely.
 > > 
-> > Ho humm. I've found at least one other bug, but that one only affects
-> > hugepages. Do you perhaps have transparent hugepages enabled? But even
-> > then it looks quite unlikely.
+> > __unmap_hugepage_range is hugetlb not THP if you had that one in mind.
+> > And yes, it doesn't set the range which sounds buggy.
 > 
-> __unmap_hugepage_range is hugetlb not THP if you had that one in mind.
-> And yes, it doesn't set the range which sounds buggy.
+> Or, did you mean tlb_remove_page called from zap_huge_pmd? That one
+> should be safe as tlb_remove_pmd_tlb_entry sets need_flush and that
+> means that the full range is flushed.
 
-Or, did you mean tlb_remove_page called from zap_huge_pmd? That one
-should be safe as tlb_remove_pmd_tlb_entry sets need_flush and that
-means that the full range is flushed.
+Dohh... But we need need_flush_all and that is not set here. So this
+really looks buggy.
 
 -- 
 Michal Hocko
