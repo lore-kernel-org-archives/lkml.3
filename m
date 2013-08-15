@@ -1,169 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758337Ab3HOOmE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 10:42:04 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54775 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757776Ab3HOOmC (ORCPT
+	id S1758401Ab3HOOpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 10:45:19 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55821 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757786Ab3HOOpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 10:42:02 -0400
-Date: Thu, 15 Aug 2013 10:42:00 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Mark Brown <broonie@kernel.org>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-In-Reply-To: <20130814235519.GS2401@sirena.org.uk>
-Message-ID: <Pine.LNX.4.44L0.1308151013350.1210-100000@iolanthe.rowland.org>
+	Thu, 15 Aug 2013 10:45:16 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <520CE978.5010000@roeck-us.net>
+Date: Thu, 15 Aug 2013 07:45:12 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/17] 3.4.58-stable review
+References: <20130813063501.728847844@linuxfoundation.org> <520A1D56.2050507@roeck-us.net> <20130813175858.GC7336@kroah.com> <20130813201936.GA18358@roeck-us.net> <CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com> <20130813223622.GA12790@roeck-us.net> <CAMuHMdVsR3Af+ccWMq6aU99UUAtCXyf8Ss0fbSYw7tR_w2mwkA@mail.gmail.com> <520B5873.6010708@roeck-us.net> <20130815063648.GE25754@kroah.com>
+In-Reply-To: <20130815063648.GE25754@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Aug 2013, Mark Brown wrote:
+On 08/14/2013 11:36 PM, Greg Kroah-Hartman wrote:
+> On Wed, Aug 14, 2013 at 03:14:11AM -0700, Guenter Roeck wrote:
+>> On 08/14/2013 01:26 AM, Geert Uytterhoeven wrote:
+>>> On Wed, Aug 14, 2013 at 12:36 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>>> cris/...:
+>>>>>> In file included from include/linux/page-flags.h:8:0,
+>>>>>>                    from kernel/bounds.c:9:
+>>>>>> include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
+>>>>>> include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
+>>>>>> include/linux/types.h:30:1: error: unknown type name '__kernel_pid_t'
+>>>>>> include/linux/types.h:31:1: error: unknown type name '__kernel_daddr_t'
+>>>>>> include/linux/types.h:33:1: error: unknown type name '__kernel_suseconds_t'
+>>>>>>
+>>>>>> That one might be tricky (or simple if someone knows what is wrong).
+>>>>>
+>>>>> Fixed in v3.5-rc1:
+>>>>>
+>>>>> commit 74f077d2a7651409c44bb323471f219a4b0d2aab
+>>>>> Author: Jiri Slaby <jslaby@suse.cz>
+>>>>> Date:   Mon Apr 2 13:40:17 2012 +0200
+>>>>>
+>>>>>       cris: posix_types.h, include asm-generic/posix_types.h
+>>>>>
+>>>> It does fix above error, but then there is another error:
+>>>>
+>>>>     AS      arch/cris/arch-v10/lib/checksum.o
+>>>> In file included from <command-line>:4:0:
+>>>> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
+>>>> make[1]: *** [arch/cris/arch-v10/lib/checksum.o] Error 1
+>>>> make[1]: *** Waiting for unfinished jobs....
+>>>>     AS      arch/cris/arch-v10/lib/checksumcopy.o
+>>>> In file included from <command-line>:4:0:
+>>>> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
+>>>> make[1]: *** [arch/cris/arch-v10/lib/checksumcopy.o] Error 1
+>>>
+>>> commit 7b91747d42a1012e3781dd09fa638d113809e3fd
+>>> Author: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>> Date:   Wed Apr 18 21:58:43 2012 +0200
+>>>
+>>>       cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
+>>>
+>>
+>> Great, thanks for tracking this down.
+>>
+>> With both patches applied, we are almost there. Next error:
+>>
+>> kernel/built-in.o: In function `core_kernel_data':
+>> (.text+0x12e38): undefined reference to `_sdata'
+>> make: *** [vmlinux] Error 1
+>>
+>> This has been fixed with commit 473e162e (CRIS: Add _sdata to vmlinux.lds.S).
+>>
+>> So, in summary, we have
+>>
+>> 473e162e CRIS: Add _sdata to vmlinux.lds.S
+>> 69349c2d cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
+>> 7b91747d cris: posix_types.h, include asm-generic/posix_types.h
+>>
+>> With those three patches applied, cris targets build in 3.4.y.
+>
+> Wonderful, I've now applied all of these.
+>
+> Anything else I'm missing for 3.4?
+>
+Besides the now failing mips buids;
 
-> On Wed, Aug 14, 2013 at 03:39:20PM -0400, Alan Stern wrote:
-> 
-> > I don't see the point of all this.  Obviously the device can't be used
-> > until it physically appears on the bus.  What benefit do you get from
-> > registering it and making it available to userspace before that?
-> 
-> Two things.  One is that some devices have the ability to perform useful
-> functions when powered down sufficiently that they can't run a complex
-> bus, providing notification when they need to wake up (or being woken up
-> if the power on comes from userspace).  The other is that then userspace
-> can just see the device and start using it when it needs it without
-> having to have a mechanism to discover that there's something there with
-> manual power control.
-> 
-> This can also be an issue in cases where we compose multiple physical
-> devices into composite ones for userspace (embedded audio and video do
-> this a lot for example).  A given bit of hardware may only be useful in
-> some circumstances.
-> 
-> > Well, basic "power this on" stuff is pretty much all we have discussed 
-> > in this thread so far.  What other sorts of things are going to be 
-> > needed for a general solution?
-> 
-> If you look elsewhere at the stuff I've been saying about Slimbus that's
-> the nastiest case I'm aware of in terms of the bus itself - that's got
-> the devices with low power modes that do useful things with the device
-> (and bus) mostly powered off and things like that.  Things like activity
-> detection of various kinds where the device is monitoring for activity
-> in a low power state.
+Building arm:allmodconfig ... failed
+--------------
+Error log:
+.config:25:warning: symbol value '' invalid for PHYS_OFFSET
+make[2]: *** [silentoldconfig] Error 1
+make[1]: *** [silentoldconfig] Error 2
+make: *** No rule to make target `include/config/auto.conf', needed by `include/config/kernel.release'.  Stop.
 
-Okay.  Previously we agreed that a device on one of these buses could
-remain off-line except when the system needs to bring it to full power.  
-To me, discovery and enumeration on the bus seem like a legitimate 
-need.
+That was "fixed" by a complete arm Kconfig overhaul. I don't think you want
+that in 3.4.
+--------------
 
-So why not bring the device to full power as soon as possible during
-boot, and have it registered on the bus in the usual way?  Once that's
-done, the ordinary runtime PM mechanism will allow the device to go
-back off-line.
+Building frv:defconfig ... failed
+--------------
+Error log:
+[ ... ]
+kernel/fork.c: In function 'free_task':
+kernel/fork.c:174:2: error: implicit declaration of function 'free_task_struct' [-Werror=implicit-function-declaration]
+kernel/fork.c: In function 'dup_task_struct':
+kernel/fork.c:266:2: error: implicit declaration of function 'alloc_task_struct_node' [-Werror=implicit-function-declaration]
+kernel/fork.c:266:6: warning: assignment makes pointer from integer without a cast [enabled by default]
+cc1: some warnings being treated as errors
+make[1]: *** [kernel/fork.o] Error 1
 
-> I've also mentioned the devices that need platform data which is a part
-> of this too; one reason for knowing that the device is there before it
-> appears is so that we can pass platform data/DT/whatever to it.
+I already sent you a sha with a fix for that.
 
-Can you pass this "whatever" data to the device as part of the initial 
-bring-it-to-full-power procedure?
+---------------
+Building powerpc:chroma_defconfig ... failed
+--------------
+Error log:
+arch/powerpc/mm/numa.c: In function 'do_init_bootmem':
+arch/powerpc/mm/numa.c:529:19: error: 'aa.arrays' may be used uninitialized in this function [-Werror=maybe-uninitialized]
+arch/powerpc/mm/numa.c:642:22: note: 'aa.arrays' was declared here
+cc1: all warnings being treated as errors
+make[1]: *** [arch/powerpc/mm/numa.o] Error 1
+make: *** [arch/powerpc/mm] Error 2
+make: *** Waiting for unfinished jobs....
+--------------
 
-By the way, you mentioned something earlier that some of this platform
-data might duplicate information that could be discovered through the
-usual bus probing mechanisms (for example, USB descriptors).  IMO
-that's a bad idea.  Not only is it wasteful, it also has the potential
-for causing confusion if the two sets of data should disagree for any
-reason.  When possible, it's always better to get info about the 
-hardware from the hardware itself.
+That's all. Assuming you revert the mips patch (MIPS: Rewrite pfn_valid to work in modules, too)
+and apply the frv patch, we are down to three build failures out of 64 builds. Not too bad.
 
-> > Now I'm getting confused.  It seems we're talking about at least three
-> > very different things here:
-> 
-> >      A: Devising a mechanism for platform code to do things involving
-> > 	devices that are dynamically registered on discoverable buses.
-> 
-> If we need random platform code then we're failing, half the point of
-> things like DT and ACPI is to avoid writing random board code.  we do
-> want to pass data to devices for their drivers to use but having to have
-> random bits of per board code would be really sad.
+I now see an occasional qemu runtime crash on the x86 target on 3.4. It doesn't happen
+all the time, so it is hard to determine if it is a new problem or an old one.
+I'll try to find out. The crash is seen during reboot in native_nmi_stop_other_cpus(),
+if that rings a bell with anyone.
 
-At the level of abstraction in this discussion, there's no need to 
-discriminate between code and data.  Just imagine that I simply wrote 
-"platform", meaning platform code and/or data.
-
-> >      B: Telling the subsystem and driver code for a discoverable bus
-> > 	that a particular device is present before it has been 
-> > 	detected.
-> 
-> >      C: Implementing a mechanism whereby drivers can take a device
-> > 	off-line while still pretending to userspace that the device
-> > 	is still present, by bringing it back on-line as needed.
-> 
-> > I don't see much connection between these things.  Perhaps you can
-> > explain in more detail.
-> 
-> I think the solutions for these overlap so much they're the same thing.
-> The situation we're in in in your case B is just the idle case for
-> condition C - if we know about the device before it's been detected then
-> if it's been removed we just go back into the situation where we know
-> about it but it isn't powered.
-
-I imagine that teaching a subsystem to know about a device before it 
-has been detected would require significant changes.  My suggestion -- 
-powering up the device, detecting it, and then powering it back down -- 
-fits in very cleanly with existing designs and would require 
-comparatively little work.  Case B then becomes unnecessary; all the 
-important stuff will be handled under Case C.
-
-> > (BTW, it's worth mentioning that C has already been done, in the form
-> > of runtime PM.  The difference may be that you propose to take the
-> > device so far off-line that it disappears from the bus.  AFAICS, this
-> > would be purely a private matter to be arranged between the subsystem
-> > and the driver; it does not need to be handled at the level of the
-> > device-model or PM core.)
-> 
-> Actually runtime PM is actually already used for completely offlining
-> devices on buses that are too blind to notice - it's only an issue on
-> buses that can notice insertion and removal and want to do something
-> about it.  The use cases I'm describing already happen in mainline today
-> for devices on the dumber buses.
-
-Which means eliminating case B will be all that much easier for these 
-buses.
-
-> I think if we've got something which the hardware engineers can do on
-> multiple buses then they probably will so we should have at least a
-> pattern for how it's going to work over multiple buses rather than
-> having to handle different models for different buses.  I'll try to have
-> a think about what that pattern might be at some point (in my copious
-> free time).
-
-There's one important factor to keep in mind: Are devices on the bus
-physically removable?  If not, the situation is pretty straightforward.  
-You just remember that the device used to be present, and reuse the old
-data structures when it reappears.
-
-If devices are removable then things are a lot more complicated.  The 
-usb-storage driver used to do what you are talking about, back in the 
-days of the 2.4 kernels.  When a mass-storage device was unplugged, 
-the driver would remember it and reuse the data structures when the 
-device was plugged back in and reprobed.  Linus himself told us this 
-was a mistake, so we removed the feature.
-
-The USB subsystem now supports this feature in a very limited form.  
-If the hardware session gets dropped while the computer is suspended,
-then at resume time the system will try to verify that the device
-present at that bus address is the same device that was there before
-the suspend.  If it is, we will continue to use it as if the connection
-had never dropped.
-
-Alan Stern
+Guenter
 
