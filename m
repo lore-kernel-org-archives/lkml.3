@@ -1,96 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab3HOUvy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 16:51:54 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:43725 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab3HOUvv (ORCPT
+	id S1751933Ab3HOU6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 16:58:50 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:44384 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab3HOU6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 16:51:51 -0400
+	Thu, 15 Aug 2013 16:58:49 -0400
+X-IronPort-AV: E=Sophos;i="4.89,888,1367971200"; 
+   d="scan'208";a="42596177"
+Message-ID: <1376600325.9273.223.camel@hastur.hellion.org.uk>
+Subject: Re: [PATCH v4 10/10] xen/arm,arm64: enable SWIOTLB_XEN
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <konrad.wilk@oracle.com>
+Date: Thu, 15 Aug 2013 21:58:45 +0100
+In-Reply-To: <1376565054-24153-10-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1308151200580.4470@kaball.uk.xensource.com>
+	 <1376565054-24153-10-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-In-Reply-To: <520D398D.9040806@ti.com>
-References: <51E83A4F.5080904@ti.com>
-	<CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com>
-	<51ED2385.60108@ti.com>
-	<51ED5C66.1010407@ti.com>
-	<51EFFBE1.4090505@ti.com>
-	<51F0031B.1050307@ti.com>
-	<51F00530.9090703@ti.com>
-	<51F02069.3050207@ti.com>
-	<51F0223E.4050008@ti.com>
-	<51F0240F.3050507@ti.com>
-	<20130813081003.GU7656@atomide.com>
-	<520A02BA.4090805@ti.com>
-	<CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com>
-	<520D398D.9040806@ti.com>
-Date: Thu, 15 Aug 2013 22:51:50 +0200
-Message-ID: <CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Sricharan R <r.sricharan@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Nishanth Menon <nm@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 10:26 PM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> On Thursday 15 August 2013 04:01 PM, Linus Walleij wrote:
->> On Tue, Aug 13, 2013 at 11:56 AM, Sricharan R <r.sricharan@ti.com> wrote:
->>
->>>  Initially irqchip was discussed, but we also have a DMA crossbar
->>>  to map the dma-requests. Since both irq/dma crossbars should be handled,
->>>  pinctrl was suggested as the appropriate place to handle this.
->>
->> I think it is better to use irqchip.
->>
-> Did you happen to read the thread why irqchip is in-appropriate
-> for such an IP.
+On Thu, 2013-08-15 at 12:10 +0100, Stefano Stabellini wrote:
+> At the moment always rely on swiotlb-xen, but when Xen starts supporting
+> hardware IOMMUs we'll be able to avoid it conditionally on the presence
+> of an IOMMU on the platform.
 
-Sorry I don't understand what thread that is... can you point me there?
-My previous statement on this issue what this:
-http://marc.info/?l=linux-kernel&m=137442541628641&w=2
+Do we have any idea how we are going to do this?
 
-> As I said earlier, an IRQ-chip always need a
-> real IRQ link (even for the chained one) to the primary irqchip.
->
-> This IP is just dummy IP makes the connections for the primary
-> irqchip(read GIC). And its use only limited to make the
-> connection between the peripheral IRQ event to the GIC IRQ line.
->
-> I don't see how you can make this happen with an irqchip
-> infrastructure.
+It's extra complicated if you consider that on some systems on some of
+the devices are behind an IOMMU :-/
 
-I think my post above describes this.
+I wonder if we can enumerate which devices have an IOMMU at boot time
+and force a ludicrous dma mask (such as 0) if one isn't present in order
+to force us to always take the exchange_and_pin path?
 
->> I don't see any way to really abstract this pretty simple crossbar
->> for reuse across subsystems.
->>
-> This exactly the reason, i am against idea of over-engineering the
-> simple IP whose only job is to make the physical wire connection
-> in software where as this is generally done in RTL by default on
-> most of the SOCs.
+Ian.
 
-Well, it was made accessible by software, and if someone has a
-usecase that requires this do be done dynamically, i.e. not just
-being set up by firmware and never touched, and that use case
-is valid, then I guess we need to do something...
-
-I think it was mentioned in the thread that there is really such
-a usecase?
-
-Yours,
-Linus Walleij
