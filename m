@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759018Ab3HOQS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 12:18:56 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:13450 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756721Ab3HOQSz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 12:18:55 -0400
-Message-ID: <520CFF6C.7020302@itdev.co.uk>
-Date: Thu, 15 Aug 2013 17:18:52 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	id S1759034Ab3HOQWw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 12:22:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758226Ab3HOQWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 12:22:50 -0400
+Date: Thu, 15 Aug 2013 18:23:16 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Mike Christie <mchristie@fusionio.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130815162316.GA27882@dhcp-26-207.brq.redhat.com>
+References: <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
+ <20130719003034.GG28005@kernel.dk>
+ <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+ <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+ <1374248000.2266.20.camel@dabdike>
+ <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+ <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+ <51EAA33C.9010405@fusionio.com>
+ <20130809191542.GD25306@dhcp-26-207.brq.redhat.com>
+ <1376079457.5171.172.camel@haakon3.risingtidesystems.com>
 MIME-Version: 1.0
-To: rydberg@euromail.se
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
-        Benson Leung <bleung@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH 37/51] Input: atmel_mxt_ts - Implement vector/orientation
- support
-References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk> <1372337366-9286-38-git-send-email-nick.dyer@itdev.co.uk> <20130718172029.GF32381@polaris.bitmath.org>
-In-Reply-To: <20130718172029.GF32381@polaris.bitmath.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376079457.5171.172.camel@haakon3.risingtidesystems.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rydberg@euromail.se wrote:
-> On Thu, Jun 27, 2013 at 01:49:12PM +0100, Nick Dyer wrote:
->> The atmel touch messages contain orientation information as a byte in a packed
->> format which can be passed straight on to Android if the input device
->> configuration is correct, see
->> http://source.android.com/tech/input/touch-devices.html#touchorientationcalibration
+On Fri, Aug 09, 2013 at 01:17:37PM -0700, Nicholas A. Bellinger wrote:
+> On Fri, 2013-08-09 at 21:15 +0200, Alexander Gordeev wrote:
+> Mmmm, I'm able to reproduce over here with ahci + scsi-mq, and it
+> appears to be a bug related with using sdev->sdev_md_req.queue_depth=1,
+> that ends up causing the blkdev_issue_flush() to wait forever because
+> blk_mq_wait_for_tags() never ends up getting the single tag back for the
+> WRITE_FLUSH bio -> SYNCHRONIZE_CACHE cdb.
 
-Except they've changed the URL, should be:
-https://source.android.com/devices/tech/input/touch-devices.html#touchorientationcalibration
+It turns out this way - blkdev_issue_flush() claims the only tag, submits
+the bio and waits for the completion. But because blk_mq_make_request()
+does not mark any context in blk_mq_hw_ctx::ctx_map (nor enslists the request
+into blk_mq_ctx::rq_list) it never gets processed from blk_mq_work_fn->
+__blk_mq_run_hw_queue() and blkdev_issue_flush() waits endlessly. All other
+requests are just waiting for the tag availability as result.
 
-The Atmel format is two 4-bit signed values packed into 1 byte, you use
-inverse tan to work out the angle, and pythagoras theorem to work out the
-magnitude of the vector (giving a confidence level)
+[...]
 
->> This requires vector reports to be enabled in maXTouch config (zero DISVECT
->> bit in T9 CTRL field)
->>
->> Android converts the format in frameworks/base/services/input/Input.cpp,
->> search for ORIENTATION_CALIBRATION_VECTOR.
+> Bumping queue_depth=2 seems to work-around the issue, but AFAICT it's a
+> genuine tag starvation bug with queue_depth=1 and WRITE_FLUSH..
+
+If I try to hack and force __blk_mq_run_hw_queue() to process the request...
+
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 6fc1df3..c22b6f66 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -889,9 +962,12 @@ static void blk_mq_make_request(struct request_queue *q, struct bio *bio)
+ 	hctx->queued++;
+ 
+ 	if (unlikely(is_flush_fua)) {
++		list_add(&rq->queuelist, &hctx->dispatch);
+ 		blk_mq_bio_to_request(q, rq, bio);
+ 		blk_mq_put_ctx(ctx);
+ 		blk_insert_flush(rq);
+ 		goto run_queue;
+ 	}
+
+... I get a kernel BUG at drivers/scsi/scsi_lib.c:1233
+
+	BUG_ON(!req->nr_phys_segments);
+
+IOW I am not sure how to proceed.
+
+> --nab
 > 
-> How does this compare to the input mt documentation?
 
-http://lxr.free-electrons.com/source/Documentation/input/multi-touch-protocol.txt#L263
-
-So yes, we don't meet the documented format. Options:
-1. Leave out this patch entirely and support out of tree
-2. Update multi-touch-protocol.txt to include the Atmel format
-3. Convert in driver to match documented protocol. Presumably via a LUT of
-the 256 possible values. Although this loses the confidence level that is
-implied.
-4. Getting the firmware changed is not a valid option I'm afraid (too many
-devices already out there).
-
-Which do you prefer (I suspect 3) ?
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
