@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab3HOXD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 19:03:57 -0400
-Received: from hoabinh.gov.vn ([123.27.62.13]:52716 "EHLO mail.hoabinh.gov.vn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751929Ab3HOXD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 19:03:56 -0400
-Date: Fri, 16 Aug 2013 06:01:46 +0700 (ICT)
-From: "PT.AMEEX" <cucmt.hlus@hoabinh.gov.vn>
-Reply-To: "PT.AMEEX@YAHOO.COM" <PT.AMEEX@YAHOO.COM>
-To: cucmt.hlus@hoabinh.gov.vn
-Message-ID: <296492995.50291376607706262.JavaMail.root@mail.hoabinh.gov.vn>
-Subject: We appreciate your prompt reply.
+	id S1752611Ab3HOXGA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 19:06:00 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:34555 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab3HOXF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 19:05:58 -0400
+Message-ID: <520D5ED2.9040403@gmail.com>
+Date: Fri, 16 Aug 2013 01:05:54 +0200
+From: Ben Tebulin <tebulin@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ben Tebulin <tebulin@googlemail.com>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please continue
+ your great work! :-)
+References: <52050382.9060802@gmail.com> <520BB225.8030807@gmail.com> <20130814174039.GA24033@dhcp22.suse.cz> <CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com> <20130814182756.GD24033@dhcp22.suse.cz> <CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com> <520C9E78.2020401@gmail.com> <CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com> <CA+55aFxuUrcod=X2t2yqR_zJ4s1uaCsGB-p1oLTQrG+y+Z2PbA@mail.gmail.com>
+In-Reply-To: <CA+55aFxuUrcod=X2t2yqR_zJ4s1uaCsGB-p1oLTQrG+y+Z2PbA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [114.79.13.188]
-X-Mailer: Zimbra 5.0.18_GA_3011.RHEL5_64 (zclient/5.0.18_GA_3011.RHEL5_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Supplier,
+Am 15.08.2013 20:00, schrieb Linus Torvalds:
+> Ok, so I've slept on it, and here's my current thinking.
+> [...]  
 
-We appreciate your prompt reply. Our customer that directs us to your company has sent us the sample product needed in this website. Do sign in your valid email and password to view the exact sample in this website.
+Many thoughts which as a user I'm am unable to follow  ;-)
 
-Visit the following website
+> This patch tries to fix the interface instead of trying to patch up
+> the individual places that *should* set the range some particular way
+> [...]
+> This patch is against current git, so to apply you need to have
+> that commit e6c495a96ce0 cherry-picked to older kernels first.
 
-http://abercrombie-fitch.cm-abb.com/
+I took a shot based on 3.9.11 + e6c495a96ce0. The reason why I don't
+simply use the current git master is, that for some reasons my
+linux-image-*.deb become 750MB and larger since 3.10.y and I have no
+clue at all why and what to do about it.
 
-We already registered your business email with secure page and you can view the specs if this product is available.
+The patch failed. Due to my outstanding incompetence I resorted into
+applying it onto master, cherry-picking that back and trying to resolve
+the remaining conflicts correctly.
 
-After that, we are going into negotiations for bulk purchase should you have the specs needed.
+>  - I have no idea whether this will fix the problem Ben sees, but I
+> feel happier about the code, because now any place that forgets to set
+> up start/end will work just fine, because they are always valid. 
 
-I am waiting your reply, tks.
+Simpler code? Resilient API? Happy people? Great!
 
-Best Regards
+> Ben, please test. I'm worried that the problem you see is something 
+> even more fundamentally wrong with the whole "oops, must flush in the
+> middle" logic, but I'm _hoping_ this fixes it.
 
-Lilly
+It's gone.
 
-Amex furniture and fabrics
+Really!
 
-2 avenue Gabriel
+I git-fsck'ed successfully around 30 times in a row.
+And even all the other things still seem to work ;-)
 
-75382 Paris Cedex 08. France.
+Honestly I have to confess that I'm deeply impressed how this finally
+worked out: I just threw a particular, innocent-looking commit hash and
+nothing more into the round. And while still being unsure if this might
+be a plain user space issue, only 24h later I received a 11kb sized
+kernel patch (with blatant typos in it !1! *g* ) apparently solving my
+issue.
 
+/me happy now, too! :)
+
+- Ben
