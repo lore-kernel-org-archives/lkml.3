@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab3HOUup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 16:50:45 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:51371 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab3HOUuo (ORCPT
+	id S1752125Ab3HOUvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 16:51:54 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:43725 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab3HOUvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 16:50:44 -0400
-Date: Thu, 15 Aug 2013 13:50:44 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Peter Maydell <peter.maydell@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+	Thu, 15 Aug 2013 16:51:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <520D398D.9040806@ti.com>
+References: <51E83A4F.5080904@ti.com>
+	<CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com>
+	<51ED2385.60108@ti.com>
+	<51ED5C66.1010407@ti.com>
+	<51EFFBE1.4090505@ti.com>
+	<51F0031B.1050307@ti.com>
+	<51F00530.9090703@ti.com>
+	<51F02069.3050207@ti.com>
+	<51F0223E.4050008@ti.com>
+	<51F0240F.3050507@ti.com>
+	<20130813081003.GU7656@atomide.com>
+	<520A02BA.4090805@ti.com>
+	<CACRpkda+m82PYJsExLM6JLsLa8-bVhdvy_r_+-uKfVT2NG7Cbg@mail.gmail.com>
+	<520D398D.9040806@ti.com>
+Date: Thu, 15 Aug 2013 22:51:50 +0200
+Message-ID: <CACRpkdYeo1y-HhftkRWgwyq8o-NVuJ978Uq+ON880LHhUxC=hg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Sricharan R <r.sricharan@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Nishanth Menon <nm@ti.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        QEMU Developers <qemu-devel@nongnu.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>
-Subject: Re: [Qemu-devel] SCSI bus failures with qemu-arm in kernel 3.8+
-Message-ID: <20130815205044.GA21599@roeck-us.net>
-References: <5207B3C3.9080508@roeck-us.net>
- <20130811220450.GY23006@n2100.arm.linux.org.uk>
- <52082EF8.10005@roeck-us.net>
- <CAFEAcA94ygwRPSsfxs3DvOcTZbdafLiEHys94FG4aXUx+A1t=A@mail.gmail.com>
- <20130813034054.GA18218@roeck-us.net>
- <CAFEAcA_-S8z6ZMr8TMPvkcTyyCSMOj1DExVsY4JDQjRXDU5WGw@mail.gmail.com>
- <20130815175428.GA18580@roeck-us.net>
- <CAFEAcA_MyJPwo6Gd_dxeWM5q5-7MYqR6-rrePusFzYaGGckWJQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFEAcA_MyJPwo6Gd_dxeWM5q5-7MYqR6-rrePusFzYaGGckWJQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 07:05:22PM +0100, Peter Maydell wrote:
-> On 15 August 2013 18:54, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On Thu, Aug 15, 2013 at 05:45:42PM +0100, Peter Maydell wrote:
-> >> On 13 August 2013 04:40, Guenter Roeck <linux@roeck-us.net> wrote:
-> >> > Patch tested and working with qemu 1.5.2, using the configuration file
-> >> > from the yocto project. Patch applied on top of kernel version 3.11-rc5.
-> >>
-> >> OK, I tested this on PB926+PCI backplane hardware, and it is
-> >> definitely better than current mainline, in that the test USB
-> >> card that I have no longer causes the kernel to generate this sort of
-> >> backtrace:
-> >>
-> > Do you mean my patch fixes the traceback below as a side effect ?
-> > Would be great ... it would be one more reason to get it applied.
-> 
-> Yes, exactly -- the kernel currently has the wrong irq mapping,
-> which causes the traceback (ie h/w asserts irq 93 but the kernel
-> is listening on something else). That the patch fixes this confirms
-> that it is the behaviour of hardware as well as of QEMU.
-> 
-> >> However it still doesn't seem to reliably detect the USB harddisk
-> >> plugged into the card, so I think there may be further issues, possibly
-> >> some subset of those Arnd identified and fixed with this patch:
-> >> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/93397
-> >>
-> > Does it get better if you apply Arnd's patch ?
-> 
-> Arnd's patch is ancient and won't apply as is (due to intervening
-> changes and also because some of the things it fixes were fixed
-> in later patches); I'm currently trying to extract the relevant parts.
-> 
-> If you want you can confirm that I/O port PCI access is broken on
-> QEMU too -- disable CONFIG_SCSI_SYM53C8XX_MMIO so
-> the driver uses PCI IO rather than MMIO and you'll see QEMU's
-> SCSI device doesn't work any more.
-> 
-> >> so I'd like to continue testing.
-> >>
-> >> The other thing this patch should (IMHO) have is the
-> >> line in pci_versatile_setup() which tells QEMU that the
-> >> kernel really does expect hardware-like behaviour:
-> 
-> >> (Without this line QEMU will guess whether the kernel is broken
-> >> or not and will get it right most but not necessarily all of the time.)
-> >>
-> > Might make sense, but I think it should be a separate patch.
-> 
-> It needs to go in the same patch, because a kernel with the fixed
-> irq remapping must also tell QEMU it is fixed; if you split the
-> two then at the point between the two patches the kernel is
-> broken for bisection purposes.
-> 
-Thinking about it - is that really true ? My image with the patch applied
-works just fine under qemu 1.5.2, and unless I am missing something it won't
-work with qemu 1.4 anyway. So what exactly is broken ?
+On Thu, Aug 15, 2013 at 10:26 PM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> On Thursday 15 August 2013 04:01 PM, Linus Walleij wrote:
+>> On Tue, Aug 13, 2013 at 11:56 AM, Sricharan R <r.sricharan@ti.com> wrote:
+>>
+>>>  Initially irqchip was discussed, but we also have a DMA crossbar
+>>>  to map the dma-requests. Since both irq/dma crossbars should be handled,
+>>>  pinctrl was suggested as the appropriate place to handle this.
+>>
+>> I think it is better to use irqchip.
+>>
+> Did you happen to read the thread why irqchip is in-appropriate
+> for such an IP.
 
-Thanks,
-Guenter
+Sorry I don't understand what thread that is... can you point me there?
+My previous statement on this issue what this:
+http://marc.info/?l=linux-kernel&m=137442541628641&w=2
+
+> As I said earlier, an IRQ-chip always need a
+> real IRQ link (even for the chained one) to the primary irqchip.
+>
+> This IP is just dummy IP makes the connections for the primary
+> irqchip(read GIC). And its use only limited to make the
+> connection between the peripheral IRQ event to the GIC IRQ line.
+>
+> I don't see how you can make this happen with an irqchip
+> infrastructure.
+
+I think my post above describes this.
+
+>> I don't see any way to really abstract this pretty simple crossbar
+>> for reuse across subsystems.
+>>
+> This exactly the reason, i am against idea of over-engineering the
+> simple IP whose only job is to make the physical wire connection
+> in software where as this is generally done in RTL by default on
+> most of the SOCs.
+
+Well, it was made accessible by software, and if someone has a
+usecase that requires this do be done dynamically, i.e. not just
+being set up by firmware and never touched, and that use case
+is valid, then I guess we need to do something...
+
+I think it was mentioned in the thread that there is really such
+a usecase?
+
+Yours,
+Linus Walleij
