@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757512Ab3HONDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 09:03:15 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:52604 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757425Ab3HONDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 09:03:13 -0400
-Message-ID: <520CD13B.2060702@huawei.com>
-Date: Thu, 15 Aug 2013 21:01:47 +0800
-From: Libo Chen <clbchenlibo.chen@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <michal.simek@xilinx.com>, <renner@efe-gmbh.de>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        <monstr@monstr.eu>
-Subject: [PATCH v3 6/7] net: xilinx_emaclite: use platform_{get,set}_drvdata()
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.158]
-X-CFilter-Loop: Reflected
+	id S1756661Ab3HONMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 09:12:12 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:60864 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754821Ab3HONMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 09:12:10 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: Yann Droneaud <ydroneaud@opteya.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 01/10] ia64: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Thu, 15 Aug 2013 15:10:51 +0200
+Message-Id: <e592269fefdc1f0d2149d807d1d1300a1e86ee23.1376327678.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <cover.1376327678.git.ydroneaud@opteya.com>
+References: <cover.1376327678.git.ydroneaud@opteya.com>
+In-Reply-To: <cover.1376327678.git.ydroneaud@opteya.com>
+References: <cover.1376327678.git.ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the wrapper functions for getting and setting the driver data using
-platform_device instead of using dev_{get,set}_drvdata() with &of_dev->dev,
-so we can directly pass a struct platform_device.
+Macro get_unused_fd() is used to allocate a file descriptor with
+default flags. Those default flags (0) can be "unsafe":
+O_CLOEXEC must be used by default to not leak file descriptor
+across exec().
 
-Signed-off-by: Libo Chen <libo.chen@huawei.com>
+Instead of macro get_unused_fd(), functions anon_inode_getfd()
+or get_unused_fd_flags() should be used with flags given by userspace.
+If not possible, flags should be set to O_CLOEXEC to provide userspace
+with a default safe behavor.
+
+In a further patch, get_unused_fd() will be removed so that
+new code start using anon_inode_getfd() or get_unused_fd_flags()
+with correct flags.
+
+This patch replaces calls to get_unused_fd() with equivalent call to
+get_unused_fd_flags(0) to preserve current behavor for existing code.
+
+The hard coded flag value (0) should be reviewed on a per-subsystem basis,
+and, if possible, set to O_CLOEXEC.
+
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Link: http://lkml.kernel.org/r/cover.1376327678.git.ydroneaud@opteya.com
 ---
- drivers/net/ethernet/xilinx/xilinx_emaclite.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ arch/ia64/kernel/perfmon.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-index fd4dbda..7c1ccbc 100644
---- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-+++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-@@ -1230,8 +1230,7 @@ error:
-  */
- static int xemaclite_of_remove(struct platform_device *of_dev)
- {
--	struct device *dev = &of_dev->dev;
--	struct net_device *ndev = dev_get_drvdata(dev);
-+	struct net_device *ndev = platform_get_drvdata(of_dev);
-
- 	struct net_local *lp = netdev_priv(ndev);
-
+diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+index 5a9ff1c..64757c1 100644
+--- a/arch/ia64/kernel/perfmon.c
++++ b/arch/ia64/kernel/perfmon.c
+@@ -2668,7 +2668,7 @@ pfm_context_create(pfm_context_t *ctx, void *arg, int count, struct pt_regs *reg
+ 
+ 	ret = -ENOMEM;
+ 
+-	fd = get_unused_fd();
++	fd = get_unused_fd_flags(0);
+ 	if (fd < 0)
+ 		return fd;
+ 
 -- 
-1.7.1
+1.8.3.1
 
