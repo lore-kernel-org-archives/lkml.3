@@ -1,135 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3HOFzf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 01:55:35 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:40825 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab3HOFze (ORCPT
+	id S1753630Ab3HOF6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 01:58:48 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:46710 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753141Ab3HOF6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 01:55:34 -0400
-Date: Thu, 15 Aug 2013 13:55:23 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
-        joro@8bytes.org
-Subject: Re: [PATCH v2] KVM: PPC: move iommu_add_device earlier
-Message-ID: <20130815055523.GA13692@weiyang.vnet.ibm.com>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1376535439-12838-1-git-send-email-aik@ozlabs.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376535439-12838-1-git-send-email-aik@ozlabs.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081505-4790-0000-0000-000009CF1BFD
+	Thu, 15 Aug 2013 01:58:46 -0400
+X-AuditID: cbfec7f5-b7f5f6d00000105f-ab-520c6e139bf9
+Message-id: <520C6E0A.8030505@samsung.com>
+Date: Thu, 15 Aug 2013 08:58:34 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: joelf@ti.com
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mark Greer <mgreer@animalcreek.com>, Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: [PATCH 00/10] crypto: omap-aes: DMA and PIO mode improvements
+References: <1376521969-16807-1-git-send-email-joelf@ti.com>
+ <520C1327.8090607@ti.com>
+In-reply-to: <520C1327.8090607@ti.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4NV3hPJ4gg4e7lCzmnG9hsdi3kdfi
+	487prBabHl9jtbh/7yeTxeVdc9gsZi/pZ7FY0fGF0eLBZiaLZ/17GC1e961htth/xcuBx6Pv
+	8XNmj29fJ7F4bFl5k8nj23tZj81L6j2O39jO5PF5k1wAexSXTUpqTmZZapG+XQJXxt0fSQVz
+	5SuOdS1la2C8JtHFyMkhIWAicfP0A2YIW0ziwr31bF2MXBxCAksZJXbM2sEK4TQySfTsfM8E
+	4SxklOhYvpsNpIVXQEti6YJuMJtFQFXi+/Ff7CA2m4CexIbmH2C2qECExMolD1gh6gUlfky+
+	xwJiiwgISFw795MZZCizwD9midcL/4IVCQt4SdxsawUq4gDaFiFxcI8nSJhTQE3iy9ZvTCA2
+	s4COxP7WaWwQtrzE5jVvwV4QArqhe+1aNoh3FCVOTz7HPIFReBaS1bOQtM9C0r6AkXkVo2hq
+	aXJBcVJ6rpFecWJucWleul5yfu4mRkisfd3BuPSY1SFGAQ5GJR7eiDbuICHWxLLiytxDjBIc
+	zEoivP+9eYKEeFMSK6tSi/Lji0pzUosPMTJxcEo1MMaLMkqWlXxLvdHGe25KMAPXpOQrCR5J
+	j5etrbwapP7Idc1D5VtH51fLbMioPrt+rsO9hx3bbsuoVLrW7GJl/JMsqPJMN8CpxLTrG7fy
+	8TsXOc+IXLR5qKVxMj3kecn+GBmNolfyGWL9aTfDra/a+e+zl9vKmdf/enPxSrsPX9y/fFBZ
+	uJJjjhJLcUaioRZzUXEiALHRCf+TAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey,
+On 15/08/13 02:30, Joel Fernandes wrote:
+> On 08/14/2013 06:12 PM, Joel Fernandes wrote:
+>> This patch series is a rewrite of the DMA portion of omap-aes driver
+>> and also adds support for PIO mode. Both these modes, give better
+>> performance than before.
+>>
+>> Earlier, only a single SG was used for DMA purpose, and the SG-list
+>> passed from the crypto layer was being copied and DMA'd one entry at
+>> a time. This turns out to be quite inefficient, so we replace it with
+>> much simpler code that directly passes the SG-list from crypto to the
+>> DMA layer.
+>>
+>> We also add PIO mode support to the driver, and switch to PIO mode
+>> whenever the DMA channel allocation is not available. This is only for
+>> OMAP4 platform will work on any platform on which IRQ information is
+>> populated.
+>>
+>> Tests performed on am33xx and omap4 SoCs , notice the 50% perf improvement
+> Just correcting, this is more like 35% not 50% when using DMA.
 
-On Thu, Aug 15, 2013 at 12:57:19PM +1000, Alexey Kardashevskiy wrote:
->The current implementation of IOMMU on sPAPR does not use iommu_ops
->and therefore does not call IOMMU API's bus_set_iommu() which
->1) sets iommu_ops for a bus
->2) registers a bus notifier
->Instead, PCI devices are added to IOMMU groups from
->subsys_initcall_sync(tce_iommu_init) which does basically the same
->thing without using iommu_ops callbacks.
->
->However Freescale PAMU driver (https://lkml.org/lkml/2013/7/1/158)
->implements iommu_ops and when tce_iommu_init is called, every PCI device
->is already added to some group so there is a conflict.
->
->This patch does 2 things:
->1. removes the loop in which PCI devices were added to groups and
->adds devices as soon as they get the iommu_table pointer assigned to them.
->For this, the set_iommu_table_base_and_group() function is introduced.
->2. moves a bus notifier to powernv code (for hotplug) in order to avoid
->conflict with the notifier from the Freescale driver.
->
->iommu_add_device() and iommu_del_device() are public now.
+Hmm :)
 
-Small suggestion, how about add a prefix like "ppc_"?
-
-Since on intel, it has intel_iommu_add_device. Maybe this could help the
-audience.
+1766/1460 = ~20%
 
 >
->Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->---
+> Thanks,
 >
->@@ -623,3 +623,33 @@ void __init pnv_pci_init(void)
-> 	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
-> #endif
-> }
->+
->+static int tce_iommu_bus_notifier(struct notifier_block *nb,
->+		unsigned long action, void *data)
->+{
->+	struct device *dev = data;
->+
->+	switch (action) {
->+	case BUS_NOTIFY_ADD_DEVICE:
->+		return iommu_add_device(dev);
->+	case BUS_NOTIFY_DEL_DEVICE:
->+		iommu_del_device(dev);
->+		return 0;
-
-Recently, I encounter a problem for device remove. In some cases, the device
-will not belong to any iommu_group. For example, the DMA space is not enough
-and can't allocate a TCE segment. (This happens on P7IOC. I think on P8 it
-won't happen.) In this case, dev->iommu_group would be NULL and kernel crash
-in iommu_group_remove_device(), since it try to reference group->notifier.
-
-In iommu_bus_notifier(), it will check dev->iommu_group before calling the
-remove_device. 
-	if (ops->remove_device && dev->iommu_group)
-
-So I suggest to add this check here too.
-
-BTW, I have a patch like this, which I put the check in iommu_group_remove_device.
-This could protect the kernel from do the removing without the check outside. 
-
-Author: Wei Yang <weiyang@linux.vnet.ibm.com>
-Date:   Wed Aug 14 04:45:06 2013 -0400
-
-    iommu: check dev->iommu_group before removing a device 
-    
-    In some cases, one device may not associate with any iommu_group.
-    For example, not enough DMA address space.
-    
-    For those devices, kernel will crash when try to remove it from an iommu_group.
-    
-    This patch do the check before remove it.
-    
-    Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
-
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index fbe9ca7..fe41946 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -379,6 +379,9 @@ void iommu_group_remove_device(struct device *dev)
-        struct iommu_group *group = dev->iommu_group;
-        struct iommu_device *tmp_device, *device = NULL;
- 
-+       if (!group)
-+               return;
-+
-        /* Pre-notify listeners that a device is being removed. */
-        blocking_notifier_call_chain(&group->notifier,
-                                     IOMMU_GROUP_NOTIFY_DEL_DEVICE, dev);
-
-I am not sure which place is better, in iommu_group_remove_device() or in the 
-tce_iommu_bus_notifier().
-
-I am glad to hear your suggestions.
-
-
--- 
-Richard Yang
-Help you, Help me
+> -Joel
+>
+>
+>
+>
+>
+>> for large 8K blocks:
+>>
+>> Sample run on am33xx (beaglebone):
+>> With DMA rewrite:
+>> [   26.410052] test 0 (128 bit key, 16 byte blocks): 4318 operations in 1 seconds (69088 bytes)
+>> [   27.414314] test 1 (128 bit key, 64 byte blocks): 4360 operations in 1 seconds (279040 bytes)
+>> [   28.414406] test 2 (128 bit key, 256 byte blocks): 3609 operations in 1 seconds (923904 bytes)
+>> [   29.414410] test 3 (128 bit key, 1024 byte blocks): 3418 operations in 1 seconds (3500032 bytes)
+>> [   30.414510] test 4 (128 bit key, 8192 byte blocks): 1766 operations in 1 seconds (14467072 bytes)
+>>
+>> Without DMA rewrite:
+>> [   31.920519] test 0 (128 bit key, 16 byte blocks): 4417 operations in 1 seconds (70672 bytes)
+>> [   32.925997] test 1 (128 bit key, 64 byte blocks): 4221 operations in 1 seconds (270144 bytes)
+>> [   33.926194] test 2 (128 bit key, 256 byte blocks): 3528 operations in 1 seconds (903168 bytes)
+>> [   34.926225] test 3 (128 bit key, 1024 byte blocks): 3281 operations in 1 seconds (3359744 bytes)
+>> [   35.926385] test 4 (128 bit key, 8192 byte blocks): 1460 operations in 1 seconds (11960320 bytes)
+>>
+>> With PIO mode, note the tremndous boost in performance for small blocks there:
+>> [   27.294905] test 0 (128 bit key, 16 byte blocks): 20585 operations in 1 seconds (329360 bytes)
+>> [   28.302282] test 1 (128 bit key, 64 byte blocks): 8106 operations in 1 seconds (518784 bytes)
+>> [   29.302374] test 2 (128 bit key, 256 byte blocks): 2359 operations in 1 seconds (603904 bytes)
+>> [   30.302575] test 3 (128 bit key, 1024 byte blocks): 605 operations in 1 seconds (619520 bytes)
+>> [   31.303781] test 4 (128 bit key, 8192 byte blocks): 79 operations in 1 seconds (647168 bytes)
+>>
+>> Future work in this direction would be to dynamically change between
+>> PIO/DMA mode based on the block size.
+>>
+>> Joel Fernandes (10):
+>>   crypto: scatterwalk:  Add support for calculating number of SG
+>>     elements
+>>   crypto: omap-aes: Add useful debug macros
+>>   crypto: omap-aes: Populate number of SG elements
+>>   crypto: omap-aes: Simplify DMA usage by using direct SGs
+>>   crypto: omap-aes: Sync SG before DMA operation
+>>   crypto: omap-aes: Remove previously used intermediate buffers
+>>   crypto: omap-aes: Add IRQ info and helper macros
+>>   crypto: omap-aes: PIO mode: Add IRQ handler and walk SGs
+>>   crypto: omap-aes: PIO mode: platform data for OMAP4 and trigger it
+>>   crypto: omap-aes: Switch to PIO mode in probe function
+>>
+>>  crypto/scatterwalk.c         |   22 +++
+>>  drivers/crypto/omap-aes.c    |  400 ++++++++++++++++++++----------------------
+>>  include/crypto/scatterwalk.h |    2 +
+>>  3 files changed, 217 insertions(+), 207 deletions(-)
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
