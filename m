@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760165Ab3HOCMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 22:12:22 -0400
-Received: from ozlabs.org ([203.10.76.45]:59669 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759785Ab3HOCMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 22:12:21 -0400
-Date: Thu, 15 Aug 2013 12:12:17 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Hansen <dave@sr71.net>,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, linuxppc-dev@ozlabs.org
-Subject: Re: [RFC][PATCH] drivers: base: dynamic memory block creation
-Message-ID: <20130815021217.GA11452@concordia>
-References: <1376508705-3188-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20130814194348.GB10469@kroah.com>
- <520BE30D.3070401@sr71.net>
- <20130814203546.GA6200@kroah.com>
- <CAE9FiQUz6Ev0nbCoSbH7E=+zeJr6GKwR4B-z8+zJTRDPeF=jeA@mail.gmail.com>
- <20130814215253.GC17423@variantweb.net>
+	id S1760038Ab3HOCWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 22:22:42 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:39375 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab3HOCWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Aug 2013 22:22:40 -0400
+Date: Wed, 14 Aug 2013 22:22:35 -0400
+From: Tejun Heo <tj@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Tang Chen <imtangchen@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
+        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
+Message-ID: <20130815022235.GA4439@htj.dyndns.org>
+References: <520BDD2F.2060909@gmail.com>
+ <20130814195541.GH28628@htj.dyndns.org>
+ <520BE891.8090004@gmail.com>
+ <20130814203538.GK28628@htj.dyndns.org>
+ <520BF3E3.5030006@gmail.com>
+ <20130814213637.GO28628@htj.dyndns.org>
+ <520C2A06.5020007@gmail.com>
+ <20130815012133.GQ28628@htj.dyndns.org>
+ <20130815013346.GR28628@htj.dyndns.org>
+ <520C3273.10605@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130814215253.GC17423@variantweb.net>
+In-Reply-To: <520C3273.10605@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 04:52:53PM -0500, Seth Jennings wrote:
-> On Wed, Aug 14, 2013 at 02:37:26PM -0700, Yinghai Lu wrote:
-> > On Wed, Aug 14, 2013 at 1:35 PM, Greg Kroah-Hartman
-> > <gregkh@linuxfoundation.org> wrote:
-> > > On Wed, Aug 14, 2013 at 01:05:33PM -0700, Dave Hansen wrote:
-> > >> On 08/14/2013 12:43 PM, Greg Kroah-Hartman wrote:
-> > >> > On Wed, Aug 14, 2013 at 02:31:45PM -0500, Seth Jennings wrote:
-> > >> >> ppc64 has a normal memory block size of 256M (however sometimes as low
-> > >> >> as 16M depending on the system LMB size), and (I think) x86 is 128M.  With
-> > >> >> 1TB of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
-> > >> >> entries per block that's around 80k items that need be created at boot
-> > >> >> time in sysfs.  Some systems go up to 16TB where the issue is even more
-> > >> >> severe.
-> > >> >
-> > >> > The x86 developers are working with larger memory sizes and they haven't
-> > >> > seen the problem in this area, for them it's in other places, as I
-> > >> > referred to in my other email.
-> > >>
-> > >> The SGI guys don't run normal distro kernels and don't turn on memory
-> > >> hotplug, so they don't see this.  I do the same in my testing of
-> > >> large-memory x86 systems to speed up my boots.  I'll go stick it back in
-> > >> there and see if I can generate some numbers for a 1TB machine.
-> > >>
-> > >> But, the problem on x86 is at _worst_ 1/8 of the problem on ppc64 since
-> > >> the SECTION_SIZE is so 8x bigger by default.
-> > >>
-> > >> Also, the cost of creating sections on ppc is *MUCH* higher than x86
-> > >> when amortized across the number of pages that you're initializing.  A
-> > >> section on ppc64 has to be created for each (2^24/2^16)=256 pages while
-> > >> one on x86 is created for each (2^27/2^12)=32768 pages.
-> > >>
-> > >> Thus, x86 folks with our small pages and large sections tend to be
-> > >> focused on per-page costs.  The ppc folks with their small sections and
-> > >> larger pages tend to be focused on the per-section costs.
-> > >
-> > > Ah, thanks for the explaination, now it makes more sense why they are
-> > > both optimizing in different places.
-> > 
-> > I had one local patch that sent before, it will probe block size for
-> > generic x86_64.
-> > set it to 2G looks more reasonable for system with 1T+ ram.
+On Wed, Aug 14, 2013 at 09:44:19PM -0400, KOSAKI Motohiro wrote:
+> >This is doubly idiotic because this is all early boot.  Most users
+> >don't even have a way to access the debug info if the machine crashes
+> >that early.  Developement convenience is something that we consider
+> >too but, seriously, users come first.  This is not your personal
+> >playground.  Don't frigging crash if you have any other option.
 > 
-> If I am understanding you correctly, you are suggesting we make the block size
-> a boot time tunable.  It can't be a runtime tunable since the memory blocks are
-> currently created a boot time.
-> 
-> On ppc64, we can't just just choose a memory block size since it must align
-> with the underlying LMB (logical memory block) size, set in the hardware ahead
-> of time.
+> Again, the best depend on the purpose and the goal. If someone specify
+> to enable hotplugging, They are sure they need it. Now, any fallback
+> achieve their goal. Their goal is not booting. If they don't have enough
+> machine to achieve their goal, we have only one way, tell them that.
 
-As long as the Linux block size is a multiple of the LMB size it should
-be possible. You'd just have to plug/unplug multiple LMBs at once.
+Yes, you go and tell them with the blank screen.
 
-It would be possible to construct an LMB layout that defeats that, eg.
-every 2nd LMB not present, but I don't think that's actually a concern
-in practice.
-
-cheers
+-- 
+tejun
