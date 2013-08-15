@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab3HONfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 09:35:52 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47554 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756305Ab3HONfv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 09:35:51 -0400
-Message-ID: <1376573746.18617.45.camel@hornet>
-Subject: Re: [PATCH v3] hwspinlock/msm: Add support for Qualcomm MSM HW
- Mutex block
-From: Pawel Moll <pawel.moll@arm.com>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: "ohad@wizery.com" <ohad@wizery.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Jeffrey Hugo <jhugo@codeaurora.org>,
-        Eric Holmberg <eholmber@codeaurora.org>
-Date: Thu, 15 Aug 2013 14:35:46 +0100
-In-Reply-To: <1376507361-26907-1-git-send-email-galak@codeaurora.org>
-References: <1376507361-26907-1-git-send-email-galak@codeaurora.org>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 15 Aug 2013 13:35:46.0856 (UTC) FILETIME=[59210280:01CE99BC]
-X-MC-Unique: 113081514354900201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757389Ab3HONke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 09:40:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59324 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756298Ab3HONkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 09:40:33 -0400
+Date: Thu, 15 Aug 2013 15:40:31 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Tebulin <tebulin@googlemail.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert
+ 53a59fc67!
+Message-ID: <20130815134031.GC27864@dhcp22.suse.cz>
+References: <52050382.9060802@gmail.com>
+ <520BB225.8030807@gmail.com>
+ <20130814174039.GA24033@dhcp22.suse.cz>
+ <CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com>
+ <20130814182756.GD24033@dhcp22.suse.cz>
+ <CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com>
+ <520C9E78.2020401@gmail.com>
+ <CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-14 at 20:09 +0100, Kumar Gala wrote:
-> +Required properties:
-> +- compatible: should be "qcom,tcsr-mutex"
-> +- reg: Should contain registers location and length of mutex registers
-> +- reg-names:
-> +	"mutex-base"  - string to identify mutex registers
+On Thu 15-08-13 05:02:31, Linus Torvalds wrote:
+> On Thu, Aug 15, 2013 at 2:25 AM, Ben Tebulin <tebulin@googlemail.com> wrote:
+> >
+> > I just cherry-picked e6c495a96ce0 into 3.9.11 and 3.7.10.
+> > Unfortunately this does _not resolve_ my issue (too good to be true) :-(
+> 
+> Ho humm. I've found at least one other bug, but that one only affects
+> hugepages. Do you perhaps have transparent hugepages enabled? But even
+> then it looks quite unlikely.
 
-Just out of curiosity, why is reg-names required? Especially if there
-seem to be only one set of registers?
+__unmap_hugepage_range is hugetlb not THP if you had that one in mind.
+And yes, it doesn't set the range which sounds buggy.
 
-Paweł
+> I'll think about this some more. I'm not happy with how that
+> particular whole TLB flushing hack was done, but I need to sleep on
+> this.
 
+I am looking into it as well, but there are high prio things which
+preempt me a lot :/
 
+Thanks for looking into it.
+-- 
+Michal Hocko
+SUSE Labs
