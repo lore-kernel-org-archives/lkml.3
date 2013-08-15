@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759612Ab3HOSF6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 14:05:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59818 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758938Ab3HOSFq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 14:05:46 -0400
-Date: Thu, 15 Aug 2013 20:05:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v3 3/3] sched: clean-up struct sd_lb_stat
-Message-ID: <20130815180521.GV24092@twins.programming.kicks-ass.net>
-References: <1375778203-31343-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375778203-31343-4-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1759571Ab3HOSIB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 14:08:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14008 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759201Ab3HOSIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 14:08:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,886,1367996400"; 
+   d="scan'208";a="387733143"
+Message-ID: <520D18F7.5000801@linux.intel.com>
+Date: Thu, 15 Aug 2013 11:07:51 -0700
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375778203-31343-4-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm/vmalloc: use wrapper function get_vm_area_size
+ to caculate size of vm area
+References: <1376526703-2081-1-git-send-email-liwanp@linux.vnet.ibm.com> <1376526703-2081-4-git-send-email-liwanp@linux.vnet.ibm.com>
+In-Reply-To: <1376526703-2081-4-git-send-email-liwanp@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 05:36:43PM +0900, Joonsoo Kim wrote:
-> -	if (sds->group_imb) {
-> -		sds->busiest_load_per_task =
-> -			min(sds->busiest_load_per_task, sds->avg_load);
+On 08/14/2013 05:31 PM, Wanpeng Li wrote:
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 93d3182..553368c 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -1553,7 +1553,7 @@ static void *__vmalloc_area_node(struct vm_struct *area, gfp_t gfp_mask,
+>  	unsigned int nr_pages, array_size, i;
+>  	gfp_t nested_gfp = (gfp_mask & GFP_RECLAIM_MASK) | __GFP_ZERO;
+>  
+> -	nr_pages = (area->size - PAGE_SIZE) >> PAGE_SHIFT;
+> +	nr_pages = get_vm_area_size(area) >> PAGE_SHIFT;
+>  	array_size = (nr_pages * sizeof(struct page *));
 
-> +	if (busiest->group_imb) {
-> +		busiest->load_per_task =
-> +			min(busiest->load_per_task, sds->sd_avg_load);
->  	}
-
-> -	if (sds->max_load < sds->avg_load) {
-> +	if (busiest->avg_load < this->avg_load) {
-
-Tsk, inconsistency there.
-
-> -	max_pull = min(sds->max_load - sds->avg_load, load_above_capacity);
-> +	max_pull = min(busiest->avg_load - sds->sd_avg_load,
-> +			load_above_capacity);
-
-you just made it possible for the above subtraction to become negative.
-
-Also not entirely sure why you renamed sds->avg_load; renaming it back.
+I guess this is fine, but I do see this same kind of use in a couple of
+other spots in the kernel.  Was there a reason for doing this in this
+one spot but ignoring the others?
