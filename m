@@ -1,143 +1,536 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760205Ab3HOGIC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:08:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59124 "EHLO
+	id S1760278Ab3HOGIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:08:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59129 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab3HOGIA (ORCPT
+	with ESMTP id S1753713Ab3HOGIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:08:00 -0400
-Date: Wed, 14 Aug 2013 23:09:33 -0700
+	Thu, 15 Aug 2013 02:08:09 -0400
+Date: Wed, 14 Aug 2013 23:09:42 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.4.58
-Message-ID: <20130815060933.GA16651@kroah.com>
+Subject: Re: Linux 3.4.58
+Message-ID: <20130815060942.GB16651@kroah.com>
+References: <20130815060933.GA16651@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130815060933.GA16651@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---yrj/dFKFPuw6o+aM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-I'm announcing the release of the 3.4.58 kernel.
-
-All users of the 3.4 kernel series must upgrade.
-
-The updated 3.4.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
-x-3.4.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
-mmary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                  |    2=20
- drivers/char/virtio_console.c             |   47 ++++++++++++--------
- drivers/hwmon/adt7470.c                   |    2=20
- drivers/scsi/megaraid/megaraid_sas_base.c |   20 ++++++--
- drivers/scsi/nsp32.c                      |    2=20
- drivers/scsi/scsi.c                       |    3 +
- drivers/usb/core/hub.c                    |    5 +-
- fs/cifs/cifsencrypt.c                     |    2=20
- fs/cifs/cifsglob.h                        |    1=20
- fs/cifs/connect.c                         |    7 +--
- fs/cifs/sess.c                            |    6 +-
- fs/dcache.c                               |    2=20
- fs/debugfs/inode.c                        |   69 +++++++++----------------=
------
- fs/ext4/ialloc.c                          |   10 ++--
- fs/ext4/super.c                           |   17 ++++++-
- include/linux/ftrace_event.h              |    4 +
- kernel/trace/trace.c                      |    1=20
- tools/perf/util/map.c                     |    3 -
- 18 files changed, 111 insertions(+), 92 deletions(-)
-
-Amit Shah (5):
-      virtio: console: fix race with port unplug and open/close
-      virtio: console: fix race in port_fops_open() and port unplug
-      virtio: console: clean up port data immediately at time of unplug
-      virtio: console: fix raising SIGIO after port unplug
-      virtio: console: return -ENODEV on all read operations after unplug
-
-Andrew Vagin (1):
-      tracing: Fix fields of struct trace_iterator that are zeroed by mista=
-ke
-
-Arnd Bergmann (1):
-      SCSI: nsp32: use mdelay instead of large udelay constants
-
-Chen Gang (1):
-      cifs: extend the buffer length enought for sprintf() using
-
-Curt Brune (1):
-      hwmon: (adt7470) Fix incorrect return code check
-
-Greg Kroah-Hartman (1):
-      Linux 3.4.58
-
-Joshua Zhu (1):
-      perf tools: Add anonymous huge page recognition
-
-Julius Werner (1):
-      usb: core: don't try to reset_device() a port that got just disconnec=
-ted
-
-Martin K. Petersen (1):
-      SCSI: Don't attempt to send extended INQUIRY command if skip_vpd_page=
-s is set
-
-NeilBrown (1):
-      vfs: d_obtain_alias() needs to use "/" as default name.
-
-Oleg Nesterov (1):
-      debugfs: debugfs_remove_recursive() must not rely on list_empty(d_sub=
-dirs)
-
-Piotr Sarna (1):
-      ext4: fix mount/remount error messages for incompatible mount options
-
-Sumit.Saxena@lsi.com (1):
-      SCSI: megaraid_sas: megaraid_sas driver init fails in kdump kernel
-
-Theodore Ts'o (1):
-      ext4: make sure group number is bumped after a inode allocation race
-
-
---yrj/dFKFPuw6o+aM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSDHCdAAoJEDjbvchgkmk+pQcP/2mNJSdA7aEm5gJmTdgQ2rOj
-OhKFd8FYnyEmoLnFFAYFaFOR3vwjWqhIKE4zbRIktvEVnzcjfj7h95lzqcdwE1Zf
-4WWEkRM1Vmu7805nKXYoy/A05ERvaJjbGUKCs7yl1LyXeVO4iMAVL4vy0ojP3ELu
-M9R0HSDcjyT/PdC84NRyI6wJzy+CoH2648JAxBXVpP4rLHYTUIoIYISA7H0TIp6X
-Uh9Rij0ODgSpTIZ+iHS7ZZjyACgwtZmRbGWROwdVYm6LxVsIIRiCRnsFlv2wEf6r
-68h/rCD/KQF1od6y8qDTVMNUPvbJUj73Sx0TG6l1281A5nCI0uz0wovjXPVwMjZS
-fbEkNcToSlPqTBkWruekHGNpG6ekIpWfZGr8oWqyNlCtZ3QDDThCcQO3iJwWRo+l
-vw9FE8lWbQ7qlMQvIjPeGuTr7VmwSX0M2iONpAzUJObdqezjd8Xd28M1GLR3Boau
-FXqF2DCVaYlCDzJ+RD++iOrdm/iMTarvvkc+zxVjWFzg8KEfMp1k5wYMM6WmqcHx
-WPlfCFEdI3jOcA5aPRIGv+CZpWiaQWYryEjxIeEkE4YcaGuXVRpk96AndEsiq9x3
-4pZ/ndKGwGLu17lZatIHxJFsl8pNikvdktKKWy+ome2iJLYqMScm8f9BFQB8m0ht
-UAwLef+Q7mIJU2+/M78Q
-=X95D
------END PGP SIGNATURE-----
-
---yrj/dFKFPuw6o+aM--
+diff --git a/Makefile b/Makefile
+index 7f4df0c..b19d508 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 4
+-SUBLEVEL = 57
++SUBLEVEL = 58
+ EXTRAVERSION =
+ NAME = Saber-toothed Squirrel
+ 
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index f77e341..0cd2d50 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -256,9 +256,12 @@ static struct port *find_port_by_devt_in_portdev(struct ports_device *portdev,
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&portdev->ports_lock, flags);
+-	list_for_each_entry(port, &portdev->ports, list)
+-		if (port->cdev->dev == dev)
++	list_for_each_entry(port, &portdev->ports, list) {
++		if (port->cdev->dev == dev) {
++			kref_get(&port->kref);
+ 			goto out;
++		}
++	}
+ 	port = NULL;
+ out:
+ 	spin_unlock_irqrestore(&portdev->ports_lock, flags);
+@@ -630,6 +633,10 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
+ 
+ 	port = filp->private_data;
+ 
++	/* Port is hot-unplugged. */
++	if (!port->guest_connected)
++		return -ENODEV;
++
+ 	if (!port_has_data(port)) {
+ 		/*
+ 		 * If nothing's connected on the host just return 0 in
+@@ -646,7 +653,7 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+-	/* Port got hot-unplugged. */
++	/* Port got hot-unplugged while we were waiting above. */
+ 	if (!port->guest_connected)
+ 		return -ENODEV;
+ 	/*
+@@ -789,14 +796,14 @@ static int port_fops_open(struct inode *inode, struct file *filp)
+ 	struct port *port;
+ 	int ret;
+ 
++	/* We get the port with a kref here */
+ 	port = find_port_by_devt(cdev->dev);
++	if (!port) {
++		/* Port was unplugged before we could proceed */
++		return -ENXIO;
++	}
+ 	filp->private_data = port;
+ 
+-	/* Prevent against a port getting hot-unplugged at the same time */
+-	spin_lock_irq(&port->portdev->ports_lock);
+-	kref_get(&port->kref);
+-	spin_unlock_irq(&port->portdev->ports_lock);
+-
+ 	/*
+ 	 * Don't allow opening of console port devices -- that's done
+ 	 * via /dev/hvc
+@@ -1254,14 +1261,6 @@ static void remove_port(struct kref *kref)
+ 
+ 	port = container_of(kref, struct port, kref);
+ 
+-	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
+-	device_destroy(pdrvdata.class, port->dev->devt);
+-	cdev_del(port->cdev);
+-
+-	kfree(port->name);
+-
+-	debugfs_remove(port->debugfs_file);
+-
+ 	kfree(port);
+ }
+ 
+@@ -1291,12 +1290,14 @@ static void unplug_port(struct port *port)
+ 	spin_unlock_irq(&port->portdev->ports_lock);
+ 
+ 	if (port->guest_connected) {
++		/* Let the app know the port is going down. */
++		send_sigio_to_port(port);
++
++		/* Do this after sigio is actually sent */
+ 		port->guest_connected = false;
+ 		port->host_connected = false;
+-		wake_up_interruptible(&port->waitqueue);
+ 
+-		/* Let the app know the port is going down. */
+-		send_sigio_to_port(port);
++		wake_up_interruptible(&port->waitqueue);
+ 	}
+ 
+ 	if (is_console_port(port)) {
+@@ -1315,6 +1316,14 @@ static void unplug_port(struct port *port)
+ 	 */
+ 	port->portdev = NULL;
+ 
++	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
++	device_destroy(pdrvdata.class, port->dev->devt);
++	cdev_del(port->cdev);
++
++	kfree(port->name);
++
++	debugfs_remove(port->debugfs_file);
++
+ 	/*
+ 	 * Locks around here are not necessary - a port can't be
+ 	 * opened after we removed the port struct from ports_list
+diff --git a/drivers/hwmon/adt7470.c b/drivers/hwmon/adt7470.c
+index 54ec8905..034085d 100644
+--- a/drivers/hwmon/adt7470.c
++++ b/drivers/hwmon/adt7470.c
+@@ -215,7 +215,7 @@ static inline int adt7470_write_word_data(struct i2c_client *client, u8 reg,
+ 					  u16 value)
+ {
+ 	return i2c_smbus_write_byte_data(client, reg, value & 0xFF)
+-	       && i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
++	       || i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
+ }
+ 
+ static void adt7470_init_client(struct i2c_client *client)
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index 073d5ad..7926162 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -3493,11 +3493,21 @@ static int megasas_init_fw(struct megasas_instance *instance)
+ 		break;
+ 	}
+ 
+-	/*
+-	 * We expect the FW state to be READY
+-	 */
+-	if (megasas_transition_to_ready(instance, 0))
+-		goto fail_ready_state;
++	if (megasas_transition_to_ready(instance, 0)) {
++		atomic_set(&instance->fw_reset_no_pci_access, 1);
++		instance->instancet->adp_reset
++			(instance, instance->reg_set);
++		atomic_set(&instance->fw_reset_no_pci_access, 0);
++		dev_info(&instance->pdev->dev,
++			"megasas: FW restarted successfully from %s!\n",
++			__func__);
++
++		/*waitting for about 30 second before retry*/
++		ssleep(30);
++
++		if (megasas_transition_to_ready(instance, 0))
++			goto fail_ready_state;
++	}
+ 
+ 	/* Check if MSI-X is supported while in ready state */
+ 	msix_enable = (instance->instancet->read_fw_status_reg(reg_set) &
+diff --git a/drivers/scsi/nsp32.c b/drivers/scsi/nsp32.c
+index 62b6168..e705ed3 100644
+--- a/drivers/scsi/nsp32.c
++++ b/drivers/scsi/nsp32.c
+@@ -2926,7 +2926,7 @@ static void nsp32_do_bus_reset(nsp32_hw_data *data)
+ 	 * reset SCSI bus
+ 	 */
+ 	nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
+-	udelay(RESET_HOLD_TIME);
++	mdelay(RESET_HOLD_TIME / 1000);
+ 	nsp32_write1(base, SCSI_BUS_CONTROL, 0);
+ 	for(i = 0; i < 5; i++) {
+ 		intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 07322ec..29fabff 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -1025,6 +1025,9 @@ int scsi_get_vpd_page(struct scsi_device *sdev, u8 page, unsigned char *buf,
+ {
+ 	int i, result;
+ 
++	if (sdev->skip_vpd_pages)
++		goto fail;
++
+ 	/* Ask for all the pages supported by this device */
+ 	result = scsi_vpd_inquiry(sdev, buf, 0, buf_len);
+ 	if (result)
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index a969ec1..aa54fad 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3890,7 +3890,8 @@ static void hub_events(void)
+ 					hub->hdev->children[i - 1];
+ 
+ 				dev_dbg(hub_dev, "warm reset port %d\n", i);
+-				if (!udev) {
++				if (!udev || !(portstatus &
++						USB_PORT_STAT_CONNECTION)) {
+ 					status = hub_port_reset(hub, i,
+ 							NULL, HUB_BH_RESET_TIME,
+ 							true);
+@@ -3900,8 +3901,8 @@ static void hub_events(void)
+ 					usb_lock_device(udev);
+ 					status = usb_reset_device(udev);
+ 					usb_unlock_device(udev);
++					connect_change = 0;
+ 				}
+-				connect_change = 0;
+ 			}
+ 
+ 			if (connect_change)
+diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+index 6d0c62a..6dd3b61 100644
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -369,7 +369,7 @@ find_domain_name(struct cifs_ses *ses, const struct nls_table *nls_cp)
+ 		if (blobptr + attrsize > blobend)
+ 			break;
+ 		if (type == NTLMSSP_AV_NB_DOMAIN_NAME) {
+-			if (!attrsize)
++			if (!attrsize || attrsize >= CIFS_MAX_DOMAINNAME_LEN)
+ 				break;
+ 			if (!ses->domainName) {
+ 				ses->domainName =
+diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+index 73fea28..a5fcf19 100644
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -38,6 +38,7 @@
+ #define MAX_TREE_SIZE (2 + MAX_SERVER_SIZE + 1 + MAX_SHARE_SIZE + 1)
+ #define MAX_SERVER_SIZE 15
+ #define MAX_SHARE_SIZE 80
++#define CIFS_MAX_DOMAINNAME_LEN 256 /* max domain name length */
+ #define MAX_USERNAME_SIZE 256	/* reasonable maximum for current servers */
+ #define MAX_PASSWORD_SIZE 512	/* max for windows seems to be 256 wide chars */
+ 
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 9cc574c..e7fe81d 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -1698,7 +1698,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
+ 			if (string == NULL)
+ 				goto out_nomem;
+ 
+-			if (strnlen(string, 256) == 256) {
++			if (strnlen(string, CIFS_MAX_DOMAINNAME_LEN)
++					== CIFS_MAX_DOMAINNAME_LEN) {
+ 				printk(KERN_WARNING "CIFS: domain name too"
+ 						    " long\n");
+ 				goto cifs_parse_mount_err;
+@@ -2356,8 +2357,8 @@ cifs_put_smb_ses(struct cifs_ses *ses)
+ 
+ #ifdef CONFIG_KEYS
+ 
+-/* strlen("cifs:a:") + INET6_ADDRSTRLEN + 1 */
+-#define CIFSCREDS_DESC_SIZE (7 + INET6_ADDRSTRLEN + 1)
++/* strlen("cifs:a:") + CIFS_MAX_DOMAINNAME_LEN + 1 */
++#define CIFSCREDS_DESC_SIZE (7 + CIFS_MAX_DOMAINNAME_LEN + 1)
+ 
+ /* Populate username and pw fields from keyring if possible */
+ static int
+diff --git a/fs/cifs/sess.c b/fs/cifs/sess.c
+index 551d0c2..de9b1c1 100644
+--- a/fs/cifs/sess.c
++++ b/fs/cifs/sess.c
+@@ -198,7 +198,7 @@ static void unicode_domain_string(char **pbcc_area, struct cifs_ses *ses,
+ 		bytes_ret = 0;
+ 	} else
+ 		bytes_ret = cifs_strtoUTF16((__le16 *) bcc_ptr, ses->domainName,
+-					    256, nls_cp);
++					    CIFS_MAX_DOMAINNAME_LEN, nls_cp);
+ 	bcc_ptr += 2 * bytes_ret;
+ 	bcc_ptr += 2;  /* account for null terminator */
+ 
+@@ -256,8 +256,8 @@ static void ascii_ssetup_strings(char **pbcc_area, struct cifs_ses *ses,
+ 
+ 	/* copy domain */
+ 	if (ses->domainName != NULL) {
+-		strncpy(bcc_ptr, ses->domainName, 256);
+-		bcc_ptr += strnlen(ses->domainName, 256);
++		strncpy(bcc_ptr, ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
++		bcc_ptr += strnlen(ses->domainName, CIFS_MAX_DOMAINNAME_LEN);
+ 	} /* else we will send a null domain name
+ 	     so the server will default to its own domain */
+ 	*bcc_ptr = 0;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index e498de2..9d39de4 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1556,7 +1556,7 @@ EXPORT_SYMBOL(d_find_any_alias);
+  */
+ struct dentry *d_obtain_alias(struct inode *inode)
+ {
+-	static const struct qstr anonstring = { .name = "" };
++	static const struct qstr anonstring = { .name = "/", .len = 1 };
+ 	struct dentry *tmp;
+ 	struct dentry *res;
+ 
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index b80bc84..9dc6e76 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -527,8 +527,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
+  */
+ void debugfs_remove_recursive(struct dentry *dentry)
+ {
+-	struct dentry *child;
+-	struct dentry *parent;
++	struct dentry *child, *next, *parent;
+ 
+ 	if (!dentry)
+ 		return;
+@@ -538,61 +537,37 @@ void debugfs_remove_recursive(struct dentry *dentry)
+ 		return;
+ 
+ 	parent = dentry;
++ down:
+ 	mutex_lock(&parent->d_inode->i_mutex);
++	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
++		if (!debugfs_positive(child))
++			continue;
+ 
+-	while (1) {
+-		/*
+-		 * When all dentries under "parent" has been removed,
+-		 * walk up the tree until we reach our starting point.
+-		 */
+-		if (list_empty(&parent->d_subdirs)) {
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			if (parent == dentry)
+-				break;
+-			parent = parent->d_parent;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-		}
+-		child = list_entry(parent->d_subdirs.next, struct dentry,
+-				d_u.d_child);
+- next_sibling:
+-
+-		/*
+-		 * If "child" isn't empty, walk down the tree and
+-		 * remove all its descendants first.
+-		 */
++		/* perhaps simple_empty(child) makes more sense */
+ 		if (!list_empty(&child->d_subdirs)) {
+ 			mutex_unlock(&parent->d_inode->i_mutex);
+ 			parent = child;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-			continue;
++			goto down;
+ 		}
+-		__debugfs_remove(child, parent);
+-		if (parent->d_subdirs.next == &child->d_u.d_child) {
+-			/*
+-			 * Try the next sibling.
+-			 */
+-			if (child->d_u.d_child.next != &parent->d_subdirs) {
+-				child = list_entry(child->d_u.d_child.next,
+-						   struct dentry,
+-						   d_u.d_child);
+-				goto next_sibling;
+-			}
+-
+-			/*
+-			 * Avoid infinite loop if we fail to remove
+-			 * one dentry.
+-			 */
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			break;
+-		}
+-		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
++ up:
++		if (!__debugfs_remove(child, parent))
++			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 	}
+ 
+-	parent = dentry->d_parent;
++	mutex_unlock(&parent->d_inode->i_mutex);
++	child = parent;
++	parent = parent->d_parent;
+ 	mutex_lock(&parent->d_inode->i_mutex);
+-	__debugfs_remove(dentry, parent);
++
++	if (child != dentry) {
++		next = list_entry(child->d_u.d_child.next, struct dentry,
++					d_u.d_child);
++		goto up;
++	}
++
++	if (!__debugfs_remove(child, parent))
++		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 	mutex_unlock(&parent->d_inode->i_mutex);
+-	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ }
+ EXPORT_SYMBOL_GPL(debugfs_remove_recursive);
+ 
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index e42b468..b1c3f2a 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -687,11 +687,8 @@ repeat_in_this_group:
+ 		ino = ext4_find_next_zero_bit((unsigned long *)
+ 					      inode_bitmap_bh->b_data,
+ 					      EXT4_INODES_PER_GROUP(sb), ino);
+-		if (ino >= EXT4_INODES_PER_GROUP(sb)) {
+-			if (++group == ngroups)
+-				group = 0;
+-			continue;
+-		}
++		if (ino >= EXT4_INODES_PER_GROUP(sb))
++			goto next_group;
+ 		if (group == 0 && (ino+1) < EXT4_FIRST_INO(sb)) {
+ 			ext4_error(sb, "reserved inode found cleared - "
+ 				   "inode=%lu", ino + 1);
+@@ -709,6 +706,9 @@ repeat_in_this_group:
+ 			goto got; /* we grabbed the inode! */
+ 		if (ino < EXT4_INODES_PER_GROUP(sb))
+ 			goto repeat_in_this_group;
++next_group:
++		if (++group == ngroups)
++			group = 0;
+ 	}
+ 	err = -ENOSPC;
+ 	goto out;
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index b93de81..8bbb14c 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3232,7 +3232,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		}
+ 		if (test_opt(sb, DIOREAD_NOLOCK)) {
+ 			ext4_msg(sb, KERN_ERR, "can't mount with "
+-				 "both data=journal and delalloc");
++				 "both data=journal and dioread_nolock");
+ 			goto failed_mount;
+ 		}
+ 		if (test_opt(sb, DELALLOC))
+@@ -4397,6 +4397,21 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+ 		goto restore_opts;
+ 	}
+ 
++	if (test_opt(sb, DATA_FLAGS) == EXT4_MOUNT_JOURNAL_DATA) {
++		if (test_opt2(sb, EXPLICIT_DELALLOC)) {
++			ext4_msg(sb, KERN_ERR, "can't mount with "
++				 "both data=journal and delalloc");
++			err = -EINVAL;
++			goto restore_opts;
++		}
++		if (test_opt(sb, DIOREAD_NOLOCK)) {
++			ext4_msg(sb, KERN_ERR, "can't mount with "
++				 "both data=journal and dioread_nolock");
++			err = -EINVAL;
++			goto restore_opts;
++		}
++	}
++
+ 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
+ 		ext4_abort(sb, "Abort forced by user");
+ 
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 176a939..16cad53 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -71,6 +71,8 @@ struct trace_iterator {
+ 	/* trace_seq for __print_flags() and __print_symbolic() etc. */
+ 	struct trace_seq	tmp_seq;
+ 
++	cpumask_var_t		started;
++
+ 	/* The below is zeroed out in pipe_read */
+ 	struct trace_seq	seq;
+ 	struct trace_entry	*ent;
+@@ -83,7 +85,7 @@ struct trace_iterator {
+ 	loff_t			pos;
+ 	long			idx;
+ 
+-	cpumask_var_t		started;
++	/* All new field here will be zeroed out in pipe_read */
+ };
+ 
+ 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 13cd224..5dd9626 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3478,6 +3478,7 @@ waitagain:
+ 	memset(&iter->seq, 0,
+ 	       sizeof(struct trace_iterator) -
+ 	       offsetof(struct trace_iterator, seq));
++	cpumask_clear(iter->started);
+ 	iter->pos = -1;
+ 
+ 	trace_event_read_lock();
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 35ae568..9593f27 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -15,7 +15,8 @@ const char *map_type__name[MAP__NR_TYPES] = {
+ 
+ static inline int is_anon_memory(const char *filename)
+ {
+-	return strcmp(filename, "//anon") == 0;
++	return !strcmp(filename, "//anon") ||
++	       !strcmp(filename, "/anon_hugepage (deleted)");
+ }
+ 
+ static inline int is_no_dso_memory(const char *filename)
