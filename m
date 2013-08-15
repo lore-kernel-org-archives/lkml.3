@@ -1,100 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759243Ab3HOAW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 20:22:57 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:43468 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab3HOAW4 (ORCPT
+	id S1759661Ab3HOAZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 20:25:12 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:48497 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754667Ab3HOAZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 20:22:56 -0400
-Date: Wed, 14 Aug 2013 20:22:51 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] idr: Document ida tree sections
-Message-ID: <20130815002251.GP28628@htj.dyndns.org>
-References: <20130809145756.GL20515@mtj.dyndns.org>
- <20130813221308.GA11980@kmo-pixel>
- <20130813221928.GE28996@mtj.dyndns.org>
- <20130813222759.GA12069@kmo-pixel>
- <20130813224428.GG28996@mtj.dyndns.org>
- <20130813225927.GA2000@kmo-pixel>
- <20130813232211.GI28996@mtj.dyndns.org>
- <20130813235133.GA3807@kmo-pixel>
- <20130813235947.GL28996@mtj.dyndns.org>
- <20130815000427.GB6427@kmo-pixel>
+	Wed, 14 Aug 2013 20:25:10 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgcWAPYeDFJ5LCJR/2dsb2JhbABBGhaCcDWrOwI8jiGFWoEgF3SCJAEBBAEnExwjBQsIAxgJJQ8FJQMhE4gKBQ0yuFkWjViBK4E3B4QSA5djgS6QJYMtKoEt
+Date: Thu, 15 Aug 2013 10:24:36 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, linux-ext4@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+Message-ID: <20130815002436.GI6023@dastard>
+References: <520BB9EF.5020308@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130815000427.GB6427@kmo-pixel>
+In-Reply-To: <520BB9EF.5020308@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Kent.
-
-On Wed, Aug 14, 2013 at 05:04:27PM -0700, Kent Overstreet wrote:
-> I was just telling you how I felt :) Regardless of that, IMO what I've
-> got now is superior to any radix tree based approach for what ida/idr
-> are supposed to do. I could of course be wrong, but I'm not convinced...
-
-It's just very difficult to tell either way.  You say it's better but
-the benefit to weirdity ratio doesn't seem too apparent.  The only
-thing the proposed solution saves is a few pointer dereferences in
-extreme corner cases at the cost of making low level library using
-high order allocation or vmalloc allocation.
-
-Weirdity aside, the unsualness even makes evaluating the overhead
-muddier.  e.g. vmalloc space is expensive not only in terms of address
-space real estate but also in terms of runtime performance because
-each vmalloc page is additional TLB pressure in most configurations
-where the kernel linear address space is mapped with gigantic
-mappings.  The net effect could be small and won't easily show up in
-microbenchmarks as they usually don't tend to push TLB pressure but
-then again the performance benefit of the proposed implementation is
-likely to extremely minor too.
-
-For a code piece to be unusual, it should have its accompanying clear
-benefits, which doesn't seem to be the case here.  It's different and
-maybe better in some extreme benchmarks specifically designed for it
-but that seems to be about it.
-
-> Re: caching the last allocation with a radix tree based implementation.
-> I thought about that more last night, I don't think that would be viable
-> for using ida underneath the percpu ida allocator.
->
-> Reason being percpu ida has to heavily optimize for the case where
-> almost all of the id space is allocated, and after awhile the id space
-> is going to be fragmented - so caching the last allocated id is going to
-> be useless.
-
-A 4k page has 32k bits.  It can serve up quite a few IDs even with
-internal indexing.  Most cases will be fine with single page and
-single layer would cover most of what's left.  How is that gonna be
-very different from the proposed implementation.  If you worry about
-huge ID space being distributed by a lot of CPUs, you can use per-cpu
-hints, which will be faster than the proposed solution anyway.
-
-> This is also why I implemented the ganged allocation bit, to amortize
-> the bitmap tree traversal. So we'd lose out on that going back to a
-> radix tree, or have to reimplement it (and it'll be slower due to
-> pointer chasing).
+On Wed, Aug 14, 2013 at 10:10:07AM -0700, Dave Hansen wrote:
+> We talked a little about this issue in this thread:
 > 
-> Which is all not the end of the world, but it means that if we punt on
-> the ida/idr rewrites for now or change our minds about them - we _do_
-> have quite a bit of stuff waiting on the percpu ida allocator, so for
-> that to go in separate I'll have to change it back to using a stack of
-> integers for the global freelist - which does use significantly more
-> memory.
+> 	http://marc.info/?l=linux-mm&m=137573185419275&w=2
+> 
+> but I figured I'd follow up with a full comparison.  ext4 is about 20%
+> slower in handling write page faults than ext3.  xfs is about 30% slower
+> than ext3.  I'm running on an 8-socket / 80-core / 160-thread system.
+> Test case is this:
+> 
+> 	https://github.com/antonblanchard/will-it-scale/blob/master/tests/page_fault3.c
 
-Yes, I'd like to see better, percpu-aware ida too and there are things
-which can benefit from it, but we still need to get ida right and I
-don't think it's a very difficult thing to do at this point.
+So, it writes a 128MB file sequentially via mmap page faults. This
+isn't a page fault benchmark, as such...
 
-Thanks.
+> 
+> It's a little easier to look at the trends as you grow the number of
+> processes:
+> 
+> 	http://www.sr71.net/~dave/intel/page-fault-exts/cmp.html?1=ext3&2=ext4&3=xfs&hide=linear,threads,threads_idle,processes_idle&rollPeriod=16
+> 
+> I recorded and diff'd some perf data (I've still got the raw data if
+> anyone wants it), and the main culprit of the ext4/xfs delta looks to be
+> spinlock contention (or at least bouncing) in xfs_log_commit_cil().
+> This looks to be a known problem:
+> 
+> 	http://oss.sgi.com/archives/xfs/2013-07/msg00110.html
 
+Yup, apparently they've been pulled into the xfsdev tree, but i
+haven't seen it updated since they were pulled in so the linux-next
+builds aren't picking up the fixes yet.
+
+> Here's a brief snippet of the ext4->xfs 'perf diff'.  Note that things
+> like page_fault() go down in the profile because we are doing _fewer_ of
+> them, not because it got faster:
+> 
+> > # Baseline    Delta          Shared Object                                          Symbol
+> > # ........  .......  .....................  ..............................................
+> > #
+> >     22.04%   -4.07%  [kernel.kallsyms]      [k] page_fault                                
+> >      2.93%  +12.49%  [kernel.kallsyms]      [k] _raw_spin_lock                            
+> >      8.21%   -0.58%  page_fault3_processes  [.] testcase                                  
+> >      4.87%   -0.34%  [kernel.kallsyms]      [k] __set_page_dirty_buffers                  
+> >      4.07%   -0.58%  [kernel.kallsyms]      [k] mem_cgroup_update_page_stat               
+> >      4.10%   -0.61%  [kernel.kallsyms]      [k] __block_write_begin                       
+> >      3.69%   -0.57%  [kernel.kallsyms]      [k] find_get_page                             
+> 
+> It's a bit of a bummer that things are so much less scalable on the
+> newer filesystems.
+
+Sorry, what? What filesystems are you comparing here? XFS is
+anything but new...
+
+> I expected xfs to do a _lot_ better than it did.
+
+perf diff doesn't tell me anything about how you should expect the
+workload to scale.
+
+This workload appears to be a concurrent write workload using
+mmap(), so performance is going to be determined by filesystem
+configuration, storage capability and the CPU overhead of the
+page_mkwrite() path through the filesystem. It's not a page fault
+benchmark at all - it's simply a filesystem write bandwidth
+benchmark.
+
+So, perhaps you could describe the storage you are using, as that
+would shed more light on your results. A good summary of what
+information is useful to us is here:
+
+http://xfs.org/index.php/XFS_FAQ#Q:_What_information_should_I_include_when_reporting_a_problem.3F
+
+And FWIW, it's no secret that XFS has more per-operation overhead
+than ext4 through the write path when it comes to allocation, so
+it's no surprise that on a workload that is highly dependent on
+allocation overhead that ext4 is a bit faster....
+
+Cheers,
+
+Dave.
 -- 
-tejun
+Dave Chinner
+david@fromorbit.com
