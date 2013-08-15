@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752023Ab3HOUtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 16:49:03 -0400
-Received: from titanium.nobletdesign.com ([64.34.172.148]:53441 "EHLO
-	titanium.nobletdesign.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab3HOUtA (ORCPT
+	id S1751826Ab3HOUu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 16:50:26 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:51056 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab3HOUuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 16:49:00 -0400
-X-Greylist: delayed 1309 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Aug 2013 16:49:00 EDT
-Message-ID: <520D399B.6020607@gnat.ca>
-Date: Thu, 15 Aug 2013 14:27:07 -0600
-From: "Nathanael D. Noblet" <nathanael@gnat.ca>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 15 Aug 2013 16:50:25 -0400
 MIME-Version: 1.0
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Kailang Yang <kailang@realtek.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: RealTek Inverted Mic Patch
-Content-Type: multipart/mixed;
- boundary="------------080508000103060603000502"
+In-Reply-To: <20130814200549.21626.79779.stgit@bling.home>
+References: <20130814200549.21626.79779.stgit@bling.home>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 15 Aug 2013 14:50:04 -0600
+Message-ID: <CAErSpo6zfR2TQViyKTr9mjWHSnp9Veo9wRN_eQCJU2YtabPRTA@mail.gmail.com>
+Subject: Re: [PATCH] pci: Add probe functions for bus and slot reset
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080508000103060603000502
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Wed, Aug 14, 2013 at 2:06 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> Users of pci_reset_bus() and pci_reset_slot() need a way to probe
+> whether the bus or slot supports reset.  Add trivial helper functions
+> and export them as vfio-pci will make use of these.
+>
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 
-Hello,
+Merged to the PCI "next" branch for v3.12, thanks.
 
-   I have hardware that suffers from an internal phase inverted mic that 
-isn't properly detected. Below is a patch that fixes the issue for my 
-particular hardware.
-
-Pre patch alsa-info:
-
-http://www.alsa-project.org/db/?f=a922c77ddf473a8f478ec334fa9dca684f213b59
-
-Post patch alsa-info:
-http://www.alsa-project.org/db/?f=14cd25b323d3bbb02fabbac78e62851569893c3f
-
-Incase you care. The patch is small. I don't know if you need any kind 
-of signed off/written by etc for something so small. In any case there 
-is no intellectual property in this at all. Feel free to do as you wish 
-with it. However including it in the kernel would make my life easier.
-
-Thanks,
--- 
-Nathanael d. Noblet
-t 403.875.4613
-
---------------080508000103060603000502
-Content-Type: text/x-patch;
- name="alsa-realtek-inverted-mic.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="alsa-realtek-inverted-mic.patch"
-
---- a/sound/pci/hda/patch_realtek.c.org	2013-08-15 13:17:49.804492932 -0600
-+++ b/sound/pci/hda/patch_realtek.c	2013-08-15 13:18:40.582364931 -0600
-@@ -4208,6 +4208,7 @@
- 	SND_PCI_QUIRK(0x17aa, 0x3a0d, "Lenovo Ideapad Y550", ALC662_FIXUP_IDEAPAD),
- 	SND_PCI_QUIRK(0x19da, 0xa130, "Zotac Z68", ALC662_FIXUP_ZOTAC_Z68),
- 	SND_PCI_QUIRK(0x1b35, 0x2206, "CZC P10T", ALC662_FIXUP_CZC_P10T),
-+    SND_PCI_QUIRK(0x1025, 0x034a, "Gateway LT27", ALC662_FIXUP_INV_DMIC),
- 
- #if 0
- 	/* Below is a quirk table taken from the old code.
-
---------------080508000103060603000502--
+> ---
+>
+> This is logically patch 10/9 for v5 pci: bus and slot reset interfaces.
+> If there's a need to re-spin anything I'll roll this in.
+>
+>  drivers/pci/pci.c   |   24 ++++++++++++++++++++++++
+>  include/linux/pci.h |    2 ++
+>  2 files changed, 26 insertions(+)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index ba68451..888d847 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -3610,6 +3610,18 @@ static int pci_slot_reset(struct pci_slot *slot, int probe)
+>  }
+>
+>  /**
+> + * pci_probe_reset_slot - probe whether a PCI slot can be reset
+> + * @slot: PCI slot to probe
+> + *
+> + * Return 0 if slot can be reset, negative if a slot reset is not supported.
+> + */
+> +int pci_probe_reset_slot(struct pci_slot *slot)
+> +{
+> +       return pci_slot_reset(slot, 1);
+> +}
+> +EXPORT_SYMBOL_GPL(pci_probe_reset_slot);
+> +
+> +/**
+>   * pci_reset_slot - reset a PCI slot
+>   * @slot: PCI slot to reset
+>   *
+> @@ -3662,6 +3674,18 @@ static int pci_bus_reset(struct pci_bus *bus, int probe)
+>  }
+>
+>  /**
+> + * pci_probe_reset_bus - probe whether a PCI bus can be reset
+> + * @bus: PCI bus to probe
+> + *
+> + * Return 0 if bus can be reset, negative if a bus reset is not supported.
+> + */
+> +int pci_probe_reset_bus(struct pci_bus *bus)
+> +{
+> +       return pci_bus_reset(bus, 1);
+> +}
+> +EXPORT_SYMBOL_GPL(pci_probe_reset_bus);
+> +
+> +/**
+>   * pci_reset_bus - reset a PCI bus
+>   * @bus: top level PCI bus to reset
+>   *
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 1a8fd34..daf40cd 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -924,7 +924,9 @@ int pcie_set_mps(struct pci_dev *dev, int mps);
+>  int __pci_reset_function(struct pci_dev *dev);
+>  int __pci_reset_function_locked(struct pci_dev *dev);
+>  int pci_reset_function(struct pci_dev *dev);
+> +int pci_probe_reset_slot(struct pci_slot *slot);
+>  int pci_reset_slot(struct pci_slot *slot);
+> +int pci_probe_reset_bus(struct pci_bus *bus);
+>  int pci_reset_bus(struct pci_bus *bus);
+>  void pci_reset_bridge_secondary_bus(struct pci_dev *dev);
+>  void pci_update_resource(struct pci_dev *dev, int resno);
+>
