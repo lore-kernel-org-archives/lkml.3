@@ -1,312 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab3HOVVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 17:21:35 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:64824 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab3HOVVe (ORCPT
+	id S1752175Ab3HOVXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 17:23:13 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:46089 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab3HOVXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 17:21:34 -0400
-Date: Thu, 15 Aug 2013 22:21:29 +0100 (IST)
-From: "paulmcquad@gmail.com" <paulmcquad@gmail.com>
-To: paulmcquad@gmail.com
-cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org
-Subject: [PATCH] Staging:BCM:DDRInit.c:Replacing __FUNCTION__
-Message-ID: <alpine.DEB.2.02.1308152213010.7299@paul87-DT2110>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 15 Aug 2013 17:23:12 -0400
+Date: Thu, 15 Aug 2013 09:07:34 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: rydberg@euromail.se, Daniel Kurtz <djkurtz@chromium.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: Atmel updates to atmel_mxt_ts touch controller driver - v6
+Message-ID: <20130815160734.GB12196@core.coreip.homeip.net>
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+ <20130718194739.GA559@polaris.bitmath.org>
+ <520CFA0D.4090905@itdev.co.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520CFA0D.4090905@itdev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 15, 2013 at 04:55:57PM +0100, Nick Dyer wrote:
+> rydberg@euromail.se wrote:
+> > First: thanks for the patches and you work on this driver.
+> 
+> Thank you for your time in looking at these changes.
+> 
+> > Now, I don't swear much, but I would like to emphasize line 161 of
+> > Documentation/SubmittingPatches:
+> > 
+> > **Do not send more than 15 patches at once to the vger mailing lists!!!***
+> > 
+> > One reason that should be obvious by now is that your work will be
+> > attended to much quicker. One may think that it is more efficient to
+> > send the whole backlog at once, but in fact, the time it takes to get
+> > a patchset accepted is inversely proportional to the length of the
+> > patchset. So please, keep it small and simple next time,
+> 
+> Apologies. I will split this lot up into several smaller series of patches.
 
-__Function__ gets replaced with __func__
+Wait, I am in the process of applying it actually...
 
-Signed-Off-By: Paul McQuade <paulmcquad@gmail.com>
----
- drivers/staging/bcm/DDRInit.c |   54 
-++++++++++++++++++++---------------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
-
-diff --git a/drivers/staging/bcm/DDRInit.c b/drivers/staging/bcm/DDRInit.c
-index 8c696b6..f5eda96 100644
---- a/drivers/staging/bcm/DDRInit.c
-+++ b/drivers/staging/bcm/DDRInit.c
-@@ -828,13 +828,13 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
- 		{
- 				retval= rdmalt(Adapter,(UINT)0x0f000830, 
-&uiResetValue, sizeof(uiResetValue));
- 				if(retval < 0) {
--					BCM_DEBUG_PRINT(Adapter,CMHOST, 
-RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+					BCM_DEBUG_PRINT(Adapter, CMHOST, 
-RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 					return retval;
- 				}
- 				uiResetValue |= 0x44;
- 				retval = wrmalt(Adapter,(UINT)0x0f000830, 
-&uiResetValue, sizeof(uiResetValue));
- 				if(retval < 0) {
--					BCM_DEBUG_PRINT(Adapter,CMHOST, 
-WRM, DBG_LVL_ALL, "%s:%d WRM failed\n", __FUNCTION__, __LINE__);
-+					BCM_DEBUG_PRINT(Adapter, CMHOST, 
-RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 					return retval;
- 				}
- 		}
-@@ -972,7 +972,7 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
- 		}
- 		retval = wrmalt(Adapter, psDDRSetting->ulRegAddress, 
-&value, sizeof(value));
- 		if(STATUS_SUCCESS != retval) {
--			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 
-0,"%s:%d\n", __FUNCTION__, __LINE__);
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, 
-"%s:%d\n", __func__, __LINE__);
- 			break;
- 		}
- 
-@@ -992,25 +992,25 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
- 			uiResetValue = 0x01010001;
- 			retval = wrmalt(Adapter, (UINT)0x0F007018, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			uiResetValue = 0x00040020;
- 			retval = wrmalt(Adapter, (UINT)0x0F007094, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			uiResetValue = 0x01020101;
- 			retval = wrmalt(Adapter, (UINT)0x0F00701c, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			uiResetValue = 0x01010000;
- 			retval = wrmalt(Adapter, (UINT)0x0F007018, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 		}
-@@ -1026,34 +1026,34 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
- 		{
- 			retval = rdmalt(Adapter,(UINT)0x0f000c00, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			retval = rdmalt(Adapter,(UINT)0x0f000c00, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			uiResetValue = 0x1322a8;
- 			retval = wrmalt(Adapter, (UINT)0x0f000d1c, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			retval = rdmalt(Adapter,(UINT)0x0f000c00, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 
-RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 
-RDM, DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			retval = rdmalt(Adapter,(UINT)0x0f000c00, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			uiResetValue = 0x132296;
- 			retval = wrmalt(Adapter, (UINT)0x0f000d14, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 		}
-@@ -1062,34 +1062,34 @@ int ddr_init(struct bcm_mini_adapter *Adapter)
- 
- 			retval = rdmalt(Adapter,(UINT)0x0f000c00, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			retval = rdmalt(Adapter,(UINT)0x0f000c00, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			uiResetValue = 0x6003229a;
- 			retval = wrmalt(Adapter, (UINT)0x0f000d14, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			retval = rdmalt(Adapter,(UINT)0x0f000c00, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			retval = rdmalt(Adapter,(UINT)0x0f000c00, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 			uiResetValue = 0x1322a8;
- 			retval = wrmalt(Adapter, (UINT)0x0f000d1c, 
-&uiResetValue, sizeof(uiResetValue));
- 			if(retval < 0) {
--				BCM_DEBUG_PRINT(Adapter,CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __FUNCTION__, __LINE__);
-+				BCM_DEBUG_PRINT(Adapter, CMHOST, RDM, 
-DBG_LVL_ALL, "%s:%d RDM failed\n", __func__, __LINE__);
- 				return retval;
- 			}
- 		}
-@@ -1235,28 +1235,28 @@ int download_ddr_settings(struct bcm_mini_adapter 
-*Adapter)
- 	retval = wrmalt(Adapter, ul_ddr_setting_load_addr, &value, 
-sizeof(value));
- 	if(retval)
- 	{
--		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"%s:%d\n", 
-__FUNCTION__, __LINE__);
-+		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "%s:%d\n", 
-__func__, __LINE__);
- 
- 		return retval;
- 	}
--	ul_ddr_setting_load_addr+=sizeof(ULONG);
-+	ul_ddr_setting_load_addr += sizeof(ULONG);
- 	/*signature */
- 	value =(0x1d1e0dd0);
- 	retval = wrmalt(Adapter, ul_ddr_setting_load_addr, &value, 
-sizeof(value));
- 	if(retval)
- 	{
--		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"%s:%d\n", 
-__FUNCTION__, __LINE__);
-+		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "%s:%d\n", 
-__func__, __LINE__);
- 		return retval;
- 	}
- 
--	ul_ddr_setting_load_addr+=sizeof(ULONG);
-+	ul_ddr_setting_load_addr += sizeof(ULONG);
- 	RegCount*=(sizeof(struct bcm_ddr_setting)/sizeof(ULONG));
- 
- 	while(RegCount && !retval)
- 	{
- 		value = psDDRSetting->ulRegAddress ;
- 		retval = wrmalt( Adapter, ul_ddr_setting_load_addr, 
-&value, sizeof(value));
--		ul_ddr_setting_load_addr+=sizeof(ULONG);
-+		ul_ddr_setting_load_addr += sizeof(ULONG);
- 		if(!retval)
- 		{
- 			if(bOverrideSelfRefresh && 
-(psDDRSetting->ulRegAddress == 0x0F007018))
-@@ -1264,7 +1264,7 @@ int download_ddr_settings(struct bcm_mini_adapter 
-*Adapter)
- 				value = (psDDRSetting->ulRegValue 
-|(1<<8));
- 				if(STATUS_SUCCESS != wrmalt(Adapter, 
-ul_ddr_setting_load_addr,
- 						&value, sizeof(value))){
--					
-BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"%s:%d\n", __FUNCTION__, 
-__LINE__);
-+					BCM_DEBUG_PRINT(Adapter, 
-DBG_TYPE_PRINTK, 0, 0, "%s:%d\n", __func__, __LINE__);
- 					break;
- 				}
- 			}
-@@ -1274,12 +1274,12 @@ int download_ddr_settings(struct bcm_mini_adapter 
-*Adapter)
- 
- 				if(STATUS_SUCCESS != wrmalt(Adapter, 
-ul_ddr_setting_load_addr ,
- 							&value, 
-sizeof(value))){
--					
-BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"%s:%d\n", __FUNCTION__, 
-__LINE__);
-+					BCM_DEBUG_PRINT(Adapter, 
-DBG_TYPE_PRINTK, 0, 0, "%s:%d\n", __func__, __LINE__);
- 					break;
- 				}
- 			}
- 		}
--		ul_ddr_setting_load_addr+=sizeof(ULONG);
-+		ul_ddr_setting_load_addr += sizeof(ULONG);
- 		RegCount--;
- 		psDDRSetting++;
- 	}
 -- 
-1.7.10.4
-
+Dmitry
