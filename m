@@ -1,183 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759611Ab3HOSNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 14:13:55 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:39475 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758621Ab3HOSNy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 14:13:54 -0400
-Message-ID: <1376590389.24607.33.camel@concerto>
-Subject: [RFC PATCH] Fix aio performance regression for database caused by
- THP
-From: Khalid Aziz <khalid.aziz@oracle.com>
-To: aarcange@redhat.com, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        mgorman@suse.de, riel@redhat.com, minchan@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 15 Aug 2013 12:13:09 -0600
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1759685Ab3HOSQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 14:16:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2252 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759418Ab3HOSQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 14:16:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,886,1367996400"; 
+   d="scan'208";a="346910022"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+CC: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Aristeu Rozanski Filho" <arozansk@redhat.com>
+Subject: RE: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Thread-Topic: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Thread-Index: AQHOlGVcQB6qi1wV3Ei8qYoYEneewpmMKjwAgAMKHwCAArfagIAAEviAgAAiKACAAV9FAIAAEOaAgABNEAD//407sIABmBcAgADhpgCAAKPcAIAAO3WAgAAErgD//9MiAA==
+Date: Thu, 15 Aug 2013 18:16:48 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F31CBCE72@ORSMSX106.amr.corp.intel.com>
+References: <5208D80D.5030206@linux.vnet.ibm.com>
+ <20130812114404.3bd64fa0@samsung.com> <520A1B5E.8040105@linux.vnet.ibm.com>
+ <20130813094147.062317f8@concha.lan> <520A6A30.1030406@linux.vnet.ibm.com>
+ <3908561D78D1C84285E8C5FCA982C28F31CB8DB5@ORSMSX106.amr.corp.intel.com>
+ <520B603E.3040002@linux.vnet.ibm.com> <20130814211504.393cf138@concha.lan>
+ <20130815100132.GC27616@pd.tnic> <20130815103421.178a5224@samsung.com>
+ <20130815135106.GG27616@pd.tnic>
+In-Reply-To: <20130815135106.GG27616@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7FIGvHg017578
 
-I am working with a tool that simulates oracle database I/O workload.
-This tool (orion to be specific -
-<http://docs.oracle.com/cd/E11882_01/server.112/e16638/iodesign.htm#autoId24>) allocates hugetlbfs pages using shmget() with SHM_HUGETLB flag. It then does aio into these pages from flash disks using various common block sizes used by database. I am looking at performance with two of the most common block sizes - 1M and 64K. aio performance with these two block sizes plunged after Transparent HugePages was introduced in the kernel. Here are performance numbers:
+> * We parse some APEI table and disable those MCA banks which the BIOS
+> wants to handle first.
 
-		pre-THP		2.6.39		3.11-rc5
-1M read		8384 MB/s	5629 MB/s	6501 MB/s
-64K read	7867 MB/s	4576 MB/s	4251 MB/s
+We have no idea which errors the BIOS has chosen for itself.  We just know which
+bank numbers ... and Intel processors change mappings of which errors are logged
+in which banks in every new processor tock (and sometimes tick).  Some banks
+are documented in processor datasheet. most are not. Most common case might
+well be memory ... but it could be cache, or I/O, or ...
 
-I have narrowed the performance impact down to the overheads introduced
-by THP in __get_page_tail() and put_compound_page() routines. perf top
-shows >40% of cycles being spent in these two routines. Every time
-direct I/O to hugetlbfs pages starts, kernel calls get_page() to grab a
-reference to the pages and calls put_page() when I/O completes to put
-the reference away. THP introduced significant amount of locking
-overhead to get_page() and put_page() when dealing with compound pages
-because hugepages can be split underneath get_page() and put_page(). It
-added this overhead irrespective of whether it is dealing with hugetlbfs
-pages or transparent hugepages. This resulted in 20%-45% drop in aio
-performance when using hugetlbfs pages.
+So this doesn't help Mauro figure out whether to allow loading of an
+EDAC driver that will peek and poke at chipset specific registers in
+possibly racy ways with BIOS code doing the same thing.
 
-Since hugetlbfs pages can not be split, there is no reason to go through
-all the locking overhead for these pages from what I can see. I added
-code to __get_page_tail() and put_compound_page() to bypass all the
-locking code when working with hugetlbfs pages. This improved
-performance significantly. Performance numbers with this patch:
-
-		pre-THP		3.11-rc5	3.11-rc5 + Patch
-1M read		8384 MB/s	6501 MB/s	8371 MB/s
-64K read	7867 MB/s	4251 MB/s	6510 MB/s
-
-Performance with 64K read is still lower than what it was before THP,
-but still a 53% improvement. It does mean there is more work to be done
-but I will take a 53% improvement for now.
-
-Please take a look at the following patch and let me know if it looks
-reasonable.
-
-
-Signed-off-by: Khalid Aziz <khalid.aziz@oracle.com>
----
- mm/swap.c |   77 +++++++++++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 52 insertions(+), 25 deletions(-)
-
-diff --git a/mm/swap.c b/mm/swap.c
-index 62b78a6..cc8326f 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -31,6 +31,7 @@
- #include <linux/memcontrol.h>
- #include <linux/gfp.h>
- #include <linux/uio.h>
-+#include <linux/hugetlb.h>
- 
- #include "internal.h"
- 
-@@ -81,6 +82,19 @@ static void __put_compound_page(struct page *page)
- 
- static void put_compound_page(struct page *page)
- {
-+	/*
-+	 * hugetlbfs pages can not be split from under us. If this
-+	 * is a hugetlbfs page, check refcount on head page and release
-+	 * the page if refcount is zero.
-+	 */
-+	if (PageHuge(page)) {
-+		page = compound_head(page);
-+		if (put_page_testzero(page))
-+			__put_compound_page(page);
-+
-+		return;
-+	}
-+
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
- 		struct page *page_head = compound_trans_head(page);
-@@ -184,38 +198,51 @@ bool __get_page_tail(struct page *page)
- 	 * proper PT lock that already serializes against
- 	 * split_huge_page().
- 	 */
--	unsigned long flags;
- 	bool got = false;
--	struct page *page_head = compound_trans_head(page);
-+	struct page *page_head;
- 
--	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-+	/*
-+	 * If this is a hugetlbfs page, it can not be split under
-+	 * us. Simply increment refcount for head page
-+	 */
-+	if (PageHuge(page)) {
-+		page_head = compound_head(page);
-+		atomic_inc(&page_head->_count);
-+		got = true;
-+	} else {
-+		unsigned long flags;
-+
-+		page_head = compound_trans_head(page);
-+		if (likely(page != page_head &&
-+					get_page_unless_zero(page_head))) {
-+
-+			/* Ref to put_compound_page() comment. */
-+			if (PageSlab(page_head)) {
-+				if (likely(PageTail(page))) {
-+					__get_page_tail_foll(page, false);
-+					return true;
-+				} else {
-+					put_page(page_head);
-+					return false;
-+				}
-+			}
- 
--		/* Ref to put_compound_page() comment. */
--		if (PageSlab(page_head)) {
-+			/*
-+			 * page_head wasn't a dangling pointer but it
-+			 * may not be a head page anymore by the time
-+			 * we obtain the lock. That is ok as long as it
-+			 * can't be freed from under us.
-+			 */
-+			flags = compound_lock_irqsave(page_head);
-+			/* here __split_huge_page_refcount won't run anymore */
- 			if (likely(PageTail(page))) {
- 				__get_page_tail_foll(page, false);
--				return true;
--			} else {
--				put_page(page_head);
--				return false;
-+				got = true;
- 			}
-+			compound_unlock_irqrestore(page_head, flags);
-+			if (unlikely(!got))
-+				put_page(page_head);
- 		}
--
--		/*
--		 * page_head wasn't a dangling pointer but it
--		 * may not be a head page anymore by the time
--		 * we obtain the lock. That is ok as long as it
--		 * can't be freed from under us.
--		 */
--		flags = compound_lock_irqsave(page_head);
--		/* here __split_huge_page_refcount won't run anymore */
--		if (likely(PageTail(page))) {
--			__get_page_tail_foll(page, false);
--			got = true;
--		}
--		compound_unlock_irqrestore(page_head, flags);
--		if (unlikely(!got))
--			put_page(page_head);
- 	}
- 	return got;
- }
--- 
-1.7.10.4
-
-
-
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
