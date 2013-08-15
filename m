@@ -1,89 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397Ab3HOBvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 21:51:49 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:45422 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760062Ab3HOBvc (ORCPT
+	id S1760062Ab3HOBzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 21:55:23 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:38767 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758580Ab3HOBzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 21:51:32 -0400
-Date: Wed, 14 Aug 2013 21:51:23 -0400
-From: Tejun Heo <tj@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Tang Chen <imtangchen@gmail.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        robert.moore@intel.com, lv.zheng@intel.com, rjw@sisk.pl,
-        lenb@kernel.org, tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH part5 0/7] Arrange hotpluggable memory as ZONE_MOVABLE.
-Message-ID: <20130815015123.GA3079@htj.dyndns.org>
-References: <20130814182342.GG28628@htj.dyndns.org>
- <520BDD2F.2060909@gmail.com>
- <20130814195541.GH28628@htj.dyndns.org>
- <520BE891.8090004@gmail.com>
- <20130814203538.GK28628@htj.dyndns.org>
- <520BF3E3.5030006@gmail.com>
- <20130814213637.GO28628@htj.dyndns.org>
- <520C2A06.5020007@gmail.com>
- <20130815012133.GQ28628@htj.dyndns.org>
- <520C3104.6000802@gmail.com>
+	Wed, 14 Aug 2013 21:55:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520C3104.6000802@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1375790802-11857-1-git-send-email-xtfeng@gmail.com>
+References: <87d2prqvse.fsf@rustcorp.com.au>
+	<1375790802-11857-1-git-send-email-xtfeng@gmail.com>
+Date: Thu, 15 Aug 2013 09:55:21 +0800
+Message-ID: <CAJn8CcFmVdPLSnfOPROa60SS2iHyj8QAyDb7NJw9Jnv8SuKNtw@mail.gmail.com>
+Subject: Re: [PATCH] cpumask: fix cpumask leak in partition_sched_domains
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Xiaotian Feng <xtfeng@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 09:38:12PM -0400, KOSAKI Motohiro wrote:
-> As you think makes no sense, I also think your position makes no sense. So, please
-> stop emotional word. That doesn't help discussion progress.
+On Tue, Aug 6, 2013 at 8:06 PM, Xiaotian Feng <xtfeng@gmail.com> wrote:
+> If doms_new is NULL, partition_sched_domains() will reset ndoms_cur
+> to 0, and free old sched domains with free_sched_domains(doms_cur, ndoms_cur).
+> As ndoms_cur is 0, the cpumask will not be freed.
+>
+> Signed-off-by: Xiaotian Feng <xtfeng@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: linux-kernel@vger.kernel.org
 
-Would you then please stop making nonsense assertions like "the
-fundamental rule here is to crash"?  You could have started the whole
-thread with "I'm not sure about the failure mode, it can be better to
-hard fail because ..." and we could have debated on the details.
-Instead I now have to break the nonsense assertion.  Of course the
-tension is way higher.
+Any comments on this patch? Without this patch, I can see following
+with kmemleak.
 
-> If the user was you, I agree. But I know the users don't react so.
+unreferenced object 0xffff880118d26aa8 (size 512):
+  comm "swapper/0", pid 1, jiffies 4294892366 (age 287.736s)
+  hex dump (first 32 bytes):
+    0f 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff817350e6>] kmemleak_alloc+0x26/0x50
+    [<ffffffff811b92c6>] kmem_cache_alloc_node_trace+0x116/0x2d0
+    [<ffffffff8139e66f>] alloc_cpumask_var_node+0x1f/0x90
+    [<ffffffff8139e6ee>] alloc_cpumask_var+0xe/0x10
+    [<ffffffff810a328c>] alloc_sched_domains+0x5c/0x80
+    [<ffffffff81daf8c6>] sched_init_smp+0x365/0x47d
+    [<ffffffff81d8f01e>] kernel_init_freeable+0xe3/0x1ef
+    [<ffffffff81731b1e>] kernel_init+0xe/0xf0
+    [<ffffffff817543ac>] ret_from_fork+0x7c/0xb0
+    [<ffffffffffffffff>] 0xffffffffffffffff
 
-Yeah, users react super well to machines failing boot without any way
-to know what's going on.  How is a good idea?
-
-> Again, there is no perfect solution if an admin is true stupid. We can just
-> suggest "you are wrong, not kernel", but no more further. I'm sure just kernel
-> logging doesn't help because they don't read it and they say no body read such
-
-There are things like automated reporting.  The system is trying to
-use hotplug, right?  It would have associated tools to do that, won't
-it?  If you want to support it, build sensible tools and conventions
-around it and given how specialized / highend the whole thing is, it
-shouldn't be hard either.
-
-> plenty and for developer messages. I may accept any strong notification, but,
-> still, I don't think it's worth. Only sane way is, an admin realize their mistake
-> and fix themselves.
-
-Yes, we'll show them who's the boss.  No, this is not how things are
-done in kernel.  We don't crash to give admins a lesson.  Do you even
-realize that this isn't completely deterministic?  The machine might
-boot fine one time and fail the next time.  What lesson would that
-teach the admin?  Stay away from linux?
-
-> Huh? no fallback mean no additional code. I can't imagine no code makes runtime overhead.
-
-What fallback are you talking about?  You need to report hotpluggable
-node somehow anyway.
-
--- 
-tejun
+> ---
+>  kernel/sched/core.c |    5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index b7c32cb..3d6c57b 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -6184,8 +6184,9 @@ match1:
+>                 ;
+>         }
+>
+> +       n = ndoms_cur;
+>         if (doms_new == NULL) {
+> -               ndoms_cur = 0;
+> +               n = 0;
+>                 doms_new = &fallback_doms;
+>                 cpumask_andnot(doms_new[0], cpu_active_mask, cpu_isolated_map);
+>                 WARN_ON_ONCE(dattr_new);
+> @@ -6193,7 +6194,7 @@ match1:
+>
+>         /* Build new domains */
+>         for (i = 0; i < ndoms_new; i++) {
+> -               for (j = 0; j < ndoms_cur && !new_topology; j++) {
+> +               for (j = 0; j < n && !new_topology; j++) {
+>                         if (cpumask_equal(doms_new[i], doms_cur[j])
+>                             && dattrs_equal(dattr_new, i, dattr_cur, j))
+>                                 goto match2;
+> --
+> 1.7.9.6 (Apple Git-31.1)
+>
