@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760460Ab3HOGfR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:35:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59276 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361Ab3HOGfP (ORCPT
+	id S1760358Ab3HOGj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:39:29 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:14613 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab3HOGj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:35:15 -0400
-Date: Wed, 14 Aug 2013 23:36:48 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/17] 3.4.58-stable review
-Message-ID: <20130815063648.GE25754@kroah.com>
-References: <20130813063501.728847844@linuxfoundation.org>
- <520A1D56.2050507@roeck-us.net>
- <20130813175858.GC7336@kroah.com>
- <20130813201936.GA18358@roeck-us.net>
- <CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com>
- <20130813223622.GA12790@roeck-us.net>
- <CAMuHMdVsR3Af+ccWMq6aU99UUAtCXyf8Ss0fbSYw7tR_w2mwkA@mail.gmail.com>
- <520B5873.6010708@roeck-us.net>
+	Thu, 15 Aug 2013 02:39:28 -0400
+Message-ID: <520C7780.7020008@huawei.com>
+Date: Thu, 15 Aug 2013 14:38:56 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520B5873.6010708@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Minchan Kim <minchan@kernel.org>
+CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        <riel@redhat.com>, <aquini@redhat.com>, <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
+References: <520B0B75.4030708@huawei.com> <20130814085711.GK2296@suse.de> <20130814155205.GA2706@gmail.com> <20130814161642.GM2296@suse.de> <20130814163921.GC2706@gmail.com> <20130814180012.GO2296@suse.de> <520C3DD2.8010905@huawei.com> <20130815024427.GA2718@gmail.com> <520C4EFF.8040305@huawei.com> <20130815041736.GA2592@gmail.com>
+In-Reply-To: <20130815041736.GA2592@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 03:14:11AM -0700, Guenter Roeck wrote:
-> On 08/14/2013 01:26 AM, Geert Uytterhoeven wrote:
-> > On Wed, Aug 14, 2013 at 12:36 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> >>>> cris/...:
-> >>>> In file included from include/linux/page-flags.h:8:0,
-> >>>>                   from kernel/bounds.c:9:
-> >>>> include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
-> >>>> include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
-> >>>> include/linux/types.h:30:1: error: unknown type name '__kernel_pid_t'
-> >>>> include/linux/types.h:31:1: error: unknown type name '__kernel_daddr_t'
-> >>>> include/linux/types.h:33:1: error: unknown type name '__kernel_suseconds_t'
-> >>>>
-> >>>> That one might be tricky (or simple if someone knows what is wrong).
-> >>>
-> >>> Fixed in v3.5-rc1:
-> >>>
-> >>> commit 74f077d2a7651409c44bb323471f219a4b0d2aab
-> >>> Author: Jiri Slaby <jslaby@suse.cz>
-> >>> Date:   Mon Apr 2 13:40:17 2012 +0200
-> >>>
-> >>>      cris: posix_types.h, include asm-generic/posix_types.h
-> >>>
-> >> It does fix above error, but then there is another error:
-> >>
-> >>    AS      arch/cris/arch-v10/lib/checksum.o
-> >> In file included from <command-line>:4:0:
-> >> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
-> >> make[1]: *** [arch/cris/arch-v10/lib/checksum.o] Error 1
-> >> make[1]: *** Waiting for unfinished jobs....
-> >>    AS      arch/cris/arch-v10/lib/checksumcopy.o
-> >> In file included from <command-line>:4:0:
-> >> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
-> >> make[1]: *** [arch/cris/arch-v10/lib/checksumcopy.o] Error 1
-> >
-> > commit 7b91747d42a1012e3781dd09fa638d113809e3fd
-> > Author: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > Date:   Wed Apr 18 21:58:43 2012 +0200
-> >
-> >      cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
-> >
-> 
-> Great, thanks for tracking this down.
-> 
-> With both patches applied, we are almost there. Next error:
-> 
-> kernel/built-in.o: In function `core_kernel_data':
-> (.text+0x12e38): undefined reference to `_sdata'
-> make: *** [vmlinux] Error 1
-> 
-> This has been fixed with commit 473e162e (CRIS: Add _sdata to vmlinux.lds.S).
-> 
-> So, in summary, we have
-> 
-> 473e162e CRIS: Add _sdata to vmlinux.lds.S
-> 69349c2d cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
-> 7b91747d cris: posix_types.h, include asm-generic/posix_types.h
-> 
-> With those three patches applied, cris targets build in 3.4.y.
+On 2013/8/15 12:17, Minchan Kim wrote:
 
-Wonderful, I've now applied all of these.
+> 
+> Please read full thread in detail.
+> 
+> Mel suggested following as
+> 
+> if (PageBuddy(page)) {
+>         int nr_pages = (1 << page_order(page)) - 1;
+>         if (PageBuddy(page)) {
+>                 nr_pages = min(nr_pages, MAX_ORDER_NR_PAGES - 1);
+>                 low_pfn += nr_pages;
+>                 continue;
+>         }
+> }
+> 
+> min(nr_pages, xxx) removes your concern but I think Mel's version
+> isn't right. It should be aligned with pageblock boundary so I 
+> suggested following.
+> 
+> if (PageBuddy(page)) {
+> #ifdef CONFIG_MEMORY_ISOLATION
+> 	unsigned long order = page_order(page);
+> 	if (PageBuddy(page)) {
+> 		low_pfn += (1 << order) - 1;
+> 		low_pfn = min(low_pfn, end_pfn);
 
-Anything else I'm missing for 3.4?
+Hi Minchan,
 
-thanks,
+I understand now, but why use "end_pfn" here? 
+Do you mean we should use pageblock_nr_pages instead of MAX_ORDER_NR_PAGES?
+Just like this:
 
-greg k-h
+if (PageBuddy(page)) {
+	unsigned long order = page_order(page);
+	order = min(order, pageblock_order);
+	if (PageBuddy(page))
+		low_pfn += (1 << order) - 1;
+	continue;
+}
+
+Thanks,
+Xishi Qiu
+
+> 	}
+> #endif
+> 	continue;
+> }
+> 
+> so worst case is (pageblock_nr_pages - 1).
+> but we don't need to add CONFIG_MEMORY_ISOLATION so my suggestion
+> is following as.
+> 
+> if (PageBuddy(page)) {
+> 	unsigned long order = page_order(page);
+> 	if (PageBuddy(page)) {
+> 		low_pfn += (1 << order) - 1;
+> 		low_pfn = min(low_pfn, end_pfn);
+> 	}
+> 	continue;
+> }
+> 
+> 
+
+
+
