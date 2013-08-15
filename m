@@ -1,269 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab3HOM07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 08:26:59 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:54070 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754042Ab3HOM05 (ORCPT
+	id S1755771Ab3HOMbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 08:31:21 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:61076 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450Ab3HOMbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 08:26:57 -0400
-Date: Thu, 15 Aug 2013 14:26:17 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH net-next v2 1/3] net/usb/r8152: support aggregation
-Message-ID: <20130815122617.GA18057@electric-eye.fr.zoreil.com>
-References: <1376378913-879-1-git-send-email-hayeswang@realtek.com>
- <1376484880-741-1-git-send-email-hayeswang@realtek.com>
+	Thu, 15 Aug 2013 08:31:19 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Lars Poeschel <poeschel@lemonage.de>
+Cc: Lars Poeschel <larsi@wh2.tu-dresden.de>, grant.likely@linaro.org,
+        linus.walleij@linaro.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
+Subject: Re: [PATCH v2] RFC: interrupt consistency check for OF GPIO IRQs
+Date: Thu, 15 Aug 2013 14:31:08 +0200
+Message-ID: <5024472.WsjusA1KXL@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.6-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <201308151412.43932.poeschel@lemonage.de>
+References: <1376387195-27469-1-git-send-email-larsi@wh2.tu-dresden.de> <1955836.AOXICuVgjP@flatron> <201308151412.43932.poeschel@lemonage.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376484880-741-1-git-send-email-hayeswang@realtek.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart6463264.is8iAGSuk6"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-[...]
-> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-> index 11c51f2..abb0b9f 100644
-> --- a/drivers/net/usb/r8152.c
-> +++ b/drivers/net/usb/r8152.c
-[...]
-> @@ -315,13 +318,34 @@ struct tx_desc {
->  	u32 opts2;
->  };
->  
-> +struct rx_agg {
-> +	struct list_head list;
-> +	struct urb *urb;
-> +	void *context;
 
-void * is not needed: context is always struct r8152 *.
+--nextPart6463264.is8iAGSuk6
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-> +	void *buffer;
-> +	void *head;
-> +};
-> +
-> +struct tx_agg {
-> +	struct list_head list;
-> +	struct urb *urb;
-> +	void *context;
+On Thursday 15 of August 2013 14:12:43 Lars Poeschel wrote:
+> On Thursday 15 August 2013 at 11:53:15, Tomasz Figa wrote:
+> > Hi Lars, Linus,
+> > 
+> > On Tuesday 13 of August 2013 11:46:35 Lars Poeschel wrote:
+> > > From: Linus Walleij <linus.walleij@linaro.org>
+> > > 
+> > > Currently the kernel is ambigously treating GPIOs and interrupts
+> > > from a GPIO controller: GPIOs and interrupts are treated as
+> > > orthogonal. This unfortunately makes it unclear how to actually
+> > > retrieve and request a GPIO line or interrupt from a GPIO
+> > > controller in the device tree probe path.
+> > > 
+> > > In the non-DT probe path it is clear that the GPIO number has to
+> > > be passed to the consuming device, and if it is to be used as
+> > > an interrupt, the consumer shall performa a gpio_to_irq() mapping
+> > > and request the resulting IRQ number.
+> > > 
+> > > In the DT boot path consumers may have been given one or more
+> > > interrupts from the interrupt-controller side of the GPIO chip
+> > > in an abstract way, such that the driver is not aware of the
+> > > fact that a GPIO chip is backing this interrupt, and the GPIO
+> > > side of the same line is never requested with gpio_request().
+> > > A typical case for this is ethernet chips which just take some
+> > > interrupt line which may be a "hard" interrupt line (such as an
+> > > external interrupt line from an SoC) or a cascaded interrupt
+> > > connected to a GPIO line.
+> > > 
+> > > This has the following undesired effects:
+> > > 
+> > > - The GPIOlib subsystem is not aware that the line is in use
+> > > 
+> > >   and willingly lets some other consumer perform gpio_request()
+> > >   on it, leading to a complex resource conflict if it occurs.
+> > > 
+> > > - The GPIO debugfs file claims this GPIO line is "free".
+> > > 
+> > > - The line direction of the interrupt GPIO line is not
+> > > 
+> > >   explicitly set as input, even though it is obvious that such
+> > >   a line need to be set up in this way, often making the system
+> > >   depend on boot-on defaults for this kind of settings.
+> > > 
+> > > To solve this dilemma, perform an interrupt consistency check
+> > > when adding a GPIO chip: if the chip is both gpio-controller and
+> > > interrupt-controller, walk all children of the device tree,
+> > > check if these in turn reference the interrupt-controller, and
+> > > if they do, loop over the interrupts used by that child and
+> > > perform gpio_reques() and gpio_direction_input() on these,
+> > > making them unreachable from the GPIO side.
+> > 
+> > The idea is rather interesting, but there are some problems I
+> > commented
+> > on inline. (Feel free to ignore those that are nits, since this is at
+> > RFC stage.)
+> 
+> I don't want to ignore. I want to discuss and test the idea here. Thanks
+> for your contribution!
 
-void * is not needed: context is always struct r8152 *.
+You're welcome.
 
-> +	void *buffer;
-> +	void *head;
-> +	u32 skb_num;
-> +	u32 skb_len;
-> +};
-> +
->  struct r8152 {
->  	unsigned long flags;
->  	struct usb_device *udev;
->  	struct tasklet_struct tl;
->  	struct net_device *netdev;
-> -	struct urb *rx_urb, *tx_urb;
-> -	struct sk_buff *tx_skb, *rx_skb;
-> +	struct tx_agg tx_info[RTL8152_MAX_TX];
-> +	struct rx_agg rx_info[RTL8152_MAX_RX];
-> +	struct list_head rx_done, tx_free;
-> +	struct sk_buff_head tx_queue;
-> +	spinlock_t rx_lock, tx_lock;
+> > >  /**
+> > > 
+> > > + * of_gpio_scan_nodes_and_x_irq_lines - internal function to
+> > 
+> > Hmm, what is an "x irq line"?
+> 
+> You already found out. Comment on this is below.
+> 
+> > > +	for_each_child_of_node(node, child) {
+> > > +		of_gpio_scan_nodes_and_x_irq_lines(child, gcn, gc,
+> > 
+> > request);
+> > 
+> > nit: A blank line would be nice here.
+> 
+> Ok.
+> 
+> > > +		/* Check if we have an IRQ parent, else continue */
+> > > +		irq_parent = of_irq_find_parent(child);
+> > > +		if (!irq_parent)
+> > > +			continue;
+> > 
+> > You can probably put the irq_parent node here to not duplicate calls
+> > in
+> > both code paths below.
+> 
+> I thought about that before. Is this really allowed? Would the
+> inequality- check (irq_parent != gcn) after of_node_put be still valid?
 
-You may group rx data on one side and tx data on an other side to be
-more cache friendly.
+Well, this is just a check over pointers. Assuming that you know that your 
+GPIO chip won't go away while this code is running, you can safely compare 
+the pointers as the same device tree node can't have two different 
+pointers.
 
-[...]
-> @@ -686,6 +711,9 @@ static void ocp_reg_write(struct r8152 *tp, u16 addr, u16 data)
->  	ocp_write_word(tp, MCU_TYPE_PLA, ocp_index, data);
->  }
->  
-> +static
-> +int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, gfp_t mem_flags);
-> +
+> > > +		/* Is it so that this very GPIO chip is the parent? */
+> > > +		if (irq_parent != gcn) {
+> > > +			of_node_put(irq_parent);
+> > > +			continue;
+> > > +		}
+> > > +		of_node_put(irq_parent);
+> > > +
+> > > +		pr_debug("gpiochip OF: node %s references GPIO interrupt
+> > 
+> > lines\n",
+> > 
+> > > +				child->name);
+> > > +
+> > > +		/* Get the interrupts property */
+> > > +		intspec = of_get_property(child, "interrupts", &intlen);
+> > > +		if (intspec == NULL)
+> > > +			continue;
+> > > +		intlen /= sizeof(*intspec);
+> > > +
+> > > +		num_irq = of_irq_count(gcn);
+> > > +		for (i = 0; i < num_irq; i++) {
+> > > +			/*
+> > > +			 * The first cell is always the local IRQ number,
+> > 
+> > and
+> > 
+> > > +			 * this corresponds to the GPIO line offset for a
+> > 
+> > GPIO
+> > 
+> > > +			 * chip.
+> > > +			 *
+> > > +			 * FIXME: take interrupt-cells into account here.
+> > 
+> > This is the biggest problem of this patch. It assumes that there is
+> > only a single and shared GPIO/interrupt specification scheme, which
+> > might not be true.
+> > 
+> > First of all, almost all interrupt bindings have an extra,
+> > semi-generic
+> > flags field as last cell in the specifier. Now there can be more than
+> > 
+> > one cell used to index GPIOs and interrupts, for example:
+> > 	interrupts = <1 3 8>
+> > 
+> > which could mean: bank 1, pin 3, low level triggered.
+> > 
+> > I think you may need to reuse a lot of the code that normally parses
+> > the interrupts property, i.e. the irq_of_parse_and_map() path, which
+> > will then give you the hwirq index inside your irq chip, which may
+> > (or may not) be the same as the GPIO offset inside your GPIO chip.
+> 
+> Ok, valid objection. This is what the FIXME is about. But this should be
+> solvable. Am I right that there are 3 cases to handle:
+> interrupt-cells = 1: It is the index for the gpio.
+> interrupt-cells = 2: First is index for the gpio, second flags (like low
+> level triggered)
+> interrupt-cells = 3: First bank number, middle gpio inside that bank,
+> last flags.
 
-It's a new, less than 10 lines function without driver internal dependencies.
+Well, there are basically no restrictions over the format of GPIO and 
+interrupt specifiers. Any driver is free to define its own and provide 
+private .xlate() callback to parse it. No assumptions should be made about 
+the format, other than each GPIO/interrupt is specified by numer of cells 
+specified in #interrupt- or #gpio-cells property of the controller.
 
-The forward declaration is not needed.
+> You are right, that we should try to reuse existing code for that. I
+> will see, if I find the time to put up a third patch, which honors
+> this.
+> > If you're unlucky enough to spot a controller that uses completely
+> > different numbering schemes for GPIOs and interrupts, then you're
+> > probably screwed, because only the driver for this controller can know
+> > the mapping between them.
+> 
+> Do such cases exist right now? Shouldn't be the number I request for
+> interrupt in the device tree the gpio number I use with this chip ?
+> Everything else would be weird.
 
-[...]
-> @@ -743,129 +751,425 @@ static struct net_device_stats *rtl8152_get_stats(struct net_device *dev)
->  
->  static void read_bulk_callback(struct urb *urb)
+We can't simply cover all the existing cases and say it's done. We should 
+design things that are more or less future-proof.
 
-No rtl8152_ prefix ?
+I can imagine a single device that is both a GPIO expander and an 
+interrupt controller, but has separate sets of pins, e.g. 8 dedicated 
+interrupt pins and 16 separate general-purpose I/O pins. It would have 
+both interrupt-controller and gpio-controller properties, but wouldn't not 
+have any mapping between both namespaces at all, because both are about 
+completely different entities.
 
->  {
-[...]
-> -	if (!netif_device_present(netdev))
-> +	if (!netif_carrier_ok(netdev))
->  		return;
+> > I don't have any good ideas for doing this properly at the moment, but
+> > I will think about it and post another reply if something nice comes
+> > to my mind.
+> 
+> If we really have to take this into account, that would require an
+> additional function pointer inside gpio_chip, something like
+> irq_to_gpio. The driver has to implement this functions then.
 
-How is it related to the subject of the patch ?
+Something like this could probably handle this, but I'm not sure if this 
+is really necessary. Let me think about it a bit more as I think this 
+could be done in a completely different way, but need to figure out all 
+the details.
 
-[...]
-> +static void rx_bottom(struct r8152 *tp)
-> +{
-> +	struct net_device_stats *stats;
-> +	struct net_device *netdev;
-> +	struct rx_agg *agg;
-> +	struct rx_desc *rx_desc;
-> +	unsigned long lockflags;
+> > > +			 */
+> > > +			offset = of_read_number(intspec + i, 1);
+> > 
+> > nit: of_read_number is a little overkill for simply getting a single
+> > cell. You could use be32_to_cpup(intspec + i) to achieve the same.
+> 
+> Ok.
+> 
+> > > +			pr_debug("gpiochip: OF node references
+> > 
+> > offset=%d\n",
+> > 
+> > > +				 offset);
+> > > +
+> > > +			if (request) {
+> > > +				/*
+> > > +				 * This child is making a reference to
+> > 
+> > this
+> > 
+> > > +				 * chip through the interrupts property,
+> > 
+> > so
+> > 
+> > > +				 * reserve these GPIO lines and set them
+> > 
+> > as
+> > 
+> > > +				 * input.
+> > > +				 */
+> > > +				ret = gpio_request(gc->base + offset, "OF
+> > 
+> > IRQ");
+> > 
+> > > +				if (ret)
+> > > +					pr_err("gpiolib OF: could not
+> > 
+> > request IRQ GPIO %d (%d)\n",
+> > 
+> > > +					       gc->base + offset, offset);
+> > 
+> > Would some kind of error handling be a bad idea here? Like, for
+> > example, marking this IRQ as invalid or something among these lines.
+> 
+> If that fails, things are like before and someone would request an irq
+> for a gpio he does not own. Again what misses here is a connection
+> between gpio and irq subsystem. I could only record that this gpio pin
+> failed somewhere in the gpio subsystem, but what has to fail later is
+> the request for the irq inside the irq subsystem.
+> Hmm....
 
-Idiom: 'flags'.
+See below.
 
-> +	struct list_head *cursor, *next;
-> +	struct sk_buff *skb;
-> +	struct urb *urb;
-> +	unsigned pkt_len;
-> +	int len_used;
-> +	u8 *rx_data;
-> +	int ret;
+> > > +				ret = gpio_direction_input(gc->base +
+> > 
+> > offset);
+> > 
+> > > +				if (ret)
+> > > +					pr_err("gpiolib OF: could not set
+> > 
+> > IRQ GPIO %d (%d) as input\n",
+> > 
+> > > +					       gc->base + offset, offset);
+> > 
+> > I'm not sure if this is the correct action if someone already
+> > requested
+> > the GPIO before and probably already set it up with their own set of
+> > parameters (not necessarily the same as enforced by calling
+> > gpio_direction_input()).
+> 
+> That should definitely not happen! This is what this patch is for. As we
+> are requesting this gpio somewhere inside the gpiochip_add process, no
+> one should be able to request that gpio earlier.
 
-The scope of these variables is needlessly wide.
+Ahh, right. The pins are being requested before the GPIO chip actually 
+becomes available to the consumers. So this is probably fine. Sorry for 
+the noise.
 
-> +
-> +	netdev = tp->netdev;
-> +
-> +	stats = rtl8152_get_stats(netdev);
-> +
-> +	spin_lock_irqsave(&tp->rx_lock, lockflags);
-> +	list_for_each_safe(cursor, next, &tp->rx_done) {
-> +		list_del_init(cursor);
-> +		spin_unlock_irqrestore(&tp->rx_lock, lockflags);
-> +
-> +		agg = list_entry(cursor, struct rx_agg, list);
-> +		urb = agg->urb;
-> +		if (urb->actual_length < ETH_ZLEN) {
+> > > +			} else {
+> > > +				gpio_free(gc->base + offset);
+> > 
+> > What if the request failed? This would mean calling gpio_free() on a
+> > GPIO previously requested by someone else.
+> 
+> See above.
 
-			goto submit;
+Fair enough.
 
-> +			ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
-> +			spin_lock_irqsave(&tp->rx_lock, lockflags);
-> +			if (ret && ret != -ENODEV) {
-> +				list_add_tail(&agg->list, next);
-> +				tasklet_schedule(&tp->tl);
-> +			}
-> +			continue;
-> +		}
+> > > +			}
+> > > +		}
+> > > +	}
+> > > +}
+> > > +
+> > > +#define of_gpiochip_request_irq_lines(np, gc) \
+> > > +	of_gpiochip_x_irq_lines(np, gc, 1)
+> > > +
+> > > +#define of_gpiochip_free_irq_lines(np, gc) \
+> > > +	of_gpiochip_x_irq_lines(np, gc, 0)
+> > 
+> > Aha, so the x is a wildcard. Fine, although it makes the code slightly
+> > less reader-friendly IMHO.
+> 
+> I am not happy with this naming as well, but I did not want to duplicate
+> the code. I could have seperate request_irq_lines and free_irq_lines
+> functions having most of the code in common. Has someone a better
+> solution in mind ?
 
-(remove the line above)
+Well, simply a better name would be enough, but this is just a nitpick of 
+mine.
 
-[...]
-> +			rx_data = rx_agg_align(rx_data + pkt_len + 4);
-> +			rx_desc = (struct rx_desc *)rx_data;
-> +			pkt_len = le32_to_cpu(rx_desc->opts1) & RX_LEN_MASK;
-> +			len_used = (int)(rx_data - (u8 *)agg->head);
-> +			len_used += sizeof(struct rx_desc) + pkt_len;
-> +		}
-> +
+Best regards,
+Tomasz
 
-submit:
+--nextPart6463264.is8iAGSuk6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
 
-> +		ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
-> +		spin_lock_irqsave(&tp->rx_lock, lockflags);
-> +		if (ret && ret != -ENODEV) {
-> +			list_add_tail(&agg->list, next);
-> +			tasklet_schedule(&tp->tl);
-> +		}
-> +	}
-> +	spin_unlock_irqrestore(&tp->rx_lock, lockflags);
-> +}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-It should be possible to retrieve more items in the spinlocked section
-so as to have a chance to batch more work. I have not thought too deeply
-about it.
+iQIcBAABAgAGBQJSDMoQAAoJEIv3Hb8G/XrunqkQAJNa72V/CxFITc4rqDIEDQRi
+NjwcxBMTc8BGuJqwpih17v3GZBXTlBaj/moFWxDQ1mJuC5bTiG6+1mtbQtnKF6g4
+8v03ztPWo9jWj/60L+00+79K5eHO9K9eDN9cAewQI6IzPHuVFccNFg0EmdfQNMb3
+NzDQsJb9LVfeyZQzwTgtPgdm6pLp1iusK1rMnFfcaPXqIo67G4cw3pWlcK0/6MiC
+l0P0RwdwrwJHguKoZsv6MhSdXSeNuV57yy58qjgzJ6Jq2EEeGpRqAc67yFuAoMyN
++I2XBbqdJhzsAjwQSytwq9qqoM4UyWCrvKTxpGbkFPKBelGcznxsSh9IkaJYbjSR
+mTxRTjbKAif9GUK2xsNyot/8uMOWJM7owRqJwt9+xzXgmZ+Ug6QiCm5zrofZ3+HF
++jJdB5ROpNFxe70n449i0q/l/qqQ0n5LGGHCXWfYTxSolr3eyn956JkHVXZEEtL5
+a8gIQ0kpdbWcbBSW27+r0rtmHeFP4VXa8lBoLiBy3cH6WKBnjLLKAFHTqMY5rMfL
+Y96EqDq/hLSIqe6YkknO8Xxq5+Zzz5dHbJh0/FTNwsqWFWvEB5XkjW+xo3vdUxzo
+pXeZPP6LqbZyLPuxy+vbstwVjO/DBDY+JFiQLxvMNe+sK3abzEqFQ+uWQ6ugXQE6
+yvUoZ21V/N6A9tp6VsX2
+=a5KB
+-----END PGP SIGNATURE-----
 
-> +
-> +static void tx_bottom(struct r8152 *tp)
-> +{
-> +	struct net_device_stats *stats;
-> +	struct net_device *netdev;
-> +	struct tx_agg *agg;
-> +	unsigned long lockflags;
-> +	u32 remain, total;
-> +	u8 *tx_data;
-> +	int res;
-> +
-> +	netdev = tp->netdev;
-> +
-> +next_agg:
+--nextPart6463264.is8iAGSuk6--
 
-Use a real for / while loop and split this function as you experience
-line length problem.
-
-[...]
-> +static void bottom_half(unsigned long data)
->  {
->  	struct r8152 *tp;
-> -	int status = urb->status;
->  
-> -	tp = urb->context;
-> -	if (!tp)
-> +	tp = (struct r8152 *)data;
-
-  	struct r8152 *tp = (struct r8152 *)data;
-
-[...]
-> -	if (!netif_device_present(tp->netdev))
-> +
-> +	if (!netif_carrier_ok(tp->netdev))
->  		return;
-
-It deserves an explanation.
-
-[...]
-> @@ -923,33 +1227,44 @@ static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
->  {
-[...]
-> +	spin_lock_irqsave(&tp->tx_lock, lockflags);
-> +	if (!list_empty(&tp->tx_free) && skb_queue_empty(&tp->tx_queue)) {
-> +		struct list_head *cursor;
-> +
-> +		cursor = tp->tx_free.next;
-> +		list_del_init(cursor);
-> +		agg = list_entry(cursor, struct tx_agg, list);
-
-Duplicated in tx_bottom.
-
-[...]
-> @@ -999,17 +1313,18 @@ static inline u8 rtl8152_get_speed(struct r8152 *tp)
->  
->  static int rtl8152_enable(struct r8152 *tp)
->  {
-> -	u32	ocp_data;
-> +	u32 ocp_data;
-> +	int i, ret;
->  	u8 speed;
->  
->  	speed = rtl8152_get_speed(tp);
-> -	if (speed & _100bps) {
-> +	if (speed & _10bps) {
->  		ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_EEEP_CR);
-> -		ocp_data &= ~EEEP_CR_EEEP_TX;
-> +		ocp_data |= EEEP_CR_EEEP_TX;
->  		ocp_write_word(tp, MCU_TYPE_PLA, PLA_EEEP_CR, ocp_data);
->  	} else {
->  		ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_EEEP_CR);
-> -		ocp_data |= EEEP_CR_EEEP_TX;
-> +		ocp_data &= ~EEEP_CR_EEEP_TX;
-
-Call me "Mickey Mouse" if this is related to the subject of the patch.
-
-[...]
-> @@ -1631,10 +1965,12 @@ static int rtl8152_probe(struct usb_interface *intf,
->  		return -ENOMEM;
->  	}
->  
-> +	SET_NETDEV_DEV(netdev, &intf->dev);
->  	tp = netdev_priv(netdev);
-> +	memset(tp, 0, sizeof(*tp));
-
-Useless, see kzalloc in net/core/dev.c::alloc_netdev_mqs
-
--- 
-Ueimor
