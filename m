@@ -1,98 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758375Ab3HORzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 13:55:22 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42298 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753338Ab3HORzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 13:55:20 -0400
-Date: Thu, 15 Aug 2013 13:55:18 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Mark Brown <broonie@kernel.org>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-In-Reply-To: <20130815171048.GC30073@sirena.org.uk>
-Message-ID: <Pine.LNX.4.44L0.1308151335310.905-100000@iolanthe.rowland.org>
+	id S1759352Ab3HORzb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 13:55:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41730 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759135Ab3HORz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 13:55:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,886,1367996400"; 
+   d="scan'208";a="363217762"
+Message-ID: <520D160A.10405@intel.com>
+Date: Thu, 15 Aug 2013 10:55:22 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] mm/pgtable: Fix continue to preallocate pmds even
+ if failure occurrence
+References: <1376526703-2081-1-git-send-email-liwanp@linux.vnet.ibm.com>
+In-Reply-To: <1376526703-2081-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Aug 2013, Mark Brown wrote:
+On 08/14/2013 05:31 PM, Wanpeng Li wrote:
+> preallocate_pmds will continue to preallocate pmds even if failure 
+> occurrence, and then free all the preallocate pmds if there is 
+> failure, this patch fix it by stop preallocate if failure occurrence
+> and go to free path.
 
-> On Thu, Aug 15, 2013 at 10:42:00AM -0400, Alan Stern wrote:
-> > On Thu, 15 Aug 2013, Mark Brown wrote:
-> 
-> > So why not bring the device to full power as soon as possible during
-> > boot, and have it registered on the bus in the usual way?  Once that's
-> > done, the ordinary runtime PM mechanism will allow the device to go
-> > back off-line.
-> 
-> That could be done, and is likely to happen anyway as a result of device
-> initialisation.  I'm not sure it buys much to force it to happen
-> immediately, though.
+I guess there are a billion ways to do this, but I'm not sure we even
+need 'failed':
 
-Not necessarily immediately, then.  Let's say at the time when you
-would have wanted to tell the bus about the device's existence, even
-though it hadn't yet been detected.
+--- arch/x86/mm/pgtable.c.orig	2013-08-15 10:52:15.145615027 -0700
++++ arch/x86/mm/pgtable.c	2013-08-15 10:52:47.509614081 -0700
+@@ -196,21 +196,18 @@
+ static int preallocate_pmds(pmd_t *pmds[])
+ {
+ 	int i;
+-	bool failed = false;
 
-> There's a big difference between random glue outside the drivers and
-> something the drivers know about themselves, it's important to be clear
-> on this.  Bodges for this often involve writing a bit of board code that
-> the drivers don't know anything about.
+ 	for(i = 0; i < PREALLOCATED_PMDS; i++) {
+ 		pmd_t *pmd = (pmd_t *)__get_free_page(PGALLOC_GFP);
+ 		if (pmd == NULL)
+-			failed = true;
++			goto err;
+ 		pmds[i] = pmd;
+ 	}
 
-Of course.  Glue outside of drivers is very significant, whether that 
-glue takes the form of code or data.
+-	if (failed) {
+-		free_pmds(pmds);
+-		return -ENOMEM;
+-	}
+-
+ 	return 0;
++err:
++	free_pmds(pmds);
++	return -ENOMEM;
+ }
 
-> > I imagine that teaching a subsystem to know about a device before it 
-> > has been detected would require significant changes.  My suggestion -- 
-> > powering up the device, detecting it, and then powering it back down -- 
-> > fits in very cleanly with existing designs and would require 
-> > comparatively little work.  Case B then becomes unnecessary; all the 
-> > important stuff will be handled under Case C.
-> 
-> To be honest I don't see how that helps much if you're going to handle
-> the case where platform data is required to enumerate the device.  You
-> need to know about the device prior to enumeration in order to get the
-> platform data to the driver when it does enumerate and you can't
-> enumerate it until you do that anyway.
+I don't have a problem with what you have, though.  It's better than
+what was there, so:
 
-You're a little imprecise here.  Which driver do you mean?  The driver
-that will ultimately bind to the device, or the driver that will
-discover and enumerate it (which generally is bound to the device's
-upstream parent)?  I'll assume the latter.
-
-Under what circumstances is platform data required to enumerate a
-device on a discoverable bus?  We're assuming the platform has already
-taken care of everything required to make the device appear on the bus
-in the usual manner (such as bringing it to full power).  Can you give
-an example where something more is needed?
-
-(Were you thinking of the case where the device's IRQ signal doesn't go
-over the bus but uses a different platform mechanism?  I don't quite 
-see how this can work.  What about devices on the bus that aren't known 
-to the platform beforehand?  How do they send their IRQ signals?)
-
->  A bus could insist on this if it
-> needed the information from enumeration for some reason but really it
-> seems like an implementation detail.
-
-It isn't an implementation detail.  The "power-up for initial
-detection" scheme is a general solution to the problem of setting up a
-complicated communication path between the bus and the platform.  
-(I.e., it gives a simple way to avoid the need for this communication,
-that can be used on any discoverable bus.)  It also is a general 
-solution for avoiding the problem of registering a device on a bus 
-before that device has been discovered and enumerated.
-
-Alan Stern
-
+Reviewed-by: Dave Hansen <dave.hansen@linux.intel.com>
