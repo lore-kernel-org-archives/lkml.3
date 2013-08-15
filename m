@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759425Ab3HOUCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 16:02:39 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:36498 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757851Ab3HOUCi (ORCPT
+	id S1759811Ab3HOUEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 16:04:16 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:56594 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758205Ab3HOUEO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 16:02:38 -0400
+	Thu, 15 Aug 2013 16:04:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <1376471493-22215-2-git-send-email-Julia.Lawall@lip6.fr>
-References: <1376471493-22215-1-git-send-email-Julia.Lawall@lip6.fr>
-	<1376471493-22215-2-git-send-email-Julia.Lawall@lip6.fr>
-Date: Thu, 15 Aug 2013 22:02:37 +0200
-Message-ID: <CACRpkdbHS5WTSgPqh4WAtQatH1U4thROqXqY07Sre2vxh2XJZw@mail.gmail.com>
-Subject: Re: [PATCH 1/29] pinctrl: nomadik: simplify use of devm_ioremap_resource
+In-Reply-To: <201308141359.54473.heiko@sntech.de>
+References: <201308141359.13872.heiko@sntech.de>
+	<201308141359.54473.heiko@sntech.de>
+Date: Thu, 15 Aug 2013 22:04:14 +0200
+Message-ID: <CACRpkdboWnsRRUEEufQY_=x3bWKyZLoWP5G_YvEhtTtZs6BTuw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] ARM: S3C24XX: number the dma clocks
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Dan Williams <djbw@fb.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 11:11 AM, Julia Lawall <Julia.Lawall@lip6.fr> wrote:
+On Wed, Aug 14, 2013 at 1:59 PM, Heiko Stübner <heiko@sntech.de> wrote:
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> Each dma channel has its own clock. The upcoming dma driver wants to
+> handle these itself and therefore needs to be able to get the correct
+> clock for a channel.
 >
-> Remove unneeded error handling on the result of a call to
-> platform_get_resource when the value is passed to devm_ioremap_resource.
+> Therefore rename the dma clocks to "dma.X" for s3c2412, s3c2416 and
+> s3c2443. This does not change the behaviour for the old dma driver at
+> all, as all dma clocks are still always on and not handled by the old
+> dma driver at all.
 >
-> Move the call to platform_get_resource adjacent to the call to
-> devm_ioremap_resource to make the connection between them more clear.
->
-> A simplified version of the semantic patch that makes this change is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @@
-> expression pdev,res,n,e,e1;
-> expression ret != 0;
-> identifier l;
-> @@
->
-> - res = platform_get_resource(pdev, IORESOURCE_MEM, n);
->   ... when != res
-> - if (res == NULL) { ... \(goto l;\|return ret;\) }
->   ... when != res
-> + res = platform_get_resource(pdev, IORESOURCE_MEM, n);
->   e = devm_ioremap_resource(e1, res);
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> are always enabled in the original code.
+> ---
 
-Patch applied.
+There is some noise at the end of your commit message.
 
 Yours,
 Linus Walleij
