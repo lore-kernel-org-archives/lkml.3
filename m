@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758691Ab3HOTWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 15:22:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12458 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086Ab3HOTWN (ORCPT
+	id S1758592Ab3HOT3v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 15:29:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41136 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab3HOT3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 15:22:13 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F0my4ousGMIA:10 a=7Vahp7kjsuqt3vje45cA:9 a=CjuIK1q_8ugA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Date: Thu, 15 Aug 2013 15:22:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.10.6-rt3
-Message-ID: <20130815152210.5ed93696@gandalf.local.home>
-In-Reply-To: <520D212F.7030400@localhost>
-References: <20130812163413.GI23040@linutronix.de>
-	<520D212F.7030400@localhost>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+	Thu, 15 Aug 2013 15:29:50 -0400
+Date: Thu, 15 Aug 2013 12:29:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Matt Domsch <Matt_Domsch@dell.com>,
+        Jim Hull <jim.hull@hp.com>, Karel Zak <kzak@redhat.com>,
+        Peter Jones <pjones@redhat.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] partitions/efi: detect hybrid mbrs
+Message-Id: <20130815122949.aff0bc4821e4adaec8eb359b@linux-foundation.org>
+In-Reply-To: <1376585982.2152.2.camel@buesod1.americas.hpqcorp.net>
+References: <1375766476-4204-1-git-send-email-davidlohr@hp.com>
+	<20130806141603.948961cecfc9426aeee7c083@linux-foundation.org>
+	<1376585982.2152.2.camel@buesod1.americas.hpqcorp.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -31,31 +28,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Aug 2013 11:42:55 -0700
-Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU> wrote:
+On Thu, 15 Aug 2013 09:59:42 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
 
-> On 08/12/2013 09:34 AM, Sebastian Andrzej Siewior wrote:
-> > Dear RT folks!
-> >
-> > I'm pleased to announce the v3.10.6-rt3 patch set.
+> On Tue, 2013-08-06 at 14:16 -0700, Andrew Morton wrote:
+> > On Mon,  5 Aug 2013 22:21:08 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > 
+> > > This patchset teaches the kernel about hybrid master boot records (MBRs), one of
+> > > the most common issues with GUID partition tables, as a workaround to layout
+> > > disk partitions to be compatible with both EFI and legacy MBR based systems.
+> > > Except for adding more pmbr checks, to better comply with the UEFI/GPT specs, the
+> > > functionality is left unchanged - we only inform (through debug) the user about
+> > > the used MBR scheme. While it is true that these restrictions can be bypassed when
+> > > forcing gpt, this is not the correct or default way of doing things, complicating
+> > > users furthermore. More details are in the individual patches.
+> > 
+> > Patches look nice, although I'll cheerily admit to not having a clue
+> > what they do.  What is a "hybrid MBR" anyway?
+> > 
+> > Someone's editor seems to replace tabs with spaces so the patches
+> > generate quite a checkpatch storm.  Please use checkpatch.
+> > 
 > 
-> I'm getting this when trying to build:
-> 
-> drivers/md/bcache/request.c: In function 'cached_dev_write_complete':
-> drivers/md/bcache/request.c:1008:2: error: implicit declaration of 
-> function 'up_read_non_owner' [-Werror=implicit-function-declaration]
->    up_read_non_owner(&dc->writeback_lock);
->    ^
-> drivers/md/bcache/request.c: In function 'request_write':
-> drivers/md/bcache/request.c:1034:2: error: implicit declaration of 
-> function 'down_read_non_owner' [-Werror=implicit-function-declaration]
->    down_read_non_owner(&dc->writeback_lock);
->    ^
-> cc1: some warnings being treated as errors
-> 
+> Andrew, any chance of getting this in for 3.12?
 
-Can you send us your config.
+gee, I didn't review the patches because I simply have no useful
+knowledge in the area.  I can check the whitespace and code comments,
+but that has the downside of creating the false impression that someone
+actually reviewed the code :(
 
-Thanks,
+I'm struggling to think who might be better situated.  Matt Fleming or
+Matt Domsch, maybe?
 
--- Steve
