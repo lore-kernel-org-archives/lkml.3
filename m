@@ -1,112 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158Ab3HOPJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 11:09:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30577 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab3HOPJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 11:09:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,885,1367996400"; 
-   d="scan'208";a="381427905"
-Message-ID: <520CEF26.50804@intel.com>
-Date: Thu, 15 Aug 2013 08:09:26 -0700
-From: Dave Hansen <dave.hansen@intel.com>
+	id S1758094Ab3HOPMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 11:12:14 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55047 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756994Ab3HOPMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 11:12:12 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <520CEFCA.8070309@roeck-us.net>
+Date: Thu, 15 Aug 2013 08:12:10 -0700
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Dave Hansen <dave.hansen@linux.intel.com>, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-References: <520BB9EF.5020308@linux.intel.com> <20130815002436.GI6023@dastard>
-In-Reply-To: <20130815002436.GI6023@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/17] 3.4.58-stable review
+References: <20130813063501.728847844@linuxfoundation.org> <520A1D56.2050507@roeck-us.net> <20130813175858.GC7336@kroah.com> <20130813201936.GA18358@roeck-us.net> <CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com> <20130813223622.GA12790@roeck-us.net> <CAMuHMdVsR3Af+ccWMq6aU99UUAtCXyf8Ss0fbSYw7tR_w2mwkA@mail.gmail.com> <520B5873.6010708@roeck-us.net> <20130815063648.GE25754@kroah.com>
+In-Reply-To: <20130815063648.GE25754@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2013 05:24 PM, Dave Chinner wrote:
-> On Wed, Aug 14, 2013 at 10:10:07AM -0700, Dave Hansen wrote:
->> We talked a little about this issue in this thread:
+On 08/14/2013 11:36 PM, Greg Kroah-Hartman wrote:
+> On Wed, Aug 14, 2013 at 03:14:11AM -0700, Guenter Roeck wrote:
+>> On 08/14/2013 01:26 AM, Geert Uytterhoeven wrote:
+>>> On Wed, Aug 14, 2013 at 12:36 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>>>> cris/...:
+>>>>>> In file included from include/linux/page-flags.h:8:0,
+>>>>>>                    from kernel/bounds.c:9:
+>>>>>> include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
+>>>>>> include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
+>>>>>> include/linux/types.h:30:1: error: unknown type name '__kernel_pid_t'
+>>>>>> include/linux/types.h:31:1: error: unknown type name '__kernel_daddr_t'
+>>>>>> include/linux/types.h:33:1: error: unknown type name '__kernel_suseconds_t'
+>>>>>>
+>>>>>> That one might be tricky (or simple if someone knows what is wrong).
+>>>>>
+>>>>> Fixed in v3.5-rc1:
+>>>>>
+>>>>> commit 74f077d2a7651409c44bb323471f219a4b0d2aab
+>>>>> Author: Jiri Slaby <jslaby@suse.cz>
+>>>>> Date:   Mon Apr 2 13:40:17 2012 +0200
+>>>>>
+>>>>>       cris: posix_types.h, include asm-generic/posix_types.h
+>>>>>
+>>>> It does fix above error, but then there is another error:
+>>>>
+>>>>     AS      arch/cris/arch-v10/lib/checksum.o
+>>>> In file included from <command-line>:4:0:
+>>>> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
+>>>> make[1]: *** [arch/cris/arch-v10/lib/checksum.o] Error 1
+>>>> make[1]: *** Waiting for unfinished jobs....
+>>>>     AS      arch/cris/arch-v10/lib/checksumcopy.o
+>>>> In file included from <command-line>:4:0:
+>>>> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
+>>>> make[1]: *** [arch/cris/arch-v10/lib/checksumcopy.o] Error 1
+>>>
+>>> commit 7b91747d42a1012e3781dd09fa638d113809e3fd
+>>> Author: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>> Date:   Wed Apr 18 21:58:43 2012 +0200
+>>>
+>>>       cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
+>>>
 >>
->> 	http://marc.info/?l=linux-mm&m=137573185419275&w=2
+>> Great, thanks for tracking this down.
 >>
->> but I figured I'd follow up with a full comparison.  ext4 is about 20%
->> slower in handling write page faults than ext3.  xfs is about 30% slower
->> than ext3.  I'm running on an 8-socket / 80-core / 160-thread system.
->> Test case is this:
+>> With both patches applied, we are almost there. Next error:
 >>
->> 	https://github.com/antonblanchard/will-it-scale/blob/master/tests/page_fault3.c
-> 
-> So, it writes a 128MB file sequentially via mmap page faults. This
-> isn't a page fault benchmark, as such...
-
-Call it what you will. :)
-
-The other half of the benchmark (the threaded case) looks _completely_
-different since it's dominated by per-mm VM structures while doing page
-faults.
-
->>> # Baseline    Delta          Shared Object                                          Symbol
->>> # ........  .......  .....................  ..............................................
->>> #
->>>     22.04%   -4.07%  [kernel.kallsyms]      [k] page_fault                                
->>>      2.93%  +12.49%  [kernel.kallsyms]      [k] _raw_spin_lock                            
->>>      8.21%   -0.58%  page_fault3_processes  [.] testcase                                  
->>>      4.87%   -0.34%  [kernel.kallsyms]      [k] __set_page_dirty_buffers                  
->>>      4.07%   -0.58%  [kernel.kallsyms]      [k] mem_cgroup_update_page_stat               
->>>      4.10%   -0.61%  [kernel.kallsyms]      [k] __block_write_begin                       
->>>      3.69%   -0.57%  [kernel.kallsyms]      [k] find_get_page                             
+>> kernel/built-in.o: In function `core_kernel_data':
+>> (.text+0x12e38): undefined reference to `_sdata'
+>> make: *** [vmlinux] Error 1
 >>
->> It's a bit of a bummer that things are so much less scalable on the
->> newer filesystems.
-> 
-> Sorry, what? What filesystems are you comparing here? XFS is
-> anything but new...
+>> This has been fixed with commit 473e162e (CRIS: Add _sdata to vmlinux.lds.S).
+>>
+>> So, in summary, we have
+>>
+>> 473e162e CRIS: Add _sdata to vmlinux.lds.S
+>> 69349c2d cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
+>> 7b91747d cris: posix_types.h, include asm-generic/posix_types.h
+>>
+>> With those three patches applied, cris targets build in 3.4.y.
+>
+> Wonderful, I've now applied all of these.
+>
+> Anything else I'm missing for 3.4?
+>
+One more patch to apply to 3.4:
 
-As I said in the first message:
-> Here's a brief snippet of the ext4->xfs 'perf diff'.  Note that things
-> like page_fault() go down in the profile because we are doing _fewer_ of
-> them, not because it got faster:
+aa709f3bc powerpc/numa: Avoid stupid uninitialized warning from gcc
 
-And, yes, I probably shouldn't be calling xfs "newer".
+This fixes the powerpc:chroma_defconfig build.
 
->> I expected xfs to do a _lot_ better than it did.
-> 
-> perf diff doesn't tell me anything about how you should expect the
-> workload to scale.
-
-Click on the little "Linear scaling" checkbox.  That's what I _want_ it
-to do.  It's completely unscientific, but I _expected_ xfs to do better
-than ext4 here.
-
-> This workload appears to be a concurrent write workload using
-> mmap(), so performance is going to be determined by filesystem
-> configuration, storage capability and the CPU overhead of the
-> page_mkwrite() path through the filesystem. It's not a page fault
-> benchmark at all - it's simply a filesystem write bandwidth
-> benchmark.
-> 
-> So, perhaps you could describe the storage you are using, as that
-> would shed more light on your results.
-
-The storage is a piddly little laptop disk.  If I do this on a
-ramfs-hosted loopback, the things actually looks the same (or even a wee
-bit worse).  The reason is that nobody is waiting on the disk to finish
-any of the writeback (we're way below the dirty limits), so we're not
-actually limited by the storage.
-
-> And FWIW, it's no secret that XFS has more per-operation overhead
-> than ext4 through the write path when it comes to allocation, so
-> it's no surprise that on a workload that is highly dependent on
-> allocation overhead that ext4 is a bit faster....
-
-Oh, I didn't mean to be spilling secrets here or anything.  I'm
-obviously not a filesystem developer and I have zero deep understanding
-of what the difference in overhead of the write paths is.  It confused
-me, so I reported it.
+Guenter
 
