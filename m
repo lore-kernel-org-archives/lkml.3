@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758555Ab3HOQhA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 12:37:00 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:22059 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086Ab3HOQg6 (ORCPT
+	id S1758848Ab3HOQiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 12:38:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38994 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756829Ab3HOQit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 12:36:58 -0400
-Message-ID: <1376584540.10300.416.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] mm/hotplug: Remove stop_machine() from
- try_offline_node()
-From: Toshi Kani <toshi.kani@hp.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        tangchen@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        liwanp@linux.vnet.ibm.com
-Date: Thu, 15 Aug 2013 10:35:40 -0600
-In-Reply-To: <520C2D04.8060408@gmail.com>
-References: <1376336071-9128-1-git-send-email-toshi.kani@hp.com>
-	 <520C2D04.8060408@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Aug 2013 12:38:49 -0400
+Date: Thu, 15 Aug 2013 09:40:24 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 35/36] hid: roccat: convert class code to use bin_attrs
+ in groups
+Message-ID: <20130815164024.GB15688@kroah.com>
+References: <1376582626.2452.26.camel@neuromancer.tessier-ashpool>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1376582626.2452.26.camel@neuromancer.tessier-ashpool>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-08-14 at 21:21 -0400, KOSAKI Motohiro wrote:
-> (8/12/13 3:34 PM), Toshi Kani wrote:
-> > lock_device_hotplug() serializes hotplug & online/offline operations.
-> > The lock is held in common sysfs online/offline interfaces and ACPI
-> > hotplug code paths.
-> > 
-> > try_offline_node() off-lines a node if all memory sections and cpus
-> > are removed on the node.  It is called from acpi_processor_remove()
-> > and acpi_memory_remove_memory()->remove_memory() paths, both of which
-> > are in the ACPI hotplug code.
-> > 
-> > try_offline_node() calls stop_machine() to stop all cpus while checking
-> > all cpu status with the assumption that the caller is not protected from
-> > CPU hotplug or CPU online/offline operations.  However, the caller is
-> > always serialized with lock_device_hotplug().  Also, the code needs to
-> > be properly serialized with a lock, not by stopping all cpus at a random
-> > place with stop_machine().
-> > 
-> > This patch removes the use of stop_machine() in try_offline_node() and
-> > adds comments to try_offline_node() and remove_memory() that
-> > lock_device_hotplug() is required.
+On Thu, Aug 15, 2013 at 06:03:46PM +0200, Stefan Achatz wrote:
+> Hello Greg,
+> looking through the patch I found the following:
 > 
-> This patch need more verbose explanation. check_cpu_on_node() traverse cpus
-> and cpu hotplug seems to use cpu_hotplug_driver_lock() instead of lock_device_hotplug().
+> 
+> 
+> In hid-roccat-kone.c, PROFILE_ATTR macro:
+> The line
+>  .private = &profile_numbers[number],
+> should read
+>  .private = &profile_numbers[number-1],
 
-As described: 
+Ah, ok, thanks, will fix up.
 
-| lock_device_hotplug() serializes hotplug & online/offline operations.
-| The lock is held in common sysfs online/offline interfaces and ACPI
-| hotplug code paths.
+> Regarding the compiler warning about unused pyra_sysfs_write_settings:
+> The attribute is indeed readwrite, but the code to write is not standard
+> code. The read function was created with the PYRA_SYSFS_R macro and the
+> write function was written manually. Used were both by
+> PYRA_BIN_ATTRIBUTE_RW.
+> In this case I would keep the PYRA_SYSFS_* macros standalone so that the
+> calling code looks like this:
+> 
+> PYRA_SYSFS_W(control, CONTROL);
+> PYRA_SYSFS_RW(info, INFO);
+> PYRA_SYSFS_RW(profile_settings, PROFILE_SETTINGS);
+> PYRA_SYSFS_RW(profile_buttons, PROFILE_BUTTONS);
+> PYRA_SYSFS_R(settings, SETTINGS);
+> 
+> PYRA_BIN_ATTRIBUTE_W(control, CONTROL);
+> PYRA_BIN_ATTRIBUTE_RW(info, INFO);
+> PYRA_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS);
+> PYRA_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS);
+> PYRA_BIN_ATTRIBUTE_RW(settings, SETTINGS);
 
-And here are their code paths.
+Hm, I'll look this over again and see if I can make it better.
 
-- CPU & Mem online/offline via sysfs online
-	store_online()->lock_device_hotplug()
+But why are you using a "non standard" write function?  What is special
+here about this?
 
-- Mem online via sysfs state:
-	store_mem_state()->lock_device_hotplug()
+> Another thing: Why does nobody (besides me) use the get_maintainer.pl
+> script, so I have to search manually for patches regarding my code?
 
-- ACPI CPU & Mem hot-add:
-	acpi_scan_bus_device_check()->lock_device_hotplug()
+I did use it:
 
-- ACPI CPU & Mem hot-delete:
-	acpi_scan_hot_remove()->lock_device_hotplug()
+$ ./scripts/get_maintainer.pl --file drivers/hid/hid-roccat-kone.c 
+Jiri Kosina <jkosina@suse.cz> (maintainer:HID CORE LAYER)
+linux-input@vger.kernel.org (open list:HID CORE LAYER)
+linux-kernel@vger.kernel.org (open list)
 
-> That said, the race is not happen against another memeory happen. It's likely happen
-> another cpu hotplug. So commenting remove_memory() doesn't make much sense.
+You aren't listed there, perhaps a MAINTAINERS entry needs to be added?
 
-This lock scheme protects from both CPU and memory hotplug, and requires
-the caller to call lock_device_hotplug().
+thanks,
 
-Thanks,
--Toshi
-
-
+greg k-h
