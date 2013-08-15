@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab3HOTb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 15:31:26 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48878 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756721Ab3HOTbZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 15:31:25 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: nomadik: shut up a warning for flags
-Date: Thu, 15 Aug 2013 21:31:15 +0200
-Message-Id: <1376595075-791-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.1.4
+	id S1759221Ab3HOTbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 15:31:39 -0400
+Received: from imap.thunk.org ([74.207.234.97]:44228 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755331Ab3HOTbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 15:31:36 -0400
+Date: Thu, 15 Aug 2013 15:31:22 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, linux-ext4@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        david@fromorbit.com, Tim Chen <tim.c.chen@linux.intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Andy Lutomirski <luto@amacapital.net>
+Subject: Re: page fault scalability (ext3, ext4, xfs)
+Message-ID: <20130815193122.GA19536@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dave Hansen <dave.hansen@linux.intel.com>,
+	linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
+	linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
+	LKML <linux-kernel@vger.kernel.org>, david@fromorbit.com,
+	Tim Chen <tim.c.chen@linux.intel.com>,
+	Andi Kleen <ak@linux.intel.com>,
+	Andy Lutomirski <luto@amacapital.net>
+References: <520BB9EF.5020308@linux.intel.com>
+ <20130815150506.GA10415@thunk.org>
+ <520D13A5.2070808@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520D13A5.2070808@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The irq flags variable gets a warning like this after
-commit bf4dae5ce1b95a5932e43036edcf3f1b324758c6
-"pinctrl: nomadik: delete ancient pin control API":
+On Thu, Aug 15, 2013 at 10:45:09AM -0700, Dave Hansen wrote:
+> 
+> I _believe_ this is because the block allocation is occurring during the
+> warmup, even in those numbers I posted previously.  will-it-scale forks
+> things off early and the tests spend most of their time in those while
+> loops.  Each "page fault handled" (the y-axis) is a trip through the
+> while loop, *not* a call to testcase().
 
-In file included from include/linux/seqlock.h:29:0,
-                 from include/linux/time.h:5,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from
-drivers/pinctrl/pinctrl-nomadik.c:14:
-drivers/pinctrl/pinctrl-nomadik.c: In function 'nmk_pmx_enable':
-include/linux/spinlock.h:348:122: warning:
-'flags' may be used uninitialized in this function
-[-Wmaybe-uninitialized]
-  raw_spin_unlock_irqrestore(&lock->rlock, flags);
-                                                   ^
-drivers/pinctrl/pinctrl-nomadik.c:1515:16: note:
-'flags' was declared here
-  unsigned long flags;
+Ah, OK.  Sorry, I misinterpreted what was going on.
 
-The function is question was never changed but it appears
-the semantic checker could previously determine that the code
-path that would use the flags was going to either use it or
-not, but now it can't for some reason. Just fix it up.
+So basically, what we have going on in the test is (a) we're bumping
+i_version and/or mtime, and (b) the munmap() implies an msync(), so
+writeback is happening in the background concurrently with the write
+page faults, and we may be (actually, almost certainly) seeing some
+interference between the writeback and the page_mkwrite operations.
 
-Reported-by: Olof Johansson <olof@lixom.net>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-nomadik.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That implies that if you redid the test using a ramdisk, which will
+significantly speed up the writeback and overhead caused by the
+journal transactions for the metadata updates, the results might very
+well be different.
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 89280bc..a8b8a53 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -1512,7 +1512,7 @@ static int nmk_pmx_enable(struct pinctrl_dev *pctldev, unsigned function,
- 	struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
- 	const struct nmk_pingroup *g;
- 	static unsigned int slpm[NUM_BANKS];
--	unsigned long flags;
-+	unsigned long flags = 0;
- 	bool glitch;
- 	int ret = -EINVAL;
- 	int i;
--- 
-1.8.1.4
+Cheers,
 
+						- Ted
