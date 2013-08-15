@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759991Ab3HOSm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 14:42:29 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:64975 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759878Ab3HOSm0 convert rfc822-to-8bit (ORCPT
+	id S1759468Ab3HOStt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 14:49:49 -0400
+Received: from smtp2.Stanford.EDU ([171.67.219.82]:43336 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753467Ab3HOStr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 14:42:26 -0400
+	Thu, 15 Aug 2013 14:49:47 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Aug 2013 14:49:47 EDT
+Message-ID: <520D212F.7030400@localhost>
+Date: Thu, 15 Aug 2013 11:42:55 -0700
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <87ioz67qq0.fsf@nemi.mork.no>
-References: <52050382.9060802@gmail.com>
-	<520BB225.8030807@gmail.com>
-	<20130814174039.GA24033@dhcp22.suse.cz>
-	<CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com>
-	<20130814182756.GD24033@dhcp22.suse.cz>
-	<CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com>
-	<520C9E78.2020401@gmail.com>
-	<CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com>
-	<CA+55aFxuUrcod=X2t2yqR_zJ4s1uaCsGB-p1oLTQrG+y+Z2PbA@mail.gmail.com>
-	<87ioz67qq0.fsf@nemi.mork.no>
-Date: Thu, 15 Aug 2013 11:42:25 -0700
-X-Google-Sender-Auth: _vbfdkXTf2dcoI-6b56c8cBR7Tw
-Message-ID: <CA+55aFxpguNh5Fi7q4WwHMFdBF2YL+gj_o7d67X8hV_XF9Zz4A@mail.gmail.com>
-Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please revert 53a59fc67!
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: =?UTF-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-Cc: Ben Tebulin <tebulin@googlemail.com>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-rt-users <linux-rt-users@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.10.6-rt3
+References: <20130812163413.GI23040@linutronix.de>
+In-Reply-To: <20130812163413.GI23040@linutronix.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 11:29 AM, Bjørn Mork <bjorn@mork.no> wrote:
-> Linus Torvalds <torvalds@linux-foundation.org> writes:
+On 08/12/2013 09:34 AM, Sebastian Andrzej Siewior wrote:
+> Dear RT folks!
 >
->> Comments? Especially s390, ARM, ia64, sh and um that I edited blindly...
+> I'm pleased to announce the v3.10.6-rt3 patch set.
+
+I'm getting this when trying to build:
+
+drivers/md/bcache/request.c: In function 'cached_dev_write_complete':
+drivers/md/bcache/request.c:1008:2: error: implicit declaration of 
+function 'up_read_non_owner' [-Werror=implicit-function-declaration]
+   up_read_non_owner(&dc->writeback_lock);
+   ^
+drivers/md/bcache/request.c: In function 'request_write':
+drivers/md/bcache/request.c:1034:2: error: implicit declaration of 
+function 'down_read_non_owner' [-Werror=implicit-function-declaration]
+   down_read_non_owner(&dc->writeback_lock);
+   ^
+cc1: some warnings being treated as errors
+
+Does not look like *_read_non_owner exist in rwsem_rt.h...
+-- Fernando
+
+
+> Changes since v3.10.6-rt2
+> - the queue can be imported with git quiltimport
+> - powerpc compiles again. Thanks to Paul Gortmaker for the patch.
+> - added three patches from v3.8 which fall the wagon on their way to
+>    3.10. One of them enables RT-FULL on ARM :)
+> - removed all cpsw patches from the queue. They made it upstream. My
+>    nfsboot setup seems not to work, lets look at this later.
+> - make arm/spear compile. Thanks to Felipe Balbi for the patch.
+> - Add a patch from Corey Minyard to no longer use deprecated
+>    CONFIG_NO_HZ.
+> - add the one patch which I added to the last 3.8-rt to get get list_bl
+>    work again on !SMP && !DEBUG_SPINLOCK
+> - Spell "preemptible" properly in "Preemptible Kernel (Basic RT)" menu
+>    item. Thanks to Uwe Kleine-König for the patch.
+> - a patch from John Kacur to avoid a warning in the hpsa.
+> - a patch for the ppc5200 where the compiler thinks a variable isn't
+>    initialized and stops compililing due to -Werror
 >
-> I can see that :-)  You have a couple of "unsigned logn"s here.
-
-Just checking that you guys are awake.
-
-Good job. You passed.
-
-                 Linus
+> Known issues:
+>
+>        - SLAB support not working
+>
+>        - The cpsw network driver shows some issues.
+>
+>        - ARM & PPC don't fall apart once booted. More testing doesn't
+>          hurt.
+>
+>        - bcache with CONFIG_DEBUG_LOCK_ALLOC enabled does not compile.
+...
