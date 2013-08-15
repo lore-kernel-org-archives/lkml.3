@@ -1,403 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760076Ab3HOGHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 02:07:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59121 "EHLO
+	id S1760205Ab3HOGIC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 02:08:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59124 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753891Ab3HOGHk (ORCPT
+	with ESMTP id S1753713Ab3HOGIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 02:07:40 -0400
-Date: Wed, 14 Aug 2013 23:09:13 -0700
+	Thu, 15 Aug 2013 02:08:00 -0400
+Date: Wed, 14 Aug 2013 23:09:33 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.91
-Message-ID: <20130815060913.GB16595@kroah.com>
-References: <20130815060905.GA16595@kroah.com>
+Subject: Linux 3.4.58
+Message-ID: <20130815060933.GA16651@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
 Content-Disposition: inline
-In-Reply-To: <20130815060905.GA16595@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index 4789f7a..ab2f30a 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 90
-+SUBLEVEL = 91
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index a95256a..f2fb2f2 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -241,9 +241,12 @@ static struct port *find_port_by_devt_in_portdev(struct ports_device *portdev,
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&portdev->ports_lock, flags);
--	list_for_each_entry(port, &portdev->ports, list)
--		if (port->cdev->dev == dev)
-+	list_for_each_entry(port, &portdev->ports, list) {
-+		if (port->cdev->dev == dev) {
-+			kref_get(&port->kref);
- 			goto out;
-+		}
-+	}
- 	port = NULL;
- out:
- 	spin_unlock_irqrestore(&portdev->ports_lock, flags);
-@@ -622,6 +625,10 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
- 
- 	port = filp->private_data;
- 
-+	/* Port is hot-unplugged. */
-+	if (!port->guest_connected)
-+		return -ENODEV;
-+
- 	if (!port_has_data(port)) {
- 		/*
- 		 * If nothing's connected on the host just return 0 in
-@@ -638,7 +645,7 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
- 		if (ret < 0)
- 			return ret;
- 	}
--	/* Port got hot-unplugged. */
-+	/* Port got hot-unplugged while we were waiting above. */
- 	if (!port->guest_connected)
- 		return -ENODEV;
- 	/*
-@@ -781,14 +788,14 @@ static int port_fops_open(struct inode *inode, struct file *filp)
- 	struct port *port;
- 	int ret;
- 
-+	/* We get the port with a kref here */
- 	port = find_port_by_devt(cdev->dev);
-+	if (!port) {
-+		/* Port was unplugged before we could proceed */
-+		return -ENXIO;
-+	}
- 	filp->private_data = port;
- 
--	/* Prevent against a port getting hot-unplugged at the same time */
--	spin_lock_irq(&port->portdev->ports_lock);
--	kref_get(&port->kref);
--	spin_unlock_irq(&port->portdev->ports_lock);
--
- 	/*
- 	 * Don't allow opening of console port devices -- that's done
- 	 * via /dev/hvc
-@@ -1243,14 +1250,6 @@ static void remove_port(struct kref *kref)
- 
- 	port = container_of(kref, struct port, kref);
- 
--	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
--	device_destroy(pdrvdata.class, port->dev->devt);
--	cdev_del(port->cdev);
--
--	kfree(port->name);
--
--	debugfs_remove(port->debugfs_file);
--
- 	kfree(port);
- }
- 
-@@ -1268,12 +1267,14 @@ static void unplug_port(struct port *port)
- 	spin_unlock_irq(&port->portdev->ports_lock);
- 
- 	if (port->guest_connected) {
-+		/* Let the app know the port is going down. */
-+		send_sigio_to_port(port);
-+
-+		/* Do this after sigio is actually sent */
- 		port->guest_connected = false;
- 		port->host_connected = false;
--		wake_up_interruptible(&port->waitqueue);
- 
--		/* Let the app know the port is going down. */
--		send_sigio_to_port(port);
-+		wake_up_interruptible(&port->waitqueue);
- 	}
- 
- 	if (is_console_port(port)) {
-@@ -1299,6 +1300,14 @@ static void unplug_port(struct port *port)
- 	 */
- 	port->portdev = NULL;
- 
-+	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
-+	device_destroy(pdrvdata.class, port->dev->devt);
-+	cdev_del(port->cdev);
-+
-+	kfree(port->name);
-+
-+	debugfs_remove(port->debugfs_file);
-+
- 	/*
- 	 * Locks around here are not necessary - a port can't be
- 	 * opened after we removed the port struct from ports_list
-diff --git a/drivers/hwmon/adt7470.c b/drivers/hwmon/adt7470.c
-index c6d1ce0..a9726c1 100644
---- a/drivers/hwmon/adt7470.c
-+++ b/drivers/hwmon/adt7470.c
-@@ -215,7 +215,7 @@ static inline int adt7470_write_word_data(struct i2c_client *client, u8 reg,
- 					  u16 value)
- {
- 	return i2c_smbus_write_byte_data(client, reg, value & 0xFF)
--	       && i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
-+	       || i2c_smbus_write_byte_data(client, reg + 1, value >> 8);
- }
- 
- static void adt7470_init_client(struct i2c_client *client)
-diff --git a/drivers/scsi/nsp32.c b/drivers/scsi/nsp32.c
-index f6a50c9..bfb05b8 100644
---- a/drivers/scsi/nsp32.c
-+++ b/drivers/scsi/nsp32.c
-@@ -2927,7 +2927,7 @@ static void nsp32_do_bus_reset(nsp32_hw_data *data)
- 	 * reset SCSI bus
- 	 */
- 	nsp32_write1(base, SCSI_BUS_CONTROL, BUSCTL_RST);
--	udelay(RESET_HOLD_TIME);
-+	mdelay(RESET_HOLD_TIME / 1000);
- 	nsp32_write1(base, SCSI_BUS_CONTROL, 0);
- 	for(i = 0; i < 5; i++) {
- 		intrdat = nsp32_read2(base, IRQ_STATUS); /* dummy read */
-diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-index 07132c4..219933b 100644
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -3473,13 +3473,12 @@ CIFSSMBSetCIFSACL(const int xid, struct cifs_tcon *tcon, __u16 fid,
- 	int rc = 0;
- 	int bytes_returned = 0;
- 	SET_SEC_DESC_REQ *pSMB = NULL;
--	NTRANSACT_RSP *pSMBr = NULL;
-+	void *pSMBr;
- 
- setCifsAclRetry:
--	rc = smb_init(SMB_COM_NT_TRANSACT, 19, tcon, (void **) &pSMB,
--			(void **) &pSMBr);
-+	rc = smb_init(SMB_COM_NT_TRANSACT, 19, tcon, (void **) &pSMB, &pSMBr);
- 	if (rc)
--			return (rc);
-+		return rc;
- 
- 	pSMB->MaxSetupCount = 0;
- 	pSMB->Reserved = 0;
-@@ -3507,9 +3506,8 @@ setCifsAclRetry:
- 	pSMB->AclFlags = cpu_to_le32(CIFS_ACL_DACL);
- 
- 	if (pntsd && acllen) {
--		memcpy((char *) &pSMBr->hdr.Protocol + data_offset,
--			(char *) pntsd,
--			acllen);
-+		memcpy((char *)pSMBr + offsetof(struct smb_hdr, Protocol) +
-+				data_offset, pntsd, acllen);
- 		inc_rfc1001_len(pSMB, byte_count + data_count);
- 	} else
- 		inc_rfc1001_len(pSMB, byte_count);
-@@ -5291,7 +5289,8 @@ CIFSSMBSetFileInfo(const int xid, struct cifs_tcon *tcon,
- 	param_offset = offsetof(struct smb_com_transaction2_sfi_req, Fid) - 4;
- 	offset = param_offset + params;
- 
--	data_offset = (char *) (&pSMB->hdr.Protocol) + offset;
-+	data_offset = (char *)pSMB +
-+			offsetof(struct smb_hdr, Protocol) + offset;
- 
- 	count = sizeof(FILE_BASIC_INFO);
- 	pSMB->MaxParameterCount = cpu_to_le16(2);
-@@ -5560,7 +5559,7 @@ CIFSSMBUnixSetFileInfo(const int xid, struct cifs_tcon *tcon,
- 		       u16 fid, u32 pid_of_opener)
- {
- 	struct smb_com_transaction2_sfi_req *pSMB  = NULL;
--	FILE_UNIX_BASIC_INFO *data_offset;
-+	char *data_offset;
- 	int rc = 0;
- 	u16 params, param_offset, offset, byte_count, count;
- 
-@@ -5582,8 +5581,9 @@ CIFSSMBUnixSetFileInfo(const int xid, struct cifs_tcon *tcon,
- 	param_offset = offsetof(struct smb_com_transaction2_sfi_req, Fid) - 4;
- 	offset = param_offset + params;
- 
--	data_offset = (FILE_UNIX_BASIC_INFO *)
--				((char *)(&pSMB->hdr.Protocol) + offset);
-+	data_offset = (char *)pSMB +
-+			offsetof(struct smb_hdr, Protocol) + offset;
-+
- 	count = sizeof(FILE_UNIX_BASIC_INFO);
- 
- 	pSMB->MaxParameterCount = cpu_to_le16(2);
-@@ -5605,7 +5605,7 @@ CIFSSMBUnixSetFileInfo(const int xid, struct cifs_tcon *tcon,
- 	inc_rfc1001_len(pSMB, byte_count);
- 	pSMB->ByteCount = cpu_to_le16(byte_count);
- 
--	cifs_fill_unix_set_info(data_offset, args);
-+	cifs_fill_unix_set_info((FILE_UNIX_BASIC_INFO *)data_offset, args);
- 
- 	rc = SendReceiveNoRsp(xid, tcon->ses, (struct smb_hdr *) pSMB, 0);
- 	if (rc)
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 8b64f38..ecc0742 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1563,7 +1563,7 @@ static struct dentry * d_find_any_alias(struct inode *inode)
-  */
- struct dentry *d_obtain_alias(struct inode *inode)
- {
--	static const struct qstr anonstring = { .name = "" };
-+	static const struct qstr anonstring = { .name = "/", .len = 1 };
- 	struct dentry *tmp;
- 	struct dentry *res;
- 
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index e7a7a2f..eac5b7c 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -380,8 +380,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
-  */
- void debugfs_remove_recursive(struct dentry *dentry)
- {
--	struct dentry *child;
--	struct dentry *parent;
-+	struct dentry *child, *next, *parent;
- 
- 	if (!dentry)
- 		return;
-@@ -391,61 +390,37 @@ void debugfs_remove_recursive(struct dentry *dentry)
- 		return;
- 
- 	parent = dentry;
-+ down:
- 	mutex_lock(&parent->d_inode->i_mutex);
-+	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
-+		if (!debugfs_positive(child))
-+			continue;
- 
--	while (1) {
--		/*
--		 * When all dentries under "parent" has been removed,
--		 * walk up the tree until we reach our starting point.
--		 */
--		if (list_empty(&parent->d_subdirs)) {
--			mutex_unlock(&parent->d_inode->i_mutex);
--			if (parent == dentry)
--				break;
--			parent = parent->d_parent;
--			mutex_lock(&parent->d_inode->i_mutex);
--		}
--		child = list_entry(parent->d_subdirs.next, struct dentry,
--				d_u.d_child);
-- next_sibling:
--
--		/*
--		 * If "child" isn't empty, walk down the tree and
--		 * remove all its descendants first.
--		 */
-+		/* perhaps simple_empty(child) makes more sense */
- 		if (!list_empty(&child->d_subdirs)) {
- 			mutex_unlock(&parent->d_inode->i_mutex);
- 			parent = child;
--			mutex_lock(&parent->d_inode->i_mutex);
--			continue;
--		}
--		__debugfs_remove(child, parent);
--		if (parent->d_subdirs.next == &child->d_u.d_child) {
--			/*
--			 * Try the next sibling.
--			 */
--			if (child->d_u.d_child.next != &parent->d_subdirs) {
--				child = list_entry(child->d_u.d_child.next,
--						   struct dentry,
--						   d_u.d_child);
--				goto next_sibling;
--			}
--
--			/*
--			 * Avoid infinite loop if we fail to remove
--			 * one dentry.
--			 */
--			mutex_unlock(&parent->d_inode->i_mutex);
--			break;
-+			goto down;
- 		}
--		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
-+ up:
-+		if (!__debugfs_remove(child, parent))
-+			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- 	}
- 
--	parent = dentry->d_parent;
-+	mutex_unlock(&parent->d_inode->i_mutex);
-+	child = parent;
-+	parent = parent->d_parent;
- 	mutex_lock(&parent->d_inode->i_mutex);
--	__debugfs_remove(dentry, parent);
-+
-+	if (child != dentry) {
-+		next = list_entry(child->d_u.d_child.next, struct dentry,
-+					d_u.d_child);
-+		goto up;
-+	}
-+
-+	if (!__debugfs_remove(child, parent))
-+		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- 	mutex_unlock(&parent->d_inode->i_mutex);
--	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- }
- EXPORT_SYMBOL_GPL(debugfs_remove_recursive);
- 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 59d3ef1..217b3c2 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -71,6 +71,8 @@ struct trace_iterator {
- 	/* trace_seq for __print_flags() and __print_symbolic() etc. */
- 	struct trace_seq	tmp_seq;
- 
-+	cpumask_var_t		started;
-+
- 	/* The below is zeroed out in pipe_read */
- 	struct trace_seq	seq;
- 	struct trace_entry	*ent;
-@@ -82,7 +84,7 @@ struct trace_iterator {
- 	loff_t			pos;
- 	long			idx;
- 
--	cpumask_var_t		started;
-+	/* All new field here will be zeroed out in pipe_read */
- };
- 
- 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 91b8e9a..f15b21a 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3245,6 +3245,7 @@ waitagain:
- 	memset(&iter->seq, 0,
- 	       sizeof(struct trace_iterator) -
- 	       offsetof(struct trace_iterator, seq));
-+	cpumask_clear(iter->started);
- 	iter->pos = -1;
- 
- 	trace_event_read_lock();
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index a16ecab..9a5d1b9 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -15,7 +15,8 @@ const char *map_type__name[MAP__NR_TYPES] = {
- 
- static inline int is_anon_memory(const char *filename)
- {
--	return strcmp(filename, "//anon") == 0;
-+	return !strcmp(filename, "//anon") ||
-+	       !strcmp(filename, "/anon_hugepage (deleted)");
- }
- 
- void map__init(struct map *self, enum map_type type,
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.4.58 kernel.
+
+All users of the 3.4 kernel series must upgrade.
+
+The updated 3.4.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                  |    2=20
+ drivers/char/virtio_console.c             |   47 ++++++++++++--------
+ drivers/hwmon/adt7470.c                   |    2=20
+ drivers/scsi/megaraid/megaraid_sas_base.c |   20 ++++++--
+ drivers/scsi/nsp32.c                      |    2=20
+ drivers/scsi/scsi.c                       |    3 +
+ drivers/usb/core/hub.c                    |    5 +-
+ fs/cifs/cifsencrypt.c                     |    2=20
+ fs/cifs/cifsglob.h                        |    1=20
+ fs/cifs/connect.c                         |    7 +--
+ fs/cifs/sess.c                            |    6 +-
+ fs/dcache.c                               |    2=20
+ fs/debugfs/inode.c                        |   69 +++++++++----------------=
+-----
+ fs/ext4/ialloc.c                          |   10 ++--
+ fs/ext4/super.c                           |   17 ++++++-
+ include/linux/ftrace_event.h              |    4 +
+ kernel/trace/trace.c                      |    1=20
+ tools/perf/util/map.c                     |    3 -
+ 18 files changed, 111 insertions(+), 92 deletions(-)
+
+Amit Shah (5):
+      virtio: console: fix race with port unplug and open/close
+      virtio: console: fix race in port_fops_open() and port unplug
+      virtio: console: clean up port data immediately at time of unplug
+      virtio: console: fix raising SIGIO after port unplug
+      virtio: console: return -ENODEV on all read operations after unplug
+
+Andrew Vagin (1):
+      tracing: Fix fields of struct trace_iterator that are zeroed by mista=
+ke
+
+Arnd Bergmann (1):
+      SCSI: nsp32: use mdelay instead of large udelay constants
+
+Chen Gang (1):
+      cifs: extend the buffer length enought for sprintf() using
+
+Curt Brune (1):
+      hwmon: (adt7470) Fix incorrect return code check
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.58
+
+Joshua Zhu (1):
+      perf tools: Add anonymous huge page recognition
+
+Julius Werner (1):
+      usb: core: don't try to reset_device() a port that got just disconnec=
+ted
+
+Martin K. Petersen (1):
+      SCSI: Don't attempt to send extended INQUIRY command if skip_vpd_page=
+s is set
+
+NeilBrown (1):
+      vfs: d_obtain_alias() needs to use "/" as default name.
+
+Oleg Nesterov (1):
+      debugfs: debugfs_remove_recursive() must not rely on list_empty(d_sub=
+dirs)
+
+Piotr Sarna (1):
+      ext4: fix mount/remount error messages for incompatible mount options
+
+Sumit.Saxena@lsi.com (1):
+      SCSI: megaraid_sas: megaraid_sas driver init fails in kdump kernel
+
+Theodore Ts'o (1):
+      ext4: make sure group number is bumped after a inode allocation race
+
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJSDHCdAAoJEDjbvchgkmk+pQcP/2mNJSdA7aEm5gJmTdgQ2rOj
+OhKFd8FYnyEmoLnFFAYFaFOR3vwjWqhIKE4zbRIktvEVnzcjfj7h95lzqcdwE1Zf
+4WWEkRM1Vmu7805nKXYoy/A05ERvaJjbGUKCs7yl1LyXeVO4iMAVL4vy0ojP3ELu
+M9R0HSDcjyT/PdC84NRyI6wJzy+CoH2648JAxBXVpP4rLHYTUIoIYISA7H0TIp6X
+Uh9Rij0ODgSpTIZ+iHS7ZZjyACgwtZmRbGWROwdVYm6LxVsIIRiCRnsFlv2wEf6r
+68h/rCD/KQF1od6y8qDTVMNUPvbJUj73Sx0TG6l1281A5nCI0uz0wovjXPVwMjZS
+fbEkNcToSlPqTBkWruekHGNpG6ekIpWfZGr8oWqyNlCtZ3QDDThCcQO3iJwWRo+l
+vw9FE8lWbQ7qlMQvIjPeGuTr7VmwSX0M2iONpAzUJObdqezjd8Xd28M1GLR3Boau
+FXqF2DCVaYlCDzJ+RD++iOrdm/iMTarvvkc+zxVjWFzg8KEfMp1k5wYMM6WmqcHx
+WPlfCFEdI3jOcA5aPRIGv+CZpWiaQWYryEjxIeEkE4YcaGuXVRpk96AndEsiq9x3
+4pZ/ndKGwGLu17lZatIHxJFsl8pNikvdktKKWy+ome2iJLYqMScm8f9BFQB8m0ht
+UAwLef+Q7mIJU2+/M78Q
+=X95D
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
