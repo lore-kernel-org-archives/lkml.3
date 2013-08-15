@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab3HOHDl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 03:03:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53255 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab3HOHDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 03:03:39 -0400
-Message-ID: <520C7D13.8060900@ti.com>
-Date: Thu, 15 Aug 2013 02:02:43 -0500
-From: Joel Fernandes <joelf@ti.com>
-Reply-To: <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1760243Ab3HOHH1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 03:07:27 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:47962 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab3HOHHZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 03:07:25 -0400
+Date: Thu, 15 Aug 2013 00:07:29 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-bcache@vger.kernel.org
+Subject: Re: [GIT PULL] bcache fixes for 3.11
+Message-ID: <20130815070729.GC6427@kmo-pixel>
+References: <20130814225904.GA6427@kmo-pixel>
+ <520C788A.1060208@profihost.ag>
 MIME-Version: 1.0
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mark Greer <mgreer@animalcreek.com>, Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: [PATCH 00/10] crypto: omap-aes: DMA and PIO mode improvements
-References: <1376521969-16807-1-git-send-email-joelf@ti.com> <520C1327.8090607@ti.com> <520C6E0A.8030505@samsung.com>
-In-Reply-To: <520C6E0A.8030505@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520C788A.1060208@profihost.ag>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2013 12:58 AM, Dmitry Kasatkin wrote:
-> On 15/08/13 02:30, Joel Fernandes wrote:
->> On 08/14/2013 06:12 PM, Joel Fernandes wrote:
->>> This patch series is a rewrite of the DMA portion of omap-aes driver
->>> and also adds support for PIO mode. Both these modes, give better
->>> performance than before.
->>>
->>> Earlier, only a single SG was used for DMA purpose, and the SG-list
->>> passed from the crypto layer was being copied and DMA'd one entry at
->>> a time. This turns out to be quite inefficient, so we replace it with
->>> much simpler code that directly passes the SG-list from crypto to the
->>> DMA layer.
->>>
->>> We also add PIO mode support to the driver, and switch to PIO mode
->>> whenever the DMA channel allocation is not available. This is only for
->>> OMAP4 platform will work on any platform on which IRQ information is
->>> populated.
->>>
->>> Tests performed on am33xx and omap4 SoCs , notice the 50% perf improvement
->> Just correcting, this is more like 35% not 50% when using DMA.
+On Thu, Aug 15, 2013 at 08:43:22AM +0200, Stefan Priebe - Profihost AG wrote:
+> Am 15.08.2013 00:59, schrieb Kent Overstreet:
+> > Jens, here's the latest bcache fixes. Some urgent stuff in here:
+> > 
+> > 
+> > The following changes since commit 79826c35eb99cd3c0873b8396f45fa26c87fb0b0:
+> > 
+> >   bcache: Allocation kthread fixes (2013-07-12 00:22:49 -0700)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
+> > 
+> > for you to fetch changes up to 0434a516e99ee51ac2d0dfa71b2f56c89ac5db05:
+> > 
+> >   bcache: Fix a flush/fua performance bug (2013-08-14 15:44:51 -0700)
+> > 
+> > ----------------------------------------------------------------
+> > Gabriel de Perthuis (1):
+> >       bcache: Strip endline when writing the label through sysfs
+> > 
+> > Geert Uytterhoeven (1):
+> >       bcache: Correct printf()-style format length modifier
+> > 
+> > Kent Overstreet (4):
+> >       bcache: Fix a dumb journal discard bug
+> >       bcache: Fix for when no journal entries are found
+> >       bcache: Fix a writeback performance regression
+> >       bcache: Fix a flush/fua performance bug
+> > 
+> >  drivers/md/bcache/bcache.h    |  7 +++----
+> >  drivers/md/bcache/btree.c     |  2 +-
+> >  drivers/md/bcache/journal.c   | 33 ++++++++++++++++++++-------------
+> >  drivers/md/bcache/sysfs.c     |  9 +++++++--
+> >  drivers/md/bcache/util.c      | 11 ++++++++++-
+> >  drivers/md/bcache/util.h      | 12 +++++++++---
+> >  drivers/md/bcache/writeback.c | 37 ++++++++++++++++++-------------------
+> >  7 files changed, 68 insertions(+), 43 deletions(-)
+> > --
 > 
-> Hmm :)
+> As 3.10 is long term stable release. You might need CC the stable list
+> for patches which have to go to 3.10 as well.
 > 
-> 1766/1460 = ~20%
+> At least this one should go to 3.10:
+> > Gabriel de Perthuis (1):
+> >       bcache: Strip endline when writing the label through sysfs
 
-Yes sorry, I messed the cover letter up. If I resend the series again,
-I'll update this number.
-
-On OMAP4 though, I saw 2800 ops/sec vs 1800 ops/sec which is around 50%
-so it depends on SoC and DMA controller. OMAP4 uses SDMA while AM335x
-uses EDMA.
-
-Also with very large blocks, this improvement will be much higher as we
-will not be doing all the intermediate copy but I haven't tested with
-such large blocks.
-
-Thanks,
-
--Joel
-
+That patch is fixing a bug in code that was merged for 3.11 - the rest
+are marked for stable :)
