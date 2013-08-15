@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab3HOWcd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 18:32:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41784 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab3HOWcc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 18:32:32 -0400
-Date: Thu, 15 Aug 2013 23:32:11 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Darren Etheridge <detheridge@ti.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/8] Several NXP TDA998x patches
-Message-ID: <20130815223211.GG23006@n2100.arm.linux.org.uk>
-References: <1376509413-1462-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1752314Ab3HOWhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 18:37:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751481Ab3HOWht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 18:37:49 -0400
+Subject: [PATCH 0/2] vgaarb: Fixes for partial VGA opt-out
+To: linux-kernel@vger.kernel.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: airlied@redhat.com, intel-gfx@lists.freedesktop.org,
+        ville.syrjala@linux.intel.com
+Date: Thu, 15 Aug 2013 16:37:47 -0600
+Message-ID: <20130815222835.27642.15330.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1376509413-1462-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 14, 2013 at 09:43:25PM +0200, Sebastian Hesselbarth wrote:
-> This patch set picks up several patches sent during the past months
-> related with NXP TDA998x HDMI transmitter driver. The patches have
-> been tested on Marvell Dove (Armada DRM) on several HDMI and DVI modes
-> with audio playing on S/PDIF.
-> 
-> I bumped all patches to v2, although only patches 2, 5, and 6 have
-> changed. I also fixed a typo in commit line of patch 8. As Darren
-> Etheridge already gave his Tested-by and tilcdc related patches have
-> not changed, I added it to all patches for v2, too.
-> 
-> I have not added Russell King's Tested-by, as I hope he will have a
-> close look at what I changed after his review comments.
-> 
-> Darren Etheridge (1):
->   drm/tilcdc fixup mode to workaround sync for tda998x
-> 
-> Russell King (5):
->   drm/i2c: tda998x: fix EDID reading on TDA19988 devices
->   drm/i2c: tda998x: ensure VIP output mux is properly set
->   drm/i2c: tda998x: fix npix/nline programming
->   drm/i2c: tda998x: prepare for video input configuration
->   drm/i2c: tda998x: add video and audio input configuration
-> 
-> Sebastian Hesselbarth (2):
->   drm/i2c: tda998x: fix sync generation and calculation
->   drm/i2c: tda998x: prepare for broken sync workaround
-> 
->  drivers/gpu/drm/i2c/tda998x_drv.c     |  481 +++++++++++++++++++++++++++------
->  drivers/gpu/drm/tilcdc/tilcdc_crtc.c  |    7 +-
->  drivers/gpu/drm/tilcdc/tilcdc_slave.c |   27 +-
->  include/drm/i2c/tda998x.h             |   30 ++
->  4 files changed, 467 insertions(+), 78 deletions(-)
->  create mode 100644 include/drm/i2c/tda998x.h
-> 
-> ---
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: Darren Etheridge <detheridge@ti.com>
-> Cc: Rob Clark <robdclark@gmail.com>
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: linux-kernel@vger.kernel.org
+I'm trying to add support for VGA arbitration on newer Intel graphics
+devices.  The existing code attempts to do this, but appear to have
+not been updated since GMCH devices roamed the Earth.  On newer
+devices like Haswell, we can disable VGA memory through an MSR on the
+device, but we rely on the VGA arbiter to manage VGA IO using the PCI
+COMMAND register.  In trying to unregister legacy VGA memory, I found
+that the VGA arbiter still wanted to disable both memory and IO on
+the device and that it forgot to actually program the device to
+disable IO when the decoding is updated.  This series attempts to fix
+both of those.  Thanks,
 
-Okay, I'm happy with this set.  Patches 1-7 can get a:
+Alex
 
-Tested-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
 
-Thanks.
+Alex Williamson (2):
+      vgaarb: Don't disable resources that are not owned
+      vgaarb: Fix VGA decodes changes
+
+
+ drivers/gpu/vga/vgaarb.c |   50 ++++++++++++++++++++--------------------------
+ 1 file changed, 22 insertions(+), 28 deletions(-)
