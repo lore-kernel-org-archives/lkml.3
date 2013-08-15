@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab3HONsl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 09:48:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42425 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab3HONsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 09:48:39 -0400
-Date: Thu, 15 Aug 2013 08:48:33 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: =?iso-8859-1?Q?St=E9phane?= Graber <stgraber@ubuntu.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RESEND] [PATCH] coredump: Add new %P variable in core_pattern
-Message-ID: <20130815134833.GA11369@sergelap>
-References: <20130815125132.GA11139@castiana>
+	id S1757604Ab3HONvL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 09:51:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58891 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755951Ab3HONvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 09:51:08 -0400
+Date: Thu, 15 Aug 2013 15:51:06 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "lance.ortiz@hp.com" <lance.ortiz@hp.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski Filho <arozansk@redhat.com>
+Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error
+ trace event
+Message-ID: <20130815135106.GG27616@pd.tnic>
+References: <5208D80D.5030206@linux.vnet.ibm.com>
+ <20130812114404.3bd64fa0@samsung.com>
+ <520A1B5E.8040105@linux.vnet.ibm.com>
+ <20130813094147.062317f8@concha.lan>
+ <520A6A30.1030406@linux.vnet.ibm.com>
+ <3908561D78D1C84285E8C5FCA982C28F31CB8DB5@ORSMSX106.amr.corp.intel.com>
+ <520B603E.3040002@linux.vnet.ibm.com>
+ <20130814211504.393cf138@concha.lan>
+ <20130815100132.GC27616@pd.tnic>
+ <20130815103421.178a5224@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130815125132.GA11139@castiana>
+In-Reply-To: <20130815103421.178a5224@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Stéphane.  There were no objections last time this was posted,
-right?  Hopefully it can be applied this time.
+On Thu, Aug 15, 2013 at 10:34:21AM -0300, Mauro Carvalho Chehab wrote:
+> Yes, but the thing is that it is not safe to use the hardware driver
+> if the BIOS is also reading the hardware error registers directly, as,
+> on several hardware, a read cause the error data to be cleaned on such
+> register.
 
--serge
+Here's the deal:
 
-Quoting Stéphane Graber (stgraber@ubuntu.com):
-> This adds a new %P variable to be used in core_pattern. This variable contains
-> the global PID (PID in the init namespace) as %p contains the PID in the
-> current namespace which isn't always what we want.
-> 
-> The main use for this is to make it easier to handle crashes that happened
-> within a container. With that new variables it's possible to have the crashes
-> dumped into the container or forwarded to the host with the right PID
-> (from the host's point of view).
-> 
-> Reported-by: Hans Feldt <hans.feldt@ericsson.com>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Andy Whitcroft <apw@canonical.com>
-> Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-> Signed-off-by: Stéphane Graber <stgraber@ubuntu.com>
-> 
-> ---
->  Documentation/sysctl/kernel.txt | 1 +
->  fs/coredump.c                   | 5 +++++
->  2 files changed, 6 insertions(+)
-> 
-> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-> index ccd4258..833026d 100644
-> --- a/Documentation/sysctl/kernel.txt
-> +++ b/Documentation/sysctl/kernel.txt
-> @@ -182,6 +182,7 @@ core_pattern is used to specify a core dumpfile pattern name.
->  	%<NUL>	'%' is dropped
->  	%%	output one '%'
->  	%p	pid
-> +	%P	global pid (init PID namespace)
->  	%u	uid
->  	%g	gid
->  	%d	dump mode, matches PR_SET_DUMPABLE and
-> diff --git a/fs/coredump.c b/fs/coredump.c
-> index c647965..528c6fc 100644
-> --- a/fs/coredump.c
-> +++ b/fs/coredump.c
-> @@ -186,6 +186,11 @@ static int format_corename(struct core_name *cn, struct coredump_params *cprm)
->  				err = cn_printf(cn, "%d",
->  					      task_tgid_vnr(current));
->  				break;
-> +			/* global pid */
-> +			case 'P':
-> +				err = cn_printf(cn, "%d",
-> +					      task_tgid_nr(current));
-> +				break;
->  			/* uid */
->  			case 'u':
->  				err = cn_printf(cn, "%d", cred->uid);
-> -- 
-> 1.8.1.2
-> 
+* We parse some APEI table and disable those MCA banks which the BIOS
+wants to handle first.
+
+* When the BIOS decides to report an error from that handling, it does
+so over another BIOS table.
+
+* Now you have two possibilities:
+
+** On systems without an edac driver or where it doesn't make sense to
+have the ghes_edac driver, we call trace_mc_event() straight from APEI
+code (this is what we're currently discussung).
+
+** On other systems, where we need ghes_edac, we *don't* use the
+trace_mc_event() tracepoint in the APEI code but let it come from
+ghes_edac with additional information collected by edac.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
