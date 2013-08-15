@@ -1,96 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab3HNX7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Aug 2013 19:59:51 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50670 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab3HNX7t (ORCPT
+	id S1758346Ab3HOAAr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Aug 2013 20:00:47 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:16219 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab3HOAAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Aug 2013 19:59:49 -0400
-Date: Thu, 15 Aug 2013 00:59:29 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20130814235929.GT2401@sirena.org.uk>
-References: <20130814184643.GL2401@sirena.org.uk>
- <Pine.LNX.4.44L0.1308141514440.1701-100000@iolanthe.rowland.org>
- <A2CA0424C0A6F04399FB9E1CD98E030458DE9E22@US01WEMBX2.internal.synopsys.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/CHBEyLWSSL2QXIQ"
-Content-Disposition: inline
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458DE9E22@US01WEMBX2.internal.synopsys.com>
-X-Cookie: Your present plans will be successful.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Non-enumerable devices on USB and other enumerable buses
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 14 Aug 2013 20:00:44 -0400
+X-AuditID: cbfec373-b7fca6d0000018b9-5d-520c1a2b2a18
+Date: Wed, 14 Aug 2013 21:00:35 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, bhelgaas@google.com,
+        rostedt@goodmis.org, rjw@sisk.pl, lance.ortiz@hp.com,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mce: acpi/apei: trace: Enable ghes memory error trace
+ event
+Message-id: <20130814210035.57096048@concha.lan>
+In-reply-to: <520A6D98.9060204@linux.vnet.ibm.com>
+References: <1375986471-27113-1-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+ <1375986471-27113-4-git-send-email-naveen.n.rao@linux.vnet.ibm.com>
+ <20130808163822.67e0828a@samsung.com> <20130810180322.GC4155@pd.tnic>
+ <20130812083355.47c1bae8@samsung.com> <5208D80D.5030206@linux.vnet.ibm.com>
+ <20130812125343.GE18018@pd.tnic> <520A16BD.30201@linux.vnet.ibm.com>
+ <20130813124258.GC4077@pd.tnic> <520A6D98.9060204@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t/hYF1tKZ4gg62/tC2WNGVYfN7wj83i
+	Q981Jovl+/oZLS7vmsNmcXbecTaL+y1P2S36F/YyWezreMBk8ebCPRYHLo/vrX0sHi37brF7
+	LNhU6rFr204mj8V7XjJ5PDi0mcXj0eIWRo/Pm+QCOKK4bFJSczLLUov07RK4Mhpvv2It2Cda
+	sWzBBrYGxhsCXYycHBICJhLdN96yQNhiEhfurWfrYuTiEBJYwijRNHMbC4TTwCQxsWcRkMPB
+	wSKgKvFlmQ5IA5uAkcSrxhZWEFtEwFTiyIrrTCD1zAJ3GSVal65jA0kIC4RJ7NnTzARi8woY
+	SLx9NYEdxOYEaj64djLUtl3MEmcbj4EtkBBwktg61ReiXlDix+R7YNcxC2hJbN7WxAphy0ts
+	XvOWeQKjwCwkZbOQlM1CUraAkXkVo2hpcXJBcVJ6rpFecWJucWleul5yfu4mRkh8FO9gfLHB
+	6hCjAAejEg/vhg7uICHWxLLiytxDjBIczEoivGdAQrwpiZVVqUX58UWlOanFhxiZODilGhht
+	fn69tpznyt22L70M+xQnPyj1Xqyymqlo+4Tal+Fav2KWZZi3flmy1ebJ60KVHTUdp9/OTTt9
+	P9FH0q2p5m3U6unF+34tMrgirK8ZHDxDqpJ9UrbEEi529fRtYhlMzdEd994ybLQK0rhofsS5
+	Lb12ccaM3TeyH+wSjQtUDtxy5kfzh8LZl+KUWIozEg21mIuKEwGd3qrrbQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Tue, 13 Aug 2013 23:02:08 +0530
+"Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com> escreveu:
 
---/CHBEyLWSSL2QXIQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 08/13/2013 06:12 PM, Borislav Petkov wrote:
+> > On Tue, Aug 13, 2013 at 04:51:33PM +0530, Naveen N. Rao wrote:
+> >> You're right - my trace point makes all the data provided by apei
+> >> as-is to userspace. However, ghes_edac seems to squash some of this
+> >> data into a string when reporting through mc_event.
+> >
+> > Right, for systems which don't need EDAC to decode to the DIMM or for
+> > which there are no EDAC drivers written, they could use a tracepoint
+> > which carries APEI info as-is. Others, which need EDAC, should probably
+> > use trace_mc_event and disable the APEI tracepoint.
+> 
+> If I'm not mistaken, even for systems that have EDAC drivers, it looks 
+> to me like EDAC can't really decode to the DIMM given what is provided 
+> by the bios in the APEI report currently.
 
-On Wed, Aug 14, 2013 at 08:16:56PM +0000, Paul Zimmerman wrote:
+Yes, the current APEI events, reported via EDAC, can't be decoded currently.
 
-> Mark's original complaint about USB was this:
->=20
-> > the device).  The hub needs to be "plugged" into the SoC after the SoC
-> > USB controller has started with some GPIOs so we need to tell the system
-> > that the hub exists and needs to be synchronised with the USB controlle=
-r.
+> If and when ghes_edac gains 
+> this capability, users will have a choice between raw APEI reports vs. 
+> edac processed ones.
 
-> This sounds to me like the normal discovery mechanism for USB isn't getti=
-ng
-> kicked off because no Connect Status Change is being triggered on the root
-> port when the hub is brought online using the GPIOs. Maybe the port has
-> been runtime suspended because no device was attached originally?
+An APEI-specific tracing won't fix it, as, AFAIKT, we don't have any way
+to map it, even on userspace.
 
-> So maybe the only thing needed for USB is a way to tell the parent port to
-> frob its port control bits to try to determine if a device is now present.
-> (set Wake on Connect Enable? Do a Port Reset? Cycle the Port Power bit if
-> possible?)
+> 
+> >
+> > I think this should address Tony's concerns...
+> >
+> > Btw, you could call your TP something simpler like
+> > trace_ghes_memory_event or so.
+> 
+> I started out with a simpler name, but eventually decided to use the 
+> name from the CPER record so it is clear what this event carries. I 
+> think this will be better when adding further ghes events for say, 
+> processor generic, PCIe and others.
+> 
+> >
+> > Btw 2, if GHES can report other types of errors (I'm pretty sure it can)
+> > maybe we can use a single tracepoint called trace_ghes_event for any
+> > types of errors coming out of it...
+> 
+> Two problems with this:
+> - One, the record size will be really big since the cper records for 
+> each type of error is large.
+> - Two, it may be better to filter events based on the type of error 
+> (memory error, processor, pcie, ...) rather than subscribing for all 
+> ghes error reports.
 
-No, that's not required in this case - the case is the opposite one to
-the one you describe.  Host starting first then hub works fine, if the
-host does go into a low power mode it seems to notice the hub appearing
-just fine.  Hub then host fails for some reason which I don't know.
+I agree: per-type of error events is better than a big generic one.
+> 
+> >
+> > Oh, and while at it, we probably need to start thinking of a mechanism
+> > to disable all the error printing, i.e. cper_print_mem() and such,
+> > if a userspace agent is listening in on the tracepoint and the error
+> > information is carried through it to userspace.
+> 
+> Do you mean conditionally print the cper records based on whether the 
+> tracepoint is enabled or not? Wouldn't that be confusing if someone is 
+> monitoring dmesg as well?
+> 
+> 
+> Thanks,
+> Naveen
+> 
 
---/CHBEyLWSSL2QXIQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+-- 
 
-iQIcBAEBAgAGBQJSDBneAAoJELSic+t+oim9rasP/3tP6EPWBOv8CENfJ2Q4Co/O
-kAmnoODKiwsn6Ha+ifucsHp43f1PomVqjYhW6BDqO3yJApsXqbtQY1kQqjkEAQRm
-YDARUby0AbMQNRK8HnwnXWiDeJV3+1Ze6sI8/aqWnLtUfThjSswqxEQRVy1LgwXN
-6SB1HiQLDDvPvVRIXs84bbvG18KR3VaOmPS+ViqDePKE51jXHFXU5CjlEWzPziGB
-qhG6YWRpIIfxBpYm3mM5Z9Ze9aKo3oKzgP27gVMtRwVTE1Yr0UdbXO7OgO0xNkBk
-btWZfHOSE9i1gQ55maJxUilaRoUOgal2p2LylY2SGdZUx3vVh5ySRNJUPRn/Z5gU
-tghpYe3FejH+ZbYurUsv7teCnsHHWBs2Wme8kFK5QCtM2SORrr0HIgup7w2PvV4L
-kiZlXkJE/HapIrYZs0wAOYO0FE9hXE8RSnChOUMZa+anQcLH/OI3uvagZZjJ0VAh
-upqJpGf6ydwFdABpSDjqdihsDQsfns+IDQO6feHidPPCI7hSyxdAOa4HYQv7UQtV
-w45L6DdudUKW1aXQbu4iiNYL2muCuDwF3dE66Sm4a+ds3QSK6qobLxDPeVQeGZ4L
-5AZbejAvIRGK9r16w1fqBB4PGZes4QlGJKjOAbqR/UlxXkwt42IOujRM7zyMF7E1
-VSCItsT1BKBAc/I6hCY7
-=jJ3E
------END PGP SIGNATURE-----
-
---/CHBEyLWSSL2QXIQ--
+Cheers,
+Mauro
