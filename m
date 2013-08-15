@@ -1,109 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760356Ab3HOHpq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 03:45:46 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:63913 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311Ab3HOHpn (ORCPT
+	id S1759993Ab3HOHrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 03:47:10 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:64924 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787Ab3HOHq3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 03:45:43 -0400
-Message-ID: <520C8707.4000100@huawei.com>
-Date: Thu, 15 Aug 2013 15:45:11 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 15 Aug 2013 03:46:29 -0400
+From: Caizhiyong <caizhiyong@huawei.com>
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Karel Zak <kzak@redhat.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wanglin (Albert)" <albert.wanglin@huawei.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Shmulik Ladkani <shmulik.ladkani@gmail.com>,
+        Huang Shijie <b32955@freescale.com>
+Subject: RE: [PATCH] block: add command line partition parser
+Thread-Topic: [PATCH] block: add command line partition parser
+Thread-Index: AQHOl+qqJeZC0CvH906unOBo+NYxZJmUzWsAgAAUuICAAKUVMP//q3WAgACI4RD//5tPAIAAipFw
+Date: Thu, 15 Aug 2013 07:45:39 +0000
+Message-ID: <C3050A4DBA34F345975765E43127F10F1C064375@szxeml512-mbx.china.huawei.com>
+References: <C3050A4DBA34F345975765E43127F10F1C061D75@szxeml512-mbs.china.huawei.com>
+ <20130805152206.76462cc4a42e51b16a0532f1@linux-foundation.org>
+ <C3050A4DBA34F345975765E43127F10F1C06237C@szxeml512-mbs.china.huawei.com>
+ <20130814155742.d3cd651e40e552696667e4f2@linux-foundation.org>
+ <CAN8TOE-aGcKQNayzEVQaS1wJ_Uqp3RAZ5pTuVEhaaY9f487-xA@mail.gmail.com>
+ <C3050A4DBA34F345975765E43127F10F1C063B36@szxeml512-mbx.china.huawei.com>
+ <20130815050007.GA23474@brian-ubuntu>
+ <C3050A4DBA34F345975765E43127F10F1C064357@szxeml512-mbx.china.huawei.com>
+ <20130815070938.GB24007@brian-ubuntu>
+In-Reply-To: <20130815070938.GB24007@brian-ubuntu>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.67.223.18]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, <riel@redhat.com>,
-        <aquini@redhat.com>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Xishi Qiu <qiuxishi@huawei.com>
-Subject: Re: [PATCH] mm: skip the page buddy block instead of one page
-References: <520B0B75.4030708@huawei.com> <20130814085711.GK2296@suse.de> <20130814155205.GA2706@gmail.com> <20130814161642.GM2296@suse.de> <20130814163921.GC2706@gmail.com> <20130814180012.GO2296@suse.de> <520C3DD2.8010905@huawei.com> <20130815024427.GA2718@gmail.com> <520C4EFF.8040305@huawei.com> <20130815041736.GA2592@gmail.com> <20130815042434.GA3139@gmail.com>
-In-Reply-To: <20130815042434.GA3139@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.196]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/8/15 12:24, Minchan Kim wrote:
-
->> Please read full thread in detail.
->>
->> Mel suggested following as
->>
->> if (PageBuddy(page)) {
->>         int nr_pages = (1 << page_order(page)) - 1;
->>         if (PageBuddy(page)) {
->>                 nr_pages = min(nr_pages, MAX_ORDER_NR_PAGES - 1);
->>                 low_pfn += nr_pages;
->>                 continue;
->>         }
->> }
->>
->> min(nr_pages, xxx) removes your concern but I think Mel's version
->> isn't right. It should be aligned with pageblock boundary so I 
->> suggested following.
->>
->> if (PageBuddy(page)) {
->> #ifdef CONFIG_MEMORY_ISOLATION
->> 	unsigned long order = page_order(page);
->> 	if (PageBuddy(page)) {
->> 		low_pfn += (1 << order) - 1;
->> 		low_pfn = min(low_pfn, end_pfn);
->> 	}
->> #endif
->> 	continue;
->> }
->>
-
-Hi Minchan,
-
-I understand now, but why use "end_pfn" here? 
-Maybe like this:
-
-if (PageBuddy(page)) {
-	/*
-	 * page_order is racy without zone->lock but worst case
-	 * by the racing is just skipping pageblock_nr_pages.
-	 */
-	unsigned long nr_pages = 1 << page_order(page);
-	if (likely(PageBuddy(page))) {
-		nr_pages = min(nr_pages, MAX_ORDER_NR_PAGES);
-
-		/* Align with pageblock boundary */
-		if ((low_pfn & (pageblock_nr_pages - 1)) + nr_pages >
-		    pageblock_nr_pages)
-			low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
-		else
-			low_pfn += nr_pages - 1;
-	}
-	continue;
-}
-
-Thanks,
-Xishi Qiu
-
->> so worst case is (pageblock_nr_pages - 1).
->> but we don't need to add CONFIG_MEMORY_ISOLATION so my suggestion
->> is following as.
->>
->> if (PageBuddy(page)) {
->> 	unsigned long order = page_order(page);
->> 	if (PageBuddy(page)) {
->> 		low_pfn += (1 << order) - 1;
->> 		low_pfn = min(low_pfn, end_pfn);
+> -----Original Message-----
+> From: Brian Norris [mailto:computersforpeace@gmail.com]
+> Sent: Thursday, August 15, 2013 3:10 PM
+> To: Caizhiyong
+> Cc: Andrew Morton; Karel Zak; linux-mtd@lists.infradead.org;
+> linux-kernel@vger.kernel.org; Wanglin (Albert); Artem Bityutskiy; Shmulik Ladkani;
+> Huang Shijie
+> Subject: Re: [PATCH] block: add command line partition parser
 > 
-> Maybe it should be low_pfn = min(low_pfn, end_pfn - 1).
+> On Thu, Aug 15, 2013 at 06:16:04AM +0000, Caizhiyong wrote:
+> > > -----Original Message-----
+> > > From: Brian Norris [mailto:computersforpeace@gmail.com]
+> > > Sent: Thursday, August 15, 2013 1:00 PM
+> > > To: Caizhiyong
+> > > Cc: Andrew Morton; Karel Zak; linux-mtd@lists.infradead.org;
+> > > linux-kernel@vger.kernel.org; Wanglin (Albert); Artem Bityutskiy; Shmulik
+> Ladkani;
+> > > Huang Shijie
+> > > Subject: Re: [PATCH] block: add command line partition parser
+> > >
+> > > On Thu, Aug 15, 2013 at 03:38:47AM +0000, Caizhiyong wrote:
+> > > > > -----Original Message-----
+> > > > > From: Brian Norris [mailto:computersforpeace@gmail.com]
+> > > > > Sent: Thursday, August 15, 2013 8:12 AM
+> > > > > To: Andrew Morton
+> > > > > Cc: Caizhiyong; Karel Zak; linux-mtd@lists.infradead.org;
+> > > > > linux-kernel@vger.kernel.org; Wanglin (Albert); Artem Bityutskiy; Shmulik
+> > > Ladkani;
+> > > > > Huang Shijie
+> > > > > Subject: Re: [PATCH] block: add command line partition parser
+> > > > >
+> > > > > On Wed, Aug 14, 2013 at 3:57 PM, Andrew Morton
+> > > > > <akpm@linux-foundation.org> wrote:
+> > > > > > On Tue, 13 Aug 2013 06:02:17 +0000 Caizhiyong <caizhiyong@huawei.com>
+> wrote:
+> > > > > >
+> > > > > >> move the command line parser to a separate module, and change it into
+> > > > > >> library-style code.
+> > > > > >>
+> > > > > >> reference: https://lkml.org/lkml/2013/8/6/550
+> > > > >
+> > > > > The most recent patch is an addendum to this linked patch then?
+> > > > >
+> > > > > > Well OK.  But to prove the library's usefulness and to generally clean
+> > > > > > up the kernel, someone needs to sign up to the task of converting
+> > > > > > drivers/mtd/cmdlinepart.c to use this code.
+> > > > > >
+> > > > > > I've been hopefully cc'ing various MTD people but am not being
+> > > > > > overwhelmed with waves of enthusiasm ;)
+> > > > >
+> > > > > "I've been" implies that you have done so prior to this email. And
+> > > > > "people" implies more than one person. I see that you CC'd David
+> > > > > Woodhouse over a week ago, but he's fairly silent these days on MTD
+> > > > > things. It's Artem or me who handle most of the day-to-day of MTD. And
+> > > > > this is the first time I've seen this! (BTW, please include
+> > > > > linux-mtd@lists.infradead.org for anything involving MTD.)
+> > > > >
+> > > > > This seems reasonable, and I'd be willing to work with this proposal.
+> > > > >
+> > > > > Caizhiyong, can you submit a clear single patch (or series of
+> > > > > patches), CC'd to linux-mtd at least? Then we can see about supporting
+> > > > > it in MTD. It doesn't look too difficult, but I need to check that it
+> > > > > faithfully mimics the capability we currently rely on. There have been
+> > > > > previous discussions on changing it, but this was rejected in favor of
+> > > > > allowing more flexibility. Here's part of one such conversation:
+> > > > >
+> > > > > http://lists.infradead.org/pipermail/linux-mtd/2012-August/043599.html
+> > > > >
+> http://lists.infradead.org/pipermail/linux-mtd/2012-September/043825.html
+> > > > > http://lists.infradead.org/pipermail/linux-mtd/2012-December/045322.html
+> > > > >
+> > > > > So I would recommend:
+> > > > > (1) consider carefully the implications of your command-line format
+> > > > > now, rather than later
+> > > > > (2) if you want MTD to use it, it needs to support the features we use now
+> > > >
+> > > > It is fully functional reference MTD, :-).
+> > >
+> > > I realize that. I just want to be clear that we have to reconcile (1)
+> > > and (2). IOW, if block device requirements stray too far from MTD
+> > > requirements, then we might as well drop the idea of integration now.
+> > > But if they agree, then we can move forward.
+> > >
+> > > > > Some particular cases to consider: overlapping partitions (how do
+> > > > > block devices handle overlapping partitions?), out-of-order
+> > > > > specification, zero sized partitions, mixed syntax (some specified
+> > > > > with an offset, some not), multiple '-' partitions.
+> > > >
+> > > > I think the 'offset' just is used to hide some MTD space.
+> > >
+> > > No, it specifies offset as a distance from the beginning of the flash,
+> > > so partitions can be numbered out of order. This is intentionally
+> > > utilized by some users, for example, to ensure that a particular
+> > > partition is always /dev/mtd0, even if it is not the first partition
+> > > physically.
+> > >
+> > > > There are two way:
+> > > > 1) redefine the 'offset' as a gap between forward partition and next partition.
+> > > > 2) add code forbid command line partitions overlapping and out-of-order.
+> > > >
+> > > > I recommend 1), it seems to solve those problem(overlapping and out-of-order),
+> > > but it will affect habit.
+> > >
+> > > The linked discussion is where MTD settled on retaining old practice. I
+> > > brought it up not so that we change it here, but so that you would
+> > > understand what you are agreeing to if you adopt a common MTD and block
+> > > device parsing infrastructure.
+> > >
+> > > [Note that I am much less familiar with block device mechanics than with
+> > > MTD.] Are any of the problem areas I mentioned actually forbidden on
+> > > block devices? I know, for instance, that an MBR partition table can
+> > > specify partitions out of order. And I've googled around and seen some
+> > > posts about people (unintentionally) ending up with overlapping hard
+> > > disk partitions.
+> > >
+> > > So from my primitive knowledge, it sounds like a block devices parser
+> > > could agree with the same principle put forward by Shmulik in that
+> > > second URL:
+> > >
+> > >  "So far, mtdparts commandline parsing has been very lenient and liberal.
+> > >   I think we should keep this approach; give the user the flexibility,
+> > >   he'll be responsible to provide meaningful cmdline parts for his
+> > >   system."
+> > >
+> > > Brian
+> >
+> > I want to use the MTD command line partition method on block devices (eMMC).
+> > It is very suitable for embedded systems. I think, in embedded system partition
+> method,
+> > if somebody need some feature on MTD device, he may be also need it on block device.
+> > so I fully functional reference MTD command line partition.
 > 
+> I agree.
 > 
->> 	}
->> 	continue;
->> }
->>
->>
+> I'm curious: have you seen any need for a similar arrangement via
+> device-tree? See, for example, drivers/mtd/ofpart.c.
+
+So far, I have no seen. We mainly use ARM. For ARM, device-tree is a new thing.
+
 > 
+> > I tested the out-of-order and overlapping on my system, used command line partition,
+> It is work ok.
+> > The block device code is not make any restrictions on partition out-of-order and
+> overlapping.
+> 
+> OK, good. Thanks for checking.
+> 
+> > I hope extend the flexibility to block device.
+> 
+> Sure. I'll try to review the full patch soon and test out integrating
+> it with MTD.
 
+If there is no problem, I will send my next patch, mtd cmdline parts use cmdline-parser lib.
 
-
+> 
+> Thanks,
+> Brian
