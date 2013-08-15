@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759221Ab3HOTbj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 15:31:39 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44228 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755331Ab3HOTbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 15:31:36 -0400
-Date: Thu, 15 Aug 2013 15:31:22 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, linux-ext4@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        david@fromorbit.com, Tim Chen <tim.c.chen@linux.intel.com>,
-        Andi Kleen <ak@linux.intel.com>, Andy Lutomirski <luto@amacapital.net>
-Subject: Re: page fault scalability (ext3, ext4, xfs)
-Message-ID: <20130815193122.GA19536@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Hansen <dave.hansen@linux.intel.com>,
-	linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-	linux-ext4@vger.kernel.org, Jan Kara <jack@suse.cz>,
-	LKML <linux-kernel@vger.kernel.org>, david@fromorbit.com,
-	Tim Chen <tim.c.chen@linux.intel.com>,
-	Andi Kleen <ak@linux.intel.com>,
-	Andy Lutomirski <luto@amacapital.net>
-References: <520BB9EF.5020308@linux.intel.com>
- <20130815150506.GA10415@thunk.org>
- <520D13A5.2070808@linux.intel.com>
+	id S1759453Ab3HOTbz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 15:31:55 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:47387 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759269Ab3HOTbx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 15:31:53 -0400
+Message-ID: <520D2CAE.3090501@cogentembedded.com>
+Date: Thu, 15 Aug 2013 23:31:58 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <520D13A5.2070808@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+CC: Sekhar Nori <nsekhar@ti.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v4 5/5] ARM: davinci: da850: add OF_DEV_AUXDATA entry
+ for eth0.
+References: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com> <1376546497-26931-6-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1376546497-26931-6-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 10:45:09AM -0700, Dave Hansen wrote:
-> 
-> I _believe_ this is because the block allocation is occurring during the
-> warmup, even in those numbers I posted previously.  will-it-scale forks
-> things off early and the tests spend most of their time in those while
-> loops.  Each "page fault handled" (the y-axis) is a trip through the
-> while loop, *not* a call to testcase().
+Hello.
 
-Ah, OK.  Sorry, I misinterpreted what was going on.
+On 15-08-2013 10:01, Lad, Prabhakar wrote:
 
-So basically, what we have going on in the test is (a) we're bumping
-i_version and/or mtime, and (b) the munmap() implies an msync(), so
-writeback is happening in the background concurrently with the write
-page faults, and we may be (actually, almost certainly) seeing some
-interference between the writeback and the page_mkwrite operations.
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-That implies that if you redid the test using a ramdisk, which will
-significantly speed up the writeback and overhead caused by the
-journal transactions for the metadata updates, the results might very
-well be different.
+> Add OF_DEV_AUXDATA for eth0  driver in da850 board dt
+> file to use emac clock.
 
-Cheers,
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+[...]
 
-						- Ted
+> diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+> index d172563..caa9202 100644
+> --- a/arch/arm/mach-davinci/da8xx-dt.c
+> +++ b/arch/arm/mach-davinci/da8xx-dt.c
+> @@ -44,6 +44,9 @@ static struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
+>   	OF_DEV_AUXDATA("ns16550a", 0x01d0c000, "serial8250.1", NULL),
+>   	OF_DEV_AUXDATA("ns16550a", 0x01d0d000, "serial8250.2", NULL),
+>   	OF_DEV_AUXDATA("ti,davinci_mdio", 0x01e24000, "davinci_mdio.0", NULL),
+> +	OF_DEV_AUXDATA("ti,davinci-dm6467-emac", 0x01e20000, "davinci_emac.1",
+> +		       NULL),
+> +
+
+    Empty line hardly needed here.
+
+>   	{}
+>   };
+
+WBR, Sergei
+
