@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab3HPP6G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 11:58:06 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:48067 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab3HPP6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 11:58:03 -0400
+	id S1754180Ab3HPP7b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 11:59:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58502 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752477Ab3HPP7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 11:59:25 -0400
+Message-ID: <520E4C39.9080301@ti.com>
+Date: Fri, 16 Aug 2013 21:28:49 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130816155156.GA6953@roeck-us.net>
-References: <20130809173326.75aed3b6@mail.gmx.de>
-	<CACRpkdYe9+Fb-YO4Mn885YtY_YiRWsG1U+sFXo-poThpDOL1dw@mail.gmail.com>
-	<20130816155156.GA6953@roeck-us.net>
-Date: Fri, 16 Aug 2013 17:58:02 +0200
-Message-ID: <CACRpkdaxdkriaO-ufq6JSFONecBRHYstfnUBojGOwQfBaXb8ZA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: Fix bit masking in Kontron PLD GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Michael Brunner <mibru@gmx.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Strasser <strassek@engr.orst.edu>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Chris Healy <chealy@imsco-us.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH v4 3/5] ARM: davinci: da850: add OF_DEV_AUXDATA entry
+ for mdio.
+References: <1376546497-26931-1-git-send-email-prabhakar.csengg@gmail.com> <1376546497-26931-4-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1376546497-26931-4-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 5:51 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+On 8/15/2013 11:31 AM, Lad, Prabhakar wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> 
+> Add OF_DEV_AUXDATA for mdio driver in da850 board dt
+> file to use mdio clock.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-> I think Michael just went on vacation.
->
-> Clean version is below. He must have sent it to me separately
-> because it worked for me.
+Queued for v3.12
 
-Yeah this worked fine ... strange.
-
-Patch applied.
-
-Yours,
-Linus Walleij
+Thanks,
+Sekhar
