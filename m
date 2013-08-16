@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab3HPHyp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 03:54:45 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60958 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab3HPHyo (ORCPT
+	id S1751575Ab3HPHz5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 03:55:57 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:52009 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3HPHzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 03:54:44 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520DDAC2.2030609@roeck-us.net>
-Date: Fri, 16 Aug 2013 00:54:42 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Fri, 16 Aug 2013 03:55:53 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Linux kernel cross-compilers
-References: <520C9A39.3030808@roeck-us.net> <20130816054732.GA28445@thor.bakeyournoodle.com>
-In-Reply-To: <20130816054732.GA28445@thor.bakeyournoodle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFwFx7uhtDTX5vfiYRo+keLmuvxvSFupU4nB8g1KCN-WVg@mail.gmail.com>
+References: <52050382.9060802@gmail.com>
+	<520BB225.8030807@gmail.com>
+	<20130814174039.GA24033@dhcp22.suse.cz>
+	<CA+55aFwAz7GdcB6nC0Th42y8eAM591sKO1=mYh5SWgyuDdHzcA@mail.gmail.com>
+	<20130814182756.GD24033@dhcp22.suse.cz>
+	<CA+55aFxB6Wyj3G3Ju8E7bjH-706vi3vysuATUZ13h1tdYbCbnQ@mail.gmail.com>
+	<520C9E78.2020401@gmail.com>
+	<CA+55aFy2D2hTc_ina1DvungsCL4WU2OTM=bnVb8sDyDcGVCBEQ@mail.gmail.com>
+	<CA+55aFxuUrcod=X2t2yqR_zJ4s1uaCsGB-p1oLTQrG+y+Z2PbA@mail.gmail.com>
+	<520D5ED2.9040403@gmail.com>
+	<CA+55aFwFx7uhtDTX5vfiYRo+keLmuvxvSFupU4nB8g1KCN-WVg@mail.gmail.com>
+Date: Fri, 16 Aug 2013 09:55:52 +0200
+Message-ID: <CAFLxGvyHFtEKh4x0_3Sjgus9O++48BL0hzNbKadK2JoA1k3O9Q@mail.gmail.com>
+Subject: Re: [Bug] Reproducible data corruption on i5-3340M: Please continue
+ your great work! :-)
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Tebulin <tebulin@googlemail.com>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2013 10:47 PM, Tony Breeds wrote:
-> On Thu, Aug 15, 2013 at 02:07:05AM -0700, Guenter Roeck wrote:
->> Hi Tony,
->>
->> would it be possible to provide an arm64 cross-compiler on https://www.kernel.org/pub/tools/crosstool/ ?
->
-> I have one built I just need to upload it.  I'll try and do it this
-> weekend.
->
-Would be great.
+On Fri, Aug 16, 2013 at 2:33 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> I'll probably delay committing it until tomorrow, in the hope that
+> somebody using one of the other architectures will at least ack that
+> it compiles. I'm re-attaching the patch (with the two "logn" -> "long"
+> fixes) just to encourage that. Hint hint, everybody..
 
->> Also, the xtensa compiler fails for me with an odd error message on one of my servers.
->> Have you heard about any problems with it from others ?
->
-> Nope.  Sorry, but it looks like you're being looked after there.
->
-No far not helping. I had hoped it is a known problem that has been fixed with a later
-gcc or binutils version, but it looks like it isn't widely seen.
+/me tested arch/um, so far everything looks good. :-)
 
->> c6x is supposed to be supported by gcc now. No idea if that helps anything, though.
->
-> Thanks.  I have tried to build a 4.8.1 cx6 toolchain but It hasn't
-> worked todate.  I'll keep trying as time permits.
-
-Too bad. Thanks for trying!
-
-Guenter
-
+-- 
+Thanks,
+//richard
