@@ -1,72 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab3HQAMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:12:36 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:47660 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756617Ab3HQAMe (ORCPT
+	id S1756996Ab3HQANG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:13:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51630 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756574Ab3HPWjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:12:34 -0400
-Subject: Re: [PULL] Miscellaneous trivialities
-Date: Fri, 16 Aug 2013 20:02:23 -0000
-From: Michael Witten <mfwitten@gmail.com>
-To: Rob Landley <rob@landley.net>
-Cc: Jiri Kosina <trivial@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
-Message-ID: <44b5fd3b87ba4565a78f1da4fa7d2e7d-mfwitten@gmail.com>
-In-Reply-To: <1376668096.2737.43@driftwood>
-References: <e3119c5240504890b8fd3ce2e38231c1-mfwitten@gmail.com>
-            <1376668096.2737.43@driftwood>
+	Fri, 16 Aug 2013 18:39:23 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 090/133] virtio: console: clean up port data immediately at time of unplug
+Date: Fri, 16 Aug 2013 15:33:52 -0700
+Message-Id: <1376692475-28413-91-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Aug 2013 10:48:16 -0500, Rob Landley wrote:
+3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
 
-> On 08/15/2013 04:44:01 AM, Michael Witten wrote:
->
->> I've been sitting on some trivial patches for a while, and I'd just
->> like to get them out of the way.
->>
->> Here is the series:
->>
->> ...
->>
->>   [5] Docs: Replace `hotplug' with `udev'
->>
->> ...
->>
->> diff --git a/Documentation/networking/README.ipw2200 b/Documentation/networking/README.ipw2200
->> index b7658be..aeb6494 100644
->> --- a/Documentation/networking/README.ipw2200
->> +++ b/Documentation/networking/README.ipw2200
->> @@ -256,7 +256,7 @@ You can set the debug level via:
->> 
->>  Where $VALUE would be a number in the case of this sysfs entry.  The
->>  input to sysfs files does not have to be a number.  For example, the
->> -firmware loader used by hotplug utilizes sysfs entries for transferring
->> +firmware loader used by udev utilizes sysfs entries for transferring
->>  the firmware image from user space into the driver.
->
-> Hotplug is the name of the kernel subsystem, udev was one implementation
-> of a userspace agent for it. A different implementation would be mdev
-> (in busybox), some linux from scratch types are still using variants of
-> diethotplug, there's a fork of udev called eudev that avoids systemd...
->
-> And these days, firmware loading is mostly done directly by the kernel.
->
->>  The Intel(R) PRO/Wireless 2915ABG Driver for Linux exposes sysfs entries
->> @@ -425,8 +425,7 @@ are made to the driver.  Currently, there are no major changes planned.
->>  ----------------------------------------------
->>
->>  The driver requires a firmware image, download it and extract the
->> -files under /lib/firmware (or wherever your hotplug's firmware.agent
->> -will look for firmware files)
->> +files under /lib/firmware (or wherever udev will look for firmware files)
->
-> Again, hotplug is correct.
+------------------
 
-Thanks for catching my error. I removed that patch from the series; the
-remaining commits can be pulled from here:
+From: Amit Shah <amit.shah@redhat.com>
 
-  https://github.com/mfwitten/linux.git trivial/misc/1
+commit ea3768b4386a8d1790f4cc9a35de4f55b92d6442 upstream.
+
+We used to keep the port's char device structs and the /sys entries
+around till the last reference to the port was dropped.  This is
+actually unnecessary, and resulted in buggy behaviour:
+
+1. Open port in guest
+2. Hot-unplug port
+3. Hot-plug a port with the same 'name' property as the unplugged one
+
+This resulted in hot-plug being unsuccessful, as a port with the same
+name already exists (even though it was unplugged).
+
+This behaviour resulted in a warning message like this one:
+
+-------------------8<---------------------------------------
+WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xc9/0x130() (Not tainted)
+Hardware name: KVM
+sysfs: cannot create duplicate filename
+'/devices/pci0000:00/0000:00:04.0/virtio0/virtio-ports/vport0p1'
+
+Call Trace:
+ [<ffffffff8106b607>] ? warn_slowpath_common+0x87/0xc0
+ [<ffffffff8106b6f6>] ? warn_slowpath_fmt+0x46/0x50
+ [<ffffffff811f2319>] ? sysfs_add_one+0xc9/0x130
+ [<ffffffff811f23e8>] ? create_dir+0x68/0xb0
+ [<ffffffff811f2469>] ? sysfs_create_dir+0x39/0x50
+ [<ffffffff81273129>] ? kobject_add_internal+0xb9/0x260
+ [<ffffffff812733d8>] ? kobject_add_varg+0x38/0x60
+ [<ffffffff812734b4>] ? kobject_add+0x44/0x70
+ [<ffffffff81349de4>] ? get_device_parent+0xf4/0x1d0
+ [<ffffffff8134b389>] ? device_add+0xc9/0x650
+
+-------------------8<---------------------------------------
+
+Instead of relying on guest applications to release all references to
+the ports, we should go ahead and unregister the port from all the core
+layers.  Any open/read calls on the port will then just return errors,
+and an unplug/plug operation on the host will succeed as expected.
+
+This also caused buggy behaviour in case of the device removal (not just
+a port): when the device was removed (which means all ports on that
+device are removed automatically as well), the ports with active
+users would clean up only when the last references were dropped -- and
+it would be too late then to be referencing char device pointers,
+resulting in oopses:
+
+-------------------8<---------------------------------------
+PID: 6162   TASK: ffff8801147ad500  CPU: 0   COMMAND: "cat"
+ #0 [ffff88011b9d5a90] machine_kexec at ffffffff8103232b
+ #1 [ffff88011b9d5af0] crash_kexec at ffffffff810b9322
+ #2 [ffff88011b9d5bc0] oops_end at ffffffff814f4a50
+ #3 [ffff88011b9d5bf0] die at ffffffff8100f26b
+ #4 [ffff88011b9d5c20] do_general_protection at ffffffff814f45e2
+ #5 [ffff88011b9d5c50] general_protection at ffffffff814f3db5
+    [exception RIP: strlen+2]
+    RIP: ffffffff81272ae2  RSP: ffff88011b9d5d00  RFLAGS: 00010246
+    RAX: 0000000000000000  RBX: ffff880118901c18  RCX: 0000000000000000
+    RDX: ffff88011799982c  RSI: 00000000000000d0  RDI: 3a303030302f3030
+    RBP: ffff88011b9d5d38   R8: 0000000000000006   R9: ffffffffa0134500
+    R10: 0000000000001000  R11: 0000000000001000  R12: ffff880117a1cc10
+    R13: 00000000000000d0  R14: 0000000000000017  R15: ffffffff81aff700
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+ #6 [ffff88011b9d5d00] kobject_get_path at ffffffff8126dc5d
+ #7 [ffff88011b9d5d40] kobject_uevent_env at ffffffff8126e551
+ #8 [ffff88011b9d5dd0] kobject_uevent at ffffffff8126e9eb
+ #9 [ffff88011b9d5de0] device_del at ffffffff813440c7
+
+-------------------8<---------------------------------------
+
+So clean up when we have all the context, and all that's left to do when
+the references to the port have dropped is to free up the port struct
+itself.
+
+Reported-by: chayang <chayang@redhat.com>
+Reported-by: YOGANANTH SUBRAMANIAN <anantyog@in.ibm.com>
+Reported-by: FuXiangChun <xfu@redhat.com>
+Reported-by: Qunfang Zhang <qzhang@redhat.com>
+Reported-by: Sibiao Luo <sluo@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/char/virtio_console.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 4e848c8..615804c 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -1524,14 +1524,6 @@ static void remove_port(struct kref *kref)
+ 
+ 	port = container_of(kref, struct port, kref);
+ 
+-	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
+-	device_destroy(pdrvdata.class, port->dev->devt);
+-	cdev_del(port->cdev);
+-
+-	kfree(port->name);
+-
+-	debugfs_remove(port->debugfs_file);
+-
+ 	kfree(port);
+ }
+ 
+@@ -1589,6 +1581,14 @@ static void unplug_port(struct port *port)
+ 	 */
+ 	port->portdev = NULL;
+ 
++	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
++	device_destroy(pdrvdata.class, port->dev->devt);
++	cdev_del(port->cdev);
++
++	kfree(port->name);
++
++	debugfs_remove(port->debugfs_file);
++
+ 	/*
+ 	 * Locks around here are not necessary - a port can't be
+ 	 * opened after we removed the port struct from ports_list
+-- 
+1.8.1.2
+
