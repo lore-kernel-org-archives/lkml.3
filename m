@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab3HQANz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:13:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51628 "EHLO
+	id S1755539Ab3HQAOY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:14:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51616 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756569Ab3HPWjW (ORCPT
+	with ESMTP id S1756488Ab3HPWjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:22 -0400
+	Fri, 16 Aug 2013 18:39:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 045/133] iwlwifi: mvm: refuse connection to APs with BI < 16
-Date: Fri, 16 Aug 2013 15:33:07 -0700
-Message-Id: <1376692475-28413-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 092/133] virtio: console: return -ENODEV on all read operations after unplug
+Date: Fri, 16 Aug 2013 15:33:54 -0700
+Message-Id: <1376692475-28413-93-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,68 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit 48bc13072109ea58465542aa1ee31b4e1065468a upstream.
+commit 96f97a83910cdb9d89d127c5ee523f8fc040a804 upstream.
 
-Due to a firmware bug, it crashes when the beacon interval
-is smaller than 16. Avoid this by refusing the station state
-change creating the AP station, causing mac80211 to abandon
-the attempt to connect to the AP, and eventually wpa_s to
-blacklist it.
+If a port gets unplugged while a user is blocked on read(), -ENODEV is
+returned.  However, subsequent read()s returned 0, indicating there's no
+host-side connection (but not indicating the device went away).
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[ luis: backported to 3.5:
-  - file renamed: drivers/net/wireless/iwlwifi/mvm/mac80211.c ->
-    drivers/net/wireless/iwlwifi/iwl-mac80211.c
-  - adjusted context
-  - changed IWL_ERR 1st argument to 'priv'
-  - removed redundant condition in 'if' statement ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+This also happened when a port was unplugged and the user didn't have
+any blocking operation pending.  If the user didn't monitor the SIGIO
+signal, they won't have a chance to find out if the port went away.
+
+Fix by returning -ENODEV on all read()s after the port gets unplugged.
+write() already behaves this way.
+
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/dvm/mac80211.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+ drivers/char/virtio_console.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/dvm/mac80211.c b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
-index 3163e0f..c784f69 100644
---- a/drivers/net/wireless/iwlwifi/dvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
-@@ -786,9 +786,23 @@ static int iwlagn_mac_sta_state(struct ieee80211_hw *hw,
- 	mutex_lock(&priv->mutex);
- 	if (vif->type == NL80211_IFTYPE_STATION) {
- 		if (old_state == IEEE80211_STA_NOTEXIST &&
--		    new_state == IEEE80211_STA_NONE)
-+		    new_state == IEEE80211_STA_NONE) {
-+			/*
-+			 * Firmware bug - it'll crash if the beacon interval is less
-+			 * than 16. We can't avoid connecting at all, so refuse the
-+			 * station state change, this will cause mac80211 to abandon
-+			 * attempts to connect to this AP, and eventually wpa_s will
-+			 * blacklist the AP...
-+			 */
-+			if (vif->bss_conf.beacon_int < 16) {
-+				IWL_ERR(priv,
-+					"AP %pM beacon interval is %d, refusing due to firmware bug!\n",
-+					sta->addr, vif->bss_conf.beacon_int);
-+				ret = -EINVAL;
-+				goto out_unlock;
-+			}
- 			op = ADD;
--		else if (old_state == IEEE80211_STA_NONE &&
-+		} else if (old_state == IEEE80211_STA_NONE &&
- 			 new_state == IEEE80211_STA_NOTEXIST)
- 			op = REMOVE;
- 		else if (old_state == IEEE80211_STA_AUTH &&
-@@ -856,6 +870,7 @@ static int iwlagn_mac_sta_state(struct ieee80211_hw *hw,
- 	if (iwl_is_rfkill(priv))
- 		ret = 0;
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 62834bc..12829ae 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -755,6 +755,10 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
  
-+out_unlock:
- 	mutex_unlock(&priv->mutex);
- 	IWL_DEBUG_MAC80211(priv, "leave\n");
+ 	port = filp->private_data;
  
++	/* Port is hot-unplugged. */
++	if (!port->guest_connected)
++		return -ENODEV;
++
+ 	if (!port_has_data(port)) {
+ 		/*
+ 		 * If nothing's connected on the host just return 0 in
+@@ -771,7 +775,7 @@ static ssize_t port_fops_read(struct file *filp, char __user *ubuf,
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+-	/* Port got hot-unplugged. */
++	/* Port got hot-unplugged while we were waiting above. */
+ 	if (!port->guest_connected)
+ 		return -ENODEV;
+ 	/*
 -- 
 1.8.1.2
 
