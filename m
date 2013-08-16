@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3HPBhd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 21:37:33 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:36400 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab3HPBhc (ORCPT
+	id S1753406Ab3HPBlC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 21:41:02 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47827 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753278Ab3HPBlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 21:37:32 -0400
-Message-ID: <1376617039.2389.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 0/8] partitions/efi: detect hybrid mbrs
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Matt Domsch <Matt_Domsch@dell.com>,
-        Jim Hull <jim.hull@hp.com>, Karel Zak <kzak@redhat.com>,
-        Peter Jones <pjones@redhat.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>
-Date: Thu, 15 Aug 2013 18:37:19 -0700
-In-Reply-To: <20130815122949.aff0bc4821e4adaec8eb359b@linux-foundation.org>
-References: <1375766476-4204-1-git-send-email-davidlohr@hp.com>
-	 <20130806141603.948961cecfc9426aeee7c083@linux-foundation.org>
-	 <1376585982.2152.2.camel@buesod1.americas.hpqcorp.net>
-	 <20130815122949.aff0bc4821e4adaec8eb359b@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Thu, 15 Aug 2013 21:41:00 -0400
+Date: Fri, 16 Aug 2013 11:40:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Teigland <teigland@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: linux-next: manual merge of the dlm tree with Linus' tree
+Message-Id: <20130816114050.5f4bf4b21f1bde305235ac42@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__16_Aug_2013_11_40_50_+1000_TVXQ7m1BQV6xtwgH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-08-15 at 12:29 -0700, Andrew Morton wrote:
-> On Thu, 15 Aug 2013 09:59:42 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> 
-> > On Tue, 2013-08-06 at 14:16 -0700, Andrew Morton wrote:
-> > > On Mon,  5 Aug 2013 22:21:08 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > > 
-> > > > This patchset teaches the kernel about hybrid master boot records (MBRs), one of
-> > > > the most common issues with GUID partition tables, as a workaround to layout
-> > > > disk partitions to be compatible with both EFI and legacy MBR based systems.
-> > > > Except for adding more pmbr checks, to better comply with the UEFI/GPT specs, the
-> > > > functionality is left unchanged - we only inform (through debug) the user about
-> > > > the used MBR scheme. While it is true that these restrictions can be bypassed when
-> > > > forcing gpt, this is not the correct or default way of doing things, complicating
-> > > > users furthermore. More details are in the individual patches.
-> > > 
-> > > Patches look nice, although I'll cheerily admit to not having a clue
-> > > what they do.  What is a "hybrid MBR" anyway?
-> > > 
-> > > Someone's editor seems to replace tabs with spaces so the patches
-> > > generate quite a checkpatch storm.  Please use checkpatch.
-> > > 
-> > 
-> > Andrew, any chance of getting this in for 3.12?
-> 
-> gee, I didn't review the patches because I simply have no useful
-> knowledge in the area.  I can check the whitespace and code comments,
-> but that has the downside of creating the false impression that someone
-> actually reviewed the code :(
-> 
-> I'm struggling to think who might be better situated.  Matt Fleming or
-> Matt Domsch, maybe?
-> 
+--Signature=_Fri__16_Aug_2013_11_40_50_+1000_TVXQ7m1BQV6xtwgH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc'ing Matt Fleming.
+Hi David,
 
-Karel, I believe you took a look at these, any thoughts?
+Today's linux-next merge of the dlm tree got a conflict in fs/dlm/user.c
+between commit 201d3dfa4da1 ("dlm: kill the unnecessary and wrong
+device_close()->recalc_sigpending()") from Linus' tree and commit
+c6ca7bc91d51 ("dlm: remove signal blocking") from the dlm tree.
 
-Thanks,
-Davidlohr
+I fixed it up (the latter is a superset of the former, so I just used it)
+and can carry the fix as necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__16_Aug_2013_11_40_50_+1000_TVXQ7m1BQV6xtwgH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJSDYMlAAoJEECxmPOUX5FEp1gP/3YSFFpysXCG8R2qI9iGoFTn
+5AsuwXbmqwXNyq/dQCIseN7I/F62DtmdzG/TsexoaMkQKAvwGsGUMzEOQSCUpkrJ
+JJV61tDkolmEIdG0bnBhuSR2Bxx8jaab0WhLCvnUYaB2XHKJpedYKhCOfkZbGpY6
+VYtQQgjPKPb6EAuVezfyqTey8oOS7U41GT4JySM+I07dogPwO4HyuQsjGGJVVGBl
+H5f0fOVrmYkX2p35QHIQDYTip73AAz2hw7+yRCIrZ9s3doQEyp/Cw1JX4BP1oFO6
+NJY8GiewRVBSE53pdUsjQhaTNv1nrFCJ8qnD/cpD5oC0fBzIE8SHSP6A5nOfq78B
+4yMC9ivVcimYmwa/YZl1zEHG5xCCwiKU9sBwLaJRmIJtOYob1rTDFX+WQfgXrsG4
+MSK3fz0ijJuE16rK73KYNGDgNQ8GsetXF7vuogTxAq5FYFjq1AV/sEdpvv1ajWNm
+4nsabNwP79BSyNmy4fePMEqI9IXqHSqMwnwRqy69C8c0w52Qp+7+OEM6fTH1Wido
+FxRCaWdvA+3DVbNNl+gTP3tFuC3tDLlIYz01jkLnzuCG1BBrVZnmA/ZsaX4+QVOD
+CB0CEqnn/sJ3m3wcjLnaqwVKpzdRFT0L/U/suZ03ABCtB4pxcd+fqqN3L5ISTZ25
+Q7gOYqYw7ad2SkSda01Q
+=0tUI
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__16_Aug_2013_11_40_50_+1000_TVXQ7m1BQV6xtwgH--
