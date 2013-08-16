@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab3HQAFI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:05:08 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59357 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab3HQAFE (ORCPT
+	id S1755669Ab3HQAGA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:06:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51731 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756815Ab3HPWj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:05:04 -0400
-Date: Fri, 16 Aug 2013 14:50:44 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>
-Subject: Re: [PATCH RFC 1/3] spmi: Linux driver framework for SPMI
-Message-ID: <20130816195044.GI4035@joshc.qualcomm.com>
-References: <cover.1376596224.git.joshc@codeaurora.org>
- <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
- <20130816184614.GA31510@kroah.com>
- <20130816194714.GH4035@joshc.qualcomm.com>
+	Fri, 16 Aug 2013 18:39:57 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 100/133] regmap: Add missing header for !CONFIG_REGMAP stubs
+Date: Fri, 16 Aug 2013 15:34:02 -0700
+Message-Id: <1376692475-28413-101-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
+References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130816194714.GH4035@joshc.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 02:47:14PM -0500, Josh Cartwright wrote:
-> > 
-> > Why?  If debugfs isn't enabled, the functions should just compile away
-> > with the debugfs_() calls, so no need to do this type of thing here,
-> > right?
-> 
-> Not sure I follow you, but it may be because this is a bit misleading.
-> 
-> Currently CONFIG_DEBUG_FS is being extended to also mean "do you want
-> the SPMI core to create device entries?".  It would probably make more
-                      debugfs -^
+3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
 
+------------------
+
+From: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+
+commit 49ccc142f9cbc33fdda18e8fa90c1c5b4a79c0ad upstream.
+
+regmap.h requires linux/err.h if CONFIG_REGMAP is not defined. Without it I get
+error.
+CC      drivers/media/platform/exynos4-is/fimc-reg.o
+In file included from drivers/media/platform/exynos4-is/fimc-reg.c:14:0:
+include/linux/regmap.h: In function ‘regmap_write’:
+include/linux/regmap.h:525:10: error: ‘EINVAL’ undeclared (first use in this function)
+include/linux/regmap.h:525:10: note: each undeclared identifier is reported only once for each function it appears in
+
+Signed-off-by: Mateusz Krawczuk <m.krawczuk@partner.samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ include/linux/regmap.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index b7e95bf..6a0b639 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -15,6 +15,7 @@
+ 
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
++#include <linux/err.h>
+ 
+ struct module;
+ struct device;
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.2
+
