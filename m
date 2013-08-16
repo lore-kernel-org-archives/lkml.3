@@ -1,124 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab3HPB2d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 21:28:33 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62752 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab3HPB2c (ORCPT
+	id S1753394Ab3HPB2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 21:28:47 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:48497 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab3HPB2p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 21:28:32 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <520D8042.6060203@roeck-us.net>
-Date: Thu, 15 Aug 2013 18:28:34 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803 Thunderbird/17.0.8
+	Thu, 15 Aug 2013 21:28:45 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/17] 3.4.58-stable review
-References: <20130813063501.728847844@linuxfoundation.org> <520A1D56.2050507@roeck-us.net> <20130813175858.GC7336@kroah.com> <20130813201936.GA18358@roeck-us.net> <CAMuHMdVetwp7r=O_svmnyHBEQzdg-OdRxRB-3TJVQeQ7KULU7g@mail.gmail.com> <20130813223622.GA12790@roeck-us.net> <CAMuHMdVsR3Af+ccWMq6aU99UUAtCXyf8Ss0fbSYw7tR_w2mwkA@mail.gmail.com> <520B5873.6010708@roeck-us.net> <20130815063648.GE25754@kroah.com> <520CE978.5010000@roeck-us.net> <20130816012248.GB28289@kroah.com>
-In-Reply-To: <20130816012248.GB28289@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130815100719.GB25875@lee--X1>
+References: <1376468930-9794-1-git-send-email-chao.xie@marvell.com>
+	<1376468930-9794-4-git-send-email-chao.xie@marvell.com>
+	<20130814174227.GI4046@lee--X1>
+	<CADApbejPaRRX5OM5Ho8-bV2vaKLODOjhOh2Abzb8Auniwdukkw@mail.gmail.com>
+	<20130815100719.GB25875@lee--X1>
+Date: Fri, 16 Aug 2013 09:28:44 +0800
+Message-ID: <CADApbegsSEaHhTBoy+STf2EDE3t8NR-K0GMWr1ObRPZkmPsYxQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] mfd: 88pm800: add device tree support
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Chao Xie <chao.xie@marvell.com>, sameo@linux.intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/15/2013 06:22 PM, Greg Kroah-Hartman wrote:
-> On Thu, Aug 15, 2013 at 07:45:12AM -0700, Guenter Roeck wrote:
->> On 08/14/2013 11:36 PM, Greg Kroah-Hartman wrote:
->>> On Wed, Aug 14, 2013 at 03:14:11AM -0700, Guenter Roeck wrote:
->>>> On 08/14/2013 01:26 AM, Geert Uytterhoeven wrote:
->>>>> On Wed, Aug 14, 2013 at 12:36 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->>>>>>>> cris/...:
->>>>>>>> In file included from include/linux/page-flags.h:8:0,
->>>>>>>>                     from kernel/bounds.c:9:
->>>>>>>> include/linux/types.h:25:1: error: unknown type name '__kernel_ino_t'
->>>>>>>> include/linux/types.h:29:1: error: unknown type name '__kernel_off_t'
->>>>>>>> include/linux/types.h:30:1: error: unknown type name '__kernel_pid_t'
->>>>>>>> include/linux/types.h:31:1: error: unknown type name '__kernel_daddr_t'
->>>>>>>> include/linux/types.h:33:1: error: unknown type name '__kernel_suseconds_t'
->>>>>>>>
->>>>>>>> That one might be tricky (or simple if someone knows what is wrong).
->>>>>>>
->>>>>>> Fixed in v3.5-rc1:
->>>>>>>
->>>>>>> commit 74f077d2a7651409c44bb323471f219a4b0d2aab
->>>>>>> Author: Jiri Slaby <jslaby@suse.cz>
->>>>>>> Date:   Mon Apr 2 13:40:17 2012 +0200
->>>>>>>
->>>>>>>        cris: posix_types.h, include asm-generic/posix_types.h
->>>>>>>
->>>>>> It does fix above error, but then there is another error:
->>>>>>
->>>>>>      AS      arch/cris/arch-v10/lib/checksum.o
->>>>>> In file included from <command-line>:4:0:
->>>>>> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
->>>>>> make[1]: *** [arch/cris/arch-v10/lib/checksum.o] Error 1
->>>>>> make[1]: *** Waiting for unfinished jobs....
->>>>>>      AS      arch/cris/arch-v10/lib/checksumcopy.o
->>>>>> In file included from <command-line>:4:0:
->>>>>> /home/groeck/src/linux-stable/include/linux/kconfig.h:23:0: error: syntax error in macro parameter list
->>>>>> make[1]: *** [arch/cris/arch-v10/lib/checksumcopy.o] Error 1
->>>>>
->>>>> commit 7b91747d42a1012e3781dd09fa638d113809e3fd
->>>>> Author: Paul Gortmaker <paul.gortmaker@windriver.com>
->>>>> Date:   Wed Apr 18 21:58:43 2012 +0200
->>>>>
->>>>>        cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
->>>>>
->>>>
->>>> Great, thanks for tracking this down.
->>>>
->>>> With both patches applied, we are almost there. Next error:
->>>>
->>>> kernel/built-in.o: In function `core_kernel_data':
->>>> (.text+0x12e38): undefined reference to `_sdata'
->>>> make: *** [vmlinux] Error 1
->>>>
->>>> This has been fixed with commit 473e162e (CRIS: Add _sdata to vmlinux.lds.S).
->>>>
->>>> So, in summary, we have
->>>>
->>>> 473e162e CRIS: Add _sdata to vmlinux.lds.S
->>>> 69349c2d cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
->>>> 7b91747d cris: posix_types.h, include asm-generic/posix_types.h
->>>>
->>>> With those three patches applied, cris targets build in 3.4.y.
->>>
->>> Wonderful, I've now applied all of these.
->>>
->>> Anything else I'm missing for 3.4?
->>>
->> Besides the now failing mips buids;
->>
->> Building arm:allmodconfig ... failed
->> --------------
->> Error log:
->> .config:25:warning: symbol value '' invalid for PHYS_OFFSET
->> make[2]: *** [silentoldconfig] Error 1
->> make[1]: *** [silentoldconfig] Error 2
->> make: *** No rule to make target `include/config/auto.conf', needed by `include/config/kernel.release'.  Stop.
->>
->> That was "fixed" by a complete arm Kconfig overhaul. I don't think you want
->> that in 3.4.
->> --------------
+On Thu, Aug 15, 2013 at 6:07 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>> >> +Optional parent device properties:
+>> >> +- marvell,88pm800-irq-write-clear: inicates whether interrupt status is cleared by write
+>> >> +- marvell,88pm800-battery-detection: indicats whether need 88pm800 to support battery
+>> >> +                             detection or not.
+>> >
+>> > Not sure what these are. This is why you need to CC the Device Tree
+>> > guys.
+>> >
+>> It is the 88pm805's own configuration.
+>> 88pm800-irq-write-clear: when irq happens, the status register is
+>> write clear or read clear.
+>> 88pm800-battery-detection: whether the battery is connected to chip.
+>> It means that whether
+>> the chip be aware of battery or not.
 >
-> Not a "complete" overhaul, no.  But getting a default allmodconfig
-> building for arm would be nice, if possible.
+> As you are adding vendor specific bindings, you need to Cc the Device
+> Tree mailing list.
 >
+>> >> +     if (IS_ENABLED(CONFIG_OF)) {
+>> >> +             if (!pdata) {
+>> >> +                     pdata = devm_kzalloc(&client->dev,
+>> >> +                                          sizeof(*pdata), GFP_KERNEL);
+>> >> +                     if (!pdata)
+>> >> +                             return -ENOMEM;
+>> >> +             }
+>> >> +             ret = pm800_dt_init(node, &client->dev, pdata);
+>> >> +             if (ret)
+>> >> +                     return ret;
+>> >> +     } else if (!pdata) {
+>> >> +             return -EINVAL;
+>> >> +     }
+>> >
+>> > Replace with:
+>> >
+>> >         if (!pdata) {
+>> >                 if (node)
+>> >                         /* <blah> populate pdata with DT </blah> */
+>> >                 else
+>> >                         return -EINVAL;
+>> >         }
+>> >
+>> The orignial code will cover the following situation.
+>> 1. DT enabled, and user pass pdata
+>> 2. DT enabled, but user do not pass pdata
+>> 3. DT disabled, user pass pdata
+>> 4. DT disabled, user do not pass pdata.
+>>
+>> 88pm805 has a callback for config the it based on platform requirment.
+>> I do not want to remove this callback now, because it includes so many
+>> configurations.
+>> So i allow user can pass pdata with callback if the platform needs to
+>> configure the chip.
+>
+> Mixing DT with pdata is a bad idea. If you need to pass a call-back
+> pointer, then _only_ use pdata i.e. get all of your platform specific
+> information from pdata, rather than just over-writing sections of it
+> with information retrieved from Device Tree.
+>
+> So:
+>
+> If pdata  - use pdata and ignore DT completely
+> If !pdata:
+>    If DT  - use DT
+>    If !DT - return -EINVAL
+>
+> Out of interest, what does your call-back do?
+>
+Without the callback, the soc still can work.
+The callback does job relates to power saving and CP's requirment.
+1. LPM configure for the chip based on AP/CP's requriment.
+2. 88pm800 OSC configuration
+3. Some output pin configuration of 88pm800, for example reset_out_n pin
 
-I agree. I'll look into it a bit further.
+I want to abstract the callback step by step, so the first step are the patches
+that enable DT first.
 
-Also, to keep you busy:
+For the patch 0001 and 0002 are fixes, so if these two patches are all
+right, can you
+merge them? Then i will submit the 2 DT related patches again with cc
+to device tree maillist.
 
-cd8d2331 alpha: makefile: don't enforce small data model for kernel builds
+Thanks.
 
-fixes the alpha defconfig build for 3.4.
-
-Guenter
-
+> --
+> Lee Jones
+> Linaro ST-Ericsson Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
