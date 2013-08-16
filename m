@@ -1,154 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab3HQANG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:13:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51630 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756574Ab3HPWjX (ORCPT
+	id S1757101Ab3HQANI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:13:08 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:65263 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756574Ab3HQANG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:23 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 090/133] virtio: console: clean up port data immediately at time of unplug
-Date: Fri, 16 Aug 2013 15:33:52 -0700
-Message-Id: <1376692475-28413-91-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 16 Aug 2013 20:13:06 -0400
+Date: Fri, 16 Aug 2013 21:26:51 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Max Filippov <jcmvbkbc@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Linux kernel cross-compilers
+Message-ID: <20130816192651.GA13953@merkur.ravnborg.org>
+References: <520C9A39.3030808@roeck-us.net> <CAMo8BfKyqZYMkh96wyZSpYUpXwqFQZkco=XgtjUrNG-jSzW5pA@mail.gmail.com> <20130816054823.GB28445@thor.bakeyournoodle.com> <CAMo8Bf+veq_DU7-hnB0yySy6YWpwU2TYx3U9e89c_m8Mv9Cv5w@mail.gmail.com> <520DD9CA.90305@roeck-us.net> <CAMo8BfLvVk+2CyQD28otU265J4rvbt0Eg11Vqr4u4zjKjrTanw@mail.gmail.com> <520DEF05.9030803@roeck-us.net> <CAMo8BfKWFGxr6a48tFqGCourOcWOTO9rmCHy3Q05jR_QEuq=Cg@mail.gmail.com> <520E48A7.3050401@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520E48A7.3050401@roeck-us.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, Aug 16, 2013 at 08:43:35AM -0700, Guenter Roeck wrote:
+> On 08/16/2013 02:45 AM, Max Filippov wrote:
+>>>> Guenter,
+>>>> can you share a complete build log with V=1?
+>>>>
+>>>
+>>> http://roeck-us.net/linux/logs/make.xtensa.log.bad
+>>> http://roeck-us.net/linux/logs/make.xtensa.log.ok
+>>>
+>>> Key difference: the failing command in the bad case is
+>>>          xtensa-linux-objcopy -O elf32-xtensa-le
+>>> and in the good case
+>>>          xtensa-linux-objcopy -O elf32-xtensa-be
+>>>
+>>> Same compiler (4.6.3 from kernel.org), same configuration file, same command
+>>> line.
+>>> Configuration file is generated from defconfig, and the resulting .config
+>>> file
+>>> is the same in both cases.
+>>>
+>>> If I execute make and expicitly set BIG_ENDIAN=1 on the failing system as
+>>> parameter to it,
+>>> it works fine. If I set BIG_ENDIAN=0 on the passing system, it fails.
+>>>
+>>> I am puzzled. Guess there must be something different, but I have no idea
+>>> what it might be.
+>>
+>> What is the output of
+>>
+>> echo -e __XTENSA_EB__ | xtensa-linux-gcc -E -
+>>
+>> on the failing system?
+>>
+> It is "1", but that let me pinpoint the problem.
+>
+> On the failing system, the version of echo executed by make does
+> not understand the "-e" option. Thus, when running arch/xtensa/boot/Makefile,
+> "echo -e __XTENSA_EB__" returns "-e __XTENSA_EB__", which doesn't compile,
+> and BIG_ENDIAN ends up being 0. So the compiler is completely innocent.
+>
+> I found out the root source: SHELL is set the /bin/sh, which on the failing
+> system points to /bin/dash (default in Ubuntu, or at least it used to be).
+> dash apparently has a built-in version of echo which does not understand '-e'.
 
-------------------
+Could you try to replace "echo -e bla" with "printf "bla".
+Kbuild.include uses some similar tricks but here printf is used.
+Maybe this can be dash compatible then
 
-From: Amit Shah <amit.shah@redhat.com>
-
-commit ea3768b4386a8d1790f4cc9a35de4f55b92d6442 upstream.
-
-We used to keep the port's char device structs and the /sys entries
-around till the last reference to the port was dropped.  This is
-actually unnecessary, and resulted in buggy behaviour:
-
-1. Open port in guest
-2. Hot-unplug port
-3. Hot-plug a port with the same 'name' property as the unplugged one
-
-This resulted in hot-plug being unsuccessful, as a port with the same
-name already exists (even though it was unplugged).
-
-This behaviour resulted in a warning message like this one:
-
--------------------8<---------------------------------------
-WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xc9/0x130() (Not tainted)
-Hardware name: KVM
-sysfs: cannot create duplicate filename
-'/devices/pci0000:00/0000:00:04.0/virtio0/virtio-ports/vport0p1'
-
-Call Trace:
- [<ffffffff8106b607>] ? warn_slowpath_common+0x87/0xc0
- [<ffffffff8106b6f6>] ? warn_slowpath_fmt+0x46/0x50
- [<ffffffff811f2319>] ? sysfs_add_one+0xc9/0x130
- [<ffffffff811f23e8>] ? create_dir+0x68/0xb0
- [<ffffffff811f2469>] ? sysfs_create_dir+0x39/0x50
- [<ffffffff81273129>] ? kobject_add_internal+0xb9/0x260
- [<ffffffff812733d8>] ? kobject_add_varg+0x38/0x60
- [<ffffffff812734b4>] ? kobject_add+0x44/0x70
- [<ffffffff81349de4>] ? get_device_parent+0xf4/0x1d0
- [<ffffffff8134b389>] ? device_add+0xc9/0x650
-
--------------------8<---------------------------------------
-
-Instead of relying on guest applications to release all references to
-the ports, we should go ahead and unregister the port from all the core
-layers.  Any open/read calls on the port will then just return errors,
-and an unplug/plug operation on the host will succeed as expected.
-
-This also caused buggy behaviour in case of the device removal (not just
-a port): when the device was removed (which means all ports on that
-device are removed automatically as well), the ports with active
-users would clean up only when the last references were dropped -- and
-it would be too late then to be referencing char device pointers,
-resulting in oopses:
-
--------------------8<---------------------------------------
-PID: 6162   TASK: ffff8801147ad500  CPU: 0   COMMAND: "cat"
- #0 [ffff88011b9d5a90] machine_kexec at ffffffff8103232b
- #1 [ffff88011b9d5af0] crash_kexec at ffffffff810b9322
- #2 [ffff88011b9d5bc0] oops_end at ffffffff814f4a50
- #3 [ffff88011b9d5bf0] die at ffffffff8100f26b
- #4 [ffff88011b9d5c20] do_general_protection at ffffffff814f45e2
- #5 [ffff88011b9d5c50] general_protection at ffffffff814f3db5
-    [exception RIP: strlen+2]
-    RIP: ffffffff81272ae2  RSP: ffff88011b9d5d00  RFLAGS: 00010246
-    RAX: 0000000000000000  RBX: ffff880118901c18  RCX: 0000000000000000
-    RDX: ffff88011799982c  RSI: 00000000000000d0  RDI: 3a303030302f3030
-    RBP: ffff88011b9d5d38   R8: 0000000000000006   R9: ffffffffa0134500
-    R10: 0000000000001000  R11: 0000000000001000  R12: ffff880117a1cc10
-    R13: 00000000000000d0  R14: 0000000000000017  R15: ffffffff81aff700
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #6 [ffff88011b9d5d00] kobject_get_path at ffffffff8126dc5d
- #7 [ffff88011b9d5d40] kobject_uevent_env at ffffffff8126e551
- #8 [ffff88011b9d5dd0] kobject_uevent at ffffffff8126e9eb
- #9 [ffff88011b9d5de0] device_del at ffffffff813440c7
-
--------------------8<---------------------------------------
-
-So clean up when we have all the context, and all that's left to do when
-the references to the port have dropped is to free up the port struct
-itself.
-
-Reported-by: chayang <chayang@redhat.com>
-Reported-by: YOGANANTH SUBRAMANIAN <anantyog@in.ibm.com>
-Reported-by: FuXiangChun <xfu@redhat.com>
-Reported-by: Qunfang Zhang <qzhang@redhat.com>
-Reported-by: Sibiao Luo <sluo@redhat.com>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/char/virtio_console.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 4e848c8..615804c 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1524,14 +1524,6 @@ static void remove_port(struct kref *kref)
- 
- 	port = container_of(kref, struct port, kref);
- 
--	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
--	device_destroy(pdrvdata.class, port->dev->devt);
--	cdev_del(port->cdev);
--
--	kfree(port->name);
--
--	debugfs_remove(port->debugfs_file);
--
- 	kfree(port);
- }
- 
-@@ -1589,6 +1581,14 @@ static void unplug_port(struct port *port)
- 	 */
- 	port->portdev = NULL;
- 
-+	sysfs_remove_group(&port->dev->kobj, &port_attribute_group);
-+	device_destroy(pdrvdata.class, port->dev->devt);
-+	cdev_del(port->cdev);
-+
-+	kfree(port->name);
-+
-+	debugfs_remove(port->debugfs_file);
-+
- 	/*
- 	 * Locks around here are not necessary - a port can't be
- 	 * opened after we removed the port struct from ports_list
--- 
-1.8.1.2
-
+	Sam
