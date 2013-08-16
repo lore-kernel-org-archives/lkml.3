@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758014Ab3HQAeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:34:01 -0400
-Received: from smtp-s01.adinet.com.uy ([200.40.30.61]:24337 "EHLO
-	smtp-s03.adinet.com.uy" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756576Ab3HQAd7 (ORCPT
+	id S1758044Ab3HQAe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:34:28 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60204 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295Ab3HQAeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 20:33:59 -0400
-X-CNFS-ANALYSIS: v=2.0 cv=ds/y+ic4 c=1 sm=2 a=m9k+4w/bP6kxJnZDEydTug==:17
- a=fc5eX-7etnwA:10 a=lkbrnGkaV94A:10 a=IkcTkHD0fZMA:10 a=MkT04gfWAAAA:8
- a=uKjqEd65QDLFaUwUpiwA:9 a=QEXdDO2ut3YA:10 a=kTbYlp8LzlxKigRG:21
- a=IATmrUbCQQ6l7HZg:21 a=cHZeHg9rOoc8+HWka+jrjA==:117
-Message-ID: <20770446.3567801376696283538.JavaMail.defaultUser@defaultHost>
-Date: Fri, 16 Aug 2013 20:38:03 -0300 (UYT)
-From: "blessingzamba133@adinet.com.uy" <blessingzamba133@adinet.com.uy>
-Subject: Hello dear
+	Fri, 16 Aug 2013 20:34:22 -0400
+Date: Fri, 16 Aug 2013 13:27:02 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>
+Subject: Re: [ 00/17] 3.4.58-stable review
+Message-ID: <20130816202702.GD4568@roeck-us.net>
+References: <520A1D56.2050507@roeck-us.net>
+ <20130813175858.GC7336@kroah.com>
+ <20130813201936.GA18358@roeck-us.net>
+ <20130815063158.GB25754@kroah.com>
+ <520C86BD.2020903@roeck-us.net>
+ <CAMuHMdU+EOC_etihOzUC6N0cqc2qHaGm3_L+gyTRxESCGhOzEg@mail.gmail.com>
+ <520DB045.7000309@roeck-us.net>
+ <20130816051041.GA23784@kroah.com>
+ <520DE21D.8000905@roeck-us.net>
+ <20130816124140.GD24550@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 174.136.98.202
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130816124140.GD24550@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 16, 2013 at 05:41:40AM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Aug 16, 2013 at 01:26:05AM -0700, Guenter Roeck wrote:
+> > On 08/15/2013 10:10 PM, Greg Kroah-Hartman wrote:
+> > [ .. ]
+> > 
+> > >> three to go (arm:allmodconfig, sparc32:defconfig, and sparc64:allmodconfig).
+> > >
+> > 
+> > Please add (in this order) the following patches to 3.4.
+> > 
+> > de36e66d5f sparc32: add ucmpdi2
+> > 74c7b28953 sparc32: Add ucmpdi2.o to obj-y instead of lib-y.
+> > 
+> > This fixes the sparc32:defconfig build error.
+> 
+> Now applied, thanks.
+> 
+Down to three failures now, out of 69 builds.
 
-Hello dear
-How are you today I hope all is well with you, my name is 
-miss blessing zamba 24 years old girl is my pleasure to contact you after
- viewing your profile  which really interest me to communicating with 
-you please if you have the desire with me so we can get to know each 
-other better and see what happens in the future?. I'll be very glad if 
-you could send me mail back to my personal e-mail for more easy 
-communication and to know more about each other.i will tell you why i 
-make this contact with you in my next email and i will send you my 
-picture when I receive your response, i am waiting to hear from you, and
- I wish you all the best on your life. thank you and have a nice day
-miss blessing
+Still failing:
+	arm:allmodconfig
+	sparc64:allmodconfig
+	xtensa:defconfig
+
+None of those appear simple to fix.
+
+In case someone wants to have a look, here is the latest log:
+
+http://server.roeck-us.net:8010/builders/stable-queue-3.4/builds/45/steps/shell/logs/stdio
+	
+Guenter
