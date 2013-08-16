@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab3HPRNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 13:13:49 -0400
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:28557
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752125Ab3HPRNr (ORCPT
+	id S1754805Ab3HPROz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 13:14:55 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:39348 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab3HPROu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 13:13:47 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371Ic89bh936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh2a8h839h8e2h8e3h941hd25he5bhf0ah1269h1288h12a5h12a9h12bdh12e1h137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5hbe9i1155h)
-From: Li Yang-R58472 <r58472@freescale.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: System suspend states and device driver suspend() callback
-Thread-Topic: System suspend states and device driver suspend() callback
-Thread-Index: AQHOmlevaKyDtL1EQU+OBxMir9SK85mXs+gAgABfUm0=
-Date: Fri, 16 Aug 2013 17:13:42 +0000
-Message-ID: <02318724-F4F7-4D53-9926-872E9417F672@freescale.com>
-References: <CADRPPNSD+uj_t5+qbNW29y7SuJkB_vMck-DGFJFV4A0AmPC6pQ@mail.gmail.com>,<17024788.0xFN8jEV59@vostro.rjw.lan>
-In-Reply-To: <17024788.0xFN8jEV59@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="gb2312"
+	Fri, 16 Aug 2013 13:14:50 -0400
+Date: Fri, 16 Aug 2013 19:14:48 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Kevin Hilman <khilman@linaro.org>, sedat.dilek@gmail.com,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linux kbuild ML <linux-kbuild@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the ext4 tree
+Message-ID: <20130816171448.GA13841@merkur.ravnborg.org>
+References: <CA+icZUUt4domktYZZn0Qp3BZoSFqmKic4qSnVP4cuTKwUww_=A@mail.gmail.com> <20130807153840.4f2997b603397c07aca98b2d@canb.auug.org.au> <87zjsted0c.fsf@linaro.org> <20130808102228.d2034d3a4c986d2970926ab9@canb.auug.org.au> <20130808103614.a039da2f236154b52329b28b@canb.auug.org.au> <20130808191650.GB3282@free.fr> <20130808215449.GD3282@free.fr> <20130809114248.GA5691@merkur.ravnborg.org> <20130811213923.GA5312@free.fr> <520E24CE.9040604@suse.cz>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <520E24CE.9040604@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r7GHDqdu024228
 
-
-
-ÔÚ 2013-8-16£¬ÏÂÎç7:22£¬"Rafael J. Wysocki" <rjw@sisk.pl> Ğ´µÀ£º
-
-> On Friday, August 16, 2013 04:06:26 PM Li Yang wrote:
->> Hi Guys,
->> 
->> Is there a standard way for the device drivers to know if the system
->> is going to ¡°standby¡± mode or ¡°mem¡± mode when the suspend() callbacks
->> are called?
+On Fri, Aug 16, 2013 at 03:10:38PM +0200, Michal Marek wrote:
+> On 11.8.2013 23:39, Yann E. MORIN wrote:
+> > On 2013-08-09 13:42 +0200, Sam Ravnborg spake thusly:
+> >> If we drop the special handling of "MODULES" and introduced
+> >> the following in we may fix it - hopefully:
+> >>
+> >> config MODULES
+> >> 	option modules
+> >>
+> >> The option handling is already in place. It is even documented :-)
+> > 
+> > Yes, indeed, that one is pretty easy! :-)
+> > 
+> >> At least we could then drop the sym_lookup here (zconf.y):
+> >>         if (!modules_sym->prop) {
+> >>                 struct property *prop;
+> >>
+> >>                 prop = prop_alloc(P_DEFAULT, modules_sym);
+> >>                 prop->expr = expr_alloc_symbol(sym_lookup("MODULES", 0));
+> >>         }
+> >> Without the sym_lookup I think the symbol will not be defined and tus not marked valid.
+> > 
+> > Sorry, I don't understand what we should do here.
+> > 
+> > From what I understand, here's what happens:
+> >   - there's no symbol that declared the 'modules' option, so the
+> >     modules_sym->prop is NULL;
+> >   - so we look for the symbol 'MODULES' and use that as the symbol used
+> >     to evaluate if tristates are enabled.
+> > 
+> > So, now we have 'option modules' added to MODULES, we never enter this
+> > if() condition.
+> > 
+> > But what would happen to other projects that do not have a symbol set
+> > with 'option modules' and no 'MODULES' symbol? Surely, those projects do
+> > not need tristates, but what should the code do in this case?
+> > 
+> > So, I don't know what to replace this 'sym_lookup("MODULES", 0)' with.
 > 
-> No, there's none.
-> 
-> What do you need that for?
+> If the Kconfig files do not provide any symbol with 'option modules',
+> then set modules_sym to a dummy bool with the value 'n'?
+This is my thinking too - to use the symbol "n".
+But I wanted to try it out - but so far have not had time for it.
 
-Some chips like ours are putting the on-chip devices into different low power states when entering different system low power states.  When we enter system standby, on-chip devices are clock gated.  While entering suspend to ram, on-chip devices are power gated.  We want to driver to act differently too when entering different suspend states.
-
-- Leo
-
-> 
-> Rafael
-> 
-> 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	Sam
