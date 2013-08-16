@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3HPBQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 21:16:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44565 "EHLO
+	id S1753229Ab3HPBVO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 21:21:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44573 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab3HPBQ5 (ORCPT
+	with ESMTP id S1751738Ab3HPBVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 21:16:57 -0400
-Date: Thu, 15 Aug 2013 18:18:33 -0700
+	Thu, 15 Aug 2013 21:21:13 -0400
+Date: Thu, 15 Aug 2013 18:22:48 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
@@ -16,7 +16,7 @@ Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         stable <stable@vger.kernel.org>
 Subject: Re: [ 00/17] 3.4.58-stable review
-Message-ID: <20130816011833.GA28289@kroah.com>
+Message-ID: <20130816012248.GB28289@kroah.com>
 References: <20130813063501.728847844@linuxfoundation.org>
  <520A1D56.2050507@roeck-us.net>
  <20130813175858.GC7336@kroah.com>
@@ -26,17 +26,17 @@ References: <20130813063501.728847844@linuxfoundation.org>
  <CAMuHMdVsR3Af+ccWMq6aU99UUAtCXyf8Ss0fbSYw7tR_w2mwkA@mail.gmail.com>
  <520B5873.6010708@roeck-us.net>
  <20130815063648.GE25754@kroah.com>
- <520CEFCA.8070309@roeck-us.net>
+ <520CE978.5010000@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <520CEFCA.8070309@roeck-us.net>
+In-Reply-To: <520CE978.5010000@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 15, 2013 at 08:12:10AM -0700, Guenter Roeck wrote:
+On Thu, Aug 15, 2013 at 07:45:12AM -0700, Guenter Roeck wrote:
 > On 08/14/2013 11:36 PM, Greg Kroah-Hartman wrote:
 > > On Wed, Aug 14, 2013 at 03:14:11AM -0700, Guenter Roeck wrote:
 > >> On 08/14/2013 01:26 AM, Geert Uytterhoeven wrote:
@@ -101,10 +101,23 @@ On Thu, Aug 15, 2013 at 08:12:10AM -0700, Guenter Roeck wrote:
 > >
 > > Anything else I'm missing for 3.4?
 > >
-> One more patch to apply to 3.4:
+> Besides the now failing mips buids;
 > 
-> aa709f3bc powerpc/numa: Avoid stupid uninitialized warning from gcc
+> Building arm:allmodconfig ... failed
+> --------------
+> Error log:
+> .config:25:warning: symbol value '' invalid for PHYS_OFFSET
+> make[2]: *** [silentoldconfig] Error 1
+> make[1]: *** [silentoldconfig] Error 2
+> make: *** No rule to make target `include/config/auto.conf', needed by `include/config/kernel.release'.  Stop.
+> 
+> That was "fixed" by a complete arm Kconfig overhaul. I don't think you want
+> that in 3.4.
+> --------------
 
-Now applied, thanks.
+Not a "complete" overhaul, no.  But getting a default allmodconfig
+building for arm would be nice, if possible.
+
+thanks,
 
 greg k-h
