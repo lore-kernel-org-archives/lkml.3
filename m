@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab3HQAa3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:30:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51384 "EHLO
+	id S1757119Ab3HQAfY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:35:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51294 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab3HPWfO (ORCPT
+	with ESMTP id S1753278Ab3HPWfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:35:14 -0400
+	Fri, 16 Aug 2013 18:35:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Skirvin <jeffrey.d.skirvin@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Chih-Chung Chang <chihchung@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 020/133] [SCSI] isci: Fix a race condition in the SSP task management path
-Date: Fri, 16 Aug 2013 15:32:42 -0700
-Message-Id: <1376692475-28413-21-git-send-email-kamal@canonical.com>
+Subject: [PATCH 004/133] ASoC: max98088 - fix element type of the register cache.
+Date: Fri, 16 Aug 2013 15:32:26 -0700
+Message-Id: <1376692475-28413-5-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,60 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
+From: Chih-Chung Chang <chihchung@chromium.org>
 
-commit 96f15f29038e58e1b0a96483e2b369ff446becf1 upstream.
+commit cb6f66a2d278e57a6c9d8fb59bd9ebd8ab3965c2 upstream.
 
-This commit fixes a race condition in the isci driver abort task and SSP
-device task management path.  The race is caused when an I/O termination
-in the SCU hardware is necessary because of an SSP target timeout condition,
-and the check of the I/O end state races against the HW-termination-driven
-end state.  The failure of the race meant that no TMF was sent to the device
-to clean-up the pending I/O.
+The registers of max98088 are 8 bits, not 16 bits. This bug causes the
+contents of registers to be overwritten with bad values when the codec
+is suspended and then resumed.
 
-Signed-off-by: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
-Reviewed-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Chih-Chung Chang <chihchung@chromium.org>
+Signed-off-by: Dylan Reid <dgreid@chromium.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/isci/task.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ sound/soc/codecs/max98088.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/isci/task.c b/drivers/scsi/isci/task.c
-index b6f19a1..572ab51 100644
---- a/drivers/scsi/isci/task.c
-+++ b/drivers/scsi/isci/task.c
-@@ -491,6 +491,7 @@ int isci_task_abort_task(struct sas_task *task)
- 	struct isci_tmf           tmf;
- 	int                       ret = TMF_RESP_FUNC_FAILED;
- 	unsigned long             flags;
-+	int                       target_done_already = 0;
+diff --git a/sound/soc/codecs/max98088.c b/sound/soc/codecs/max98088.c
+index 5d36319..6c9e662 100644
+--- a/sound/soc/codecs/max98088.c
++++ b/sound/soc/codecs/max98088.c
+@@ -1594,7 +1594,7 @@ static int max98088_dai2_digital_mute(struct snd_soc_dai *codec_dai, int mute)
  
- 	/* Get the isci_request reference from the task.  Note that
- 	 * this check does not depend on the pending request list
-@@ -505,9 +506,11 @@ int isci_task_abort_task(struct sas_task *task)
- 	/* If task is already done, the request isn't valid */
- 	if (!(task->task_state_flags & SAS_TASK_STATE_DONE) &&
- 	    (task->task_state_flags & SAS_TASK_AT_INITIATOR) &&
--	    old_request)
-+	    old_request) {
- 		idev = isci_get_device(task->dev->lldd_dev);
--
-+		target_done_already = test_bit(IREQ_COMPLETE_IN_TARGET,
-+					       &old_request->flags);
-+	}
- 	spin_unlock(&task->task_state_lock);
- 	spin_unlock_irqrestore(&ihost->scic_lock, flags);
+ static void max98088_sync_cache(struct snd_soc_codec *codec)
+ {
+-       u16 *reg_cache = codec->reg_cache;
++       u8 *reg_cache = codec->reg_cache;
+        int i;
  
-@@ -561,7 +564,7 @@ int isci_task_abort_task(struct sas_task *task)
- 
- 	if (task->task_proto == SAS_PROTOCOL_SMP ||
- 	    sas_protocol_ata(task->task_proto) ||
--	    test_bit(IREQ_COMPLETE_IN_TARGET, &old_request->flags) ||
-+	    target_done_already ||
- 	    test_bit(IDEV_GONE, &idev->flags)) {
- 
- 		spin_unlock_irqrestore(&ihost->scic_lock, flags);
+        if (!codec->cache_sync)
 -- 
 1.8.1.2
 
