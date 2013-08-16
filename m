@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab3HPHFf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 03:05:35 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:63021 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab3HPHFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 03:05:33 -0400
-Message-ID: <520DCF2C.1020903@huawei.com>
-Date: Fri, 16 Aug 2013 15:05:16 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH] cgroup: change cgroup_from_id() to css_from_id()
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	id S1752567Ab3HPHIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 03:08:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:29462 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420Ab3HPHIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 03:08:14 -0400
+X-IronPort-AV: E=Sophos;i="4.89,892,1367942400"; 
+   d="scan'208";a="8217636"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, lenb@kernel.org,
+        rjw@sisk.pl, liwanp@linux.vnet.ibm.com, tj@kernel.org,
+        akpm@linux-foundation.org
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: [PATCH 3/6] acpi cleanup: Use pr_info() instead of printk() in arch/x86/mm/srat.c
+Date: Fri, 16 Aug 2013 15:06:46 +0800
+Message-Id: <1376636809-10159-4-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1376636809-10159-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1376636809-10159-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/16 15:06:32,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/08/16 15:06:36,
+	Serialize complete at 2013/08/16 15:06:36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we want cgroup core to always provide the css to use to the
-subsystems, so change this API to css_from_id().
+Use pr_info() instead of printk() in arch/x86/mm/srat.c.
 
-Uninline css_from_id(), because it's getting bigger and cgroup_css()
-has been unexported.
-
-While at it, remove the #ifdef.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- include/linux/cgroup.h | 20 ++------------------
- kernel/cgroup.c        | 22 ++++++++++++++++++++++
- 2 files changed, 24 insertions(+), 18 deletions(-)
+ arch/x86/mm/srat.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 11a6419..50186f0 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -742,27 +742,11 @@ static inline struct cgroup *task_cgroup(struct task_struct *task,
- 	return task_css(task, subsys_id)->cgroup;
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 71411aa..6286e89 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -71,8 +71,8 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+ 	pxm = pa->proximity_domain;
+ 	apic_id = pa->apic_id;
+ 	if (!apic->apic_id_valid(apic_id)) {
+-		printk(KERN_INFO "SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
+-			 pxm, apic_id);
++		pr_info("SRAT: PXM %u -> X2APIC 0x%04x ignored\n",
++			pxm, apic_id);
+ 		return;
+ 	}
+ 	node = setup_node(pxm);
+@@ -83,13 +83,13 @@ acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
+ 	}
+ 
+ 	if (apic_id >= MAX_LOCAL_APIC) {
+-		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
++		pr_info("SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+ 		return;
+ 	}
+ 	set_apicid_to_node(apic_id, node);
+ 	node_set(node, numa_nodes_parsed);
+ 	acpi_numa = 1;
+-	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
++	pr_info("SRAT: PXM %u -> APIC 0x%04x -> Node %u\n",
+ 	       pxm, apic_id, node);
  }
  
--/**
-- * cgroup_from_id - lookup cgroup by id
-- * @ss: cgroup subsys to be looked into
-- * @id: the cgroup id
-- *
-- * Returns the cgroup if there's valid one with @id, otherwise returns NULL.
-- * Should be called under rcu_read_lock().
-- */
--static inline struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id)
--{
--#ifdef CONFIG_PROVE_RCU
--	rcu_lockdep_assert(rcu_read_lock_held() ||
--			   lockdep_is_held(&cgroup_mutex),
--			   "cgroup_from_id() needs proper protection");
--#endif
--	return idr_find(&ss->root->cgroup_idr, id);
--}
--
- struct cgroup_subsys_state *css_next_child(struct cgroup_subsys_state *pos,
- 					   struct cgroup_subsys_state *parent);
+@@ -124,14 +124,14 @@ acpi_numa_processor_affinity_init(struct acpi_srat_cpu_affinity *pa)
+ 		apic_id = pa->apic_id;
  
-+struct cgroup_subsys_state *css_from_id(struct cgroup_subsys *ss, int id);
-+
- /**
-  * css_for_each_child - iterate through children of a css
-  * @pos: the css * to use as the loop cursor
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 99785d6..6ec2377 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -5710,6 +5710,28 @@ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id)
- 	return css ? css : ERR_PTR(-ENOENT);
+ 	if (apic_id >= MAX_LOCAL_APIC) {
+-		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
++		pr_info("SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
+ 		return;
+ 	}
+ 
+ 	set_apicid_to_node(apic_id, node);
+ 	node_set(node, numa_nodes_parsed);
+ 	acpi_numa = 1;
+-	printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
++	pr_info("SRAT: PXM %u -> APIC 0x%02x -> Node %u\n",
+ 	       pxm, apic_id, node);
  }
  
-+/**
-+ * css_from_id - lookup css by id
-+ * @ss: cgroup subsys to be looked into
-+ * @id: the cgroup id
-+ *
-+ * Returns the css if there's valid one with @id, otherwise returns NULL.
-+ * Should be called under rcu_read_lock().
-+ */
-+struct cgroup_subsys_state *css_from_id(struct cgroup_subsys *ss, int id)
-+{
-+	struct cgroup *cgrp;
-+
-+	rcu_lockdep_assert(rcu_read_lock_held() ||
-+			   lockdep_is_held(&cgroup_mutex),
-+			   "css_from_id() needs proper protection");
-+
-+	cgrp = idr_find(&ss->root->cgroup_idr, id);
-+	if (cgrp)
-+		return cgroup_css(cgrp, ss->subsys_id);
-+	return NULL;
-+}
-+
- #ifdef CONFIG_CGROUP_DEBUG
- static struct cgroup_subsys_state *
- debug_css_alloc(struct cgroup_subsys_state *parent_css)
 -- 
-1.8.0.2
+1.7.1
+
