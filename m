@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab3HQAab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:30:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51383 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754900Ab3HPWfO (ORCPT
+	id S1758014Ab3HQAeB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:34:01 -0400
+Received: from smtp-s01.adinet.com.uy ([200.40.30.61]:24337 "EHLO
+	smtp-s03.adinet.com.uy" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756576Ab3HQAd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:35:14 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Youquan Song <youquan.song@intel.com>, Tejun Heo <tj@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 005/133] ata: Fix DVD not dectected at some platform with Wellsburg PCH
-Date: Fri, 16 Aug 2013 15:32:27 -0700
-Message-Id: <1376692475-28413-6-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 16 Aug 2013 20:33:59 -0400
+X-CNFS-ANALYSIS: v=2.0 cv=ds/y+ic4 c=1 sm=2 a=m9k+4w/bP6kxJnZDEydTug==:17
+ a=fc5eX-7etnwA:10 a=lkbrnGkaV94A:10 a=IkcTkHD0fZMA:10 a=MkT04gfWAAAA:8
+ a=uKjqEd65QDLFaUwUpiwA:9 a=QEXdDO2ut3YA:10 a=kTbYlp8LzlxKigRG:21
+ a=IATmrUbCQQ6l7HZg:21 a=cHZeHg9rOoc8+HWka+jrjA==:117
+Message-ID: <20770446.3567801376696283538.JavaMail.defaultUser@defaultHost>
+Date: Fri, 16 Aug 2013 20:38:03 -0300 (UYT)
+From: "blessingzamba133@adinet.com.uy" <blessingzamba133@adinet.com.uy>
+Subject: Hello dear
+MIME-Version: 1.0
+Content-Type: text/plain;charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 174.136.98.202
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
-
-From: Youquan Song <youquan.song@intel.com>
-
-commit eac27f04a71e1f39f196f7e520d16dcefc955d77 upstream.
-
-There is a patch b55f84e2d527182e7c611d466cd0bb6ddce201de "ata_piix: Fix DVD
- not dectected at some Haswell platforms" to fix an issue of DVD not
-recognized on Haswell Desktop platform with Lynx Point.
-Recently, it is also found the same issue at some platformas with Wellsburg PCH.
-
-So deliver a similar patch to fix it by disables 32bit PIO in IDE mode.
-
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/ata/ata_piix.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index c70942f..2ae9efc 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -330,7 +330,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	/* SATA Controller IDE (Wellsburg) */
- 	{ 0x8086, 0x8d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
--	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
- 	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
--- 
-1.8.1.2
-
+Hello dear
+How are you today I hope all is well with you, my name is 
+miss blessing zamba 24 years old girl is my pleasure to contact you after
+ viewing your profile  which really interest me to communicating with 
+you please if you have the desire with me so we can get to know each 
+other better and see what happens in the future?. I'll be very glad if 
+you could send me mail back to my personal e-mail for more easy 
+communication and to know more about each other.i will tell you why i 
+make this contact with you in my next email and i will send you my 
+picture when I receive your response, i am waiting to hear from you, and
+ I wish you all the best on your life. thank you and have a nice day
+miss blessing
