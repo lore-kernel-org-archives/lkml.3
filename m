@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab3HPKqx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 06:46:53 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:36167 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab3HPKqs (ORCPT
+	id S1753449Ab3HPK6M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 06:58:12 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3169 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753189Ab3HPK6L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 06:46:48 -0400
-From: Jens Frederich <jfrederich@gmail.com>
-To: gregkh@linuxfoundation.com
-Cc: dsd@laptop.org, jon.nettleton@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Jens Frederich <jfrederich@gmail.com>
-Subject: [PATCH] Staging: olpc_dcon: fix typo in olpc_dcon.h
-Date: Fri, 16 Aug 2013 12:46:32 +0200
-Message-Id: <1376649992-6127-1-git-send-email-jfrederich@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 16 Aug 2013 06:58:11 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <520E05B5.3050507@broadcom.com>
+Date: Fri, 16 Aug 2013 12:57:57 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Li Yang" <leoli@freescale.com>
+cc: linux-pm@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: System suspend states and device driver suspend() callback
+References: <CADRPPNSD+uj_t5+qbNW29y7SuJkB_vMck-DGFJFV4A0AmPC6pQ@mail.gmail.com>
+In-Reply-To: <CADRPPNSD+uj_t5+qbNW29y7SuJkB_vMck-DGFJFV4A0AmPC6pQ@mail.gmail.com>
+X-WSS-ID: 7E10DCD12L874935134-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The backlight brightness register (DCON_REG_BRIGHT) address is 0xa.
+On 08/16/2013 10:06 AM, Li Yang wrote:
+> Hi Guys,
+>
+> Is there a standard way for the device drivers to know if the system
+> is going to “standby” mode or “mem” mode when the suspend() callbacks
+> are called?
 
-Signed-off-by: Jens Frederich <jfrederich@gmail.com>
+what about implementing struct device_driver::suspend?
 
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.h b/drivers/staging/olpc_dcon/olpc_dcon.h
-index 524ee49..e2663b1 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.h
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.h
-@@ -30,7 +30,7 @@
- #define DCON_REG_VSYNC_WIDTH	0x7
- #define DCON_REG_TIMEOUT	0x8
- #define DCON_REG_SCAN_INT	0x9
--#define DCON_REG_BRIGHT		0x10
-+#define DCON_REG_BRIGHT		0xa
- #define DCON_REG_MEM_OPT_A	0x41
- #define DCON_REG_MEM_OPT_B	0x42
- 
--- 
-1.7.9.5
+This is for driver level suspend operation, so not per-device.
+
+> Regards,
+>
+> Leo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
 
