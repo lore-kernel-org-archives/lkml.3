@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab3HQAMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:12:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51634 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756581Ab3HPWjY (ORCPT
+	id S1756866Ab3HQAMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:12:36 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:47660 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756617Ab3HQAMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:24 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 043/133] mac80211: fix ethtool stats for non-station interfaces
-Date: Fri, 16 Aug 2013 15:33:05 -0700
-Message-Id: <1376692475-28413-44-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Fri, 16 Aug 2013 20:12:34 -0400
+Subject: Re: [PULL] Miscellaneous trivialities
+Date: Fri, 16 Aug 2013 20:02:23 -0000
+From: Michael Witten <mfwitten@gmail.com>
+To: Rob Landley <rob@landley.net>
+Cc: Jiri Kosina <trivial@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
+Message-ID: <44b5fd3b87ba4565a78f1da4fa7d2e7d-mfwitten@gmail.com>
+In-Reply-To: <1376668096.2737.43@driftwood>
+References: <e3119c5240504890b8fd3ce2e38231c1-mfwitten@gmail.com>
+            <1376668096.2737.43@driftwood>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.7 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 16 Aug 2013 10:48:16 -0500, Rob Landley wrote:
 
-------------------
+> On 08/15/2013 04:44:01 AM, Michael Witten wrote:
+>
+>> I've been sitting on some trivial patches for a while, and I'd just
+>> like to get them out of the way.
+>>
+>> Here is the series:
+>>
+>> ...
+>>
+>>   [5] Docs: Replace `hotplug' with `udev'
+>>
+>> ...
+>>
+>> diff --git a/Documentation/networking/README.ipw2200 b/Documentation/networking/README.ipw2200
+>> index b7658be..aeb6494 100644
+>> --- a/Documentation/networking/README.ipw2200
+>> +++ b/Documentation/networking/README.ipw2200
+>> @@ -256,7 +256,7 @@ You can set the debug level via:
+>> 
+>>  Where $VALUE would be a number in the case of this sysfs entry.  The
+>>  input to sysfs files does not have to be a number.  For example, the
+>> -firmware loader used by hotplug utilizes sysfs entries for transferring
+>> +firmware loader used by udev utilizes sysfs entries for transferring
+>>  the firmware image from user space into the driver.
+>
+> Hotplug is the name of the kernel subsystem, udev was one implementation
+> of a userspace agent for it. A different implementation would be mdev
+> (in busybox), some linux from scratch types are still using variants of
+> diethotplug, there's a fork of udev called eudev that avoids systemd...
+>
+> And these days, firmware loading is mostly done directly by the kernel.
+>
+>>  The Intel(R) PRO/Wireless 2915ABG Driver for Linux exposes sysfs entries
+>> @@ -425,8 +425,7 @@ are made to the driver.  Currently, there are no major changes planned.
+>>  ----------------------------------------------
+>>
+>>  The driver requires a firmware image, download it and extract the
+>> -files under /lib/firmware (or wherever your hotplug's firmware.agent
+>> -will look for firmware files)
+>> +files under /lib/firmware (or wherever udev will look for firmware files)
+>
+> Again, hotplug is correct.
 
-From: Johannes Berg <johannes@sipsolutions.net>
+Thanks for catching my error. I removed that patch from the series; the
+remaining commits can be pulled from here:
 
-commit e13bae4f807401729b3f27c7e882a96b8b292809 upstream.
-
-As reported in https://bugzilla.kernel.org/show_bug.cgi?id=60514,
-the station loop never initialises 'sinfo' and therefore adds up
-a stack values, leaking stack information (the number of times it
-adds values is easily obtained another way.)
-
-Fix this by initialising the sinfo for each station to add.
-
-Signed-off-by: Johannes Berg <johannes@sipsolutions.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/mac80211/cfg.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-index 49c48c6..40732e3 100644
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -638,6 +638,8 @@ static void ieee80211_get_et_stats(struct wiphy *wiphy,
- 			if (sta->sdata->dev != dev)
- 				continue;
- 
-+			sinfo.filled = 0;
-+			sta_set_sinfo(sta, &sinfo);
- 			i = 0;
- 			ADD_STA_STATS(sta);
- 		}
--- 
-1.8.1.2
-
+  https://github.com/mfwitten/linux.git trivial/misc/1
