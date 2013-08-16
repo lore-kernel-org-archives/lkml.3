@@ -1,45 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab3HPOx5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 10:53:57 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:63420 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab3HPOxx (ORCPT
+	id S1754476Ab3HPOzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 10:55:24 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:59438 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab3HPOzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 10:53:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1375889038-7953-1-git-send-email-larsi@wh2.tu-dresden.de>
-References: <1375889038-7953-1-git-send-email-larsi@wh2.tu-dresden.de>
-Date: Fri, 16 Aug 2013 16:53:53 +0200
-Message-ID: <CACRpkdZX5tNmY0KcUrghv8TzVVP_vmgfxje+LMKpEbFfyQMTUA@mail.gmail.com>
-Subject: Re: [PATCH] gpio: adnp: Fix segfault if request_threaded_irq fails
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lars Poeschel <larsi@wh2.tu-dresden.de>
-Cc: Lars Poeschel <poeschel@lemonage.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 16 Aug 2013 10:55:22 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Wilcox <matthew@wil.cx>, Bruce Fields <bfields@fieldses.org>,
+        David Howells <dhowells@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH v4] locks: close potential race between setlease and open
+Date: Fri, 16 Aug 2013 10:49:32 -0400
+Message-Id: <1376664572-4635-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1373310444-25862-1-git-send-email-jlayton@redhat.com>
+References: <1373310444-25862-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 7, 2013 at 5:23 PM, Lars Poeschel <larsi@wh2.tu-dresden.de> wrote:
+v2:
+- fix potential double-free of lease if second check finds conflict
+- add smp_mb's to ensure that other CPUs see i_flock changes
 
-> From: Lars Poeschel <poeschel@lemonage.de>
->
-> In case request_threaded_irq inside adnp_irq_setup fails, the driver
-> segfaults. This is because irq_domain_remove is called twice with
-> the same pointer. First time in adnp_irq_setup and then a second time
-> after leaving adnp_irq_setup in the error path of adnp_i2c_probe
-> inside adnp_teardown.
-> This fixes this by removing the call to irq_domain_remove from
-> adnp_irq_setup.
->
-> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+v3:
+- remove smp_mb calls. Partial ordering is unlikely to help here.
 
-Patch applied.
+v4:
+- add back smp_mb calls. While we have implicit barriers in place
+  that enforce this today, it's best to be explicit about it as a
+  defensive coding measure.
 
-Yours,
-Linus Walleij
+As Al Viro points out, there is an unlikely, but possible race between
+opening a file and setting a lease on it. generic_add_lease is done with
+the i_lock held, but the inode->i_flock check in break_lease is
+lockless. It's possible for another task doing an open to do the entire
+pathwalk and call break_lease between the point where generic_add_lease
+checks for a conflicting open and adds the lease to the list. If this
+occurs, we can end up with a lease set on the file with a conflicting
+open.
+
+To guard against that, check again for a conflicting open after adding
+the lease to the i_flock list. If the above race occurs, then we can
+simply unwind the lease setting and return -EAGAIN.
+
+Because we take dentry references and acquire write access on the file
+before calling break_lease, we know that if the i_flock list is empty
+when the open caller goes to check it then the necessary refcounts have
+already been incremented. Thus the additional check for a conflicting
+open will see that there is one and the setlease call will fail.
+
+Cc: Bruce Fields <bfields@fieldses.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/locks.c         | 75 ++++++++++++++++++++++++++++++++++++++++++++----------
+ include/linux/fs.h |  6 +++++
+ 2 files changed, 68 insertions(+), 13 deletions(-)
+
+diff --git a/fs/locks.c b/fs/locks.c
+index b27a300..8dddcb5 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -652,15 +652,18 @@ static void locks_insert_lock(struct file_lock **pos, struct file_lock *fl)
+ 	locks_insert_global_locks(fl);
+ }
+ 
+-/*
+- * Delete a lock and then free it.
+- * Wake up processes that are blocked waiting for this lock,
+- * notify the FS that the lock has been cleared and
+- * finally free the lock.
++/**
++ * locks_delete_lock - Delete a lock and then free it.
++ * @thisfl_p: pointer that points to the fl_next field of the previous
++ * 	      inode->i_flock list entry
++ *
++ * Unlink a lock from all lists and free the namespace reference, but don't
++ * free it yet. Wake up processes that are blocked waiting for this lock and
++ * notify the FS that the lock has been cleared.
+  *
+  * Must be called with the i_lock held!
+  */
+-static void locks_delete_lock(struct file_lock **thisfl_p)
++static void locks_unlink_lock(struct file_lock **thisfl_p)
+ {
+ 	struct file_lock *fl = *thisfl_p;
+ 
+@@ -675,6 +678,18 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
+ 	}
+ 
+ 	locks_wake_up_blocks(fl);
++}
++
++/*
++ * Unlink a lock from all lists and free it.
++ *
++ * Must be called with i_lock held!
++ */
++static void locks_delete_lock(struct file_lock **thisfl_p)
++{
++	struct file_lock *fl = *thisfl_p;
++
++	locks_unlink_lock(thisfl_p);
+ 	locks_free_lock(fl);
+ }
+ 
+@@ -1455,6 +1470,32 @@ int fcntl_getlease(struct file *filp)
+ 	return type;
+ }
+ 
++/**
++ * check_conflicting_open - see if the given dentry points to a file that has
++ * 			    an existing open that would conflict with the
++ * 			    desired lease.
++ * @dentry:	dentry to check
++ * @arg:	type of lease that we're trying to acquire
++ *
++ * Check to see if there's an existing open fd on this file that would
++ * conflict with the lease we're trying to set.
++ */
++static int
++check_conflicting_open(const struct dentry *dentry, const long arg)
++{
++	int ret = 0;
++	struct inode *inode = dentry->d_inode;
++
++	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
++		return -EAGAIN;
++
++	if ((arg == F_WRLCK) && ((d_count(dentry) > 1) ||
++	    (atomic_read(&inode->i_count) > 1)))
++		ret = -EAGAIN;
++
++	return ret;
++}
++
+ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
+ {
+ 	struct file_lock *fl, **before, **my_before = NULL, *lease;
+@@ -1464,12 +1505,8 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
+ 
+ 	lease = *flp;
+ 
+-	error = -EAGAIN;
+-	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+-		goto out;
+-	if ((arg == F_WRLCK)
+-	    && ((d_count(dentry) > 1)
+-		|| (atomic_read(&inode->i_count) > 1)))
++	error = check_conflicting_open(dentry, arg);
++	if (error)
+ 		goto out;
+ 
+ 	/*
+@@ -1514,8 +1551,20 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
+ 		goto out;
+ 
+ 	locks_insert_lock(before, lease);
+-	return 0;
+ 
++	/*
++	 * The check in break_lease() is lockless. It's possible for another
++	 * open to race in after we did the earlier check for a conflicting
++	 * open but before the lease was inserted. Check again for a
++	 * conflicting open and cancel the lease if there is one.
++	 *
++	 * We also add a barrier here to ensure that the insertion of the lock
++	 * precedes these checks.
++	 */
++	smp_mb();
++	error = check_conflicting_open(dentry, arg);
++	if (error)
++		locks_unlink_lock(flp);
+ out:
+ 	return error;
+ }
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 9818747..165bf41 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1955,6 +1955,12 @@ static inline int locks_verify_truncate(struct inode *inode,
+ 
+ static inline int break_lease(struct inode *inode, unsigned int mode)
+ {
++	/*
++	 * Since this check is lockless, we must ensure that any refcounts
++	 * taken are done before checking inode->i_flock. Otherwise, we could
++	 * end up racing with tasks trying to set a new lease on this file.
++	 */
++	smp_mb();
+ 	if (inode->i_flock)
+ 		return __break_lease(inode, mode);
+ 	return 0;
+-- 
+1.8.3.1
+
