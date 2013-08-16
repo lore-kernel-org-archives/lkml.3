@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab3HPWao (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:30:44 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.208]:39061 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753925Ab3HPWak convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:30:40 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-6.tower-131.messagelabs.com!1376680094!14491222!13
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "kernel@savoirfairelinux.com" <kernel@savoirfairelinux.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 16 Aug 2013 14:06:24 -0500
-Subject: RE: [PATCH] gpio: (gpio-pca953x) move header to linux/platform_data/
-Thread-Topic: [PATCH] gpio: (gpio-pca953x) move header to
- linux/platform_data/
-Thread-Index: Ac6akdA6Qk5q0sqBR4ykcmbeIG4QTgAIUdlA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DAC7DA184@AUSP01VMBX24.collaborationhost.net>
-References: <CACRpkdZdeVNtJSmc6Lr6j=oO9FLsAvjyrwhYS0j4OoAEhxCN9g@mail.gmail.com>
- <82440653.410050.1376665340121.JavaMail.root@mail>
-In-Reply-To: <82440653.410050.1376665340121.JavaMail.root@mail>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755305Ab3HPWbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:31:04 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:48699 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754109Ab3HPWbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:31:02 -0400
+Date: Fri, 16 Aug 2013 14:31:55 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Linux MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memblock, numa: Binary search node id
+Message-ID: <20130816193154.GE22182@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <1376545589-32129-1-git-send-email-yinghai@kernel.org> <20130815134348.bb119a7987af0bb64ed77b7b@linux-foundation.org> <20130816190106.GD22182@sgi.com> <CAE9FiQUYccFLzfHcjx+cgLky0UH8h99msDsNdAR7WdLpzwFQ2A@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUYccFLzfHcjx+cgLky0UH8h99msDsNdAR7WdLpzwFQ2A@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 16, 2013 8:02 AM, Vivien Didelot wrote:
-> Hi Linus,
->
-> You wrote:
-> > But:
->>
->>>  drivers/gpio/gpio-pca953x.c                 |  2 +-
->> (...)
->>> diff --git a/drivers/gpio/gpio-pca953x.c
->>> b/drivers/gpio/gpio-pca953x.c
->>> index 426c51d..8804aec 100644
->>> --- a/drivers/gpio/gpio-pca953x.c
->>> +++ b/drivers/gpio/gpio-pca953x.c
->>> @@ -18,7 +18,7 @@
->>>  #include <linux/irq.h>
->>>  #include <linux/irqdomain.h>
->>>  #include <linux/i2c.h>
->>> -#include <linux/i2c/pca953x.h>
->>> +#include <linux/platform_data/pca953x.h>
->> 
->> Why does the GPIO driver need platform data from the
->> I2C driver???
->> 
->> Can't this just be made to go away?
->
-> I didn't dig that much in the driver, but I cannot imagine
-> another way to pass, for instance, the setup callback.
->
-> What would be a good alternative for you?
+On Fri, Aug 16, 2013 at 12:15:21PM -0700, Yinghai Lu wrote:
+> On Fri, Aug 16, 2013 at 12:01 PM, Russ Anderson <rja@sgi.com> wrote:
+> > On Thu, Aug 15, 2013 at 01:43:48PM -0700, Andrew Morton wrote:
+> >> On Wed, 14 Aug 2013 22:46:29 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
+> >>
+> >> > Current early_pfn_to_nid() on arch that support memblock go
+> >> > over memblock.memory one by one, so will take too many try
+> >> > near the end.
+> >> >
+> >> > We can use existing memblock_search to find the node id for
+> >> > given pfn, that could save some time on bigger system that
+> >> > have many entries memblock.memory array.
+> >>
+> >> Looks nice.  I wonder how much difference it makes.
+> >
+> > Here are the timing differences for several machines.
+> > In each case with the patch less time was spent in __early_pfn_to_nid().
+> >
+> >
+> >                         3.11-rc5        with patch      difference (%)
+> >                         --------        ----------      --------------
+> > UV1: 256 nodes  9TB:     411.66          402.47         -9.19 (2.23%)
+> > UV2: 255 nodes 16TB:    1141.02         1138.12         -2.90 (0.25%)
+> > UV2:  64 nodes  2TB:     128.15          126.53         -1.62 (1.26%)
+> > UV2:  32 nodes  2TB:     121.87          121.07         -0.80 (0.66%)
+> >                         Time in seconds.
+> >
+> 
+> Thanks.
+> 
+> 9T one have more entries in memblock.memory?
 
-I think the confusion here is because the pca953x.h header was initially
-placed in linux/i2c.
+Yes.  It is older hardware with smaller DIMMs and more of them.
 
-This device is an I2C connected GPIO expander. The pca953x.h header has
-the information needed for the platform to hook up to the device. It doesn't
-really expose the fact that it's an I2C driver.
-
-Just by 2 cents...
-Hartley
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
