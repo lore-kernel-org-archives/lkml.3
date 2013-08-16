@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab3HPQdW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 12:33:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1988 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab3HPQdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 12:33:16 -0400
-Date: Fri, 16 Aug 2013 18:26:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+	id S1754288Ab3HPQep (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 12:34:45 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:55502 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab3HPQem (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 12:34:42 -0400
+Date: Fri, 16 Aug 2013 18:34:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
         Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
         Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 2/4] nohz: Synchronize sleep time stats with seqlock
-Message-ID: <20130816162654.GA453@redhat.com>
-References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com> <1376667753-29014-3-git-send-email-fweisbec@gmail.com> <20130816160201.GA31682@redhat.com> <20130816162056.GE24210@somewhere>
+Subject: Re: [PATCH 4/4] nohz: Convert a few places to use local per cpu
+ accesses
+Message-ID: <20130816163437.GG24210@somewhere>
+References: <1376667753-29014-1-git-send-email-fweisbec@gmail.com>
+ <1376667753-29014-5-git-send-email-fweisbec@gmail.com>
+ <20130816160043.GA24092@twins.programming.kicks-ass.net>
+ <20130816161954.GA32704@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130816162056.GE24210@somewhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130816161954.GA32704@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16, Frederic Weisbecker wrote:
->
-> On Fri, Aug 16, 2013 at 06:02:01PM +0200, Oleg Nesterov wrote:
-> > > +	do {
-> > > +		seq = read_seqcount_begin(&ts->sleeptime_seq);
-> > > +		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
-> > > +			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-> > > +			iowait = ktime_add(ts->iowait_sleeptime, delta);
-> > > +		} else {
-> > > +			iowait = ts->iowait_sleeptime;
-> > > +		}
-> > > +	} while (read_seqcount_retry(&ts->sleeptime_seq, seq));
+On Fri, Aug 16, 2013 at 06:19:54PM +0200, Oleg Nesterov wrote:
+> On 08/16, Peter Zijlstra wrote:
 > >
-> > Unless I missread this patch, this is still racy a bit.
+> > OK so these patches look ok to me -- didn't read in detail though.
 > >
-> > Suppose it is called on CPU_0 and cpu == 1. Suppose that
-> > ts->idle_active == T and nr_iowait_cpu(cpu) == 1.
+> > On Fri, Aug 16, 2013 at 05:42:33PM +0200, Frederic Weisbecker wrote:
+> > > A few functions use remote per CPU access APIs when they
+> > > deal with local values.
+> > >
+> > > Just to the right conversion to improve performance, code
+> > > readability and debug checks.
 > >
-> > So we return iowait_sleeptime + delta.
+> > > @@ -410,7 +408,7 @@ static void tick_nohz_update_jiffies(ktime_t now)
+> > >
+> > >  static void tick_nohz_stop_idle(int cpu, ktime_t now)
+> > >  {
+> > > -	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+> > > +	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
 > >
-> > Suppose that we call get_cpu_iowait_time_us() again. By this time
-> > the task which incremented ->nr_iowait can be woken up on another
-> > CPU, and it can do atomic_dec(rq->nr_iowait). So the next time
-> > we return iowait_sleeptime, and this is not monotonic again.
->
-> Hmm, by the time it decrements nr_iowait, it returned from schedule() and
-> so idle had flushed the pending iowait sleeptime.
+> > What's there from stopping someone from calling this with cpu !=
+> > smp_processor_id() ?
+> 
+> I _guess_ this should not happen, but in this case we should probably
+> remove the "cpu" argument. And smp_processor_id() in tick_nohz_idle_exit().
+> 
+> tick_check_idle/tick_check_nohz doesn't need "int cpu" too, it seems.
 
-Suppose a task does io_schedule() on CPU_0, and increments the counter.
-This CPU becomes idle and nr_iowait_cpu(0) == 1.
+Yep, indeed it seems right to remove the cpu argument to prevent from further
+calls to these APIs on remote CPUs, which would otherwise result in random disaster.
 
-Then this task is woken up, but try_to_wake_up() selects another CPU != 0.
-
-It returns from schedule() and decrements the same counter, it doesn't
-do raw_rq/etc again. nr_iowait_cpu(0) becomes 0.
-
-In fact the task can even migrate to another CPU right after raw_rq().
-
-> May be you have some scenario in mind that I'm missing?
-
-Or me...
-
-Oleg.
-
+> 
+> Oleg.
+> 
