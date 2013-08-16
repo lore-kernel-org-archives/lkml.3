@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab3HPJc2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 05:32:28 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:35399 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab3HPJcZ (ORCPT
+	id S1754890Ab3HPJfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 05:35:16 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42494 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754638Ab3HPJfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 05:32:25 -0400
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-To: <x86@kernel.org>, Jiri Kosina <trivial@kernel.org>
-Cc: <mingo@redhat.com>, <hpa@zytor.com>, <gleb@redhat.com>,
-        <pbonzini@redhat.com>, <tglx@linutronix.de>,
-        <linux-kernel@vger.kernel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Subject: [PATCH trivial sparse fix] guest x86 kvm: fix sparse warning: symbol 'klock_waiting' was not declared. Should it be static
-Date: Fri, 16 Aug 2013 15:08:41 +0530
-Message-Id: <1376645921-8056-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <y>
-References: <y>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081609-3620-0000-0000-000003F69771
+	Fri, 16 Aug 2013 05:35:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374176130-21209-1-git-send-email-andi@etezian.org>
+References: <1374176130-21209-1-git-send-email-andi@etezian.org>
+Date: Fri, 16 Aug 2013 11:35:13 +0200
+Message-ID: <CACRpkdYDLGaQJ+R0stejCLRY7sgdnEBqkBocfh0GqhD+WiLx3A@mail.gmail.com>
+Subject: Re: [PATCH] u8500_defconfig: allow creation and mounting of devtmpfs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andi Shyti <andi@etezian.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Lee Jones <lee.jones@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was not declared as static since it was thought to be used by pv-flushtlb earlier.
+On Thu, Jul 18, 2013 at 9:35 PM, Andi Shyti <andi@etezian.org> wrote:
 
-Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
----
- This should apply on top of tip/spinlocks and fixes the sparse warning
- introduced by pvspinlock patch series.
+> This patch enables CONFIG_DETTMPFS and CONFIG_DEVTMPFS_MOUNT
+> flags for u8500 based devices.
+>
+> In this way it's possible to create a tmpfs/ramfs already in the
+> early stages of the boot, allowing programs like udev/mdev to
+> populate the /dev directory.
+>
+> Signed-off-by: Andi Shyti <andi@etezian.org>
 
- arch/x86/kernel/kvm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Patch applied.
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index b8ef630..56e2fa4 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -529,7 +529,7 @@ arch_initcall(activate_jump_labels);
- #ifdef CONFIG_PARAVIRT_SPINLOCKS
- 
- /* Kick a cpu by its apicid. Used to wake up a halted vcpu */
--void kvm_kick_cpu(int cpu)
-+static void kvm_kick_cpu(int cpu)
- {
- 	int apicid;
- 	unsigned long flags = 0;
--- 
-1.7.11.7
-
+Yours,
+Linus Walleij
