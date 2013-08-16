@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab3HQAGS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:06:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51725 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756800Ab3HPWj4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756808Ab3HPWj4 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 16 Aug 2013 18:39:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51708 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756694Ab3HPWjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:39:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Oleg Nesterov <oleg@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 101/133] userns: unshare_userns(&cred) should not populate cred on failure
-Date: Fri, 16 Aug 2013 15:34:03 -0700
-Message-Id: <1376692475-28413-102-git-send-email-kamal@canonical.com>
+Subject: [PATCH 102/133] userns: limit the maximum depth of user_namespace->parent chain
+Date: Fri, 16 Aug 2013 15:34:04 -0700
+Message-Id: <1376692475-28413-103-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -30,55 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleg Nesterov <oleg@redhat.com>
 
-commit 6160968cee8b90a5dd95318d716e31d7775c4ef3 upstream.
+commit 8742f229b635bf1c1c84a3dfe5e47c814c20b5c8 upstream.
 
-unshare_userns(new_cred) does *new_cred = prepare_creds() before
-create_user_ns() which can fail. However, the caller expects that
-it doesn't need to take care of new_cred if unshare_userns() fails.
+Ensure that user_namespace->parent chain can't grow too much.
+Currently we use the hardroded 32 as limit.
 
-We could change the single caller, sys_unshare(), but I think it
-would be more clean to avoid the side effects on failure, so with
-this patch unshare_userns() does put_cred() itself and initializes
-*new_cred only if create_user_ns() succeeeds.
-
+Reported-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/user_namespace.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ include/linux/user_namespace.h | 1 +
+ kernel/user_namespace.c        | 4 ++++
+ 2 files changed, 5 insertions(+)
 
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index 5209cfe..e4539aa 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -23,6 +23,7 @@ struct user_namespace {
+ 	struct uid_gid_map	projid_map;
+ 	struct kref		kref;
+ 	struct user_namespace	*parent;
++	int			level;
+ 	kuid_t			owner;
+ 	kgid_t			group;
+ 	unsigned int		proc_inum;
 diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index f359dc7..38ae0f5 100644
+index 38ae0f5..b9b0b51 100644
 --- a/kernel/user_namespace.c
 +++ b/kernel/user_namespace.c
-@@ -105,16 +105,21 @@ int create_user_ns(struct cred *new)
- int unshare_userns(unsigned long unshare_flags, struct cred **new_cred)
- {
- 	struct cred *cred;
-+	int err = -ENOMEM;
+@@ -62,6 +62,9 @@ int create_user_ns(struct cred *new)
+ 	kgid_t group = new->egid;
+ 	int ret;
  
- 	if (!(unshare_flags & CLONE_NEWUSER))
- 		return 0;
++	if (parent_ns->level > 32)
++		return -EUSERS;
++
+ 	/*
+ 	 * Verify that we can not violate the policy of which files
+ 	 * may be accessed that is specified by the root directory,
+@@ -92,6 +95,7 @@ int create_user_ns(struct cred *new)
+ 	kref_init(&ns->kref);
+ 	/* Leave the new->user_ns reference with the new user namespace. */
+ 	ns->parent = parent_ns;
++	ns->level = parent_ns->level + 1;
+ 	ns->owner = owner;
+ 	ns->group = group;
  
- 	cred = prepare_creds();
--	if (!cred)
--		return -ENOMEM;
-+	if (cred) {
-+		err = create_user_ns(cred);
-+		if (err)
-+			put_cred(cred);
-+		else
-+			*new_cred = cred;
-+	}
- 
--	*new_cred = cred;
--	return create_user_ns(cred);
-+	return err;
- }
- 
- void free_user_ns(struct kref *kref)
 -- 
 1.8.1.2
 
