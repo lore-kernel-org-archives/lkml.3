@@ -1,91 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3HPSsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 14:48:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40397 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291Ab3HPSr6 (ORCPT
+	id S1755672Ab3HPSt2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 14:49:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54305 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754457Ab3HPStW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 14:47:58 -0400
-Date: Fri, 16 Aug 2013 11:46:56 -0700
-From: tip-bot for Frederic Weisbecker <tipbot@zytor.com>
-Message-ID: <tip-c2e7fcf53c3cb02b4ada1c66a9bc8a4d97d58aba@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, efault@gmx.de, bp@alien8.de,
-        paulmck@linux.vnet.ibm.com, zhong@linux.vnet.ibm.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, khilman@linaro.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        efault@gmx.de, peterz@infradead.org, bp@alien8.de,
-        paulmck@linux.vnet.ibm.com, zhong@linux.vnet.ibm.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-        khilman@linaro.org
-In-Reply-To: <1375460996-16329-4-git-send-email-fweisbec@gmail.com>
-References: <1375460996-16329-4-git-send-email-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/nohz] nohz:
-  Include local CPU in full dynticks global kick
-Git-Commit-ID: c2e7fcf53c3cb02b4ada1c66a9bc8a4d97d58aba
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 16 Aug 2013 14:49:22 -0400
+Date: Fri, 16 Aug 2013 11:49:21 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Sagar Dharia <sdharia@codeaurora.org>,
+        Gilad Avidov <gavidov@codeaurora.org>,
+        Michael Bohan <mbohan@codeaurora.org>
+Subject: Re: [PATCH RFC 1/3] spmi: Linux driver framework for SPMI
+Message-ID: <20130816184921.GB31510@kroah.com>
+References: <cover.1376596224.git.joshc@codeaurora.org>
+ <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 16 Aug 2013 11:47:04 -0700 (PDT)
+In-Reply-To: <02deef1d90121011ab1df90ad704ef0ee36e2584.1376596224.git.joshc@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c2e7fcf53c3cb02b4ada1c66a9bc8a4d97d58aba
-Gitweb:     http://git.kernel.org/tip/c2e7fcf53c3cb02b4ada1c66a9bc8a4d97d58aba
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Fri, 2 Aug 2013 18:29:56 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 16 Aug 2013 17:55:33 +0200
+On Fri, Aug 09, 2013 at 01:37:09PM -0700, Josh Cartwright wrote:
+> +++ b/drivers/spmi/spmi.c
+> @@ -0,0 +1,449 @@
+> +/* Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +#define pr_fmt(fmt) "%s: " fmt, __func__
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/errno.h>
+> +#include <linux/idr.h>
+> +#include <linux/slab.h>
+> +#include <linux/module.h>
+> +#include <linux/of_device.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spmi.h>
+> +#include <linux/module.h>
+> +#include <linux/pm_runtime.h>
+> +
+> +#include "spmi-dbgfs.h"
+> +
+> +static DEFINE_MUTEX(board_lock);
+> +static DEFINE_IDR(ctrl_idr);
+> +
+> +static void spmi_dev_release(struct device *dev)
+> +{
+> +	struct spmi_device *spmidev = to_spmi_device(dev);
+> +	kfree(spmidev);
+> +}
+> +
+> +static struct device_type spmi_dev_type = {
+> +	.release	= spmi_dev_release,
+> +};
 
-nohz: Include local CPU in full dynticks global kick
+I give a lot of people crap when they get things wrong with the driver
+model, so it's only fair to call out when it's done correctly.
 
-tick_nohz_full_kick_all() is useful to notify all full dynticks
-CPUs that there is a system state change to checkout before
-re-evaluating the need for the tick.
+Nice job here, thanks for getting this right.
 
-Unfortunately this is implemented using smp_call_function_many()
-that ignores the local CPU. This CPU also needs to re-evaluate
-the tick.
+> +static void spmi_ctrl_release(struct device *dev)
+> +{
+> +	struct spmi_controller *ctrl = to_spmi_controller(dev);
+> +	complete(&ctrl->dev_released);
 
-on_each_cpu_mask() is not useful either because we don't want to
-re-evaluate the tick state in place but asynchronously from an IPI
-to avoid messing up with any random locking scenario.
+When is this memory going to be freed?
 
-So lets call tick_nohz_full_kick() from tick_nohz_full_kick_all()
-so that the usual irq work takes care of it.
+Ah, you think it will be when you remove the device later on:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1375460996-16329-4-git-send-email-fweisbec@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/time/tick-sched.c | 1 +
- 1 file changed, 1 insertion(+)
+> +int spmi_del_controller(struct spmi_controller *ctrl)
+> +{
+> +	struct spmi_controller *found;
+> +
+> +	if (!ctrl)
+> +		return -EINVAL;
+> +
+> +	/* Check that the ctrl has been added */
+> +	mutex_lock(&board_lock);
+> +	found = idr_find(&ctrl_idr, ctrl->nr);
+> +	mutex_unlock(&board_lock);
+> +
+> +	if (found != ctrl)
+> +		return -EINVAL;
+> +
+> +	spmi_dfs_del_controller(ctrl);
+> +
+> +	/* Remove all the clients associated with this controller */
+> +	mutex_lock(&board_lock);
+> +	bus_for_each_dev(&spmi_bus_type, NULL, ctrl, spmi_ctrl_remove_device);
+> +	idr_remove(&ctrl_idr, ctrl->nr);
+> +	mutex_unlock(&board_lock);
+> +
+> +	init_completion(&ctrl->dev_released);
+> +	device_unregister(&ctrl->dev);
+> +	wait_for_completion(&ctrl->dev_released);
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index adea6fc3..3612fc7 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -246,6 +246,7 @@ void tick_nohz_full_kick_all(void)
- 	preempt_disable();
- 	smp_call_function_many(tick_nohz_full_mask,
- 			       nohz_full_kick_ipi, NULL, false);
-+	tick_nohz_full_kick();
- 	preempt_enable();
- }
- 
+But you just leaked memory, right?
+
+You should never have to wait for this to happen, why did you need to
+add this?  Why not just a simple call to kfree() in the release
+function?
+
+thanks,
+
+greg k-h
