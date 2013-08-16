@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab3HPWaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 18:30:07 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54103 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab3HPWaC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:30:02 -0400
-Date: Fri, 16 Aug 2013 14:25:49 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Sagar Dharia <sdharia@codeaurora.org>,
-        Gilad Avidov <gavidov@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH RFC 3/3] spmi: document the PMIC arbiter SPMI bindings
-Message-ID: <20130816192549.GG4035@joshc.qualcomm.com>
-References: <cover.1376596224.git.joshc@codeaurora.org>
- <b639088d50df93caaef8fe7e09c12953b1153ce8.1376596224.git.joshc@codeaurora.org>
- <D1534646-7CB5-4EE7-8C1E-1C607BE22396@codeaurora.org>
+	id S1755056Ab3HPWao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 18:30:44 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.208]:39061 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753925Ab3HPWak convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 18:30:40 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-6.tower-131.messagelabs.com!1376680094!14491222!13
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "kernel@savoirfairelinux.com" <kernel@savoirfairelinux.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 16 Aug 2013 14:06:24 -0500
+Subject: RE: [PATCH] gpio: (gpio-pca953x) move header to linux/platform_data/
+Thread-Topic: [PATCH] gpio: (gpio-pca953x) move header to
+ linux/platform_data/
+Thread-Index: Ac6akdA6Qk5q0sqBR4ykcmbeIG4QTgAIUdlA
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DAC7DA184@AUSP01VMBX24.collaborationhost.net>
+References: <CACRpkdZdeVNtJSmc6Lr6j=oO9FLsAvjyrwhYS0j4OoAEhxCN9g@mail.gmail.com>
+ <82440653.410050.1376665340121.JavaMail.root@mail>
+In-Reply-To: <82440653.410050.1376665340121.JavaMail.root@mail>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D1534646-7CB5-4EE7-8C1E-1C607BE22396@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Kumar-
+On Friday, August 16, 2013 8:02 AM, Vivien Didelot wrote:
+> Hi Linus,
+>
+> You wrote:
+> > But:
+>>
+>>>  drivers/gpio/gpio-pca953x.c                 |  2 +-
+>> (...)
+>>> diff --git a/drivers/gpio/gpio-pca953x.c
+>>> b/drivers/gpio/gpio-pca953x.c
+>>> index 426c51d..8804aec 100644
+>>> --- a/drivers/gpio/gpio-pca953x.c
+>>> +++ b/drivers/gpio/gpio-pca953x.c
+>>> @@ -18,7 +18,7 @@
+>>>  #include <linux/irq.h>
+>>>  #include <linux/irqdomain.h>
+>>>  #include <linux/i2c.h>
+>>> -#include <linux/i2c/pca953x.h>
+>>> +#include <linux/platform_data/pca953x.h>
+>> 
+>> Why does the GPIO driver need platform data from the
+>> I2C driver???
+>> 
+>> Can't this just be made to go away?
+>
+> I didn't dig that much in the driver, but I cannot imagine
+> another way to pass, for instance, the setup callback.
+>
+> What would be a good alternative for you?
 
-Thanks for the review.
+I think the confusion here is because the pca953x.h header was initially
+placed in linux/i2c.
 
-On Fri, Aug 16, 2013 at 01:53:27PM -0500, Kumar Gala wrote:
-> On Aug 9, 2013, at 3:37 PM, Josh Cartwright wrote:
-> 
-> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> > ---
-> > .../devicetree/bindings/spmi/spmi-pmic-arb.txt     | 26 ++++++++++++++++++++++
-> > 1 file changed, 26 insertions(+)
-> > create mode 100644 Documentation/devicetree/bindings/spmi/spmi-pmic-arb.txt
-> 
-> As this is a qcom specific binding, I think the file name should be msm-spmi-pmic-arb.txt or something like that.
+This device is an I2C connected GPIO expander. The pca953x.h header has
+the information needed for the platform to hook up to the device. It doesn't
+really expose the fact that it's an I2C driver.
 
-Agreed.  It might be nice to use a vendor prefix in the name too.  How's qcom,msm-pmic-arb.txt sound?
-
-> > diff --git a/Documentation/devicetree/bindings/spmi/spmi-pmic-arb.txt b/Documentation/devicetree/bindings/spmi/spmi-pmic-arb.txt
-> > new file mode 100644
-> > index 0000000..1c14bf4
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/spmi/spmi-pmic-arb.txt
-> > @@ -0,0 +1,26 @@
-> > +Qualcomm SPMI Controller (PMIC Arbiter)
-> 
-> We should get in the habit of trying to have at least one sentence about what the device is or does.
-
-Certainly.
-
-> > +
-> > +Required properties:
-> > +- compatible : should be "qcom,spmi-pmic-arb".
-> > +- reg-names  : should be "core", "intr", "cnfg"
-> > +- reg : offset and length of the PMIC Arbiter Core register map.
-> > +- reg : offset and length of the PMIC Arbiter Interrupt controller register map.
-> > +- reg : offset and length of the PMIC Arbiter Configuration register map.
-> > +- #address-cells : must be set to 1
-> > +- #size-cells : must be set to 0
-> 
-> Hmm, you aren't describe anything about child nodes.
-
-Indeed.  I'll put together a generic SPMI binding document as you had
-suggested before and reference it in this binding.
-
-  Josh
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Just by 2 cents...
+Hartley
