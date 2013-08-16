@@ -1,100 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab3HPRpV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 13:45:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53868 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab3HPRpR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 13:45:17 -0400
-Date: Fri, 16 Aug 2013 10:45:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Sarah Sharp <sarah.a.sharp@intel.com>,
+	id S1754899Ab3HPRu1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 13:50:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2324 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754337Ab3HPRuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Aug 2013 13:50:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,896,1367996400"; 
+   d="scan'208";a="388341814"
+Date: Fri, 16 Aug 2013 10:50:09 -0700
+From: Sarah Sharp <sarah.a.sharp@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Dmitry Kasatkin <d.kasatkin@samsung.com>, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 2/2] xhci:prevent "callbacks suppressed" when debug is
  not enabled
-Message-ID: <20130816174516.GA20389@kroah.com>
+Message-ID: <20130816175009.GE5445@xanatos>
 References: <71bb3fcd9f1a99aa7bd8f6dd1fb6267173db51d2.1376582695.git.d.kasatkin@samsung.com>
  <70b3564625bbda6247cc5627041344fef8a762ae.1376582695.git.d.kasatkin@samsung.com>
  <20130816001716.GA7367@kroah.com>
  <20130816172635.GA7975@xanatos>
  <20130816173000.GA8210@xanatos>
  <CACE9dm9Rw55HdwsKRYvecCFCAO137uU4iv5yLnEMzc-0pRZCsg@mail.gmail.com>
+ <20130816174516.GA20389@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACE9dm9Rw55HdwsKRYvecCFCAO137uU4iv5yLnEMzc-0pRZCsg@mail.gmail.com>
+In-Reply-To: <20130816174516.GA20389@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 16, 2013 at 08:38:12PM +0300, Dmitry Kasatkin wrote:
-> On Fri, Aug 16, 2013 at 8:30 PM, Sarah Sharp <sarah.a.sharp@intel.com> wrote:
-> > On Fri, Aug 16, 2013 at 10:26:35AM -0700, Sarah Sharp wrote:
-> >> On Thu, Aug 15, 2013 at 05:17:16PM -0700, Greg KH wrote:
-> >> > On Thu, Aug 15, 2013 at 07:04:55PM +0300, Dmitry Kasatkin wrote:
-> >> > > When debug is not enabled and dev_dbg() will expand to nothing,
-> >> > > log might be flooded with "callbacks suppressed". If it was not
-> >> > > done on purpose, better to use dev_dbg_ratelimited() instead.
-> >> > >
-> >> > > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> >> > > ---
-> >> > >  drivers/usb/host/xhci-ring.c | 6 ++----
-> >> > >  1 file changed, 2 insertions(+), 4 deletions(-)
-> >> >
-> >> >
-> >> > Sarah, does this patch conflict with the trace debug patches being
-> >> > worked on?  I'll hold off on applying it for now, let me know if it's ok
-> >> > or not.
-> >>
-> >> It doesn't conflict with the trace debug patches, because those only
-> >> effect debugging with xhci_dbg with the host device, not dev_dbg with
-> >> the USB device.  This should apply fine to usb-next.
-> >
-> > At another glance, the patch removes two if blocks, but doesn't
-> > re-indent the rest of the lines:
-> >
-> >> @@ -3060,8 +3060,7 @@ int xhci_queue_intr_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
-> >>        * to set the polling interval (once the API is added).
-> >>        */
-> >>       if (xhci_interval != ep_interval) {
-> >> -             if (printk_ratelimit())
-> >> -                     dev_dbg(&urb->dev->dev, "Driver uses different interval"
-> >> +             dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
-> >>                                       " (%d microframe%s) than xHCI "
-> >>                                       "(%d microframe%s)\n",
-> >>                                       ep_interval,
-> >
-> > That should probably be fixed.
+On Fri, Aug 16, 2013 at 10:45:16AM -0700, Greg KH wrote:
+> On Fri, Aug 16, 2013 at 08:38:12PM +0300, Dmitry Kasatkin wrote:
+> > On Fri, Aug 16, 2013 at 8:30 PM, Sarah Sharp <sarah.a.sharp@intel.com> wrote:
+> > > On Fri, Aug 16, 2013 at 10:26:35AM -0700, Sarah Sharp wrote:
+> > >> On Thu, Aug 15, 2013 at 05:17:16PM -0700, Greg KH wrote:
+> > >> > On Thu, Aug 15, 2013 at 07:04:55PM +0300, Dmitry Kasatkin wrote:
+> > >> > > When debug is not enabled and dev_dbg() will expand to nothing,
+> > >> > > log might be flooded with "callbacks suppressed". If it was not
+> > >> > > done on purpose, better to use dev_dbg_ratelimited() instead.
+> > >> > >
+> > >> > > Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> > >> > > ---
+> > >> > >  drivers/usb/host/xhci-ring.c | 6 ++----
+> > >> > >  1 file changed, 2 insertions(+), 4 deletions(-)
+> > >> >
+> > >> >
+> > >> > Sarah, does this patch conflict with the trace debug patches being
+> > >> > worked on?  I'll hold off on applying it for now, let me know if it's ok
+> > >> > or not.
+> > >>
+> > >> It doesn't conflict with the trace debug patches, because those only
+> > >> effect debugging with xhci_dbg with the host device, not dev_dbg with
+> > >> the USB device.  This should apply fine to usb-next.
+> > >
+> > > At another glance, the patch removes two if blocks, but doesn't
+> > > re-indent the rest of the lines:
+> > >
+> > >> @@ -3060,8 +3060,7 @@ int xhci_queue_intr_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+> > >>        * to set the polling interval (once the API is added).
+> > >>        */
+> > >>       if (xhci_interval != ep_interval) {
+> > >> -             if (printk_ratelimit())
+> > >> -                     dev_dbg(&urb->dev->dev, "Driver uses different interval"
+> > >> +             dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
+> > >>                                       " (%d microframe%s) than xHCI "
+> > >>                                       "(%d microframe%s)\n",
+> > >>                                       ep_interval,
+> > >
+> > > That should probably be fixed.
+> > 
+> > It actually looks correct when patch is applied.
+> > 
+> > But it depends what you mean of course.
+> > It looks like it was before:
+> > dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
+> >                                        " (%d microframe%s) than xHCI "
+> >                                        "(%d microframe%s)\n",
+> >                                        ep_interval,
+> >                                         ep_interval == 1 ? "" : "s",
+> > 
+> > Or may be you mean:
+> > dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
+> >                                " (%d microframe%s) than xHCI "
+> >                                "(%d microframe%s)\n",
+> >                                ep_interval,
+> >                                ep_interval == 1 ? "" : "s",
 > 
-> It actually looks correct when patch is applied.
+> No, it should look like:
 > 
-> But it depends what you mean of course.
-> It looks like it was before:
-> dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
->                                        " (%d microframe%s) than xHCI "
->                                        "(%d microframe%s)\n",
->                                        ep_interval,
->                                         ep_interval == 1 ? "" : "s",
+> 		dev_dbg_ratelimited(&urb->dev->dev,
+> 				    "Driver uses different interval (%d microframe%s) than xHCI (%d microframe%s)\n",
+> 				     ep_interval, ep_interval == 1 ? "" : "s",
 > 
-> Or may be you mean:
-> dev_dbg_ratelimited(&urb->dev->dev, "Driver uses different interval"
->                                " (%d microframe%s) than xHCI "
->                                "(%d microframe%s)\n",
->                                ep_interval,
->                                ep_interval == 1 ? "" : "s",
+> and the rest of that call indented the same way.
 
-No, it should look like:
+Or just use the default tabbed indentation in your editor (use '==' if
+you're using vim).  I don't mind if the second line is indented with
+spaces to align with the parenthesis, and the majority of the xHCI
+driver uses cindent vim indentation.  Either way is fine with me though.
 
-		dev_dbg_ratelimited(&urb->dev->dev,
-				    "Driver uses different interval (%d microframe%s) than xHCI (%d microframe%s)\n",
-				     ep_interval, ep_interval == 1 ? "" : "s",
-
-and the rest of that call indented the same way.
-
-thanks,
-
-greg k-h
+Sarah Sharp
