@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab3HPNSF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 09:18:05 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:37201 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab3HPNR7 (ORCPT
+	id S1751439Ab3HPNSV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 09:18:21 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:53608 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab3HPNSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 09:17:59 -0400
-Subject: [RFC PATCH v2 02/11] pstore: Add new argument 'compressed' in
- pstore write callback
+	Fri, 16 Aug 2013 09:18:15 -0400
+Subject: [RFC PATCH v2 04/11] pstore: Add compression support to pstore
 To: linuxppc-dev@ozlabs.org, tony.luck@intel.com, linux-kernel@vger.kernel.org,
         keescook@chromium.org
 From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 Cc: jkenisto@linux.vnet.ibm.com, ananth@in.ibm.com, benh@kernel.crashing.org,
         cbouatmailru@gmail.com, mahesh@linux.vnet.ibm.com, ccross@android.com
-Date: Fri, 16 Aug 2013 18:47:47 +0530
-Message-ID: <20130816131747.3338.44215.stgit@aruna-ThinkPad-T420>
+Date: Fri, 16 Aug 2013 18:48:05 +0530
+Message-ID: <20130816131805.3338.68767.stgit@aruna-ThinkPad-T420>
 In-Reply-To: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
 References: <20130816131403.3338.82330.stgit@aruna-ThinkPad-T420>
 User-Agent: StGit/0.16-41-gd1dd
@@ -24,147 +23,221 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13081613-4790-0000-0000-000009D4B024
+x-cbid: 13081613-9574-0000-0000-00000935D569
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addition of new argument 'compressed' in the write call back will
-help the backend to know if the data passed from pstore is compressed
-or not (In case where compression fails.). If compressed, the backend
-can add a tag indicating the data is compressed while writing to
-persistent store.
+Add compression support to pstore which will help in capturing more data.
+Initially, pstore will make a call to kmsg_dump with a bigger buffer
+and will pass the size of bigger buffer to kmsg_dump and then compress
+the data to registered buffer of registered size.
+
+In case compression fails, pstore will capture the uncompressed
+data by making a call again to kmsg_dump with registered_buffer
+of registered size.
+
+Pstore will indicate the data is compressed or not with a flag
+in the write callback.
 
 Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
 ---
- arch/powerpc/platforms/pseries/nvram.c |    4 ++--
- drivers/acpi/apei/erst.c               |    4 ++--
- drivers/firmware/efi/efi-pstore.c      |    2 +-
- fs/pstore/platform.c                   |    7 ++++---
- fs/pstore/ram.c                        |    2 +-
- include/linux/pstore.h                 |    4 ++--
- 6 files changed, 12 insertions(+), 11 deletions(-)
+ fs/pstore/platform.c |  148 +++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 139 insertions(+), 9 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index b966458..dbe5dad 100644
---- a/arch/powerpc/platforms/pseries/nvram.c
-+++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -554,7 +554,7 @@ static int nvram_pstore_open(struct pstore_info *psi)
-  * @part:               pstore writes data to registered buffer in parts,
-  *                      part number will indicate the same.
-  * @count:              Indicates oops count
-- * @hsize:              Size of header added by pstore
-+ * @compressed:         Flag to indicate the log is compressed
-  * @size:               number of bytes written to the registered buffer
-  * @psi:                registered pstore_info structure
-  *
-@@ -565,7 +565,7 @@ static int nvram_pstore_open(struct pstore_info *psi)
- static int nvram_pstore_write(enum pstore_type_id type,
- 				enum kmsg_dump_reason reason,
- 				u64 *id, unsigned int part, int count,
--				size_t hsize, size_t size,
-+				bool compressed, size_t size,
- 				struct pstore_info *psi)
- {
- 	int rc;
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index 88d0b0f..5e90796 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -935,7 +935,7 @@ static ssize_t erst_reader(u64 *id, enum pstore_type_id *type, int *count,
- 			   struct timespec *time, char **buf,
- 			   struct pstore_info *psi);
- static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
--		       u64 *id, unsigned int part, int count, size_t hsize,
-+		       u64 *id, unsigned int part, int count, bool compressed,
- 		       size_t size, struct pstore_info *psi);
- static int erst_clearer(enum pstore_type_id type, u64 id, int count,
- 			struct timespec time, struct pstore_info *psi);
-@@ -1055,7 +1055,7 @@ out:
- }
- 
- static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
--		       u64 *id, unsigned int part, int count, size_t hsize,
-+		       u64 *id, unsigned int part, int count, bool compressed,
- 		       size_t size, struct pstore_info *psi)
- {
- 	struct cper_pstore_record *rcd = (struct cper_pstore_record *)
-diff --git a/drivers/firmware/efi/efi-pstore.c b/drivers/firmware/efi/efi-pstore.c
-index 73de5a9..fab6892 100644
---- a/drivers/firmware/efi/efi-pstore.c
-+++ b/drivers/firmware/efi/efi-pstore.c
-@@ -103,7 +103,7 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 
- static int efi_pstore_write(enum pstore_type_id type,
- 		enum kmsg_dump_reason reason, u64 *id,
--		unsigned int part, int count, size_t hsize, size_t size,
-+		unsigned int part, int count, bool compressed, size_t size,
- 		struct pstore_info *psi)
- {
- 	char name[DUMP_NAME_LEN];
 diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 422962a..20fa686 100644
+index 20fa686..56218cb 100644
 --- a/fs/pstore/platform.c
 +++ b/fs/pstore/platform.c
-@@ -149,6 +149,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+@@ -26,6 +26,7 @@
+ #include <linux/console.h>
+ #include <linux/module.h>
+ #include <linux/pstore.h>
++#include <linux/zlib.h>
+ #include <linux/string.h>
+ #include <linux/timer.h>
+ #include <linux/slab.h>
+@@ -65,6 +66,15 @@ struct pstore_info *psinfo;
+ 
+ static char *backend;
+ 
++/* Compression parameters */
++#define COMPR_LEVEL 6
++#define WINDOW_BITS 12
++#define MEM_LEVEL 4
++static struct z_stream_s stream;
++
++static char *big_oops_buf;
++static size_t big_oops_buf_sz;
++
+ /* How much of the console log to snapshot */
+ static unsigned long kmsg_bytes = 10240;
+ 
+@@ -117,6 +127,91 @@ bool pstore_cannot_block_path(enum kmsg_dump_reason reason)
+ }
+ EXPORT_SYMBOL_GPL(pstore_cannot_block_path);
+ 
++/* Derived from logfs_compress() */
++static int pstore_compress(const void *in, void *out, size_t inlen,
++							size_t outlen)
++{
++	int err, ret;
++
++	ret = -EIO;
++	err = zlib_deflateInit2(&stream, COMPR_LEVEL, Z_DEFLATED, WINDOW_BITS,
++						MEM_LEVEL, Z_DEFAULT_STRATEGY);
++	if (err != Z_OK)
++		goto error;
++
++	stream.next_in = in;
++	stream.avail_in = inlen;
++	stream.total_in = 0;
++	stream.next_out = out;
++	stream.avail_out = outlen;
++	stream.total_out = 0;
++
++	err = zlib_deflate(&stream, Z_FINISH);
++	if (err != Z_STREAM_END)
++		goto error;
++
++	err = zlib_deflateEnd(&stream);
++	if (err != Z_OK)
++		goto error;
++
++	if (stream.total_out >= stream.total_in)
++		goto error;
++
++	ret = stream.total_out;
++error:
++	return ret;
++}
++
++static void allocate_buf_for_compression(void)
++{
++	size_t size;
++
++	big_oops_buf_sz = (psinfo->bufsize * 100) / 45;
++	big_oops_buf = kmalloc(big_oops_buf_sz, GFP_KERNEL);
++	if (big_oops_buf) {
++		size = max(zlib_deflate_workspacesize(WINDOW_BITS, MEM_LEVEL),
++			zlib_inflate_workspacesize());
++		stream.workspace = kmalloc(size, GFP_KERNEL);
++		if (!stream.workspace) {
++			pr_err("pstore: No memory for compression workspace; "
++				"skipping compression\n");
++			kfree(big_oops_buf);
++			big_oops_buf = NULL;
++		}
++	} else {
++		pr_err("No memory for uncompressed data; "
++			"skipping compression\n");
++		stream.workspace = NULL;
++	}
++
++}
++
++/*
++ * Called when compression fails, since the printk buffer
++ * would be fetched for compression calling it again when
++ * compression fails would have moved the iterator of
++ * printk buffer which results in fetching old contents.
++ * Copy the recent messages from big_oops_buf to psinfo->buf
++ */
++static size_t copy_kmsg_to_buffer(int hsize, size_t len)
++{
++	size_t total_len;
++	size_t diff;
++
++	total_len = hsize + len;
++
++	if (total_len > psinfo->bufsize) {
++		diff = total_len - psinfo->bufsize + hsize;
++		memcpy(psinfo->buf, big_oops_buf, hsize);
++		memcpy(psinfo->buf + hsize, big_oops_buf + diff,
++					psinfo->bufsize - hsize);
++		total_len = psinfo->bufsize;
++	} else
++		memcpy(psinfo->buf, big_oops_buf, total_len);
++
++	return total_len;
++}
++
+ /*
+  * callback from kmsg_dump. (s2,l2) has the most recently
+  * written bytes, older bytes are in (s1,l1). Save as much
+@@ -148,23 +243,56 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		char *dst;
  		unsigned long size;
  		int hsize;
++		int zipped_len = -1;
  		size_t len;
-+		bool compressed = false;
+-		bool compressed = false;
++		bool compressed;
++		size_t total_len;
  
- 		dst = psinfo->buf;
- 		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part);
-@@ -159,7 +160,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 			break;
+-		dst = psinfo->buf;
+-		hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount, part);
+-		size = psinfo->bufsize - hsize;
+-		dst += hsize;
++		if (big_oops_buf) {
++			dst = big_oops_buf;
++			hsize = sprintf(dst, "%s#%d Part%d\n", why,
++							oopscount, part);
++			size = big_oops_buf_sz - hsize;
+ 
+-		if (!kmsg_dump_get_buffer(dumper, true, dst, size, &len))
+-			break;
++			if (!kmsg_dump_get_buffer(dumper, true, dst + hsize,
++								size, &len))
++				break;
++
++			zipped_len = pstore_compress(dst, psinfo->buf,
++						hsize + len, psinfo->bufsize);
++
++			if (zipped_len > 0) {
++				compressed = true;
++				total_len = zipped_len;
++			} else {
++				pr_err("pstore: compression failed for Part %d"
++					" returned %d\n", part, zipped_len);
++				pr_err("pstore: Capture uncompressed"
++					" oops/panic report of Part %d\n", part);
++				compressed = false;
++				total_len = copy_kmsg_to_buffer(hsize, len);
++			}
++		} else {
++			dst = psinfo->buf;
++			hsize = sprintf(dst, "%s#%d Part%d\n", why, oopscount,
++									part);
++			size = psinfo->bufsize - hsize;
++			dst += hsize;
++
++			if (!kmsg_dump_get_buffer(dumper, true, dst,
++								size, &len))
++				break;
++
++			compressed = false;
++			total_len = hsize + len;
++		}
  
  		ret = psinfo->write(PSTORE_TYPE_DMESG, reason, &id, part,
--				    oopscount, hsize, hsize + len, psinfo);
-+				    oopscount, compressed, hsize + len, psinfo);
+-				    oopscount, compressed, hsize + len, psinfo);
++				    oopscount, compressed, total_len, psinfo);
  		if (ret == 0 && reason == KMSG_DUMP_OOPS && pstore_is_mounted())
  			pstore_new_entry = 1;
  
-@@ -221,10 +222,10 @@ static void pstore_register_console(void) {}
- static int pstore_write_compat(enum pstore_type_id type,
- 			       enum kmsg_dump_reason reason,
- 			       u64 *id, unsigned int part, int count,
--			       size_t hsize, size_t size,
-+			       bool compressed, size_t size,
- 			       struct pstore_info *psi)
- {
--	return psi->write_buf(type, reason, id, part, psinfo->buf, hsize,
-+	return psi->write_buf(type, reason, id, part, psinfo->buf, compressed,
- 			     size, psi);
- }
+-		total += hsize + len;
++		total += total_len;
+ 		part++;
+ 	}
+ 	if (pstore_cannot_block_path(reason)) {
+@@ -262,6 +390,8 @@ int pstore_register(struct pstore_info *psi)
+ 		return -EINVAL;
+ 	}
  
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index a6119f9..fe7188f 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -196,7 +196,7 @@ static int notrace ramoops_pstore_write_buf(enum pstore_type_id type,
- 					    enum kmsg_dump_reason reason,
- 					    u64 *id, unsigned int part,
- 					    const char *buf,
--					    size_t hsize, size_t size,
-+					    bool compressed, size_t size,
- 					    struct pstore_info *psi)
- {
- 	struct ramoops_context *cxt = psi->data;
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index 4aa80ba..abfca4f 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -58,11 +58,11 @@ struct pstore_info {
- 			struct pstore_info *psi);
- 	int		(*write)(enum pstore_type_id type,
- 			enum kmsg_dump_reason reason, u64 *id,
--			unsigned int part, int count, size_t hsize,
-+			unsigned int part, int count, bool compressed,
- 			size_t size, struct pstore_info *psi);
- 	int		(*write_buf)(enum pstore_type_id type,
- 			enum kmsg_dump_reason reason, u64 *id,
--			unsigned int part, const char *buf, size_t hsize,
-+			unsigned int part, const char *buf, bool compressed,
- 			size_t size, struct pstore_info *psi);
- 	int		(*erase)(enum pstore_type_id type, u64 id,
- 			int count, struct timespec time,
++	allocate_buf_for_compression();
++
+ 	if (pstore_is_mounted())
+ 		pstore_get_records(0);
+ 
 
