@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab3HPC1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 22:27:48 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42407 "EHLO
+	id S1754805Ab3HPC1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 22:27:53 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59472 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab3HPC1n (ORCPT
+	with ESMTP id S1754580Ab3HPC1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 22:27:43 -0400
+	Thu, 15 Aug 2013 22:27:50 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 15/34] cpufreq: imx6q: remove calls to cpufreq_notify_transition()
-Date: Fri, 16 Aug 2013 07:55:12 +0530
-Message-Id: <91e60ba4e81b89fbdbf2ff495ccfbf8dc7cb6a04.1376619363.git.viresh.kumar@linaro.org>
+        Viresh Kumar <viresh.kumar@linaro.org>, Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH 16/34] cpufreq: kirkwood: remove calls to cpufreq_notify_transition()
+Date: Fri, 16 Aug 2013 07:55:13 +0530
+Message-Id: <c20eb7b61e26669d024bc207fe9a81a1d5f8f64a.1376619363.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1376619363.git.viresh.kumar@linaro.org>
 References: <cover.1376619363.git.viresh.kumar@linaro.org>
@@ -46,124 +45,85 @@ frequency change, this one removes it from this driver.
 
 Some related minor cleanups are also done along with it.
 
-Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Andrew Lunn <andrew@lunn.ch>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/cpufreq/imx6q-cpufreq.c | 39 ++++++++++++++++-----------------------
- 1 file changed, 16 insertions(+), 23 deletions(-)
+ drivers/cpufreq/kirkwood-cpufreq.c | 54 ++++++++++++++------------------------
+ 1 file changed, 20 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
-index 04a32fb..f35c674 100644
---- a/drivers/cpufreq/imx6q-cpufreq.c
-+++ b/drivers/cpufreq/imx6q-cpufreq.c
-@@ -41,14 +41,14 @@ static unsigned int imx6q_get_speed(unsigned int cpu)
- 
- static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
+diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+index c3d6987..fcf461e 100644
+--- a/drivers/cpufreq/kirkwood-cpufreq.c
++++ b/drivers/cpufreq/kirkwood-cpufreq.c
+@@ -58,48 +58,34 @@ static unsigned int kirkwood_cpufreq_get_cpu_frequency(unsigned int cpu)
+ static int kirkwood_cpufreq_target(struct cpufreq_policy *policy,
+ 			    unsigned int index)
  {
 -	struct cpufreq_freqs freqs;
- 	struct opp *opp;
- 	unsigned long freq_hz, volt, volt_old;
-+	unsigned int old_freq, new_freq;
- 	int ret;
+ 	unsigned int state = kirkwood_freq_table[index].driver_data;
+ 	unsigned long reg;
  
--	freqs.new = freq_table[index].frequency;
--	freq_hz = freqs.new * 1000;
--	freqs.old = clk_get_rate(arm_clk) / 1000;
-+	new_freq = freq_table[index].frequency;
-+	freq_hz = new_freq * 1000;
-+	old_freq = clk_get_rate(arm_clk) / 1000;
+-	freqs.old = kirkwood_cpufreq_get_cpu_frequency(0);
+-	freqs.new = kirkwood_freq_table[index].frequency;
++	local_irq_disable();
  
- 	rcu_read_lock();
- 	opp = opp_find_freq_ceil(cpu_dev, &freq_hz);
-@@ -63,26 +63,23 @@ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
- 	volt_old = regulator_get_voltage(arm_reg);
- 
- 	dev_dbg(cpu_dev, "%u MHz, %ld mV --> %u MHz, %ld mV\n",
--		freqs.old / 1000, volt_old / 1000,
--		freqs.new / 1000, volt / 1000);
--
 -	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
-+		old_freq / 1000, volt_old / 1000,
-+		new_freq / 1000, volt / 1000);
++	/* Disable interrupts to the CPU */
++	reg = readl_relaxed(priv.base);
++	reg |= CPU_SW_INT_BLK;
++	writel_relaxed(reg, priv.base);
  
- 	/* scaling up?  scale voltage before frequency */
--	if (freqs.new > freqs.old) {
-+	if (new_freq > old_freq) {
- 		ret = regulator_set_voltage_tol(arm_reg, volt, 0);
- 		if (ret) {
- 			dev_err(cpu_dev,
- 				"failed to scale vddarm up: %d\n", ret);
--			freqs.new = freqs.old;
--			goto post_notify;
-+			return ret;
- 		}
- 
- 		/*
- 		 * Need to increase vddpu and vddsoc for safety
- 		 * if we are about to run at 1.2 GHz.
- 		 */
--		if (freqs.new == FREQ_1P2_GHZ / 1000) {
-+		if (new_freq == FREQ_1P2_GHZ / 1000) {
- 			regulator_set_voltage_tol(pu_reg,
- 					PU_SOC_VOLTAGE_HIGH, 0);
- 			regulator_set_voltage_tol(soc_reg,
-@@ -103,13 +100,13 @@ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
- 	clk_set_parent(step_clk, pll2_pfd2_396m_clk);
- 	clk_set_parent(pll1_sw_clk, step_clk);
- 	if (freq_hz > clk_get_rate(pll2_pfd2_396m_clk)) {
--		clk_set_rate(pll1_sys_clk, freqs.new * 1000);
-+		clk_set_rate(pll1_sys_clk, new_freq * 1000);
- 		/*
- 		 * If we are leaving 396 MHz set-point, we need to enable
- 		 * pll1_sys_clk and disable pll2_pfd2_396m_clk to keep
- 		 * their use count correct.
- 		 */
--		if (freqs.old * 1000 <= clk_get_rate(pll2_pfd2_396m_clk)) {
-+		if (old_freq * 1000 <= clk_get_rate(pll2_pfd2_396m_clk)) {
- 			clk_prepare_enable(pll1_sys_clk);
- 			clk_disable_unprepare(pll2_pfd2_396m_clk);
- 		}
-@@ -124,16 +121,15 @@ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
- 	}
- 
- 	/* Ensure the arm clock divider is what we expect */
--	ret = clk_set_rate(arm_clk, freqs.new * 1000);
-+	ret = clk_set_rate(arm_clk, new_freq * 1000);
- 	if (ret) {
- 		dev_err(cpu_dev, "failed to set clock rate: %d\n", ret);
- 		regulator_set_voltage_tol(arm_reg, volt_old, 0);
--		freqs.new = freqs.old;
--		goto post_notify;
-+		return ret;
- 	}
- 
- 	/* scaling down?  scale voltage after frequency */
--	if (freqs.new < freqs.old) {
-+	if (new_freq < old_freq) {
- 		ret = regulator_set_voltage_tol(arm_reg, volt, 0);
- 		if (ret) {
- 			dev_warn(cpu_dev,
-@@ -141,7 +137,7 @@ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
- 			ret = 0;
- 		}
- 
--		if (freqs.old == FREQ_1P2_GHZ / 1000) {
-+		if (old_freq == FREQ_1P2_GHZ / 1000) {
- 			regulator_set_voltage_tol(pu_reg,
- 					PU_SOC_VOLTAGE_NORMAL, 0);
- 			regulator_set_voltage_tol(soc_reg,
-@@ -149,10 +145,7 @@ static int imx6q_set_target(struct cpufreq_policy *policy, unsigned int index)
- 		}
- 	}
- 
--post_notify:
--	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+-	dev_dbg(priv.dev, "Attempting to set frequency to %i KHz\n",
+-		kirkwood_freq_table[index].frequency);
+-	dev_dbg(priv.dev, "old frequency was %i KHz\n",
+-		kirkwood_cpufreq_get_cpu_frequency(0));
 -
--	return ret;
-+	return 0;
- }
+-	if (freqs.old != freqs.new) {
+-		local_irq_disable();
+-
+-		/* Disable interrupts to the CPU */
+-		reg = readl_relaxed(priv.base);
+-		reg |= CPU_SW_INT_BLK;
+-		writel_relaxed(reg, priv.base);
+-
+-		switch (state) {
+-		case STATE_CPU_FREQ:
+-			clk_disable(priv.powersave_clk);
+-			break;
+-		case STATE_DDR_FREQ:
+-			clk_enable(priv.powersave_clk);
+-			break;
+-		}
++	switch (state) {
++	case STATE_CPU_FREQ:
++		clk_disable(priv.powersave_clk);
++		break;
++	case STATE_DDR_FREQ:
++		clk_enable(priv.powersave_clk);
++		break;
++	}
  
- static int imx6q_cpufreq_init(struct cpufreq_policy *policy)
+-		/* Wait-for-Interrupt, while the hardware changes frequency */
+-		cpu_do_idle();
++	/* Wait-for-Interrupt, while the hardware changes frequency */
++	cpu_do_idle();
+ 
+-		/* Enable interrupts to the CPU */
+-		reg = readl_relaxed(priv.base);
+-		reg &= ~CPU_SW_INT_BLK;
+-		writel_relaxed(reg, priv.base);
++	/* Enable interrupts to the CPU */
++	reg = readl_relaxed(priv.base);
++	reg &= ~CPU_SW_INT_BLK;
++	writel_relaxed(reg, priv.base);
+ 
+-		local_irq_enable();
+-	}
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	local_irq_enable();
+ 
+ 	return 0;
+ }
 -- 
 1.7.12.rc2.18.g61b472e
 
