@@ -1,204 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab3HPDUF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Aug 2013 23:20:05 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54301 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751939Ab3HPDUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Aug 2013 23:20:00 -0400
-Message-ID: <520D9A3E.1040903@ti.com>
-Date: Fri, 16 Aug 2013 08:49:26 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753690Ab3HPDpH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Aug 2013 23:45:07 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:41414 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752877Ab3HPDpG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Aug 2013 23:45:06 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r7G3ipfZ013903, This message is accepted by code: ctloc85258
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, "'nic_swsd'" <nic_swsd@realtek.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        "'David Miller'" <davem@davemloft.net>
+References: <1376378913-879-1-git-send-email-hayeswang@realtek.com> <1376484880-741-1-git-send-email-hayeswang@realtek.com> <20130815122617.GA18057@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH net-next v2 1/3] net/usb/r8152: support aggregation
+Date: Fri, 16 Aug 2013 11:44:56 +0800
+Message-ID: <4C3BE5B36641404DBF9ED8943729871B@realtek.com.tw>
 MIME-Version: 1.0
-To: Benoit Cousson <bcousson@baylibre.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <a-kishore@ti.com>, <afzal@ti.com>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
-        Roger Quadros <rogerq@ti.com>
-Subject: Re: [PATCH v3] arm: dts: AM43x: Add usb DT nodes for AM4372
-References: <1373444082-4169-1-git-send-email-george.cherian@ti.com> <520B9144.5000701@ti.com> <520B958B.1000900@baylibre.com>
-In-Reply-To: <520B958B.1000900@baylibre.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac6Zsrsza18B0UNyQ32N13Vvcse1YgAePpMg
+In-Reply-To: <20130815122617.GA18057@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit ,
+Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> Sent: Thursday, August 15, 2013 8:26 PM
+> To: Hayeswang
+> Cc: netdev@vger.kernel.org; nic_swsd; 
+> linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org; David Miller
+> Subject: Re: [PATCH net-next v2 1/3] net/usb/r8152: support 
+> aggregation
+> 
+[...]
+> > +static
+> > +int r8152_submit_rx(struct r8152 *tp, struct rx_agg *agg, 
+> gfp_t mem_flags);
+> > +
+> 
+> It's a new, less than 10 lines function without driver 
+> internal dependencies.
+> 
+> The forward declaration is not needed.
 
-Thanks for your review.
+The r8152_submit_rx() need the declaration of read_bulk_callback(), and the
+read_bulk_callback() need the declaration of r8152_submit_rx(), too. It likes
+a dead lock, so I have no idea how to do it without another declaration.
 
-On 8/14/2013 8:04 PM, Benoit Cousson wrote:
-> + Roger
->
-> Hi George,
->
-> Yes, I had some comment about the "ti'type" in Roger's series that 
-> will be applicable here as well.
->
+[...]
+> > -	if (!netif_device_present(netdev))
+> > +	if (!netif_carrier_ok(netdev))
+> >  		return;
+> 
+> How is it related to the subject of the patch ?
 
+When link down, the driver would cancel all bulks. This avoid the re-submitting
+bulk.
 
->
-> On 14/08/2013 16:16, George Cherian wrote:
->> +Benoit
->>   If you dont have any comments, can you take this for 3.12?
->>
->> Regards
->> -George
->>
->> On 7/10/2013 1:44 PM, George Cherian wrote:
->>
->>> This patch adds
->>>     - HS USB nodes
->>>     - phy nodes
->>>     - usb control module nodes.
->>>
->>> Signed-off-by: George Cherian <george.cherian@ti.com>
->>> ---
->>>
->>> changes from v2
->>> change synopsis to snps
->>> use simple node names
->>> add both USB and PHY instances
->>> add usbctrl node
->>>
->>> changes from v1
->>> renamed synopsis to snps
->>> removed flag tx-fifo-resize
->>>
->>>   arch/arm/boot/dts/am4372.dtsi | 58
->>> +++++++++++++++++++++++++++++++++++++++++++
->>>   1 file changed, 58 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/am4372.dtsi
->>> b/arch/arm/boot/dts/am4372.dtsi
->>> index ddc1df7..37f196f 100644
->>> --- a/arch/arm/boot/dts/am4372.dtsi
->>> +++ b/arch/arm/boot/dts/am4372.dtsi
->>> @@ -64,5 +64,63 @@
->>>               compatible = "ti,am4372-counter32k","ti,omap-counter32k";
->>>               reg = <0x44e86000 0x40>;
->>>           };
->>> +
->>> +        phy1: usbphy1 {
->>> +            compatible = "ti,am4372-usb2";
->
-> That's not a very good name for a phy? It looks like a usb module.
->
-> The bindings specify only ti,omap-usb2 or ti,omap-usb3 for USB2 or USB3.
-> I guess it should be one of them and potentially the binding should be 
-> updated with ti,omap-usb2-phy and ti,omap-usb3-phy names while we can 
-> still do it.
->
->>> +            #phy-cells = <0>;
->>> +            id = <0>;
->>> +            status = "disabled";
->>> +        };
->>> +
->>> +        phy2: usbphy2 {
->
-> Why do you need a different node name here? It should be a generic 
-> name to identify the function, so usbphy or usb-phy seems good enough.
+> [...]
+> > +static void rx_bottom(struct r8152 *tp)
+> > +{
+> > +	struct net_device_stats *stats;
+> > +	struct net_device *netdev;
+> > +	struct rx_agg *agg;
+> > +	struct rx_desc *rx_desc;
+> > +	unsigned long lockflags;
+> 
+> Idiom: 'flags'.
+> 
+> > +	struct list_head *cursor, *next;
+> > +	struct sk_buff *skb;
+> > +	struct urb *urb;
+> > +	unsigned pkt_len;
+> > +	int len_used;
+> > +	u8 *rx_data;
+> > +	int ret;
+> 
+> The scope of these variables is needlessly wide.
+> 
+> > +
+> > +	netdev = tp->netdev;
+> > +
+> > +	stats = rtl8152_get_stats(netdev);
+> > +
+> > +	spin_lock_irqsave(&tp->rx_lock, lockflags);
+> > +	list_for_each_safe(cursor, next, &tp->rx_done) {
+> > +		list_del_init(cursor);
+> > +		spin_unlock_irqrestore(&tp->rx_lock, lockflags);
+> > +
+> > +		agg = list_entry(cursor, struct rx_agg, list);
+> > +		urb = agg->urb;
+> > +		if (urb->actual_length < ETH_ZLEN) {
+> 
+> 			goto submit;
+> 
+> > +			ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
+> > +			spin_lock_irqsave(&tp->rx_lock, lockflags);
+> > +			if (ret && ret != -ENODEV) {
+> > +				list_add_tail(&agg->list, next);
+> > +				tasklet_schedule(&tp->tl);
+> > +			}
+> > +			continue;
+> > +		}
+> 
+> (remove the line above)
+> 
+> [...]
+> > +			rx_data = rx_agg_align(rx_data + pkt_len + 4);
+> > +			rx_desc = (struct rx_desc *)rx_data;
+> > +			pkt_len = le32_to_cpu(rx_desc->opts1) & 
+> RX_LEN_MASK;
+> > +			len_used = (int)(rx_data - (u8 *)agg->head);
+> > +			len_used += sizeof(struct rx_desc) + pkt_len;
+> > +		}
+> > +
+> 
+> submit:
+> 
+> > +		ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
+> > +		spin_lock_irqsave(&tp->rx_lock, lockflags);
+> > +		if (ret && ret != -ENODEV) {
+> > +			list_add_tail(&agg->list, next);
+> > +			tasklet_schedule(&tp->tl);
+> > +		}
+> > +	}
+> > +	spin_unlock_irqrestore(&tp->rx_lock, lockflags);
+> > +}
+> 
+> It should be possible to retrieve more items in the spinlocked section
+> so as to have a chance to batch more work. I have not thought 
+> too deeply
+> about it.
 
-There are 2 instances of usb controllers and these instances for those 2 
-phys, which essentially dont have any reg property. So I named it as 
-usbphy1 and usbphy2.
->
->>> +            compatible = "ti,am4372-usb2";
->>> +            #phy-cells = <0>;
->>> +            id = <1>;
->>> +            status = "disabled";
->>> +        };
->>> +
->>> +        usbctrl: omap-control-usb@44e10620 {
->>> +            compatible = "ti,omap-control-usb";
->>> +            reg = <0x44e10620 0x10>;
->>> +            reg-names = "control_dev_conf";
->>> +            ti,type = <3>;
->>> +            status = "disabled";
->>> +        };
->>> +
->>> +        usb1: am4372_dwc3@48380000 {
->>> +            status = "disabled";
->>> +            compatible = "ti,am4372-dwc3";
->>> +            reg = <0x48380000 0x200>;
->>> +            interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>;
->>> +            #address-cells = <1>;
->>> +            #size-cells = <1>;
->>> +            utmi-mode = <1>;
->>> +            ranges;
->
-> A blank line here will be nice.
+I only lock when I want to remove or inser the agg list, and unlock as soon as
+possible. I don't think I keep locking for a long time.
 
-okay
->
->>> +            dwc3@48390000 {
->>> +                compatible = "snps,dwc3";
->>> +                reg = <0x48390000 0xd000>;
->>> +                interrupts = <GIC_SPI  168 IRQ_TYPE_LEVEL_HIGH>;
->>> +                phys = <&phy1>;
->>> +                phy-names = "am4372-usb1";
->
-> What is the purpose of the phy-names? Is it relevant to add the SoC 
-> name in something that usually, at least for the clocks and IRQs, is 
-> IP specific?
->
-> The current documentation does not explain it and does not support 
-> phys property either.
->
->   synopsys DWC3 CORE
->
->   DWC3- USB3 CONTROLLER
->
->   Required properties:
->    - compatible: must be "synopsys,dwc3"
->    - reg : Address and length of the register set for the device
->    - interrupts: Interrupts used by the dwc3 controller.
->    - usb-phy : array of phandle for the PHY device
->
-> Is there some binding update ongoing for 3.12?
-
-The phy part, especially was added with the generic phy framework in 
-mind. The generic phy framework uses phys and phy-names instead of usb-phy.
-Also all synopsys  references for compatible are being replaced with snps.
-
->
->>> +            };
->>> +        };
->>> +
->>> +        usb2: am4372_dwc3@483c0000 {
->>> +            status = "disabled";
->>> +            compatible = "ti,am4372-dwc3";
->>> +            reg = <0x483c0000 0x200>;
->>> +            interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_HIGH>;
->>> +            #address-cells = <1>;
->>> +            #size-cells = <1>;
->>> +            utmi-mode = <1>;
->>> +            ranges;
->
-> A blank line here will be nice.
->
-
-okay
->>> +            dwc3@483d0000 {
->>> +                compatible = "snps,dwc3";
->>> +                reg = <0x483d0000 0xd000>;
->>> +                interrupts = <GIC_SPI  174 IRQ_TYPE_LEVEL_HIGH>;
->>> +                phys = <&phy2>;
->>> +                phy-names = "am4372-usb2";
->>> +            };
->>> +        };
->>>       };
->>>   };
->>
->>
->
-> Regards,
-> Benoit
->
-
-
--- 
--George
+ 
+Best Regards,
+Hayes
 
