@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab3HQALx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Aug 2013 20:11:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51652 "EHLO
+	id S1756516Ab3HQAMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Aug 2013 20:12:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51643 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756592Ab3HPWj3 (ORCPT
+	with ESMTP id S1756589Ab3HPWj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Aug 2013 18:39:29 -0400
+	Fri, 16 Aug 2013 18:39:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: enrico Mioso <mrkiko.rs@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Michal Kazior <michal.kazior@tieto.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 037/133] usb: serial: option: blacklist ONDA MT689DC QMI interface
-Date: Fri, 16 Aug 2013 15:32:59 -0700
-Message-Id: <1376692475-28413-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 042/133] nl80211: fix mgmt tx status and testmode reporting for netns
+Date: Fri, 16 Aug 2013 15:33:04 -0700
+Message-Id: <1376692475-28413-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1376692475-28413-1-git-send-email-kamal@canonical.com>
 References: <1376692475-28413-1-git-send-email-kamal@canonical.com>
@@ -28,34 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Enrico Mioso <mrkiko.rs@gmail.com>
+From: Michal Kazior <michal.kazior@tieto.com>
 
-commit 3d1a69e726406ab662ab88fa30a3a05ed404334d upstream.
+commit a0ec570f4f69c4cb700d743a915096c2c8f56a99 upstream.
 
-Prevent the option driver from binding itself to the QMI/WWAN interface, making
-it unusable by the proper driver.
+These two events were sent to the default network
+namespace.
 
-Signed-off-by: enrico Mioso <mrkiko.rs@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This caused AP mode in a non-default netns to not
+work correctly. Mgmt tx status was multicasted to
+a different (default) netns instead of the one the
+AP was in.
+
+Signed-off-by: Michal Kazior <michal.kazior@tieto.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/option.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/wireless/nl80211.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 9736e9b..1c8733a 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -819,7 +819,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0017, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0018, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0019, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0019, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0020, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0021, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index f45706a..c6268cb 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -5800,12 +5800,14 @@ EXPORT_SYMBOL(cfg80211_testmode_alloc_event_skb);
+ 
+ void cfg80211_testmode_event(struct sk_buff *skb, gfp_t gfp)
+ {
++	struct cfg80211_registered_device *rdev = ((void **)skb->cb)[0];
+ 	void *hdr = ((void **)skb->cb)[1];
+ 	struct nlattr *data = ((void **)skb->cb)[2];
+ 
+ 	nla_nest_end(skb, data);
+ 	genlmsg_end(skb, hdr);
+-	genlmsg_multicast(skb, 0, nl80211_testmode_mcgrp.id, gfp);
++	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
++				nl80211_testmode_mcgrp.id, gfp);
+ }
+ EXPORT_SYMBOL(cfg80211_testmode_event);
+ #endif
+@@ -8754,7 +8756,8 @@ void nl80211_send_mgmt_tx_status(struct cfg80211_registered_device *rdev,
+ 
+ 	genlmsg_end(msg, hdr);
+ 
+-	genlmsg_multicast(msg, 0, nl80211_mlme_mcgrp.id, gfp);
++	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), msg, 0,
++				nl80211_mlme_mcgrp.id, gfp);
+ 	return;
+ 
+  nla_put_failure:
 -- 
 1.8.1.2
 
